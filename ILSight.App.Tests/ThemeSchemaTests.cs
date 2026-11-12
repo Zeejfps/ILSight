@@ -2,8 +2,8 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using ZGF.Gui.Immediate;
-using ILSight.CodeView;
-using ILSight.BuiltInAssets;
+using ILSight.CodeViewArea;
+using ILSight.BuiltInArea;
 
 namespace ILSight.App.Tests;
 

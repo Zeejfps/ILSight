@@ -1,6 +1,6 @@
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.CodeView;
+using ILSight.CodeViewArea;
 using ILSight.DocumentViewing;
 using ILSight.MetadataGridArea;
 using ILSight.Searching;

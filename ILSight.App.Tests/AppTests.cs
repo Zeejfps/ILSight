@@ -5,7 +5,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ZGF.KeyboardModule;
-using ILSight.BuiltInAssets;
+using ILSight.BuiltInArea;
 using ILSight.Searching;
 using ILSight.MainScreen;
 using static ILSight.Preferences;

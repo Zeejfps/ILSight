@@ -4,8 +4,8 @@ using ZGF.Gui.Immediate;
 using ILSight.Core;
 using static ILSight.SettingsKeeping.Settings;
 using static ILSight.Theming;
-using ILSight.CodeView;
-using ILSight.BuiltInAssets;
+using ILSight.CodeViewArea;
+using ILSight.BuiltInArea;
 using ILSight.AppSettingArea;
 using ILSight.DisplayChoices;
 

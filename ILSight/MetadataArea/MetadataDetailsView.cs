@@ -2,7 +2,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Metadata;
-using ILSight.CodeView;
+using ILSight.CodeViewArea;
 
 namespace ILSight.MetadataArea;
 

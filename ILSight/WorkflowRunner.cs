@@ -1,5 +1,5 @@
 using ZGF.Gui.Immediate;
-using ILSight.Commanding;
+using ILSight.CommandArea;
 
 namespace ILSight;
 

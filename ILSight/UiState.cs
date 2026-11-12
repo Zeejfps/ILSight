@@ -1,11 +1,11 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.CodeView;
+using ILSight.CodeViewArea;
 using ILSight.Exporting;
 using ILSight.BookmarkArea;
-using ILSight.BuiltInAssets;
-using ILSight.ComparisonPicking;
+using ILSight.BuiltInArea;
+using ILSight.ComparisonPickerArea;
 using ILSight.Omnibars;
 using ILSight.DocumentViewing;
 using ILSight.ProcessBrowsing;

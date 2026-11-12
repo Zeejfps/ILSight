@@ -1,6 +1,6 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
-using ILSight.BuiltInAssets;
+using ILSight.BuiltInArea;
 
 namespace ILSight;
 

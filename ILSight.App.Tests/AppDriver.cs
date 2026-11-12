@@ -2,7 +2,7 @@ using System.Threading.Channels;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Testing;
 using ILSight.Core;
-using ILSight.Commanding;
+using ILSight.CommandArea;
 using ILSight.AppSettingArea;
 using ILSight.ILSightAppArea;
 

@@ -1,8 +1,8 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.CodeView;
-using ILSight.Commanding;
+using ILSight.CodeViewArea;
+using ILSight.CommandArea;
 
 namespace ILSight;
 

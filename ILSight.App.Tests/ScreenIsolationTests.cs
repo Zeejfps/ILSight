@@ -2,7 +2,7 @@ using System.Reflection;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.CodeView;
+using ILSight.CodeViewArea;
 using ILSight.Exporting;
 using ILSight.BookmarkArea;
 using ILSight.ProcessBrowsing;

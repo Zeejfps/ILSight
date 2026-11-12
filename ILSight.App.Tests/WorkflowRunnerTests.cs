@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using ILSight.Commanding;
+using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
 

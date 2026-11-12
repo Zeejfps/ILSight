@@ -1,5 +1,5 @@
 using ILSight.Core;
-using ILSight.ComparisonPicking;
+using ILSight.ComparisonPickerArea;
 using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;

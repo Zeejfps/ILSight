@@ -1,4 +1,4 @@
-using ILSight.BuiltInAssets;
+using ILSight.BuiltInArea;
 
 namespace ILSight.UserState;
 

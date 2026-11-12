@@ -1,6 +1,6 @@
 using ZGF.Geometry;
 using ZGF.Gui.Immediate;
-using ILSight.BuiltInAssets;
+using ILSight.BuiltInArea;
 
 namespace ILSight.Diagramming;
 

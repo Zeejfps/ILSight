@@ -1,5 +1,5 @@
 using ILSight.Core;
-using ILSight.CodeView;
+using ILSight.CodeViewArea;
 using ILSight.ILSightAppArea;
 using static ILSight.App.Tests.BuiltInGlyphs;
 

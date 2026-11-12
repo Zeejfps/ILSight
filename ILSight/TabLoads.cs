@@ -1,4 +1,4 @@
-using ILSight.Commanding;
+using ILSight.CommandArea;
 
 namespace ILSight;
 

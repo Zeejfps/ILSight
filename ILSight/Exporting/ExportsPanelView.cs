@@ -5,7 +5,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ZGF.KeyboardModule;
-using ILSight.Commanding;
+using ILSight.CommandArea;
 using ILSight.DocumentViewing;
 using static ILSight.Exporting.Exports;
 

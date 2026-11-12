@@ -1,7 +1,7 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core.Comparison;
-using ILSight.BuiltInAssets;
+using ILSight.BuiltInArea;
 
 namespace ILSight;
 

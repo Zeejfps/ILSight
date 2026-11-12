@@ -1,6 +1,6 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
-using ILSight.Commanding;
+using ILSight.CommandArea;
 using ILSight.AppSettingArea;
 using ILSight.AssemblyListArea;
 using ILSight.ILSightAppArea;

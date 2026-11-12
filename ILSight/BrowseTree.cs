@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.BuiltInAssets;
+using ILSight.BuiltInArea;
 using ILSight.UserState;
 
 namespace ILSight;

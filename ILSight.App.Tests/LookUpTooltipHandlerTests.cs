@@ -1,5 +1,5 @@
 using ILSight.Core;
-using ILSight.CodeTooltipping;
+using ILSight.CodeTooltipArea;
 
 namespace ILSight.App.Tests;
 

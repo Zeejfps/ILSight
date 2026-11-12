@@ -1,5 +1,5 @@
 using ILSight.Core;
-using ILSight.CodeView;
+using ILSight.CodeViewArea;
 
 namespace ILSight;
 

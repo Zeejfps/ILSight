@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.Commanding;
+using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
 

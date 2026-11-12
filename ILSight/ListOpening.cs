@@ -1,5 +1,5 @@
 using ILSight.Core;
-using ILSight.Commanding;
+using ILSight.CommandArea;
 using ILSight.AssemblyListArea;
 
 namespace ILSight;

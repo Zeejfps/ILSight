@@ -1,6 +1,6 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
-using ILSight.Commanding;
+using ILSight.CommandArea;
 using static ILSight.MainScreen.Dialogs;
 
 namespace ILSight.MainScreen;

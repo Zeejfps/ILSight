@@ -2,7 +2,7 @@ using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ZGF.KeyboardModule;
 using ILSight.Exporting;
-using ILSight.Commanding;
+using ILSight.CommandArea;
 using ILSight.MainScreen;
 using ILSight.AssemblyArea;
 using static ZGF.Desktop.ShortcutModifiers;

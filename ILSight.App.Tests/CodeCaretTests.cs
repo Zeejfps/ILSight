@@ -2,7 +2,7 @@ using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ZGF.KeyboardModule;
-using ILSight.CodeView;
+using ILSight.CodeViewArea;
 
 namespace ILSight.App.Tests;
 

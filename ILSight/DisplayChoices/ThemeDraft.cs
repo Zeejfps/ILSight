@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using ZGF.Gui.Immediate;
-using ILSight.CodeView;
+using ILSight.CodeViewArea;
 
 namespace ILSight.DisplayChoices;
 

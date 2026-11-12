@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using Xunit.Abstractions;
 using ILSight.Core;
-using ILSight.CodeView;
+using ILSight.CodeViewArea;
 using ILSight.DisplayChoices;
 
 namespace ILSight.App.Tests;

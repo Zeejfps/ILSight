@@ -1,6 +1,6 @@
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.Commanding;
+using ILSight.CommandArea;
 using static ILSight.Analysis;
 using static ILSight.Diagramming.Diagrams;
 using static ILSight.Docking;

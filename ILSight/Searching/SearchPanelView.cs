@@ -4,7 +4,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ZGF.KeyboardModule;
 using ILSight.Core;
-using ILSight.Commanding;
+using ILSight.CommandArea;
 
 using static ILSight.ScreenLayout;
 

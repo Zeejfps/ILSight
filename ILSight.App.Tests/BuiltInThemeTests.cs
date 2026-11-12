@@ -1,6 +1,6 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
-using ILSight.BuiltInAssets;
+using ILSight.BuiltInArea;
 
 namespace ILSight.App.Tests;
 

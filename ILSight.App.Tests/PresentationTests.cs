@@ -1,6 +1,6 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
-using ILSight.BuiltInAssets;
+using ILSight.BuiltInArea;
 using static ILSight.App.Tests.BuiltInGlyphs;
 
 namespace ILSight.App.Tests;

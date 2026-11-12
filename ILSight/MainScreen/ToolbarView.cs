@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.Commanding;
+using ILSight.CommandArea;
 using ILSight.AssemblyListArea;
 using static ILSight.AssemblyListArea.AssemblyLists;
 using static ILSight.Preferences;

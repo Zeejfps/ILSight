@@ -2,7 +2,7 @@ using ZGF.Gui.Immediate;
 using System.Globalization;
 using ILSight.Core;
 using ZGF.KeyboardModule;
-using ILSight.BuiltInAssets;
+using ILSight.BuiltInArea;
 using ILSight.MainScreen;
 using static ILSight.ScreenLayout;
 

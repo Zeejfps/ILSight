@@ -1,8 +1,8 @@
 using ZGF.Gui.Immediate;
 using ILSight.App.Tests.Fixtures;
 using ILSight.Core;
-using ILSight.CodeView;
-using ILSight.CodeTooltipping;
+using ILSight.CodeViewArea;
+using ILSight.CodeTooltipArea;
 
 namespace ILSight.App.Tests;
 

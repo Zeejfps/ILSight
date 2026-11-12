@@ -3,7 +3,7 @@ using ZGF.Desktop;
 using ILSight.Core;
 using ILSight.Exporting;
 using ILSight.BookmarkArea;
-using ILSight.CodeTooltipping;
+using ILSight.CodeTooltipArea;
 using ILSight.UserState;
 using ILSight.Searching;
 using ILSight.Diagramming;

@@ -7,7 +7,7 @@ using ILSight.Core;
 using static ILSight.SettingsKeeping.Settings;
 using static ILSight.App.Tests.TestPaths;
 using ILSight.BookmarkArea;
-using ILSight.Commanding;
+using ILSight.CommandArea;
 using ILSight.AppSettingArea;
 using ILSight.AssemblyListArea;
 using ILSight.DisplayChoices;

@@ -2,7 +2,7 @@ using System.Diagnostics;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
-using ILSight.Commanding;
+using ILSight.CommandArea;
 
 namespace ILSight.Diagramming;
 

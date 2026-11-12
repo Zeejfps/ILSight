@@ -1,7 +1,7 @@
 using ZGF.Desktop;
 using ZGF.KeyboardModule;
 using ILSight.Core;
-using ILSight.CodeView;
+using ILSight.CodeViewArea;
 using ILSight.BookmarkArea;
 using static ILSight.AssemblyListArea.AssemblyLists;
 using static ILSight.BookmarkArea.Bookmarks;

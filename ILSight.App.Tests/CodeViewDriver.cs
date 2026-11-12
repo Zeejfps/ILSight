@@ -5,9 +5,9 @@ using ZGF.Gui.Immediate;
 using ILSight.App.Tests.Fixtures;
 using ILSight.Core;
 using ZGF.KeyboardModule;
-using ILSight.CodeView;
-using ILSight.CodeTooltipping;
-using ILSight.Commanding;
+using ILSight.CodeViewArea;
+using ILSight.CodeTooltipArea;
+using ILSight.CommandArea;
 using ILSight.DisplayChoices;
 
 namespace ILSight.App.Tests;

@@ -1,4 +1,4 @@
-using ILSight.CodeView;
+using ILSight.CodeViewArea;
 
 namespace ILSight;
 

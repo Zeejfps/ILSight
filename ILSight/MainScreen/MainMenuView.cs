@@ -4,7 +4,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Exporting;
-using ILSight.Commanding;
+using ILSight.CommandArea;
 using ILSight.ProcessBrowsing;
 using ILSight.FrameworkPicking;
 using ILSight.UserState;

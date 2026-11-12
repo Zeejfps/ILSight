@@ -3,7 +3,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Comparison;
-using ILSight.Commanding;
+using ILSight.CommandArea;
 using ILSight.DocumentViewing;
 using ILSight.AssemblyArea;
 using static ILSight.Comparisons;

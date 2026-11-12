@@ -5,7 +5,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Analysis;
 using ILSight.Exporting;
-using ILSight.Commanding;
+using ILSight.CommandArea;
 using ILSight.Diagramming;
 using ILSight.AssemblyArea;
 using static ILSight.AssemblyArea.Assemblies;

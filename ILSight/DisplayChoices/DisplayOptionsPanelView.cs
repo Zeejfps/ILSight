@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
-using ILSight.Commanding;
+using ILSight.CommandArea;
 using ILSight.SettingsKeeping;
 using static ILSight.CodeDisplay;
 using static ILSight.IconTheming;

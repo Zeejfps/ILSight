@@ -1,4 +1,4 @@
-using ILSight.BuiltInAssets;
+using ILSight.BuiltInArea;
 using ILSight.UserState;
 
 namespace ILSight.App.Tests;
