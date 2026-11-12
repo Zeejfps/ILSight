@@ -16,7 +16,7 @@ public sealed class ReferenceTreeTests
 
         Assert.DoesNotContain(coreLib.Assembly, app.AppState.Assemblies.Listed);
         Assert.Same(coreLib, app.Ui.Tree.View.Selected);
-        Assert.Same(coreLib, app.AppState.Tabs.Active!.Node);
+        Assert.Same(coreLib, app.AppState.Tabs.Active?.Node);
     }
 
     [Fact]

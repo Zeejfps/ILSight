@@ -123,6 +123,8 @@ public sealed class SettingsFormatTests : IDisposable
 
     private static AppSettings ExpectedSettings()
     {
+        var braces = DecompilerToggles.FindToggle("AlwaysUseBraces");
+        Assert.NotNull(braces);
         return new AppSettings()
         {
             AssemblyLists =
@@ -138,7 +140,7 @@ public sealed class SettingsFormatTests : IDisposable
             Theme = ThemeId<ThemeFile>.Of("monokai"),
             IconTheme = ThemeId<IconThemeFile>.Of("custom-icons"),
             Language = DecompilationLanguage.IL,
-            Decompiler = DecompilerToggles.SetToggle(new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp12 }, DecompilerToggles.FindToggle("AlwaysUseBraces")!, false),
+            Decompiler = DecompilerToggles.SetToggle(new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp12 }, braces, false),
             FoldedOptionGroups = ["Other"],
             Display = new DisplayOptions(CodeFontSize.Clamp(14f), false, true, false, true, false, 1.25f, new CodeFont("Mono", @"C:\Fonts\Mono.ttf", 1),
                 TokenFormat.Hex, true, true, true, false),

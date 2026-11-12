@@ -57,7 +57,7 @@ public sealed class RunArgumentsTests
         d.RunUntil(() => d.AppState.Tabs.Active?.Node is not null);
         d.Settle();
 
-        Assert.Equal("Greet(int) : string", d.AppState.Tabs.Active!.Node!.Text);
+        Assert.Equal("Greet(int) : string", d.AppState.Tabs.Active?.Node?.Text);
         Assert.Empty(d.AppState.Errors.Entries);
     }
 

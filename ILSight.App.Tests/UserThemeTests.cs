@@ -134,8 +134,9 @@ public sealed class UserThemeTests : IDisposable
         appState.UserThemes.ReloadThemes();
 
         Assert.Equal(_temp.PathOf("themes"), folder);
-        Assert.Equal(BuiltInThemes.ReadSchema(), File.ReadAllText(Path.Combine(folder!, "theme.schema.json")));
-        Assert.Equal(BuiltInThemes.ReadGuide(), File.ReadAllText(Path.Combine(folder!, "README.md")));
+        Assert.NotNull(folder);
+        Assert.Equal(BuiltInThemes.ReadSchema(), File.ReadAllText(Path.Combine(folder, "theme.schema.json")));
+        Assert.Equal(BuiltInThemes.ReadGuide(), File.ReadAllText(Path.Combine(folder, "README.md")));
         Assert.Equal(BuiltInThemes.Files.Count, appState.Themes.Ids.Count);
         Assert.Empty(appState.Errors.Entries);
     }
@@ -150,7 +151,8 @@ public sealed class UserThemeTests : IDisposable
 
         var path = CreateCustomTheme(appState);
 
-        var text = File.ReadAllText(path!);
+        Assert.NotNull(path);
+        var text = File.ReadAllText(path);
         Assert.Equal(_temp.PathOf(Path.Combine("themes", "dracula-custom.json")), path);
         Assert.Equal("dracula-custom", appState.Theme.Text);
         Assert.Empty(appState.Errors.Entries);
@@ -228,7 +230,8 @@ public sealed class UserThemeTests : IDisposable
         var path = CreateCustomTheme(appState);
 
         Assert.Equal("light-custom.json", Path.GetFileName(path));
-        Assert.Contains("\"extends\": \"light\",", File.ReadAllText(path!));
+        Assert.NotNull(path);
+        Assert.Contains("\"extends\": \"light\",", File.ReadAllText(path));
     }
 
     [Fact]

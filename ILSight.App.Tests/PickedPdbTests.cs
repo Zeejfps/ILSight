@@ -27,7 +27,7 @@ public sealed class PickedPdbTests
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Pdbs.All.Count > 0, Patience);
         app.Settle(2);
 
-        Assert.Equal(FixturePdb, LoadedAssemblies.EnsureDebugSymbols(OpenAssemblyOf(app.Driver))!.SourceFileName);
+        Assert.Equal(FixturePdb, LoadedAssemblies.EnsureDebugSymbols(OpenAssemblyOf(app.Driver))?.SourceFileName);
         Assert.Empty(app.AppState.Errors.Entries);
     }
 
@@ -44,8 +44,8 @@ public sealed class PickedPdbTests
         next.Start(RestoreActiveAssemblyListAsync);
         next.Settle();
 
-        Assert.Equal(FixturePdb, Assert.Single(temp.Settings().AssemblyLists).Pdbs![PathOf(copy)]);
-        Assert.Equal(FixturePdb, LoadedAssemblies.EnsureDebugSymbols(OpenAssemblyOf(next))!.SourceFileName);
+        Assert.Equal(FixturePdb, Assert.Single(temp.Settings().AssemblyLists).Pdbs?[PathOf(copy)]);
+        Assert.Equal(FixturePdb, LoadedAssemblies.EnsureDebugSymbols(OpenAssemblyOf(next))?.SourceFileName);
     }
 
     [Fact]

@@ -139,7 +139,7 @@ public sealed class ScreenIsolationTests : IDisposable
 
     private static IEnumerable<(object Value, string Path)> ListElements(Array array, string path)
     {
-        var element = array.GetType().GetElementType()!;
+        var element = array.GetType().GetElementType() ?? throw new InvalidOperationException($"{array.GetType()} is an array with no element type.");
         if (element.IsPrimitive || element.IsEnum || element == typeof(string))
         {
             yield break;

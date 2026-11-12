@@ -23,7 +23,9 @@ public sealed class PackageBrowsingTests
 
         Assert.Equal(NodeIcon.Package, Assert.Single(app.Ui.Tree.Roots).Icon);
         Assert.True(app.Frames.Drew(PackageName));
-        Assert.Contains($"{LibFolder}/", Documents.GetText(app.AppState.Tabs.Active!.Document));
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        Assert.Contains($"{LibFolder}/", Documents.GetText(tab.Document));
     }
 
     [Fact]
@@ -36,7 +38,7 @@ public sealed class PackageBrowsingTests
         app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, greeter.Definition, a.Navigation.BeginResolving(inNewTab: false), ct));
         app.Settle(2);
 
-        Assert.Same(greeter, app.AppState.Tabs.Active!.Node);
+        Assert.Same(greeter, app.AppState.Tabs.Active?.Node);
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
     }
 

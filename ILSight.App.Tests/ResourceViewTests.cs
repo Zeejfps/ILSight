@@ -15,7 +15,9 @@ public sealed class ResourceViewTests
     {
         var app = AppDriver.Opened(width: 1400f);
         app.Show(app.Node(["Resources", .. path]), 3);
-        return (app, app.AppState.Tabs.Active!);
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        return (app, tab);
     }
 
     private static string ImageOf(AppDriver app, DocumentTab tab)
@@ -44,7 +46,8 @@ public sealed class ResourceViewTests
     {
         var (app, tab) = ShowResource("Mixed.resources", "Picture.png");
 
-        Assert.Equal((2, 2), (tab.Image!.Width, tab.Image.Height));
+        Assert.NotNull(tab.Image);
+        Assert.Equal((2, 2), (tab.Image.Width, tab.Image.Height));
         Assert.Contains(app.Frames.Canvas.Images, i => i.Inputs.ImageId == ImageOf(app, tab));
     }
 
@@ -154,7 +157,8 @@ public sealed class ResourceViewTests
     {
         var (app, tab) = ShowResource("Mixed.resources");
 
-        Assert.Equal(["Name", "Value", "Type"], tab.Grid!.Columns.Select(c => c.Name));
+        Assert.NotNull(tab.Grid);
+        Assert.Equal(["Name", "Value", "Type"], tab.Grid.Columns.Select(c => c.Name));
         app.TextRect("Greeting");
         app.TextRect("Hello");
     }

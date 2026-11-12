@@ -93,9 +93,11 @@ public sealed class TargetFrameworkTests
 
         Assert.All(shapes, shape => Assert.Equal(before, shape));
         Assert.Same(sample, SampleOf(app.AppState));
-        Assert.Equal(BrowseNodes.GetPath(greeter), BrowseNodes.GetPath(tree.View.Selected!));
+        var selected = tree.View.Selected;
+        Assert.NotNull(selected);
+        Assert.Equal(BrowseNodes.GetPath(greeter), BrowseNodes.GetPath(selected));
         Assert.NotSame(greeter, tree.View.Selected);
-        Assert.Same(FixturesOf(app.AppState), app.AppState.Tabs.Active!.Node!.Assembly);
+        Assert.Same(FixturesOf(app.AppState), app.AppState.Tabs.Active?.Node?.Assembly);
         Assert.Empty(app.AppState.Errors.Entries);
 
         void RunFrame()
@@ -135,7 +137,7 @@ public sealed class TargetFrameworkTests
         app.Settle(3);
 
         Assert.Equal(before, Trees.ListExpandedPaths(tree));
-        Assert.Equal("Greeter", app.AppState.Tabs.Active!.Node!.Text);
+        Assert.Equal("Greeter", app.AppState.Tabs.Active?.Node?.Text);
         Assert.Empty(app.AppState.Errors.Entries);
     }
 

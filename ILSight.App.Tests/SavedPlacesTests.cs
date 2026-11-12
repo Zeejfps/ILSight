@@ -74,7 +74,7 @@ public sealed class SavedPlacesTests : IDisposable
 
     private static string[] StepsOf(JsonElement path)
     {
-        return path.GetProperty("Steps").EnumerateArray().Select(static s => s.GetProperty("Step").GetString()!).ToArray();
+        return path.GetProperty("Steps").EnumerateArray().Select(static s => s.GetProperty("Step").GetString() ?? throw new InvalidOperationException("A saved step holds no text.")).ToArray();
     }
 
     [Fact]

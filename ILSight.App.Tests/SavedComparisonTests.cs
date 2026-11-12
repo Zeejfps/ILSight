@@ -56,7 +56,8 @@ public sealed class SavedComparisonTests : IDisposable
 
     private ComparisonDocumentRecord ReadSavedComparison()
     {
-        var documents = _temp.Settings().AssemblyLists.Single().Documents!;
+        var documents = _temp.Settings().AssemblyLists.Single().Documents;
+        Assert.NotNull(documents);
         return documents.Tabs
             .OfType<ComparisonDocumentRecord>()
             .Single();
@@ -66,8 +67,10 @@ public sealed class SavedComparisonTests : IDisposable
     public void After_a_restart_a_comparison_comes_back_in_its_panel_with_its_sides_and_filters_and_compares_again()
     {
         var app = Compared();
-        var tab = app.AppState.Tabs.Active!;
-        var comparison = tab.Comparison!;
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        var comparison = tab.Comparison;
+        Assert.NotNull(comparison);
         app.StartComparing(SwapComparedAssemblies(app.AppState.Assemblies, comparison));
         app.StartComparing(ChangeComparedScope(app.AppState.Assemblies, comparison, ApiScope.AllDeclared));
         Comparisons.ShowOnlyDifferences(DocumentPanels.GetView(app.Ui.Documents, tab).Comparison, false);
@@ -77,7 +80,8 @@ public sealed class SavedComparisonTests : IDisposable
         var next = Restart(app);
 
         var restored = next.AppState.Tabs.Open.Single(t => t.Comparison is not null);
-        var reopened = restored.Comparison!;
+        var reopened = restored.Comparison;
+        Assert.NotNull(reopened);
         Assert.Equal("ApiDiffSample API diff", restored.Title);
         Assert.Equal(panel, DocumentPanels.GetPanel(next.Ui.Documents, restored));
         Assert.Equal(RightPath, reopened.LeftPath.Text);
@@ -92,16 +96,21 @@ public sealed class SavedComparisonTests : IDisposable
     public void Swapping_the_sides_or_showing_every_entry_is_saved_without_anything_else_changing()
     {
         var app = Compared();
-        var tab = app.AppState.Tabs.Active!;
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
         Assert.Equal(LeftPath, ReadSavedComparison().LeftPath.Text);
 
-        app.StartComparing(SwapComparedAssemblies(app.AppState.Assemblies, tab.Comparison!));
+        var comparison = tab.Comparison;
+        Assert.NotNull(comparison);
+        app.StartComparing(SwapComparedAssemblies(app.AppState.Assemblies, comparison));
         app.Settle(2);
         Assert.Equal(RightPath, ReadSavedComparison().LeftPath.Text);
 
         Comparisons.ShowOnlyDifferences(DocumentPanels.GetView(app.Ui.Documents, tab).Comparison, false);
         app.Settle(2);
-        Assert.False(ReadSavedComparison().View!.OnlyDifferences);
+        var savedView = ReadSavedComparison().View;
+        Assert.NotNull(savedView);
+        Assert.False(savedView.OnlyDifferences);
     }
 
     [Fact]

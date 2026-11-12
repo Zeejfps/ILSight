@@ -110,12 +110,13 @@ public sealed class PresentationTests
         var hidden = tree.Row(ns.Child("Hidden"));
         var greeter = tree.Row(ns.Child("Greeter"));
 
-        Assert.Equal(Icons.OverlayPrivate, field.Icon!.Value.Overlay);
-        Assert.Equal(BuiltInThemes.Light.Icons.Restricted, field.Icon!.Value.OverlayColor);
-        Assert.Equal(IconTheming.ReferenceId.Text, field.Icon!.Value.Glyph.Family);
+        Assert.Equal(Icons.OverlayPrivate, field.Icon?.Overlay);
+        Assert.Equal(BuiltInThemes.Light.Icons.Restricted, field.Icon?.OverlayColor);
+        Assert.Equal(IconTheming.ReferenceId.Text, field.Icon?.Glyph.Family);
         Assert.Equal(UiTheme.Light.TextMuted, field.LabelColor);
-        Assert.Equal(Icons.OverlayInternal, hidden.Icon!.Value.Overlay);
-        Assert.Null(greeter.Icon!.Value.Overlay);
+        Assert.Equal(Icons.OverlayInternal, hidden.Icon?.Overlay);
+        var greeterIcon = Assert.NotNull(greeter.Icon);
+        Assert.Null(greeterIcon.Overlay);
         Assert.Null(greeter.Secondary);
     }
 
@@ -143,7 +144,9 @@ public sealed class PresentationTests
     [Fact]
     public void A_forwarded_type_row_shows_the_forward_icon_and_the_assembly_it_is_forwarded_to()
     {
-        var runtime = Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, "System.Runtime.dll");
+        var runtimeFolder = Path.GetDirectoryName(typeof(object).Assembly.Location);
+        Assert.NotNull(runtimeFolder);
+        var runtime = Path.Combine(runtimeFolder, "System.Runtime.dll");
         var facade = new AssemblyList().Open(runtime);
         var forwarded = facade.Root.Child("System").Children.First(c => c.Text == "Object");
         var tree = new BrowseTree { Session = TestSession.Shared };
@@ -151,7 +154,7 @@ public sealed class PresentationTests
         var row = tree.Row(forwarded);
 
         Assert.Equal("Object", row.Label);
-        Assert.Equal(Icons.NodeForwardedType, row.Icon!.Value.Glyph);
+        Assert.Equal(Icons.NodeForwardedType, row.Icon?.Glyph);
         Assert.Equal("→ System.Private.CoreLib", row.Secondary);
         Assert.Equal("System.Object", row.Tooltip);
     }
@@ -169,7 +172,7 @@ public sealed class PresentationTests
 
         var row = tree.Row(used);
 
-        Assert.Equal(Icons.NodeTypeReference, row.Icon!.Value.Glyph);
+        Assert.Equal(Icons.NodeTypeReference, row.Icon?.Glyph);
         Assert.Equal("System.Collections.Generic", row.Secondary);
         Assert.Equal("System.Collections.Generic.List<>", row.Tooltip);
     }
@@ -193,7 +196,8 @@ public sealed class PresentationTests
         var d = new AppStateDriver();
         var assembly = d.OpenFixtures();
 
-        var tab = d.AppState.Tabs.Active!;
+        var tab = d.AppState.Tabs.Active;
+        Assert.NotNull(tab);
 
         Assert.Equal(assembly.Name, tab.Title);
         Assert.Contains(assembly.FullName, tab.Tooltip);

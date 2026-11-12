@@ -130,8 +130,9 @@ public sealed class UserIconThemeTests : IDisposable
         appState.UserIconThemes.ReloadThemes();
 
         Assert.Equal(_temp.PathOf("icon-themes"), folder);
-        Assert.Equal(BuiltInIconThemes.ReadSchema(), File.ReadAllText(Path.Combine(folder!, "icon-theme.schema.json")));
-        Assert.Equal(BuiltInIconThemes.ReadGuide(), File.ReadAllText(Path.Combine(folder!, "README.md")));
+        Assert.NotNull(folder);
+        Assert.Equal(BuiltInIconThemes.ReadSchema(), File.ReadAllText(Path.Combine(folder, "icon-theme.schema.json")));
+        Assert.Equal(BuiltInIconThemes.ReadGuide(), File.ReadAllText(Path.Combine(folder, "README.md")));
         Assert.Single(appState.IconThemes.Ids);
         Assert.Empty(appState.Errors.Entries);
     }
@@ -143,7 +144,8 @@ public sealed class UserIconThemeTests : IDisposable
 
         var path = CreateCustomIconTheme(appState);
 
-        var text = File.ReadAllText(path!);
+        Assert.NotNull(path);
+        var text = File.ReadAllText(path);
         Assert.Equal(_temp.PathOf(Path.Combine("icon-themes", "lucide-custom.json")), path);
         Assert.Equal("lucide-custom", appState.IconTheme.Text);
         Assert.Empty(appState.Errors.Entries);
@@ -216,7 +218,9 @@ public sealed class UserIconThemeTests : IDisposable
         d.RunUntil(() => ResolveIconTheme(d.AppState).Icons.NodeClass.Svg != before);
         d.AppState.Workflows.CancelAll();
 
-        Assert.False(ResolveIconTheme(d.AppState).Icons.NodeClass.Svg!.UsesCurrentColor);
+        var after = ResolveIconTheme(d.AppState).Icons.NodeClass.Svg;
+        Assert.NotNull(after);
+        Assert.False(after.UsesCurrentColor);
         Assert.Empty(d.AppState.Errors.Entries);
     }
 

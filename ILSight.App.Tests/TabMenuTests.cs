@@ -13,7 +13,10 @@ public sealed class TabMenuTests
     {
         var app = AppDriver.Opened(width: 1600f);
         app.Settle(2);
-        var assembly = app.AppState.Tabs.Active!.Node!;
+        var active = app.AppState.Tabs.Active;
+        Assert.NotNull(active);
+        var assembly = active.Node;
+        Assert.NotNull(assembly);
         foreach (var type in Types)
         {
             app.Show(app.Fixture(type), 2, inNewTab: true);
@@ -25,9 +28,14 @@ public sealed class TabMenuTests
 
     private static List<string> TitlesInGroup(AppDriver app)
     {
-        var tab = app.AppState.Tabs.Active!;
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
         return ListTabsInGroup(app.Ui, tab)
-            .Select(t => NodeText.Name(t.Node!))
+            .Select(t =>
+            {
+                Assert.NotNull(t.Node);
+                return NodeText.Name(t.Node);
+            })
             .ToList();
     }
 
@@ -69,8 +77,10 @@ public sealed class TabMenuTests
     public void Closing_all_closes_the_documents_of_the_group_and_leaves_the_other_panels_docked_there()
     {
         var (app, _) = OpenTabs();
-        var tab = app.AppState.Tabs.Active!;
-        var group = app.Ui.Layout.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, tab))!;
+        var tab = app.AppState.Tabs.Active;
+        Assert.NotNull(tab);
+        var group = app.Ui.Layout.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, tab));
+        Assert.NotNull(group);
         group.Panels.Add(DockPanels.Bookmarks);
         app.Run(2);
 
@@ -86,7 +96,11 @@ public sealed class TabMenuTests
     {
         var app = AppDriver.Opened(width: 1600f);
         app.Settle(2);
-        var title = NodeText.Name(app.AppState.Tabs.Active!.Node!);
+        var active = app.AppState.Tabs.Active;
+        Assert.NotNull(active);
+        var node = active.Node;
+        Assert.NotNull(node);
+        var title = NodeText.Name(node);
 
         app.Frames.ClickOn(GetTab(title), PointerButton.Right).Frame();
 
