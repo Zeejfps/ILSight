@@ -57,7 +57,13 @@ public static class BrowseSessions
 
         var packageRoot = EnsureRoot(session, place.Container);
         var folder = FindFolderNode(session, packageRoot, place.File.Folder) ?? packageRoot;
-        GetChildren(session, folder);
+        var listing = GetChildren(session, folder);
+        if (listing is ChildrenState.Ready && session.ModuleRoots.TryGetValue(module, out var listed))
+        {
+            return listed;
+        }
+
+        // The folder failed to list, or lists no root for the module: one is made there.
         return session.ModuleRoots.GetValue(module, m => ModuleNodes.CreateModuleRoot(m, folder));
     }
 
@@ -427,7 +433,13 @@ public static class BrowseSessions
             return null;
         }
 
-        GetChildren(session, parent);
+        var siblings = GetChildren(session, parent);
+        if (siblings is ChildrenState.Failed)
+        {
+            // The parent's children failed to build: nothing lists the node.
+            return null;
+        }
+
         return index.GetValueOrDefault(handle);
     }
 
@@ -488,7 +500,13 @@ public static class BrowseSessions
 
     private static BrowseNode? FindNamespace(BrowseSession session, LoadedModule module, string name)
     {
-        GetChildren(session, EnsureRoot(session, module));
+        var namespaces = GetChildren(session, EnsureRoot(session, module));
+        if (namespaces is ChildrenState.Failed)
+        {
+            // The module's namespaces failed to build: none is listed.
+            return null;
+        }
+
         return EnsureNamespaces(session, module).GetValueOrDefault(name);
     }
 
