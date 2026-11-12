@@ -144,7 +144,7 @@ public sealed class HistoryTests
         ScrollTo(app, 20, new TextPosition(21, 4), new TextPosition(22, 8));
         Show(app, "Greeter");
 
-        app.AppState.Language = DecompilationLanguage.IL;
+        app.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         app.Settle(4);
         app.GoBack();
         app.Settle(4);

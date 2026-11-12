@@ -247,7 +247,7 @@ public sealed class AppTests
         app.Frames.ClickOn(Selector.WithText("IL"));
         app.Settle();
 
-        Assert.Equal(DecompilationLanguage.IL, app.AppState.Language);
+        Assert.Equal(DecompilationLanguage.IL, app.AppState.Decompiler.Setup.Language);
         Assert.Equal(DecompilationLanguage.IL, app.AppState.Navigation.ActiveTab?.Load.Language);
     }
 
@@ -260,7 +260,7 @@ public sealed class AppTests
         app.Frames.ClickOn(Selector.WithText("IL+C#"));
         app.Settle(1);
 
-        Assert.Equal(DecompilationLanguage.ILWithCSharp, app.AppState.Language);
+        Assert.Equal(DecompilationLanguage.ILWithCSharp, app.AppState.Decompiler.Setup.Language);
         Assert.Equal(DecompilationLanguage.ILWithCSharp, app.AppState.Navigation.ActiveTab?.Load.Language);
         Assert.True(app.Frames.Drew("IL with C#"));
         Assert.True(app.Frames.Drew("C# 14.0 / VS 2026"));
@@ -279,7 +279,7 @@ public sealed class AppTests
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "C# 5.0 / VS 2012"));
         app.Settle(1);
 
-        Assert.Equal(CSharpVersion.CSharp5, app.AppState.DecompilerOptions.LanguageVersion);
+        Assert.Equal(CSharpVersion.CSharp5, app.AppState.Decompiler.Setup.Options.LanguageVersion);
         Assert.Equal(CSharpVersion.CSharp5, app.AppState.Navigation.ActiveTab?.Load.Options.LanguageVersion);
         Assert.Contains(app.Frames.Canvas.Texts, t => t.Inputs.Text == "C# 5.0 / VS 2012");
 
@@ -317,7 +317,7 @@ public sealed class AppTests
 
         var stringConcat = DecompilerToggles.FindToggle("StringConcat");
         Assert.NotNull(stringConcat);
-        Assert.False(DecompilerToggles.IsOn(app.AppState.DecompilerOptions, stringConcat));
+        Assert.False(DecompilerToggles.IsOn(app.AppState.Decompiler.Setup.Options, stringConcat));
         var ticked = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(ticked);
         Assert.Contains("string.Concat", Documents.GetText(ticked.Document));
@@ -325,7 +325,7 @@ public sealed class AppTests
         app.Frames.ClickOn(Selector.AtPath("dock/decompiler-options/reset"));
         app.Settle(1);
 
-        Assert.Equal(DecompilerOptions.Default, app.AppState.DecompilerOptions);
+        Assert.Equal(DecompilerOptions.Default, app.AppState.Decompiler.Setup.Options);
         var reset = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(reset);
         Assert.DoesNotContain("string.Concat", Documents.GetText(reset.Document));
@@ -335,7 +335,7 @@ public sealed class AppTests
     public void Turning_debug_symbols_off_disassembles_an_open_IL_document_again()
     {
         var app = AppDriver.Opened();
-        app.AppState.Language = DecompilationLanguage.IL;
+        app.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         app.Show(app.Fixture("Outline"), 1);
         var outline = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(outline);
@@ -360,7 +360,7 @@ public sealed class AppTests
         app.Run();
 
         app.Frames.ClickOn(Selector.WithText("switch expressions")).Frame();
-        Assert.Equal(DecompilerOptions.Default with { LanguageVersion = CSharpVersion.CSharp7 }, app.AppState.DecompilerOptions);
+        Assert.Equal(DecompilerOptions.Default with { LanguageVersion = CSharpVersion.CSharp7 }, app.AppState.Decompiler.Setup.Options);
         Assert.Contains(app.Frames.Canvas.Texts, t => t.Inputs.Text.StartsWith("Features newer than"));
 
         var texts = app.Frames.TextRects().ToList();
@@ -411,11 +411,11 @@ public sealed class AppTests
 
         app.Frames.ClickOn(Selector.WithText("C# 8.0 / VS 2019"));
         app.Settle(1);
-        Assert.All(csharp8, t => Assert.False(DecompilerToggles.IsOn(app.AppState.DecompilerOptions, t)));
+        Assert.All(csharp8, t => Assert.False(DecompilerToggles.IsOn(app.AppState.Decompiler.Setup.Options, t)));
         Assert.DoesNotContain(nameof(CSharpVersion.CSharp8), app.Ui.FoldedOptionGroups.Folded);
 
         app.Frames.ClickOn(Selector.WithText("switch expressions")).Frame();
-        Assert.Equal(csharp8.Length - 1, csharp8.Count(toggle => DecompilerToggles.IsChanged(app.AppState.DecompilerOptions, toggle)));
+        Assert.Equal(csharp8.Length - 1, csharp8.Count(toggle => DecompilerToggles.IsChanged(app.AppState.Decompiler.Setup.Options, toggle)));
         Assert.False(IsBold(app, "switch expressions"));
         Assert.True(IsBold(app, "Async iterators"));
         Assert.True(IsBold(app, "C# 8.0 / VS 2019"));
@@ -423,7 +423,7 @@ public sealed class AppTests
 
         app.Frames.ClickOn(Selector.WithText("C# 8.0 / VS 2019"));
         app.Settle(1);
-        Assert.Equal(DecompilerOptions.Default, app.AppState.DecompilerOptions);
+        Assert.Equal(DecompilerOptions.Default, app.AppState.Decompiler.Setup.Options);
         Assert.False(IsBold(app, "C# 8.0 / VS 2019"));
     }
 
@@ -672,7 +672,7 @@ public sealed class AppTests
     public void The_toolbar_ends_in_a_gear_that_opens_the_display_options_whatever_the_language()
     {
         var app = AppDriver.Opened(width: 1600f);
-        app.AppState.Language = DecompilationLanguage.IL;
+        app.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         app.Run(2);
         var theme = app.Theme;
         var gear = app.TextRect(Icons.ToolbarDisplayOptions);
@@ -770,7 +770,7 @@ public sealed class AppTests
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "IL"));
         app.Settle();
 
-        Assert.Equal(DecompilationLanguage.IL, app.AppState.Language);
+        Assert.Equal(DecompilationLanguage.IL, app.AppState.Decompiler.Setup.Language);
     }
 
     [Fact]

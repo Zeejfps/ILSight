@@ -166,7 +166,7 @@ public sealed class DecompileIntoTabHandlerTests
 
         d.TakeViewCommands();
 
-        var load = d.AppState.Navigation.Restore(tab, greeter, d.AppState.Decompiler, AtLineTen);
+        var load = d.AppState.Navigation.Restore(tab, greeter, d.AppState.Decompiler.Setup, AtLineTen);
 
         Assert.Null(load);
         Assert.False(tab.Load.IsBusy);

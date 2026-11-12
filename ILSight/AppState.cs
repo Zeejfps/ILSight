@@ -199,45 +199,8 @@ public sealed class AppState
     /// <summary>The interface language.</summary>
     public Locale Locale;
 
-    private DecompilerSetup? _decompiler;
-
-    /// <summary>The language code is shown in and how C# is decompiled, the one value the views read and pass on;
-    /// made again only when <see cref="Language"/> or <see cref="DecompilerOptions"/> changes.</summary>
-    public required DecompilerSetup Decompiler
-    {
-        get => _decompiler ?? throw new InvalidOperationException("The app state is made with how it decompiles.");
-        init => _decompiler = value;
-    }
-
-    /// <summary>The language code is shown in.</summary>
-    public DecompilationLanguage Language
-    {
-        get => Decompiler.Language;
-        set
-        {
-            if (value == Decompiler.Language)
-            {
-                return;
-            }
-
-            _decompiler = Decompiler with { Language = value };
-        }
-    }
-
-    /// <summary>How C# is decompiled.</summary>
-    public DecompilerOptions DecompilerOptions
-    {
-        get => Decompiler.Options;
-        set
-        {
-            if (value == Decompiler.Options)
-            {
-                return;
-            }
-
-            _decompiler = Decompiler with { Options = value };
-        }
-    }
+    /// <summary>The language code is shown in and how C# is decompiled, and the setup the views read and pass on.</summary>
+    public required DecompilerChoice Decompiler { get; init; }
 
     /// <summary>The commands the features queue for the view when none is on the stack, for the screen to run
     /// in order before it draws next.</summary>

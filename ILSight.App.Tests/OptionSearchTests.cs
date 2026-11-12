@@ -170,7 +170,7 @@ public sealed class OptionSearchTests
         app.Frames.ClickOn(Selector.WithText("C# 8.0 / VS 2019"));
         app.Settle(1);
 
-        var changed = DecompilerToggle.All.Where(t => DecompilerToggles.IsChanged(app.AppState.DecompilerOptions, t));
+        var changed = DecompilerToggle.All.Where(t => DecompilerToggles.IsChanged(app.AppState.Decompiler.Setup.Options, t));
         Assert.Equal("SwitchExpressions", Assert.Single(changed).Name);
     }
 

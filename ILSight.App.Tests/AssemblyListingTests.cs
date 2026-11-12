@@ -248,7 +248,7 @@ public sealed class AssemblyListingTests
         d.Settle();
 
         d.SwitchList(SavedAssemblyLists.DefaultName);
-        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a, Trees.ListExpandedPaths(d.Ui.Tree), ct));
+        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, Trees.ListExpandedPaths(d.Ui.Tree), ct));
         d.Settle();
 
         Assert.Equal([AppStateDriver.FixturePath], AssemblyListing.ListFilePaths(d.AppState.Assemblies).Select(static p => p.Text));
@@ -354,7 +354,7 @@ public sealed class AssemblyListingTests
         Assert.NotNull(first);
         app.Show(farewell, 2, inNewTab: true);
 
-        DocumentPanels.ActivateTab(app.Ui, app.AppState.Navigation, app.AppState.Decompiler, first);
+        DocumentPanels.ActivateTab(app.Ui, app.AppState.Navigation, app.AppState.Decompiler.Setup, first);
         app.Run(2);
 
         Assert.Same(first, app.AppState.Navigation.ActiveTab);

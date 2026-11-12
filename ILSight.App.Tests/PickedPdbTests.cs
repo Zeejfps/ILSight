@@ -52,7 +52,7 @@ public sealed class PickedPdbTests
     {
         var d = AppStateDriver.Opened();
 
-        d.Start((a, ct) => a.AssemblyReloading.UsePdbAsync(a, OpenAssemblyOf(d), OtherBuildPdb, ct));
+        d.Start((a, ct) => a.AssemblyReloading.UsePdbAsync(a.ListSession, a.Reopens, a.Decompiler, OpenAssemblyOf(d), OtherBuildPdb, ct));
         d.RunUntil(() => d.AppState.Errors.Entries.Count > 0);
 
         var error = Assert.Single(d.AppState.Errors.Entries);
@@ -93,7 +93,7 @@ public sealed class PickedPdbTests
 
     private static void Pick(AppStateDriver d, string pdb)
     {
-        d.Start((a, ct) => a.AssemblyReloading.UsePdbAsync(a, OpenAssemblyOf(d), pdb, ct));
+        d.Start((a, ct) => a.AssemblyReloading.UsePdbAsync(a.ListSession, a.Reopens, a.Decompiler, OpenAssemblyOf(d), pdb, ct));
         d.RunUntil(() => d.AppState.Assemblies.Pdbs.All.Count > 0);
         d.Settle();
     }

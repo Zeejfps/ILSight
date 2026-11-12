@@ -19,7 +19,7 @@ public sealed class SettingsSavingTests
         var d = AppStateDriver.WithoutScreen(InFile());
         var ports = new FakeSettingsSavingPorts();
         var saving = new SettingsSaving(ports);
-        d.AppState.Language = DecompilationLanguage.IL;
+        d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
 
         var first = saving.SaveIfChanged(d.AppState, 0);
         var second = saving.SaveIfChanged(d.AppState, 0);
@@ -35,7 +35,7 @@ public sealed class SettingsSavingTests
         var d = AppStateDriver.WithoutScreen(InFile());
         var ports = new FakeSettingsSavingPorts { Answer = new SettingsWriteResult.Failed("Disk full.") };
         var saving = new SettingsSaving(ports);
-        d.AppState.Language = DecompilationLanguage.IL;
+        d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
 
         var failed = saving.SaveIfChanged(d.AppState, 0);
         var waiting = saving.SaveIfChanged(d.AppState, 1);

@@ -152,7 +152,7 @@ public sealed class RunArgumentsTests
         var error = Assert.Single(d.AppState.Errors.Entries).Words();
         Assert.Contains("2", error.Title);
         Assert.Equal($"--language=il-csharp{Environment.NewLine}--opengl", error.Details);
-        Assert.Equal(DecompilationLanguage.IL, d.AppState.Language);
+        Assert.Equal(DecompilationLanguage.IL, d.AppState.Decompiler.Setup.Language);
     }
 
     [Fact]
@@ -169,8 +169,8 @@ public sealed class RunArgumentsTests
         var csharp = Start(new AppSettings { Language = DecompilationLanguage.IL }, "--language=C#");
         var il = Start(new AppSettings { Language = DecompilationLanguage.CSharp }, "--language=IL");
 
-        Assert.Equal(DecompilationLanguage.CSharp, csharp.AppState.Language);
-        Assert.Equal(DecompilationLanguage.IL, il.AppState.Language);
+        Assert.Equal(DecompilationLanguage.CSharp, csharp.AppState.Decompiler.Setup.Language);
+        Assert.Equal(DecompilationLanguage.IL, il.AppState.Decompiler.Setup.Language);
     }
 
     [Fact]

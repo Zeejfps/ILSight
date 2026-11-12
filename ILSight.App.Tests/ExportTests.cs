@@ -46,7 +46,7 @@ public sealed class ExportTests : IDisposable
     public void Saving_code_writes_the_node_in_the_current_language()
     {
         var d = AppStateDriver.Opened();
-        d.AppState.Language = DecompilationLanguage.IL;
+        d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         var path = _temp.PathOf("Greeter.il");
 
         SaveCode(d.AppState, d.Fixture("Greeter"), path);

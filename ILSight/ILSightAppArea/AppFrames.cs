@@ -55,7 +55,7 @@ internal static class AppFrames
         FollowActiveTab(uiState, appState.Navigation.ActiveTab);
         QueuedCommands.RunViewCommands(uiState, appState);
         SyncTabViews(uiState, appState.Navigation);
-        FocusNextTabIfNone(uiState, appState.Navigation, appState.Decompiler);
+        FocusNextTabIfNone(uiState, appState.Navigation, appState.Decompiler.Setup);
         FollowLoadOptions(uiState, appState);
         FollowDecompilation(uiState, appState);
         FollowExportSetup(uiState.ExportSetup, appState);
@@ -191,7 +191,7 @@ internal static class AppFrames
     /// <summary>Reads the open assemblies again, as F5 does, when the options that apply as they are read changed.</summary>
     private static void FollowLoadOptions(UiState uiState, AppState appState)
     {
-        if (!AssemblyListing.TryChangeLoadOptions(appState.Assemblies, appState.DecompilerOptions))
+        if (!AssemblyListing.TryChangeLoadOptions(appState.Assemblies, appState.Decompiler.Setup.Options))
         {
             return;
         }
@@ -203,7 +203,7 @@ internal static class AppFrames
     /// reloading. A method of its own, so that the frames that start nothing allocate no closure.</summary>
     private static void StartRefreshing(AppState appState, List<NodePath> expanded)
     {
-        Commands.StartShowing(appState, nameof(AssemblyReloading.RefreshAssembliesAsync), ct => appState.AssemblyReloading.RefreshAssembliesAsync(appState, expanded, ct));
+        Commands.StartShowing(appState, nameof(AssemblyReloading.RefreshAssembliesAsync), ct => appState.AssemblyReloading.RefreshAssembliesAsync(appState.Lists, appState.ListSession, appState.ViewCommands, appState.Decompiler, expanded, ct));
     }
 
     /// <summary>Opens the error dialog on the newest error whenever one is reported.</summary>
@@ -214,15 +214,15 @@ internal static class AppFrames
 
     private static void FollowDecompilation(UiState uiState, AppState appState)
     {
-        var language = appState.Language;
-        if (!ShownChanges.TryTakeDecompilation(uiState, language, appState.DecompilerOptions))
+        var language = appState.Decompiler.Setup.Language;
+        if (!ShownChanges.TryTakeDecompilation(uiState, language, appState.Decompiler.Setup.Options))
         {
             return;
         }
 
         foreach (var tab in ListFrontTabs(uiState))
         {
-            Commands.StartDecompiling(appState, StartDecompilingAgainIfOutdated(tab, language, appState.DecompilerOptions));
+            Commands.StartDecompiling(appState, StartDecompilingAgainIfOutdated(tab, language, appState.Decompiler.Setup.Options));
         }
     }
 

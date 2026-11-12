@@ -63,7 +63,7 @@ public sealed class MetadataGridTests
     {
         var (app, tab, grid) = ShowTable("TypeDef", frames: 0);
 
-        app.AppState.Language = DecompilationLanguage.IL;
+        app.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         app.Settle(2);
 
         Assert.Same(grid, tab.Grid);
@@ -114,7 +114,7 @@ public sealed class MetadataGridTests
         app.Frames.Click(TextBeside(app, baseType, "Greeter"), modifiers: KeyModifiers.Control);
         app.Settle(3);
 
-        app.AppState.Language = DecompilationLanguage.IL;
+        app.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         app.Settle(2);
         app.GoBack();
         app.Settle(3);

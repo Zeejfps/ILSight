@@ -32,7 +32,7 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
         TabDestination destination)
     {
         return resolved.Match<DecompileTicket?>(
-            found => appState.Navigation.ShowHistoryPlace(destination, found.Value, appState.Decompiler, position),
+            found => appState.Navigation.ShowHistoryPlace(destination, found.Value, appState.Decompiler.Setup, position),
             _ =>
             {
                 ReportHistoryPlaceGone(place, null);

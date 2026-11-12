@@ -88,7 +88,7 @@ public sealed class TargetFrameworkTests
         var before = Trees.ListExpandedPaths(tree);
         var shapes = new List<List<NodePath>>();
 
-        app.Start((a, ct) => a.AssemblyReloading.SetTargetFrameworkAsync(a, fixtures, Net48, ct));
+        app.Start((a, ct) => a.AssemblyReloading.SetTargetFrameworkAsync(a.ListSession, a.Reopens, a.Decompiler, fixtures, Net48, ct));
         Poll.Until(() => FixturesOf(app.AppState) != fixtures, RunFrame);
         RunFrame();
 
@@ -134,7 +134,7 @@ public sealed class TargetFrameworkTests
         app.Show(assembly.Child(AppStateDriver.FixturesNamespace, "Greeter"), 2);
         var before = Trees.ListExpandedPaths(tree);
 
-        app.Start((a, ct) => a.AssemblyReloading.SetTargetFrameworkAsync(a, Assert.IsType<LoadedModule>(assembly.Assembly), Net48, ct));
+        app.Start((a, ct) => a.AssemblyReloading.SetTargetFrameworkAsync(a.ListSession, a.Reopens, a.Decompiler, Assert.IsType<LoadedModule>(assembly.Assembly), Net48, ct));
         app.Settle(3);
 
         Assert.Equal(before, Trees.ListExpandedPaths(tree));

@@ -114,7 +114,7 @@ public sealed class DiagramTests
     {
         var d = AppStateDriver.Opened();
         var empty = d.AppState.Navigation.OpenEmptyTab();
-        Assert.Null(d.AppState.Navigation.FocusTab(empty, d.AppState.Decompiler));
+        Assert.Null(d.AppState.Navigation.FocusTab(empty, d.AppState.Decompiler.Setup));
         var tabs = d.AppState.Navigation.OpenTabs.Count;
 
         ShowInNew(d, "Greeter");

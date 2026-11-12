@@ -10,8 +10,8 @@ namespace ILSight.AssemblyArea;
 /// <summary>Reading the assemblies of the list again: one of them, with a PDB or a target framework picked for it,
 /// or all of them from disk, then showing each tab's place in them again. The workflows return once the files are
 /// read, with the loads they started in the tabs for the edge to start, and reach the files and the user's error
-/// reports through <see cref="IPorts"/>. Each step takes the parts of the app state it uses; the workflows take the
-/// app state only to read how code is decompiled once the files are read, as it is then.</summary>
+/// reports through <see cref="IPorts"/>. Each takes the parts of the app state it uses, and how code is decompiled as
+/// its owner (<see cref="DecompilerChoice"/>), read once the files are read, as it is then.</summary>
 public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
 {
     public interface IPorts
@@ -39,7 +39,8 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     /// <summary>Checks that the PDB at <paramref name="pdbPath"/> can be read for <paramref name="assembly"/>,
     /// then has the assembly read it in place of the one it finds itself, kept with the list, and reopens the
     /// assembly to show it. Reports why when it cannot be read. Returns the loads that started in the tabs.</summary>
-    public async Task<List<DecompileTicket>> UsePdbAsync(AppState appState, LoadedModule assembly, string pdbPath, CancellationToken ct)
+    public async Task<List<DecompileTicket>> UsePdbAsync(OpenListSession session, Reopens reopens, DecompilerChoice decompiler, LoadedModule assembly,
+        string pdbPath, CancellationToken ct)
     {
         var checking = await ports.CheckPdbAsync(assembly, pdbPath, ct);
         var check = checking.Match(static ok => ok.Value, static _ => PdbCheck.Unreadable);
@@ -48,14 +49,14 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             ports.ReportError(new AppProblem.PdbUnusable(pdbPath, assembly.Name, check));
             return [];
         }
-        var assemblies = appState.ListSession.Assemblies;
+        var assemblies = session.Assemblies;
         if (!AssemblyListing.IsListed(assemblies, assembly))
         {
             return [];
         }
 
         assemblies.Pdbs.Pick(assembly.FilePath, pdbPath);
-        return await ReopenAssemblyAsync(appState, assembly, ct);
+        return await ReopenAssemblyAsync(session, reopens, decompiler, assembly, ct);
     }
 
     /// <summary>Resolves <paramref name="assembly"/>'s references against the framework
@@ -63,9 +64,10 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     /// null, against the one the assembly was built for; kept with the list, and the assembly reopened
     /// to show it. Does nothing when that is the framework already in use. Returns the loads that started in the
     /// tabs.</summary>
-    public Task<List<DecompileTicket>> SetTargetFrameworkAsync(AppState appState, LoadedModule assembly, TargetFrameworkId? framework, CancellationToken ct)
+    public Task<List<DecompileTicket>> SetTargetFrameworkAsync(OpenListSession session, Reopens reopens, DecompilerChoice decompiler, LoadedModule assembly,
+        TargetFrameworkId? framework, CancellationToken ct)
     {
-        var assemblies = appState.ListSession.Assemblies;
+        var assemblies = session.Assemblies;
         if (!AssemblyListing.IsListed(assemblies, assembly))
         {
             return Task.FromResult<List<DecompileTicket>>([]);
@@ -77,7 +79,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         }
 
         PickTargetFramework(assemblies.TargetFrameworks, assembly, framework);
-        return ReopenAssemblyAsync(appState, assembly, ct);
+        return ReopenAssemblyAsync(session, reopens, decompiler, assembly, ct);
     }
 
     /// <summary>Whether <paramref name="framework"/>, null for the one the assembly was built for, is
@@ -105,16 +107,15 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     /// <summary>Reads the item of the list holding <paramref name="assembly"/> again, its nodes loaded as far as
     /// they were, then lists it where the item is and shows each tab's place in it again, returning the loads that
     /// started in the tabs. The other assemblies stay as they are.</summary>
-    private async Task<List<DecompileTicket>> ReopenAssemblyAsync(AppState appState, LoadedAssembly assembly, CancellationToken ct)
+    private async Task<List<DecompileTicket>> ReopenAssemblyAsync(OpenListSession session, Reopens reopens, DecompilerChoice decompiler,
+        LoadedAssembly assembly, CancellationToken ct)
     {
-        var session = appState.ListSession;
-        var reopens = appState.Reopens;
         var item = assembly.ListedItem;
         var ticket = reopens.Start(item.FilePath);
-        var tabs = ListTabsShowing(session.Navigation, appState.Language, item);
+        var tabs = ListTabsShowing(session.Navigation, decompiler.Setup.Language, item);
         var places = tabs.ConvertAll(t => t.Location);
         var reopened = await ports.ReadAgainAsync(item, places, ct);
-        return FinishReopen(reopens, session, appState.Decompiler, item, reopened, ticket, tabs);
+        return FinishReopen(reopens, session, decompiler.Setup, item, reopened, ticket, tabs);
     }
 
     private static List<ReloadingTab> ListTabsShowing(Navigation navigation, DecompilationLanguage language, LoadedAssembly item)
@@ -185,20 +186,20 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     /// <paramref name="expanded"/>, the paths of the nodes it had expanded, and shows each tab's place again,
     /// decompiled from the fresh files, and what the tabs reopened from the open list's saved documents showed.
     /// Returns the loads that started in the tabs.</summary>
-    public async Task<TabLoads> RefreshAssembliesAsync(AppState appState, IReadOnlyList<NodePath> expanded, CancellationToken ct)
+    public async Task<TabLoads> RefreshAssembliesAsync(SavedAssemblyLists lists, OpenListSession session, Queue<ViewCommand> viewCommands,
+        DecompilerChoice decompiler, IReadOnlyList<NodePath> expanded, CancellationToken ct)
     {
-        var session = appState.ListSession;
-        RememberOpenAssemblies(appState.Lists, session);
+        RememberOpenAssemblies(lists, session);
         var intent = session.Navigation.BeginRequest();
         var ticket = session.Reload.Start();
 
-        var paths = appState.Lists.ActivePaths.ToList();
-        var tabs = ReleaseShownTabs(session.Navigation, appState.Language);
+        var paths = lists.ActivePaths.ToList();
+        var tabs = ReleaseShownTabs(session.Navigation, decompiler.Setup.Language);
         var places = tabs.ConvertAll(t => t.Location);
         session.ClearAssemblies();
 
         var reloaded = await ports.ReopenFilesAsync(paths, expanded, places, ticket.Token, ct);
-        return FinishReload(session, appState.ViewCommands, appState.Decompiler, reloaded, ticket, intent, tabs);
+        return FinishReload(session, viewCommands, decompiler.Setup, reloaded, ticket, intent, tabs);
     }
 
     private static List<ReloadingTab> ReleaseShownTabs(Navigation navigation, DecompilationLanguage language)

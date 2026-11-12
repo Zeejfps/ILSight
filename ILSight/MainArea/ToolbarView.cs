@@ -63,12 +63,12 @@ internal static class ToolbarView
                 {
                     if (back.Clicked)
                     {
-                        Commands.MoveLater(ui.State, appState.Navigation.GoBack(appState.Assemblies, appState.Decompiler));
+                        Commands.MoveLater(ui.State, appState.Navigation.GoBack(appState.Assemblies, appState.Decompiler.Setup));
                     }
 
                     if (back.IsOpen)
                     {
-                        HistoryItems(ui, appState.Navigation, appState.Assemblies, appState.Decompiler, -1);
+                        HistoryItems(ui, appState.Navigation, appState.Assemblies, appState.Decompiler.Setup, -1);
                     }
                 }
                 using (var forward = ui.SplitIconButton("forward", ui.State.Icons.ToolbarForward,
@@ -77,28 +77,28 @@ internal static class ToolbarView
                 {
                     if (forward.Clicked)
                     {
-                        Commands.MoveLater(ui.State, appState.Navigation.GoForward(appState.Assemblies, appState.Decompiler));
+                        Commands.MoveLater(ui.State, appState.Navigation.GoForward(appState.Assemblies, appState.Decompiler.Setup));
                     }
 
                     if (forward.IsOpen)
                     {
-                        HistoryItems(ui, appState.Navigation, appState.Assemblies, appState.Decompiler, 1);
+                        HistoryItems(ui, appState.Navigation, appState.Assemblies, appState.Decompiler.Setup, 1);
                     }
                 }
             }
 
             using (Group(ui))
             {
-                var language = appState.Language;
+                var language = appState.Decompiler.Setup.Language;
                 var languages = Languages(t);
                 if (ui.SegmentedControl("language", ref language, languages))
                 {
-                    Commands.Later(ui.State, language, static (a, l) => a.Language = l);
+                    Commands.Later(ui.State, language, static (a, l) => a.Decompiler.UseLanguage(l));
                 }
 
                 if (DecompilationLanguages.ShowsCSharp(language))
                 {
-                    LanguageVersion(ui, appState.DecompilerOptions);
+                    LanguageVersion(ui, appState.Decompiler.Setup.Options);
                     if (ui.IconButton("decompiler-options", ui.State.Icons.ToolbarDecompilerOptions, t.PanelDecompilerOptions, variant: ButtonVariant.Neutral))
                     {
                         OpenPanel(ui.State, DockView.DecompilerOptions);

@@ -78,8 +78,8 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
             tab.Load.ShowGone(waiting.Record.Location);
             return null;
         }
-        var position = Navigation.KeepPosition(waiting.Record.View, waiting.Record.Language, appState.Language);
-        var load = appState.Navigation.Restore(tab, node, appState.Decompiler, position);
+        var position = Navigation.KeepPosition(waiting.Record.View, waiting.Record.Language, appState.Decompiler.Setup.Language);
+        var load = appState.Navigation.Restore(tab, node, appState.Decompiler.Setup, position);
         RevealIfActive(appState, tab, node);
         return load;
     }

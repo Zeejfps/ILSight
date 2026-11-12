@@ -150,7 +150,7 @@ internal static class AppRoot
             UserIconThemes = new UserThemes<IconThemeFile, IconThemeContents, IconTheme>(new UserIconThemesAdapter(errors)) { Themes = iconThemes, Folder = settingsPlace.IconThemesFolder },
             Theme = settings.Theme,
             IconTheme = settings.IconTheme,
-            Decompiler = new DecompilerSetup { Language = settings.Language, Options = settings.Decompiler },
+            Decompiler = new DecompilerChoice { Setup = new DecompilerSetup { Language = settings.Language, Options = settings.Decompiler } },
             Locale = ChooseLocale(settings),
             ApiVisibility = settings.ApiVisibility,
             Updates = new AppUpdates(new AppUpdatesAdapter()),

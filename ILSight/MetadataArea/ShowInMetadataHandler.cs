@@ -33,7 +33,7 @@ public sealed class ShowInMetadataHandler(ShowInMetadataHandler.IPorts ports)
     private DecompileTicket? ShowResolvedRow(AppState appState, CodeReference reference, Resolution<MetadataTarget> resolved, TabDestination destination)
     {
         return resolved.Match<DecompileTicket?>(
-            found => appState.Navigation.ShowRowIn(destination, found.Value, appState.Decompiler),
+            found => appState.Navigation.ShowRowIn(destination, found.Value, appState.Decompiler.Setup),
             _ =>
             {
                 ReportUnresolved(reference, null);

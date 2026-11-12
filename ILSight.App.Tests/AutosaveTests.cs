@@ -60,7 +60,7 @@ public sealed class AutosaveTests : IDisposable
                 appState.Theme = ThemeId<ThemeFile>.Of("monokai");
                 break;
             case nameof(AppSettings.Language):
-                appState.Language = DecompilationLanguage.IL;
+                appState.Decompiler.UseLanguage(DecompilationLanguage.IL);
                 break;
             case nameof(AppSettings.Decompiler):
                 SetLanguageVersion(appState, CSharpVersion.CSharp7_3);
@@ -240,7 +240,7 @@ public sealed class AutosaveTests : IDisposable
         d.AppState.SettingsSaving.Save(d.AppState);
         var unchanged = d.AppState.SettingsSaving.SaveIfChanged(d.AppState, d.Now);
         var blocker = BlockSettingsWrites();
-        d.AppState.Language = DecompilationLanguage.IL;
+        d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
 
         var failed = d.AppState.SettingsSaving.SaveIfChanged(d.AppState, d.Now);
         var waiting = d.AppState.SettingsSaving.SaveIfChanged(d.AppState, d.Now + 0.5);
@@ -260,7 +260,7 @@ public sealed class AutosaveTests : IDisposable
         d.AppState.SettingsSaving.Save(d.AppState);
         var blocker = BlockSettingsWrites();
 
-        d.AppState.Language = DecompilationLanguage.IL;
+        d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         d.Pump();
         d.Now += SaveRetry.DelaySeconds + 0.5;
         d.Pump();
@@ -283,7 +283,7 @@ public sealed class AutosaveTests : IDisposable
         app.Run(2);
         var blocker = BlockSettingsWrites();
 
-        app.AppState.Language = DecompilationLanguage.IL;
+        app.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         app.Run();
         var failedAt = app.Frames.RealTime;
         var wakeAt = app.Frames.WakeAt;
@@ -304,7 +304,7 @@ public sealed class AutosaveTests : IDisposable
     {
         var d = new AppStateDriver(_temp.Settings());
         var blocker = BlockSettingsWrites();
-        d.AppState.Language = DecompilationLanguage.IL;
+        d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         d.Pump();
         Directory.Delete(blocker);
 

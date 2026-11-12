@@ -82,11 +82,11 @@ public sealed class BookmarkTests : IDisposable
         ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
         var bookmarks = d.AppState.Bookmarks;
 
-        d.AppState.Language = DecompilationLanguage.IL;
+        d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         d.Settle();
         Assert.NotNull(tab.Node);
         var il = tab.Document.Lines[Assert.Single(bookmarks.ListMarkedLines(tab.Document, tab.Node)).Key].Text;
-        d.AppState.Language = DecompilationLanguage.CSharp;
+        d.AppState.Decompiler.UseLanguage(DecompilationLanguage.CSharp);
         d.Show(d.Fixture("Outline").Children.Single(c => c.Text.StartsWith("Third()")));
         Assert.NotNull(tab.Node);
         var own = tab.Document.Lines[Assert.Single(bookmarks.ListMarkedLines(tab.Document, tab.Node)).Key].Text;
@@ -104,7 +104,7 @@ public sealed class BookmarkTests : IDisposable
         ToggleBookmark(d.AppState, tab, brace, Names.Bookmark);
         var bookmark = Assert.Single(d.AppState.Bookmarks.Items);
 
-        d.AppState.Language = DecompilationLanguage.IL;
+        d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         d.Settle();
 
         Assert.Null(bookmark.Anchor);

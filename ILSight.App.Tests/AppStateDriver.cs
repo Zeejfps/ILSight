@@ -217,7 +217,7 @@ internal sealed class AppStateDriver
     /// starts decompiling it there, without waiting for that.</summary>
     public void StartShowing(BrowseNode node, bool inNewTab = false)
     {
-        Commands.StartDecompiling(AppState, AppState.Navigation.ShowNode(node, AppState.Decompiler, inNewTab));
+        Commands.StartDecompiling(AppState, AppState.Navigation.ShowNode(node, AppState.Decompiler.Setup, inNewTab));
     }
 
     /// <summary>Switches to the list named <paramref name="name"/> as the lists dialog and the toolbar's list menu do: in
@@ -240,7 +240,7 @@ internal sealed class AppStateDriver
     /// load or the lookup it left, as the app's commands start them, without waiting for them.</summary>
     public void GoToEntry(int index)
     {
-        var move = AppState.Navigation.GoToEntry(index, AppState.Assemblies, AppState.Decompiler);
+        var move = AppState.Navigation.GoToEntry(index, AppState.Assemblies, AppState.Decompiler.Setup);
         if (move is null)
         {
             return;

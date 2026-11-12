@@ -266,7 +266,7 @@ internal static class MainMenuView
         var canSave = CanSaveCode(appState.Navigation.ActiveTab?.Node);
         if (ui.MenuItem(t.FileSaveCode, Shortcuts.SaveCode, enabled: canSave, id: "save-code", icon: new UiIcon(ui.State.Icons.FileSaveCode)))
         {
-            SaveDialogs.PickActiveCodeFile(ui, appState.Navigation, appState.Language);
+            SaveDialogs.PickActiveCodeFile(ui, appState.Navigation, appState.Decompiler.Setup.Language);
         }
 
         var anyOpen = ui.State.Tree.Roots.Length > 0;
@@ -286,16 +286,16 @@ internal static class MainMenuView
         var t = ui.State.Strings;
         if (ui.MenuItem(t.ViewBack, Shortcuts.Back, enabled: appState.Navigation.CanGoBack, id: "back"))
         {
-            Commands.MoveLater(ui.State, appState.Navigation.GoBack(appState.Assemblies, appState.Decompiler));
+            Commands.MoveLater(ui.State, appState.Navigation.GoBack(appState.Assemblies, appState.Decompiler.Setup));
         }
 
         if (ui.MenuItem(t.ViewForward, Shortcuts.Forward, enabled: appState.Navigation.CanGoForward, id: "forward"))
         {
-            Commands.MoveLater(ui.State, appState.Navigation.GoForward(appState.Assemblies, appState.Decompiler));
+            Commands.MoveLater(ui.State, appState.Navigation.GoForward(appState.Assemblies, appState.Decompiler.Setup));
         }
 
         ui.MenuSeparator();
-        DecompilerMenu(ui, appState.Language);
+        DecompilerMenu(ui, appState.Decompiler.Setup.Language);
         ui.MenuSeparator();
         ApiVisibilityMenu(ui, appState.ApiVisibility);
         ui.MenuSeparator();
@@ -432,7 +432,7 @@ internal static class MainMenuView
             var label = DecompilationLanguages.Label(language);
             if (ui.MenuRadioItem(label, current == language))
             {
-                Commands.Later(ui.State, language, static (a, l) => a.Language = l);
+                Commands.Later(ui.State, language, static (a, l) => a.Decompiler.UseLanguage(l));
             }
         }
     }

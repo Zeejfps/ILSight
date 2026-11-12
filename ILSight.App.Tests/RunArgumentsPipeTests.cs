@@ -129,8 +129,8 @@ public sealed class RunArgumentsPipeTests
     {
         var app = new AppDriver(queuedArguments: Arguments("--language=IL"));
 
-        app.Frames.WaitUntil(() => app.AppState.Language == DecompilationLanguage.IL, Patience);
+        app.Frames.WaitUntil(() => app.AppState.Decompiler.Setup.Language == DecompilationLanguage.IL, Patience);
 
-        Assert.Equal(DecompilationLanguage.IL, app.AppState.Language);
+        Assert.Equal(DecompilationLanguage.IL, app.AppState.Decompiler.Setup.Language);
     }
 }

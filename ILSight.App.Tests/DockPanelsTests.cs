@@ -95,7 +95,7 @@ public sealed class DockPanelsTests
         var d = new AppStateDriver(settings);
 
         d.Ui.Search.Kinds = SearchKinds.Literals;
-        d.AppState.Language = DecompilationLanguage.IL;
+        d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         d.NextFrame();
         d.AppState.SettingsSaving.Save(d.AppState);
 

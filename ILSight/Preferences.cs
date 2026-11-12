@@ -9,19 +9,19 @@ public static class Preferences
 {
     public static void SetLanguageVersion(AppState appState, CSharpVersion version)
     {
-        var options = appState.DecompilerOptions with { LanguageVersion = version };
+        var options = appState.Decompiler.Setup.Options with { LanguageVersion = version };
         SetDecompilerOptions(appState, options);
     }
 
     public static void SetDecompilerToggle(AppState appState, DecompilerToggle toggle, bool value)
     {
-        var options = DecompilerToggles.SetToggle(appState.DecompilerOptions, toggle, value);
+        var options = DecompilerToggles.SetToggle(appState.Decompiler.Setup.Options, toggle, value);
         SetDecompilerOptions(appState, options);
     }
 
     public static void SetDecompilerToggles(AppState appState, IEnumerable<DecompilerToggle> toggles, bool value)
     {
-        var options = DecompilerToggles.SetToggle(appState.DecompilerOptions, toggles, value);
+        var options = DecompilerToggles.SetToggle(appState.Decompiler.Setup.Options, toggles, value);
         SetDecompilerOptions(appState, options);
     }
 
@@ -29,7 +29,7 @@ public static class Preferences
     /// version and how projects are exported.</summary>
     public static void ResetDecompilerToggles(AppState appState)
     {
-        var options = DecompilerToggles.ResetCodeToggles(appState.DecompilerOptions);
+        var options = DecompilerToggles.ResetCodeToggles(appState.Decompiler.Setup.Options);
         SetDecompilerOptions(appState, options);
     }
 
@@ -37,11 +37,11 @@ public static class Preferences
     /// options by reference (<see cref="ShownChanges.TryTakeDecompilation"/>), so equal new ones would count as a change.</summary>
     private static void SetDecompilerOptions(AppState appState, DecompilerOptions options)
     {
-        if (options == appState.DecompilerOptions)
+        if (options == appState.Decompiler.Setup.Options)
         {
             return;
         }
 
-        appState.DecompilerOptions = options;
+        appState.Decompiler.UseOptions(options);
     }
 }

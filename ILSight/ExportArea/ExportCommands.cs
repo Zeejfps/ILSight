@@ -18,7 +18,7 @@ public static class ExportCommands
             return;
         }
 
-        var work = new ExportWork.CodeFile { Node = node, Language = appState.Language, Options = appState.DecompilerOptions, File = path };
+        var work = new ExportWork.CodeFile { Node = node, Language = appState.Decompiler.Setup.Language, Options = appState.Decompiler.Setup.Options, File = path };
         StartWriting(appState, work);
     }
 
@@ -40,13 +40,13 @@ public static class ExportCommands
     /// several as a solution with a folder per project.</summary>
     public static void StartExport(AppState appState, ExportRequest request)
     {
-        StartWriting(appState, Exports.ToWork(request, appState.DecompilerOptions));
+        StartWriting(appState, Exports.ToWork(request, appState.Decompiler.Setup.Options));
     }
 
     /// <summary>Writes a portable PDB of <paramref name="assembly"/>'s decompiled C# to <paramref name="path"/>.</summary>
     public static void GeneratePdb(AppState appState, LoadedModule assembly, string path)
     {
-        StartWriting(appState, new ExportWork.Pdb { Assembly = assembly, Options = appState.DecompilerOptions, File = path });
+        StartWriting(appState, new ExportWork.Pdb { Assembly = assembly, Options = appState.Decompiler.Setup.Options, File = path });
     }
 
     /// <summary>Writes the HTML class diagrammer of <paramref name="assembly"/> into a folder of its own in
@@ -60,7 +60,7 @@ public static class ExportCommands
     /// Assemblies that cannot have one, or fail, are the report's problems.</summary>
     public static void GeneratePdbs(AppState appState, string folder)
     {
-        var work = new ExportWork.Pdbs { Assemblies = appState.Assemblies.Assemblies, Options = appState.DecompilerOptions, Folder = folder };
+        var work = new ExportWork.Pdbs { Assemblies = appState.Assemblies.Assemblies, Options = appState.Decompiler.Setup.Options, Folder = folder };
         StartWriting(appState, work);
     }
 

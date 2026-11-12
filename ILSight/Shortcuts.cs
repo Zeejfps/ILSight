@@ -91,25 +91,25 @@ internal static class Shortcuts
         new(Forward, static (ui, appState) => GoForward(ui.State, appState), WhileTyping: true),
         new(Open, static (ui, appState) => MainMenuView.OpenFile(ui, appState.Navigation)),
         new(Settings, static (ui, _) => OpenPanel(ui.State, DockView.DisplayOptions), WhileTyping: true),
-        new(SaveCode, static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, appState.Navigation, appState.Language)),
+        new(SaveCode, static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, appState.Navigation, appState.Decompiler.Setup.Language)),
         new(Export, static (ui, appState) => Exports.OpenExportSetup(ui.State.ExportSetup, appState.Assemblies.Assemblies, FindActiveAssembly(appState.Navigation))),
-        new(ReloadAll, static (ui, _) => Commands.Start(ui.State, nameof(AssemblyReloading.RefreshAssembliesAsync), Trees.ListExpandedPaths(ui.State.Tree), static (a, expanded, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a, expanded, ct))),
+        new(ReloadAll, static (ui, _) => Commands.Start(ui.State, nameof(AssemblyReloading.RefreshAssembliesAsync), Trees.ListExpandedPaths(ui.State.Tree), static (a, expanded, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, expanded, ct))),
         new(CloseTab, static (ui, _) => CloseActiveTab(ui.State)),
-        new(NextTab, static (ui, appState) => CycleTab(ui.State, appState.Navigation, appState.Decompiler, 1)),
-        new(PreviousTab, static (ui, appState) => CycleTab(ui.State, appState.Navigation, appState.Decompiler, -1)),
+        new(NextTab, static (ui, appState) => CycleTab(ui.State, appState.Navigation, appState.Decompiler.Setup, 1)),
+        new(PreviousTab, static (ui, appState) => CycleTab(ui.State, appState.Navigation, appState.Decompiler.Setup, -1)),
     ];
 
     /// <summary>Goes to the history entry before the current one in this frame, and asks for its load or lookup to be
     /// started once the frame is drawn.</summary>
     private static void GoBack(UiState screen, AppState appState)
     {
-        Commands.MoveLater(screen, appState.Navigation.GoBack(appState.Assemblies, appState.Decompiler));
+        Commands.MoveLater(screen, appState.Navigation.GoBack(appState.Assemblies, appState.Decompiler.Setup));
     }
 
     /// <summary>As <see cref="GoBack"/>, to the entry after the current one.</summary>
     private static void GoForward(UiState screen, AppState appState)
     {
-        Commands.MoveLater(screen, appState.Navigation.GoForward(appState.Assemblies, appState.Decompiler));
+        Commands.MoveLater(screen, appState.Navigation.GoForward(appState.Assemblies, appState.Decompiler.Setup));
     }
 
     /// <summary>Runs the app-wide shortcuts pressed this frame, and goes back and forward with the

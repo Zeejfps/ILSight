@@ -189,7 +189,7 @@ public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
         var appState = _appState;
         if (arguments.Language is not null)
         {
-            appState.Language = arguments.Language.Value;
+            appState.Decompiler.UseLanguage(arguments.Language.Value);
         }
 
         if (arguments.AssemblyList is not null)

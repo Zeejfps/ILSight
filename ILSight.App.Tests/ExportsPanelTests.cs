@@ -346,7 +346,7 @@ public sealed class ExportsPanelTests : IDisposable
         Assert.NotNull(active);
         var report = active.Content;
 
-        d.AppState.Language = DecompilationLanguage.IL;
+        d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         d.Settle();
 
         Assert.Same(report, d.AppState.Navigation.ActiveTab?.Content);
