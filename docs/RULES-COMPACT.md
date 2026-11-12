@@ -33,7 +33,10 @@ the same port), RL0105 (infrastructure, or a type holding it, in a port signatur
   values: no `DbContext`, `IQueryable`, `HttpClient` or `ILogger`, and no type that holds one (a library's feed object
   keeping an `HttpClient`). Pass what the class decides with (`PackageSource`); the adapter keeps the library's
   objects. Each class lists only what it uses. A library's own I/O client is infrastructure: only adapters call it,
-  and it is tested through its own seam (an `HttpMessageHandler`).
+  and it is tested through its own seam (an `HttpMessageHandler`). A decision that compared objects ("the same feed"
+  = the same object the library made once per URL) is restated on a value key whose own equality is that identity's
+  (`FeedUrl`: the URL ignoring case, with `Equals` and `GetHashCode`), not a map each place must remember: compared by
+  their fields, the same feed retyped in other letters searched again.
 - The codebase's own services that do effects or hold shared state (a job runner like `Background.Start`, an
   error log like `Errors.Report`, a cache) are dependencies too: through the port, called by the adapter. List
   them as `rulelab.ambient_types` in `.editorconfig`. Built-in primitives (`Task.Run`, `await`, `CancellationToken`)
@@ -177,6 +180,10 @@ Take the first match:
   about. Test through public methods; never add an interface only to fake it.
 - A helper lives with the code that uses it: when only one area calls it, it belongs there; when its last caller
   moves, it moves too; with no callers left, delete it.
+- A helper that reaches no port is not a step and belongs to none of its callers (not private to a use case, then
+  copied; not public on it, then handed to code with no I/O): a change under a rule is a method of the type keeping
+  the rule (a rule across two objects nothing holds is a missing type), a calculation a static method on its concept.
+  One that reaches the port is a step: its callers share it and are one class.
 
 ## R005: Data goes in through `required init` properties
 
@@ -224,7 +231,8 @@ Build: everything (`.editorconfig`, RL0701 target-typed `new()`, RL0702 two stat
 ## R008: Make invalid states unrepresentable with unions
 
 Build: RL0801 (`switch` on a union), RL0802 (discarded `To*` / `With*`), RL0803 (`if` chain over cases), RL0804
-(discarded result union), RL0805 (status enum + nullables), RL0806 (case added from outside).
+(discarded result union), RL0805 (status enum + nullables), RL0806 (case added from outside); suggestion while
+measured: RL0807 (a dropped value of a type marked `[MustUse]`).
 
 - Use a union when which data exists depends on a state or kind: a status with fields that must agree, success **or**
   error, kinds of message. Fields that are optional independently stay nullable.
@@ -263,6 +271,12 @@ Build: RL0801 (`switch` on a union), RL0802 (discarded `To*` / `With*`), RL0803 
   `is` check per case it cares about, each its own `if`, then what the rest get. Never `switch` with `_`.
 - Transitions are `To<State>` and their result is always used. One allowed from several states → an abstract
   `Try<Verb>` on the base.
+- **A result the caller must act on is a type the build won't let it drop:** a result union (RL0804), or, for
+  anything else whose loss leaves state stuck (a ticket for I/O only the caller starts: dropped, the tab says
+  "loading" forever), a type marked `[MustUse]`, an attribute the project declares (any namespace). Mark the type, not
+  each method. RL0807 reports it, or its `T?` or a list of it, as a statement, after `_ =`, as the body of a lambda
+  whose delegate returns nothing (`Later(() => ShowNode(...))`), or in a local nothing reads. Not a union made only to
+  be un-droppable: RL0804 misses a list of them and a lambda's.
 - EF never maps the union: a row type, `row.ToOrder()` (throws `InvalidDataException` on contradictory columns) and
   `order.CopyTo(trackedRow)` through `Match`.
 
@@ -285,6 +299,13 @@ suggestion while measured: RL0903 (an adapter's catch that turns cancellation in
   isn't the only one: the edge links a workflow's token to everything that cancels it on purpose (newer work under
   newest-wins, a dialog that closed) and ends quietly when any did (`catch (OperationCanceledException) when
   (link.IsCancellationRequested)`). Never make every cancellation quiet: the timeout is lost.
+- **A canceller that appears partway through a workflow** (its state change returns a ticket newer work cancels)
+  can't be linked by the edge that started it: the workflow ends at that change and returns the ticket (`[MustUse]`,
+  R008), and that edge starts the I/O under it, linked to it
+  (`runner.Start(ct => decompile.HandleAsync(tab, load, ct), load.Work.Token)`). Not a catch in the workflow, not a
+  token added to the runner's (it ends the whole workflow: a reopen's last step was skipped). The state still refuses
+  a result whose ticket isn't its newest: linking saves work, it doesn't decide what's shown. Where the workflow needs
+  the I/O's outcome after it, the port takes the ticket and answers `Stopped` (not a second bare token: it swaps).
 - An adapter that turns failures into results lets cancellation through: catch the failures it reports, and a timeout
   as `catch (TaskCanceledException) when (!ct.IsCancellationRequested)`; never `OperationCanceledException` (or
   everything) into `Failed`, or shutdown is reported as a failure and every workflow must re-check its token.
@@ -297,12 +318,23 @@ Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100
 - Work that must outlive the request goes on a queue (an outbox), not a detached task.
 - Only an edge starts work. Features return a `Task` their caller awaits; one that starts its own work returns before
   it's done (callers read stale state) on a token nobody can cancel. List the job runner in `rulelab.ambient_types`.
-- **Frame-driven UIs** (the draw isn't an edge): state the user must see in the frame of their input changes in that
-  frame, and only the I/O is queued, taking what the change returned
+- **Frame-driven UIs** (the draw isn't an edge): the input's frame shows the input taken and nothing it made untrue
+  as current. Split each workflow at its first wait: what it changes before waiting on I/O (cached answers included)
+  changes in the input's frame, what it can't know yet shows as under way ("loading") in place of what it replaces,
+  and only the I/O is queued, taking what the change returned
   (`var ticket = downloads.Start(id); commands.Queue(ct => download.HandleAsync(downloads, ticket, ct));`); the frame
-  edge starts every queued command, even after a failed draw. Work found while drawing (icons, details) is recorded as
+  edge starts every queued command, even after a failed draw, and the ticket is `[MustUse]` (R008). Work found while drawing (icons, details) is recorded as
   pending on its owner, once per item, and an edge starts it (the frame edge before the next draw, or one queued
   command): one workflow for a batch the port takes, else one per item.
+- **Screen state the edge reads back after the draw** (where a tab's view stands) is kept with the content the view
+  drew: the view records the version it drew (the tab counts its changes), and the read-back stores it on the tab
+  while it still shows that version, on what kept that content once replaced (its history entry), never on newer
+  content. Then a change in the draw needs no view and no reordering; don't delay the change to a command after the
+  read-back (a frame late), and reading back before the next draw doesn't help (the view still holds the old line).
+- A widget learns of its input when drawn: state drawn above it shows the input next frame. Draw the state after the
+  widget where the layout allows; otherwise the draw asks for a frame. In a UI that draws on demand, whatever changes
+  drawn state with no frame to follow asks for one: the draw (`ui.RequestFrame()`) for what it changed after drawing it
+  and for work it left for the next frame's edge, the edge when a workflow it started ends; else it waits for input.
 - One operation at a time per `DbContext`; real parallelism needs a context per query (`IDbContextFactory<T>`).
 - An `async void` event handler is an edge: `try` / `catch` its body and suppress VSTHRD100 with the reason.
 - No `ConfigureAwait(false)` in application code.

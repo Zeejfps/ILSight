@@ -40,7 +40,8 @@ the frame edge before each draw and the commands the draw queues, started after 
 (R010 "Frame-driven UIs"). Edges are few, and they are the only places that:
 
 - **start work** that outlives the call that asked for it (R010), and create the `CancellationToken` it runs on,
-  linked to everything that may cancel it on purpose (R009 "Cancellation someone asked for");
+  linked to everything that may cancel it on purpose (R009 "Cancellation someone asked for"; a canceller a workflow
+  creates partway comes back to the edge with the I/O it cancels);
 - **catch** everything a unit of work can throw, log it once, and carry on (R009);
 - **build and wire** the application's use cases and adapters (the composition root: R001), and reach infrastructure
   directly (R001).
@@ -62,13 +63,13 @@ The build checks what can be checked mechanically (`analyzers/`, wired in throug
 | R002 | `!` (RL0201), `== null` (RL0202, except in expression trees, which can't contain `is`), nullable suppressions (RL0203) | where to narrow, what null means |
 | R003 | missing `Async` (RL0301), `Find*` not `T?` or a union with a not-found case (RL0302), `Get*` returning `T?` (RL0303), `Is*`... not `bool` (RL0304), `Load*` / `Fetch*` (RL0305); suggestions while measured: a `bool` method named as an action (RL0306: also `bool CloseTab`, `bool Set`), a `Get*` returning -1 or `default` of a struct (RL0307) | whether a name is a verb; choosing the right pattern; sentinels that come from elsewhere (`Array.IndexOf`, `FirstOrDefault`) or travel through the codebase's own parameters (-1 for "no row"); a `TrySet` that should count changes; a placeholder returned to fill a generic `T` |
 | R007 | braces and block bodies (`.editorconfig`), target-typed `new()` (RL0701), two statements on one line (RL0702), `var` for locals (IDE0007) | – |
-| R008 | `switch` on a union (RL0801), discarded `To*`/`With*` results (RL0802), `if` / `else if` chain over union cases (RL0803), discarded result union (RL0804), a `Status` / `State` / `Kind` enum next to nullable properties (RL0805), a case added from outside a union (RL0806) | whether nullable fields really depend on the status; whether a question every case answers or only some (and whether a default is harmless for a future case) |
-| R004 | vague type names (RL0401); suggestion while measured: a public field or collection the type changes in its own methods, unless a widget binds it by `ref` (RL0403) | classification; one-implementation interfaces (an analyzer can't see across projects); framework-facing data mixed with rules kept elsewhere; something depending on a framework-facing method having run; whether use cases share a step (one class) or not (a class each) |
+| R008 | `switch` on a union (RL0801), discarded `To*`/`With*` results (RL0802), `if` / `else if` chain over union cases (RL0803), discarded result union (RL0804), a `Status` / `State` / `Kind` enum next to nullable properties (RL0805), a case added from outside a union (RL0806); suggestion while measured: a dropped value of a type marked `[MustUse]` (RL0807) | whether nullable fields really depend on the status; whether a question every case answers or only some (and whether a default is harmless for a future case); which types leave state stuck when dropped (the marker is put by hand); a value passed to code that ignores it |
+| R004 | vague type names (RL0401); suggestion while measured: a public field or collection the type changes in its own methods, unless a widget binds it by `ref` (RL0403) | classification; one-implementation interfaces (an analyzer can't see across projects); framework-facing data mixed with rules kept elsewhere; something depending on a framework-facing method having run; whether use cases share a step (one class) or not (a class each); where a helper with no port lives (the compiler keeps a rule's type private once it's there: CS0122) |
 | R005 | positional records with 2+ values (RL0501) | rules spanning several values |
-| R001 | direct time / randomness / I/O, and the codebase's own services listed in `rulelab.ambient_types` (static, or reached through an object passed in), outside adapters (and types only adapters use: I/O code they share), the composition root, tests and `rulelab.infrastructure` files (RL0101); a static class whose functions take the same port (RL0103); a port member whose signature is, or holds, infrastructure or a listed service (RL0105); suggestions while measured: a use case or adapter constructed outside the composition root (RL0102), another use case reached around the port: its port taken as a parameter or extended, or a constructor taking more than its port (RL0104) | an effect reached through an unlisted method of an object passed in; another feature's use case called as a static function over the state; a decision inside I/O code adapters share; pure code that differs per kind injected or passed per call instead of on the kind; whether a record of functions is standing in for a port; whether a function takes the whole state (and narrowing it bottom-up); a settings pass setting values on live objects; what lives per document or request; ports, adapters, what counts as a decision |
+| R001 | direct time / randomness / I/O, and the codebase's own services listed in `rulelab.ambient_types` (static, or reached through an object passed in), outside adapters (and types only adapters use: I/O code they share), the composition root, tests and `rulelab.infrastructure` files (RL0101); a static class whose functions take the same port (RL0103); a port member whose signature is, or holds, infrastructure or a listed service (RL0105); suggestions while measured: a use case or adapter constructed outside the composition root (RL0102), another use case reached around the port: its port taken as a parameter or extended, or a constructor taking more than its port (RL0104) | an effect reached through an unlisted method of an object passed in; another feature's use case called as a static function over the state; a decision inside I/O code adapters share; pure code that differs per kind injected or passed per call instead of on the kind; whether a record of functions is standing in for a port; whether a function takes the whole state (and narrowing it bottom-up); a settings pass setting values on live objects; what lives per document or request; a decision that relied on an object's identity once the port passes values (a key's hand-written `Equals` without `GetHashCode` is CS8851); ports, adapters, what counts as a decision |
 | R006 | – | all, including whether an input is read all-or-nothing or leniently |
-| R010 | async method without a token (RL1001), `_ =` fire-and-forget (RL1002), token not passed on (CA2016), blocking waits (VSTHRD002), `async void` (VSTHRD100), un-awaited tasks (VSTHRD110), sync calls in async code (VSTHRD103, CA1849); a job runner listed in `rulelab.ambient_types` started from a draw (RL0101); an I/O step called without what its state change returned (the compiler: CS1503 / CS7036) | parallel queries on one `DbContext`; moving async work out of sync-only callers; state the user must see in the frame of their input; work started from a draw by other means |
-| R009 | empty catch (RL0901), catch-all outside an edge (RL0902), `throw ex` (CA2200), throwing `Exception` (CA2201), discarded result union (RL0804); suggestion while measured: an adapter's catch that turns cancellation into a result (RL0903) | which failures are expected; specific catches in decision code; log-and-rethrow; a library object or deferred sequence leaving an adapter; cancellation turned into a result without a catch (an awaiter or continuation); whether a workflow's token is linked to everything that cancels it on purpose |
+| R010 | async method without a token (RL1001), `_ =` fire-and-forget (RL1002), token not passed on (CA2016), blocking waits (VSTHRD002), `async void` (VSTHRD100), un-awaited tasks (VSTHRD110), sync calls in async code (VSTHRD103, CA1849); a job runner listed in `rulelab.ambient_types` started from a draw (RL0101); an I/O step called without what its state change returned (the compiler: CS1503 / CS7036) | parallel queries on one `DbContext`; moving async work out of sync-only callers; what the input's frame must show (and where a workflow's first wait is); work started from a draw by other means; state drawn before the widget that changes it; whether a frame follows a change in a UI that draws on demand; where the edge's read-back of the screen is kept |
+| R009 | empty catch (RL0901), catch-all outside an edge (RL0902), `throw ex` (CA2200), throwing `Exception` (CA2201), discarded result union (RL0804); suggestion while measured: an adapter's catch that turns cancellation into a result (RL0903), a dropped ticket handed back (RL0807) | which failures are expected; specific catches in decision code; log-and-rethrow; a library object or deferred sequence leaving an adapter; cancellation turned into a result without a catch (an awaiter or continuation); whether a workflow's token is linked to everything that cancels it on purpose, and a canceller found partway handed back to the edge |
 | R011 | – (suggestions while measured: a loop doing a lower level's work between steps, RL1101; a condition written in mechanics between steps, RL1102) | whether a call goes up a level; what the levels are |
 | R012 | null checks written as property patterns, at the top of a pattern or on a member inside one (RL1201), calls that don't return `bool` inside a condition (RL1202) | – |
 | R013 | a second top-level type in a file (RL1301), a file named after none of its types (RL1302), a type written in two or more hand-written places (RL1303); generated code doesn't count | whether a type only one other type uses should be nested in it; how to split a class that was split across files (by what each part knows, R004) |
@@ -241,6 +242,15 @@ one's port, extends it, or takes something beside its own.
    A library's own I/O client (ILSight.Core's NuGet feed client) is infrastructure: only adapters call it, and its own
    decisions (the protocol's: read the feed's index once) are tested through its infrastructure's seam, an
    `HttpMessageHandler`, not through ports (S21).
+   **A decision that relied on an object's identity is restated on a value key.** While the port passed objects, "the
+   same feed" could mean "the same object": the browser skipped a search when `wanted == lastSearched` on a record
+   holding the library's feed object, which the library made once per URL, ignoring case. Values compare by their
+   fields, so the same decision silently means something else. Restate it on a key whose own equality is the identity's
+   (the URL, ignoring case): a type of its own (`FeedUrl` with its `Equals` and `GetHashCode`), so `==`, a dictionary
+   and every record holding it agree with the library; not a map from URL to value that each place must remember to go
+   through. In testing (S24), values compared by their fields searched again when the user retyped the feed's URL in
+   other letters, and lost the config's name for it; a map in the browser (ILSight's) and the key both behaved like the
+   objects, but with the map a source's own `==` still called the retyped feed another one.
 3. **List only what this class uses.** If two classes need the same operation, each port declares it. Don't share wide interfaces.
 4. **Per-call data goes in method parameters**, never in a port-using class's constructor.
    ```csharp
@@ -452,6 +462,7 @@ outside the composition root.
 - [ ] No `DateTime.Now`/`UtcNow`, `Guid.NewGuid()`, `Random`, `File`, `Environment`, `HttpClient` or `ILogger` in a class that makes decisions.
 - [ ] No call to the codebase's own services (job runners, error logs, caches), static or through an object passed in, in a class that makes decisions; they are listed in `rulelab.ambient_types`.
 - [ ] Port members are named after needs; their signatures carry values: no infrastructure types, and no types that hold one (the adapter keeps the library's objects).
+- [ ] A decision that compared objects (the same feed = the same object) compares a value key whose own equality is that identity's.
 - [ ] Per-call data arrives through method parameters.
 - [ ] Pure collaborators are called directly, not injected. Pure code that differs per kind is `static abstract` on the
       kind's type (the use case's type parameter); a handler parameter only carries the caller's own policy.
@@ -878,6 +889,18 @@ Work top to bottom and take the first match.
   is the first place the next reader looks for that area's knowledge, and the wrong one. (A stated convention, not
   measured: the compiler's IDE0051 reports a private member nobody calls, and found none here; a helper used from one
   other area needs a whole-solution view, like the seam test.)
+- **A helper that reaches no port is not a step,** so it groups nothing, and it belongs to none of its callers: not a
+  private method of a use case (the others would copy it) nor a public one (a caller with no I/O would be handed the
+  use case, and its test a fake port). It goes where step 1 puts what it does: a change under a rule is a method of the
+  type that keeps the rule (a rule across two objects that nothing holds together is a type missing), a calculation a
+  static method on its concept. Every caller, use case or not, calls it there. A helper that does reach the port is a
+  step, so whatever calls it shares that step and belongs to the class (a "portless" caller of it isn't portless).
+  In testing (S14, ILSight's `ClearAssemblies`: every assembly off the list, and the analyses of them, shared by
+  close-all and a reload use case), every home behaved alike at first. Copied into the use case, a line added to one
+  copy left close-all keeping an analysis of a closed assembly; on the use case, close-all's test built it with a
+  2-member fake; as a static function beside close-all (ILSight's), a feature written later took assemblies off the
+  list without it and left their analyses; as a method of a type holding the list and the analyses, that feature
+  could only close through it (`DEMO_CS0122`).
 
 ### Framework-facing state
 
@@ -952,6 +975,7 @@ public sealed class AssemblyChoice                     // owns its rule: Selecte
 
 - [ ] Every new type matches a row in step 1.
 - [ ] Use cases share a class only when they share a step; one that shares none has its own class and port.
+- [ ] A helper that reaches no port lives on the type whose rule it keeps (or the concept it computes), never in one of its callers.
 - [ ] No type only forwards calls (adapters excepted).
 - [ ] No `Manager` / `Helper` / `Utils` / `Processor` / `<Noun>Service` names.
 - [ ] No interface with a single implementation, except R001 ports.
@@ -1511,6 +1535,33 @@ return null;                                                 // everything else,
 The same `CopyTo` written with `Switch` (`sms: s => { row.Channel = ...; row.Text = s.Text; }`) compiled and left a
 stale `Subject` on a row that changed from an email to an sms.
 
+### Values the caller must act on
+
+**A method whose result the caller must act on returns a type the build won't let it drop.** A result union is one
+already (RL0804, R009). Anything else whose loss leaves state stuck (a ticket the state hands out for I/O only the
+caller can start: dropped, the tab says "loading" forever) is a type marked `[MustUse]`, an attribute the project
+declares itself (`public sealed class MustUseAttribute : Attribute`, in any namespace: the analyzer knows it by name).
+Mark the type, not each method: every method that returns it is covered, the next one written included.
+
+```csharp
+[MustUse]
+public sealed class DecompileTicket { ... }
+
+Navigation.ShowNode(tab, node);                       // RL0807: nothing starts the load; the tab says "loading" for good
+loads.Start(Navigation.ShowNode(tab, node));          // acted on
+commands.Later(() => Navigation.ShowNode(tab, node)); // RL0807: an Action drops it (ShowLater, a Func, keeps it)
+```
+
+RL0807 reports a value of a marked type (or its `T?`, or a collection of them) used as a statement (awaited, or
+through `?.`), discarded with `_ =`, returned by a lambda whose delegate returns nothing, or put in a local nothing
+reads. In testing (S10), ILSight's `DecompileTicket?` dropped those three ways (a call as a statement, the list a
+reload returns, a lambda handed to `Later` where `ShowLater` was meant) compiled cleanly and left every tab "loading"
+with no load started; with the type marked, each drop is reported. A union for "a load or nothing" (`Showing.Loading` /
+`AlreadyShown`) behaved the same when used, but RL0804 reported one of the three drops, and every caller wrote a
+`Switch` for what `T?` already says. Marking methods instead (JetBrains' `[MustUseReturnValue]`) would take 26
+attributes in ILSight, and miss the 27th method. RL0807 is a suggestion while measured; a project that marks a type
+can make it an error in its `.editorconfig` (`dotnet_diagnostic.RL0807.severity = error`).
+
 ### Persistence
 
 EF Core maps a **row type** (database-shaped, flat, nullable), never the union: EF can't change an entity's type, and
@@ -1547,6 +1598,7 @@ update without a tracking number has no case to become). Response DTOs stay flat
 - [ ] A question only some cases answer: a virtual member with a "doesn't apply" default (only where that default is harmless for a future case), or one `is` check per case in another layer, not a `Match` that answers "none" for most cases; never `switch` with `_`.
 - [ ] `Switch` only for synchronous side effects that differ per case.
 - [ ] Transitions are `To<State>` on the source state, and their result is used.
+- [ ] A value whose loss leaves state stuck (a ticket for I/O the caller must start) is a type marked `[MustUse]`, and none is dropped (RL0807).
 - [ ] Persisted unions go through a row type with `ToX()` / `CopyTo(trackedRow)`.
 - [ ] Independent optional fields stay nullable.
 
@@ -1601,7 +1653,9 @@ var message = account.Withdraw(amount).Match(
 - One case per outcome the caller handles differently, each with its own data. A failure case added later breaks every
   `Match` that doesn't handle it.
 - Use the shared `Result<T>` (R006) when callers only need "it failed, and why", as with input validation.
-- **Never discard a result.** `account.Withdraw(500);` compiles, and the refusal goes unnoticed (RL0804).
+- **Never discard a result.** `account.Withdraw(500);` compiles, and the refusal goes unnoticed (RL0804). A value
+  that isn't an outcome but leaves state stuck when lost (a ticket) is marked `[MustUse]` (R008 "Values the caller
+  must act on").
 - Don't use a library result type (`ErrorOr<T>`, `OneOf`): its errors aren't cases the compiler makes callers handle,
   and RuleLab's union checks don't see it.
 
@@ -1708,6 +1762,29 @@ while (!stoppingToken.IsCancellationRequested)
   In testing, a runner that excluded only shutdown reported a superseded search and a closed dialog's search as
   "Unexpected: A task was canceled."; with the token linked, both ended quietly and an `HttpClient` timeout was still
   reported. An edge that made every cancellation quiet lost the timeout (S08).
+- **A canceller that appears partway through a workflow goes back to an edge with the I/O it cancels.** When the
+  workflow's own state change creates what may cancel the next step on purpose (pointing a tab at a node returns a
+  ticket from the tab's newest-wins work), the edge that started the workflow couldn't link it. The workflow ends at
+  that state change and returns the ticket (a `[MustUse]` type: R008), and the edge that started it starts the I/O
+  under it, linked to the ticket, as a frame-driven view does with what its state change returns (R010):
+  ```csharp
+  runner.Start(async ct => StartDecompiling(await navigation.HandleAsync(tab, reference, ct)));   // the command
+  runner.Start(ct => decompile.HandleAsync(tab, load, ct), load.Work.Token);                        // StartDecompiling
+  ```
+  Not a catch in the workflow (decision code catches nothing), and not a token the workflow adds to the runner's: its
+  cancellation then ends the whole workflow, not the part the ticket covers. Linking saves work; it doesn't decide
+  what is shown: the state still refuses a result whose ticket isn't its newest. Where the workflow needs the I/O's
+  outcome after it (none of ILSight's do), the I/O's port takes the ticket and answers `Stopped` when the ticket's work
+  was cancelled, its adapter linking the two and letting the workflow's own token through. Tested with the ticket's
+  token as a second `CancellationToken`, which swaps silently; the ticket itself can't (not tested).
+  In testing (S09), ILSight's form ran a superseded decompile to the end and dropped it. Linking and catching in the
+  workflow, a stop token to the port, handing the I/O back, and a token added to the runner's each stopped it partway
+  and reported nothing; linking without the catch was reported as unexpected, and so were the port's two tokens
+  swapped (it compiles). Added to the runner's, the ticket of one tab ended a reopen of two before its last step:
+  "Reopening..." stayed for good; the other three ran it. In every form a late answer was refused by the tab's own
+  check; a tab that trusted the token showed the old load over the newer one. Handing back costs a step: the workflow
+  no longer returns once the code is shown, so its test starts the load it gets back, and a caller that reaches it
+  through its port returns the ticket on.
 
 ### Checklist
 
@@ -1718,6 +1795,7 @@ while (!stoppingToken.IsCancellationRequested)
 - [ ] An adapter that turns failures into results lets `OperationCanceledException` through when its own token was cancelled (a timeout is a failure).
 - [ ] A lazily-throwing library's values are read inside the adapter member's catch; no library object or deferred sequence leaves the adapter.
 - [ ] Catch-alls exist only at the edge, around one unit of work, and end quietly only for cancellation someone asked for (shutdown, newer work, a closed dialog: the workflow's token is linked to each), never for a timeout.
+- [ ] A workflow whose state change creates a canceller partway (a ticket) ends there and returns it; the edge starts the I/O under it, linked to it (no catch in the workflow, no token added to the runner's).
 - [ ] No empty catch, no `throw ex;`, no log-and-rethrow.
 
 ---
@@ -1754,7 +1832,8 @@ together on one `DbContext` threw "a second operation was started on this contex
    Edges). A feature that starts its own work (through `Task.Run` left running, a job runner, or a runner it was handed)
    returns before the work is done, so its caller reads stale state, and the work runs on a token nobody can cancel
    (R010 S05, verified). The edge hands each workflow its token, linked to shutdown and to whatever may cancel it on
-   purpose (R009 "Cancellation someone asked for"), keeps track of it, and reports its unexpected failure (R009). List
+   purpose (R009 "Cancellation someone asked for"; what the workflow's own state change creates partway, the workflow
+   hands back to the edge with the I/O it cancels), keeps track of it, and reports its unexpected failure (R009). List
    your job runner in `rulelab.ambient_types` (R001) so a start outside an edge is reported.
 5. **No `async void`** (VSTHRD100): its exceptions can't be caught by the caller. The one exception is an event handler,
    which must be `async void`: it is an edge (R009), so wrap its body in a `try` / `catch` and suppress VSTHRD100 on it
@@ -1769,9 +1848,18 @@ together on one `DbContext` threw "a second operation was started on this contex
 In an immediate-mode UI the view runs every frame, and it is not an edge: work starts at the **frame edge** before the
 draw, or from a **command** the draw queues, which the frame loop starts after the draw (Edges).
 
-- **State the user must see in the frame of their input changes in that frame; only the I/O waits for the edge.** The
-  view calls the state's own method, then queues the I/O, which takes what that method returned, so it can't run
-  without the state change, and the state refuses a result for anything it didn't start:
+- **The input's frame shows the input taken, and nothing the input made untrue as current.** That is the test for
+  what must change in that frame. To pass it without deciding piece by piece, split each workflow at its first wait:
+  everything it changes before waiting on I/O changes in the input's frame (what is known without waiting, a cached
+  answer included), and what it can't know yet is shown as under way (a loading row, "decompiling") in place of what
+  it replaces. Only the I/O waits for the edge. In testing (S09, the four inputs ILSight left queued whole), the frame
+  of the input still marked the old assembly list and showed its assemblies; showed the old type's code as current
+  while the tree's selection (the framework's) had moved to the clicked node; showed the old history entry after Back
+  though the new one's code was cached; and showed nothing of an opened file. Split at the first wait, each showed the
+  input taken in its own frame. On demand (below), the old list stayed on screen for as long as the new one loaded.
+  Where it costs: an answer that comes at once still shows "loading" for one frame (a cached one doesn't).
+- **The view calls the state's own method, then queues the I/O**, which takes what that method returned, so it can't
+  run without the state change, and the state refuses a result for anything it didn't start:
   ```csharp
   var ticket = browser.Downloads.Start(browser.Selected);                       // "Downloading..." this frame
   commands.Queue(ct => download.HandleAsync(browser.Downloads, ticket, ct));    // only the I/O is queued
@@ -1780,7 +1868,33 @@ draw, or from a **command** the draw queues, which the frame loop starts after t
   already changed. In testing, with the whole workflow queued, "Downloading..." appeared a frame after Enter and a
   reopened dialog showed its last scan's failure for a frame; split this way, both showed in the frame of the input,
   the I/O without its ticket didn't compile (CS1503), and a forged ticket's result was refused. Where it hurts: if the
-  queued I/O never starts, the state says "Downloading..." for nothing (verified), hence the frame edge's duty (S06).
+  queued I/O never starts, the state says "Downloading..." for nothing (verified), hence the frame edge's duty, and
+  the ticket is a type the build won't let anyone drop (`[MustUse]`, R008) (S06).
+- **State the edge reads back from the screen belongs to the content it was drawn for.** A frame edge that copies
+  the screen into the app after the draw (where a tab's view stands, kept for its history) stores it with the content
+  the view drew: the view records the version of the content it drew (the tab counts its content's changes, R003),
+  and the read-back keeps it on the tab while the tab still shows that version, on whatever kept that content once it
+  was replaced (its history entry), and nowhere else. The state change itself stays in the input's frame (the split
+  at the first wait decides that); a change in the draw then needs no view and no reordering of the edge. Delaying the
+  change to a command that runs after the read-back shows the input a frame late, and is right only while the edge
+  keeps that order.
+  ```csharp
+  tab.ShowIn(view);              // the draw: a view that last drew other content moves to this content's line
+  var clicked = Ui.CodeView(screen, view.Code, tab.Code, clickedLine);
+  if (clicked is not null)
+  {
+      tab.Navigate(target);      // in the input's frame
+  }
+
+  tab.TakeFrom(view);            // the edge, after the draw: kept with the version the view drew, wherever it is now
+  ```
+  In testing (S10, a Ctrl+click that follows a reference), changing the tab in the draw with the edge's read-back
+  unchanged lost the line clicked on (Back returned to line 25, not 40) and stored the old document's line on the new
+  one (Forward showed it at 40). Reading back before the next draw instead did the same; a read-back that only skipped
+  content changed since the draw fixed the second and not the first. Kept with the content it was drawn for, both
+  were right, and the click's frame showed the new tab; ILSight's queued command was right a frame later. A change
+  that reads the view back first (`Navigate(node, view)`) was right too, but then every change needs the view, which a
+  workflow continuing between frames doesn't have.
 - **Work the draw finds it needs** (a row's icon, its details) **is recorded as pending on the state that owns it,
   once per item, and an edge starts it for everything pending**: the frame edge before the next draw, or one command
   the draw queues (a frame sooner). The draw shows "loading" from the pending state, in the same frame. Start one
@@ -1789,6 +1903,18 @@ draw, or from a **command** the draw queues, which the frame loop starts after t
   "requested" set: the lambda's closure), outlived shutdown, and retried a failing fetch every frame with nobody told;
   recorded as pending, 3 fetches, 0 bytes a frame, cancelled at shutdown, a failure reported once. One workflow for the
   batch let one unexpected failure stop the icons after it; one per item didn't (S07).
+- **A widget learns of its input when it is drawn,** so whatever was drawn before it this frame shows the state from
+  before the input. Where the layout allows, draw that state after the widget (or read the input before the draw, as
+  a key is); otherwise the draw that changed it asks for another frame, and the change shows one frame late.
+- **In a UI that draws on demand** (a window that draws only on input or when asked, as ZGF's), **whatever changes
+  drawn state with no frame to follow asks for one**: the draw, for state it changed after drawing it and for work it
+  left pending for the next frame's edge (`ui.RequestFrame()`); the edge, when a workflow it started ends (ZGF wakes the
+  window when work posts back to the UI thread). A command the draw queues needs no next frame: the loop starts it
+  after the draw. In testing (S08), the status line above NuGet's Open button said "Ready" after the click until the
+  user's next input (drawn every frame: one frame late); with the draw asking for a frame it was one frame late with
+  no input, and drawn below the button it was right in the click's frame, in a changed layout. S07's pending icons
+  never started, since the frame edge runs only before a frame, until the draw asked for one; their results then
+  waited for input until the edge asked for a frame as each fetch ended.
 
 ### Checklist
 
@@ -1796,7 +1922,9 @@ draw, or from a **command** the draw queues, which the frame loop starts after t
 - [ ] Every async method takes `CancellationToken ct` last and passes it to every async call.
 - [ ] Every task is awaited: no `_ = ...Async(...)`, no `async void` except event handlers (with a `try` / `catch`).
 - [ ] Only an edge starts work; features return tasks their callers await.
-- [ ] Frame-driven UIs: what the user must see changes in the frame of the input, and the queued I/O takes what that change returned; work found while drawing is recorded as pending and started by an edge.
+- [ ] Frame-driven UIs: the input's frame shows the input taken and nothing it made untrue as current (each workflow split at its first wait, what waits shown as under way), and the queued I/O takes what that change returned; work found while drawing is recorded as pending and started by an edge.
+- [ ] State drawn before the widget that changes it is drawn after it, or the draw asks for a frame; in a UI that draws on demand, the draw asks for a frame for work it left for the frame edge, and the edge for each workflow that ends.
+- [ ] The edge's read-back of the screen is kept with the content the view drew (a version the view records): on the tab while it still shows it, on what kept it once replaced, never on newer content; the change itself stays in the input's frame.
 - [ ] No parallel queries on one `DbContext`.
 
 ---
