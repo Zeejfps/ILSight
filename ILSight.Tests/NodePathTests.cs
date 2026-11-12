@@ -61,7 +61,7 @@ public sealed class NodePathTests
     public void A_closed_assembly_is_never_listed_again()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        AssemblyListing.CloseAssembly(list, assembly);
+        list.Close(assembly);
 
         Assert.False(AssemblyListing.TryList(list, assembly));
         var reopened = list.Open(Trees.TestAssemblyPath);

@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace ILSight.Core;
 
 /// <summary>
@@ -100,5 +102,122 @@ public sealed class AssemblyList
     public IReadOnlyList<AssemblyPath> ListFilePaths()
     {
         return Now.Listed.Select(a => a.FilePath).ToArray();
+    }
+
+    /// <summary>Removes the item of the list holding <paramref name="assembly"/>: the assembly, or the package it was
+    /// read out of, whose assemblies are forgotten with it, and what was picked for them. Documents and nodes already
+    /// handed out stay valid. Reads nothing: what stays loaded is what was.</summary>
+    internal void Close(LoadedAssembly assembly)
+    {
+        var item = assembly.ListedItem;
+        using (var held = State.Enter())
+        {
+            if (item is not FailedAssembly && !TryForgetKnown(held.Value, item))
+            {
+                return;
+            }
+
+            var isPackage = item is LoadedPackage;
+            Pdbs.Forget(item.FilePath, andUnder: isPackage);
+            TargetFrameworks.Forget(item.FilePath, andUnder: isPackage);
+            ForgetReadOutOf(held.Value, item);
+            var now = held.Snapshot;
+            if (!now.Listed.Contains(item))
+            {
+                return;
+            }
+
+            var loaded = now.Loaded.RemoveAll(m => m.ListedItem == item);
+            held.Snapshot = now with { Listed = now.Listed.Remove(item), Loaded = loaded, Version = now.Version + 1 };
+        }
+        Changed?.Invoke();
+    }
+
+    /// <summary>Closes every assembly, and stops the opens that started before: they no longer list what they
+    /// read.</summary>
+    internal void CloseAll()
+    {
+        using (var held = State.Enter())
+        {
+            var now = held.Snapshot with { Generation = held.Snapshot.Generation + 1 };
+            held.Snapshot = now;
+            if (now.Listed.IsEmpty && held.Value.Count == 0)
+            {
+                return;
+            }
+
+            held.Value.Clear();
+            held.Snapshot = now with { Listed = [], Loaded = [], Version = now.Version + 1 };
+        }
+        Changed?.Invoke();
+    }
+
+    /// <summary>Orders the open files by name, and those of one name by version; what loaded follows its item.</summary>
+    public void SortListed()
+    {
+        using (var held = State.Enter())
+        {
+            var now = held.Snapshot;
+            var sorted = now.Listed
+                .OrderBy(a => a.Name, NaturalStringComparer.Instance)
+                .ThenBy(a => a.Version)
+                .ToImmutableArray();
+            if (sorted.SequenceEqual(now.Listed))
+            {
+                return;
+            }
+
+            held.Snapshot = now with { Listed = sorted, Loaded = OrderLoaded(now.Loaded, sorted), Version = now.Version + 1 };
+        }
+        Changed?.Invoke();
+    }
+
+    /// <summary><paramref name="loaded"/> in the order of the items of <paramref name="listed"/> they were read
+    /// from, those of one item as they were.</summary>
+    private static ImmutableArray<LoadedModule> OrderLoaded(ImmutableArray<LoadedModule> loaded, ImmutableArray<LoadedAssembly> listed)
+    {
+        var ordered = ImmutableArray.CreateBuilder<LoadedModule>(loaded.Length);
+        foreach (var item in listed)
+        {
+            foreach (var module in loaded)
+            {
+                if (module.ListedItem == item)
+                {
+                    ordered.Add(module);
+                }
+            }
+        }
+        return ordered.MoveToImmutable();
+    }
+
+    /// <summary>Forgets <paramref name="assembly"/> among those read, by path; false when what is known by its path
+    /// is not it.</summary>
+    internal static bool TryForgetKnown(Dictionary<AssemblyPath, LoadedAssembly> byPath, LoadedAssembly assembly)
+    {
+        if (!byPath.TryGetValue(assembly.FilePath, out var known))
+        {
+            return false;
+        }
+
+        if (known != assembly)
+        {
+            return false;
+        }
+
+        byPath.Remove(assembly.FilePath);
+        return true;
+    }
+
+    /// <summary>Forgets the assemblies read out of <paramref name="package"/> among those read.</summary>
+    internal static void ForgetReadOutOf(Dictionary<AssemblyPath, LoadedAssembly> byPath, LoadedAssembly package)
+    {
+        var read = byPath
+            .Where(k => k.Value is LoadedModule module && module.Place is not null && module.Place.Container == package)
+            .Select(k => k.Key)
+            .ToList();
+        foreach (var path in read)
+        {
+            byPath.Remove(path);
+        }
     }
 }

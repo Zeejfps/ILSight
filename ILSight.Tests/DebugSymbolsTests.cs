@@ -72,7 +72,7 @@ public sealed class DebugSymbolsTests
         var before = LoadedAssemblies.EnsureDebugSymbols(list.OpenModule(copy));
 
         list.Pdbs.Pick(AssemblyPath.Of(copy), TestPdbPath);
-        AssemblyListing.CloseAll(list);
+        list.CloseAll();
         var after = list.OpenModule(copy);
 
         Assert.Null(before);
@@ -91,7 +91,7 @@ public sealed class DebugSymbolsTests
         var test = list.Open(Trees.TestAssemblyPath);
         list.Pdbs.Pick(test.FilePath, TestPdbPath);
 
-        AssemblyListing.CloseAssembly(list, test);
+        list.Close(test);
 
         Assert.Empty(list.Pdbs.All);
     }

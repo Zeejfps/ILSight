@@ -63,7 +63,7 @@ public sealed class RestoreAnalysesHandlerTests
         var ports = new FakeRestoreAnalysesHandlerPorts
         {
             Found = new Outcome<List<AnalysisSymbol?>>.Failed(new IOException("unreadable")),
-            WhileLooking = () => AssemblyListing.CloseAll(d.AppState.Assemblies),
+            WhileLooking = () => d.AppState.Assemblies.CloseAll(),
         };
 
         await new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.Analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None);

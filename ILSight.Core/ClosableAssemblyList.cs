@@ -17,15 +17,15 @@ public sealed class ClosableAssemblyList
     public AssemblyList List { get; }
 
     /// <summary>Takes the item holding <paramref name="assembly"/> off the list (the assembly, or the package it was
-    /// read out of), as <see cref="AssemblyListing.CloseAssembly"/> does; one no longer listed is passed over.</summary>
+    /// read out of), as <see cref="AssemblyList.Close"/> does; one no longer listed is passed over.</summary>
     public void Close(LoadedAssembly assembly)
     {
-        AssemblyListing.CloseAssembly(List, assembly);
+        List.Close(assembly);
     }
 
-    /// <summary>Takes every assembly off the list, as <see cref="AssemblyListing.CloseAll"/> does.</summary>
+    /// <summary>Takes every assembly off the list, as <see cref="AssemblyList.CloseAll"/> does.</summary>
     public void CloseAll()
     {
-        AssemblyListing.CloseAll(List);
+        List.CloseAll();
     }
 }

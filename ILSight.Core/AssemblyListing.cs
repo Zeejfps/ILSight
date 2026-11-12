@@ -18,7 +18,7 @@ public static class AssemblyListing
     /// system starts loading in the background. A file that is missing or not a .NET assembly is listed
     /// all the same, as a <see cref="FailedAssembly"/>, and the assembly takes its place
     /// once the file loads. Once <paramref name="cancellationToken"/> is cancelled
-    /// the assembly is no longer listed, so cancelling before <see cref="CloseAll"/> keeps the opens of
+    /// the assembly is no longer listed, so cancelling before <see cref="AssemblyList.CloseAll"/> keeps the opens of
     /// several files out of the list that follows.</summary>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled,
     /// or the list was cleared while the file was read.</exception>
@@ -52,62 +52,6 @@ public static class AssemblyListing
         catch (AssemblyLoadException e)
         {
             return FindListedFailure(list, path) ?? LoadedAssemblies.CreateFailed(list, e);
-        }
-    }
-
-    /// <summary>Removes the item of the list holding <paramref name="assembly"/>: the assembly, or the
-    /// package it was read out of, whose assemblies are forgotten with it. Documents and nodes already
-    /// handed out stay valid.</summary>
-    internal static void CloseAssembly(AssemblyList list, LoadedAssembly assembly)
-    {
-        var item = assembly.ListedItem;
-        using (var held = list.State.Enter())
-        {
-            if (item is not FailedAssembly && !TryForgetKnown(held.Value, item))
-            {
-                return;
-            }
-
-            var isPackage = item is LoadedPackage;
-            list.Pdbs.Forget(item.FilePath, andUnder: isPackage);
-            list.TargetFrameworks.Forget(item.FilePath, andUnder: isPackage);
-            ForgetReadOutOf(held.Value, item);
-            var listed = held.Snapshot.Listed;
-            if (!listed.Contains(item))
-            {
-                return;
-            }
-
-            ChangeListed(held, listed.Remove(item));
-        }
-        list.ChangedHandlers?.Invoke();
-    }
-
-    private static bool TryForgetKnown(Dictionary<AssemblyPath, LoadedAssembly> byPath, LoadedAssembly assembly)
-    {
-        if (!byPath.TryGetValue(assembly.FilePath, out var known))
-        {
-            return false;
-        }
-
-        if (known != assembly)
-        {
-            return false;
-        }
-
-        byPath.Remove(assembly.FilePath);
-        return true;
-    }
-
-    private static void ForgetReadOutOf(Dictionary<AssemblyPath, LoadedAssembly> byPath, LoadedAssembly package)
-    {
-        var read = byPath
-            .Where(k => k.Value is LoadedModule module && module.Place is not null && module.Place.Container == package)
-            .Select(k => k.Key)
-            .ToList();
-        foreach (var path in read)
-        {
-            byPath.Remove(path);
         }
     }
 
@@ -175,24 +119,6 @@ public static class AssemblyListing
         return MetadataReaderOptions.None;
     }
 
-    /// <summary>Closes every assembly.</summary>
-    internal static void CloseAll(AssemblyList list)
-    {
-        using (var held = list.State.Enter())
-        {
-            var now = held.Snapshot;
-            held.Snapshot = now with { Generation = now.Generation + 1 };
-            if (now.Listed.IsEmpty && held.Value.Count == 0)
-            {
-                return;
-            }
-
-            held.Value.Clear();
-            ChangeListed(held, ImmutableArray<LoadedAssembly>.Empty);
-        }
-        list.ChangedHandlers?.Invoke();
-    }
-
     /// <summary>Reads the item of the list holding <paramref name="assembly"/> again from its file: the
     /// assembly, or the package it was read out of with the assemblies in it, each taking what is picked
     /// for it now. It is not listed until <see cref="TryReplace"/> puts it in the item's place. Reads the
@@ -223,12 +149,12 @@ public static class AssemblyListing
                 return false;
             }
 
-            if (!TryForgetKnown(held.Value, item))
+            if (!AssemblyList.TryForgetKnown(held.Value, item))
             {
                 return false;
             }
 
-            ForgetReadOutOf(held.Value, item);
+            AssemblyList.ForgetReadOutOf(held.Value, item);
             Know(held.Value, fresh);
             ChangeListed(held, listed.Replace(item, fresh));
         }
@@ -249,26 +175,6 @@ public static class AssemblyListing
         {
             byPath[assembly.FilePath] = assembly;
         }
-    }
-
-    /// <summary>Orders the open files by name, and those of one name by version.</summary>
-    public static void SortListed(AssemblyList list)
-    {
-        using (var held = list.State.Enter())
-        {
-            var listed = held.Snapshot.Listed;
-            var sorted = listed
-                .OrderBy(a => a.Name, NaturalStringComparer.Instance)
-                .ThenBy(a => a.Version)
-                .ToImmutableArray();
-            if (sorted.SequenceEqual(listed))
-            {
-                return;
-            }
-
-            ChangeListed(held, sorted);
-        }
-        list.ChangedHandlers?.Invoke();
     }
 
     /// <summary>Lists the assemblies <paramref name="assembly"/> references that can be found, as
