@@ -13,6 +13,7 @@ using ILSight.FrameworkPicking;
 using ILSight.AssemblyListKeeping;
 using ILSight.DisplayChoices;
 using ILSight.NuGet;
+using ILSight.Searching;
 using static ILSight.DocumentPanels;
 
 namespace ILSight;

@@ -1,4 +1,4 @@
-namespace ILSight;
+namespace ILSight.Searching;
 
 /// <summary>An order of the search results: what they are sorted by, and whether that runs backwards.</summary>
 public sealed record SearchOrder

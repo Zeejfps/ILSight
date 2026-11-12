@@ -15,6 +15,7 @@ using ILSight.AssemblyListKeeping;
 using ILSight.DisplayChoices;
 using ILSight.MetadataGridArea;
 using ILSight.NuGet;
+using ILSight.Searching;
 
 namespace ILSight;
 

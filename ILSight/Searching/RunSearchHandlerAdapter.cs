@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.Searching;
 
 /// <summary>Reaches the app's error reports, and searches the browse tree's assemblies off the UI thread, for
 /// <see cref="RunSearchHandler"/>: each batch is found on the thread pool and brought back on the UI thread; the first

@@ -14,6 +14,7 @@ using ILSight.FrameworkPicking;
 using ILSight.AssemblyListKeeping;
 using ILSight.DisplayChoices;
 using ILSight.NuGet;
+using ILSight.Searching;
 
 namespace ILSight;
 

@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using ILSight.Core;
+using ILSight.Searching;
 
 namespace ILSight.App.Tests;
 

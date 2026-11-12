@@ -1,4 +1,4 @@
-namespace ILSight;
+namespace ILSight.Searching;
 
 /// <summary>The runs of a search that may still deliver hits: asked for while the screen drew, until the edge starts
 /// them (<see cref="RunSearchHandler"/>), then running until they end. A new query cancels them all, and only a run

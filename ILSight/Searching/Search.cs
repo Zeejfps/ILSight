@@ -1,7 +1,7 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.Searching;
 
 /// <summary>The search panel's query, streamed results and selection. While the panel is open a
 /// query runs once typing pauses; assemblies opened later are searched and their hits added, and

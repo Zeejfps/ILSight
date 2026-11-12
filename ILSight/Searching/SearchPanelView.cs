@@ -9,7 +9,7 @@ using ILSight.Commanding;
 
 using static ILSight.ScreenLayout;
 
-namespace ILSight;
+namespace ILSight.Searching;
 
 internal static class SearchPanelView
 {

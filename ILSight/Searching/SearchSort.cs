@@ -1,4 +1,4 @@
-namespace ILSight;
+namespace ILSight.Searching;
 
 /// <summary>What the search results are sorted by; <see cref="Relevance"/> puts the closest matches first.</summary>
 public enum SearchSort

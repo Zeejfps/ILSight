@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.Searching;
 
 /// <summary>A run of a search <see cref="Searches.Update"/> asked for, for <see cref="RunSearchHandler"/> to run: the
 /// query, the assemblies it searches, and the work it runs as, which a new query cancels. Dropped, the search says it

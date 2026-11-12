@@ -1,7 +1,7 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.Searching;
 
 /// <summary>Running a <see cref="Search"/>: starting it once the query settled, taking in what it finds,
 /// and sorting and picking from what it found.</summary>

@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.Searching;
 
 /// <summary>Runs a search's run through <see cref="IPorts"/>, without holding up the screen, merging what it finds into
 /// the search's rows as it comes in, while no new query replaced it; when it fails, it is reported, unless a new query

@@ -10,6 +10,7 @@ using ILSight.FrameworkPicking;
 using ILSight.AssemblyListKeeping;
 using ILSight.MetadataGridArea;
 using ILSight.NuGet;
+using ILSight.Searching;
 using static ILSight.Settings;
 using static ILSight.ScreenLayout;
 

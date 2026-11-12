@@ -1,6 +1,6 @@
 using ILSight.Core;
 
-namespace ILSight;
+namespace ILSight.Searching;
 
 /// <summary>
 /// The order a search's results are in, and the order asked for. A header click asks for an order, which the
