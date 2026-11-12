@@ -80,6 +80,9 @@ dotnet_diagnostic.RL0103.severity = error
 dotnet_diagnostic.RL0105.severity = error
 dotnet_diagnostic.RL0104.severity = suggestion
 dotnet_diagnostic.RL0903.severity = suggestion
+dotnet_diagnostic.RL1301.severity = warning
+dotnet_diagnostic.RL1302.severity = warning
+dotnet_diagnostic.RL1303.severity = warning
 # R011's checks are suggestions while their precision is measured (RULES.md R011).
 dotnet_diagnostic.RL1101.severity = suggestion
 dotnet_diagnostic.RL1102.severity = suggestion
@@ -95,3 +98,7 @@ rulelab.test_code = true
 # composition root (AppRoot).
 [{ILSight/WorkflowRunner.cs,ILSight/AppCommand.cs,ILSight/ILSightApp.cs,ILSight/ILSightAppLauncher.cs,ILSight/AppRoot.cs,ILSight/AppFrames.cs,ILSight/AppFrames.Commands.cs}]
 rulelab.infrastructure = true
+
+# Decompiler fixtures: source the tests compile and read as input, laid out as the tests need (R013 doesn't apply).
+[ILSight.Tests/Fixtures/**.cs]
+rulelab.one_type_per_file = false

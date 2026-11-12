@@ -10,7 +10,7 @@ the evidence lives in `rules/<id>/README.md`.
 | Code | Rules that apply |
 |------|------------------|
 | Production code | All rules. |
-| Tests and test helpers | **R002, R003, R005, R007, R008, R010, R012** (except RL1001: test methods needn't take a token), and R009's ban on empty catches. These are what keep tests readable: no `!`, names that say what is tested, labelled test data, braces, honest states. **Not R001, R004 or R011.** A test is a composition root: it builds the code under test with real or fake infrastructure, may open databases, build DI containers, write output and catch exceptions directly. Fakes that implement a port are expected (they are the port's second adapter). |
+| Tests and test helpers | **R002, R003, R005, R007, R008, R010, R012, R013** (except RL1001: test methods needn't take a token), and R009's ban on empty catches. These are what keep tests readable: no `!`, names that say what is tested, labelled test data, braces, honest states, a test class found by its file name. **Not R001, R004 or R011.** A test is a composition root: it builds the code under test with real or fake infrastructure, may open databases, build DI containers, write output and catch exceptions directly. Fakes that implement a port are expected (they are the port's second adapter). |
 
 Test conventions:
 
@@ -65,19 +65,22 @@ The build checks what can be checked mechanically (`analyzers/`, wired in throug
 | R008 | `switch` on a union (RL0801), discarded `To*`/`With*` results (RL0802), `if` / `else if` chain over union cases (RL0803), discarded result union (RL0804), a `Status` / `State` / `Kind` enum next to nullable properties (RL0805), a case added from outside a union (RL0806) | whether nullable fields really depend on the status; whether a question every case answers or only some (and whether a default is harmless for a future case) |
 | R004 | vague type names (RL0401); suggestion while measured: a public field or collection the type changes in its own methods, unless a widget binds it by `ref` (RL0403) | classification; one-implementation interfaces (an analyzer can't see across projects); framework-facing data mixed with rules kept elsewhere; something depending on a framework-facing method having run; whether use cases share a step (one class) or not (a class each) |
 | R005 | positional records with 2+ values (RL0501) | rules spanning several values |
-| R001 | direct time / randomness / I/O, and the codebase's own services listed in `rulelab.ambient_types` (static, or reached through an object passed in), outside adapters, the composition root, tests and `rulelab.infrastructure` files (RL0101); a static class whose functions take the same port (RL0103); a port member whose signature is, or holds, infrastructure or a listed service (RL0105); suggestions while measured: a use case or adapter constructed outside the composition root (RL0102), another use case reached around the port: its port taken as a parameter or extended, or a constructor taking more than its port (RL0104) | an effect reached through an unlisted method of an object passed in; another feature's use case called as a static function over the state; whether a record of functions is standing in for a port; whether a function takes the whole state (and narrowing it bottom-up); a settings pass setting values on live objects; what lives per document or request; ports, adapters, what counts as a decision |
+| R001 | direct time / randomness / I/O, and the codebase's own services listed in `rulelab.ambient_types` (static, or reached through an object passed in), outside adapters (and types only adapters use: I/O code they share), the composition root, tests and `rulelab.infrastructure` files (RL0101); a static class whose functions take the same port (RL0103); a port member whose signature is, or holds, infrastructure or a listed service (RL0105); suggestions while measured: a use case or adapter constructed outside the composition root (RL0102), another use case reached around the port: its port taken as a parameter or extended, or a constructor taking more than its port (RL0104) | an effect reached through an unlisted method of an object passed in; another feature's use case called as a static function over the state; a decision inside I/O code adapters share; pure code that differs per kind injected or passed per call instead of on the kind; whether a record of functions is standing in for a port; whether a function takes the whole state (and narrowing it bottom-up); a settings pass setting values on live objects; what lives per document or request; ports, adapters, what counts as a decision |
 | R006 | – | all, including whether an input is read all-or-nothing or leniently |
 | R010 | async method without a token (RL1001), `_ =` fire-and-forget (RL1002), token not passed on (CA2016), blocking waits (VSTHRD002), `async void` (VSTHRD100), un-awaited tasks (VSTHRD110), sync calls in async code (VSTHRD103, CA1849); a job runner listed in `rulelab.ambient_types` started from a draw (RL0101); an I/O step called without what its state change returned (the compiler: CS1503 / CS7036) | parallel queries on one `DbContext`; moving async work out of sync-only callers; state the user must see in the frame of their input; work started from a draw by other means |
 | R009 | empty catch (RL0901), catch-all outside an edge (RL0902), `throw ex` (CA2200), throwing `Exception` (CA2201), discarded result union (RL0804); suggestion while measured: an adapter's catch that turns cancellation into a result (RL0903) | which failures are expected; specific catches in decision code; log-and-rethrow; a library object or deferred sequence leaving an adapter; cancellation turned into a result without a catch (an awaiter or continuation); whether a workflow's token is linked to everything that cancels it on purpose |
 | R011 | – (suggestions while measured: a loop doing a lower level's work between steps, RL1101; a condition written in mechanics between steps, RL1102) | whether a call goes up a level; what the levels are |
 | R012 | null checks written as property patterns, at the top of a pattern or on a member inside one (RL1201), calls that don't return `bool` inside a condition (RL1202) | – |
+| R013 | a second top-level type in a file (RL1301), a file named after none of its types (RL1302), a type written in two or more hand-written places (RL1303); generated code doesn't count | whether a type only one other type uses should be nested in it; how to split a class that was split across files (by what each part knows, R004) |
 
 To break a rule on purpose, suppress it with the reason written down:
 `#pragma warning disable RL0802 // Deliberate: demonstrates the discarded-result trap`, or on a member
 `[SuppressMessage("RuleLab.R001", "RL0101", Justification = "...")]`.
 
 Mark folders whose job is I/O (an Infrastructure project, startup wiring) with `rulelab.infrastructure = true` in
-`.editorconfig`, and test folders with `rulelab.test_code = true`.
+`.editorconfig`, and test folders with `rulelab.test_code = true`. Files whose layout is itself data (test fixtures a
+tool reads as source, scenario files that pair variants on purpose) opt out of one type per file with
+`rulelab.one_type_per_file = false` (R013).
 
 ---
 
@@ -115,6 +118,34 @@ Does **not** go through the port; use it directly:
 
 - **Pure code**: calculations, mapping, value validation. Call it as a static method or `new` it up. Never inject it.
 - **Values**: records, DTOs, per-call input. Pass them as method parameters.
+
+**Pure code that differs per kind is the kind's.** One use case serving several kinds that differ only in pure code
+(ILSight's `UserThemes` for colour and icon themes: each kind's name, file extension, reader and new-theme draft) takes
+the kind as a type parameter, and the kind's type declares that code as `static abstract` members. The port carries
+values (a file's text), not the kind's reading of it. Not a delegate the composition root injects (pure code is never
+injected), and not a handler each caller passes: a handler is for the caller's own policy (the name it gives a new
+theme, in the user's language; R011).
+
+```csharp
+public interface IThemeKind
+{
+    static abstract string Extension { get; }
+    static abstract ThemeFile Parse(string id, string text);
+    static abstract string ComposeDraft(string name, string parentId);
+}
+
+public sealed class UserThemes<TKind>(UserThemes<TKind>.IPorts ports)   // reads with TKind.Parse(id, text)
+    where TKind : IThemeKind
+```
+
+In testing (S22), the three forms behaved alike wired for production. With the draft passed by each caller and the
+reader behind the port (ILSight's form), the use case's test passed a draft of its own, as ILSight's tests do, and
+passed while the app's draft and reader disagreed (the shipped custom theme extended nothing); on the kind, the same
+test with only a fake port ran both and saw it. Injected, a colour use case wired with the icon kind's code compiled,
+listed none of the user's colour themes and wrote the new one with the icon extension; on the kind, the adapter and
+the use case must name the same kind (`DEMO_CS1503`). Where it hurts: the kind must be a type known when compiling. A
+kind chosen at run time can't reach static members through the interface (`DEMO_CS8926`); there it is a value, a union
+whose cases answer (R008; not tested).
 
 **Where an effect comes from doesn't change whose it is.** An effect the code causes (I/O, time, randomness, logging,
 a job runner or other shared state such as an error log) is its dependency however it's reached: a static, a method on
@@ -287,6 +318,17 @@ one's port, extends it, or takes something beside its own.
   propagates (R009). A library that throws lazily is translated where its values are read, and cancellation is not a
   failure to translate (R009 "Adapters translate"). Calling another use case the composition root built, for a port
   member that asks for it, is translating too ("Where an effect comes from", S20).
+- **Adapters that share code.** Adapters that differ only in values (a folder, the kind's facts) are one adapter,
+  generic over the kind when the port is, built per kind by the composition root. Where they also differ in what they
+  do, the I/O they share is a type of its own that each adapter holds: infrastructure, like a library's I/O client
+  (point 2), used only by adapters, deciding nothing. Not a base adapter with a hook per kind: each port member is then
+  split between the base and a subclass, and the base's translation of failures doesn't cover a hook's I/O. In testing
+  (S23), ILSight's form (an abstract base adapter, a subclass per kind) and the shared type behaved alike, except that a
+  font the disk refused escaped the base form (its icon hook read it after the base's catch: `UnauthorizedAccessException`)
+  where the whole icon adapter reported the theme unreadable (R009); the shared type was tested alone against a
+  temporary folder, the base only through a subclass implementing its hooks (2 here, 5 in ILSight); a third kind that
+  differs only in facts is one more subclass in the base form and no new type in the other. RL0101 treats a type that
+  only adapters use (besides the root and tests) as theirs, so the I/O it does is not reported.
 - Several ports may share one adapter when they use the same infrastructure. Register each port to the shared instance:
 
   ```csharp
@@ -411,8 +453,10 @@ outside the composition root.
 - [ ] No call to the codebase's own services (job runners, error logs, caches), static or through an object passed in, in a class that makes decisions; they are listed in `rulelab.ambient_types`.
 - [ ] Port members are named after needs; their signatures carry values: no infrastructure types, and no types that hold one (the adapter keeps the library's objects).
 - [ ] Per-call data arrives through method parameters.
-- [ ] Pure collaborators are called directly, not injected.
+- [ ] Pure collaborators are called directly, not injected. Pure code that differs per kind is `static abstract` on the
+      kind's type (the use case's type parameter); a handler parameter only carries the caller's own policy.
 - [ ] Adapters contain no business branching.
+- [ ] Adapters that differ only in values are one adapter; I/O that adapters share is a type they hold, not a base adapter.
 
 ---
 
@@ -827,6 +871,8 @@ Work top to bottom and take the first match.
   went from 1 port to 3 (6 members) plus an adapter that forwards to the step.
 - **Knowledge shared by use cases lives on the type it's about.** Which status transitions are allowed belongs on `Order`, not repeated in each handler.
 - **Type count is not the goal.** Sorting a grab bag into well-named homes adds types; removing pass-through layers removes them. Both are right.
+- **Where a type's code lives is R013:** one type per file, and a class too big for one file is split here, by what each
+  part knows, not across files by topic with `partial`.
 - **A helper lives with the code that uses it.** When only one area calls it, it belongs to that area (knowledge in
   one place): when its last caller moves, it moves too, and a helper with no callers left is deleted. Left behind, it
   is the first place the next reader looks for that area's knowledge, and the wrong one. (A stated convention, not
@@ -1932,3 +1978,73 @@ if (!string.IsNullOrEmpty(nickname)) { ... }       // narrows: [NotNullWhen(fals
 - [ ] Null checks are `is null` / `is not null` (or `string.IsNullOrEmpty`), never `is { } x` or a property pattern on a nullable, at the top of a pattern or on a member inside one (`Member: null`, `Member: not null`, `Member: null or ""`).
 - [ ] Read-until-null loops read once at the top of each pass.
 - [ ] No call was hoisted above the check that guarded it (`a && Call()`, a later `else if`).
+
+---
+
+## R013: One type per file, named after it; `partial` only where a tool writes the other half
+
+**Rule.** Each file declares one top-level type and is named after it (`Order.cs`). Related types share a folder (and
+its namespace), not a file: a feature is a folder of one-type files. A type that only one other type uses, and nobody
+outside it names, is nested in it. A type is written in one place: `partial` only where a tool writes the other half (a
+source generator: `[GeneratedRegex]`, `[LibraryImport]`, a `JsonSerializerContext`, a UI framework's generator; a
+designer file). A class too big for one file is too big: split it into types by what each knows (R004), not into files
+by topic.
+
+**Why.** A call site names a type; the file name should say where it is, for a person and for an agent searching
+files. In ILSight, which grouped types into files by feature, 411 of its 757 top-level types have no file named after
+them (`SettingsFile.cs` holds 30), so finding one takes a search. A class split by topic hides what came from where:
+ILSight's `BrowseNodes`, one static class over 7 files, calls 22 of its 53 private members from a file other than the
+one declaring them, so "private" no longer means "in this file". With state, it hides the rules too: in testing, an
+assembly part closed tabs by editing the list that the tabs part keeps a rule about, and the shown tab silently became
+another one, then threw (S01).
+
+### How
+
+1. **One top-level type per file, named after it.** A generic type's file drops the parameters (`Result.cs`, or
+   `Result{T}.cs`); types that share a name and differ in arity (`Result` and `Result<T>`) share it. A file of top-level
+   statements holds nothing else.
+2. **Related types share a folder, not a file.** A feature is a folder (`Feed/`: `FeedJson.cs`, `PackageJson.cs`, ...)
+   whose namespace follows it.
+3. **Nest what only one type uses.** A type only one other type uses, and nobody outside it names, is nested in it,
+   private: a union's cases (R008), a use case's `IPorts` (R001), a helper record. That includes a format's wire DTOs
+   that only its reader uses, with their serializer context (S02). Types other code names (DTOs the app reads) get
+   files of their own.
+4. **A helper only the file uses and that can't be nested is a `file` type.** Extension methods need a top-level static
+   class (`DEMO_CS1109`): `file static class MoneyText` beside the type that uses it. Nothing outside the file can use it
+   (`DEMO_CS0103`), so nobody looks for it by name; the checks don't count it.
+   ```csharp
+   public sealed class Receipt                // Receipt.cs
+   {
+       private sealed record Line { ... }     // only the receipt uses it: nested, private
+   }
+
+   file static class MoneyText                // extension methods only this file uses
+   {
+       public static string ToCurrency(this decimal amount) { ... }
+   }
+   ```
+5. **`partial` only where a tool writes the other half.** One declaration by hand, the rest generated (a `.g.cs` file,
+   an `<auto-generated>` header, `[GeneratedCode]`). A type that contains a generated nested type is partial for the
+   same reason (`FeedJson` holding its `JsonSerializerContext`): still one declaration by hand.
+6. **A class too big for one file is split by what it knows**, not by topic into files: state with a rule becomes a type
+   that keeps it (S01's `Tabs`, whose list the assemblies code can no longer reach: `DEMO_CS0122`), and each group of
+   functions about one concept a static class named for it (R004). Merging the parts into one file is not the fix: in
+   S01 the merged class had the same bug; it only puts the rule on the same screen as the code that breaks it.
+
+**What it costs.** More files: S02's format of 8 DTOs, a reader and a context went from 1 file to 10 (or stayed 1, with
+the DTOs nested in the reader). An edit to one feature touches several files of one folder instead of one file (not
+measured). A union with many cases stays one file: its cases are nested (R008 S09's 24 cases; ILSight's `NodeSubject`).
+
+**Enforcement.** RL1301 reports a second top-level type in a file, RL1302 a file named after none of its types, RL1303
+a type declared in two or more hand-written places. Code a tool generated doesn't count. Files whose layout is itself
+data opt out of RL1301 and RL1302 with `rulelab.one_type_per_file = false` (the sandbox's scenario files, which pair
+variants on purpose; a decompiler's test fixtures, which tests read as source). Measured: on the sandbox 6 findings
+in 3 files, on ILSight 486 (22 of them in its decompiler fixtures), all real, no false alarms.
+
+### Checklist
+
+- [ ] Each file declares one top-level type and is named after it (types that differ only in arity share it).
+- [ ] Related types share a folder, not a file; a type only one other type uses is nested in it, private.
+- [ ] A helper only one file uses that can't be nested (extension methods) is a `file` type.
+- [ ] `partial` appears only where a tool writes the other half; no type is written by hand in two places.
+- [ ] A class too big for one file is split into types by what each knows (R004), not into files by topic.

@@ -10,13 +10,13 @@ rule's section there when you're unsure, or when you touch what it covers (EF pe
   UI, the frame edge before the draw and the commands the draw queues (the draw is not an edge). Only edges start
   work (and create its token, linked to whatever may cancel it on purpose), catch everything (R009) and build and
   wire use cases and adapters (R001's composition root). Mark their files `rulelab.infrastructure = true`.
-- **Tests** follow R002, R003, R005, R007, R008, R010, R012 (test methods needn't take a token) and R009's ban on empty
+- **Tests** follow R002, R003, R005, R007, R008, R010, R012, R013 (test methods needn't take a token) and R009's ban on empty
   catches; not the others. Name tests the way the codebase already does (one convention per codebase); a new codebase
   uses `Method_Scenario_Expected`. Assertion helpers carry `[DoesNotReturnIf(false)]` so they narrow nulls.
 
 ## R001: A decision-making class reaches the outside world through one port
 
-Build: RL0101 (time, randomness, I/O, listed services used directly), RL0103 (a static class whose functions take
+Build: RL0101 (time, randomness, I/O, listed services used directly, outside adapters and the types only they use), RL0103 (a static class whose functions take
 the same port), RL0105 (infrastructure, or a type holding it, in a port signature); suggestions while measured: RL0102
 (a use case or adapter constructed outside the composition root), RL0104 (another use case reached around the port).
 
@@ -46,7 +46,11 @@ the same port), RL0105 (infrastructure, or a type holding it, in a port signatur
   whose adapter calls the other use case, which the root built. Don't take its port, its effects or the use case
   itself beside your port: its decisions would run in your tests, and its changes would break them.
 - Pure code (calculations, mapping, validation) is called directly, never injected. Per-call data goes in method
-  parameters. If a calculation's only dependency is the time, take `now` as a parameter and have no port; a shared
+  parameters. **Pure code that differs per kind** (one use case for colour and icon themes: each kind's extension,
+  reader, draft) is `static abstract` on the kind's type, which the use case takes as a type parameter
+  (`UserThemes<TKind> where TKind : IThemeKind`, `TKind.Parse(id, text)`); the port carries values. Not injected, not
+  passed by each caller (a handler is for the caller's own policy, such as the name it gives a new theme): a test that
+  passes its own copy doesn't run the real one. If a calculation's only dependency is the time, take `now` as a parameter and have no port; a shared
   service that stamps the time (an error log) is a port member and reads its own clock.
 - **The composition root** (`Program.cs`, DI registration, or `AppRoot.Build` without a container) builds the state,
   use cases and adapters and chooses the adapters. It's an edge file; tests build the app through it with fakes.
@@ -62,6 +66,10 @@ the same port), RL0105 (infrastructure, or a type holding it, in a port signatur
 - **Adapters** (`<Class>Adapter`) implement the port with real infrastructure. No branching on business data; branching
   that translates the infrastructure (a 404 → `null`, a unique-key violation → "already exists") belongs there, and so
   does calling another use case the root built for a port member that asks for it.
+- **Adapters that share code:** ones that differ only in values (a folder, the kind's facts) are one adapter, generic
+  over the kind, built per kind by the root. Where they also differ in what they do, the I/O they share is a type of
+  its own each adapter holds (infrastructure: only adapters use it, it decides nothing), not a base adapter with hooks:
+  a hook's I/O falls outside the base's catch, and the shared code can't be tested without a subclass.
 - No port needed: adapters, decorators, the composition root (other rules still apply). Framework-created types
   (attributes, EF entities, JSON converters) take no dependencies; controllers and components stay thin and delegate.
 - Several port calls sharing a scope or transaction: return a handle (`Task<IOutboxBatch> OpenBatchAsync(...)`).
@@ -346,3 +354,20 @@ return `bool` in a condition).
   Reading before the loop and at the end of the body breaks on the first `continue`.
 - Don't hoist a call above what guards it: `if (cache.IsLoaded && cache.FindPrice(sku) is ...)` becomes a guard
   (`if (!cache.IsLoaded) { return ...; }`), then `var price = cache.FindPrice(sku);`. Hoisted blindly, it throws.
+
+## R013: One type per file, named after it; `partial` only where a tool writes the other half
+
+Build: RL1301 (a second top-level type in a file), RL1302 (a file named after none of its types), RL1303 (a type
+written in two or more hand-written places). Generated code doesn't count.
+
+- One top-level type per file, named after it (`Order.cs`; `Result` and `Result<T>` share `Result.cs`). Related types
+  share a folder and its namespace, not a file: a feature is a folder of one-type files.
+- A type only one other type uses, and nobody outside names, is nested in it, private (a union's cases, `IPorts`, a
+  helper record, the wire DTOs only a format's reader uses). A helper only this file uses that can't be nested
+  (extension methods need a top-level static class) is a `file` type.
+- `partial` only where a tool writes the other half (`[GeneratedRegex]`, `[LibraryImport]`, a `JsonSerializerContext`, a
+  UI generator, a designer file). Never to split a class you wrote: a class too big for one file is split into types by
+  what each knows (R004): the part with state and a rule becomes a type that keeps it. Merging the parts into one file
+  fixes nothing.
+- Files whose layout is itself data (scenario files pairing variants, test fixtures read as source) opt out of RL1301 /
+  RL1302 with `rulelab.one_type_per_file = false` in `.editorconfig`.
