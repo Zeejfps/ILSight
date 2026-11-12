@@ -5,9 +5,9 @@ namespace ILSight.Tests;
 public sealed class ILSpyLayoutTests
 {
     [Fact]
-    public void A_type_opens_with_ILSpys_comments_and_imports_its_namespace_instead_of_declaring_it()
+    public async Task A_type_opens_with_ILSpys_comments_and_imports_its_namespace_instead_of_declaring_it()
     {
-        var document = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
+        var document = await Trees.CalculatorDocumentAsync(DecompilationLanguage.CSharp);
 
         Assert.Equal("// " + Trees.TestAssembly.FullName, document.Lines[0].Text);
         Assert.Equal("// " + Trees.FixturesNamespace + ".Calculator<T>", document.Lines[1].Text);
@@ -16,24 +16,25 @@ public sealed class ILSpyLayoutTests
     }
 
     [Fact]
-    public void A_member_opens_with_the_assembly_and_its_declaring_type()
+    public async Task A_member_opens_with_the_assembly_and_its_declaring_type()
     {
         var assembly = Trees.TestAssembly;
 
-        var document = assembly.Calculator().Child("Add(T) : void").Decompile(DecompilationLanguage.CSharp);
+        var document = await assembly.CalculatorAsync().GetChildAsync("Add(T) : void").DecompileAsync(DecompilationLanguage.CSharp);
 
         Assert.Equal("// " + assembly.FullName, document.Lines[0].Text);
         Assert.Equal("// " + Trees.FixturesNamespace + ".Calculator<T>", document.Lines[1].Text);
     }
 
     [Fact]
-    public void A_constructor_shows_with_the_fields_it_initializes_and_a_field_shows_alone()
+    public async Task A_constructor_shows_with_the_fields_it_initializes_and_a_field_shows_alone()
     {
         var assembly = Trees.TestAssembly;
-        var calculator = assembly.Calculator();
+        var calculator = await assembly.CalculatorAsync();
 
-        var ctor = Documents.GetText(calculator.Children.Single(c => c.Text.StartsWith("Calculator()")).Decompile(DecompilationLanguage.CSharp));
-        var field = Documents.GetText(calculator.Child("_items : List<T>").Decompile(DecompilationLanguage.CSharp));
+        var members = await calculator.ListChildrenAsync();
+        var ctor = Documents.GetText(await members.Single(c => c.Text.StartsWith("Calculator()")).DecompileAsync(DecompilationLanguage.CSharp));
+        var field = Documents.GetText(await calculator.GetChildAsync("_items : List<T>").DecompileAsync(DecompilationLanguage.CSharp));
 
         Assert.Contains("_items = new List<T>()", ctor);
         Assert.Contains("public Calculator()", ctor);

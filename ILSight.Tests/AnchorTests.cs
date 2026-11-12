@@ -5,14 +5,14 @@ namespace ILSight.Tests;
 public sealed class AnchorTests
 {
     [Fact]
-    public void A_statement_is_found_again_in_the_methods_own_document_and_in_IL()
+    public async Task A_statement_is_found_again_in_the_methods_own_document_and_in_IL()
     {
-        var type = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
+        var type = await Trees.CalculatorDocumentAsync(DecompilationLanguage.CSharp);
         var line = type.LineContaining("Changed?.Invoke(this, EventArgs.Empty);");
 
         var anchor = Assert.NotNull(Documents.FindAnchorAt(type, line));
-        var method = Trees.TestAssembly.Calculator().Child("Add(T) : void").Decompile(DecompilationLanguage.CSharp);
-        var il = Trees.CalculatorDocument(DecompilationLanguage.IL);
+        var method = await Trees.TestAssembly.CalculatorAsync().GetChildAsync("Add(T) : void").DecompileAsync(DecompilationLanguage.CSharp);
+        var il = await Trees.CalculatorDocumentAsync(DecompilationLanguage.IL);
         var ilLine = Assert.NotNull(Documents.FindLine(il, anchor));
 
         Assert.Equal(CodeAnchorKind.Statement, anchor.Kind);
@@ -23,25 +23,27 @@ public sealed class AnchorTests
     }
 
     [Fact]
-    public void A_definition_is_found_again_in_either_language()
+    public async Task A_definition_is_found_again_in_either_language()
     {
-        var type = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
+        var type = await Trees.CalculatorDocumentAsync(DecompilationLanguage.CSharp);
         var line = type.LineContaining("public void Add(T item)");
 
         var anchor = Assert.NotNull(Documents.FindAnchorAt(type, line));
-        var il = Trees.CalculatorDocument(DecompilationLanguage.IL);
+        var il = await Trees.CalculatorDocumentAsync(DecompilationLanguage.IL);
 
         Assert.Equal(CodeAnchorKind.Definition, anchor.Kind);
         Assert.Equal(line, Documents.FindLine(type, anchor));
-        Assert.Equal(Documents.FindDefinitionLine(il, Trees.TestAssembly.Calculator().Child("Add(T) : void")), Documents.FindLine(il, anchor));
+        Assert.Equal(Documents.FindDefinitionLine(il, await Trees.TestAssembly.CalculatorAsync().GetChildAsync("Add(T) : void")), Documents.FindLine(il, anchor));
     }
 
     [CaseInsensitivePathsTheory]
     [InlineData("Changed?.Invoke(this, EventArgs.Empty);")]
     [InlineData("public void Add(T item)")]
-    public void An_anchor_finds_its_line_whatever_the_case_of_its_path(string text)
+#pragma warning disable RL0301 // A theory: its attribute derives from xUnit's TheoryAttribute, which RL0301 doesn't follow.
+    public async Task An_anchor_finds_its_line_whatever_the_case_of_its_path(string text)
+#pragma warning restore RL0301
     {
-        var type = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
+        var type = await Trees.CalculatorDocumentAsync(DecompilationLanguage.CSharp);
         var line = type.LineContaining(text);
         var anchor = Assert.NotNull(Documents.FindAnchorAt(type, line));
 
@@ -78,15 +80,15 @@ public sealed class AnchorTests
     }
 
     [Fact]
-    public void Anchors_looked_up_from_many_threads_at_once_all_find_their_lines()
+    public async Task Anchors_looked_up_from_many_threads_at_once_all_find_their_lines()
     {
-        var first = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
+        var first = await Trees.CalculatorDocumentAsync(DecompilationLanguage.CSharp);
         var lines = new[] { first.LineContaining("Changed?.Invoke(this, EventArgs.Empty);"), first.LineContaining("public void Add(T item)") };
         var anchors = lines.Select(l => Assert.NotNull(Documents.FindAnchorAt(first, l))).ToArray();
 
         for (var round = 0; round < 20; round++)
         {
-            var fresh = Trees.TestAssembly.Calculator().Decompile(DecompilationLanguage.CSharp);
+            var fresh = await Trees.TestAssembly.CalculatorAsync().DecompileAsync(DecompilationLanguage.CSharp);
             var found = new int?[64];
             Parallel.For(0, found.Length, i => found[i] = Documents.FindLine(fresh, anchors[i % anchors.Length]));
 
@@ -95,9 +97,9 @@ public sealed class AnchorTests
     }
 
     [Fact]
-    public void A_line_with_no_statement_or_definition_has_no_anchor()
+    public async Task A_line_with_no_statement_or_definition_has_no_anchor()
     {
-        var type = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
+        var type = await Trees.CalculatorDocumentAsync(DecompilationLanguage.CSharp);
         var brace = type.LineContaining("public void Add(T item)") + 1;
 
         Assert.Equal("{", type.Lines[brace].Text.Trim());
@@ -105,15 +107,15 @@ public sealed class AnchorTests
     }
 
     [Fact]
-    public void A_path_rebuilt_from_its_segments_names_the_same_node()
+    public async Task A_path_rebuilt_from_its_segments_names_the_same_node()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var path = assembly.Calculator().Child("Add(T) : void").Path;
+        var path = (await assembly.CalculatorAsync().GetChildAsync("Add(T) : void")).Path;
 
         var rebuilt = NodePath.From(path.FilePath, path.Steps.ToList());
 
         Assert.Equal(path, rebuilt);
-        Assert.Same(assembly.Calculator().Child("Add(T) : void"), list.FindNode(rebuilt));
+        Assert.Same(await assembly.CalculatorAsync().GetChildAsync("Add(T) : void"), await list.FindNodeAsync(rebuilt));
     }
 
     /// <summary>A test of what holds only where <see cref="AssemblyPath"/> ignores case; skipped elsewhere.</summary>

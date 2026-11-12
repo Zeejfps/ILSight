@@ -10,19 +10,19 @@ public sealed class ILSpyTreeTests
     }
 
     [Fact]
-    public void Nodes_are_named_as_ILSpys_tree_names_them()
+    public async Task Nodes_are_named_as_ILSpys_tree_names_them()
     {
         var assembly = Trees.TestAssembly;
-        var calculator = assembly.Calculator();
+        var calculator = await assembly.CalculatorAsync();
 
-        Assert.Equal(assembly.FilePath.Text, ILSpyTree.NameOf(assembly.Root));
-        Assert.Equal(Trees.FixturesNamespace, ILSpyTree.NameOf(assembly.Fixtures()));
+        Assert.Equal(assembly.FilePath.Text, ILSpyTree.NameOf(await assembly.ReadRootAsync()));
+        Assert.Equal(Trees.FixturesNamespace, ILSpyTree.NameOf(await assembly.FixturesAsync()));
         Assert.Equal(Trees.FixturesNamespace + ".Calculator`1", ILSpyTree.NameOf(calculator));
-        Assert.Equal(Trees.FixturesNamespace + ".Calculator`1+Mode", ILSpyTree.NameOf(calculator.Child("Mode")));
-        Assert.Equal("Field _items", ILSpyTree.NameOf(calculator.Child("_items : List<T>")));
-        Assert.Equal("Event Changed", ILSpyTree.NameOf(calculator.Child("Changed : EventHandler?")));
-        Assert.StartsWith("Method Add(", ILSpyTree.NameOf(calculator.Child("Add(T) : void")));
-        Assert.StartsWith("Property Count", ILSpyTree.NameOf(calculator.Child("Count : int")));
+        Assert.Equal(Trees.FixturesNamespace + ".Calculator`1+Mode", ILSpyTree.NameOf(await calculator.GetChildAsync("Mode")));
+        Assert.Equal("Field _items", ILSpyTree.NameOf(await calculator.GetChildAsync("_items : List<T>")));
+        Assert.Equal("Event Changed", ILSpyTree.NameOf(await calculator.GetChildAsync("Changed : EventHandler?")));
+        Assert.StartsWith("Method Add(", ILSpyTree.NameOf(await calculator.GetChildAsync("Add(T) : void")));
+        Assert.StartsWith("Property Count", ILSpyTree.NameOf(await calculator.GetChildAsync("Count : int")));
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public sealed class ILSpyTreeTests
     {
         var (list, assembly) = Trees.OpenTestAssembly();
 
-        foreach (var node in assembly.Calculator().Children.Prepend(assembly.Calculator()))
+        foreach (var node in (await assembly.CalculatorAsync().ListChildrenAsync()).Prepend(await assembly.CalculatorAsync()))
         {
             var path = ILSpyTree.PathOf(node);
             if (path is null)
@@ -46,7 +46,7 @@ public sealed class ILSpyTreeTests
     public async Task A_bookmark_without_a_tree_path_is_found_by_its_token()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var calculator = assembly.Calculator();
+        var calculator = await assembly.CalculatorAsync();
         var definedToken = calculator.Token;
         Assert.NotNull(definedToken);
         var token = (uint)definedToken.Value;
@@ -62,7 +62,7 @@ public sealed class ILSpyTreeTests
     public async Task A_token_that_names_an_entity_of_another_name_finds_nothing()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var definedToken = assembly.Calculator().Token;
+        var definedToken = (await assembly.CalculatorAsync()).Token;
         Assert.NotNull(definedToken);
         var token = (uint)definedToken.Value;
 
@@ -71,11 +71,11 @@ public sealed class ILSpyTreeTests
     }
 
     [Fact]
-    public void A_node_and_its_document_keep_the_names_ILSpy_records_a_bookmark_by()
+    public async Task A_node_and_its_document_keep_the_names_ILSpy_records_a_bookmark_by()
     {
         var assembly = Trees.TestAssembly;
-        var calculator = assembly.Calculator();
-        var document = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
+        var calculator = await assembly.CalculatorAsync();
+        var document = await Trees.CalculatorDocumentAsync(DecompilationLanguage.CSharp);
         var anchor = Documents.FindAnchorAt(document, document.LineContaining("Changed?.Invoke(this, EventArgs.Empty);"));
         Assert.NotNull(anchor);
 

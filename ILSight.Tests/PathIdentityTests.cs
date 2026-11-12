@@ -17,84 +17,88 @@ public sealed class PathIdentityTests : IDisposable
         _temp.Dispose();
     }
 
-    private static BrowseNode Root(string path)
+    private static async Task<BrowseNode> RootAsync(string path)
     {
-        return new AssemblyList { Runtime = TestRuntime.Installed }.Open(path).Root;
+        return await new AssemblyList { Runtime = TestRuntime.Installed }.Open(path).ReadRootAsync();
     }
 
     [Fact]
-    public void Overloads_told_apart_only_by_the_namespace_of_a_parameter_type_are_each_found_again()
+    public async Task Overloads_told_apart_only_by_the_namespace_of_a_parameter_type_are_each_found_again()
     {
-        var overloads = Root(Trees.PathsBeforePath).Child(Namespace, "Overloads").Children
+        var overloads = (await RootAsync(Trees.PathsBeforePath).GetChildAsync(Namespace, "Overloads").ListChildrenAsync())
             .Where(static c => c.Text.StartsWith("Take(", StringComparison.Ordinal))
             .ToArray();
 
-        AssertSameLabelAndEachFoundAgain(Trees.PathsBeforePath, overloads);
+        await AssertSameLabelAndEachFoundAgainAsync(Trees.PathsBeforePath, overloads);
     }
 
     [Fact]
-    public void Types_of_one_name_used_from_two_namespaces_are_each_found_again()
+    public async Task Types_of_one_name_used_from_two_namespaces_are_each_found_again()
     {
-        var widgets = Root(Trees.PathsBeforePath).Child("References", "PathsLibrary", "Referenced types").Children
+        var widgets = (await RootAsync(Trees.PathsBeforePath).GetChildAsync("References", "PathsLibrary", "Referenced types").ListChildrenAsync())
             .Where(static c => c.Text == "Widget")
             .ToArray();
 
-        AssertSameLabelAndEachFoundAgain(Trees.PathsBeforePath, widgets);
+        await AssertSameLabelAndEachFoundAgainAsync(Trees.PathsBeforePath, widgets);
     }
 
     [Fact]
-    public void Methods_of_one_name_two_types_import_from_a_module_are_each_found_again()
+    public async Task Methods_of_one_name_two_types_import_from_a_module_are_each_found_again()
     {
-        var imports = Root(Trees.PathsBeforePath).Child("References", "paths-native").Children
+        var imports = (await RootAsync(Trees.PathsBeforePath).GetChildAsync("References", "paths-native").ListChildrenAsync())
             .Where(static c => c.Text.StartsWith("Answer(", StringComparison.Ordinal))
             .ToArray();
 
-        AssertSameLabelAndEachFoundAgain(Trees.PathsBeforePath, imports);
+        await AssertSameLabelAndEachFoundAgainAsync(Trees.PathsBeforePath, imports);
     }
 
     [Fact]
-    public void An_event_and_its_backing_field_are_each_found_again()
+    public async Task An_event_and_its_backing_field_are_each_found_again()
     {
-        var changed = Root(Trees.PathsBeforePath).Child(Namespace, "Notifier").Children
+        var changed = (await RootAsync(Trees.PathsBeforePath).GetChildAsync(Namespace, "Notifier").ListChildrenAsync())
             .Where(static c => c.Text.StartsWith("Changed", StringComparison.Ordinal))
             .ToArray();
 
-        AssertSameLabelAndEachFoundAgain(Trees.PathsBeforePath, changed);
+        await AssertSameLabelAndEachFoundAgainAsync(Trees.PathsBeforePath, changed);
         Assert.Equal([MemberShape.Field, MemberShape.Event], changed.Select(static c => c.MemberShape).Order());
     }
 
     [Fact]
-    public void Two_debug_directory_entries_of_one_type_are_each_found_again()
+    public async Task Two_debug_directory_entries_of_one_type_are_each_found_again()
     {
         var path = _temp.Copy(Trees.PathsBeforePath, "PathsSample.dll");
         RetypeDebugEntry(path, DebugDirectoryEntryType.PdbChecksum, DebugDirectoryEntryType.CodeView);
-        var entries = Root(path).Child("Metadata", "Debug Directory").Children
+        var entries = (await RootAsync(path).GetChildAsync("Metadata", "Debug Directory").ListChildrenAsync())
             .Where(static c => c.Text == nameof(DebugDirectoryEntryType.CodeView))
             .ToArray();
 
-        AssertSameLabelAndEachFoundAgain(path, entries);
+        await AssertSameLabelAndEachFoundAgainAsync(path, entries);
     }
 
     [Fact]
-    public void A_place_is_found_again_after_a_rebuild_changes_its_label_or_kind()
+    public async Task A_place_is_found_again_after_a_rebuild_changes_its_label_or_kind()
     {
         var path = _temp.Copy(Trees.PathsBeforePath, "PathsSample.dll");
-        var before = Root(path);
-        var ns = before.Child(Namespace);
-        var box = ns.Child("Box<T>");
+        var before = await RootAsync(path);
+        var ns = await before.GetChildAsync(Namespace);
+        var box = await ns.GetChildAsync("Box<T>");
         var places = new[]
         {
             box,
-            box.Children.Single(static c => c.Text.StartsWith("Put(", StringComparison.Ordinal)),
-            ns.Child("Shape"),
-            ns.Child("Limits").Children.Single(static c => c.Text.StartsWith("Max", StringComparison.Ordinal)),
-            before.Child("Metadata", "Tables").Children.Single(static c => c.Text.StartsWith("02 TypeDef", StringComparison.Ordinal)),
+            (await box.ListChildrenAsync()).Single(static c => c.Text.StartsWith("Put(", StringComparison.Ordinal)),
+            await ns.GetChildAsync("Shape"),
+            (await ns.GetChildAsync("Limits").ListChildrenAsync()).Single(static c => c.Text.StartsWith("Max", StringComparison.Ordinal)),
+            (await before.GetChildAsync("Metadata", "Tables").ListChildrenAsync()).Single(static c => c.Text.StartsWith("02 TypeDef", StringComparison.Ordinal)),
         };
         File.Copy(Trees.PathsAfterPath, path, overwrite: true);
 
         var after = new AssemblyList { Runtime = TestRuntime.Installed };
         after.Open(path);
-        var found = places.Select(p => after.FindNode(p.Path)).ToArray();
+        var found = new List<BrowseNode?>();
+        foreach (var place in places)
+        {
+            found.Add(await after.FindNodeAsync(place.Path));
+        }
 
         Assert.All(found, Assert.NotNull);
         var foundNodes = found.OfType<BrowseNode>().ToArray();
@@ -106,13 +110,13 @@ public sealed class PathIdentityTests : IDisposable
     }
 
     [Fact]
-    public void A_node_of_a_rebuilt_file_is_the_counterpart_of_the_node_it_was_before()
+    public async Task A_node_of_a_rebuilt_file_is_the_counterpart_of_the_node_it_was_before()
     {
         var path = _temp.Copy(Trees.PathsBeforePath, "PathsSample.dll");
-        var shape = Root(path).Child(Namespace, "Shape");
+        var shape = await RootAsync(path).GetChildAsync(Namespace, "Shape");
         File.Copy(Trees.PathsAfterPath, path, overwrite: true);
-        var ns = Root(path).Child(Namespace);
-        ns.EnsureChildren();
+        var ns = await RootAsync(path).GetChildAsync(Namespace);
+        await ns.EnsureChildrenAsync();
 
         var counterpart = TestSession.Shared.FindLoadedChildLike(ns, shape);
 
@@ -121,16 +125,17 @@ public sealed class PathIdentityTests : IDisposable
     }
 
     [Fact]
-    public void A_place_in_a_package_is_found_again_when_its_folders_are_merged_otherwise()
+    public async Task A_place_in_a_package_is_found_again_when_its_folders_are_merged_otherwise()
     {
         var path = _temp.Write("Sample.nupkg", []);
         WritePackage(path, withNotes: false);
-        var lib = Root(path).Child("lib/net10.0");
-        var shape = lib.Children.Single(static c => c.Subject is NodeSubject.Module).Child(Namespace, "Shape");
+        var lib = await RootAsync(path).GetChildAsync("lib/net10.0");
+        var modules = await lib.ListChildrenAsync();
+        var shape = await modules.Single(static c => c.Subject is NodeSubject.Module).GetChildAsync(Namespace, "Shape");
         WritePackage(path, withNotes: true);
 
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var found = new[] { list.FindNode(lib.Path), list.FindNode(shape.Path) };
+        var found = new[] { await list.FindNodeAsync(lib.Path), await list.FindNodeAsync(shape.Path) };
 
         Assert.Equal(["net10.0", "Shape"], found.Select(static f => f?.Text));
         Assert.Equal("lib", found[0]?.Parent?.Text);
@@ -138,7 +143,7 @@ public sealed class PathIdentityTests : IDisposable
 
     /// <summary>Asserts <paramref name="nodes"/> are two nodes of one label, named apart, and each found
     /// again in another list that opens the file at <paramref name="path"/>.</summary>
-    private static void AssertSameLabelAndEachFoundAgain(string path, BrowseNode[] nodes)
+    private static async Task AssertSameLabelAndEachFoundAgainAsync(string path, BrowseNode[] nodes)
     {
         Assert.Equal(2, nodes.Length);
         Assert.Equal(nodes[0].Text, nodes[1].Text);
@@ -146,7 +151,11 @@ public sealed class PathIdentityTests : IDisposable
         var reopened = new AssemblyList { Runtime = TestRuntime.Installed };
         reopened.Open(path);
 
-        var found = nodes.Select(n => reopened.FindNode(n.Path)).ToArray();
+        var found = new List<BrowseNode?>();
+        foreach (var node in nodes)
+        {
+            found.Add(await reopened.FindNodeAsync(node.Path));
+        }
 
         Assert.All(found, Assert.NotNull);
         Assert.NotSame(found[0], found[1]);

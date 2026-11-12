@@ -9,12 +9,18 @@ public sealed class DiagramTests : IDisposable
 {
     private const string FixturesNamespace = "ILSight.Tests.Fixtures";
 
-    private static readonly Lazy<DiagramModel> s_model = new(() => ClassDiagrams.BuildModel(Trees.TestAssembly, MainOf(Trees.TestAssembly), null, CancellationToken.None));
+    private static readonly SharedRead<DiagramModel> s_model = new(BuildModelAsync);
+
+    private static async Task<DiagramModel> BuildModelAsync()
+    {
+        var main = await MainOfAsync(Trees.TestAssembly);
+        return ClassDiagrams.BuildModel(Trees.TestAssembly, main, null, CancellationToken.None);
+    }
 
     /// <summary>The main module of <paramref name="module"/>'s type system, as read.</summary>
-    private static MetadataModule MainOf(LoadedModule module)
+    private static async Task<MetadataModule> MainOfAsync(LoadedModule module)
     {
-        var read = TestWaits.Wait(() => LoadedAssemblies.ReadTypeSystemAsync(module, CancellationToken.None));
+        var read = await LoadedAssemblies.ReadTypeSystemAsync(module, CancellationToken.None);
         return Assert.IsType<TypeSystemRead.Read>(read).TypeSystem.MainModule;
     }
 
@@ -25,11 +31,15 @@ public sealed class DiagramTests : IDisposable
         _temp.Dispose();
     }
 
-    private static Dictionary<string, DiagramType> Fixtures => s_model.Value.TypesByNamespace[FixturesNamespace];
-
-    private static DiagramType TypeNamed(string id)
+    private static async Task<Dictionary<string, DiagramType>> FixturesAsync()
     {
-        return Fixtures[id];
+        var model = await s_model.ReadAsync();
+        return model.TypesByNamespace[FixturesNamespace];
+    }
+
+    private static async Task<DiagramType> TypeNamedAsync(string id)
+    {
+        return (await FixturesAsync())[id];
     }
 
     [Fact]
@@ -50,9 +60,9 @@ public sealed class DiagramTests : IDisposable
     }
 
     [Fact]
-    public void A_generic_class_is_drawn_with_its_members_and_named_with_its_type_parameters()
+    public async Task A_generic_class_is_drawn_with_its_members_and_named_with_its_type_parameters()
     {
-        var calculator = TypeNamed("Calculator");
+        var calculator = await TypeNamedAsync("Calculator");
 
         Assert.Equal("Calculator❰T❱", calculator.Name);
         Assert.StartsWith("class Calculator {", calculator.Body);
@@ -65,10 +75,10 @@ public sealed class DiagramTests : IDisposable
     }
 
     [Fact]
-    public void An_enum_lists_its_values_and_an_interface_is_annotated()
+    public async Task An_enum_lists_its_values_and_an_interface_is_annotated()
     {
-        var mode = Fixtures.Values.Single(t => t.Body.Contains("Precise"));
-        var shape = TypeNamed("IShape");
+        var mode = (await FixturesAsync()).Values.Single(t => t.Body.Contains("Precise"));
+        var shape = await TypeNamedAsync("IShape");
 
         Assert.Contains("<<Enumeration>>\n    Fast\n    Slow\n    Precise", mode.Body);
         Assert.Contains("<<Interface>>", shape.Body);
@@ -76,20 +86,20 @@ public sealed class DiagramTests : IDisposable
     }
 
     [Fact]
-    public void The_xml_documentation_of_types_and_members_is_carried_as_plain_text()
+    public async Task The_xml_documentation_of_types_and_members_is_carried_as_plain_text()
     {
-        var calculator = TypeNamed("Calculator");
+        var calculator = await TypeNamedAsync("Calculator");
 
         Assert.NotNull(calculator.XmlDocs);
         Assert.Equal("How many items were added.", calculator.XmlDocs["Count"]);
         Assert.StartsWith("Adds an item and raises [ILSight.Tests.Fixtures.Calculator`1.Changed].", calculator.XmlDocs["Add"]);
-        Assert.Equal("The space the shape covers.", TypeNamed("IShape").XmlDocs?["Area"]);
+        Assert.Equal("The space the shape covers.", (await TypeNamedAsync("IShape")).XmlDocs?["Area"]);
     }
 
     [Fact]
-    public void Types_outside_the_assembly_that_its_types_derive_from_are_named_as_outside_references()
+    public async Task Types_outside_the_assembly_that_its_types_derive_from_are_named_as_outside_references()
     {
-        var references = s_model.Value.OutsideReferences;
+        var references = (await s_model.ReadAsync()).OutsideReferences;
 
         Assert.Equal("System.IDisposable", references["System_IDisposable"]);
         Assert.Equal("System.IProgress❰T❱", references["System_IProgress_T"]);
@@ -106,11 +116,11 @@ public sealed class DiagramTests : IDisposable
     }
 
     [Fact]
-    public void Progress_counts_up_to_every_type()
+    public async Task Progress_counts_up_to_every_type()
     {
         var progress = new RecordedProgress();
 
-        ClassDiagrams.BuildModel(Trees.TestAssembly, MainOf(Trees.TestAssembly), progress, CancellationToken.None);
+        ClassDiagrams.BuildModel(Trees.TestAssembly, await MainOfAsync(Trees.TestAssembly), progress, CancellationToken.None);
 
         var reports = progress.Reports;
         Assert.Equal(1f, reports[^1].Fraction);

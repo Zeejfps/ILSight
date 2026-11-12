@@ -7,8 +7,8 @@ internal static class Trees
     public const string FixturesNamespace = "ILSight.Tests.Fixtures";
 
     private static readonly Lazy<LoadedModule> s_testAssembly = new(() => new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(TestAssemblyPath));
-    private static readonly Lazy<DecompiledDocument> s_calculatorCSharp = new(() => TestAssembly.Calculator().Decompile(DecompilationLanguage.CSharp));
-    private static readonly Lazy<DecompiledDocument> s_calculatorIL = new(() => TestAssembly.Calculator().Decompile(DecompilationLanguage.IL));
+    private static readonly SharedRead<DecompiledDocument> s_calculatorCSharp = new(() => TestAssembly.CalculatorAsync().DecompileAsync(DecompilationLanguage.CSharp));
+    private static readonly SharedRead<DecompiledDocument> s_calculatorIL = new(() => TestAssembly.CalculatorAsync().DecompileAsync(DecompilationLanguage.IL));
 
     public static string TestAssemblyPath => typeof(Trees).Assembly.Location;
 
@@ -53,24 +53,24 @@ internal static class Trees
     /// <see cref="OpenTestAssembly"/>.</summary>
     public static LoadedModule TestAssembly => s_testAssembly.Value;
 
-    public static DecompiledDocument CalculatorDocument(DecompilationLanguage language)
+    public static Task<DecompiledDocument> CalculatorDocumentAsync(DecompilationLanguage language)
     {
         return language switch
         {
-            DecompilationLanguage.CSharp => s_calculatorCSharp.Value,
-            DecompilationLanguage.IL => s_calculatorIL.Value,
+            DecompilationLanguage.CSharp => s_calculatorCSharp.ReadAsync(),
+            DecompilationLanguage.IL => s_calculatorIL.ReadAsync(),
             _ => throw new ArgumentOutOfRangeException(nameof(language)),
         };
     }
 
-    public static BrowseNode Fixtures(this LoadedAssembly assembly)
+    public static async Task<BrowseNode> FixturesAsync(this LoadedAssembly assembly)
     {
-        return assembly.Root.Child(FixturesNamespace);
+        return await assembly.ReadRootAsync().GetChildAsync(FixturesNamespace);
     }
 
-    public static BrowseNode Calculator(this LoadedAssembly assembly)
+    public static async Task<BrowseNode> CalculatorAsync(this LoadedAssembly assembly)
     {
-        return assembly.Fixtures().Child("Calculator<T>");
+        return await assembly.FixturesAsync().GetChildAsync("Calculator<T>");
     }
 
     public static (AssemblyList List, LoadedModule Assembly) OpenTestAssembly()

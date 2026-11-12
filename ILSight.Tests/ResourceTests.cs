@@ -7,9 +7,9 @@ namespace ILSight.Tests;
 
 public sealed class ResourceTests
 {
-    private static BrowseNode Resources(LoadedAssembly assembly)
+    private static async Task<BrowseNode> ResourcesAsync(LoadedAssembly assembly)
     {
-        return assembly.Root.Child("Resources");
+        return await assembly.ReadRootAsync().GetChildAsync("Resources");
     }
 
     private static byte[] Fixture(string name)
@@ -78,12 +78,12 @@ public sealed class ResourceTests
     }
 
     [Fact]
-    public void An_svg_resource_shows_as_a_picture()
+    public async Task An_svg_resource_shows_as_a_picture()
     {
-        var svg = Resources(Trees.TestAssembly).Child("shape.svg");
+        var svg = await ResourcesAsync(Trees.TestAssembly).GetChildAsync("shape.svg");
 
         Assert.True(svg.IsImage);
-        Assert.Equal("SVG", Assert.IsType<NodeContent.Picture>(svg.Content()).Image.Format);
+        Assert.Equal("SVG", Assert.IsType<NodeContent.Picture>(await svg.ReadContentAsync()).Image.Format);
     }
 
     [Fact]
@@ -120,31 +120,31 @@ public sealed class ResourceTests
     }
 
     [Fact]
-    public void Pictures_show_as_pictures_and_the_rest_as_documents()
+    public async Task Pictures_show_as_pictures_and_the_rest_as_documents()
     {
         var assembly = Trees.TestAssembly;
-        var resources = Resources(assembly);
+        var resources = await ResourcesAsync(assembly);
 
-        Assert.True(resources.Child("logo.png").IsImage);
-        Assert.IsType<NodeContent.Picture>(resources.Child("red.gif").Content());
-        Assert.False(resources.Child("red.gif").IsCode);
-        Assert.IsType<NodeContent.Code>(resources.Child("sample.xml").Content());
-        Assert.True(resources.Child("sample.xml").IsCode);
-        Assert.IsType<NodeSubject.ResourceContainer>(resources.Child("Mixed.resources").Subject);
-        Assert.All(resources.Children, c => Assert.True(c.HasResource));
+        Assert.True((await resources.GetChildAsync("logo.png")).IsImage);
+        Assert.IsType<NodeContent.Picture>(await resources.GetChildAsync("red.gif").ReadContentAsync());
+        Assert.False((await resources.GetChildAsync("red.gif")).IsCode);
+        Assert.IsType<NodeContent.Code>(await resources.GetChildAsync("sample.xml").ReadContentAsync());
+        Assert.True((await resources.GetChildAsync("sample.xml")).IsCode);
+        Assert.IsType<NodeSubject.ResourceContainer>((await resources.GetChildAsync("Mixed.resources")).Subject);
+        Assert.All(await resources.ListChildrenAsync(), c => Assert.True(c.HasResource));
 
-        var image = Assert.IsType<NodeContent.Picture>(resources.Child("logo.png").Content()).Image;
+        var image = Assert.IsType<NodeContent.Picture>(await resources.GetChildAsync("logo.png").ReadContentAsync()).Image;
         Assert.Equal(Expected, image.Rgba);
-        Assert.Equal(Fixture("logo.png"), BrowseNodes.ReadResource(resources.Child("logo.png")));
+        Assert.Equal(Fixture("logo.png"), BrowseNodes.ReadResource(await resources.GetChildAsync("logo.png")));
     }
 
     [Fact]
-    public void A_picture_that_cannot_be_read_says_so()
+    public async Task A_picture_that_cannot_be_read_says_so()
     {
         var assembly = Trees.TestAssembly;
-        var broken = Resources(assembly).Child("broken.png");
+        var broken = await ResourcesAsync(assembly).GetChildAsync("broken.png");
 
-        var document = Assert.IsType<NodeContent.Code>(broken.Content(DecompilationLanguage.IL)).Document;
+        var document = Assert.IsType<NodeContent.Code>(await broken.ReadContentAsync(DecompilationLanguage.IL)).Document;
 
         Assert.False(broken.IsCode);
         Assert.Equal("// This is no PNG, JPEG, BMP, GIF, ICO, CUR or SVG picture.", document.Lines[0].Text);
@@ -153,11 +153,11 @@ public sealed class ResourceTests
     }
 
     [Fact]
-    public void Xml_is_colored_as_markup()
+    public async Task Xml_is_colored_as_markup()
     {
         var assembly = Trees.TestAssembly;
 
-        var document = Resources(assembly).Child("sample.xml").Decompile(DecompilationLanguage.CSharp);
+        var document = await ResourcesAsync(assembly).GetChildAsync("sample.xml").DecompileAsync(DecompilationLanguage.CSharp);
         var spans = document.SpansOf().ToList();
 
         Assert.StartsWith("<?xml version=\"1.0\"?>", Documents.GetText(document));
@@ -169,11 +169,11 @@ public sealed class ResourceTests
     }
 
     [Fact]
-    public void Json_is_colored_by_what_each_token_is()
+    public async Task Json_is_colored_by_what_each_token_is()
     {
         var assembly = Trees.TestAssembly;
 
-        var spans = Resources(assembly).Child("data.json").Decompile(DecompilationLanguage.CSharp).SpansOf().Select(s => (s.Text, s.Span.Kind)).ToList();
+        var spans = (await ResourcesAsync(assembly).GetChildAsync("data.json").DecompileAsync(DecompilationLanguage.CSharp)).SpansOf().Select(s => (s.Text, s.Span.Kind)).ToList();
 
         Assert.Contains(("\"name\"", SpanKind.Field), spans);
         Assert.Contains(("\"fixture\"", SpanKind.String), spans);
@@ -182,23 +182,23 @@ public sealed class ResourceTests
     }
 
     [Fact]
-    public void Binary_resources_show_as_a_hex_dump()
+    public async Task Binary_resources_show_as_a_hex_dump()
     {
         var assembly = Trees.TestAssembly;
 
-        var text = Documents.GetText(Resources(assembly).Child("blob.bin").Decompile(DecompilationLanguage.CSharp));
+        var text = Documents.GetText(await ResourcesAsync(assembly).GetChildAsync("blob.bin").DecompileAsync(DecompilationLanguage.CSharp));
 
         Assert.Contains("blob.bin (Embedded, 6 bytes)", text);
         Assert.Contains("00 01 02 03 FF FE", text);
     }
 
     [Fact]
-    public void A_resources_file_lists_its_entries_in_a_grid_and_its_byte_entries_as_nodes()
+    public async Task A_resources_file_lists_its_entries_in_a_grid_and_its_byte_entries_as_nodes()
     {
         var assembly = Trees.TestAssembly;
-        var file = Resources(assembly).Child("Mixed.resources");
+        var file = await ResourcesAsync(assembly).GetChildAsync("Mixed.resources");
 
-        var grid = Assert.IsType<NodeContent.Table>(file.Content()).Grid;
+        var grid = Assert.IsType<NodeContent.Table>(await file.ReadContentAsync()).Grid;
         var rows = Enumerable.Range(0, grid.RowCount).Select(r => (MetadataGrids.GetText(grid, r, 0), MetadataGrids.GetText(grid, r, 1), MetadataGrids.GetText(grid, r, 2))).ToList();
 
         Assert.Equal(["Name", "Value", "Type"], grid.Columns.Select(c => c.Name));
@@ -214,47 +214,47 @@ public sealed class ResourceTests
         Assert.Equal(("Hello", 0), MetadataGrids.GetLines(grid, 1, 1));
         Assert.False(grid.HasDetails);
         Assert.Null(MetadataGrids.FindTooltip(grid, 1, 1));
-        Assert.Equal([("Notes.xml", false), ("Picture.png", true)], file.Children.Select(static c => (c.Text, c.IsImage)));
-        Assert.Equal(Expected, Assert.IsType<NodeContent.Picture>(file.Child("Picture.png").Content()).Image.Rgba);
-        Assert.Contains(("root", SpanKind.Keyword), file.Child("Notes.xml").Decompile(DecompilationLanguage.CSharp).SpansOf().Select(s => (s.Text, s.Span.Kind)));
+        Assert.Equal([("Notes.xml", false), ("Picture.png", true)], (await file.ListChildrenAsync()).Select(static c => (c.Text, c.IsImage)));
+        Assert.Equal(Expected, Assert.IsType<NodeContent.Picture>(await file.GetChildAsync("Picture.png").ReadContentAsync()).Image.Rgba);
+        Assert.Contains(("root", SpanKind.Keyword), (await file.GetChildAsync("Notes.xml").DecompileAsync(DecompilationLanguage.CSharp)).SpansOf().Select(s => (s.Text, s.Span.Kind)));
     }
 
     [Fact]
-    public void A_resources_file_is_its_bytes_its_entries_and_a_grid_at_once()
+    public async Task A_resources_file_is_its_bytes_its_entries_and_a_grid_at_once()
     {
-        var file = Resources(Trees.TestAssembly).Child("Mixed.resources");
+        var file = await ResourcesAsync(Trees.TestAssembly).GetChildAsync("Mixed.resources");
 
         Assert.True(file.HasResource);
         Assert.Equal(Fixture("Mixed.resources"), BrowseNodes.ReadResource(file));
         Assert.Equal("Mixed.resources", file.ResourceFileName);
         Assert.True(file.HasChildren);
-        Assert.IsType<NodeContent.Table>(file.Content(DecompilationLanguage.IL));
+        Assert.IsType<NodeContent.Table>(await file.ReadContentAsync(DecompilationLanguage.IL));
         Assert.False(file.IsCode);
         Assert.Null(file.FolderInPackage);
     }
 
     [Fact]
-    public void Baml_shows_as_xaml_whatever_the_language()
+    public async Task Baml_shows_as_xaml_whatever_the_language()
     {
-        var baml = MainWindowBaml();
+        var baml = await MainWindowBamlAsync();
 
-        var document = Assert.IsType<NodeContent.Code>(baml.Content(DecompilationLanguage.IL)).Document;
+        var document = Assert.IsType<NodeContent.Code>(await baml.ReadContentAsync(DecompilationLanguage.IL)).Document;
 
         Assert.False(baml.IsImage);
         Assert.True(baml.IsCode);
         Assert.Contains("x:Class=\"SampleApp.MainWindow\"", Documents.GetText(document));
     }
 
-    private static BrowseNode MainWindowBaml()
+    private static async Task<BrowseNode> MainWindowBamlAsync()
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.SampleAppPath);
-        return Resources(assembly).Child("SampleApp.g.resources").Child("mainwindow.baml");
+        return await ResourcesAsync(assembly).GetChildAsync("SampleApp.g.resources").GetChildAsync("mainwindow.baml");
     }
 
     [Fact]
-    public void Baml_shows_as_the_xaml_it_was_compiled_from()
+    public async Task Baml_shows_as_the_xaml_it_was_compiled_from()
     {
-        var document = MainWindowBaml().Decompile(DecompilationLanguage.CSharp);
+        var document = await MainWindowBamlAsync().DecompileAsync(DecompilationLanguage.CSharp);
         var text = Documents.GetText(document);
 
         Assert.Contains("x:Class=\"SampleApp.MainWindow\"", text);
@@ -263,9 +263,9 @@ public sealed class ResourceTests
     }
 
     [Fact]
-    public void Baml_saves_as_xaml()
+    public async Task Baml_saves_as_xaml()
     {
-        var baml = MainWindowBaml();
+        var baml = await MainWindowBamlAsync();
 
         var saved = Encoding.UTF8.GetString(BrowseNodes.ReadResource(baml));
 
@@ -273,19 +273,19 @@ public sealed class ResourceTests
         Assert.Contains("x:Class=\"SampleApp.MainWindow\"", saved);
     }
 
-    private static (int Width, int Height, string Format) Picture(BrowseNode node)
+    private static async Task<(int Width, int Height, string Format)> PictureAsync(BrowseNode node)
     {
-        var image = Assert.IsType<NodeContent.Picture>(node.Content()).Image;
+        var image = Assert.IsType<NodeContent.Picture>(await node.ReadContentAsync()).Image;
         return (image.Width, image.Height, image.Format);
     }
 
     [Fact]
-    public void Avalonia_assets_unpack_into_the_tree_under_their_paths()
+    public async Task Avalonia_assets_unpack_into_the_tree_under_their_paths()
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.AvaloniaSamplePath);
-        var container = Resources(assembly).Child("!AvaloniaResources");
+        var container = await ResourcesAsync(assembly).GetChildAsync("!AvaloniaResources");
 
-        var entries = container.Children.Select(static c => (c.Text, c.IsImage)).ToList();
+        var entries = (await container.ListChildrenAsync()).Select(static c => (c.Text, c.IsImage)).ToList();
 
         Assert.Equal(
             [
@@ -293,29 +293,29 @@ public sealed class ResourceTests
                 ("/Assets/logo.png", true), ("/Assets/notes.json", false),
             ],
             entries);
-        Assert.Equal((64, 64, "SVG"), Picture(container.Child("/Assets/icon.svg")));
-        Assert.Equal(Expected, Assert.IsType<NodeContent.Picture>(container.Child("/Assets/logo.png").Content()).Image.Rgba);
-        Assert.Contains("\"sample\"", Documents.GetText(container.Child("/Assets/notes.json").Decompile(DecompilationLanguage.CSharp)));
-        var xamlInfo = container.Child("/!AvaloniaResourceXamlInfo").Decompile(DecompilationLanguage.CSharp);
+        Assert.Equal((64, 64, "SVG"), await PictureAsync(await container.GetChildAsync("/Assets/icon.svg")));
+        Assert.Equal(Expected, Assert.IsType<NodeContent.Picture>(await container.GetChildAsync("/Assets/logo.png").ReadContentAsync()).Image.Rgba);
+        Assert.Contains("\"sample\"", Documents.GetText(await container.GetChildAsync("/Assets/notes.json").DecompileAsync(DecompilationLanguage.CSharp)));
+        var xamlInfo = await container.GetChildAsync("/!AvaloniaResourceXamlInfo").DecompileAsync(DecompilationLanguage.CSharp);
         Assert.Contains("/MainWindow.axaml", Documents.GetText(xamlInfo));
         Assert.True(xamlInfo.Lines.Length > 5);
     }
 
     [Fact]
-    public void Avalonia_0_10_assets_unpack_from_their_xml_index()
+    public async Task Avalonia_0_10_assets_unpack_from_their_xml_index()
     {
-        var container = Resources(Trees.TestAssembly).Child("!AvaloniaResources");
+        var container = await ResourcesAsync(Trees.TestAssembly).GetChildAsync("!AvaloniaResources");
 
-        Assert.Equal(["/!AvaloniaResourceXamlInfo", "/Assets/logo.png", "/Assets/notes.json"], container.Children.Select(c => c.Text));
-        Assert.Equal(Expected, Assert.IsType<NodeContent.Picture>(container.Child("/Assets/logo.png").Content()).Image.Rgba);
+        Assert.Equal(["/!AvaloniaResourceXamlInfo", "/Assets/logo.png", "/Assets/notes.json"], (await container.ListChildrenAsync()).Select(c => c.Text));
+        Assert.Equal(Expected, Assert.IsType<NodeContent.Picture>(await container.GetChildAsync("/Assets/logo.png").ReadContentAsync()).Image.Rgba);
     }
 
     [Fact]
-    public void An_avalonia_container_lists_its_assets()
+    public async Task An_avalonia_container_lists_its_assets()
     {
-        var container = Resources(Trees.TestAssembly).Child("!AvaloniaResources");
+        var container = await ResourcesAsync(Trees.TestAssembly).GetChildAsync("!AvaloniaResources");
 
-        var text = Documents.GetText(container.Decompile(DecompilationLanguage.CSharp));
+        var text = Documents.GetText(await container.DecompileAsync(DecompilationLanguage.CSharp));
 
         Assert.Contains("// /Assets/logo.png (76 bytes)", text);
         Assert.Contains("// /Assets/notes.json (", text);
@@ -332,11 +332,11 @@ public sealed class ResourceTests
     }
 
     [Fact]
-    public void The_resources_folder_describes_each_resource()
+    public async Task The_resources_folder_describes_each_resource()
     {
         var assembly = Trees.TestAssembly;
 
-        var text = Documents.GetText(Resources(assembly).Decompile(DecompilationLanguage.CSharp));
+        var text = Documents.GetText(await ResourcesAsync(assembly).DecompileAsync(DecompilationLanguage.CSharp));
 
         Assert.Contains("// logo.png (Embedded, 76 bytes)", text);
         Assert.Contains("// Mixed.resources (Embedded, ", text);

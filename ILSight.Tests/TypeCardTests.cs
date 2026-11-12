@@ -11,14 +11,14 @@ public sealed class TypeCardTests
 
     private static AssemblyList List => s_opened.Value.List;
 
-    private static CodeReference.Entity Zoo(string type)
+    private static async Task<CodeReference.Entity> ZooAsync(string type)
     {
-        return s_opened.Value.Assembly.Root.Child(ZooNamespace, type).Definition;
+        return (await s_opened.Value.Assembly.ReadRootAsync().GetChildAsync(ZooNamespace, type)).Definition;
     }
 
-    private static TypeCard Card(string type)
+    private static async Task<TypeCard> CardAsync(string type)
     {
-        var card = TestWaits.Wait(() => TypeCards.ReadAsync(List, Zoo(type), CancellationToken.None)).FoundOrNull;
+        var card = (await TypeCards.ReadAsync(List, await ZooAsync(type), CancellationToken.None)).FoundOrNull;
         Assert.NotNull(card);
         return card;
     }
@@ -39,37 +39,37 @@ public sealed class TypeCardTests
     }
 
     [Fact]
-    public void A_card_names_its_type_as_the_tree_does_and_tags_what_it_is()
+    public async Task A_card_names_its_type_as_the_tree_does_and_tags_what_it_is()
     {
-        var animal = Card("Animal");
+        var animal = await CardAsync("Animal");
 
         Assert.Equal("Animal", animal.Name);
         Assert.Equal(ZooNamespace + ".Animal", animal.FullName);
         Assert.Equal(TypeShape.Class, animal.Shape);
         Assert.Equal(TypeStereotype.Abstract, animal.Stereotype);
-        Assert.Equal(TypeStereotype.Interface, Card("IFeeds").Stereotype);
-        Assert.Equal(TypeStereotype.Static, Card("Visits").Stereotype);
-        Assert.Equal(TypeStereotype.None, Card("Lion").Stereotype);
+        Assert.Equal(TypeStereotype.Interface, (await CardAsync("IFeeds")).Stereotype);
+        Assert.Equal(TypeStereotype.Static, (await CardAsync("Visits")).Stereotype);
+        Assert.Equal(TypeStereotype.None, (await CardAsync("Lion")).Stereotype);
         Assert.Equal(Trees.TestAssemblyPath, animal.AssemblyPath.Text);
     }
 
     [Fact]
-    public void Its_own_members_are_listed_by_kind_in_the_tree_s_order_without_accessors_or_backing_fields()
+    public async Task Its_own_members_are_listed_by_kind_in_the_tree_s_order_without_accessors_or_backing_fields()
     {
-        var animal = Card("Animal");
+        var animal = await CardAsync("Animal");
 
         Assert.Equal([MemberSection.Fields, MemberSection.Properties, MemberSection.Methods], animal.Sections.Select(static s => s.Kind));
         Assert.Equal(["Tag", "_age"], NamesIn(animal, MemberSection.Fields));
         Assert.Equal(["Keeper", "Name"], NamesIn(animal, MemberSection.Properties));
         Assert.Contains("Speak", NamesIn(animal, MemberSection.Methods));
         Assert.DoesNotContain("get_Name", NamesIn(animal, MemberSection.Methods));
-        Assert.Contains(Card("Keeper").Sections, static s => s.Kind == MemberSection.Events);
+        Assert.Contains((await CardAsync("Keeper")).Sections, static s => s.Kind == MemberSection.Events);
     }
 
     [Fact]
-    public void A_member_reads_as_the_tree_labels_it_with_its_icon_and_accessibility()
+    public async Task A_member_reads_as_the_tree_labels_it_with_its_icon_and_accessibility()
     {
-        var animal = Card("Animal");
+        var animal = await CardAsync("Animal");
 
         var age = animal.Sections[0].Members[1];
         Assert.Equal("_age : int", age.Text);
@@ -80,9 +80,9 @@ public sealed class TypeCardTests
     }
 
     [Fact]
-    public void What_a_type_inherits_is_grouped_by_the_base_type_it_comes_from_without_what_it_cannot_reach()
+    public async Task What_a_type_inherits_is_grouped_by_the_base_type_it_comes_from_without_what_it_cannot_reach()
     {
-        var lion = Card("Lion");
+        var lion = await CardAsync("Lion");
 
         var group = Assert.Single(lion.Inherited);
         Assert.Equal("Animal", group.From);
@@ -93,40 +93,40 @@ public sealed class TypeCardTests
     }
 
     [Fact]
-    public void A_type_links_to_what_it_derives_from_implements_and_holds()
+    public async Task A_type_links_to_what_it_derives_from_implements_and_holds()
     {
-        var lion = Card("Lion");
-        var keeper = Card("Keeper");
+        var lion = await CardAsync("Lion");
+        var keeper = await CardAsync("Keeper");
 
-        Assert.Contains(new TypeLink.Inherits { From = Zoo("Lion"), To = Zoo("Animal") }, lion.Links);
-        Assert.Contains(new TypeLink.Implements { From = Zoo("Lion"), To = Zoo("IFeeds") }, lion.Links);
+        Assert.Contains(new TypeLink.Inherits { From = await ZooAsync("Lion"), To = await ZooAsync("Animal") }, lion.Links);
+        Assert.Contains(new TypeLink.Implements { From = await ZooAsync("Lion"), To = await ZooAsync("IFeeds") }, lion.Links);
         Assert.Equal(
         [
-            new TypeLink.HoldsMany { From = Zoo("Keeper"), To = Zoo("Animal"), Property = "Animals" },
-            new TypeLink.HoldsOne { From = Zoo("Keeper"), To = Zoo("Enclosure"), Property = "Home" },
+            new TypeLink.HoldsMany { From = await ZooAsync("Keeper"), To = await ZooAsync("Animal"), Property = "Animals" },
+            new TypeLink.HoldsOne { From = await ZooAsync("Keeper"), To = await ZooAsync("Enclosure"), Property = "Home" },
         ], keeper.Links);
     }
 
     [Fact]
-    public void Built_in_types_and_the_bases_every_type_has_are_no_links()
+    public async Task Built_in_types_and_the_bases_every_type_has_are_no_links()
     {
-        Assert.Equal([new TypeLink.HoldsOne { From = Zoo("Animal"), To = Zoo("Keeper"), Property = "Keeper" }], Card("Animal").Links);
-        Assert.Empty(Card("Enclosure").Links);
+        Assert.Equal([new TypeLink.HoldsOne { From = await ZooAsync("Animal"), To = await ZooAsync("Keeper"), Property = "Keeper" }], (await CardAsync("Animal")).Links);
+        Assert.Empty((await CardAsync("Enclosure")).Links);
     }
 
     [Fact]
-    public void Classes_and_interfaces_can_have_derived_types_and_sealed_types_cannot()
+    public async Task Classes_and_interfaces_can_have_derived_types_and_sealed_types_cannot()
     {
-        Assert.True(Card("Animal").CanHaveDerived);
-        Assert.True(Card("IFeeds").CanHaveDerived);
-        Assert.False(Card("Parrot").CanHaveDerived);
-        Assert.False(Card("Enclosure").CanHaveDerived);
+        Assert.True((await CardAsync("Animal")).CanHaveDerived);
+        Assert.True((await CardAsync("IFeeds")).CanHaveDerived);
+        Assert.False((await CardAsync("Parrot")).CanHaveDerived);
+        Assert.False((await CardAsync("Enclosure")).CanHaveDerived);
     }
 
     [Fact]
     public async Task A_type_reads_with_the_types_of_its_assembly_it_is_related_to_either_way()
     {
-        var read = Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>(await TypeCards.ReadWithNeighboursAsync(List, Zoo("Animal"), CancellationToken.None));
+        var read = Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>(await TypeCards.ReadWithNeighboursAsync(List, await ZooAsync("Animal"), CancellationToken.None));
         var cards = read.Value;
 
         Assert.Equal("Animal", cards[0].Name);
@@ -136,8 +136,8 @@ public sealed class TypeCardTests
     [Fact]
     public async Task The_types_deriving_from_a_class_or_implementing_an_interface_are_found_among_the_open_assemblies()
     {
-        var derived = await TypeCards.ReadDerivedAsync(List, Zoo("Animal"), CancellationToken.None);
-        var implementing = await TypeCards.ReadDerivedAsync(List, Zoo("IFeeds"), CancellationToken.None);
+        var derived = await TypeCards.ReadDerivedAsync(List, await ZooAsync("Animal"), CancellationToken.None);
+        var implementing = await TypeCards.ReadDerivedAsync(List, await ZooAsync("IFeeds"), CancellationToken.None);
 
         Assert.Equal(["Lion", "Parrot"], NamesOf(derived.Found).Order());
         Assert.Equal(["Lion"], NamesOf(implementing.Found));
@@ -152,7 +152,7 @@ public sealed class TypeCardTests
         var shapes = list.OpenModule(WrittenAssemblies.WriteWithBase(temp, "Shapes", "Shape", "Circle"));
         list.OpenModule(BrokenAssemblies.WriteUnreadableTypeSystem(temp, WrittenAssemblies.WriteDeriving(temp, "Billing", "Shapes", "Shape", "Invoice")));
         list.OpenModule(WrittenAssemblies.WriteDeriving(temp, "Orders", "Shapes", "Shape", "Order"));
-        var shape = shapes.Root.Child("Shapes", "Shape").Definition;
+        var shape = (await shapes.ReadRootAsync().GetChildAsync("Shapes", "Shape")).Definition;
 
         var derived = await TypeCards.ReadDerivedAsync(list, shape, CancellationToken.None);
 
@@ -164,16 +164,17 @@ public sealed class TypeCardTests
     [Fact]
     public async Task Finding_derived_types_stops_when_cancelled()
     {
+        var animal = await ZooAsync("Animal");
         using var cancel = new CancellationTokenSource();
         await cancel.CancelAsync();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => TypeCards.ReadDerivedAsync(List, Zoo("Animal"), cancel.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => TypeCards.ReadDerivedAsync(List, animal, cancel.Token));
     }
 
     [Fact]
     public async Task A_reference_to_a_member_reads_as_no_card()
     {
-        var name = s_opened.Value.Assembly.Root.Child(ZooNamespace, "Animal", "Name : string").Definition;
+        var name = (await s_opened.Value.Assembly.ReadRootAsync().GetChildAsync(ZooNamespace, "Animal", "Name : string")).Definition;
 
         Assert.IsType<Lookup<TypeCard>.NotFound>(await TypeCards.ReadAsync(List, name, CancellationToken.None));
         Assert.Empty(Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>(await TypeCards.ReadWithNeighboursAsync(List, name, CancellationToken.None)).Value);

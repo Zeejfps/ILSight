@@ -18,9 +18,9 @@ public sealed class LoadOptionsTests
         return (list, list.OpenModule(Trees.TestAssemblyPath));
     }
 
-    private static BrowseNode RuntimeReference(LoadedAssembly assembly)
+    private static async Task<BrowseNode> RuntimeReferenceAsync(LoadedAssembly assembly)
     {
-        return assembly.Root.Child("References", "System.Runtime");
+        return await assembly.ReadRootAsync().GetChildAsync("References", "System.Runtime");
     }
 
     [Fact]
@@ -73,24 +73,24 @@ public sealed class LoadOptionsTests
     }
 
     [Fact]
-    public void Without_loading_references_a_reference_to_an_assembly_not_listed_resolves_to_none()
+    public async Task Without_loading_references_a_reference_to_an_assembly_not_listed_resolves_to_none()
     {
         var (_, assembly) = OpenWith(Off(DecompilerToggle.AutoLoadAssemblyReferences));
 
-        var children = RuntimeReference(assembly).Children;
+        var children = await RuntimeReferenceAsync(assembly).ListChildrenAsync();
 
         Assert.All(children, c => Assert.IsType<NodeSubject.ReferencedTypes>(c.Subject));
     }
 
     [Fact]
-    public void Without_loading_references_a_reference_resolves_to_the_listed_assembly()
+    public async Task Without_loading_references_a_reference_resolves_to_the_listed_assembly()
     {
         var (list, assembly) = OpenWith(Off(DecompilerToggle.AutoLoadAssemblyReferences));
         var runtimePath = RuntimeAssemblies.Find(TestRuntime.Installed, "System.Runtime");
         Assert.NotNull(runtimePath);
         list.Open(runtimePath);
 
-        var children = RuntimeReference(assembly).Children;
+        var children = await RuntimeReferenceAsync(assembly).ListChildrenAsync();
 
         Assert.Contains(children, c => c.Text == "System.Private.CoreLib");
     }

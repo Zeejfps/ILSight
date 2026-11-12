@@ -5,9 +5,9 @@ namespace ILSight.Tests;
 public sealed class FoldingTests
 {
     [Fact]
-    public void CSharp_folds_the_usings_collapsed_and_type_and_member_bodies_open()
+    public async Task CSharp_folds_the_usings_collapsed_and_type_and_member_bodies_open()
     {
-        var document = Trees.CalculatorDocument(DecompilationLanguage.CSharp);
+        var document = await Trees.CalculatorDocumentAsync(DecompilationLanguage.CSharp);
 
         var usings = document.FoldAt("using System;");
         Assert.Equal(document.LineContaining("using ILSight.Tests.Fixtures;"), usings.EndLine);
@@ -33,9 +33,9 @@ public sealed class FoldingTests
     }
 
     [Fact]
-    public void IL_folds_types_and_methods_from_their_signatures()
+    public async Task IL_folds_types_and_methods_from_their_signatures()
     {
-        var document = Trees.CalculatorDocument(DecompilationLanguage.IL);
+        var document = await Trees.CalculatorDocumentAsync(DecompilationLanguage.IL);
 
         var type = document.FoldAt("extends [System.Runtime]System.Object");
         Assert.StartsWith("} // end of class", document.Lines[type.EndLine].Text);
@@ -55,9 +55,9 @@ public sealed class FoldingTests
     [Theory]
     [InlineData(DecompilationLanguage.CSharp)]
     [InlineData(DecompilationLanguage.IL)]
-    public void Folds_are_ordered_on_lines_of_their_own_and_nest_whole(DecompilationLanguage language)
+    public async Task Folds_are_ordered_on_lines_of_their_own_and_nest_whole(DecompilationLanguage language)
     {
-        var document = Trees.CalculatorDocument(language);
+        var document = await Trees.CalculatorDocumentAsync(language);
 
         Assert.True(document.Folds.Length >= 5);
         var open = new Stack<FoldRegion>();
@@ -86,9 +86,9 @@ public sealed class FoldingTests
     }
 
     [Fact]
-    public void A_member_on_its_own_folds_its_body_and_plain_text_folds_nothing()
+    public async Task A_member_on_its_own_folds_its_body_and_plain_text_folds_nothing()
     {
-        var document = Trees.TestAssembly.Calculator().Child("Describe() : string").Decompile(DecompilationLanguage.CSharp);
+        var document = await Trees.TestAssembly.CalculatorAsync().GetChildAsync("Describe() : string").DecompileAsync(DecompilationLanguage.CSharp);
 
         var body = Assert.Single(document.Folds);
         Assert.Equal(document.LineContaining("internal string Describe()"), body.StartLine);

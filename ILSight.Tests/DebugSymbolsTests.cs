@@ -64,7 +64,7 @@ public sealed class DebugSymbolsTests
     }
 
     [Fact]
-    public void An_assembly_reads_the_pdb_picked_for_it_once_it_is_opened_again()
+    public async Task An_assembly_reads_the_pdb_picked_for_it_once_it_is_opened_again()
     {
         using var temp = new TempDir();
         var copy = temp.Copy(Trees.TestAssemblyPath, Path.GetFileName(Trees.TestAssemblyPath));
@@ -81,7 +81,7 @@ public sealed class DebugSymbolsTests
         Assert.Equal(TestPdbPath, symbols.SourceFileName);
         Assert.True(symbols.TryGetName(CircleMethod(nameof(Circle.Grow)), 1, out var name));
         Assert.Equal("step", name);
-        Assert.Contains(after.Root.Children, c => c.Text == "Debug Metadata (From portable PDB)");
+        Assert.Contains(await after.ReadRootAsync().ListChildrenAsync(), c => c.Text == "Debug Metadata (From portable PDB)");
     }
 
     [Fact]

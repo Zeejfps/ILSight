@@ -9,11 +9,11 @@ public sealed class WebCilTests
     private static readonly byte[] WebAssemblyHeader = [0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00];
 
     [Fact]
-    public void A_webcil_module_opens_as_an_assembly_and_decompiles()
+    public async Task A_webcil_module_opens_as_an_assembly_and_decompiles()
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
 
-        var counter = assembly.Root.Child("SampleApp").Child("Counter").Decompile(DecompilationLanguage.CSharp);
+        var counter = await assembly.ReadRootAsync().GetChildAsync("SampleApp").GetChildAsync("Counter").DecompileAsync(DecompilationLanguage.CSharp);
 
         Assert.IsNotType<FailedAssembly>(assembly);
         Assert.IsNotType<LoadedPackage>(assembly);
@@ -23,22 +23,23 @@ public sealed class WebCilTests
     }
 
     [Fact]
-    public void A_webcil_module_shows_its_metadata_without_pe_headers()
+    public async Task A_webcil_module_shows_its_metadata_without_pe_headers()
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
 
-        var metadata = assembly.Root.Child("Metadata").Children;
+        var metadata = await assembly.ReadRootAsync().GetChildAsync("Metadata").ListChildrenAsync();
 
         Assert.DoesNotContain(metadata, static c => c.Is(MetadataGridRole.Header));
         Assert.Contains(metadata, static c => c.Subject is NodeSubject.MetadataTables);
     }
 
     [Fact]
-    public void A_webcil_modules_grid_is_read_whole_as_its_content_is_made()
+    public async Task A_webcil_modules_grid_is_read_whole_as_its_content_is_made()
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
 
-        var grid = Assert.IsType<NodeContent.Table>(assembly.Root.Child("Metadata").Child("Tables").Table("TypeDef").Content()).Grid;
+        var tables = await assembly.ReadRootAsync().GetChildAsync("Metadata", "Tables");
+        var grid = Assert.IsType<NodeContent.Table>(await tables.TableAsync("TypeDef").ReadContentAsync()).Grid;
 
         var whole = Assert.IsType<MetadataGrid.ReadWhole>(grid);
         var counter = grid.RowNamed("Counter");
@@ -58,11 +59,11 @@ public sealed class WebCilTests
     }
 
     [Fact]
-    public void The_summary_of_a_webcil_module_leaves_out_the_architecture()
+    public async Task The_summary_of_a_webcil_module_leaves_out_the_architecture()
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
 
-        var summary = Documents.GetText(assembly.Root.Decompile(DecompilationLanguage.CSharp));
+        var summary = Documents.GetText(await assembly.ReadRootAsync().DecompileAsync(DecompilationLanguage.CSharp));
 
         Assert.Contains(Trees.WebCilSamplePath, summary);
         Assert.DoesNotContain("Architecture:", summary);

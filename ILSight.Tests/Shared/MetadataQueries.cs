@@ -6,9 +6,9 @@ namespace ILSight.Tests;
 internal static class MetadataQueries
 {
     /// <summary>The table named <paramref name="name"/> in a metadata tables folder.</summary>
-    public static BrowseNode Table(this BrowseNode tables, string name)
+    public static async Task<BrowseNode> TableAsync(this BrowseNode tables, string name)
     {
-        return tables.Children.Single(c => c.Text.Split(' ')[1] == name);
+        return (await tables.ListChildrenAsync()).Single(c => c.Text.Split(' ')[1] == name);
     }
 
     public static int Column(this MetadataGrid grid, string name)

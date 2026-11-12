@@ -8,17 +8,17 @@ public sealed class ReferenceReferencesTests
     private const string CoreLib = "System.Private.CoreLib";
 
     /// <summary>The test assembly's reference to System.Runtime.</summary>
-    private static BrowseNode RuntimeReference(LoadedAssembly assembly)
+    private static async Task<BrowseNode> RuntimeReferenceAsync(LoadedAssembly assembly)
     {
-        return assembly.Root.Child("References", Runtime);
+        return await assembly.ReadRootAsync().GetChildAsync("References", Runtime);
     }
 
     [Fact]
-    public void A_reference_lists_the_references_of_the_assembly_it_resolves_to_after_the_types_used_from_it()
+    public async Task A_reference_lists_the_references_of_the_assembly_it_resolves_to_after_the_types_used_from_it()
     {
         var (_, assembly) = Trees.OpenTestAssembly();
 
-        var children = RuntimeReference(assembly).Children;
+        var children = await RuntimeReferenceAsync(assembly).ListChildrenAsync();
 
         Assert.IsType<NodeSubject.ReferencedTypes>(children[0].Subject);
         var coreLib = Assert.Single(children, c => c.Text == CoreLib);
@@ -27,45 +27,45 @@ public sealed class ReferenceReferencesTests
     }
 
     [Fact]
-    public void The_assembly_a_reference_resolves_to_is_read_without_being_listed()
+    public async Task The_assembly_a_reference_resolves_to_is_read_without_being_listed()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
 
-        RuntimeReference(assembly).EnsureChildren();
+        await RuntimeReferenceAsync(assembly).EnsureChildrenAsync();
 
         Assert.Equal([assembly], list.Listed);
     }
 
     [Fact]
-    public void A_reference_of_a_reference_holds_what_that_assembly_uses_of_it()
+    public async Task A_reference_of_a_reference_holds_what_that_assembly_uses_of_it()
     {
         var (_, assembly) = Trees.OpenTestAssembly();
-        var coreLib = RuntimeReference(assembly).Child(CoreLib);
+        var coreLib = await RuntimeReferenceAsync(assembly).GetChildAsync(CoreLib);
 
-        var forwarded = coreLib.Child("Referenced types").Children;
+        var forwarded = await coreLib.GetChildAsync("Referenced types").ListChildrenAsync();
 
         Assert.Contains(forwarded, f => f.Subject is NodeSubject.ForwardedType && f.Text == "Object");
     }
 
     [Fact]
-    public void A_reference_of_a_reference_is_found_again_by_its_path()
+    public async Task A_reference_of_a_reference_is_found_again_by_its_path()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var coreLib = RuntimeReference(assembly).Child(CoreLib);
+        var coreLib = await RuntimeReferenceAsync(assembly).GetChildAsync(CoreLib);
 
-        var found = list.FindNode(coreLib.Path);
+        var found = await list.FindNodeAsync(coreLib.Path);
 
         Assert.Same(coreLib, found);
-        Assert.Same(assembly.Root, coreLib.Root);
+        Assert.Same(await assembly.ReadRootAsync(), coreLib.Root);
     }
 
     [Fact]
-    public void A_reference_of_a_reference_reads_as_where_it_resolves_from_the_assembly_that_holds_it()
+    public async Task A_reference_of_a_reference_reads_as_where_it_resolves_from_the_assembly_that_holds_it()
     {
         var (_, assembly) = Trees.OpenTestAssembly();
-        var coreLib = RuntimeReference(assembly).Child(CoreLib);
+        var coreLib = await RuntimeReferenceAsync(assembly).GetChildAsync(CoreLib);
 
-        var text = Documents.GetText(Assert.IsType<NodeContent.Code>(coreLib.Content()).Document);
+        var text = Documents.GetText(Assert.IsType<NodeContent.Code>(await coreLib.ReadContentAsync()).Document);
 
         Assert.Contains("Resolves to", text);
         Assert.Contains($"{CoreLib}.dll", text);

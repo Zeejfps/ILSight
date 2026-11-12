@@ -5,10 +5,11 @@ namespace ILSight.Tests;
 
 public sealed class BlobTooltipTests
 {
-    private static MetadataGrid Grid(string table)
+    private static async Task<MetadataGrid> GridAsync(string table)
     {
-        var node = Trees.TestAssembly.Root.Child("Metadata", "Tables").Table(table);
-        return Assert.IsType<NodeContent.Table>(node.Content()).Grid;
+        var tables = await Trees.TestAssembly.ReadRootAsync().GetChildAsync("Metadata", "Tables");
+        var node = await tables.TableAsync(table);
+        return Assert.IsType<NodeContent.Table>(await node.ReadContentAsync()).Grid;
     }
 
     private static string? TooltipText(MetadataGrid grid, int row, string column)
@@ -24,9 +25,9 @@ public sealed class BlobTooltipTests
     }
 
     [Fact]
-    public void A_property_signature_reads_as_IL_declares_the_property_with_its_index_parameters()
+    public async Task A_property_signature_reads_as_IL_declares_the_property_with_its_index_parameters()
     {
-        var properties = Grid("Property");
+        var properties = await GridAsync("Property");
 
         var count = TooltipText(properties, properties.RowNamed("Count"), "Signature");
         var indexer = TooltipText(properties, properties.RowNamed("Item"), "Signature");
@@ -36,18 +37,18 @@ public sealed class BlobTooltipTests
     }
 
     [Fact]
-    public void A_signature_of_locals_lists_each_local_by_its_index()
+    public async Task A_signature_of_locals_lists_each_local_by_its_index()
     {
-        var signatures = ListTooltipTexts(Grid("StandAloneSig"), "Signature");
+        var signatures = ListTooltipTexts(await GridAsync("StandAloneSig"), "Signature");
 
         Assert.Contains(signatures, s => s is not null && s.StartsWith("[0] ", StringComparison.Ordinal));
         Assert.DoesNotContain(signatures, s => s is not null && s.Contains("/* signature", StringComparison.Ordinal));
     }
 
     [Fact]
-    public void A_constant_reads_as_the_literal_it_holds()
+    public async Task A_constant_reads_as_the_literal_it_holds()
     {
-        var values = ListTooltipTexts(Grid("Constant"), "Value");
+        var values = ListTooltipTexts(await GridAsync("Constant"), "Value");
 
         Assert.Contains("42", values);
     }

@@ -5,27 +5,27 @@ namespace ILSight.Tests;
 public sealed class NodePathTests
 {
     [Fact]
-    public void A_listed_lookup_finds_a_place_only_in_an_assembly_the_list_holds_and_lists_none()
+    public async Task A_listed_lookup_finds_a_place_only_in_an_assembly_the_list_holds_and_lists_none()
     {
         var (_, assembly) = Trees.OpenTestAssembly();
-        var add = assembly.Calculator().Child("Add(T) : void");
+        var add = await assembly.CalculatorAsync().GetChildAsync("Add(T) : void");
         var empty = new AssemblyList { Runtime = TestRuntime.Installed };
 
-        Assert.Null(empty.FindListedNode(add.Path));
+        Assert.Null(await empty.FindListedNodeAsync(add.Path));
         Assert.Empty(empty.Listed);
 
         var (listing, _) = Trees.OpenTestAssembly();
-        Assert.Equal(add.Text, listing.FindListedNode(add.Path)?.Text);
+        Assert.Equal(add.Text, (await listing.FindListedNodeAsync(add.Path))?.Text);
     }
 
     [Fact]
-    public void A_path_finds_the_same_place_in_a_reopened_assembly()
+    public async Task A_path_finds_the_same_place_in_a_reopened_assembly()
     {
         var (_, assembly) = Trees.OpenTestAssembly();
-        var add = assembly.Calculator().Child("Add(T) : void");
+        var add = await assembly.CalculatorAsync().GetChildAsync("Add(T) : void");
         var (fresh, _) = Trees.OpenTestAssembly();
 
-        var found = fresh.FindNode(add.Path);
+        var found = await fresh.FindNodeAsync(add.Path);
 
         Assert.NotNull(found);
         Assert.NotSame(add, found);
@@ -35,26 +35,26 @@ public sealed class NodePathTests
     }
 
     [Fact]
-    public void Paths_are_equal_by_place()
+    public async Task Paths_are_equal_by_place()
     {
         var (_, a) = Trees.OpenTestAssembly();
         var (_, b) = Trees.OpenTestAssembly();
 
-        Assert.Equal(a.Calculator().Path, b.Calculator().Path);
-        Assert.Equal(a.Calculator().Path.GetHashCode(), b.Calculator().Path.GetHashCode());
-        Assert.NotEqual(a.Calculator().Path, a.Fixtures().Path);
-        Assert.Equal(a.Root.Path, b.Root.Path);
+        Assert.Equal((await a.CalculatorAsync()).Path, (await b.CalculatorAsync()).Path);
+        Assert.Equal((await a.CalculatorAsync()).Path.GetHashCode(), (await b.CalculatorAsync()).Path.GetHashCode());
+        Assert.NotEqual((await a.CalculatorAsync()).Path, (await a.FixturesAsync()).Path);
+        Assert.Equal((await a.ReadRootAsync()).Path, (await b.ReadRootAsync()).Path);
     }
 
     [Fact]
-    public void A_path_into_a_file_that_is_gone_finds_nothing()
+    public async Task A_path_into_a_file_that_is_gone_finds_nothing()
     {
         using var temp = new TempDir();
         var copy = temp.Copy(Trees.TestAssemblyPath, "fixture.dll");
-        var path = new AssemblyList { Runtime = TestRuntime.Installed }.Open(copy).Calculator().Path;
+        var path = (await new AssemblyList { Runtime = TestRuntime.Installed }.Open(copy).CalculatorAsync()).Path;
         File.Delete(copy);
 
-        Assert.Null(new AssemblyList { Runtime = TestRuntime.Installed }.FindNode(path));
+        Assert.Null(await new AssemblyList { Runtime = TestRuntime.Installed }.FindNodeAsync(path));
     }
 
     [Fact]
@@ -72,14 +72,14 @@ public sealed class NodePathTests
     }
 
     [Fact]
-    public void Children_can_be_asked_for_without_building_them()
+    public async Task Children_can_be_asked_for_without_building_them()
     {
         var (_, assembly) = Trees.OpenTestAssembly();
-        var root = assembly.Root;
+        var root = await assembly.ReadRootAsync();
 
         Assert.IsType<ChildrenState.Unloaded>(root.ChildrenState);
 
-        var built = root.Children;
+        var built = await root.ListChildrenAsync();
         Assert.Same(built, Assert.IsType<ChildrenState.Ready>(root.ChildrenState).Children);
     }
 }

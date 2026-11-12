@@ -10,14 +10,14 @@ public sealed class ForwardedTypeTests
     }
 
     [Fact]
-    public void A_facade_lists_the_types_it_forwards_in_their_namespaces()
+    public async Task A_facade_lists_the_types_it_forwards_in_their_namespaces()
     {
         var facade = new AssemblyList { Runtime = TestRuntime.Installed }.Open(RuntimeFile("System.Runtime.dll"));
 
-        var generic = facade.Root.Child("System.Collections.Generic");
-        var list = generic.Child("IList<>");
-        var dictionary = generic.Child("IDictionary<,>");
-        var exception = generic.Child("KeyNotFoundException");
+        var generic = await facade.ReadRootAsync().GetChildAsync("System.Collections.Generic");
+        var list = await generic.GetChildAsync("IList<>");
+        var dictionary = await generic.GetChildAsync("IDictionary<,>");
+        var exception = await generic.GetChildAsync("KeyNotFoundException");
 
         Assert.True(generic.IsPublicApi);
         Assert.IsType<NodeSubject.ForwardedType>(list.Subject);
@@ -29,11 +29,11 @@ public sealed class ForwardedTypeTests
     }
 
     [Fact]
-    public void A_namespace_sorts_its_forwarded_types_by_name_then_by_how_many_type_parameters_they_have()
+    public async Task A_namespace_sorts_its_forwarded_types_by_name_then_by_how_many_type_parameters_they_have()
     {
         var facade = new AssemblyList { Runtime = TestRuntime.Installed }.Open(RuntimeFile("System.Runtime.dll"));
 
-        var labels = facade.Root.Child("System").Children.Select(c => c.Text).ToList();
+        var labels = (await facade.ReadRootAsync().GetChildAsync("System").ListChildrenAsync()).Select(c => c.Text).ToList();
 
         var sorted = labels
             .OrderBy(l => l.Split('<')[0], NaturalStringComparer.Instance)
@@ -43,13 +43,13 @@ public sealed class ForwardedTypeTests
     }
 
     [Fact]
-    public void A_forwarded_type_goes_to_its_definition_however_many_forwards_away()
+    public async Task A_forwarded_type_goes_to_its_definition_however_many_forwards_away()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var netstandard = list.Open(RuntimeFile("netstandard.dll"));
-        var forwarded = netstandard.Root.Child("System.Collections.Generic").Child("List<>");
+        var forwarded = await netstandard.ReadRootAsync().GetChildAsync("System.Collections.Generic").GetChildAsync("List<>");
 
-        var definition = list.FindNode(forwarded.Destination);
+        var definition = await list.FindNodeAsync(forwarded.Destination);
 
         Assert.Equal("System.Collections", Assert.IsType<NodeSubject.ForwardedType>(forwarded.Subject).Value.Destination);
         Assert.NotNull(definition);
@@ -60,15 +60,15 @@ public sealed class ForwardedTypeTests
     }
 
     [Fact]
-    public void A_forwarded_type_reads_as_where_it_is_forwarded_to_with_a_link_to_its_definition()
+    public async Task A_forwarded_type_reads_as_where_it_is_forwarded_to_with_a_link_to_its_definition()
     {
         var facade = new AssemblyList { Runtime = TestRuntime.Installed }.Open(RuntimeFile("System.Runtime.dll"));
-        var forwarded = facade.Root.Child("System.Collections.Generic").Child("IList<>");
+        var forwarded = await facade.ReadRootAsync().GetChildAsync("System.Collections.Generic").GetChildAsync("IList<>");
 
-        var document = forwarded.Decompile(DecompilationLanguage.CSharp);
+        var document = await forwarded.DecompileAsync(DecompilationLanguage.CSharp);
         var namespaceNode = forwarded.Parent;
         Assert.NotNull(namespaceNode);
-        var namespaceDocument = namespaceNode.Decompile(DecompilationLanguage.CSharp);
+        var namespaceDocument = await namespaceNode.DecompileAsync(DecompilationLanguage.CSharp);
 
         Assert.Contains("// Forwarded to System.Private.CoreLib", Documents.GetText(document));
         Assert.Equal<CodeReference?>(forwarded.Destination, document.Lines[document.LineContaining("System.Collections.Generic.IList<>")].SpanAt("System.Collections.Generic.IList<>").Reference);

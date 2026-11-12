@@ -2,24 +2,35 @@ using ILSight.Core;
 
 namespace ILSight.Tests;
 
+/// <summary>A node of <see cref="TestSession.Shared"/>'s tree read further, each an async read the test awaits (also
+/// of a node still being read, so the reads chain): a child by its labels, what the node shows, the node decompiled.</summary>
 internal static class NodeQueries
 {
-    /// <summary>The node at <paramref name="path"/> under <paramref name="node"/>, one label a level.</summary>
-    public static BrowseNode Child(this BrowseNode node, params ReadOnlySpan<string> path)
+    /// <summary>The node at <paramref name="path"/> under <paramref name="node"/>, one label a level, each level's
+    /// children built when nobody built them yet; fails the test when a level has no such child.</summary>
+    public static async Task<BrowseNode> GetChildAsync(this BrowseNode node, params string[] path)
     {
         foreach (var text in path)
         {
-            node = ChildNamed(node, text);
+            node = await GetChildNamedAsync(node, text);
         }
 
         return node;
     }
 
+    /// <summary><see cref="GetChildAsync(BrowseNode, string[])"/> of the node <paramref name="read"/> gives.</summary>
+    public static async Task<BrowseNode> GetChildAsync(this Task<BrowseNode> read, params string[] path)
+    {
+        var node = await read;
+        return await node.GetChildAsync(path);
+    }
+
     /// <summary>The child labelled <paramref name="text"/>; the one the source declared when the
     /// compiler made up another of the same label, as it does for an event's field.</summary>
-    private static BrowseNode ChildNamed(BrowseNode node, string text)
+    private static async Task<BrowseNode> GetChildNamedAsync(BrowseNode node, string text)
     {
-        var named = node.Children
+        var children = await node.ListChildrenAsync();
+        var named = children
             .Where(c => c.Text == text)
             .ToList();
         if (named.Count > 1)
@@ -30,7 +41,7 @@ internal static class NodeQueries
         var child = named.SingleOrDefault();
         if (child is null)
         {
-            throw new InvalidOperationException($"'{node.Text}' has no child '{text}': {string.Join(", ", node.Children.Select(c => c.Text))}");
+            throw new InvalidOperationException($"'{node.Text}' has no child '{text}': {string.Join(", ", children.Select(c => c.Text))}");
         }
 
         return child;
@@ -41,19 +52,40 @@ internal static class NodeQueries
         return !node.IsCompilerGenerated;
     }
 
-    public static NodeContent Content(this BrowseNode node, DecompilationLanguage language = DecompilationLanguage.CSharp)
+    /// <summary>What <paramref name="node"/> shows in <paramref name="language"/>.</summary>
+    public static Task<NodeContent> ReadContentAsync(this BrowseNode node, DecompilationLanguage language = DecompilationLanguage.CSharp)
     {
-        return TestWaits.Wait(() => NodeContentLoader.GetContentAsync(TestSession.Shared, node, language, DecompilerOptions.Default));
+        return NodeContentLoader.GetContentAsync(TestSession.Shared, node, language, DecompilerOptions.Default);
     }
 
-    public static DecompiledDocument Decompile(this BrowseNode node, DecompilationLanguage language, CancellationToken cancellationToken = default)
+    public static async Task<NodeContent> ReadContentAsync(this Task<BrowseNode> read, DecompilationLanguage language = DecompilationLanguage.CSharp)
     {
-        return TestWaits.Wait(() => NodeContentLoader.DecompileAsync(TestSession.Shared, node, language, DecompilerOptions.Default, cancellationToken));
+        var node = await read;
+        return await node.ReadContentAsync(language);
     }
 
-    public static DecompiledDocument Decompile(this BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
+    public static Task<DecompiledDocument> DecompileAsync(this BrowseNode node, DecompilationLanguage language, CancellationToken cancellationToken = default)
+    {
+        return NodeContentLoader.DecompileAsync(TestSession.Shared, node, language, DecompilerOptions.Default, cancellationToken);
+    }
+
+    public static Task<DecompiledDocument> DecompileAsync(this BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
         CancellationToken cancellationToken = default)
     {
-        return TestWaits.Wait(() => NodeContentLoader.DecompileAsync(TestSession.Shared, node, language, options, cancellationToken));
+        return NodeContentLoader.DecompileAsync(TestSession.Shared, node, language, options, cancellationToken);
+    }
+
+    public static async Task<DecompiledDocument> DecompileAsync(this Task<BrowseNode> read, DecompilationLanguage language,
+        CancellationToken cancellationToken = default)
+    {
+        var node = await read;
+        return await node.DecompileAsync(language, cancellationToken);
+    }
+
+    public static async Task<DecompiledDocument> DecompileAsync(this Task<BrowseNode> read, DecompilationLanguage language, DecompilerOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        var node = await read;
+        return await node.DecompileAsync(language, options, cancellationToken);
     }
 }

@@ -20,7 +20,7 @@ public sealed class AssemblyListTests
     }
 
     [Fact]
-    public void An_assembly_read_again_takes_its_place_in_the_list_with_what_is_picked_for_it_now()
+    public async Task An_assembly_read_again_takes_its_place_in_the_list_with_what_is_picked_for_it_now()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var first = list.Open(Trees.TestAssemblyPath);
@@ -36,7 +36,7 @@ public sealed class AssemblyListTests
         Assert.Equal([fresh.Item, second], list.Listed);
         Assert.Equal([fresh.Item, second], list.Assemblies);
         Assert.Equal("net48", Assert.IsType<LoadedModule>(fresh.Item).FrameworkMoniker);
-        Assert.Same(fresh.Item, list.FindNode(first.Root.Path)?.Assembly);
+        Assert.Same(fresh.Item, (await list.FindNodeAsync((await first.ReadRootAsync()).Path))?.Assembly);
     }
 
     [Fact]
@@ -133,18 +133,18 @@ public sealed class AssemblyListTests
     }
 
     [Fact]
-    public void A_failed_file_shows_why_it_failed_and_has_no_children()
+    public async Task A_failed_file_shows_why_it_failed_and_has_no_children()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         using var temp = new TempDir();
         var text = temp.Write("text.dll", "not a PE file");
 
-        var root = list.Open(text).Root;
-        var document = root.Decompile(DecompilationLanguage.CSharp);
+        var root = await list.Open(text).ReadRootAsync();
+        var document = await root.DecompileAsync(DecompilationLanguage.CSharp);
 
         Assert.IsType<NodeSubject.FailedAssembly>(root.Subject);
         Assert.Equal("text.dll", root.Text);
-        Assert.Empty(root.Children);
+        Assert.Empty(await root.ListChildrenAsync());
         Assert.NotNull(document.Error);
         Assert.Contains($"Cannot open '{text}'", Documents.GetText(document));
     }
@@ -180,13 +180,13 @@ public sealed class AssemblyListTests
     }
 
     [Fact]
-    public void A_node_path_to_a_failed_file_finds_its_root()
+    public async Task A_node_path_to_a_failed_file_finds_its_root()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         using var temp = new TempDir();
         var failed = list.Open(temp.PathOf("missing.dll"));
 
-        Assert.Same(failed.Root, list.FindNode(failed.Root.Path));
+        Assert.Same(await failed.ReadRootAsync(), await list.FindNodeAsync((await failed.ReadRootAsync()).Path));
     }
 
     [Fact]
@@ -263,18 +263,18 @@ public sealed class AssemblyListTests
     }
 
     [Fact]
-    public void References_resolve_from_the_runtime_directory_and_next_to_the_assembly()
+    public async Task References_resolve_from_the_runtime_directory_and_next_to_the_assembly()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var references = assembly.Root.Child("References");
+        var references = await assembly.ReadRootAsync().GetChildAsync("References");
 
-        var runtime = list.FindNode(references.Child("System.Runtime").Destination);
-        var sibling = list.FindNode(references.Child("ILSight.Core").Destination);
+        var runtime = await list.FindNodeAsync((await references.GetChildAsync("System.Runtime")).Destination);
+        var sibling = await list.FindNodeAsync((await references.GetChildAsync("ILSight.Core")).Destination);
 
         Assert.NotNull(runtime);
         Assert.Equal(Path.Combine(RuntimeAssemblies.ListDirectories(TestRuntime.Installed)[0], "System.Runtime.dll"), runtime.Assembly.FilePath.Text, ignoreCase: true);
         Assert.Equal(typeof(AssemblyList).Assembly.Location, sibling?.Assembly.FilePath.Text, ignoreCase: true);
-        Assert.Same(runtime.Assembly.Root, runtime);
+        Assert.Same(await runtime.Assembly.ReadRootAsync(), runtime);
         Assert.Contains(runtime.Assembly, list.Assemblies);
     }
 
@@ -346,11 +346,11 @@ public sealed class AssemblyListTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var paths = new[] { Trees.TestAssemblyPath, typeof(AssemblyList).Assembly.Location, Trees.CoreLibPath };
 
-        var opened = await Task.WhenAll(Enumerable.Range(0, 24).Select(i => Task.Run(() =>
+        var opened = await Task.WhenAll(Enumerable.Range(0, 24).Select(i => Task.Run(async () =>
         {
             var assembly = list.Open(paths[i % paths.Length]);
             _ = list.Assemblies.Count;
-            _ = assembly.Root.Children.Count;
+            _ = (await assembly.ReadRootAsync().ListChildrenAsync()).Count;
             return assembly;
         })));
 

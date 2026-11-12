@@ -7,10 +7,10 @@ namespace ILSight.Tests;
 
 public sealed class AnalysisTests
 {
-    private static (AssemblyList List, BrowseNode Node) Member(string label)
+    private static async Task<(AssemblyList List, BrowseNode Node)> MemberAsync(string label)
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        return (list, assembly.Calculator().Child(label));
+        return (list, await assembly.CalculatorAsync().GetChildAsync(label));
     }
 
     private static List<AnalysisSymbol> Run(AssemblyList list, BrowseNode node, string header)
@@ -22,9 +22,9 @@ public sealed class AnalysisTests
     }
 
     [Fact]
-    public void A_method_offers_ILSpys_analyses_in_its_order()
+    public async Task A_method_offers_ILSpys_analyses_in_its_order()
     {
-        var (_, add) = Member("Add(T) : void");
+        var (_, add) = await MemberAsync("Add(T) : void");
 
         var symbol = add.Analysis;
         Assert.NotNull(symbol);
@@ -34,9 +34,9 @@ public sealed class AnalysisTests
     }
 
     [Fact]
-    public void Used_by_finds_the_callers_and_each_leads_to_its_node()
+    public async Task Used_by_finds_the_callers_and_each_leads_to_its_node()
     {
-        var (list, add) = Member("Add(T) : void");
+        var (list, add) = await MemberAsync("Add(T) : void");
 
         var callers = Run(list, add, "Used By");
 
@@ -46,13 +46,13 @@ public sealed class AnalysisTests
         Assert.Equal(Trees.FixturesNamespace + ".Calculator<T> (ILSight.Tests)", plus.Location);
         var calculator = add.Parent;
         Assert.NotNull(calculator);
-        Assert.Same(calculator.Children.Single(c => c.Is(MemberShape.Operator)), list.FindNode(Assert.IsAssignableFrom<CodeReference.Navigable>(plus.Reference)));
+        Assert.Same((await calculator.ListChildrenAsync()).Single(c => c.Is(MemberShape.Operator)), await list.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(plus.Reference)));
     }
 
     [Fact]
-    public void Read_by_finds_every_member_reading_a_field()
+    public async Task Read_by_finds_every_member_reading_a_field()
     {
-        var (list, items) = Member("_items : List<T>");
+        var (list, items) = await MemberAsync("_items : List<T>");
 
         var readers = Run(list, items, "Read By").Select(r => r.Label).ToList();
 
@@ -62,11 +62,11 @@ public sealed class AnalysisTests
     }
 
     [Fact]
-    public void An_interface_is_used_by_the_types_implementing_it_and_its_property_by_theirs()
+    public async Task An_interface_is_used_by_the_types_implementing_it_and_its_property_by_theirs()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var shape = assembly.Fixtures().Child("IShape");
-        var area = shape.Child("Area : double");
+        var shape = await assembly.FixturesAsync().GetChildAsync("IShape");
+        var area = await shape.GetChildAsync("Area : double");
 
         var users = Run(list, shape, "Used By").Select(r => r.Label);
         var implementations = Run(list, area, "Implemented By").Select(r => r.Label);
@@ -86,7 +86,7 @@ public sealed class AnalysisTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var core = list.OpenModule(typeof(AssemblyList).Assembly.Location);
         list.OpenModule(BrokenAssemblies.WriteUnreadableTypeSystem(temp, Trees.TestAssemblyPath));
-        var symbol = core.Root.Child("ILSight.Core", "AssemblyPath").Analysis;
+        var symbol = (await core.ReadRootAsync().GetChildAsync("ILSight.Core", "AssemblyPath")).Analysis;
         Assert.NotNull(symbol);
         var usedBy = symbol.Kinds.Single(static k => Analyzers.GetHeader(k) == "Used By");
 
@@ -109,7 +109,7 @@ public sealed class AnalysisTests
         var core = list.OpenModule(typeof(AssemblyList).Assembly.Location);
         var reads = await AnalyzerScope.ReadReachableAsync(list, core, CancellationToken.None);
         list.OpenModule(Trees.TestAssemblyPath);
-        var type = Assert.IsAssignableFrom<IEntity>(NodeDefinitions.GetSymbol(Assert.IsType<NodeSubject.TypeDefinition>(core.Root.Child("ILSight.Core", "AssemblyPath").Subject).Definition));
+        var type = Assert.IsAssignableFrom<IEntity>(NodeDefinitions.GetSymbol(Assert.IsType<NodeSubject.TypeDefinition>((await core.ReadRootAsync().GetChildAsync("ILSight.Core", "AssemblyPath")).Subject).Definition));
 
         var scanned = AnalyzerScope.Create(list, reads, new ConcurrentDictionary<LoadedModule, UnreadableModule>(), type).ListTypeSystems(CancellationToken.None).ToList();
 

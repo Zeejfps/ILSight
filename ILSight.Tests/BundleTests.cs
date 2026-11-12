@@ -21,7 +21,7 @@ public sealed class BundleTests
     private static string CoreAssemblyPath => typeof(AssemblyList).Assembly.Location;
 
     [Fact]
-    public void A_single_file_bundle_opens_as_a_package_of_its_files()
+    public async Task A_single_file_bundle_opens_as_a_package_of_its_files()
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
@@ -29,24 +29,24 @@ public sealed class BundleTests
         var bundle = list.Open(WriteBundle(temp));
 
         Assert.IsType<LoadedPackage>(bundle);
-        Assert.True(Assert.IsType<NodeSubject.Package>(bundle.Root.Subject).Value.Package.Package.IsBundle);
-        Assert.Equal(BundleName, bundle.Root.Text);
+        Assert.True(Assert.IsType<NodeSubject.Package>((await bundle.ReadRootAsync()).Subject).Value.Package.Package.IsBundle);
+        Assert.Equal(BundleName, (await bundle.ReadRootAsync()).Text);
         Assert.Equal([typeof(NodeSubject.PackageFile), typeof(NodeSubject.Module), typeof(NodeSubject.Module)],
-            bundle.Root.Children.Select(static c => c.Subject.GetType()));
-        Assert.Equal("App.deps.json", bundle.Root.Children[0].Text);
+            (await bundle.ReadRootAsync().ListChildrenAsync()).Select(static c => c.Subject.GetType()));
+        Assert.Equal("App.deps.json", (await bundle.ReadRootAsync().ListChildrenAsync())[0].Text);
         Assert.Equal(["ILSight.Core", TestAssemblyName], list.Assemblies.Select(a => a.Name));
     }
 
     [Fact]
-    public void A_compressed_assembly_in_a_bundle_decompiles_and_finds_the_assembly_beside_it()
+    public async Task A_compressed_assembly_in_a_bundle_decompiles_and_finds_the_assembly_beside_it()
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var bundle = list.Open(WriteBundle(temp));
         var assembly = list.Assemblies.Single(a => a.Name == TestAssemblyName);
 
-        var calculator = assembly.Calculator().Decompile(DecompilationLanguage.CSharp);
-        var core = list.FindNode(assembly.Root.Child("References", "ILSight.Core").Destination);
+        var calculator = await assembly.CalculatorAsync().DecompileAsync(DecompilationLanguage.CSharp);
+        var core = await list.FindNodeAsync((await assembly.ReadRootAsync().GetChildAsync("References", "ILSight.Core")).Destination);
 
         Assert.Null(calculator.Error);
         Assert.Contains("class Calculator<T>", Documents.GetText(calculator));
@@ -54,38 +54,38 @@ public sealed class BundleTests
     }
 
     [Fact]
-    public void A_file_of_a_bundle_that_is_no_assembly_shows_its_contents()
+    public async Task A_file_of_a_bundle_that_is_no_assembly_shows_its_contents()
     {
         using var temp = new TempDir();
         var bundle = new AssemblyList { Runtime = TestRuntime.Installed }.Open(WriteBundle(temp));
 
-        var deps = bundle.Root.Child("App.deps.json");
+        var deps = await bundle.ReadRootAsync().GetChildAsync("App.deps.json");
 
         Assert.Equal("{}", Encoding.UTF8.GetString(BrowseNodes.ReadResource(deps)));
     }
 
     [Fact]
-    public void An_entry_the_manifest_places_past_the_end_of_the_file_is_not_read()
+    public async Task An_entry_the_manifest_places_past_the_end_of_the_file_is_not_read()
     {
         using var temp = new TempDir();
         var path = WriteBundle(temp, ("Broken.dll", [1, 2, 3], false, 1_000_000));
         var bundle = Assert.IsType<LoadedPackage>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(path));
 
-        var broken = bundle.Root.Child("Broken.dll");
+        var broken = await bundle.ReadRootAsync().GetChildAsync("Broken.dll");
 
         Assert.IsType<NodeSubject.PackageFile>(broken.Subject);
         Assert.Throws<InvalidDataException>(() => BrowseNodes.ReadResource(broken));
     }
 
     [Fact]
-    public void Extracting_a_bundle_lists_an_entry_it_cannot_read_and_writes_the_others()
+    public async Task Extracting_a_bundle_lists_an_entry_it_cannot_read_and_writes_the_others()
     {
         using var temp = new TempDir();
         var path = WriteBundle(temp, ("Broken.dll", [1, 2, 3], false, 1_000_000), ("App.deps.json", Encoding.UTF8.GetBytes("{}"), false, 0));
         var bundle = Assert.IsType<LoadedPackage>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(path));
         var target = temp.PathOf("out");
 
-        var extracted = PackageExtraction.ExtractFolder(bundle.Package, FolderOf(bundle.Root), target);
+        var extracted = PackageExtraction.ExtractFolder(bundle.Package, FolderOf(await bundle.ReadRootAsync()), target);
 
         var failure = Assert.IsType<ExtractFailure.NotWritten>(Assert.Single(extracted.Failures));
         Assert.Equal("Broken.dll", failure.File.Name);

@@ -40,13 +40,13 @@ public sealed class SavedPathTests : IDisposable
 
     [Theory]
     [MemberData(nameof(SavedKinds))]
-    public void A_path_to_a_node_of_each_kind_finds_it_again_in_another_list_that_reopened_its_file(string kind)
+    public async Task A_path_to_a_node_of_each_kind_finds_it_again_in_another_list_that_reopened_its_file(string kind)
     {
-        var node = Sample(kind);
+        var node = await SampleAsync(kind);
         var reopened = new AssemblyList { Runtime = TestRuntime.Installed };
         AssemblyListing.Open(reopened, node.Path.FilePath);
 
-        var found = reopened.FindNode(node.Path);
+        var found = await reopened.FindNodeAsync(node.Path);
 
         Assert.NotNull(found);
         Assert.NotSame(node, found);
@@ -54,23 +54,23 @@ public sealed class SavedPathTests : IDisposable
     }
 
     [Fact]
-    public void A_path_to_a_file_that_failed_finds_nothing_in_a_list_that_does_not_list_it()
+    public async Task A_path_to_a_file_that_failed_finds_nothing_in_a_list_that_does_not_list_it()
     {
-        var failed = Sample("FailedAssembly");
+        var failed = await SampleAsync("FailedAssembly");
 
-        Assert.Null(new AssemblyList { Runtime = TestRuntime.Installed }.FindNode(failed.Path));
+        Assert.Null(await new AssemblyList { Runtime = TestRuntime.Installed }.FindNodeAsync(failed.Path));
     }
 
     /// <summary>A node of <paramref name="kind"/>, in a file left in place for another list to open.</summary>
-    private BrowseNode Sample(string kind)
+    private async Task<BrowseNode> SampleAsync(string kind)
     {
         return kind switch
         {
-            "Package" or "PackageFolder" => FirstOf(Open(PackageTests.WritePackage(_temp)), kind),
-            "Bundle" => Open(BundleTests.WriteBundle(_temp)).Root,
-            "FailedAssembly" => Open(_temp.Write("broken.dll", "no assembly")).Root,
-            "ForwardedType" => FirstOf(Open(Path.Combine(RuntimeAssemblies.ListDirectories(TestRuntime.Installed)[0], "System.Runtime.dll")), kind),
-            _ => FirstOf(Open(Trees.TestAssemblyPath), kind),
+            "Package" or "PackageFolder" => await FirstOfAsync(Open(PackageTests.WritePackage(_temp)), kind),
+            "Bundle" => await Open(BundleTests.WriteBundle(_temp)).ReadRootAsync(),
+            "FailedAssembly" => await Open(_temp.Write("broken.dll", "no assembly")).ReadRootAsync(),
+            "ForwardedType" => await FirstOfAsync(Open(Path.Combine(RuntimeAssemblies.ListDirectories(TestRuntime.Installed)[0], "System.Runtime.dll")), kind),
+            _ => await FirstOfAsync(Open(Trees.TestAssemblyPath), kind),
         };
     }
 
@@ -128,9 +128,9 @@ public sealed class SavedPathTests : IDisposable
     /// <summary>The first node of <paramref name="kind"/> breadth first from the root of
     /// <paramref name="assembly"/>, not following a reference into the references of the assembly it
     /// resolves to.</summary>
-    private static BrowseNode FirstOf(LoadedAssembly assembly, string kind)
+    private static async Task<BrowseNode> FirstOfAsync(LoadedAssembly assembly, string kind)
     {
-        var queue = new Queue<BrowseNode>([assembly.Root]);
+        var queue = new Queue<BrowseNode>([await assembly.ReadRootAsync()]);
         while (queue.Count > 0)
         {
             var node = queue.Dequeue();
@@ -140,7 +140,7 @@ public sealed class SavedPathTests : IDisposable
                 return node;
             }
 
-            foreach (var child in node.Children)
+            foreach (var child in await node.ListChildrenAsync())
             {
                 if (node.Subject is NodeSubject.AssemblyReference && child.Subject is NodeSubject.AssemblyReference)
                 {
