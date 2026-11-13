@@ -54,6 +54,20 @@ public sealed class CodeViewTooltipTests
     }
 
     [Fact]
+    public async Task Resting_on_a_member_in_a_closed_assemblys_code_says_it_was_closed_and_looks_nothing_up()
+    {
+        var view = await FarewellAsync();
+        view.ClosedAssembly = "Shop.dll";
+
+        RestOn(view, "Say()");
+        RunOut(view);
+
+        Assert.True(view.Frames.Drew("Shop.dll was closed."));
+        Assert.False(view.Frames.Drew("Says "));
+        Assert.False(view.Frames.Drew("Bye"));
+    }
+
+    [Fact]
     public async Task Resting_on_a_member_shows_its_declaration_and_documentation()
     {
         var view = await FarewellAsync();

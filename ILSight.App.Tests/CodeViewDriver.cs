@@ -52,7 +52,8 @@ internal sealed class CodeViewDriver
     {
         using (ui.Screen())
         {
-            Last = CodeViewWidget.RenderCodeView(ui, "code", Document, State, Bookmarks, tooltips: Tooltips, display: Display);
+            Last = CodeViewWidget.RenderCodeView(ui, "code", Document, State, Bookmarks, tooltips: Tooltips, display: Display,
+                closedAssembly: ClosedAssembly);
         }
 
         StartAskedLookups();
@@ -86,6 +87,9 @@ internal sealed class CodeViewDriver
     public IReadOnlyDictionary<int, bool>? Bookmarks { get; set; }
     public CodeTooltips? Tooltips { get; set; }
     public DisplayOptions? Display { get; set; }
+
+    /// <summary>The name of the closed assembly the code is of, as a tab of one passes it; null while it is open.</summary>
+    public string? ClosedAssembly { get; set; }
     public CodeViewResult Last { get; private set; }
 
     private float FoldLeft => Origin + MarkColumn + GutterPadding + Digits * Cell + GutterPadding;

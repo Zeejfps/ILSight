@@ -6,6 +6,7 @@ using ILSight.Core.Metadata;
 using ZGF.KeyboardModule;
 using static ILSight.App.Tests.BuiltInGlyphs;
 using ILSight.MetadataGridArea;
+using ILSight.CommandArea;
 using ILSight.MetadataArea;
 using ILSight.SettingArea;
 using static ILSight.App.Tests.TestPaths;
@@ -323,6 +324,35 @@ public sealed class MetadataGridTests
         Assert.Equal(MetadataGrids.OrderRows(grid, name, descending: true), landed);
         Assert.Same(landed, state.Order);
         Assert.False(state.IsViewUnderWay);
+    }
+
+    [Fact]
+    public async Task A_closed_assemblys_row_menu_shows_its_links_disabled_saying_why()
+    {
+        var (app, tab, grid, row) = await ShowGreeterRowAsync();
+        var greeter = TextBeside(app, MetadataGrids.GetText(grid, row, grid.Column("Name")), "Greeter");
+        var fixtures = app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
+        var closed = app.Ui.Strings.DocumentClosed(fixtures.FilePath.FileName);
+        using (app.Driver.Turn())
+        {
+            Commands.CloseAssemblies(app.AppState, [fixtures]);
+        }
+
+        app.Settle(2);
+
+        app.Frames.Click(greeter, PointerButton.Right).Frame(2);
+        var disabled = new[] { "Go to definition", "Open in new tab" }
+            .Select(label => app.Frames.Find(Selector.OfRole(SemanticRole.MenuItem, label)).Has(SemanticStates.Disabled))
+            .ToList();
+        var why = app.Frames.Drew(closed);
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Go to definition")).Frame(2);
+        app.Settle(2);
+
+        Assert.Equal([true, true], disabled);
+        Assert.True(why);
+        Assert.Same(tab, app.AppState.Navigation.ActiveTab);
+        Assert.Same(grid, tab.Grid);
+        Assert.Empty(app.AppState.Errors.Entries);
     }
 
     [Fact]

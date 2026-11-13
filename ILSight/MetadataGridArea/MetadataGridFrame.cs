@@ -4,6 +4,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core.Metadata;
 using ZGF.KeyboardModule;
 using ILSight.MetadataArea;
+using ILSight.CommandArea;
 
 namespace ILSight.MetadataGridArea;
 
@@ -224,13 +225,9 @@ internal ref struct MetadataGridFrame
             {
                 MetadataGridWidget.SelectAllText(State);
             }
-            else if (Ui.IsPressedAt(Shortcuts.GoToToken, i) && ClosedAssembly is null)
+            else if (Ui.IsPressedAt(Shortcuts.GoToToken, i))
             {
-                var target = MetadataGrids.FindLink(Grid, State.Selected, State.CurrentColumn);
-                if (target is not null)
-                {
-                    result = new MetadataGridResult { Target = target, Definition = null, InNewTab = false };
-                }
+                result = GoToToken(State.Selected, State.CurrentColumn) ?? result;
             }
         }
         return result;
@@ -384,7 +381,7 @@ internal ref struct MetadataGridFrame
     /// <summary>Does what the user asked of the rows this frame: open, copy or show the menu.</summary>
     private void Answer(TableBody body)
     {
-        if (body.Activated && ClosedAssembly is null)
+        if (body.Activated)
         {
             OpenDefinition(State.Selected, body.InNewTab);
         }
@@ -400,6 +397,26 @@ internal ref struct MetadataGridFrame
         }
     }
 
+    /// <summary>Goes to the row the token of <paramref name="row"/>'s cell in <paramref name="column"/> names, when it names
+    /// one; once the grid's assembly was closed, says why where the user pressed, going nowhere.</summary>
+    private MetadataGridResult? GoToToken(int row, int column)
+    {
+        var target = MetadataGrids.FindLink(Grid, row, column);
+        if (target is null)
+        {
+            return null;
+        }
+
+        if (TryReportClosed())
+        {
+            return null;
+        }
+
+        return new MetadataGridResult { Target = target, Definition = null, InNewTab = false };
+    }
+
+    /// <summary>Opens what <paramref name="row"/> defines, when it defines something; once the grid's assembly was closed,
+    /// says why where the user pressed, opening nothing.</summary>
     private void OpenDefinition(int row, bool inNewTab)
     {
         var definition = MetadataGrids.FindDefinition(Grid, row);
@@ -408,7 +425,26 @@ internal ref struct MetadataGridFrame
             return;
         }
 
+        if (TryReportClosed())
+        {
+            return;
+        }
+
         _result = new MetadataGridResult { Target = null, Definition = definition, InNewTab = inNewTab };
+    }
+
+    /// <summary>Whether the grid's assembly was closed, which a link would read: then has the user told so, as a command
+    /// unavailable says why where it was pressed.</summary>
+    private bool TryReportClosed()
+    {
+        var closed = ClosedAssembly;
+        if (closed is null)
+        {
+            return false;
+        }
+
+        Commands.ReportLater(Ui.State, new AppProblem.AssemblyClosed { Assembly = closed });
+        return true;
     }
 
     private void Cell(TableRow cells, int row, int c)
@@ -516,11 +552,6 @@ internal ref struct MetadataGridFrame
             Ui.ClipboardText = MetadataGridWidget.GetRowText(State, row);
         }
 
-        if (ClosedAssembly is not null)
-        {
-            return null;
-        }
-
         var target = column >= 0 ? MetadataGrids.FindLink(Grid, row, column) : null;
         var definition = MetadataGrids.FindDefinition(Grid, row);
         if (target is null && definition == null)
@@ -529,19 +560,21 @@ internal ref struct MetadataGridFrame
         }
 
         Ui.MenuSeparator();
-        if (target is not null && Ui.MenuItem(Strings.MetadataGoToToken, Shortcuts.GoToToken, id: "go-to-token"))
+        var closed = ClosedAssembly;
+        var why = closed is null ? null : ClosedText(closed);
+        if (target is not null && Ui.MenuItem(Strings.MetadataGoToToken, Shortcuts.GoToToken, enabled: why is null, id: "go-to-token", detail: why))
         {
             result = new MetadataGridResult { Target = target, Definition = null, InNewTab = false };
         }
 
         if (definition != null)
         {
-            if (Ui.MenuItem(Strings.CodeGoToDefinition, Shortcuts.Enter, id: "go-to-definition"))
+            if (Ui.MenuItem(Strings.CodeGoToDefinition, Shortcuts.Enter, enabled: why is null, id: "go-to-definition", detail: why))
             {
                 result = new MetadataGridResult { Target = null, Definition = definition, InNewTab = false };
             }
 
-            if (Ui.MenuItem(Strings.CodeOpenInNewTab, id: "open-in-new-tab"))
+            if (Ui.MenuItem(Strings.CodeOpenInNewTab, enabled: why is null, id: "open-in-new-tab", detail: why))
             {
                 result = new MetadataGridResult { Target = null, Definition = definition, InNewTab = true };
             }

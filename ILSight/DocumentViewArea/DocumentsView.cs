@@ -115,7 +115,8 @@ internal static class DocumentsView
         var lines = !tab.Load.IsBusy && tab.Node is not null && tab.Document.Error is null ? bookmarks.ListMarkedLines(tab.Document, tab.Node) : null;
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
         var document = GetDocumentToShow(ui.State, view, tab);
-        var result = CodeViewWidget.RenderCodeView(ui, "code", document, view.Code, lines, tooltips: tooltips, display: ui.State.Display);
+        var result = CodeViewWidget.RenderCodeView(ui, "code", document, view.Code, lines, tooltips: tooltips, display: ui.State.Display,
+            closedAssembly: tab.Load.ClosedAssembly);
         if (result.Intent is not null)
         {
             Act(ui, navigation, tab, result.Intent);
@@ -124,9 +125,17 @@ internal static class DocumentsView
         Zoom(ui.State, result.Zoom);
     }
 
-    /// <summary>Does what the user asked the code view of <paramref name="tab"/> to do.</summary>
+    /// <summary>Does what the user asked the code view of <paramref name="tab"/> to do; once its assembly was closed, what
+    /// would read it is unavailable, and says why where the user acted.</summary>
     private static void Act(Ui<UiState> ui, Navigation navigation, DocumentTab tab, CodeViewIntent intent)
     {
+        var closed = tab.Load.ClosedAssembly;
+        if (closed is not null && !intent.CanRunWhenClosed)
+        {
+            Commands.ReportLater(ui.State, new AppProblem.AssemblyClosed { Assembly = closed });
+            return;
+        }
+
         intent.Switch((ui, navigation, tab),
             navigate: static (s, navigate) => Commands.FollowLater(s.ui.State, navigate.Target, s.navigation.BeginResolving(navigate.InNewTab)),
             toggleBookmark: static (s, toggle) => Commands.Later(s.ui.State, (screen: s.ui.State, s.tab, line: toggle.Line, t: s.ui.State.Strings),

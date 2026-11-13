@@ -249,6 +249,13 @@ public abstract record AppProblem
 
     public sealed record SearchFailed(Exception Error) : AppProblem;
 
+    /// <summary>What was asked would read <see cref="Assembly"/>, the file a tab shows closed
+    /// (<see cref="TabLoad.ShowClosed"/>): a view of a closed assembly asks for nothing more.</summary>
+    public sealed record AssemblyClosed : AppProblem
+    {
+        public required string Assembly { get; init; }
+    }
+
     /// <summary>Work started on the UI thread failed where it does not expect to fail.</summary>
     public sealed record Unexpected(Exception Error) : AppProblem;
 
@@ -273,7 +280,7 @@ public abstract record AppProblem
         Func<CustomThemeNotWritten, TResult> customThemeNotWritten, Func<ThemesNotWatched, TResult> themesNotWatched,
         Func<RuntimeNotScanned, TResult> runtimeNotScanned, Func<NuGetConfigUnreadable, TResult> nuGetConfigUnreadable,
         Func<NuGetSearchFailed, TResult> nuGetSearchFailed, Func<PackageNotDownloaded, TResult> packageNotDownloaded,
-        Func<SearchFailed, TResult> searchFailed, Func<Unexpected, TResult> unexpected)
+        Func<SearchFailed, TResult> searchFailed, Func<AssemblyClosed, TResult> assemblyClosed, Func<Unexpected, TResult> unexpected)
     {
         return this switch
         {
@@ -316,6 +323,7 @@ public abstract record AppProblem
             NuGetSearchFailed c => nuGetSearchFailed(c),
             PackageNotDownloaded c => packageNotDownloaded(c),
             SearchFailed c => searchFailed(c),
+            AssemblyClosed c => assemblyClosed(c),
             Unexpected c => unexpected(c),
             _ => throw new UnreachableException($"AppProblem.Match does not handle {GetType().Name}."),
         };

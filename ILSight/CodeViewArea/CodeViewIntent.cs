@@ -10,6 +10,11 @@ public abstract record CodeViewIntent
     {
     }
 
+    /// <summary>Whether it can be done in the code of an assembly that was closed (<see cref="TabLoad.ShowClosed"/>),
+    /// reading nothing of it: not, unless the case says so, as following, analyzing or showing a reference looks the
+    /// assembly up.</summary>
+    public virtual bool CanRunWhenClosed => false;
+
     /// <summary>Go to <see cref="Target"/>, in a new tab when <see cref="InNewTab"/>.</summary>
     public sealed record Navigate : CodeViewIntent
     {
@@ -18,7 +23,11 @@ public abstract record CodeViewIntent
         public required bool InNewTab { get; init; }
     }
 
-    public sealed record ToggleBookmark(int Line) : CodeViewIntent;
+    /// <summary>Marks or unmarks <see cref="Line"/>, which the document already holds.</summary>
+    public sealed record ToggleBookmark(int Line) : CodeViewIntent
+    {
+        public override bool CanRunWhenClosed => true;
+    }
 
     public sealed record Analyze(CodeReference.Entity Entity) : CodeViewIntent;
 

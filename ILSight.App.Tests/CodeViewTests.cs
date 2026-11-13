@@ -342,6 +342,26 @@ public sealed class CodeViewTests
     }
 
     [Fact]
+    public async Task In_a_closed_assemblys_code_the_context_menu_shows_what_would_read_it_disabled_saying_why()
+    {
+        var (view, line, column) = await GreeterAtAsync("Greet(2)");
+        view.ClosedAssembly = "Shop.dll";
+
+        view.Click(line, column, PointerButton.Right);
+        view.Run();
+        var disabled = new[] { "Go to definition", "Open in new tab", "Analyze", "Show in metadata" }
+            .Select(label => view.Frames.Find(Selector.OfRole(SemanticRole.MenuItem, label)).Has(SemanticStates.Disabled))
+            .ToList();
+        var why = view.Frames.Drew("Shop.dll was closed.");
+        var item = view.Frames.Canvas.Texts.Single(t => t.Inputs.Text == "Go to definition").Inputs.Position;
+        view.Frames.Click(item.Left + 2f, view.Frames.Height - item.Center.Y);
+
+        Assert.Equal([true, true, true, true], disabled);
+        Assert.True(why);
+        Assert.Null(view.Last.Intent);
+    }
+
+    [Fact]
     public async Task The_context_menu_goes_to_the_definition_under_the_pointer()
     {
         var (view, line, column) = await GreeterAtAsync("Greet(2)");

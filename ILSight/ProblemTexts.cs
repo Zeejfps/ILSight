@@ -69,6 +69,7 @@ public static class ProblemTexts
             nuGetSearchFailed: p => (t.ErrorSearchNuget(p.Feed), p.Error.ToString()),
             packageNotDownloaded: p => (t.ErrorDownloadPackage(p.Package), p.Error.ToString()),
             searchFailed: p => (t.ErrorSearch, p.Error.ToString()),
+            assemblyClosed: p => (t.DocumentClosed(p.Assembly), ""),
             unexpected: p => (t.ErrorUnexpected, p.Error.ToString()));
     }
 

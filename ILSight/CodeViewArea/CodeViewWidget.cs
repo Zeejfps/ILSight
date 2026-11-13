@@ -254,10 +254,13 @@ public static class CodeViewWidget
     /// <paramref name="tooltips"/>, resting the pointer on a type or member shows its declaration and
     /// documentation. With <paramref name="display"/>, the code is drawn at its size with the aids it
     /// turns on, and Ctrl with the wheel, =, - or 0 asks to change the size; without, at the theme's
-    /// size with line numbers only.
+    /// size with line numbers only. With <paramref name="closedAssembly"/>, the name of the closed assembly the code is
+    /// of (<see cref="TabLoad.ShowClosed"/>), nothing that would read it is asked for: the menu shows following,
+    /// analyzing and showing a reference disabled, and a hovered type or member's tooltip, each saying it was closed.
     /// </summary>
     public static CodeViewResult RenderCodeView(Ui<UiState> ui, string id, DecompiledDocument document, CodeViewState state,
-        IReadOnlyDictionary<int, bool>? bookmarks = null, bool gutter = true, CodeTooltips? tooltips = null, DisplayOptions? display = null)
+        IReadOnlyDictionary<int, bool>? bookmarks = null, bool gutter = true, CodeTooltips? tooltips = null, DisplayOptions? display = null,
+        string? closedAssembly = null)
     {
         using var scope = ui.Id(id);
         ShowDocument(state, document);
@@ -507,17 +510,24 @@ public static class CodeViewWidget
             if (tooltips is not null && hasRect)
             {
                 var under = new HoveredSpan { Span = hoverSpan, TextX = rect.X + textLeft, TextY = rect.Y };
-                var followed = ReferenceTooltip(ui, state, document, tooltips, codeId, under, advance, rowHeight);
-                if (followed is not null)
+                if (closedAssembly is not null)
                 {
-                    intent = followed;
+                    ClosedTooltip(ui, state, document, codeId, under, advance, rowHeight, closedAssembly);
+                }
+                else
+                {
+                    var followed = ReferenceTooltip(ui, state, document, tooltips, codeId, under, advance, rowHeight);
+                    if (followed is not null)
+                    {
+                        intent = followed;
+                    }
                 }
             }
             state.LaidOutScrollX = state.ScrollX;
             state.LaidOutScrollY = state.ScrollY;
         }
 
-        var picked = ContextMenu(ui, state, document, bookmarks is not null);
+        var picked = ContextMenu(ui, state, document, bookmarks is not null, closedAssembly);
         if (picked is not null)
         {
             intent = picked;
@@ -674,6 +684,29 @@ public static class CodeViewWidget
         return FollowLink(ui, click);
     }
 
+    /// <summary>The tooltip of the type or member under the pointer in the code of <paramref name="closedAssembly"/>, which
+    /// was closed: it says so, under the span, looking nothing up.</summary>
+    private static void ClosedTooltip(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, int codeId, HoveredSpan hovered,
+        float advance, float rowHeight, string closedAssembly)
+    {
+        var part = 0;
+        var entity = FindHoveredEntity(state, document, hovered);
+        var span = hovered.Span;
+        if (entity is not null && span is not null)
+        {
+            part = HashCode.Combine(span.Value.Line, span.Value.Span) | 1;
+        }
+
+        var anchor = TooltipAnchor(state, document, hovered, advance, rowHeight);
+        using var popup = ui.TooltipContent(codeId, part, anchor, out _, CodeTooltipView.Look);
+        if (!popup.IsOpen)
+        {
+            return;
+        }
+
+        CodeTooltipView.RenderClosed(ui, closedAssembly);
+    }
+
     /// <summary>A link clicked in the tooltip asks to navigate to it, in a new tab with a middle
     /// click or Ctrl, and closes the tooltip.</summary>
     private static CodeViewIntent? FollowLink(Ui<UiState> ui, RichTextClick click)
@@ -693,6 +726,19 @@ public static class CodeViewWidget
     /// its lookup is done; null otherwise, and while a press drags a selection.</summary>
     private static Lookup<CodeTooltip>? TooltipOf(CodeViewState state, DecompiledDocument document, CodeTooltips tooltips, HoveredSpan hovered)
     {
+        var entity = FindHoveredEntity(state, document, hovered);
+        if (entity is null)
+        {
+            return null;
+        }
+
+        return tooltips.FindShown(entity);
+    }
+
+    /// <summary>The type or member the span under the pointer names; null for another span, none, and while a press
+    /// drags a selection.</summary>
+    private static CodeReference.Entity? FindHoveredEntity(CodeViewState state, DecompiledDocument document, HoveredSpan hovered)
+    {
         var span = hovered.Span;
         if (span is null)
         {
@@ -704,12 +750,7 @@ public static class CodeViewWidget
             return null;
         }
 
-        if (document.Lines[span.Value.Line].Spans[span.Value.Span].Reference is not CodeReference.Entity entity)
-        {
-            return null;
-        }
-
-        return tooltips.FindShown(entity);
+        return document.Lines[span.Value.Line].Spans[span.Value.Span].Reference as CodeReference.Entity;
     }
 
     /// <summary>The hovered span, widened to the left by the tooltip's padding so the tooltip's
@@ -1372,8 +1413,9 @@ public static class CodeViewWidget
         };
     }
 
-    /// <summary>The items that show <paramref name="entity"/> on a diagram, when it is a type.</summary>
-    private static CodeViewIntent? DiagramItems(Ui<UiState> ui, CodeReference.Entity entity)
+    /// <summary>The items that show <paramref name="entity"/> on a diagram, when it is a type; disabled, saying
+    /// <paramref name="why"/>, when given.</summary>
+    private static CodeViewIntent? DiagramItems(Ui<UiState> ui, CodeReference.Entity entity, string? why)
     {
         if (entity.Kind != EntityKind.Type)
         {
@@ -1382,12 +1424,12 @@ public static class CodeViewWidget
 
         var t = ui.State.Strings;
         CodeViewIntent? picked = null;
-        if (ui.MenuItem(t.TreeShowInDiagram, id: "show-in-diagram"))
+        if (ui.MenuItem(t.TreeShowInDiagram, enabled: why is null, id: "show-in-diagram", detail: why))
         {
             picked = new CodeViewIntent.ShowInDiagram(entity);
         }
 
-        if (ui.MenuItem(t.TreeShowInNewDiagram, id: "show-in-new-diagram"))
+        if (ui.MenuItem(t.TreeShowInNewDiagram, enabled: why is null, id: "show-in-new-diagram", detail: why))
         {
             picked = new CodeViewIntent.ShowInNewDiagram(entity);
         }
@@ -1395,7 +1437,10 @@ public static class CodeViewWidget
         return picked;
     }
 
-    private static CodeViewIntent? ContextMenu(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, bool bookmarkable)
+    /// <summary>The code view's menu; in the code of <paramref name="closedAssembly"/>, which was closed, what would read
+    /// it is shown disabled, saying so.</summary>
+    private static CodeViewIntent? ContextMenu(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, bool bookmarkable,
+        string? closedAssembly)
     {
         var t = ui.State.Strings;
         CodeViewIntent? picked = null;
@@ -1451,16 +1496,17 @@ public static class CodeViewWidget
                 ExpandAll(state);
             }
         }
+        var why = ClosedText(ui, closedAssembly);
         var reference = target.Navigable;
         if (reference != null)
         {
             ui.MenuSeparator();
-            if (ui.MenuItem(t.CodeGoToDefinition, id: "go-to-definition"))
+            if (ui.MenuItem(t.CodeGoToDefinition, enabled: why is null, id: "go-to-definition", detail: why))
             {
                 picked = new CodeViewIntent.Navigate { Target = reference, InNewTab = false };
             }
 
-            if (ui.MenuItem(t.CodeOpenInNewTab, id: "open-in-new-tab"))
+            if (ui.MenuItem(t.CodeOpenInNewTab, enabled: why is null, id: "open-in-new-tab", detail: why))
             {
                 picked = new CodeViewIntent.Navigate { Target = reference, InNewTab = true };
             }
@@ -1474,17 +1520,18 @@ public static class CodeViewWidget
             }
 
             var analyzable = target.Analyzable;
-            if (analyzable is not null && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
+            if (analyzable is not null && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, enabled: why is null, id: "analyze", detail: why))
             {
                 picked = new CodeViewIntent.Analyze(analyzable);
             }
 
-            if (ui.MenuItem(t.TreeShowInApiReference, id: "show-in-api-reference", icon: new UiIcon(ui.State.Icons.LinkApiReference)))
+            if (ui.MenuItem(t.TreeShowInApiReference, enabled: why is null, id: "show-in-api-reference", icon: new UiIcon(ui.State.Icons.LinkApiReference),
+                    detail: why))
             {
                 picked = new CodeViewIntent.ShowInApiReference(entity);
             }
 
-            picked = DiagramItems(ui, entity) ?? picked;
+            picked = DiagramItems(ui, entity, why) ?? picked;
         }
         var shown = target.Metadata;
         if (shown != null)
@@ -1494,12 +1541,24 @@ public static class CodeViewWidget
                 ui.MenuSeparator();
             }
 
-            if (ui.MenuItem(t.TreeShowInMetadata, id: "show-in-metadata"))
+            if (ui.MenuItem(t.TreeShowInMetadata, enabled: why is null, id: "show-in-metadata", detail: why))
             {
                 picked = new CodeViewIntent.ShowInMetadata(shown);
             }
         }
         return picked;
+    }
+
+    /// <summary>That <paramref name="closedAssembly"/>, the assembly the code is of, was closed, as its tab's bar says it;
+    /// null while it is open.</summary>
+    private static string? ClosedText(Ui<UiState> ui, string? closedAssembly)
+    {
+        if (closedAssembly is null)
+        {
+            return null;
+        }
+
+        return ui.Memo("closed", (closedAssembly, t: ui.State.Strings), static a => a.t.DocumentClosed(a.closedAssembly));
     }
 
     private static void PaintRow(UiPainter p, (CodeViewFrame Frame, CodeRow Row) shown)

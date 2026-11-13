@@ -67,6 +67,17 @@ internal static class CodeTooltipView
         return default;
     }
 
+    /// <summary>Records that <paramref name="assembly"/>, the assembly the hovered type or member is in, was closed, where
+    /// the tooltip's declaration would be: the code of a closed assembly looks nothing up.</summary>
+    public static void RenderClosed(Ui<UiState> ui, string assembly)
+    {
+        using (ui.Column(new Box { Padding = new Spacing(PaddingX, SignaturePaddingY), Gap = 0f }))
+        {
+            var text = ui.Memo("closed", (assembly, t: ui.State.Strings), static a => a.t.DocumentClosed(a.assembly));
+            ui.Text(text, color: ui.Theme.Warning, wrap: true);
+        }
+    }
+
     /// <summary>Records the tooltip and returns the link clicked in it this frame, if one was.</summary>
     public static RichTextClick Render(Ui<UiState> ui, CodeTooltip tooltip)
     {

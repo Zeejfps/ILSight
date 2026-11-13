@@ -326,6 +326,28 @@ public sealed class CloseAssembliesTests
     }
 
     [Fact]
+    public async Task Analyze_in_a_closed_assemblys_code_looks_nothing_up_and_says_why_where_pressed()
+    {
+        var app = await ShowingGreeterAndKeyboardKeyAsync();
+        CloseKeyboardFromTheDialog(app);
+        var tab = TabShowing(app, "KeyboardKey");
+        var code = DocumentPanels.GetView(app.Ui.Documents, tab).Code;
+        var bar = app.TextRect($"{KeyboardFile} was closed.");
+        app.Frames.Click(bar.X + 300f, bar.Y + 150f).Frame();
+        var (line, column) = tab.Document.GetPosition("enum KeyboardKey");
+        var name = new TextPosition { Line = line, Column = column + "enum ".Length + 1 };
+        code.Selection.Select(name, name);
+
+        app.Frames.Key(Shortcuts.Analyze).Frame(2);
+        app.Settle(2);
+
+        Assert.Empty(app.AppState.Analyzer.Roots);
+        Assert.Single(app.AppState.Assemblies.Listed);
+        Assert.Equal(KeyboardFile, tab.Load.ClosedAssembly);
+        Assert.Contains(app.AppState.Errors.Entries, e => e.Words().Title == $"{KeyboardFile} was closed.");
+    }
+
+    [Fact]
     public async Task Opening_a_closed_assembly_again_revives_its_tab_which_reads_again_without_the_closed_bar()
     {
         var app = await ShowingGreeterAndKeyboardKeyAsync();
