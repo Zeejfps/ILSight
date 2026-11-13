@@ -24,22 +24,22 @@ public sealed class ExportWriting(ExportWriting.IPorts ports)
         /// <see cref="ExportOutcome{T}.Stopped"/> once <paramref name="start"/>'s turn is cancelled, and what the work
         /// failed with as <see cref="ExportOutcome{T}.Failed"/>; the cancellation of <paramref name="ct"/> is let
         /// through.</summary>
-        Task<ExportOutcome<string>> WriteCodeFileAsync(ExportWork.CodeFile work, ExportStart start, CancellationToken ct);
+        Task<ExportOutcome<string>> WriteCodeFileAsync(ExportWork.CodeFile work, ExportTurn.Started start, CancellationToken ct);
 
-        Task<ExportOutcome<ExportedProject>> WriteProjectAsync(ExportWork.Project work, ExportStart start, CancellationToken ct);
+        Task<ExportOutcome<ExportedProject>> WriteProjectAsync(ExportWork.Project work, ExportTurn.Started start, CancellationToken ct);
 
-        Task<ExportOutcome<List<ExportedProject>>> WriteSolutionAsync(ExportWork.Solution work, ExportStart start, CancellationToken ct);
+        Task<ExportOutcome<List<ExportedProject>>> WriteSolutionAsync(ExportWork.Solution work, ExportTurn.Started start, CancellationToken ct);
 
         /// <summary>Answers the path written.</summary>
-        Task<ExportOutcome<string>> WritePdbAsync(ExportWork.Pdb work, ExportStart start, CancellationToken ct);
+        Task<ExportOutcome<string>> WritePdbAsync(ExportWork.Pdb work, ExportTurn.Started start, CancellationToken ct);
 
         /// <summary>Answers the assemblies whose PDB could not be written, and why.</summary>
-        Task<ExportOutcome<List<PdbFailure>>> WritePdbsAsync(ExportWork.Pdbs work, ExportStart start, CancellationToken ct);
+        Task<ExportOutcome<List<PdbFailure>>> WritePdbsAsync(ExportWork.Pdbs work, ExportTurn.Started start, CancellationToken ct);
 
         /// <summary>Answers the diagrammer's page.</summary>
-        Task<ExportOutcome<string>> WriteDiagramAsync(ExportWork.Diagram work, ExportStart start, CancellationToken ct);
+        Task<ExportOutcome<string>> WriteDiagramAsync(ExportWork.Diagram work, ExportTurn.Started start, CancellationToken ct);
 
-        Task<ExportOutcome<ExtractedFiles>> ExtractPackageFolderAsync(ExportWork.PackageFolder work, ExportStart start, CancellationToken ct);
+        Task<ExportOutcome<ExtractedFiles>> ExtractPackageFolderAsync(ExportWork.PackageFolder work, ExportTurn.Started start, CancellationToken ct);
     }
 
     /// <summary>Waits for the turn of the export <paramref name="ticket"/> queued, then writes <paramref name="work"/>
@@ -50,7 +50,7 @@ public sealed class ExportWriting(ExportWriting.IPorts ports)
         CancellationToken ct)
     {
         var turn = await ticket.Turn.WaitAsync(ct);
-        if (turn is not ExportStart start)
+        if (turn is not ExportTurn.Started start)
         {
             return;
         }
@@ -78,7 +78,7 @@ public sealed class ExportWriting(ExportWriting.IPorts ports)
     /// <summary>Writes the export through <paramref name="write"/>, ends the turn, and reports how the export ended,
     /// measured from <paramref name="started"/>: a finished one as <paramref name="complete"/> lists what it wrote, a
     /// cancelled one as cancelled, a failed one as failing to export <paramref name="subject"/>.</summary>
-    private async Task<ExportReport> WriteAsync<T>(Func<CancellationToken, Task<ExportOutcome<T>>> write, ExportStart start, ExportTicket ticket,
+    private async Task<ExportReport> WriteAsync<T>(Func<CancellationToken, Task<ExportOutcome<T>>> write, ExportTurn.Started start, ExportTicket ticket,
         string subject, long started, Func<ExportReport, T, ExportReport> complete, CancellationToken ct)
     {
         var outcome = await write(ct);

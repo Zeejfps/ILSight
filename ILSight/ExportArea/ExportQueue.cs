@@ -25,7 +25,7 @@ public sealed class ExportQueue
 
     /// <summary>Queues <paramref name="job"/>, which has one part until it reports otherwise. Its turn comes at once
     /// when nothing runs, else when the exports queued before it have ended. A started export ends its turn with
-    /// <see cref="ExportStart.EndTurn"/>.</summary>
+    /// <see cref="ExportTurn.Started.EndTurn"/>.</summary>
     public ExportTicket Enter(ExportJob job)
     {
         _lastRun++;
@@ -64,7 +64,7 @@ public sealed class ExportQueue
 
         var turn = _waiting[index];
         _waiting.RemoveAt(index);
-        turn.Started.SetResult(new ExportWithdrawn());
+        turn.Started.SetResult(new ExportTurn.Withdrawn());
     }
 
     private void StartNext()
@@ -90,7 +90,7 @@ public sealed class ExportQueue
         };
         _running = active;
         var progress = new Progress<ExportProgress>(p => TakeProgress(run, p));
-        turn.Started.SetResult(new ExportStart(run, progress, () => EndTurn(run), active.Cancel.Token));
+        turn.Started.SetResult(new ExportTurn.Started(run, progress, () => EndTurn(run), active.Cancel.Token));
     }
 
     /// <summary>Ends the turn of the export <paramref name="run"/>, when it is the running one, and

@@ -133,7 +133,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     {
         var app = AppDriver.Opened(height: TallWindow);
         OpenPanel(app.Ui, DockView.Exports);
-        var running = Assert.IsType<ExportStart>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
+        var running = Assert.IsType<ExportTurn.Started>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
         Assert.False(app.AppState.Export.Enter(TestJobs.Named("Later")).Turn.IsCompleted);
         app.Run(2);
 
@@ -153,7 +153,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     {
         var app = AppDriver.Opened(height: TallWindow);
         OpenPanel(app.Ui, DockView.Exports);
-        var running = Assert.IsType<ExportStart>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
+        var running = Assert.IsType<ExportTurn.Started>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
         Assert.False(app.AppState.Export.Enter(TestJobs.Named("Second")).Turn.IsCompleted);
         Assert.False(app.AppState.Export.Enter(TestJobs.Named("Third")).Turn.IsCompleted);
         app.Run(2);
@@ -180,7 +180,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
         var app = AppDriver.Opened(height: TallWindow);
         var theme = app.Theme;
         OpenPanel(app.Ui, DockView.Exports);
-        var running = Assert.IsType<ExportStart>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
+        var running = Assert.IsType<ExportTurn.Started>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
         running.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.5f });
         app.Run(2);
 
@@ -207,7 +207,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     {
         var app = AppDriver.Opened();
         OpenPanel(app.Ui, DockView.Exports);
-        var running = Assert.IsType<ExportStart>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
+        var running = Assert.IsType<ExportTurn.Started>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
         app.Run(2);
 
         Assert.False(app.Frames.Drew(Text(Icons.StatusLoading)));

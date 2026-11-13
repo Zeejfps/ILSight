@@ -27,39 +27,39 @@ internal sealed class FakeExportWritingPorts : ExportWriting.IPorts
         return AreFoldersThere;
     }
 
-    public Task<ExportOutcome<string>> WriteCodeFileAsync(ExportWork.CodeFile work, ExportStart start, CancellationToken ct)
+    public Task<ExportOutcome<string>> WriteCodeFileAsync(ExportWork.CodeFile work, ExportTurn.Started start, CancellationToken ct)
     {
         Asked.Add(work);
         return Task.FromResult(CodeFile);
     }
 
-    public Task<ExportOutcome<ExportedProject>> WriteProjectAsync(ExportWork.Project work, ExportStart start, CancellationToken ct)
+    public Task<ExportOutcome<ExportedProject>> WriteProjectAsync(ExportWork.Project work, ExportTurn.Started start, CancellationToken ct)
     {
         throw new NotSupportedException("No test writes a project through the fake.");
     }
 
-    public Task<ExportOutcome<List<ExportedProject>>> WriteSolutionAsync(ExportWork.Solution work, ExportStart start, CancellationToken ct)
+    public Task<ExportOutcome<List<ExportedProject>>> WriteSolutionAsync(ExportWork.Solution work, ExportTurn.Started start, CancellationToken ct)
     {
         throw new NotSupportedException("No test writes a solution through the fake.");
     }
 
-    public Task<ExportOutcome<string>> WritePdbAsync(ExportWork.Pdb work, ExportStart start, CancellationToken ct)
+    public Task<ExportOutcome<string>> WritePdbAsync(ExportWork.Pdb work, ExportTurn.Started start, CancellationToken ct)
     {
         throw new NotSupportedException("No test writes a PDB through the fake.");
     }
 
-    public Task<ExportOutcome<List<PdbFailure>>> WritePdbsAsync(ExportWork.Pdbs work, ExportStart start, CancellationToken ct)
+    public Task<ExportOutcome<List<PdbFailure>>> WritePdbsAsync(ExportWork.Pdbs work, ExportTurn.Started start, CancellationToken ct)
     {
         throw new NotSupportedException("No test writes PDBs through the fake.");
     }
 
-    public Task<ExportOutcome<string>> WriteDiagramAsync(ExportWork.Diagram work, ExportStart start, CancellationToken ct)
+    public Task<ExportOutcome<string>> WriteDiagramAsync(ExportWork.Diagram work, ExportTurn.Started start, CancellationToken ct)
     {
         Asked.Add(work);
         return Task.FromResult(Diagram);
     }
 
-    public Task<ExportOutcome<ExtractedFiles>> ExtractPackageFolderAsync(ExportWork.PackageFolder work, ExportStart start, CancellationToken ct)
+    public Task<ExportOutcome<ExtractedFiles>> ExtractPackageFolderAsync(ExportWork.PackageFolder work, ExportTurn.Started start, CancellationToken ct)
     {
         throw new NotSupportedException("No test extracts a package folder through the fake.");
     }

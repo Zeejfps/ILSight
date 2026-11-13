@@ -10,7 +10,7 @@ public sealed class ExportTicket
 
     public required ExportJob Job { get; init; }
 
-    /// <summary>Completes when the export's turn comes: <see cref="ExportStart"/>, which it ends with
-    /// <see cref="ExportStart.EndTurn"/>, or <see cref="ExportWithdrawn"/>.</summary>
+    /// <summary>Completes when the export's turn comes: <see cref="ExportTurn.Started"/>, which it ends with
+    /// <see cref="ExportTurn.Started.EndTurn"/>, or <see cref="ExportTurn.Withdrawn"/>.</summary>
     public required Task<ExportTurn> Turn { get; init; }
 }

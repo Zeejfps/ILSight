@@ -37,44 +37,44 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
     }
 
     /// <remarks>A module the library could not read, for code that reads it, fails the export, saying why.</remarks>
-    public Task<ExportOutcome<string>> WriteCodeFileAsync(ExportWork.CodeFile work, ExportStart start, CancellationToken ct)
+    public Task<ExportOutcome<string>> WriteCodeFileAsync(ExportWork.CodeFile work, ExportTurn.Started start, CancellationToken ct)
     {
         return RunOverTypeSystemAsync(token => CodeFiles.SaveAsync(session, work.Node, work.Language, work.Options, work.File, token), start, ct);
     }
 
     /// <remarks>An assembly closed before the export began stops it, writing nothing.</remarks>
-    public Task<ExportOutcome<ExportedProject>> WriteProjectAsync(ExportWork.Project work, ExportStart start, CancellationToken ct)
+    public Task<ExportOutcome<ExportedProject>> WriteProjectAsync(ExportWork.Project work, ExportTurn.Started start, CancellationToken ct)
     {
         return RunOverModulesAsync(token => AssemblyExport.ExportProjectAsync(work.Assembly, work.Options, work.ProjectFile, work.Extras, start.Progress, token),
             start, ct);
     }
 
     /// <remarks>An assembly closed before the export began stops it, writing nothing.</remarks>
-    public Task<ExportOutcome<List<ExportedProject>>> WriteSolutionAsync(ExportWork.Solution work, ExportStart start, CancellationToken ct)
+    public Task<ExportOutcome<List<ExportedProject>>> WriteSolutionAsync(ExportWork.Solution work, ExportTurn.Started start, CancellationToken ct)
     {
         return RunOverModulesAsync(token => AssemblyExport.ExportSolutionAsync(work.Projects, work.Options, work.SolutionFile, work.Extras, start.Progress,
             token), start, ct);
     }
 
     /// <remarks>An assembly the library could not read fails the export, saying why.</remarks>
-    public Task<ExportOutcome<string>> WritePdbAsync(ExportWork.Pdb work, ExportStart start, CancellationToken ct)
+    public Task<ExportOutcome<string>> WritePdbAsync(ExportWork.Pdb work, ExportTurn.Started start, CancellationToken ct)
     {
         return RunOverTypeSystemAsync(token => AssemblyExport.GeneratePdbAsync(work.Assembly, work.Options, work.File, start.Progress, token), start, ct);
     }
 
     /// <remarks>An assembly closed before the export began stops it, writing nothing.</remarks>
-    public Task<ExportOutcome<List<PdbFailure>>> WritePdbsAsync(ExportWork.Pdbs work, ExportStart start, CancellationToken ct)
+    public Task<ExportOutcome<List<PdbFailure>>> WritePdbsAsync(ExportWork.Pdbs work, ExportTurn.Started start, CancellationToken ct)
     {
         return RunOverModulesAsync(token => AssemblyExport.GeneratePdbsAsync(work.Assemblies, work.Options, work.Folder, start.Progress, token), start, ct);
     }
 
     /// <remarks>An assembly the library could not read fails the export, saying why.</remarks>
-    public Task<ExportOutcome<string>> WriteDiagramAsync(ExportWork.Diagram work, ExportStart start, CancellationToken ct)
+    public Task<ExportOutcome<string>> WriteDiagramAsync(ExportWork.Diagram work, ExportTurn.Started start, CancellationToken ct)
     {
         return RunOverTypeSystemAsync(token => ClassDiagrams.WriteAsync(work.Assembly, work.Folder, start.Progress, token), start, ct);
     }
 
-    public Task<ExportOutcome<ExtractedFiles>> ExtractPackageFolderAsync(ExportWork.PackageFolder work, ExportStart start, CancellationToken ct)
+    public Task<ExportOutcome<ExtractedFiles>> ExtractPackageFolderAsync(ExportWork.PackageFolder work, ExportTurn.Started start, CancellationToken ct)
     {
         return RunAsync(token => PackageExtraction.ExtractFolder(work.Place.Container.Package, work.Place.Folder, work.Folder, start.Progress, token), start,
             ct);
@@ -82,15 +82,15 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
 
     /// <summary>Runs <paramref name="work"/> on the thread pool on a token that the cancellation of
     /// <paramref name="start"/>'s turn and of <paramref name="ct"/> both cancel, and comes back on the UI thread.</summary>
-    private static async Task<ExportOutcome<T>> RunAsync<T>(Func<CancellationToken, T> work, ExportStart start, CancellationToken ct)
+    private static async Task<ExportOutcome<T>> RunAsync<T>(Func<CancellationToken, T> work, ExportTurn.Started start, CancellationToken ct)
     {
         using var link = CancellationTokenSource.CreateLinkedTokenSource(start.Token, ct);
         var token = link.Token;
         return await CatchAsync(Background.Run(() => work(token)), start, ct);
     }
 
-    /// <inheritdoc cref="RunAsync{T}(Func{CancellationToken, T}, ExportStart, CancellationToken)"/>
-    private static async Task<ExportOutcome<T>> RunAsync<T>(Func<CancellationToken, Task<T>> work, ExportStart start, CancellationToken ct)
+    /// <inheritdoc cref="RunAsync{T}(Func{CancellationToken, T}, ExportTurn.Started, CancellationToken)"/>
+    private static async Task<ExportOutcome<T>> RunAsync<T>(Func<CancellationToken, Task<T>> work, ExportTurn.Started start, CancellationToken ct)
     {
         using var link = CancellationTokenSource.CreateLinkedTokenSource(start.Token, ct);
         var token = link.Token;
@@ -100,7 +100,7 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
     /// <summary>What an export's <paramref name="work"/>, which decompiles the user's assemblies, came to: done with
     /// what it gave; stopped when its turn, <paramref name="start"/>, was cancelled; else failed with what it threw
     /// (<see cref="UntrustedReads"/>). The cancellation of <paramref name="ct"/>, the workflow's, is let through.</summary>
-    private static async Task<ExportOutcome<T>> CatchAsync<T>(BackgroundWork<T> work, ExportStart start, CancellationToken ct)
+    private static async Task<ExportOutcome<T>> CatchAsync<T>(BackgroundWork<T> work, ExportTurn.Started start, CancellationToken ct)
     {
         var outcome = await UntrustedReads.CatchAsync(work, ct);
         return outcome.Match(static ok => new ExportOutcome<T>.Done(ok.Value), failed => ToFailedOrStopped<T>(failed.Error, start));
@@ -108,7 +108,7 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
 
     /// <summary>What <paramref name="error"/>, which an export's work ended with, means: it stopped when it is the
     /// cancellation of <paramref name="start"/>'s turn, else it failed.</summary>
-    private static ExportOutcome<T> ToFailedOrStopped<T>(Exception error, ExportStart start)
+    private static ExportOutcome<T> ToFailedOrStopped<T>(Exception error, ExportTurn.Started start)
     {
         if (error is OperationCanceledException && start.Token.IsCancellationRequested)
         {
@@ -118,9 +118,9 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
         return new ExportOutcome<T>.Failed(error);
     }
 
-    /// <summary>Runs <paramref name="work"/> over a module's type system as <see cref="RunAsync{T}(Func{CancellationToken, Task{T}}, ExportStart, CancellationToken)"/>
+    /// <summary>Runs <paramref name="work"/> over a module's type system as <see cref="RunAsync{T}(Func{CancellationToken, Task{T}}, ExportTurn.Started, CancellationToken)"/>
     /// does; a module the library could not read fails it, saying why; one closed before it began stops it.</summary>
-    private static async Task<ExportOutcome<T>> RunOverTypeSystemAsync<T>(Func<CancellationToken, Task<TypeSystemWork<T>>> work, ExportStart start,
+    private static async Task<ExportOutcome<T>> RunOverTypeSystemAsync<T>(Func<CancellationToken, Task<TypeSystemWork<T>>> work, ExportTurn.Started start,
         CancellationToken ct)
     {
         var outcome = await RunAsync(work, start, ct);
@@ -134,9 +134,9 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
     }
 
     /// <summary>Runs <paramref name="work"/> over the modules it reads as
-    /// <see cref="RunAsync{T}(Func{CancellationToken, Task{T}}, ExportStart, CancellationToken)"/> does; one closed before
+    /// <see cref="RunAsync{T}(Func{CancellationToken, Task{T}}, ExportTurn.Started, CancellationToken)"/> does; one closed before
     /// it began stops it.</summary>
-    private static async Task<ExportOutcome<T>> RunOverModulesAsync<T>(Func<CancellationToken, Task<ModuleRead<T>>> work, ExportStart start,
+    private static async Task<ExportOutcome<T>> RunOverModulesAsync<T>(Func<CancellationToken, Task<ModuleRead<T>>> work, ExportTurn.Started start,
         CancellationToken ct)
     {
         var outcome = await RunAsync(work, start, ct);
