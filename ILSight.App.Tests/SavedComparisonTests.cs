@@ -2,9 +2,6 @@ using ZGF.Desktop;
 using ILSight.Core;
 using ILSight.Core.Comparison;
 using ILSight.AssemblyArea;
-using static ILSight.AssemblyListArea.AssemblyLists;
-using static ILSight.Comparisons;
-using static ILSight.App.Tests.TestPaths;
 using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
@@ -28,13 +25,13 @@ public sealed class SavedComparisonTests : IDisposable
     private AppDriver Compared()
     {
         var app = new AppDriver(settings: _temp.Settings());
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [PathOf(LeftPath), PathOf(RightPath)], ct));
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Count == 2, Patience);
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)], ct));
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Count == 2, AppStateDriver.Patience);
         app.Settle(2);
         var assemblies = app.AppState.Assemblies.Assemblies;
-        app.StartComparing(CompareAssemblies(app.AppState.Navigation, app.AppState.Assemblies, assemblies[0], assemblies[1],
+        app.StartComparing(Comparisons.CompareAssemblies(app.AppState.Navigation, app.AppState.Assemblies, assemblies[0], assemblies[1],
             Names.Comparison(assemblies[0])));
-        app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Comparison?.Result is ComparisonResult.Compared, Patience);
+        app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Comparison?.Result is ComparisonResult.Compared, AppStateDriver.Patience);
         app.Settle(2);
         return app;
     }
@@ -43,7 +40,7 @@ public sealed class SavedComparisonTests : IDisposable
     {
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 700, false)));
         var next = new AppDriver(settings: _temp.Settings());
-        next.Frames.WaitUntil(() => FindComparison(next)?.Result is ComparisonResult.Compared, Patience);
+        next.Frames.WaitUntil(() => FindComparison(next)?.Result is ComparisonResult.Compared, AppStateDriver.Patience);
         next.Settle(2);
         return next;
     }
@@ -72,8 +69,8 @@ public sealed class SavedComparisonTests : IDisposable
         Assert.NotNull(tab);
         var comparison = tab.Comparison;
         Assert.NotNull(comparison);
-        app.StartComparing(SwapComparedAssemblies(app.AppState.Assemblies, comparison));
-        app.StartComparing(ChangeComparedScope(app.AppState.Assemblies, comparison, ApiScope.AllDeclared));
+        app.StartComparing(Comparisons.SwapComparedAssemblies(app.AppState.Assemblies, comparison));
+        app.StartComparing(Comparisons.ChangeComparedScope(app.AppState.Assemblies, comparison, ApiScope.AllDeclared));
         DocumentPanels.GetView(app.Ui.Documents, tab).Comparison.ShowOnlyDifferences(false);
         app.Settle(2);
         var panel = DocumentPanels.GetPanel(app.Ui.Documents, tab);
@@ -103,7 +100,7 @@ public sealed class SavedComparisonTests : IDisposable
 
         var comparison = tab.Comparison;
         Assert.NotNull(comparison);
-        app.StartComparing(SwapComparedAssemblies(app.AppState.Assemblies, comparison));
+        app.StartComparing(Comparisons.SwapComparedAssemblies(app.AppState.Assemblies, comparison));
         app.Settle(2);
         Assert.Equal(RightPath, ReadSavedComparison().LeftPath.Text);
 
@@ -123,7 +120,7 @@ public sealed class SavedComparisonTests : IDisposable
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 700, false)));
 
         var next = new AppDriver(settings: _temp.Settings());
-        next.Frames.WaitUntil(() => next.AppState.Assemblies.Assemblies.Count == 1, Patience);
+        next.Frames.WaitUntil(() => next.AppState.Assemblies.Assemblies.Count == 1, AppStateDriver.Patience);
         next.Settle(2);
 
         Assert.Null(FindComparison(next));

@@ -1,7 +1,5 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
-using static ILSight.SettingArea.Settings;
-using static ILSight.ScreenLayout;
 using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
@@ -30,7 +28,7 @@ public sealed class LayoutPersistenceTests : IDisposable
     {
         var d = AppStateDriver.Opened(_temp.Settings());
         var screen = d.Ui;
-        OpenPanel(screen, DockView.Analyzer);
+        ScreenLayout.OpenPanel(screen, DockView.Analyzer);
         var analyzer = screen.Layout.GroupOf(DockPanels.Analyzer);
         Assert.NotNull(analyzer);
         screen.Layout.Dock(DockPanels.Bookmarks, analyzer, DockEdge.Center);
@@ -60,8 +58,8 @@ public sealed class LayoutPersistenceTests : IDisposable
     {
         var d = new AppStateDriver(_temp.Settings());
         var screen = d.Ui;
-        OpenSearch(screen);
-        OpenPanel(screen, DockView.Analyzer);
+        ScreenLayout.OpenSearch(screen);
+        ScreenLayout.OpenPanel(screen, DockView.Analyzer);
         var analyzer = screen.Layout.GroupOf(DockPanels.Analyzer);
         Assert.NotNull(analyzer);
         screen.Layout.Dock(DockPanels.Search, analyzer, DockEdge.Center);

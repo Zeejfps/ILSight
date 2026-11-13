@@ -1,9 +1,6 @@
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ZGF.KeyboardModule;
-using static ILSight.CodeDisplay;
-using static ILSight.SettingArea.Settings;
-using static ILSight.ScreenLayout;
 using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
@@ -103,7 +100,7 @@ public sealed class TitleBarTests : IDisposable
     public void Use_system_title_bar_in_the_display_options_puts_the_menus_in_a_bar_of_their_own_and_back()
     {
         var app = WithTitleBarToDrawIn(OptionsWidth, OptionsHeight);
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.WithText(SystemTitleBarOption)).Frame(2);
@@ -122,7 +119,7 @@ public sealed class TitleBarTests : IDisposable
     public void Where_the_window_keeps_its_title_bar_to_itself_the_menus_have_a_bar_of_their_own_and_no_title_bar_option()
     {
         var app = new AppDriver(OptionsWidth, OptionsHeight);
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run(2);
 
         Assert.Null(app.Frames.TitleBarBackground);
@@ -134,7 +131,7 @@ public sealed class TitleBarTests : IDisposable
     public void The_system_title_bar_is_still_kept_after_a_restart()
     {
         var d = new AppStateDriver(_temp.Settings());
-        SetDisplayOptions(d.Ui, d.Ui.Display with { SystemTitleBar = true });
+        CodeDisplay.SetDisplayOptions(d.Ui, d.Ui.Display with { SystemTitleBar = true });
         d.NextFrame();
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 

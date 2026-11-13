@@ -2,7 +2,6 @@ using ILSight.Core;
 using ILSight.Core.Resources;
 using ILSight.NuGetArea;
 using ILSight.ILSightAppArea;
-using static ILSight.NuGetArea.FetchNuGetIconHandler;
 
 namespace ILSight.App.Tests;
 
@@ -150,7 +149,7 @@ public sealed class NuGetBrowserTests
 
     private static ResourceImage Pixels()
     {
-        return new ResourceImage { Width = IconPixels, Height = IconPixels, Rgba = new byte[IconPixels * IconPixels * 4], Format = "PNG" };
+        return new ResourceImage { Width = FetchNuGetIconHandler.IconPixels, Height = FetchNuGetIconHandler.IconPixels, Rgba = new byte[FetchNuGetIconHandler.IconPixels * FetchNuGetIconHandler.IconPixels * 4], Format = "PNG" };
     }
 
     private static Task<Outcome<FeedPage>> AnswerPageAsync(FeedPage page)

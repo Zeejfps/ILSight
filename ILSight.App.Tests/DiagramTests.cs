@@ -1,8 +1,6 @@
 using ILSight.Core;
 using ILSight.Core.Diagrams;
 using ILSight.DiagramArea;
-using static ILSight.DiagramArea.Diagrams;
-using static ILSight.Docking;
 
 namespace ILSight.App.Tests;
 
@@ -150,13 +148,13 @@ public sealed class DiagramTests
         var diagram = await ShowInNewAsync(d, "Breakdown");
         Assert.Equal(["Breakdown"], CardNames(diagram));
         var breakdown = diagram.Cards[0];
-        Assert.True(HasMissingBases(diagram, breakdown));
+        Assert.True(Diagrams.HasMissingBases(diagram, breakdown));
 
         d.Start((a, ct) => a.DiagramGrowing.ExpandBasesAsync(diagram, breakdown, ct));
         d.Settle();
 
         Assert.Equal(["Breakdown", "Exception"], CardNames(diagram));
-        Assert.False(HasMissingBases(diagram, breakdown));
+        Assert.False(Diagrams.HasMissingBases(diagram, breakdown));
         Assert.Contains(diagram.Links, static l => l is TypeLink.Inherits);
         Assert.False(diagram.IsHome(diagram.Cards[1].AssemblyPath));
         Assert.True(diagram.IsHome(breakdown.AssemblyPath));

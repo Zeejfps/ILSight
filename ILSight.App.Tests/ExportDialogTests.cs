@@ -4,10 +4,6 @@ using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.ExportArea;
 using ILSight.AssemblyArea;
-using static ILSight.Preferences;
-using static ILSight.ScreenLayout;
-using static ILSight.App.Tests.BuiltInGlyphs;
-using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;
 
@@ -45,7 +41,7 @@ public sealed class ExportDialogTests : IDisposable
     {
         var d = new AppStateDriver();
         d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SampleAppPath)], ct));
-        d.RunUntil(() => d.AppState.Assemblies.IsListed(PathOf(SampleAppPath)));
+        d.RunUntil(() => d.AppState.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)));
         d.Settle();
         return d;
     }
@@ -535,7 +531,7 @@ public sealed class ExportDialogTests : IDisposable
     {
         var app = new AppDriver();
         app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SampleAppPath)], ct));
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.IsListed(PathOf(SampleAppPath)), AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)), AppStateDriver.Patience);
         app.Settle(2);
 
         app.Frames.Key(Shortcuts.Export).Frame(2);
@@ -573,7 +569,7 @@ public sealed class ExportDialogTests : IDisposable
     public void The_export_options_live_in_the_dialog_and_not_in_the_decompiler_options()
     {
         var app = AppDriver.Opened(height: 1400f);
-        OpenPanel(app.Ui, DockView.DecompilerOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DecompilerOptions);
         app.Run(2);
         Assert.False(app.Frames.Drew("SDK-style project files"));
 
@@ -638,9 +634,9 @@ public sealed class ExportDialogTests : IDisposable
         var d = AppStateDriver.Opened();
         var sdk = DecompilerToggles.FindToggle("UseSdkStyleProjectFormat");
         Assert.NotNull(sdk);
-        SetDecompilerToggle(d.AppState, sdk, !sdk.DefaultValue);
+        Preferences.SetDecompilerToggle(d.AppState, sdk, !sdk.DefaultValue);
 
-        ResetDecompilerToggles(d.AppState);
+        Preferences.ResetDecompilerToggles(d.AppState);
 
         Assert.Equal(!sdk.DefaultValue, DecompilerToggles.IsOn(d.AppState.Decompiler.Setup.Options, sdk));
     }

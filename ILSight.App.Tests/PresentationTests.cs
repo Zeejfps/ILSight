@@ -1,7 +1,6 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.BuiltInArea;
-using static ILSight.App.Tests.BuiltInGlyphs;
 
 namespace ILSight.App.Tests;
 
@@ -17,13 +16,13 @@ public sealed class PresentationTests
 
         foreach (var kind in kinds)
         {
-            var glyph = Text(NodeIcons.Glyph(kind, Icons));
+            var glyph = BuiltInGlyphs.Text(NodeIcons.Glyph(kind, BuiltInGlyphs.Icons));
             Assert.Equal(1, glyph.Length);
             Assert.InRange((int)glyph[0], 0xE000, 0xF8FF);
             Assert.NotEqual(0u, NodeIcons.GetColor(BuiltInThemes.Dark.Icons, kind));
             Assert.NotEqual(0u, NodeIcons.GetColor(Light.Icons, kind));
         }
-        Assert.Equal(kinds.Length, kinds.Select(k => NodeIcons.Glyph(k, Icons)).Distinct().Count());
+        Assert.Equal(kinds.Length, kinds.Select(k => NodeIcons.Glyph(k, BuiltInGlyphs.Icons)).Distinct().Count());
     }
 
     [Fact]
@@ -108,17 +107,17 @@ public sealed class PresentationTests
         var ns = await root.GetChildAsync(AppStateDriver.FixturesNamespace);
         var privateField = (await ns.GetChildAsync("Outline").ListChildrenAsync()).Single(c => c.Icon == NodeIcon.Field && c.Accessibility == NodeAccessibility.Private);
         var tree = new BrowseTree { Session = TestSession.Shared };
-        tree.SetStyle(UiTheme.Light, Light.Icons, Icons);
+        tree.SetStyle(UiTheme.Light, Light.Icons, BuiltInGlyphs.Icons);
 
         var field = tree.Row(privateField);
         var hidden = tree.Row(await ns.GetChildAsync("Hidden"));
         var greeter = tree.Row(await ns.GetChildAsync("Greeter"));
 
-        Assert.Equal(Icons.OverlayPrivate, field.Icon?.Overlay);
+        Assert.Equal(BuiltInGlyphs.Icons.OverlayPrivate, field.Icon?.Overlay);
         Assert.Equal(Light.Icons.Restricted, field.Icon?.OverlayColor);
         Assert.Equal(IconTheming.ReferenceId.Text, field.Icon?.Glyph.Family);
         Assert.Equal(UiTheme.Light.TextMuted, field.LabelColor);
-        Assert.Equal(Icons.OverlayInternal, hidden.Icon?.Overlay);
+        Assert.Equal(BuiltInGlyphs.Icons.OverlayInternal, hidden.Icon?.Overlay);
         var greeterIcon = Assert.NotNull(greeter.Icon);
         Assert.Null(greeterIcon.Overlay);
         Assert.Null(greeter.Secondary);
@@ -157,7 +156,7 @@ public sealed class PresentationTests
         var row = tree.Row(forwarded);
 
         Assert.Equal("Object", row.Label);
-        Assert.Equal(Icons.NodeForwardedType, row.Icon?.Glyph);
+        Assert.Equal(BuiltInGlyphs.Icons.NodeForwardedType, row.Icon?.Glyph);
         Assert.Equal("→ System.Private.CoreLib", row.Secondary);
         Assert.Equal("System.Object", row.Tooltip);
     }
@@ -181,7 +180,7 @@ public sealed class PresentationTests
 
         var row = tree.Row(used);
 
-        Assert.Equal(Icons.NodeTypeReference, row.Icon?.Glyph);
+        Assert.Equal(BuiltInGlyphs.Icons.NodeTypeReference, row.Icon?.Glyph);
         Assert.Equal("System.Collections.Generic", row.Secondary);
         Assert.Equal("System.Collections.Generic.List<>", row.Tooltip);
     }

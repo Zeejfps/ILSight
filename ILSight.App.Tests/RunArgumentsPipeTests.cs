@@ -171,8 +171,8 @@ public sealed class RunArgumentsPipeTests
         app.Run();
 
         Assert.True(await RunPipes.TrySendAsync(address, Arguments("--navigateto=" + GreetId, AppStateDriver.FixturePath)));
-        app.Frames.WaitUntil(() => app.Frames.FrontRequested, Patience);
-        app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Method, Patience);
+        app.Frames.WaitUntil(() => app.Frames.FrontRequested, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Method, AppStateDriver.Patience);
         app.Settle(1);
 
         Assert.Equal("Greet(int) : string", app.AppState.Navigation.ActiveTab?.Node?.Text);
@@ -184,7 +184,7 @@ public sealed class RunArgumentsPipeTests
     {
         var app = new AppDriver(queuedArguments: Arguments("--language=IL"));
 
-        app.Frames.WaitUntil(() => app.AppState.Decompiler.Setup.Language == DecompilationLanguage.IL, Patience);
+        app.Frames.WaitUntil(() => app.AppState.Decompiler.Setup.Language == DecompilationLanguage.IL, AppStateDriver.Patience);
 
         Assert.Equal(DecompilationLanguage.IL, app.AppState.Decompiler.Setup.Language);
     }

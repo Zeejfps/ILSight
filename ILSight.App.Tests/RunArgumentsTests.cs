@@ -6,9 +6,6 @@ using ILSight.AppSettingArea;
 using ILSight.AssemblyListArea;
 using ILSight.ILSightAppArea;
 using ILSight.SettingArea;
-using static ILSight.ILSightAppArea.RunArgumentsActions;
-using static ILSight.SettingArea.Settings;
-using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;
 
@@ -60,7 +57,7 @@ public sealed class RunArgumentsTests
         var d = new AppStateDriver();
 
         var files = CommandLines.Parse(["--navigateto=M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)", AppStateDriver.FixturePath]).Arguments.Files;
-        d.Start((a, ct) => OpenRequestedFilesAsync(a, files, ct));
+        d.Start((a, ct) => RunArgumentsActions.OpenRequestedFilesAsync(a, files, ct));
         d.RunUntil(() => d.AppState.Navigation.ActiveTab?.Node is not null);
         d.Settle();
 
@@ -74,7 +71,7 @@ public sealed class RunArgumentsTests
         var d = new AppStateDriver();
 
         var files = CommandLines.Parse(["--navigateto=T:Nowhere.Missing", AppStateDriver.FixturePath]).Arguments.Files;
-        d.Start((a, ct) => OpenRequestedFilesAsync(a, files, ct));
+        d.Start((a, ct) => RunArgumentsActions.OpenRequestedFilesAsync(a, files, ct));
         d.RunUntil(() => d.AppState.Refusals.Shown is not null);
 
         Assert.Equal(new Refusal.IdNotFound { Id = "T:Nowhere.Missing" }, d.AppState.Refusals.Shown);
@@ -189,7 +186,7 @@ public sealed class RunArgumentsTests
         var d = Start(SettingsWith(temp, new AssemblyListRecord
         {
             Name = SavedAssemblyLists.DefaultName,
-            Assemblies = [PathOf(AppStateDriver.FixturePath)],
+            Assemblies = [TestPaths.PathOf(AppStateDriver.FixturePath)],
         }), $"--list={Other}");
 
         Assert.Equal(Other, d.AppState.Lists.Active);
@@ -203,12 +200,12 @@ public sealed class RunArgumentsTests
         using var temp = new TempDir();
         var settings = SettingsWith(temp,
             new AssemblyListRecord { Name = SavedAssemblyLists.DefaultName, Assemblies = [] },
-            new AssemblyListRecord { Name = Other, Assemblies = [PathOf(AppStateDriver.FixturePath)] });
+            new AssemblyListRecord { Name = Other, Assemblies = [TestPaths.PathOf(AppStateDriver.FixturePath)] });
 
         var d = Start(settings, "--list=other", OtherAssembly);
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
-        AssemblyPath[] opened = [PathOf(AppStateDriver.FixturePath), PathOf(OtherAssembly)];
+        AssemblyPath[] opened = [TestPaths.PathOf(AppStateDriver.FixturePath), TestPaths.PathOf(OtherAssembly)];
         Assert.Equal(Other, d.AppState.Lists.Active);
         Assert.Equal(opened.OrderBy(static p => p.Text), d.AppState.Assemblies.ListFilePaths().OrderBy(static p => p.Text));
         Assert.Equal(Other, temp.Settings().ActiveAssemblyList);
@@ -221,7 +218,7 @@ public sealed class RunArgumentsTests
         var d = Start(SettingsWith(temp, new AssemblyListRecord
         {
             Name = SavedAssemblyLists.DefaultName,
-            Assemblies = [PathOf(AppStateDriver.FixturePath)],
+            Assemblies = [TestPaths.PathOf(AppStateDriver.FixturePath)],
         }), "--clear-list", OtherAssembly);
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
@@ -238,20 +235,20 @@ public sealed class RunArgumentsTests
         var listing = new ListingRecord();
 
         var started = new AppDriver(settings: DefaultAndOther(startedTemp), queuedArguments: arguments, hooks: new AdapterHooks { Reopening = listing.Over });
-        Assert.DoesNotContain(PathOf(AppStateDriver.FixturePath), started.AppState.Assemblies.Arriving);
+        Assert.DoesNotContain(TestPaths.PathOf(AppStateDriver.FixturePath), started.AppState.Assemblies.Arriving);
         Assert.False(started.AppState.IsReloading);
-        started.Frames.WaitUntil(() => AreListed(started.AppState, arguments.Files.Paths), Patience);
+        started.Frames.WaitUntil(() => AreListed(started.AppState, arguments.Files.Paths), AppStateDriver.Patience);
         started.Settle();
 
         var inbox = Channel.CreateUnbounded<RunArguments>();
         var handed = new AppDriver(settings: DefaultAndOther(openTemp), inbox: inbox);
-        handed.Frames.WaitUntil(() => handed.AppState.Assemblies.IsListed(PathOf(AppStateDriver.FixturePath)), Patience);
+        handed.Frames.WaitUntil(() => handed.AppState.Assemblies.IsListed(TestPaths.PathOf(AppStateDriver.FixturePath)), AppStateDriver.Patience);
         handed.Settle();
         Assert.True(inbox.Writer.TryWrite(arguments));
-        handed.Frames.WaitUntil(() => AreListed(handed.AppState, arguments.Files.Paths), Patience);
+        handed.Frames.WaitUntil(() => AreListed(handed.AppState, arguments.Files.Paths), AppStateDriver.Patience);
         handed.Settle();
 
-        Assert.DoesNotContain(PathOf(AppStateDriver.FixturePath), listing.Asked);
+        Assert.DoesNotContain(TestPaths.PathOf(AppStateDriver.FixturePath), listing.Asked);
         Assert.Equal(Other, started.AppState.Lists.Active);
         Assert.Equal([CoreAssembly], started.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
         Assert.Empty(started.AppState.Errors.Entries);
@@ -275,7 +272,7 @@ public sealed class RunArgumentsTests
         using var receiver = await routing;
         Assert.NotNull(receiver);
         var app = new AppDriver(settings: DefaultAndOther(temp), inbox: receiver.Inbox);
-        app.Frames.WaitUntil(() => AreListed(app.AppState, later.Files.Paths), Patience);
+        app.Frames.WaitUntil(() => AreListed(app.AppState, later.Files.Paths), AppStateDriver.Patience);
         app.Settle();
 
         Assert.True(isTaken);
@@ -296,8 +293,8 @@ public sealed class RunArgumentsTests
     private static AppSettings DefaultAndOther(TempDir temp)
     {
         return SettingsWith(temp,
-            new AssemblyListRecord { Name = SavedAssemblyLists.DefaultName, Assemblies = [PathOf(AppStateDriver.FixturePath)] },
-            new AssemblyListRecord { Name = Other, Assemblies = [PathOf(OtherAssembly)] });
+            new AssemblyListRecord { Name = SavedAssemblyLists.DefaultName, Assemblies = [TestPaths.PathOf(AppStateDriver.FixturePath)] },
+            new AssemblyListRecord { Name = Other, Assemblies = [TestPaths.PathOf(OtherAssembly)] });
     }
 
     /// <summary>Starts over <paramref name="settings"/> with the command line of <paramref name="args"/> the way the
@@ -307,7 +304,7 @@ public sealed class RunArgumentsTests
     {
         var arguments = CommandLines.Parse(args).Arguments;
         var app = new AppDriver(settings: settings, queuedArguments: arguments);
-        app.Frames.WaitUntil(() => AreListed(app.AppState, arguments.Files.Paths), Patience);
+        app.Frames.WaitUntil(() => AreListed(app.AppState, arguments.Files.Paths), AppStateDriver.Patience);
         app.Settle();
         return app;
     }

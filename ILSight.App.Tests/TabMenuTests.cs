@@ -1,6 +1,5 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
-using static ILSight.DocumentPanels;
 
 namespace ILSight.App.Tests;
 
@@ -30,7 +29,7 @@ public sealed class TabMenuTests
     {
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        return ListTabsInGroup(app.Ui, tab)
+        return DocumentPanels.ListTabsInGroup(app.Ui, tab)
             .Select(t =>
             {
                 Assert.NotNull(t.Node);
@@ -41,7 +40,7 @@ public sealed class TabMenuTests
 
     private static void PickFromTabMenu(AppDriver app, string title, string item)
     {
-        app.Frames.ClickOn(GetTab(title), PointerButton.Right).Frame();
+        app.Frames.ClickOn(Targets.GetTab(title), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, item)).Frame(2);
         app.Settle(2);
     }
@@ -84,7 +83,7 @@ public sealed class TabMenuTests
         group.Panels.Add(DockPanels.Bookmarks);
         app.Run(2);
 
-        CloseTabsInGroup(app.Ui, tab);
+        DocumentPanels.CloseTabsInGroup(app.Ui, tab);
         app.Settle(2);
 
         Assert.Empty(app.AppState.Navigation.OpenTabs);
@@ -102,7 +101,7 @@ public sealed class TabMenuTests
         Assert.NotNull(node);
         var title = NodeText.Name(node);
 
-        app.Frames.ClickOn(GetTab(title), PointerButton.Right).Frame();
+        app.Frames.ClickOn(Targets.GetTab(title), PointerButton.Right).Frame();
 
         Assert.True(app.Frames.Drew("Close others"));
         Assert.True(app.Frames.Drew(Shortcuts.CloseTab.Label));

@@ -1,6 +1,5 @@
 using ILSight.Core;
 using ILSight.ComparisonPickerArea;
-using static ILSight.App.Tests.TestPaths;
 using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
@@ -14,7 +13,7 @@ public sealed class ComparisonPickerTests
     private static AppStateDriver OpenThree()
     {
         var d = AppStateDriver.Opened();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [PathOf(OlderPath), PathOf(NewerPath)], ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [TestPaths.PathOf(OlderPath), TestPaths.PathOf(NewerPath)], ct));
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 3);
         d.Settle();
         return d;

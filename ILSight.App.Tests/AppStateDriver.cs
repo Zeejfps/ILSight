@@ -10,9 +10,6 @@ using ILSight.SettingArea;
 using ILSight.AssemblyListArea;
 using ILSight.FrameworkArea;
 using ILSight.ProcessArea;
-using static ILSight.Analysis;
-using static ILSight.Navigation;
-using static ILSight.SettingArea.Settings;
 
 namespace ILSight.App.Tests;
 

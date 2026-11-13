@@ -2,8 +2,6 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.AppSettingArea;
-using static ILSight.SettingArea.Settings;
-using static ILSight.ScreenLayout;
 using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
@@ -61,7 +59,7 @@ public sealed class DockPanelsTests
         var d = new AppStateDriver();
         var appState = d.AppState;
 
-        OpenSearch(d.Ui);
+        ScreenLayout.OpenSearch(d.Ui);
         d.Ui.Search.Query = "Greeter";
 
         var search = d.Ui.Layout.GroupOf(DockPanels.Search);
@@ -113,7 +111,7 @@ public sealed class DockPanelsTests
         var driver = AppStateDriver.Opened();
         driver.Ui.Search.Query = "inassembly:Old Greet";
 
-        ScopeSearch(driver.Ui, await driver.NodeAsync(AppStateDriver.FixturesNamespace));
+        ScreenLayout.ScopeSearch(driver.Ui, await driver.NodeAsync(AppStateDriver.FixturesNamespace));
 
         Assert.Equal($"innamespace:{AppStateDriver.FixturesNamespace} inassembly:Old Greet ", driver.Ui.Search.Query);
         Assert.True(driver.Ui.Layout.Contains(DockPanels.Search));

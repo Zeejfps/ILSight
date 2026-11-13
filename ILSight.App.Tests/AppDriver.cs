@@ -138,7 +138,7 @@ internal sealed class AppDriver
     /// <paramref name="frames"/> frames.</summary>
     public void Settle(int frames = 0)
     {
-        Frames.WaitUntilReady(Patience);
+        Frames.WaitUntilReady(AppStateDriver.Patience);
         Run(frames);
     }
 
@@ -147,15 +147,15 @@ internal sealed class AppDriver
     /// that set moving, as cards gliding to a new layout.</summary>
     public void RunOut()
     {
-        Frames.Settle(SettleSeconds);
+        Frames.Settle(AppStateDriver.SettleSeconds);
         Settle();
-        Frames.Settle(SettleSeconds);
+        Frames.Settle(AppStateDriver.SettleSeconds);
     }
 
     /// <summary>Runs frames without advancing time, each pumping the app state first, until none is asked for.</summary>
     private void RunFramesInPlace()
     {
-        Frames.WaitUntil(static () => true, Patience);
+        Frames.WaitUntil(static () => true, AppStateDriver.Patience);
     }
 
 

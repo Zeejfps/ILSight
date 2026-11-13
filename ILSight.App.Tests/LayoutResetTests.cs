@@ -1,4 +1,3 @@
-using static ILSight.ScreenLayout;
 
 namespace ILSight.App.Tests;
 
@@ -9,7 +8,7 @@ public sealed class LayoutResetTests
     {
         var app = new AppDriver();
         var screen = app.Ui;
-        OpenPanel(screen, DockView.Bookmarks);
+        ScreenLayout.OpenPanel(screen, DockView.Bookmarks);
         app.Run(2);
 
         app.Frames.ClickOn(Selector.WithText("View"));

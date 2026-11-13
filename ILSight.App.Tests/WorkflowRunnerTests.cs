@@ -12,7 +12,7 @@ public sealed class WorkflowRunnerTests
         var clock = Stopwatch.StartNew();
         while (work.Outstanding.Count > 0)
         {
-            if (clock.Elapsed > Patience)
+            if (clock.Elapsed > AppStateDriver.Patience)
             {
                 throw new TimeoutException($"Still running: {string.Join(", ", work.Outstanding)}.");
             }
@@ -262,7 +262,7 @@ public sealed class WorkflowRunnerTests
         });
         var whileRunning = work.Outstanding;
         runner.CancelAll();
-        await ended.Task.WaitAsync(Patience);
+        await ended.Task.WaitAsync(AppStateDriver.Patience);
 
         Assert.Empty(whileRunning);
         Assert.True(given.IsCancellationRequested);

@@ -4,10 +4,6 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
-using static ILSight.AssemblyListArea.AssemblyLists;
-using static ILSight.DiagramArea.Diagrams;
-using static ILSight.DocumentPanels;
-using static ILSight.App.Tests.TestPaths;
 using ILSight.CodeViewArea;
 using ILSight.DiagramCameraArea;
 using ILSight.DocumentViewArea;
@@ -103,7 +99,7 @@ public sealed class SavedDocumentsTests : IDisposable
     /// <summary>Runs frames until the diagram of <paramref name="tab"/> is laid out and its cards stopped moving.</summary>
     private static void SettleDiagram(AppDriver app, DocumentTab tab)
     {
-        app.Frames.WaitUntil(() => IsLaidOut(app, tab), Patience);
+        app.Frames.WaitUntil(() => IsLaidOut(app, tab), AppStateDriver.Patience);
         app.Run();
     }
 
@@ -155,7 +151,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var list = new AssemblyListRecord
         {
             Name = SavedAssemblyLists.DefaultName,
-            Assemblies = [PathOf(AppStateDriver.FixturePath)],
+            Assemblies = [TestPaths.PathOf(AppStateDriver.FixturePath)],
             Documents = documents,
         };
         return new AppSettings { AssemblyLists = [list] };
@@ -165,7 +161,7 @@ public sealed class SavedDocumentsTests : IDisposable
     {
         return new TypeAnchor
         {
-            AssemblyPath = PathOf(AppStateDriver.FixturePath),
+            AssemblyPath = TestPaths.PathOf(AppStateDriver.FixturePath),
             FullName = $"{AppStateDriver.FixturesNamespace}.{name}",
         };
     }
@@ -173,7 +169,7 @@ public sealed class SavedDocumentsTests : IDisposable
     /// <summary>Where the fixture type <paramref name="name"/> is, as this build saves it.</summary>
     private static NodePath FixturePlace(string name)
     {
-        return NodePath.From(PathOf(AppStateDriver.FixturePath),
+        return NodePath.From(TestPaths.PathOf(AppStateDriver.FixturePath),
         [
             new NodePathStep
             {
@@ -233,7 +229,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
         next.Settle(4);
-        ActivateTab(next.Ui, next.AppState.Navigation, next.AppState.Decompiler.Setup, TabTitled(next, "Outline"));
+        DocumentPanels.ActivateTab(next.Ui, next.AppState.Navigation, next.AppState.Decompiler.Setup, TabTitled(next, "Outline"));
         next.Run(4);
 
         Assert.Equal(outlinePosition, CodeOf(next, TabTitled(next, "Outline")).Position);
@@ -267,7 +263,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var fields = new CardFold.Own { Card = diagram.Diagram.Cards[0].Anchor, Section = MemberSection.Fields };
         Diagrams.ToggleFold(view, fields);
         Diagrams.ShowHiddenMembers(view, true);
-        ActivateTab(app.Ui, app.AppState.Navigation, app.AppState.Decompiler.Setup, greeter);
+        DocumentPanels.ActivateTab(app.Ui, app.AppState.Navigation, app.AppState.Decompiler.Setup, greeter);
         app.Run(3);
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
 
@@ -315,7 +311,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
         next.Settle(4);
-        ActivateTab(next.Ui, next.AppState.Navigation, next.AppState.Decompiler.Setup, GridTab(next));
+        DocumentPanels.ActivateTab(next.Ui, next.AppState.Navigation, next.AppState.Decompiler.Setup, GridTab(next));
         next.Run(4);
 
         Assert.Equal(row, GridOf(next, GridTab(next)).Selected);
@@ -423,7 +419,7 @@ public sealed class SavedDocumentsTests : IDisposable
             Panel = DiagramPanel,
             Title = "Vehicle diagram",
             Types = [vehicle, FixtureType("Missing")],
-            HomeAssemblies = [PathOf(AppStateDriver.FixturePath)],
+            HomeAssemblies = [TestPaths.PathOf(AppStateDriver.FixturePath)],
             View = null,
         };
         var d = new AppStateDriver(SettingsWith(new DocumentsRecord
@@ -441,7 +437,7 @@ public sealed class SavedDocumentsTests : IDisposable
         Assert.Equal([vehicle], ListTypes(tab));
         var diagram = tab.Diagram;
         Assert.NotNull(diagram);
-        Assert.True(diagram.IsHome(PathOf(AppStateDriver.FixturePath)));
+        Assert.True(diagram.IsHome(TestPaths.PathOf(AppStateDriver.FixturePath)));
         Assert.Same(tab, d.AppState.Navigation.DiagramTab);
     }
 
@@ -454,7 +450,7 @@ public sealed class SavedDocumentsTests : IDisposable
         d.SwitchList(Other);
         d.Settle();
         d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(AppStateDriver.FixturePath)], ct));
-        d.RunUntil(() => d.AppState.Assemblies.ListFilePaths().Contains(PathOf(AppStateDriver.FixturePath)));
+        d.RunUntil(() => d.AppState.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(AppStateDriver.FixturePath)));
         d.Settle();
         d.Show(await d.FixtureAsync("Farewell"));
 
@@ -553,7 +549,7 @@ public sealed class SavedDocumentsTests : IDisposable
         {
             Panel = panel,
             Title = title,
-            Location = NodePath.From(PathOf(AppStateDriver.FixturePath), []),
+            Location = NodePath.From(TestPaths.PathOf(AppStateDriver.FixturePath), []),
             Language = DecompilationLanguage.CSharp,
             View = null,
         };

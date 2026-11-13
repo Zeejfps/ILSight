@@ -2,7 +2,6 @@ using ILSight.Core;
 using ILSight.Core.Processes;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.ProcessArea;
-using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;
 
@@ -22,12 +21,12 @@ public sealed class ProcessPickerTests
     private static readonly RunningModule WebDll = new RunningModule.OnDisk
     {
         Name = "Web.Api.dll",
-        Path = FakePath("Web.Api.dll"),
+        Path = TestPaths.FakePath("Web.Api.dll"),
     };
     private static readonly RunningModule CoreLib = new RunningModule.OnDisk
     {
         Name = "System.Private.CoreLib.dll",
-        Path = FakePath("System.Private.CoreLib.dll"),
+        Path = TestPaths.FakePath("System.Private.CoreLib.dll"),
     };
     private static readonly RunningModule Generated = new RunningModule.InMemory { Name = "Generated" };
 
@@ -179,7 +178,7 @@ public sealed class ProcessPickerTests
     [Fact]
     public async Task ListModulesAsync_ModulesListed_ShowsThemAndPicksOutTheEntryAssembly()
     {
-        var ports = new FakePorts { Running = [Web], Modules = static (process, _) => ListedAsync(process, [CoreLib, Generated, WebDll], FakePath("Web.Api.dll")) };
+        var ports = new FakePorts { Running = [Web], Modules = static (process, _) => ListedAsync(process, [CoreLib, Generated, WebDll], TestPaths.FakePath("Web.Api.dll")) };
         var picker = await OpenAsync(ports);
         using var shutdown = new CancellationTokenSource();
 
@@ -188,7 +187,7 @@ public sealed class ProcessPickerTests
         var loaded = Assert.IsType<ModuleScan.Loaded>(picker.Browser.Modules);
         Assert.Equal(Web, loaded.Process);
         Assert.Equal([CoreLib, Generated, WebDll], loaded.Modules);
-        Assert.Equal([FakePath("Web.Api.dll")], picker.Browser.ListToOpen());
+        Assert.Equal([TestPaths.FakePath("Web.Api.dll")], picker.Browser.ListToOpen());
         Assert.Equal(shutdown.Token, Assert.Single(ports.ListingTokens));
         Assert.Null(Follow(picker));
     }
@@ -202,7 +201,7 @@ public sealed class ProcessPickerTests
         var modules = ProcessPicking.GetModules(picker.Browser.Modules);
 
         picker.Browser.ModuleSelection.SelectAll(modules);
-        Assert.Equal([FakePath("System.Private.CoreLib.dll"), FakePath("Web.Api.dll")], picker.Browser.ListToOpen());
+        Assert.Equal([TestPaths.FakePath("System.Private.CoreLib.dll"), TestPaths.FakePath("Web.Api.dll")], picker.Browser.ListToOpen());
 
         picker.Browser.ModuleSelection.Select(Generated, SelectionChange.Replace, modules);
         Assert.False(picker.Browser.CanOpen);
@@ -212,7 +211,7 @@ public sealed class ProcessPickerTests
     [Fact]
     public async Task ListToOpen_AnotherProcessSelectedSinceTheModulesListed_OpensNothingOfTheProcessBefore()
     {
-        var ports = new FakePorts { Running = [Web, Worker], Modules = static (process, _) => ListedAsync(process, [WebDll], FakePath("Web.Api.dll")) };
+        var ports = new FakePorts { Running = [Web, Worker], Modules = static (process, _) => ListedAsync(process, [WebDll], TestPaths.FakePath("Web.Api.dll")) };
         var picker = await OpenAsync(ports);
         await SelectAndListAsync(picker, Web);
 
@@ -225,7 +224,7 @@ public sealed class ProcessPickerTests
     [Fact]
     public async Task FollowSelection_AnotherProcessSelected_DropsTheModulesShownAtOnceAndListsItsOwn()
     {
-        var ports = new FakePorts { Running = [Web, Worker], Modules = static (process, _) => ListedAsync(process, [WebDll], FakePath("Web.Api.dll")) };
+        var ports = new FakePorts { Running = [Web, Worker], Modules = static (process, _) => ListedAsync(process, [WebDll], TestPaths.FakePath("Web.Api.dll")) };
         var picker = await OpenAsync(ports);
         await SelectAndListAsync(picker, Web);
 
@@ -249,7 +248,7 @@ public sealed class ProcessPickerTests
             {
                 Process = process,
                 Detail = "gone",
-                EntryAssembly = FakePath("Jobs.Worker.dll"),
+                EntryAssembly = TestPaths.FakePath("Jobs.Worker.dll"),
             }),
         };
         var picker = await OpenAsync(ports);
@@ -258,7 +257,7 @@ public sealed class ProcessPickerTests
 
         Assert.Equal("gone", Assert.IsType<ModuleScan.Unreachable>(picker.Browser.Modules).Detail);
         Assert.True(picker.Browser.CanOpen);
-        Assert.Equal([FakePath("Jobs.Worker.dll")], picker.Browser.ListToOpen());
+        Assert.Equal([TestPaths.FakePath("Jobs.Worker.dll")], picker.Browser.ListToOpen());
     }
 
     [Fact]
@@ -538,7 +537,7 @@ public sealed class ProcessPickerTests
         Assert.Contains(new RunningModule.OnDisk
         {
             Name = "ILSight.Core.dll",
-            Path = PathOf(typeof(AssemblyList).Assembly.Location),
+            Path = TestPaths.PathOf(typeof(AssemblyList).Assembly.Location),
         }, modules);
     }
 }

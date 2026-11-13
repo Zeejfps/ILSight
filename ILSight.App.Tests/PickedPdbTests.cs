@@ -1,9 +1,7 @@
 using ILSight.Core;
-using static ILSight.AssemblyListArea.AssemblyLists;
-using static ILSight.SettingArea.Settings;
-using static ILSight.App.Tests.TestPaths;
 using ILSight.SettingArea;
 using ILSight.CommandArea;
+using ILSight.AssemblyListArea;
 
 namespace ILSight.App.Tests;
 
@@ -19,13 +17,13 @@ public sealed class PickedPdbTests
         var copy = CopyFixtureWithoutPdb(temp);
         var app = new AppDriver(width: 1600f, settings: temp.Settings());
         app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(copy)], ct));
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.IsListed(PathOf(copy)), Patience);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.IsListed(TestPaths.PathOf(copy)), AppStateDriver.Patience);
         app.Settle(2);
         Assert.Null(LoadedAssemblies.EnsureDebugSymbols(OpenAssemblyOf(app.Driver)));
         app.Frames.FilePicker.Answer = FixturePdb;
 
         app.PickFromTreeMenu(OpenAssemblyOf(app.Driver).Name, "Select PDB…");
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.Pdbs.All.Count > 0, Patience);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Pdbs.All.Count > 0, AppStateDriver.Patience);
         app.Settle(2);
 
         Assert.Equal(FixturePdb, LoadedAssemblies.EnsureDebugSymbols(OpenAssemblyOf(app.Driver))?.SourceFileName);
@@ -44,7 +42,7 @@ public sealed class PickedPdbTests
         var next = new AppStateDriver(temp.Settings());
         next.Settle();
 
-        Assert.Equal(FixturePdb, Assert.Single(temp.Settings().AssemblyLists).Pdbs?[PathOf(copy)]);
+        Assert.Equal(FixturePdb, Assert.Single(temp.Settings().AssemblyLists).Pdbs?[TestPaths.PathOf(copy)]);
         Assert.Equal(FixturePdb, LoadedAssemblies.EnsureDebugSymbols(OpenAssemblyOf(next))?.SourceFileName);
     }
 
@@ -70,7 +68,7 @@ public sealed class PickedPdbTests
         Pick(d, FixturePdb);
 
         d.InTurn(() => Commands.CloseAllAssemblies(d.AppState));
-        RememberOpenAssemblies(d.AppState.Lists, d.AppState.ListSession);
+        AssemblyLists.RememberOpenAssemblies(d.AppState.Lists, d.AppState.ListSession);
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         Assert.Empty(d.AppState.Assemblies.Pdbs.All);
@@ -87,7 +85,7 @@ public sealed class PickedPdbTests
     {
         var d = new AppStateDriver(temp.Settings());
         d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(copy)], ct));
-        d.RunUntil(() => d.AppState.Assemblies.IsListed(PathOf(copy)));
+        d.RunUntil(() => d.AppState.Assemblies.IsListed(TestPaths.PathOf(copy)));
         d.Settle();
         return d;
     }

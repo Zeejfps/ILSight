@@ -2,8 +2,6 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using ILSight.Core;
-using static ILSight.ScreenLayout;
-using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;
 
@@ -29,7 +27,7 @@ public sealed class SearchPanelTests : IDisposable
         var (fixtures, middle, keyboard) = (app.AppState.Assemblies.Assemblies[0], app.AppState.Assemblies.Assemblies[1],
             app.AppState.Assemblies.Assemblies[2]);
         Assert.Equal(broken, middle.FilePath.Text);
-        OpenSearch(app.Ui);
+        ScreenLayout.OpenSearch(app.Ui);
         app.Run();
 
         app.Frames.Type("t:e").Frame();

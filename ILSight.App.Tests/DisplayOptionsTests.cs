@@ -8,9 +8,6 @@ using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.BuiltInArea;
 using ILSight.ILSightAppArea;
-using static ILSight.CodeDisplay;
-using static ILSight.ScreenLayout;
-using static ILSight.SettingArea.Settings;
 using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
@@ -199,11 +196,11 @@ public sealed class DisplayOptionsTests
         var ui = Screens.Blank();
         var size = ui.Theme.MonoFontSize;
 
-        ZoomCode(ui, 2);
+        CodeDisplay.ZoomCode(ui, 2);
         Assert.Equal(size + 2f, ui.Display.FontSize?.Points);
-        ZoomCode(ui, -100);
+        CodeDisplay.ZoomCode(ui, -100);
         Assert.Equal(CodeFontSize.Min, ui.Display.FontSize?.Points);
-        ResetCodeZoom(ui);
+        CodeDisplay.ResetCodeZoom(ui);
         Assert.Null(ui.Display.FontSize);
     }
 
@@ -223,7 +220,7 @@ public sealed class DisplayOptionsTests
     public void The_panel_scales_the_whole_ui_through_the_window()
     {
         var app = AppDriver.Opened(width: 1600f);
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
         Assert.True(app.Frames.Drew("100%"));
 
@@ -251,7 +248,7 @@ public sealed class DisplayOptionsTests
             TreeTokens = TokenFormat.Decimal,
         };
 
-        SetDisplayOptions(app.Ui, options);
+        CodeDisplay.SetDisplayOptions(app.Ui, options);
         app.Run();
         Assert.IsType<SettingsWriteResult.Written>(app.AppState.SettingsSaving.Save(app.AppState));
 
@@ -264,8 +261,8 @@ public sealed class DisplayOptionsTests
     {
         var app = AppDriver.Opened(width: 1600f);
 
-        OpenPanel(app.Ui, DockView.DecompilerOptions);
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DecompilerOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
 
         Assert.Same(app.Ui.Layout.GroupOf(DockPanels.DecompilerOptions), app.Ui.Layout.GroupOf(DockPanels.DisplayOptions));
@@ -276,7 +273,7 @@ public sealed class DisplayOptionsTests
     public void The_panel_changes_the_size_and_the_toggles_and_resets_them()
     {
         var app = AppDriver.Opened(width: 1600f, height: TallWindow);
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
         var size = app.Ui.Theme.MonoFontSize;
 
@@ -307,7 +304,7 @@ public sealed class DisplayOptionsTests
     public void The_panel_picks_how_the_tree_writes_metadata_tokens()
     {
         var app = AppDriver.Opened(width: 1600f, height: TallWindow);
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
         Assert.False(IsBold(app, "Metadata tokens"));
 
@@ -324,7 +321,7 @@ public sealed class DisplayOptionsTests
         var app = AppDriver.Opened(width: 1600f, height: TallWindow);
         var tables = await app.NodeAsync("Metadata", "Tables");
         var empty = await tables.TableAsync("FieldPtr");
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
         Assert.DoesNotContain(empty, app.Ui.Tree.GetChildren(tables).Nodes);
 
@@ -342,7 +339,7 @@ public sealed class DisplayOptionsTests
         var root = await app.NodeAsync();
         var outermost = await app.NodeAsync("ILSight");
         var fixtures = await app.NodeAsync(AppStateDriver.FixturesNamespace);
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
         Assert.Contains(fixtures, app.Ui.Tree.GetChildren(root).Nodes);
         Assert.DoesNotContain(outermost, app.Ui.Tree.GetChildren(root).Nodes);
@@ -361,7 +358,7 @@ public sealed class DisplayOptionsTests
     {
         var app = AppDriver.Opened(width: 1600f, height: TallWindow);
         var shown = app.AppState.Navigation.PreviewTab;
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.WithText("Preview tabs")).Frame(2);
@@ -377,7 +374,7 @@ public sealed class DisplayOptionsTests
     public void The_theme_is_picked_from_the_panel_and_draws_the_window()
     {
         var app = AppDriver.Opened(width: 1600f);
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
         Assert.Equal("dark", app.AppState.Theme.Text);
 
@@ -394,7 +391,7 @@ public sealed class DisplayOptionsTests
         using var temp = new TempDir();
         temp.Write("themes/midnight.json", """{ "name": "Midnight", "extends": "dark", "ui": { "background": "#000010" } }""");
         var app = new AppDriver(width: 1600f, settings: temp.Settings());
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.WithText("Dark")).Frame();
@@ -411,7 +408,7 @@ public sealed class DisplayOptionsTests
         temp.Write("themes/twin-a.json", """{ "name": "Twin", "extends": "dark", "ui": { "background": "#00000A" } }""");
         temp.Write("themes/twin-b.json", """{ "name": "Twin", "extends": "dark", "ui": { "background": "#00000B" } }""");
         var app = new AppDriver(width: 1600f, settings: temp.Settings());
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.WithText("Dark")).Frame();
@@ -428,7 +425,7 @@ public sealed class DisplayOptionsTests
     public void The_open_theme_menu_closes_when_the_themes_are_read_again()
     {
         var app = AppDriver.Opened(width: 1600f);
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
         app.Frames.ClickOn(Selector.WithText("Dark")).Frame();
         Assert.True(IsDrawn(app, "Dracula"));
@@ -444,7 +441,7 @@ public sealed class DisplayOptionsTests
     {
         using var temp = new TempDir();
         var app = new AppDriver(width: 1600f, settings: temp.Settings());
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.AtPath("dock/display-options/customize-theme")).Frame();
@@ -458,7 +455,7 @@ public sealed class DisplayOptionsTests
     {
         using var temp = new TempDir();
         var app = new AppDriver(width: 3000f, settings: temp.Settings());
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run(2);
 
         var controls = FilledWith(app, app.Theme.Control);
@@ -502,7 +499,7 @@ public sealed class DisplayOptionsTests
         using var temp = new TempDir();
         var file = temp.Write("long.ttf", EmbeddedAssets.LoadBytes(typeof(ILSightApp).Assembly, "JetBrainsMono-Regular.ttf"));
         var app = AppDriver.Opened(width: 3000f);
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         CodeDisplay.SetCodeFont(app.Ui, new CodeFont
         {
             Family = "A monospaced font with a name far too long to show whole",
@@ -524,7 +521,7 @@ public sealed class DisplayOptionsTests
     {
         temp.Write("icon-themes/shapes.json", """{ "name": "Shapes with a long name" }""");
         var app = new AppDriver(width: width, settings: temp.Settings());
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run(2);
         return app;
     }
@@ -596,7 +593,7 @@ public sealed class DisplayOptionsTests
     public void The_ui_language_is_picked_from_the_panel_too()
     {
         var app = AppDriver.Opened(width: 1600f);
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.WithText("English")).Frame();
@@ -610,7 +607,7 @@ public sealed class DisplayOptionsTests
     public void Cancelling_the_reset_question_keeps_the_options()
     {
         var app = AppDriver.Opened(width: 1600f, height: TallWindow);
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
         app.Frames.ClickOn(Selector.WithText("Line numbers")).Frame();
 
@@ -625,7 +622,7 @@ public sealed class DisplayOptionsTests
     public void A_font_size_stepped_back_to_the_themes_is_no_longer_a_choice_of_its_own()
     {
         var app = AppDriver.Opened(width: 1600f);
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.AtPath("dock/display-options/larger")).Frame();
@@ -665,7 +662,7 @@ public sealed class DisplayOptionsTests
     {
         var app = AppDriver.Opened(width: 1600f);
         app.Frames.SystemFonts.Families.AddRange(installed);
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run(2);
         return app;
     }
@@ -709,7 +706,7 @@ public sealed class DisplayOptionsTests
         using var temp = new TempDir();
         var app = AppDriver.Opened(width: 1600f);
 
-        SetCodeFont(app.Ui, new CodeFont { Family = "Gone Mono", Path = temp.PathOf("gone.ttf"), FaceIndex = 0 });
+        CodeDisplay.SetCodeFont(app.Ui, new CodeFont { Family = "Gone Mono", Path = temp.PathOf("gone.ttf"), FaceIndex = 0 });
         app.Run(2);
 
         Assert.Null(app.Ui.Display.Font);

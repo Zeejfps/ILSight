@@ -3,7 +3,6 @@ using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.OmnibarArea;
-using static ILSight.CodeDisplay;
 
 namespace ILSight.App.Tests;
 
@@ -59,7 +58,7 @@ public sealed class OmnibarTests
         var path = GetCrumb(app, label).Path;
         Assert.NotNull(path);
         var crumb = path.Segments;
-        app.Frames.ClickOn(GetPath([.. crumb.Take(crumb.Count - 1), new TestSegment.Named("children")])).Frame(2);
+        app.Frames.ClickOn(Targets.GetPath([.. crumb.Take(crumb.Count - 1), new TestSegment.Named("children")])).Frame(2);
     }
 
     /// <summary>Starts a search in the active bar with Ctrl+L and types <paramref name="query"/>, waiting
@@ -94,7 +93,7 @@ public sealed class OmnibarTests
     {
         var app = await ShowingAsync("Greeter");
 
-        SetDisplayOptions(app.Ui, app.Ui.Display with { NestedNamespaces = true });
+        CodeDisplay.SetDisplayOptions(app.Ui, app.Ui.Display with { NestedNamespaces = true });
         app.Run(2);
         var labels = ActiveCrumbs(app)
             .Select(c => c.Label)
@@ -140,7 +139,7 @@ public sealed class OmnibarTests
         var menu = app.Ui.Omnibar.Menu;
         Assert.NotNull(menu);
         var selected = menu.Selection.Item;
-        app.Frames.ClickOn(GetCrumbChild("document-1", "Farewell")).Frame(2);
+        app.Frames.ClickOn(Targets.GetCrumbChild("document-1", "Farewell")).Frame(2);
         app.Settle(2);
 
         Assert.Same(await app.FixtureAsync("Greeter"), selected);
@@ -210,7 +209,7 @@ public sealed class OmnibarTests
         var app = await ShowingAsync("Greeter");
         SearchFor(app, "Farewell");
 
-        app.Frames.ClickOn(GetSuggestion("document-1", "Farewell")).Frame(2);
+        app.Frames.ClickOn(Targets.GetSuggestion("document-1", "Farewell")).Frame(2);
         app.Settle(2);
 
         Assert.Same(await app.FixtureAsync("Farewell"), app.AppState.Navigation.ActiveTab?.Node);
@@ -235,7 +234,7 @@ public sealed class OmnibarTests
     {
         var app = await ShowingAsync("Greeter");
 
-        SetDisplayOptions(app.Ui, app.Ui.Display with { ShowOmnibar = false });
+        CodeDisplay.SetDisplayOptions(app.Ui, app.Ui.Display with { ShowOmnibar = false });
         app.Run(2);
         var searchIcon = BuiltInGlyphs.Text(BuiltInGlyphs.Icons.SearchField);
         var searchButtons = app.Frames.TextRects()

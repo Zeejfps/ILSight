@@ -4,8 +4,6 @@ using ILSight.CodeViewArea;
 using ILSight.DocumentViewArea;
 using ILSight.MetadataGridArea;
 using ILSight.SearchArea;
-using static ILSight.Docking;
-using static ILSight.DocumentPanels;
 using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
@@ -167,7 +165,7 @@ public sealed class AppStateTests
         var farewellPanel = DocumentPanels.GetPanel(d.Ui.Documents, farewell);
         var documents = d.Ui.Layout;
         documents.Dock(farewellPanel, documents.Root, DockEdge.Right);
-        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup, greeter);
+        DocumentPanels.ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup, greeter);
         d.NextFrame();
 
         d.Show(await d.FixtureAsync("Outline"), inNewTab: true);
@@ -192,7 +190,7 @@ public sealed class AppStateTests
         var group = documents.GroupOf(greeterPanel);
         Assert.NotNull(group);
         documents.Dock(greeterPanel, group, DockEdge.Right);
-        SyncActiveTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup);
+        DocumentPanels.SyncActiveTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup);
         d.NextFrame();
 
         Assert.Equal(2, d.AppState.Navigation.OpenTabs.Count);
@@ -389,7 +387,7 @@ public sealed class AppStateTests
         var d = AppStateDriver.Opened();
         d.Show(await d.FixtureAsync("Greeter"));
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
-        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup, d.AppState.Navigation.OpenTabs[0]);
+        DocumentPanels.ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup, d.AppState.Navigation.OpenTabs[0]);
         d.Settle();
 
         d.GoBack();
@@ -405,7 +403,7 @@ public sealed class AppStateTests
         d.TurnOffPreviewTabs();
         d.Show(await d.FixtureAsync("Greeter"));
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
-        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup, d.AppState.Navigation.OpenTabs[0]);
+        DocumentPanels.ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup, d.AppState.Navigation.OpenTabs[0]);
         d.Settle();
         d.Show(await d.FixtureAsync("Counter"));
 
@@ -453,7 +451,7 @@ public sealed class AppStateTests
         d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
         d.StartShowing(farewell);
         d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, reference, a.Navigation.BeginResolving(inNewTab: true), ct));
-        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup, d.AppState.Navigation.OpenTabs[0]);
+        DocumentPanels.ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup, d.AppState.Navigation.OpenTabs[0]);
         d.NextFrame();
         d.Settle();
 
@@ -582,7 +580,7 @@ public sealed class AppStateTests
         var d = AppStateDriver.Opened();
         ScreenLayout.OpenSearch(d.Ui);
 
-        OnPanelClosed(d.Ui, DockPanels.Search);
+        DocumentPanels.OnPanelClosed(d.Ui, DockPanels.Search);
 
         Assert.False(d.Ui.Search.TryTakeFocus());
     }

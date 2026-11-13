@@ -36,9 +36,9 @@ public sealed class CodeViewTooltipTests
     /// tooltip shows what the lookup found.</summary>
     private static void RunOut(CodeViewDriver view)
     {
-        view.Frames.Settle(SettleSeconds);
-        view.Frames.WaitUntilReady(Patience);
-        view.Frames.Settle(SettleSeconds);
+        view.Frames.Settle(AppStateDriver.SettleSeconds);
+        view.Frames.WaitUntilReady(AppStateDriver.Patience);
+        view.Frames.Settle(AppStateDriver.SettleSeconds);
     }
 
     /// <summary>Whether a tooltip is drawn: text in the tooltip's text size, not the code's.</summary>

@@ -7,7 +7,6 @@ using ILSight.Core;
 using ILSight.Core.Comparison;
 using ILSight.Core.Diagrams;
 using ILSight.Core.Metadata;
-using static ILSight.App.Tests.TestPaths;
 using ILSight.CodeViewArea;
 using ILSight.BookmarkArea;
 using ILSight.AppSettingArea;
@@ -23,8 +22,8 @@ public sealed class SettingsFormatTests : IDisposable
     private const string BookmarksFixture = "ILSpy.Bookmarks.json";
     private const string FixtureFolderInFile = @"C:\\Fixture\\";
 
-    private static readonly AssemblyPath A = PathOf(Rooted("Fixture/A.dll"));
-    private static readonly AssemblyPath B = PathOf(Rooted("Fixture/B.dll"));
+    private static readonly AssemblyPath A = TestPaths.PathOf(TestPaths.Rooted("Fixture/A.dll"));
+    private static readonly AssemblyPath B = TestPaths.PathOf(TestPaths.Rooted("Fixture/B.dll"));
     private static readonly TypeAnchor Calculator = new TypeAnchor { AssemblyPath = A, FullName = "Ns.Calculator" };
     private static readonly TypeAnchorJson CalculatorJson = new TypeAnchorJson
     {
@@ -140,7 +139,7 @@ public sealed class SettingsFormatTests : IDisposable
     private static string Fixture(string name)
     {
         return File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Settings", name))
-            .Replace(FixtureFolderInFile, JsonEncodedText.Encode(Rooted("Fixture/")).Value);
+            .Replace(FixtureFolderInFile, JsonEncodedText.Encode(TestPaths.Rooted("Fixture/")).Value);
     }
 
     private static void AssertSameJson(string expected, string actual)
@@ -167,7 +166,7 @@ public sealed class SettingsFormatTests : IDisposable
                         Token = 0x06000001,
                         ILOffset = 7,
                     }],
-                    Pdbs = new Dictionary<AssemblyPath, string> { [A] = Rooted("Fixture/A.pdb") },
+                    Pdbs = new Dictionary<AssemblyPath, string> { [A] = TestPaths.Rooted("Fixture/A.pdb") },
                     Frameworks = new Dictionary<AssemblyPath, string> { [B] = ".NETCoreApp,Version=v8.0" },
                     Documents = ExpectedDocuments(),
                 },

@@ -19,7 +19,7 @@ public sealed class PreviewTabTests
 
     private static void Pick(AppDriver app, string row)
     {
-        app.Frames.ClickOn(GetFixtureRow(row)).Frame(2);
+        app.Frames.ClickOn(Targets.GetFixtureRow(row)).Frame(2);
         app.Settle(2);
     }
 
@@ -66,7 +66,7 @@ public sealed class PreviewTabTests
         Pick(app, "Greeter");
         var preview = app.AppState.Navigation.PreviewTab;
         Assert.NotNull(preview);
-        app.Frames.MoveTo(GetFixtureRow("Farewell"));
+        app.Frames.MoveTo(Targets.GetFixtureRow("Farewell"));
 
         app.Frames.Press().Frame();
 

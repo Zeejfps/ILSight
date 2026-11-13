@@ -1,6 +1,5 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
-using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;
 
@@ -14,8 +13,8 @@ public sealed class AssemblyMenuTests
         using var temp = new TempDir();
         var missing = temp.PathOf("Missing.dll");
         var app = AppDriver.Opened();
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [PathOf(missing), PathOf(CoreLibPath)], ct));
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 3, Patience);
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [TestPaths.PathOf(missing), TestPaths.PathOf(CoreLibPath)], ct));
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 3, AppStateDriver.Patience);
         app.Settle(2);
 
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/sort-list")).Frame(2);
@@ -81,9 +80,9 @@ public sealed class AssemblyMenuTests
         var internalType = (await app.FixtureAsync("Hidden")).Definition;
 
         app.Start((a, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, greeter, ct));
-        app.Frames.WaitUntil(() => app.Frames.OpenedUrls.Count == 1, Patience);
+        app.Frames.WaitUntil(() => app.Frames.OpenedUrls.Count == 1, AppStateDriver.Patience);
         app.Start((a, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, internalType, ct));
-        app.Frames.WaitUntil(() => app.AppState.Refusals.Shown is not null, Patience);
+        app.Frames.WaitUntil(() => app.AppState.Refusals.Shown is not null, AppStateDriver.Patience);
 
         Assert.EndsWith("/ilsight.app.tests.fixtures.greeter", app.Frames.OpenedUrls[0]);
         var refusal = app.AppState.Refusals.Shown;
@@ -101,7 +100,7 @@ public sealed class AssemblyMenuTests
 
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, name), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Load dependencies")).Frame();
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Any(a => a.Name == "System.Runtime"), Patience);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Any(a => a.Name == "System.Runtime"), AppStateDriver.Patience);
         app.Settle(2);
 
         var names = app.Ui.Tree.Roots.Select(r => r.Assembly.Name).ToList();

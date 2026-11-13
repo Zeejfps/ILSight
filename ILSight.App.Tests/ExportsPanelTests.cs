@@ -1,10 +1,6 @@
 using ILSight.Core;
 using ILSight.ExportArea;
 using ILSight.DocumentViewArea;
-using static ILSight.ExportArea.Exports;
-using static ILSight.ExportArea.ExportCommands;
-using static ILSight.ScreenLayout;
-using static ILSight.App.Tests.BuiltInGlyphs;
 
 namespace ILSight.App.Tests;
 
@@ -36,11 +32,11 @@ public sealed class ExportsPanelTests : IDisposable
     public async Task Starting_an_export_brings_the_exports_panel_to_the_front()
     {
         var d = AppStateDriver.Opened();
-        OpenPanel(d.Ui, DockView.Bookmarks);
+        ScreenLayout.OpenPanel(d.Ui, DockView.Bookmarks);
 
         var saved = await d.FixtureAsync("Greeter");
 
-        d.InTurn(() => SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
         d.NextFrame();
 
         var layout = d.Ui.Layout;
@@ -55,9 +51,9 @@ public sealed class ExportsPanelTests : IDisposable
         var app = AppDriver.Opened(height: TallWindow);
         var first = Folder("First");
         var greeterNode = await app.FixtureAsync("Greeter");
-        app.Driver.InTurn(() => SaveCode(app.AppState, greeterNode, Path.Combine(first, "Greeter.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, Path.Combine(first, "Greeter.cs")));
         var farewellNode = await app.FixtureAsync("Farewell");
-        app.Driver.InTurn(() => SaveCode(app.AppState, farewellNode, Path.Combine(Folder("Second"), "Farewell.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, farewellNode, Path.Combine(Folder("Second"), "Farewell.cs")));
         app.Settle(2);
 
         app.Frames.ClickOn(Selector.AtPath("dock/exports/#1/open-folder")).Frame();
@@ -71,9 +67,9 @@ public sealed class ExportsPanelTests : IDisposable
         var app = AppDriver.Opened(height: TallWindow);
         var path = _temp.PathOf("Greeter.cs");
         var greeterNode = await app.FixtureAsync("Greeter");
-        app.Driver.InTurn(() => SaveCode(app.AppState, greeterNode, path));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, path));
         var farewellNode = await app.FixtureAsync("Farewell");
-        app.Driver.InTurn(() => SaveCode(app.AppState, farewellNode, _temp.PathOf("Farewell.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, farewellNode, _temp.PathOf("Farewell.cs")));
         app.Settle(2);
 
         app.Frames.ClickOn(Selector.AtPath("dock/exports/#1/show-report")).Frame(2);
@@ -94,14 +90,14 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var d = AppStateDriver.Opened();
         var saved = await d.FixtureAsync("Greeter");
-        d.InTurn(() => SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
         var farewell = await d.FixtureAsync("Farewell");
-        d.InTurn(() => SaveCode(d.AppState, farewell, _temp.PathOf("Farewell.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, farewell, _temp.PathOf("Farewell.cs")));
         d.Settle();
 
-        RemoveFinishedExport(d.AppState, d.AppState.FinishedExports[0]);
+        Exports.RemoveFinishedExport(d.AppState, d.AppState.FinishedExports[0]);
         Assert.Equal("Farewell", Assert.Single(d.AppState.FinishedExports).Name);
-        ClearFinishedExports(d.AppState);
+        Exports.ClearFinishedExports(d.AppState);
 
         Assert.Empty(d.AppState.FinishedExports);
     }
@@ -112,9 +108,9 @@ public sealed class ExportsPanelTests : IDisposable
         var d = AppStateDriver.Opened();
         var farewell = _temp.PathOf("Farewell.cs");
         var saved = await d.FixtureAsync("Greeter");
-        d.InTurn(() => SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
         var farewellNode = await d.FixtureAsync("Farewell");
-        d.InTurn(() => SaveCode(d.AppState, farewellNode, farewell));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, farewellNode, farewell));
         var waiting = Assert.Single(d.AppState.Export.Waiting);
 
         d.AppState.Export.Withdraw(waiting.Run);
@@ -130,7 +126,7 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened(height: TallWindow);
         var greeterNode = await app.FixtureAsync("Greeter");
-        app.Driver.InTurn(() => SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter.cs")));
         app.Settle();
         var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
         Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Later"))).Turn.IsCompleted);
@@ -147,7 +143,7 @@ public sealed class ExportsPanelTests : IDisposable
     public async Task A_cancelled_export_says_it_is_cancelling_until_it_stops()
     {
         var app = AppDriver.Opened();
-        OpenPanel(app.Ui, DockView.Exports);
+        ScreenLayout.OpenPanel(app.Ui, DockView.Exports);
         var start = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Fixtures"))).Turn);
         app.Run(2);
 
@@ -166,12 +162,12 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened();
         var greeterNode = await app.FixtureAsync("Greeter");
-        app.Driver.InTurn(() => SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter.cs")));
         app.Settle(2);
 
         Assert.True(app.Frames.Drew("Open folder"));
         Assert.False(app.Frames.Drew("Show report"));
-        Assert.True(app.Frames.Drew(Text(Icons.ExportShowReport)));
+        Assert.True(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.ExportShowReport)));
     }
 
     [Fact]
@@ -179,7 +175,7 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened();
         var greeterNode = await app.FixtureAsync("Greeter");
-        app.Driver.InTurn(() => SaveCode(app.AppState, greeterNode, _temp.PathOf(Path.Combine("missing", "Greeter.cs"))));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, _temp.PathOf(Path.Combine("missing", "Greeter.cs"))));
         app.Settle(2);
 
         Assert.True(app.Frames.Drew("Show report"));
@@ -199,15 +195,15 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened(height: TallWindow);
         var greeterNode = await app.FixtureAsync("Greeter");
-        app.Driver.InTurn(() => SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter.cs")));
         app.Settle(2);
         var withOne = MeasureFrames(app);
 
         var farewellNode = await app.FixtureAsync("Farewell");
-        app.Driver.InTurn(() => SaveCode(app.AppState, farewellNode, _temp.PathOf(Path.Combine("missing", "Farewell.cs"))));
-        app.Driver.InTurn(() => SaveCode(app.AppState, farewellNode, _temp.PathOf("Farewell.cs")));
-        app.Driver.InTurn(() => SaveCode(app.AppState, greeterNode, _temp.PathOf(Path.Combine("missing", "Greeter.cs"))));
-        app.Driver.InTurn(() => SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter2.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, farewellNode, _temp.PathOf(Path.Combine("missing", "Farewell.cs"))));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, farewellNode, _temp.PathOf("Farewell.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, _temp.PathOf(Path.Combine("missing", "Greeter.cs"))));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter2.cs")));
         app.Settle(2);
         var withFive = MeasureFrames(app);
 
@@ -229,7 +225,7 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened(height: TallWindow);
         var greeterNode = await app.FixtureAsync("Greeter");
-        app.Driver.InTurn(() => SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter.cs")));
         app.Settle();
         var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
         Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Second"))).Turn.IsCompleted);
@@ -247,7 +243,7 @@ public sealed class ExportsPanelTests : IDisposable
     public async Task The_running_export_shows_its_assembly_and_percentage()
     {
         var app = AppDriver.Opened();
-        OpenPanel(app.Ui, DockView.Exports);
+        ScreenLayout.OpenPanel(app.Ui, DockView.Exports);
         var start = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Both"))).Turn);
         start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 2, Parts = 4, Fraction = 0.5f });
         app.Run(2);
@@ -275,7 +271,7 @@ public sealed class ExportsPanelTests : IDisposable
 
         var saved = await d.FixtureAsync("Greeter");
 
-        d.InTurn(() => SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
         var running = d.AppState.Export.Running;
         Assert.NotNull(running);
         var run = running.Export.Run;
@@ -303,9 +299,9 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened(height: TallWindow);
         var greeterNode = await app.FixtureAsync("Greeter");
-        app.Driver.InTurn(() => SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter.cs")));
         app.Settle(2);
-        ShowExportReport(app.AppState, app.AppState.FinishedExports[0]);
+        Exports.ShowExportReport(app.AppState, app.AppState.FinishedExports[0]);
         app.Run(2);
 
         app.AppState.Locale = Locale.De;
@@ -325,11 +321,11 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var d = AppStateDriver.Opened();
         var saved = await d.FixtureAsync("Greeter");
-        d.InTurn(() => SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
         d.Settle();
         var lookup = d.AppState.Navigation.BeginResolving(inNewTab: false);
 
-        ShowExportReport(d.AppState, d.AppState.FinishedExports[0]);
+        Exports.ShowExportReport(d.AppState, d.AppState.FinishedExports[0]);
 
         Assert.True(d.AppState.Navigation.IsStale(lookup.Intent));
         Assert.False(d.AppState.Navigation.IsResolving);
@@ -340,9 +336,9 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var d = AppStateDriver.Opened();
         var saved = await d.FixtureAsync("Greeter");
-        d.InTurn(() => SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
         d.Settle();
-        ShowExportReport(d.AppState, d.AppState.FinishedExports[0]);
+        Exports.ShowExportReport(d.AppState, d.AppState.FinishedExports[0]);
         var report = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(report);
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
@@ -358,10 +354,10 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var d = AppStateDriver.Opened();
         var saved = await d.FixtureAsync("Greeter");
-        d.InTurn(() => SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
         d.Settle();
         var finished = d.AppState.FinishedExports[0];
-        ShowExportReport(d.AppState, finished);
+        Exports.ShowExportReport(d.AppState, finished);
         var report = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(report);
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
@@ -381,16 +377,16 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var d = AppStateDriver.Opened();
         var saved = await d.FixtureAsync("Greeter");
-        d.InTurn(() => SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
         d.Settle();
         var finished = d.AppState.FinishedExports[0];
-        ShowExportReport(d.AppState, finished);
+        Exports.ShowExportReport(d.AppState, finished);
         var report = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(report);
         var reportAt = d.AppState.Navigation.HistoryIndex;
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
         d.AppState.Navigation.CloseTab(report);
-        RemoveFinishedExport(d.AppState, finished);
+        Exports.RemoveFinishedExport(d.AppState, finished);
 
         d.GoBack();
         d.Settle();
@@ -404,9 +400,9 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var d = AppStateDriver.Opened();
         var saved = await d.FixtureAsync("Greeter");
-        d.InTurn(() => SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
         d.Settle();
-        ShowExportReport(d.AppState, d.AppState.FinishedExports[0]);
+        Exports.ShowExportReport(d.AppState, d.AppState.FinishedExports[0]);
         var active = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(active);
         var report = active.Content;

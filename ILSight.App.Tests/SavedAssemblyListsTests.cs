@@ -1,5 +1,4 @@
 using ILSight.AssemblyListArea;
-using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;
 
@@ -32,13 +31,13 @@ public sealed class SavedAssemblyListsTests
     public void A_duplicate_holds_the_same_assemblies_under_a_name_of_its_own()
     {
         var lists = new SavedAssemblyLists();
-        lists.RememberActivePaths([FakePath("a.dll"), FakePath("b.dll")]);
+        lists.RememberActivePaths([TestPaths.FakePath("a.dll"), TestPaths.FakePath("b.dll")]);
 
         var copy = lists.Duplicate(SavedAssemblyLists.DefaultName, "Default copy");
-        lists.RememberActivePaths([FakePath("c.dll")]);
+        lists.RememberActivePaths([TestPaths.FakePath("c.dll")]);
 
         Assert.Equal("Default copy", copy);
-        Assert.Equal([FakePath("a.dll"), FakePath("b.dll")], lists.GetPaths(copy));
+        Assert.Equal([TestPaths.FakePath("a.dll"), TestPaths.FakePath("b.dll")], lists.GetPaths(copy));
     }
 
     [Fact]
@@ -47,10 +46,10 @@ public sealed class SavedAssemblyListsTests
         var lists = new SavedAssemblyLists();
         lists.Add("Framework");
 
-        var name = lists.Add("Framework", [FakePath("a.dll"), FakePath("b.dll")]);
+        var name = lists.Add("Framework", [TestPaths.FakePath("a.dll"), TestPaths.FakePath("b.dll")]);
 
         Assert.Equal("Framework 2", name);
-        Assert.Equal([FakePath("a.dll"), FakePath("b.dll")], lists.GetPaths(name));
+        Assert.Equal([TestPaths.FakePath("a.dll"), TestPaths.FakePath("b.dll")], lists.GetPaths(name));
         Assert.Equal(SavedAssemblyLists.DefaultName, lists.Active);
     }
 
@@ -80,7 +79,7 @@ public sealed class SavedAssemblyListsTests
         Assert.Equal("Work", lists.Active);
 
         lists.Remove("Work");
-        lists.RememberActivePaths([FakePath("a.dll")]);
+        lists.RememberActivePaths([TestPaths.FakePath("a.dll")]);
         lists.Remove(SavedAssemblyLists.DefaultName);
 
         Assert.Equal([SavedAssemblyLists.DefaultName], lists.Names);
@@ -100,7 +99,7 @@ public sealed class SavedAssemblyListsTests
         lists.RememberActivePaths([]);
         lists.RememberActiveDocuments(null);
         revisions.Add(lists.Revision);
-        lists.RememberActivePaths([FakePath("a.dll")]);
+        lists.RememberActivePaths([TestPaths.FakePath("a.dll")]);
         revisions.Add(lists.Revision);
         Assert.True(lists.TryRename("Work", "Play"));
         revisions.Add(lists.Revision);
@@ -119,10 +118,10 @@ public sealed class SavedAssemblyListsTests
         var lists = new SavedAssemblyLists();
         List<AssemblyListRecord> records =
         [
-            new AssemblyListRecord { Name = " ", Assemblies = [FakePath("x.dll")] },
-            new AssemblyListRecord { Name = "Work", Assemblies = [FakePath("a.dll")] },
-            new AssemblyListRecord { Name = "work", Assemblies = [FakePath("b.dll")] },
-            new AssemblyListRecord { Name = "Play", Assemblies = [FakePath("c.dll")] },
+            new AssemblyListRecord { Name = " ", Assemblies = [TestPaths.FakePath("x.dll")] },
+            new AssemblyListRecord { Name = "Work", Assemblies = [TestPaths.FakePath("a.dll")] },
+            new AssemblyListRecord { Name = "work", Assemblies = [TestPaths.FakePath("b.dll")] },
+            new AssemblyListRecord { Name = "Play", Assemblies = [TestPaths.FakePath("c.dll")] },
         ];
 
         lists.Restore(records, "play");
@@ -131,6 +130,6 @@ public sealed class SavedAssemblyListsTests
 
         lists.Restore(records, "Gone");
         Assert.Equal("Work", lists.Active);
-        Assert.Equal([FakePath("a.dll")], lists.ActivePaths);
+        Assert.Equal([TestPaths.FakePath("a.dll")], lists.ActivePaths);
     }
 }

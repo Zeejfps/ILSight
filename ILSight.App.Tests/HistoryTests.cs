@@ -1,8 +1,6 @@
 using ILSight.Core;
 using ILSight.CodeViewArea;
 using ILSight.ILSightAppArea;
-using static ILSight.App.Tests.BuiltInGlyphs;
-using static ILSight.App.Tests.TestPaths;
 using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
@@ -249,7 +247,7 @@ public sealed class HistoryTests
 
         ClickBackDropdown(app);
         var row = app.Frames.Canvas.Texts.Last(t => t.Inputs.Text == "Outline").Inputs.Position;
-        var glyph = Text(NodeIcons.Glyph(NodeIcons.Of(outline.Subject), Icons));
+        var glyph = BuiltInGlyphs.Text(NodeIcons.Glyph(NodeIcons.Of(outline.Subject), BuiltInGlyphs.Icons));
 
         Assert.Contains(app.Frames.Canvas.Texts, t => t.Inputs.Text == glyph && t.Inputs.Position.Left < row.Left
             && MathF.Abs(t.Inputs.Position.Top - t.Inputs.Position.Height / 2 - (row.Top - row.Height / 2)) < 2f);
@@ -269,8 +267,8 @@ public sealed class HistoryTests
 
     private static LoadedModule OpenApiDiffSample(AppDriver app)
     {
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [PathOf(ApiDiffSamplePath)], ct));
-        app.Driver.RunUntil(() => app.AppState.Assemblies.IsListed(PathOf(ApiDiffSamplePath)));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [TestPaths.PathOf(ApiDiffSamplePath)], ct));
+        app.Driver.RunUntil(() => app.AppState.Assemblies.IsListed(TestPaths.PathOf(ApiDiffSamplePath)));
         app.Settle(4);
         return ApiDiffSampleOf(app);
     }
@@ -289,7 +287,7 @@ public sealed class HistoryTests
         app.Settle(4);
 
         Assert.Equal("Greeter", app.AppState.Navigation.ActiveTab?.Node?.Text);
-        Assert.False(app.AppState.Assemblies.IsListed(PathOf(ApiDiffSamplePath)));
+        Assert.False(app.AppState.Assemblies.IsListed(TestPaths.PathOf(ApiDiffSamplePath)));
     }
 
     [Fact]
@@ -306,7 +304,7 @@ public sealed class HistoryTests
         Assert.True(account.Has(ZGF.Gui.Immediate.SemanticStates.Disabled));
         Assert.Equal("Farewell", app.AppState.Navigation.ActiveTab?.Node?.Text);
         Assert.Equal(current, app.AppState.Navigation.HistoryIndex);
-        Assert.False(app.AppState.Assemblies.IsListed(PathOf(ApiDiffSamplePath)));
+        Assert.False(app.AppState.Assemblies.IsListed(TestPaths.PathOf(ApiDiffSamplePath)));
     }
 
     [Fact]
@@ -340,7 +338,7 @@ public sealed class HistoryTests
 
     private static void ClickBackDropdown(AppDriver app)
     {
-        var icon = app.TextRect(Icons.ToolbarBack);
+        var icon = app.TextRect(BuiltInGlyphs.Icons.ToolbarBack);
         var x = icon.X + icon.Width / 2 + app.Theme.IconButtonSize / 2 + app.Theme.DropdownButtonWidth / 2;
         app.Frames.Click(x, icon.Y + icon.Height / 2).Frame();
     }

@@ -1,7 +1,5 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
-using static ILSight.Docking;
-using static ILSight.ScreenLayout;
 
 namespace ILSight.App.Tests;
 
@@ -127,7 +125,7 @@ public sealed class DockingTests
         var layout = d.Ui.Layout;
         layout.Dock(DocumentPanels.GetPanel(app.Ui.Documents, farewell), layout.Root, DockEdge.Bottom);
         layout.Float(DockPanels.Assemblies, new UiRect(40f, 40f, 300f, 300f));
-        OpenPanel(d.Ui, DockView.Bookmarks);
+        ScreenLayout.OpenPanel(d.Ui, DockView.Bookmarks);
         app.Run(2);
 
         app.Frames.ClickOn(Selector.WithText("View"));

@@ -3,10 +3,6 @@ using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.ExportArea;
-using static ILSight.ExportArea.Exports;
-using static ILSight.ExportArea.ExportCommands;
-using static ILSight.App.Tests.BuiltInGlyphs;
-using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;
 
@@ -32,7 +28,7 @@ public sealed class ExportTests : IDisposable
     {
         var d = new AppStateDriver();
         d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SampleAppPath)], ct));
-        d.RunUntil(() => d.AppState.Assemblies.IsListed(PathOf(SampleAppPath)));
+        d.RunUntil(() => d.AppState.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)));
         d.Settle();
         return d;
     }
@@ -51,7 +47,7 @@ public sealed class ExportTests : IDisposable
 
         var saved = await d.FixtureAsync("Greeter");
 
-        d.InTurn(() => SaveCode(d.AppState, saved, path));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, path));
         d.Settle();
 
         Assert.Contains(".class public auto ansi beforefieldinit ILSight.App.Tests.Fixtures.Greeter", await File.ReadAllTextAsync(path));
@@ -66,7 +62,7 @@ public sealed class ExportTests : IDisposable
 
         var saved = await SampleOf(d).ReadRootAsync();
 
-        d.InTurn(() => SaveCode(d.AppState, saved, path));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, path));
         d.Settle();
 
         var code = await File.ReadAllTextAsync(path);
@@ -82,8 +78,8 @@ public sealed class ExportTests : IDisposable
         var node = await d.NodeAsync("Resources", "data.json");
         var path = _temp.PathOf("data.json");
 
-        Assert.True(CanSaveCode(node));
-        d.InTurn(() => SaveCode(d.AppState, node, path));
+        Assert.True(Exports.CanSaveCode(node));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, node, path));
         d.Settle();
 
         Assert.Equal(BrowseNodes.ReadResource(node), await File.ReadAllBytesAsync(path));
@@ -97,7 +93,7 @@ public sealed class ExportTests : IDisposable
         var path = _temp.PathOf("data.json");
         var setup = new DecompilerSetup { Language = DecompilationLanguage.CSharp, Options = DecompilerOptions.Default };
 
-        var save = ToCodeSave(node, setup, path);
+        var save = Exports.ToCodeSave(node, setup, path);
 
         var bytes = Assert.IsType<CodeSave.ResourceBytes>(save);
         Assert.Same(node, bytes.Node);
@@ -112,7 +108,7 @@ public sealed class ExportTests : IDisposable
         var path = _temp.PathOf("Greeter.il");
         var setup = new DecompilerSetup { Language = DecompilationLanguage.IL, Options = DecompilerOptions.Default };
 
-        var save = ToCodeSave(node, setup, path);
+        var save = Exports.ToCodeSave(node, setup, path);
 
         var work = Assert.IsType<CodeSave.Code>(save).Work;
         Assert.Same(node, work.Node);
@@ -127,7 +123,7 @@ public sealed class ExportTests : IDisposable
         var d = OpenedSample();
         var assembly = SampleOf(d);
 
-        GeneratePdbs(d.AppState, _temp.Path);
+        ExportCommands.GeneratePdbs(d.AppState, _temp.Path);
         d.Settle();
 
         Assert.True(File.Exists(_temp.PathOf(assembly.PdbFileName)));
@@ -139,12 +135,12 @@ public sealed class ExportTests : IDisposable
     {
         var app = new AppDriver();
         app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SampleAppPath)], ct));
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.IsListed(PathOf(SampleAppPath)), Patience);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)), AppStateDriver.Patience);
         app.Settle(2);
         app.Frames.FilePicker.Answer = _temp.Path;
 
         app.PickFromTreeMenu(SampleOf(app.Driver).Name, "Create diagram…");
-        app.Frames.WaitUntil(() => app.Frames.OpenedFiles.Count == 1, Patience);
+        app.Frames.WaitUntil(() => app.Frames.OpenedFiles.Count == 1, AppStateDriver.Patience);
 
         var page = Path.Combine(_temp.Path, "SampleApp diagram", "index.html");
         var report = Assert.Single(app.AppState.FinishedExports);
@@ -202,9 +198,9 @@ public sealed class ExportTests : IDisposable
 
         app.Frames.ClickOn(Selector.WithText("File")).Frame(2);
 
-        IconGlyph[] icons = [Icons.FileOpen, Icons.FileOpenFromFramework, Icons.FileOpenFromProcess, Icons.FileSaveCode, Icons.FileExportProject,
-            Icons.FileGeneratePdb];
-        Assert.All(icons, icon => Assert.True(app.Frames.Drew(Text(icon))));
+        IconGlyph[] icons = [BuiltInGlyphs.Icons.FileOpen, BuiltInGlyphs.Icons.FileOpenFromFramework, BuiltInGlyphs.Icons.FileOpenFromProcess, BuiltInGlyphs.Icons.FileSaveCode, BuiltInGlyphs.Icons.FileExportProject,
+            BuiltInGlyphs.Icons.FileGeneratePdb];
+        Assert.All(icons, icon => Assert.True(app.Frames.Drew(BuiltInGlyphs.Text(icon))));
     }
 
     [Fact]
@@ -339,8 +335,8 @@ public sealed class ExportTests : IDisposable
 
         var greeterNode = await d.FixtureAsync("Greeter");
         var farewellNode = await d.FixtureAsync("Farewell");
-        d.InTurn(() => SaveCode(d.AppState, greeterNode, greeter));
-        d.InTurn(() => SaveCode(d.AppState, farewellNode, farewell));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, greeterNode, greeter));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, farewellNode, farewell));
         Assert.Equal(1, d.AppState.Export.WaitingCount);
         d.Settle();
 
@@ -388,7 +384,7 @@ public sealed class ExportTests : IDisposable
 
         var saved = await d.FixtureAsync("Greeter");
 
-        d.InTurn(() => SaveCode(d.AppState, saved, path));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, path));
         d.Settle();
 
         var report = Assert.Single(d.AppState.FinishedExports);
@@ -422,7 +418,7 @@ public sealed class ExportTests : IDisposable
 
         var saved = await d.FixtureAsync("Greeter");
 
-        d.InTurn(() => SaveCode(d.AppState, saved, path));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, path));
         d.Settle();
 
         var report = Assert.Single(d.AppState.FinishedExports);

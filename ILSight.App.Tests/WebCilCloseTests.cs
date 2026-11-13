@@ -2,7 +2,6 @@ using ZGF.Gui.Immediate;
 using ILSight.CommandArea;
 using ILSight.Core;
 using ILSight.Core.Metadata;
-using static ILSight.App.Tests.AppStateDriver;
 
 namespace ILSight.App.Tests;
 
@@ -39,7 +38,7 @@ public sealed class WebCilCloseTests
         app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [module]));
         app.Settle(2);
         var released = LoadedAssemblies.WaitForReleaseAsync(module, CancellationToken.None);
-        app.Frames.WaitUntil(() => released.IsCompleted, Patience);
+        app.Frames.WaitUntil(() => released.IsCompleted, AppStateDriver.Patience);
         await File.WriteAllBytesAsync(path, whole);
 
         Assert.Same(code, tab.Document);

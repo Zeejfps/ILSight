@@ -2,8 +2,6 @@ using System.Globalization;
 using System.Text;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
-using static ILSight.SettingArea.Settings;
-using static ILSight.Theming;
 using ILSight.CodeViewArea;
 using ILSight.BuiltInArea;
 using ILSight.AppSettingArea;
@@ -102,7 +100,7 @@ public sealed class UserThemeTests : IDisposable
         settings.Theme = Id("gone");
         var appState = AppRoot.RestoreAppState(settings, TestSession.Shared);
 
-        Assert.Same(appState.Themes.GetTheme(Id("dark")), ResolveTheme(appState));
+        Assert.Same(appState.Themes.GetTheme(Id("dark")), Theming.ResolveTheme(appState));
         Assert.IsType<SettingsWriteResult.Written>(appState.SettingsSaving.Save(appState));
         Assert.Equal("gone", _temp.Settings().Theme.Text);
     }
@@ -157,8 +155,8 @@ public sealed class UserThemeTests : IDisposable
         Assert.Equal("dracula-custom", appState.Theme.Text);
         Assert.Empty(appState.Errors.Entries);
         Assert.Equal("Dracula (custom)", appState.Themes.GetThemeName(Id("dracula-custom"), CultureInfo.GetCultureInfo("en")));
-        Assert.Equal(dracula.Ui, ResolveTheme(appState).Ui);
-        Assert.Equal(dracula.Code.Keyword, ResolveTheme(appState).Code.Keyword);
+        Assert.Equal(dracula.Ui, Theming.ResolveTheme(appState).Ui);
+        Assert.Equal(dracula.Code.Keyword, Theming.ResolveTheme(appState).Code.Keyword);
         Assert.Contains("\"extends\": \"dracula\",", text);
         Assert.Contains("// \"rowHover\": \"#2C2E3B\",", text);
         Assert.Contains("// \"popupShadowColor\": \"#00000066\",", text);
@@ -278,7 +276,7 @@ public sealed class UserThemeTests : IDisposable
         Directory.Delete(folder, recursive: true);
         d.RunUntil(() => Directory.Exists(folder));
         WriteTheme("back", """{ "extends": "dark", "ui": { "accent": "#00FF00" } }""");
-        d.RunUntil(() => ResolveTheme(d.AppState).Ui.Accent == 0xFF00FF00);
+        d.RunUntil(() => Theming.ResolveTheme(d.AppState).Ui.Accent == 0xFF00FF00);
         d.AppState.Workflows.CancelAll();
 
         Assert.Empty(d.AppState.Errors.Entries);
@@ -290,10 +288,10 @@ public sealed class UserThemeTests : IDisposable
         var settings = Settings();
         settings.Theme = Id("live");
         var d = new AppStateDriver(settings);
-        Assert.Same(d.AppState.Themes.GetTheme(Id("dark")), ResolveTheme(d.AppState));
+        Assert.Same(d.AppState.Themes.GetTheme(Id("dark")), Theming.ResolveTheme(d.AppState));
 
         WriteTheme("live", """{ "extends": "dark", "ui": { "accent": "#FF00FF" } }""");
-        d.RunUntil(() => ResolveTheme(d.AppState).Ui.Accent == 0xFFFF00FF);
+        d.RunUntil(() => Theming.ResolveTheme(d.AppState).Ui.Accent == 0xFFFF00FF);
         d.AppState.Workflows.CancelAll();
 
         Assert.Equal("live", d.AppState.Theme.Text);

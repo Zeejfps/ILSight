@@ -5,8 +5,6 @@ using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.Core.Diagrams;
 using ILSight.DiagramArea;
-using static ILSight.Docking;
-using static ILSight.App.Tests.BuiltInGlyphs;
 using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
@@ -307,7 +305,7 @@ public sealed class DiagramViewTests
     {
         var app = await PickFromTreeAsync("Vehicle", "Show in diagram");
 
-        Assert.True(app.Frames.Drew(Text(Icons.TabDiagram)));
+        Assert.True(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.TabDiagram)));
     }
 
     [Fact]

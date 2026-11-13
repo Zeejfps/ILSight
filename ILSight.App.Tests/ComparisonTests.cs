@@ -3,10 +3,6 @@ using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.Core.Comparison;
 using ILSight.AssemblyArea;
-using static ILSight.Comparisons;
-using static ILSight.Docking;
-using static ILSight.DocumentPanels;
-using static ILSight.App.Tests.TestPaths;
 using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
@@ -24,7 +20,7 @@ public sealed class ComparisonTests
     private static AppStateDriver OpenBoth()
     {
         var d = new AppStateDriver();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [PathOf(LeftPath), PathOf(RightPath)], ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)], ct));
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 2);
         d.Settle();
         return d;
@@ -38,7 +34,7 @@ public sealed class ComparisonTests
     /// <summary>Compares <paramref name="assembly"/> with <paramref name="other"/> and waits for the comparison.</summary>
     private static AssemblyComparison Compare(AppStateDriver d, string assembly, string other)
     {
-        d.StartComparing(CompareAssemblies(d.AppState.Navigation, d.AppState.Assemblies, Opened(d, assembly), Opened(d, other),
+        d.StartComparing(Comparisons.CompareAssemblies(d.AppState.Navigation, d.AppState.Assemblies, Opened(d, assembly), Opened(d, other),
             Names.Comparison(Opened(d, assembly))));
         d.Settle();
         var tab = d.AppState.Navigation.ActiveTab;
@@ -90,7 +86,7 @@ public sealed class ComparisonTests
         var navigation = d.AppState.Navigation;
         var lookup = navigation.BeginResolving(inNewTab: false);
 
-        d.StartComparing(CompareAssemblies(navigation, d.AppState.Assemblies, Opened(d, LeftPath), Opened(d, RightPath), Names.Comparison(Opened(d, LeftPath))));
+        d.StartComparing(Comparisons.CompareAssemblies(navigation, d.AppState.Assemblies, Opened(d, LeftPath), Opened(d, RightPath), Names.Comparison(Opened(d, LeftPath))));
         d.Settle();
 
         Assert.True(navigation.IsStale(lookup.Intent));
@@ -101,7 +97,7 @@ public sealed class ComparisonTests
     private static AppStateDriver OpenWithFixtures()
     {
         var d = AppStateDriver.Opened();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [PathOf(LeftPath), PathOf(RightPath)], ct));
+        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)], ct));
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 3);
         d.Settle();
         return d;
@@ -131,7 +127,7 @@ public sealed class ComparisonTests
         var comparisonTab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(comparisonTab);
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
-        ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup, comparisonTab);
+        DocumentPanels.ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup, comparisonTab);
         d.Settle();
         var account = Entry(DiffOf(comparison), "ApiDiffSample", "Account");
         var sides = Assert.IsType<ApiSides.Both>(Assert.IsType<ApiEntry.Entity>(account).Sides);
@@ -166,7 +162,7 @@ public sealed class ComparisonTests
     {
         var d = OpenWithFixtures();
         var compared = Compare(d, LeftPath, RightPath);
-        d.StartComparing(SwapComparedAssemblies(d.AppState.Assemblies, compared));
+        d.StartComparing(Comparisons.SwapComparedAssemblies(d.AppState.Assemblies, compared));
         d.Settle();
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -223,7 +219,7 @@ public sealed class ComparisonTests
         var added = DiffOf(comparison).Added;
         var removed = DiffOf(comparison).Removed;
 
-        d.StartComparing(SwapComparedAssemblies(d.AppState.Assemblies, comparison));
+        d.StartComparing(Comparisons.SwapComparedAssemblies(d.AppState.Assemblies, comparison));
         d.Settle();
 
         var swapped = DiffOf(comparison);
@@ -239,7 +235,7 @@ public sealed class ComparisonTests
         var comparison = Compare(d, LeftPath, RightPath);
         Assert.Equal(ApiChange.Removed, Entry(DiffOf(comparison), "ApiDiffSample", "Helper").Change);
 
-        d.StartComparing(ChangeComparedScope(d.AppState.Assemblies, comparison, ApiScope.AllDeclared));
+        d.StartComparing(Comparisons.ChangeComparedScope(d.AppState.Assemblies, comparison, ApiScope.AllDeclared));
         d.Settle();
 
         Assert.Equal(ApiScope.AllDeclared, DiffOf(comparison).Scope);
@@ -276,7 +272,7 @@ public sealed class ComparisonTests
         var comparison = Compare(d, LeftPath, RightPath);
 
         d.InTurn(() => Commands.CloseAssemblies(d.AppState, [Opened(d, RightPath)]));
-        d.StartComparing(SwapComparedAssemblies(d.AppState.Assemblies, comparison));
+        d.StartComparing(Comparisons.SwapComparedAssemblies(d.AppState.Assemblies, comparison));
         d.Settle();
 
         var failed = Assert.IsType<ComparisonResult.Failed>(comparison.Result);
@@ -287,7 +283,7 @@ public sealed class ComparisonTests
     public void Closing_the_tab_drops_the_comparison_in_flight()
     {
         var d = OpenBoth();
-        d.StartComparing(CompareAssemblies(d.AppState.Navigation, d.AppState.Assemblies, Opened(d, LeftPath), Opened(d, RightPath),
+        d.StartComparing(Comparisons.CompareAssemblies(d.AppState.Navigation, d.AppState.Assemblies, Opened(d, LeftPath), Opened(d, RightPath),
             Names.Comparison(Opened(d, LeftPath))));
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -354,7 +350,7 @@ public sealed class ComparisonTests
         PickCompareWith(app);
 
         app.Frames.ClickOn(Selector.AtPath("compare-picker-compare")).Frame();
-        app.Frames.WaitUntil(() => HasCompared(app.AppState.Navigation.ActiveTab?.Comparison), Patience);
+        app.Frames.WaitUntil(() => HasCompared(app.AppState.Navigation.ActiveTab?.Comparison), AppStateDriver.Patience);
         app.Settle(2);
 
         Assert.False(app.Ui.ComparisonPicker.Choice.IsOpen);
@@ -375,7 +371,7 @@ public sealed class ComparisonTests
         Assert.True(app.TextRect(app.Ui.Icons.ComparisonSwap).Y < app.TextRect(Compared).Y);
 
         app.Frames.ClickOn(Selector.AtPath("dock/document-2/swap")).Frame();
-        app.Frames.WaitUntil(() => DiffOf(comparison).LeftName == RightName, Patience);
+        app.Frames.WaitUntil(() => DiffOf(comparison).LeftName == RightName, AppStateDriver.Patience);
         app.Settle(2);
 
         Assert.Equal(LeftPath, comparison.RightPath.Text);
@@ -401,9 +397,9 @@ public sealed class ComparisonTests
     private static AppDriver ComparedOnScreen()
     {
         var app = OpenBothOnScreen();
-        app.StartComparing(CompareAssemblies(app.AppState.Navigation, app.AppState.Assemblies, Opened(app.Driver, LeftPath), Opened(app.Driver, RightPath),
+        app.StartComparing(Comparisons.CompareAssemblies(app.AppState.Navigation, app.AppState.Assemblies, Opened(app.Driver, LeftPath), Opened(app.Driver, RightPath),
             Names.Comparison(Opened(app.Driver, LeftPath))));
-        app.Frames.WaitUntil(() => HasCompared(app.AppState.Navigation.ActiveTab?.Comparison), Patience);
+        app.Frames.WaitUntil(() => HasCompared(app.AppState.Navigation.ActiveTab?.Comparison), AppStateDriver.Patience);
         app.Settle(2);
         return app;
     }
@@ -411,8 +407,8 @@ public sealed class ComparisonTests
     private static AppDriver OpenBothOnScreen()
     {
         var app = new AppDriver(width: 1400f);
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [PathOf(LeftPath), PathOf(RightPath)], ct));
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Count == 2, Patience);
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)], ct));
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Count == 2, AppStateDriver.Patience);
         app.Settle(2);
         return app;
     }
@@ -420,14 +416,14 @@ public sealed class ComparisonTests
     /// <summary>Right-clicks the left assembly's row and picks Compare with… from its menu.</summary>
     private static void PickCompareWith(AppDriver app)
     {
-        app.Frames.ClickOn(GetTreeRow(LeftName), PointerButton.Right).Frame();
+        app.Frames.ClickOn(Targets.GetTreeRow(LeftName), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Compare with…")).Frame();
         app.Run(2);
     }
 
     private static AssemblyComparison NewComparison()
     {
-        return new AssemblyComparison { LeftPath = PathOf(LeftPath), RightPath = PathOf(RightPath) };
+        return new AssemblyComparison { LeftPath = TestPaths.PathOf(LeftPath), RightPath = TestPaths.PathOf(RightPath) };
     }
 
     [Fact]

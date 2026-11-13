@@ -1,5 +1,4 @@
 using Xunit.Abstractions;
-using static ILSight.ScreenLayout;
 
 namespace ILSight.App.Tests;
 
@@ -35,7 +34,7 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
     public void A_frame_of_the_app_with_only_tool_panels_open_allocates_nothing()
     {
         var app = AppDriver.Opened();
-        OpenPanel(app.Ui, DockView.Bookmarks);
+        ScreenLayout.OpenPanel(app.Ui, DockView.Bookmarks);
         app.Settle(2);
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);

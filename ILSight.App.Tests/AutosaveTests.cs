@@ -2,8 +2,6 @@ using ZGF.Desktop;
 using ZGF.Geometry;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using static ILSight.Preferences;
-using static ILSight.SettingArea.Settings;
 using ILSight.AppSettingArea;
 using ILSight.SettingArea;
 
@@ -64,7 +62,7 @@ public sealed class AutosaveTests : IDisposable
                 appState.Decompiler.UseLanguage(DecompilationLanguage.IL);
                 break;
             case nameof(AppSettings.Decompiler):
-                SetLanguageVersion(appState, CSharpVersion.CSharp7_3);
+                Preferences.SetLanguageVersion(appState, CSharpVersion.CSharp7_3);
                 break;
             case nameof(AppSettings.ApiVisibility):
                 appState.ApiVisibility = ApiVisibility.All;

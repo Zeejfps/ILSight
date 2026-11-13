@@ -14,8 +14,6 @@ using ILSight.SearchArea;
 using ILSight.MainArea;
 using ILSight.AssemblyArea;
 using ILSight.MetadataArea;
-using static ILSight.SettingArea.Settings;
-using static ILSight.ScreenLayout;
 using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
@@ -51,9 +49,9 @@ public sealed class ScreenIsolationTests : IDisposable
         var d = AppStateDriver.Opened(_temp.Settings());
         d.Show(await d.FixtureAsync("Greeter"));
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
-        OpenPanel(d.Ui, DockView.Bookmarks);
+        ScreenLayout.OpenPanel(d.Ui, DockView.Bookmarks);
         d.Analyze(await d.FixtureAsync("Greeter"));
-        ScopeSearch(d.Ui, await d.NodeAsync(AppStateDriver.FixturesNamespace));
+        ScreenLayout.ScopeSearch(d.Ui, await d.NodeAsync(AppStateDriver.FixturesNamespace));
         d.Ui.BookmarkColumns.Restore([1f, 1f, 4f, 1f]);
         d.Settle();
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));

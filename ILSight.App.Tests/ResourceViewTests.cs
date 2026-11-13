@@ -2,10 +2,7 @@ using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ZGF.KeyboardModule;
-using static ILSight.Docking;
-using static ILSight.ExportArea.Exports;
-using static ILSight.ExportArea.ExportCommands;
-using static ILSight.App.Tests.BuiltInGlyphs;
+using ILSight.ExportArea;
 
 namespace ILSight.App.Tests;
 
@@ -36,7 +33,7 @@ public sealed class ResourceViewTests
         Assert.Equal((2f, 2f), (drawn.Inputs.Position.Width, drawn.Inputs.Position.Height));
         app.TextRect("PNG, 2 × 2 pixels");
         var export = app.TextRect("Export");
-        var icon = app.Frames.TextRect(Text(Icons.ResourceExport));
+        var icon = app.Frames.TextRect(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.ResourceExport));
         Assert.True(icon.Right <= export.X);
         Assert.Equal(export.Y + export.Height / 2, icon.Y + icon.Height / 2, 2f);
     }
@@ -254,7 +251,7 @@ public sealed class ResourceViewTests
         Directory.CreateDirectory(temp.Path);
         var path = temp.PathOf("data.json");
 
-        app.Driver.InTurn(() => SaveResource(app.AppState, node, path));
+        app.Driver.InTurn(() => ExportCommands.SaveResource(app.AppState, node, path));
         app.Settle();
 
         Assert.Equal(BrowseNodes.ReadResource(node), await File.ReadAllBytesAsync(path));
@@ -270,7 +267,7 @@ public sealed class ResourceViewTests
         Directory.CreateDirectory(temp.Path);
         var path = temp.PathOf("data.json");
 
-        app.Driver.InTurn(() => SaveResource(app.AppState, node, path));
+        app.Driver.InTurn(() => ExportCommands.SaveResource(app.AppState, node, path));
         var underWay = app.AppState.Work.Outstanding.ToList();
         var writtenInTheTurn = File.Exists(path);
         app.Settle();
@@ -293,7 +290,7 @@ public sealed class ResourceViewTests
         var t = Strings.For(Locale.De);
 
         app.Driver.InTurn(() => CommandArea.Commands.CloseAssemblies(app.AppState, [module]));
-        app.Driver.InTurn(() => SaveResource(app.AppState, node, path));
+        app.Driver.InTurn(() => ExportCommands.SaveResource(app.AppState, node, path));
         app.Settle();
         app.Run(2);
 

@@ -4,12 +4,10 @@ using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.Core.Metadata;
 using ZGF.KeyboardModule;
-using static ILSight.App.Tests.BuiltInGlyphs;
 using ILSight.MetadataGridArea;
 using ILSight.CommandArea;
 using ILSight.MetadataArea;
 using ILSight.SettingArea;
-using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;
 
@@ -199,7 +197,7 @@ public sealed class MetadataGridTests
         var token = TextBeside(app, MetadataGrids.GetText(grid, row, grid.Column("BaseType")), "Greeter");
 
         app.Frames.MovePointer(token.X + 2f, token.Y + token.Height / 2).Frame(2);
-        app.Frames.Click(TextBeside(app, Text(Icons.LinkToken), "Greeter"));
+        app.Frames.Click(TextBeside(app, BuiltInGlyphs.Text(BuiltInGlyphs.Icons.LinkToken), "Greeter"));
         app.Settle(3);
 
         Assert.Same(await TableAsync(app, "TypeRef"), tab.Node);
@@ -214,11 +212,11 @@ public sealed class MetadataGridTests
         var name = MetadataGrids.GetText(grid, row, grid.Column("Name"));
         var token = TextBeside(app, MetadataGrids.GetText(grid, row, baseType), name);
         app.Frames.MovePointer(token.X + 2f, token.Y + token.Height / 2).Frame(2);
-        var icon = TextBeside(app, Text(Icons.LinkToken), name);
+        var icon = TextBeside(app, BuiltInGlyphs.Text(BuiltInGlyphs.Icons.LinkToken), name);
 
         app.Frames.MovePointer(icon).Frame(2);
 
-        Assert.True(app.Frames.Drew(Text(Icons.LinkToken)));
+        Assert.True(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.LinkToken)));
         Assert.Contains(app.Frames.Canvas.Rects, r => r.Inputs.Style.BackgroundColor == app.Theme.RowHover
                                                       && Math.Abs(app.Frames.Height - r.Inputs.Position.Top + r.Inputs.Position.Height / 2 - (icon.Y + icon.Height / 2)) < 4f);
     }
@@ -276,8 +274,8 @@ public sealed class MetadataGridTests
     {
         var app = AppDriver.Opened(width: 2400f);
         var path = typeof(object).Assembly.Location;
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [PathOf(path)], ct));
-        app.Driver.RunUntil(() => app.AppState.Assemblies.IsListed(PathOf(path)));
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [TestPaths.PathOf(path)], ct));
+        app.Driver.RunUntil(() => app.AppState.Assemblies.IsListed(TestPaths.PathOf(path)));
         app.Settle();
         var coreLib = app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == path);
         app.Show(await (await coreLib.ReadRootAsync().GetChildAsync("Metadata", "Tables")).TableAsync("Param"), 3);
@@ -373,7 +371,7 @@ public sealed class MetadataGridTests
     {
         var header = app.TextRect(column);
         return app.Frames.TextRects()
-            .Where(t => t.Text == Text(Icons.MetadataFilter))
+            .Where(t => t.Text == BuiltInGlyphs.Text(BuiltInGlyphs.Icons.MetadataFilter))
             .Select(t => t.Rect)
             .Where(r => r.X > header.X && Math.Abs(r.Y + r.Height / 2 - (header.Y + header.Height / 2)) < 4f)
             .MinBy(r => r.X);

@@ -3,12 +3,6 @@ using ZGF.KeyboardModule;
 using ILSight.Core;
 using ILSight.CodeViewArea;
 using ILSight.BookmarkArea;
-using static ILSight.AssemblyListArea.AssemblyLists;
-using static ILSight.BookmarkArea.Bookmarks;
-using static ILSight.SettingArea.Settings;
-using static ILSight.ScreenLayout;
-using static ILSight.App.Tests.BuiltInGlyphs;
-using static ILSight.App.Tests.TestPaths;
 using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
@@ -38,11 +32,11 @@ public sealed class BookmarkTests : IDisposable
         var (d, tab, line) = await OutlineAtAsync("return First();", AppStateDriver.WithoutScreen());
         var bookmarks = d.AppState.Bookmarks;
 
-        var added = ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
+        var added = Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
         var bookmark = Assert.Single(bookmarks.Items);
         Assert.NotNull(tab.Node);
         var marked = bookmarks.ListMarkedLines(tab.Document, tab.Node);
-        var removed = ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
+        var removed = Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
 
         Assert.Equal(new BookmarkToggle.Added(bookmark), added);
         Assert.Equal(new BookmarkToggle.Removed { Bookmark = bookmark, Row = 0 }, removed);
@@ -63,15 +57,15 @@ public sealed class BookmarkTests : IDisposable
 
         var anchor = Documents.FindAnchorAt(tab.Document, line);
 
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
         var info = Assert.Single(d.AppState.Bookmarks.Items).ILSpy;
         Assert.NotNull(anchor);
         Assert.Equal(module.FullName, info.AssemblyFullName);
         Assert.Equal(module.FilePath.FileName, info.ModuleName);
         Assert.Equal((uint)anchor.Value.Token, info.Token);
-        Assert.Equal(FixturesNamespace + ".Outline.Third", info.MemberName);
-        Assert.Equal(FixturesNamespace + ".Outline", info.LocationNodeName);
-        Assert.Equal([module.FilePath.Text, FixturesNamespace, FixturesNamespace + ".Outline"], info.TreePath);
+        Assert.Equal(AppStateDriver.FixturesNamespace + ".Outline.Third", info.MemberName);
+        Assert.Equal(AppStateDriver.FixturesNamespace + ".Outline", info.LocationNodeName);
+        Assert.Equal([module.FilePath.Text, AppStateDriver.FixturesNamespace, AppStateDriver.FixturesNamespace + ".Outline"], info.TreePath);
     }
 
     [Fact]
@@ -79,8 +73,8 @@ public sealed class BookmarkTests : IDisposable
     {
         var (d, tab, line) = await OutlineAtAsync("return First();", AppStateDriver.WithoutScreen());
         var first = tab.Document.GetPosition("foreach").Line;
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, first, Names.Bookmark));
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, first, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
         var bookmarks = d.AppState.Bookmarks;
         var panel = new BookmarksPanel();
         ItemSelections.Select(panel.Selection, bookmarks.Items[0], bookmarks.Items);
@@ -101,7 +95,7 @@ public sealed class BookmarkTests : IDisposable
     public async Task A_bookmark_follows_its_statement_into_IL_and_into_the_methods_own_document()
     {
         var (d, tab, line) = await OutlineAtAsync("return First();");
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
         var bookmarks = d.AppState.Bookmarks;
 
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
@@ -123,7 +117,7 @@ public sealed class BookmarkTests : IDisposable
         var (d, tab, line) = await OutlineAtAsync("return First();");
         var brace = line - 1;
         Assert.Equal("{", tab.Document.Lines[brace].Text.Trim());
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, brace, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, brace, Names.Bookmark));
         var bookmark = Assert.Single(d.AppState.Bookmarks.Items);
 
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
@@ -139,7 +133,7 @@ public sealed class BookmarkTests : IDisposable
     {
         var app = new AppDriver(height: 360f);
         var (d, tab, line) = await OutlineAtAsync("return First();", app.Driver);
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
         app.Show(await app.FixtureAsync("Greeter"), 3);
 
         var bookmark = d.AppState.Bookmarks.Items[0];
@@ -156,8 +150,8 @@ public sealed class BookmarkTests : IDisposable
     {
         var (d, tab, line) = await OutlineAtAsync("return First();");
         var first = tab.Document.GetPosition("foreach").Line;
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, first, Names.Bookmark));
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, first, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
         var bookmarks = d.AppState.Bookmarks;
         bookmarks.SetEnabled(bookmarks.Items[1], false);
 
@@ -175,7 +169,7 @@ public sealed class BookmarkTests : IDisposable
     public async Task A_bookmark_marking_a_line_already_marked_is_not_added()
     {
         var (d, tab, line) = await OutlineAtAsync("return First();");
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
         var bookmarks = d.AppState.Bookmarks;
         var twin = bookmarks.Items[0];
 
@@ -189,7 +183,7 @@ public sealed class BookmarkTests : IDisposable
     public async Task Saved_bookmarks_marking_one_line_load_as_one_and_say_how_many_were_left_out()
     {
         var (d, tab, line) = await OutlineAtAsync("return First();", new AppStateDriver(_temp.Settings()));
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
         var settings = _temp.Settings();
         settings.Bookmarks.Add(settings.Bookmarks[0] with { Name = "Twin" });
@@ -204,7 +198,7 @@ public sealed class BookmarkTests : IDisposable
     public async Task Bookmarks_are_saved_with_the_settings_and_found_again_on_the_next_run()
     {
         var (d, tab, line) = await OutlineAtAsync("return First();", new AppStateDriver(_temp.Settings()));
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
         var bookmarks = d.AppState.Bookmarks;
         bookmarks.Rename(bookmarks.Items[0], "Calls First");
         d.Pump();
@@ -229,7 +223,7 @@ public sealed class BookmarkTests : IDisposable
         var clicked = view.Click(view.MarkOf(new CodeRow(3)));
 
         Assert.Equal(line, Assert.IsType<CodeViewIntent.ToggleBookmark>(clicked.Intent).Line);
-        Assert.Equal(2, view.Frames.Canvas.Texts.Count(t => t.Inputs.Text == Text(Icons.CodeBookmark)));
+        Assert.Equal(2, view.Frames.Canvas.Texts.Count(t => t.Inputs.Text == BuiltInGlyphs.Text(BuiltInGlyphs.Icons.CodeBookmark)));
         Assert.False(view.State.HasSelection);
     }
 
@@ -241,7 +235,7 @@ public sealed class BookmarkTests : IDisposable
         var clicked = view.Click(view.MarkOf(new CodeRow(3)));
 
         Assert.IsNotType<CodeViewIntent.ToggleBookmark>(clicked.Intent);
-        Assert.DoesNotContain(view.Frames.Canvas.Texts, t => t.Inputs.Text == Text(Icons.CodeBookmark));
+        Assert.DoesNotContain(view.Frames.Canvas.Texts, t => t.Inputs.Text == BuiltInGlyphs.Text(BuiltInGlyphs.Icons.CodeBookmark));
     }
 
     [Fact]
@@ -275,8 +269,8 @@ public sealed class BookmarkTests : IDisposable
     {
         var app = new AppDriver(height: 500f);
         var (d, tab, line) = await OutlineAtAsync("return First();", app.Driver);
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
-        OpenPanel(d.Ui, DockView.Bookmarks);
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
+        ScreenLayout.OpenPanel(d.Ui, DockView.Bookmarks);
         app.Run(frames);
         return (app, d, tab, line);
     }
@@ -291,7 +285,7 @@ public sealed class BookmarkTests : IDisposable
         app.Frames.MovePointer(location.X + 2f, location.Y + location.Height / 2).Frame(90);
         Assert.True(app.Frames.Drew(Strings.En.BookmarksGoToHint));
 
-        app.Frames.Click(app.TextRect(Icons.LinkBookmark));
+        app.Frames.Click(app.TextRect(BuiltInGlyphs.Icons.LinkBookmark));
         d.Settle();
 
         Assert.Equal("Outline", tab.Node?.Text);
@@ -323,10 +317,10 @@ public sealed class BookmarkTests : IDisposable
     {
         var app = new AppDriver(height: 500f);
         var (d, tab, line) = await OutlineAtAsync("return First();", app.Driver);
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("foreach").Line, Names.Bookmark));
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("needle").Line, Names.Bookmark));
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
-        OpenPanel(d.Ui, DockView.Bookmarks);
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("foreach").Line, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("needle").Line, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
+        ScreenLayout.OpenPanel(d.Ui, DockView.Bookmarks);
         app.Run(3);
         var bookmarks = d.AppState.Bookmarks;
         var panel = app.Ui.BookmarksPanel;
@@ -346,10 +340,10 @@ public sealed class BookmarkTests : IDisposable
     {
         var app = new AppDriver(height: 500f);
         var (d, tab, line) = await OutlineAtAsync("return First();", app.Driver);
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("foreach").Line, Names.Bookmark));
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("needle").Line, Names.Bookmark));
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
-        OpenPanel(d.Ui, DockView.Bookmarks);
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("foreach").Line, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("needle").Line, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
+        ScreenLayout.OpenPanel(d.Ui, DockView.Bookmarks);
         app.Run(3);
         var bookmarks = d.AppState.Bookmarks;
         var panel = app.Ui.BookmarksPanel;
@@ -486,7 +480,7 @@ public sealed class BookmarkTests : IDisposable
         var (d, tab, _) = await OutlineAtAsync("return First();");
         foreach (var text in lines)
         {
-            Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, tab.Document.GetPosition(text).Line, Names.Bookmark));
+            Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition(text).Line, Names.Bookmark));
         }
 
         ExportBookmarks(d, path);
@@ -515,7 +509,7 @@ public sealed class BookmarkTests : IDisposable
         var path = await ExportedAsync("return First();", "foreach");
         var (d, tab, line) = await OutlineAtAsync("return First();");
         var bookmarks = d.AppState.Bookmarks;
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
         bookmarks.Rename(bookmarks.Items[0], "Mine");
 
         ImportBookmarks(d, path);
@@ -541,7 +535,7 @@ public sealed class BookmarkTests : IDisposable
         var first = await ExportedAsAsync("first.json", "foreach");
         var second = await ExportedAsAsync("second.json", "needle");
         var (d, tab, line) = await OutlineAtAsync("return First();");
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
 
         ImportBookmarks(d, first);
         ImportBookmarks(d, second);
@@ -563,7 +557,7 @@ public sealed class BookmarkTests : IDisposable
     {
         var path = _temp.Write("other.json", "{ \"assemblies\": [] }");
         var (d, tab, line) = await OutlineAtAsync("return First();");
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
 
         ImportBookmarks(d, path);
         d.Settle();
@@ -676,7 +670,7 @@ public sealed class BookmarkTests : IDisposable
         Directory.CreateDirectory(_temp.Path);
         var path = _temp.PathOf("exported.json");
         var (d, tab, line) = await OutlineAtAsync("return First();");
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
 
         ExportBookmarks(d, path);
         using var json = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(path));
@@ -740,7 +734,7 @@ public sealed class BookmarkTests : IDisposable
     {
         var path = await ExportedAsync("return First();");
         var (d, tab, line) = await OutlineAtAsync("return First();");
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
 
         ImportBookmarks(d, path);
         d.Settle();

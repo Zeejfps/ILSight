@@ -4,8 +4,6 @@ using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using static ILSight.SettingArea.Settings;
-using static ILSight.App.Tests.TestPaths;
 using ILSight.BookmarkArea;
 using ILSight.AppSettingArea;
 using ILSight.AssemblyListArea;
@@ -16,8 +14,8 @@ namespace ILSight.App.Tests;
 
 public sealed class AppSettingsTests : IDisposable
 {
-    private static readonly string A = Rooted("a.dll");
-    private static readonly string B = Rooted("b.dll");
+    private static readonly string A = TestPaths.Rooted("a.dll");
+    private static readonly string B = TestPaths.Rooted("b.dll");
     private static readonly string AInJson = JsonEncodedText.Encode(A).Value;
     private static readonly string BInJson = JsonEncodedText.Encode(B).Value;
 
@@ -41,8 +39,8 @@ public sealed class AppSettingsTests : IDisposable
         var settings = AppRoot.ReadSettingsFile(FullFilePath.Of(SettingsFile)).Settings;
         settings.AssemblyLists =
         [
-            new AssemblyListRecord { Name = "Work", Assemblies = [FakePath("a.dll"), FakePath("b.dll")] },
-            new AssemblyListRecord { Name = "Play", Assemblies = [FakePath("c.dll")] },
+            new AssemblyListRecord { Name = "Work", Assemblies = [TestPaths.FakePath("a.dll"), TestPaths.FakePath("b.dll")] },
+            new AssemblyListRecord { Name = "Play", Assemblies = [TestPaths.FakePath("c.dll")] },
         ];
         settings.ActiveAssemblyList = "Play";
         settings.Language = DecompilationLanguage.IL;
@@ -58,7 +56,7 @@ public sealed class AppSettingsTests : IDisposable
         var problem = read.Problem;
         Assert.IsType<SettingsProblem.None>(problem);
         Assert.Equal(["Work", "Play"], loaded.AssemblyLists.Select(static l => l.Name));
-        Assert.Equal([FakePath("a.dll"), FakePath("b.dll")], loaded.AssemblyLists[0].Assemblies);
+        Assert.Equal([TestPaths.FakePath("a.dll"), TestPaths.FakePath("b.dll")], loaded.AssemblyLists[0].Assemblies);
         Assert.Equal("Play", loaded.ActiveAssemblyList);
         Assert.Equal(DecompilationLanguage.IL, loaded.Language);
         Assert.Equal(settings.Decompiler, loaded.Decompiler);
@@ -229,7 +227,7 @@ public sealed class AppSettingsTests : IDisposable
         Assert.Equal(new CodeAnchor
         {
             Kind = CodeAnchorKind.Definition,
-            FilePath = PathOf(A),
+            FilePath = TestPaths.PathOf(A),
             Token = 33554434,
         }, analyzed);
         Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(loaded));

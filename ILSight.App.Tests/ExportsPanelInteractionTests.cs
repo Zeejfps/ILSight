@@ -4,10 +4,6 @@ using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.ExportArea;
 using ILSight.DocumentViewArea;
-using static ILSight.ExportArea.Exports;
-using static ILSight.ExportArea.ExportCommands;
-using static ILSight.ScreenLayout;
-using static ILSight.App.Tests.BuiltInGlyphs;
 
 namespace ILSight.App.Tests;
 
@@ -35,9 +31,9 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     {
         var app = AppDriver.Opened(width: width, height: TallWindow);
         var greeterNode = await app.FixtureAsync("Greeter");
-        app.Driver.InTurn(() => SaveCode(app.AppState, greeterNode, Path.Combine(Folder("First"), "Greeter.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, Path.Combine(Folder("First"), "Greeter.cs")));
         var farewellNode = await app.FixtureAsync("Farewell");
-        app.Driver.InTurn(() => SaveCode(app.AppState, farewellNode, Path.Combine(Folder("Second"), "Farewell.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, farewellNode, Path.Combine(Folder("Second"), "Farewell.cs")));
         app.Settle(2);
         return app;
     }
@@ -134,7 +130,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     public async Task A_waiting_export_is_withdrawn_from_the_keyboard_and_the_running_one_stays()
     {
         var app = AppDriver.Opened(height: TallWindow);
-        OpenPanel(app.Ui, DockView.Exports);
+        ScreenLayout.OpenPanel(app.Ui, DockView.Exports);
         var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
         Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Later"))).Turn.IsCompleted);
         app.Run(2);
@@ -154,7 +150,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     public async Task The_remove_from_queue_button_takes_the_export_out_mid_frame_without_breaking_the_list()
     {
         var app = AppDriver.Opened(height: TallWindow);
-        OpenPanel(app.Ui, DockView.Exports);
+        ScreenLayout.OpenPanel(app.Ui, DockView.Exports);
         var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
         Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Second"))).Turn.IsCompleted);
         Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Third"))).Turn.IsCompleted);
@@ -173,7 +169,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
         app.Run(2);
 
         Assert.False(app.Frames.Drew("Open folder"));
-        Assert.True(app.Frames.Drew(Text(Icons.ExportOpenFolder)));
+        Assert.True(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.ExportOpenFolder)));
     }
 
     [Fact]
@@ -181,7 +177,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     {
         var app = AppDriver.Opened(height: TallWindow);
         var theme = app.Theme;
-        OpenPanel(app.Ui, DockView.Exports);
+        ScreenLayout.OpenPanel(app.Ui, DockView.Exports);
         var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
         running.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.5f });
         app.Run(2);
@@ -208,11 +204,11 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     public async Task The_running_export_keeps_the_frames_coming_so_its_spinner_turns()
     {
         var app = AppDriver.Opened();
-        OpenPanel(app.Ui, DockView.Exports);
+        ScreenLayout.OpenPanel(app.Ui, DockView.Exports);
         var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
         app.Run(2);
 
-        Assert.False(app.Frames.Drew(Text(Icons.StatusLoading)));
+        Assert.False(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.StatusLoading)));
         Assert.True(app.Frames.WakeAt - app.Frames.RealTime <= 1.0 / 30.0 + 1e-6);
         app.Driver.InTurn(running.EndTurn);
     }

@@ -1,8 +1,8 @@
 using ILSight.Core;
 using ILSight.AssemblyArea;
-using static ILSight.AssemblyArea.AssemblyReloading;
 using ILSight.SettingArea;
 using ILSight.CommandArea;
+using ILSight.AssemblyListArea;
 
 namespace ILSight.App.Tests;
 
@@ -166,8 +166,8 @@ public sealed class AssembliesTests
         Assert.Equal(PdbCheck.OtherBuild, unusable.Check);
         Assert.Equal("other.pdb", unusable.PdbPath);
         Assert.Equal(PdbCheck.Unreadable, Assert.IsType<AppProblem.PdbUnusable>(Assert.Single(failed.Reported)).Check);
-        Assert.DoesNotContain(nameof(IPorts.ReadAgainAsync), otherBuild.Asked);
-        Assert.DoesNotContain(nameof(IPorts.ReadAgainAsync), failed.Asked);
+        Assert.DoesNotContain(nameof(AssemblyReloading.IPorts.ReadAgainAsync), otherBuild.Asked);
+        Assert.DoesNotContain(nameof(AssemblyReloading.IPorts.ReadAgainAsync), failed.Asked);
         Assert.Empty(d.AppState.Assemblies.Pdbs.All);
         Assert.Empty(otherBuildLoads);
         Assert.Empty(failedLoads);
@@ -184,7 +184,7 @@ public sealed class AssembliesTests
 
         Assert.Equal([new Refusal.PdbNotRead { Pdb = "picked.pdb", Assembly = "ILSight.Fixtures.dll" }], ports.Refused);
         Assert.Empty(ports.Reported);
-        Assert.DoesNotContain(nameof(IPorts.ReadAgainAsync), ports.Asked);
+        Assert.DoesNotContain(nameof(AssemblyReloading.IPorts.ReadAgainAsync), ports.Asked);
         Assert.Empty(d.AppState.Assemblies.Pdbs.All);
         Assert.Empty(loads);
     }
@@ -201,7 +201,7 @@ public sealed class AssembliesTests
         var loads = await d.RunAsync(() => new AssemblyReloading(ports).UsePdbAsync(d.AppState.ListSession, d.AppState.Reopens, d.AppState.Decompiler, fixtures, "matching.pdb", shutdown.Token));
 
         Assert.Equal("matching.pdb", d.AppState.Assemblies.Pdbs.All[fixtures.FilePath]);
-        Assert.Equal([nameof(IPorts.CheckPdbAsync), nameof(IPorts.ReadAgainAsync)], ports.Asked);
+        Assert.Equal([nameof(AssemblyReloading.IPorts.CheckPdbAsync), nameof(AssemblyReloading.IPorts.ReadAgainAsync)], ports.Asked);
         Assert.All(ports.Tokens, t => Assert.Equal(shutdown.Token, t));
         var notReloaded = Assert.IsType<AppProblem.AssemblyNotReloaded>(Assert.Single(ports.Reported));
         Assert.Same(error, notReloaded.Error);
@@ -509,7 +509,7 @@ public sealed class AssembliesTests
         var reopening = appState.ListSession.BeginReopening(appState.Lists);
         appState.Lists.Add("Other", [PathTo("Other.dll")]);
 
-        var opening = AssemblyListArea.AssemblyLists.SwitchAssemblyList(appState.Lists, appState.ListSession, appState.View, "Other");
+        var opening = AssemblyLists.SwitchAssemblyList(appState.Lists, appState.ListSession, appState.View, "Other");
 
         Assert.NotNull(opening);
         Assert.False(appState.ListSession.TryFinishReopening(reopening.Reload));

@@ -9,9 +9,6 @@ using ILSight.BuiltInArea;
 using ILSight.SearchArea;
 using ILSight.MainArea;
 using ILSight.CommandArea;
-using static ILSight.Preferences;
-using static ILSight.ScreenLayout;
-using static ILSight.App.Tests.BuiltInGlyphs;
 
 namespace ILSight.App.Tests;
 
@@ -20,7 +17,7 @@ public sealed class AppTests
     private static AppDriver Searching(string text, int moreRowsThan, float width = 1000f)
     {
         var app = AppDriver.Opened(width);
-        OpenSearch(app.Ui);
+        ScreenLayout.OpenSearch(app.Ui);
         app.Run();
         app.Frames.Type(text).Frame();
         app.RunOut();
@@ -36,7 +33,7 @@ public sealed class AppTests
         view.SetExpanded(await app.NodeAsync(), true);
         view.SetExpanded(await app.NodeAsync(AppStateDriver.FixturesNamespace), true);
         view.Refresh();
-        app.Frames.WaitUntil(() => app.Frames.Drew(until), Patience);
+        app.Frames.WaitUntil(() => app.Frames.Drew(until), AppStateDriver.Patience);
         return app;
     }
 
@@ -375,7 +372,7 @@ public sealed class AppTests
         Assert.NotNull(outline);
         var named = Documents.GetText(outline.Document);
 
-        SetDecompilerToggle(app.AppState, DecompilerToggle.UseDebugSymbols, false);
+        Preferences.SetDecompilerToggle(app.AppState, DecompilerToggle.UseDebugSymbols, false);
         app.Settle(1);
 
         Assert.Contains("int32 total", named);
@@ -388,9 +385,9 @@ public sealed class AppTests
     public void Options_newer_than_the_version_are_greyed_out_and_groups_fold()
     {
         var app = AppDriver.Opened(width: 1600f);
-        SetLanguageVersion(app.AppState, CSharpVersion.CSharp7);
+        Preferences.SetLanguageVersion(app.AppState, CSharpVersion.CSharp7);
         FoldOptionGroupsBut(app, nameof(CSharpVersion.CSharp8));
-        OpenPanel(app.Ui, DockView.DecompilerOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DecompilerOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.WithText("switch expressions")).Frame();
@@ -409,20 +406,20 @@ public sealed class AppTests
 
     private static bool IsGroupMark(string text)
     {
-        var unfolded = Text(Icons.OptionsGroupUnfolded);
+        var unfolded = BuiltInGlyphs.Text(BuiltInGlyphs.Icons.OptionsGroupUnfolded);
         if (text == unfolded)
         {
             return true;
         }
 
-        return text == Text(Icons.OptionsGroupFolded);
+        return text == BuiltInGlyphs.Text(BuiltInGlyphs.Icons.OptionsGroupFolded);
     }
 
     [Fact]
     public void The_options_toolbar_collapses_and_expands_every_group()
     {
         var app = AppDriver.Opened(width: 1600f);
-        OpenPanel(app.Ui, DockView.DecompilerOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DecompilerOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.AtPath("dock/decompiler-options/collapse"));
@@ -439,7 +436,7 @@ public sealed class AppTests
     {
         var app = AppDriver.Opened(width: 1600f);
         FoldOptionGroupsBut(app, nameof(CSharpVersion.CSharp8));
-        OpenPanel(app.Ui, DockView.DecompilerOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DecompilerOptions);
         app.Run();
         var csharp8 = DecompilerToggle.All.Where(t => t.Group is DecompilerToggleGroup.Language { IntroducedIn: CSharpVersion.CSharp8 }).ToArray();
 
@@ -491,7 +488,7 @@ public sealed class AppTests
     public void SearchPanel_InvalidRegex_ShowsWhyNothingIsFoundUntilFixed()
     {
         var app = AppDriver.Opened();
-        OpenSearch(app.Ui);
+        ScreenLayout.OpenSearch(app.Ui);
         app.Run();
         app.Frames.Type("/[a/").Frame();
         app.RunOut();
@@ -528,13 +525,13 @@ public sealed class AppTests
         app.RunOut();
         Assert.Equal(names.Order(StringComparer.OrdinalIgnoreCase), search.Results.Rows.Select(r => r.Text));
         Assert.Same(selected, search.Results.SelectedRow?.Node);
-        Assert.True(app.Frames.Drew(Text(Icons.SortAscending)));
+        Assert.True(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.SortAscending)));
 
         app.Frames.ClickOn(Selector.WithText("Name")).Frame();
         app.RunOut();
         Assert.Equal(names.OrderDescending(StringComparer.OrdinalIgnoreCase), search.Results.Rows.Select(r => r.Text));
         Assert.Same(selected, search.Results.SelectedRow?.Node);
-        Assert.True(app.Frames.Drew(Text(Icons.SortDescending)));
+        Assert.True(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.SortDescending)));
 
         app.Frames.ClickOn(Selector.WithText("Name")).Frame();
         app.RunOut();
@@ -562,11 +559,11 @@ public sealed class AppTests
 
         Assert.True(app.Frames.Drew("Namespaces"));
         var events = app.LastTextRect("Events");
-        var icon = app.LastTextRect(Icons.NodeEvent);
+        var icon = app.LastTextRect(BuiltInGlyphs.Icons.NodeEvent);
         Assert.True(icon.Right <= events.X && events.X - icon.Right < 16f, $"the events icon ends at {icon.Right}, its label starts at {events.X}");
         Assert.True(MathF.Abs(icon.Y + icon.Height / 2 - (events.Y + events.Height / 2)) < 4f);
         app.Frames.Key(KeyboardKey.Escape).Frame(2);
-        app.Frames.WaitUntil(() => app.Ui.Search.Results is { IsBusy: false, Rows.Count: > 0 }, Patience);
+        app.Frames.WaitUntil(() => app.Ui.Search.Results is { IsBusy: false, Rows.Count: > 0 }, AppStateDriver.Patience);
 
         Assert.Equal(SearchKinds.Methods, app.Ui.Search.Kinds);
         Assert.All(app.Ui.Search.Results.Rows, r => Assert.Equal(NodeIcon.Method, r.Node.Icon));
@@ -578,7 +575,7 @@ public sealed class AppTests
     public void All_kinds_stands_alone_and_comes_back_when_the_last_kind_is_unchecked()
     {
         var app = AppDriver.Opened();
-        OpenSearch(app.Ui);
+        ScreenLayout.OpenSearch(app.Ui);
         app.Run(2);
 
         app.Frames.ClickOn(Selector.WithText("Types and members")).Frame();
@@ -611,8 +608,8 @@ public sealed class AppTests
             .MaxBy(r => r.X);
         var assembliesTab = app.TextRect("Assemblies");
 
-        Assert.True(WasIconDrawnBefore(app, Icons.PanelAssemblies, assembliesTab));
-        Assert.True(WasIconDrawnBefore(app, NodeIcons.Glyph(NodeIcons.Of(shown.Node.Subject), Icons), documentTab));
+        Assert.True(WasIconDrawnBefore(app, BuiltInGlyphs.Icons.PanelAssemblies, assembliesTab));
+        Assert.True(WasIconDrawnBefore(app, NodeIcons.Glyph(NodeIcons.Of(shown.Node.Subject), BuiltInGlyphs.Icons), documentTab));
     }
 
     [Fact]
@@ -627,14 +624,14 @@ public sealed class AppTests
         app.Run(2);
 
         var analyzer = app.LastTextRect("Analyzer");
-        Assert.True(WasIconDrawnBefore(app, Icons.PanelAnalyzer, analyzer));
-        Assert.True(WasIconDrawnBefore(app, Icons.PanelDisplayOptions, app.LastTextRect("Display options")));
+        Assert.True(WasIconDrawnBefore(app, BuiltInGlyphs.Icons.PanelAnalyzer, analyzer));
+        Assert.True(WasIconDrawnBefore(app, BuiltInGlyphs.Icons.PanelDisplayOptions, app.LastTextRect("Display options")));
         Assert.Equal(analyzer.X, app.LastTextRect("Display options").X, 0.01f);
     }
 
     private static bool WasIconDrawnBefore(AppDriver app, IconGlyph icon, UiRect title)
     {
-        var glyph = Text(icon);
+        var glyph = BuiltInGlyphs.Text(icon);
         return app.Frames.TextRects()
             .Where(t => t.Text == glyph)
             .Any(t => IsJustBefore(t.Rect, title));
@@ -669,10 +666,10 @@ public sealed class AppTests
         app.Run(2);
         Assert.False(app.Frames.Drew("Search…"));
 
-        OpenSearch(app.Ui);
+        ScreenLayout.OpenSearch(app.Ui);
         app.Run(2);
 
-        var icon = app.LastTextRect(Icons.SearchField);
+        var icon = app.LastTextRect(BuiltInGlyphs.Icons.SearchField);
         var placeholder = app.TextRect("Search…");
 
         Assert.True(icon.Right <= placeholder.X, $"the icon ends at {icon.Right}, the placeholder starts at {placeholder.X}");
@@ -685,8 +682,8 @@ public sealed class AppTests
         var app = new AppDriver();
         app.Run(2);
         var theme = app.Theme;
-        var open = app.TextRect(Icons.ToolbarOpen);
-        var search = app.TextRect(Icons.ToolbarSearch);
+        var open = app.TextRect(BuiltInGlyphs.Icons.ToolbarOpen);
+        var search = app.TextRect(BuiltInGlyphs.Icons.ToolbarSearch);
         Assert.Equal(open.Y, search.Y, 1f);
         Assert.InRange(search.X - open.Right, 0f, theme.IconButtonSize);
         Assert.True(app.TextRect("C#").X > search.Right);
@@ -709,7 +706,7 @@ public sealed class AppTests
         app.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         app.Run(2);
         var theme = app.Theme;
-        var gear = app.TextRect(Icons.ToolbarDisplayOptions);
+        var gear = app.TextRect(BuiltInGlyphs.Icons.ToolbarDisplayOptions);
         Assert.False(app.Ui.Layout.Contains(DockPanels.DisplayOptions));
 
         app.Frames.ClickOn(Selector.AtPath("display-options")).Frame(2);
@@ -739,7 +736,7 @@ public sealed class AppTests
         app.Run(2);
         var theme = app.Theme;
         var file = app.TextRect("File");
-        var open = app.TextRect(Icons.ToolbarOpen);
+        var open = app.TextRect(BuiltInGlyphs.Icons.ToolbarOpen);
         var rects = app.Frames.Canvas.Rects.Select(r => (r.Inputs.Style.BackgroundColor, Rect: app.Frames.ToUi(r.Inputs.Position))).ToList();
 
         Assert.Contains(rects, r => r.BackgroundColor == theme.Background && r.Rect.Y <= file.Y && r.Rect.Bottom >= file.Bottom && r.Rect.Bottom <= open.Y);
@@ -754,7 +751,7 @@ public sealed class AppTests
         var secondary = NodeText.Secondary(await app.NodeAsync());
         Assert.NotNull(secondary);
         Assert.True(app.TextRect(secondary).X > app.TextRect(app.AppState.Assemblies.Assemblies[0].Name).Right);
-        Assert.True(app.Frames.Drew(Text(Icons.OverlayInternal)));
+        Assert.True(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.OverlayInternal)));
     }
 
     [Fact]
@@ -764,7 +761,7 @@ public sealed class AppTests
         app.Run(2);
 
         var row = app.Ui.Search.Results.Rows.First(r => r.Node.Icon == NodeIcon.Class);
-        var header = app.LastTextRect(Icons.SearchField);
+        var header = app.LastTextRect(BuiltInGlyphs.Icons.SearchField);
         var texts = app.Frames.TextRects().ToList();
         var name = texts.Single(t => t.Text == row.Text && t.Rect.Y > header.Bottom).Rect;
         var cells = texts.Where(t => t.Rect.Y == name.Y && t.Rect.X > name.Right).OrderBy(t => t.Rect.X).ToList();

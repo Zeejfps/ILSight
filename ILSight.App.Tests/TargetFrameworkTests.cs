@@ -3,9 +3,6 @@ using ZGF.Gui;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.AssemblyListArea;
-using static ILSight.AssemblyListArea.AssemblyLists;
-using static ILSight.SettingArea.Settings;
-using static ILSight.App.Tests.TestPaths;
 using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
@@ -47,7 +44,7 @@ public sealed class TargetFrameworkTests
         Assert.Equal("net48", NodeText.PickedFramework(await assembly.ReadRootAsync()));
         Assert.DoesNotContain("net48", NodeText.Secondary(await assembly.ReadRootAsync()));
         Assert.Equal(FontWeight.Bold, app.Frames.Canvas.Texts.Single(t => t.Inputs.Text == "net48").Inputs.Style.FontWeight.Value);
-        Assert.Equal(Net48.Text, Assert.Single(temp.Settings().AssemblyLists).Frameworks?[PathOf(AppStateDriver.FixturePath)]);
+        Assert.Equal(Net48.Text, Assert.Single(temp.Settings().AssemblyLists).Frameworks?[TestPaths.PathOf(AppStateDriver.FixturePath)]);
     }
 
     [Fact]
@@ -74,7 +71,7 @@ public sealed class TargetFrameworkTests
     {
         var app = AppDriver.Opened(width: 1600f);
         app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SampleAppPath)], ct));
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.IsListed(PathOf(SampleAppPath)), Patience);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)), AppStateDriver.Patience);
         var fixtures = FixturesOf(app.AppState);
         var sample = SampleOf(app.AppState);
         var tree = app.Ui.Tree;
@@ -120,7 +117,7 @@ public sealed class TargetFrameworkTests
         using var temp = new TempDir();
         var app = new AppDriver();
         app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(WritePackage(temp))], ct));
-        app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, Patience);
+        app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, AppStateDriver.Patience);
         app.Settle(2);
         var package = await app.AppState.Assemblies.Listed[0].ReadRootAsync();
         var folder = await package.GetChildAsync("lib/net10.0");
@@ -162,8 +159,8 @@ public sealed class TargetFrameworkTests
             new AssemblyListRecord
             {
                 Name = SavedAssemblyLists.DefaultName,
-                Assemblies = [PathOf(AppStateDriver.FixturePath)],
-                Frameworks = new Dictionary<AssemblyPath, string> { [PathOf(AppStateDriver.FixturePath)] = Net48.Text },
+                Assemblies = [TestPaths.PathOf(AppStateDriver.FixturePath)],
+                Frameworks = new Dictionary<AssemblyPath, string> { [TestPaths.PathOf(AppStateDriver.FixturePath)] = Net48.Text },
             },
         ];
         var d = new AppStateDriver(settings);
@@ -183,8 +180,8 @@ public sealed class TargetFrameworkTests
             new AssemblyListRecord
             {
                 Name = SavedAssemblyLists.DefaultName,
-                Assemblies = [PathOf(AppStateDriver.FixturePath)],
-                Frameworks = new Dictionary<AssemblyPath, string> { [PathOf(AppStateDriver.FixturePath)] = @"C:\symbols\Fixtures.pdb" },
+                Assemblies = [TestPaths.PathOf(AppStateDriver.FixturePath)],
+                Frameworks = new Dictionary<AssemblyPath, string> { [TestPaths.PathOf(AppStateDriver.FixturePath)] = @"C:\symbols\Fixtures.pdb" },
             },
         ];
         var d = new AppStateDriver(settings);

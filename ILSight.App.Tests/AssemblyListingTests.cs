@@ -4,11 +4,6 @@ using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.CommandArea;
 using ILSight.AssemblyListArea;
-using static ILSight.AssemblyListArea.AssemblyLists;
-using static ILSight.Docking;
-using static ILSight.SettingArea.Settings;
-using static ILSight.App.Tests.BuiltInGlyphs;
-using static ILSight.App.Tests.TestPaths;
 using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
@@ -39,7 +34,7 @@ public sealed class AssemblyListingTests
         settings.AssemblyLists = [new AssemblyListRecord
         {
             Name = SavedAssemblyLists.DefaultName,
-            Assemblies = [PathOf(AppStateDriver.FixturePath), PathOf(other)],
+            Assemblies = [TestPaths.PathOf(AppStateDriver.FixturePath), TestPaths.PathOf(other)],
         }];
         var d = AppStateDriver.Starting(settings);
 
@@ -59,7 +54,7 @@ public sealed class AssemblyListingTests
         settings.AssemblyLists = [new AssemblyListRecord
         {
             Name = SavedAssemblyLists.DefaultName,
-            Assemblies = [PathOf(gone), PathOf(AppStateDriver.FixturePath)],
+            Assemblies = [TestPaths.PathOf(gone), TestPaths.PathOf(AppStateDriver.FixturePath)],
         }];
         var d = new AppStateDriver(settings);
 
@@ -136,7 +131,7 @@ public sealed class AssemblyListingTests
     {
         var d = AppStateDriver.Opened();
         d.Analyze(await d.FixtureAsync("Greeter"));
-        var copy = DuplicateAssemblyList(d.AppState, SavedAssemblyLists.DefaultName, "Copy");
+        var copy = AssemblyLists.DuplicateAssemblyList(d.AppState, SavedAssemblyLists.DefaultName, "Copy");
 
         d.SwitchList(copy);
         d.Settle();
@@ -192,11 +187,11 @@ public sealed class AssemblyListingTests
         var d = AppStateDriver.Opened();
         var other = typeof(AppState).Assembly.Location;
 
-        CreateAssemblyList(d.AppState, "New list");
+        AssemblyLists.CreateAssemblyList(d.AppState, "New list");
         d.SwitchList("New list");
         d.Settle();
         d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(other)], ct));
-        d.RunUntil(() => d.AppState.Assemblies.ListFilePaths().Contains(PathOf(other)));
+        d.RunUntil(() => d.AppState.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)));
         d.SwitchList(SavedAssemblyLists.DefaultName);
         d.Settle();
 
@@ -236,7 +231,7 @@ public sealed class AssemblyListingTests
     public void Deleting_the_open_list_opens_the_assemblies_of_the_one_that_takes_its_place()
     {
         var d = AppStateDriver.Opened();
-        CreateAssemblyList(d.AppState, "New list");
+        AssemblyLists.CreateAssemblyList(d.AppState, "New list");
         d.Settle();
 
         d.DeleteList("New list");
@@ -458,7 +453,7 @@ public sealed class AssemblyListingTests
         var folder = Path.GetDirectoryName(other) ?? throw new InvalidOperationException($"The app assembly's path names no folder: '{other}'.");
 
         app.Frames.DropFiles(folder, other).Frame();
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.ListFilePaths().Contains(PathOf(other)), Patience);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)), AppStateDriver.Patience);
 
         Assert.Equal([AppStateDriver.FixturePath, other], app.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
     }
@@ -479,7 +474,7 @@ public sealed class AssemblyListingTests
         Assert.True(saidResolving);
         Assert.False(app.Frames.Drew(app.Ui.Strings.StatusResolving));
         Assert.True(app.AppState.Navigation.IsStale(resolving.Intent));
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.ListFilePaths().Contains(PathOf(other)), Patience);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)), AppStateDriver.Patience);
     }
 
     [Fact]
@@ -494,7 +489,7 @@ public sealed class AssemblyListingTests
         app.Frames.Key(Shortcuts.Open).Frame();
         app.Frames.Frame();
         var saidOpening = app.Frames.Drew(app.Ui.Strings.StatusOpening);
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.ListFilePaths().Contains(PathOf(other)), Patience);
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)), AppStateDriver.Patience);
         app.Settle(2);
 
         Assert.False(saidOpeningBefore);
@@ -531,7 +526,7 @@ public sealed class AssemblyListingTests
         Assert.True(app.Frames.Drew("Assembly lists"));
         Assert.True(app.Frames.Drew("1 assembly"));
         Assert.True(app.Frames.Drew("0 assemblies"));
-        Assert.True(app.Frames.Drew(Text(Icons.ListsActive)));
+        Assert.True(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.ListsActive)));
     }
 
     [Fact]
@@ -578,9 +573,9 @@ public sealed class AssemblyListingTests
         var app = OpenedDialog();
 
         app.Frames.ClickOn(Selector.WithText("Add preconfigured"));
-        app.Frames.WaitUntil(() => app.Frames.Drew(app.Ui.Strings.ListsLookingForPresets), Patience);
+        app.Frames.WaitUntil(() => app.Frames.Drew(app.Ui.Strings.ListsLookingForPresets), AppStateDriver.Patience);
         var lookedForBeforeShown = app.Ui.Presets.Found is null;
-        app.Frames.WaitUntil(() => app.Ui.Presets.Found is not null, Patience);
+        app.Frames.WaitUntil(() => app.Ui.Presets.Found is not null, AppStateDriver.Patience);
         app.Frames.Frame(2);
 
         Assert.True(lookedForBeforeShown);
@@ -595,7 +590,7 @@ public sealed class AssemblyListingTests
         var preset = AssemblyListPresets.FindInstalled()[0];
 
         app.Frames.ClickOn(Selector.WithText("Add preconfigured"));
-        app.Frames.WaitUntil(() => app.Ui.Presets.Found is not null, Patience);
+        app.Frames.WaitUntil(() => app.Ui.Presets.Found is not null, AppStateDriver.Patience);
         app.Frames.Frame(2);
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, preset.Name)).Frame(2);
 

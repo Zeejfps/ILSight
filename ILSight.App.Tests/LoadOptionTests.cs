@@ -1,5 +1,4 @@
 using ILSight.Core;
-using static ILSight.Preferences;
 
 namespace ILSight.App.Tests;
 
@@ -12,7 +11,7 @@ public sealed class LoadOptionTests
         app.Settle(2);
         var before = (await app.NodeAsync()).Assembly;
 
-        SetDecompilerToggle(app.AppState, DecompilerToggle.AutoLoadAssemblyReferences, false);
+        Preferences.SetDecompilerToggle(app.AppState, DecompilerToggle.AutoLoadAssemblyReferences, false);
         app.Run(2);
         app.Settle(2);
         var runtime = await app.NodeAsync("References", "System.Runtime");

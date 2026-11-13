@@ -1,7 +1,5 @@
 using ILSight.Core;
 using ILSight.CommandArea;
-using static ILSight.BookmarkArea.Bookmarks;
-using static ILSight.CodeDisplay;
 using ILSight.BookmarkArea;
 
 namespace ILSight.App.Tests;
@@ -19,7 +17,7 @@ public sealed class NestedNamespaceTests
 
     private static void Nest(AppDriver app, bool nest)
     {
-        SetDisplayOptions(app.Ui, app.Ui.Display with { NestedNamespaces = nest });
+        CodeDisplay.SetDisplayOptions(app.Ui, app.Ui.Display with { NestedNamespaces = nest });
         app.Run();
     }
 
@@ -70,7 +68,7 @@ public sealed class NestedNamespaceTests
         var fixtures = await app.NodeAsync(AppStateDriver.FixturesNamespace);
 
         app.Driver.InTurn(() => Commands.StartExpandingNamespaces(app.AppState, tree, tree.ExpandNamespaces()));
-        app.Frames.WaitUntil(() => tree.View.IsExpanded(fixtures), Patience);
+        app.Frames.WaitUntil(() => tree.View.IsExpanded(fixtures), AppStateDriver.Patience);
 
         foreach (var name in EnclosingNamespaces)
         {
@@ -165,7 +163,7 @@ public sealed class NestedNamespaceTests
         app.Show(outline, 2);
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(app.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark));
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(app.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark));
         var bookmark = Assert.Single(app.AppState.Bookmarks.Items);
         app.Show(await app.FixtureAsync("Greeter"), 2);
         Nest(app, false);

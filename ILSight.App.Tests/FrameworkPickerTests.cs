@@ -1,7 +1,6 @@
 using ILSight.Core;
 using ILSight.FrameworkArea;
 using ILSight.DiagramArea;
-using static ILSight.App.Tests.TestPaths;
 
 namespace ILSight.App.Tests;
 
@@ -96,19 +95,19 @@ public sealed class FrameworkPickerTests
             {
                 Name = "System.Net.Http",
                 Framework = "Microsoft.NETCore.App",
-                FilePath = FakePath("a.dll"),
+                FilePath = TestPaths.FakePath("a.dll"),
             },
             new RuntimeAssembly
             {
                 Name = "System.Net.Sockets",
                 Framework = "Microsoft.NETCore.App",
-                FilePath = FakePath("b.dll"),
+                FilePath = TestPaths.FakePath("b.dll"),
             },
             new RuntimeAssembly
             {
                 Name = "System.Text.Json",
                 Framework = "Microsoft.NETCore.App",
-                FilePath = FakePath("c.dll"),
+                FilePath = TestPaths.FakePath("c.dll"),
             },
         };
         var picker = CreatePicker(new FakeFrameworkBrowserPorts { Assemblies = assemblies });
@@ -130,13 +129,13 @@ public sealed class FrameworkPickerTests
         {
             Name = "Fixtures",
             Framework = "Microsoft.NETCore.App",
-            FilePath = PathOf(AppStateDriver.FixturePath),
+            FilePath = TestPaths.PathOf(AppStateDriver.FixturePath),
         };
         var other = new RuntimeAssembly
         {
             Name = "System.Text.Json",
             Framework = "Microsoft.NETCore.App",
-            FilePath = FakePath("c.dll"),
+            FilePath = TestPaths.FakePath("c.dll"),
         };
         var picker = CreatePicker(new FakeFrameworkBrowserPorts { Assemblies = [open, other] });
         var list = new AssemblyList { Runtime = TestRuntime.Installed };

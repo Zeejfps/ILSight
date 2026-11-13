@@ -1,10 +1,6 @@
 using System.Globalization;
 using System.Text;
 using ILSight.Core;
-using static ILSight.App.Tests.BuiltInGlyphs;
-using static ILSight.IconTheming;
-using static ILSight.ScreenLayout;
-using static ILSight.SettingArea.Settings;
 using ILSight.BuiltInArea;
 using ILSight.UserArea;
 using ILSight.AppSettingArea;
@@ -65,7 +61,7 @@ public sealed class UserIconThemeTests : IDisposable
     {
         var appState = AppRoot.RestoreAppState(Settings(), TestSession.Shared);
         Assert.Equal("lucide", appState.IconTheme.Text);
-        Assert.Equal(BuiltInIconThemes.Reference.Icons.NodeClass, ResolveIconTheme(appState).Icons.NodeClass);
+        Assert.Equal(BuiltInIconThemes.Reference.Icons.NodeClass, IconTheming.ResolveIconTheme(appState).Icons.NodeClass);
 
         appState.IconTheme = Id("mine");
         Assert.IsType<Saving.Saved>(appState.SettingsSaving.SaveIfChanged(appState, 0));
@@ -88,7 +84,7 @@ public sealed class UserIconThemeTests : IDisposable
         settings.IconTheme = Id("gone");
         var appState = AppRoot.RestoreAppState(settings, TestSession.Shared);
 
-        Assert.Same(appState.IconThemes.GetTheme(Id("lucide")), ResolveIconTheme(appState));
+        Assert.Same(appState.IconThemes.GetTheme(Id("lucide")), IconTheming.ResolveIconTheme(appState));
         Assert.IsType<SettingsWriteResult.Written>(appState.SettingsSaving.Save(appState));
         Assert.Equal("gone", Settings().IconTheme.Text);
     }
@@ -104,7 +100,7 @@ public sealed class UserIconThemeTests : IDisposable
 
         Assert.Equal(["lucide", "shapes"], appState.IconThemes.Ids.Select(static i => i.Text));
         Assert.Equal("Shapes", appState.IconThemes.ListNames(CultureInfo.InvariantCulture).Last());
-        Assert.NotNull(ResolveIconTheme(appState).Icons.NodeClass.Svg);
+        Assert.NotNull(IconTheming.ResolveIconTheme(appState).Icons.NodeClass.Svg);
         Assert.Empty(appState.Errors.Entries);
     }
 
@@ -151,7 +147,7 @@ public sealed class UserIconThemeTests : IDisposable
         Assert.Equal("lucide-custom", appState.IconTheme.Text);
         Assert.Empty(appState.Errors.Entries);
         Assert.Equal("Lucide (custom)", appState.IconThemes.GetThemeName(Id("lucide-custom"), CultureInfo.GetCultureInfo("en")));
-        Assert.Equal(BuiltInIconThemes.Reference.Icons.ToolbarBack, ResolveIconTheme(appState).Icons.ToolbarBack);
+        Assert.Equal(BuiltInIconThemes.Reference.Icons.ToolbarBack, IconTheming.ResolveIconTheme(appState).Icons.ToolbarBack);
         Assert.Contains("\"extends\": \"lucide\",", text);
         Assert.Contains("// \"toolbar.back\": { \"font\": \"lucide\", \"glyph\": \"E048\" },", text);
         Assert.Equal(AppIcons.Keys.Count, CountCommentedIcons(text));
@@ -211,13 +207,13 @@ public sealed class UserIconThemeTests : IDisposable
         var settings = Settings();
         settings.IconTheme = Id("live");
         var d = new AppStateDriver(settings);
-        var before = ResolveIconTheme(d.AppState).Icons.NodeClass.Svg;
+        var before = IconTheming.ResolveIconTheme(d.AppState).Icons.NodeClass.Svg;
 
         _temp.Write(ClassPicture, MemoryIconAssets.Picture.Replace("currentColor", "#FF0000"));
-        d.RunUntil(() => ResolveIconTheme(d.AppState).Icons.NodeClass.Svg != before);
+        d.RunUntil(() => IconTheming.ResolveIconTheme(d.AppState).Icons.NodeClass.Svg != before);
         d.AppState.Workflows.CancelAll();
 
-        var after = ResolveIconTheme(d.AppState).Icons.NodeClass.Svg;
+        var after = IconTheming.ResolveIconTheme(d.AppState).Icons.NodeClass.Svg;
         Assert.NotNull(after);
         Assert.False(after.UsesCurrentColor);
         Assert.Empty(d.AppState.Errors.Entries);
@@ -237,7 +233,7 @@ public sealed class UserIconThemeTests : IDisposable
         var registered = app.Frames.RegisteredFonts.Count;
 
         File.WriteAllBytes(font, LucideFont().Append((byte)0).ToArray());
-        app.Frames.WaitUntil(() => app.Frames.RegisteredFonts.Count > registered, Patience);
+        app.Frames.WaitUntil(() => app.Frames.RegisteredFonts.Count > registered, AppStateDriver.Patience);
         app.AppState.Workflows.CancelAll();
 
         Assert.Equal(LucideFont().Length + 1, app.Frames.RegisteredFonts.Last(f => f.Family == family).Data.Length);
@@ -268,7 +264,7 @@ public sealed class UserIconThemeTests : IDisposable
         _temp.Write(ClassPicture, MemoryIconAssets.Picture);
         WriteIconTheme("shapes", """{ "name": "Shapes", "icons": { "node.class": { "svg": "svg/class.svg" } } }""");
         var app = new AppDriver(width: 1600f, settings: Settings());
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.AtPath("dock/display-options/icon-theme")).Frame();
@@ -276,14 +272,14 @@ public sealed class UserIconThemeTests : IDisposable
 
         Assert.Equal("shapes", app.AppState.IconTheme.Text);
         Assert.NotNull(app.Ui.Icons.NodeClass.Svg);
-        Assert.True(app.Frames.Drew(Text(Icons.OptionsCustomizeIconTheme)));
+        Assert.True(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.OptionsCustomizeIconTheme)));
     }
 
     [Fact]
     public void Customizing_the_icon_theme_switches_to_a_new_one_and_opens_its_file()
     {
         var app = new AppDriver(width: 1600f, settings: Settings());
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.AtPath("dock/display-options/customize-icon-theme")).Frame();
@@ -296,10 +292,10 @@ public sealed class UserIconThemeTests : IDisposable
     public void The_icon_theme_buttons_hide_while_the_settings_live_in_memory()
     {
         var app = new AppDriver(width: 1600f);
-        OpenPanel(app.Ui, DockView.DisplayOptions);
+        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
 
         Assert.True(app.Frames.Drew("Icon theme"));
-        Assert.False(app.Frames.Drew(Text(Icons.OptionsCustomizeIconTheme)));
+        Assert.False(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.OptionsCustomizeIconTheme)));
     }
 }
