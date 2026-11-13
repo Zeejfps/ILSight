@@ -115,16 +115,10 @@ public static class CodeDisplay
         SetDisplayOptions(uiState, reset);
     }
 
-    /// <summary>Asks the user whether to reset the display options before <see cref="ResetDisplayOptions"/> does.</summary>
-    public static void AskToResetDisplayOptions(UiState uiState)
-    {
-        uiState.ConfirmingDisplayReset = true;
-    }
-
     /// <summary>Stops asking, resetting the display options when <paramref name="confirmed"/>.</summary>
     public static void FinishDisplayOptionsReset(UiState uiState, bool confirmed)
     {
-        uiState.ConfirmingDisplayReset = false;
+        uiState.DisplayReset.Stop();
         if (confirmed)
         {
             ResetDisplayOptions(uiState);

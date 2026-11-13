@@ -142,8 +142,8 @@ public sealed class UiState : IUiState
     /// <summary>How the documents draw code: its size and the aids drawn around it.</summary>
     public required DisplayOptions Display;
 
-    /// <summary>Set while the user is asked whether to put every display option back to its default.</summary>
-    public bool ConfirmingDisplayReset;
+    /// <summary>Whether to put every display option back to its default, asked of the user.</summary>
+    public Confirmation DisplayReset { get; } = new();
 
     /// <summary>The fonts the display options offer to draw code in.</summary>
     public CodeFontChoices CodeFonts { get; } = new();

@@ -715,7 +715,7 @@ internal static class DisplayOptionsPanelView
         {
             if (ui.Button(t.DisplayOptionsReset, enabled: changed, id: "reset", variant: ButtonVariant.Ghost, icon: icon))
             {
-                CodeDisplay.AskToResetDisplayOptions(ui.State);
+                ui.State.DisplayReset.Ask();
             }
         }
     }

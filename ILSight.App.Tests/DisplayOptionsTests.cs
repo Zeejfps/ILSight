@@ -291,11 +291,11 @@ public sealed class DisplayOptionsTests
         Assert.False(IsBold(app, "UI scale"));
 
         app.Frames.ClickOn(Selector.WithText("Reset to defaults")).Frame(2);
-        Assert.True(app.Ui.ConfirmingDisplayReset);
+        Assert.True(app.Ui.DisplayReset.IsAsked);
         Assert.Equal(changed, app.Ui.Display);
         app.Frames.ClickOn(Selector.WithText("Reset")).Frame(2);
 
-        Assert.False(app.Ui.ConfirmingDisplayReset);
+        Assert.False(app.Ui.DisplayReset.IsAsked);
         Assert.Equal(DisplayOptions.Default, app.Ui.Display);
     }
 
@@ -610,7 +610,7 @@ public sealed class DisplayOptionsTests
         app.Frames.ClickOn(Selector.WithText("Reset to defaults")).Frame(2);
         app.Frames.ClickOn(Selector.WithText("Cancel")).Frame(2);
 
-        Assert.False(app.Ui.ConfirmingDisplayReset);
+        Assert.False(app.Ui.DisplayReset.IsAsked);
         Assert.False(app.Ui.Display.ShowLineNumbers);
     }
 

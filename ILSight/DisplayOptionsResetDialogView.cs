@@ -10,7 +10,7 @@ internal static class DisplayOptionsResetDialogView
     {
         var t = ui.State.Strings;
         var screen = ui.State;
-        var open = screen.ConfirmingDisplayReset;
+        var open = screen.DisplayReset.IsAsked;
         using (var dialog = ui.Dialog("display-reset", t.DisplayOptionsReset, ref open, closeButton: false))
         {
             if (dialog.IsOpen)
@@ -30,7 +30,7 @@ internal static class DisplayOptionsResetDialogView
                 }
             }
         }
-        if (!open && screen.ConfirmingDisplayReset)
+        if (!open && screen.DisplayReset.IsAsked)
         {
             CodeDisplay.FinishDisplayOptionsReset(screen, false);
         }
