@@ -11,8 +11,7 @@ public sealed class NavigationHistory
 {
     private const int Capacity = 200;
 
-    /// <summary>Every place recorded, oldest first, and the one being shown. An index rather than back and
-    /// forward stacks, as the history menus name the entry to go to by where it is.</summary>
+    // An index rather than back and forward stacks, as the history menus name the entry to go to by where it is.
     private readonly CursorList<HistoryEntry> _entries = new(Capacity);
 
     /// <summary>Every place recorded, oldest first.</summary>

@@ -10,15 +10,13 @@ namespace ILSight;
 /// (<see cref="DocumentTab"/>) only reads it. Used on the UI thread only.</summary>
 public sealed class TabDocument
 {
-    /// <summary>The tab's work, which each of its loads runs as: one started cancels the one before; once the tab is
-    /// closed, what is in flight is cancelled and its result dropped.</summary>
+    // Each of the tab's loads runs as this work: one started cancels the one before; once the tab is closed, what is in
+    // flight is cancelled and its result dropped.
     private readonly LatestWork _work = new();
 
-    /// <summary>What the tab shows when it is not a node's: a diagram, a comparison, a report, a saved diagram or
-    /// comparison it waits for, or nothing; null while it is pointed at a node, which <see cref="_load"/> shows.</summary>
+    // Null while the tab is pointed at a node, which _load shows.
     private TabContent? _shown = new TabContent.Empty();
 
-    /// <summary>The title of <see cref="_shown"/>, where it has one.</summary>
     private string? _title;
 
     private TabLoad _load;
@@ -26,12 +24,11 @@ public sealed class TabDocument
     // The file of the assembly the user closed that the diagram or comparison shown reads; null while none is.
     private AssemblyPath? _closedFile;
 
-    /// <summary>What <see cref="Changes"/> had counted when the tab was last pointed somewhere, past what its load,
-    /// diagram or comparison counts now.</summary>
+    // What Changes had counted when the tab was last pointed somewhere, past what its load, diagram or comparison
+    // counts now.
     private int _pointedChanges;
 
-    /// <summary>What <see cref="Version"/> had counted when the tab was last pointed somewhere, past what its load
-    /// counts now.</summary>
+    // What Version had counted when the tab was last pointed somewhere, past what its load counts now.
     private int _pointedVersion;
 
     public TabDocument()
@@ -188,7 +185,6 @@ public sealed class TabDocument
         _load = new TabLoad(_work);
     }
 
-    /// <summary>Counts the tab as pointed somewhere else, past what it counted, and cancels what was in flight.</summary>
     private void PointElsewhere()
     {
         _pointedChanges = Changes + 1;

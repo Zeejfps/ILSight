@@ -153,8 +153,6 @@ public static class Analysis
         ResolveAnalysis(analyzer, viewCommands, root, symbol);
     }
 
-    /// <summary>Turns <paramref name="root"/> into the analysis of <paramref name="symbol"/>, and commands
-    /// the view to show the root that analyzes it.</summary>
     private static void ResolveAnalysis(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, AnalyzerPendingNode root, AnalysisSymbol symbol)
     {
         var shown = analyzer.ResolveRoot(root, symbol);

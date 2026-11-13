@@ -90,7 +90,6 @@ internal static class ErrorDialogView
         return dialog.Texts.GetDocument(error, t);
     }
 
-    /// <summary>Forgets every error and closes the dialog.</summary>
     private static void ClearErrors(ErrorLog errors, ErrorDialog shown)
     {
         errors.Entries.Clear();

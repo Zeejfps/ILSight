@@ -99,8 +99,8 @@ public static class IconTheming
 
     private static readonly HashSet<string> Keys = ListKeys();
 
-    /// <summary>Icons the app once drew and no longer does. A theme written while it had them still
-    /// names them, so they are passed over without an error.</summary>
+    // Icons the app once drew and no longer does. A theme written while it had them still names them, so they are
+    // passed over without an error.
     private static readonly HashSet<string> RetiredKeys = ["file.exit"];
     private static readonly byte[] Utf8Bom = [0xEF, 0xBB, 0xBF];
 
@@ -172,8 +172,6 @@ public static class IconTheming
         };
     }
 
-    /// <summary>What reading <paramref name="path"/> came to, among <paramref name="named"/>; by default, when it is
-    /// not there, that it is unreadable.</summary>
     private static IconAsset GetReadOrDefault(IReadOnlyDictionary<string, IconAsset> named, string path)
     {
         if (named.TryGetValue(path, out var asset))
@@ -255,9 +253,6 @@ public static class IconTheming
         }
     }
 
-    /// <summary>The font <paramref name="id"/>, named by <paramref name="named"/>, loaded from what reading it came to,
-    /// <paramref name="asset"/>, once to check that it can be and to read its characters, as the family its source
-    /// draws it as, else as its id; broken after reporting why it cannot be.</summary>
     private static IconFont BuildFont(IconThemeFile theme, string id, ThemeNamedFile named, IconAsset asset)
     {
         var bytes = TakeBytes(theme, named, asset);
@@ -311,7 +306,6 @@ public static class IconTheming
         TakeIcon(theme, key, subject, written, line);
     }
 
-    /// <summary>The fields of an icon as written, each null when left out.</summary>
     private readonly record struct IconFields
     {
         public string? Font { get; init; }
@@ -346,9 +340,7 @@ public static class IconTheming
         return fields;
     }
 
-    /// <summary>Takes the icon <paramref name="fields"/> make: one drawn in a font at once, a picture named for reading
-    /// (<see cref="IconThemeFile.NamedPictures"/>); nothing after reporting why they make none. The one written last
-    /// for a key wins.</summary>
+    // The one written last for a key wins.
     private static void TakeIcon(ParsedIconTheme theme, string key, string subject, IconFields fields, int line)
     {
         var font = fields.Font;
@@ -391,7 +383,6 @@ public static class IconTheming
         return new IconValue.Glyph { Font = font, Codepoint = codepoint.Value, File = theme.File, Line = line };
     }
 
-    /// <summary>The Unicode scalar value <paramref name="hex"/> writes in up to six hex digits, or null.</summary>
     private static int? ParseCodepoint(string hex)
     {
         if (hex.Length == 0 || hex.Length > MaxCodepointDigits)
@@ -417,8 +408,6 @@ public static class IconTheming
         return codepoint;
     }
 
-    /// <summary>The picture <paramref name="named"/> names, parsed from what reading it came to,
-    /// <paramref name="asset"/>; null after reporting why it cannot be.</summary>
     private static IconValue? BuildPicture(IconThemeFile theme, ThemeNamedFile named, IconAsset asset)
     {
         var bytes = TakeBytes(theme, named, asset);
@@ -447,8 +436,6 @@ public static class IconTheming
         return Encoding.UTF8.GetString(content);
     }
 
-    /// <summary>The bytes of the file <paramref name="named"/> names, as reading it came to; null after reporting
-    /// why it cannot be read.</summary>
     private static byte[]? TakeBytes(IconThemeFile theme, ThemeNamedFile named, IconAsset asset)
     {
         if (asset.Bytes is null)

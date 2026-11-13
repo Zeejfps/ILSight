@@ -221,7 +221,6 @@ public static class DocumentPanels
         ActivateActivePanel(uiState);
     }
 
-    /// <summary>Makes the view of the reopened tab, as it was saved, and returns the panel it is shown in.</summary>
     private static string AddReopenedView(UiState uiState, ReopenedTab reopened)
     {
         var panel = ChooseReopenedPanel(uiState, reopened.Record.Panel);
@@ -231,7 +230,6 @@ public static class DocumentPanels
         return panel;
     }
 
-    /// <summary>The panel <paramref name="saved"/>, unless a tab is shown in it; else a new one.</summary>
     private static string ChooseReopenedPanel(UiState uiState, string saved)
     {
         if (!IsTabPanel(uiState, saved))
@@ -274,8 +272,6 @@ public static class DocumentPanels
         DocumentPanels.RestoreComparisonView(uiState.Documents, reopened.Tab, view);
     }
 
-    /// <summary>Docks the panels of <paramref name="panels"/>, by the names they were saved as, that the
-    /// layout does not have, as <paramref name="layout"/> arranges them.</summary>
     private static void DockUndocked(UiState uiState, Dictionary<string, string> panels, DockLayout? layout)
     {
         var undocked = panels.Values
@@ -290,8 +286,6 @@ public static class DocumentPanels
         Docking.DockArranged(uiState.MainLayout, undocked, arrangement);
     }
 
-    /// <summary>A copy of <paramref name="layout"/> renamed as <paramref name="panels"/> says and holding
-    /// <paramref name="undocked"/> alone; one group of them when there is no layout.</summary>
     private static DockLayout ArrangeUndocked(List<string> undocked, Dictionary<string, string> panels, DockLayout? layout)
     {
         if (layout is null)
@@ -358,7 +352,6 @@ public static class DocumentPanels
         Docking.DockDocument(uiState.MainLayout, panel, panel);
     }
 
-    /// <summary>Whether <paramref name="panel"/> is a view, or a tab is shown in it.</summary>
     private static bool IsShownPanel(UiState uiState, string panel)
     {
         if (DockPanels.IsView(panel))
@@ -419,8 +412,7 @@ public static class DocumentPanels
         FocusTab(uiState, navigation, setup, next);
     }
 
-    /// <summary>The tab in front of the first group, docked then floating, that has one in front.
-    /// Allocates nothing.</summary>
+    // Loops, not LINQ, so it allocates nothing.
     private static DocumentTab? FindFrontTab(UiState uiState)
     {
         var layout = uiState.Layout;
@@ -462,9 +454,6 @@ public static class DocumentPanels
         return FindFrontTab(uiState, split.Second);
     }
 
-    /// <summary>Makes <paramref name="tab"/> <paramref name="navigation"/>'s active tab now, and asks for what it
-    /// shows to be decompiled again, once the frame is drawn, when it was shown in another language than
-    /// <paramref name="setup"/>'s or with other options.</summary>
     private static void FocusTab(UiState uiState, Navigation navigation, DecompilerSetup setup, DocumentTab tab)
     {
         Commands.DecompileLater(uiState, navigation.FocusTab(tab, setup));
@@ -670,8 +659,6 @@ public static class DocumentPanels
         return tabs;
     }
 
-    /// <summary>Adds the document tabs of <paramref name="group"/> to <paramref name="tabs"/>, in the
-    /// order its strip shows them.</summary>
     private static void AddTabsOf(UiState uiState, List<DocumentTab> tabs, DockGroup group)
     {
         foreach (var panel in group.Panels)
@@ -680,7 +667,6 @@ public static class DocumentPanels
         }
     }
 
-    /// <summary>Adds the tab of <paramref name="panel"/> to <paramref name="tabs"/> when it is a document's.</summary>
     private static void AddTabOf(UiState uiState, List<DocumentTab> tabs, string? panel)
     {
         var tab = uiState.Documents.FindTab(panel);

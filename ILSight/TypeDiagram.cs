@@ -18,12 +18,11 @@ public sealed class TypeDiagram
     private readonly List<TypeLink> _links = new();
     private readonly HashSet<AssemblyPath> _homeAssemblies = new();
 
-    /// <summary>The types it shows, in the order added: those with a card, those still read, and those whose card
-    /// couldn't be read.</summary>
+    // In the order added: those with a card, those still read, and those whose card couldn't be read.
     private readonly List<TypeAnchor> _kept = new();
 
-    /// <summary>The diagram's work in the background: its layout, one started cancelling the one before, whose
-    /// result is then dropped; closing it closes the diagram, cancelling the reading of cards too.</summary>
+    // Its layout, one started cancelling the one before, whose result is then dropped; closing it closes the diagram,
+    // cancelling the reading of cards too.
     private readonly LatestWork _work = new();
 
     private readonly HashSet<CardRead> _reads = new();

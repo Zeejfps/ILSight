@@ -15,7 +15,6 @@ namespace ILSight;
 /// when larger than the view.</summary>
 internal static class ResourceImageView
 {
-    /// <summary>The picture last given to the canvas, and the zoom it was drawn at.</summary>
     private sealed class Uploaded
     {
         public ResourceImage? Image;
@@ -89,7 +88,6 @@ internal static class ResourceImageView
         ui.Separator(theme.IconSize);
     }
 
-    /// <summary>Switches to the markup while the picture shows, and back.</summary>
     private static void SourceButton(Ui<UiState> ui, PictureView picture)
     {
         var t = ui.State.Strings;
@@ -122,8 +120,7 @@ internal static class ResourceImageView
         }
     }
 
-    /// <summary>Gives the canvas the picture when it changed, and a vector picture again, drawn
-    /// sharp, when the zoom changed; a raster one is stretched instead.</summary>
+    // A vector picture is drawn again, sharp, when the zoom changed; a raster one is stretched instead.
     private static void Upload(Ui<UiState> ui, string imageId, ResourceImage image, float scale)
     {
         var uploaded = ui.GetState<Uploaded>(ui.GetId(imageId));
@@ -165,7 +162,6 @@ internal static class ResourceImageView
 
     private const string XamlExtension = ".xaml";
 
-    /// <summary>A XAML filter first for a resource saved as XAML, then all files.</summary>
     private static FileFilter[] ExportFilters(Strings t, string fileName)
     {
         var all = new FileFilter(t.FileFilterAll, ["*.*"]);

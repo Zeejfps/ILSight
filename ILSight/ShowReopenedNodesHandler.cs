@@ -37,8 +37,7 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
         return ShowReopenedNodes(appState, nodes, shown);
     }
 
-    /// <summary>Shows each of <paramref name="nodes"/> as <paramref name="shown"/>, in the same order, found it.
-    /// Returns the loads that started in the tabs.</summary>
+    // shown holds what was found for each of nodes, in the same order.
     private static List<DecompileTicket> ShowReopenedNodes(AppState appState, IReadOnlyList<WaitingNode> nodes, List<Lookup<BrowseNode>> shown)
     {
         var loads = new List<DecompileTicket>();
@@ -54,10 +53,6 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
         return loads;
     }
 
-    /// <summary>Shows the node <paramref name="lookup"/> found where the waiting tab's node was, back where its view
-    /// stood when it was shown in the language the app shows now, or that it is gone, or in a module that could not be
-    /// read; unless the tab was pointed elsewhere or closed meanwhile. Returns the load it started in the tab; null
-    /// when it started none.</summary>
     private static DecompileTicket? ShowReopenedNode(AppState appState, WaitingNode waiting, Lookup<BrowseNode> lookup)
     {
         if (!SavedDocuments.TryFinishWaiting(appState.Reopened, waiting.Reopened))
@@ -85,8 +80,6 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
             });
     }
 
-    /// <summary>Shows <paramref name="node"/> in <paramref name="tab"/>, back where its view stood. Returns the load it
-    /// started in the tab; null when it started none.</summary>
     private static DecompileTicket? Restore(AppState appState, WaitingNode waiting, DocumentTab tab, BrowseNode node)
     {
         var position = Navigation.KeepPosition(waiting.Record.View, waiting.Record.Language, appState.Decompiler.Setup.Language);

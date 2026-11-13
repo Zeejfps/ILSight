@@ -6,7 +6,6 @@ namespace ILSight;
 /// only when the node or the tree's shape changes.</summary>
 public sealed class Breadcrumb
 {
-    /// <summary>The crumbs, by the node and the tree's revision they were built for.</summary>
     private Memo<(ByReference<BrowseNode>, int), IReadOnlyList<Crumb>> _path;
 
     public IReadOnlyList<Crumb> Crumbs => _path.Last ?? [];
@@ -36,10 +35,9 @@ public sealed class Breadcrumb
             .ToArray();
     }
 
-    /// <summary>An assembly's name as its tab titles it, with the version that tells apart those of one
-    /// name; any other node's as its row labels it.</summary>
     private static string GetCrumbLabel(BrowseNode node, BrowseTree tree)
     {
+        // An assembly's tab title carries the version that tells apart those of one name.
         if (node.Subject is NodeSubject.Module)
         {
             return tree.GetLabel(node);

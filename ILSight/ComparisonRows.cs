@@ -164,7 +164,7 @@ public sealed class ComparisonRows : ITreeModel<ApiEntry>
         return HoldsChanges(entry);
     }
 
-    /// <summary>Whether a child of <paramref name="entry"/> differs or holds one that does. Allocates nothing.</summary>
+    // A loop, not Any, so it allocates nothing.
     private static bool HoldsChanges(ApiEntry entry)
     {
         foreach (var child in entry.Children)
@@ -227,8 +227,6 @@ public sealed class ComparisonRows : ITreeModel<ApiEntry>
         return new TreeRow(entry.Text, icon, color, tooltip, change);
     }
 
-    /// <summary>The color of what was added, removed or changed; muted for what is the same throughout,
-    /// and the theme's text color for what holds a difference.</summary>
     private uint GetColor(ApiEntry entry)
     {
         return entry.Change switch
@@ -250,8 +248,6 @@ public sealed class ComparisonRows : ITreeModel<ApiEntry>
         return _theme.TextMuted;
     }
 
-    /// <summary>How the entry is declared: on both sides when it changed, else on the side it is on;
-    /// null for a namespace.</summary>
     private string? DescribeDeclarations(ApiEntry entry)
     {
         return entry.Match<string?>(

@@ -121,11 +121,8 @@ internal static class AppRoot
         return new RestoredState { AppState = appState, Start = start };
     }
 
-    /// <summary>Records on <paramref name="appState"/> what starting implies, reading nothing: the active list's
-    /// reopening begun as a reload, its files on their way (<see cref="OpenListSession.BeginReopening"/>), and the
-    /// finding of its saved analyses (<see cref="Analysis.BeginRestoring"/>). The run arguments decide from the list as
-    /// on its way, so this is their handler's prerequisite: the app takes those already waiting before it starts the
-    /// reading this returns.</summary>
+    // Reads nothing. The run arguments decide from the list as on its way, so this is their handler's prerequisite: the
+    // app takes those already waiting before it starts the reading this returns.
     private static ListStart RecordStart(AppState appState)
     {
         var reopening = appState.ListSession.BeginReopening(appState.Lists);
@@ -167,7 +164,6 @@ internal static class AppRoot
         return appState;
     }
 
-    /// <summary>Tells the user <paramref name="problem"/>, if anything is wrong.</summary>
     private static void ReportProblem(AppState appState, AppProblem? problem)
     {
         if (problem is null)
@@ -188,8 +184,6 @@ internal static class AppRoot
         return hook(real);
     }
 
-    /// <summary>The app state <paramref name="settings"/> describe, with its use cases over the adapters they
-    /// reach the world through, before anything is restored into it.</summary>
     private static AppState CreateAppState(AppSettings settings, BrowseSession session, AppUpdates.IPorts updates,
         AdapterHooks? hooks)
     {
@@ -278,7 +272,6 @@ internal static class AppRoot
         return appState;
     }
 
-    /// <summary>The interface language the settings name, else the one the user's culture speaks.</summary>
     private static Locale ChooseLocale(AppSettings settings)
     {
         if (settings.Locale is not null)
@@ -307,19 +300,13 @@ internal static class AppRoot
         return uiState;
     }
 
-    /// <summary>The screen, with its use cases over the adapters they reach the world through, before what the
-    /// settings kept of it besides its layout, display options, folded groups and filters is restored.</summary>
-    /// <param name="saved">What the settings kept of the screen when they were last saved.</param>
-    /// <param name="work">Where the work the screen starts in the background is counted.</param>
-    /// <param name="reportError">Tells the user that something done in the background failed.</param>
-    /// <param name="session">The browse tree the tree and searches show nodes of.</param>
-    /// <param name="nuGetRequests">Sends the "open from NuGet" dialog's requests; the app's shared connections when null.</param>
-    /// <param name="runtimeScan">Scans the runtime for the "open from framework" dialog.</param>
-    /// <param name="processes">Lists the running processes for the "open from process" dialog.</param>
+    // Restores, of what the settings kept of the screen, only its layout, display options, folded groups and filters;
+    // the rest is restored after.
     private static UiState CreateUiState(ViewSettings saved, BackgroundWork work, Action<AppProblem> reportError, BrowseSession session,
         HttpMessageHandler? nuGetRequests, FrameworkBrowser.IPorts runtimeScan, ProcessBrowser.IPorts processes)
     {
         var appCommands = new Queue<AppCommand>();
+        // A null nuGetRequests uses the app's shared connections.
         var nuGet = new NuGetClient(nuGetRequests);
         var uiState = new UiState
         {
@@ -348,7 +335,6 @@ internal static class AppRoot
         return uiState;
     }
 
-    /// <summary>The folder of the licenses the app ships beside it; null when it ships none there.</summary>
     private static string? FindShippedLicenses()
     {
         var folder = Path.Combine(AppContext.BaseDirectory, LicensesFolder);

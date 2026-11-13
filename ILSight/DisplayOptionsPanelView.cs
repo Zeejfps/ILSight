@@ -63,9 +63,6 @@ internal static class DisplayOptionsPanelView
         }
     }
 
-    /// <summary>Whether the option called <paramref name="title"/> is shown for <paramref name="words"/>:
-    /// always without a search, else when they match its title, its <paramref name="description"/> or
-    /// its section's <paramref name="heading"/>.</summary>
     private static bool Shows(Strings t, string[] words, string heading, string title, string? description = null)
     {
         if (words.Length == 0)
@@ -76,7 +73,6 @@ internal static class DisplayOptionsPanelView
         return OptionSearch.IsMatch(t.Culture, words, title, description, heading);
     }
 
-    /// <summary>Draws the line between the rows of a card before each row but its first.</summary>
     private static void NextRow(Ui<UiState> ui, ref int rows)
     {
         if (rows > 0)
@@ -97,17 +93,14 @@ internal static class DisplayOptionsPanelView
         ListInstalledFonts(ui);
     }
 
-    /// <summary>Asks for the fonts installed, kept once listed. Its own method, so that the closure is made only the
-    /// frame the listing is asked for.</summary>
+    // Its own method, so that the closure is made only the frame the listing is asked for.
     private static void ListInstalledFonts(Ui<UiState> ui)
     {
         var screen = ui.State;
         ui.ListSystemFonts(families => screen.CodeFonts.KeepFonts(families));
     }
 
-    /// <summary>The theme, the icon theme, the scale, the language and the title bar, those the search
-    /// matches; false, drawing nothing, when it matches none. Only the scale and the title bar are
-    /// options a reset puts back, so only their names turn bold.</summary>
+    // Only the scale and the title bar are options a reset puts back, so only their names turn bold.
     private static bool InterfaceSection(Ui<UiState> ui, AppState appState, string[] words)
     {
         var t = ui.State.Strings;
@@ -166,8 +159,6 @@ internal static class DisplayOptionsPanelView
         return true;
     }
 
-    /// <summary>The switch between the menus in the title bar and the system's title bar, offered only
-    /// where the platform lets the menus into the title bar.</summary>
     private static void SystemTitleBarRow(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
@@ -180,9 +171,6 @@ internal static class DisplayOptionsPanelView
         }
     }
 
-    /// <summary>The themes of the catalog, built-in ones first, then the buttons that start a custom theme
-    /// from the one shown, open the themes folder and read the user's themes again, while the settings
-    /// have a folder to keep themes in.</summary>
     private static void ThemePicker(Ui<UiState> ui, ThemeCatalog<ThemeFile, ThemeContents, AppTheme> themes, ThemeId<ThemeFile> chosen, SettingsPlace settingsPlace)
     {
         using var controls = ui.Row(new Box { Width = ControlWidth(0f, 0f), Gap = ui.Theme.GapTight, AlignY = Align.Center });
@@ -208,7 +196,6 @@ internal static class DisplayOptionsPanelView
         }
     }
 
-    /// <summary>Starts a theme of the user's own from the one shown, switches to it and opens its file.</summary>
     private static void CustomizeThemeButton(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
@@ -253,9 +240,6 @@ internal static class DisplayOptionsPanelView
         }
     }
 
-    /// <summary>The icon themes of the catalog, built-in ones first, then the buttons that start a custom
-    /// icon theme from the one shown, open the icon themes folder and read the user's icon themes again,
-    /// while the settings have a folder to keep icon themes in.</summary>
     private static void IconThemePicker(Ui<UiState> ui, ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> themes, ThemeId<IconThemeFile> chosen, SettingsPlace settingsPlace)
     {
         using var controls = ui.Row(new Box { Width = ControlWidth(0f, 0f), Gap = ui.Theme.GapTight, AlignY = Align.Center });
@@ -281,7 +265,6 @@ internal static class DisplayOptionsPanelView
         }
     }
 
-    /// <summary>Starts an icon theme of the user's own from the one shown, switches to it and opens its file.</summary>
     private static void CustomizeIconThemeButton(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
@@ -346,7 +329,6 @@ internal static class DisplayOptionsPanelView
         }
     }
 
-    /// <summary>Where <paramref name="scale"/> is among <paramref name="scales"/>, or null when it is none of them.</summary>
     private static int? FindScaleIndex(IReadOnlyList<float> scales, float scale)
     {
         for (var i = 0; i < scales.Count; i++)
@@ -388,10 +370,6 @@ internal static class DisplayOptionsPanelView
             .ToArray();
     }
 
-    /// <summary>A dropdown as wide as the widest of <paramref name="labels"/> while the row has room, cut
-    /// short with its label ellipsized when the row is narrow, showing the one at
-    /// <paramref name="current"/>, or the first when it is none of them; returns the index picked on
-    /// this frame, or null.</summary>
     private static int? PickFrom(Ui<UiState> ui, string id, string[] labels, int? current)
     {
         return PickFrom<string>(ui, id, labels, current, null, 0);
@@ -432,8 +410,6 @@ internal static class DisplayOptionsPanelView
         return itemIds[index].ToString();
     }
 
-    /// <summary>The code's font and size, with a preview under them, and the aids drawn around it, those
-    /// the search matches; false, drawing nothing, when it matches none.</summary>
     private static bool CodeSection(Ui<UiState> ui, string[] words)
     {
         var t = ui.State.Strings;
@@ -525,8 +501,6 @@ internal static class DisplayOptionsPanelView
         return true;
     }
 
-    /// <summary>The bundled font and the installed monospaced ones, the chosen one shown by name even
-    /// before the installed ones are listed.</summary>
     private static void FontPicker(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
@@ -554,8 +528,6 @@ internal static class DisplayOptionsPanelView
         }
     }
 
-    /// <summary>As wide as the longest name offered or <paramref name="shown"/>, up to a limit past which
-    /// names are shortened.</summary>
     private static float MeasureFontPicker(Ui<UiState> ui, string shown)
     {
         var offered = ui.SelectButtonWidth(ui.State.CodeFonts.Labels);
@@ -585,8 +557,7 @@ internal static class DisplayOptionsPanelView
         }
     }
 
-    /// <summary>A line of code text in the chosen font and size on the documents' background, under the
-    /// font size, so every change to either shows as it is made.</summary>
+    // Under the font size, so every change to the font or its size shows as it is made.
     private static void FontPreview(Ui<UiState> ui)
     {
         var theme = ui.Theme;
@@ -614,7 +585,7 @@ internal static class DisplayOptionsPanelView
         return size.ToString(FontSizeFormat, CultureInfo.CurrentCulture);
     }
 
-    /// <summary>As wide as the largest size, so the buttons beside it stay put as it changes.</summary>
+    // The largest size's width, so the buttons beside it stay put as the size changes.
     private static float MeasureFontSizeSlot(Ui<UiState> ui)
     {
         var widest = FormatFontSize(CodeFontSize.Max);
@@ -622,8 +593,6 @@ internal static class DisplayOptionsPanelView
         return MathF.Ceiling(width) + ui.Theme.Gap * 2;
     }
 
-    /// <summary>How the tree writes tokens and what it lists, those options the search matches; false,
-    /// drawing nothing, when it matches none.</summary>
     private static bool TreeSection(Ui<UiState> ui, string[] words)
     {
         var t = ui.State.Strings;
@@ -709,7 +678,6 @@ internal static class DisplayOptionsPanelView
         };
     }
 
-    /// <summary>A row whose switch flips when it or the rest of the row is clicked.</summary>
     private static bool SwitchRow(Ui<UiState> ui, string title, ref bool value, string id, bool changed)
     {
         var press = ui.Interact(id + RowSuffix);
@@ -738,7 +706,6 @@ internal static class DisplayOptionsPanelView
         return true;
     }
 
-    /// <summary>The link-quiet button that puts every option back, at the end of the form.</summary>
     private static void ResetRow(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
@@ -758,7 +725,6 @@ internal static class DisplayOptionsPanelView
         return text.ToUpperInvariant();
     }
 
-    /// <summary>A section of the form: its heading in small muted capitals over what the caller adds.</summary>
     private static Ui.Scope Section(Ui<UiState> ui, string heading)
     {
         var theme = ui.Theme;
@@ -767,7 +733,6 @@ internal static class DisplayOptionsPanelView
         return section;
     }
 
-    /// <summary>A raised card holding a section's option rows, which the caller divides with separators.</summary>
     private static Ui.Scope Card(Ui<UiState> ui)
     {
         var theme = ui.Theme;
@@ -782,15 +747,11 @@ internal static class DisplayOptionsPanelView
         });
     }
 
-    /// <summary>A row of a card: <paramref name="title"/>, bold when changed, over its muted
-    /// <paramref name="description"/> when it has one, then the control the caller adds at the right.</summary>
     private static Ui.Scope OptionRow(Ui<UiState> ui, string title, string? description, bool changed)
     {
         return OptionRow(ui, 0, title, description, changed);
     }
 
-    /// <summary>A row as <see cref="OptionRow(Ui{UiState}, string, string?, bool)"/>, which <paramref name="id"/>
-    /// takes the pointer for when it is not 0.</summary>
     private static Ui.Scope OptionRow(Ui<UiState> ui, int id, string title, string? description, bool changed)
     {
         var theme = ui.Theme;
@@ -826,8 +787,6 @@ internal static class DisplayOptionsPanelView
         return row;
     }
 
-    /// <summary>A row's description, muted and small, wrapping in the title's width, the hits of
-    /// <paramref name="query"/> in it marked on <paramref name="mark"/>.</summary>
     private static void Description(Ui<UiState> ui, string description, string query, uint mark)
     {
         var theme = ui.Theme;
@@ -843,19 +802,16 @@ internal static class DisplayOptionsPanelView
         }
     }
 
-    /// <summary>The title's share of a row: what the control leaves. The description wraps in it and
-    /// asks for no room of its own. When the row is short the control gives up room first, and the
-    /// title only after it, cut short down to its own width or <see cref="TitleMinWidth"/>, whichever
-    /// is less.</summary>
+    // The description wraps in the title's share and asks for no room of its own. When the row is short the control
+    // gives up room first, and the title only after it, cut short down to its own width or TitleMinWidth, whichever is
+    // less.
     private static Sizing TitleWidth(Ui<UiState> ui, string title, bool bold)
     {
         var width = ui.MeasureText(title, bold: bold);
         return Sizing.Grow(MathF.Min(width, TitleMinWidth)) with { Priority = TitlePriority };
     }
 
-    /// <summary>A control's width at the right of a row: <paramref name="size"/>, or its content's when
-    /// larger, up to <paramref name="max"/>, giving up room down to <paramref name="min"/> before the
-    /// title gives up any.</summary>
+    // Gives up room down to min before the title gives up any.
     private static Sizing ControlWidth(float min, float size, float max = float.PositiveInfinity)
     {
         return Sizing.Shrink(min, size, max);

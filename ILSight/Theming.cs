@@ -66,8 +66,6 @@ public static class Theming
         return catalog;
     }
 
-    /// <summary>The theme the chain makes, merged over the code and icon colors of the built-in theme of
-    /// its root's type, or null when it does not make a whole one.</summary>
     private static AppTheme? BuildChainTheme(ThemeCatalog<ThemeFile, ThemeContents, AppTheme> catalog, ThemeFile file, IReadOnlyList<(ThemeFile File, ThemeContents Contents)> chain)
     {
         var root = chain[0].File;
@@ -90,8 +88,6 @@ public static class Theming
         return theme;
     }
 
-    /// <summary>The built-in theme whose code and icon colors <paramref name="root"/>, which extends no
-    /// other, builds on: the one of its type. Null after reporting that it has no type.</summary>
     private static ThemeContents? FindImplicitBase(ThemeCatalog<ThemeFile, ThemeContents, AppTheme> catalog, ThemeFile root)
     {
         if (root.Type is null)
@@ -123,14 +119,13 @@ public static class Theming
     private const string IconsSection = "icons";
     private const string KeySeparator = ", ";
 
-    /// <summary>Takes the code and icon colors of <paramref name="contents"/>, under all that is added later.</summary>
+    // The bottom layer, under all that is added later.
     private static void AddCodeAndIcons(MergedTheme merged, ThemeContents contents)
     {
         StackValues(merged.Code, contents.Code);
         StackValues(merged.Icons, contents.Icons);
     }
 
-    /// <summary>Takes everything <paramref name="contents"/> sets, over what was added before.</summary>
     private static void AddContents(MergedTheme merged, ThemeContents contents)
     {
         foreach (var (name, value) in contents.Palette)
@@ -163,8 +158,6 @@ public static class Theming
         return layers;
     }
 
-    /// <summary>The theme the merged colors make, or null when a required color is missing; adds what
-    /// is wrong to <paramref name="errors"/>, a missing color as an error of <paramref name="file"/>.</summary>
     private static AppTheme? BuildTheme(MergedTheme merged, string file, ICollection<ThemeError> errors)
     {
         var ui = LookUpColors(merged, UiSection, merged.Ui, errors);
@@ -199,8 +192,6 @@ public static class Theming
         return colors;
     }
 
-    /// <summary>Takes the color of the topmost of <paramref name="layers"/> that has one, reporting each
-    /// palette name above it that the palette does not have.</summary>
     private static void LookUpTopColor(MergedTheme merged, string section, string key, List<ThemeValue> layers, Dictionary<string, uint> colors, ICollection<ThemeError> errors)
     {
         for (var i = layers.Count - 1; i >= 0; i--)
@@ -310,8 +301,6 @@ public static class Theming
         return new IconTheme { Icons = new AppIcons(set), Set = set, Fonts = fonts, Values = values };
     }
 
-    /// <summary>Takes the topmost of <paramref name="layers"/> that can be drawn, reporting each one above
-    /// it whose font no theme declares.</summary>
     private static void TakeTopIcon(MergedIconTheme merged, string key, List<IconValue> layers, Dictionary<string, IconGlyph> glyphs, Dictionary<string, IconValue> values,
         ICollection<ThemeError> errors)
     {
@@ -330,8 +319,6 @@ public static class Theming
         }
     }
 
-    /// <summary>What <paramref name="value"/> draws; null when its font is broken, or after reporting that
-    /// no theme declares its font or that the font has no glyph for it.</summary>
     private static IconGlyph? MakeGlyph(MergedIconTheme merged, string key, IconValue value, ICollection<ThemeError> errors)
     {
         return value.Match((merged, key, errors),
@@ -375,8 +362,6 @@ public static class Theming
         return IconGlyph.FromFont(text, loaded.Face.Family);
     }
 
-    /// <summary>The faces of the merged fonts that could be read, then those of <paramref name="fallback"/>
-    /// in families not drawn by them.</summary>
     private static List<FontFace> ListFaces(MergedIconTheme merged, IconTheme? fallback)
     {
         var faces = merged.Fonts.Values
@@ -518,8 +503,6 @@ public static class Theming
         return new ThemeName.PerLanguage(byTag, fallback);
     }
 
-    /// <summary>The names by language tag, tags compared ignoring case; a tag given again is reported
-    /// and its first name kept.</summary>
     private static Dictionary<string, string> ReadNamesByTag(ThemeJson json, ref Utf8JsonReader reader)
     {
         var byTag = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -734,7 +717,7 @@ public static class Theming
         theme.Extends = new ThemeParent<ThemeFile> { Id = id, Line = line };
     }
 
-    /// <summary>Reads the palette, whose colors must be written out, not named.</summary>
+    // A palette's colors must be written out, not named.
     private static void ReadPalette(ParsedTheme theme, ref Utf8JsonReader reader, int line)
     {
         if (!Theming.IsJsonObject(theme.Json, ref reader, PaletteKey, line))
@@ -760,7 +743,6 @@ public static class Theming
         }
     }
 
-    /// <summary>Reads a section of colors whose keys are <paramref name="keys"/>, each a color or a palette name.</summary>
     private static void ReadColors(ParsedTheme theme, ref Utf8JsonReader reader, string section, int line, Dictionary<string, ThemeValue> colors, HashSet<string> keys)
     {
         if (!Theming.IsJsonObject(theme.Json, ref reader, section, line))
@@ -797,7 +779,6 @@ public static class Theming
         colors[name] = value;
     }
 
-    /// <summary>True when <paramref name="color"/> is a color a theme can hold; else reports why not.</summary>
     private static bool IsValidColor(ParsedTheme theme, string key, string color, int line)
     {
         if (!UiColor.TryParse(color, out _))
@@ -820,10 +801,9 @@ public static class Theming
             .ToHashSet();
     }
 
-    /// <summary>A theme's palette and colors merged over those of the themes it extends, before palette names
-    /// are looked up. Built once at the end, so a color a parent names takes the palette color a child set, a
-    /// color whose palette name is unknown keeps the one beneath it, and a role nobody set is derived from the
-    /// final base roles.</summary>
+    // Merged before palette names are looked up, and built once at the end, so a color a parent names takes the palette
+    // color a child set, a color whose palette name is unknown keeps the one beneath it, and a role nobody set is
+    // derived from the final base roles.
     private sealed class MergedTheme
     {
         public readonly Dictionary<string, ThemeValue> Palette = new();

@@ -46,7 +46,6 @@ internal static class QueuedCommands
         DocumentPanels.ShowTab(uiState, tab, beside);
     }
 
-    /// <summary>Shows those of the reopened <paramref name="tabs"/> still open where they were docked.</summary>
     private static void ShowReopenedIfOpen(UiState uiState, AppState appState, IReadOnlyList<ReopenedTab> tabs, DockLayout? layout)
     {
         var open = tabs
@@ -73,7 +72,6 @@ internal static class QueuedCommands
         uiState.Tree.ExpandNodes(listed);
     }
 
-    /// <summary>Expands <paramref name="root"/> and selects it, unless it was removed meanwhile.</summary>
     private static void ShowAnalysis(UiState uiState, AppState appState, AnalyzerSymbolNode root)
     {
         if (!appState.Analyzer.HasRoot(root))

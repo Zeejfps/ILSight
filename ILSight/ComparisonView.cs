@@ -42,7 +42,7 @@ internal static class ComparisonView
         ContextMenu(ui, navigation, rows);
     }
 
-    /// <summary>The tools in a bar of the tab's own, while the bar over documents, where they sit otherwise, is hidden.</summary>
+    // For when the bar over documents, where the tools sit otherwise, is hidden.
     private static void OwnToolbar(Ui<UiState> ui, AssemblyList assemblies, DocumentTab tab, AssemblyComparison comparison)
     {
         using (ui.PaneToolbar())
@@ -115,9 +115,6 @@ internal static class ComparisonView
         return ApiScope.PublicApi;
     }
 
-    /// <summary>Which assemblies were compared, the left one first, and how many types and members were
-    /// added, removed and changed, each in the color its rows are drawn in, and whether they are being
-    /// compared again; nothing before the first comparison finished.</summary>
     private static void Summary(Ui<UiState> ui, AssemblyComparison comparison)
     {
         var diff = FindDiff(comparison);
@@ -142,8 +139,6 @@ internal static class ComparisonView
         ui.Separator();
     }
 
-    /// <summary>What the tab says in place of the tree: why the comparison failed, that it runs, or that
-    /// nothing differs; null when it shows the tree.</summary>
     private static string? FindHint(Ui<UiState> ui, AssemblyComparison comparison, ComparisonRows rows)
     {
         return comparison.Result.Match<(Ui<UiState> ui, ComparisonRows rows), string?>((ui, rows),
@@ -152,7 +147,6 @@ internal static class ComparisonView
             static (s, failed) => s.ui.Memo("comparison-failure", (failed.Failure, t: s.ui.State.Strings), static a => DescribeFailure(a.t, a.Failure)));
     }
 
-    /// <summary>What the newest comparison found; null before the first finished, or after a failure.</summary>
     private static ApiDiff? FindDiff(AssemblyComparison comparison)
     {
         return comparison.Result.Match<ApiDiff?>(static _ => null, static compared => compared.Diff, static _ => null);
@@ -190,8 +184,6 @@ internal static class ComparisonView
         }
     }
 
-    /// <summary>Begins following the code of <paramref name="entry"/> in the right assembly, else in the left, and asks
-    /// for it to be looked up and shown.</summary>
     private static void Open(UiState screen, Navigation navigation, ApiEntry? entry, bool inNewTab)
     {
         if (entry is null)
@@ -208,7 +200,6 @@ internal static class ComparisonView
         Commands.FollowLater(screen, side.Reference, navigation.BeginResolving(inNewTab));
     }
 
-    /// <summary>How the left assembly has <paramref name="entry"/>; null for a namespace or what it lacks.</summary>
     private static ApiSide? LeftOf(ApiEntry entry)
     {
         if (entry is not ApiEntry.Entity entity)
@@ -222,7 +213,6 @@ internal static class ComparisonView
             static sides => sides.Left);
     }
 
-    /// <summary>How the right assembly has <paramref name="entry"/>; null for a namespace or what it lacks.</summary>
     private static ApiSide? RightOf(ApiEntry entry)
     {
         if (entry is not ApiEntry.Entity entity)

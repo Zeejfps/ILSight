@@ -139,8 +139,6 @@ public sealed class ThemeCatalog<TFile, TContents, TTheme>
         return Build(this, file, chain);
     }
 
-    /// <summary><paramref name="file"/> and the themes it extends, each with what it sets, the one extending
-    /// no other first; null when one could not be read or the chain breaks off or goes in a circle.</summary>
     private List<(TFile File, TContents Contents)>? ListThemeChain(TFile file)
     {
         var files = ListThemeChainFiles(file);
@@ -163,8 +161,6 @@ public sealed class ThemeCatalog<TFile, TContents, TTheme>
         return chain;
     }
 
-    /// <summary><paramref name="file"/> and the themes it extends, the one extending no other first; null
-    /// when the chain breaks off or goes in a circle.</summary>
     private List<TFile>? ListThemeChainFiles(TFile file)
     {
         var chain = new List<TFile> { file };
@@ -185,8 +181,6 @@ public sealed class ThemeCatalog<TFile, TContents, TTheme>
         return chain;
     }
 
-    /// <summary>The theme <paramref name="child"/> extends as <paramref name="extends"/> says, or null after
-    /// reporting that there is none or that it is already in <paramref name="chain"/>.</summary>
     private TFile? FindParent(TFile child, ThemeParent<TFile> extends, List<TFile> chain)
     {
         if (!_files.TryGetValue(extends.Id, out var parent))
@@ -214,8 +208,7 @@ public sealed class ThemeCatalog<TFile, TContents, TTheme>
         return parent;
     }
 
-    /// <summary>The circle <paramref name="chain"/> closes by extending <paramref name="parent"/>, from
-    /// the theme being resolved on: <c>a → b → a</c>.</summary>
+    // From the theme being resolved on: a → b → a.
     private static string DescribeCycle(List<TFile> chain, TFile parent)
     {
         var ids = chain
@@ -225,8 +218,6 @@ public sealed class ThemeCatalog<TFile, TContents, TTheme>
         return string.Join(ChainArrow, ids);
     }
 
-    /// <summary>What <paramref name="file"/> shows when it cannot be resolved: its parent as that resolves,
-    /// else the built-in theme <see cref="FindFallbackId"/> names.</summary>
     private TTheme FallBackFrom(TFile file)
     {
         var target = GetFallBack(file);

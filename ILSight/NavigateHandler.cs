@@ -35,8 +35,6 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
         return ShowResolved(navigation, decompiler, reference, navigation.EndResolving(ticket.Intent, found), ticket.Destination);
     }
 
-    /// <summary>Shows what <paramref name="resolved"/> found, or reports it unresolved. Returns the load it started
-    /// in the tab; null when it started none.</summary>
     private DecompileTicket? ShowResolved(Navigation navigation, DecompilerChoice decompiler, CodeReference reference, Resolution<BrowseNode> resolved,
         TabDestination destination)
     {

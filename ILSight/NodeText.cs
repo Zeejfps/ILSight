@@ -174,17 +174,15 @@ public static class NodeText
         return TokenPrefix + DefinedToken(node).ToString(CultureInfo.InvariantCulture);
     }
 
-    /// <summary>The token of what <paramref name="node"/> defines, asked for only of one that defines something.</summary>
     private static int DefinedToken(BrowseNode node)
     {
         return node.Token ?? throw new UnreachableException();
     }
 
-    /// <summary>An assembly's version and framework; with a picked framework, which its row shows bold
-    /// on its own, the version and the separator before it.</summary>
     private static string Identity(LoadedModule assembly)
     {
         var version = assembly.Version?.ToString();
+        // A picked framework its row shows bold on its own, so then only the version and the separator before it.
         if (!assembly.IsTargetFrameworkPicked)
         {
             return string.Join(Separator, new[] { version, assembly.FrameworkMoniker }.OfType<string>());

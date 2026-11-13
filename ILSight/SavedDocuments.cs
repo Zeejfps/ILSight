@@ -107,7 +107,6 @@ public static class SavedDocuments
         }
     }
 
-    /// <summary>Makes the tab reopened from the one docked as <paramref name="panel"/> active, else the first.</summary>
     private static void MakeSavedActive(OpenListSession session, List<ReopenedTab> reopened, string? panel)
     {
         var active = FindReopened(reopened, panel);
@@ -161,9 +160,6 @@ public static class SavedDocuments
         return new DocumentsRecord { Tabs = records, Active = active, Preview = preview, Layout = layout };
     }
 
-    /// <summary>What the settings keep of <paramref name="tab"/>; null for one they leave out: one the screen docks
-    /// nowhere, and one whose assembly was closed (<see cref="DocumentTab.ClosedAssembly"/>: a node's, a diagram's or a
-    /// comparison's), gone after a restart.</summary>
     private static SavedTab? SaveTab(OpenListSession session, ViewSettings view, DocumentTab tab)
     {
         var panel = FindTabPanel(view, tab);
@@ -173,6 +169,7 @@ public static class SavedDocuments
             return new SavedTab { Tab = tab, Record = KeepWaiting(waiting, panel) };
         }
 
+        // A tab whose assembly was closed (a node's, a diagram's or a comparison's) would be gone after a restart.
         if (tab.ClosedAssembly is not null)
         {
             return null;
@@ -204,8 +201,6 @@ public static class SavedDocuments
         return null;
     }
 
-    /// <summary>What a tab still waiting was saved as, docked as <paramref name="panel"/> says when the
-    /// screen docked it.</summary>
     private static DocumentRecord KeepWaiting(DocumentRecord waiting, TabPanel? panel)
     {
         if (panel is null)
@@ -216,8 +211,6 @@ public static class SavedDocuments
         return waiting with { Panel = panel.Panel };
     }
 
-    /// <summary>What the settings keep of a tab the screen shows: its diagram, its comparison, or the node at
-    /// its location; null for a tab showing none of these, such as a report or nothing.</summary>
     private static DocumentRecord? SaveShown(DocumentTab tab, TabPanel panel)
     {
         var diagram = tab.Diagram;
@@ -288,8 +281,6 @@ public static class SavedDocuments
         return found.Record.Panel;
     }
 
-    /// <summary>A copy of <paramref name="layout"/> holding the panels of <paramref name="records"/> alone,
-    /// as they are arranged in it; null when there is no layout.</summary>
     private static DockLayout? ArrangeSaved(DockLayout? layout, List<DocumentRecord> records)
     {
         if (layout is null)
@@ -375,8 +366,6 @@ public static class SavedDocuments
         return TabLoads.From([], diagramReads, ListLookups(nodes), comparisonRuns);
     }
 
-    /// <summary>Has <paramref name="tab"/>, whose assembly was closed and is listed again, wait for what it showed, kept
-    /// as the settings would keep it; null while the screen docks it nowhere yet.</summary>
     private static ReopenedTab? Revive(OpenListSession session, DocumentViews documents, DocumentTab tab)
     {
         var panel = DocumentPanels.FindTabPanel(documents, tab);
@@ -395,7 +384,6 @@ public static class SavedDocuments
         return WaitFor(session.Reopened, tab, record);
     }
 
-    /// <summary>The lookup of <paramref name="nodes"/>; none when no tab waits for a node.</summary>
     private static List<ReopenedNodesLookup> ListLookups(List<WaitingNode> nodes)
     {
         if (nodes.Count == 0)
@@ -406,9 +394,6 @@ public static class SavedDocuments
         return [new ReopenedNodesLookup { Nodes = nodes }];
     }
 
-    /// <summary>Shows the diagram or comparison <paramref name="reopened"/> showed, adding the read of its cards to
-    /// <paramref name="diagramReads"/>, or its run to <paramref name="comparisonRuns"/>, or adds its node to
-    /// <paramref name="nodes"/>, to be found with the others.</summary>
     private static void ShowReopened(Navigation navigation, ReopenedTabs reopenedTabs, AssemblyList assemblies, ReopenedTab reopened, List<WaitingNode> nodes,
         List<SavedDiagramRead> diagramReads, List<ComparisonRun> comparisonRuns)
     {
@@ -426,7 +411,6 @@ public static class SavedDocuments
         }
     }
 
-    /// <summary>Adds <paramref name="work"/> to <paramref name="started"/> when a reopening started one.</summary>
     private static void AddStarted<T>(List<T> started, T? work) where T : class
     {
         if (work is null)
@@ -437,8 +421,6 @@ public static class SavedDocuments
         started.Add(work);
     }
 
-    /// <summary>Where <paramref name="node"/> was, when its file is open in the list; else null, as the
-    /// list holds it no more.</summary>
     private static NodePath? FindListedPlace(AssemblyList assemblies, NodeDocumentRecord node)
     {
         if (!assemblies.IsListed(node.Location.FilePath))

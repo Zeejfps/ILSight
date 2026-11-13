@@ -55,16 +55,11 @@ public sealed class WorkflowRunner(BackgroundWork work, ErrorLog errors)
         _shutdown.Cancel();
     }
 
-    /// <summary>A token source of the workflow's own, cancelled with the app's shutdown and with each of
-    /// <paramref name="cancelledOnPurposeBy"/>.</summary>
     private CancellationTokenSource Link(ReadOnlySpan<CancellationToken> cancelledOnPurposeBy)
     {
         return CancellationTokenSource.CreateLinkedTokenSource([_shutdown.Token, .. cancelledOnPurposeBy]);
     }
 
-    /// <summary>Runs <paramref name="workflow"/> on <paramref name="ct"/>, the token of <paramref name="link"/>,
-    /// which it lets go of once the workflow ends; an unexpected exception it ends with is reported, then
-    /// <paramref name="settle"/>, if any, settles what its start left pending.</summary>
     private async Task RunAsync(Func<CancellationToken, Task> workflow, Action<Exception>? settle, IDisposable link, CancellationToken ct)
     {
         using (link)

@@ -76,8 +76,6 @@ internal static class Shortcuts
     public static readonly Shortcut Quit = Shortcut.Command(KeyboardKey.Q);
     public static readonly Shortcut Minimize = Shortcut.Command(KeyboardKey.M);
 
-    /// <summary>An app-wide shortcut and what it does; one that works <see cref="WhileTyping"/> runs
-    /// even while a text field has focus.</summary>
     private readonly record struct Binding
     {
         public required Shortcut Keys { get; init; }
@@ -103,14 +101,11 @@ internal static class Shortcuts
         new Binding { Keys = PreviousTab, Run = static (ui, appState) => DocumentPanels.CycleTab(ui.State, appState.Navigation, appState.Decompiler.Setup, -1) },
     ];
 
-    /// <summary>Goes to the history entry before the current one in this frame, and asks for its load or lookup to be
-    /// started once the frame is drawn.</summary>
     private static void GoBack(UiState screen, AppState appState)
     {
         Commands.MoveLater(screen, appState.Navigation.GoBack(appState.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
     }
 
-    /// <summary>As <see cref="GoBack"/>, to the entry after the current one.</summary>
     private static void GoForward(UiState screen, AppState appState)
     {
         Commands.MoveLater(screen, appState.Navigation.GoForward(appState.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
@@ -145,9 +140,9 @@ internal static class Shortcuts
         }
     }
 
-    /// <summary>Searches in the omnibar, unless the key ends Ctrl+M, Ctrl+L in the code, which folds it.</summary>
     private static void SearchInOmnibarUnlessFolding(Ui<UiState> ui)
     {
+        // The key also ends Ctrl+M, Ctrl+L, which folds the code instead.
         if (ui.IsPressed(ToggleAllFolds))
         {
             return;

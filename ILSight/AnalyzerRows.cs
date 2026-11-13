@@ -173,7 +173,6 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         }
     }
 
-    /// <summary>Asks once for <paramref name="kind"/> to run, unless it already started.</summary>
     private void AskToRun(AnalyzerKindNode kind)
     {
         if (kind.HasStarted)
@@ -270,7 +269,6 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         return new TreeRow(message.Error, icon, _theme.Danger);
     }
 
-    /// <summary>What the row of <paramref name="message"/> says.</summary>
     private string GetMessageText(AnalyzerMessageNode message)
     {
         var unreadable = message.Unreadable;
@@ -282,15 +280,12 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         return message.Error ?? _strings.AnalyzerLoading;
     }
 
-    /// <summary>The row of a restored analysis that failed: why, as a warning, in its place.</summary>
     private TreeRow CreateFailedRow(AnalyzerFailedNode failed)
     {
         var warning = new UiIcon(_icons.StatusError, _theme.Warning);
         return new TreeRow(GetFailedText(failed), warning, _theme.Warning);
     }
 
-    /// <summary>What the row of <paramref name="failed"/> says: that its module couldn't be read, that its symbol is no
-    /// longer in its file, or why looking it up failed.</summary>
     private string GetFailedText(AnalyzerFailedNode failed)
     {
         var anchor = failed.SavedAs;

@@ -6,7 +6,6 @@ namespace ILSight;
 /// before it stale, and its result is then ignored.</summary>
 public sealed class Reopens
 {
-    /// <summary>The ticket of the reopen that counts, by the file it is of.</summary>
     private readonly Dictionary<AssemblyPath, int> _current = new();
 
     private int _last;

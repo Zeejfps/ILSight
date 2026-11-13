@@ -36,8 +36,6 @@ public sealed class OpenAndShowIdHandler(OpenAndShowIdHandler.IPorts ports)
         return ShowFound(appState, idString, found, ticket);
     }
 
-    /// <summary>Shows what the id names, when it was found and nothing else was asked for meanwhile, else reports
-    /// why not. Returns the load it started in the tab; null when it started none.</summary>
     private DecompileTicket? ShowFound(AppState appState, string idString, Outcome<Lookup<BrowseNode>> found, int ticket)
     {
         return found.Match(
@@ -49,9 +47,6 @@ public sealed class OpenAndShowIdHandler(OpenAndShowIdHandler.IPorts ports)
             });
     }
 
-    /// <summary>Shows the node <paramref name="lookup"/> found, what the id names, unless something else was asked for
-    /// meanwhile; reports when none has it, or the module it may be in could not be read. Returns the load it started
-    /// in the tab; null when it started none.</summary>
     private DecompileTicket? ShowFoundNode(AppState appState, string idString, Lookup<BrowseNode> lookup, int ticket)
     {
         if (appState.Navigation.IsStale(ticket))

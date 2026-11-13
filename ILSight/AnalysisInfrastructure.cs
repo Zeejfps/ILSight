@@ -37,7 +37,6 @@ public sealed class AnalysisInfrastructure(ErrorLog errors, AssemblyList assembl
         }
     }
 
-    /// <summary>The next batch of <paramref name="batches"/>, or what reading it threw; null at the end.</summary>
     private static async Task<Outcome<IReadOnlyList<AnalysisFind>>?> ReadNextAsync(IAsyncEnumerator<IReadOnlyList<AnalysisFind>> batches,
         CancellationToken ct)
     {

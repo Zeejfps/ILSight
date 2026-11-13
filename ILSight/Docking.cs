@@ -25,10 +25,6 @@ public static class Docking
         layout.Dock.Activate(panel);
     }
 
-    /// <summary>Docks <paramref name="view"/> where it goes: the assemblies left of everything; the options
-    /// beside the documents; search below them; bookmarks beside search; the analyzer beside search or
-    /// bookmarks; the exports beside any of those; and each of the last four below the documents when
-    /// there is nothing to go beside.</summary>
     private static void DockWhereItGoes(MainLayout layout, DockView view, string? activeDocument)
     {
         switch (view)
@@ -157,9 +153,6 @@ public static class Docking
         }
     }
 
-    /// <summary>Docks the documents under <paramref name="node"/> as it arranges them: its lead group into or
-    /// beside <paramref name="target"/> as <paramref name="edge"/> says, or where documents start out when
-    /// there is no target, then the others in the place that lead group takes.</summary>
     private static void DockArranged(MainLayout layout, DockNode node, DockGroup? target, DockEdge edge, float share)
     {
         var lead = FindLeadGroup(node);
@@ -177,9 +170,8 @@ public static class Docking
         DockRestArranged(layout, node, docked);
     }
 
-    /// <summary>Docks the groups under <paramref name="node"/> but its lead, docked as <paramref name="lead"/>,
-    /// splitting the place it takes as <paramref name="node"/> splits it: each split's second side goes beside
-    /// its first while that first side still fills the place, so each side then splits only its own part.</summary>
+    // Each split's second side goes beside its first while that first side still fills the place, so each side then
+    // splits only its own part.
     private static void DockRestArranged(MainLayout layout, DockNode node, DockGroup lead)
     {
         if (node is not DockSplit split)
@@ -207,7 +199,6 @@ public static class Docking
         }
     }
 
-    /// <summary>The first group under <paramref name="node"/> that holds a document, or null when none does.</summary>
     private static DockGroup? FindLeadGroup(DockNode node)
     {
         if (node is DockGroup group)
@@ -253,11 +244,9 @@ public static class Docking
         return docked;
     }
 
-    /// <summary>Docks <paramref name="panel"/>, the first of a group arranged, into or beside
-    /// <paramref name="target"/>, or where documents start out when there is none; unless it is docked
-    /// already, as the first panel of a floating window is.</summary>
     private static void DockFirstArranged(MainLayout layout, string panel, DockGroup? target, DockEdge edge, float share)
     {
+        // The first panel of a floating window is docked already.
         if (layout.Dock.Contains(panel))
         {
             return;
@@ -291,8 +280,6 @@ public static class Docking
         };
     }
 
-    /// <summary>Floats the documents of <paramref name="window"/> in a window of their own where it was,
-    /// arranged as it arranges them.</summary>
     private static void FloatArranged(MainLayout layout, DockWindow window)
     {
         var panels = DockLayout.PanelsIn(window.Root);
@@ -376,7 +363,6 @@ public static class Docking
         return layout.Dock.Root;
     }
 
-    /// <summary>The group a new document joins: the active document's, else the first holding one.</summary>
     private static DockGroup? FindDocumentGroup(MainLayout layout, string? activeDocument)
     {
         var active = FindActiveGroup(layout, activeDocument);
@@ -405,8 +391,6 @@ public static class Docking
         return layout.Dock.GroupOf(activeDocument);
     }
 
-    /// <summary>Docks <paramref name="panel"/> beside <paramref name="target"/>, or into it when the
-    /// layout is empty.</summary>
     private static void DockBeside(MainLayout layout, string panel, DockNode target, DockEdge edge, float share)
     {
         var root = layout.Dock.Root as DockGroup;

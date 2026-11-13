@@ -59,8 +59,6 @@ public sealed class RestoreAnalysesHandler(RestoreAnalysesHandler.IPorts ports)
         Analysis.FailRoots(analyzer, restore.Roots, error.Message);
     }
 
-    /// <summary>Names each of <paramref name="unreadable"/>, the modules whose roots failed as they could not be
-    /// read.</summary>
     private void ReportUnreadable(List<UnreadableModule> unreadable)
     {
         foreach (var module in unreadable)

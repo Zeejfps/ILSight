@@ -63,8 +63,6 @@ public static class ItemSelections
         SelectRow(selection, items, reveal: false);
     }
 
-    /// <summary>Gives <see cref="ItemSelection{T}.Rows"/> the selected item's row in <paramref name="items"/>,
-    /// or no row when it is not one of them.</summary>
     private static void SelectRow<T>(ItemSelection<T> selection, IReadOnlyList<T> items, bool reveal)
         where T : class
     {

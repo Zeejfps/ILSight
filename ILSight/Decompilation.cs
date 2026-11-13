@@ -43,7 +43,6 @@ public static class Decompilation
         viewCommands.Enqueue(new ViewCommand.RevealRow { Tab = tab, Row = row.Value });
     }
 
-    /// <summary>The line <paramref name="target"/> marks, else the node's definition; null when there is neither.</summary>
     private static int? FindLineToReveal(DocumentTab tab, Bookmark? target)
     {
         var node = tab.Node;

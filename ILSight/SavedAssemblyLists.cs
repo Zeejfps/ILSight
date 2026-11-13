@@ -50,8 +50,6 @@ public sealed class SavedAssemblyLists
 
     public int Count => _lists.Count;
 
-    /// <summary>A list: its name, its assemblies' paths, the symbols analyzed in it, what was picked for
-    /// its assemblies, by assembly path, and the documents it had open.</summary>
     private sealed class SavedList
     {
         public required string Name { get; set; }
@@ -121,8 +119,6 @@ public sealed class SavedAssemblyLists
         }
     }
 
-    /// <summary>Puts the frameworks the settings wrote as <paramref name="saved"/> into <paramref name="into"/>,
-    /// leaving out one that is not a framework id.</summary>
     private static void ReadFrameworks(IReadOnlyDictionary<AssemblyPath, string>? saved, Dictionary<AssemblyPath, TargetFrameworkId> into)
     {
         if (saved is null)
@@ -167,9 +163,9 @@ public sealed class SavedAssemblyLists
             .ToList();
     }
 
-    /// <summary>A list's picks as the settings keep them; null for none, which leaves them out.</summary>
     private static Dictionary<AssemblyPath, string>? SavePicks(Dictionary<AssemblyPath, string> picks)
     {
+        // Null, not empty, leaves them out of the settings.
         if (picks.Count == 0)
         {
             return null;
@@ -178,7 +174,6 @@ public sealed class SavedAssemblyLists
         return new Dictionary<AssemblyPath, string>(picks);
     }
 
-    /// <summary>A list's frameworks as the settings keep them, as written; null for none.</summary>
     private static Dictionary<AssemblyPath, string>? SaveFrameworks(Dictionary<AssemblyPath, TargetFrameworkId> frameworks)
     {
         if (frameworks.Count == 0)
@@ -340,7 +335,6 @@ public sealed class SavedAssemblyLists
         return list.Analyzed;
     }
 
-    /// <summary>Adds <paramref name="list"/>, numbered when its name is taken, and returns the name it got.</summary>
     private string Insert(SavedList list)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(list.Name);
@@ -460,8 +454,6 @@ public sealed class SavedAssemblyLists
         return DefaultName;
     }
 
-    /// <summary>The list named <paramref name="name"/>, which <see cref="GetReplacement"/> named after the
-    /// list it replaces was removed: one of those left, or the empty one made when none was.</summary>
     private SavedList GetRemainingList(string name)
     {
         var list = FindList(name);
@@ -483,7 +475,7 @@ public sealed class SavedAssemblyLists
         return _lists.Find(l => string.Equals(l.Name, name.Trim(), StringComparison.OrdinalIgnoreCase));
     }
 
-    /// <summary>Counts a change to the lists, so that what was saved can tell it is out of date.</summary>
+    // So that what was saved can tell it is out of date.
     private void NoteChange()
     {
         Revision++;

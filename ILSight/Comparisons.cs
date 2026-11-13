@@ -81,7 +81,6 @@ public static class Comparisons
         return new ComparisonRun { Comparison = comparison, Left = left, Right = right, Scope = comparison.Scope, Work = work };
     }
 
-    /// <summary>The open assembly read from <paramref name="filePath"/> whose API can be compared; null when there is none.</summary>
     private static LoadedModule? FindOpen(AssemblyList assemblies, AssemblyPath filePath)
     {
         foreach (var assembly in assemblies.Assemblies)

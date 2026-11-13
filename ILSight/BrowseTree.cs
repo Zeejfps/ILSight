@@ -72,8 +72,6 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
         return true;
     }
 
-    /// <summary>Moves what was expanded and selected under each root no longer among
-    /// <paramref name="roots"/> to the root of its file read again, when one is, and forgets it.</summary>
     private void FollowGoneRoots(BrowseNode[] roots)
     {
         if (_roots.Length == 0)
@@ -131,8 +129,6 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
         }
     }
 
-    /// <summary>The node standing where <paramref name="node"/> does, under <paramref name="root"/>
-    /// in place of <paramref name="node"/>'s root, found through children already loaded.</summary>
     private BrowseNode? FindCounterpart(BrowseNode node, BrowseNode root)
     {
         if (node.Parent is null)
@@ -149,8 +145,6 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
         return Session.FindLoadedChildLike(parent, node);
     }
 
-    /// <summary>Collapses <paramref name="node"/> and the nodes under it, expanding each one's
-    /// counterpart under <paramref name="counterpart"/> instead.</summary>
     private void FollowExpansion(BrowseNode node, BrowseNode? counterpart)
     {
         if (!View.IsExpanded(node))
@@ -301,8 +295,6 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
         View.Reveal(path);
     }
 
-    /// <summary>The rows from the root down to <paramref name="node"/>, or to its nearest shown
-    /// ancestor when it is hidden or inside a hidden node.</summary>
     private List<BrowseNode> ListShownPathTo(BrowseNode node)
     {
         var path = ListPathTo(node);
@@ -329,8 +321,6 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
         return path;
     }
 
-    /// <summary>The node whose row holds <paramref name="node"/>'s: the namespace a namespace nests in
-    /// when namespaces nest, else its parent.</summary>
     private BrowseNode? FindShownParent(BrowseNode node)
     {
         if (IsNested(node))
@@ -356,8 +346,6 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
         return IsApiHidden(node);
     }
 
-    /// <summary>Whether a namespace is left out: when it holds no type that shows and, when namespaces
-    /// nest, no namespace that shows nests in it.</summary>
     private bool IsNamespaceHidden(BrowseNode node, NamespaceInfo ns)
     {
         var ownHidden = ns.IsEnclosingOnly || IsApiHidden(node);
@@ -515,7 +503,6 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
             static (shown, failed) => TreeChildren<BrowseNode>.Placeholder(shown.tree.CreateFailedRow(failed.Error)));
     }
 
-    /// <summary>A loading row under <paramref name="node"/>, whose children are asked for.</summary>
     private TreeChildren<BrowseNode> ShowLoading(BrowseNode node)
     {
         Builds.Ask(node);
@@ -532,8 +519,8 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
         return ListShownChildren(node, children);
     }
 
-    /// <summary>Apart from <see cref="EnsureShownChildren"/>, which runs per expanded row every frame, as a lambda
-    /// capturing a parameter costs its closure on the way in, before anything else is looked at.</summary>
+    // Apart from EnsureShownChildren, which runs per expanded row every frame, as a lambda capturing a parameter costs
+    // its closure on the way in, before anything else is looked at.
     private BrowseNode[] ListShownChildren(BrowseNode node, IReadOnlyList<BrowseNode> children)
     {
         var shown = children
@@ -566,7 +553,6 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
             Spinning: IsReopening(node));
     }
 
-    /// <summary>Whether the node is the root of a listed file being reopened.</summary>
     private bool IsReopening(BrowseNode node)
     {
         if (_reopening.Count == 0)
@@ -577,8 +563,6 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
         return node.Parent is null && _reopening.Contains(node.Assembly.FilePath);
     }
 
-    /// <summary>The node's metadata token when the tree shows tokens and it has one, else what
-    /// <see cref="NodeText.Secondary"/> adds.</summary>
     private string? FindSecondary(BrowseNode node)
     {
         var token = NodeText.Token(node, _tokens);
@@ -645,7 +629,6 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
         return nodes.Select(static n => n.Assembly.FilePath.Text).ToArray();
     }
 
-    /// <summary>How a root reads: as tabs show it, and as its row does.</summary>
     private readonly record struct RootLabel
     {
         public required string Title { get; init; }

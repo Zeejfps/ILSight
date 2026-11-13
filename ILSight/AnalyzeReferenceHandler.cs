@@ -44,8 +44,6 @@ public sealed class AnalyzeReferenceHandler(AnalyzeReferenceHandler.IPorts ports
             });
     }
 
-    /// <summary>Turns the root of <paramref name="pending"/> into the analysis of what <paramref name="lookup"/> found;
-    /// else the root goes, saying why.</summary>
     private void Analyze(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, PendingAnalysis pending, Lookup<BrowseNode> lookup)
     {
         lookup.Switch(

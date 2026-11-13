@@ -10,10 +10,8 @@ namespace ILSight;
 /// <see cref="TabDocument"/>, and its load through <see cref="TabLoad"/>.</summary>
 public sealed class DocumentTabs
 {
-    /// <summary>The id the last tab opened was given.</summary>
     private int _lastTabId;
 
-    /// <summary>Which document each tab opened here is, kept as long as the tab is.</summary>
     private readonly ConditionalWeakTable<DocumentTab, TabDocument> _documents = new();
 
     /// <summary>Opens a new tab, showing nothing yet, with an id no tab had before.</summary>
@@ -41,10 +39,9 @@ public sealed class DocumentTabs
     /// <summary>The tabs open, in order.</summary>
     public readonly TrackedList<DocumentTab> Open = new();
 
-    /// <summary>The tab of the diagram last worked in, which may since show something else.</summary>
+    // May since show something else than a diagram.
     private DocumentTab? _lastDiagram;
 
-    /// <summary>What the tabs closed had counted as <see cref="DocumentTab.Changes"/>.</summary>
     private int _closedChanges;
 
     /// <summary>The tab the user last worked in, and how many times that changed.</summary>

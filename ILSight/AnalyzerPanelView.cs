@@ -95,10 +95,9 @@ internal static class AnalyzerPanelView
         }
     }
 
-    /// <summary>What Analyze applies to in the analyzer, its menu item and its key alike: a result selected, unless it is
-    /// a root, which is analyzed already (not offered); unavailable when its assembly can't be listed.</summary>
     private static CommandOffer<AnalysisSymbol> OfferAnalysis(AnalyzerRows rows, AnalyzerTree analyzer)
     {
+        // A root is analyzed already, so it isn't offered.
         if (rows.View.Selected is not AnalyzerSymbolNode picked || analyzer.HasRoot(picked))
         {
             return new CommandOffer<AnalysisSymbol>.NotOffered();
@@ -107,8 +106,6 @@ internal static class AnalyzerPanelView
         return Analysis.OfferAnalysis(analyzer, picked.Symbol);
     }
 
-    /// <summary>Analyzes what <paramref name="offer"/> applies to as the key asks, or reports why it is unavailable
-    /// where the user acted; nothing where it isn't offered.</summary>
     private static void AnalyzeSelected(UiState screen, CommandOffer<AnalysisSymbol> offer)
     {
         offer.Switch(
@@ -126,8 +123,6 @@ internal static class AnalyzerPanelView
         }
     }
 
-    /// <summary>Begins following what <paramref name="node"/> stands for, when it stands for a symbol with a
-    /// reference, and asks for it to be looked up and shown.</summary>
     private static void GoTo(UiState screen, Navigation navigation, AnalyzerNode? node)
     {
         if (node is not AnalyzerSymbolNode symbol)
@@ -179,8 +174,6 @@ internal static class AnalyzerPanelView
         }
     }
 
-    /// <summary>The menu's Analyze, as <paramref name="offer"/> decides it: offered, it analyzes; unavailable, it shows
-    /// disabled, saying why; not offered, it isn't listed.</summary>
     private static void AnalyzeItem(Ui<UiState> ui, CommandOffer<AnalysisSymbol> offer)
     {
         var t = ui.State.Strings;

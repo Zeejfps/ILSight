@@ -115,8 +115,6 @@ internal static class OptionSearch
         return runs;
     }
 
-    /// <summary><paramref name="text"/> as runs in <paramref name="style"/> with the hits of <paramref name="query"/>
-    /// marked, kept in <paramref name="label"/> while they stay the same; null when it has none, as without a search.</summary>
     private static IReadOnlyList<RichTextRun>? EnsureMarkedRuns(MarkedLabel label, CultureInfo culture, string query, string text, TextStyle style)
     {
         if (label.HasValue && ReferenceEquals(label.Style, style) && string.Equals(label.Text, text, StringComparison.Ordinal)
@@ -186,9 +184,7 @@ internal static class OptionSearch
         }
     }
 
-    /// <summary>A label as a search last marked it: its runs for <see cref="Text"/> in <see cref="Style"/> while the
-    /// search was <see cref="Query"/>, null when no word of it was in the text. Kept per label between frames, so the
-    /// runs are the same list while nothing changes, as rich text wants.</summary>
+    // Kept per label between frames, so the runs are the same list while nothing changes, as rich text wants.
     private sealed class MarkedLabel
     {
         public bool HasValue;

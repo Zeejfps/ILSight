@@ -18,7 +18,6 @@ public sealed class OpenListSession
 
     private readonly AnalyzerTree _analyzer;
 
-    /// <summary>The files the reopening under way asked for, on their way until each lands; none when none runs.</summary>
     private IReadOnlyList<AssemblyPath> _reopening = [];
 
     /// <param name="assemblies">The list itself, which only the session closes, and whose read side the analyzer it
@@ -77,8 +76,6 @@ public sealed class OpenListSession
         return true;
     }
 
-    /// <summary>Takes what the reopening asked for that hasn't landed off those on their way, and the analyses of
-    /// it with it, as closing it would.</summary>
     private void StopReopeningArrivals()
     {
         var stopped = _assemblies.StopArriving(_reopening);
@@ -105,13 +102,11 @@ public sealed class OpenListSession
         return removed;
     }
 
-    /// <summary>Has each open tab showing a node read from <paramref name="item"/>, an item of the list the user
-    /// closed, or out of it, keep what it shows and read it no more (<see cref="TabLoad.ShowClosed"/>), as the rule
-    /// across the list and the tabs asks: a tab whose assembly is closed reads nothing; so does each tab showing a
-    /// diagram or a comparison that reads it (<see cref="Navigation.ShowDocumentsClosed"/>). Every close covers it; two
-    /// changes take an item off the list and are left out on purpose: reading the list again
-    /// (<see cref="ClearAssemblies"/>, whose tabs wait to find their places in what it reads), and reading one item
-    /// again (<see cref="TryReplaceAssembly"/>, whose tabs are found again in what replaced it).</summary>
+    // As the rule across the list and the tabs asks: a tab whose assembly is closed reads nothing; so does each tab
+    // showing a diagram or a comparison that reads it (Navigation.ShowDocumentsClosed). Every close covers it; two
+    // changes take an item off the list and are left out on purpose: reading the list again (ClearAssemblies, whose
+    // tabs wait to find their places in what it reads), and reading one item again (TryReplaceAssembly, whose tabs are
+    // found again in what replaced it).
     private void ShowTabsClosed(LoadedAssembly item)
     {
         var name = item.FilePath.FileName;

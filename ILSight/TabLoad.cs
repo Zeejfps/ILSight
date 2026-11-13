@@ -12,26 +12,21 @@ namespace ILSight;
 /// only.</summary>
 public sealed class TabLoad
 {
-    /// <summary>The tab's work: one started cancels the one before, whose result is then dropped; once the tab is
-    /// closed, what is in flight is cancelled and its result dropped. Shared by the tab's loads, as starting another
-    /// cancels this one's.</summary>
+    // Shared by the tab's loads, as starting another cancels this one's.
     private readonly LatestWork _work;
 
     private TabContent _content;
 
-    /// <summary>Where the view is to stand once the load in flight arrives.</summary>
     private Arrival _arrival;
 
-    /// <summary>Where the view of the shown node last stood, as <see cref="Position"/> gives it.</summary>
     private ViewPosition _viewPosition;
 
     private DecompilationLanguage _language;
 
-    /// <summary>The options <see cref="Content"/> was decompiled with.</summary>
     private DecompilerOptions _options = DecompilerOptions.Default;
 
-    /// <summary>The file name of the list's item the node was read from, once the user closed it: the load keeps what
-    /// it shows of the node and reads it no more. Null while the item is open.</summary>
+    // Null while the list's item the node was read from is open; once the user closed it, the load keeps what it shows
+    // of the node and reads it no more.
     private string? _closedAssembly;
 
     private int _changes;
@@ -242,7 +237,6 @@ public sealed class TabLoad
         return true;
     }
 
-    /// <summary>The node loading; only a loading load can show what it brought.</summary>
     private BrowseNode GetLoadingNode()
     {
         if (_content is not TabContent.Loading loading)
@@ -296,13 +290,12 @@ public sealed class TabLoad
         });
     }
 
-    /// <summary>Lets go of the node for <paramref name="content"/>, which holds none, and so of what was kept of it
-    /// once its assembly closed.</summary>
     private void ReleaseNode(TabContent content)
     {
         _changes++;
         Cancel();
         _content = content;
+        // What was kept of the node once its assembly closed goes with it.
         _closedAssembly = null;
     }
 

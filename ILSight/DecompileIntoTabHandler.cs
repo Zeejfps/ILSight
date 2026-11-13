@@ -34,7 +34,7 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
     {
         var read = await ports.DecompileAsync(ticket.Node, ticket.Language, ticket.Options, firstGridRows, ct);
         var load = ticket.Load;
-        var loaded = FindLoaded(load, ticket.Work, read);
+        var loaded = ShowClosedOrFindLoaded(load, ticket.Work, read);
         if (loaded is null || !TryShowLoaded(load, ticket.Work, loaded))
         {
             return;
@@ -52,10 +52,7 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
         Decompilation.Arrive(viewCommands, tab, arrival);
     }
 
-    /// <summary>What the decompile brought, or that it failed; null when the node's module was closed before it began,
-    /// which <paramref name="load"/> then shows, unless a newer load started on the tab, or the tab closed, since
-    /// <paramref name="work"/> was given.</summary>
-    private static Outcome<NodeContent>? FindLoaded(TabLoad load, WorkTicket work, Outcome<ModuleRead<NodeContent>> read)
+    private static Outcome<NodeContent>? ShowClosedOrFindLoaded(TabLoad load, WorkTicket work, Outcome<ModuleRead<NodeContent>> read)
     {
         return read.Match<Outcome<NodeContent>?>(
             ok => ok.Value.Match<Outcome<NodeContent>?>(
@@ -70,8 +67,6 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
         return null;
     }
 
-    /// <summary>Shows on <paramref name="load"/> what it brought, or that it failed, unless a newer load started on the
-    /// tab, or the tab closed, since <paramref name="work"/> was given. Returns whether it landed.</summary>
     private static bool TryShowLoaded(TabLoad load, WorkTicket work, Outcome<NodeContent> loaded)
     {
         return loaded.Match(
@@ -79,7 +74,6 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
             failed => load.TryShowFailed(work, failed.Error.Message));
     }
 
-    /// <summary>Why the load failed, or why the document it brought could not be decompiled; null when neither.</summary>
     private static Exception? FindFailure(TabLoad load, Outcome<NodeContent> loaded)
     {
         return loaded.Match<Exception?>(
@@ -87,10 +81,9 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
             failed => failed.Error);
     }
 
-    /// <summary>Reports why <paramref name="node"/> could not be shown, unless its file failed to load,
-    /// which its tab tells already.</summary>
     private void ReportFailure(BrowseNode node, Exception error)
     {
+        // A file that failed to load has its tab tell it already.
         if (node.Assembly is FailedAssembly)
         {
             return;

@@ -147,7 +147,6 @@ public static class ProblemTexts
         return string.Join(Environment.NewLine, errors.Select(e => DescribeThemeError(t, e)));
     }
 
-    /// <summary><paramref name="error"/> as a line of a report: the file, the line when known, and what is wrong.</summary>
     private static string DescribeThemeError(Strings t, ThemeError error)
     {
         var problem = DescribeThemeProblem(t, error);

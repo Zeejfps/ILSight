@@ -16,10 +16,8 @@ public sealed class AnalyzerTree
 {
     private readonly TrackedList<AnalyzerNode> _roots = new();
 
-    /// <summary>The open list, read to check each add against.</summary>
     private readonly AssemblyList _assemblies;
 
-    /// <summary>What <see cref="ListSavedAnalyses"/> listed when <see cref="Revision"/> last changed.</summary>
     private List<CodeAnchor> _saved = [];
 
     /// <param name="assemblies">The open list, which the session holding both closes: read only, to check each add
@@ -88,8 +86,6 @@ public sealed class AnalyzerTree
         return new Refusal.NotAnalyzable { Symbol = symbol.Label };
     }
 
-    /// <summary>A root waiting, shown as loading, while the file <paramref name="symbol"/> is in, which the list does
-    /// not hold, is found by its reference and listed (<see cref="FindRefusal"/> answered that it has one).</summary>
     private AnalyzerAdd BeginListing(AnalysisSymbol symbol)
     {
         var reference = symbol.Reference ?? throw new InvalidOperationException($"{symbol.Label} is listed by its reference, which it has none of.");
@@ -276,7 +272,6 @@ public sealed class AnalyzerTree
         }
     }
 
-    /// <summary>Whether the list holds the file <paramref name="symbol"/> is in, landed or on its way.</summary>
     private bool IsOnTheList(AnalysisSymbol symbol)
     {
         var file = symbol.File;
@@ -347,7 +342,6 @@ public sealed class AnalyzerTree
         };
     }
 
-    /// <summary>Changes <see cref="Revision"/> when the roots changed what <see cref="ListSavedAnalyses"/> lists.</summary>
     private void FollowSavedAnalyses()
     {
         var saved = ListSavedAnalyses();

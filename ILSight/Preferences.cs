@@ -33,10 +33,10 @@ public static class Preferences
         SetDecompilerOptions(appState, options);
     }
 
-    /// <summary>Keeps the options chosen before when <paramref name="options"/> equal them: the screen takes new
-    /// options by reference (<see cref="ShownChanges.TryTakeDecompilation"/>), so equal new ones would count as a change.</summary>
     private static void SetDecompilerOptions(AppState appState, DecompilerOptions options)
     {
+        // The screen takes new options by reference (ShownChanges.TryTakeDecompilation), so equal new ones would count
+        // as a change.
         if (options == appState.Decompiler.Setup.Options)
         {
             return;
