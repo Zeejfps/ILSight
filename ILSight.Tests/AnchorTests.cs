@@ -39,9 +39,7 @@ public sealed class AnchorTests
     [CaseInsensitivePathsTheory]
     [InlineData("Changed?.Invoke(this, EventArgs.Empty);")]
     [InlineData("public void Add(T item)")]
-#pragma warning disable RL0301 // A theory: its attribute derives from xUnit's TheoryAttribute, which RL0301 doesn't follow.
     public async Task An_anchor_finds_its_line_whatever_the_case_of_its_path(string text)
-#pragma warning restore RL0301
     {
         var type = await Trees.CalculatorDocumentAsync(DecompilationLanguage.CSharp);
         var line = type.LineContaining(text);
