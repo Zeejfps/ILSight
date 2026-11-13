@@ -12,10 +12,18 @@ internal sealed class FakeCheckExportFilesHandlerPorts : CheckExportFilesHandler
 
     public List<string> Asked { get; } = [];
 
-    public Task<bool> HasEntriesAsync(string folder, CancellationToken ct)
+    /// <summary>The folders listing fails for, and why.</summary>
+    public Dictionary<string, Exception> Unlistable { get; init; } = [];
+
+    public Task<Outcome<bool>> LookInFolderAsync(string folder, CancellationToken ct)
     {
         Asked.Add(folder);
-        return Task.FromResult(FilledFolders.Contains(folder));
+        if (Unlistable.TryGetValue(folder, out var why))
+        {
+            return Task.FromResult<Outcome<bool>>(new Outcome<bool>.Failed(why));
+        }
+
+        return Task.FromResult<Outcome<bool>>(new Outcome<bool>.Ok(FilledFolders.Contains(folder)));
     }
 
     public Task<bool> IsFileThereAsync(string file, CancellationToken ct)

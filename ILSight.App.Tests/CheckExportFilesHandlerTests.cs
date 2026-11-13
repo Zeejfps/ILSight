@@ -24,6 +24,41 @@ public sealed class CheckExportFilesHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_FolderCannotBeListed_FailsTheLookSayingWhyAndAsksNothingMoreUntilRetried()
+    {
+        var checks = new ExportFileChecks();
+        var check = checks.StartCheck(Folder, KeyFile);
+        Assert.NotNull(check);
+        var ports = new FakeCheckExportFilesHandlerPorts { Unlistable = { [Folder] = new UnauthorizedAccessException("Access is denied.") } };
+
+        await new CheckExportFilesHandler(ports).HandleAsync(checks, check, CancellationToken.None);
+
+        Assert.Equal("Access is denied.", Assert.IsType<ExportFileLook.Failed>(checks.FindLook(Folder, KeyFile)).Why);
+        Assert.Null(checks.FindFacts(Folder, KeyFile));
+        Assert.Null(checks.StartCheck(Folder, KeyFile));
+    }
+
+    [Fact]
+    public async Task Retry_AfterAFailedLook_LooksAtTheSameNamesAgain()
+    {
+        var checks = new ExportFileChecks();
+        var failing = checks.StartCheck(Folder, "");
+        Assert.NotNull(failing);
+        await new CheckExportFilesHandler(new FakeCheckExportFilesHandlerPorts { Unlistable = { [Folder] = new IOException("The network path was not found.") } })
+            .HandleAsync(checks, failing, CancellationToken.None);
+
+        var retried = checks.Retry();
+        Assert.NotNull(retried);
+        var lookWhileRetried = checks.FindLook(Folder, "");
+        await new CheckExportFilesHandler(new FakeCheckExportFilesHandlerPorts { FilledFolders = [Folder] }).HandleAsync(checks, retried, CancellationToken.None);
+
+        Assert.True(retried.IsOf(Folder, ""));
+        Assert.IsType<ExportFileLook.Checking>(lookWhileRetried);
+        Assert.Equal(new ExportFileFacts { FolderHoldsFiles = true, IsKeyFileMissing = false }, checks.FindFacts(Folder, ""));
+        Assert.Null(checks.Retry());
+    }
+
+    [Fact]
     public async Task HandleAsync_RelativeFolderAndNoKeyFile_LooksAtNothing()
     {
         var checks = new ExportFileChecks();

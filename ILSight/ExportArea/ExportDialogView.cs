@@ -424,7 +424,7 @@ internal static class ExportDialogView
                     PickFolder(ui, setup);
                 }
             }
-            var files = FindFiles(ui, setup);
+            var files = FindFacts(ui, setup);
             if (files?.FolderHoldsFiles == true)
             {
                 ui.Text(t.ExportFolderWarning, color: theme.Warning, size: theme.FontSizeSmall, wrap: true);
@@ -535,7 +535,7 @@ internal static class ExportDialogView
                 PickKeyFile(ui, setup);
             }
         }
-        var files = FindFiles(ui, setup);
+        var files = FindFacts(ui, setup);
         if (files?.IsKeyFileMissing == true)
         {
             ui.Text(t.ExportKeyFileMissing, color: theme.Danger, size: theme.FontSizeSmall, wrap: true);
@@ -571,6 +571,11 @@ internal static class ExportDialogView
             var blocker = Exports.FindBlocker(setup, FindFiles(ui, setup));
             var color = IsMistake(blocker) ? theme.Danger : theme.TextMuted;
             ui.Text(BlockerText(t, blocker), color: color, size: theme.FontSizeSmall, wrap: true);
+            if (blocker is ExportBlocker.CheckFailed && ui.Button(t.NugetRetry, id: "export-check-retry", variant: ButtonVariant.Ghost))
+            {
+                RetryCheck(ui.State, setup.Files);
+            }
+
             if (ui.Button(t.ExportCancel, id: "export-cancel", variant: ButtonVariant.Ghost))
             {
                 Exports.CloseExportSetup(setup);
@@ -583,10 +588,25 @@ internal static class ExportDialogView
         }
     }
 
-    /// <summary>Whether <paramref name="blocker"/> is something typed wrong rather than not yet given.</summary>
+    /// <summary>Asks the disk again about the folder and key file whose look failed, once the frame is drawn
+    /// (<see cref="CheckExportFilesHandler"/>): the dialog shows it being looked at from this frame on.</summary>
+    private static void RetryCheck(UiState uiState, ExportFileChecks files)
+    {
+        var check = files.Retry();
+        if (check is null)
+        {
+            return;
+        }
+
+        Commands.Start(uiState, nameof(CheckExportFilesHandler), (Files: files, Check: check),
+            static (a, s, ct) => a.CheckExportFilesHandler.HandleAsync(s.Files, s.Check, ct));
+    }
+
+    /// <summary>Whether <paramref name="blocker"/> is something wrong rather than not yet given: typed wrong, or the
+    /// disk failing to say.</summary>
     private static bool IsMistake(ExportBlocker? blocker)
     {
-        return blocker is ExportBlocker.Clash or ExportBlocker.KeyFileMissing;
+        return blocker is ExportBlocker.Clash or ExportBlocker.KeyFileMissing or ExportBlocker.CheckFailed;
     }
 
     private static string BlockerText(Strings t, ExportBlocker? blocker)
@@ -602,7 +622,8 @@ internal static class ExportDialogView
             namelessProject: static (t, _) => t.ExportNeedsName,
             clash: static (t, clash) => t.ExportNameClash(clash.Name),
             keyFileMissing: static (t, _) => t.ExportKeyFileMissing,
-            checking: static (_, _) => "");
+            checking: static (_, _) => "",
+            checkFailed: static (_, failed) => failed.Why);
     }
 
     /// <summary>All the open assemblies to tick, ticked ones first, narrowed by a filter. Only the list
@@ -729,7 +750,7 @@ internal static class ExportDialogView
     /// says about the folder and key file it names is still being looked at.</summary>
     internal static void Start(ExportSetup setup, AppState appState)
     {
-        var files = setup.Files.FindFacts(setup.Folder, setup.StrongNameKeyFile);
+        var files = setup.Files.FindLook(setup.Folder, setup.StrongNameKeyFile);
         if (!Exports.CanExport(setup, files))
         {
             return;
@@ -739,18 +760,29 @@ internal static class ExportDialogView
         ExportCommands.StartExport(appState, Exports.CreateRequest(setup));
     }
 
-    /// <summary>What the disk says about the folder and key file the dialog names, or null while it is being looked
-    /// at; a frame is asked for when no look at them was asked for yet, which the frame edge starts
-    /// (<see cref="AppFrames"/>).</summary>
-    private static ExportFileFacts? FindFiles(Ui<UiState> ui, ExportSetup setup)
+    /// <summary>How far the look at the disk for the folder and key file the dialog names has got, or null before one
+    /// was asked for, when a frame is asked for: the frame edge starts it (<see cref="AppFrames"/>).</summary>
+    /// <summary>What the disk said about the folder and key file the dialog names, once looked at
+    /// (<see cref="FindFiles"/>); null while it is looked at, or when the look failed.</summary>
+    private static ExportFileFacts? FindFacts(Ui<UiState> ui, ExportSetup setup)
     {
-        var files = setup.Files;
-        var facts = files.FindFacts(setup.Folder, setup.StrongNameKeyFile);
-        if (facts is null && !files.HasAsked(setup.Folder, setup.StrongNameKeyFile))
+        var look = FindFiles(ui, setup);
+        if (look is not ExportFileLook.Checked looked)
+        {
+            return null;
+        }
+
+        return looked.Facts;
+    }
+
+    private static ExportFileLook? FindFiles(Ui<UiState> ui, ExportSetup setup)
+    {
+        var look = setup.Files.FindLook(setup.Folder, setup.StrongNameKeyFile);
+        if (look is null)
         {
             ui.RequestUpdate();
         }
 
-        return facts;
+        return look;
     }
 }

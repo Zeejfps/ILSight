@@ -2,28 +2,36 @@ namespace ILSight.ExportArea;
 
 /// <summary>What the disk says about the folder and key file the export dialog names: looked at again, off the frame,
 /// each time either name changes, and taken only while it is of the names asked for last, so the dialog never decides
-/// with what the disk said about a name no longer typed.</summary>
+/// with what the disk said about a name no longer typed. A look is being made, made, or failed, saying why; a failed one
+/// is asked again only when the user retries it (<see cref="Retry"/>) or a name changes.</summary>
 public sealed class ExportFileChecks
 {
     private ExportFileCheck? _asked;
-    private ExportFileFacts? _facts;
+    private ExportFileLook _look = new ExportFileLook.Checking();
+
+    /// <summary>How far the look at <paramref name="folder"/> and <paramref name="keyFile"/>, as typed, has got; null
+    /// before one was asked for.</summary>
+    public ExportFileLook? FindLook(string folder, string keyFile)
+    {
+        if (!HasAsked(folder, keyFile))
+        {
+            return null;
+        }
+
+        return _look;
+    }
 
     /// <summary>What the disk says about <paramref name="folder"/> and <paramref name="keyFile"/>, as typed; null while
-    /// it is being looked at, or before it was asked for.</summary>
+    /// it is being looked at, when the look failed, or before it was asked for.</summary>
     public ExportFileFacts? FindFacts(string folder, string keyFile)
     {
-        var asked = _asked;
-        if (asked is null)
+        var look = FindLook(folder, keyFile);
+        if (look is not ExportFileLook.Checked looked)
         {
             return null;
         }
 
-        if (!asked.IsOf(folder, keyFile))
-        {
-            return null;
-        }
-
-        return _facts;
+        return looked.Facts;
     }
 
     /// <summary>Whether the last look asked for is of <paramref name="folder"/> and <paramref name="keyFile"/>, as
@@ -49,9 +57,27 @@ public sealed class ExportFileChecks
             return null;
         }
 
+        return Ask(folder, keyFile);
+    }
+
+    /// <summary>Asks again for the names whose look failed, as the user retries it; returns the look to make, or null
+    /// when the last look did not fail.</summary>
+    public ExportFileCheck? Retry()
+    {
+        var asked = _asked;
+        if (asked is null || _look is not ExportFileLook.Failed)
+        {
+            return null;
+        }
+
+        return Ask(asked.Folder, asked.KeyFile);
+    }
+
+    private ExportFileCheck Ask(string folder, string keyFile)
+    {
         var check = new ExportFileCheck { Folder = folder, KeyFile = keyFile };
         _asked = check;
-        _facts = null;
+        _look = new ExportFileLook.Checking();
         return check;
     }
 
@@ -64,6 +90,18 @@ public sealed class ExportFileChecks
             return;
         }
 
-        _facts = facts;
+        _look = new ExportFileLook.Checked { Facts = facts };
+    }
+
+    /// <summary>Takes that <paramref name="check"/> failed, because <paramref name="why"/>, unless a newer check was
+    /// asked for meanwhile: the dialog says why, and the look is asked again only when retried or a name changes.</summary>
+    public void Fail(ExportFileCheck check, string why)
+    {
+        if (check != _asked)
+        {
+            return;
+        }
+
+        _look = new ExportFileLook.Failed { Why = why };
     }
 }

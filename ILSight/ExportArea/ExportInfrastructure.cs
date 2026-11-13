@@ -201,9 +201,21 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
         }
     }
 
-    public Task<bool> HasEntriesAsync(string folder, CancellationToken ct)
+    /// <remarks>A folder the system refuses to list, or that fails to list, answers <see cref="Outcome{T}.Failed"/>.</remarks>
+    public async Task<Outcome<bool>> LookInFolderAsync(string folder, CancellationToken ct)
     {
-        return Task.Run(() => HasEntries(folder), ct);
+        try
+        {
+            return new Outcome<bool>.Ok(await Task.Run(() => HasEntries(folder), ct));
+        }
+        catch (IOException e)
+        {
+            return new Outcome<bool>.Failed(e);
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            return new Outcome<bool>.Failed(e);
+        }
     }
 
     private static bool HasEntries(string folder)

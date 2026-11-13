@@ -116,10 +116,10 @@ public sealed class ExportDialogTests : IDisposable
         setup.Choices[1].Name = setup.Choices[0].Name.ToUpperInvariant();
 
         Assert.NotNull(setup.Clash);
-        Assert.False(Exports.CanExport(setup, d.CheckExportFiles()));
+        Assert.False(Exports.CanExport(setup, Looked(d.CheckExportFiles())));
         setup.Choices[1].Name = "Other";
         Assert.Null(setup.Clash);
-        Assert.True(Exports.CanExport(setup, d.CheckExportFiles()));
+        Assert.True(Exports.CanExport(setup, Looked(d.CheckExportFiles())));
     }
 
     [Fact]
@@ -130,11 +130,11 @@ public sealed class ExportDialogTests : IDisposable
         var setup = d.Ui.ExportSetup;
 
         setup.Folder = "relative";
-        Assert.False(Exports.CanExport(setup, d.CheckExportFiles()));
+        Assert.False(Exports.CanExport(setup, Looked(d.CheckExportFiles())));
         setup.Folder = _temp.Path;
-        Assert.True(Exports.CanExport(setup, d.CheckExportFiles()));
+        Assert.True(Exports.CanExport(setup, Looked(d.CheckExportFiles())));
         TickAll(setup, false);
-        Assert.False(Exports.CanExport(setup, d.CheckExportFiles()));
+        Assert.False(Exports.CanExport(setup, Looked(d.CheckExportFiles())));
     }
 
     [Fact]
@@ -146,20 +146,26 @@ public sealed class ExportDialogTests : IDisposable
         var choice = Assert.Single(setup.Choices);
 
         TickAll(setup, false);
-        Assert.IsType<ExportBlocker.NoAssembly>(Exports.FindBlocker(setup, NothingAmiss));
+        Assert.IsType<ExportBlocker.NoAssembly>(Exports.FindBlocker(setup, Looked(NothingAmiss)));
         TickAll(setup, true);
-        Assert.IsType<ExportBlocker.NoFolder>(Exports.FindBlocker(setup, NothingAmiss));
+        Assert.IsType<ExportBlocker.NoFolder>(Exports.FindBlocker(setup, Looked(NothingAmiss)));
         setup.Folder = FullPath;
         choice.Name = " ";
-        Assert.IsType<ExportBlocker.NamelessProject>(Exports.FindBlocker(setup, NothingAmiss));
+        Assert.IsType<ExportBlocker.NamelessProject>(Exports.FindBlocker(setup, Looked(NothingAmiss)));
         choice.Name = "Project";
-        Assert.Null(Exports.FindBlocker(setup, NothingAmiss));
+        Assert.Null(Exports.FindBlocker(setup, Looked(NothingAmiss)));
     }
 
     /// <summary>A folder path no test writes to: the decision never looks at the disk.</summary>
     private static readonly string FullPath = Path.Combine(Path.GetTempPath(), "ILSight-never-written");
 
     private static readonly ExportFileFacts NothingAmiss = new() { FolderHoldsFiles = false, IsKeyFileMissing = false };
+
+    /// <summary>A look at the disk made, which said <paramref name="facts"/>.</summary>
+    private static ExportFileLook Looked(ExportFileFacts facts)
+    {
+        return new ExportFileLook.Checked { Facts = facts };
+    }
 
     private static ExportSetup ReadyToExport(AppStateDriver d)
     {
@@ -175,10 +181,20 @@ public sealed class ExportDialogTests : IDisposable
         var setup = ReadyToExport(AppStateDriver.Opened());
         setup.StrongNameKeyFile = Path.Combine(FullPath, "signing.snk");
 
-        var blocker = Exports.FindBlocker(setup, NothingAmiss with { IsKeyFileMissing = true });
+        var blocker = Exports.FindBlocker(setup, Looked(NothingAmiss with { IsKeyFileMissing = true }));
 
         Assert.IsType<ExportBlocker.KeyFileMissing>(blocker);
-        Assert.Null(Exports.FindBlocker(setup, NothingAmiss));
+        Assert.Null(Exports.FindBlocker(setup, Looked(NothingAmiss)));
+    }
+
+    [Fact]
+    public void FindBlocker_LookAtTheDiskFailed_StopsTheExportSayingWhy()
+    {
+        var setup = ReadyToExport(AppStateDriver.Opened());
+
+        var blocker = Exports.FindBlocker(setup, new ExportFileLook.Failed { Why = "Access is denied." });
+
+        Assert.Equal("Access is denied.", Assert.IsType<ExportBlocker.CheckFailed>(blocker).Why);
     }
 
     [Fact]
@@ -186,7 +202,7 @@ public sealed class ExportDialogTests : IDisposable
     {
         var setup = ReadyToExport(AppStateDriver.Opened());
 
-        var canExport = Exports.CanExport(setup, NothingAmiss with { FolderHoldsFiles = true });
+        var canExport = Exports.CanExport(setup, Looked(NothingAmiss with { FolderHoldsFiles = true }));
 
         Assert.True(canExport);
     }
@@ -199,7 +215,7 @@ public sealed class ExportDialogTests : IDisposable
         TickAll(setup, true);
         setup.Choices[1].Name = setup.Choices[0].Name;
 
-        var blocker = Exports.FindBlocker(setup, NothingAmiss with { IsKeyFileMissing = true });
+        var blocker = Exports.FindBlocker(setup, Looked(NothingAmiss with { IsKeyFileMissing = true }));
 
         Assert.Equal(setup.Choices[0].Name, Assert.IsType<ExportBlocker.Clash>(blocker).Name);
     }
@@ -592,11 +608,11 @@ public sealed class ExportDialogTests : IDisposable
 
         setup.StrongNameKeyFile = _temp.PathOf("missing.snk");
         Assert.True(d.CheckExportFiles().IsKeyFileMissing);
-        Assert.False(Exports.CanExport(setup, d.CheckExportFiles()));
+        Assert.False(Exports.CanExport(setup, Looked(d.CheckExportFiles())));
 
         setup.StrongNameKeyFile = _temp.Write("signing.snk", [1, 2, 3]);
         Assert.False(d.CheckExportFiles().IsKeyFileMissing);
-        Assert.True(Exports.CanExport(setup, d.CheckExportFiles()));
+        Assert.True(Exports.CanExport(setup, Looked(d.CheckExportFiles())));
     }
 
     [Fact]

@@ -393,8 +393,8 @@ public static class Exports
 
     /// <summary>The first thing that keeps the export from starting, or null: it needs at least one
     /// assembly, a folder, a name for each project that no other takes, and no key file that is not
-    /// there, as <paramref name="files"/> says, which is null while the disk is being looked at.</summary>
-    public static ExportBlocker? FindBlocker(ExportSetup setup, ExportFileFacts? files)
+    /// there, as <paramref name="files"/>, the look at the disk, says once made; null before it was asked for.</summary>
+    public static ExportBlocker? FindBlocker(ExportSetup setup, ExportFileLook? files)
     {
         if (setup.IncludedCount == 0)
         {
@@ -422,7 +422,16 @@ public static class Exports
             return new ExportBlocker.Checking();
         }
 
-        if (files.Value.IsKeyFileMissing)
+        return files.Match<ExportBlocker?>(
+            static _ => new ExportBlocker.Checking(),
+            static looked => FindFileBlocker(looked.Facts),
+            static failed => new ExportBlocker.CheckFailed(failed.Why));
+    }
+
+    /// <summary>What the disk says that keeps the export from starting: a key file named that is not there.</summary>
+    private static ExportBlocker? FindFileBlocker(ExportFileFacts files)
+    {
+        if (files.IsKeyFileMissing)
         {
             return new ExportBlocker.KeyFileMissing();
         }
@@ -430,7 +439,7 @@ public static class Exports
         return null;
     }
 
-    public static bool CanExport(ExportSetup setup, ExportFileFacts? files)
+    public static bool CanExport(ExportSetup setup, ExportFileLook? files)
     {
         return FindBlocker(setup, files) is null;
     }
