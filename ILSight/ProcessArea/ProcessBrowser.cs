@@ -48,11 +48,17 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
 
     public MultiSelection<RunningModule> ModuleSelection { get; } = new();
 
-    /// <summary>Whether Open has anything to open, worked out without building the list.</summary>
+    /// <summary>Whether Open has anything to open, worked out without building the list: nothing unless the modules
+    /// shown are the selected process's.</summary>
     public bool CanOpen
     {
         get
         {
+            if (!ShowsSelectedProcess())
+            {
+                return false;
+            }
+
             if (ModuleSelection.Count == 0)
             {
                 return ProcessPicking.FindEntryAssembly(Modules) != null;
@@ -148,16 +154,9 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
         ProcessSelection.Clear();
     }
 
-    /// <summary>Re-filters when the processes or <paramref name="filter"/> changed, and follows the process
-    /// selected: returns it, for its modules to be listed now, once it is another than the one whose modules are
-    /// shown; else null. A selection cleared stops the listing and shows no modules.</summary>
-    public RunningProcess? Update(string filter)
-    {
-        ApplyFilter(filter);
-        return FollowSelection();
-    }
-
-    private void ApplyFilter(string filter)
+    /// <summary>Re-filters when the processes or <paramref name="filter"/>, as typed, changed, keeping the process
+    /// selected while it still shows: the field calls it in the frame it takes the typing, before the list draws.</summary>
+    public void TakeFilter(string filter)
     {
         if (Scan is not ProcessScan.Scanned scanned)
         {
@@ -196,11 +195,17 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
         return _filtered[index];
     }
 
-    private RunningProcess? FollowSelection()
+    /// <summary>Follows the process selected, once it is another than the one whose modules are shown: the modules
+    /// shown go at once, and those of the process selected start listing, in place of the listing running, which is
+    /// stopped and its result dropped, so that the dialog draws them loading and Open finds nothing of the process
+    /// before. Returns what <see cref="ListModulesAsync"/> needs to list them, whose work picking another process or
+    /// closing the dialog cancels; null when nothing is to be listed. A selection cleared stops the listing and shows
+    /// no modules. The list calls it in the frame it takes the selection, before the modules draw and Open is
+    /// asked.</summary>
+    public ModuleListingTicket? FollowSelection()
     {
         var selected = FindSelectedProcess();
-        var shown = ProcessPicking.FindProcess(Modules);
-        if (selected?.Id == shown?.Id)
+        if (ShowsSelectedProcess())
         {
             return null;
         }
@@ -209,15 +214,19 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
         {
             StopListing();
             Modules = new ModuleScan.None();
+            return null;
         }
-        return selected;
+
+        return StartListing(selected);
     }
 
-    /// <summary>Starts listing the modules of <paramref name="process"/> in place of the listing running, which is
-    /// stopped and its result dropped: the dialog draws them loading from now on. Returns what
-    /// <see cref="ListModulesAsync"/> needs to list them, whose work picking another process or closing the dialog
-    /// cancels.</summary>
-    public ModuleListingTicket StartListing(RunningProcess process)
+    /// <summary>Whether the modules shown, listed or not, are the selected process's: none for no process.</summary>
+    private bool ShowsSelectedProcess()
+    {
+        return FindSelectedProcess()?.Id == ProcessPicking.FindProcess(Modules)?.Id;
+    }
+
+    private ModuleListingTicket StartListing(RunningProcess process)
     {
         _stopped = false;
         var work = _listings.Start();
@@ -274,9 +283,15 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
     }
 
     /// <summary>What Open opens: the modules picked out that have a file, in the order shown; with none picked
-    /// out, the entry assembly, which may be no module, as a single-file app's executable isn't.</summary>
+    /// out, the entry assembly, which may be no module, as a single-file app's executable isn't. Nothing while the
+    /// modules shown are of another process than the one selected.</summary>
     public List<AssemblyPath> ListToOpen()
     {
+        if (!ShowsSelectedProcess())
+        {
+            return [];
+        }
+
         if (ModuleSelection.Count == 0)
         {
             var entry = ProcessPicking.FindEntryAssembly(Modules);

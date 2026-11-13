@@ -129,33 +129,6 @@ internal static class AppFrames
         }
     }
 
-    /// <summary>Does what comes before the "open from running process" dialog draws: while it is open, takes in
-    /// the filter typed, and starts listing the modules of the process selected once it is another than the one
-    /// whose modules are shown, so that the dialog draws them loading.</summary>
-    internal static void FollowProcessPicker(UiState uiState, AppState appState)
-    {
-        var picker = uiState.ProcessPicker;
-        if (!picker.IsOpen)
-        {
-            return;
-        }
-
-        var process = picker.Update();
-        if (process is not null)
-        {
-            StartListingModules(appState, picker.Browser, process);
-        }
-    }
-
-    /// <summary>Starts listing the modules of <paramref name="process"/> now, before the frame draws, on a token
-    /// that picking another process and closing the dialog cancel too. A method of its own, so that the frames
-    /// that start nothing allocate no closure.</summary>
-    private static void StartListingModules(AppState appState, ProcessBrowser browser, RunningProcess process)
-    {
-        var listing = browser.StartListing(process);
-        appState.Workflows.Start(nameof(ProcessBrowser.ListModulesAsync), ct => browser.ListModulesAsync(listing, ct), listing.Work.Token);
-    }
-
     /// <summary>Starts <paramref name="wanted"/> now, before the frame draws, on a token that a newer search and
     /// closing the dialog cancel too. A method of its own, so that the frames that start nothing allocate no
     /// closure.</summary>

@@ -66,7 +66,6 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     {
         StartFrame(ui.State, _appState);
         FollowNuGetPicker(ui, _appState);
-        FollowProcessPicker(ui.State, _appState);
         Draw(ui, draw);
         FinishFrame(ui, _appState, _codeFonts);
         QuitIfAsked(ui);

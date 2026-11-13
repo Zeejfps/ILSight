@@ -3,7 +3,7 @@ using ILSight.ProcessArea;
 
 namespace ILSight;
 
-/// <summary>A listing of a process's modules <see cref="ProcessBrowser.StartListing"/> started, for
+/// <summary>A listing of a process's modules <see cref="ProcessBrowser.FollowSelection"/> started, for
 /// <see cref="ProcessBrowser.ListModulesAsync"/> to run: the process, and the work it runs as, which picking another
 /// process or closing the dialog cancels.</summary>
 [MustUse]

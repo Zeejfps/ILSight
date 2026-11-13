@@ -28,11 +28,4 @@ public sealed class ProcessPicker
         Browser.FocusFilter();
         return Browser.StartScan();
     }
-
-    /// <summary>Takes in the filter as typed; returns the process whose modules are to be listed now, or null.
-    /// See <see cref="ProcessBrowser.Update"/>.</summary>
-    public RunningProcess? Update()
-    {
-        return Browser.Update(Filter);
-    }
 }

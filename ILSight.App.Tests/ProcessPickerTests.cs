@@ -114,8 +114,16 @@ public sealed class ProcessPickerTests
     {
         var picker = new ProcessPicker { Browser = new ProcessBrowser(ports) };
         await ScanAsync(picker.Browser, picker.Open());
-        Assert.Null(picker.Update());
+        Assert.Null(Follow(picker));
         return picker;
+    }
+
+    /// <summary>Takes in the filter typed and follows the process selected, as the dialog does in the frame they are
+    /// input; the listing of the process's modules it started, or null.</summary>
+    private static ModuleListingTicket? Follow(ProcessPicker picker)
+    {
+        picker.Browser.TakeFilter(picker.Filter);
+        return picker.Browser.FollowSelection();
     }
 
     /// <summary>Closes the dialog as its close box does, then tells what it found, as each frame does.</summary>
@@ -128,27 +136,27 @@ public sealed class ProcessPickerTests
     private static List<RunningProcess> Filter(ProcessPicker picker, string filter)
     {
         picker.Filter = filter;
-        picker.Update();
+        picker.Browser.TakeFilter(filter);
         return picker.Browser.Filtered.ToList();
     }
 
-    /// <summary>Selects <paramref name="process"/> as the list does; the process whose modules the frame then asks
-    /// for, which must be it.</summary>
-    private static RunningProcess Select(ProcessPicker picker, RunningProcess process)
+    /// <summary>Selects <paramref name="process"/> as the list does; the listing of the modules the dialog then
+    /// starts, which must be its.</summary>
+    private static ModuleListingTicket Select(ProcessPicker picker, RunningProcess process)
     {
         var filtered = picker.Browser.Filtered;
         picker.Browser.ProcessSelection.Select(filtered.ToList().IndexOf(process), filtered.Count);
-        var asked = picker.Update();
-        Assert.NotNull(asked);
-        Assert.Equal(process, asked);
-        return asked;
+        var listing = Follow(picker);
+        Assert.NotNull(listing);
+        Assert.Equal(process, listing.Process);
+        return listing;
     }
 
     /// <summary>Selects <paramref name="process"/> and lists its modules, as the frame does, on the token of the work
     /// the listing was started as.</summary>
     private static Task SelectAndListAsync(ProcessPicker picker, RunningProcess process)
     {
-        var listing = picker.Browser.StartListing(Select(picker, process));
+        var listing = Select(picker, process);
         return picker.Browser.ListModulesAsync(listing, listing.Work.Token);
     }
 
@@ -175,14 +183,14 @@ public sealed class ProcessPickerTests
         var picker = await OpenAsync(ports);
         using var shutdown = new CancellationTokenSource();
 
-        await picker.Browser.ListModulesAsync(picker.Browser.StartListing(Select(picker, Web)), shutdown.Token);
+        await picker.Browser.ListModulesAsync(Select(picker, Web), shutdown.Token);
 
         var loaded = Assert.IsType<ModuleScan.Loaded>(picker.Browser.Modules);
         Assert.Equal(Web, loaded.Process);
         Assert.Equal([CoreLib, Generated, WebDll], loaded.Modules);
         Assert.Equal([FakePath("Web.Api.dll")], picker.Browser.ListToOpen());
         Assert.Equal(shutdown.Token, Assert.Single(ports.ListingTokens));
-        Assert.Null(picker.Update());
+        Assert.Null(Follow(picker));
     }
 
     [Fact]
@@ -199,6 +207,36 @@ public sealed class ProcessPickerTests
         picker.Browser.ModuleSelection.Select(Generated, SelectionChange.Replace, modules);
         Assert.False(picker.Browser.CanOpen);
         Assert.Empty(picker.Browser.ListToOpen());
+    }
+
+    [Fact]
+    public async Task ListToOpen_AnotherProcessSelectedSinceTheModulesListed_OpensNothingOfTheProcessBefore()
+    {
+        var ports = new FakePorts { Running = [Web, Worker], Modules = static (process, _) => ListedAsync(process, [WebDll], FakePath("Web.Api.dll")) };
+        var picker = await OpenAsync(ports);
+        await SelectAndListAsync(picker, Web);
+
+        picker.Browser.ProcessSelection.Select(picker.Browser.Filtered.ToList().IndexOf(Worker), picker.Browser.Filtered.Count);
+
+        Assert.False(picker.Browser.CanOpen);
+        Assert.Empty(picker.Browser.ListToOpen());
+    }
+
+    [Fact]
+    public async Task FollowSelection_AnotherProcessSelected_DropsTheModulesShownAtOnceAndListsItsOwn()
+    {
+        var ports = new FakePorts { Running = [Web, Worker], Modules = static (process, _) => ListedAsync(process, [WebDll], FakePath("Web.Api.dll")) };
+        var picker = await OpenAsync(ports);
+        await SelectAndListAsync(picker, Web);
+
+        var listing = Select(picker, Worker);
+
+        Assert.Equal(Worker, listing.Process);
+        Assert.Equal(Worker, Assert.IsType<ModuleScan.Loading>(picker.Browser.Modules).Process);
+        Assert.Equal(0, picker.Browser.ModuleSelection.Count);
+        Assert.False(picker.Browser.CanOpen);
+        await picker.Browser.ListModulesAsync(listing, listing.Work.Token);
+        Assert.Equal(Worker, Assert.IsType<ModuleScan.Loaded>(picker.Browser.Modules).Process);
     }
 
     [Fact]
@@ -321,7 +359,7 @@ public sealed class ProcessPickerTests
         using var shutdown = new CancellationTokenSource();
         await shutdown.CancelAsync();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => picker.Browser.ListModulesAsync(picker.Browser.StartListing(Select(picker, Web)), shutdown.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => picker.Browser.ListModulesAsync(Select(picker, Web), shutdown.Token));
 
         Assert.True(Assert.Single(ports.ListingTokens).IsCancellationRequested);
         Assert.Empty(ports.Reported);
@@ -337,7 +375,7 @@ public sealed class ProcessPickerTests
         ports.Running.RemoveAt(0);
         await ScanAsync(picker.Browser, picker.Browser.StartScan());
 
-        Assert.Null(picker.Update());
+        Assert.Null(Follow(picker));
         Assert.Equal([Worker], picker.Browser.Filtered);
         Assert.Equal(Worker, picker.Browser.FindSelectedProcess());
         Assert.IsType<ModuleScan.Loaded>(picker.Browser.Modules);
@@ -355,7 +393,7 @@ public sealed class ProcessPickerTests
         Assert.Equal([Web], Assert.IsType<ProcessScan.Scanned>(picker.Browser.Scan).Processes);
         refreshed.SetResult(new Outcome<IReadOnlyList<RunningProcess>>.Ok([Worker]));
         await refreshing;
-        picker.Update();
+        picker.Browser.TakeFilter(picker.Filter);
 
         Assert.Equal([Worker], picker.Browser.Filtered);
     }
@@ -374,7 +412,7 @@ public sealed class ProcessPickerTests
         await ScanAsync(picker.Browser, picker.Browser.StartScan());
         older.SetResult(new Outcome<IReadOnlyList<RunningProcess>>.Ok([Web]));
         await olderScan;
-        picker.Update();
+        picker.Browser.TakeFilter(picker.Filter);
 
         Assert.True(olderTicket.Token.IsCancellationRequested);
         Assert.Equal([Worker], picker.Browser.Filtered);
@@ -491,7 +529,7 @@ public sealed class ProcessPickerTests
         var adapter = new ProcessBrowserAdapter(static problem => throw new InvalidOperationException(problem.ToString()));
         var picker = new ProcessPicker { Browser = new ProcessBrowser(adapter) };
         await ScanAsync(picker.Browser, picker.Open());
-        picker.Update();
+        picker.Browser.TakeFilter(picker.Filter);
         var self = Assert.Single(picker.Browser.Filtered, p => p.Id.Value == Environment.ProcessId);
 
         await SelectAndListAsync(picker, self);

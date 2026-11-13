@@ -41,9 +41,10 @@ internal static class ProcessPickerView
         Commands.Start(uiState, nameof(ProcessBrowser.ScanAsync), (Browser: browser, Scan: scan), static (_, s, ct) => s.Browser.ScanAsync(s.Scan, ct), scan.Token);
     }
 
-    /// <summary>Draws the dialog, over the filter applied and the modules of the process selected, which start
-    /// listing before it draws (see <see cref="AppFrames.FollowProcessPicker"/>); then tells what it found whether
-    /// it is still open, which stops what it started once it is not, however it was closed.</summary>
+    /// <summary>Draws the dialog, taking the filter typed and the process selected in the frame they are input, before
+    /// what they change draws and Open is asked: the modules of a process newly selected show loading in that frame,
+    /// and Open finds nothing of the process before; then tells what it found whether it is still open, which stops
+    /// what it started once it is not, however it was closed.</summary>
     public static void Render(Ui<UiState> ui, Navigation navigation)
     {
         var picker = ui.State.ProcessPicker;
@@ -93,6 +94,7 @@ internal static class ProcessPickerView
         }
 
         open |= ui.TextField(FilterId, ref picker.Filter, t.ProcessPickerFilter, clearable: true);
+        browser.TakeFilter(picker.Filter);
 
         using (ui.Row(new Box { Height = Sizing.Grow(), Gap = theme.Gap, AlignY = Align.Start }))
         {
@@ -100,6 +102,8 @@ internal static class ProcessPickerView
             {
                 open |= Processes(ui, browser, processListId);
             }
+
+            FollowSelection(ui.State, browser);
 
             using (Pane(ui, 1f - ProcessPaneShare))
             {
@@ -121,6 +125,26 @@ internal static class ProcessPickerView
             close |= ui.Button(t.PickerCancel, id: "process-cancel");
             open |= ui.Button(t.PickerOpen, enabled: browser.CanOpen, id: "process-open", variant: ButtonVariant.Primary);
         }
+    }
+
+    /// <summary>Follows the process selected (<see cref="ProcessBrowser.FollowSelection"/>), and asks for its modules
+    /// to be listed once the frame is drawn, when it is another than the one whose modules were shown.</summary>
+    private static void FollowSelection(UiState uiState, ProcessBrowser browser)
+    {
+        var listing = browser.FollowSelection();
+        if (listing is not null)
+        {
+            ListLater(uiState, browser, listing);
+        }
+    }
+
+    /// <summary>Asks for the modules <paramref name="listing"/> is of to be listed once the frame is drawn, on a token
+    /// that picking another process and closing the dialog cancel too. A method of its own, so that the frames that
+    /// list nothing allocate no closure.</summary>
+    private static void ListLater(UiState uiState, ProcessBrowser browser, ModuleListingTicket listing)
+    {
+        Commands.Start(uiState, nameof(ProcessBrowser.ListModulesAsync), (Browser: browser, Listing: listing),
+            static (_, s, ct) => s.Browser.ListModulesAsync(s.Listing, ct), listing.Work.Token);
     }
 
     private static string Summary(Strings t, int processes, int modules, int selected)
