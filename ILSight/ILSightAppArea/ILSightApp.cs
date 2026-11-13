@@ -160,7 +160,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     // Before the first frame, so icons never show in another font first and the first frame finds them registered.
     private void RegisterChosenIconFonts(ImmediateGuiAppHost<UiState> host)
     {
-        Appearance.ApplyIconTheme(UiState, IconTheming.ResolveIconTheme(_appState));
+        UiState.Appearance.ApplyIconTheme(IconTheming.ResolveIconTheme(_appState));
         if (!UiState.Shown.TryTakeIcons(UiState.Icons, UiState.IconFonts))
         {
             return;

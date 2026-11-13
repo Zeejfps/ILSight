@@ -29,19 +29,22 @@ namespace ILSight;
 /// through <see cref="AppCommands"/>.</summary>
 public sealed class UiState : IUiState
 {
-    public UiTheme Theme { get; set; } = UiTheme.Dark;
-    public CodeViewPalette CodeViewPalette { get; set; } = BuiltInThemes.Dark.Code;
-    public NodeIconPalette NodeIconPalette { get; set; } = BuiltInThemes.Dark.Icons;
+    public Appearance Appearance { get; } = new();
 
-    /// <summary>What each icon key draws in the chosen icon theme.</summary>
-    public AppIcons Icons { get; set; } = BuiltInIconThemes.Reference.Icons;
+    public UiTheme Theme => Appearance.Theme;
 
-    /// <summary>The fonts <see cref="Icons"/> are drawn in, which must be registered for them to show.</summary>
-    public IReadOnlyList<FontFace> IconFonts { get; set; } = BuiltInIconThemes.Reference.Fonts;
+    public CodeViewPalette CodeViewPalette => Appearance.CodeViewPalette;
+
+    public NodeIconPalette NodeIconPalette => Appearance.NodeIconPalette;
+
+    public AppIcons Icons => Appearance.Icons;
+
+    public IReadOnlyList<FontFace> IconFonts => Appearance.IconFonts;
+
+    public Strings Strings => Appearance.Strings;
 
     /// <summary>What the screen last showed: the icons, the decompilation, the list, the code font.</summary>
     internal ShownChanges Shown { get; } = new();
-    public Strings Strings { get; set; } = Strings.En;
 
     /// <summary>What the screen asked of the app state while it drew, for the app to run once the frame is drawn.</summary>
     public required Queue<AppCommand> AppCommands { get; init; }

@@ -35,8 +35,8 @@ internal static class AppFrames
     /// export dialog's folder and key file when they changed.</summary>
     internal static void StartFrame(UiState uiState, AppState appState)
     {
-        Appearance.ApplyThemeAndLanguage(uiState, Theming.ResolveTheme(appState), appState.Locale);
-        Appearance.ApplyIconTheme(uiState, IconTheming.ResolveIconTheme(appState));
+        uiState.Appearance.ApplyThemeAndLanguage(Theming.ResolveTheme(appState), appState.Locale);
+        uiState.Appearance.ApplyIconTheme(IconTheming.ResolveIconTheme(appState));
         Trees.SyncTrees(uiState, appState.Assemblies, appState.Analyzer, appState.ApiVisibility, appState.Reopens.Files);
         appState.Navigation.UsePreviewTabs(uiState.Display.PreviewTabs);
         DocumentPanels.FollowTabContent(uiState);
