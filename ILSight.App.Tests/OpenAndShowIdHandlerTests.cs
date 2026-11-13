@@ -11,7 +11,7 @@ public sealed class OpenAndShowIdHandlerTests
         var greeter = await d.FixtureAsync("Greeter");
         var opening = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(greeter)) };
 
-        var load = await new OpenAndShowIdHandler(opening).HandleAsync(d.AppState, [], "T:Greeter", CancellationToken.None);
+        var load = await d.RunAsync(() => new OpenAndShowIdHandler(opening).HandleAsync(d.AppState, [], "T:Greeter", CancellationToken.None));
 
         Assert.Same(greeter, d.AppState.Navigation.ActiveTab?.Node);
         Assert.Same(greeter, load?.Node);
@@ -24,7 +24,7 @@ public sealed class OpenAndShowIdHandlerTests
         var d = AppStateDriver.WithoutScreen();
         var opening = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)) };
 
-        var load = await new OpenAndShowIdHandler(opening).HandleAsync(d.AppState, [], "T:Nowhere.Missing", CancellationToken.None);
+        var load = await d.RunAsync(() => new OpenAndShowIdHandler(opening).HandleAsync(d.AppState, [], "T:Nowhere.Missing", CancellationToken.None));
 
         var reported = Assert.IsType<AppProblem.IdNotFound>(Assert.Single(opening.Reported));
         Assert.Equal("T:Nowhere.Missing", reported.Id);
@@ -41,8 +41,8 @@ public sealed class OpenAndShowIdHandlerTests
         var found = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(await d.FixtureAsync("Greeter"))), WhileOpening = () => appState.Navigation.BeginRequest() };
         var missing = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)), WhileOpening = () => appState.Navigation.BeginRequest() };
 
-        var foundLoad = await new OpenAndShowIdHandler(found).HandleAsync(appState, [], "T:Greeter", CancellationToken.None);
-        var missingLoad = await new OpenAndShowIdHandler(missing).HandleAsync(appState, [], "T:Nowhere.Missing", CancellationToken.None);
+        var foundLoad = await d.RunAsync(() => new OpenAndShowIdHandler(found).HandleAsync(appState, [], "T:Greeter", CancellationToken.None));
+        var missingLoad = await d.RunAsync(() => new OpenAndShowIdHandler(missing).HandleAsync(appState, [], "T:Nowhere.Missing", CancellationToken.None));
 
         Assert.Same(shown, appState.Navigation.ActiveTab?.Node);
         Assert.Empty(found.Reported);
@@ -58,8 +58,8 @@ public sealed class OpenAndShowIdHandlerTests
         var failed = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(new IOException("unreadable")) };
         var cancelled = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(new OperationCanceledException()) };
 
-        var failedLoad = await new OpenAndShowIdHandler(failed).HandleAsync(d.AppState, [], "T:Greeter", CancellationToken.None);
-        var cancelledLoad = await new OpenAndShowIdHandler(cancelled).HandleAsync(d.AppState, [], "T:Greeter", CancellationToken.None);
+        var failedLoad = await d.RunAsync(() => new OpenAndShowIdHandler(failed).HandleAsync(d.AppState, [], "T:Greeter", CancellationToken.None));
+        var cancelledLoad = await d.RunAsync(() => new OpenAndShowIdHandler(cancelled).HandleAsync(d.AppState, [], "T:Greeter", CancellationToken.None));
 
         var reported = Assert.IsType<AppProblem.OpenFailed>(Assert.Single(failed.Reported));
         Assert.Equal("unreadable", reported.Error.Message);

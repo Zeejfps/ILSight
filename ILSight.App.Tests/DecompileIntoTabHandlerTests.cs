@@ -13,8 +13,7 @@ public sealed class DecompileIntoTabHandlerTests
         Caret = default,
     });
 
-    /// <summary>Cancels <paramref name="shutdown"/> at once, on this thread, as the workflow runner does as the app
-    /// shuts down, so that the handler goes on here rather than through the test's posted actions.</summary>
+    /// <summary>Cancels <paramref name="shutdown"/> at once, as the workflow runner does as the app shuts down.</summary>
     private static void ShutDown(CancellationTokenSource shutdown)
     {
         shutdown.Cancel();
@@ -42,7 +41,8 @@ public sealed class DecompileIntoTabHandlerTests
     [Fact]
     public async Task HandleAsync_ModuleClosedBeforeTheDecompileBegan_StopsTheLoadAndSaysTheAssemblyWasClosed()
     {
-        var greeter = await AppStateDriver.OpenedWithoutScreen().FixtureAsync("Greeter");
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var greeter = await d.FixtureAsync("Greeter");
         var module = Assert.IsType<LoadedModule>(greeter.Assembly);
         var viewCommands = new Queue<ViewCommand>();
         var (navigation, tab) = FirstTab(viewCommands);
@@ -50,9 +50,9 @@ public sealed class DecompileIntoTabHandlerTests
         var load = navigation.Restore(tab, greeter, In(DecompilationLanguage.IL), AtLineTen);
         Assert.NotNull(load);
 
-        var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None);
+        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None));
         Assert.Single(ports.Requests).Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Closed { Module = module }));
-        await handling;
+        await d.EndAsync(handling);
 
         Assert.Equal(new TabContent.Stopped(greeter), tab.Content);
         Assert.Equal(module.FilePath.FileName, tab.Load.ClosedAssembly);
@@ -64,7 +64,8 @@ public sealed class DecompileIntoTabHandlerTests
     [Fact]
     public async Task HandleAsync_Decompiled_ShowsItAndCommandsTheViewWhereToStand()
     {
-        var greeter = await AppStateDriver.OpenedWithoutScreen().FixtureAsync("Greeter");
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var greeter = await d.FixtureAsync("Greeter");
         var viewCommands = new Queue<ViewCommand>();
         var (navigation, tab) = FirstTab(viewCommands);
         var ports = new FakeDecompileIntoTabHandlerPorts();
@@ -72,11 +73,11 @@ public sealed class DecompileIntoTabHandlerTests
         Assert.NotNull(load);
         var code = CodeOf("Greeter");
 
-        var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None);
+        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None));
         var request = Assert.Single(ports.Requests);
         Assert.IsType<TabContent.Loading>(tab.Content);
         request.Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Read { Value = code }));
-        await handling;
+        await d.EndAsync(handling);
 
         Assert.Same(greeter, request.Node);
         Assert.Equal(DecompilationLanguage.IL, request.Language);
@@ -90,7 +91,8 @@ public sealed class DecompileIntoTabHandlerTests
     [Fact]
     public async Task HandleAsync_CorruptFile_ShowsAndReportsTheFailure()
     {
-        var greeter = await AppStateDriver.OpenedWithoutScreen().FixtureAsync("Greeter");
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var greeter = await d.FixtureAsync("Greeter");
         var viewCommands = new Queue<ViewCommand>();
         var (navigation, tab) = FirstTab(viewCommands);
         var ports = new FakeDecompileIntoTabHandlerPorts();
@@ -98,9 +100,9 @@ public sealed class DecompileIntoTabHandlerTests
         Assert.NotNull(load);
         var corrupt = new BadImageFormatException("Bad IL range.");
 
-        var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None);
+        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None));
         Assert.Single(ports.Requests).Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Failed(corrupt));
-        await handling;
+        await d.EndAsync(handling);
 
         var failed = Assert.IsType<TabContent.Failed>(tab.Content);
         Assert.Equal("Bad IL range.", failed.Message);
@@ -121,17 +123,17 @@ public sealed class DecompileIntoTabHandlerTests
         var handler = new DecompileIntoTabHandler(ports);
         var older = navigation.Restore(tab, greeter, In(DecompilationLanguage.CSharp), position: null);
         Assert.NotNull(older);
-        var olderHandling = handler.HandleAsync(viewCommands, older, NodeQueries.FirstGridRows, CancellationToken.None);
+        var olderHandling = d.BeginAsync(() => handler.HandleAsync(viewCommands, older, NodeQueries.FirstGridRows, CancellationToken.None));
         var newer = navigation.Restore(tab, farewell, In(DecompilationLanguage.CSharp), position: null);
         Assert.NotNull(newer);
-        var newerHandling = handler.HandleAsync(viewCommands, newer, NodeQueries.FirstGridRows, CancellationToken.None);
+        var newerHandling = d.BeginAsync(() => handler.HandleAsync(viewCommands, newer, NodeQueries.FirstGridRows, CancellationToken.None));
         var farewellCode = CodeOf("Farewell");
 
         ports.Requests[0].Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Read { Value = CodeOf("Greeter") }));
-        await olderHandling;
+        await d.EndAsync(olderHandling);
         Assert.Same(farewell, Assert.IsType<TabContent.Loading>(tab.Content).Node);
         ports.Requests[1].Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Read { Value = farewellCode }));
-        await newerHandling;
+        await d.EndAsync(newerHandling);
 
         Assert.True(older.Work.Token.IsCancellationRequested);
         Assert.False(newer.Work.Token.IsCancellationRequested);
@@ -142,7 +144,8 @@ public sealed class DecompileIntoTabHandlerTests
     [Fact]
     public async Task HandleAsync_TabClosedMeanwhile_DropsWhatArrives()
     {
-        var greeter = await AppStateDriver.OpenedWithoutScreen().FixtureAsync("Greeter");
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var greeter = await d.FixtureAsync("Greeter");
         var viewCommands = new Queue<ViewCommand>();
         var (navigation, tab) = FirstTab(viewCommands);
         var ports = new FakeDecompileIntoTabHandlerPorts();
@@ -150,10 +153,10 @@ public sealed class DecompileIntoTabHandlerTests
         Assert.NotNull(load);
         viewCommands.Clear();
 
-        var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None);
+        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None));
         navigation.CloseTab(tab);
         Assert.Single(ports.Requests).Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Failed(new BadImageFormatException("Bad IL range.")));
-        await handling;
+        await d.EndAsync(handling);
 
         Assert.True(load.Work.Token.IsCancellationRequested);
         Assert.IsType<TabContent.Loading>(tab.Content);
@@ -164,7 +167,8 @@ public sealed class DecompileIntoTabHandlerTests
     [Fact]
     public async Task HandleAsync_CancelledAtShutdown_EndsCancelledShowingAndReportingNothing()
     {
-        var greeter = await AppStateDriver.OpenedWithoutScreen().FixtureAsync("Greeter");
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var greeter = await d.FixtureAsync("Greeter");
         var viewCommands = new Queue<ViewCommand>();
         var (navigation, tab) = FirstTab(viewCommands);
         var ports = new FakeDecompileIntoTabHandlerPorts();
@@ -173,10 +177,10 @@ public sealed class DecompileIntoTabHandlerTests
         viewCommands.Clear();
         using var shutdown = new CancellationTokenSource();
 
-        var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, shutdown.Token);
+        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, shutdown.Token));
         ShutDown(shutdown);
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => handling);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => d.EndAsync(handling));
         Assert.IsType<TabContent.Loading>(tab.Content);
         Assert.Empty(viewCommands);
         Assert.Empty(ports.Reported);

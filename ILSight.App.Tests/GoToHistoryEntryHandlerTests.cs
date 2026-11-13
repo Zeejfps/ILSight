@@ -34,7 +34,7 @@ public sealed class GoToHistoryEntryHandlerTests
         var back = d.AppState.Navigation.HistoryIndex - 1;
         var lookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(greeter)) };
 
-        var load = await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, GoTo(d.AppState, back), CancellationToken.None);
+        var load = await d.RunAsync(() => new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, GoTo(d.AppState, back), CancellationToken.None));
 
         Assert.Equal(PlaceOf(d.AppState, back), Assert.Single(lookup.LookedUp));
         Assert.Same(greeter, d.AppState.Navigation.ActiveTab?.Node);
@@ -52,7 +52,7 @@ public sealed class GoToHistoryEntryHandlerTests
         var back = d.AppState.Navigation.HistoryIndex - 1;
         var lookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)) };
 
-        var load = await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, GoTo(d.AppState, back), CancellationToken.None);
+        var load = await d.RunAsync(() => new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, GoTo(d.AppState, back), CancellationToken.None));
 
         var gone = Assert.IsType<AppProblem.HistoryPlaceGone>(Assert.Single(lookup.Reported));
         Assert.Equal(PlaceOf(d.AppState, back), gone.Place);
@@ -70,7 +70,7 @@ public sealed class GoToHistoryEntryHandlerTests
         var error = new IOException("unreadable");
         var lookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(error) };
 
-        var load = await new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, GoTo(d.AppState, back), CancellationToken.None);
+        var load = await d.RunAsync(() => new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState, GoTo(d.AppState, back), CancellationToken.None));
 
         Assert.Same(error, Assert.IsType<AppProblem.HistoryPlaceGone>(Assert.Single(lookup.Reported)).Error);
         Assert.False(d.AppState.IsResolving);

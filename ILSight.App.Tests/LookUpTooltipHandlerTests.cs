@@ -21,7 +21,7 @@ public sealed class LookUpTooltipHandlerTests
         var tooltip = await AssemblyListing.DescribeReferenceAsync(assemblies, lookup.Reference, CancellationToken.None);
         var ports = new FakeLookUpTooltipHandlerPorts { Answer = new Outcome<Lookup<CodeTooltip>>.Ok(tooltip) };
 
-        await new LookUpTooltipHandler(ports).HandleAsync(tooltips, lookup, CancellationToken.None);
+        await d.RunAsync(() => new LookUpTooltipHandler(ports).HandleAsync(tooltips, lookup, CancellationToken.None));
 
         Assert.True(tooltips.TryGetTooltip(lookup.Reference, out var kept));
         Assert.Same(tooltip, kept);
@@ -36,7 +36,7 @@ public sealed class LookUpTooltipHandlerTests
         var lookup = await AskForGreeterAsync(d, tooltips);
         var ports = new FakeLookUpTooltipHandlerPorts { Answer = new Outcome<Lookup<CodeTooltip>>.Failed(new InvalidDataException("unreadable")) };
 
-        await new LookUpTooltipHandler(ports).HandleAsync(tooltips, lookup, CancellationToken.None);
+        await d.RunAsync(() => new LookUpTooltipHandler(ports).HandleAsync(tooltips, lookup, CancellationToken.None));
 
         Assert.True(tooltips.TryGetTooltip(lookup.Reference, out var kept));
         Assert.IsType<Lookup<CodeTooltip>.NotFound>(kept);
@@ -53,7 +53,7 @@ public sealed class LookUpTooltipHandlerTests
         var unreadable = new Lookup<CodeTooltip>.Unreadable { Module = new UnreadableModule { Module = module, Why = new BadImageFormatException("Bad namespace.") } };
         var ports = new FakeLookUpTooltipHandlerPorts { Answer = new Outcome<Lookup<CodeTooltip>>.Ok(unreadable) };
 
-        await new LookUpTooltipHandler(ports).HandleAsync(tooltips, lookup, CancellationToken.None);
+        await d.RunAsync(() => new LookUpTooltipHandler(ports).HandleAsync(tooltips, lookup, CancellationToken.None));
 
         Assert.Same(unreadable, tooltips.FindShown(lookup.Reference));
     }
