@@ -15,15 +15,15 @@ namespace ILSight.Core;
 /// </summary>
 public sealed class BrowseSession
 {
-    public readonly ConditionalWeakTable<LoadedModule, BrowseNode> ModuleRoots = new();
-    public readonly ConditionalWeakTable<LoadedModule, ConcurrentDictionary<string, BrowseNode>> Namespaces = new();
-    public readonly ConditionalWeakTable<BrowseNode, IReadOnlyList<BrowseNode>> Nested = new();
-    public readonly ConditionalWeakTable<BrowseNode, IReadOnlyList<BrowseNode>> Inner = new();
-    public readonly ConditionalWeakTable<LoadedAssembly, BrowseNode> OtherRoots = new();
-    public readonly ConditionalWeakTable<LoadedModule, ConcurrentDictionary<EntityHandle, BrowseNode>> Index = new();
+    private readonly ConditionalWeakTable<LoadedModule, BrowseNode> _moduleRoots = new();
+    private readonly ConditionalWeakTable<LoadedModule, ConcurrentDictionary<string, BrowseNode>> _namespaces = new();
+    private readonly ConditionalWeakTable<BrowseNode, IReadOnlyList<BrowseNode>> _nested = new();
+    private readonly ConditionalWeakTable<BrowseNode, IReadOnlyList<BrowseNode>> _inner = new();
+    private readonly ConditionalWeakTable<LoadedAssembly, BrowseNode> _otherRoots = new();
+    private readonly ConditionalWeakTable<LoadedModule, ConcurrentDictionary<EntityHandle, BrowseNode>> _index = new();
 
     /// <summary>Where each node's children stand, which can only be read or changed holding its lock.</summary>
-    internal readonly ConditionalWeakTable<BrowseNode, Guarded<ChildrenState>> Children = new();
+    private readonly ConditionalWeakTable<BrowseNode, Guarded<ChildrenState>> _children = new();
 
     /// <summary>The root of the listed <paramref name="item"/>'s tree (a module not read out of a package, a package,
     /// a file that could not be read), made from the item's values the first time, then kept. Reads no file. A module
@@ -38,10 +38,83 @@ public sealed class BrowseSession
                 throw new ArgumentException($"{module.Name} is read out of a package, which is the listed item.", nameof(item));
             }
 
-            return ModuleRoots.GetValue(module, static m => BrowseRoots.Create(m));
+            return _moduleRoots.GetValue(module, static m => BrowseRoots.Create(m));
         }
 
-        return OtherRoots.GetValue(item, static a => BrowseRoots.Create(a));
+        return _otherRoots.GetValue(item, static a => BrowseRoots.Create(a));
+    }
+
+    /// <summary>The root kept for <paramref name="module"/>, a module read out of a package, listed or made; null before
+    /// either.</summary>
+    internal BrowseNode? FindModuleRoot(LoadedModule module)
+    {
+        if (_moduleRoots.TryGetValue(module, out var root))
+        {
+            return root;
+        }
+
+        return null;
+    }
+
+    /// <summary>The root kept for <paramref name="module"/>, else one made under <paramref name="folder"/> and kept.</summary>
+    internal BrowseNode EnsureModuleRoot(LoadedModule module, BrowseNode folder)
+    {
+        return _moduleRoots.GetValue(module, m => ModuleNodes.CreateModuleRoot(m, folder));
+    }
+
+    /// <summary>Where <paramref name="node"/>'s children stand, made not loaded the first time it is asked for.</summary>
+    internal Guarded<ChildrenState> EnsureChildrenSlot(BrowseNode node)
+    {
+        return _children.GetValue(node, static _ => new Guarded<ChildrenState>(ChildrenState.NotLoaded));
+    }
+
+    /// <summary>Keeps <paramref name="node"/>, a child just built, where it is found again: a type or member by its
+    /// handle, a module's root by its module, a namespace by its name; the first one kept stays.</summary>
+    internal void Register(BrowseNode node)
+    {
+        if (node.Subject is NodeSubject.TypeDefinition type)
+        {
+            EnsureIndex(type.Definition.Module).TryAdd(type.Definition.Handle, node);
+        }
+
+        if (node.Subject is NodeSubject.MemberDefinition member)
+        {
+            EnsureIndex(member.Definition.Module).TryAdd(member.Definition.Handle, node);
+        }
+
+        if (node.Subject is NodeSubject.Module module)
+        {
+            _moduleRoots.TryAdd(module.Value, node);
+        }
+
+        if (node.Subject is NodeSubject.Namespace ns)
+        {
+            EnsureNamespaces(ns.Value.Module).TryAdd(ns.Value.Name, node);
+        }
+    }
+
+    /// <summary>The node kept for the type or member <paramref name="handle"/> names in <paramref name="module"/>; null
+    /// when none was built yet.</summary>
+    internal BrowseNode? FindIndexed(LoadedModule module, EntityHandle handle)
+    {
+        return EnsureIndex(module).GetValueOrDefault(handle);
+    }
+
+    /// <summary>The node kept for the namespace <paramref name="name"/> of <paramref name="module"/>; null when none
+    /// was built yet.</summary>
+    internal BrowseNode? FindNamespace(LoadedModule module, string name)
+    {
+        return EnsureNamespaces(module).GetValueOrDefault(name);
+    }
+
+    private ConcurrentDictionary<EntityHandle, BrowseNode> EnsureIndex(LoadedModule module)
+    {
+        return _index.GetValue(module, static _ => new ConcurrentDictionary<EntityHandle, BrowseNode>());
+    }
+
+    private ConcurrentDictionary<string, BrowseNode> EnsureNamespaces(LoadedModule module)
+    {
+        return _namespaces.GetValue(module, static _ => new ConcurrentDictionary<string, BrowseNode>(StringComparer.Ordinal));
     }
 
     /// <summary>The table node and row that <paramref name="address"/>, a link of the grid <paramref name="grid"/> shows,
@@ -120,7 +193,7 @@ public sealed class BrowseSession
     /// for an image that isn't in memory.</summary>
     private IReadOnlyList<BrowseNode> EnsureTables(BrowseNode tables, MetadataFolderInfo folder)
     {
-        var slot = Children.GetValue(tables, static _ => new Guarded<ChildrenState>(ChildrenState.NotLoaded));
+        var slot = EnsureChildrenSlot(tables);
         TaskCompletionSource<ChildrenState> building;
         using (var held = slot.Enter())
         {
@@ -168,7 +241,7 @@ public sealed class BrowseSession
     /// <summary>Where <paramref name="node"/>'s children stand now; never blocks or builds them.</summary>
     public ChildrenState PeekChildren(BrowseNode node)
     {
-        if (!Children.TryGetValue(node, out var slot))
+        if (!_children.TryGetValue(node, out var slot))
         {
             return ChildrenState.NotLoaded;
         }
@@ -188,7 +261,7 @@ public sealed class BrowseSession
             return state;
         }
 
-        if (Nested.TryGetValue(node, out var nested))
+        if (_nested.TryGetValue(node, out var nested))
         {
             return new ChildrenState.Ready(nested);
         }
@@ -200,7 +273,7 @@ public sealed class BrowseSession
     /// so that only the first time pays for the closure.</summary>
     private IReadOnlyList<BrowseNode> AddNested(BrowseNode node, IReadOnlyList<BrowseNode> children)
     {
-        return Nested.GetValue(node, n => NestChildren(n, children));
+        return _nested.GetValue(node, n => NestChildren(n, children));
     }
 
     /// <summary>Whether <paramref name="node"/> has children, answered without building them where
@@ -261,7 +334,7 @@ public sealed class BrowseSession
     /// none for a node that is no namespace. Never blocks.</summary>
     public IReadOnlyList<BrowseNode> ListInnerNamespaces(BrowseNode node)
     {
-        if (Inner.TryGetValue(node, out var known))
+        if (_inner.TryGetValue(node, out var known))
         {
             return known;
         }
@@ -293,7 +366,7 @@ public sealed class BrowseSession
         var inner = siblings
             .Where(c => ReferenceEquals(c.EnclosingNamespace, node))
             .ToArray();
-        return Inner.GetValue(node, _ => inner);
+        return _inner.GetValue(node, _ => inner);
     }
 
     /// <summary>The children as the tree lists them when it nests namespaces, given those built: for a

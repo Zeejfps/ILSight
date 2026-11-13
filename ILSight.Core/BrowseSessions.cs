@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Metadata;
@@ -31,7 +30,8 @@ public static class BrowseSessions
     /// file: the one that folder lists, else one made there the first time, then kept.</summary>
     private static async Task<BrowseNode> EnsureRootInPackageAsync(BrowseSession session, LoadedModule module, PackagePlace place, CancellationToken ct)
     {
-        if (session.ModuleRoots.TryGetValue(module, out var placed))
+        var placed = session.FindModuleRoot(module);
+        if (placed is not null)
         {
             return placed;
         }
@@ -39,13 +39,17 @@ public static class BrowseSessions
         var packageRoot = await EnsureRootAsync(session, place.Container, ct);
         var folder = await FindFolderNodeAsync(session, packageRoot, place.File.Folder, ct) ?? packageRoot;
         var listing = await GetChildrenAsync(session, folder, ct);
-        if (listing is ChildrenState.Ready && session.ModuleRoots.TryGetValue(module, out var listed))
+        if (listing is ChildrenState.Ready)
         {
-            return listed;
+            var listed = session.FindModuleRoot(module);
+            if (listed is not null)
+            {
+                return listed;
+            }
         }
 
         // The folder failed to list, or lists no root for the module: one is made there.
-        return session.ModuleRoots.GetValue(module, m => ModuleNodes.CreateModuleRoot(m, folder));
+        return session.EnsureModuleRoot(module, folder);
     }
 
     /// <summary>The node of the folder at <paramref name="folder"/>, a path from the package's root: the
@@ -97,7 +101,7 @@ public static class BrowseSessions
     /// <see cref="ChildrenState.Ready"/> or <see cref="ChildrenState.Failed"/>.</summary>
     public static Task<ChildrenState> GetChildrenAsync(BrowseSession session, BrowseNode node, CancellationToken cancellationToken = default)
     {
-        var slot = EnsureSlot(session, node);
+        var slot = session.EnsureChildrenSlot(node);
         Task<ChildrenState> load;
         using (var held = slot.Enter())
         {
@@ -130,11 +134,6 @@ public static class BrowseSessions
         }
 
         return [];
-    }
-
-    private static Guarded<ChildrenState> EnsureSlot(BrowseSession session, BrowseNode node)
-    {
-        return session.Children.GetValue(node, static _ => new Guarded<ChildrenState>(ChildrenState.NotLoaded));
     }
 
     /// <summary>Builds the children once the read of the type system the build reads ended, records the nodes they
@@ -197,38 +196,10 @@ public static class BrowseSessions
 
         foreach (var child in built)
         {
-            Register(session, child);
+            session.Register(child);
         }
 
         return new ChildrenState.Ready(built);
-    }
-
-    private static void Register(BrowseSession session, BrowseNode node)
-    {
-        if (node.Subject is NodeSubject.TypeDefinition type)
-        {
-            EnsureIndex(session, type.Definition.Module).TryAdd(type.Definition.Handle, node);
-        }
-
-        if (node.Subject is NodeSubject.MemberDefinition member)
-        {
-            EnsureIndex(session, member.Definition.Module).TryAdd(member.Definition.Handle, node);
-        }
-
-        if (node.Subject is NodeSubject.Module module)
-        {
-            session.ModuleRoots.TryAdd(module.Value, node);
-        }
-
-        if (node.Subject is NodeSubject.Namespace ns)
-        {
-            EnsureNamespaces(session, ns.Value.Module).TryAdd(ns.Value.Name, node);
-        }
-    }
-
-    private static ConcurrentDictionary<EntityHandle, BrowseNode> EnsureIndex(BrowseSession session, LoadedModule module)
-    {
-        return session.Index.GetValue(module, static _ => new ConcurrentDictionary<EntityHandle, BrowseNode>());
     }
 
     /// <summary>The node <paramref name="path"/> leads to from <paramref name="item"/>'s root, when it is
@@ -354,8 +325,8 @@ public static class BrowseSessions
             return null;
         }
 
-        var index = EnsureIndex(session, module);
-        if (index.TryGetValue(handle, out var node))
+        var node = session.FindIndexed(module, handle);
+        if (node is not null)
         {
             return node;
         }
@@ -373,7 +344,7 @@ public static class BrowseSessions
             return null;
         }
 
-        return index.GetValueOrDefault(handle);
+        return session.FindIndexed(module, handle);
     }
 
     /// <summary>The node listing the node of <paramref name="handle"/>: a top-level type's namespace, else
@@ -444,12 +415,7 @@ public static class BrowseSessions
             return null;
         }
 
-        return EnsureNamespaces(session, module).GetValueOrDefault(name);
-    }
-
-    private static ConcurrentDictionary<string, BrowseNode> EnsureNamespaces(BrowseSession session, LoadedModule module)
-    {
-        return session.Namespaces.GetValue(module, static _ => new ConcurrentDictionary<string, BrowseNode>(StringComparer.Ordinal));
+        return session.FindNamespace(module, name);
     }
 
     /// <summary>The node of the namespace, type or member <paramref name="idString"/> names in
