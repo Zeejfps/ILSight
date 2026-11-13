@@ -13,12 +13,10 @@ public sealed class SearchNuGetFeedHandlerAdapter(Action<AppProblem> reportError
         reportError(problem);
     }
 
-    /// <summary>Searches and comes back on the UI thread, with whatever the search threw as
+    /// <summary>Searches and comes back on the UI thread, with a request that failed or timed out (<see cref="NetworkFailures"/>) as
     /// <see cref="Outcome{T}.Failed"/>.</summary>
-    public async Task<Outcome<FeedPage>> SearchAsync(FeedSearch search, CancellationToken ct)
+    public Task<Outcome<FeedPage>> SearchAsync(FeedSearch search, CancellationToken ct)
     {
-        var found = await Background.Wait(NuGetFeeds.SearchAsync(client.EnsureFeed(search.Feed), search.Query, search.IncludePrerelease, search.Page, ct));
-        ct.ThrowIfCancellationRequested();
-        return found;
+        return NetworkFailures.CatchAsync(Background.Wait(NuGetFeeds.SearchAsync(client.EnsureFeed(search.Feed), search.Query, search.IncludePrerelease, search.Page, ct)), ct);
     }
 }

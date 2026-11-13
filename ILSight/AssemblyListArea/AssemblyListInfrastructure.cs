@@ -28,18 +28,18 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         return File.Exists(path);
     }
 
-    /// <summary>Opens on the thread pool and comes back on the UI thread, with whatever the opening threw as
+    /// <summary>Opens on the thread pool and comes back on the UI thread, with what the read failed with (<see cref="UntrustedReads"/>) as
     /// <see cref="Outcome{T}.Failed"/>.</summary>
-    public async Task<Outcome<LoadedAssembly?>> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
+    public Task<Outcome<LoadedAssembly?>> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
     {
-        return await Background.Wait(Task.Run(() => OpenFiles(paths, stop), ct));
+        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => OpenFiles(paths, stop), ct)), ct);
     }
 
     /// <summary>Opens as <see cref="OpenFilesAsync"/> does, and gives the root node of the last file listed, which
     /// opening shows.</summary>
-    async Task<Outcome<BrowseNode?>> AssemblyOpening.IPorts.OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
+    Task<Outcome<BrowseNode?>> AssemblyOpening.IPorts.OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
     {
-        return await Background.Wait(Task.Run(() => OpenFilesAndFindRootAsync(paths, stop, ct), ct));
+        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => OpenFilesAndFindRootAsync(paths, stop, ct), ct)), ct);
     }
 
     /// <summary>Lists the files, those that fail to load as failed, and gives the root of the last, or null for
@@ -56,13 +56,13 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
     }
 
     /// <inheritdoc cref="OpenFilesAsync"/>
-    public async Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, CancellationToken stop, CancellationToken ct)
+    public Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, CancellationToken stop, CancellationToken ct)
     {
-        return await Background.Wait(Task.Run(() => AssemblyListing.ListReferences(assemblies, assembly, stop), ct));
+        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => AssemblyListing.ListReferences(assemblies, assembly, stop), ct)), ct);
     }
 
     /// <summary>Checks on the thread pool, under a reading of the assembly, and comes back on the UI thread, with
-    /// whatever the check threw as <see cref="PdbChecking.Failed"/>; an assembly closed before answers
+    /// a file it could not read (<see cref="FileReadFailures"/>) as <see cref="PdbChecking.Failed"/>; an assembly closed before answers
     /// <see cref="PdbChecking.Closed"/>.</summary>
     public async Task<PdbChecking> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct)
     {
@@ -72,22 +72,22 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
             return new PdbChecking.Closed { Assembly = assembly.FilePath.FileName };
         }
 
-        var checking = await Background.Wait(Task.Run(() => PdbFiles.Check(assembly, pdbPath), ct));
+        var checking = await FileReadFailures.CatchAsync(Background.Wait(Task.Run(() => PdbFiles.Check(assembly, pdbPath), ct)), ct);
         return checking.Match<PdbChecking>(static ok => new PdbChecking.Checked { Check = ok.Value }, static failed => new PdbChecking.Failed { Error = failed.Error });
     }
 
-    /// <summary>Reads on the thread pool and comes back on the UI thread, with whatever the reading threw as
+    /// <summary>Reads on the thread pool and comes back on the UI thread, with what the read failed with (<see cref="UntrustedReads"/>) as
     /// <see cref="Outcome{T}.Failed"/>.</summary>
-    public async Task<Outcome<ReopenedFile>> ReadAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
+    public Task<Outcome<ReopenedFile>> ReadAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
     {
-        return await Background.Wait(Task.Run(() => ReadItemAgainAsync(item, places, ct), ct));
+        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => ReadItemAgainAsync(item, places, ct), ct)), ct);
     }
 
     /// <inheritdoc cref="OpenFilesAsync"/>
-    public async Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded,
+    public Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded,
         IReadOnlyList<NodePath> places, CancellationToken stop, CancellationToken ct)
     {
-        return await Background.Wait(Task.Run(() => ReopenFilesAsync(paths, expanded, places, stop), ct));
+        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => ReopenFilesAsync(paths, expanded, places, stop), ct)), ct);
     }
 
     /// <summary>Lists the files, those that fail to load as failed, and returns the last.</summary>

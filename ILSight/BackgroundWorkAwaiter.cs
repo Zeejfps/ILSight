@@ -1,9 +1,10 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace ILSight;
 
-/// <summary>The awaiter of <see cref="BackgroundWork{T}"/>: it continues when the work ends, as that type says,
-/// and hands back the work's <see cref="Outcome{T}"/>.</summary>
+/// <summary>The awaiter of <see cref="BackgroundWork{T}"/>: it continues when the work ends, as that type says, and
+/// hands back what the work gave, or throws what it ended with, as <c>await</c> does.</summary>
 public readonly struct BackgroundWorkAwaiter<T>(Task<T> task) : INotifyCompletion
 {
     public bool IsCompleted => false;
@@ -13,14 +14,15 @@ public readonly struct BackgroundWorkAwaiter<T>(Task<T> task) : INotifyCompletio
         BackgroundAwaiting.ContinueAfter(task, continuation);
     }
 
-    public Outcome<T> GetResult()
+    public T GetResult()
     {
         var ended = task;
         if (ended.IsCompletedSuccessfully)
         {
-            return new Outcome<T>.Ok(ended.Result);
+            return ended.Result;
         }
 
-        return new Outcome<T>.Failed(BackgroundAwaiting.GetError(ended));
+        BackgroundAwaiting.Rethrow(ended);
+        throw new UnreachableException("A task that did not run to its end was cancelled or failed.");
     }
 }

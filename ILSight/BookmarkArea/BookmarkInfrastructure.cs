@@ -22,15 +22,13 @@ public sealed class BookmarkInfrastructure(ErrorLog errors, AssemblyList assembl
         return BookmarkFile.Write(path, records);
     }
 
-    /// <summary>Looks on the thread pool and comes back on the UI thread, with whatever the lookup threw as
+    /// <summary>Looks on the thread pool and comes back on the UI thread, with what the read failed with (<see cref="UntrustedReads"/>) as
     /// <see cref="Outcome{T}.Failed"/>, except the cancellation of <paramref name="ct"/>, which it lets through. A
     /// record with this app's place is where it says; one of the real ILSpy's is where ILSpy's tree path, token or
     /// member name lead.</summary>
-    public async Task<Outcome<List<Lookup<NodePath>>>> LookUpPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct)
+    public Task<Outcome<List<Lookup<NodePath>>>> LookUpPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct)
     {
-        var found = await Background.Wait(Task.Run(() => FindPlacesAsync(records, ct), ct));
-        ct.ThrowIfCancellationRequested();
-        return found;
+        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => FindPlacesAsync(records, ct), ct)), ct);
     }
 
     private async Task<List<Lookup<NodePath>>> FindPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct)

@@ -8,12 +8,10 @@ namespace ILSight.NuGetArea;
 /// timeout nobody asked for is a failure.</summary>
 public sealed class ReadNuGetDetailsHandlerAdapter(NuGetClient client) : ReadNuGetDetailsHandler.IPorts
 {
-    /// <summary>Reads and comes back on the UI thread, with whatever the read threw as
+    /// <summary>Reads and comes back on the UI thread, with a request that failed or timed out (<see cref="NetworkFailures"/>) as
     /// <see cref="Outcome{T}.Failed"/>.</summary>
-    public async Task<Outcome<PackageVersionDetails>> ReadDetailsAsync(NuGetSource feed, PackageId id, FeedVersion version, CancellationToken ct)
+    public Task<Outcome<PackageVersionDetails>> ReadDetailsAsync(NuGetSource feed, PackageId id, FeedVersion version, CancellationToken ct)
     {
-        var read = await Background.Wait(NuGetFeeds.ReadDetailsAsync(client.EnsureFeed(feed), id, version, ct));
-        ct.ThrowIfCancellationRequested();
-        return read;
+        return NetworkFailures.CatchAsync(Background.Wait(NuGetFeeds.ReadDetailsAsync(client.EnsureFeed(feed), id, version, ct)), ct);
     }
 }

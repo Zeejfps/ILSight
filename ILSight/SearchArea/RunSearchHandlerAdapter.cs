@@ -38,7 +38,7 @@ public sealed class RunSearchHandlerAdapter(ErrorLog errors, BrowseSession sessi
     private static async Task<Outcome<IReadOnlyList<SearchFind>>?> ReadNextAsync(IAsyncEnumerator<IReadOnlyList<SearchFind>> batches,
         CancellationToken ct)
     {
-        var moved = await Background.Wait(batches.MoveNextAsync().AsTask());
+        var moved = await UntrustedReads.CatchAsync(Background.Wait(batches.MoveNextAsync().AsTask()), ct);
         ct.ThrowIfCancellationRequested();
         return moved.Match<Outcome<IReadOnlyList<SearchFind>>?>(
             ok => ok.Value ? new Outcome<IReadOnlyList<SearchFind>>.Ok(batches.Current) : null,

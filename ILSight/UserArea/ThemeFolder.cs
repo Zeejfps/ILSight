@@ -156,8 +156,6 @@ public sealed class ThemeFolder(ThemeFolderWatch watch)
     public async Task<Outcome<ThemeFolderEvent>> WaitForChangeAsync(CancellationToken ct)
     {
         using var stopping = ct.Register(watch.Stop);
-        var change = await Background.Wait(watch.NextChangeAsync(ct));
-        ct.ThrowIfCancellationRequested();
-        return change;
+        return await FileReadFailures.CatchAsync(Background.Wait(watch.NextChangeAsync(ct)), ct);
     }
 }

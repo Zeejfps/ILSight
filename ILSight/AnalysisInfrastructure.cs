@@ -41,7 +41,7 @@ public sealed class AnalysisInfrastructure(ErrorLog errors, AssemblyList assembl
     private static async Task<Outcome<IReadOnlyList<AnalysisFind>>?> ReadNextAsync(IAsyncEnumerator<IReadOnlyList<AnalysisFind>> batches,
         CancellationToken ct)
     {
-        var moved = await Background.Wait(batches.MoveNextAsync().AsTask());
+        var moved = await UntrustedReads.CatchAsync(Background.Wait(batches.MoveNextAsync().AsTask()), ct);
         ct.ThrowIfCancellationRequested();
         return moved.Match<Outcome<IReadOnlyList<AnalysisFind>>?>(
             ok => ok.Value ? new Outcome<IReadOnlyList<AnalysisFind>>.Ok(batches.Current) : null,
@@ -50,9 +50,9 @@ public sealed class AnalysisInfrastructure(ErrorLog errors, AssemblyList assembl
 
     /// <summary>Finds them on the thread pool, each once the read of its assembly's type system ended, and comes back
     /// on the UI thread.</summary>
-    public async Task<Outcome<List<Lookup<AnalysisSymbol>>>> LookUpAnalyzedAsync(IReadOnlyList<CodeAnchor> analyzed, CancellationToken ct)
+    public Task<Outcome<List<Lookup<AnalysisSymbol>>>> LookUpAnalyzedAsync(IReadOnlyList<CodeAnchor> analyzed, CancellationToken ct)
     {
-        return await Background.Wait(Task.Run(() => FindAnalyzedAsync(analyzed, ct), ct));
+        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => FindAnalyzedAsync(analyzed, ct), ct)), ct);
     }
 
     private async Task<List<Lookup<AnalysisSymbol>>> FindAnalyzedAsync(IReadOnlyList<CodeAnchor> analyzed, CancellationToken ct)

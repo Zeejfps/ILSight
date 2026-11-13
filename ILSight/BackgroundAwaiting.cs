@@ -1,3 +1,5 @@
+using System.Runtime.ExceptionServices;
+
 namespace ILSight;
 
 /// <summary>What awaiting work on the thread pool does, whether it gives something back
@@ -12,15 +14,16 @@ internal static class BackgroundAwaiting
         task.GetAwaiter().OnCompleted(continuation);
     }
 
-    /// <summary>What <paramref name="task"/>, which did not run to its end, failed with: the cancellation when it
-    /// was cancelled.</summary>
-    public static Exception GetError(Task task)
+    /// <summary>Throws what <paramref name="ended"/>, which ended without running to its end, ended with, as
+    /// <c>await</c> does: its cancellation, carrying the token that cancelled it, or the exception it failed with.</summary>
+    public static void Rethrow(Task ended)
     {
-        if (task.Exception is null)
+        if (ended.IsCanceled)
         {
-            return new OperationCanceledException();
+            throw new TaskCanceledException(ended);
         }
 
-        return task.Exception.GetBaseException();
+        var error = ended.Exception ?? throw new InvalidOperationException("The task ran to its end; it has nothing to throw.");
+        ExceptionDispatchInfo.Throw(error.InnerExceptions[0]);
     }
 }

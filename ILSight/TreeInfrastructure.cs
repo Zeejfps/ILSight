@@ -16,10 +16,8 @@ public sealed class TreeInfrastructure(BrowseSession session) : BuildChildrenHan
     }
 
     /// <summary>Builds them on the thread pool and comes back on the UI thread.</summary>
-    public async Task<Outcome<ChildrenState>> BuildAssemblyChildrenAsync(BrowseNode assembly, CancellationToken ct)
+    public Task<Outcome<ChildrenState>> BuildAssemblyChildrenAsync(BrowseNode assembly, CancellationToken ct)
     {
-        var built = await Background.Wait(BrowseSessions.GetChildrenAsync(session, assembly, ct));
-        ct.ThrowIfCancellationRequested();
-        return built;
+        return UntrustedReads.CatchAsync(Background.Wait(BrowseSessions.GetChildrenAsync(session, assembly, ct)), ct);
     }
 }

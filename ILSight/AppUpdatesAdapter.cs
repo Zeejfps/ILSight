@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Velopack;
 using Velopack.Locators;
 using Velopack.Sources;
@@ -7,7 +8,8 @@ namespace ILSight;
 /// <summary>The seam around Velopack: the releases of the app's GitHub repository, on the channel it was
 /// packed for, for <see cref="AppUpdates"/>. The channel each RID is packed with in release.yml comes with the
 /// install, so it is not named here. Velopack's calls block, so they run on the thread pool and come back on the
-/// UI thread; what they throw is a failed result, except the cancellation of the token the call was given.</summary>
+/// UI thread; a request that failed or timed out (<see cref="NetworkFailures"/>), or an updater that could not start, is
+/// a failed result; the cancellation of the token the call was given, and anything else, are let through.</summary>
 public sealed class AppUpdatesAdapter : AppUpdates.IPorts
 {
     // Every installed copy asks here for the rest of its life, so the repository can't move without
@@ -23,17 +25,14 @@ public sealed class AppUpdatesAdapter : AppUpdates.IPorts
         return VelopackLocator.IsCurrentSet && _manager.Value.IsInstalled;
     }
 
-    public async Task<Outcome<UpdateInfo?>> LookUpUpdateAsync(CancellationToken ct)
+    public Task<Outcome<UpdateInfo?>> LookUpUpdateAsync(CancellationToken ct)
     {
-        var found = await Background.Wait(Task.Run(() => _manager.Value.CheckForUpdates(), ct));
-        ct.ThrowIfCancellationRequested();
-        return found;
+        return NetworkFailures.CatchAsync(Background.Wait(Task.Run(() => _manager.Value.CheckForUpdates(), ct)), ct);
     }
 
     public async Task<bool> TryDownloadAsync(UpdateInfo update, CancellationToken ct)
     {
-        var downloaded = await Background.Wait(Task.Run(() => _manager.Value.DownloadUpdates(update), ct));
-        ct.ThrowIfCancellationRequested();
+        var downloaded = await NetworkFailures.CatchAsync(Background.Wait(Task.Run(() => _manager.Value.DownloadUpdates(update), ct)), ct);
         return downloaded is Outcome.Done;
     }
 
@@ -42,13 +41,22 @@ public sealed class AppUpdatesAdapter : AppUpdates.IPorts
     /// so that the app quits into the update rather than leave an updater waiting for an exit.</summary>
     public async Task<bool> TryApplyAfterExitAsync(UpdateInfo update, CancellationToken ct)
     {
-        var started = await Background.Wait(Task.Run(() => _manager.Value.WaitExitThenApplyUpdates(update, silent: false, restart: true), ct));
-        if (started is Outcome.Done)
+        try
         {
+            await Background.Wait(Task.Run(() => _manager.Value.WaitExitThenApplyUpdates(update, silent: false, restart: true), ct));
             return true;
         }
-
-        ct.ThrowIfCancellationRequested();
-        return false;
+        catch (Win32Exception)
+        {
+            return false;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 }

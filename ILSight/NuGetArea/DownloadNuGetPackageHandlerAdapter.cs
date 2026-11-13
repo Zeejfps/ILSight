@@ -13,12 +13,10 @@ public sealed class DownloadNuGetPackageHandlerAdapter(Action<AppProblem> report
         reportError(problem);
     }
 
-    /// <summary>Downloads and comes back on the UI thread, with whatever the download threw as
+    /// <summary>Downloads and comes back on the UI thread, with a request that failed or timed out (<see cref="NetworkFailures"/>) as
     /// <see cref="Outcome{T}.Failed"/>.</summary>
-    public async Task<Outcome<string>> DownloadPackageAsync(PackageCache cache, NuGetSource feed, PackageId id, PackageVersion version, CancellationToken ct)
+    public Task<Outcome<string>> DownloadPackageAsync(PackageCache cache, NuGetSource feed, PackageId id, PackageVersion version, CancellationToken ct)
     {
-        var fetched = await Background.Wait(NuGetFeeds.GetPackageAsync(cache, client.EnsureFeed(feed), id, version, ct));
-        ct.ThrowIfCancellationRequested();
-        return fetched;
+        return NetworkFailures.CatchAsync(Background.Wait(NuGetFeeds.GetPackageAsync(cache, client.EnsureFeed(feed), id, version, ct)), ct);
     }
 }

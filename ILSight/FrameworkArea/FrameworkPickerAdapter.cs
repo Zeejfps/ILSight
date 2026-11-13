@@ -16,12 +16,10 @@ internal sealed class FrameworkPickerAdapter(Action<AppProblem> reportError, Ins
         reportError(problem);
     }
 
-    /// <summary>Scans on the thread pool and comes back on the UI thread, with whatever the scan threw as
+    /// <summary>Scans on the thread pool and comes back on the UI thread, with a file it could not read (<see cref="FileReadFailures"/>) as
     /// <see cref="Outcome{T}.Failed"/>.</summary>
-    public async Task<Outcome<IReadOnlyList<RuntimeAssembly>>> ListAssembliesAsync(CancellationToken ct)
+    public Task<Outcome<IReadOnlyList<RuntimeAssembly>>> ListAssembliesAsync(CancellationToken ct)
     {
-        var scanned = await Background.Wait(Task.Run(() => _assemblies.Value, ct));
-        ct.ThrowIfCancellationRequested();
-        return scanned;
+        return FileReadFailures.CatchAsync(Background.Wait(Task.Run(() => _assemblies.Value, ct)), ct);
     }
 }

@@ -8,12 +8,10 @@ namespace ILSight.NuGetArea;
 /// cancellation of the token it was given, which it lets through; a timeout nobody asked for is a failure.</summary>
 public sealed class FetchNuGetIconHandlerAdapter(NuGetClient client) : FetchNuGetIconHandler.IPorts
 {
-    /// <summary>Fetches and comes back on the UI thread, with whatever the fetch threw as
+    /// <summary>Fetches and comes back on the UI thread, with a request that failed or timed out (<see cref="NetworkFailures"/>) as
     /// <see cref="Outcome{T}.Failed"/>.</summary>
-    public async Task<Outcome<ResourceImage>> DownloadIconAsync(WebUrl url, int side, CancellationToken ct)
+    public Task<Outcome<ResourceImage>> DownloadIconAsync(WebUrl url, int side, CancellationToken ct)
     {
-        var icon = await Background.Wait(NuGetFeeds.GetIconAsync(client.Icons, url, side, ct));
-        ct.ThrowIfCancellationRequested();
-        return icon;
+        return NetworkFailures.CatchAsync(Background.Wait(NuGetFeeds.GetIconAsync(client.Icons, url, side, ct)), ct);
     }
 }

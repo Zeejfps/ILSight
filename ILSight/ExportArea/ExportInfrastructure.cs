@@ -7,9 +7,10 @@ namespace ILSight.ExportArea;
 /// <summary>Reaches the app's error reports, the clock and the disk, for <see cref="ExportWriting"/>,
 /// <see cref="SaveResourceHandler"/>, <see cref="ExtractPackageFileHandler"/> and
 /// <see cref="CheckExportFilesHandler"/>. An export's work runs on the thread pool and comes back on the UI thread, on a
-/// token its turn's cancellation and the workflow's both cancel: whatever it threw comes back as
-/// <see cref="ExportOutcome{T}.Failed"/>, its turn's cancellation as <see cref="ExportOutcome{T}.Stopped"/>, and the
-/// workflow's own cancellation is let through.</summary>
+/// token its turn's cancellation and the workflow's both cancel: what it threw comes back as
+/// <see cref="ExportOutcome{T}.Failed"/> (the decompiler's reads of the user's assemblies, <see cref="UntrustedReads"/>),
+/// its turn's cancellation as <see cref="ExportOutcome{T}.Stopped"/>, and the workflow's own cancellation is let
+/// through.</summary>
 public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, BrowseSession session)
     : ExportWriting.IPorts, SaveResourceHandler.IPorts, ExtractPackageFileHandler.IPorts, CheckExportFilesHandler.IPorts
 {
@@ -85,9 +86,7 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
     {
         using var link = CancellationTokenSource.CreateLinkedTokenSource(start.Token, ct);
         var token = link.Token;
-        var outcome = await Background.Run(() => work(token));
-        ct.ThrowIfCancellationRequested();
-        return outcome.Match(static ok => new ExportOutcome<T>.Done(ok.Value), failed => Translate<T>(failed.Error, start));
+        return await CatchAsync(Background.Run(() => work(token)), start, ct);
     }
 
     /// <inheritdoc cref="RunAsync{T}(Func{CancellationToken, T}, ExportStart, CancellationToken)"/>
@@ -95,9 +94,28 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
     {
         using var link = CancellationTokenSource.CreateLinkedTokenSource(start.Token, ct);
         var token = link.Token;
-        var outcome = await Background.Wait(Task.Run(() => work(token), CancellationToken.None));
-        ct.ThrowIfCancellationRequested();
-        return outcome.Match(static ok => new ExportOutcome<T>.Done(ok.Value), failed => Translate<T>(failed.Error, start));
+        return await CatchAsync(Background.Wait(Task.Run(() => work(token), CancellationToken.None)), start, ct);
+    }
+
+    /// <summary>What an export's <paramref name="work"/>, which decompiles the user's assemblies, came to: done with
+    /// what it gave; stopped when its turn, <paramref name="start"/>, was cancelled; else failed with what it threw
+    /// (<see cref="UntrustedReads"/>). The cancellation of <paramref name="ct"/>, the workflow's, is let through.</summary>
+    private static async Task<ExportOutcome<T>> CatchAsync<T>(BackgroundWork<T> work, ExportStart start, CancellationToken ct)
+    {
+        var outcome = await UntrustedReads.CatchAsync(work, ct);
+        return outcome.Match(static ok => new ExportOutcome<T>.Done(ok.Value), failed => ToFailedOrStopped<T>(failed.Error, start));
+    }
+
+    /// <summary>What <paramref name="error"/>, which an export's work ended with, means: it stopped when it is the
+    /// cancellation of <paramref name="start"/>'s turn, else it failed.</summary>
+    private static ExportOutcome<T> ToFailedOrStopped<T>(Exception error, ExportStart start)
+    {
+        if (error is OperationCanceledException && start.Token.IsCancellationRequested)
+        {
+            return new ExportOutcome<T>.Stopped();
+        }
+
+        return new ExportOutcome<T>.Failed(error);
     }
 
     /// <summary>Runs <paramref name="work"/> over a module's type system as <see cref="RunAsync{T}(Func{CancellationToken, Task{T}}, ExportStart, CancellationToken)"/>
@@ -126,18 +144,6 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
             static done => done.Value.Match<ExportOutcome<T>>(static read => new ExportOutcome<T>.Done(read.Value), static _ => new ExportOutcome<T>.Stopped()),
             static stopped => new ExportOutcome<T>.Stopped(),
             static failed => new ExportOutcome<T>.Failed(failed.Error));
-    }
-
-    /// <summary>What <paramref name="error"/>, which an export's work ended with, means: it stopped when it is the
-    /// cancellation of <paramref name="start"/>'s turn, else it failed.</summary>
-    private static ExportOutcome<T> Translate<T>(Exception error, ExportStart start)
-    {
-        if (error is OperationCanceledException && start.Token.IsCancellationRequested)
-        {
-            return new ExportOutcome<T>.Stopped();
-        }
-
-        return new ExportOutcome<T>.Failed(error);
     }
 
     /// <remarks>Reads the resource under a reading of its module; one closed before answers
@@ -192,9 +198,9 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
         }
     }
 
-    public async Task<bool> HasEntriesAsync(string folder, CancellationToken ct)
+    public Task<bool> HasEntriesAsync(string folder, CancellationToken ct)
     {
-        return await Task.Run(() => HasEntries(folder), ct);
+        return Task.Run(() => HasEntries(folder), ct);
     }
 
     private static bool HasEntries(string folder)
@@ -207,8 +213,8 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
         return Directory.EnumerateFileSystemEntries(folder).Any();
     }
 
-    public async Task<bool> IsFileThereAsync(string file, CancellationToken ct)
+    public Task<bool> IsFileThereAsync(string file, CancellationToken ct)
     {
-        return await Task.Run(() => File.Exists(file), ct);
+        return Task.Run(() => File.Exists(file), ct);
     }
 }

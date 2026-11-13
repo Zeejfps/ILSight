@@ -5,7 +5,7 @@ namespace ILSight.AssemblyArea;
 
 /// <summary>Reaches the app's error reports, and compares assemblies' APIs off the UI thread, for
 /// <see cref="CompareAssembliesHandler"/>. The comparison runs on the thread pool and comes back on the UI thread, with
-/// whatever it threw as <see cref="Outcome{T}.Failed"/>, except the cancellation of the token the call was given, which
+/// what the read failed with (<see cref="UntrustedReads"/>) as <see cref="Outcome{T}.Failed"/>, except the cancellation of the token the call was given, which
 /// it lets through.</summary>
 public sealed class CompareAssembliesHandlerAdapter(ErrorLog errors) : CompareAssembliesHandler.IPorts
 {
@@ -19,7 +19,7 @@ public sealed class CompareAssembliesHandlerAdapter(ErrorLog errors) : CompareAs
     /// says so.</summary>
     public async Task<Outcome<ModuleRead<ApiDiff>>> CompareAsync(LoadedModule left, LoadedModule right, ApiScope scope, CancellationToken ct)
     {
-        var compared = await Background.Wait(Task.Run(() => ApiEntries.CompareAsync(left, right, scope, ct), ct));
+        var compared = await UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => ApiEntries.CompareAsync(left, right, scope, ct), ct)), ct);
         ct.ThrowIfCancellationRequested();
         return compared.Match(
             static ok => ok.Value.Match<Outcome<ModuleRead<ApiDiff>>>(
