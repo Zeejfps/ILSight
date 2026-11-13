@@ -103,7 +103,7 @@ internal sealed class AppDriver
         Driver.GoForward();
     }
 
-    /// <summary>Starts <paramref name="workflow"/> over the app state now, as <see cref="AppStateDriver.Start"/> does.</summary>
+    /// <summary>Starts <paramref name="workflow"/> over the app state now, as <see cref="AppStateDriver.Start(Func{AppState, CancellationToken, Task})"/> does.</summary>
     public void Start(Func<AppState, CancellationToken, Task> workflow)
     {
         Driver.Start(workflow);

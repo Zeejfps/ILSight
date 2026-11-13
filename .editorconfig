@@ -41,15 +41,24 @@ csharp_style_var_elsewhere = true:error
 dotnet_diagnostic.IDE0007.severity = error
 
 # R009: `throw ex;` (CA2200); throwing Exception / SystemException / ApplicationException (CA2201).
-dotnet_diagnostic.CA2200.severity = warning
-dotnet_diagnostic.CA2201.severity = warning
+dotnet_diagnostic.CA2200.severity = error
+dotnet_diagnostic.CA2201.severity = error
 
 # R010: pass the token you have (CA2016); call the async version inside async code (CA1849). VSTHRD200 duplicates
 # RL0301; VSTHRD003 is about Visual Studio's JoinableTaskFactory.
-dotnet_diagnostic.CA2016.severity = warning
-dotnet_diagnostic.CA1849.severity = warning
+dotnet_diagnostic.CA2016.severity = error
+dotnet_diagnostic.CA1849.severity = error
 # R010: no blocking wait on a task (VSTHRD002); the one allowed wait is suppressed in place with its reason.
 dotnet_diagnostic.VSTHRD002.severity = error
+# R010: async void only in an event handler, an edge, suppressed with its reason (VSTHRD100); the async version
+# inside async code (VSTHRD103); no task left unobserved (VSTHRD110). VSTHRD001 (posting to the UI thread by hand):
+# 0, and errors keep it so.
+dotnet_diagnostic.VSTHRD100.severity = error
+dotnet_diagnostic.VSTHRD103.severity = error
+dotnet_diagnostic.VSTHRD110.severity = error
+dotnet_diagnostic.VSTHRD001.severity = error
+# Documentation comments: a cref names one member (CS0419, an ambiguous overload).
+dotnet_diagnostic.CS0419.severity = error
 dotnet_diagnostic.VSTHRD200.severity = none
 dotnet_diagnostic.VSTHRD003.severity = none
 
@@ -138,3 +147,4 @@ dotnet_diagnostic.VSTHRD002.severity = none
 dotnet_diagnostic.VSTHRD100.severity = none
 dotnet_diagnostic.VSTHRD103.severity = none
 dotnet_diagnostic.VSTHRD110.severity = none
+dotnet_diagnostic.CS0419.severity = none
