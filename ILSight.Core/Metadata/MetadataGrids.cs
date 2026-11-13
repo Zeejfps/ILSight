@@ -631,4 +631,11 @@ public static class MetadataGrids
     {
         return unchecked((uint)Convert.ToInt64(value, CultureInfo.InvariantCulture));
     }
+
+    /// <summary>What a cell's read came to when the library threw reading it, as on a corrupt row: the cell shows "?"
+    /// and, hovered, <see cref="Reason"/>.</summary>
+    private sealed class MetadataCellFailure
+    {
+        public required string Reason { get; init; }
+    }
 }

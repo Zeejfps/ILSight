@@ -60,7 +60,7 @@ public abstract class MetadataGrid
     /// for a paged one, once its page has.</summary>
     public abstract bool IsRowRead(int row);
 
-    /// <summary>A cell's value as the screen shows it, a <see cref="MetadataCellFailure"/> for one whose read failed;
+    /// <summary>A cell's value as the screen shows it, a failure (shown "?", its reason hovered) for one whose read failed;
     /// null for a row not read (<see cref="IsRowRead"/>).</summary>
     internal abstract object? FindValue(int row, int column);
 
@@ -151,9 +151,9 @@ public abstract class MetadataGrid
     }
 
     /// <summary>A grid whose file the library maps: its rows are read a page at a time, on the I/O side
-    /// (<see cref="MetadataGrids.ReadPage"/>), each cell's value or <see cref="MetadataCellFailure"/> with its tooltip
+    /// (<see cref="MetadataGrids.ReadPage"/>), each cell's value or its read's failure, with its tooltip
     /// and link, each row's details and definition. The draw shows the pages read and asks for those it finds missing
-    /// (<see cref="Ask"/>), once each, for the frame edge to read.</summary>
+    /// (<see cref="TryAsk"/>), once each, for the frame edge to read.</summary>
     public sealed class Paged : MetadataGrid
     {
         /// <summary>How many rows a page holds, the size of each read the frame edge makes for the draw. The first
