@@ -75,6 +75,17 @@ public sealed class DecompilationTests
     }
 
     [Fact]
+    public async Task A_positional_record_decompiles_with_its_parameters_in_its_header()
+    {
+        var assembly = Trees.TestAssembly;
+
+        var document = await assembly.FixturesAsync().GetChildAsync("Point").DecompileAsync(DecompilationLanguage.CSharp);
+
+        Assert.Null(document.Error);
+        Assert.Contains("public record Point(int X, int Y)", Documents.GetText(document));
+    }
+
+    [Fact]
     public async Task An_older_language_version_avoids_newer_syntax()
     {
         var assembly = Trees.TestAssembly;
