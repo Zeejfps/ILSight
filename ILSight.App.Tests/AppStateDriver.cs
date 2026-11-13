@@ -326,10 +326,10 @@ internal sealed class AppStateDriver
         Commands.StartComparing(AppState, run);
     }
 
-    /// <summary>Analyzes <paramref name="node"/> as the views do.</summary>
+    /// <summary>Analyzes what <paramref name="node"/> stands for as the views do.</summary>
     public void Analyze(BrowseNode node)
     {
-        AnalyzerPanelView.Analyze(Ui, AppState, node);
+        Commands.Analyze(AppState, Ui, node.Analysis ?? throw new InvalidOperationException($"{node.Text} stands for nothing to analyze."));
     }
 
     /// <summary>Analyzes what <paramref name="reference"/> points at as the views do.</summary>

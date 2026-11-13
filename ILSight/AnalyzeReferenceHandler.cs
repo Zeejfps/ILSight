@@ -2,8 +2,9 @@ using ILSight.Core;
 
 namespace ILSight;
 
-/// <summary>Analyzes what a reference points at: finds it through <see cref="IPorts"/>, opening its assembly if it is
-/// not, and turns the root waiting for it into its analysis.</summary>
+/// <summary>Analyzes what a reference points at, or a symbol whose assembly is not on the list, by its own reference:
+/// finds it through <see cref="IPorts"/>, opening and listing its assembly if it is not, and turns the root waiting for
+/// it into its analysis.</summary>
 public sealed class AnalyzeReferenceHandler(AnalyzeReferenceHandler.IPorts ports)
 {
     public interface IPorts
@@ -17,9 +18,10 @@ public sealed class AnalyzeReferenceHandler(AnalyzeReferenceHandler.IPorts ports
         /// <see cref="Outcome{T}.Failed"/>.</summary>
         Task<Outcome<Lookup<BrowseNode>>> LookUpReferenceAsync(CodeReference.Navigable reference, CancellationToken ct);
     }
-    /// <summary>Finds what the reference of <paramref name="pending"/> points at and turns its root into the analysis
-    /// of it, which <paramref name="viewCommands"/> has the view show. The root goes when the reference does not
-    /// resolve, or leads into a module that could not be read, which is reported; once the root was removed from
+    /// <summary>Finds what the reference of <paramref name="pending"/> points at, listing its assembly, and turns its
+    /// root into the analysis it waits for (<see cref="PendingAnalysis.Analyze"/>), which
+    /// <paramref name="viewCommands"/> has the view show. The root goes when the reference does not resolve, or leads
+    /// into a module that could not be read, which is reported; once the root was removed from
     /// <paramref name="analyzer"/>, as clearing the list removes them all, what is found is dropped.</summary>
     public async Task HandleAsync(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, PendingAnalysis pending, CancellationToken ct)
     {
@@ -48,7 +50,7 @@ public sealed class AnalyzeReferenceHandler(AnalyzeReferenceHandler.IPorts ports
         return lookup.Match<AppProblem?>(
             found =>
             {
-                Analysis.AnalyzeFound(analyzer, viewCommands, pending.Root, found.Value);
+                pending.Analyze(analyzer, viewCommands, found.Value);
                 return null;
             },
             _ => new AppProblem.Unresolved { Reference = pending.Reference, Error = null },

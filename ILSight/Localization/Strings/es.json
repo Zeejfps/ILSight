@@ -678,6 +678,8 @@
   "error.module_unreadable": "No se pudo leer {name}",
   "error.decompile": "No se puede descompilar {name}",
   "error.analyze": "No se puede analizar {name} ({analysis})",
+  "error.analyze_symbol": "No se puede analizar {name}",
+  "error.not_openable": "Su ensamblado no está abierto y nada nombra su definición para abrirlo.",
   "error.scan_runtime": "No se pueden examinar los ensamblados del runtime",
   "error.read_nuget_config": "No se puede leer la configuración de NuGet",
   "error.search_nuget": "No se puede buscar en {source}",

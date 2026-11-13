@@ -678,6 +678,8 @@
   "error.module_unreadable": "Не удалось прочитать {name}",
   "error.decompile": "Не удалось декомпилировать {name}",
   "error.analyze": "Не удалось проанализировать {name} ({analysis})",
+  "error.analyze_symbol": "Не удалось проанализировать {name}",
+  "error.not_openable": "Его сборка не открыта, и нет определения, по которому её можно открыть.",
   "error.scan_runtime": "Не удалось просканировать сборки среды выполнения",
   "error.read_nuget_config": "Не удаётся прочитать конфигурацию NuGet",
   "error.search_nuget": "Не удаётся выполнить поиск в {source}",

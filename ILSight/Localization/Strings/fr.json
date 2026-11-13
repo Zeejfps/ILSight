@@ -678,6 +678,8 @@
   "error.module_unreadable": "Impossible de lire {name}",
   "error.decompile": "Impossible de décompiler {name}",
   "error.analyze": "Impossible d'analyser {name} ({analysis})",
+  "error.analyze_symbol": "Impossible d'analyser {name}",
+  "error.not_openable": "Son assembly n'est pas ouvert, et rien ne nomme sa définition pour l'ouvrir.",
   "error.scan_runtime": "Impossible d’analyser les assemblys du runtime",
   "error.read_nuget_config": "Impossible de lire la configuration NuGet",
   "error.search_nuget": "Impossible de rechercher dans {source}",

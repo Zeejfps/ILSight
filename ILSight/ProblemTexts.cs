@@ -36,6 +36,7 @@ public static class ProblemTexts
             goneAfterReload: p => (t.ErrorFindAfterReload(p.Location.Label), p.Location.ToString()),
             analysisFailed: p => (t.ErrorAnalyze(p.Subject, AnalyzerText.Header(t, p.Kind)), p.Error.ToString()),
             analysesNotRestored: p => (t.ErrorRestoreAnalyses, p.Error.ToString()),
+            notAnalyzable: p => (t.ErrorAnalyzeSymbol(p.Symbol), t.ErrorNotOpenable),
             idNotFound: p => (t.ErrorNavigateTo(p.Id), ""),
             argumentsIgnored: p => (t.ErrorArgumentsIgnored(p.Arguments.Count), string.Join(Environment.NewLine, p.Arguments)),
             noApiReferencePage: p => (t.ErrorNoApiReferencePage(p.Name), t.ErrorNoApiReferencePageDetails),

@@ -2,6 +2,7 @@ using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Testing;
 using ILSight.Core;
+using ILSight.Core.Analysis;
 using ZGF.KeyboardModule;
 using ILSight.CodeViewArea;
 using ILSight.CommandArea;
@@ -25,6 +26,16 @@ public sealed class AnalyzerTests
         rows.GetChildren(kind);
         d.RunUntil(() => kind.IsDone);
         return kind;
+    }
+
+    private static AnalysisSymbol SymbolOf(BrowseNode node)
+    {
+        return node.Analysis ?? throw new InvalidOperationException($"{node.Text} stands for nothing to analyze.");
+    }
+
+    private static List<string> ListedPaths(AppStateDriver d)
+    {
+        return d.AppState.Assemblies.Listed.Select(static a => a.FilePath.Text).ToList();
     }
 
     [Fact]
@@ -104,7 +115,7 @@ public sealed class AnalyzerTests
 
         app.DoubleClickOn(Selector.WithText(app.Frames.Canvas.Texts.Last(t => t.Inputs.Text.StartsWith("Third()")).Inputs.Text));
         d.Settle();
-        AnalyzerPanelView.Analyze(app.Ui.Analyzer, app.AppState, caller.Symbol);
+        Commands.Analyze(app.AppState, app.Ui, caller.Symbol);
 
         Assert.StartsWith("Third()", d.AppState.Navigation.ActiveTab?.Node?.Text);
         Assert.Equal(2, analyzer.Roots.Count);
@@ -150,6 +161,57 @@ public sealed class AnalyzerTests
 
         Assert.Equal(2, d.AppState.Analyzer.Roots.Count);
         Assert.StartsWith("Third()", d.AppState.Analyzer.Found()[1].Symbol.Label);
+    }
+
+    [Fact]
+    public void Analyzing_a_result_in_an_assembly_loaded_only_to_resolve_references_lists_it_as_following_it_does_and_analyzes_it_there()
+    {
+        var d = AppStateDriver.Opened();
+        var analyzer = d.AppState.Analyzer;
+        d.Analyze(d.Fixture("Outline").Children.Single(c => c.Text.StartsWith("Second()")));
+        var uses = Expand(d, analyzer.Found()[0], "Uses");
+        var append = uses.Found.OfType<AnalyzerSymbolNode>().First(n => n.Symbol.Label.StartsWith("Append("));
+        var file = append.Symbol.File;
+        Assert.NotNull(file);
+        var reference = append.Symbol.Reference;
+        Assert.NotNull(reference);
+        var listedBefore = ListedPaths(d);
+
+        Commands.Analyze(d.AppState, d.Ui, append.Symbol);
+        var waiting = analyzer.Roots.ToList();
+        d.Settle();
+        var followed = AppStateDriver.Opened();
+        followed.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
+        followed.Settle();
+
+        Assert.Equal([AppStateDriver.FixturePath], listedBefore);
+        Assert.IsType<AnalyzerPendingNode>(waiting[1]);
+        Assert.Equal([AppStateDriver.FixturePath, file.Text], ListedPaths(d));
+        Assert.Equal(ListedPaths(followed), ListedPaths(d));
+        var root = analyzer.Found()[1];
+        Assert.Same(append.Symbol, root.Symbol);
+        Assert.True(root.Symbol.IsIn(d.AppState.Assemblies.Listed[1]));
+        Assert.Same(root, d.Ui.Analyzer.View.Selected);
+        Assert.Empty(d.AppState.Errors.Entries);
+    }
+
+    [Fact]
+    public void Analyzing_a_symbol_whose_assembly_nothing_can_list_adds_nothing_and_says_why()
+    {
+        var d = AppStateDriver.Opened();
+        var nowhere = new AnalysisSymbol
+        {
+            Shape = new SymbolShape.Assembly(), Accessibility = NodeAccessibility.Public, Label = "Nowhere", Location = "",
+            Reference = null, Kinds = [], Accessors = [], File = null, Definition = null,
+        };
+
+        Commands.Analyze(d.AppState, d.Ui, nowhere);
+        d.Settle();
+
+        Assert.Empty(d.AppState.Analyzer.Roots);
+        var error = Assert.Single(d.AppState.Errors.Entries);
+        Assert.Equal("Cannot analyze Nowhere", error.Words().Title);
+        Assert.Equal("Its assembly isn't open, and nothing names its definition to open it by.", error.Words().Details);
     }
 
     private static void ShowFirstCaller(AppDriver app)
@@ -241,16 +303,14 @@ public sealed class AnalyzerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var reference = ReferenceToFirst(d);
         var analyzer = d.AppState.Analyzer;
-        var first = AddToAnalyzer(d.AppState, First(d));
-        AddToAnalyzer(d.AppState, d.Fixture("Greeter"));
+        var first = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(SymbolOf(First(d)))).Root;
+        var greeter = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(SymbolOf(d.Fixture("Greeter")))).Root;
         d.TakeViewCommands();
 
         Commands.StartAnalyzing(d.AppState, BeginAnalyzing(analyzer, reference));
         d.Settle();
 
-        Assert.Equal(2, analyzer.Roots.Count);
-        Assert.Same(analyzer.Found()[0], first);
-        Assert.NotNull(first);
+        Assert.Equal<AnalyzerNode>([first, greeter], analyzer.Roots);
         Assert.Equal([new ViewCommand.ShowAnalysis(first)], d.TakeViewCommands());
     }
 

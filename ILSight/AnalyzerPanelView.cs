@@ -102,7 +102,7 @@ internal static class AnalyzerPanelView
     {
         if (rows.View.Selected is AnalyzerSymbolNode picked)
         {
-            Commands.Later(screen, (rows, symbol: picked.Symbol), static (a, s) => Analyze(s.rows, a, s.symbol));
+            Commands.AnalyzeLater(screen, picked.Symbol);
         }
     }
 
@@ -157,7 +157,7 @@ internal static class AnalyzerPanelView
 
         if (!isRoot && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
         {
-            Commands.Later(ui.State, (rows, symbol: node.Symbol), static (a, s) => Analyze(s.rows, a, s.symbol));
+            Commands.AnalyzeLater(ui.State, node.Symbol);
         }
 
         ui.MenuSeparator();
@@ -186,30 +186,20 @@ internal static class AnalyzerPanelView
         }
     }
 
-    /// <summary>Analyzes the type or member <paramref name="node"/> stands for in the analyzer, which
-    /// is opened if it is not, and selects its root.</summary>
-    public static void Analyze(UiState screen, AppState appState, BrowseNode node)
+    /// <summary>Opens the analyzer if it is not and shows <paramref name="root"/>, expanded and selected.</summary>
+    public static void ShowAnalysis(UiState screen, AnalyzerSymbolNode root)
     {
-        var root = AddToAnalyzer(appState, node);
-        if (root is null)
-        {
-            return;
-        }
-
         OpenPanel(screen, DockView.Analyzer);
         Analysis.ShowRoot(screen.Analyzer, root);
     }
 
-    /// <summary>Analyzes <paramref name="symbol"/>, or finds the root analyzing it already, and shows that root.</summary>
-    internal static void Analyze(AnalyzerRows rows, AppState appState, AnalysisSymbol symbol)
+    /// <summary>Opens the analyzer if it is not, where the root of <paramref name="pending"/> shows as loading while
+    /// the assembly of the symbol it analyzes is listed. Returns it, for the edge to list and analyze
+    /// (<see cref="AnalyzeReferenceHandler"/>).</summary>
+    public static PendingAnalysis ShowListing(UiState screen, PendingAnalysis pending)
     {
-        var root = AddToAnalyzer(appState, symbol);
-        if (root is null)
-        {
-            return;
-        }
-
-        Analysis.ShowRoot(rows, root);
+        OpenPanel(screen, DockView.Analyzer);
+        return pending;
     }
 
     /// <summary>Opens the analyzer if it is not, where a root shows as loading while what

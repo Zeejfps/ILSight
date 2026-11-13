@@ -9,7 +9,8 @@ namespace ILSight;
 /// <see cref="AnalyzerPendingNode"/> until it is found, with the analyses under them. Results stream
 /// in from the background and keep the order the analysis finds them in, or ILSpy's sorting when it
 /// asks for one. The roots change only through its methods, which keep the counts below, and an analysis is of an
-/// assembly the list holds: an add that lands after its assembly was closed, or stopped arriving, is refused.
+/// assembly the list holds: a symbol asked for in an assembly it doesn't hold waits, as loading, while that assembly is
+/// listed, and an add that lands after its assembly was closed, or stopped arriving, is refused.
 /// </summary>
 public sealed class AnalyzerTree
 {
@@ -62,26 +63,41 @@ public sealed class AnalyzerTree
         Findings++;
     }
 
-    /// <summary>Adds <paramref name="symbol"/> as a root, unless a root analyzes it already, and
-    /// returns the root that does; null, adding nothing, when the list neither lists nor has on its way the file it is
-    /// in.</summary>
-    public AnalyzerSymbolNode? AddRoot(AnalysisSymbol symbol)
+    /// <summary>Adds <paramref name="symbol"/> as a root, unless a root analyzes it already, and answers the root that
+    /// does. When the list neither lists nor has on its way the file it is in, adds a root waiting while that file is
+    /// listed, as following a reference into it lists it, for the edge to start; refused, adding nothing, when it has no
+    /// reference to list it by.</summary>
+    public AnalyzerAdd AddRoot(AnalysisSymbol symbol)
     {
         if (!IsOnTheList(symbol))
         {
-            return null;
+            return BeginListing(symbol);
         }
 
         var existing = FindRoot(symbol);
         if (existing is not null)
         {
-            return existing;
+            return new AnalyzerAdd.Analyzing { Root = existing };
         }
 
         var root = new AnalyzerSymbolNode { Symbol = symbol };
         _roots.Add(root);
         FollowSavedAnalyses();
-        return root;
+        return new AnalyzerAdd.Analyzing { Root = root };
+    }
+
+    /// <summary>A root waiting, shown as loading, while the file <paramref name="symbol"/> is in, which the list does
+    /// not hold, is found by its reference and listed; refused when it has none.</summary>
+    private AnalyzerAdd BeginListing(AnalysisSymbol symbol)
+    {
+        var reference = symbol.Reference;
+        if (reference is null)
+        {
+            return new AnalyzerAdd.Refused { Problem = new AppProblem.NotAnalyzable { Symbol = symbol.Label } };
+        }
+
+        var pending = new PendingAnalysis.OfSymbol { Root = AddPending(savedAs: null), Reference = reference, Symbol = symbol };
+        return new AnalyzerAdd.Listing { Pending = pending };
     }
 
     private AnalyzerSymbolNode? FindRoot(AnalysisSymbol symbol)

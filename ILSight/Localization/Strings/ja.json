@@ -678,6 +678,8 @@
   "error.module_unreadable": "{name} を読み込めませんでした",
   "error.decompile": "{name} を逆コンパイルできません",
   "error.analyze": "{name} を分析できません ({analysis})",
+  "error.analyze_symbol": "{name} を分析できません",
+  "error.not_openable": "アセンブリが開かれておらず、それを開くための定義もありません。",
   "error.scan_runtime": "ランタイムのアセンブリをスキャンできません",
   "error.read_nuget_config": "NuGet 構成を読み込めません",
   "error.search_nuget": "{source} を検索できません",

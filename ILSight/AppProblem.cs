@@ -49,6 +49,13 @@ public abstract record AppProblem
 
     public sealed record AnalysesNotRestored(Exception Error) : AppProblem;
 
+    /// <summary>Analyzing <see cref="Symbol"/> was asked for, but its assembly isn't on the list and nothing names its
+    /// definition to list it by.</summary>
+    public sealed record NotAnalyzable : AppProblem
+    {
+        public required string Symbol { get; init; }
+    }
+
     /// <summary>No open assembly has what the documentation id <see cref="Id"/> names.</summary>
     public sealed record IdNotFound(string Id) : AppProblem;
 
@@ -249,7 +256,7 @@ public abstract record AppProblem
     public TResult Match<TResult>(Func<OpenFailed, TResult> openFailed, Func<PdbUnusable, TResult> pdbUnusable,
         Func<AssemblyNotReloaded, TResult> assemblyNotReloaded,
         Func<AssembliesNotReloaded, TResult> assembliesNotReloaded, Func<GoneAfterReload, TResult> goneAfterReload,
-        Func<AnalysisFailed, TResult> analysisFailed, Func<AnalysesNotRestored, TResult> analysesNotRestored,
+        Func<AnalysisFailed, TResult> analysisFailed, Func<AnalysesNotRestored, TResult> analysesNotRestored, Func<NotAnalyzable, TResult> notAnalyzable,
         Func<IdNotFound, TResult> idNotFound, Func<ArgumentsIgnored, TResult> argumentsIgnored,
         Func<NoApiReferencePage, TResult> noApiReferencePage, Func<Unresolved, TResult> unresolved,
         Func<HistoryPlaceGone, TResult> historyPlaceGone, Func<BookmarkGone, TResult> bookmarkGone, Func<ModuleUnreadable, TResult> moduleUnreadable,
@@ -277,6 +284,7 @@ public abstract record AppProblem
             GoneAfterReload c => goneAfterReload(c),
             AnalysisFailed c => analysisFailed(c),
             AnalysesNotRestored c => analysesNotRestored(c),
+            NotAnalyzable c => notAnalyzable(c),
             IdNotFound c => idNotFound(c),
             ArgumentsIgnored c => argumentsIgnored(c),
             NoApiReferencePage c => noApiReferencePage(c),

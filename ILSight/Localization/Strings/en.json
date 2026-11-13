@@ -693,6 +693,8 @@
   "error.module_unreadable": "{name} couldn't be read",
   "error.decompile": "Cannot decompile {name}",
   "error.analyze": "Cannot analyze {name} ({analysis})",
+  "error.analyze_symbol": "Cannot analyze {name}",
+  "error.not_openable": "Its assembly isn't open, and nothing names its definition to open it by.",
   "error.scan_runtime": "Cannot scan the runtime's assemblies",
   "error.read_nuget_config": "Cannot read the NuGet config",
   "error.search_nuget": "Cannot search {source}",

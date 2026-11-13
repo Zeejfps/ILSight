@@ -678,6 +678,8 @@
   "error.module_unreadable": "{name} konnte nicht gelesen werden",
   "error.decompile": "{name} kann nicht dekompiliert werden",
   "error.analyze": "{name} kann nicht analysiert werden ({analysis})",
+  "error.analyze_symbol": "{name} kann nicht analysiert werden",
+  "error.not_openable": "Seine Assembly ist nicht geöffnet, und nichts benennt seine Definition, um sie zu öffnen.",
   "error.scan_runtime": "Die Assemblys der Laufzeit können nicht durchsucht werden",
   "error.read_nuget_config": "Die NuGet-Konfiguration kann nicht gelesen werden",
   "error.search_nuget": "{source} kann nicht durchsucht werden",

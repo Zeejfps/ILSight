@@ -9,8 +9,9 @@ public sealed class RestoreAnalysesHandlerTests
     private static AnalysesRestore WaitForGreeterAndFarewell(AppStateDriver d)
     {
         var analyzer = d.AppState.Analyzer;
-        analyzer.AddRoot(SymbolOf(d, "Greeter"));
-        analyzer.AddRoot(SymbolOf(d, "Farewell"));
+        var greeter = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(SymbolOf(d, "Greeter"))).Root;
+        var farewell = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(SymbolOf(d, "Farewell"))).Root;
+        Assert.Equal<AnalyzerNode>([greeter, farewell], analyzer.Roots);
         var saved = analyzer.ListSavedAnalyses();
         analyzer.ClearRoots();
         analyzer.AddPending(saved);

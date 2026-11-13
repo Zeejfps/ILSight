@@ -678,6 +678,8 @@
   "error.module_unreadable": "{name}을(를) 읽을 수 없습니다",
   "error.decompile": "{name}을(를) 디컴파일할 수 없습니다",
   "error.analyze": "{name}을(를) 분석할 수 없습니다 ({analysis})",
+  "error.analyze_symbol": "{name}을(를) 분석할 수 없습니다",
+  "error.not_openable": "어셈블리가 열려 있지 않고, 이를 열 수 있는 정의도 없습니다.",
   "error.scan_runtime": "런타임 어셈블리를 검사할 수 없습니다",
   "error.read_nuget_config": "NuGet 구성을 읽을 수 없습니다",
   "error.search_nuget": "{source}을(를) 검색할 수 없습니다",

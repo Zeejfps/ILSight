@@ -137,32 +137,12 @@ public static class Analysis
             .ToList();
     }
 
-    /// <summary>Analyzes the type or member <paramref name="node"/> stands for in the analyzer. Returns
-    /// the root analyzing it, or null when it cannot be analyzed.</summary>
-    public static AnalyzerSymbolNode? AddToAnalyzer(AppState appState, BrowseNode node)
-    {
-        var symbol = node.Analysis;
-        if (symbol is null)
-        {
-            return null;
-        }
-
-        return AddToAnalyzer(appState, symbol);
-    }
-
-    /// <summary>Analyzes <paramref name="symbol"/> in the analyzer. Returns the root analyzing it, the one
-    /// already there when it was analyzed before; null when its assembly is no longer on the list.</summary>
-    public static AnalyzerSymbolNode? AddToAnalyzer(AppState appState, AnalysisSymbol symbol)
-    {
-        return appState.Analyzer.AddRoot(symbol);
-    }
-
     /// <summary>Adds a root to <paramref name="analyzer"/> that shows as loading while what
     /// <paramref name="reference"/> points at is found. Returns it with the reference, for
     /// <see cref="AnalyzeReferenceHandler"/> to find and analyze.</summary>
     public static PendingAnalysis BeginAnalyzing(AnalyzerTree analyzer, CodeReference.Navigable reference)
     {
-        return new PendingAnalysis { Root = analyzer.AddPending(savedAs: null), Reference = reference };
+        return new PendingAnalysis.OfTarget { Root = analyzer.AddPending(savedAs: null), Reference = reference };
     }
 
     /// <summary>The roots of <paramref name="analyzer"/> restored from the saved analyses that still wait for their
@@ -194,6 +174,14 @@ public static class Analysis
             analyzer.RemoveRoot(root);
             return;
         }
+        ResolveAnalysis(analyzer, viewCommands, root, symbol);
+    }
+
+    /// <summary>Turns <paramref name="root"/>, which waited while the assembly <paramref name="symbol"/> is in was
+    /// listed, into the analysis of <paramref name="symbol"/>, which <paramref name="viewCommands"/> has the view show;
+    /// removes it when that assembly left the list meanwhile.</summary>
+    public static void AnalyzeListed(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, AnalyzerPendingNode root, AnalysisSymbol symbol)
+    {
         ResolveAnalysis(analyzer, viewCommands, root, symbol);
     }
 

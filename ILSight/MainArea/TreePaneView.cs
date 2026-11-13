@@ -324,7 +324,13 @@ internal static class TreePaneView
             return;
         }
 
-        Commands.Later(ui.State, (screen: ui.State, picked), static (a, s) => AnalyzerPanelView.Analyze(s.screen, a, s.picked));
+        var analysis = picked.Analysis;
+        if (analysis is null)
+        {
+            return;
+        }
+
+        Commands.AnalyzeLater(ui.State, analysis);
     }
 
     private static void CloseOnDelete(Ui<UiState> ui)
@@ -463,7 +469,7 @@ internal static class TreePaneView
         var analysis = node.Analysis;
         if (analysis is not null && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
         {
-            Commands.Later(ui.State, (screen: ui.State, node), static (a, s) => AnalyzerPanelView.Analyze(s.screen, a, s.node));
+            Commands.AnalyzeLater(ui.State, analysis);
         }
 
         var definition = node.Reference;

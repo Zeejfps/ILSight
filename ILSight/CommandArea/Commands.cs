@@ -1,4 +1,5 @@
 using ILSight.Core;
+using ILSight.Core.Analysis;
 using ILSight.CodeTooltipArea;
 using ILSight.AssemblyListArea;
 using ILSight.SearchArea;
@@ -95,6 +96,24 @@ public static class Commands
         {
             StartAnalyzing(appState, AnalyzerPanelView.Analyze(uiState, appState.Analyzer, reference));
         };
+    }
+
+    /// <summary>Asks for <paramref name="symbol"/> to be analyzed once the frame is drawn (<see cref="Analyze"/>).</summary>
+    public static void AnalyzeLater(UiState uiState, AnalysisSymbol symbol)
+    {
+        Later(uiState, (screen: uiState, symbol), static (a, s) => Analyze(a, s.screen, s.symbol));
+    }
+
+    /// <summary>Analyzes <paramref name="symbol"/>: the analyzer opens, if it is not, with the root analyzing it
+    /// selected (<see cref="AnalyzerPanelView.ShowAnalysis"/>). When the list doesn't hold its assembly, a root shows as
+    /// loading while the assembly is listed, as following a reference into it lists it, and the analysis lands then
+    /// (<see cref="StartAnalyzing"/>); when nothing names its definition to list it by, the user is told why.</summary>
+    public static void Analyze(AppState appState, UiState screen, AnalysisSymbol symbol)
+    {
+        appState.Analyzer.AddRoot(symbol).Switch(
+            analyzing => AnalyzerPanelView.ShowAnalysis(screen, analyzing.Root),
+            listing => StartAnalyzing(appState, AnalyzerPanelView.ShowListing(screen, listing.Pending)),
+            refused => Errors.Report(appState, refused.Problem));
     }
 
     /// <summary>Starts finding what the reference of <paramref name="pending"/> points at and analyzing it in its root

@@ -678,6 +678,8 @@
   "error.module_unreadable": "无法读取 {name}",
   "error.decompile": "无法反编译 {name}",
   "error.analyze": "无法分析 {name}（{analysis}）",
+  "error.analyze_symbol": "无法分析 {name}",
+  "error.not_openable": "它的程序集未打开，也没有可用来打开它的定义。",
   "error.scan_runtime": "无法扫描运行时的程序集",
   "error.read_nuget_config": "无法读取 NuGet 配置",
   "error.search_nuget": "无法搜索 {source}",
