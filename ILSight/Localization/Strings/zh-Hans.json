@@ -327,6 +327,7 @@
   "document.reloading": "正在重新加载…",
   "document.gone": "重新加载后 {location} 已不存在。",
   "document.unreadable": "无法读取 {name}（{why}）。",
+  "document.closed": "{name} 已关闭。",
   "code.copy": "复制",
   "code.copy_plain_text": "复制为纯文本",
   "code.select_all": "全选",

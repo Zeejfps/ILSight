@@ -35,6 +35,7 @@ internal static class DocumentsView
     private static void Content(Ui<UiState> ui, Navigation navigation, BrowseSession session, AssemblyList assemblies, DecompilerSetup setup, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
     {
         DocumentPanels.RecordShown(DocumentPanels.GetView(ui.State.Documents, tab), tab);
+        ClosedBanner(ui, tab.Load.ClosedAssembly);
         tab.Content.Switch((ui, navigation, session, assemblies, setup, bookmarks, tooltips, tab),
             empty: static (s, _) => Hint(s.ui, s.ui.State.Strings.DocumentsHint),
             loading: static (s, loading) => RenderLoading(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab, loading),
@@ -45,10 +46,30 @@ internal static class DocumentsView
             diagram: static (s, diagram) => DiagramView.Render(s.ui, s.navigation, s.tooltips, s.tab, diagram.Types),
             comparison: static (s, comparison) => ComparisonView.Render(s.ui, s.navigation, s.assemblies, s.tab, comparison.Assemblies),
             failed: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
+            stopped: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
             reloading: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
             reopening: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
             gone: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
             unreadable: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab));
+    }
+
+    /// <summary>The bar over a tab whose assembly was closed, saying so: the tab keeps what it showed and reads it no
+    /// more (<see cref="TabLoad.ShowClosed"/>). Nothing while <paramref name="assembly"/>, the closed file's name, is
+    /// null.</summary>
+    private static void ClosedBanner(Ui<UiState> ui, string? assembly)
+    {
+        if (assembly is null)
+        {
+            return;
+        }
+
+        var theme = ui.Theme;
+        var text = ui.Memo("closed-banner", (assembly, t: ui.State.Strings), static a => a.t.DocumentClosed(a.assembly));
+        using (ui.Row(new Box { Padding = new Spacing(theme.Gap, theme.GapTight), Gap = theme.Gap, Background = theme.PaneBackground }))
+        {
+            ui.Text(text, color: theme.Warning);
+        }
+        ui.Separator();
     }
 
     /// <summary>The code view of <paramref name="tab"/>, whose node <paramref name="loading"/> is on its way, or a

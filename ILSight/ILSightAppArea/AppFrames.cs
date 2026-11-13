@@ -211,6 +211,9 @@ internal static class AppFrames
         ErrorDialogView.ShowNewErrors(uiState.ErrorDialog, errors.Revision, errors.Entries);
     }
 
+    /// <summary>Decompiles each tab in front again once the language or the options changed, when it shows what they
+    /// would show otherwise; a tab whose assembly was closed keeps what it shows and reads nothing
+    /// (<see cref="TabLoad.ShowClosed"/>).</summary>
     private static void FollowDecompilation(UiState uiState, AppState appState)
     {
         var language = appState.Decompiler.Setup.Language;

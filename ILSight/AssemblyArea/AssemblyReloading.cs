@@ -198,7 +198,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         var ticket = session.Reload.Start();
 
         var paths = lists.ActivePaths.ToList();
-        var tabs = ReleaseShownTabs(session.Navigation, decompiler.Setup.Language);
+        var tabs = ReleaseShownTabs(session.Navigation, session.Assemblies, decompiler.Setup.Language);
         var places = tabs.ConvertAll(t => t.Location);
         session.ClearAssemblies();
 
@@ -206,7 +206,10 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         return FinishReload(session, viewCommands, decompiler.Setup, reloaded, ticket, intent, tabs);
     }
 
-    private static List<ReloadingTab> ReleaseShownTabs(Navigation navigation, DecompilationLanguage language)
+    /// <summary>Lets go of the node each tab shows, to find its place again in what the reload reads; a tab whose
+    /// assembly was closed (<see cref="TabLoad.ShowClosed"/>) keeps what it shows, reading nothing, unless its file
+    /// is on <paramref name="assemblies"/> again, where its place is found as any other's.</summary>
+    private static List<ReloadingTab> ReleaseShownTabs(Navigation navigation, AssemblyList assemblies, DecompilationLanguage language)
     {
         var reloading = new List<ReloadingTab>();
         foreach (var tab in navigation.OpenTabs)
@@ -217,11 +220,28 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
                 continue;
             }
 
+            if (IsKeptClosed(tab, assemblies, location))
+            {
+                continue;
+            }
+
             var position = FindPositionToKeep(tab, language);
             tab.Load.ShowReloading(location);
             reloading.Add(new ReloadingTab { Tab = tab, Location = location, Version = tab.Version, Position = position });
         }
         return reloading;
+    }
+
+    /// <summary>Whether <paramref name="tab"/>, at <paramref name="location"/>, shows a node whose assembly was closed
+    /// and whose file <paramref name="assemblies"/> doesn't list again.</summary>
+    private static bool IsKeptClosed(DocumentTab tab, AssemblyList assemblies, NodePath location)
+    {
+        if (tab.Load.ClosedAssembly is null)
+        {
+            return false;
+        }
+
+        return !assemblies.IsListed(location.FilePath);
     }
 
     private static ViewPosition? FindPositionToKeep(DocumentTab tab, DecompilationLanguage language)

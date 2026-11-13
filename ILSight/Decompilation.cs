@@ -74,7 +74,7 @@ public static class Decompilation
     /// <summary>Starts the load of the node <paramref name="tab"/> shows again, as <see cref="TabLoad.StartAgainIfOutdated"/>
     /// does, if it was shown in another language, or with other options, than <paramref name="language"/> and
     /// <paramref name="options"/>. Returns what <see cref="DecompileIntoTabHandler"/> needs to bring it in; null when it
-    /// needs no decompiling again.</summary>
+    /// needs no decompiling again, or its assembly was closed (<see cref="TabLoad.ShowClosed"/>).</summary>
     public static DecompileTicket? StartDecompilingAgainIfOutdated(DocumentTab tab, DecompilationLanguage language, DecompilerOptions options)
     {
         var load = tab.Load;

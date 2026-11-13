@@ -327,6 +327,7 @@
   "document.reloading": "다시 로드하는 중…",
   "document.gone": "다시 로드한 후 {location}이(가) 없습니다.",
   "document.unreadable": "{name}을(를) 읽을 수 없습니다 ({why}).",
+  "document.closed": "{name}이(가) 닫혔습니다.",
   "code.copy": "복사",
   "code.copy_plain_text": "일반 텍스트로 복사",
   "code.select_all": "모두 선택",

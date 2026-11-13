@@ -80,6 +80,10 @@ public abstract record TabContent
         public required string Message { get; init; }
     }
 
+    /// <summary>Nothing of <see cref="Node"/>: its assembly was closed while it decompiled or its grid or picture was
+    /// read, and the read stopped there (<see cref="TabLoad.ShowClosed"/>).</summary>
+    public sealed record Stopped(BrowseNode Node) : TabContent;
+
     /// <summary>The tab waits to find the node at <see cref="Location"/> again: its assembly is reloading,
     /// or the saved documents are reopening. <see cref="Title"/> is the node's name as it was last known,
     /// or null where the saved documents kept none.</summary>
@@ -122,7 +126,7 @@ public abstract record TabContent
     public TResult Match<TResult>(Func<Empty, TResult> empty, Func<Loading, TResult> loading, Func<Code, TResult> code,
         Func<Table, TResult> table, Func<Picture, TResult> picture, Func<Report, TResult> report,
         Func<Diagram, TResult> diagram, Func<Comparison, TResult> comparison, Func<Failed, TResult> failed,
-        Func<Reloading, TResult> reloading, Func<Reopening, TResult> reopening, Func<Gone, TResult> gone,
+        Func<Stopped, TResult> stopped, Func<Reloading, TResult> reloading, Func<Reopening, TResult> reopening, Func<Gone, TResult> gone,
         Func<Unreadable, TResult> unreadable)
     {
         return this switch
@@ -136,6 +140,7 @@ public abstract record TabContent
             Diagram c => diagram(c),
             Comparison c => comparison(c),
             Failed c => failed(c),
+            Stopped c => stopped(c),
             Reloading c => reloading(c),
             Reopening c => reopening(c),
             Gone c => gone(c),
@@ -149,7 +154,7 @@ public abstract record TabContent
     public void Switch<TState>(TState state, Action<TState, Empty> empty, Action<TState, Loading> loading,
         Action<TState, Code> code, Action<TState, Table> table, Action<TState, Picture> picture,
         Action<TState, Report> report, Action<TState, Diagram> diagram, Action<TState, Comparison> comparison,
-        Action<TState, Failed> failed, Action<TState, Reloading> reloading, Action<TState, Reopening> reopening,
+        Action<TState, Failed> failed, Action<TState, Stopped> stopped, Action<TState, Reloading> reloading, Action<TState, Reopening> reopening,
         Action<TState, Gone> gone, Action<TState, Unreadable> unreadable)
     {
         switch (this)
@@ -180,6 +185,9 @@ public abstract record TabContent
                 return;
             case Failed c:
                 failed(state, c);
+                return;
+            case Stopped c:
+                stopped(state, c);
                 return;
             case Reloading c:
                 reloading(state, c);

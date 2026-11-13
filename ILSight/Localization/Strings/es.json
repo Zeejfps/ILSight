@@ -327,6 +327,7 @@
   "document.reloading": "Recargando…",
   "document.gone": "{location} ya no existe tras recargar.",
   "document.unreadable": "No se pudo leer {name} ({why}).",
+  "document.closed": "Se cerró {name}.",
   "code.copy": "Copiar",
   "code.copy_plain_text": "Copiar como texto sin formato",
   "code.select_all": "Seleccionar todo",

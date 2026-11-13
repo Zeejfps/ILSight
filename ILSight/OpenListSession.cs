@@ -6,11 +6,13 @@ namespace ILSight;
 /// <summary>What the open assembly list holds while it is open, which switching to another list changes together:
 /// its assemblies, the analyses, the tabs and their history, the tabs reopened from its saved documents, its reload
 /// and its opens. The lists and delete dialogs and the toolbar's list menu take it to switch lists in the frame of
-/// their input, without the rest of the app's state. It keeps a rule across the assemblies and the analyses (an
-/// analysis is of an assembly on the list), so it holds the list itself privately and closes assemblies by its own
-/// methods: what it hands out (<see cref="Assemblies"/>) reads the list and opens onto it, but closes nothing. The
-/// tabs (<see cref="Navigation"/>), the reopened tabs, the reload and the opens keep rules of their own, and none of
-/// their members makes a part another list's, so it hands them out and their readers use them directly.</summary>
+/// their input, without the rest of the app's state. It keeps rules across the assemblies and the analyses (an
+/// analysis is of an assembly on the list) and across the assemblies and the tabs (a tab whose assembly is closed
+/// reads nothing), so it holds the list itself privately and closes assemblies by its own methods, which mark the
+/// tabs of what they close: what it hands out (<see cref="Assemblies"/>) reads the list and opens onto it, but closes
+/// nothing. The tabs (<see cref="Navigation"/>), the reopened tabs, the reload and the opens keep rules of their own,
+/// and none of their members makes a part another list's, so it hands them out and their readers use them
+/// directly.</summary>
 public sealed class OpenListSession
 {
     private readonly ClosableAssemblyList _assemblies;
@@ -89,13 +91,41 @@ public sealed class OpenListSession
     }
 
     /// <summary>Takes <paramref name="items"/> off the list, and the analyses of them with them; one no longer on it is
-    /// passed over.</summary>
+    /// passed over. The tabs showing what was read from them keep what they show, saying it was closed, and read it no
+    /// more (<see cref="ShowTabsClosed"/>).</summary>
     public void CloseAssemblies(IReadOnlyList<LoadedAssembly> items)
     {
         foreach (var item in items)
         {
             _assemblies.Close(item);
             _analyzer.RemoveAnalysesOf(item.ListedItem);
+            ShowTabsClosed(item.ListedItem);
+        }
+    }
+
+    /// <summary>Has each open tab showing a node read from <paramref name="item"/>, an item of the list the user
+    /// closed, or out of it, keep what it shows and read it no more (<see cref="TabLoad.ShowClosed"/>), as the rule
+    /// across the list and the tabs asks: a tab whose assembly is closed reads nothing. Every close covers it; two
+    /// changes take an item off the list and are left out on purpose: reading the list again
+    /// (<see cref="ClearAssemblies"/>, whose tabs wait to find their places in what it reads), and reading one item
+    /// again (<see cref="TryReplaceAssembly"/>, whose tabs are found again in what replaced it).</summary>
+    private void ShowTabsClosed(LoadedAssembly item)
+    {
+        var name = item.FilePath.FileName;
+        foreach (var tab in Navigation.OpenTabs)
+        {
+            var node = tab.Node;
+            if (node is null)
+            {
+                continue;
+            }
+
+            if (node.Assembly.ListedItem != item)
+            {
+                continue;
+            }
+
+            tab.Load.ShowClosed(name);
         }
     }
 
@@ -125,13 +155,19 @@ public sealed class OpenListSession
     }
 
     /// <summary>Closes every assembly of the open list and the analyses of them, stopping its reload and its opens;
-    /// tabs still waiting for it to reopen their places show what is left of them. Returns the loads that started in
-    /// those tabs, for the edge that asked for this to start.</summary>
+    /// tabs still waiting for it to reopen their places show what is left of them, and those showing what was read
+    /// from it keep what they show, saying it was closed, and read it no more. Returns the loads that started in those
+    /// tabs, for the edge that asked for this to start.</summary>
     public TabLoads CloseAllAssemblies()
     {
         Navigation.BeginRequest();
         Opens.Cancel();
         Reload.Stop();
+        foreach (var item in Assemblies.Listed)
+        {
+            ShowTabsClosed(item);
+        }
+
         ClearAssemblies();
         Assemblies.Pdbs.ForgetAll();
         Assemblies.TargetFrameworks.ForgetAll();

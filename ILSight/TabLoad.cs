@@ -5,7 +5,8 @@ namespace ILSight;
 /// <summary>A tab's load of the node it is pointed at: what it shows of the node while it loads, once loaded or
 /// failed, or while the node is away (its assembly reloading, the saved documents reopening, or gone); the language
 /// and options it is decompiled with; where its view is to stand once loaded, and where it stood since. Only the newest
-/// load's result lands (<see cref="TryShowLoaded"/>, <see cref="TryShowFailed"/>). Which node a tab is pointed at is
+/// load's result lands (<see cref="TryShowLoaded"/>, <see cref="TryShowFailed"/>), and once the node's assembly is
+/// closed none does, nor does any load start again (<see cref="ShowClosed"/>). Which node a tab is pointed at is
 /// <see cref="Navigation"/>'s, which makes a new load for each (<see cref="TabDocument"/>): no member here points the
 /// tab elsewhere, so the navigation hands the load out (<see cref="DocumentTab.Load"/>). Used on the UI thread
 /// only.</summary>
@@ -28,6 +29,10 @@ public sealed class TabLoad
 
     /// <summary>The options <see cref="Content"/> was decompiled with.</summary>
     private DecompilerOptions _options = DecompilerOptions.Default;
+
+    /// <summary>The file name of the list's item the node was read from, once the user closed it: the load keeps what
+    /// it shows of the node and reads it no more. Null while the item is open.</summary>
+    private string? _closedAssembly;
 
     private int _changes;
 
@@ -76,6 +81,7 @@ public sealed class TabLoad
         diagram: static _ => null,
         comparison: static _ => null,
         failed: static failed => failed.Node,
+        stopped: static stopped => stopped.Node,
         reloading: static _ => null,
         reopening: static _ => null,
         gone: static _ => null,
@@ -93,6 +99,7 @@ public sealed class TabLoad
         diagram: static _ => null,
         comparison: static _ => null,
         failed: static failed => failed.Node.Path,
+        stopped: static stopped => stopped.Node.Path,
         reloading: static reloading => reloading.Location,
         reopening: static _ => null,
         gone: static gone => gone.Location,
@@ -109,6 +116,7 @@ public sealed class TabLoad
         diagram: static _ => DecompiledDocument.Empty,
         comparison: static _ => DecompiledDocument.Empty,
         failed: static _ => DecompiledDocument.Empty,
+        stopped: static _ => DecompiledDocument.Empty,
         reloading: static _ => DecompiledDocument.Empty,
         reopening: static _ => DecompiledDocument.Empty,
         gone: static _ => DecompiledDocument.Empty,
@@ -125,6 +133,7 @@ public sealed class TabLoad
         diagram: static _ => null,
         comparison: static _ => null,
         failed: static failed => NodeText.Name(failed.Node),
+        stopped: static stopped => NodeText.Name(stopped.Node),
         reloading: static reloading => reloading.Title,
         reopening: static _ => null,
         gone: static gone => gone.Title,
@@ -140,7 +149,13 @@ public sealed class TabLoad
 
     public bool IsBusy => _work.IsRunning;
 
-    /// <summary>Counts up whenever the load starts again, or lets go of its node.</summary>
+    /// <summary>The file name of the list's item the node was read from, once the user closed it
+    /// (<see cref="ShowClosed"/>): the load keeps what it shows and reads the node no more. Null while it is
+    /// open.</summary>
+    public string? ClosedAssembly => _closedAssembly;
+
+    /// <summary>Counts up whenever the load starts again, lets go of its node, or its node's assembly is
+    /// closed.</summary>
     public int Changes => _changes;
 
     /// <summary>Where the view of the shown node stands, as the view last kept it, or null while there is none.</summary>
@@ -186,9 +201,15 @@ public sealed class TabLoad
     }
 
     /// <summary>Shows <paramref name="loaded"/>, which the load <paramref name="ticket"/> was given for brought,
-    /// unless a newer load started since, or the tab closed. Returns whether it landed.</summary>
+    /// unless a newer load started since, the tab closed, or the node's assembly closed (<see cref="ShowClosed"/>, which
+    /// gave up the load). Returns whether it landed.</summary>
     public bool TryShowLoaded(WorkTicket ticket, NodeContent loaded)
     {
+        if (_closedAssembly is not null)
+        {
+            return false;
+        }
+
         if (!_work.TryFinish(ticket))
         {
             return false;
@@ -203,9 +224,15 @@ public sealed class TabLoad
     }
 
     /// <summary>Shows that the load <paramref name="ticket"/> was given for failed with <paramref name="message"/>,
-    /// unless a newer load started since, or the tab closed. Returns whether it landed.</summary>
+    /// unless a newer load started since, the tab closed, or the node's assembly closed. Returns whether it
+    /// landed.</summary>
     public bool TryShowFailed(WorkTicket ticket, string message)
     {
+        if (_closedAssembly is not null)
+        {
+            return false;
+        }
+
         if (!_work.TryFinish(ticket))
         {
             return false;
@@ -269,11 +296,42 @@ public sealed class TabLoad
         });
     }
 
+    /// <summary>Lets go of the node for <paramref name="content"/>, which holds none, and so of what was kept of it
+    /// once its assembly closed.</summary>
     private void ReleaseNode(TabContent content)
     {
         _changes++;
         Cancel();
         _content = content;
+        _closedAssembly = null;
+    }
+
+    /// <summary>Keeps what the load shows of its node, whose assembly the user closed: <paramref name="assembly"/>,
+    /// the file name of the list's item it was read from. The load reads the node no more: what was in flight is
+    /// cancelled, its result refused as it lands (<see cref="TryShowLoaded"/>), a node still loading showing that
+    /// nothing of it came (<see cref="TabContent.Stopped"/>), and nothing starts it again
+    /// (<see cref="StartAgainIfOutdated"/>). A load of no node has nothing of one to keep and stays as it is, as does
+    /// one shown closed already.</summary>
+    public void ShowClosed(string assembly)
+    {
+        var node = Node;
+        if (node is null)
+        {
+            return;
+        }
+
+        if (_closedAssembly is not null)
+        {
+            return;
+        }
+
+        _changes++;
+        Cancel();
+        _closedAssembly = assembly;
+        if (_content is TabContent.Loading)
+        {
+            _content = new TabContent.Stopped(node);
+        }
     }
 
     /// <summary>Cancels the load in flight, if any, whose result is then dropped.</summary>
@@ -318,9 +376,15 @@ public sealed class TabLoad
 
     /// <summary>Starts the load of the node it shows again, if it was shown in another language, or with other options,
     /// than <paramref name="language"/> and <paramref name="options"/>, keeping the view where it was when the language
-    /// is the same. Returns the ticket its result lands with; null when it needs no loading again.</summary>
+    /// is the same. Returns the ticket its result lands with; null when it needs no loading again, or its node's
+    /// assembly was closed, the load reading it no more (<see cref="ShowClosed"/>).</summary>
     public WorkTicket? StartAgainIfOutdated(DecompilationLanguage language, DecompilerOptions options)
     {
+        if (_closedAssembly is not null)
+        {
+            return null;
+        }
+
         var node = Node;
         if (node is null)
         {

@@ -334,6 +334,7 @@
   "document.reloading": "Reloading…",
   "document.gone": "{location} is gone after reloading.",
   "document.unreadable": "{name} couldn't be read ({why}).",
+  "document.closed": "{name} was closed.",
 
   "code.copy": "Copy",
 
