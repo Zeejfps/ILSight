@@ -52,8 +52,6 @@ internal sealed class ReadingResolver : IAssemblyResolver
         return Task.FromResult(ResolveModule(mainModule, moduleName));
     }
 
-    /// <summary>The file of <paramref name="module"/>, added to the unit's reading first; null for none, or one
-    /// closed. The resolving module's own file needs no reading of its own: the unit holds it.</summary>
     private MetadataFile? HandOut(LoadedModule? module)
     {
         if (module is null)
@@ -62,6 +60,7 @@ internal sealed class ReadingResolver : IAssemblyResolver
         }
 
         var library = LoadedAssemblies.GetKept(module);
+        // The resolving module's own file needs no reading of its own: the unit holds it.
         if (ReferenceEquals(library, _resolving))
         {
             return library.File;

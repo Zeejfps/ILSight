@@ -24,7 +24,6 @@ public static class PdbFiles
         return Check(pe, pdbPath);
     }
 
-    /// <summary>Whether the PDB at <paramref name="pdbPath"/> can be read for <paramref name="assembly"/>.</summary>
     private static PdbCheck Check(PEFile assembly, string pdbPath)
     {
         try
@@ -72,8 +71,6 @@ public static class PdbFiles
         return image.AsSpan().StartsWith(signature);
     }
 
-    /// <summary>Whether the PDB is of the build one of the assembly's CodeView entries names; any
-    /// PDB matches an assembly that names none.</summary>
     private static PdbCheck CheckBuild(PEFile assembly, MetadataReaderProvider provider)
     {
         var namesBuild = false;

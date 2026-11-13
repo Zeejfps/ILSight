@@ -193,8 +193,7 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
         };
     }
 
-    /// <summary>Whether <paramref name="node"/> names the type parameter a <c>where</c> clause is
-    /// about, which the decompiler writes without a symbol.</summary>
+    // The decompiler writes the type parameter a where clause is about without a symbol.
     private static bool IsConstrainedTypeParameter(AstNode node)
     {
         if (node.Parent is not Constraint constraint)

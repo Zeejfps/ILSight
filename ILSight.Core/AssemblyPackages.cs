@@ -8,7 +8,6 @@ public static class AssemblyPackages
 {
     private const char Separator = '/';
 
-    /// <summary>The folders and files of a package as they are listed, sorted into a tree once all are in.</summary>
     private sealed class FileTree
     {
         public required ListedFolder Root { get; init; }
@@ -64,9 +63,6 @@ public static class AssemblyPackages
         return CreatePackage(tree, path, isBundle: false, file => ReadZipFile(path, file, entryNames[file.FullName]));
     }
 
-    /// <summary>Adds <paramref name="entry"/> to <paramref name="tree"/> under its name with <c>/</c>
-    /// between folders, remembering the name the zip gives it to read it by; leaves out one whose name
-    /// leads out of the package.</summary>
     private static void AddZipEntry(FileTree tree, Dictionary<string, string> entryNames, ZipArchiveEntry entry)
     {
         var fullName = FindNameInside(entry.FullName);
@@ -107,8 +103,6 @@ public static class AssemblyPackages
         return CreatePackage(tree, path, isBundle: true, file => BundleContents.Read(path.Text, byName[file.FullName]));
     }
 
-    /// <summary>Adds a file to <paramref name="tree"/> for each of a bundle's <paramref name="entries"/> that names one;
-    /// answers the entries by the name each file has inside, the first one kept where names repeat.</summary>
     private static Dictionary<string, SingleFileBundle.Entry> AddBundleFiles(FileTree tree, IEnumerable<SingleFileBundle.Entry> entries)
     {
         var byName = new Dictionary<string, SingleFileBundle.Entry>(StringComparer.Ordinal);
@@ -131,9 +125,6 @@ public static class AssemblyPackages
         return name.EndsWith(Separator) || name.EndsWith('\\');
     }
 
-    /// <summary><paramref name="name"/>, as a package entry gives it, with <c>/</c> between folders
-    /// and no empty or <c>.</c> folders; null when it leads out of the package: rooted, on a drive,
-    /// or through <c>..</c>.</summary>
     private static string? FindNameInside(string name)
     {
         if (name.StartsWith(Separator) || name.StartsWith('\\') || name.Contains(':'))

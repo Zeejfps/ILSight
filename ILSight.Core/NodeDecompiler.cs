@@ -52,8 +52,6 @@ internal static class NodeDecompiler
             static c => throw new InvalidOperationException($"'{c.Module.FilePath}' was decompiled after its release: the unit holds a reading of the node's module, which the request's is."));
     }
 
-    /// <summary>The document of <paramref name="request"/>, whose module the library could not read: the failure, for
-    /// code that reads it; else what it writes without the module's type system.</summary>
     private static DecompiledDocument DecompileUnreadable(ModuleReading reading, DocumentRequest request, Exception why, DecompilationLanguage language, DecompilerOptions options,
         CancellationToken cancellationToken, string? note)
     {
@@ -72,8 +70,6 @@ internal static class NodeDecompiler
         return request is DocumentRequest.ModulePreview or DocumentRequest.Type or DocumentRequest.Member;
     }
 
-    /// <summary>Writes the document <paramref name="request"/> asks for with <paramref name="typeSystem"/>, its module's
-    /// as read, after <paramref name="note"/> as a comment when given.</summary>
     private static DecompiledDocument Decompile(ModuleReading reading, DocumentRequest request, DecompilerTypeSystem? typeSystem, DecompilationLanguage language,
         DecompilerOptions options, CancellationToken cancellationToken, string? note)
     {
@@ -94,8 +90,6 @@ internal static class NodeDecompiler
         return builder.BuildDocument(request.Title);
     }
 
-    /// <summary>Has the decompiler write what <paramref name="request"/> asks for into <paramref name="builder"/>;
-    /// what it threw when it failed on the module, else null. Cancellation asked for goes through.</summary>
     private static Exception? TryWrite(ModuleReading reading, DocumentRequest request, DocumentBuilder builder, DecompilationLanguage language,
         DecompilerSettings settings, CancellationToken cancellationToken)
     {
@@ -114,8 +108,6 @@ internal static class NodeDecompiler
         }
     }
 
-    /// <summary>Writes the document <paramref name="request"/> asks for with <paramref name="typeSystem"/>, its module's
-    /// as read, as <see cref="DecompileAsync"/> does, but throws what the decompiler throws.</summary>
     private static DecompiledDocument DecompileOrThrow(ModuleReading reading, DocumentRequest request, DecompilerTypeSystem? typeSystem, DecompilationLanguage language,
         DecompilerOptions options, CancellationToken cancellationToken)
     {
@@ -144,8 +136,6 @@ internal static class NodeDecompiler
         }
     }
 
-    /// <summary>The document saying the decompiler failed on what <paramref name="request"/> asks for, and
-    /// how.</summary>
     private static DecompiledDocument DescribeFailure(DocumentRequest request, DecompilationLanguage language, Exception thrown)
     {
         var error = new DocumentBuilder { Language = language };
@@ -155,7 +145,6 @@ internal static class NodeDecompiler
         return error.BuildFailure(request.Title, thrown);
     }
 
-    /// <summary>Why the file <paramref name="failure"/> names could not be read.</summary>
     private static DecompiledDocument DescribeLoadError(DocumentRequest.Failure failure, DecompilationLanguage language)
     {
         var error = failure.Assembly.Error;
@@ -223,7 +212,6 @@ internal static class NodeDecompiler
         syntaxTree.AcceptVisitor(new CSharpOutputVisitor(writer, settings.CSharpFormattingOptions));
     }
 
-    /// <summary>The syntax tree of the whole module or the namespace's types <paramref name="export"/> names.</summary>
     private static SyntaxTree DecompileWhole(ModuleReading reading, CodeExport export, DecompilerTypeSystem typeSystem, DecompilerSettings settings,
         CancellationToken cancellationToken)
     {
@@ -380,8 +368,6 @@ internal static class NodeDecompiler
         };
     }
 
-    /// <summary>What disassembles each method body: with the C# above each statement for
-    /// <see cref="DecompilationLanguage.ILWithCSharp"/>, else as plain IL.</summary>
     private static MethodBodyDisassembler CreateMethodBodyDisassembler(ModuleReading reading, LoadedModule assembly, DecompilerTypeSystem typeSystem,
         ITextOutput output, DecompilationLanguage language, DecompilerSettings settings, CancellationToken cancellationToken)
     {
@@ -393,8 +379,7 @@ internal static class NodeDecompiler
         return new MethodBodyDisassembler(output, cancellationToken);
     }
 
-    /// <summary>The comments ILSpy opens a type or member with: a warning for a reference assembly,
-    /// the assembly's full name, and the type.</summary>
+    // ILSpy opens a type or member with these comments.
     private static void WriteHeader(LoadedModule assembly, DocumentBuilder output, IType type, ConversionFlags flags)
     {
         var attributes = RequireTypeSystem(output.TypeSystem).MainModule.GetAssemblyAttributes();
@@ -408,14 +393,13 @@ internal static class NodeDecompiler
         WriteComment(output, type is ITypeDefinition definition ? ambience.ConvertSymbol(definition) : ambience.ConvertType(type));
     }
 
-    /// <summary>Whether <paramref name="attributes"/>, an assembly's, mark it a reference assembly.</summary>
     private static bool IsReferenceAssembly(IEnumerable<IAttribute> attributes)
     {
         return attributes.Any(static a => a.AttributeType.FullName == ReferenceAssemblyAttribute);
     }
 
-    /// <summary>Decompiles <paramref name="member"/> as ILSpy shows it on its own: a constructor of a
-    /// class or a field that is not constant with the members whose initializers it shares.</summary>
+    // As ILSpy shows a member on its own: a constructor of a class, or a field that is not constant, with the members
+    // whose initializers it shares.
     private static SyntaxTree DecompileMember(CSharpDecompiler decompiler, IMember member, ITypeDefinition declaring)
     {
         var module = decompiler.TypeSystem.MainModule;
@@ -657,8 +641,6 @@ internal static class NodeDecompiler
             static (o, forwarded) => WriteForwardedType(o, forwarded.Line));
     }
 
-    /// <summary>A line for each type and member <paramref name="entries"/> lists as used from a reference,
-    /// going to where it is defined, with what is used of a type indented under it.</summary>
     private static void WriteUsed(DocumentBuilder output, IReadOnlyList<UsedEntry> entries, string indent, CancellationToken cancellationToken)
     {
         foreach (var entry in entries)
@@ -681,7 +663,6 @@ internal static class NodeDecompiler
         }
     }
 
-    /// <summary>A line naming the forwarded type, which goes to where it is defined, and where it is forwarded to.</summary>
     private static void WriteForwardedType(DocumentBuilder output, ForwardedLine line)
     {
         output.Write(line.Label, SpanKind.Type, line.Target);
@@ -712,7 +693,6 @@ internal static class NodeDecompiler
         output.WriteLine();
     }
 
-    /// <summary>WPF's compiled XAML as the XAML it was compiled from, colored as markup.</summary>
     private static void WriteXaml(ModuleReading reading, DocumentRequest.Baml baml, DocumentBuilder output, CancellationToken cancellationToken)
     {
         var xaml = Baml.DecompileToText(reading, baml.Module, baml.Data, cancellationToken);
@@ -720,12 +700,10 @@ internal static class NodeDecompiler
         output.WriteLine();
     }
 
-    /// <summary>A text resource as its text, colored as XML or JSON when it is that, as ILSpy shows
-    /// it, and indented when written on one line; anything else as a description and a hex dump of
-    /// its first bytes.</summary>
     private static void WriteResource(DocumentRequest.Resource resource, DocumentBuilder output)
     {
         var data = resource.Read();
+        // Colored as XML or JSON when it is that, as ILSpy shows it.
         var detected = ResourceText.Detect(resource.Title, data);
         if (detected is not null)
         {
@@ -770,7 +748,6 @@ internal static class NodeDecompiler
         }
     }
 
-    /// <summary>An assembly reference's full name, which goes to the assembly, after a comment's marker.</summary>
     private static void WriteReferenceLine(DocumentBuilder output, SummaryLink reference)
     {
         output.Write("// ", SpanKind.Comment);
@@ -788,7 +765,6 @@ internal static class NodeDecompiler
         return "A native library, or a module holding no metadata";
     }
 
-    /// <summary>The methods the assembly imports from a module, after a blank line, a line each.</summary>
     private static void WriteImports(DocumentBuilder output, IReadOnlyList<SummaryLink> imports)
     {
         if (imports.Count == 0)
@@ -815,9 +791,8 @@ internal static class NodeDecompiler
         output.WriteLine();
     }
 
-    /// <summary>Passes C# on to the writers it decorates, telling the decompiler where in
-    /// <see cref="DocumentBuilder"/> each token lands, so that it can record where each node of the syntax
-    /// tree was written.</summary>
+    // Tells the decompiler where in the DocumentBuilder each token lands, so that it can record where each node of the
+    // syntax tree was written.
     private sealed class LocatingTokenWriter(TokenWriter decorated, DocumentBuilder builder) : DecoratingTokenWriter(decorated), ILocatable
     {
         public TextLocation Location => builder.Location;

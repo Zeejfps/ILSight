@@ -40,8 +40,6 @@ public static class AssemblyListing
         }
     }
 
-    /// <summary>The assembly read from <paramref name="path"/>, or when it cannot be read, the failure
-    /// listed for it, else a new one.</summary>
     private static LoadedAssembly GetAssemblyOrFailure(AssemblyList list, AssemblyPath path, int generation)
     {
         try
@@ -148,7 +146,6 @@ public static class AssemblyListing
             static unreadable => unreadable);
     }
 
-    /// <summary><paramref name="resolved"/>, once its assembly is listed; not found when it cannot be.</summary>
     private static Lookup<(LoadedModule Assembly, EntityHandle Handle)> ListResolved(AssemblyList list,
         Lookup<(LoadedModule Assembly, EntityHandle Handle)>.Found resolved, int generation, CancellationToken ct)
     {
@@ -302,10 +299,6 @@ public static class AssemblyListing
         }
     }
 
-    /// <summary>The type or member <paramref name="entity"/> points at, the assembly that defines it and that
-    /// assembly's type system, loading the assembly without listing it, once the reads of the type systems the
-    /// resolving reads ended; not found when it cannot be resolved, unreadable when the library could not read an
-    /// assembly on the way.</summary>
     private static async Task<Lookup<ResolvedEntity>> ResolveEntityAsync(AssemblyList list, ModuleReading reading, CodeReference.Entity entity,
         CancellationToken ct)
     {
@@ -320,8 +313,6 @@ public static class AssemblyListing
         return await definition.ThenFindAsync((found, c) => ResolveEntityAsync(reading, found.Assembly, found.Handle, c), ct);
     }
 
-    /// <summary>The type or member <paramref name="handle"/> defines in <paramref name="assembly"/>, once the read of
-    /// its type system ended.</summary>
     private static async Task<Lookup<ResolvedEntity>> ResolveEntityAsync(ModuleReading reading, LoadedModule assembly, EntityHandle handle,
         CancellationToken ct)
     {
@@ -332,8 +323,6 @@ public static class AssemblyListing
             static _ => new Lookup<ResolvedEntity>.NotFound());
     }
 
-    /// <summary>A type or member a reference was resolved to, the assembly that defines it, and that assembly's type
-    /// system as read.</summary>
     private sealed class ResolvedEntity
     {
         public required IEntity Entity { get; init; }
@@ -419,8 +408,6 @@ public static class AssemblyListing
         }
     }
 
-    /// <summary>The assembly at <paramref name="path"/>, read from the file unless it is loaded. One read
-    /// for a <paramref name="generation"/> that a clear has ended is not kept.</summary>
     private static LoadedAssembly GetAssembly(AssemblyList list, AssemblyPath path, int generation)
     {
         var existing = list.FindRead(path);
@@ -451,13 +438,11 @@ public static class AssemblyListing
             return TryList(list, module.Place.Container, generation, cancellationToken);
         }
 
-        var read = new FreshItem { Item = assembly, ReadOutOf = ListReadOutOf(assembly) };
+        var read = new FreshItem { Item = assembly, ReadOutOf = EnsureReadOutOf(assembly) };
         return list.TryList(read, generation, cancellationToken);
     }
 
-    /// <summary>The assemblies read out of <paramref name="assembly"/>, reading them now, when it is a package; none
-    /// for anything else.</summary>
-    private static IReadOnlyList<LoadedModule> ListReadOutOf(LoadedAssembly assembly)
+    private static IReadOnlyList<LoadedModule> EnsureReadOutOf(LoadedAssembly assembly)
     {
         if (assembly is LoadedPackage package)
         {
@@ -502,10 +487,9 @@ public static class AssemblyListing
         return admitted.Use;
     }
 
-    /// <summary>Releases <paramref name="assembly"/>, read and not kept, as its arrival stopped (the list was cleared
-    /// meanwhile) or another read of its file was kept first: nothing on the list reads it, so its library's objects go
-    /// once whoever was handed it stops reading it. (One read out of a package the list doesn't hold, a package read
-    /// again among them, is its package's, released with it.)</summary>
+    // An unkept read (the list was cleared meanwhile, or another read of its file was kept first) is on no list, so
+    // its library's objects go once whoever was handed it stops reading it. One read out of a package the list doesn't
+    // hold, a package read again among them, is its package's, released with it.
     private static void ReleaseUnkept(LoadedAssembly? assembly)
     {
         if (assembly is not LoadedModule module)
@@ -528,9 +512,6 @@ public static class AssemblyListing
         }
     }
 
-    /// <summary>The assembly that defines what <paramref name="handle"/> names in <paramref name="owner"/>, and the
-    /// handle of its definition there; not found when it resolves to nothing that can be loaded, unreadable when the
-    /// library could not read the type system of <paramref name="owner"/>, which a reference is resolved in.</summary>
     private static async Task<Lookup<(LoadedModule Assembly, EntityHandle Handle)>> ResolveDefinitionAsync(AssemblyList list, ModuleReading reading,
         LoadedModule owner, EntityHandle handle, int generation, CancellationToken ct)
     {
@@ -566,9 +547,6 @@ public static class AssemblyListing
         return Found(assembly, definition.MetadataToken);
     }
 
-    /// <summary>What <paramref name="path"/> holds: an assembly, a package, or an assembly in a
-    /// package, read from a path <see cref="AssemblyPackages.GetFilePath"/> made.</summary>
-    /// <exception cref="AssemblyLoadException">There is no such file, or it is none of those.</exception>
     private static LoadedAssembly Read(AssemblyList list, AssemblyPath path, int generation)
     {
         if (File.Exists(path.Text))
@@ -576,6 +554,7 @@ public static class AssemblyListing
             return ReadAssemblyOrPackage(list, path);
         }
 
+        // A path that names no file may name an assembly in a package: AssemblyPackages.GetFilePath made it.
         var inPackage = AssemblyPackages.SplitPath(path);
         if (inPackage is null)
         {
@@ -591,8 +570,6 @@ public static class AssemblyListing
         return ReadOutOfPackage(list, package, path, inPackage.Value.FullName);
     }
 
-    /// <summary>The assembly at <paramref name="path"/>, else the WebCIL module, else the package, else
-    /// why it is none of those.</summary>
     private static LoadedAssembly ReadAssemblyOrPackage(AssemblyList list, AssemblyPath path)
     {
         try
@@ -628,8 +605,7 @@ public static class AssemblyListing
         return LoadedAssemblies.CreatePackage(list, package);
     }
 
-    /// <summary>The assembly <paramref name="path"/> holds as WebCIL, wrapped in WebAssembly the way
-    /// Blazor ships it; null when the file is no WebCIL.</summary>
+    // WebCIL is an assembly wrapped in WebAssembly, the way Blazor ships it.
     private static WebCilFile? ReadWebCil(AssemblyList list, AssemblyPath path)
     {
         try
@@ -727,7 +703,6 @@ public static class AssemblyListing
         }
     }
 
-    /// <summary>The assembly or module <paramref name="stream"/> holds, known by <paramref name="path"/>.</summary>
     private static PEFile ReadImage(AssemblyList list, AssemblyPath path, Stream stream)
     {
         try

@@ -134,8 +134,6 @@ public static class ILSpyTree
         return reached;
     }
 
-    /// <summary>The child of <paramref name="node"/> ILSpy's tree names <paramref name="name"/>, once the read of the
-    /// type system its children's build reads ended.</summary>
     private static async Task<Lookup<BrowseNode>> FindChildAsync(BrowseSession session, BrowseNode node, string name, CancellationToken ct)
     {
         var children = await BrowseSessions.ListReadableChildrenAsync(session, node, ct);
@@ -145,9 +143,6 @@ public static class ILSpyTree
             static _ => new Lookup<BrowseNode>.NotFound());
     }
 
-    /// <summary>The node of the entity <paramref name="token"/> names, or its nearest ancestor; not found when
-    /// the entity is not the one called <paramref name="memberName"/>, as after a rebuild the token can name
-    /// another.</summary>
     private static async Task<Lookup<BrowseNode>> FindEntityAsync(AssemblyList list, BrowseSession session, AssemblyPath filePath, uint token,
         string memberName, CancellationToken ct)
     {
@@ -174,6 +169,7 @@ public static class ILSpyTree
         CancellationToken ct)
     {
         var entity = Resolve(main, (int)token);
+        // After a rebuild the token can name another entity.
         if (entity is null || entity.FullName != memberName)
         {
             return null;

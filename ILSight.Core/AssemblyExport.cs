@@ -26,13 +26,11 @@ public static class AssemblyExport
             return new ModuleRead<ExportedProject>.Closed { Module = assembly };
         }
 
-        var part = Part(progress, assembly, 0, WholeExport);
+        var part = BeginPart(progress, assembly, 0, WholeExport);
         var project = await ExportProjectAsync(reading, assembly, options, FullFilePath.Of(projectPath), extras ?? ProjectExtras.None, part, cancellationToken);
         return new ModuleRead<ExportedProject>.Read { Value = project };
     }
 
-    /// <summary>Exports the project, then the PDB when one is asked for; each takes half of the
-    /// part's share of the export.</summary>
     private static async Task<ExportedProject> ExportProjectAsync(ModuleReading reading, LoadedModule assembly, DecompilerOptions options,
         FullFilePath projectPath, ProjectExtras extras, PartProgress? part, CancellationToken cancellationToken)
     {
@@ -85,8 +83,6 @@ public static class AssemblyExport
         return new BamlProjectDecompiler(assembly, LoadedAssemblies.CreateResolver(reading, assembly), settings, symbols, cancellationToken);
     }
 
-    /// <summary><paramref name="project"/> with a portable PDB of its assembly written beside it, or
-    /// with why it could not be.</summary>
     private static async Task<ExportedProject> WithPdbAsync(ModuleReading reading, ExportedProject project, DecompilerOptions options, string folder,
         bool embedSources, IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
     {
@@ -147,7 +143,7 @@ public static class AssemblyExport
             cancellationToken.ThrowIfCancellationRequested();
             var project = projects[i];
             var projectPath = FullFilePath.Of(ExportNames.ProjectPathIn(folder, project.Name));
-            var part = Part(progress, project.Assembly, i, bounds);
+            var part = BeginPart(progress, project.Assembly, i, bounds);
             exported.Add(await ExportProjectAsync(reading, project.Assembly, options, projectPath, withExtras, part, cancellationToken));
         }
         var items = exported.ConvertAll(ToSolutionItem);
@@ -170,7 +166,7 @@ public static class AssemblyExport
         IProgress<ExportProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         return LoadedAssemblies.WithTypeSystemAsync(assembly, (reading, typeSystem) => GeneratePdb(reading, assembly, typeSystem, options, path, embedSources: true,
-            Part(progress, assembly, 0, WholeExport), cancellationToken), cancellationToken);
+            BeginPart(progress, assembly, 0, WholeExport), cancellationToken), cancellationToken);
     }
 
     private static string GeneratePdb(ModuleReading reading, LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerOptions options, string path,
@@ -219,7 +215,7 @@ public static class AssemblyExport
         {
             cancellationToken.ThrowIfCancellationRequested();
             var assembly = assemblies[i];
-            var part = Part(progress, assembly, i, bounds);
+            var part = BeginPart(progress, assembly, i, bounds);
             var failure = await TryGeneratePdbAsync(reading, assembly, options, folder, embedSources: true, part, cancellationToken);
             if (failure is not null)
             {
@@ -229,8 +225,6 @@ public static class AssemblyExport
         return failures;
     }
 
-    /// <summary>Writes a portable PDB of <paramref name="assembly"/> into <paramref name="folder"/>, once the read of its
-    /// type system ended; why it could not, the library failing on it among the reasons, else null.</summary>
     private static async Task<PdbFailure?> TryGeneratePdbAsync(ModuleReading reading, LoadedModule assembly, DecompilerOptions options, string folder,
         bool embedSources, IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
     {
@@ -273,7 +267,6 @@ public static class AssemblyExport
         }
     }
 
-    /// <summary>Where the one part of an export of a single assembly starts and ends in it.</summary>
     private static readonly float[] WholeExport = [0f, 1f];
 
     /// <summary>Where each part of an export of <paramref name="assemblies"/> starts in it, and where
@@ -298,10 +291,7 @@ public static class AssemblyExport
         return Math.Max(1, types);
     }
 
-    /// <summary>Tells <paramref name="progress"/> that the part at <paramref name="index"/>,
-    /// <paramref name="assembly"/>, starts where <paramref name="bounds"/> say, and gives what reports
-    /// the decompiler's progress within it.</summary>
-    private static PartProgress? Part(IProgress<ExportProgress>? progress, LoadedModule assembly, int index, float[] bounds)
+    private static PartProgress? BeginPart(IProgress<ExportProgress>? progress, LoadedModule assembly, int index, float[] bounds)
     {
         if (progress is null)
         {
@@ -313,9 +303,6 @@ public static class AssemblyExport
         return part;
     }
 
-    /// <summary>The decompiler's progress within one part of an export, which spans
-    /// <see cref="From"/> to <see cref="To"/> of the whole, passed on as the export's. The decompiler's
-    /// <see cref="IProgress{T}"/> demands <see cref="Report"/>.</summary>
     private sealed class PartProgress : IProgress<DecompilationProgress>
     {
         public required IProgress<ExportProgress> Progress { get; init; }
@@ -342,7 +329,6 @@ public static class AssemblyExport
         });
     }
 
-    /// <summary>The span of <paramref name="part"/> cut in two, for two steps that each take half of it.</summary>
     private static (PartProgress First, PartProgress Second) GetHalves(PartProgress part)
     {
         var middle = (part.From + part.To) / 2;

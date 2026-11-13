@@ -31,7 +31,6 @@ internal sealed class TypeSystemReading(ModuleLibrary library)
         }
     }
 
-    /// <summary>The read under way or done, else one begun under <paramref name="reading"/>.</summary>
     private Task<TypeSystemBuild<TypeSystemRead>> JoinOrBeginAsync(ModuleReading reading, CancellationToken ct)
     {
         lock (_gate)
@@ -45,11 +44,11 @@ internal sealed class TypeSystemReading(ModuleLibrary library)
         }
     }
 
-    /// <summary>Forgets <paramref name="read"/>, unless another unit already began the next.</summary>
     private void Drop(Task<TypeSystemBuild<TypeSystemRead>> read)
     {
         lock (_gate)
         {
+            // Another unit may already have begun the next read.
             if (ReferenceEquals(_read, read))
             {
                 _read = null;

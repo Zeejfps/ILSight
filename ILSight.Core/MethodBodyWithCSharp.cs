@@ -57,8 +57,6 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         }
     }
 
-    /// <summary>Decompiles the method to C# and finds where its statements start in IL; on failure,
-    /// keeps why for the first instruction to say.</summary>
     private void DecompileToCSharp(MethodDefinitionHandle handle)
     {
         var builder = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = _assembly, TypeSystem = _typeSystem };
@@ -72,8 +70,6 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         _points = FindPoints(points, handle);
     }
 
-    /// <summary>Has the decompiler write the method in C# into <paramref name="builder"/>; the sequence points of what
-    /// it wrote, or null when it failed on the module, keeping why.</summary>
     private Dictionary<ILFunction, List<SequencePoint>>? TryWriteCSharp(MethodDefinitionHandle handle, DocumentBuilder builder)
     {
         try
@@ -90,12 +86,11 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         }
     }
 
-    /// <summary>The sequence points of the function <paramref name="handle"/> compiled to: the method
-    /// itself, or for an async method or iterator, its state machine's MoveNext.</summary>
     private static List<SequencePoint> FindPoints(Dictionary<ILFunction, List<SequencePoint>> points, MethodDefinitionHandle handle)
     {
         foreach (var (function, list) in points)
         {
+            // An async method or iterator compiles to its state machine's MoveNext.
             var method = function.MoveNextMethod ?? function.Method;
             if (method is not null && method.MetadataToken == handle)
             {
@@ -120,9 +115,6 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         base.WriteInstruction(output, metadataFile, methodHandle, ref blob, methodRva);
     }
 
-    /// <summary>Writes the statements that start at IL offset <paramref name="offset"/>; the
-    /// instructions come in order, so the points before it are passed by. Without the C#, there are no
-    /// points.</summary>
     private void WriteCSharpAt(ITextOutput output, int offset)
     {
         WriteFailureAt(output, offset);
@@ -132,6 +124,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
             return;
         }
 
+        // The instructions come in order, so the points before this one are passed by.
         while (_next < _points.Count && _points[_next].Offset < offset)
         {
             _next++;
@@ -174,8 +167,6 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         }
     }
 
-    /// <summary>Writes a line of the statement, less the indentation its first line has: in C#'s colors
-    /// to a <see cref="DocumentBuilder"/>, as plain text to any other output.</summary>
     private static void WriteStatementLine(ITextOutput output, SequencePoint point, DocumentLine line, int number, int indent)
     {
         var text = line.Text;
@@ -190,8 +181,6 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         WriteComment(output, text.Substring(from));
     }
 
-    /// <summary>Where the statement starts on line <paramref name="number"/>, from column 0: its start
-    /// on its first line, else the line's start.</summary>
     private static int StartColumnOn(SequencePoint point, int number, string text)
     {
         if (number != point.StartLine)
@@ -199,11 +188,10 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
             return 0;
         }
 
+        // A sequence point counts columns from 1.
         return Math.Clamp(point.StartColumn - 1, 0, text.Length);
     }
 
-    /// <summary>Where the statement ends on line <paramref name="number"/>, from column 0: its end on
-    /// its last line, else the line's end.</summary>
     private static int EndColumnOn(SequencePoint point, int number, string text)
     {
         if (number != point.EndLine)
@@ -211,6 +199,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
             return text.Length;
         }
 
+        // A sequence point counts columns from 1.
         return Math.Clamp(point.EndColumn - 1, 0, text.Length);
     }
 

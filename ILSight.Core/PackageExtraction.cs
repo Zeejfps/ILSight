@@ -69,8 +69,6 @@ public static class PackageExtraction
         }
     }
 
-    /// <summary>Where <paramref name="file"/> goes under <paramref name="root"/>, at its path from
-    /// <paramref name="folder"/>; null when that path leads out of <paramref name="root"/>, or names no file.</summary>
     private static FullFilePath? FindTargetPath(PackageFile file, PackageFolder folder, string root)
     {
         var relative = GetRelativePath(folder, file).Replace(Separator, Path.DirectorySeparatorChar);

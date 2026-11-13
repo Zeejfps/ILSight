@@ -92,8 +92,6 @@ internal static class Documentation
         return IdStringProvider.FindEntity(cref, new SimpleTypeResolveContext(module));
     }
 
-    /// <summary>The sections in <see cref="DocSectionKind"/> order; text outside any section is
-    /// the summary when there is none.</summary>
     private static List<DocSection> ReadSections(XmlDocumentationElement documentation)
     {
         var sections = new List<DocSection>();
@@ -165,7 +163,6 @@ internal static class Documentation
         };
     }
 
-    /// <summary>The parameter or type parameter a <c>param</c> or <c>typeparam</c> element names, as code.</summary>
     private static DocRun? NameOf(XmlDocumentationElement element)
     {
         var name = element.GetAttribute("name");
@@ -177,8 +174,6 @@ internal static class Documentation
         return new DocRun { Text = name, Style = DocStyle.Code };
     }
 
-    /// <summary>The exception an <c>exception</c> element is about, by its short name: the text
-    /// inside the element describes when it is thrown.</summary>
     private static DocRun? ExceptionLabel(XmlDocumentationElement element)
     {
         var cref = element.GetAttribute("cref");
@@ -253,7 +248,6 @@ internal static class Documentation
         }
     }
 
-    /// <summary>A <c>see</c>: a keyword, a type or member by its short name, or a link's text.</summary>
     private static void AddSee(DocText text, XmlDocumentationElement element)
     {
         var langword = element.GetAttribute("langword");
@@ -277,7 +271,6 @@ internal static class Documentation
         Documentation.AddRun(text, shown, DocStyle.Plain);
     }
 
-    /// <summary>The value of <paramref name="element"/>'s attribute <paramref name="name"/>, empty without one.</summary>
     private static string AttributeText(XmlDocumentationElement element, string name)
     {
         var value = element.GetAttribute(name);
@@ -289,8 +282,6 @@ internal static class Documentation
         return value;
     }
 
-    /// <summary>The type or member <paramref name="element"/>'s <c>cref</c> names, shown as
-    /// <paramref name="shown"/> or else by its short name; null without a <c>cref</c>.</summary>
     private static DocRun? CrefRun(XmlDocumentationElement element, string shown)
     {
         var cref = element.GetAttribute("cref");
@@ -325,8 +316,7 @@ internal static class Documentation
         return ShortNameOf(cref);
     }
 
-    /// <summary>An id string such as <c>M:System.String.Concat(System.String)</c> as
-    /// <c>String.Concat</c>: a type by its name, a member with its type's.</summary>
+    // An id string reads like M:System.String.Concat(System.String), shown as String.Concat.
     private static string ShortNameOf(string cref)
     {
         var isType = cref.StartsWith("T:", StringComparison.Ordinal);
@@ -392,7 +382,6 @@ internal static class Documentation
         };
     }
 
-    /// <summary>An item's <c>term</c> and <c>description</c>; text outside them describes it too.</summary>
     private static DocListItem ReadListItem(XmlDocumentationElement item)
     {
         var term = new DocText();
@@ -443,8 +432,6 @@ internal static class Documentation
         return new CodeSignature { Line = line, ParameterStarts = parameters.Starts, Constraints = constraints };
     }
 
-    /// <summary>The <c>where</c> clauses of the entity's own type parameters, highlighted as code,
-    /// one a line; none when it has no constraints.</summary>
     private static IReadOnlyList<DocumentLine> WriteConstraints(IEntity entity, LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerSettings settings)
     {
         var builder = new TypeSystemAstBuilder
@@ -472,7 +459,6 @@ internal static class Documentation
         return ListConstraintLines(output.BuildDocument(entity.Name).Lines);
     }
 
-    /// <summary>The written clauses without the blank lines between them.</summary>
     private static List<DocumentLine> ListConstraintLines(IReadOnlyList<DocumentLine> lines)
     {
         return lines
@@ -529,8 +515,6 @@ internal static class Documentation
         doc.Runs.Add(new DocRun { Text = collapsed, Style = style, Reference = reference });
     }
 
-    /// <summary>Adds <paramref name="code"/> as a block of its own, lines kept and their common
-    /// indentation removed.</summary>
     private static void AddCode(DocText doc, string code)
     {
         BreakParagraph(doc);
@@ -552,7 +536,6 @@ internal static class Documentation
         }
     }
 
-    /// <summary>Ends the open paragraph.</summary>
     private static void BreakParagraph(DocText doc)
     {
         TrimParagraphEnds(doc);
@@ -570,8 +553,7 @@ internal static class Documentation
         return doc.Blocks;
     }
 
-    /// <summary>The text read as one run of words, its paragraphs joined by spaces, as a list item
-    /// shows it; code blocks and lists inside it are left out.</summary>
+    // A list item shows its text as one run of words.
     private static IReadOnlyList<DocRun> FinishInline(DocText doc)
     {
         var joined = new List<DocRun>();
@@ -641,9 +623,6 @@ internal static class Documentation
         return collapsed.ToString();
     }
 
-    /// <summary>The code's lines without the blank ones around them or the indentation they
-    /// share. Its first line arrives with its indentation trimmed, so only the lines after it say
-    /// how deep the code sits.</summary>
     private static string Dedent(string code)
     {
         var lines = code.Replace("\r\n", "\n").Split('\n').ToList();
@@ -657,6 +636,7 @@ internal static class Documentation
             lines.RemoveAt(lines.Count - 1);
         }
 
+        // The first line arrives with its indentation trimmed, so only the lines after it say how deep the code sits.
         var indent = CommonIndent(lines.Skip(1));
         var dedented = lines
             .Select(l => RemoveIndent(l, indent))
@@ -696,11 +676,7 @@ internal static class Documentation
         return line.Substring(indent);
     }
 
-    /// <summary>
-    /// Documentation blocks as they are read: runs join the open paragraph with their whitespace
-    /// collapsed, as XML documentation is rendered, and a paragraph is kept only when it has text.
-    /// Code blocks and lists stand on their own between paragraphs.
-    /// </summary>
+    // Runs join the open paragraph with their whitespace collapsed, as XML documentation is rendered.
     private sealed class DocText
     {
         public readonly List<DocBlock> Blocks = new();

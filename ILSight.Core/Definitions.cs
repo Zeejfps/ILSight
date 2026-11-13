@@ -26,8 +26,7 @@ internal static class Definitions
         return definition;
     }
 
-    /// <summary>The type an exported type of <paramref name="module"/> names, found by its name among
-    /// the assemblies the module's type system loaded, however many forwards away it is defined.</summary>
+    // Found by name among the assemblies the module's type system loaded, so however many forwards away it is defined.
     private static ITypeDefinition? ResolveForwarded(MetadataModule module, ExportedTypeHandle handle)
     {
         var name = ForwardedTypes.NameOf(module.MetadataFile.Metadata, handle);

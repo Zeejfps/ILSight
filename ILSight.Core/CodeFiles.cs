@@ -21,7 +21,7 @@ public static class CodeFiles
         }
 
         var export = await NodeContentLoader.ToCodeExportAsync(session, node, cancellationToken);
-        var module = ModuleOf(export);
+        var module = FindModule(export);
         if (module is null)
         {
             return Save(reading, export, null, language, options, path, cancellationToken);
@@ -34,8 +34,6 @@ public static class CodeFiles
             static c => new TypeSystemWork<string>.Closed { Module = c.Module });
     }
 
-    /// <summary>The code of <paramref name="export"/>, whose module the library could not read: nothing, for code that
-    /// reads it; else what it writes without the module's type system.</summary>
     private static TypeSystemWork<string> SaveUnreadable(ModuleReading reading, CodeExport export, LoadedModule module, TypeSystemRead.Unreadable unreadable,
         DecompilationLanguage language, DecompilerOptions options, string path, CancellationToken cancellationToken)
     {
@@ -54,8 +52,8 @@ public static class CodeFiles
         return new TypeSystemWork<string>.Done { Value = path };
     }
 
-    /// <summary>The module <paramref name="export"/>'s code is read from; null for a package's document.</summary>
-    private static LoadedModule? ModuleOf(CodeExport export)
+    // A package's document is read from no module.
+    private static LoadedModule? FindModule(CodeExport export)
     {
         if (export is CodeExport.WholeModule whole)
         {

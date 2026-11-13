@@ -34,8 +34,6 @@ internal static class MetadataTableNodes
         return result.ToArray();
     }
 
-    /// <summary>The node of <paramref name="part"/> under <paramref name="parent"/>, with the values a node of a
-    /// metadata table shows, all read from <paramref name="part"/>.</summary>
     private static BrowseNode Create(BrowseNode parent, MetadataTableInfo part)
     {
         var text = part.Title;

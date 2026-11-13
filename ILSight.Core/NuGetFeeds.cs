@@ -106,7 +106,7 @@ public static class NuGetFeeds
         return ParseDerivedUrl($"{index.Registrations.Text.TrimEnd('/')}/{id.Lower}/{version.Version.Filed}.json");
     }
 
-    /// <summary>The details in a catalog entry, which a registration leaf gives inline or as the URL to read it from.</summary>
+    // A registration leaf gives the catalog entry inline or as the URL to read it from.
     private static async Task<PackageVersionDetails> ReadCatalogEntryAsync(NuGetFeed feed, JsonElement entry, DateTimeOffset? listedAt, CancellationToken cancellationToken)
     {
         if (entry.ValueKind == JsonValueKind.Object)
@@ -138,8 +138,8 @@ public static class NuGetFeeds
         await AtomicFile.WriteAsync(path, response.Content.CopyToAsync, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Where the feed serves a package file: <c>{folder}/{id}/{version}/{id}.{version}.nupkg</c>,
-    /// in lower case, the version without its build metadata.</summary>
+    // The feed serves a package file at {folder}/{id}/{version}/{id}.{version}.nupkg, in lower case, the version
+    // without its build metadata.
     private static WebUrl GetPackageUrl(WebUrl folder, PackageId id, PackageVersion version)
     {
         var lowerId = id.Lower;
@@ -147,8 +147,6 @@ public static class NuGetFeeds
         return ParseDerivedUrl($"{folder.Text.TrimEnd('/')}/{lowerId}/{lowerVersion}/{lowerId}.{lowerVersion}.nupkg");
     }
 
-    /// <summary>The URL <paramref name="text"/>, made from one the feed gave.</summary>
-    /// <exception cref="InvalidDataException">What the feed gave makes no web URL.</exception>
     private static WebUrl ParseDerivedUrl(string text)
     {
         return WebUrl.Parse(text) ?? throw new InvalidDataException($"{text} is no web URL.");
@@ -199,21 +197,18 @@ public static class NuGetFeeds
         return $"; {string.Join(", ", leftOut)} could not be read";
     }
 
-    /// <summary>The URL of the first resource whose type is <paramref name="type"/>, or a version of it; with none, the
-    /// failure names the resources that couldn't be read, which may have been it.</summary>
     private static WebUrl GetResource(NuGetFeed feed, Lenient<List<FeedResource>> resources, string type)
     {
         var url = FindOptionalResource(resources.Value, type);
         if (url is null)
         {
+            // The resources that couldn't be read may have been it.
             throw new InvalidDataException($"The service index of {feed.Source.Url} names no {type}{DescribeLeftOut(resources.LeftOut)}.");
         }
 
         return url;
     }
 
-    /// <summary>The web URL of the first resource whose type is <paramref name="type"/>; null when there is
-    /// none, or its URL is none.</summary>
     private static WebUrl? FindOptionalResource(List<FeedResource> resources, string type)
     {
         foreach (var resource in resources)
@@ -287,8 +282,7 @@ public static class NuGetFeeds
         return path;
     }
 
-    /// <summary>Where a package sits in a folder laid out as the global packages folder is:
-    /// <c>{id}/{version}/{id}.{version}.nupkg</c>, in lower case.</summary>
+    // The global packages folder lays a package out as {id}/{version}/{id}.{version}.nupkg, in lower case.
     private static string GetPackagePath(string folder, PackageId id, PackageVersion version)
     {
         var lowerId = id.Lower;
@@ -296,7 +290,7 @@ public static class NuGetFeeds
         return Path.Combine(folder, lowerId, lowerVersion, $"{lowerId}.{lowerVersion}.nupkg");
     }
 
-    /// <summary>The largest icon file read; nuget.org takes none larger.</summary>
+    // nuget.org takes no icon file larger.
     private const int MaxBytes = 1024 * 1024;
 
     /// <summary>The picture at <paramref name="url"/>, shrunk to fit a square <paramref name="side"/>

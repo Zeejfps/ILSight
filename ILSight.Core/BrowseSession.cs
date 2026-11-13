@@ -22,7 +22,6 @@ public sealed class BrowseSession
     private readonly ConditionalWeakTable<LoadedAssembly, BrowseNode> _otherRoots = new();
     private readonly ConditionalWeakTable<LoadedModule, ConcurrentDictionary<EntityHandle, BrowseNode>> _index = new();
 
-    /// <summary>Where each node's children stand, which can only be read or changed holding its lock.</summary>
     private readonly ConditionalWeakTable<BrowseNode, Guarded<ChildrenState>> _children = new();
 
     /// <summary>The root of the listed <paramref name="item"/>'s tree (a module not read out of a package, a package,
@@ -147,7 +146,6 @@ public sealed class BrowseSession
         return new MetadataTarget { Node = table, Row = address.Row };
     }
 
-    /// <summary>The "Metadata" folder <paramref name="node"/> belongs to, and what it lists.</summary>
     private static (BrowseNode Node, MetadataFolderInfo Info)? FindMetadataFolder(BrowseNode node)
     {
         for (var parent = node.Parent; parent is not null; parent = parent.Parent)
@@ -160,8 +158,6 @@ public sealed class BrowseSession
         return null;
     }
 
-    /// <summary>The first of <paramref name="node"/>'s built children that <paramref name="match"/> picks; null when its
-    /// children aren't built or none is picked.</summary>
     private BrowseNode? FindBuiltChild(BrowseNode node, Func<BrowseNode, bool> match)
     {
         var children = PeekChildren(node);
@@ -173,8 +169,6 @@ public sealed class BrowseSession
         return ready.Children.FirstOrDefault(match);
     }
 
-    /// <summary>The node listing the rows of <paramref name="table"/> among <paramref name="tables"/>; null when none
-    /// does.</summary>
     private static BrowseNode? FindTable(IReadOnlyList<BrowseNode> tables, TableIndex table)
     {
         foreach (var node in tables)
@@ -187,10 +181,7 @@ public sealed class BrowseSession
         return null;
     }
 
-    /// <summary>The children of <paramref name="tables"/>, a metadata folder's "Tables" node: those built, else made now
-    /// from <paramref name="folder"/>'s image in memory and kept, as the tree's build keeps them (a read that fails is
-    /// kept as their failure, which the tree shows). None while another thread builds them, after a failed build, and
-    /// for an image that isn't in memory.</summary>
+    // Kept as the tree's build keeps them: a read that fails is kept as their failure, which the tree shows.
     private IReadOnlyList<BrowseNode> EnsureTables(BrowseNode tables, MetadataFolderInfo folder)
     {
         var slot = EnsureChildrenSlot(tables);
@@ -269,8 +260,8 @@ public sealed class BrowseSession
         return new ChildrenState.Ready(AddNested(node, ready.Children));
     }
 
-    /// <summary>Apart from <see cref="PeekNestedChildren"/>, which the tree asks per expanded row every frame,
-    /// so that only the first time pays for the closure.</summary>
+    // Apart from PeekNestedChildren, which the tree asks per expanded row every frame, so that only the first time pays
+    // for the closure.
     private IReadOnlyList<BrowseNode> AddNested(BrowseNode node, IReadOnlyList<BrowseNode> children)
     {
         return _nested.GetValue(node, n => NestChildren(n, children));
@@ -359,8 +350,8 @@ public sealed class BrowseSession
         return AddInnerNamespaces(node, siblings.Children);
     }
 
-    /// <summary>Apart from <see cref="ListInnerNamespaces"/>, which the tree asks per row every frame while
-    /// namespaces nest, so that only the first time pays for the closures.</summary>
+    // Apart from ListInnerNamespaces, which the tree asks per row every frame while namespaces nest, so that only the
+    // first time pays for the closures.
     private IReadOnlyList<BrowseNode> AddInnerNamespaces(BrowseNode node, IReadOnlyList<BrowseNode> siblings)
     {
         var inner = siblings
@@ -369,9 +360,6 @@ public sealed class BrowseSession
         return _inner.GetValue(node, _ => inner);
     }
 
-    /// <summary>The children as the tree lists them when it nests namespaces, given those built: for a
-    /// module, its children but the namespaces nested in others; for a namespace, the namespaces nested in
-    /// it and its own children, each where ILSpy sorts the full names of the types in it; else as built.</summary>
     private IReadOnlyList<BrowseNode> NestChildren(BrowseNode node, IReadOnlyList<BrowseNode> children)
     {
         if (node.Subject is NodeSubject.Module)
@@ -387,8 +375,6 @@ public sealed class BrowseSession
         return children;
     }
 
-    /// <summary>The namespaces in <paramref name="inner"/> among <paramref name="own"/>, a namespace's
-    /// children sorted.</summary>
     private static BrowseNode[] Interleave(IReadOnlyList<BrowseNode> inner, IReadOnlyList<BrowseNode> own)
     {
         var result = new List<BrowseNode>(own.Count + inner.Count);
@@ -406,15 +392,14 @@ public sealed class BrowseSession
         return result.ToArray();
     }
 
-    /// <summary>Whether ILSpy, sorting the full names of the types, comes to those in
-    /// <paramref name="inner"/> before <paramref name="child"/>.</summary>
+    // ILSpy sorts the full names of the types (as their reflection names end: List`1), so an inner namespace goes
+    // where the names of the types in it would sort.
     private static bool SortsBefore(BrowseNode inner, BrowseNode child)
     {
         var key = NamespaceNames.LastSegment(inner.FullName) + ".";
         return NaturalStringComparer.Instance.Compare(key, GetReflectionName(child)) < 0;
     }
 
-    /// <summary>The name a namespace's type is sorted under, as its reflection name ends: <c>List`1</c>.</summary>
     private static string GetReflectionName(BrowseNode child)
     {
         if (child.Subject is NodeSubject.TypeDefinition type)
@@ -430,8 +415,6 @@ public sealed class BrowseSession
         throw new UnreachableException();
     }
 
-    /// <summary>The reflection name of a type named <paramref name="name"/> with <paramref name="arity"/> type
-    /// parameters: <c>List`1</c>.</summary>
     private static string ReflectionName(string name, int arity)
     {
         return arity == 0 ? name : name + "`" + arity;

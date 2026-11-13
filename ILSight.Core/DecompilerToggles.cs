@@ -61,8 +61,7 @@ public static class DecompilerToggles
         return options with { Changes = options.Changes.Without(shapingCode) };
     }
 
-    /// <summary>The options with the project export toggles at their defaults, as they only shape
-    /// exported projects, not code.</summary>
+    // The project export toggles only shape exported projects, not code.
     private static DecompilerOptions LeaveOutProjectExport(DecompilerOptions options)
     {
         var shapingProjects = DecompilerToggle.All.Where(static t => t.Group is DecompilerToggleGroup.ProjectExport);
@@ -133,8 +132,6 @@ public static class DecompilerToggles
         return toggles;
     }
 
-    /// <summary>The group the decompiler's <paramref name="category"/> stands for, or null for one whose
-    /// toggles aren't offered.</summary>
     private static DecompilerToggleGroup? FindGroup(string category)
     {
         var version = FindIntroduced(category);
@@ -152,7 +149,7 @@ public static class DecompilerToggles
         };
     }
 
-    /// <summary>The version a category such as <c>C# 7.3 / VS 2017.7</c> names.</summary>
+    // The decompiler names a language's category such as "C# 7.3 / VS 2017.7".
     private static CSharpVersion? FindIntroduced(string category)
     {
         if (!category.StartsWith("C# ", StringComparison.Ordinal))

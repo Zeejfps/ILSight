@@ -91,7 +91,6 @@ public abstract record SearchLiteral
         return term.StartsWith("0x", StringComparison.OrdinalIgnoreCase) || term.StartsWith("-0x", StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>Whether <paramref name="term"/> has a <see cref="float"/>'s <c>f</c> suffix.</summary>
     private static bool IsSingle(string term)
     {
         return term.Length > 1 && term[^1] is 'f' or 'F';
@@ -109,8 +108,6 @@ public abstract record SearchLiteral
         return new Integer { Value = negative ? -(long)hex : (long)hex };
     }
 
-    /// <summary>A decimal integer, signed or not, with any <c>u</c> and <c>l</c> suffixes; one past
-    /// <see cref="long.MaxValue"/> wraps round as the <see cref="ulong"/> it is.</summary>
     private static Integer? FindInteger(string term)
     {
         var digits = term.TrimEnd('u', 'U', 'l', 'L');
@@ -124,6 +121,7 @@ public abstract record SearchLiteral
             return null;
         }
 
+        // Past long.MaxValue, it wraps round as the ulong it is.
         return new Integer { Value = (long)unsigned };
     }
 
@@ -137,7 +135,6 @@ public abstract record SearchLiteral
         return new Single { Value = single };
     }
 
-    /// <summary>A number with a point or an exponent, and maybe a <c>d</c> suffix.</summary>
     private static Double? FindDouble(string term)
     {
         var digits = term.Length > 1 && term[^1] is 'd' or 'D' ? term[..^1] : term;

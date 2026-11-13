@@ -70,7 +70,6 @@ public sealed class AssemblyResolver
         return FindAssembly(reference);
     }
 
-    /// <summary>The listed assembly <paramref name="reference"/> names, one as new as it asks for first.</summary>
     private LoadedModule? FindListed(IAssemblyReference reference)
     {
         var exact = List.FindKnown(reference, exactOrNewer: true, listedOnly: true);
@@ -150,7 +149,6 @@ public sealed class AssemblyResolver
         return FindInRuntime(reference.Name);
     }
 
-    /// <summary>The running runtime's file of <paramref name="name"/>; null when it has none.</summary>
     private AssemblyPath? FindInRuntime(string name)
     {
         var found = RuntimeAssemblies.Find(List.Runtime, name);
@@ -162,8 +160,6 @@ public sealed class AssemblyResolver
         return AssemblyPath.Parse(found);
     }
 
-    /// <summary>The main assembly's directory; for one read out of a package, then each folder of the
-    /// package above it, up to the package's root.</summary>
     private IEnumerable<string> ListNearbyDirectories()
     {
         var directory = Path.GetDirectoryName(MainPath);
@@ -203,7 +199,6 @@ public sealed class AssemblyResolver
         return null;
     }
 
-    /// <summary>Whether there is a file at <paramref name="path"/>, on disk or in the main assembly's package.</summary>
     private bool Exists(AssemblyPath path)
     {
         if (File.Exists(path.Text))

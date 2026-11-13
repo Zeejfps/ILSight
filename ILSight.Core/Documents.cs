@@ -121,8 +121,8 @@ public static class Documents
         return found;
     }
 
-    /// <summary>The kept lines of the definitions; any thread may be the one to fill them. Filling is a function of
-    /// its own, whose closure a document that has them does not pay for.</summary>
+    // Any thread may be the one to fill them. Filling is a function of its own, whose closure a document that has them
+    // does not pay for.
     private static Dictionary<CodeAnchor, int> EnsureDefinitionLines(DecompiledDocument document)
     {
         var kept = Volatile.Read(ref document.DefinitionLines);
@@ -139,7 +139,7 @@ public static class Documents
         return LazyInitializer.EnsureInitialized(ref document.DefinitionLines, () => ListDefinitionLines(document));
     }
 
-    /// <summary>The kept lines of the statements; any thread may be the one to fill them.</summary>
+    // Any thread may be the one to fill them.
     private static Dictionary<CodeAnchor, (int Offset, int Line)[]> EnsureStatementLines(DecompiledDocument document)
     {
         var kept = Volatile.Read(ref document.StatementLines);
@@ -176,7 +176,6 @@ public static class Documents
             .ToDictionary(static g => g.Key, static g => g.Select(static s => (s.Value.ILOffset, s.Key)).Order().ToArray());
     }
 
-    /// <summary>The statement anchor <paramref name="statement"/> with its offset left out, naming its method.</summary>
     private static CodeAnchor GetMethodAnchor(CodeAnchor statement)
     {
         return statement with { ILOffset = 0 };

@@ -17,8 +17,8 @@ public static class LoadedAssemblies
 {
     private static readonly TypeSystemOptions DefaultTypeSystemOptions = DecompilerTypeSystem.GetOptions(Settings.Create());
 
-    /// <summary>The library's objects of each module made here, kept against the module, so they live as long as it
-    /// does, and released once it is closed and nothing reads it (<see cref="Release"/>).</summary>
+    // Kept against the module, so the library's objects live as long as it does; released once it is closed and nothing
+    // reads it (Release).
     private static readonly ConditionalWeakTable<LoadedModule, ModuleLibrary> Libraries = new();
 
     /// <summary>The module <paramref name="file"/> holds, known by <paramref name="path"/>, with nothing
@@ -51,8 +51,6 @@ public static class LoadedAssemblies
         return module;
     }
 
-    /// <summary>The library's objects kept against <paramref name="module"/>, to read; throws for one not made here, or
-    /// released: a unit reads a module only under a reading (<see cref="TryBeginReading(LoadedModule)"/>).</summary>
     private static ModuleLibrary GetLibrary(LoadedModule module)
     {
         var library = GetKept(module);
@@ -212,13 +210,11 @@ public static class LoadedAssemblies
         return $"{name} ({version})";
     }
 
-    /// <summary>The name of a file that holds no assembly's name: the file's, without its extension.</summary>
     private static string GetFileName(AssemblyPath filePath)
     {
         return Path.GetFileNameWithoutExtension(filePath.Text);
     }
 
-    /// <summary>The assembly's name, or for a module that is no assembly, its file's.</summary>
     private static string GetModuleName(AssemblyPath path, MetadataFile file)
     {
         if (!file.Metadata.IsAssembly)
@@ -262,7 +258,6 @@ public static class LoadedAssemblies
         }
     }
 
-    /// <summary>The symbols of the PDB the list picked for this assembly, else those it finds itself.</summary>
     private static DebugSymbols? FindDebugSymbols(AssemblyList list, AssemblyPath path, MetadataFile file, PackagePlace? place)
     {
         if (file is not PEFile pe)
@@ -384,8 +379,6 @@ public static class LoadedAssemblies
         }
     }
 
-    /// <summary>A type system of <paramref name="library"/>'s module with <paramref name="options"/>, what its resolver
-    /// hands out added to <paramref name="reading"/>, the unit's, and recorded.</summary>
     private static TypeSystemBuild<DecompilerTypeSystem> BuildTypeSystem(ModuleLibrary library, ModuleReading reading, TypeSystemOptions options)
     {
         var resolver = new ReadingResolver(library, reading);

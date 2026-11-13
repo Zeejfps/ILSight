@@ -82,9 +82,6 @@ public static class NodeLookup
         }
     }
 
-    /// <summary>The node of what <paramref name="handle"/> defines in <paramref name="assembly"/>, or of the assembly
-    /// itself, once the read of its type system ended, under <paramref name="reading"/>, the unit's; not found when the
-    /// assembly was released (closed) meanwhile.</summary>
     private static async Task<Lookup<BrowseNode>> FindTargetAsync(BrowseSession session, ModuleReading reading, LoadedModule assembly, EntityHandle handle,
         CancellationToken ct)
     {

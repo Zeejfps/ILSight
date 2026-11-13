@@ -94,7 +94,6 @@ internal static class MetadataNodes
         return result.ToArray();
     }
 
-    /// <summary>The embedded PDB the module already loaded, or null when it could not be read.</summary>
     private static DebugSymbols? FindEmbeddedSymbols(LoadedModule module)
     {
         var symbols = LoadedAssemblies.EnsureDebugSymbols(module);

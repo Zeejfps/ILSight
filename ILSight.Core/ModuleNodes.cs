@@ -36,7 +36,6 @@ internal static class ModuleNodes
         return result.ToArray();
     }
 
-    /// <summary>The top-level types of <paramref name="main"/> by their namespace, those missing left out.</summary>
     private static Dictionary<string, List<ITypeDefinition>> ListTypesByNamespace(MetadataModule main)
     {
         var byNamespace = new Dictionary<string, List<ITypeDefinition>>(StringComparer.Ordinal);
@@ -57,8 +56,6 @@ internal static class ModuleNodes
         return byNamespace;
     }
 
-    /// <summary>A node for every namespace a type is in, defined or forwarded, or a name nests in, sorted by name, each
-    /// knowing the one it nests in.</summary>
     private static List<BrowseNode> ListNamespaceNodes(BrowseNode parent, LoadedModule module, Dictionary<string, List<ITypeDefinition>> byNamespace,
         Dictionary<string, List<ForwardedType>> forwardedByNamespace)
     {
@@ -79,8 +76,6 @@ internal static class ModuleNodes
         return nodes;
     }
 
-    /// <summary>The namespace <paramref name="name"/> of <paramref name="module"/>, with the types it defines and those it
-    /// forwards.</summary>
     private static NamespaceInfo CreateNamespace(LoadedModule module, string name, List<ITypeDefinition> types, List<ForwardedType> forwarded)
     {
         var forwardedTypes = forwarded
@@ -89,8 +84,6 @@ internal static class ModuleNodes
         return NodeDefinitions.CreateNamespace(module, name, types, forwardedTypes);
     }
 
-    /// <summary>The namespace <paramref name="name"/> extends by a segment, made already, as names
-    /// sort after the names they extend; null for an outermost name.</summary>
     private static BrowseNode? FindEnclosing(Dictionary<string, BrowseNode> namespaces, string name)
     {
         var enclosing = NamespaceNames.EnclosingName(name);
@@ -99,6 +92,7 @@ internal static class ModuleNodes
             return null;
         }
 
+        // Made already, as names sort after the names they extend.
         return namespaces[enclosing];
     }
 

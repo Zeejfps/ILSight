@@ -80,7 +80,7 @@ public sealed record TargetFrameworkId
         return Text;
     }
 
-    /// <summary>A .NET Core version's moniker: <c>net</c> from .NET 5 on, <c>netcoreapp</c> before.</summary>
+    // .NET Core's moniker is net from .NET 5 on, netcoreapp before.
     private static string CoreAppMoniker(string version)
     {
         if (System.Version.TryParse(version, out var parsed) && parsed.Major >= FirstNetMajor)

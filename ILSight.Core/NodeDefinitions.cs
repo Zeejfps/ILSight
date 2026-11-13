@@ -397,9 +397,8 @@ public static class NodeDefinitions
             packageFile: static file => new NodePathSegment.PackageFile(file.Value.File.FullName));
     }
 
-    /// <summary>The documentation id of <paramref name="member"/>, written from its signature as the type
-    /// system reads it, as <see cref="IdStringProvider"/> writes one for a member backed by metadata, so that
-    /// a member of an assembly that does not resolve has one too.</summary>
+    // Written from the signature as the type system reads it, as IdStringProvider writes one for a member backed by
+    // metadata, so that a member of an assembly that does not resolve has one too.
     private static string GetUsedMemberId(IMember member)
     {
         var id = new StringBuilder();

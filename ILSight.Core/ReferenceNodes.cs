@@ -53,8 +53,6 @@ internal static class ReferenceNodes
         return children.ToArray();
     }
 
-    /// <summary>The assembly <paramref name="reference"/> resolves to, loaded if it is not; null when it
-    /// cannot be found or read.</summary>
     private static LoadedModule? ResolveReferenced(AssemblyReferenceInfo reference)
     {
         var resolved = LoadedAssemblies.GetResolver(reference.Module).ResolveAssembly(reference.Reference);
@@ -95,13 +93,11 @@ internal static class ReferenceNodes
         return BrowseNodes.Create(parent, new NodeSubject.ForwardedType { Value = NodeDefinitions.CreateForwardedType(module, type) });
     }
 
-    /// <summary>The node of the type <paramref name="handle"/> names, used from a reference, under <paramref name="parent"/>.</summary>
     private static BrowseNode CreateUsedType(BrowseNode parent, LoadedModule module, TypeReferenceHandle handle)
     {
         return BrowseNodes.Create(parent, new NodeSubject.TypeReference { Value = CreateUsedTypeInfo(parent, module, handle) });
     }
 
-    /// <summary>The type <paramref name="handle"/> names, used from a reference, as listed under <paramref name="parent"/>.</summary>
     private static TypeReferenceInfo CreateUsedTypeInfo(BrowseNode parent, LoadedModule module, TypeReferenceHandle handle)
     {
         var metadata = LoadedAssemblies.GetFile(module).Metadata;
@@ -113,8 +109,6 @@ internal static class ReferenceNodes
         return new TypeReferenceInfo { Module = module, Handle = handle, Namespace = ns, Label = label, FullName = GetQualifiedName(parent, ns, label), ReflectionName = GetQualifiedReflectionName(parent, ns, name) };
     }
 
-    /// <summary>The full name of a type labelled <paramref name="label"/> listed under <paramref name="parent"/>: after the
-    /// type it is nested in, when this node is one, else after its namespace.</summary>
     private static string GetQualifiedName(BrowseNode parent, string ns, string label)
     {
         if (parent.Subject is NodeSubject.TypeReference)
@@ -130,8 +124,6 @@ internal static class ReferenceNodes
         return $"{ns}.{label}";
     }
 
-    /// <summary>The reflection name of a type metadata names <paramref name="name"/> listed under <paramref name="parent"/>:
-    /// after the type it is nested in, when this node is one, else after its namespace.</summary>
     private static string GetQualifiedReflectionName(BrowseNode parent, string ns, string name)
     {
         if (parent.Subject is NodeSubject.TypeReference holder)
@@ -186,8 +178,6 @@ internal static class ReferenceNodes
         return BrowseNodes.Create(parent, new NodeSubject.MemberReference { Value = info });
     }
 
-    /// <summary>The member <paramref name="handle"/> uses as its type declares it: for an accessor, the
-    /// property or event it belongs to.</summary>
     private static IMember ResolveDeclared(MetadataModule module, MemberReferenceHandle handle)
     {
         var declared = ResolveUsed(module, handle).MemberDefinition;
@@ -235,7 +225,6 @@ internal static class ReferenceNodes
         return BrowseNodes.Create(parent, new NodeSubject.ModuleReference { Value = info });
     }
 
-    /// <summary>Whether the assembly's file table lists the module as one holding metadata.</summary>
     private static bool IsModuleWithMetadata(MetadataReader metadata, string name)
     {
         foreach (var handle in metadata.AssemblyFiles)
@@ -249,7 +238,6 @@ internal static class ReferenceNodes
         return false;
     }
 
-    /// <summary>The methods imported from each module, read from what each method's import names.</summary>
     private static Dictionary<ModuleReferenceHandle, List<MethodDefinitionHandle>> ListImportsByModule(MetadataReader metadata)
     {
         var imports = new Dictionary<ModuleReferenceHandle, List<MethodDefinitionHandle>>();
@@ -301,10 +289,8 @@ internal static class ReferenceNodes
             .ToArray();
     }
 
-    /// <summary>The import of <paramref name="method"/>: labelled as the tree labels the method, beside the
-    /// type declaring it. A stub the compiler generates as a local function, as <c>[LibraryImport]</c>
-    /// does, is labelled and goes as the method declaring it, with the stub's own parameters, the ones
-    /// the module is called with. Null for a method no type declares or with no address.</summary>
+    // A stub the compiler generates as a local function, as [LibraryImport] does, is labelled and goes as the method
+    // declaring it, with the stub's own parameters, the ones the module is called with.
     private static ImportedMethodInfo? CreateImport(IMethod method, ModuleReferenceInfo module)
     {
         var declaring = method.DeclaringTypeDefinition;
@@ -323,7 +309,6 @@ internal static class ReferenceNodes
         return new ImportedMethodInfo { Shown = shown, Id = IdStringProvider.GetIdString(method), Label = GetImportLabel(method), DeclaringTypeName = EntityText.FullName(declaring), EntryPoint = entryPoint, ModuleName = module.Name };
     }
 
-    /// <summary>The tree's label for <paramref name="method"/>, named as the method enclosing it when it is a local function.</summary>
     private static string GetImportLabel(IMethod method)
     {
         var label = EntityText.Label(method);
@@ -336,9 +321,8 @@ internal static class ReferenceNodes
         return enclosing + label.Substring(method.Name.Length);
     }
 
-    /// <summary>The name of the method a local function is declared in, as the compiler writes it into the
-    /// function's name, e.g. <c>CloseHandle</c> for <c>&lt;CloseHandle&gt;g____PInvoke|277_0</c>; null
-    /// for a method that is no local function.</summary>
+    // The compiler writes the name of the method a local function is declared in into the function's name, e.g.
+    // CloseHandle in <CloseHandle>g____PInvoke|277_0.
     private static string? FindEnclosingName(string name)
     {
         if (!name.StartsWith('<'))
@@ -355,8 +339,6 @@ internal static class ReferenceNodes
         return name.Substring(1, end - 1);
     }
 
-    /// <summary>The method <paramref name="method"/> is declared in when it is a local function and its type
-    /// declares a method of that name, else <paramref name="method"/> itself.</summary>
     private static IMethod GetEnclosingMethod(IMethod method, ITypeDefinition declaring)
     {
         var enclosing = FindEnclosingName(method.Name);
@@ -374,7 +356,7 @@ internal static class ReferenceNodes
         return declared;
     }
 
-    /// <summary>The name the method's import gives, else the method's own, as the runtime looks it up.</summary>
+    // The runtime looks the entry point up by the name the method's import gives, else by the method's own.
     private static string ReadEntryPoint(MetadataReader metadata, IMethod method)
     {
         var handle = DecompilerFacts.GetMethodHandle(method);

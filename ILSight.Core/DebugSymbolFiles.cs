@@ -142,8 +142,6 @@ internal static class DebugSymbolFiles
         return null;
     }
 
-    /// <summary>The PDB the CodeView entry names in the assembly's folder, else the one named
-    /// after the assembly; null when neither is there.</summary>
     private static PdbImage? ReadBeside(string assemblyPath, string codeViewPath, AssemblyPackage? package)
     {
         var folder = Path.GetDirectoryName(assemblyPath) ?? "";
@@ -164,8 +162,6 @@ internal static class DebugSymbolFiles
         return null;
     }
 
-    /// <summary>The bytes of the file at <paramref name="path"/>: on disk, or in <paramref name="package"/>
-    /// when there is one, where the path runs through it. Null when there is no such file.</summary>
     private static byte[]? TryReadFile(string path, AssemblyPackage? package)
     {
         if (package is null)

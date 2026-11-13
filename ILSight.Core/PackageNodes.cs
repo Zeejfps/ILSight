@@ -22,7 +22,6 @@ internal static class PackageNodes
         return children.ToArray();
     }
 
-    /// <summary>The folder, merged with each folder it holds when that is all it holds.</summary>
     private static PackageFolderInfo CreateMergedFolder(LoadedPackage package, PackageFolder folder)
     {
         var shown = folder;

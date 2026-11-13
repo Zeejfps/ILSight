@@ -15,9 +15,7 @@ namespace ILSight.Core;
 /// </summary>
 public sealed class AssemblyList
 {
-    /// <summary>What was read, by path, reachable only holding the lock: assemblies, packages and the
-    /// assemblies read out of packages. Beside it the <see cref="AssemblyListSnapshot"/>, read without the lock and
-    /// replaced only holding it. Held only by this type's methods, and never while reading files.</summary>
+    // The lock is held only by this type's methods, and never while reading files.
     private readonly Guarded<Dictionary<AssemblyPath, LoadedAssembly>, AssemblyListSnapshot> _state = new(new Dictionary<AssemblyPath, LoadedAssembly>(), AssemblyListSnapshot.Empty);
 
     /// <summary>The list as of now, all of one moment.</summary>
@@ -60,16 +58,15 @@ public sealed class AssemblyList
     /// background threads when navigation opens a referenced assembly.</summary>
     public event Action? Changed;
 
-    /// <summary>The modules listed whose type system is to be read ahead of its first use, in the order they were
-    /// listed; each module listed is added, on whichever thread lists it.</summary>
+    // Each module listed is added, on whichever thread lists it.
     private readonly ConcurrentQueue<LoadedModule> _typeSystemReadsAsked = new();
 
     /// <summary>Whether a listed module's type system waits to be read ahead of its first use. Asking allocates
     /// nothing.</summary>
     public bool HasTypeSystemReadsAsked => !_typeSystemReadsAsked.IsEmpty;
 
-    /// <summary>Asks for a listed assembly's type system to be read ahead of its first use, so that it is ready when
-    /// first shown: the app's frame edge begins the read (<see cref="LoadedAssemblies.ReadTypeSystemAsync"/>).</summary>
+    // Only asked here, so that it is ready when first shown: the app's frame edge begins the read
+    // (LoadedAssemblies.ReadTypeSystemAsync).
     private void AskTypeSystemRead(LoadedAssembly assembly)
     {
         if (assembly is not LoadedModule module)
@@ -290,9 +287,6 @@ public sealed class AssemblyList
         return true;
     }
 
-    /// <summary>The modules of <paramref name="listed"/>, in its order: those listed <paramref name="before"/> for
-    /// each item but <paramref name="fresh"/>, and for it, itself when it is a module, else what was read out of
-    /// it.</summary>
     private static ImmutableArray<LoadedModule> ListLoaded(ImmutableArray<LoadedAssembly> listed, ImmutableArray<LoadedModule> before,
         FreshItem fresh)
     {
@@ -359,8 +353,6 @@ public sealed class AssemblyList
         Changed?.Invoke();
     }
 
-    /// <summary><paramref name="loaded"/> in the order of the items of <paramref name="listed"/> they were read
-    /// from, those of one item as they were.</summary>
     private static ImmutableArray<LoadedModule> OrderLoaded(ImmutableArray<LoadedModule> loaded, ImmutableArray<LoadedAssembly> listed)
     {
         var ordered = ImmutableArray.CreateBuilder<LoadedModule>(loaded.Length);
@@ -377,8 +369,6 @@ public sealed class AssemblyList
         return ordered.MoveToImmutable();
     }
 
-    /// <summary>Forgets <paramref name="assembly"/> among those read, by path; false when what is known by its path
-    /// is not it.</summary>
     private static bool TryForgetKnown(Dictionary<AssemblyPath, LoadedAssembly> byPath, LoadedAssembly assembly)
     {
         if (!byPath.TryGetValue(assembly.FilePath, out var known))
@@ -395,7 +385,6 @@ public sealed class AssemblyList
         return true;
     }
 
-    /// <summary>Forgets the assemblies read out of <paramref name="package"/> among those read; returns them.</summary>
     private static List<LoadedModule> ForgetReadOutOf(Dictionary<AssemblyPath, LoadedAssembly> byPath, LoadedAssembly package)
     {
         var read = byPath.Values
@@ -618,15 +607,11 @@ public sealed class AssemblyList
         return true;
     }
 
-    /// <summary><paramref name="arriving"/> without <paramref name="landed"/>, however often it was asked for: an
-    /// assembly is listed for it.</summary>
     private static ImmutableArray<AssemblyPath> WithoutArrival(ImmutableArray<AssemblyPath> arriving, AssemblyPath landed)
     {
         return arriving.RemoveAll(landed.Equals);
     }
 
-    /// <summary>Whether <paramref name="assembly"/> is what the list holds for its path: the assembly
-    /// read from it, or for a failure, the one listed for it while nothing was read from it.</summary>
     private static bool HoldsPathFor(Dictionary<AssemblyPath, LoadedAssembly> byPath, AssemblyListSnapshot now, LoadedAssembly assembly)
     {
         if (assembly is not FailedAssembly)
@@ -643,8 +628,6 @@ public sealed class AssemblyList
         return failure is null || failure == assembly;
     }
 
-    /// <summary>The list with <paramref name="assembly"/> where the failure listed for its path was,
-    /// or last when there is none.</summary>
     private static ImmutableArray<LoadedAssembly> ListInPlaceOfFailure(ImmutableArray<LoadedAssembly> listed, LoadedAssembly assembly)
     {
         var failure = FindFailure(listed, assembly.FilePath);

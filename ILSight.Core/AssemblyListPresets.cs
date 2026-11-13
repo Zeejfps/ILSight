@@ -83,7 +83,6 @@ public static class AssemblyListPresets
         return presets;
     }
 
-    /// <summary>The newest patch of each feature version installed in <paramref name="frameworkDirectory"/>, newest first.</summary>
     private static List<InstalledVersion> ListNewestPatches(string frameworkDirectory)
     {
         var newest = new Dictionary<(int Major, int Minor), InstalledVersion>();
@@ -107,7 +106,7 @@ public static class AssemblyListPresets
             .ToList();
     }
 
-    /// <summary>The version a directory such as <c>9.0.3</c> or <c>11.0.0-preview.1</c> is named for, or null.</summary>
+    // An installed runtime's directory is named for its version, such as 9.0.3 or 11.0.0-preview.1.
     private static InstalledVersion? ReadVersion(string directory)
     {
         var label = Path.GetFileName(directory);

@@ -26,8 +26,6 @@ public static class BrowseSessions
         return session.EnsureRoot(assembly);
     }
 
-    /// <summary>The root of <paramref name="module"/> under the folder of its package's tree holding its
-    /// file: the one that folder lists, else one made there the first time, then kept.</summary>
     private static async Task<BrowseNode> EnsureRootInPackageAsync(BrowseSession session, LoadedModule module, PackagePlace place, CancellationToken ct)
     {
         var placed = session.FindModuleRoot(module);
@@ -52,9 +50,7 @@ public static class BrowseSessions
         return session.EnsureModuleRoot(module, folder);
     }
 
-    /// <summary>The node of the folder at <paramref name="folder"/>, a path from the package's root: the
-    /// folder's own node, or the node it is merged into; the package's root for its root. Null when the
-    /// package holds no such folder.</summary>
+    // A folder may have no node of its own: the node it is merged into stands for it.
     private static async Task<BrowseNode?> FindFolderNodeAsync(BrowseSession session, BrowseNode packageRoot, string folder, CancellationToken ct)
     {
         if (folder.Length == 0)
@@ -136,8 +132,6 @@ public static class BrowseSessions
         return [];
     }
 
-    /// <summary>Builds the children once the read of the type system the build reads ended, records the nodes they
-    /// index, and keeps them in <paramref name="slot"/>.</summary>
     private static async Task<ChildrenState> KeepBuiltAsync(BrowseSession session, BrowseNode node, Guarded<ChildrenState> slot, CancellationToken ct)
     {
         var state = await BuildChildrenAsync(session, node, ct);
@@ -149,13 +143,10 @@ public static class BrowseSessions
         return state;
     }
 
-    /// <summary>The children of <paramref name="node"/>, built once the reads of the type systems the build reads
-    /// ended, which the build is handed; a build reading one module's type system fails, saying why, when the library
-    /// could not read it; derived types name each module the search reached that it could not read beside those found.
-    /// The build is a unit reading the node's module and those it reads: a node of a module released (closed) before
-    /// it began has no children to show, nor one whose children are read from a module released.</summary>
     private static async Task<ChildrenState> BuildChildrenAsync(BrowseSession session, BrowseNode node, CancellationToken ct)
     {
+        // A node of a module released (closed) before the build began has no children to show, nor one whose children
+        // are read from a module released.
         using var reading = LoadedAssemblies.BeginReading();
         if (node.Assembly is LoadedModule own && !LoadedAssemblies.TryRead(reading, own))
         {
@@ -216,8 +207,6 @@ public static class BrowseSessions
         return await FollowStepsAsync(session, await EnsureRootAsync(session, item, ct), path.Steps, ct);
     }
 
-    /// <summary>The node <paramref name="steps"/> lead to from <paramref name="root"/>; not found when a step
-    /// names no child, or more than one; unreadable as <see cref="ListReadableChildrenAsync"/> says.</summary>
     private static async Task<Lookup<BrowseNode>> FollowStepsAsync(BrowseSession session, BrowseNode root, ImmutableArray<NodePathStep> steps,
         CancellationToken ct)
     {
@@ -230,8 +219,6 @@ public static class BrowseSessions
         return reached;
     }
 
-    /// <summary>The child of <paramref name="node"/> <paramref name="segment"/> names: an entry of a package by its
-    /// full path, else the one child it names.</summary>
     private static async Task<Lookup<BrowseNode>> FindStepAsync(BrowseSession session, BrowseNode node, NodePathSegment segment, CancellationToken ct)
     {
         if (segment.IsPackageEntry)
@@ -269,8 +256,6 @@ public static class BrowseSessions
             }),
             static c => Task.FromResult<TypeSystemWork<IReadOnlyList<BrowseNode>>>(new TypeSystemWork<IReadOnlyList<BrowseNode>>.Closed { Module = c.Module }));
     }
-    /// <summary>The entry of the package whose root is <paramref name="packageRoot"/> that
-    /// <paramref name="segment"/> names by its full path, wherever the folders holding it were merged.</summary>
     private static async Task<BrowseNode?> FindInPackageAsync(BrowseSession session, BrowseNode packageRoot, NodePathSegment segment, CancellationToken ct)
     {
         if (packageRoot.Subject is not NodeSubject.Package package || !package.Value.IsRoot)
@@ -293,8 +278,6 @@ public static class BrowseSessions
         return BrowseSession.FindChild(await ListChildrenAsync(session, holder, ct), segment);
     }
 
-    /// <summary>The full path in its package of the entry <paramref name="segment"/> names, a folder, a file or
-    /// an assembly read out of the package.</summary>
     private static string PackagePathOf(NodePathSegment segment)
     {
         if (segment is NodePathSegment.PackageFolder folder)
@@ -347,8 +330,6 @@ public static class BrowseSessions
         return session.FindIndexed(module, handle);
     }
 
-    /// <summary>The node listing the node of <paramref name="handle"/>: a top-level type's namespace, else
-    /// the node of the entity that holds it.</summary>
     private static async Task<BrowseNode?> FindParentAsync(BrowseSession session, LoadedModule module, MetadataModule main, EntityHandle handle,
         CancellationToken ct)
     {
@@ -393,7 +374,6 @@ public static class BrowseSessions
         return null;
     }
 
-    /// <summary>The node of the entity that holds <paramref name="handle"/>'s; null when none holds it or it has no node.</summary>
     private static async Task<BrowseNode?> FindOwnerNodeAsync(BrowseSession session, LoadedModule module, MetadataModule main, EntityHandle handle,
         CancellationToken ct)
     {
@@ -458,8 +438,6 @@ public static class BrowseSessions
             static _ => Task.FromResult<Lookup<MetadataTarget>>(new Lookup<MetadataTarget>.NotFound()));
     }
 
-    /// <summary>The row <paramref name="handle"/> names in the table <paramref name="index"/> of the folder of
-    /// <paramref name="file"/>'s metadata among <paramref name="folders"/>; not found when none lists it.</summary>
     private static async Task<Lookup<MetadataTarget>> FindRowAsync(BrowseSession session, IReadOnlyList<BrowseNode> folders,
         ICSharpCode.Decompiler.Metadata.MetadataFile file, TableIndex index, EntityHandle handle, CancellationToken ct)
     {
@@ -479,7 +457,6 @@ public static class BrowseSessions
         return new Lookup<MetadataTarget>.Found { Value = new MetadataTarget { Node = table, Row = row } };
     }
 
-    /// <summary>Whether <paramref name="node"/> is the folder of <paramref name="file"/>'s metadata.</summary>
     private static bool IsMetadataOf(BrowseNode node, ICSharpCode.Decompiler.Metadata.MetadataFile file)
     {
         var metadata = FindMetadata(node);
@@ -491,7 +468,6 @@ public static class BrowseSessions
         return ReferenceEquals(metadata.File, file);
     }
 
-    /// <summary>The metadata <paramref name="node"/> is the folder of; null for a node of anything else.</summary>
     private static MetadataFolderInfo? FindMetadata(BrowseNode node)
     {
         if (node.Subject is not NodeSubject.Metadata metadata)
@@ -502,8 +478,6 @@ public static class BrowseSessions
         return metadata.Value;
     }
 
-    /// <summary>The node listing the rows of <paramref name="table"/> in <paramref name="folder"/>, or null
-    /// when it lists none.</summary>
     private static async Task<BrowseNode?> FindTableAsync(BrowseSession session, BrowseNode folder, TableIndex table, CancellationToken ct)
     {
         var tables = (await ListChildrenAsync(session, folder, ct)).FirstOrDefault(static c => c.Subject is NodeSubject.MetadataTables);

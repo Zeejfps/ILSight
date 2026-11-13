@@ -25,7 +25,6 @@ public static class NuGetConfigs
         };
     }
 
-    /// <summary>The environment of the user running the app.</summary>
     private static NuGetEnvironment ReadEnvironment()
     {
         return new NuGetEnvironment
@@ -81,8 +80,6 @@ public static class NuGetConfigs
         return new NuGetConfigRead.Read { Config = new NuGetConfig { Sources = sources, GlobalPackagesFolder = folder } };
     }
 
-    /// <summary>The enabled v3 sources, in the order the config adds them; none when it adds none, clears them or
-    /// disables them all.</summary>
     private static List<NuGetSource> ListSources(XDocument document)
     {
         var sources = new List<NuGetSource>();
@@ -114,8 +111,6 @@ public static class NuGetConfigs
         return string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>Applies one entry of the sources section: a <c>clear</c> drops those added before it,
-    /// an <c>add</c> adds its source unless it is disabled, is no v3 feed or its name is taken.</summary>
     private static void ApplySourceEntry(XElement entry, HashSet<string> disabled, List<NuGetSource> sources)
     {
         if (entry.Name.LocalName == "clear")
@@ -148,18 +143,15 @@ public static class NuGetConfigs
         sources.Add(source);
     }
 
-    /// <summary>Whether a source in <paramref name="sources"/> is named <paramref name="name"/>, whatever its case, as
-    /// NuGet compares source names.</summary>
+    // NuGet compares source names whatever their case.
     private static bool IsNameTaken(List<NuGetSource> sources, string name)
     {
         return sources.Any(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase));
     }
 
-    /// <summary>The folder restores put packages in: the one the environment names, else the config's,
-    /// else <c>.nuget/packages</c> in the user's home folder. The environment's counts only as an absolute
-    /// path, as NuGet takes no other, and is taken as it is, as NuGet expands no variables in it.</summary>
     private static string GetGlobalPackagesFolder(XDocument? document, string configPath, NuGetEnvironment environment)
     {
+        // NuGet takes the environment's folder only as an absolute path, and expands no variables in it.
         var fromEnvironment = environment.PackagesFolderVariable;
         if (!string.IsNullOrEmpty(fromEnvironment) && Path.IsPathRooted(fromEnvironment))
         {

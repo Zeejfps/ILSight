@@ -44,11 +44,8 @@ internal sealed class DocumentBuilder : ITextOutput
     private bool _lineClassified;
     private CodeReference.Entity? _scope;
 
-    /// <summary>What each level of indentation writes.</summary>
     private string _indentation = Settings.Indentation;
 
-    /// <summary>The kind of the span a token writer started (<see cref="StartSpan"/>), which what is written in it takes;
-    /// null outside one.</summary>
     private SpanKind? _kind;
 
     /// <summary>ITextOutput's, which the decompiler may read or set; this app's code indents through
@@ -130,9 +127,6 @@ internal sealed class DocumentBuilder : ITextOutput
             EntityNames = NameAnchoredEntities(statements), Folds = ListFoldRegions(built) };
     }
 
-    /// <summary>The ILSpy full name of the entity of the module written each anchor names: a
-    /// statement's method, a definition's type or member, resolved through the module's type system. None when the
-    /// document names nothing of a module, or the type system could not be read.</summary>
     private Dictionary<(AssemblyPath FilePath, int Token), string> NameAnchoredEntities(Dictionary<int, CodeAnchor> statements)
     {
         var names = new Dictionary<(AssemblyPath FilePath, int Token), string>();
@@ -292,8 +286,6 @@ internal sealed class DocumentBuilder : ITextOutput
         WriteLine();
     }
 
-    /// <summary>Appends <paramref name="span"/>'s text from column <paramref name="from"/> on: the part
-    /// inside the statement as it is, the parts before and after it as a comment.</summary>
     private void AppendSourceSpan(string text, DocumentSpan span, int from, int start, int end)
     {
         var first = Math.Max(span.Start, from);
@@ -313,7 +305,6 @@ internal sealed class DocumentBuilder : ITextOutput
         Append(text.AsSpan(from, to - from), kind, reference, false);
     }
 
-    /// <summary>The reference a copied span keeps: a type's or member's, not a local's or label's.</summary>
     private static CodeReference? FindLink(CodeReference? reference)
     {
         if (reference is CodeReference.Local or CodeReference.Label)
@@ -520,8 +511,7 @@ internal sealed class DocumentBuilder : ITextOutput
         return nested.ToImmutable();
     }
 
-    /// <summary>Whether <paramref name="start"/> names a collapsed text that says more than its
-    /// header line, which stays in view; an XML doc comment names its own first line.</summary>
+    // The header line stays in view, and an XML doc comment's fold names its own first line.
     private static bool HasOwnText(OpenFold start, DocumentLine header)
     {
         if (start.Text == DefaultFoldText)
@@ -728,7 +718,6 @@ internal sealed class DocumentBuilder : ITextOutput
             };
     }
 
-    /// <summary>A fold the decompiler started and hasn't ended: where it starts and how it shows folded.</summary>
     private readonly record struct OpenFold
     {
         public required int Line { get; init; }

@@ -78,9 +78,6 @@ public static class NodeContentLoader
         return await NodeDecompiler.DecompileAsync(reading, await RequestOfAsync(session, node, cancellationToken), language, options, cancellationToken);
     }
 
-    /// <summary>The grid <paramref name="node"/> shows: a metadata header, directory, table or heap's, or a
-    /// <c>.resources</c> file's entries, made with at least <paramref name="firstRows"/> rows read the first time; null
-    /// for a node that shows none.</summary>
     private static MetadataGrid? GridOf(BrowseNode node, int firstRows)
     {
         if (node.Subject is NodeSubject.MetadataTable table)
@@ -116,7 +113,6 @@ public static class NodeContentLoader
             unreadable => DecompileWithNoteAsync(session, reading, node, language, options, unreadable.Why, cancellationToken));
     }
 
-    /// <summary><paramref name="node"/>'s document, after <paramref name="note"/> as a comment.</summary>
     private static async Task<NodeContent> DecompileWithNoteAsync(BrowseSession session, ModuleReading reading, BrowseNode node,
         DecompilationLanguage language, DecompilerOptions options, string note, CancellationToken cancellationToken)
     {
@@ -124,10 +120,9 @@ public static class NodeContentLoader
         return new NodeContent.Code(await NodeDecompiler.DecompileAsync(reading, request, language, options, cancellationToken, note));
     }
 
-    /// <summary>The picture <paramref name="node"/>'s resource holds, or why it can't be read: the decompiler reads its
-    /// bytes, and the decoders the picture in them.</summary>
     private static ResourceImageRead ReadImage(BrowseNode node)
     {
+        // The decompiler reads the resource's bytes, and the decoders the picture in them.
         try
         {
             return ResourceImages.DecodeImage(BrowseNodes.ReadResource(node));
@@ -138,7 +133,6 @@ public static class NodeContentLoader
         }
     }
 
-    /// <summary>The picture, with the markup it is stored as when it is drawn from shapes.</summary>
     private static async Task<NodeContent> GetPictureAsync(BrowseSession session, ModuleReading reading, BrowseNode node, ResourceImage image,
         DecompilationLanguage language, DecompilerOptions options, CancellationToken cancellationToken)
     {
@@ -173,17 +167,12 @@ public static class NodeContentLoader
         return new CodeExport.Document(await RequestOfAsync(session, node, ct));
     }
 
-    /// <summary>What decompiling <paramref name="node"/> asks for, with the children a summary of it lists, built on
-    /// the way.</summary>
     private static async Task<DocumentRequest> RequestOfAsync(BrowseSession session, BrowseNode node, CancellationToken ct)
     {
         var children = await ListSummarizedChildrenAsync(session, node, ct);
         return RequestOf(node, children);
     }
 
-    /// <summary>The children a summary of <paramref name="node"/> lists, each with the children it lists in turn: those
-    /// of a package, resources, references, base and derived types, namespaces and the types used from a reference;
-    /// none for a node whose document lists none.</summary>
     private static async Task<SummarizedChildren> ListSummarizedChildrenAsync(BrowseSession session, BrowseNode node, CancellationToken ct)
     {
         if (!IsSummarizedWithChildren(node.Subject))
@@ -203,7 +192,6 @@ public static class NodeContentLoader
         return new SummarizedChildren { Children = children, Nested = nested };
     }
 
-    /// <summary>Whether a summary of a node of <paramref name="subject"/> lists its children.</summary>
     private static bool IsSummarizedWithChildren(NodeSubject subject)
     {
         if (subject is NodeSubject.ResourceContainer container)
@@ -216,8 +204,7 @@ public static class NodeContentLoader
             or NodeSubject.Namespace;
     }
 
-    /// <summary>The children a summary lists, built before it is written, and the children each of them lists in
-    /// turn.</summary>
+    // Built before the summary is written.
     private sealed class SummarizedChildren
     {
         public static SummarizedChildren None { get; } = new SummarizedChildren
@@ -297,7 +284,6 @@ public static class NodeContentLoader
             packageFile: static (s, file) => ResourceRequest(s.Node, ResourceNodes.CreateData(file.Value)));
     }
 
-    /// <summary>The summary <paramref name="summary"/> of <paramref name="node"/>, read from its module.</summary>
     private static DocumentRequest.Summary SummaryRequest(BrowseNode node, SummaryInfo summary)
     {
         return new DocumentRequest.Summary
@@ -309,8 +295,6 @@ public static class NodeContentLoader
         };
     }
 
-    /// <summary>What <paramref name="node"/>, standing for <paramref name="container"/>, shows: a <c>.resources</c>
-    /// file its bytes, Avalonia's asset container the assets <paramref name="children"/> lists.</summary>
     private static DocumentRequest ContainerRequest(BrowseNode node, SummarizedChildren children, ResourceContainerInfo container)
     {
         return container.Contents.Match<(BrowseNode Node, SummarizedChildren Children, ResourceContainerInfo Container), DocumentRequest>(
@@ -319,8 +303,6 @@ public static class NodeContentLoader
             static (s, _) => SummaryRequest(s.Node, DescribeResources(s.Children)));
     }
 
-    /// <summary>What <paramref name="node"/>, standing for <paramref name="entry"/>, shows: BAML the XAML it was
-    /// compiled from, any other resource its bytes.</summary>
     private static DocumentRequest EntryRequest(BrowseNode node, ResourceEntryInfo entry)
     {
         return entry.Source.Match<(BrowseNode Node, ResourceEntryInfo Entry), DocumentRequest>((node, entry),
@@ -347,14 +329,11 @@ public static class NodeContentLoader
         };
     }
 
-    /// <summary>A comment a resource, describing each that <paramref name="children"/> lists.</summary>
     private static SummaryInfo.Comments DescribeResources(SummarizedChildren children)
     {
         return new SummaryInfo.Comments(children.Children.Select(static c => BrowseNodes.FindResourceData(c.Subject)).OfType<ResourceData>().Select(static r => r.Description).ToList());
     }
 
-    /// <summary>What the summary of <paramref name="node"/>, which has no code of its own, lists of
-    /// <paramref name="children"/>.</summary>
     private static SummaryInfo SummaryOf(BrowseNode node, SummarizedChildren children)
     {
         return node.Subject.Match<(BrowseNode Node, SummarizedChildren Children), SummaryInfo>((node, children),
@@ -429,7 +408,6 @@ public static class NodeContentLoader
             packageFile: static (_, _) => throw new UnreachableException());
     }
 
-    /// <summary>The types <paramref name="children"/> lists, each linked to where it is defined.</summary>
     private static SummaryInfo.Types TypesOf(SummarizedChildren children)
     {
         return new SummaryInfo.Types(children.Children.Select(static c => new SummaryLink
@@ -439,7 +417,6 @@ public static class NodeContentLoader
         }).ToList());
     }
 
-    /// <summary>The children of <paramref name="children"/> that stand for a <typeparamref name="TSubject"/>.</summary>
     private static IEnumerable<BrowseNode> ChildrenAbout<TSubject>(SummarizedChildren children) where TSubject : NodeSubject
     {
         return children.Children.Where(static c => c.Subject is TSubject);
@@ -461,7 +438,6 @@ public static class NodeContentLoader
         return child.Text;
     }
 
-    /// <summary>The types the namespace defines and forwards, but those the compiler made up.</summary>
     private static List<NamespaceEntry> ListNamespaceEntries(SummarizedChildren children)
     {
         var entries = new List<NamespaceEntry>();
@@ -491,7 +467,6 @@ public static class NodeContentLoader
         return entries;
     }
 
-    /// <summary>The types and members <paramref name="children"/> list as used from a reference.</summary>
     private static List<UsedEntry> ListUsed(SummarizedChildren children)
     {
         return children.Children
@@ -499,8 +474,6 @@ public static class NodeContentLoader
             .ToList();
     }
 
-    /// <summary>What a summary says of <paramref name="node"/>, used from a reference, and of
-    /// <paramref name="children"/>, the children it lists.</summary>
     private static UsedEntry UsedOf(BrowseNode node, SummarizedChildren children)
     {
         if (node.Subject is NodeSubject.ForwardedType forwarded)

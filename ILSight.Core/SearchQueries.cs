@@ -202,7 +202,6 @@ public static class SearchQueries
         return false;
     }
 
-    /// <summary>A matcher by <paramref name="pattern"/>, or one that says why it is no regular expression.</summary>
     private static SearchMatcher ParseRegex(string pattern)
     {
         try

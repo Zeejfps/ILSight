@@ -37,9 +37,6 @@ public static class BrowseNodes
             packageFile: static file => file.Value.Package);
     }
 
-    /// <summary>The name of what a node of <paramref name="subject"/>, read from <paramref name="assembly"/> and
-    /// labelled <paramref name="text"/>, stands for: a module's assembly's, a type's or member's own, else the
-    /// label.</summary>
     private static string GetName(NodeSubject subject, LoadedAssembly assembly, string text)
     {
         if (subject is NodeSubject.Module)
@@ -60,16 +57,12 @@ public static class BrowseNodes
         return text;
     }
 
-    /// <summary>Whether a node of <paramref name="subject"/> shows decompiled code (<see cref="NodeContentLoader.ReadContentAsync(BrowseSession, BrowseNode, DecompilationLanguage, DecompilerOptions, int, CancellationToken)"/>),
-    /// which changes with the language and options, rather than a grid, a picture or why the file failed to load,
-    /// which do not. Told by what the subject is, reading nothing.</summary>
+    // Decompiled code changes with the language and options; a grid, a picture or why the file failed to load do not.
     private static bool IsCode(NodeSubject subject)
     {
         return !HasGrid(subject) && subject is not NodeSubject.FailedAssembly && !IsImage(subject);
     }
 
-    /// <summary>Whether a node of <paramref name="subject"/> shows a grid: a metadata header, directory, table or
-    /// heap's, or a <c>.resources</c> file's entries.</summary>
     private static bool HasGrid(NodeSubject subject)
     {
         if (subject is NodeSubject.MetadataTable table)
@@ -133,8 +126,6 @@ public static class BrowseNodes
             packageFile: static file => ResourceNodes.CreateData(file.Value));
     }
 
-    /// <summary>A qualified name for copying a node of <paramref name="subject"/>, labelled <paramref name="text"/>,
-    /// e.g. <c>System.Collections.Generic.List&lt;T&gt;.Add(T)</c>.</summary>
     private static string ComposeFullName(NodeSubject subject, string text)
     {
         return subject.Match(text,
@@ -197,7 +188,7 @@ public static class BrowseNodes
             packageFile: static file => file.Value.File.Name);
     }
 
-    /// <summary>Whether a node of <paramref name="subject"/> may have children, guessed without building them.</summary>
+    // A guess, made without building the children.
     private static bool CanHaveChildren(NodeSubject subject)
     {
         return subject.Match(
@@ -332,8 +323,6 @@ public static class BrowseNodes
         };
     }
 
-    /// <summary>The ILSpy full name of the type or member a node of <paramref name="subject"/> defines; null for one
-    /// that defines none.</summary>
     private static string? FindEntityFullName(NodeSubject subject)
     {
         if (subject is NodeSubject.TypeDefinition type)

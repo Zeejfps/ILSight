@@ -13,7 +13,7 @@ namespace ILSight.Core;
 /// </summary>
 internal static partial class FeedJson
 {
-    /// <summary>The year a feed dates a version it unlisted.</summary>
+    // A feed dates a version it unlisted in this year.
     private const int UnlistedYear = 1900;
 
     /// <summary>The page of packages <paramref name="root"/> holds, without those that cannot be read, and where each
@@ -141,8 +141,6 @@ internal static partial class FeedJson
         return package;
     }
 
-    /// <summary>The package; null when its id or version is none NuGet allows. Where each version it lists that
-    /// can't be read was is added to <paramref name="leftOut"/>.</summary>
     private static FeedPackage? Parse(PackageJson json, string location, List<string> leftOut)
     {
         var id = PackageId.Parse(json.Id ?? "");
@@ -170,9 +168,6 @@ internal static partial class FeedJson
         };
     }
 
-    /// <summary>The versions listed, newest first, without those NuGet allows no such version of, where each was
-    /// added to <paramref name="leftOut"/>; just <paramref name="latest"/> when the feed lists none. An entry that is
-    /// null holds nothing and is passed over.</summary>
     private static List<FeedVersion> ListVersions(List<VersionJson?>? listed, PackageVersion latest, string location, List<string> leftOut)
     {
         var versions = new List<FeedVersion>();
@@ -204,13 +199,11 @@ internal static partial class FeedJson
         return versions;
     }
 
-    /// <summary>Names a feed gives as one string or as a list of them, joined by commas.</summary>
     private static string JoinNames(TextListJson? names)
     {
         return names is null ? "" : string.Join(", ", names.Items.Where(static n => n.Length > 0));
     }
 
-    /// <summary>Words a feed gives as a list of them or as one string, split on spaces.</summary>
     private static List<string> SplitWords(TextListJson? words)
     {
         return words is null ? [] : words.Items.SelectMany(static w => w.Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToList();
@@ -279,7 +272,6 @@ internal static partial class FeedJson
         };
     }
 
-    /// <summary>The severity; 0 for anything but a whole number that fits an int, or its digits.</summary>
     private static int ParseSeverity(JsonElement? severity)
     {
         if (severity is null)
@@ -404,11 +396,11 @@ internal static partial class FeedJson
 
     private sealed record AlternatePackageJson(string? Id);
 
-    /// <summary>A vulnerability, whose severity a feed may give as a number or as its digits.</summary>
     private sealed record VulnerabilityJson
     {
         public string? AdvisoryUrl { get; init; }
 
+        // A feed may give the severity as a number or as its digits.
         public JsonElement? Severity { get; init; }
     }
 

@@ -39,21 +39,17 @@ public static class AssemblySearch
         }, cancellationToken);
     }
 
-    /// <summary>Searches <paramref name="assembly"/> once the read of its type system ended, under a reading of it; why
-    /// the library failed on it (that read, or the search), else null. One released (closed) before is passed over, as
-    /// one no longer listed. Cancellation asked for goes through.</summary>
     private static async Task<string?> TrySearchAssemblyAsync(Search search, LoadedModule assembly, CancellationToken ct)
     {
         using var reading = LoadedAssemblies.BeginReading();
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, search.CancellationToken);
+        // One released (closed) before is passed over, as one no longer listed.
         return await read.Match(
             r => TrySearchAssemblyAsync(search, assembly, r.TypeSystem.MainModule, ct),
             static u => Task.FromResult<string?>(u.Thrown.SourceException.Message),
             static _ => Task.FromResult<string?>(null));
     }
 
-    /// <summary>Searches <paramref name="assembly"/>, whose type system read is <paramref name="main"/>'s; why the
-    /// library failed on it, else null. Cancellation asked for goes through.</summary>
     private static async Task<string?> TrySearchAssemblyAsync(Search search, LoadedModule assembly, MetadataModule main, CancellationToken ct)
     {
         try
@@ -271,7 +267,6 @@ public static class AssemblySearch
             await ScanConstantsAsync(search, assembly, main, file.Metadata, literal, ct);
         }
 
-        /// <summary>Adds the methods whose body uses <paramref name="literal"/>, or what they were generated for.</summary>
         private static async Task ScanMethodBodiesAsync(Search search, LoadedModule assembly, MetadataModule main, MetadataFile file, SearchLiteral literal,
             CancellationToken ct)
         {
@@ -287,8 +282,6 @@ public static class AssemblySearch
             }
         }
 
-        /// <summary>The IL of the method <paramref name="handle"/> names, when it has a body, in a namespace the search
-        /// covers, that the library can read; null otherwise.</summary>
         private static BlobReader? FindSearchedBody(Search search, MetadataFile file, MethodDefinitionHandle handle)
         {
             var reader = file.Metadata;
@@ -314,7 +307,6 @@ public static class AssemblySearch
             }
         }
 
-        /// <summary>Adds the constants whose value is <paramref name="literal"/>.</summary>
         private static async Task ScanConstantsAsync(Search search, LoadedModule assembly, MetadataModule main, MetadataReader reader, SearchLiteral literal,
             CancellationToken ct)
         {
@@ -329,8 +321,6 @@ public static class AssemblySearch
             }
         }
 
-        /// <summary>The value of the constant <paramref name="handle"/> names, when it is one, in a namespace the search
-        /// covers; null otherwise, and for a constant whose value is null.</summary>
         private static object? FindSearchedConstant(Search search, MetadataReader reader, FieldDefinitionHandle handle)
         {
             var field = reader.GetFieldDefinition(handle);
@@ -370,7 +360,6 @@ public static class AssemblySearch
             _ => SearchQueries.IsMatch(search.Query, value.ToString() ?? ""));
     }
 
-    /// <summary>Whether <paramref name="value"/> is an integer constant, of any width, equal to <paramref name="number"/>.</summary>
     private static bool IsIntegerConstant(object value, long number)
     {
         if (value is string or char or bool or float or double)
@@ -382,7 +371,6 @@ public static class AssemblySearch
         return integer == number;
     }
 
-    /// <summary>Whether the method <paramref name="body"/> loads <paramref name="literal"/>.</summary>
     private static bool HasMatchInBody(Search search, BlobReader body, MetadataReader reader, SearchLiteral literal)
     {
         return literal.Match(
@@ -448,8 +436,6 @@ public static class AssemblySearch
         return false;
     }
 
-    /// <summary>Moves <paramref name="body"/> past instructions to the next one <paramref name="isLoad"/>
-    /// accepts, up to its operand, and gives its <paramref name="code"/>; false at the end of the body.</summary>
     private static bool TrySkipToLoad(ref BlobReader body, Func<ILOpCode, bool> isLoad, out ILOpCode code)
     {
         while (body.RemainingBytes > 0)
@@ -580,8 +566,6 @@ public static class AssemblySearch
         }
         }
 
-        /// <summary>Whether <paramref name="node"/> is a namespace the assembly puts types in that the
-        /// Query finds.</summary>
         private static bool IsNamespaceFound(Search search, BrowseNode node)
         {
             if (node.Subject is not NodeSubject.Namespace ns)
@@ -644,8 +628,6 @@ public static class AssemblySearch
         }
     }
 
-        /// <summary><paramref name="node"/>, or the nearest of its ancestors the source declared
-        /// when the compiler made it up, such as the type that holds a lambda's closure class.</summary>
         private static BrowseNode? FindSourceDeclaredAncestor(BrowseNode? node)
         {
             while (node is not null)
@@ -728,7 +710,6 @@ public static class AssemblySearch
             return name.Length == 0 || name[0] == '<' ? 0f : 1f / name.Length;
         }
 
-        /// <summary>The name a node is matched by: a constructor's its type's, an entity's its own, else its label.</summary>
         private static string GetNodeName(BrowseNode node)
         {
             var entity = BrowseNodes.FindEntity(node);

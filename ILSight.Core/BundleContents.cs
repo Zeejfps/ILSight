@@ -109,13 +109,12 @@ internal static class BundleContents
         }
     }
 
-    /// <summary>Inflates <paramref name="compressed"/>, stopping one byte past the size the manifest
-    /// declares, which is enough to tell that it lied.</summary>
     private static byte[] Inflate(byte[] compressed, SingleFileBundle.Entry entry)
     {
         using var deflate = new DeflateStream(new MemoryStream(compressed), CompressionMode.Decompress);
         using var inflated = new MemoryStream();
         var buffer = new byte[81920];
+        // One byte past the size the manifest declares, which is enough to tell that it lied.
         var remaining = entry.Size + 1;
         while (remaining > 0)
         {

@@ -29,8 +29,7 @@ internal static class BrowseRoots
         return Create(package, new NodeSubject.Package { Value = folder }, folder.Label, folder.FullName, folder.Label, canHaveChildren: true, isCode: true, ilspyName: null);
     }
 
-    /// <summary>The root of <paramref name="item"/>; <paramref name="ilspyName"/> is the name ILSpy's tree gives it (a
-    /// module's file path; none for a package or a failed file).</summary>
+    // ilspyName is the name ILSpy's tree gives the root: a module's file path; none for a package or a failed file.
     private static BrowseNode Create(LoadedAssembly item, NodeSubject subject, string text, string fullName, string name, bool canHaveChildren, bool isCode,
         string? ilspyName)
     {

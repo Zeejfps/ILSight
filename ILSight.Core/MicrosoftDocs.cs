@@ -79,8 +79,7 @@ public static class MicrosoftDocs
         return null;
     }
 
-    /// <summary>The type's reflection name with its type parameter count after a dash, and a nested
-    /// type after a dot: <c>Outer-1.Inner</c>.</summary>
+    // The docs name a generic nested type's page Outer-1.Inner.
     private static string TypePageName(ITypeDefinition type)
     {
         return type.ReflectionName
@@ -88,7 +87,6 @@ public static class MicrosoftDocs
             .Replace('+', '.');
     }
 
-    /// <summary>The declaring type's page, then the member's name, a constructor's as <c>-ctor</c>.</summary>
     private static string? MemberPageName(IMember member)
     {
         var declaring = member.DeclaringTypeDefinition;
@@ -97,6 +95,7 @@ public static class MicrosoftDocs
             return null;
         }
 
+        // The docs name a constructor's page -ctor.
         var name = member.Name.Replace('.', '-');
         return TypePageName(declaring) + "." + name;
     }

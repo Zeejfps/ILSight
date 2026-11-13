@@ -116,9 +116,6 @@ public static class RuntimeFolders
         return result.ToImmutable();
     }
 
-    /// <summary>The shared frameworks in <paramref name="sharedDir"/> beside <paramref name="frameworkDir"/>, the running
-    /// one, by name, each with its directory of the running runtime's <paramref name="version"/>; those with none left
-    /// out.</summary>
     private static List<(string Framework, string Path)> ListSameVersionSiblings(string sharedDir, string frameworkDir, Version? version)
     {
         var siblings = new List<(string, string)>();
@@ -138,9 +135,6 @@ public static class RuntimeFolders
         return siblings;
     }
 
-    /// <summary>The newest directory of the shared framework at <paramref name="framework"/> whose version has the major
-    /// and minor of <paramref name="version"/>, the running runtime's; null when none has, or that version is
-    /// unknown.</summary>
     private static string? FindSameVersionDirectory(string framework, Version? version)
     {
         return Directory.EnumerateDirectories(framework)

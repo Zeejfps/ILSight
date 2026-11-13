@@ -124,7 +124,6 @@ public sealed class DebugSymbols : IDebugInfoProvider
         return extraTypeInfo.DynamicFlags is not null;
     }
 
-    /// <summary>The local of <paramref name="method"/> at <paramref name="index"/>; null when the PDB names none there.</summary>
     private LocalVariableHandle? FindLocal(MethodDefinitionHandle method, int index)
     {
         foreach (var handle in ListLocals(method))
@@ -162,7 +161,7 @@ public sealed class DebugSymbols : IDebugInfoProvider
         return names.ToArray();
     }
 
-    /// <summary>A null-terminated UTF-8 name; null for an element left unnamed.</summary>
+    // The PDB writes each name null-terminated in UTF-8, empty for an element left unnamed.
     private static string? ReadTupleElementName(ref BlobReader reader)
     {
         var length = reader.IndexOf(0);
@@ -176,7 +175,7 @@ public sealed class DebugSymbols : IDebugInfoProvider
         return name;
     }
 
-    /// <summary>One flag per bit, lowest bit of each byte first.</summary>
+    // The PDB packs one flag per bit, lowest bit of each byte first.
     private bool[] ReadDynamicFlags(BlobHandle blob)
     {
         var bytes = Metadata.GetBlobBytes(blob);
