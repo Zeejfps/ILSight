@@ -145,7 +145,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         {
             AnalyzerSymbolNode symbol => Analysis.EnsureChildren(symbol).Count > 0,
             AnalyzerKindNode kind => !kind.IsDone || kind.Found.Count > 0,
-            AnalyzerMessageNode or AnalyzerPendingNode => false,
+            AnalyzerMessageNode or AnalyzerPendingNode or AnalyzerFailedNode => false,
             _ => throw new UnreachableException(),
         };
     }
@@ -166,7 +166,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
             case AnalyzerKindNode kind:
                 AskToRun(kind);
                 return ListResults(kind);
-            case AnalyzerMessageNode or AnalyzerPendingNode:
+            case AnalyzerMessageNode or AnalyzerPendingNode or AnalyzerFailedNode:
                 return [];
             default:
                 throw new UnreachableException();
@@ -209,6 +209,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
             AnalyzerKindNode kind => CreateKindRow(kind),
             AnalyzerMessageNode message => CreateMessageRow(message),
             AnalyzerPendingNode => CreateLoadingRow(),
+            AnalyzerFailedNode failed => CreateFailedRow(failed),
             _ => throw new UnreachableException(),
         };
     }
@@ -223,6 +224,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
             AnalyzerKindNode kind => AnalyzerText.Header(_strings, kind.Kind),
             AnalyzerMessageNode message => GetMessageText(message),
             AnalyzerPendingNode => _strings.AnalyzerLoading,
+            AnalyzerFailedNode failed => GetFailedText(failed),
             _ => throw new UnreachableException(),
         };
     }
@@ -278,6 +280,24 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         }
 
         return message.Error ?? _strings.AnalyzerLoading;
+    }
+
+    /// <summary>The row of a restored analysis that failed: why, as a warning, in its place.</summary>
+    private TreeRow CreateFailedRow(AnalyzerFailedNode failed)
+    {
+        var warning = new UiIcon(_icons.StatusError, _theme.Warning);
+        return new TreeRow(GetFailedText(failed), warning, _theme.Warning);
+    }
+
+    /// <summary>What the row of <paramref name="failed"/> says: that its module couldn't be read, that its symbol is no
+    /// longer in its file, or why looking it up failed.</summary>
+    private string GetFailedText(AnalyzerFailedNode failed)
+    {
+        var anchor = failed.SavedAs;
+        return failed.Failure.Match(
+            unreadable => _strings.AnalyzerUnreadable(unreadable.Name, unreadable.Why),
+            _ => _strings.ErrorNoLongerThere($"{anchor.FilePath.FileName} ({anchor.Token:X8})"),
+            lookup => _strings.AnalyzerUnreadable(anchor.FilePath.FileName, lookup.Why));
     }
 
     private TreeRow CreateLoadingRow()

@@ -224,7 +224,7 @@ public sealed class AutosaveTests : IDisposable
     }
 
     [Fact]
-    public async Task A_saved_analysis_that_is_not_found_again_leaves_the_settings_with_the_next_save()
+    public async Task A_saved_analysis_that_is_not_found_again_shows_failed_and_stays_in_the_settings_with_the_next_save()
     {
         var first = AppStateDriver.Opened(_temp.Settings());
         first.Analyze(await first.FixtureAsync("Greeter"));
@@ -240,8 +240,46 @@ public sealed class AutosaveTests : IDisposable
         next.Settle();
         next.Pump();
 
-        Assert.Empty(next.AppState.Analyzer.Roots);
-        Assert.Empty(_temp.Settings().AssemblyLists.Single().Analyzed ?? []);
+        var root = Assert.IsType<AnalyzerFailedNode>(Assert.Single(next.AppState.Analyzer.Roots));
+        Assert.IsType<RestoreFailure.NotFound>(root.Failure);
+        Assert.EndsWith("is no longer there.", next.Ui.Analyzer.KeyOf(root));
+        Assert.Equal([anchor with { Token = anchor.Token + 0xFFFF }], _temp.Settings().AssemblyLists.Single().Analyzed ?? []);
+    }
+
+    [Fact]
+    public async Task An_analysis_of_an_assembly_held_at_the_start_shows_failed_is_saved_as_it_was_and_resolves_once_the_list_is_reloaded()
+    {
+        var copy = _temp.Write("Held.dll", await File.ReadAllBytesAsync(AppStateDriver.FixturePath));
+        var first = new AppStateDriver(_temp.Settings());
+        first.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(copy)], ct));
+        first.Settle();
+        var held = first.AppState.Assemblies.Assemblies.Single();
+        first.Analyze(await held.ReadRootAsync().GetChildAsync(AppStateDriver.FixturesNamespace, "Greeter"));
+        first.Settle();
+        first.Pump();
+        var saved = _temp.Settings().AssemblyLists.Single().Analyzed ?? [];
+        Assert.Single(saved);
+
+        AppStateDriver next;
+        AnalyzerNode failed;
+        using (new FileStream(copy, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            next = new AppStateDriver(_temp.Settings());
+            next.Settle();
+            next.Pump();
+            failed = Assert.Single(next.AppState.Analyzer.Roots);
+        }
+
+        var savedWhileHeld = _temp.Settings().AssemblyLists.Single().Analyzed ?? [];
+        var shown = next.Ui.Analyzer.KeyOf(failed);
+        next.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, [], ct));
+        next.Settle();
+
+        Assert.IsType<AnalyzerFailedNode>(failed);
+        Assert.Contains("Held.dll", shown);
+        Assert.Equal(saved, savedWhileHeld);
+        Assert.StartsWith("Greeter", Assert.Single(next.AppState.Analyzer.Found()).Symbol.Label);
+        Assert.Equal(saved, next.AppState.Analyzer.ListSavedAnalyses());
     }
 
     /// <summary>Makes writing the settings fail on any platform: a folder stands where the save writes

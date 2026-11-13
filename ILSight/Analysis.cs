@@ -47,7 +47,7 @@ public static class Analysis
                 CancelRun(kind);
                 CancelAll(kind.Found);
                 break;
-            case AnalyzerMessageNode or AnalyzerPendingNode:
+            case AnalyzerMessageNode or AnalyzerPendingNode or AnalyzerFailedNode:
                 break;
             default:
                 throw new UnreachableException();
@@ -195,8 +195,9 @@ public static class Analysis
         viewCommands.Enqueue(new ViewCommand.ShowAnalysis(shown));
     }
 
-    /// <summary>Turns each of <paramref name="restoring"/> into the analysis of the symbol found for it, in order, or
-    /// removes it when none was, or its symbol is in a module whose type system the library could not read.</summary>
+    /// <summary>Turns each of <paramref name="restoring"/> into the analysis of the symbol found for it, in order; one
+    /// whose symbol was not found, or is in a module whose type system the library could not read, stays as saved,
+    /// failed with why (<see cref="AnalyzerTree.FailRoot"/>).</summary>
     public static void AnalyzeAgain(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, IReadOnlyList<AnalyzerPendingNode> restoring,
         List<Lookup<AnalysisSymbol>> found)
     {
@@ -206,22 +207,35 @@ public static class Analysis
         }
     }
 
-    /// <summary>Removes each of <paramref name="restoring"/> from <paramref name="analyzer"/>.</summary>
-    public static void RemoveRoots(AnalyzerTree analyzer, IReadOnlyList<AnalyzerPendingNode> restoring)
+    /// <summary>Keeps each of <paramref name="restoring"/> as saved, failed: looking them up failed with
+    /// <paramref name="why"/>.</summary>
+    public static void FailRoots(AnalyzerTree analyzer, IReadOnlyList<AnalyzerPendingNode> restoring, string why)
     {
+        var failure = new RestoreFailure.Failed { Why = why };
         foreach (var root in restoring)
         {
-            analyzer.RemoveRoot(root);
+            analyzer.FailRoot(root, failure);
         }
+    }
+
+    /// <summary>Looks again for the symbols of the restored roots of <paramref name="analyzer"/> that failed, now that
+    /// the assemblies of <paramref name="assemblies"/> were read again: each waits again, as it did when it was
+    /// restored, for <see cref="RestoreAnalysesHandler"/> to find. Null when none failed.</summary>
+    public static AnalysesRestore? BeginRetrying(AnalyzerTree analyzer, AssemblyList assemblies)
+    {
+        analyzer.RetryFailedRoots();
+        return BeginRestoring(analyzer, assemblies);
     }
 
     private static void AnalyzeAgain(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, AnalyzerPendingNode root, Lookup<AnalysisSymbol> found)
     {
-        if (found is not Lookup<AnalysisSymbol>.Found symbol)
-        {
-            analyzer.RemoveRoot(root);
-            return;
-        }
-        ResolveAnalysis(analyzer, viewCommands, root, symbol.Value);
+        found.Switch(
+            symbol => ResolveAnalysis(analyzer, viewCommands, root, symbol.Value),
+            _ => analyzer.FailRoot(root, new RestoreFailure.NotFound()),
+            unreadable => analyzer.FailRoot(root, new RestoreFailure.Unreadable
+            {
+                Name = unreadable.Module.Module.FilePath.FileName,
+                Why = unreadable.Module.Why.Message,
+            }));
     }
 }

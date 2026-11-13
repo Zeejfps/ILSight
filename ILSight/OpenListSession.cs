@@ -150,13 +150,21 @@ public sealed class OpenListSession
         return CloseAssemblies(failed);
     }
 
-    /// <summary>Takes every assembly off the list, and every analysis with them, as reading them all again does.
-    /// Returns the modules taken off, for the edge to have the I/O side release them.</summary>
+    /// <summary>Takes every assembly off the list, and every analysis of them, as reading them all again does; a
+    /// restored analysis that failed, holding nothing of them, stays as saved, to be looked for again once they are read
+    /// (<see cref="Analysis.BeginRetrying"/>). Returns the modules taken off, for the edge to have the I/O side release
+    /// them.</summary>
     public RemovedModules ClearAssemblies()
+    {
+        var removed = TakeAllOff();
+        _analyzer.ClearAnalyses();
+        return removed;
+    }
+
+    private RemovedModules TakeAllOff()
     {
         var removed = _assemblies.CloseAll();
         _reopening = [];
-        _analyzer.ClearRoots();
         return removed;
     }
 
@@ -174,7 +182,8 @@ public sealed class OpenListSession
             ShowTabsClosed(item);
         }
 
-        var removed = ClearAssemblies();
+        var removed = TakeAllOff();
+        _analyzer.ClearRoots();
         Assemblies.Pdbs.ForgetAll();
         Assemblies.TargetFrameworks.ForgetAll();
         return new ListClosing { Loads = ShowReopenedDocuments(Navigation, Reopened, Assemblies), Removed = removed };

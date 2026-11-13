@@ -173,6 +173,41 @@ public sealed class AnalyzerTree
         return root;
     }
 
+    /// <summary>Keeps the waiting <paramref name="pending"/>, restored from the saved analyses, as saved, in its place,
+    /// failed with <paramref name="failure"/>; nothing once it was removed, or when it wasn't restored.</summary>
+    public void FailRoot(AnalyzerPendingNode pending, RestoreFailure failure)
+    {
+        var index = _roots.IndexOf(pending);
+        if (index < 0)
+        {
+            return;
+        }
+
+        var savedAs = pending.SavedAs;
+        if (savedAs is null)
+        {
+            return;
+        }
+
+        _roots[index] = new AnalyzerFailedNode { SavedAs = savedAs.Value, Failure = failure };
+        FollowSavedAnalyses();
+    }
+
+    /// <summary>Has each restored root that failed wait for its symbol again, in its place, as it did when it was
+    /// restored (<see cref="ListRestoring"/> lists it).</summary>
+    public void RetryFailedRoots()
+    {
+        for (var i = 0; i < _roots.Count; i++)
+        {
+            if (_roots[i] is AnalyzerFailedNode failed)
+            {
+                _roots[i] = new AnalyzerPendingNode { SavedAs = failed.SavedAs };
+            }
+        }
+
+        FollowSavedAnalyses();
+    }
+
     public bool HasRoot(AnalyzerNode root)
     {
         return _roots.Contains(root);
@@ -240,6 +275,26 @@ public sealed class AnalyzerTree
         return _assemblies.Holds(file);
     }
 
+    /// <summary>Removes every root but the restored ones that failed, which hold no symbol of the assemblies, as
+    /// reading the assemblies again does, cancelling the analyses running under them. Those that failed stay as saved,
+    /// for <see cref="RetryFailedRoots"/> once the assemblies are read.</summary>
+    public void ClearAnalyses()
+    {
+        var analyses = new List<AnalyzerNode>();
+        foreach (var root in _roots)
+        {
+            if (root is not AnalyzerFailedNode)
+            {
+                analyses.Add(root);
+            }
+        }
+
+        foreach (var root in analyses)
+        {
+            RemoveRoot(root);
+        }
+    }
+
     /// <summary>Removes every root, cancelling the analyses running under them.</summary>
     public void ClearRoots()
     {
@@ -273,6 +328,7 @@ public sealed class AnalyzerTree
         {
             AnalyzerSymbolNode symbol => symbol.Symbol.Definition,
             AnalyzerPendingNode pending => pending.SavedAs,
+            AnalyzerFailedNode failed => failed.SavedAs,
             AnalyzerKindNode or AnalyzerMessageNode => null,
             _ => throw new UnreachableException(),
         };

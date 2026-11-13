@@ -29,32 +29,37 @@ public sealed class RestoreAnalysesHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_SymbolsFound_AnalyzesEachAgainAndRemovesThoseGone()
+    public async Task HandleAsync_SymbolsFound_AnalyzesEachAgainAndKeepsThoseGoneAsSavedFailed()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var restore = await WaitForGreeterAndFarewellAsync(d);
+        var saved = d.AppState.Analyzer.ListSavedAnalyses();
         var greeter = await SymbolOfAsync(d, "Greeter");
         var ports = new FakeRestoreAnalysesHandlerPorts { Found = new Outcome<List<Lookup<AnalysisSymbol>>>.Ok([new Lookup<AnalysisSymbol>.Found { Value = greeter }, new Lookup<AnalysisSymbol>.NotFound()]) };
 
         await new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.Analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None);
 
         Assert.Equal(greeter, Assert.Single(d.AppState.Analyzer.Found()).Symbol);
-        Assert.Single(d.AppState.Analyzer.Roots);
+        var gone = Assert.IsType<AnalyzerFailedNode>(d.AppState.Analyzer.Roots[1]);
+        Assert.IsType<RestoreFailure.NotFound>(gone.Failure);
+        Assert.Equal(saved, d.AppState.Analyzer.ListSavedAnalyses());
         Assert.Empty(ports.Reported);
     }
 
     [Fact]
-    public async Task HandleAsync_LookupFailed_ReportsItAndRemovesTheRoots()
+    public async Task HandleAsync_LookupFailed_ReportsItAndKeepsTheRootsAsSavedFailedWithWhy()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var restore = await WaitForGreeterAndFarewellAsync(d);
+        var saved = d.AppState.Analyzer.ListSavedAnalyses();
         var error = new IOException("unreadable");
         var ports = new FakeRestoreAnalysesHandlerPorts { Found = new Outcome<List<Lookup<AnalysisSymbol>>>.Failed(error) };
 
         await new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.Analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None);
 
         Assert.Same(error, Assert.IsType<AppProblem.AnalysesNotRestored>(Assert.Single(ports.Reported)).Error);
-        Assert.Empty(d.AppState.Analyzer.Roots);
+        Assert.All(d.AppState.Analyzer.Roots, static r => Assert.Equal("unreadable", Assert.IsType<RestoreFailure.Failed>(Assert.IsType<AnalyzerFailedNode>(r).Failure).Why));
+        Assert.Equal(saved, d.AppState.Analyzer.ListSavedAnalyses());
     }
 
     [Fact]

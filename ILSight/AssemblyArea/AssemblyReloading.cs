@@ -279,8 +279,8 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     }
 
     /// <summary>Shows each tab's place again and what the tabs reopened from the saved documents showed, the nodes
-    /// those wait for still to be found. Returns the loads it started in the tabs, the lookup of those nodes among
-    /// them.</summary>
+    /// those wait for still to be found, and has the restored analyses that failed looked for again in what was read.
+    /// Returns the loads it started in the tabs, the lookup of those nodes and of those analyses among them.</summary>
     private TabLoads ShowReloaded(OpenListSession session, Queue<ViewCommand> viewCommands, DecompilerSetup decompiler, ReloadedNodes reloaded, int intent,
         List<ReloadingTab> tabs)
     {
@@ -292,7 +292,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         }
 
         var reopened = ShowReopenedDocuments(session.Navigation, session.Reopened, session.Assemblies);
-        return TabLoads.None.With(loads).With(reopened);
+        return TabLoads.None.With(loads).With(reopened).With(Analysis.BeginRetrying(session.Analyzer, session.Assemblies));
     }
 
     private void ReshowTab(Navigation navigation, Queue<ViewCommand> viewCommands, DecompilerSetup decompiler, ReloadingTab reloading,
