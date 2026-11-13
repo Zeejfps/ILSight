@@ -1,6 +1,7 @@
 using ILSight.Core;
 using ILSight.ComparisonPickerArea;
 using static ILSight.App.Tests.TestPaths;
+using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
 
@@ -103,7 +104,7 @@ public sealed class ComparisonPickerTests
         var d = OpenThree();
         var picker = OpenPicker(d, OlderPath);
 
-        d.AppState.ListSession.CloseAssemblies([Opened(d, OlderPath)]);
+        Commands.CloseAssemblies(d.AppState, [Opened(d, OlderPath)]);
         picker.Update(d.AppState.Assemblies);
 
         Assert.False(picker.Choice.IsOpen);

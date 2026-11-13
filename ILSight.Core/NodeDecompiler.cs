@@ -30,8 +30,8 @@ internal static class NodeDecompiler
     /// as a comment when given, once the read of its module's type system ended. Throws
     /// <see cref="OperationCanceledException"/> when cancelled; a module the library could not read, for code that
     /// reads it, and whatever the decompiler throws while it writes become a document describing it.</summary>
-    public static async Task<DecompiledDocument> DecompileAsync(DocumentRequest request, DecompilationLanguage language, DecompilerOptions options,
-        CancellationToken cancellationToken, string? note = null)
+    public static async Task<DecompiledDocument> DecompileAsync(ModuleReading reading, DocumentRequest request, DecompilationLanguage language,
+        DecompilerOptions options, CancellationToken cancellationToken, string? note = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (request is DocumentRequest.Failure failure)
@@ -45,10 +45,11 @@ internal static class NodeDecompiler
             return Decompile(request, null, language, options, cancellationToken, note);
         }
 
-        var read = await LoadedAssemblies.ReadTypeSystemAsync(module, cancellationToken);
+        var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, module, cancellationToken);
         return read.Match(
             r => Decompile(request, r.TypeSystem, language, options, cancellationToken, note),
-            u => DecompileUnreadable(request, u.Thrown.SourceException, language, options, cancellationToken, note));
+            u => DecompileUnreadable(request, u.Thrown.SourceException, language, options, cancellationToken, note),
+            static c => throw new InvalidOperationException($"'{c.Module.FilePath}' was decompiled after its release: the unit holds a reading of the node's module, which the request's is."));
     }
 
     /// <summary>The document of <paramref name="request"/>, whose module the library could not read: the failure, for

@@ -1,3 +1,4 @@
+using ILSight.Core;
 using ILSight.Core.Metadata;
 
 namespace ILSight.MetadataGridArea;
@@ -7,7 +8,7 @@ namespace ILSight.MetadataGridArea;
 /// cancellation of the token the call was given, which it lets through.</summary>
 public sealed class ReadMetadataPageHandlerAdapter : ReadMetadataPageHandler.IPorts
 {
-    public async Task<Outcome<MetadataGridPage>> ReadPageAsync(MetadataGridPageAsk ask, CancellationToken ct)
+    public async Task<Outcome<ModuleRead<MetadataGridPage>>> ReadPageAsync(MetadataGridPageAsk ask, CancellationToken ct)
     {
         var read = await Background.Wait(Task.Run(() => MetadataGrids.ReadPage(ask.Grid, ask.Page), ct));
         ct.ThrowIfCancellationRequested();

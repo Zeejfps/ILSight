@@ -175,6 +175,22 @@ public static class MetadataGridWidget
         return true;
     }
 
+    /// <summary>Ends what <paramref name="ask"/> asked for with nothing new, the grid's module closed before the work
+    /// began: the rows it showed left as they were. Returns whether it did: not when a newer view was asked for
+    /// meanwhile.</summary>
+    internal static bool ShowArrangeStopped(MetadataGridViewAsk ask)
+    {
+        var state = ask.State;
+        if (ask.Key != state.ViewAskedKey)
+        {
+            return false;
+        }
+
+        state.ViewKey = ask.Key;
+        state.RevealWhenArranged = false;
+        return true;
+    }
+
     /// <summary>Ends what <paramref name="ask"/> asked for with <paramref name="error"/>, which the view says, the rows
     /// it showed left as they were. Returns whether it did: not when a newer view was asked for meanwhile.</summary>
     internal static bool ShowArrangeFailed(MetadataGridViewAsk ask, Exception error)

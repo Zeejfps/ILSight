@@ -152,22 +152,31 @@ public static class BrowseSessions
 
     /// <summary>The children of <paramref name="node"/>, built once the reads of the type systems the build reads
     /// ended, which the build is handed; a build reading one module's type system fails, saying why, when the library
-    /// could not read it; derived types name each module the search reached that it could not read beside those found.</summary>
+    /// could not read it; derived types name each module the search reached that it could not read beside those found.
+    /// The build is a unit reading the node's module and those it reads: a node of a module released (closed) before
+    /// it began has no children to show, nor one whose children are read from a module released.</summary>
     private static async Task<ChildrenState> BuildChildrenAsync(BrowseSession session, BrowseNode node, CancellationToken ct)
     {
+        using var reading = LoadedAssemblies.BeginReading();
+        if (node.Assembly is LoadedModule own && !LoadedAssemblies.TryRead(reading, own))
+        {
+            return new ChildrenState.Ready([]);
+        }
+
         var module = BrowseNodes.FindModuleReadForChildren(node.Subject);
         if (module is not null)
         {
-            var read = await LoadedAssemblies.ReadTypeSystemAsync(module, ct);
+            var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, module, ct);
             return read.Match<ChildrenState>(
                 r => BuildChildren(session, node, new ChildrenReads { Main = r.TypeSystem.MainModule }),
-                static u => new ChildrenState.Failed(u.Thrown.SourceException));
+                static u => new ChildrenState.Failed(u.Thrown.SourceException),
+                static _ => new ChildrenState.Ready([]));
         }
 
         var derivedOf = BrowseNodes.FindDerivedTypesModule(node.Subject);
         if (derivedOf is not null)
         {
-            var reachable = await DerivedTypes.ReadReachableAsync(derivedOf, ct);
+            var reachable = await DerivedTypes.ReadReachableAsync(reading, derivedOf, ct);
             return BuildChildren(session, node, new ChildrenReads { Reachable = reachable });
         }
 
@@ -262,12 +271,14 @@ public static class BrowseSessions
         var children = await ListReadableChildrenAsync(session, node, ct);
         return children.Match(
             done => Lookup.FromNullable(BrowseSession.FindChild(done.Value, segment)),
-            static unreadable => new Lookup<BrowseNode>.Unreadable { Module = unreadable.Module });
+            static unreadable => new Lookup<BrowseNode>.Unreadable { Module = unreadable.Module },
+            static _ => new Lookup<BrowseNode>.NotFound());
     }
 
     /// <summary>The children of <paramref name="node"/>, as <see cref="ListChildrenAsync"/> lists them, once the read
     /// of the type system their build reads ended (a module's, a type reference's or a module reference's module);
-    /// that module, with why, when the library could not read it, and no children.</summary>
+    /// that module, with why, when the library could not read it, and no children; closed when it was released (closed)
+    /// before.</summary>
     internal static async Task<TypeSystemWork<IReadOnlyList<BrowseNode>>> ListReadableChildrenAsync(BrowseSession session, BrowseNode node,
         CancellationToken ct)
     {
@@ -277,13 +288,15 @@ public static class BrowseSessions
             return new TypeSystemWork<IReadOnlyList<BrowseNode>>.Done { Value = await ListChildrenAsync(session, node, ct) };
         }
 
-        var read = await LoadedAssemblies.ReadTypeSystemAsync(module, ct);
+        using var reading = LoadedAssemblies.BeginReading();
+        var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, module, ct);
         return await read.Match<Task<TypeSystemWork<IReadOnlyList<BrowseNode>>>>(
             async _ => new TypeSystemWork<IReadOnlyList<BrowseNode>>.Done { Value = await ListChildrenAsync(session, node, ct) },
             u => Task.FromResult<TypeSystemWork<IReadOnlyList<BrowseNode>>>(new TypeSystemWork<IReadOnlyList<BrowseNode>>.Unreadable
             {
                 Module = new UnreadableModule { Module = module, Why = u.Thrown.SourceException },
-            }));
+            }),
+            static c => Task.FromResult<TypeSystemWork<IReadOnlyList<BrowseNode>>>(new TypeSystemWork<IReadOnlyList<BrowseNode>>.Closed { Module = c.Module }));
     }
     /// <summary>The entry of the package whose root is <paramref name="packageRoot"/> that
     /// <paramref name="segment"/> names by its full path, wherever the folders holding it were merged.</summary>
@@ -462,11 +475,12 @@ public static class BrowseSessions
 
     /// <summary>The row <paramref name="handle"/> names in <paramref name="module"/>'s own metadata
     /// tables; not found when it names no table row or the tables could not be read; unreadable when the library could
-    /// not read the module's type system, which listing the module's folders reads.</summary>
-    internal static async Task<Lookup<MetadataTarget>> FindMetadataRowAsync(BrowseSession session, LoadedModule module, EntityHandle handle,
-        CancellationToken ct)
+    /// not read the module's type system, which listing the module's folders reads. The module is added to
+    /// <paramref name="reading"/>, the unit's: not found when it was released (closed) before.</summary>
+    internal static async Task<Lookup<MetadataTarget>> FindMetadataRowAsync(BrowseSession session, ModuleReading reading, LoadedModule module,
+        EntityHandle handle, CancellationToken ct)
     {
-        if (!MetadataTokens.TryGetTableIndex(handle.Kind, out var index))
+        if (!MetadataTokens.TryGetTableIndex(handle.Kind, out var index) || !LoadedAssemblies.TryRead(reading, module))
         {
             return new Lookup<MetadataTarget>.NotFound();
         }
@@ -474,7 +488,8 @@ public static class BrowseSessions
         var folders = await ListReadableChildrenAsync(session, await EnsureRootAsync(session, module, ct), ct);
         return await folders.Match(
             done => FindRowAsync(session, done.Value, LoadedAssemblies.GetFile(module), index, handle, ct),
-            static unreadable => Task.FromResult<Lookup<MetadataTarget>>(new Lookup<MetadataTarget>.Unreadable { Module = unreadable.Module }));
+            static unreadable => Task.FromResult<Lookup<MetadataTarget>>(new Lookup<MetadataTarget>.Unreadable { Module = unreadable.Module }),
+            static _ => Task.FromResult<Lookup<MetadataTarget>>(new Lookup<MetadataTarget>.NotFound()));
     }
 
     /// <summary>The row <paramref name="handle"/> names in the table <paramref name="index"/> of the folder of

@@ -22,12 +22,20 @@ public abstract record TypeSystemRead
         public required ExceptionDispatchInfo Thrown { get; init; }
     }
 
-    public TResult Match<TResult>(Func<Read, TResult> read, Func<Unreadable, TResult> unreadable)
+    /// <summary>The module was released (closed, and nothing read it) before the unit's reading began: nothing was
+    /// read.</summary>
+    public sealed record Closed : TypeSystemRead
+    {
+        public required LoadedModule Module { get; init; }
+    }
+
+    public TResult Match<TResult>(Func<Read, TResult> read, Func<Unreadable, TResult> unreadable, Func<Closed, TResult> closed)
     {
         return this switch
         {
             Read r => read(r),
             Unreadable u => unreadable(u),
+            Closed c => closed(c),
             _ => throw new UnreachableException($"TypeSystemRead.Match does not handle {GetType().Name}."),
         };
     }

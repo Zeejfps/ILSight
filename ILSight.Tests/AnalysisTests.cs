@@ -107,7 +107,8 @@ public sealed class AnalysisTests
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var core = list.OpenModule(typeof(AssemblyList).Assembly.Location);
-        var reads = await AnalyzerScope.ReadReachableAsync(list, core, CancellationToken.None);
+        using var reading = LoadedAssemblies.BeginReading();
+        var reads = await AnalyzerScope.ReadReachableAsync(reading, list, core, CancellationToken.None);
         list.OpenModule(Trees.TestAssemblyPath);
         var type = Assert.IsAssignableFrom<IEntity>(NodeDefinitions.GetSymbol(Assert.IsType<NodeSubject.TypeDefinition>((await core.ReadRootAsync().GetChildAsync("ILSight.Core", "AssemblyPath")).Subject).Definition));
 

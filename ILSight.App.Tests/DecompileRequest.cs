@@ -9,5 +9,5 @@ internal sealed record DecompileRequest
 
     public required DecompilationLanguage Language { get; init; }
 
-    public required TaskCompletionSource<Outcome<NodeContent>> Answer { get; init; }
+    public required TaskCompletionSource<Outcome<ModuleRead<NodeContent>>> Answer { get; init; }
 }

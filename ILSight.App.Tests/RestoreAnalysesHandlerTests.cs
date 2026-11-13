@@ -1,5 +1,6 @@
 using ILSight.Core;
 using ILSight.Core.Analysis;
+using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
 
@@ -64,7 +65,7 @@ public sealed class RestoreAnalysesHandlerTests
         var ports = new FakeRestoreAnalysesHandlerPorts
         {
             Found = new Outcome<List<Lookup<AnalysisSymbol>>>.Failed(new IOException("unreadable")),
-            WhileLooking = () => d.AppState.Assemblies.CloseAll(),
+            WhileLooking = () => LoadedAssemblies.Release(d.AppState.Assemblies.CloseAll()),
         };
 
         await new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.Analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None);
@@ -84,7 +85,7 @@ public sealed class RestoreAnalysesHandlerTests
         var ports = new FakeRestoreAnalysesHandlerPorts
         {
             Found = new Outcome<List<Lookup<AnalysisSymbol>>>.Ok([new Lookup<AnalysisSymbol>.Found { Value = greeter }, new Lookup<AnalysisSymbol>.Found { Value = farewell }]),
-            WhileLooking = () => d.AppState.ListSession.CloseAssemblies([assembly]),
+            WhileLooking = () => Commands.CloseAssemblies(d.AppState, [assembly]),
         };
 
         await new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.Analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None);

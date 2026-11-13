@@ -213,7 +213,7 @@ public static class Commands
     }
 
     /// <summary>Starts reading the type system of each module listed since the last frame, ahead of its first use,
-    /// which takes the same read's outcome (<see cref="LoadedAssemblies.ReadTypeSystemAsync"/>): a read the library
+    /// which takes the same read's outcome (<see cref="LoadedAssemblies.ReadTypeSystemAheadAsync"/>): a read the library
     /// fails on ends with nothing to report, its first use showing why. Each is counted in the app's background work
     /// until it ends. Allocates nothing while nothing is asked for.</summary>
     public static void StartReadingTypeSystems(WorkflowRunner workflows, AssemblyList assemblies)
@@ -232,7 +232,7 @@ public static class Commands
     /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
     private static void StartReadingTypeSystem(WorkflowRunner workflows, LoadedModule module)
     {
-        workflows.Start(nameof(LoadedAssemblies.ReadTypeSystemAsync), ct => LoadedAssemblies.ReadTypeSystemAsync(module, ct));
+        workflows.Start(nameof(LoadedAssemblies.ReadTypeSystemAheadAsync), ct => LoadedAssemblies.ReadTypeSystemAheadAsync(module, ct));
     }
 
     /// <summary>Starts the runs <paramref name="search"/> asked for while the screen drew (<see cref="RunSearchHandler"/>)
@@ -370,7 +370,7 @@ public static class Commands
             return;
         }
 
-        StartLoads(appState, opening.Closing);
+        FinishClosing(appState, opening.Closing);
         StartReopening(appState, opening.Reopening);
         StartRestoringAnalyses(appState, opening.Analyses);
     }
@@ -519,6 +519,35 @@ public static class Commands
     /// <summary>Starts each of <paramref name="loads"/> now: each node decompiled as
     /// <see cref="StartDecompiling(AppState, DecompileTicket?)"/> does, and the cards of each reopened diagram read
     /// (<see cref="ReopenDiagramHandler"/>) on a token that closing the diagram cancels too.</summary>
+    /// <summary>Takes <paramref name="items"/> off the open list (<see cref="OpenListSession.CloseAssemblies"/>) and has
+    /// the modules taken off released, each once nothing reads it.</summary>
+    public static void CloseAssemblies(AppState appState, IReadOnlyList<LoadedAssembly> items)
+    {
+        LoadedAssemblies.Release(appState.ListSession.CloseAssemblies(items));
+    }
+
+    /// <summary>Takes the files that failed to load off the open list
+    /// (<see cref="OpenListSession.CloseFailedAssemblies"/>), released as every close's modules are.</summary>
+    public static void CloseFailedAssemblies(AppState appState)
+    {
+        LoadedAssemblies.Release(appState.ListSession.CloseFailedAssemblies());
+    }
+
+    /// <summary>Closes every assembly of the open list (<see cref="OpenListSession.CloseAllAssemblies"/>), then starts
+    /// the loads that started in its tabs and has the modules taken off released.</summary>
+    public static void CloseAllAssemblies(AppState appState)
+    {
+        FinishClosing(appState, appState.ListSession.CloseAllAssemblies());
+    }
+
+    /// <summary>Starts the loads closing the list started in its tabs, and has the modules it took off released, each
+    /// once nothing reads it.</summary>
+    public static void FinishClosing(AppState appState, ListClosing closing)
+    {
+        StartLoads(appState, closing.Loads);
+        LoadedAssemblies.Release(closing.Removed);
+    }
+
     public static void StartLoads(AppState appState, TabLoads loads)
     {
         loads.Switch(load => StartDecompiling(appState, load), read => StartReadingCards(appState, read), lookup => StartFindingNodes(appState, lookup),

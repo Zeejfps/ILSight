@@ -20,7 +20,7 @@ public sealed class DiagramTests : IDisposable
     /// <summary>The main module of <paramref name="module"/>'s type system, as read.</summary>
     private static async Task<MetadataModule> MainOfAsync(LoadedModule module)
     {
-        var read = await LoadedAssemblies.ReadTypeSystemAsync(module, CancellationToken.None);
+        var read = await LoadedAssemblies.ReadTypeSystemAheadAsync(module, CancellationToken.None);
         return Assert.IsType<TypeSystemRead.Read>(read).TypeSystem.MainModule;
     }
 

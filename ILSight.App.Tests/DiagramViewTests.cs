@@ -7,6 +7,7 @@ using ILSight.Core.Diagrams;
 using ILSight.DiagramArea;
 using static ILSight.Docking;
 using static ILSight.App.Tests.BuiltInGlyphs;
+using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
 
@@ -281,7 +282,7 @@ public sealed class DiagramViewTests
         app.AppState.Navigation.CloseTab(tab);
         var diagramAt = app.AppState.Navigation.HistoryIndex - 1;
         Assert.IsType<HistoryEntry.Diagram>(app.AppState.Navigation.HistoryEntries[diagramAt]);
-        app.AppState.ListSession.CloseAssemblies([app.Fixture("Greeter").Root.Assembly]);
+        Commands.CloseAssemblies(app.AppState, [app.Fixture("Greeter").Root.Assembly]);
         app.Run(2);
 
         app.GoBack();

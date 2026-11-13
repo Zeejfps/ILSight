@@ -17,17 +17,19 @@ public sealed class ClosableAssemblyList
     public AssemblyList List { get; }
 
     /// <summary>Takes the item holding <paramref name="assembly"/> off the list (the assembly, or the package it was
-    /// read out of), as <see cref="AssemblyList.Close"/> does; one no longer listed is passed over.</summary>
-    public void Close(LoadedAssembly assembly)
+    /// read out of), as <see cref="AssemblyList.Close"/> does; one no longer listed is passed over. Returns the modules
+    /// it took off, for the I/O side to release.</summary>
+    public RemovedModules Close(LoadedAssembly assembly)
     {
-        List.Close(assembly);
+        return List.Close(assembly);
     }
 
     /// <summary>Lists <paramref name="fresh"/>, read again for the listed <paramref name="item"/>, in its place, as
-    /// <see cref="AssemblyList.TryReplace"/> does: reads nothing. False when the item is no longer listed.</summary>
-    public bool TryReplace(LoadedAssembly item, FreshItem fresh)
+    /// <see cref="AssemblyList.TryReplace"/> does: reads nothing. False when the item is no longer listed.
+    /// <paramref name="removed"/> is what nothing lists after: the item replaced, or the fresh one, not listed.</summary>
+    public bool TryReplace(LoadedAssembly item, FreshItem fresh, out RemovedModules removed)
     {
-        return List.TryReplace(item, fresh);
+        return List.TryReplace(item, fresh, out removed);
     }
 
     /// <summary>Records <paramref name="paths"/>, asked for, as on their way (<see cref="AssemblyList.Arriving"/>)
@@ -44,9 +46,10 @@ public sealed class ClosableAssemblyList
         return List.StopArriving(paths);
     }
 
-    /// <summary>Takes every assembly off the list, as <see cref="AssemblyList.CloseAll"/> does.</summary>
-    public void CloseAll()
+    /// <summary>Takes every assembly off the list, as <see cref="AssemblyList.CloseAll"/> does. Returns the modules it
+    /// took off, for the I/O side to release.</summary>
+    public RemovedModules CloseAll()
     {
-        List.CloseAll();
+        return List.CloseAll();
     }
 }

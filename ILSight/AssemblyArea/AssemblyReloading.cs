@@ -33,6 +33,9 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         /// fires; what that threw comes back as <see cref="Outcome{T}.Failed"/>.</summary>
         Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded, IReadOnlyList<NodePath> places,
             CancellationToken stop, CancellationToken ct);
+
+        /// <summary>Releases the modules <paramref name="removed"/> took off the list, each once nothing reads it.</summary>
+        void ReleaseModules(RemovedModules removed);
     }
 
     /// <summary>Checks that the PDB at <paramref name="pdbPath"/> can be read for <paramref name="assembly"/>,
@@ -174,7 +177,9 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         ReopenedFile reopened, List<ReloadingTab> tabs)
     {
         var loads = new List<DecompileTicket>();
-        if (!session.TryReplaceAssembly(item, reopened.Fresh))
+        var isReplaced = session.TryReplaceAssembly(item, reopened.Fresh, out var removed);
+        ports.ReleaseModules(removed);
+        if (!isReplaced)
         {
             return loads;
         }
@@ -200,7 +205,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         var paths = lists.ActivePaths.ToList();
         var tabs = ReleaseShownTabs(session.Navigation, session.Assemblies, decompiler.Setup.Language);
         var places = tabs.ConvertAll(t => t.Location);
-        session.ClearAssemblies();
+        ports.ReleaseModules(session.ClearAssemblies());
 
         var reloaded = await ports.ReopenFilesAsync(paths, expanded, places, ticket.Token, ct);
         return FinishReload(session, viewCommands, decompiler.Setup, reloaded, ticket, intent, tabs);

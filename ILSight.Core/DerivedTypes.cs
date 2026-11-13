@@ -18,9 +18,9 @@ internal static class DerivedTypes
 
     /// <summary>The reads of the type systems of the modules the search for <paramref name="type"/>'s derived types,
     /// in <paramref name="module"/>, can reach, each awaited (<see cref="AnalyzerScope.ReadReachableAsync"/>).</summary>
-    public static Task<ModuleTypeSystems> ReadReachableAsync(LoadedModule module, CancellationToken cancellationToken)
+    public static Task<ModuleTypeSystems> ReadReachableAsync(ModuleReading reading, LoadedModule module, CancellationToken cancellationToken)
     {
-        return AnalyzerScope.ReadReachableAsync(module.List, module, cancellationToken);
+        return AnalyzerScope.ReadReachableAsync(reading, module.List, module, cancellationToken);
     }
 
     /// <summary>The types deriving from <paramref name="type"/> among <paramref name="typeSystems"/>, the reads of the

@@ -1,6 +1,7 @@
 using ILSight.Core;
 using ILSight.Core.Comparison;
 using ILSight.AssemblyArea;
+using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
 
@@ -38,7 +39,7 @@ public sealed class CompareAssembliesHandlerTests
 
         var comparing = new CompareAssembliesHandler(ports).HandleAsync(run, CancellationToken.None);
         Assert.True(comparison.IsComparing);
-        Assert.Single(ports.Answers).SetResult(new Outcome<ApiDiff>.Ok(diff));
+        Assert.Single(ports.Answers).SetResult(new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Read { Value = diff }));
         await comparing;
 
         Assert.Same(diff, Assert.IsType<ComparisonResult.Compared>(comparison.Result).Diff);
@@ -56,7 +57,7 @@ public sealed class CompareAssembliesHandlerTests
         var error = new BadImageFormatException("Unreadable.");
 
         var comparing = new CompareAssembliesHandler(ports).HandleAsync(run, CancellationToken.None);
-        Assert.Single(ports.Answers).SetResult(new Outcome<ApiDiff>.Failed(error));
+        Assert.Single(ports.Answers).SetResult(new Outcome<ModuleRead<ApiDiff>>.Failed(error));
         await comparing;
 
         var failed = Assert.IsType<ComparisonResult.Failed>(comparison.Result);
@@ -77,10 +78,10 @@ public sealed class CompareAssembliesHandlerTests
         var newerComparing = handler.HandleAsync(newer, CancellationToken.None);
         var newerDiff = Diff(newer);
 
-        ports.Answers[0].SetResult(new Outcome<ApiDiff>.Ok(Diff(older)));
+        ports.Answers[0].SetResult(new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Read { Value = Diff(older) }));
         await olderComparing;
         Assert.IsType<ComparisonResult.NotYet>(comparison.Result);
-        ports.Answers[1].SetResult(new Outcome<ApiDiff>.Ok(newerDiff));
+        ports.Answers[1].SetResult(new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Read { Value = newerDiff }));
         await newerComparing;
 
         Assert.True(older.Work.Token.IsCancellationRequested);
@@ -93,7 +94,7 @@ public sealed class CompareAssembliesHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var comparison = NewComparison(d);
-        d.AppState.ListSession.CloseAssemblies([d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath)]);
+        Commands.CloseAssemblies(d.AppState, [d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath)]);
 
         var run = Comparisons.SwapComparedAssemblies(d.AppState.Assemblies, comparison);
 

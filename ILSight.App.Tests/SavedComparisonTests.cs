@@ -5,6 +5,7 @@ using ILSight.AssemblyArea;
 using static ILSight.AssemblyListArea.AssemblyLists;
 using static ILSight.Comparisons;
 using static ILSight.App.Tests.TestPaths;
+using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
 
@@ -118,7 +119,7 @@ public sealed class SavedComparisonTests : IDisposable
     public void A_comparison_of_an_assembly_no_longer_open_comes_back_saying_so()
     {
         var app = Compared();
-        app.AppState.ListSession.CloseAssemblies([app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == RightPath)]);
+        Commands.CloseAssemblies(app.AppState, [app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == RightPath)]);
         app.Settle(2);
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 700, false)));
 

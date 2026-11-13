@@ -28,9 +28,18 @@ internal sealed class FakeAssemblyReloadingPorts : AssemblyReloading.IPorts
 
     public List<AppProblem> Reported { get; } = [];
 
+    /// <summary>The modules each release was handed, in order.</summary>
+    public List<RemovedModules> Released { get; } = [];
+
     public void ReportError(AppProblem problem)
     {
         Reported.Add(problem);
+    }
+
+    public void ReleaseModules(RemovedModules removed)
+    {
+        Released.Add(removed);
+        LoadedAssemblies.Release(removed);
     }
 
     public Task<Outcome<PdbCheck>> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct)

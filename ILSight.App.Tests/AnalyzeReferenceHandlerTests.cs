@@ -1,4 +1,5 @@
 using ILSight.Core;
+using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
 
@@ -66,7 +67,7 @@ public sealed class AnalyzeReferenceHandlerTests
         var ports = new FakeAnalyzeReferenceHandlerPorts
         {
             Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(greeter)),
-            WhileLooking = () => d.AppState.ListSession.CloseAssemblies([assembly]),
+            WhileLooking = () => Commands.CloseAssemblies(d.AppState, [assembly]),
         };
         d.TakeViewCommands();
 

@@ -203,53 +203,71 @@ public sealed class AssemblyList
 
     /// <summary>Removes the item of the list holding <paramref name="assembly"/>: the assembly, or the package it was
     /// read out of, whose assemblies are forgotten with it, and what was picked for them. Documents and nodes already
-    /// handed out stay valid. Reads nothing: what stays loaded is what was.</summary>
-    internal void Close(LoadedAssembly assembly)
+    /// handed out keep what they hold. Reads nothing: what stays loaded is what was. Returns the modules it forgot,
+    /// for the I/O side to release once nothing reads them.</summary>
+    internal RemovedModules Close(LoadedAssembly assembly)
     {
         var item = assembly.ListedItem;
+        var removed = new List<LoadedModule>();
         using (var held = State.Enter())
         {
             if (item is not FailedAssembly && !TryForgetKnown(held.Value, item))
             {
-                return;
+                return RemovedModules.None;
+            }
+
+            if (item is LoadedModule itemModule)
+            {
+                removed.Add(itemModule);
             }
 
             var isPackage = item is LoadedPackage;
             Pdbs.Forget(item.FilePath, andUnder: isPackage);
             TargetFrameworks.Forget(item.FilePath, andUnder: isPackage);
-            ForgetReadOutOf(held.Value, item);
+            removed.AddRange(ForgetReadOutOf(held.Value, item));
             var now = held.Snapshot;
             if (!now.Listed.Contains(item))
             {
-                return;
+                return new RemovedModules { Modules = removed };
             }
 
             var loaded = now.Loaded.RemoveAll(m => m.ListedItem == item);
             held.Snapshot = now with { Listed = now.Listed.Remove(item), Loaded = loaded, Version = now.Version + 1 };
         }
         Changed?.Invoke();
+        return new RemovedModules { Modules = removed };
     }
 
     /// <summary>Lists <paramref name="fresh"/>, read again for the listed <paramref name="item"/>
     /// (<see cref="AssemblyListing.ReadAgain"/>), where the item is, with the assemblies read out of it, and forgets
-    /// the item and the assemblies read out of it. Reads nothing: what is listed is what was read. Nodes already handed
-    /// out stay valid. False, leaving the list as it is, when the item is no longer listed.</summary>
-    internal bool TryReplace(LoadedAssembly item, FreshItem fresh)
+    /// the item and the assemblies read out of it, which <paramref name="removed"/> returns for the I/O side to
+    /// release. Reads nothing: what is listed is what was read. Nodes already handed out keep what they hold. False,
+    /// leaving the list as it is, when the item is no longer listed: then <paramref name="removed"/> is what was read
+    /// again, which nothing lists.</summary>
+    internal bool TryReplace(LoadedAssembly item, FreshItem fresh, out RemovedModules removed)
     {
         using (var held = State.Enter())
         {
             var now = held.Snapshot;
             if (!now.Listed.Contains(item))
             {
+                removed = ListModules(fresh);
                 return false;
             }
 
             if (!TryForgetKnown(held.Value, item))
             {
+                removed = ListModules(fresh);
                 return false;
             }
 
-            ForgetReadOutOf(held.Value, item);
+            var forgotten = ForgetReadOutOf(held.Value, item);
+            if (item is LoadedModule itemModule)
+            {
+                forgotten.Insert(0, itemModule);
+            }
+
+            removed = new RemovedModules { Modules = forgotten };
             held.Value[fresh.Item.FilePath] = fresh.Item;
             foreach (var assembly in fresh.ReadOutOf)
             {
@@ -266,6 +284,18 @@ public sealed class AssemblyList
 
         Changed?.Invoke();
         return true;
+    }
+
+    /// <summary>The modules <paramref name="fresh"/> holds: itself when it is a module, else what was read out of
+    /// it.</summary>
+    private static RemovedModules ListModules(FreshItem fresh)
+    {
+        if (fresh.Item is LoadedModule module)
+        {
+            return new RemovedModules { Modules = [module] };
+        }
+
+        return new RemovedModules { Modules = fresh.ReadOutOf };
     }
 
     /// <summary>The modules of <paramref name="listed"/>, in its order: those listed <paramref name="before"/> for
@@ -294,23 +324,27 @@ public sealed class AssemblyList
         return loaded.ToImmutable();
     }
 
-    /// <summary>Closes every assembly, and stops the opens that started before: they no longer list what they
-    /// read, and nothing is on its way any more.</summary>
-    internal void CloseAll()
+    /// <summary>Closes every assembly, those read behind the scenes to resolve references included, and stops the
+    /// opens that started before: they no longer list what they read, and nothing is on its way any more. Returns the
+    /// modules it forgot, for the I/O side to release once nothing reads them.</summary>
+    internal RemovedModules CloseAll()
     {
+        List<LoadedModule> removed;
         using (var held = State.Enter())
         {
             var now = held.Snapshot with { Generation = held.Snapshot.Generation + 1, Arriving = [] };
             held.Snapshot = now;
             if (now.Listed.IsEmpty && held.Value.Count == 0)
             {
-                return;
+                return RemovedModules.None;
             }
 
+            removed = held.Value.Values.OfType<LoadedModule>().ToList();
             held.Value.Clear();
             held.Snapshot = now with { Listed = [], Loaded = [], Version = now.Version + 1 };
         }
         Changed?.Invoke();
+        return new RemovedModules { Modules = removed };
     }
 
     /// <summary>Orders the open files by name, and those of one name by version; what loaded follows its item.</summary>
@@ -369,16 +403,17 @@ public sealed class AssemblyList
         return true;
     }
 
-    /// <summary>Forgets the assemblies read out of <paramref name="package"/> among those read.</summary>
-    internal static void ForgetReadOutOf(Dictionary<AssemblyPath, LoadedAssembly> byPath, LoadedAssembly package)
+    /// <summary>Forgets the assemblies read out of <paramref name="package"/> among those read; returns them.</summary>
+    internal static List<LoadedModule> ForgetReadOutOf(Dictionary<AssemblyPath, LoadedAssembly> byPath, LoadedAssembly package)
     {
-        var read = byPath
-            .Where(k => k.Value is LoadedModule module && module.Place is not null && module.Place.Container == package)
-            .Select(k => k.Key)
+        var read = byPath.Values
+            .OfType<LoadedModule>()
+            .Where(module => module.Place is not null && module.Place.Container == package)
             .ToList();
-        foreach (var path in read)
+        foreach (var module in read)
         {
-            byPath.Remove(path);
+            byPath.Remove(module.FilePath);
         }
+        return read;
     }
 }

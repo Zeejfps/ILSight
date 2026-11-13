@@ -50,7 +50,8 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
         cards.Switch(
             ok => ok.Value.Switch(
                 done => TakeHome(viewCommands, read, done.Value),
-                unreadable => ReportModuleUnreadable(unreadable.Module)),
+                unreadable => ReportModuleUnreadable(unreadable.Module),
+                static _ => { }),
             failed => ReportUnreadable(read.Type, failed.Error));
     }
 

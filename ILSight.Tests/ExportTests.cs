@@ -113,7 +113,7 @@ public sealed class ExportTests : IDisposable
     {
         var projectPath = _temp.PathOf(Path.Combine("Project", "Tests.csproj"));
 
-        var exported = await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath);
+        var exported = await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath).GetValueAsync();
 
         Assert.Equal(projectPath, exported.ProjectPath);
         Assert.Contains("<Project", await File.ReadAllTextAsync(projectPath));
@@ -128,7 +128,7 @@ public sealed class ExportTests : IDisposable
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(Trees.SampleAppPath);
         var projectPath = _temp.PathOf(Path.Combine("Sample", "SampleApp.csproj"));
 
-        await AssemblyExport.ExportProjectAsync(assembly, DecompilerOptions.Default, projectPath);
+        await AssemblyExport.ExportProjectAsync(assembly, DecompilerOptions.Default, projectPath).GetValueAsync();
 
         var folder = Path.GetDirectoryName(projectPath) ?? throw new InvalidOperationException($"The project's path names no folder: '{projectPath}'.");
         var project = await File.ReadAllTextAsync(projectPath);
@@ -146,7 +146,7 @@ public sealed class ExportTests : IDisposable
     {
         var solutionPath = _temp.PathOf("All.sln");
 
-        var exported = await AssemblyExport.ExportSolutionAsync(ExportNames.NameProjects([Trees.TestAssembly]), DecompilerOptions.Default, solutionPath);
+        var exported = await AssemblyExport.ExportSolutionAsync(ExportNames.NameProjects([Trees.TestAssembly]), DecompilerOptions.Default, solutionPath).GetValueAsync();
 
         var project = Assert.Single(exported);
         Assert.Equal(_temp.PathOf(Path.Combine("ILSight.Tests", "ILSight.Tests.csproj")), project.ProjectPath);
@@ -176,7 +176,7 @@ public sealed class ExportTests : IDisposable
         var progress = new RecordedProgress();
         var projectPath = _temp.PathOf(Path.Combine("Project", "Tests.csproj"));
 
-        await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, progress: progress);
+        await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, progress: progress).GetValueAsync();
 
         var reports = progress.Reports;
         Assert.Equal(new ExportProgress { Name = "ILSight.Tests", Part = 1, Parts = 1, Fraction = 0f }, reports[0]);
@@ -189,7 +189,7 @@ public sealed class ExportTests : IDisposable
         var progress = new RecordedProgress();
         var solutionPath = _temp.PathOf("All.sln");
 
-        await AssemblyExport.ExportSolutionAsync(ExportNames.NameProjects([Trees.TestAssembly, Trees.TestAssembly]), DecompilerOptions.Default, solutionPath, progress: progress);
+        await AssemblyExport.ExportSolutionAsync(ExportNames.NameProjects([Trees.TestAssembly, Trees.TestAssembly]), DecompilerOptions.Default, solutionPath, progress: progress).GetValueAsync();
 
         Assert.Contains(progress.Reports, r => r is { Part: 1, Parts: 2 });
         Assert.Contains(progress.Reports, r => r is { Part: 2, Parts: 2, Fraction: 0.5f });
@@ -202,7 +202,7 @@ public sealed class ExportTests : IDisposable
         var solutionPath = _temp.PathOf("All.sln");
         SolutionProject[] projects = [new SolutionProject { Assembly = Trees.TestAssembly, Name = "Renamed" }];
 
-        var exported = await AssemblyExport.ExportSolutionAsync(projects, DecompilerOptions.Default, solutionPath);
+        var exported = await AssemblyExport.ExportSolutionAsync(projects, DecompilerOptions.Default, solutionPath).GetValueAsync();
 
         var project = Assert.Single(exported);
         Assert.Equal(_temp.PathOf(Path.Combine("Renamed", "Renamed.csproj")), project.ProjectPath);
@@ -263,7 +263,7 @@ public sealed class ExportTests : IDisposable
         await cancel.CancelAsync();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, cancellationToken: cancel.Token));
+            AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, cancellationToken: cancel.Token).GetValueAsync());
     }
 
     private static readonly Guid EmbeddedSource = new("0E8A571B-6926-466E-B4AD-8AB04611F5FE");
@@ -289,7 +289,7 @@ public sealed class ExportTests : IDisposable
         {
             Pdb = true,
             EmbedSourcesInPdb = embed,
-        });
+        }).GetValueAsync();
 
         var pdb = Assert.IsType<ProjectPdb.Written>(exported.Pdb);
         Assert.Equal(_temp.PathOf(Path.Combine("Project", "ILSight.Tests.pdb")), pdb.Path);
@@ -305,7 +305,7 @@ public sealed class ExportTests : IDisposable
         await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, new ProjectExtras
         {
             StrongNameKeyFile = key,
-        });
+        }).GetValueAsync();
 
         Assert.True(File.Exists(_temp.PathOf(Path.Combine("Project", "signing.snk"))));
         Assert.Contains("signing.snk", await File.ReadAllTextAsync(projectPath));

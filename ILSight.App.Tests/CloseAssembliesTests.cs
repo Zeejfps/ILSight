@@ -2,6 +2,7 @@ using ILSight.Core;
 using ZGF.KeyboardModule;
 using static ILSight.AssemblyArea.AssemblyClosing;
 using static ILSight.Preferences;
+using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
 
@@ -112,7 +113,7 @@ public sealed class CloseAssembliesTests
         OpenCloser(closer, d.AppState.Assemblies, Listed(d, KeyboardPath));
         closer.Order[2].Included = true;
 
-        d.AppState.ListSession.CloseAssemblies(ListToClose(closer));
+        Commands.CloseAssemblies(d.AppState, ListToClose(closer));
 
         Assert.Equal([AppStateDriver.FixturePath], ListedPaths(d));
     }
@@ -297,7 +298,7 @@ public sealed class CloseAssembliesTests
         Assert.NotNull(tab);
         Assert.IsType<TabContent.Loading>(tab.Content);
 
-        app.AppState.ListSession.CloseAssemblies([keyboard]);
+        Commands.CloseAssemblies(app.AppState, [keyboard]);
         app.Settle(2);
 
         Assert.Same(tab, app.AppState.Navigation.ActiveTab);

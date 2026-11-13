@@ -145,7 +145,7 @@ public sealed class BrowseTreeTests
         var root = assembly.Root;
         _ = root.Children;
         Assert.NotEmpty(tree.GetChildren(root).Nodes);
-        list.Close(assembly);
+        LoadedAssemblies.Release(list.Close(assembly));
         return new WeakReference(assembly);
     }
 }

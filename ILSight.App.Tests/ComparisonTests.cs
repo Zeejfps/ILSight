@@ -7,6 +7,7 @@ using static ILSight.Comparisons;
 using static ILSight.Docking;
 using static ILSight.DocumentPanels;
 using static ILSight.App.Tests.TestPaths;
+using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
 
@@ -194,7 +195,7 @@ public sealed class ComparisonTests
         d.Show(d.Fixture("Farewell"), inNewTab: true);
         d.Settle();
         d.AppState.Navigation.CloseTab(tab);
-        d.AppState.ListSession.CloseAssemblies([Opened(d, LeftPath), Opened(d, RightPath)]);
+        Commands.CloseAssemblies(d.AppState, [Opened(d, LeftPath), Opened(d, RightPath)]);
 
         d.GoBack();
         d.Settle();
@@ -274,7 +275,7 @@ public sealed class ComparisonTests
         var d = OpenBoth();
         var comparison = Compare(d, LeftPath, RightPath);
 
-        d.AppState.ListSession.CloseAssemblies([Opened(d, RightPath)]);
+        Commands.CloseAssemblies(d.AppState, [Opened(d, RightPath)]);
         d.StartComparing(SwapComparedAssemblies(d.AppState.Assemblies, comparison));
         d.Settle();
 

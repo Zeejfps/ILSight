@@ -1,3 +1,4 @@
+using ILSight.Core;
 using ILSight.Core.Metadata;
 using ILSight.MetadataGridArea;
 
@@ -8,8 +9,8 @@ internal sealed class FailingReadMetadataPageHandlerPorts : ReadMetadataPageHand
 {
     public const string Why = "The disk is gone.";
 
-    public Task<Outcome<MetadataGridPage>> ReadPageAsync(MetadataGridPageAsk ask, CancellationToken ct)
+    public Task<Outcome<ModuleRead<MetadataGridPage>>> ReadPageAsync(MetadataGridPageAsk ask, CancellationToken ct)
     {
-        return Task.FromResult<Outcome<MetadataGridPage>>(new Outcome<MetadataGridPage>.Failed(new IOException(Why)));
+        return Task.FromResult<Outcome<ModuleRead<MetadataGridPage>>>(new Outcome<ModuleRead<MetadataGridPage>>.Failed(new IOException(Why)));
     }
 }

@@ -16,6 +16,7 @@ using ILSight.AssemblyListArea;
 using ILSight.MetadataGridArea;
 using ILSight.DiagramArea;
 using ILSight.SettingArea;
+using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
 
@@ -416,7 +417,7 @@ public sealed class SavedDocumentsTests : IDisposable
         }));
 
         d.Start(AppStateDriver.OpenAtStartupAsync);
-        d.Change(static a => a.ListSession.CloseAllAssemblies());
+        Commands.CloseAllAssemblies(d.AppState);
         d.Settle();
 
         var tab = Assert.Single(d.AppState.Navigation.OpenTabs);

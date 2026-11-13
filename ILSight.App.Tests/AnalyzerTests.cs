@@ -342,7 +342,7 @@ public sealed class AnalyzerTests
         var document = outline.Decompile(DecompilationLanguage.CSharp);
         var (line, column) = document.GetPosition("return First();");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
-        d.AppState.ListSession.CloseAssemblies([assembly]);
+        Commands.CloseAssemblies(d.AppState, [assembly]);
         File.Delete(copy);
 
         d.Analyze(reference);
@@ -362,7 +362,7 @@ public sealed class AnalyzerTests
 
         analyzer.RemoveRoot(analyzer.Roots[0]);
         var left = analyzer.Found().Select(r => r.Symbol.Label).ToList();
-        d.Change(static a => a.ListSession.CloseAllAssemblies());
+        Commands.CloseAllAssemblies(d.AppState);
 
         Assert.Equal(["Greeter"], left);
         Assert.Empty(analyzer.Roots);

@@ -246,7 +246,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
 
         if (arguments.ClearList)
         {
-            Commands.StartLoads(appState, appState.ListSession.CloseAllAssemblies());
+            Commands.CloseAllAssemblies(appState);
         }
 
         var files = arguments.Files;

@@ -15,9 +15,10 @@ internal sealed class FakeDecompileIntoTabHandlerPorts : DecompileIntoTabHandler
         Reported.Add(problem);
     }
 
-    public Task<Outcome<NodeContent>> DecompileAsync(BrowseNode node, DecompilationLanguage language, DecompilerOptions options, CancellationToken ct)
+    public Task<Outcome<ModuleRead<NodeContent>>> DecompileAsync(BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
+        CancellationToken ct)
     {
-        var answer = new TaskCompletionSource<Outcome<NodeContent>>();
+        var answer = new TaskCompletionSource<Outcome<ModuleRead<NodeContent>>>();
         ct.Register(() => answer.TrySetCanceled(ct));
         Requests.Add(new DecompileRequest { Node = node, Language = language, Answer = answer });
         return answer.Task;

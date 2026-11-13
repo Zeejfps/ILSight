@@ -116,8 +116,12 @@ public static class Analyzers
             return new Lookup<AnalysisSymbol>.NotFound();
         }
 
-        var read = await LoadedAssemblies.ReadTypeSystemAsync(assembly, ct);
-        return read.Match(r => Lookup.FromNullable(Find(r.TypeSystem.MainModule, definition)), u => Lookup.FromUnreadable<AnalysisSymbol>(assembly, u));
+        using var reading = LoadedAssemblies.BeginReading();
+        var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
+        return read.Match(
+            r => Lookup.FromNullable(Find(r.TypeSystem.MainModule, definition)),
+            u => Lookup.FromUnreadable<AnalysisSymbol>(assembly, u),
+            static _ => new Lookup<AnalysisSymbol>.NotFound());
     }
 
     private static LoadedModule? TryLoad(AssemblyList list, CodeAnchor definition)
@@ -166,20 +170,28 @@ public static class Analyzers
     /// <summary>Runs <paramref name="kind"/> on <paramref name="symbol"/> over the open assemblies on
     /// the thread pool, once the reads of the type systems of the modules it can reach ended, yielding results in
     /// batches as they are found, and after them each module it reached that the library could not read. Results come
-    /// sorted when the analysis asks for it, after all are found.</summary>
+    /// sorted when the analysis asks for it, after all are found. A unit reading the symbol's module and those it
+    /// scans: a module released (closed) before is passed over, the symbol's own finding nothing.</summary>
     public static IAsyncEnumerable<IReadOnlyList<AnalysisFind>> RunAsync(AssemblyList list, AnalysisSymbol symbol, AnalysisKind kind,
         CancellationToken cancellationToken = default)
     {
         return Batches.StreamAsync<AnalysisFind>(async (emit, token) =>
         {
             var entity = GetSymbol(symbol);
+            var own = OwnModuleOf(list, entity);
+            using var reading = LoadedAssemblies.BeginReading();
+            if (!LoadedAssemblies.TryRead(reading, own))
+            {
+                return;
+            }
+
             var run = kind.Prepare(entity);
             if (run is null)
             {
                 throw new ArgumentException($"The analysis {kind.Name} does not apply to {symbol.Label}.", nameof(kind));
             }
 
-            var reads = await AnalyzerScope.ReadReachableAsync(list, OwnModuleOf(list, entity), token);
+            var reads = await AnalyzerScope.ReadReachableAsync(reading, list, own, token);
             var context = new AnalyzerContext { AssemblyList = list, TypeSystems = reads, CancellationToken = token };
             var found = run(context).Select(Describe).OfType<AnalysisSymbol>();
             if (kind.SortsResults)

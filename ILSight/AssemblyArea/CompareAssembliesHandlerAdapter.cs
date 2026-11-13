@@ -15,11 +15,17 @@ public sealed class CompareAssembliesHandlerAdapter(ErrorLog errors) : CompareAs
     }
 
     /// <summary>Compares on the thread pool once the reads of both assemblies' type systems ended, and comes back on the
-    /// UI thread; an assembly the library could not read fails the comparison, saying why.</summary>
-    public async Task<Outcome<ApiDiff>> CompareAsync(LoadedModule left, LoadedModule right, ApiScope scope, CancellationToken ct)
+    /// UI thread; an assembly the library could not read fails the comparison, saying why; one closed before it began
+    /// says so.</summary>
+    public async Task<Outcome<ModuleRead<ApiDiff>>> CompareAsync(LoadedModule left, LoadedModule right, ApiScope scope, CancellationToken ct)
     {
         var compared = await Background.Wait(Task.Run(() => ApiEntries.CompareAsync(left, right, scope, ct), ct));
         ct.ThrowIfCancellationRequested();
-        return Outcome<ApiDiff>.FromTypeSystemWork(compared);
+        return compared.Match(
+            static ok => ok.Value.Match<Outcome<ModuleRead<ApiDiff>>>(
+                static done => new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Read { Value = done.Value }),
+                static unreadable => new Outcome<ModuleRead<ApiDiff>>.Failed(unreadable.Module.Why),
+                static closed => new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Closed { Module = closed.Module })),
+            static failed => new Outcome<ModuleRead<ApiDiff>>.Failed(failed.Error));
     }
 }

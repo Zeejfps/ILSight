@@ -48,6 +48,10 @@ internal static class Trees
     /// WebAssembly as Blazor ships it.</summary>
     public static string WebCilSamplePath => Path.Combine(AppContext.BaseDirectory, "Fixtures", "WebCil", "SampleApp.wasm");
 
+    /// <summary>A WebCIL module over 64 KB, whose metadata heaps lie past the file's first 64 KB
+    /// (<c>Fixtures/WebCil/LargeApp</c> holds its source).</summary>
+    public static string WebCilLargePath => Path.Combine(AppContext.BaseDirectory, "Fixtures", "WebCil", "LargeApp.wasm");
+
     /// <summary>The test assembly, opened once for the tests that only read it. Its list is out of
     /// reach; a test that needs the list, or nodes no other test has built, opens its own with
     /// <see cref="OpenTestAssembly"/>.</summary>

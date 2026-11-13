@@ -92,15 +92,18 @@ public sealed class OpenListSession
 
     /// <summary>Takes <paramref name="items"/> off the list, and the analyses of them with them; one no longer on it is
     /// passed over. The tabs showing what was read from them keep what they show, saying it was closed, and read it no
-    /// more (<see cref="ShowTabsClosed"/>).</summary>
-    public void CloseAssemblies(IReadOnlyList<LoadedAssembly> items)
+    /// more (<see cref="ShowTabsClosed"/>). Returns the modules taken off, for the edge to have the I/O side release
+    /// them: the close completes here, and promises nothing about the files.</summary>
+    public RemovedModules CloseAssemblies(IReadOnlyList<LoadedAssembly> items)
     {
+        var removed = RemovedModules.None;
         foreach (var item in items)
         {
-            _assemblies.Close(item);
+            removed = removed.With(_assemblies.Close(item));
             _analyzer.RemoveAnalysesOf(item.ListedItem);
             ShowTabsClosed(item.ListedItem);
         }
+        return removed;
     }
 
     /// <summary>Has each open tab showing a node read from <paramref name="item"/>, an item of the list the user
@@ -130,35 +133,38 @@ public sealed class OpenListSession
     }
 
     /// <summary>Lists <paramref name="fresh"/>, the listed <paramref name="item"/> read again, in its place, reading
-    /// nothing; false when the item is no longer listed.</summary>
-    public bool TryReplaceAssembly(LoadedAssembly item, FreshItem fresh)
+    /// nothing; false when the item is no longer listed. <paramref name="removed"/> is what no longer lists after, for
+    /// the edge to have the I/O side release: the item replaced, or the fresh one, not listed.</summary>
+    public bool TryReplaceAssembly(LoadedAssembly item, FreshItem fresh, out RemovedModules removed)
     {
-        return _assemblies.TryReplace(item, fresh);
+        return _assemblies.TryReplace(item, fresh, out removed);
     }
 
-    /// <summary>Takes the files that failed to load off the list.</summary>
-    public void CloseFailedAssemblies()
+    /// <summary>Takes the files that failed to load off the list. Returns the modules taken off (none: a file that failed
+    /// to load holds none), as every close does.</summary>
+    public RemovedModules CloseFailedAssemblies()
     {
         var failed = Assemblies.Listed
             .OfType<FailedAssembly>()
             .ToList<LoadedAssembly>();
-        CloseAssemblies(failed);
+        return CloseAssemblies(failed);
     }
 
-    /// <summary>Takes every assembly off the list, and every analysis with them, as reading them all again
-    /// does.</summary>
-    public void ClearAssemblies()
+    /// <summary>Takes every assembly off the list, and every analysis with them, as reading them all again does.
+    /// Returns the modules taken off, for the edge to have the I/O side release them.</summary>
+    public RemovedModules ClearAssemblies()
     {
-        _assemblies.CloseAll();
+        var removed = _assemblies.CloseAll();
         _reopening = [];
         _analyzer.ClearRoots();
+        return removed;
     }
 
     /// <summary>Closes every assembly of the open list and the analyses of them, stopping its reload and its opens;
     /// tabs still waiting for it to reopen their places show what is left of them, and those showing what was read
     /// from it keep what they show, saying it was closed, and read it no more. Returns the loads that started in those
-    /// tabs, for the edge that asked for this to start.</summary>
-    public TabLoads CloseAllAssemblies()
+    /// tabs and the modules taken off, for the edge that asked for this to start and to have released.</summary>
+    public ListClosing CloseAllAssemblies()
     {
         Navigation.BeginRequest();
         Opens.Cancel();
@@ -168,9 +174,9 @@ public sealed class OpenListSession
             ShowTabsClosed(item);
         }
 
-        ClearAssemblies();
+        var removed = ClearAssemblies();
         Assemblies.Pdbs.ForgetAll();
         Assemblies.TargetFrameworks.ForgetAll();
-        return ShowReopenedDocuments(Navigation, Reopened, Assemblies);
+        return new ListClosing { Loads = ShowReopenedDocuments(Navigation, Reopened, Assemblies), Removed = removed };
     }
 }

@@ -39,14 +39,17 @@ public static class AssemblySearch
         }, cancellationToken);
     }
 
-    /// <summary>Searches <paramref name="assembly"/> once the read of its type system ended; why the library failed on
-    /// it (that read, or the search), else null. Cancellation asked for goes through.</summary>
+    /// <summary>Searches <paramref name="assembly"/> once the read of its type system ended, under a reading of it; why
+    /// the library failed on it (that read, or the search), else null. One released (closed) before is passed over, as
+    /// one no longer listed. Cancellation asked for goes through.</summary>
     private static async Task<string?> TrySearchAssemblyAsync(Search search, LoadedModule assembly, CancellationToken ct)
     {
-        var read = await LoadedAssemblies.ReadTypeSystemAsync(assembly, search.CancellationToken);
+        using var reading = LoadedAssemblies.BeginReading();
+        var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, search.CancellationToken);
         return await read.Match(
             r => TrySearchAssemblyAsync(search, assembly, r.TypeSystem.MainModule, ct),
-            static u => Task.FromResult<string?>(u.Thrown.SourceException.Message));
+            static u => Task.FromResult<string?>(u.Thrown.SourceException.Message),
+            static _ => Task.FromResult<string?>(null));
     }
 
     /// <summary>Searches <paramref name="assembly"/>, whose type system read is <paramref name="main"/>'s; why the

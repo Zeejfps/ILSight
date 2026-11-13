@@ -55,7 +55,7 @@ internal static class NodeQueries
     /// <summary>What <paramref name="node"/> shows in <paramref name="language"/>.</summary>
     public static Task<NodeContent> ReadContentAsync(this BrowseNode node, DecompilationLanguage language = DecompilationLanguage.CSharp)
     {
-        return NodeContentLoader.GetContentAsync(TestSession.Shared, node, language, DecompilerOptions.Default);
+        return NodeContentLoader.ReadContentAsync(TestSession.Shared, node, language, DecompilerOptions.Default).GetValueAsync();
     }
 
     public static async Task<NodeContent> ReadContentAsync(this Task<BrowseNode> read, DecompilationLanguage language = DecompilationLanguage.CSharp)
@@ -66,13 +66,13 @@ internal static class NodeQueries
 
     public static Task<DecompiledDocument> DecompileAsync(this BrowseNode node, DecompilationLanguage language, CancellationToken cancellationToken = default)
     {
-        return NodeContentLoader.DecompileAsync(TestSession.Shared, node, language, DecompilerOptions.Default, cancellationToken);
+        return NodeContentLoader.DecompileAsync(TestSession.Shared, node, language, DecompilerOptions.Default, cancellationToken).GetValueAsync();
     }
 
     public static Task<DecompiledDocument> DecompileAsync(this BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
         CancellationToken cancellationToken = default)
     {
-        return NodeContentLoader.DecompileAsync(TestSession.Shared, node, language, options, cancellationToken);
+        return NodeContentLoader.DecompileAsync(TestSession.Shared, node, language, options, cancellationToken).GetValueAsync();
     }
 
     public static async Task<DecompiledDocument> DecompileAsync(this Task<BrowseNode> read, DecompilationLanguage language,

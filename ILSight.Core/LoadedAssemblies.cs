@@ -18,7 +18,7 @@ public static class LoadedAssemblies
     private static readonly TypeSystemOptions DefaultTypeSystemOptions = DecompilerTypeSystem.GetOptions(Settings.Create());
 
     /// <summary>The library's objects of each module made here, kept against the module, so they live as long as it
-    /// does.</summary>
+    /// does, and released once it is closed and nothing reads it (<see cref="Release"/>).</summary>
     private static readonly ConditionalWeakTable<LoadedModule, ModuleLibrary> Libraries = new();
 
     /// <summary>The module <paramref name="file"/> holds, known by <paramref name="path"/>, with nothing
@@ -47,19 +47,26 @@ public static class LoadedAssemblies
             CanPickPdb = file is PEFile,
             IsImageInMemory = file is PEFile,
         };
-        Libraries.Add(module, new ModuleLibrary
-        {
-            File = file,
-            Resolver = resolver,
-            TypeSystem = new TypeSystemReading(file, resolver),
-            DebugSymbols = new Lazy<DebugSymbols?>(() => FindDebugSymbols(list, path, file, place)),
-            ReferenceUsage = new Lazy<ReferenceUsage>(() => ForwardedTypes.ReadUsage(file.Metadata)),
-        });
+        Libraries.Add(module, new ModuleLibrary(file, resolver, () => FindDebugSymbols(list, path, file, place), () => ForwardedTypes.ReadUsage(file.Metadata)));
         return module;
     }
 
-    /// <summary>The library's objects kept against <paramref name="module"/>; throws for one not made here.</summary>
+    /// <summary>The library's objects kept against <paramref name="module"/>, to read; throws for one not made here, or
+    /// released: a unit reads a module only under a reading (<see cref="TryBeginReading(LoadedModule)"/>).</summary>
     private static ModuleLibrary GetLibrary(LoadedModule module)
+    {
+        var library = GetKept(module);
+        if (library.IsReleased)
+        {
+            throw new InvalidOperationException($"The module '{module.FilePath}' was read after its release: the unit reading it holds no reading of it.");
+        }
+
+        return library;
+    }
+
+    /// <summary>The library's objects kept against <paramref name="module"/>, released or not; throws for one not made
+    /// here.</summary>
+    internal static ModuleLibrary GetKept(LoadedModule module)
     {
         if (!Libraries.TryGetValue(module, out var library))
         {
@@ -67,6 +74,72 @@ public static class LoadedAssemblies
         }
 
         return library;
+    }
+
+    /// <summary>Begins a unit's reading, of no module yet: the unit adds each module as it comes to read it
+    /// (<see cref="TryRead"/>, <see cref="ReadTypeSystemAsync"/>) and disposes it however it ends.</summary>
+    public static ModuleReading BeginReading()
+    {
+        return new ModuleReading();
+    }
+
+    /// <summary>Begins a unit's reading of <paramref name="module"/>, which the unit disposes however it ends; null once
+    /// the module was released (closed, and every reading of it ended), which the unit answers as closed. While it is
+    /// open, the module isn't released, closed or not.</summary>
+    public static ModuleReading? TryBeginReading(LoadedModule module)
+    {
+        var reading = BeginReading();
+        if (!TryRead(reading, module))
+        {
+            reading.Dispose();
+            return null;
+        }
+
+        return reading;
+    }
+
+    /// <summary>Adds <paramref name="module"/> to what <paramref name="reading"/> reads, so it isn't released before the
+    /// unit ends; false once it was released, which the unit answers as closed, or passes over.</summary>
+    public static bool TryRead(ModuleReading reading, LoadedModule module)
+    {
+        return reading.TryAdd(GetKept(module));
+    }
+
+    /// <summary>Releases what <paramref name="removed"/> took off the list: marks each module closed, and lets its
+    /// library's objects go now when no reading of it is open, else when the last one ends (a WebCIL module's mapped
+    /// file disposed, a <see cref="PEFile"/> left to the collector).</summary>
+    public static void Release(RemovedModules removed)
+    {
+        foreach (var module in removed.Modules)
+        {
+            GetKept(module).Close();
+        }
+    }
+
+    /// <summary>Completes once <paramref name="module"/>'s library objects are released: what a path that needs its file
+    /// free once it is closed (to replace or delete it) awaits after the close.</summary>
+    public static Task WaitForReleaseAsync(LoadedModule module, CancellationToken ct)
+    {
+        return GetKept(module).Released.WaitAsync(ct);
+    }
+
+    /// <summary>The file of <paramref name="module"/>, which <paramref name="resolver"/> found for a reference, for the
+    /// library to read: held under a reading for as long as the resolving module's library lives (its type systems read
+    /// it on every later use); null when it was released.</summary>
+    internal static MetadataFile? HandOut(AssemblyResolver resolver, LoadedModule module)
+    {
+        var library = GetKept(module);
+        if (ReferenceEquals(library.Resolver, resolver))
+        {
+            return library.File;
+        }
+
+        if (!resolver.Holds.TryHold(library))
+        {
+            return null;
+        }
+
+        return library.File;
     }
 
     /// <summary>The library's file <paramref name="module"/> was read from.</summary>
@@ -88,17 +161,18 @@ public static class LoadedAssemblies
         return GetLibrary(module).Resolver;
     }
 
-    /// <summary>Whether <paramref name="module"/> was read from <paramref name="file"/>, the very one.</summary>
+    /// <summary>Whether <paramref name="module"/> was read from <paramref name="file"/>, the very one. Compares the
+    /// objects, reading neither, so it asks after the module's release too.</summary>
     internal static bool IsReadFrom(LoadedModule module, MetadataFile file)
     {
-        return ReferenceEquals(GetFile(module), file);
+        return ReferenceEquals(GetKept(module).File, file);
     }
 
     /// <summary>Whether <paramref name="folder"/> shows the metadata of its module's own file, rather than that of its
-    /// debug symbols.</summary>
+    /// debug symbols. Compares the objects, reading neither, so it asks after the module's release too.</summary>
     internal static bool IsOwnMetadata(MetadataFolderInfo folder)
     {
-        return ReferenceEquals(folder.File, GetFile(folder.Module));
+        return ReferenceEquals(folder.File, GetKept(folder.Module).File);
     }
 
     /// <summary>The failure listed for the file <paramref name="error"/> tells of.</summary>
@@ -227,33 +301,56 @@ public static class LoadedAssemblies
     /// its first use, or that use), on the thread pool, and kept, so every asker takes the same outcome: the type system,
     /// or what the library threw on the module. A unit whose sync read needs it awaits this before that read starts,
     /// matches it once and hands its sync code the type system. Only <paramref name="ct"/> being cancelled before the
-    /// read began ends it early.</summary>
-    public static Task<TypeSystemRead> ReadTypeSystemAsync(LoadedModule module, CancellationToken ct)
+    /// read began ends it early. The module is added to <paramref name="reading"/>, the unit's, first: one released before answers
+    /// <see cref="TypeSystemRead.Closed"/>, read nothing.</summary>
+    public static async Task<TypeSystemRead> ReadTypeSystemAsync(ModuleReading reading, LoadedModule module, CancellationToken ct)
     {
-        return GetLibrary(module).TypeSystem.ReadAsync(ct);
+        if (!TryRead(reading, module))
+        {
+            return new TypeSystemRead.Closed { Module = module };
+        }
+
+        return await GetLibrary(module).TypeSystem.ReadAsync(ct);
+    }
+
+    /// <summary>Reads <paramref name="module"/>'s type system ahead of its first use (the frame edge's warm-up), as a
+    /// unit of its own; one released meanwhile is passed over. What it came to is that first use's to match.</summary>
+    public static async Task<TypeSystemRead> ReadTypeSystemAheadAsync(LoadedModule module, CancellationToken ct)
+    {
+        using var reading = BeginReading();
+        return await ReadTypeSystemAsync(reading, module, ct);
     }
 
     /// <summary>Awaits the read of <paramref name="module"/>'s type system, then does <paramref name="work"/> with it on
-    /// the thread the read ends on; for a module the library could not read, says why and does nothing.</summary>
+    /// the thread the read ends on, under a reading of its own; for a module the library could not read, says why and
+    /// does nothing; for one released before, says so and does nothing.</summary>
     internal static async Task<TypeSystemWork<T>> WithTypeSystemAsync<T>(LoadedModule module, Func<DecompilerTypeSystem, T> work, CancellationToken ct)
     {
-        var read = await ReadTypeSystemAsync(module, ct);
+        using var reading = BeginReading();
+        var read = await ReadTypeSystemAsync(reading, module, ct);
         return read.Match<TypeSystemWork<T>>(
             r => new TypeSystemWork<T>.Done { Value = work(r.TypeSystem) },
-            u => new TypeSystemWork<T>.Unreadable { Module = new UnreadableModule { Module = module, Why = u.Thrown.SourceException } });
+            u => new TypeSystemWork<T>.Unreadable { Module = new UnreadableModule { Module = module, Why = u.Thrown.SourceException } },
+            c => new TypeSystemWork<T>.Closed { Module = c.Module });
     }
 
-    /// <summary>The reads of <paramref name="modules"/>' type systems, each awaited and matched once: those read, and
-    /// those the library could not read, with what it threw, in the order given.</summary>
-    internal static async Task<ModuleTypeSystems> ReadTypeSystemsAsync(IEnumerable<LoadedModule> modules, CancellationToken ct)
+    /// <summary>The reads of <paramref name="modules"/>' type systems, each added to <paramref name="reading"/>, the
+    /// unit's, and awaited and matched once: those read, and those the library could not read, with what it threw, in
+    /// the order given. One released before is passed over, as one no longer listed.</summary>
+    internal static async Task<ModuleTypeSystems> ReadTypeSystemsAsync(ModuleReading reading, IEnumerable<LoadedModule> modules, CancellationToken ct)
     {
-        var asked = modules.ToList();
+        var asked = new List<LoadedModule>();
         var read = new Dictionary<MetadataFile, DecompilerTypeSystem>();
         var unreadable = new List<UnreadableModule>();
-        foreach (var module in asked)
+        foreach (var module in modules)
         {
-            var outcome = await ReadTypeSystemAsync(module, ct);
-            var typeSystem = outcome.Match<DecompilerTypeSystem?>(static r => r.TypeSystem, u => NoteUnreadable(unreadable, module, u));
+            var outcome = await ReadTypeSystemAsync(reading, module, ct);
+            var typeSystem = outcome.Match<DecompilerTypeSystem?>(static r => r.TypeSystem, u => NoteUnreadable(unreadable, module, u), static _ => null);
+            if (outcome is not TypeSystemRead.Closed)
+            {
+                asked.Add(module);
+            }
+
             if (typeSystem is not null)
             {
                 read[GetFile(module)] = typeSystem;

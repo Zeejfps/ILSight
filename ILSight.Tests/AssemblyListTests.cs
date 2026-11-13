@@ -29,10 +29,12 @@ public sealed class AssemblyListTests
 
         var fresh = AssemblyListing.ReadAgain(list, first);
         var listedWhileRead = list.Listed.ToList();
-        var replaced = list.TryReplace(first, fresh);
+        var replaced = list.TryReplace(first, fresh, out var removed);
+        LoadedAssemblies.Release(removed);
 
         Assert.Equal([first, second], listedWhileRead);
         Assert.True(replaced);
+        Assert.Equal([first], removed.Modules);
         Assert.Equal([fresh.Item, second], list.Listed);
         Assert.Equal([fresh.Item, second], list.Assemblies);
         Assert.Equal("net48", Assert.IsType<LoadedModule>(fresh.Item).FrameworkMoniker);
@@ -45,9 +47,13 @@ public sealed class AssemblyListTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var assembly = list.Open(Trees.TestAssemblyPath);
         var fresh = AssemblyListing.ReadAgain(list, assembly);
-        list.Close(assembly);
+        LoadedAssemblies.Release(list.Close(assembly));
 
-        Assert.False(list.TryReplace(assembly, fresh));
+        var replaced = list.TryReplace(assembly, fresh, out var removed);
+        LoadedAssemblies.Release(removed);
+
+        Assert.False(replaced);
+        Assert.Equal([fresh.Item], removed.Modules);
         Assert.Empty(list.Listed);
     }
 
@@ -69,7 +75,7 @@ public sealed class AssemblyListTests
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var before = list.Generation;
-        list.CloseAll();
+        LoadedAssemblies.Release(list.CloseAll());
 
         var late = list.TryLoad(Trees.TestAssemblyPath, before);
         Assert.NotNull(late);
@@ -94,7 +100,7 @@ public sealed class AssemblyListTests
         Assert.Equal([Trees.TestAssemblyPath, typeof(AssemblyList).Assembly.Location], list.ListFilePaths().Select(static p => p.Text));
         Assert.Equal(2, list.Version);
 
-        list.Close(tests);
+        LoadedAssemblies.Release(list.Close(tests));
 
         Assert.Equal([core], list.Assemblies);
         Assert.Equal(3, changes);
@@ -107,7 +113,7 @@ public sealed class AssemblyListTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var first = list.Open(Trees.TestAssemblyPath);
 
-        list.Close(first);
+        LoadedAssemblies.Release(list.Close(first));
         var second = list.Open(Trees.TestAssemblyPath);
 
         Assert.NotSame(first, second);
@@ -174,7 +180,7 @@ public sealed class AssemblyListTests
         using var temp = new TempDir();
         var failed = list.Open(temp.PathOf("missing.dll"));
 
-        list.Close(failed);
+        LoadedAssemblies.Release(list.Close(failed));
 
         Assert.Empty(list.Listed);
     }
@@ -331,7 +337,7 @@ public sealed class AssemblyListTests
 
         for (var round = 0; round < 30; round++)
         {
-            list.Close(list.Open(Trees.TestAssemblyPath));
+            LoadedAssemblies.Release(list.Close(list.Open(Trees.TestAssemblyPath)));
         }
 
         await stop.CancelAsync();
@@ -367,7 +373,7 @@ public sealed class AssemblyListTests
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(Trees.TestAssemblyPath);
 
         var read = Enumerable.Range(0, 16).AsParallel().WithDegreeOfParallelism(8)
-            .Select(_ => (TypeSystem: LoadedAssemblies.ReadTypeSystemAsync(assembly, CancellationToken.None), Usage: LoadedAssemblies.EnsureReferenceUsage(assembly), Symbols: LoadedAssemblies.EnsureDebugSymbols(assembly)))
+            .Select(_ => (TypeSystem: LoadedAssemblies.ReadTypeSystemAheadAsync(assembly, CancellationToken.None), Usage: LoadedAssemblies.EnsureReferenceUsage(assembly), Symbols: LoadedAssemblies.EnsureDebugSymbols(assembly)))
             .ToList();
         var typeSystems = await Task.WhenAll(read.Select(static r => r.TypeSystem));
 

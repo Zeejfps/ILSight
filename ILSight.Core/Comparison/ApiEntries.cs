@@ -228,10 +228,17 @@ public static class ApiEntries
     /// <summary>Compares the API of <paramref name="left"/> with that of <paramref name="right"/>, taking in
     /// what <paramref name="scope"/> says, once the reads of both assemblies' type systems ended; the first the library
     /// could not read, when it could not, with nothing compared. Reads both assemblies' types: call it off the UI
-    /// thread.</summary>
+    /// thread. A unit reading both: the first released (closed) before, when one was, with nothing compared.</summary>
     public static async Task<TypeSystemWork<ApiDiff>> CompareAsync(LoadedModule left, LoadedModule right, ApiScope scope, CancellationToken cancellationToken)
     {
-        var reads = await LoadedAssemblies.ReadTypeSystemsAsync([left, right], cancellationToken);
+        using var reading = LoadedAssemblies.BeginReading();
+        var reads = await LoadedAssemblies.ReadTypeSystemsAsync(reading, [left, right], cancellationToken);
+        var closed = new[] { left, right }.FirstOrDefault(m => !reads.Modules.Contains(m));
+        if (closed is not null)
+        {
+            return new TypeSystemWork<ApiDiff>.Closed { Module = closed };
+        }
+
         if (reads.Unreadable.Count > 0)
         {
             return new TypeSystemWork<ApiDiff>.Unreadable { Module = reads.Unreadable[0] };

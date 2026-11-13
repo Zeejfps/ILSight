@@ -334,6 +334,25 @@ public sealed class TabLoad
         }
     }
 
+    /// <summary>Shows that the node's assembly was closed (<see cref="ShowClosed"/>), as the load
+    /// <paramref name="ticket"/> was given for found its module closed as it began, unless a newer load started since or
+    /// the tab closed. Returns whether it landed.</summary>
+    public bool TryShowClosed(WorkTicket ticket, string assembly)
+    {
+        if (_closedAssembly is not null)
+        {
+            return false;
+        }
+
+        if (!_work.TryFinish(ticket))
+        {
+            return false;
+        }
+
+        ShowClosed(assembly);
+        return true;
+    }
+
     /// <summary>Cancels the load in flight, if any, whose result is then dropped.</summary>
     public void Cancel()
     {

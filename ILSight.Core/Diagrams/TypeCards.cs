@@ -12,7 +12,8 @@ public static class TypeCards
     /// resolving it reads.</summary>
     public static async Task<Lookup<TypeCard>> ReadAsync(AssemblyList list, CodeReference.Entity type, CancellationToken ct)
     {
-        var definition = await AssemblyListing.FindTypeDefinitionAsync(list, type, ct);
+        using var reading = LoadedAssemblies.BeginReading();
+        var definition = await AssemblyListing.FindTypeDefinitionAsync(list, reading, type, ct);
         return ReadFound(definition);
     }
 
@@ -23,7 +24,8 @@ public static class TypeCards
     public static async Task<TypeSystemWork<List<TypeCard>>> ReadWithNeighboursAsync(AssemblyList list, CodeReference.Entity type,
         CancellationToken cancellationToken)
     {
-        var definition = await AssemblyListing.FindTypeDefinitionAsync(list, type, cancellationToken);
+        using var reading = LoadedAssemblies.BeginReading();
+        var definition = await AssemblyListing.FindTypeDefinitionAsync(list, reading, type, cancellationToken);
         return definition.Match<TypeSystemWork<List<TypeCard>>>(
             found => new TypeSystemWork<List<TypeCard>>.Done { Value = ReadWithNeighbours(found.Value, cancellationToken) },
             static _ => new TypeSystemWork<List<TypeCard>>.Done { Value = [] },
@@ -55,7 +57,8 @@ public static class TypeCards
     /// read or no longer defines it; unreadable when the library could not read the assembly's type system.</summary>
     public static async Task<Lookup<TypeCard>> ReadAsync(AssemblyList list, TypeAnchor anchor, CancellationToken ct)
     {
-        var definition = await AssemblyListing.FindTypeDefinitionAsync(list, anchor, ct);
+        using var reading = LoadedAssemblies.BeginReading();
+        var definition = await AssemblyListing.FindTypeDefinitionAsync(list, reading, anchor, ct);
         return ReadFound(definition);
     }
 
@@ -75,17 +78,19 @@ public static class TypeCards
     /// of an assembly resolving it reads.</summary>
     public static async Task<ScopeSearch<TypeCard>> ReadDerivedAsync(AssemblyList list, CodeReference.Entity type, CancellationToken cancellationToken)
     {
-        var definition = await AssemblyListing.FindTypeDefinitionAsync(list, type, cancellationToken);
+        using var reading = LoadedAssemblies.BeginReading();
+        var definition = await AssemblyListing.FindTypeDefinitionAsync(list, reading, type, cancellationToken);
         return await definition.Match(
-            found => ReadDerivedAsync(list, found.Value, cancellationToken),
+            found => ReadDerivedAsync(list, reading, found.Value, cancellationToken),
             static _ => Task.FromResult(new ScopeSearch<TypeCard> { Found = [], Unreadable = [] }),
             static unreadable => Task.FromResult(new ScopeSearch<TypeCard> { Found = [], Unreadable = [unreadable.Module] }));
     }
 
-    private static async Task<ScopeSearch<TypeCard>> ReadDerivedAsync(AssemblyList list, ITypeDefinition definition, CancellationToken cancellationToken)
+    private static async Task<ScopeSearch<TypeCard>> ReadDerivedAsync(AssemblyList list, ModuleReading reading, ITypeDefinition definition,
+        CancellationToken cancellationToken)
     {
         var module = AssemblyListing.GetLoadedFrom(list, DecompilerFacts.GetMetadataFile(definition));
-        var reachable = await DerivedTypes.ReadReachableAsync(module, cancellationToken);
+        var reachable = await DerivedTypes.ReadReachableAsync(reading, module, cancellationToken);
         var search = DerivedTypes.Search(list, reachable, definition, cancellationToken);
         var cards = search.Found
             .Where(IsShown)

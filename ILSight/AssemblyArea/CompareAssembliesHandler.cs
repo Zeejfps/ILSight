@@ -16,7 +16,7 @@ public sealed class CompareAssembliesHandler(CompareAssembliesHandler.IPorts por
         /// <summary>What changed from <paramref name="left"/>'s API to <paramref name="right"/>'s, taking in what
         /// <paramref name="scope"/> says, worked out without holding up the screen. Working it out that failed comes back
         /// as <see cref="Outcome{T}.Failed"/>; the cancellation of <paramref name="ct"/> is let through.</summary>
-        Task<Outcome<ApiDiff>> CompareAsync(LoadedModule left, LoadedModule right, ApiScope scope, CancellationToken ct);
+        Task<Outcome<ModuleRead<ApiDiff>>> CompareAsync(LoadedModule left, LoadedModule right, ApiScope scope, CancellationToken ct);
     }
 
     /// <summary>Compares the assemblies of <paramref name="run"/> and shows what changed in its comparison, or that it
@@ -32,11 +32,7 @@ public sealed class CompareAssembliesHandler(CompareAssembliesHandler.IPorts por
         }
 
         var error = compared.Match<Exception?>(
-            ok =>
-            {
-                comparison.ShowDiff(ok.Value);
-                return null;
-            },
+            ok => Show(comparison, ok.Value),
             static failed => failed.Error);
         if (error is null)
         {
@@ -44,6 +40,16 @@ public sealed class CompareAssembliesHandler(CompareAssembliesHandler.IPorts por
         }
 
         ShowFailure(run, error);
+    }
+
+    /// <summary>Shows what changed in <paramref name="comparison"/>, or, when one of its assemblies was closed before
+    /// the comparison began, that it was; nothing failed.</summary>
+    private static Exception? Show(AssemblyComparison comparison, ModuleRead<ApiDiff> compared)
+    {
+        compared.Switch(
+            read => comparison.ShowDiff(read.Value),
+            closed => comparison.ShowFailure(new ComparisonFailure.AssemblyClosed(closed.Module.FilePath.FileName)));
+        return null;
     }
 
     private void ShowFailure(ComparisonRun run, Exception error)

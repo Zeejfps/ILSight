@@ -68,8 +68,9 @@ public static class NodeLookup
     {
         try
         {
-            var resolved = await AssemblyListing.ResolveListedAsync(list, reference, ct);
-            return await resolved.ThenFindAsync((target, c) => FindTargetAsync(session, target.Assembly, target.Handle, c), ct);
+            using var reading = LoadedAssemblies.BeginReading();
+            var resolved = await AssemblyListing.ResolveListedAsync(list, reading, reference, ct);
+            return await resolved.ThenFindAsync((target, c) => FindTargetAsync(session, reading, target.Assembly, target.Handle, c), ct);
         }
         catch (BadImageFormatException)
         {
@@ -82,18 +83,21 @@ public static class NodeLookup
     }
 
     /// <summary>The node of what <paramref name="handle"/> defines in <paramref name="assembly"/>, or of the assembly
-    /// itself, once the read of its type system ended.</summary>
-    private static async Task<Lookup<BrowseNode>> FindTargetAsync(BrowseSession session, LoadedModule assembly, EntityHandle handle, CancellationToken ct)
+    /// itself, once the read of its type system ended, under <paramref name="reading"/>, the unit's; not found when the
+    /// assembly was released (closed) meanwhile.</summary>
+    private static async Task<Lookup<BrowseNode>> FindTargetAsync(BrowseSession session, ModuleReading reading, LoadedModule assembly, EntityHandle handle,
+        CancellationToken ct)
     {
         if (handle.Kind == HandleKind.AssemblyDefinition)
         {
             return new Lookup<BrowseNode>.Found { Value = await BrowseSessions.EnsureRootAsync(session, assembly, ct) };
         }
 
-        var read = await LoadedAssemblies.ReadTypeSystemAsync(assembly, ct);
+        var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
         return await read.Match(
             async r => Lookup.FromNullable(await BrowseSessions.FindOrAncestorAsync(session, assembly, r.TypeSystem.MainModule, handle, ct)),
-            u => Task.FromResult(Lookup.FromUnreadable<BrowseNode>(assembly, u)));
+            u => Task.FromResult(Lookup.FromUnreadable<BrowseNode>(assembly, u)),
+            static _ => Task.FromResult<Lookup<BrowseNode>>(new Lookup<BrowseNode>.NotFound()));
     }
 
     /// <summary>The metadata table row that defines what <paramref name="reference"/> points at: the row
@@ -105,8 +109,9 @@ public static class NodeLookup
     {
         try
         {
-            var resolved = await AssemblyListing.ResolveListedAsync(list, reference, ct);
-            return await resolved.ThenFindAsync((target, c) => BrowseSessions.FindMetadataRowAsync(session, target.Assembly, target.Handle, c), ct);
+            using var reading = LoadedAssemblies.BeginReading();
+            var resolved = await AssemblyListing.ResolveListedAsync(list, reading, reference, ct);
+            return await resolved.ThenFindAsync((target, c) => BrowseSessions.FindMetadataRowAsync(session, reading, target.Assembly, target.Handle, c), ct);
         }
         catch (BadImageFormatException)
         {
@@ -121,17 +126,20 @@ public static class NodeLookup
     /// <summary>The node of the namespace, type or member <paramref name="idString"/> names, written as
     /// XML documentation ids are, such as <c>T:System.String</c>, in the first of <paramref name="assemblies"/>
     /// that defines it; not found when none does. When none of those read defines it and the library could not read
-    /// one of them, that one, the first, which may define it: unreadable.</summary>
+    /// one of them, that one, the first, which may define it: unreadable. One released (closed) meanwhile is passed
+    /// over.</summary>
     public static async Task<Lookup<BrowseNode>> FindByIdAsync(BrowseSession session, string idString, IEnumerable<LoadedModule> assemblies,
         CancellationToken ct)
     {
         Lookup<BrowseNode> answer = new Lookup<BrowseNode>.NotFound();
+        using var reading = LoadedAssemblies.BeginReading();
         foreach (var assembly in assemblies)
         {
-            var read = await LoadedAssemblies.ReadTypeSystemAsync(assembly, ct);
+            var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
             var found = await read.Match(
                 r => FindByIdAsync(session, idString, assembly, r.TypeSystem.MainModule, ct),
-                u => Task.FromResult(Lookup.FromUnreadable<BrowseNode>(assembly, u)));
+                u => Task.FromResult(Lookup.FromUnreadable<BrowseNode>(assembly, u)),
+                static _ => Task.FromResult<Lookup<BrowseNode>>(new Lookup<BrowseNode>.NotFound()));
             if (found is Lookup<BrowseNode>.Found)
             {
                 return found;

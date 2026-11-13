@@ -8,7 +8,7 @@ namespace ILSight.App.Tests;
 /// with through, as the adapter does; keeps the problems reported.</summary>
 internal sealed class FakeCompareAssembliesHandlerPorts : CompareAssembliesHandler.IPorts
 {
-    public List<TaskCompletionSource<Outcome<ApiDiff>>> Answers { get; } = [];
+    public List<TaskCompletionSource<Outcome<ModuleRead<ApiDiff>>>> Answers { get; } = [];
 
     public List<AppProblem> Reported { get; } = [];
 
@@ -17,9 +17,9 @@ internal sealed class FakeCompareAssembliesHandlerPorts : CompareAssembliesHandl
         Reported.Add(problem);
     }
 
-    public Task<Outcome<ApiDiff>> CompareAsync(LoadedModule left, LoadedModule right, ApiScope scope, CancellationToken ct)
+    public Task<Outcome<ModuleRead<ApiDiff>>> CompareAsync(LoadedModule left, LoadedModule right, ApiScope scope, CancellationToken ct)
     {
-        var answer = new TaskCompletionSource<Outcome<ApiDiff>>();
+        var answer = new TaskCompletionSource<Outcome<ModuleRead<ApiDiff>>>();
         ct.Register(() => answer.TrySetCanceled(ct));
         Answers.Add(answer);
         return answer.Task;

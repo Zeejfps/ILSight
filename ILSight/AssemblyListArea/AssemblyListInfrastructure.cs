@@ -13,6 +13,11 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
         Errors.Report(errors, problem);
     }
 
+    public void ReleaseModules(RemovedModules removed)
+    {
+        LoadedAssemblies.Release(removed);
+    }
+
     public bool IsFile(string path)
     {
         return File.Exists(path);
@@ -51,10 +56,17 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
         return await Background.Wait(Task.Run(() => AssemblyListing.ListReferences(assemblies, assembly, stop), ct));
     }
 
-    /// <summary>Checks on the thread pool and comes back on the UI thread, with whatever the check threw as
-    /// <see cref="Outcome{T}.Failed"/>.</summary>
+    /// <summary>Checks on the thread pool, under a reading of the assembly, and comes back on the UI thread, with
+    /// whatever the check threw as <see cref="Outcome{T}.Failed"/>; an assembly closed before fails the check, saying
+    /// so.</summary>
     public async Task<Outcome<PdbCheck>> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct)
     {
+        using var reading = LoadedAssemblies.TryBeginReading(assembly);
+        if (reading is null)
+        {
+            return new Outcome<PdbCheck>.Failed(new IOException($"{assembly.FilePath.FileName} was closed."));
+        }
+
         return await Background.Wait(Task.Run(() => PdbFiles.Check(assembly, pdbPath), ct));
     }
 

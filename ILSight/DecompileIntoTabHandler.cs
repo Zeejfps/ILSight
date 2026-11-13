@@ -13,22 +13,26 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
         void ReportError(AppProblem problem);
 
         /// <summary>What <paramref name="node"/> shows in <paramref name="language"/> with <paramref name="options"/>:
-        /// its code, grid or picture, made without holding up the screen. What making it threw, such as a corrupt
-        /// file, comes back as <see cref="Outcome{T}.Failed"/>; the cancellation of <paramref name="ct"/> is let
-        /// through.</summary>
-        Task<Outcome<NodeContent>> DecompileAsync(BrowseNode node, DecompilationLanguage language, DecompilerOptions options, CancellationToken ct);
+        /// its code, grid or picture, made without holding up the screen, or that its module was closed before it
+        /// began, and nothing was read. What making it threw, such as a corrupt file, comes back as
+        /// <see cref="Outcome{T}.Failed"/>; the cancellation of <paramref name="ct"/> is let through.</summary>
+        Task<Outcome<ModuleRead<NodeContent>>> DecompileAsync(BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
+            CancellationToken ct);
     }
 
     /// <summary>Brings in what <paramref name="ticket"/> started loading in its tab and shows it there, or that it
     /// failed, which is reported unless the node's file failed to load, which the tab tells already; then commands
     /// the view, through <paramref name="viewCommands"/>, to stand where the load was to arrive, or on the node's
-    /// definition when it failed. Drops it when newer work started on the tab, or the tab closed, meanwhile.
+    /// definition when it failed. Drops it when newer work started on the tab, or the tab closed, meanwhile. When the
+    /// node's module was closed before the decompile began, the tab keeps what it shows and says its assembly was
+    /// closed, as closing it does.
     /// <paramref name="ct"/> is the workflow's token, which the edge that starts it links to the ticket's work.</summary>
     public async Task HandleAsync(Queue<ViewCommand> viewCommands, DecompileTicket ticket, CancellationToken ct)
     {
-        var loaded = await ports.DecompileAsync(ticket.Node, ticket.Language, ticket.Options, ct);
+        var read = await ports.DecompileAsync(ticket.Node, ticket.Language, ticket.Options, ct);
         var load = ticket.Load;
-        if (!TryShowLoaded(load, ticket.Work, loaded))
+        var loaded = FindLoaded(load, ticket.Work, read);
+        if (loaded is null || !TryShowLoaded(load, ticket.Work, loaded))
         {
             return;
         }
@@ -43,6 +47,24 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
             return;
         }
         Decompilation.Arrive(viewCommands, tab, arrival);
+    }
+
+    /// <summary>What the decompile brought, or that it failed; null when the node's module was closed before it began,
+    /// which <paramref name="load"/> then shows, unless a newer load started on the tab, or the tab closed, since
+    /// <paramref name="work"/> was given.</summary>
+    private static Outcome<NodeContent>? FindLoaded(TabLoad load, WorkTicket work, Outcome<ModuleRead<NodeContent>> read)
+    {
+        return read.Match<Outcome<NodeContent>?>(
+            ok => ok.Value.Match<Outcome<NodeContent>?>(
+                static content => new Outcome<NodeContent>.Ok(content.Value),
+                closed => ShowClosed(load, work, closed.Module)),
+            static failed => new Outcome<NodeContent>.Failed(failed.Error));
+    }
+
+    private static Outcome<NodeContent>? ShowClosed(TabLoad load, WorkTicket work, LoadedModule module)
+    {
+        load.TryShowClosed(work, module.FilePath.FileName);
+        return null;
     }
 
     /// <summary>Shows on <paramref name="load"/> what it brought, or that it failed, unless a newer load started on the

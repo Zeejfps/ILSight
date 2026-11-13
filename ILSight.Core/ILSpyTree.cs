@@ -141,7 +141,8 @@ public static class ILSpyTree
         var children = await BrowseSessions.ListReadableChildrenAsync(session, node, ct);
         return children.Match(
             done => Lookup.FromNullable(done.Value.FirstOrDefault(child => NameOf(child) == name)),
-            static unreadable => new Lookup<BrowseNode>.Unreadable { Module = unreadable.Module });
+            static unreadable => new Lookup<BrowseNode>.Unreadable { Module = unreadable.Module },
+            static _ => new Lookup<BrowseNode>.NotFound());
     }
 
     /// <summary>The node of the entity <paramref name="token"/> names, or its nearest ancestor; not found when
@@ -161,10 +162,12 @@ public static class ILSpyTree
             return new Lookup<BrowseNode>.NotFound();
         }
 
-        var read = await LoadedAssemblies.ReadTypeSystemAsync(assembly, ct);
+        using var reading = LoadedAssemblies.BeginReading();
+        var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
         return await read.Match(
             async r => Lookup.FromNullable(await FindEntityAsync(session, assembly, r.TypeSystem.MainModule, token, memberName, ct)),
-            u => Task.FromResult(Lookup.FromUnreadable<BrowseNode>(assembly, u)));
+            u => Task.FromResult(Lookup.FromUnreadable<BrowseNode>(assembly, u)),
+            static _ => Task.FromResult<Lookup<BrowseNode>>(new Lookup<BrowseNode>.NotFound()));
     }
 
     private static async Task<BrowseNode?> FindEntityAsync(BrowseSession session, LoadedModule assembly, MetadataModule main, uint token, string memberName,

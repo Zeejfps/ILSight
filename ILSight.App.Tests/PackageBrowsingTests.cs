@@ -3,6 +3,7 @@ using ILSight.Core;
 using ILSight.ExportArea;
 using ILSight.AssemblyArea;
 using static ILSight.App.Tests.BuiltInGlyphs;
+using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
 
@@ -48,7 +49,7 @@ public sealed class PackageBrowsingTests
         using var temp = new TempDir();
         var app = OpenedPackage(temp);
 
-        app.AppState.ListSession.CloseAssemblies([Greeter(app).Assembly]);
+        Commands.CloseAssemblies(app.AppState, [Greeter(app).Assembly]);
         app.Run(2);
 
         Assert.Empty(app.AppState.Assemblies.Listed);

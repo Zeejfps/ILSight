@@ -40,6 +40,28 @@ public sealed class DecompileIntoTabHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_ModuleClosedBeforeTheDecompileBegan_StopsTheLoadAndSaysTheAssemblyWasClosed()
+    {
+        var greeter = AppStateDriver.OpenedWithoutScreen().Fixture("Greeter");
+        var module = Assert.IsType<LoadedModule>(greeter.Assembly);
+        var viewCommands = new Queue<ViewCommand>();
+        var (navigation, tab) = FirstTab(viewCommands);
+        var ports = new FakeDecompileIntoTabHandlerPorts();
+        var load = navigation.Restore(tab, greeter, In(DecompilationLanguage.IL), AtLineTen);
+        Assert.NotNull(load);
+
+        var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, CancellationToken.None);
+        Assert.Single(ports.Requests).Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Closed { Module = module }));
+        await handling;
+
+        Assert.Equal(new TabContent.Stopped(greeter), tab.Content);
+        Assert.Equal(module.FilePath.FileName, tab.Load.ClosedAssembly);
+        Assert.False(tab.Load.IsBusy);
+        Assert.Empty(viewCommands);
+        Assert.Empty(ports.Reported);
+    }
+
+    [Fact]
     public async Task HandleAsync_Decompiled_ShowsItAndCommandsTheViewWhereToStand()
     {
         var greeter = AppStateDriver.OpenedWithoutScreen().Fixture("Greeter");
@@ -53,7 +75,7 @@ public sealed class DecompileIntoTabHandlerTests
         var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, CancellationToken.None);
         var request = Assert.Single(ports.Requests);
         Assert.IsType<TabContent.Loading>(tab.Content);
-        request.Answer.SetResult(new Outcome<NodeContent>.Ok(code));
+        request.Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Read { Value = code }));
         await handling;
 
         Assert.Same(greeter, request.Node);
@@ -77,7 +99,7 @@ public sealed class DecompileIntoTabHandlerTests
         var corrupt = new BadImageFormatException("Bad IL range.");
 
         var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, CancellationToken.None);
-        Assert.Single(ports.Requests).Answer.SetResult(new Outcome<NodeContent>.Failed(corrupt));
+        Assert.Single(ports.Requests).Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Failed(corrupt));
         await handling;
 
         var failed = Assert.IsType<TabContent.Failed>(tab.Content);
@@ -105,10 +127,10 @@ public sealed class DecompileIntoTabHandlerTests
         var newerHandling = handler.HandleAsync(viewCommands, newer, CancellationToken.None);
         var farewellCode = CodeOf("Farewell");
 
-        ports.Requests[0].Answer.SetResult(new Outcome<NodeContent>.Ok(CodeOf("Greeter")));
+        ports.Requests[0].Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Read { Value = CodeOf("Greeter") }));
         await olderHandling;
         Assert.Same(farewell, Assert.IsType<TabContent.Loading>(tab.Content).Node);
-        ports.Requests[1].Answer.SetResult(new Outcome<NodeContent>.Ok(farewellCode));
+        ports.Requests[1].Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Read { Value = farewellCode }));
         await newerHandling;
 
         Assert.True(older.Work.Token.IsCancellationRequested);
@@ -130,7 +152,7 @@ public sealed class DecompileIntoTabHandlerTests
 
         var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, CancellationToken.None);
         navigation.CloseTab(tab);
-        Assert.Single(ports.Requests).Answer.SetResult(new Outcome<NodeContent>.Failed(new BadImageFormatException("Bad IL range.")));
+        Assert.Single(ports.Requests).Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Failed(new BadImageFormatException("Bad IL range.")));
         await handling;
 
         Assert.True(load.Work.Token.IsCancellationRequested);

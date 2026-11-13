@@ -51,7 +51,7 @@ public static class MetadataGrids
         };
         if (rows.Count > 0)
         {
-            grid.AddPage(0, ReadPage(grid, 0));
+            grid.AddPage(0, ReadPageUnderReading(grid, 0));
         }
 
         return grid;
@@ -59,8 +59,20 @@ public static class MetadataGrids
 
     /// <summary>The rows of <paramref name="grid"/> on the page at <paramref name="page"/>, read through its mapped
     /// file: each cell's value, tooltip and link, each row's details and definition, what the library throws reading
-    /// one the cell's or row's failure, in its place. I/O: call it off the screen's thread.</summary>
-    public static MetadataGridPage ReadPage(MetadataGrid.Paged grid, int page)
+    /// one the cell's or row's failure, in its place. A unit reading the grid's module: closed, reading nothing, when it
+    /// was released (closed) before. I/O: call it off the screen's thread.</summary>
+    public static ModuleRead<MetadataGridPage> ReadPage(MetadataGrid.Paged grid, int page)
+    {
+        using var reading = LoadedAssemblies.TryBeginReading(grid.Module);
+        if (reading is null)
+        {
+            return new ModuleRead<MetadataGridPage>.Closed { Module = grid.Module };
+        }
+
+        return new ModuleRead<MetadataGridPage>.Read { Value = ReadPageUnderReading(grid, page) };
+    }
+
+    private static MetadataGridPage ReadPageUnderReading(MetadataGrid.Paged grid, int page)
     {
         var first = page * MetadataGrid.Paged.RowsPerPage;
         var rows = Math.Clamp(grid.RowCount - first, 0, MetadataGrid.Paged.RowsPerPage);
@@ -133,17 +145,24 @@ public static class MetadataGrids
     /// <paramref name="descending"/>, that pass every one of <paramref name="filters"/>. <paramref name="order"/>, when
     /// given, is that sort, made before. Reads the cells' values alone, through the grid's file, never what the grid keeps
     /// for the screen, so it runs off the screen's thread (for a paged grid, I/O); give it filters of its own
-    /// (<see cref="CopyFilters"/>).</summary>
-    public static MetadataGridView ArrangeRows(MetadataGrid grid, int sortColumn, bool descending, int[]? order,
+    /// (<see cref="CopyFilters"/>). A unit reading the grid's module: closed, arranging nothing, when it was released
+    /// (closed) before.</summary>
+    public static ModuleRead<MetadataGridView> ArrangeRows(MetadataGrid grid, int sortColumn, bool descending, int[]? order,
         IReadOnlyList<MetadataColumnFilter?> filters, CancellationToken cancellationToken)
     {
+        using var reading = LoadedAssemblies.TryBeginReading(grid.Module);
+        if (reading is null)
+        {
+            return new ModuleRead<MetadataGridView>.Closed { Module = grid.Module };
+        }
+
         var sorted = order;
         if (sorted is null && sortColumn >= 0)
         {
             sorted = OrderRows(grid, sortColumn, descending, cancellationToken);
         }
 
-        return new MetadataGridView { Order = sorted, Rows = FilterRows(grid, sorted, filters, cancellationToken) };
+        return new ModuleRead<MetadataGridView>.Read { Value = new MetadataGridView { Order = sorted, Rows = FilterRows(grid, sorted, filters, cancellationToken) } };
     }
 
     /// <summary>A copy of <paramref name="filters"/> as they stand, for a filter to read while they change.</summary>
@@ -392,8 +411,7 @@ public static class MetadataGrids
     /// <summary>What <paramref name="row"/> stands for in the code, read through <paramref name="file"/>.</summary>
     internal static CodeReference.Navigable? ReadDefinition(MetadataGrid grid, MetadataFile file, int row)
     {
-        var own = LoadedAssemblies.GetFile(grid.Module);
-        if (!ReferenceEquals(file, own) || grid.Schema.Table is null)
+        if (!LoadedAssemblies.IsReadFrom(grid.Module, file) || grid.Schema.Table is null)
         {
             return null;
         }

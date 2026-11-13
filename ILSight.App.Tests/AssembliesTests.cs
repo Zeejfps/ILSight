@@ -2,6 +2,7 @@ using ILSight.Core;
 using ILSight.AssemblyArea;
 using static ILSight.AssemblyArea.AssemblyReloading;
 using ILSight.SettingArea;
+using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
 
@@ -318,7 +319,7 @@ public sealed class AssembliesTests
         var ports = new FakeAssemblyReloadingPorts
         {
             Reopen = _ => new Outcome<ReloadedNodes>.Failed(new OperationCanceledException()),
-            WhileWorking = () => d.Change(static a => a.ListSession.CloseAllAssemblies()),
+            WhileWorking = () => Commands.CloseAllAssemblies(d.AppState),
         };
 
         var loads = await new AssemblyReloading(ports).RefreshAssembliesAsync(appState.Lists, appState.ListSession, appState.ViewCommands, appState.Decompiler, [], CancellationToken.None);

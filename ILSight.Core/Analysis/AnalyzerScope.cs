@@ -38,10 +38,11 @@ internal sealed class AnalyzerScope
     public required ITypeDefinition TypeScope { get; init; }
 
     /// <summary>The reads of the type systems of every module a scope over <paramref name="list"/> can reach, each
-    /// awaited: the listed modules', and <paramref name="own"/>'s, the module the analyzed symbol is in.</summary>
-    public static Task<ModuleTypeSystems> ReadReachableAsync(AssemblyList list, LoadedModule own, CancellationToken ct)
+    /// awaited: the listed modules', and <paramref name="own"/>'s, the module the analyzed symbol is in; each added to
+    /// <paramref name="reading"/>, the unit's, one released (closed) before passed over.</summary>
+    public static Task<ModuleTypeSystems> ReadReachableAsync(ModuleReading reading, AssemblyList list, LoadedModule own, CancellationToken ct)
     {
-        return LoadedAssemblies.ReadTypeSystemsAsync(list.Assemblies.Append(own).Distinct(), ct);
+        return LoadedAssemblies.ReadTypeSystemsAsync(reading, list.Assemblies.Append(own).Distinct(), ct);
     }
 
     /// <summary>Where the symbols related to <paramref name="entity"/>, of the assemblies of the context's list, can be,

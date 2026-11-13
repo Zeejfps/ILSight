@@ -12,7 +12,7 @@ public sealed class ListOpening
 {
     public required ListReopening Reopening { get; init; }
 
-    public required TabLoads Closing { get; init; }
+    public required ListClosing Closing { get; init; }
 
     public required AnalysesRestore? Analyses { get; init; }
 }

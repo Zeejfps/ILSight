@@ -90,7 +90,8 @@ public sealed class PackageTests
         Assert.Null(await list.FindMetadataRowAsync(type));
         Assert.IsType<Lookup<CodeTooltip>.NotFound>(await AssemblyListing.DescribeReferenceAsync(list, type, CancellationToken.None));
         Assert.IsType<Lookup<string>.NotFound>(await AssemblyListing.FindApiReferencePageAsync(list, type, CancellationToken.None));
-        Assert.IsType<Lookup<ITypeDefinition>.NotFound>(await AssemblyListing.FindTypeDefinitionAsync(list, type, CancellationToken.None));
+        using var reading = LoadedAssemblies.BeginReading();
+        Assert.IsType<Lookup<ITypeDefinition>.NotFound>(await AssemblyListing.FindTypeDefinitionAsync(list, reading, type, CancellationToken.None));
         Assert.Null(await list.FindMetadataRowAsync(CodeReferences.CreateAssembly("Sample", AssemblyPath.Of(path))));
     }
 
@@ -102,11 +103,11 @@ public sealed class PackageTests
         var package = list.Open(WritePackage(temp));
         var sibling = package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Core.dll"));
         list.TargetFrameworks.Pick(sibling, Frameworks.Net48);
-        list.CloseAll();
+        LoadedAssemblies.Release(list.CloseAll());
         var assembly = AssemblyListing.TryLoad(list, package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Tests.dll")));
         Assert.NotNull(assembly);
 
-        list.Close(assembly);
+        LoadedAssemblies.Release(list.Close(assembly));
 
         Assert.Empty(list.TargetFrameworks.All);
     }
@@ -121,7 +122,8 @@ public sealed class PackageTests
 
         var read = AssemblyListing.ReadAgain(list, old[1]);
         var fresh = read.Item;
-        var replaced = list.TryReplace(package, read);
+        var replaced = list.TryReplace(package, read, out var removed);
+        LoadedAssemblies.Release(removed);
 
         Assert.True(replaced);
         Assert.Equal([fresh], list.Listed);
@@ -296,7 +298,7 @@ public sealed class PackageTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var before = (await TestAssemblyRootAsync(await list.Open(packagePath).ReadRootAsync().GetChildAsync(LibFolder))).Assembly;
 
-        list.Close(list.Listed[0]);
+        LoadedAssemblies.Release(list.Close(list.Listed[0]));
         Assert.Empty(list.Assemblies);
         var after = (await TestAssemblyRootAsync(await list.Open(packagePath).ReadRootAsync().GetChildAsync(LibFolder))).Assembly;
 

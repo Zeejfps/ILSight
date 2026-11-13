@@ -3,6 +3,7 @@ using ILSight.CodeViewArea;
 using ILSight.ILSightAppArea;
 using static ILSight.App.Tests.BuiltInGlyphs;
 using static ILSight.App.Tests.TestPaths;
+using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
 
@@ -261,7 +262,7 @@ public sealed class HistoryTests
         Show(app, "Greeter");
         app.Show(OpenApiDiffSample(app).Root.Child("ApiDiffSample", "Account"), 4);
         Show(app, "Farewell");
-        app.AppState.ListSession.CloseAssemblies([ApiDiffSampleOf(app)]);
+        Commands.CloseAssemblies(app.AppState, [ApiDiffSampleOf(app)]);
         app.Run(4);
         return app;
     }

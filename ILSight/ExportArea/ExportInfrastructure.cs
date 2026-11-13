@@ -36,15 +36,18 @@ public sealed class ExportInfrastructure(ErrorLog errors, BrowseSession session)
         return RunOverTypeSystemAsync(token => CodeFiles.SaveAsync(session, work.Node, work.Language, work.Options, work.File, token), start, ct);
     }
 
+    /// <remarks>An assembly closed before the export began stops it, writing nothing.</remarks>
     public Task<ExportOutcome<ExportedProject>> WriteProjectAsync(ExportWork.Project work, ExportStart start, CancellationToken ct)
     {
-        return RunAsync(token => AssemblyExport.ExportProjectAsync(work.Assembly, work.Options, work.ProjectFile, work.Extras, start.Progress, token), start, ct);
+        return RunOverModulesAsync(token => AssemblyExport.ExportProjectAsync(work.Assembly, work.Options, work.ProjectFile, work.Extras, start.Progress, token),
+            start, ct);
     }
 
+    /// <remarks>An assembly closed before the export began stops it, writing nothing.</remarks>
     public Task<ExportOutcome<List<ExportedProject>>> WriteSolutionAsync(ExportWork.Solution work, ExportStart start, CancellationToken ct)
     {
-        return RunAsync(token => AssemblyExport.ExportSolutionAsync(work.Projects, work.Options, work.SolutionFile, work.Extras, start.Progress, token), start,
-            ct);
+        return RunOverModulesAsync(token => AssemblyExport.ExportSolutionAsync(work.Projects, work.Options, work.SolutionFile, work.Extras, start.Progress,
+            token), start, ct);
     }
 
     /// <remarks>An assembly the library could not read fails the export, saying why.</remarks>
@@ -53,9 +56,10 @@ public sealed class ExportInfrastructure(ErrorLog errors, BrowseSession session)
         return RunOverTypeSystemAsync(token => AssemblyExport.GeneratePdbAsync(work.Assembly, work.Options, work.File, start.Progress, token), start, ct);
     }
 
+    /// <remarks>An assembly closed before the export began stops it, writing nothing.</remarks>
     public Task<ExportOutcome<List<PdbFailure>>> WritePdbsAsync(ExportWork.Pdbs work, ExportStart start, CancellationToken ct)
     {
-        return RunAsync(token => AssemblyExport.GeneratePdbsAsync(work.Assemblies, work.Options, work.Folder, start.Progress, token), start, ct);
+        return RunOverModulesAsync(token => AssemblyExport.GeneratePdbsAsync(work.Assemblies, work.Options, work.Folder, start.Progress, token), start, ct);
     }
 
     /// <remarks>An assembly the library could not read fails the export, saying why.</remarks>
@@ -92,13 +96,29 @@ public sealed class ExportInfrastructure(ErrorLog errors, BrowseSession session)
     }
 
     /// <summary>Runs <paramref name="work"/> over a module's type system as <see cref="RunAsync{T}(Func{CancellationToken, Task{T}}, ExportStart, CancellationToken)"/>
-    /// does; a module the library could not read fails it, saying why.</summary>
+    /// does; a module the library could not read fails it, saying why; one closed before it began stops it.</summary>
     private static async Task<ExportOutcome<T>> RunOverTypeSystemAsync<T>(Func<CancellationToken, Task<TypeSystemWork<T>>> work, ExportStart start,
         CancellationToken ct)
     {
         var outcome = await RunAsync(work, start, ct);
         return outcome.Match(
-            static done => done.Value.Match<ExportOutcome<T>>(static d => new ExportOutcome<T>.Done(d.Value), static u => new ExportOutcome<T>.Failed(u.Module.Why)),
+            static done => done.Value.Match<ExportOutcome<T>>(
+                static d => new ExportOutcome<T>.Done(d.Value),
+                static u => new ExportOutcome<T>.Failed(u.Module.Why),
+                static _ => new ExportOutcome<T>.Stopped()),
+            static stopped => new ExportOutcome<T>.Stopped(),
+            static failed => new ExportOutcome<T>.Failed(failed.Error));
+    }
+
+    /// <summary>Runs <paramref name="work"/> over the modules it reads as
+    /// <see cref="RunAsync{T}(Func{CancellationToken, Task{T}}, ExportStart, CancellationToken)"/> does; one closed before
+    /// it began stops it.</summary>
+    private static async Task<ExportOutcome<T>> RunOverModulesAsync<T>(Func<CancellationToken, Task<ModuleRead<T>>> work, ExportStart start,
+        CancellationToken ct)
+    {
+        var outcome = await RunAsync(work, start, ct);
+        return outcome.Match(
+            static done => done.Value.Match<ExportOutcome<T>>(static read => new ExportOutcome<T>.Done(read.Value), static _ => new ExportOutcome<T>.Stopped()),
             static stopped => new ExportOutcome<T>.Stopped(),
             static failed => new ExportOutcome<T>.Failed(failed.Error));
     }
@@ -115,8 +135,15 @@ public sealed class ExportInfrastructure(ErrorLog errors, BrowseSession session)
         return new ExportOutcome<T>.Failed(error);
     }
 
+    /// <remarks>Reads the resource under a reading of its module; one closed before fails the save, saying so.</remarks>
     public Outcome SaveResource(BrowseNode node, string path)
     {
+        using var reading = LoadedAssemblies.BeginReading();
+        if (node.Assembly is LoadedModule module && !LoadedAssemblies.TryRead(reading, module))
+        {
+            return new Outcome.Failed(new IOException($"{module.FilePath.FileName} was closed."));
+        }
+
         try
         {
             var bytes = BrowseNodes.ReadResource(node);
