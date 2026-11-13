@@ -261,6 +261,7 @@ internal static class NuGetPickerView
         using (ui.Panel(frame))
         {
             LoadingStrip(ui, picker);
+            ConfigUnreadableNote(ui, picker.Browser.ConfigUnreadable);
             if (picker.Browser.Results.Count == 0)
             {
                 NuGetPlaceholderView.Render(ui, picker);
@@ -274,6 +275,19 @@ internal static class NuGetPickerView
             LeftOutNote(ui, picker.Browser.LeftOut);
             return Rows(ui, picker);
         }
+    }
+
+    private static void ConfigUnreadableNote(Ui<UiState> ui, string? why)
+    {
+        if (why is null)
+        {
+            return;
+        }
+
+        var theme = ui.Theme;
+        var note = ui.Memo("nuget-config-unreadable", (why, t: ui.State.Strings), static a => a.t.NugetConfigUnreadable(a.why));
+        ui.Text(note, new Box { Width = Sizing.Grow(), Padding = new Spacing(theme.Gap, theme.GapTight) }, color: theme.Warning,
+            size: theme.FontSizeSmall, wrap: true);
     }
 
     private static void LeftOutNote(Ui<UiState> ui, IReadOnlyList<string> leftOut)

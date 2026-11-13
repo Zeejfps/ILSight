@@ -336,19 +336,20 @@ public static class NuGetFeeds
         return bytes;
     }
 
-    /// <summary>The setup the user's NuGet.Config describes, downloading into the app's own folder.</summary>
-    public static NuGetSetup ReadUserSetup()
+    /// <summary>What the user's NuGet.Config came to: missing, unreadable, or what it says.</summary>
+    public static NuGetConfigRead ReadUserConfig()
     {
-        return CreateSetupFromConfig(NuGetConfigs.ReadUser());
+        return NuGetConfigs.ReadUser();
     }
 
-    /// <summary>The setup when the user's config cannot be read at all: nuget.org and the default folders.</summary>
+    /// <summary>The setup of NuGet's default: nuget.org and the default folders.</summary>
     public static NuGetSetup CreateDefaultSetup()
     {
-        return CreateSetupFromConfig(NuGetConfigs.CreateDefault());
+        return CreateSetup(NuGetConfigs.CreateDefault());
     }
 
-    private static NuGetSetup CreateSetupFromConfig(NuGetConfig config)
+    /// <summary>The setup <paramref name="config"/> describes, downloading into the app's own folder.</summary>
+    public static NuGetSetup CreateSetup(NuGetConfig config)
     {
         var cache = new PackageCache { GlobalPackagesFolder = config.GlobalPackagesFolder, DownloadFolder = PackageCache.UserDownloadFolder };
         return new NuGetSetup { Sources = config.Sources, Cache = cache };

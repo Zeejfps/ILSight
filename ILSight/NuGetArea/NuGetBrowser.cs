@@ -125,6 +125,14 @@ public sealed class NuGetBrowser
 
     public bool HasNextPage => Page + 1 < PageCount;
 
+    /// <summary>Why the user's NuGet.Config couldn't be read, nuget.org standing in for its sources; null while it was
+    /// read, there is none, or it isn't read yet.</summary>
+    public string? ConfigUnreadable => FindReadySetup()?.ConfigUnreadable;
+
+    /// <summary>Whether the user's NuGet.Config was read and lists no source: nothing is searched until a feed is
+    /// typed.</summary>
+    public bool HasNoSources => _setup is SetupState.Ready ready && ready.Setup.Sources.Count == 0;
+
     /// <summary>The feeds the user's NuGet.Config lists, once the setup is read.</summary>
     public IReadOnlyList<NuGetSource> Sources
     {

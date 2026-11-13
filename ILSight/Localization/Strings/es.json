@@ -624,6 +624,8 @@
   "nuget.search_failed": "No se pudo buscar en esta fuente.",
   "nuget.no_match": "Ningún paquete coincide con «{query}».",
   "nuget.no_feed": "Escriba la URL de una fuente NuGet v3, como https://api.nuget.org/v3/index.json.",
+  "nuget.no_sources": "Su NuGet.Config no indica orígenes de paquetes. Escriba la URL de un feed NuGet v3 para buscar en él.",
+  "nuget.config_unreadable": "No se pudo leer su NuGet.Config ({why}), así que se busca en nuget.org.",
   "nuget.count": {"one": "{count:N0} paquete", "other": "{count:N0} paquetes"},
   "nuget.page": "Página {page:N0} de {pages:N0}",
   "nuget.previous_page": "Página anterior",

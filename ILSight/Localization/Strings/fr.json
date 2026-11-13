@@ -624,6 +624,8 @@
   "nuget.search_failed": "Impossible de rechercher dans ce flux.",
   "nuget.no_match": "Aucun paquet ne correspond à « {query} ».",
   "nuget.no_feed": "Saisissez l’URL d’un flux NuGet v3, par exemple https://api.nuget.org/v3/index.json.",
+  "nuget.no_sources": "Votre NuGet.Config ne liste aucune source de packages. Tapez l’URL d’un flux NuGet v3 pour y chercher.",
+  "nuget.config_unreadable": "Impossible de lire votre NuGet.Config ({why}) : nuget.org est utilisé à la place.",
   "nuget.count": {"one": "{count:N0} paquet", "other": "{count:N0} paquets"},
   "nuget.page": "Page {page:N0} sur {pages:N0}",
   "nuget.previous_page": "Page précédente",

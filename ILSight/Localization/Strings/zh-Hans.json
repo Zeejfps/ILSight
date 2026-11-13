@@ -624,6 +624,8 @@
   "nuget.search_failed": "无法搜索此源。",
   "nuget.no_match": "没有与“{query}”匹配的包。",
   "nuget.no_feed": "请输入 NuGet v3 源的 URL，例如 https://api.nuget.org/v3/index.json。",
+  "nuget.no_sources": "你的 NuGet.Config 未列出任何包源。键入 NuGet v3 源的 URL 以在其中搜索。",
+  "nuget.config_unreadable": "无法读取你的 NuGet.Config（{why}），因此改为搜索 nuget.org。",
   "nuget.count": {"other": "{count:N0} 个包"},
   "nuget.page": "第 {page:N0} 页，共 {pages:N0} 页",
   "nuget.previous_page": "上一页",

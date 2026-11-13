@@ -22,7 +22,7 @@ internal static class NuGetPlaceholderView
             }
             if (!picker.HasFeedUrl)
             {
-                Note(ui, t.NugetNoFeed);
+                Note(ui, picker.Browser.HasNoSources ? t.NugetNoSources : t.NugetNoFeed);
                 return;
             }
             if (picker.Browser.IsSearching)

@@ -25,31 +25,53 @@ public sealed class NuGetConfigTests
             </configuration>
             """);
 
-        var config = NuGetConfigs.Read(path, CreateEnvironment(null));
+        var config = ReadConfig(path, CreateEnvironment(null));
 
         Assert.Equal(["nuget.org", "company"], config.Sources.Select(s => s.Name));
         Assert.Equal("https://company.test/nuget/v3/index.json", config.Sources[1].Url.Text);
     }
 
     [Fact]
-    public void A_missing_config_offers_nuget_org()
+    public void A_missing_config_is_missing()
     {
         using var temp = new TempDir();
 
-        var config = NuGetConfigs.Read(temp.PathOf("NuGet.Config"), CreateEnvironment(null));
+        var read = NuGetConfigs.Read(temp.PathOf("NuGet.Config"), CreateEnvironment(null));
 
-        Assert.Equal([NuGetSource.NuGetOrg], config.Sources);
+        Assert.IsType<NuGetConfigRead.Missing>(read);
     }
 
     [Fact]
-    public void A_config_that_is_no_xml_offers_nuget_org()
+    public void A_config_that_is_no_xml_is_unreadable_saying_why()
     {
         using var temp = new TempDir();
         var path = temp.Write("NuGet.Config", "not xml");
 
-        var config = NuGetConfigs.Read(path, CreateEnvironment(null));
+        var read = NuGetConfigs.Read(path, CreateEnvironment(null));
 
-        Assert.Equal([NuGetSource.NuGetOrg], config.Sources);
+        Assert.NotEmpty(Assert.IsType<NuGetConfigRead.Unreadable>(read).Why);
+    }
+
+    [Fact]
+    public void A_config_that_clears_its_sources_lists_none()
+    {
+        using var temp = new TempDir();
+        var path = temp.Write("NuGet.Config", """
+            <configuration>
+              <packageSources>
+                <clear />
+              </packageSources>
+            </configuration>
+            """);
+
+        var config = ReadConfig(path, CreateEnvironment(null));
+
+        Assert.Empty(config.Sources);
+    }
+
+    private static NuGetConfig ReadConfig(string path, NuGetEnvironment environment)
+    {
+        return Assert.IsType<NuGetConfigRead.Read>(NuGetConfigs.Read(path, environment)).Config;
     }
 
     [Fact]
@@ -58,7 +80,7 @@ public sealed class NuGetConfigTests
         using var temp = new TempDir();
         var path = WriteConfigNamingRestored(temp);
 
-        var config = NuGetConfigs.Read(path, CreateEnvironment(null));
+        var config = ReadConfig(path, CreateEnvironment(null));
 
         Assert.Equal(temp.PathOf("restored"), config.GlobalPackagesFolder);
     }
@@ -70,7 +92,7 @@ public sealed class NuGetConfigTests
         var path = WriteConfigNamingRestored(temp);
         var fromEnvironment = Path.Combine(temp.Path, "env", "..", "elsewhere");
 
-        var config = NuGetConfigs.Read(path, CreateEnvironment(fromEnvironment));
+        var config = ReadConfig(path, CreateEnvironment(fromEnvironment));
 
         Assert.Equal(temp.PathOf("elsewhere"), config.GlobalPackagesFolder);
     }
@@ -84,7 +106,7 @@ public sealed class NuGetConfigTests
         using var temp = new TempDir();
         var path = WriteConfigNamingRestored(temp);
 
-        var config = NuGetConfigs.Read(path, CreateEnvironment(fromEnvironment));
+        var config = ReadConfig(path, CreateEnvironment(fromEnvironment));
 
         Assert.Equal(temp.PathOf("restored"), config.GlobalPackagesFolder);
     }
@@ -98,17 +120,7 @@ public sealed class NuGetConfigTests
         using var temp = new TempDir();
         var path = temp.Write("NuGet.Config", "<configuration />");
 
-        var config = NuGetConfigs.Read(path, CreateEnvironment(fromEnvironment));
-
-        Assert.Equal(Path.Combine(Home, ".nuget", "packages"), config.GlobalPackagesFolder);
-    }
-
-    [Fact]
-    public void A_missing_config_has_the_global_packages_folder_in_the_home_folder()
-    {
-        using var temp = new TempDir();
-
-        var config = NuGetConfigs.Read(temp.PathOf("NuGet.Config"), CreateEnvironment(null));
+        var config = ReadConfig(path, CreateEnvironment(fromEnvironment));
 
         Assert.Equal(Path.Combine(Home, ".nuget", "packages"), config.GlobalPackagesFolder);
     }
@@ -126,7 +138,7 @@ public sealed class NuGetConfigTests
         """);
         var environment = CreateEnvironment(null) with { ExpandVariables = text => text.Replace("%PACKAGES_ROOT%", Home) };
 
-        var config = NuGetConfigs.Read(path, environment);
+        var config = ReadConfig(path, environment);
 
         Assert.Equal(Path.GetFullPath(Path.Combine(Home, "restored")), config.GlobalPackagesFolder);
     }

@@ -624,6 +624,8 @@
   "nuget.search_failed": "Não foi possível pesquisar neste feed.",
   "nuget.no_match": "Nenhum pacote corresponde a “{query}”.",
   "nuget.no_feed": "Digite a URL de um feed NuGet v3, como https://api.nuget.org/v3/index.json.",
+  "nuget.no_sources": "Seu NuGet.Config não lista origens de pacotes. Digite a URL de um feed NuGet v3 para pesquisar nele.",
+  "nuget.config_unreadable": "Não foi possível ler seu NuGet.Config ({why}), então o nuget.org é pesquisado no lugar.",
   "nuget.count": {"one": "{count:N0} pacote", "other": "{count:N0} pacotes"},
   "nuget.page": "Página {page:N0} de {pages:N0}",
   "nuget.previous_page": "Página anterior",

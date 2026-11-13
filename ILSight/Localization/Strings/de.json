@@ -624,6 +624,8 @@
   "nuget.search_failed": "Dieser Feed konnte nicht durchsucht werden.",
   "nuget.no_match": "Keine Pakete passen zu „{query}“.",
   "nuget.no_feed": "Geben Sie die URL eines NuGet-v3-Feeds ein, etwa https://api.nuget.org/v3/index.json.",
+  "nuget.no_sources": "Ihre NuGet.Config enthält keine Paketquellen. Geben Sie die URL eines NuGet-v3-Feeds ein, um ihn zu durchsuchen.",
+  "nuget.config_unreadable": "Ihre NuGet.Config konnte nicht gelesen werden ({why}), daher wird stattdessen nuget.org durchsucht.",
   "nuget.count": {"one": "{count:N0} Paket", "other": "{count:N0} Pakete"},
   "nuget.page": "Seite {page:N0} von {pages:N0}",
   "nuget.previous_page": "Vorherige Seite",

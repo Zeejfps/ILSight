@@ -8,8 +8,8 @@ public static class NuGetConfigs
 {
     private const string PackagesFolderVariable = "NUGET_PACKAGES";
 
-    /// <summary>The config of the user running the app.</summary>
-    public static NuGetConfig ReadUser()
+    /// <summary>The config of the user running the app: missing, unreadable, or what it says.</summary>
+    public static NuGetConfigRead ReadUser()
     {
         var environment = ReadEnvironment();
         return Read(GetUserConfigPath(environment), environment);
@@ -46,53 +46,50 @@ public static class NuGetConfigs
         return Path.Combine(environment.HomeFolder, ".nuget", "NuGet", "NuGet.Config");
     }
 
-    /// <summary>The config at <paramref name="path"/>, as it reads in <paramref name="environment"/>.</summary>
-    public static NuGetConfig Read(string path, NuGetEnvironment environment)
+    /// <summary>The config at <paramref name="path"/>, as it reads in <paramref name="environment"/>: missing when there
+    /// is no file there, unreadable (why) when it can't be read or is no XML.</summary>
+    public static NuGetConfigRead Read(string path, NuGetEnvironment environment)
     {
-        var document = TryLoad(path);
-        var sources = ListSources(document);
-        var folder = GetGlobalPackagesFolder(document, path, environment);
-        return new NuGetConfig { Sources = sources, GlobalPackagesFolder = folder };
-    }
-
-    private static XDocument? TryLoad(string path)
-    {
+        XDocument document;
         try
         {
-            return XDocument.Load(path);
+            document = XDocument.Load(path);
         }
-        catch (IOException)
+        catch (FileNotFoundException)
         {
-            return null;
+            return new NuGetConfigRead.Missing();
         }
-        catch (UnauthorizedAccessException)
+        catch (DirectoryNotFoundException)
         {
-            return null;
+            return new NuGetConfigRead.Missing();
         }
-        catch (XmlException)
+        catch (IOException e)
         {
-            return null;
+            return new NuGetConfigRead.Unreadable { Why = e.Message };
         }
+        catch (UnauthorizedAccessException e)
+        {
+            return new NuGetConfigRead.Unreadable { Why = e.Message };
+        }
+        catch (XmlException e)
+        {
+            return new NuGetConfigRead.Unreadable { Why = e.Message };
+        }
+
+        var sources = ListSources(document);
+        var folder = GetGlobalPackagesFolder(document, path, environment);
+        return new NuGetConfigRead.Read { Config = new NuGetConfig { Sources = sources, GlobalPackagesFolder = folder } };
     }
 
-    /// <summary>The enabled v3 sources, in the order the config adds them; nuget.org when it adds none.</summary>
-    private static List<NuGetSource> ListSources(XDocument? document)
+    /// <summary>The enabled v3 sources, in the order the config adds them; none when it adds none, clears them or
+    /// disables them all.</summary>
+    private static List<NuGetSource> ListSources(XDocument document)
     {
         var sources = new List<NuGetSource>();
-        if (document is null)
-        {
-            sources.Add(NuGetSource.NuGetOrg);
-            return sources;
-        }
         var disabled = ListDisabled(document);
         foreach (var entry in ListSection(document, "packageSources"))
         {
             ApplySourceEntry(entry, disabled, sources);
-        }
-
-        if (sources.Count == 0)
-        {
-            sources.Add(NuGetSource.NuGetOrg);
         }
 
         return sources;

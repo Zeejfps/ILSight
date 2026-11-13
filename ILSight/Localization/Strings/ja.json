@@ -624,6 +624,8 @@
   "nuget.search_failed": "このフィードを検索できませんでした。",
   "nuget.no_match": "「{query}」に一致するパッケージはありません。",
   "nuget.no_feed": "NuGet v3 フィードの URL を入力してください (例: https://api.nuget.org/v3/index.json)。",
+  "nuget.no_sources": "NuGet.Config にパッケージ ソースがありません。検索するには NuGet v3 フィードの URL を入力してください。",
+  "nuget.config_unreadable": "NuGet.Config を読み取れませんでした ({why})。代わりに nuget.org を検索します。",
   "nuget.count": {"other": "{count:N0} 個のパッケージ"},
   "nuget.page": "{page:N0} / {pages:N0} ページ",
   "nuget.previous_page": "前のページ",

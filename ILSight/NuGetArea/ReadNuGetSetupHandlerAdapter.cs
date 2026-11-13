@@ -14,13 +14,18 @@ public sealed class ReadNuGetSetupHandlerAdapter(Action<AppProblem> reportError)
 
     /// <summary>Reads on the thread pool and comes back on the UI thread, with a file it could not read (<see cref="FileReadFailures"/>) as
     /// <see cref="Outcome{T}.Failed"/>.</summary>
-    public Task<Outcome<NuGetSetup>> ReadUserSetupAsync(CancellationToken ct)
+    public Task<Outcome<NuGetConfigRead>> ReadUserConfigAsync(CancellationToken ct)
     {
-        return FileReadFailures.CatchAsync(Background.Wait(Task.Run(NuGetFeeds.ReadUserSetup, ct)), ct);
+        return FileReadFailures.CatchAsync(Background.Wait(Task.Run(NuGetFeeds.ReadUserConfig, ct)), ct);
     }
 
     public NuGetSetup CreateDefaultSetup()
     {
         return NuGetFeeds.CreateDefaultSetup();
+    }
+
+    public NuGetSetup CreateSetup(NuGetConfig config)
+    {
+        return NuGetFeeds.CreateSetup(config);
     }
 }

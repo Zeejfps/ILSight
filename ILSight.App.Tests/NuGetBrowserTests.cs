@@ -18,7 +18,7 @@ public sealed class NuGetBrowserTests
     private sealed class FakePorts : ReadNuGetSetupHandler.IPorts, SearchNuGetFeedHandler.IPorts, DownloadNuGetPackageHandler.IPorts,
         FetchNuGetIconHandler.IPorts, ReadNuGetDetailsHandler.IPorts
     {
-        public Outcome<NuGetSetup> SetupRead { get; init; } = new Outcome<NuGetSetup>.Failed(new IOException("Reading the config was not expected."));
+        public Outcome<NuGetConfigRead> ConfigRead { get; init; } = new Outcome<NuGetConfigRead>.Failed(new IOException("Reading the config was not expected."));
 
         public NuGetSetup? DefaultSetup { get; init; }
 
@@ -46,9 +46,9 @@ public sealed class NuGetBrowserTests
             Reported.Add(problem);
         }
 
-        public Task<Outcome<NuGetSetup>> ReadUserSetupAsync(CancellationToken ct)
+        public Task<Outcome<NuGetConfigRead>> ReadUserConfigAsync(CancellationToken ct)
         {
-            return AnswerAsync(nameof(ReadUserSetupAsync), SetupRead, ct);
+            return AnswerAsync(nameof(ReadUserConfigAsync), ConfigRead, ct);
         }
 
         public NuGetSetup CreateDefaultSetup()
@@ -56,6 +56,12 @@ public sealed class NuGetBrowserTests
             Asked.Add(nameof(CreateDefaultSetup));
             Assert.NotNull(DefaultSetup);
             return DefaultSetup;
+        }
+
+        public NuGetSetup CreateSetup(NuGetConfig config)
+        {
+            Asked.Add(nameof(CreateSetup));
+            return new NuGetSetup { Sources = config.Sources, Cache = Setup().Cache };
         }
 
         public Task<Outcome<FeedPage>> SearchAsync(FeedSearch search, CancellationToken ct)
@@ -319,9 +325,9 @@ public sealed class NuGetBrowserTests
     }
 
     [Fact]
-    public async Task ReadSetupAsync_ConfigUnreadable_ReportsItAndSearchesTheDefaultSetupsFirstFeed()
+    public async Task ReadSetupAsync_ConfigReadFailsUnexpectedly_ReportsItAndSearchesTheDefaultSetupsFirstFeed()
     {
-        var ports = new FakePorts { SetupRead = new Outcome<NuGetSetup>.Failed(new IOException("Unreadable.")), DefaultSetup = Setup() };
+        var ports = new FakePorts { ConfigRead = new Outcome<NuGetConfigRead>.Failed(new IOException("Unreadable.")), DefaultSetup = Setup() };
         var picker = new NuGetPicker { Browser = new NuGetBrowser() };
         picker.Open();
         using var shutdown = new CancellationTokenSource();
@@ -329,11 +335,61 @@ public sealed class NuGetBrowserTests
         await new ReadNuGetSetupHandler(ports).HandleAsync(picker, shutdown.Token);
         await new ReadNuGetSetupHandler(ports).HandleAsync(picker, shutdown.Token);
 
-        Assert.Equal([nameof(FakePorts.ReadUserSetupAsync), nameof(FakePorts.CreateDefaultSetup)], ports.Asked);
+        Assert.Equal([nameof(FakePorts.ReadUserConfigAsync), nameof(FakePorts.CreateDefaultSetup)], ports.Asked);
         Assert.Equal(shutdown.Token, Assert.Single(ports.Tokens));
         Assert.IsType<AppProblem.NuGetConfigUnreadable>(Assert.Single(ports.Reported));
         Assert.False(picker.Browser.IsReadingSetup);
         Assert.Equal(FeedUrl, picker.FeedUrl);
+    }
+
+    [Fact]
+    public async Task ReadSetupAsync_ConfigUnreadable_SearchesNugetOrgSayingWhyAndReportsNothing()
+    {
+        var ports = new FakePorts
+        {
+            ConfigRead = new Outcome<NuGetConfigRead>.Ok(new NuGetConfigRead.Unreadable { Why = "Data at the root level is invalid." }),
+            DefaultSetup = Setup(),
+        };
+        var picker = new NuGetPicker { Browser = new NuGetBrowser() };
+        picker.Open();
+
+        await new ReadNuGetSetupHandler(ports).HandleAsync(picker, CancellationToken.None);
+
+        Assert.Equal([nameof(FakePorts.ReadUserConfigAsync), nameof(FakePorts.CreateDefaultSetup)], ports.Asked);
+        Assert.Equal("Data at the root level is invalid.", picker.Browser.ConfigUnreadable);
+        Assert.Empty(ports.Reported);
+        Assert.Equal(FeedUrl, picker.FeedUrl);
+    }
+
+    [Fact]
+    public async Task ReadSetupAsync_ConfigMissing_SearchesNugetOrgSayingNothing()
+    {
+        var ports = new FakePorts { ConfigRead = new Outcome<NuGetConfigRead>.Ok(new NuGetConfigRead.Missing()), DefaultSetup = Setup() };
+        var picker = new NuGetPicker { Browser = new NuGetBrowser() };
+        picker.Open();
+
+        await new ReadNuGetSetupHandler(ports).HandleAsync(picker, CancellationToken.None);
+
+        Assert.Equal([nameof(FakePorts.ReadUserConfigAsync), nameof(FakePorts.CreateDefaultSetup)], ports.Asked);
+        Assert.Null(picker.Browser.ConfigUnreadable);
+        Assert.Empty(ports.Reported);
+        Assert.Equal(FeedUrl, picker.FeedUrl);
+    }
+
+    [Fact]
+    public async Task ReadSetupAsync_ConfigListingNoSources_SearchesNothingSayingSo()
+    {
+        var config = new NuGetConfig { Sources = [], GlobalPackagesFolder = "packages" };
+        var ports = new FakePorts { ConfigRead = new Outcome<NuGetConfigRead>.Ok(new NuGetConfigRead.Read { Config = config }) };
+        var picker = new NuGetPicker { Browser = new NuGetBrowser() };
+        picker.Open();
+
+        await new ReadNuGetSetupHandler(ports).HandleAsync(picker, CancellationToken.None);
+
+        Assert.Equal([nameof(FakePorts.ReadUserConfigAsync), nameof(FakePorts.CreateSetup)], ports.Asked);
+        Assert.True(picker.Browser.HasNoSources);
+        Assert.Equal("", picker.FeedUrl);
+        Assert.Empty(ports.Searched);
     }
 
     [Fact]

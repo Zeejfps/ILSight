@@ -638,6 +638,8 @@
   "nuget.search_failed": "Couldn’t search this feed.",
   "nuget.no_match": "No packages match “{query}”.",
   "nuget.no_feed": "Type the URL of a NuGet v3 feed, such as https://api.nuget.org/v3/index.json.",
+  "nuget.no_sources": "Your NuGet.Config lists no package sources. Type the URL of a NuGet v3 feed to search one.",
+  "nuget.config_unreadable": "Couldn’t read your NuGet.Config ({why}), so nuget.org is searched instead.",
   "nuget.count": {"one": "{count:N0} package", "other": "{count:N0} packages"},
   "nuget.page": "Page {page:N0} of {pages:N0}",
   "nuget.previous_page": "Previous page",

@@ -624,6 +624,8 @@
   "nuget.search_failed": "Не удалось выполнить поиск в этом канале.",
   "nuget.no_match": "Нет пакетов, соответствующих «{query}».",
   "nuget.no_feed": "Введите URL канала NuGet v3, например https://api.nuget.org/v3/index.json.",
+  "nuget.no_sources": "В вашем NuGet.Config нет источников пакетов. Введите URL канала NuGet v3, чтобы искать в нём.",
+  "nuget.config_unreadable": "Не удалось прочитать ваш NuGet.Config ({why}), поэтому поиск идёт в nuget.org.",
   "nuget.count": {"one": "{count:N0} пакет", "few": "{count:N0} пакета", "many": "{count:N0} пакетов", "other": "{count:N0} пакета"},
   "nuget.page": "Страница {page:N0} из {pages:N0}",
   "nuget.previous_page": "Предыдущая страница",

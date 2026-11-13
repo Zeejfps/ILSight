@@ -624,6 +624,8 @@
   "nuget.search_failed": "이 피드를 검색할 수 없습니다.",
   "nuget.no_match": "“{query}”와 일치하는 패키지가 없습니다.",
   "nuget.no_feed": "NuGet v3 피드의 URL을 입력하세요(예: https://api.nuget.org/v3/index.json).",
+  "nuget.no_sources": "NuGet.Config에 패키지 원본이 없습니다. 검색하려면 NuGet v3 피드의 URL을 입력하세요.",
+  "nuget.config_unreadable": "NuGet.Config를 읽을 수 없어({why}) 대신 nuget.org를 검색합니다.",
   "nuget.count": {"other": "패키지 {count:N0}개"},
   "nuget.page": "{page:N0}/{pages:N0} 페이지",
   "nuget.previous_page": "이전 페이지",
