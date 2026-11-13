@@ -34,10 +34,6 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     private readonly Channel<RunArguments> _inbox;
     private readonly CodeFontFaces _codeFonts = new() { Bundled = ReadFont(MonoFonts.Code, MonoFontFile) };
 
-    /// <summary>Whether the last request to close was refused, the settings not saved: the next one closes, saved or
-    /// not, the user having been told.</summary>
-    private bool _closeRefused;
-
     /// <param name="appState">The app state, its start recorded on it.</param>
     /// <param name="uiState">The screen over it.</param>
     /// <param name="start">The start the root recorded on <paramref name="appState"/>, for this app to start.</param>
@@ -147,15 +143,13 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     }
 
     /// <summary>Saves the settings, with the window at <paramref name="window"/>, as the user asks to close it, while it
-    /// can still show a failure; true when it may close. A save that fails keeps it open once (the error panel shows why
-    /// in the next frame), and the next request closes it, saved or not. Arguments are refused once it closes, while a
-    /// run sending one can still be told to open its own: no frame runs after this to follow it.</summary>
+    /// can still show a failure; true when it may close, as <see cref="WindowClosing"/> answers from the save (a failed
+    /// one keeps it open once, the error panel showing why in the next frame). Arguments are refused once it closes,
+    /// while a run sending one can still be told to open its own: no frame runs after this to follow it.</summary>
     internal bool TryClose(WindowBounds window)
     {
         var write = SaveOnExit(window);
-        var refuses = write.Match(static _ => false, _ => !_closeRefused);
-        _closeRefused = refuses;
-        if (refuses)
+        if (!_appState.Closing.TryClose(write))
         {
             return false;
         }

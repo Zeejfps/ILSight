@@ -85,6 +85,38 @@ public sealed class ExportTests : IDisposable
     }
 
     [Fact]
+    public void Saving_a_resource_names_its_bytes_for_the_file_picked()
+    {
+        var d = AppStateDriver.Opened();
+        var node = d.Node("Resources", "data.json");
+        var path = _temp.PathOf("data.json");
+        var setup = new DecompilerSetup { Language = DecompilationLanguage.CSharp, Options = DecompilerOptions.Default };
+
+        var save = ToCodeSave(node, setup, path);
+
+        var bytes = Assert.IsType<CodeSave.ResourceBytes>(save);
+        Assert.Same(node, bytes.Node);
+        Assert.Equal(path, bytes.File);
+    }
+
+    [Fact]
+    public void Saving_a_node_that_is_no_resource_names_its_code_in_the_setup_language_as_one_file()
+    {
+        var d = AppStateDriver.Opened();
+        var node = d.Fixture("Greeter");
+        var path = _temp.PathOf("Greeter.il");
+        var setup = new DecompilerSetup { Language = DecompilationLanguage.IL, Options = DecompilerOptions.Default };
+
+        var save = ToCodeSave(node, setup, path);
+
+        var work = Assert.IsType<CodeSave.Code>(save).Work;
+        Assert.Same(node, work.Node);
+        Assert.Equal(DecompilationLanguage.IL, work.Language);
+        Assert.Same(setup.Options, work.Options);
+        Assert.Equal(path, work.File);
+    }
+
+    [Fact]
     public void Pdbs_are_generated_for_every_open_assembly_into_the_folder()
     {
         var d = OpenedSample();

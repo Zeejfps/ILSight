@@ -32,6 +32,19 @@ public static class Exports
         return node.IsCode;
     }
 
+    /// <summary>What saving <paramref name="node"/> to the file at <paramref name="path"/> writes: a resource's bytes as
+    /// they are, else its code in <paramref name="setup"/>'s language, as one file.</summary>
+    public static CodeSave ToCodeSave(BrowseNode node, DecompilerSetup setup, string path)
+    {
+        if (node.HasResource)
+        {
+            return new CodeSave.ResourceBytes { Node = node, File = path };
+        }
+
+        var work = new ExportWork.CodeFile { Node = node, Language = setup.Language, Options = setup.Options, File = path };
+        return new CodeSave.Code { Work = work };
+    }
+
     /// <summary>Queues the export <paramref name="job"/> and brings the exports panel to the front, where it waits,
     /// runs and ends; its turn comes once the exports queued before it have ended (<see cref="ExportWriting"/>).</summary>
     public static ExportTicket Enter(ExportQueue queue, Queue<ViewCommand> viewCommands, ExportJob job)

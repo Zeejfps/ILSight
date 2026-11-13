@@ -9,6 +9,7 @@ using ILSight.SearchArea;
 using ILSight.DiagramArea;
 using ILSight.AssemblyArea;
 using ILSight.SettingArea;
+using ILSight.ILSightAppArea;
 using ILSight.MetadataArea;
 
 namespace ILSight;
@@ -62,6 +63,10 @@ public sealed class AppState
 
     /// <summary>Whether writing the settings is failing, and when to try again.</summary>
     public SaveRetry SaveRetry { get; set; } = new SaveRetry.Clear();
+
+    /// <summary>Whether the window closes as the user asks it to, from what saving the settings then did.</summary>
+    public WindowClosing Closing { get; } = new();
+
     public BookmarkList Bookmarks { get; } = new();
 
     /// <summary>The symbols being analyzed and what the analyses found.</summary>

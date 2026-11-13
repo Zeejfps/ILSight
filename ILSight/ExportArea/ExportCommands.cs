@@ -9,17 +9,14 @@ namespace ILSight.ExportArea;
 public static class ExportCommands
 {
     /// <summary>Saves <paramref name="node"/> to the file at <paramref name="path"/>: a resource's bytes as they are,
-    /// else its code in the current language, as one file. Projects come from the export dialog.</summary>
+    /// else its code in the current language, as one file (<see cref="Exports.ToCodeSave"/>). Projects come from the
+    /// export dialog.</summary>
     public static void SaveCode(AppState appState, BrowseNode node, string path)
     {
-        if (node.HasResource)
-        {
-            SaveResource(appState, node, path);
-            return;
-        }
-
-        var work = new ExportWork.CodeFile { Node = node, Language = appState.Decompiler.Setup.Language, Options = appState.Decompiler.Setup.Options, File = path };
-        StartWriting(appState, work);
+        var save = Exports.ToCodeSave(node, appState.Decompiler.Setup, path);
+        save.Switch(appState,
+            static (a, resource) => SaveResource(a, resource.Node, resource.File),
+            static (a, code) => StartWriting(a, code.Work));
     }
 
     /// <summary>Writes the bytes of the resource <paramref name="node"/> stands for to the file at
