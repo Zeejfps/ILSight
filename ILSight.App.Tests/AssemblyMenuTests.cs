@@ -83,10 +83,13 @@ public sealed class AssemblyMenuTests
         app.Start((a, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, greeter, ct));
         app.Frames.WaitUntil(() => app.Frames.OpenedUrls.Count == 1, Patience);
         app.Start((a, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, internalType, ct));
-        app.Frames.WaitUntil(() => app.AppState.Errors.Entries.Count == 1, Patience);
+        app.Frames.WaitUntil(() => app.AppState.Refusals.Shown is not null, Patience);
 
         Assert.EndsWith("/ilsight.app.tests.fixtures.greeter", app.Frames.OpenedUrls[0]);
-        Assert.StartsWith("Hidden has no page in the .NET API reference", app.AppState.Errors.Entries[0].Words().FullText);
+        var refusal = app.AppState.Refusals.Shown;
+        Assert.NotNull(refusal);
+        Assert.StartsWith("Hidden has no page in the .NET API reference", refusal.Words(app.Ui.Strings).What);
+        Assert.Empty(app.AppState.Errors.Entries);
     }
 
     [Fact]

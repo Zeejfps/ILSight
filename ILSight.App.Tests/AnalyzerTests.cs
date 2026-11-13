@@ -208,8 +208,8 @@ public sealed class AnalyzerTests
         var unavailable = Analysis.OfferAnalysis(analyzer, unlisted);
 
         Assert.Equal(greeter, Assert.IsType<CommandOffer<AnalysisSymbol>.Runs>(offered).Target);
-        var why = Assert.IsType<AppProblem.NotAnalyzable>(Assert.IsType<CommandOffer<AnalysisSymbol>.Unavailable>(unavailable).Why);
-        Assert.Equal(why, Assert.IsType<AnalyzerAdd.Refused>(analyzer.AddRoot(unlisted)).Problem);
+        var why = Assert.IsType<Refusal.NotAnalyzable>(Assert.IsType<CommandOffer<AnalysisSymbol>.Unavailable>(unavailable).Why);
+        Assert.Equal(why, Assert.IsType<AnalyzerAdd.Refused>(analyzer.AddRoot(unlisted)).Why);
         Assert.Empty(analyzer.Roots);
     }
 
@@ -259,9 +259,12 @@ public sealed class AnalyzerTests
         d.Settle();
 
         Assert.Empty(d.AppState.Analyzer.Roots);
-        var error = Assert.Single(d.AppState.Errors.Entries);
-        Assert.Equal("Cannot analyze Nowhere", error.Words().Title);
-        Assert.Equal("Its assembly isn't open, and nothing names its definition to open it by.", error.Words().Details);
+        Assert.Empty(d.AppState.Errors.Entries);
+        var refusal = d.AppState.Refusals.Shown;
+        Assert.NotNull(refusal);
+        var (what, why) = refusal.Words(d.Ui.Strings);
+        Assert.Equal("Cannot analyze Nowhere", what);
+        Assert.Equal("Its assembly isn't open, and nothing names its definition to open it by.", why);
     }
 
     private static async Task ShowFirstCallerAsync(AppDriver app)
@@ -399,7 +402,10 @@ public sealed class AnalyzerTests
         d.Settle();
 
         Assert.Empty(d.AppState.Analyzer.Roots);
-        Assert.Equal("Cannot resolve First", Assert.Single(d.AppState.Errors.Entries).Words().Title);
+        Assert.Empty(d.AppState.Errors.Entries);
+        var refusal = d.AppState.Refusals.Shown;
+        Assert.NotNull(refusal);
+        Assert.Equal("Cannot resolve First", refusal.Words(d.Ui.Strings).What);
     }
 
     [Fact]

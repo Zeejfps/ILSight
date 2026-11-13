@@ -28,11 +28,11 @@ public static class Commands
         uiState.AppCommands.Enqueue(AppCommandFactory.Create(subject, run));
     }
 
-    /// <summary>Tells the user <paramref name="problem"/> once the frame is drawn, as a command they asked for that is
-    /// unavailable now says why where they acted (the status line and the error panel).</summary>
-    public static void ReportLater(UiState uiState, AppProblem problem)
+    /// <summary>Tells the user <paramref name="refusal"/> once the frame is drawn, as a command they asked for that is
+    /// unavailable now says why where they acted (the refusal line), never as a failure.</summary>
+    public static void RefuseLater(UiState uiState, Refusal refusal)
     {
-        Later(uiState, problem, static (a, p) => Errors.Report(a, p));
+        Later(uiState, refusal, static (a, r) => a.Refusals.Show(r));
     }
 
     /// <summary>Asks for what <paramref name="load"/> started loading in its tab, if anything, to be brought in once
@@ -110,7 +110,7 @@ public static class Commands
         appState.Analyzer.AddRoot(symbol).Switch(
             analyzing => AnalyzerPanelView.ShowAnalysis(screen, analyzing.Root),
             listing => StartAnalyzing(appState, AnalyzerPanelView.ShowListing(screen, listing.Pending)),
-            refused => Errors.Report(appState, refused.Problem));
+            refused => appState.Refusals.Show(refused.Why));
     }
 
     /// <summary>Starts finding what the reference of <paramref name="pending"/> points at and analyzing it in its root

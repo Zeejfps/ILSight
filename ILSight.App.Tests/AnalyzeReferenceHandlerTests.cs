@@ -37,8 +37,10 @@ public sealed class AnalyzeReferenceHandlerTests
         await d.RunAsync(() => new AnalyzeReferenceHandler(failed).HandleAsync(analyzer, d.AppState.ViewCommands, Analysis.BeginAnalyzing(analyzer, reference), CancellationToken.None));
 
         Assert.Empty(analyzer.Roots);
-        Assert.Null(Assert.IsType<AppProblem.Unresolved>(Assert.Single(missing.Reported)).Error);
+        Assert.Equal([new Refusal.Unresolved { Reference = reference }], missing.Refused);
+        Assert.Empty(missing.Reported);
         Assert.Same(error, Assert.IsType<AppProblem.Unresolved>(Assert.Single(failed.Reported)).Error);
+        Assert.Empty(failed.Refused);
     }
 
     [Fact]

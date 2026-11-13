@@ -8,8 +8,12 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
 {
     public interface IPorts
     {
-        /// <summary>Tells the user the reference leads nowhere, or into a module that could not be read.</summary>
+        /// <summary>Tells the user looking for the reference failed, or it leads into a module that could not be read.</summary>
         void ReportError(AppProblem problem);
+
+        /// <summary>Tells the user what they asked for was refused, and why, where they acted.</summary>
+        void ShowRefusal(Refusal refusal);
+
 
         /// <summary>The node <paramref name="reference"/> leads to; not found when it leads nowhere, unreadable when
         /// into a module whose type system the library could not read; looked for without
@@ -40,7 +44,7 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
             found => navigation.ShowFoundNode(destination, found.Value, decompiler.Setup),
             _ =>
             {
-                ReportUnresolved(reference, null);
+                ports.ShowRefusal(new Refusal.Unresolved { Reference = reference });
                 return null;
             },
             unreadable =>
@@ -50,14 +54,9 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
             },
             failed =>
             {
-                ReportUnresolved(reference, failed.Error);
+                ports.ReportError(new AppProblem.Unresolved { Reference = reference, Error = failed.Error });
                 return null;
             },
             static _ => null);
-    }
-
-    private void ReportUnresolved(CodeReference reference, Exception? error)
-    {
-        ports.ReportError(new AppProblem.Unresolved { Reference = reference, Error = error });
     }
 }

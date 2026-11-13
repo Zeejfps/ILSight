@@ -104,7 +104,7 @@ public static class AppStart
             return;
         }
 
-        Errors.Report(appState, ignored);
+        appState.Refusals.Show(ignored);
     }
 
     /// <summary>Reads the user's themes and icon themes again whenever their folders change, from the app's start

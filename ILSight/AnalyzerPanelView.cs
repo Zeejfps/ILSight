@@ -116,7 +116,7 @@ internal static class AnalyzerPanelView
     {
         offer.Switch(
             runs => Commands.AnalyzeLater(screen, runs.Target),
-            unavailable => Commands.ReportLater(screen, unavailable.Why),
+            unavailable => Commands.RefuseLater(screen, unavailable.Why),
             static _ => { });
     }
 
@@ -196,7 +196,7 @@ internal static class AnalyzerPanelView
                 }
             },
             unavailable => ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, enabled: false, id: "analyze",
-                detail: ProblemTexts.Describe(t, unavailable.Why).Details),
+                detail: unavailable.Why.Words(t).Why),
             static _ => { });
     }
 

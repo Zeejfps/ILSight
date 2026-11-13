@@ -9,8 +9,12 @@ public sealed class AnalyzeReferenceHandler(AnalyzeReferenceHandler.IPorts ports
 {
     public interface IPorts
     {
-        /// <summary>Tells the user the reference leads nowhere, or into a module that could not be read.</summary>
+        /// <summary>Tells the user looking for the reference failed, or it leads into a module that could not be read.</summary>
         void ReportError(AppProblem problem);
+
+        /// <summary>Tells the user what they asked for was refused, and why, where they acted.</summary>
+        void ShowRefusal(Refusal refusal);
+
 
         /// <summary>The node <paramref name="reference"/> leads to; not found when it leads nowhere, unreadable when
         /// into a module whose type system the library could not read; looked for without
@@ -31,29 +35,30 @@ public sealed class AnalyzeReferenceHandler(AnalyzeReferenceHandler.IPorts ports
             return;
         }
 
-        var problem = found.Match<AppProblem?>(
+        found.Switch(
             ok => Analyze(analyzer, viewCommands, pending, ok.Value),
-            failed => new AppProblem.Unresolved { Reference = pending.Reference, Error = failed.Error });
-        if (problem is null)
-        {
-            return;
-        }
-
-        analyzer.RemoveRoot(pending.Root);
-        ports.ReportError(problem);
+            failed =>
+            {
+                analyzer.RemoveRoot(pending.Root);
+                ports.ReportError(new AppProblem.Unresolved { Reference = pending.Reference, Error = failed.Error });
+            });
     }
 
     /// <summary>Turns the root of <paramref name="pending"/> into the analysis of what <paramref name="lookup"/> found;
-    /// else why not, for the root to go.</summary>
-    private static AppProblem? Analyze(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, PendingAnalysis pending, Lookup<BrowseNode> lookup)
+    /// else the root goes, saying why.</summary>
+    private void Analyze(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, PendingAnalysis pending, Lookup<BrowseNode> lookup)
     {
-        return lookup.Match<AppProblem?>(
-            found =>
+        lookup.Switch(
+            found => pending.Analyze(analyzer, viewCommands, found.Value),
+            _ =>
             {
-                pending.Analyze(analyzer, viewCommands, found.Value);
-                return null;
+                analyzer.RemoveRoot(pending.Root);
+                ports.ShowRefusal(new Refusal.Unresolved { Reference = pending.Reference });
             },
-            _ => new AppProblem.Unresolved { Reference = pending.Reference, Error = null },
-            static unreadable => AppProblem.ModuleUnreadable.FromModule(unreadable.Module));
+            unreadable =>
+            {
+                analyzer.RemoveRoot(pending.Root);
+                ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module));
+            });
     }
 }

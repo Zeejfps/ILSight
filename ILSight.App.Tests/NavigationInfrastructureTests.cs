@@ -8,7 +8,7 @@ public sealed class NavigationInfrastructureTests
 {
     private static NavigationInfrastructure Create()
     {
-        return new NavigationInfrastructure(new ErrorLog(), new AssemblyList { Runtime = TestRuntime.Installed }, new BrowseSession(), new OpenRequests());
+        return new NavigationInfrastructure(new ErrorLog(), new RefusalLine(), new AssemblyList { Runtime = TestRuntime.Installed }, new BrowseSession(), new OpenRequests());
     }
 
     private static NodePath FixtureRoot()

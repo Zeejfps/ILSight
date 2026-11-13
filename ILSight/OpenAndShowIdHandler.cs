@@ -8,9 +8,13 @@ public sealed class OpenAndShowIdHandler(OpenAndShowIdHandler.IPorts ports)
 {
     public interface IPorts
     {
-        /// <summary>Tells the user the files could not be opened, or what the id names is not in them, or may be in a
-        /// module that could not be read.</summary>
+        /// <summary>Tells the user the files could not be opened, or what the id names may be in a module that could
+        /// not be read.</summary>
         void ReportError(AppProblem problem);
+
+        /// <summary>Tells the user what they asked for was refused, and why, where they acted.</summary>
+        void ShowRefusal(Refusal refusal);
+
 
         /// <summary>Opens the files at <paramref name="paths"/>, then finds the namespace, type or member
         /// <paramref name="idString"/> names among the assemblies read from them, or among every open one when there
@@ -59,7 +63,7 @@ public sealed class OpenAndShowIdHandler(OpenAndShowIdHandler.IPorts ports)
             found => appState.Navigation.ShowNode(found.Value, appState.Decompiler.Setup),
             _ =>
             {
-                ports.ReportError(new AppProblem.IdNotFound(idString));
+                ports.ShowRefusal(new Refusal.IdNotFound { Id = idString });
                 return null;
             },
             unreadable =>

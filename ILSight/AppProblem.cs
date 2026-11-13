@@ -49,35 +49,22 @@ public abstract record AppProblem
 
     public sealed record AnalysesNotRestored(Exception Error) : AppProblem;
 
-    /// <summary>Analyzing <see cref="Symbol"/> was asked for, but its assembly isn't on the list and nothing names its
-    /// definition to list it by.</summary>
-    public sealed record NotAnalyzable : AppProblem
-    {
-        public required string Symbol { get; init; }
-    }
-
-    /// <summary>No open assembly has what the documentation id <see cref="Id"/> names.</summary>
-    public sealed record IdNotFound(string Id) : AppProblem;
-
-    /// <summary>The command line's <see cref="Arguments"/> asked for nothing the app can do.</summary>
-    public sealed record ArgumentsIgnored(IReadOnlyList<string> Arguments) : AppProblem;
-
-    public sealed record NoApiReferencePage(string Name) : AppProblem;
-
-    /// <summary>What <see cref="Reference"/> points at was not found, or finding it failed with <see cref="Error"/>.</summary>
+    /// <summary>Finding what <see cref="Reference"/> points at failed with <see cref="Error"/>; not finding it is a
+    /// refusal (<see cref="Refusal.Unresolved"/>).</summary>
     public sealed record Unresolved : AppProblem
     {
         public required CodeReference Reference { get; init; }
 
-        public required Exception? Error { get; init; }
+        public required Exception Error { get; init; }
     }
 
-    /// <summary>The place a history entry shows was not found, or finding it failed with <see cref="Error"/>.</summary>
+    /// <summary>Finding the place a history entry shows failed with <see cref="Error"/>; not finding it is a refusal
+    /// (<see cref="Refusal.HistoryPlaceGone"/>).</summary>
     public sealed record HistoryPlaceGone : AppProblem
     {
         public required NodePath Place { get; init; }
 
-        public required Exception? Error { get; init; }
+        public required Exception Error { get; init; }
     }
 
     /// <summary>The place a bookmark marks was not found, or finding it failed with <see cref="Error"/>.</summary>
@@ -249,13 +236,6 @@ public abstract record AppProblem
 
     public sealed record SearchFailed(Exception Error) : AppProblem;
 
-    /// <summary>What was asked would read <see cref="Assembly"/>, the file a tab shows closed
-    /// (<see cref="TabLoad.ShowClosed"/>): a view of a closed assembly asks for nothing more.</summary>
-    public sealed record AssemblyClosed : AppProblem
-    {
-        public required string Assembly { get; init; }
-    }
-
     /// <summary>Work started on the UI thread failed where it does not expect to fail.</summary>
     public sealed record Unexpected(Exception Error) : AppProblem;
 
@@ -263,9 +243,8 @@ public abstract record AppProblem
     public TResult Match<TResult>(Func<OpenFailed, TResult> openFailed, Func<PdbUnusable, TResult> pdbUnusable,
         Func<AssemblyNotReloaded, TResult> assemblyNotReloaded,
         Func<AssembliesNotReloaded, TResult> assembliesNotReloaded, Func<GoneAfterReload, TResult> goneAfterReload,
-        Func<AnalysisFailed, TResult> analysisFailed, Func<AnalysesNotRestored, TResult> analysesNotRestored, Func<NotAnalyzable, TResult> notAnalyzable,
-        Func<IdNotFound, TResult> idNotFound, Func<ArgumentsIgnored, TResult> argumentsIgnored,
-        Func<NoApiReferencePage, TResult> noApiReferencePage, Func<Unresolved, TResult> unresolved,
+        Func<AnalysisFailed, TResult> analysisFailed, Func<AnalysesNotRestored, TResult> analysesNotRestored,
+        Func<Unresolved, TResult> unresolved,
         Func<HistoryPlaceGone, TResult> historyPlaceGone, Func<BookmarkGone, TResult> bookmarkGone, Func<ModuleUnreadable, TResult> moduleUnreadable,
         Func<BookmarksNotExported, TResult> bookmarksNotExported,
         Func<BookmarksNotImported, TResult> bookmarksNotImported, Func<NotBookmarksFile, TResult> notBookmarksFile,
@@ -280,7 +259,7 @@ public abstract record AppProblem
         Func<CustomThemeNotWritten, TResult> customThemeNotWritten, Func<ThemesNotWatched, TResult> themesNotWatched,
         Func<RuntimeNotScanned, TResult> runtimeNotScanned, Func<NuGetConfigUnreadable, TResult> nuGetConfigUnreadable,
         Func<NuGetSearchFailed, TResult> nuGetSearchFailed, Func<PackageNotDownloaded, TResult> packageNotDownloaded,
-        Func<SearchFailed, TResult> searchFailed, Func<AssemblyClosed, TResult> assemblyClosed, Func<Unexpected, TResult> unexpected)
+        Func<SearchFailed, TResult> searchFailed, Func<Unexpected, TResult> unexpected)
     {
         return this switch
         {
@@ -291,10 +270,6 @@ public abstract record AppProblem
             GoneAfterReload c => goneAfterReload(c),
             AnalysisFailed c => analysisFailed(c),
             AnalysesNotRestored c => analysesNotRestored(c),
-            NotAnalyzable c => notAnalyzable(c),
-            IdNotFound c => idNotFound(c),
-            ArgumentsIgnored c => argumentsIgnored(c),
-            NoApiReferencePage c => noApiReferencePage(c),
             Unresolved c => unresolved(c),
             HistoryPlaceGone c => historyPlaceGone(c),
             BookmarkGone c => bookmarkGone(c),
@@ -323,7 +298,6 @@ public abstract record AppProblem
             NuGetSearchFailed c => nuGetSearchFailed(c),
             PackageNotDownloaded c => packageNotDownloaded(c),
             SearchFailed c => searchFailed(c),
-            AssemblyClosed c => assemblyClosed(c),
             Unexpected c => unexpected(c),
             _ => throw new UnreachableException($"AppProblem.Match does not handle {GetType().Name}."),
         };

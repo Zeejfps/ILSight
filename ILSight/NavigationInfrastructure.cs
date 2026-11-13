@@ -5,16 +5,21 @@ using ILSight.MetadataArea;
 
 namespace ILSight;
 
-/// <summary>Reaches the app's error reports and the open assemblies off the UI thread, for the navigation
+/// <summary>Reaches the app's error reports, its refusal line and the open assemblies off the UI thread, for the navigation
 /// handlers, <see cref="GoToBookmarkHandler"/>, <see cref="ShowReopenedNodesHandler"/> and
 /// <see cref="AnalyzeReferenceHandler"/>.</summary>
-public sealed class NavigationInfrastructure(ErrorLog errors, AssemblyList assemblies, BrowseSession session, OpenRequests opens)
+public sealed class NavigationInfrastructure(ErrorLog errors, RefusalLine refusals, AssemblyList assemblies, BrowseSession session, OpenRequests opens)
     : NavigateHandler.IPorts, ShowInMetadataHandler.IPorts, ShowInApiReferenceHandler.IPorts, OpenAndShowIdHandler.IPorts,
         GoToHistoryEntryHandler.IPorts, GoToBookmarkHandler.IPorts, ShowReopenedNodesHandler.IPorts, AnalyzeReferenceHandler.IPorts
 {
     public void ReportError(AppProblem problem)
     {
         Errors.Report(errors, problem);
+    }
+
+    public void ShowRefusal(Refusal refusal)
+    {
+        refusals.Show(refusal);
     }
 
     /// <summary>Looks in the open assemblies on the thread pool and comes back on the UI thread, with whatever the

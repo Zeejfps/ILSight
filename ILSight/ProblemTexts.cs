@@ -36,12 +36,8 @@ public static class ProblemTexts
             goneAfterReload: p => (t.ErrorFindAfterReload(p.Location.Label), p.Location.ToString()),
             analysisFailed: p => (t.ErrorAnalyze(p.Subject, AnalyzerText.Header(t, p.Kind)), p.Error.ToString()),
             analysesNotRestored: p => (t.ErrorRestoreAnalyses, p.Error.ToString()),
-            notAnalyzable: p => (t.ErrorAnalyzeSymbol(p.Symbol), t.ErrorNotOpenable),
-            idNotFound: p => (t.ErrorNavigateTo(p.Id), ""),
-            argumentsIgnored: p => (t.ErrorArgumentsIgnored(p.Arguments.Count), string.Join(Environment.NewLine, p.Arguments)),
-            noApiReferencePage: p => (t.ErrorNoApiReferencePage(p.Name), t.ErrorNoApiReferencePageDetails),
-            unresolved: p => (t.ErrorResolve(p.Reference.Name), Failure(p.Error, t.ErrorNoDefinition(p.Reference))),
-            historyPlaceGone: p => (t.ErrorGoBack(p.Place.Label), Failure(p.Error, t.ErrorNoLongerThere(p.Place))),
+            unresolved: p => (t.ErrorResolve(p.Reference.Name), p.Error.ToString()),
+            historyPlaceGone: p => (t.ErrorGoBack(p.Place.Label), p.Error.ToString()),
             bookmarkGone: p => (t.ErrorGoToBookmark(p.Bookmark), Failure(p.Error, t.ErrorNoLongerThere(p.Place))),
             moduleUnreadable: p => (t.ErrorModuleUnreadable(p.Module), p.Why.ToString()),
             bookmarksNotExported: p => (t.ErrorExportBookmarks, p.Reason),
@@ -69,7 +65,6 @@ public static class ProblemTexts
             nuGetSearchFailed: p => (t.ErrorSearchNuget(p.Feed), p.Error.ToString()),
             packageNotDownloaded: p => (t.ErrorDownloadPackage(p.Package), p.Error.ToString()),
             searchFailed: p => (t.ErrorSearch, p.Error.ToString()),
-            assemblyClosed: p => (t.DocumentClosed(p.Assembly), ""),
             unexpected: p => (t.ErrorUnexpected, p.Error.ToString()));
     }
 

@@ -42,9 +42,9 @@ public sealed class NavigateHandlerTests
         var missingLoad = await d.RunAsync(() => new NavigateHandler(missing).HandleAsync(d.AppState.Navigation, d.AppState.Decompiler, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
         var failedLoad = await d.RunAsync(() => new NavigateHandler(failed).HandleAsync(d.AppState.Navigation, d.AppState.Decompiler, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
 
-        var notThere = Assert.IsType<AppProblem.Unresolved>(Assert.Single(missing.Reported));
+        var notThere = Assert.IsType<Refusal.Unresolved>(Assert.Single(missing.Refused));
         Assert.Same(reference, notThere.Reference);
-        Assert.Null(notThere.Error);
+        Assert.Empty(missing.Reported);
         Assert.Same(error, Assert.IsType<AppProblem.Unresolved>(Assert.Single(failed.Reported)).Error);
         Assert.Same(shown, d.AppState.Navigation.ActiveTab?.Node);
         Assert.False(d.AppState.IsResolving);

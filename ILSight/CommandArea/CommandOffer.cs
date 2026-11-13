@@ -19,7 +19,7 @@ public abstract record CommandOffer<T> where T : notnull
 
     public sealed record Unavailable : CommandOffer<T>
     {
-        public required AppProblem Why { get; init; }
+        public required Refusal Why { get; init; }
     }
 
     public sealed record NotOffered : CommandOffer<T>;

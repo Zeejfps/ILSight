@@ -56,7 +56,7 @@ public sealed class AnalyzerTree
         var refusal = FindRefusal(symbol);
         if (refusal is not null)
         {
-            return new AnalyzerAdd.Refused { Problem = refusal };
+            return new AnalyzerAdd.Refused { Why = refusal };
         }
 
         if (!IsOnTheList(symbol))
@@ -78,14 +78,14 @@ public sealed class AnalyzerTree
 
     /// <summary>Why analyzing <paramref name="symbol"/> would be refused now: its file is neither on the list nor on its
     /// way, and nothing names its definition to list it by; null when <see cref="AddRoot"/> would add it.</summary>
-    public AppProblem? FindRefusal(AnalysisSymbol symbol)
+    public Refusal? FindRefusal(AnalysisSymbol symbol)
     {
         if (IsOnTheList(symbol) || symbol.Reference is not null)
         {
             return null;
         }
 
-        return new AppProblem.NotAnalyzable { Symbol = symbol.Label };
+        return new Refusal.NotAnalyzable { Symbol = symbol.Label };
     }
 
     /// <summary>A root waiting, shown as loading, while the file <paramref name="symbol"/> is in, which the list does

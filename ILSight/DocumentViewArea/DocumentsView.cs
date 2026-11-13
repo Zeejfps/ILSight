@@ -144,7 +144,7 @@ internal static class DocumentsView
         var closed = tab.Load.ClosedAssembly;
         if (closed is not null && !intent.CanRunWhenClosed)
         {
-            Commands.ReportLater(ui.State, new AppProblem.AssemblyClosed { Assembly = closed });
+            Commands.RefuseLater(ui.State, new Refusal.AssemblyClosed { Assembly = closed });
             return;
         }
 

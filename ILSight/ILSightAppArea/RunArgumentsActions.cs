@@ -6,15 +6,15 @@ namespace ILSight.ILSightAppArea;
 public static class RunArgumentsActions
 {
     /// <summary>What to tell the user of the arguments of <paramref name="arguments"/> that were ignored, or null when
-    /// none was.</summary>
-    public static AppProblem? FindIgnored(RunArguments arguments)
+    /// none was: a refusal, said on the refusal line, as no place the user acted asked for them.</summary>
+    public static Refusal? FindIgnored(RunArguments arguments)
     {
         if (arguments.Ignored.Count == 0)
         {
             return null;
         }
 
-        return new AppProblem.ArgumentsIgnored(arguments.Ignored.ToList());
+        return new Refusal.ArgumentsIgnored { Arguments = arguments.Ignored.ToList() };
     }
 
     /// <summary>Opens <paramref name="files"/>, then shows the namespace, type or member they

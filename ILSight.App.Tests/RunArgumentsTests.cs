@@ -75,9 +75,10 @@ public sealed class RunArgumentsTests
 
         var files = CommandLines.Parse(["--navigateto=T:Nowhere.Missing", AppStateDriver.FixturePath]).Arguments.Files;
         d.Start((a, ct) => OpenRequestedFilesAsync(a, files, ct));
-        d.RunUntil(() => d.AppState.Errors.Entries.Count > 0);
+        d.RunUntil(() => d.AppState.Refusals.Shown is not null);
 
-        Assert.Contains("T:Nowhere.Missing", Assert.Single(d.AppState.Errors.Entries).Words().Title);
+        Assert.Equal(new Refusal.IdNotFound { Id = "T:Nowhere.Missing" }, d.AppState.Refusals.Shown);
+        Assert.Empty(d.AppState.Errors.Entries);
     }
 
     [Fact]
@@ -156,9 +157,9 @@ public sealed class RunArgumentsTests
     {
         var d = Start(new AppSettings(), "--language=il-csharp", "--opengl", "--language=IL");
 
-        var error = Assert.Single(d.AppState.Errors.Entries).Words();
-        Assert.Contains("2", error.Title);
-        Assert.Equal($"--language=il-csharp{Environment.NewLine}--opengl", error.Details);
+        var refused = Assert.IsType<Refusal.ArgumentsIgnored>(d.AppState.Refusals.Shown);
+        Assert.Equal(["--language=il-csharp", "--opengl"], refused.Arguments);
+        Assert.Empty(d.AppState.Errors.Entries);
         Assert.Equal(DecompilationLanguage.IL, d.AppState.Decompiler.Setup.Language);
     }
 
@@ -168,6 +169,7 @@ public sealed class RunArgumentsTests
         var d = Start(new AppSettings(), "--language=IL", "--gl", "--newinstance");
 
         Assert.Empty(d.AppState.Errors.Entries);
+        Assert.Null(d.AppState.Refusals.Shown);
     }
 
     [Fact]

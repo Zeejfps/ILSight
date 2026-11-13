@@ -26,8 +26,9 @@ public sealed class OpenAndShowIdHandlerTests
 
         var load = await d.RunAsync(() => new OpenAndShowIdHandler(opening).HandleAsync(d.AppState, [], "T:Nowhere.Missing", CancellationToken.None));
 
-        var reported = Assert.IsType<AppProblem.IdNotFound>(Assert.Single(opening.Reported));
-        Assert.Equal("T:Nowhere.Missing", reported.Id);
+        var refused = Assert.IsType<Refusal.IdNotFound>(Assert.Single(opening.Refused));
+        Assert.Equal("T:Nowhere.Missing", refused.Id);
+        Assert.Empty(opening.Reported);
         Assert.Null(load);
     }
 

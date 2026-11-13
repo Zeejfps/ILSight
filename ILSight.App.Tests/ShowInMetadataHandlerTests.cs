@@ -36,8 +36,10 @@ public sealed class ShowInMetadataHandlerTests
         var missingLoad = await d.RunAsync(() => new ShowInMetadataHandler(missing).HandleAsync(d.AppState, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
         var failedLoad = await d.RunAsync(() => new ShowInMetadataHandler(failed).HandleAsync(d.AppState, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
 
-        Assert.Null(Assert.IsType<AppProblem.Unresolved>(Assert.Single(missing.Reported)).Error);
+        Assert.Equal([new Refusal.Unresolved { Reference = reference }], missing.Refused);
+        Assert.Empty(missing.Reported);
         Assert.Same(error, Assert.IsType<AppProblem.Unresolved>(Assert.Single(failed.Reported)).Error);
+        Assert.Empty(failed.Refused);
         Assert.Same(shown, d.AppState.Navigation.ActiveTab?.Node);
         Assert.False(d.AppState.IsResolving);
         Assert.Null(missingLoad);

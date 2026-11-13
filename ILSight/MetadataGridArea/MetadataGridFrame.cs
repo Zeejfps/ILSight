@@ -412,7 +412,7 @@ internal ref struct MetadataGridFrame
             return null;
         }
 
-        if (TryReportClosed())
+        if (TryRefuseClosed())
         {
             return null;
         }
@@ -430,7 +430,7 @@ internal ref struct MetadataGridFrame
             return;
         }
 
-        if (TryReportClosed())
+        if (TryRefuseClosed())
         {
             return;
         }
@@ -440,7 +440,7 @@ internal ref struct MetadataGridFrame
 
     /// <summary>Whether the grid's assembly was closed, which a link would read: then has the user told so, as a command
     /// unavailable says why where it was pressed.</summary>
-    private bool TryReportClosed()
+    private bool TryRefuseClosed()
     {
         var closed = ClosedAssembly;
         if (closed is null)
@@ -448,7 +448,7 @@ internal ref struct MetadataGridFrame
             return false;
         }
 
-        Commands.ReportLater(Ui.State, new AppProblem.AssemblyClosed { Assembly = closed });
+        Commands.RefuseLater(Ui.State, new Refusal.AssemblyClosed { Assembly = closed });
         return true;
     }
 

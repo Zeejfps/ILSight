@@ -326,8 +326,7 @@ public sealed class CloseAssembliesTests
         Assert.Empty(app.AppState.Errors.Entries);
     }
 
-    [Fact]
-    public async Task Analyze_in_a_closed_assemblys_code_looks_nothing_up_and_says_why_where_pressed()
+    private static async Task<(AppDriver App, DocumentTab Tab)> ClosedKeyboardKeyWithCaretOnItAsync()
     {
         var app = await ShowingGreeterAndKeyboardKeyAsync();
         CloseKeyboardFromTheDialog(app);
@@ -338,6 +337,59 @@ public sealed class CloseAssembliesTests
         var (line, column) = tab.Document.GetPosition("enum KeyboardKey");
         var name = new TextPosition { Line = line, Column = column + "enum ".Length + 1 };
         code.Selection.Select(name, name);
+        return (app, tab);
+    }
+
+    private static void PressAnalyzeSixTimes(AppDriver app)
+    {
+        for (var pressed = 0; pressed < 6; pressed++)
+        {
+            app.Frames.Key(Shortcuts.Analyze).Frame(2);
+        }
+
+        app.Settle(2);
+    }
+
+    private static int CountDrawn(AppDriver app, string text)
+    {
+        return app.Frames.Canvas.Texts.Count(t => t.Inputs.Text == text);
+    }
+
+    [Fact]
+    public async Task Six_actions_that_would_read_a_closed_assembly_are_refused_on_the_refusal_line_and_report_no_error()
+    {
+        var (app, _) = await ClosedKeyboardKeyWithCaretOnItAsync();
+
+        PressAnalyzeSixTimes(app);
+
+        Assert.Empty(app.AppState.Errors.Entries);
+        for (var count = 0; count <= 6; count++)
+        {
+            Assert.False(app.Frames.Drew(app.Ui.Strings.StatusErrors(count)));
+        }
+
+        Assert.Equal(new Refusal.AssemblyClosed { Assembly = KeyboardFile }, app.AppState.Refusals.Shown);
+        Assert.Equal(2, CountDrawn(app, $"{KeyboardFile} was closed."));
+    }
+
+    [Fact]
+    public async Task A_failure_reported_before_actions_a_closed_assembly_refuses_stays_alone_in_the_error_panel()
+    {
+        var (app, _) = await ClosedKeyboardKeyWithCaretOnItAsync();
+        var failure = new AppProblem.Unexpected(new InvalidOperationException("Failed before the refusals."));
+        app.Driver.InTurn(() => Errors.Report(app.AppState, failure));
+
+        PressAnalyzeSixTimes(app);
+
+        Assert.Same(failure, Assert.Single(app.AppState.Errors.Entries).Problem);
+        Assert.True(app.Frames.Drew(app.Ui.Strings.StatusErrors(1)));
+        Assert.Equal(new Refusal.AssemblyClosed { Assembly = KeyboardFile }, app.AppState.Refusals.Shown);
+    }
+
+    [Fact]
+    public async Task Analyze_in_a_closed_assemblys_code_looks_nothing_up_and_says_why_where_pressed()
+    {
+        var (app, tab) = await ClosedKeyboardKeyWithCaretOnItAsync();
 
         app.Frames.Key(Shortcuts.Analyze).Frame(2);
         app.Settle(2);
@@ -345,7 +397,8 @@ public sealed class CloseAssembliesTests
         Assert.Empty(app.AppState.Analyzer.Roots);
         Assert.Single(app.AppState.Assemblies.Listed);
         Assert.Equal(KeyboardFile, tab.Load.ClosedAssembly);
-        Assert.Contains(app.AppState.Errors.Entries, e => e.Words().Title == $"{KeyboardFile} was closed.");
+        Assert.Equal(new Refusal.AssemblyClosed { Assembly = KeyboardFile }, app.AppState.Refusals.Shown);
+        Assert.Empty(app.AppState.Errors.Entries);
     }
 
     [Fact]

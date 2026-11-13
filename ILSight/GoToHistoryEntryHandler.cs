@@ -8,8 +8,13 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
 {
     public interface IPorts
     {
-        /// <summary>Tells the user the place an entry recorded is gone, or in a module that could not be read.</summary>
+        /// <summary>Tells the user looking for the place an entry recorded failed, or it is in a module that could not
+        /// be read.</summary>
         void ReportError(AppProblem problem);
+
+        /// <summary>Tells the user what they asked for was refused, and why, where they acted.</summary>
+        void ShowRefusal(Refusal refusal);
+
 
         /// <summary>The node at <paramref name="place"/> among the listed assemblies; not found when it is gone,
         /// unreadable when in a module whose type system the library could not read; looked for without holding up the
@@ -36,7 +41,7 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
             found => appState.Navigation.ShowHistoryPlace(destination, found.Value, appState.Decompiler.Setup, position),
             _ =>
             {
-                ReportHistoryPlaceGone(place, null);
+                ports.ShowRefusal(new Refusal.HistoryPlaceGone { Place = place });
                 return null;
             },
             unreadable =>
@@ -46,14 +51,9 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
             },
             failed =>
             {
-                ReportHistoryPlaceGone(place, failed.Error);
+                ports.ReportError(new AppProblem.HistoryPlaceGone { Place = place, Error = failed.Error });
                 return null;
             },
             static _ => null);
-    }
-
-    private void ReportHistoryPlaceGone(NodePath place, Exception? error)
-    {
-        ports.ReportError(new AppProblem.HistoryPlaceGone { Place = place, Error = error });
     }
 }

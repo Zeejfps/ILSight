@@ -26,10 +26,10 @@ public abstract record AnalyzerAdd
     }
 
     /// <summary>Nothing was added: the symbol's assembly isn't on the list and can't be listed, as
-    /// <see cref="Problem"/> tells.</summary>
+    /// <see cref="Why"/> tells.</summary>
     public sealed record Refused : AnalyzerAdd
     {
-        public required AppProblem Problem { get; init; }
+        public required Refusal Why { get; init; }
     }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>
