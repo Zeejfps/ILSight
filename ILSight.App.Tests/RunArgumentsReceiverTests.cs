@@ -75,7 +75,7 @@ public sealed class RunArgumentsReceiverTests
         using var standing = RunArgumentsReceiver.StandBy(address);
 
         first.Dispose();
-        var handedOver = await RunPipes.SendAsync(address, Arguments("a.dll"));
+        var handedOver = await RunPipes.TrySendAsync(address, Arguments("a.dll"));
 
         Assert.True(handedOver);
     }
@@ -90,6 +90,6 @@ public sealed class RunArgumentsReceiverTests
         var standing = RunArgumentsReceiver.StandBy(address);
         standing.Dispose();
 
-        Assert.True(await RunPipes.SendAsync(address, Arguments("a.dll")));
+        Assert.True(await RunPipes.TrySendAsync(address, Arguments("a.dll")));
     }
 }

@@ -14,7 +14,7 @@ public sealed class CheckExportFilesHandler(CheckExportFilesHandler.IPorts ports
 
         /// <summary>Whether the file at <paramref name="file"/> is there, looked at without holding up the
         /// screen.</summary>
-        Task<bool> FileExistsAsync(string file, CancellationToken ct);
+        Task<bool> IsFileThereAsync(string file, CancellationToken ct);
     }
 
     /// <summary>Looks at what <paramref name="check"/> asks about and hands it to <paramref name="checks"/>: a folder
@@ -32,7 +32,7 @@ public sealed class CheckExportFilesHandler(CheckExportFilesHandler.IPorts ports
         var isKeyFileMissing = false;
         if (keyFile.Length > 0)
         {
-            isKeyFileMissing = !await ports.FileExistsAsync(keyFile, ct);
+            isKeyFileMissing = !await ports.IsFileThereAsync(keyFile, ct);
         }
 
         checks.Finish(check, new ExportFileFacts { FolderHoldsFiles = holdsFiles, IsKeyFileMissing = isKeyFileMissing });

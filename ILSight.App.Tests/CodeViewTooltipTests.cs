@@ -42,7 +42,7 @@ public sealed class CodeViewTooltipTests
     }
 
     /// <summary>Whether a tooltip is drawn: text in the tooltip's text size, not the code's.</summary>
-    private static bool DrewTooltip(CodeViewDriver view)
+    private static bool IsTooltipDrawn(CodeViewDriver view)
     {
         return view.Frames.Canvas.Texts.Any(static t => t.Inputs.Style.FontSize.Value != UiTheme.Dark.MonoFontSize);
     }
@@ -118,14 +118,14 @@ public sealed class CodeViewTooltipTests
         var view = await FarewellAsync();
         RestOn(view, "Say()");
         RunUntilDrawn(view, "Says ");
-        var shown = DrewTooltip(view);
+        var shown = IsTooltipDrawn(view);
 
         view.MoveTo(0, 0);
         view.Frames.Wait(LeaveGraceSeconds).Frame(2);
 
         Assert.True(shown);
         Assert.False(view.Frames.Drew("Says "));
-        Assert.False(DrewTooltip(view));
+        Assert.False(IsTooltipDrawn(view));
     }
 
     [Fact]
@@ -137,6 +137,6 @@ public sealed class CodeViewTooltipTests
         view.Frames.Wait(RestSeconds).Frame(2);
         RunOut(view);
 
-        Assert.False(DrewTooltip(view));
+        Assert.False(IsTooltipDrawn(view));
     }
 }

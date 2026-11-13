@@ -16,7 +16,7 @@ public sealed class MetadataGridPages
     /// for already.</summary>
     public void Ask(MetadataGrid.Paged grid, int row)
     {
-        if (!grid.Ask(row))
+        if (!grid.TryAsk(row))
         {
             return;
         }

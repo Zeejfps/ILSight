@@ -17,7 +17,7 @@ public sealed class ExportWriting(ExportWriting.IPorts ports)
         TimeSpan MeasureSince(long start);
 
         /// <summary>Whether the folder at <paramref name="folder"/> is there.</summary>
-        bool FolderExists(string folder);
+        bool IsFolderThere(string folder);
 
         /// <summary>Writes the code <paramref name="work"/> asks for; answers the path written. Each of these writes
         /// without holding up the screen, reporting how far it has got to <paramref name="start"/>; answers
@@ -86,7 +86,7 @@ public sealed class ExportWriting(ExportWriting.IPorts ports)
         var run = ticket.Run;
         var job = ticket.Job;
         var elapsed = ports.MeasureSince(started);
-        var folderExists = ports.FolderExists(job.Folder);
+        var folderExists = ports.IsFolderThere(job.Folder);
         return outcome.Match(
             done => complete(new ExportReport
             {

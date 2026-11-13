@@ -25,7 +25,7 @@ public static class RunArgumentsPipe
 
     /// <summary>Hands <paramref name="arguments"/> to the receiver at <paramref name="address"/> and lends it the right to
     /// come to the front; whether it took them. What the pipe throws goes through, for the caller to translate.</summary>
-    internal static async Task<bool> SendAsync(RunArgumentsAddress address, RunArguments arguments, CancellationToken token)
+    internal static async Task<bool> TrySendAsync(RunArgumentsAddress address, RunArguments arguments, CancellationToken token)
     {
         await using var pipe = new NamedPipeClientStream(".", address.Name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
         await pipe.ConnectAsync(token);

@@ -316,13 +316,13 @@ public sealed class MetadataGridTests
         var newer = Assert.Single(views.TakeAsked());
         var handler = new ArrangeMetadataGridHandler(new FakeArrangeMetadataGridHandlerPorts());
 
-        var newerLanded = await handler.HandleAsync(newer, CancellationToken.None);
-        var olderLanded = await handler.HandleAsync(older, CancellationToken.None);
+        await handler.HandleAsync(newer, CancellationToken.None);
+        var landed = state.Order;
+        await handler.HandleAsync(older, CancellationToken.None);
 
-        Assert.True(newerLanded);
-        Assert.False(olderLanded);
+        Assert.Equal(MetadataGrids.OrderRows(grid, name, descending: true), landed);
+        Assert.Same(landed, state.Order);
         Assert.False(state.IsViewUnderWay);
-        Assert.Equal(MetadataGrids.OrderRows(grid, name, descending: true), state.Order);
     }
 
     [Fact]

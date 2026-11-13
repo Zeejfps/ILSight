@@ -18,7 +18,7 @@ internal sealed class FakeCheckExportFilesHandlerPorts : CheckExportFilesHandler
         return Task.FromResult(FilledFolders.Contains(folder));
     }
 
-    public Task<bool> FileExistsAsync(string file, CancellationToken ct)
+    public Task<bool> IsFileThereAsync(string file, CancellationToken ct)
     {
         Asked.Add(file);
         return Task.FromResult(Files.Contains(file));

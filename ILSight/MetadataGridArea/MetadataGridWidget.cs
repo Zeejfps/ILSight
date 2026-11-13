@@ -168,52 +168,47 @@ public static class MetadataGridWidget
     }
 
     /// <summary>Shows the rows <paramref name="ask"/> asked for, worked out as <paramref name="arranged"/>, keeping
-    /// the row selected where the new view shows it. Returns whether it did: not when a newer view was asked for
-    /// meanwhile.</summary>
-    internal static bool ShowArranged(MetadataGridViewAsk ask, MetadataGridView arranged)
+    /// the row selected where the new view shows it; nothing when a newer view was asked for meanwhile.</summary>
+    internal static void ShowArranged(MetadataGridViewAsk ask, MetadataGridView arranged)
     {
         var state = ask.State;
         if (ask.Key != state.ViewAskedKey)
         {
-            return false;
+            return;
         }
 
         state.OrderColumn = ask.SortColumn;
         state.OrderDescending = ask.Descending;
         Show(state, ask.Key, arranged.Order, arranged.Rows);
-        return true;
     }
 
     /// <summary>Ends what <paramref name="ask"/> asked for with nothing new, the grid's module closed before the work
-    /// began: the rows it showed left as they were. Returns whether it did: not when a newer view was asked for
-    /// meanwhile.</summary>
-    internal static bool ShowArrangeStopped(MetadataGridViewAsk ask)
+    /// began: the rows it showed left as they were; nothing when a newer view was asked for meanwhile.</summary>
+    internal static void ShowArrangeStopped(MetadataGridViewAsk ask)
     {
         var state = ask.State;
         if (ask.Key != state.ViewAskedKey)
         {
-            return false;
+            return;
         }
 
         state.ViewKey = ask.Key;
         state.RevealWhenArranged = false;
-        return true;
     }
 
     /// <summary>Ends what <paramref name="ask"/> asked for with <paramref name="error"/>, which the view says, the rows
-    /// it showed left as they were. Returns whether it did: not when a newer view was asked for meanwhile.</summary>
-    internal static bool ShowArrangeFailed(MetadataGridViewAsk ask, Exception error)
+    /// it showed left as they were; nothing when a newer view was asked for meanwhile.</summary>
+    internal static void ShowArrangeFailed(MetadataGridViewAsk ask, Exception error)
     {
         var state = ask.State;
         if (ask.Key != state.ViewAskedKey)
         {
-            return false;
+            return;
         }
 
         state.ViewKey = ask.Key;
         state.ArrangeFailure = error;
         state.RevealWhenArranged = false;
-        return true;
     }
 
     private static void Show(MetadataGridState state, int key, int[]? order, int[] rows)

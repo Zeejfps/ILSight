@@ -186,7 +186,7 @@ public abstract class MetadataGrid
 
         /// <summary>Asks for the page <paramref name="row"/> is on to be read. Returns whether that is new: false when
         /// it was read, or asked for already.</summary>
-        public bool Ask(int row)
+        public bool TryAsk(int row)
         {
             if (IsRowRead(row))
             {

@@ -16,13 +16,13 @@ public sealed class ArrangeMetadataGridHandler(ArrangeMetadataGridHandler.IPorts
     }
 
     /// <summary>Works out the rows <paramref name="ask"/> asked for and has its view show them, or why they could not
-    /// be worked out, or, when the grid's module was closed before the work began, the rows as they were. Returns whether
-    /// it does: false when a newer view was asked for meanwhile, which drops this one.</summary>
-    public async Task<bool> HandleAsync(MetadataGridViewAsk ask, CancellationToken ct)
+    /// be worked out, or, when the grid's module was closed before the work began, the rows as they were; dropped
+    /// unsaid when a newer view was asked for meanwhile.</summary>
+    public async Task HandleAsync(MetadataGridViewAsk ask, CancellationToken ct)
     {
         var arranged = await ports.ArrangeAsync(ask, ct);
-        return arranged.Match(
-            ok => ok.Value.Match(read => MetadataGridWidget.ShowArranged(ask, read.Value), _ => MetadataGridWidget.ShowArrangeStopped(ask)),
+        arranged.Switch(
+            ok => ok.Value.Switch(read => MetadataGridWidget.ShowArranged(ask, read.Value), _ => MetadataGridWidget.ShowArrangeStopped(ask)),
             failed => MetadataGridWidget.ShowArrangeFailed(ask, failed.Error));
     }
 }

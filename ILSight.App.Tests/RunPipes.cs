@@ -13,7 +13,7 @@ internal static class RunPipes
     }
 
     /// <summary>Whether the run holding the role at <paramref name="address"/> took <paramref name="arguments"/>.</summary>
-    public static Task<bool> SendAsync(RunArgumentsAddress address, RunArguments arguments)
+    public static Task<bool> TrySendAsync(RunArgumentsAddress address, RunArguments arguments)
     {
         return new RunRoutingAdapter(address).TrySendAsync(arguments, CancellationToken.None);
     }

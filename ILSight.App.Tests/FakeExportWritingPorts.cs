@@ -22,7 +22,7 @@ internal sealed class FakeExportWritingPorts : ExportWriting.IPorts
         return TimeSpan.FromSeconds(2);
     }
 
-    public bool FolderExists(string folder)
+    public bool IsFolderThere(string folder)
     {
         return AreFoldersThere;
     }

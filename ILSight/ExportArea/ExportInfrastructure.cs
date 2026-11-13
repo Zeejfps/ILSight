@@ -20,7 +20,7 @@ public sealed class ExportInfrastructure(ErrorLog errors, BrowseSession session)
         return Stopwatch.GetElapsedTime(start);
     }
 
-    public bool FolderExists(string folder)
+    public bool IsFolderThere(string folder)
     {
         return Directory.Exists(folder);
     }
@@ -201,7 +201,7 @@ public sealed class ExportInfrastructure(ErrorLog errors, BrowseSession session)
         return Directory.EnumerateFileSystemEntries(folder).Any();
     }
 
-    public async Task<bool> FileExistsAsync(string file, CancellationToken ct)
+    public async Task<bool> IsFileThereAsync(string file, CancellationToken ct)
     {
         return await Task.Run(() => File.Exists(file), ct);
     }

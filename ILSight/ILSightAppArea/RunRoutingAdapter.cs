@@ -22,7 +22,7 @@ public sealed class RunRoutingAdapter(RunArgumentsAddress address) : RunRouting.
         timeout.CancelAfter(RunArgumentsPipe.HandOverTimeout);
         try
         {
-            return await RunArgumentsPipe.SendAsync(address, arguments, timeout.Token);
+            return await RunArgumentsPipe.TrySendAsync(address, arguments, timeout.Token);
         }
         catch (IOException)
         {

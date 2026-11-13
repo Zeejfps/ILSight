@@ -37,7 +37,7 @@ public sealed class RunArgumentsPipeTests
         using var receiver = await RunPipes.ClaimAsync(address);
         Assert.NotNull(receiver);
 
-        var handedOver = await RunPipes.SendAsync(address, Arguments("--navigateto=T:Some.Type", "relative.dll"));
+        var handedOver = await RunPipes.TrySendAsync(address, Arguments("--navigateto=T:Some.Type", "relative.dll"));
 
         Assert.True(handedOver);
         var handed = Assert.Single(await TakeArrivedAsync(receiver.Inbox, 1));
@@ -54,7 +54,7 @@ public sealed class RunArgumentsPipeTests
         Assert.NotNull(receiver);
         receiver.Inbox.Writer.TryComplete();
 
-        var handedOver = await RunPipes.SendAsync(address, Arguments("a.dll"));
+        var handedOver = await RunPipes.TrySendAsync(address, Arguments("a.dll"));
 
         Assert.False(handedOver);
     }
@@ -65,7 +65,7 @@ public sealed class RunArgumentsPipeTests
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
 
-        var handedOver = await RunPipes.SendAsync(address, Arguments("a.dll"));
+        var handedOver = await RunPipes.TrySendAsync(address, Arguments("a.dll"));
 
         Assert.False(handedOver);
     }
@@ -78,7 +78,7 @@ public sealed class RunArgumentsPipeTests
         using var receiver = await RunPipes.ClaimAsync(address);
         Assert.NotNull(receiver);
 
-        var sends = Enumerable.Range(0, 16).Select(i => Task.Run(() => RunPipes.SendAsync(address, Arguments(i + ".dll")))).ToArray();
+        var sends = Enumerable.Range(0, 16).Select(i => Task.Run(() => RunPipes.TrySendAsync(address, Arguments(i + ".dll")))).ToArray();
         var sent = await Task.WhenAll(sends);
 
         Assert.All(sent, Assert.True);
@@ -97,7 +97,7 @@ public sealed class RunArgumentsPipeTests
             await gone.ConnectAsync(5000);
         }
 
-        var handedOver = await RunPipes.SendAsync(address, Arguments("a.dll"));
+        var handedOver = await RunPipes.TrySendAsync(address, Arguments("a.dll"));
 
         Assert.True(handedOver);
     }
@@ -112,7 +112,7 @@ public sealed class RunArgumentsPipeTests
         var app = new AppDriver(inbox: receiver.Inbox);
         app.Run();
 
-        Assert.True(await RunPipes.SendAsync(address, Arguments("--navigateto=" + GreetId, AppStateDriver.FixturePath)));
+        Assert.True(await RunPipes.TrySendAsync(address, Arguments("--navigateto=" + GreetId, AppStateDriver.FixturePath)));
         app.Frames.WaitUntil(() => app.Frames.FrontRequested, Patience);
         app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Method, Patience);
         app.Settle(1);

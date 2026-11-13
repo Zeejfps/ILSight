@@ -134,7 +134,7 @@ public sealed class WebCilTests
         var value = grid.Column("Offset");
 
         var unread = (grid.IsRowRead(last), MetadataGrids.GetText(grid, last, value), MetadataGrids.FindTooltip(grid, last, value));
-        var asked = (grid.Ask(last), grid.Ask(MetadataGrid.Paged.RowsPerPage));
+        var asked = (grid.TryAsk(last), grid.TryAsk(MetadataGrid.Paged.RowsPerPage));
         grid.AddPage(MetadataGrid.Paged.PageOf(last), MetadataGrids.ReadPage(grid, MetadataGrid.Paged.PageOf(last)).GetValue());
 
         Assert.True(grid.IsRowRead(MetadataGrid.Paged.RowsPerPage - 1));
@@ -142,7 +142,7 @@ public sealed class WebCilTests
         Assert.Equal((true, false), asked);
         Assert.True(grid.IsRowRead(last));
         Assert.NotEqual("", MetadataGrids.GetText(grid, last, value));
-        Assert.False(grid.Ask(last));
+        Assert.False(grid.TryAsk(last));
     }
 
     [Fact]
