@@ -28,12 +28,10 @@ public sealed class AppState
     /// <summary>Where the settings are written, and the user's themes are found.</summary>
     public required SettingsPlace SettingsPlace { get; init; }
 
-    /// <summary>What the settings keep of the screen, as the screen last handed it over, or as the
-    /// settings held it until it does.</summary>
-    public required ViewSettings View;
+    public required KeptScreen KeptScreen { get; init; }
 
-    /// <summary>The main window as it was left: as the settings held it until the app closes.</summary>
-    public WindowBounds? Window;
+    /// <summary>What the settings keep of the screen (<see cref="KeptScreen"/>).</summary>
+    public ViewSettings View => KeptScreen.View;
 
     /// <summary>How many rows a grid made for a tab reads with its content: what its first show needs, the rows it
     /// measures its columns over or the window it opens to, the larger (<see cref="MetadataGridArea.MetadataGridFrame.CalculateFirstReadRows"/>),
@@ -223,8 +221,6 @@ public sealed class AppState
     /// in order before it draws next.</summary>
     public required Queue<ViewCommand> ViewCommands { get; init; }
 
-    /// <summary>Counts each time the screen hands over a change to what the settings keep of it.</summary>
-    public int ViewSettingsChanges;
 
     /// <summary>True while a reference or a history entry is being found in the background.</summary>
     public bool IsResolving => Navigation.IsResolving;

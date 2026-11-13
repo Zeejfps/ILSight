@@ -61,7 +61,7 @@ public static class Settings
             Bookmarks = appState.Bookmarks.Revision,
             Analyzer = appState.Analyzer.Revision,
             Documents = appState.Navigation.TabChanges,
-            View = appState.ViewSettingsChanges,
+            View = appState.KeptScreen.ViewChanges,
             Theme = appState.Theme,
             IconTheme = appState.IconTheme,
             Language = appState.Decompiler.Setup.Language,
@@ -91,7 +91,7 @@ public static class Settings
             CheckForUpdates = appState.IsUpdateCheckAutomatic,
             Locale = appState.Locale,
             Bookmarks = appState.Bookmarks.ListRecords(),
-            Window = appState.Window,
+            Window = appState.KeptScreen.Window,
             BookmarkColumns = view.BookmarkColumns,
             SearchColumns = view.SearchColumns,
             ExportColumns = view.ExportColumns,
@@ -110,18 +110,6 @@ public static class Settings
         };
     }
 
-    /// <summary>Takes what the settings keep of the screen, as it changed, to be written with the next save.</summary>
-    public static void KeepViewSettings(AppState appState, ViewSettings view)
-    {
-        appState.View = view;
-        appState.ViewSettingsChanges++;
-    }
-
-    /// <summary>The main window as it was left, to be written with the next save.</summary>
-    public static void KeepWindow(AppState appState, WindowBounds window)
-    {
-        appState.Window = SettingsJson.SanitizeWindow(window);
-    }
 
     /// <summary>What <paramref name="settings"/> kept of the screen.</summary>
     public static ViewSettings ReadViewSettings(AppSettings settings)

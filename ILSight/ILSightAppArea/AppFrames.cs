@@ -270,7 +270,7 @@ internal static class AppFrames
             return;
         }
 
-        SettingArea.Settings.KeepViewSettings(appState, view);
+        appState.KeptScreen.KeepView(view);
     }
 
     /// <summary>Does what comes after drawing a frame: keeps what the screen changed, runs what it asked of
