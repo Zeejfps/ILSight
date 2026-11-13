@@ -272,6 +272,20 @@ public sealed class AppTests
     }
 
     [Fact]
+    public void The_language_control_has_the_active_tab_load_in_IL_from_the_frame_it_is_clicked_in()
+    {
+        var app = AppDriver.Opened();
+        app.Run();
+        var tab = app.AppState.Navigation.ActiveTab;
+        Assert.NotNull(tab);
+
+        app.Frames.ClickOn(Selector.WithText("IL"));
+
+        Assert.Equal(DecompilationLanguage.IL, app.AppState.Decompiler.Setup.Language);
+        Assert.Equal(DecompilationLanguage.IL, tab.Load.Language);
+    }
+
+    [Fact]
     public async Task The_language_control_switches_the_active_tab_to_IL_with_CSharp_and_keeps_the_CSharp_options()
     {
         var app = AppDriver.Opened();

@@ -70,7 +70,7 @@ internal static class ToolbarView
                 var languages = Languages(t);
                 if (ui.SegmentedControl("language", ref language, languages))
                 {
-                    Commands.Later(ui.State, language, static (a, l) => a.Decompiler.UseLanguage(l));
+                    DocumentPanels.ShowInLanguage(ui.State, decompiler, language);
                 }
 
                 if (DecompilationLanguages.ShowsCSharp(language))

@@ -295,7 +295,7 @@ internal static class MainMenuView
         }
 
         ui.MenuSeparator();
-        DecompilerMenu(ui, appState.Decompiler.Setup.Language);
+        DecompilerMenu(ui, appState.Decompiler);
         ui.MenuSeparator();
         ApiVisibilityMenu(ui, appState.ApiVisibility);
         ui.MenuSeparator();
@@ -416,8 +416,9 @@ internal static class MainMenuView
         return ui.MenuItem(label, shortcut, check: open, id: panel, icon: DockPanels.Icon(ui.State.Icons, view));
     }
 
-    private static void DecompilerMenu(Ui<UiState> ui, DecompilationLanguage current)
+    private static void DecompilerMenu(Ui<UiState> ui, DecompilerChoice decompiler)
     {
+        var current = decompiler.Setup.Language;
         var t = ui.State.Strings;
         using var decompilers = ui.SubMenu(t.ViewDecompiler, id: "decompiler");
         if (!decompilers.IsOpen)
@@ -432,7 +433,7 @@ internal static class MainMenuView
             var label = DecompilationLanguages.Label(language);
             if (ui.MenuRadioItem(label, current == language))
             {
-                Commands.Later(ui.State, language, static (a, l) => a.Decompiler.UseLanguage(l));
+                DocumentPanels.ShowInLanguage(ui.State, decompiler, language);
             }
         }
     }

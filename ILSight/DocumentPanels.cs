@@ -913,6 +913,20 @@ public static class DocumentPanels
         }
     }
 
+    /// <summary>Shows code in <paramref name="language"/> from now on, as the user picked it: <paramref name="decompiler"/>
+    /// takes it in this frame, and the tabs in front that showed another start loading again in it, drawn loading from
+    /// this frame on, only their decompiling queued. The frame edge's follow finds them current
+    /// (<see cref="Decompilation.StartDecompilingAgainIfOutdated"/> starts each once).</summary>
+    public static void ShowInLanguage(UiState uiState, DecompilerChoice decompiler, DecompilationLanguage language)
+    {
+        decompiler.UseLanguage(language);
+        var setup = decompiler.Setup;
+        foreach (var tab in ListFrontTabs(uiState))
+        {
+            Commands.DecompileLater(uiState, Decompilation.StartDecompilingAgainIfOutdated(tab, setup.Language, setup.Options));
+        }
+    }
+
     /// <summary>The tab in front of each group that has one.</summary>
     public static List<DocumentTab> ListFrontTabs(UiState uiState)
     {
