@@ -238,7 +238,7 @@ public sealed class AppSettingsTests : IDisposable
         var loadResult = AppRoot.ReadSettingsFile(FullFilePath.Of(Written("""{ "Assemblies": [ "a.dll", """)));
         var loaded = loadResult.Settings;
         var problem = loadResult.Problem;
-        var appState = AppRoot.RestoreAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
+        var appState = AppRoot.RestoreStartingState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
 
         Assert.Empty(loaded.AssemblyLists);
         Assert.IsType<SettingsProblem.NotJson>(problem);
@@ -253,7 +253,7 @@ public sealed class AppSettingsTests : IDisposable
         var loadResult = AppRoot.ReadSettingsFile(FullFilePath.Of(Written(broken)));
         var loaded = loadResult.Settings;
         var problem = loadResult.Problem;
-        var appState = AppRoot.RestoreAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
+        var appState = AppRoot.RestoreStartingState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
 
         Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(loaded));
 
@@ -293,7 +293,7 @@ public sealed class AppSettingsTests : IDisposable
             loadResult = AppRoot.ReadSettingsFile(FullFilePath.Of(path));
         }
 
-        var appState = AppRoot.RestoreAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
+        var appState = AppRoot.RestoreStartingState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
         Assert.IsType<SettingsWriteResult.Written>(appState.SettingsSaving.Save(appState));
 
         Assert.IsType<SettingsKept.NotSaved>(Assert.IsType<SettingsProblem.NotRead>(loadResult.Problem).Kept);
@@ -323,7 +323,7 @@ public sealed class AppSettingsTests : IDisposable
         var loadResult = AppRoot.ReadSettingsFile(FullFilePath.Of(Written(json)));
         var loaded = loadResult.Settings;
         var problem = loadResult.Problem;
-        var appState = AppRoot.RestoreAppState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
+        var appState = AppRoot.RestoreStartingState(loadResult, CommandLines.Parse([]).Arguments, TestSession.Shared);
 
         var leftOut = Assert.IsType<SettingsProblem.ValuesLeftOut>(problem);
         Assert.Equal(["Language", "Window"], leftOut.Fields);

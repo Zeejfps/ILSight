@@ -17,14 +17,17 @@ internal sealed class AppDriver
     public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, RunArguments? queuedArguments = null, ITextMeasurer? measurer = null, Channel<RunArguments>? inbox = null,
         HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null)
     {
-        Driver = new AppStateDriver(settings, nuGetRequests, runtimeScan, processes);
+        var posted = PostedActions.OfThisTest();
         inbox ??= Channel.CreateUnbounded<RunArguments>();
         if (queuedArguments != null)
         {
             inbox.Writer.TryWrite(queuedArguments);
         }
 
-        App = new ILSightApp(AppState, Ui, CommandLines.Parse([]).Arguments.Files, inbox);
+        var built = AppRoot.BuildApp(AppStateDriver.NoProblem(settings), CommandLines.Parse([]).Arguments, inbox, TestSession.Shared, nuGetRequests,
+            runtimeScan, processes);
+        Driver = AppStateDriver.Over(posted, built.Restored);
+        App = built.App;
         Frames = UiFrames.Running(App, measurer, width: width, height: height, background: AppState.Work);
         Frames.FrameTime = 1f / 60f;
         // What the test starts outside a frame comes back through the test's queue, which wakes these frames, so

@@ -31,47 +31,72 @@ internal sealed class AppStateDriver
     public static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
     public const string FixturesNamespace = "ILSight.App.Tests.Fixtures";
 
-    private readonly PostedActions _posted = PostedActions.OfThisTest();
+    private readonly PostedActions _posted;
     private readonly UiState? _ui;
 
+    /// <summary>A driver over the app state and screen the root restores (<see cref="AppRoot.RestoreApp"/>) from
+    /// <paramref name="settings"/>, with no window, before the app opens any assemblies.</summary>
     /// <param name="settings">The settings the app starts with.</param>
     /// <param name="nuGetRequests">Sends the "open from NuGet" dialog's requests; the app's shared connections when null.</param>
     /// <param name="runtimeScan">Scans the runtime for the "open from framework" dialog; the installed runtime's when null.</param>
     /// <param name="processes">Lists the running processes for the "open from process" dialog; this machine's when null.</param>
     public AppStateDriver(AppSettings? settings = null, HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null,
         ProcessBrowser.IPorts? processes = null)
-        : this(NoProblem(settings), CommandLines.Parse([]).Arguments, withScreen: true, nuGetRequests, runtimeScan, processes)
+        : this(PostedActions.OfThisTest(), AppRoot.RestoreApp(NoProblem(settings), CommandLines.Parse([]).Arguments, TestSession.Shared, nuGetRequests,
+            runtimeScan, processes))
     {
     }
 
-    private AppStateDriver(SettingsLoadResult loadResult, RunArguments arguments, bool withScreen, HttpMessageHandler? nuGetRequests = null,
-        FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null)
+    private AppStateDriver(PostedActions posted, RestoredApp restored)
+        : this(posted, restored.AppState, restored.Screen)
     {
-        Step = Pump;
-        loadResult.Settings.Locale ??= Locale.En;
-        AppState = AppRoot.RestoreAppState(loadResult, arguments, TestSession.Shared);
-        if (withScreen)
-        {
-            _ui = AppRoot.CreateScreen(AppState, nuGetRequests, runtimeScan, processes);
-        }
+    }
 
+    /// <summary>A driver over <paramref name="appState"/> and <paramref name="ui"/>, the screen over it, if any, which
+    /// <paramref name="posted"/> took the test's posts for before the root built them. It starts restoring the analyses
+    /// the settings kept, as the app does as it starts.</summary>
+    private AppStateDriver(PostedActions posted, AppState appState, UiState? ui)
+    {
+        _posted = posted;
+        Step = Pump;
+        AppState = appState;
+        _ui = ui;
         Commands.StartRestoringAnalyses(AppState, Analysis.BeginRestoring(AppState.Analyzer, AppState.Assemblies));
     }
 
-    private static SettingsLoadResult NoProblem(AppSettings? settings)
+    /// <summary>What reading <paramref name="settings"/> gave, with nothing wrong (new settings when null), speaking
+    /// English unless they name a locale.</summary>
+    public static SettingsLoadResult NoProblem(AppSettings? settings)
     {
-        return new SettingsLoadResult
+        var loadResult = new SettingsLoadResult
         {
             Settings = settings ?? new AppSettings(),
             Problem = new SettingsProblem.None(),
         };
+        SpeakEnglishUnlessNamed(loadResult);
+        return loadResult;
+    }
+
+    /// <summary>Has the settings in <paramref name="loadResult"/> speak English unless they name a locale.</summary>
+    private static void SpeakEnglishUnlessNamed(SettingsLoadResult loadResult)
+    {
+        loadResult.Settings.Locale ??= Locale.En;
     }
 
     /// <summary>A driver over the app state and screen the app starts with, from <paramref name="loadResult"/>
     /// and <paramref name="arguments"/>, before the app opens any assemblies.</summary>
     public static AppStateDriver Started(SettingsLoadResult loadResult, RunArguments arguments)
     {
-        return new AppStateDriver(loadResult, arguments, withScreen: true);
+        var posted = PostedActions.OfThisTest();
+        SpeakEnglishUnlessNamed(loadResult);
+        return new AppStateDriver(posted, AppRoot.RestoreApp(loadResult, arguments, TestSession.Shared));
+    }
+
+    /// <summary>A driver over <paramref name="restored"/>, the app state and screen an <see cref="AppDriver"/> had the
+    /// root build with its app, which <paramref name="posted"/> took the test's posts for before.</summary>
+    public static AppStateDriver Over(PostedActions posted, RestoredApp restored)
+    {
+        return new AppStateDriver(posted, restored);
     }
 
     /// <summary>What the app starts as it starts with no files asked for: opening the active list
@@ -92,7 +117,9 @@ internal sealed class AppStateDriver
     /// <summary>A driver with an app state and no screen, which shows that the features need none.</summary>
     public static AppStateDriver WithoutScreen(AppSettings? settings = null)
     {
-        return new AppStateDriver(NoProblem(settings), CommandLines.Parse([]).Arguments, withScreen: false);
+        var posted = PostedActions.OfThisTest();
+        var appState = AppRoot.RestoreStartingState(NoProblem(settings), CommandLines.Parse([]).Arguments, TestSession.Shared);
+        return new AppStateDriver(posted, appState, ui: null);
     }
 
     /// <summary>A driver with no screen that has opened the fixture assembly.</summary>

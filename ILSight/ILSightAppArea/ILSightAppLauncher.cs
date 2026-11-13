@@ -1,4 +1,3 @@
-using System.Threading.Channels;
 using ILSight.Core;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
@@ -27,15 +26,8 @@ public static class ILSightAppLauncher
         using var receiver = routing.Claimed ?? RunArgumentsReceiver.StandBy(address);
 
         var loadResult = AppRoot.ReadSettingsFile(config.SettingsPath);
-        var app = CreateApp(loadResult, arguments, receiver.Inbox);
-        OpenWindow(app, loadResult, config);
-    }
-
-    private static ILSightApp CreateApp(SettingsLoadResult loadResult, RunArguments arguments, Channel<RunArguments> inbox)
-    {
-        var appState = AppRoot.RestoreAppState(loadResult, arguments, new BrowseSession());
-        var uiState = AppRoot.CreateScreen(appState);
-        return new ILSightApp(appState, uiState, arguments.Files, inbox);
+        var built = AppRoot.BuildApp(loadResult, arguments, receiver.Inbox, new BrowseSession());
+        OpenWindow(built.App, loadResult, config);
     }
 
     private static void OpenWindow(ILSightApp app, SettingsLoadResult loadResult, LaunchConfig config)

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Threading.Channels;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.BookmarkArea;
@@ -24,12 +25,48 @@ using ILSight.MetadataArea;
 namespace ILSight;
 
 /// <summary>The composition root: builds the app state and the screen over it, the use cases on them and the
-/// adapters those reach the world through, choosing the desktop app's adapters. The launcher builds the app
-/// through it, and so do the tests.</summary>
+/// adapters those reach the world through, choosing the desktop app's adapters. The launcher and the tests that run
+/// the whole app build it through <see cref="BuildApp"/>.</summary>
 [Edge]
 internal static class AppRoot
 {
     private const string LicensesFolder = "licenses";
+
+    /// <summary>The whole app as it starts, from what the launcher has: the app state restored from
+    /// <paramref name="loadResult"/> over <paramref name="session"/>, the screen over it (<see cref="RestoreApp"/>), and
+    /// the app that runs them in a window, opening the files <paramref name="arguments"/> name once it runs and taking
+    /// each later run's arguments from <paramref name="inbox"/>.</summary>
+    /// <param name="loadResult">What reading the settings file gave.</param>
+    /// <param name="arguments">The arguments this run was started with.</param>
+    /// <param name="inbox">Where the arguments of the runs handed to this one arrive.</param>
+    /// <param name="session">The browse tree the app's trees and searches show nodes of.</param>
+    /// <param name="nuGetRequests">Sends the "open from NuGet" dialog's requests; the app's shared connections when null.</param>
+    /// <param name="runtimeScan">Scans the runtime for the "open from framework" dialog; the installed runtime's when null.</param>
+    /// <param name="processes">Lists the running processes for the "open from process" dialog; this machine's when null.</param>
+    internal static BuiltApp BuildApp(SettingsLoadResult loadResult, RunArguments arguments, Channel<RunArguments> inbox, BrowseSession session,
+        HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null)
+    {
+        var restored = RestoreApp(loadResult, arguments, session, nuGetRequests, runtimeScan, processes);
+        var app = new ILSightApp(restored.AppState, restored.Screen, arguments.Files, inbox);
+        return new BuiltApp { Restored = restored, App = app };
+    }
+
+    /// <summary>The app state restored from <paramref name="loadResult"/> over <paramref name="session"/>, with
+    /// <paramref name="arguments"/> followed (<see cref="RestoreStartingState"/>), and the screen over it
+    /// (<see cref="CreateScreen"/>), with no window: what <see cref="BuildApp"/> runs in one.</summary>
+    /// <param name="loadResult">What reading the settings file gave.</param>
+    /// <param name="arguments">The arguments this run was started with.</param>
+    /// <param name="session">The browse tree the app's trees and searches show nodes of.</param>
+    /// <param name="nuGetRequests">Sends the "open from NuGet" dialog's requests; the app's shared connections when null.</param>
+    /// <param name="runtimeScan">Scans the runtime for the "open from framework" dialog; the installed runtime's when null.</param>
+    /// <param name="processes">Lists the running processes for the "open from process" dialog; this machine's when null.</param>
+    internal static RestoredApp RestoreApp(SettingsLoadResult loadResult, RunArguments arguments, BrowseSession session,
+        HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null)
+    {
+        var appState = RestoreStartingState(loadResult, arguments, session);
+        var screen = CreateScreen(appState, nuGetRequests, runtimeScan, processes);
+        return new RestoredApp { AppState = appState, Screen = screen };
+    }
 
     /// <summary>The settings in the file at <paramref name="file"/>, which the app starts with, and what was wrong with
     /// it; read from the disk.</summary>
@@ -42,7 +79,7 @@ internal static class AppRoot
     /// <summary>The app state to start from: what <paramref name="loadResult"/> describes, over
     /// <paramref name="session"/>, told of what was wrong with the settings, with <paramref name="arguments"/>
     /// followed. The screen is built over this; the files they name open once the app runs.</summary>
-    internal static AppState RestoreAppState(SettingsLoadResult loadResult, RunArguments arguments, BrowseSession session)
+    internal static AppState RestoreStartingState(SettingsLoadResult loadResult, RunArguments arguments, BrowseSession session)
     {
         var appState = RestoreAppState(loadResult.Settings, session);
         ReportProblem(appState, Settings.FindProblem(appState.SettingsPlace, loadResult.Problem));
