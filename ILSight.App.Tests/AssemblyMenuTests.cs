@@ -48,8 +48,8 @@ public sealed class AssemblyMenuTests
         var app = AppDriver.Opened();
         var greeter = app.Fixture("Greeter");
         var hidden = app.Fixture("Hidden");
-        Trees.RevealNode(app.Ui.Tree, hidden);
-        Trees.RevealNode(app.Ui.Tree, greeter);
+        app.Ui.Tree.RevealNode(hidden);
+        app.Ui.Tree.RevealNode(greeter);
         app.Run(2);
 
         app.PickFromTreeMenu("Greeter", "Show in .NET API reference");

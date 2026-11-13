@@ -31,7 +31,7 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
             var function = instruction.Parent.Ancestors.OfType<ILFunction>().FirstOrDefault();
             if (function is not null && function.Kind == ILFunctionKind.TopLevelFunction && function.Method is not null)
             {
-                DocumentWriting.MarkStatement(_builder, function.Method, instruction.StartILOffset);
+                _builder.MarkStatement(function.Method, instruction.StartILOffset);
             }
         }
     }
@@ -107,8 +107,7 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
 
     private SpanScope StartSpan(SpanKind? kind)
     {
-        _builder.Kind = kind;
-        return new SpanScope { Builder = _builder };
+        return _builder.StartSpan(kind);
     }
 
     private bool IsStringDelimiter(string token)

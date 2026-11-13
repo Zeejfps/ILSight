@@ -91,7 +91,7 @@ internal static class NodeDecompiler
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        return DocumentWriting.BuildDocument(builder, request.Title);
+        return builder.BuildDocument(request.Title);
     }
 
     /// <summary>Has the decompiler write what <paramref name="request"/> asks for into <paramref name="builder"/>;
@@ -128,7 +128,7 @@ internal static class NodeDecompiler
         var builder = new DocumentBuilder { Language = language, Assembly = ModuleOf(request), TypeSystem = typeSystem };
         Write(request, builder, language, Settings.Create(options), cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
-        return DocumentWriting.BuildDocument(builder, request.Title);
+        return builder.BuildDocument(request.Title);
     }
 
     private static void Write(DocumentRequest request, DocumentBuilder builder, DecompilationLanguage language, DecompilerSettings settings,
@@ -152,7 +152,7 @@ internal static class NodeDecompiler
         error.Write($"// Error decompiling {request.FullName}", SpanKind.Comment);
         error.WriteLine();
         error.Write(thrown.ToString(), SpanKind.Comment);
-        return DocumentWriting.BuildFailure(error, request.Title, thrown);
+        return error.BuildFailure(request.Title, thrown);
     }
 
     /// <summary>Why the file <paramref name="failure"/> names could not be read.</summary>
@@ -166,7 +166,7 @@ internal static class NodeDecompiler
             builder.Write(error.InnerException.ToString(), SpanKind.Comment);
         }
 
-        return DocumentWriting.BuildFailure(builder, failure.Title, error);
+        return builder.BuildFailure(failure.Title, error);
     }
 
     /// <summary>The module the document of <paramref name="request"/> is read from; null for a package's.</summary>
@@ -433,7 +433,7 @@ internal static class NodeDecompiler
         var decompiler = CreateCSharpDecompiler(assembly, RequireTypeSystem(output.TypeSystem), settings, cancellationToken);
         var syntaxTree = decompile(decompiler);
         cancellationToken.ThrowIfCancellationRequested();
-        output.IndentationString = settings.CSharpFormattingOptions.IndentationString;
+        output.IndentAs(settings.CSharpFormattingOptions);
         var writer = CreateHighlightingWriter(output, settings);
         WriteSyntaxTree(syntaxTree, writer, settings);
     }
@@ -442,7 +442,7 @@ internal static class NodeDecompiler
     /// it, recording in the tree where each node landed, for <see cref="CSharpDecompiler.CreateSequencePoints"/>.</summary>
     internal static void WriteLocatedSyntaxTree(SyntaxTree syntaxTree, DocumentBuilder output, DecompilerSettings settings)
     {
-        output.IndentationString = settings.CSharpFormattingOptions.IndentationString;
+        output.IndentAs(settings.CSharpFormattingOptions);
         var highlighting = CreateHighlightingWriter(output, settings);
         var located = new LocatingTokenWriter(highlighting, output);
         var writer = TokenWriter.WrapInWriterThatSetsLocationsInAST(located);

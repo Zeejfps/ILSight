@@ -6,20 +6,22 @@ namespace ILSight.BookmarkArea;
 /// there, and what the user calls it. With an <see cref="Anchor"/> it finds its line in any document
 /// showing it, in either language; without one, only where it was made. <see cref="ILSpy"/> and
 /// <see cref="ViewState"/> are what the real ILSpy keeps besides, so it can be written to its
-/// bookmarks file and read back from one. What changes in it after it is made is changed by the
-/// <see cref="BookmarkList"/> holding it, which counts the change.</summary>
+/// bookmarks file and read back from one. What changes in it after it is made (<see cref="BookmarkState"/>) is
+/// changed only by the <see cref="BookmarkList"/> that made it, which holds that state and counts the change; the
+/// bookmark only reads it.</summary>
 public sealed class Bookmark
 {
-    private NodePath? _place;
-    private string? _name;
+    private readonly BookmarkState _state;
+
+    /// <param name="state">What changes in it after it is made, which only the list that made it holds.</param>
+    public Bookmark(BookmarkState state)
+    {
+        _state = state;
+    }
 
     /// <summary>Where the document it was made in is: as it was read until the bookmark is gone to, then
     /// where its node was found.</summary>
-    public required NodePath Place
-    {
-        get => _place ?? throw new InvalidOperationException("A bookmark was made without a place.");
-        init => _place = value;
-    }
+    public NodePath Place => _state.Place;
 
     /// <summary>The language of the document it was made in.</summary>
     public required DecompilationLanguage Language { get; init; }
@@ -36,31 +38,15 @@ public sealed class Bookmark
     /// bookmark made here, which writes one holding only the tree path.</summary>
     public required BookmarkViewState? ViewState { get; init; }
 
-    public required string Name
-    {
-        get => _name ?? throw new InvalidOperationException("A bookmark was made without a name.");
-        init => _name = value;
-    }
+    public string Name => _state.Name;
 
     /// <summary>A disabled bookmark stays listed and marked, dimmed, but next and previous skip it.
     /// Changed only by <see cref="BookmarkList.SetEnabled"/>.</summary>
-    public bool Enabled { get; internal set; } = true;
+    public bool Enabled => _state.Enabled;
 
     /// <summary>The place and line it was made on.</summary>
     public required string Location { get; init; }
 
     /// <summary>The file name of the assembly it is in.</summary>
     public required string Module { get; init; }
-
-    /// <summary>Called only by <see cref="BookmarkList.Rename"/>, which counts the change.</summary>
-    internal void Rename(string name)
-    {
-        _name = name;
-    }
-
-    /// <summary>Called only by <see cref="BookmarkList.Resolve"/>, which counts the change.</summary>
-    internal void MoveTo(NodePath place)
-    {
-        _place = place;
-    }
 }

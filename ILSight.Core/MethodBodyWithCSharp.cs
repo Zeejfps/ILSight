@@ -65,7 +65,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
             return;
         }
 
-        _csharp = DocumentWriting.BuildDocument(builder, "");
+        _csharp = builder.BuildDocument("");
         _points = FindPoints(points, handle);
     }
 
@@ -181,7 +181,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         var end = EndColumnOn(point, number, text);
         if (output is DocumentBuilder builder)
         {
-            DocumentWriting.WriteSourceLine(builder, line, from, start, end);
+            builder.WriteSourceLine(line, from, start, end);
             return;
         }
         WriteComment(output, text.Substring(from));

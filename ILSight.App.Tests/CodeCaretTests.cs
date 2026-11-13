@@ -13,20 +13,20 @@ public sealed class CodeCaretTests
     private static DecompiledDocument Folded()
     {
         var builder = new DocumentBuilder { Language = DecompilationLanguage.CSharp };
-        DocumentWriting.Write(builder, "void F()", SpanKind.Plain);
-        DocumentWriting.WriteLine(builder);
+        builder.Write("void F()", SpanKind.Plain);
+        builder.WriteLine();
         builder.MarkFoldStart(isDefinition: true);
-        DocumentWriting.Write(builder, "{", SpanKind.Plain);
-        DocumentWriting.WriteLine(builder);
-        DocumentWriting.Write(builder, "    Call(one);", SpanKind.Plain);
-        DocumentWriting.WriteLine(builder);
-        DocumentWriting.Write(builder, "    Go();", SpanKind.Plain);
-        DocumentWriting.WriteLine(builder);
-        DocumentWriting.Write(builder, "}", SpanKind.Plain);
+        builder.Write("{", SpanKind.Plain);
+        builder.WriteLine();
+        builder.Write("    Call(one);", SpanKind.Plain);
+        builder.WriteLine();
+        builder.Write("    Go();", SpanKind.Plain);
+        builder.WriteLine();
+        builder.Write("}", SpanKind.Plain);
         builder.MarkFoldEnd();
-        DocumentWriting.WriteLine(builder);
-        DocumentWriting.Write(builder, "int x;", SpanKind.Plain);
-        return DocumentWriting.BuildDocument(builder, "folded");
+        builder.WriteLine();
+        builder.Write("int x;", SpanKind.Plain);
+        return builder.BuildDocument("folded");
     }
 
     private static CodeFolds FoldsOf(DecompiledDocument document, bool collapsed)
@@ -116,11 +116,11 @@ public sealed class CodeCaretTests
     {
         var builder = new DocumentBuilder { Language = DecompilationLanguage.CSharp };
         builder.MarkFoldStart(isDefinition: true);
-        DocumentWriting.Write(builder, "{", SpanKind.Plain);
-        DocumentWriting.WriteLine(builder);
-        DocumentWriting.Write(builder, "}", SpanKind.Plain);
+        builder.Write("{", SpanKind.Plain);
+        builder.WriteLine();
+        builder.Write("}", SpanKind.Plain);
         builder.MarkFoldEnd();
-        var document = DocumentWriting.BuildDocument(builder, "fold");
+        var document = builder.BuildDocument("fold");
 
         Assert.Equal(
             new TextPosition { Line = 0, Column = 1 },

@@ -545,7 +545,7 @@ public sealed class ExportDialogTests : IDisposable
         app.Settle(2);
         var second = app.AppState.Assemblies.Assemblies[1];
 
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, Trees.GetLabel(app.Ui.Tree, second.Root)), PointerButton.Right).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, app.Ui.Tree.GetLabel(second.Root)), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Export…")).Frame(2);
 
         var setup = app.Ui.ExportSetup;

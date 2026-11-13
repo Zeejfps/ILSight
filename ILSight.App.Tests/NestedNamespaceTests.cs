@@ -69,7 +69,7 @@ public sealed class NestedNamespaceTests
         var ilsight = app.Node("ILSight");
         var fixtures = app.Node(AppStateDriver.FixturesNamespace);
 
-        Commands.StartExpandingNamespaces(app.AppState, tree, Trees.ExpandNamespaces(tree));
+        Commands.StartExpandingNamespaces(app.AppState, tree, tree.ExpandNamespaces());
         app.Frames.WaitUntil(() => tree.View.IsExpanded(fixtures), Patience);
 
         Assert.All(EnclosingNamespaces, name => Assert.True(tree.View.IsExpanded(app.Node(name))));
@@ -77,10 +77,10 @@ public sealed class NestedNamespaceTests
         Assert.Equal([app.Node("ILSight.App"), app.Node("ILSight.Tests")], ShownChildren(app, ilsight));
         Assert.True(tree.HasChildren(ilsight));
         Assert.Contains(fixtures, ShownChildren(app, app.Node("ILSight.App.Tests")));
-        Assert.Equal("ILSight", Trees.GetRowLabel(tree, ilsight));
-        Assert.Equal("App", Trees.GetRowLabel(tree, app.Node("ILSight.App")));
-        Assert.Equal("Fixtures", Trees.GetRowLabel(tree, fixtures));
-        Assert.Equal(AppStateDriver.FixturesNamespace, Trees.GetLabel(tree, fixtures));
+        Assert.Equal("ILSight", tree.GetRowLabel(ilsight));
+        Assert.Equal("App", tree.GetRowLabel(app.Node("ILSight.App")));
+        Assert.Equal("Fixtures", tree.GetRowLabel(fixtures));
+        Assert.Equal(AppStateDriver.FixturesNamespace, tree.GetLabel(fixtures));
         Assert.True(IsShownNested(app, app.Fixture("Greeter")));
     }
 
@@ -94,17 +94,17 @@ public sealed class NestedNamespaceTests
         var door = root.Child(AppStateDriver.FixturesNamespace + ".Vault.Door");
         fixtures.EnsureChildren();
         vault.EnsureChildren();
-        Trees.ShowApi(tree, ApiVisibility.PublicOnly);
+        tree.ShowApi(ApiVisibility.PublicOnly);
 
         Assert.DoesNotContain(vault, tree.GetChildren(root).Nodes);
         Assert.Contains(door, tree.GetChildren(root).Nodes);
 
-        Trees.NestNamespaces(tree, true);
+        tree.NestNamespaces(true);
         Assert.Contains(vault, tree.GetChildren(fixtures).Nodes);
         Assert.Equal([door], tree.GetChildren(vault).Nodes);
 
-        Trees.NestNamespaces(tree, false);
-        Trees.ShowApi(tree, ApiVisibility.AllButCompilerGenerated);
+        tree.NestNamespaces(false);
+        tree.ShowApi(ApiVisibility.AllButCompilerGenerated);
         Assert.Contains(vault, tree.GetChildren(root).Nodes);
     }
 
@@ -126,7 +126,7 @@ public sealed class NestedNamespaceTests
     {
         var app = OpenedNested();
         var farewell = app.Fixture("Farewell");
-        Trees.CollapseTree(app.Ui.Tree);
+        app.Ui.Tree.CollapseAll();
 
         app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, farewell.Definition, a.Navigation.BeginResolving(inNewTab: false), ct));
         app.Settle(1);
@@ -144,7 +144,7 @@ public sealed class NestedNamespaceTests
         app.Show(greeter, 2);
         app.Show(app.Fixture("Farewell"), 2);
         Nest(app, true);
-        Trees.CollapseTree(app.Ui.Tree);
+        app.Ui.Tree.CollapseAll();
 
         app.GoBack();
         app.Settle(1);
@@ -166,7 +166,7 @@ public sealed class NestedNamespaceTests
         var bookmark = Assert.Single(app.AppState.Bookmarks.Items);
         app.Show(app.Fixture("Greeter"), 2);
         Nest(app, false);
-        Trees.CollapseTree(app.Ui.Tree);
+        app.Ui.Tree.CollapseAll();
 
         app.Start((a, ct) => a.GoToBookmarkHandler.HandleAsync(a, bookmark, ct));
         app.Settle(1);
@@ -187,7 +187,7 @@ public sealed class NestedNamespaceTests
         var before = app.Node("ILSight.App");
         app.Show(app.Fixture("Greeter"), 2);
 
-        app.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, Trees.ListExpandedPaths(app.Ui.Tree), ct));
+        app.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, app.Ui.Tree.ListExpandedPaths(), ct));
         app.Settle(1);
 
         var greeter = app.Fixture("Greeter");

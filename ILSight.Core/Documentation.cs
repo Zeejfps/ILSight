@@ -438,7 +438,7 @@ internal static class Documentation
         var parameters = new ParameterStarts(writer, output);
         var ambience = new CSharpAmbience { ConversionFlags = SignatureFlags };
         ambience.ConvertSymbol(entity, parameters, settings.CSharpFormattingOptions);
-        var line = DocumentWriting.BuildDocument(output, entity.Name).Lines[0];
+        var line = output.BuildDocument(entity.Name).Lines[0];
         var constraints = WriteConstraints(entity, assembly, typeSystem, settings);
         return new CodeSignature { Line = line, ParameterStarts = parameters.Starts, Constraints = constraints };
     }
@@ -469,7 +469,7 @@ internal static class Documentation
             constraint.AcceptVisitor(new CSharpOutputVisitor(writer, settings.CSharpFormattingOptions));
             output.WriteLine();
         }
-        return ListConstraintLines(DocumentWriting.BuildDocument(output, entity.Name).Lines);
+        return ListConstraintLines(output.BuildDocument(entity.Name).Lines);
     }
 
     /// <summary>The written clauses without the blank lines between them.</summary>

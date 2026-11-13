@@ -25,17 +25,7 @@ public static class Commands
     /// <paramref name="subject"/>, so that nothing is allocated unless this is called.</summary>
     public static void Later<T>(UiState uiState, T subject, Action<AppState, T> run)
     {
-        uiState.AppCommands.Enqueue(Create(subject, run));
-    }
-
-    /// <summary>A command doing <paramref name="run"/> to <paramref name="subject"/>. It is made here, so
-    /// that a caller that only sometimes asks doesn't allocate a closure on the way in every time.</summary>
-    public static AppCommand Create<T>(T subject, Action<AppState, T> run)
-    {
-        return appState =>
-        {
-            run(appState, subject);
-        };
+        uiState.AppCommands.Enqueue(AppCommandFactory.Create(subject, run));
     }
 
     /// <summary>Asks for what <paramref name="load"/> started loading in its tab, if anything, to be brought in once

@@ -83,7 +83,7 @@ public sealed class AppTests
         var shown = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(shown);
         Assert.NotNull(shown.Node);
-        var label = Trees.GetLabel(app.Ui.Tree, shown.Node);
+        var label = app.Ui.Tree.GetLabel(shown.Node);
         var tab = app.Frames.TextRects()
             .Where(t => t.Text == label)
             .Select(t => t.Rect)
@@ -590,7 +590,7 @@ public sealed class AppTests
         var shown = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(shown);
         Assert.NotNull(shown.Node);
-        var label = Trees.GetLabel(app.Ui.Tree, shown.Node);
+        var label = app.Ui.Tree.GetLabel(shown.Node);
         var documentTab = app.Frames.TextRects()
             .Where(t => t.Text == label)
             .Select(t => t.Rect)

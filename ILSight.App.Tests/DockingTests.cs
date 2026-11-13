@@ -14,7 +14,7 @@ public sealed class DockingTests
         var first = tabs.AddNew();
         var second = tabs.AddNew();
 
-        Tabs.Remove(tabs, second);
+        tabs.Remove(second);
         var third = tabs.AddNew();
 
         Assert.Equal(3, new[] { first.Id, second.Id, third.Id }.Distinct().Count());

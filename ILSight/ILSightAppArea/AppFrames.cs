@@ -194,7 +194,7 @@ internal static class AppFrames
             return;
         }
 
-        StartRefreshing(appState, Trees.ListExpandedPaths(uiState.Tree));
+        StartRefreshing(appState, uiState.Tree.ListExpandedPaths());
     }
 
     /// <summary>Starts reading the open assemblies again now, before the frame draws, so that it draws them

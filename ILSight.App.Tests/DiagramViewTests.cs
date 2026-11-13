@@ -24,7 +24,7 @@ public sealed class DiagramViewTests
     private static AppDriver PickFromTree(string type, string item)
     {
         var app = AppDriver.Opened();
-        Trees.RevealNode(app.Ui.Tree, app.Fixture(type));
+        app.Ui.Tree.RevealNode(app.Fixture(type));
         app.Run(2);
         app.PickFromTreeMenu(type, item);
         SettleDiagram(app);
@@ -185,8 +185,8 @@ public sealed class DiagramViewTests
     public void Showing_another_type_adds_it_to_the_diagram_and_show_in_new_diagram_opens_another()
     {
         var app = PickFromTree("Vehicle", "Show in diagram");
-        Trees.RevealNode(app.Ui.Tree, app.Fixture("Greeter"));
-        Trees.RevealNode(app.Ui.Tree, app.Fixture("Counter"));
+        app.Ui.Tree.RevealNode(app.Fixture("Greeter"));
+        app.Ui.Tree.RevealNode(app.Fixture("Counter"));
         app.Run(2);
 
         app.PickFromTreeMenu("Greeter", "Show in diagram");

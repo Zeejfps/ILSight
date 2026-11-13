@@ -34,7 +34,7 @@ public static class Documents
     {
         var builder = new DocumentBuilder { Language = language };
         builder.Write(text, SpanKind.Plain);
-        return DocumentWriting.BuildDocument(builder, title);
+        return builder.BuildDocument(title);
     }
 
     /// <summary>The index of the line that defines <paramref name="reference"/>; null when this document does not define it.</summary>

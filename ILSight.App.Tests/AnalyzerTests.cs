@@ -21,7 +21,7 @@ public sealed class AnalyzerTests
     private static AnalyzerKindNode Expand(AppStateDriver d, AnalyzerSymbolNode symbol, string header)
     {
         var rows = d.Ui.Analyzer;
-        var kind = Analysis.ListChildren(rows, symbol).OfType<AnalyzerKindNode>().Single(k => Core.Analysis.Analyzers.GetHeader(k.Kind) == header);
+        var kind = rows.ListChildren(symbol).OfType<AnalyzerKindNode>().Single(k => Core.Analysis.Analyzers.GetHeader(k.Kind) == header);
         rows.View.SetExpanded(kind, true);
         rows.GetChildren(kind);
         d.RunUntil(() => kind.IsDone);
@@ -127,7 +127,7 @@ public sealed class AnalyzerTests
     {
         var app = AppDriver.Opened();
         var d = app.Driver;
-        Trees.RevealNode(d.Ui.Tree, First(d));
+        d.Ui.Tree.RevealNode(First(d));
         app.Run(2);
         app.Frames.ClickOn(GetFixtureRow("Outline", First(d).Text));
         d.Settle();
@@ -513,7 +513,7 @@ public sealed class AnalyzerTests
         var symbol = new AnalyzerSymbolNode { Symbol = analyzed };
 
         Assert.True(rows.HasChildren(symbol));
-        Assert.NotEmpty(ListChildren(rows, symbol));
+        Assert.NotEmpty(rows.ListChildren(symbol));
         Assert.Equal(symbol.Symbol.Label, rows.Row(symbol).Label);
     }
 
@@ -525,8 +525,8 @@ public sealed class AnalyzerTests
         var kind = NewKind(d);
 
         Assert.True(rows.HasChildren(kind));
-        Assert.Same(rows.Loading, Assert.Single(ListChildren(rows, kind)));
-        ListChildren(rows, kind);
+        Assert.Same(rows.Loading, Assert.Single(rows.ListChildren(kind)));
+        rows.ListChildren(kind);
 
         Assert.Single(rows.AppCommands);
     }
@@ -538,7 +538,7 @@ public sealed class AnalyzerTests
         var message = new AnalyzerMessageNode { Error = "failed" };
 
         Assert.False(rows.HasChildren(message));
-        Assert.Empty(ListChildren(rows, message));
+        Assert.Empty(rows.ListChildren(message));
         Assert.Equal("failed", rows.Row(message).Label);
     }
 
@@ -549,7 +549,7 @@ public sealed class AnalyzerTests
         var pending = new AnalyzerPendingNode { SavedAs = null };
 
         Assert.False(rows.HasChildren(pending));
-        Assert.Empty(ListChildren(rows, pending));
+        Assert.Empty(rows.ListChildren(pending));
         Assert.True(rows.Row(pending).Spinning);
     }
 
@@ -588,7 +588,7 @@ public sealed class AnalyzerTests
         app.Run(3);
         var root = analyzer.Roots[0];
         var rows = app.Ui.Analyzer;
-        var kinds = Analysis.ListChildren(rows, root).OfType<AnalyzerKindNode>().ToList();
+        var kinds = rows.ListChildren(root).OfType<AnalyzerKindNode>().ToList();
 
         app.Frames.ClickOn(Selector.AtPath("dock/analyzer/expand")).Frame();
         var expanded = kinds.All(k => rows.View.IsExpanded(k));

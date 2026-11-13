@@ -9,7 +9,7 @@ public sealed class ExpandNamespacesHandlerTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var root = list.Open(AppStateDriver.FixturePath).Root;
         var tree = new BrowseTree { Session = TestSession.Shared };
-        Trees.TrySyncRoots(tree, list);
+        tree.TrySyncRoots(list);
         return (tree, root);
     }
 
@@ -22,7 +22,7 @@ public sealed class ExpandNamespacesHandlerTests
     public async Task HandleAsync_Built_ExpandsTheNamespacesOnly()
     {
         var (tree, root) = OpenedTree();
-        var expansion = Trees.ExpandNamespaces(tree);
+        var expansion = tree.ExpandNamespaces();
         var ports = new FakeExpandNamespacesHandlerPorts { Answer = Built(root) };
 
         await new ExpandNamespacesHandler(ports).HandleAsync(tree, expansion, root, CancellationToken.None);
@@ -37,8 +37,8 @@ public sealed class ExpandNamespacesHandlerTests
     public async Task HandleAsync_CollapsedMeanwhile_ExpandsNothing()
     {
         var (tree, root) = OpenedTree();
-        var expansion = Trees.ExpandNamespaces(tree);
-        Trees.CollapseTree(tree);
+        var expansion = tree.ExpandNamespaces();
+        tree.CollapseAll();
         var ports = new FakeExpandNamespacesHandlerPorts { Answer = Built(root) };
 
         await new ExpandNamespacesHandler(ports).HandleAsync(tree, expansion, root, CancellationToken.None);
@@ -50,7 +50,7 @@ public sealed class ExpandNamespacesHandlerTests
     public async Task HandleAsync_NotBuilt_ExpandsNothing()
     {
         var (tree, root) = OpenedTree();
-        var expansion = Trees.ExpandNamespaces(tree);
+        var expansion = tree.ExpandNamespaces();
         var ports = new FakeExpandNamespacesHandlerPorts { Answer = new Outcome<ChildrenState>.Failed(new InvalidDataException("unreadable")) };
 
         await new ExpandNamespacesHandler(ports).HandleAsync(tree, expansion, root, CancellationToken.None);

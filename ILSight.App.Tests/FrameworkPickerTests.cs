@@ -189,8 +189,8 @@ public sealed class FrameworkPickerTests
         var tabs = new DocumentTabs();
         var closed = new DocumentTab(1, new TabDocument());
 
-        Assert.Throws<InvalidOperationException>(() => Tabs.MakeActive(tabs, closed));
-        Assert.Throws<InvalidOperationException>(() => Tabs.MakePreview(tabs, closed));
+        Assert.Throws<InvalidOperationException>(() => tabs.MakeActive(closed));
+        Assert.Throws<InvalidOperationException>(() => tabs.MakePreview(closed));
     }
 
     [Fact]
@@ -198,11 +198,11 @@ public sealed class FrameworkPickerTests
     {
         var tabs = new DocumentTabs();
         var tab = tabs.AddNew();
-        Tabs.MakeActive(tabs, tab);
-        Tabs.MakePreview(tabs, tab);
+        tabs.MakeActive(tab);
+        tabs.MakePreview(tab);
         var before = tabs.Changes;
 
-        Tabs.Remove(tabs, tab);
+        tabs.Remove(tab);
 
         Assert.Null(tabs.Active);
         Assert.Null(tabs.Preview);

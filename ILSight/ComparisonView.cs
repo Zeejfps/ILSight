@@ -24,8 +24,8 @@ internal static class ComparisonView
     public static void Render(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DocumentTab tab, AssemblyComparison comparison)
     {
         var rows = DocumentPanels.GetView(ui.State.Documents, tab).Comparison;
-        Comparisons.SetRowStyle(rows, ui.Theme, ui.State.NodeIconPalette, ui.State.Icons, ui.State.Strings);
-        Comparisons.FollowDiff(rows, FindDiff(comparison));
+        rows.SetStyle(ui.Theme, ui.State.NodeIconPalette, ui.State.Icons, ui.State.Strings);
+        rows.FollowDiff(FindDiff(comparison));
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground });
         if (!ui.State.Display.ShowOmnibar)
         {
@@ -67,12 +67,12 @@ internal static class ComparisonView
         {
             if (ui.IconButton("collapse", icons.AnalyzerCollapseAll, t.CodeCollapseAll, any))
             {
-                Comparisons.CollapseAllRows(rows);
+                rows.CollapseAll();
             }
 
             if (ui.IconButton("expand", icons.AnalyzerExpandAll, t.CodeExpandAll, any))
             {
-                Comparisons.ExpandAllRows(rows);
+                rows.ExpandAll();
             }
 
             ui.Separator(ui.Theme.IconSize);
@@ -92,7 +92,7 @@ internal static class ComparisonView
         var only = rows.OnlyDifferences;
         if (ui.Checkbox(ui.State.Strings.ComparisonOnlyDifferences, ref only, id: "only-differences"))
         {
-            Comparisons.ShowOnlyDifferences(rows, only);
+            rows.ShowOnlyDifferences(only);
         }
     }
 

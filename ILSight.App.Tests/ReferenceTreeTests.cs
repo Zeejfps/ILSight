@@ -26,7 +26,7 @@ public sealed class ReferenceTreeTests
         var greeter = app.Fixture("Greeter");
         var baseType = greeter.Child("Base Types").Children[0];
         app.Show(greeter, 3);
-        Trees.RevealNode(app.Ui.Tree, baseType);
+        app.Ui.Tree.RevealNode(baseType);
         app.Run(2);
 
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, baseType.Text), PointerButton.Right).Frame();

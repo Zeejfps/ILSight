@@ -285,8 +285,8 @@ public sealed class AppStateTests
         d.Show(d.Fixture("Greeter"));
         d.Show(d.Fixture("Farewell"), inNewTab: true);
 
-        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, Trees.ListExpandedPaths(d.Ui.Tree), ct));
-        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, Trees.ListExpandedPaths(d.Ui.Tree), ct));
+        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, d.Ui.Tree.ListExpandedPaths(), ct));
+        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, d.Ui.Tree.ListExpandedPaths(), ct));
         d.Settle();
 
         Assert.Equal(["Greeter", "Farewell"], d.AppState.Navigation.OpenTabs.Select(t => t.Node?.Text));
@@ -306,7 +306,7 @@ public sealed class AppStateTests
         var ns = d.Node(AppStateDriver.FixturesNamespace);
         d.Ui.Tree.View.SetExpanded(d.Fixture("Greeter"), true);
 
-        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, Trees.ListExpandedPaths(d.Ui.Tree), ct));
+        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, d.Ui.Tree.ListExpandedPaths(), ct));
         d.Settle();
 
         var view = d.Ui.Tree.View;
@@ -331,7 +331,7 @@ public sealed class AppStateTests
         d.Ui.Tree.View.SetExpanded(d.AppState.Assemblies.Assemblies[0].Root, true);
         File.WriteAllBytes(path, unreadable);
 
-        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, Trees.ListExpandedPaths(d.Ui.Tree), ct));
+        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, d.Ui.Tree.ListExpandedPaths(), ct));
         d.Settle();
 
         var root = Assert.Single(d.AppState.Assemblies.Assemblies).Root;
@@ -347,7 +347,7 @@ public sealed class AppStateTests
         d.Show(before);
         d.Show(d.Fixture("Farewell"));
 
-        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, Trees.ListExpandedPaths(d.Ui.Tree), ct));
+        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, d.Ui.Tree.ListExpandedPaths(), ct));
         d.Settle();
         d.GoBack();
         d.Settle();
@@ -718,7 +718,7 @@ public sealed class AppStateTests
         d.Show(greeter);
         File.Delete(copy);
 
-        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, Trees.ListExpandedPaths(d.Ui.Tree), ct));
+        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, d.Ui.Tree.ListExpandedPaths(), ct));
         d.Settle();
 
         var tab = Assert.Single(d.AppState.Navigation.OpenTabs);

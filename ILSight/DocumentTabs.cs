@@ -5,8 +5,9 @@ namespace ILSight;
 
 /// <summary>The open document tabs, the one the user last worked in, the preview tab, which shows
 /// what is picked until it is kept open, and the diagram the user last worked in; each of those is always
-/// one of the open tabs, which <see cref="Tabs"/> sees to: change these only through it; and which document each
-/// tab is (<see cref="GetDocument"/>), which only their holder, <see cref="Navigation"/>, changes.</summary>
+/// one of the open tabs, which its methods see to: closing tabs and choosing among them; and which document each
+/// tab is (<see cref="GetDocument"/>), which only their holder, <see cref="Navigation"/>, changes, through
+/// <see cref="TabDocument"/>, and its load through <see cref="TabLoad"/>.</summary>
 public sealed class DocumentTabs
 {
     /// <summary>The id the last tab opened was given.</summary>
@@ -41,10 +42,10 @@ public sealed class DocumentTabs
     public readonly TrackedList<DocumentTab> Open = new();
 
     /// <summary>The tab of the diagram last worked in, which may since show something else.</summary>
-    public DocumentTab? LastDiagram;
+    private DocumentTab? _lastDiagram;
 
     /// <summary>What the tabs closed had counted as <see cref="DocumentTab.Changes"/>.</summary>
-    public int ClosedChanges;
+    private int _closedChanges;
 
     /// <summary>The tab the user last worked in, and how many times that changed.</summary>
     public Tracked<DocumentTab?> LastWorkedIn { get; } = new(null);
@@ -65,17 +66,18 @@ public sealed class DocumentTabs
     {
         get
         {
-            if (LastDiagram is null)
+            var lastDiagram = _lastDiagram;
+            if (lastDiagram is null)
             {
                 return null;
             }
 
-            if (LastDiagram.Diagram is null)
+            if (lastDiagram.Diagram is null)
             {
                 return null;
             }
 
-            return LastDiagram;
+            return lastDiagram;
         }
     }
 
@@ -86,7 +88,7 @@ public sealed class DocumentTabs
     {
         get
         {
-            var changes = Open.Revision + LastWorkedIn.Version + Previewing.Version + ClosedChanges;
+            var changes = Open.Revision + LastWorkedIn.Version + Previewing.Version + _closedChanges;
             foreach (var tab in Open)
             {
                 changes += tab.Changes;
@@ -94,5 +96,89 @@ public sealed class DocumentTabs
 
             return changes;
         }
+    }
+
+    /// <summary>Cancels the tab's work and closes it. The tab stops being active if it was.</summary>
+    public void Remove(DocumentTab tab)
+    {
+        if (!Open.TryRemove(tab))
+        {
+            return;
+        }
+
+        GetDocument(tab).Close();
+        _closedChanges += tab.Changes;
+        if (tab == Active)
+        {
+            LastWorkedIn.Value = null;
+        }
+
+        if (tab == Preview)
+        {
+            Previewing.Value = null;
+        }
+
+        if (tab == _lastDiagram)
+        {
+            _lastDiagram = null;
+        }
+    }
+
+    /// <summary>Makes <paramref name="tab"/> the active tab, and the diagram tab when it shows a diagram.</summary>
+    public void MakeActive(DocumentTab tab)
+    {
+        if (!Open.Contains(tab))
+        {
+            throw new InvalidOperationException("Only an open tab can be active.");
+        }
+
+        LastWorkedIn.Value = tab;
+        if (tab.Diagram is not null)
+        {
+            _lastDiagram = tab;
+        }
+    }
+
+    /// <summary>Makes <paramref name="tab"/> the preview tab; the one before it stays open, kept.</summary>
+    public void MakePreview(DocumentTab tab)
+    {
+        if (!Open.Contains(tab))
+        {
+            throw new InvalidOperationException("Only an open tab can be the preview tab.");
+        }
+
+        Previewing.Value = tab;
+    }
+
+    /// <summary>Keeps <paramref name="tab"/> open: it is no longer the preview tab, if it was.</summary>
+    public void Keep(DocumentTab tab)
+    {
+        if (tab != Preview)
+        {
+            return;
+        }
+
+        Previewing.Value = null;
+    }
+
+    public bool IsOpen(DocumentTab tab)
+    {
+        return Open.Contains(tab);
+    }
+
+    /// <summary><paramref name="tab"/> if it is still open, else null.</summary>
+    public DocumentTab? KeepIfOpen(DocumentTab? tab)
+    {
+        if (tab is null)
+        {
+            return null;
+        }
+
+        if (!Open.Contains(tab))
+        {
+            return null;
+        }
+
+        return tab;
     }
 }

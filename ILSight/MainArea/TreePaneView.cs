@@ -30,14 +30,14 @@ internal static class TreePaneView
     {
         var theme = ui.Theme;
         var tree = ui.State.Tree;
-        Trees.SetTreeStyle(tree, theme, ui.State.NodeIconPalette, ui.State.Icons);
-        Trees.ShowTokens(tree, ui.State.Display.TreeTokens);
-        Trees.ShowEmptyTables(tree, ui.State.Display.ShowEmptyMetadataTables);
-        Trees.NestNamespaces(tree, ui.State.Display.NestedNamespaces);
+        tree.SetStyle(theme, ui.State.NodeIconPalette, ui.State.Icons);
+        tree.ShowTokens(ui.State.Display.TreeTokens);
+        tree.ShowEmptyTables(ui.State.Display.ShowEmptyMetadataTables);
+        tree.NestNamespaces(ui.State.Display.NestedNamespaces);
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         Toolbar(ui, navigation, assemblies);
         ui.Separator();
-        if (tree.Roots.Length == 0)
+        if (tree.Roots.Count == 0)
         {
             EmptyHint(ui);
         }
@@ -144,7 +144,7 @@ internal static class TreePaneView
         var t = ui.State.Strings;
         var icons = ui.State.Icons;
         var tree = ui.State.Tree;
-        var any = tree.Roots.Length > 0;
+        var any = tree.Roots.Count > 0;
         switch (index)
         {
             case 0:
@@ -160,14 +160,14 @@ internal static class TreePaneView
             case 1:
                 if (DrawTool(ui, inMenu, "collapse", icons.AssembliesCollapseAll, t.CodeCollapseAll, any))
                 {
-                    Trees.CollapseTree(tree);
+                    tree.CollapseAll();
                 }
 
                 return;
             case 2:
                 if (DrawTool(ui, inMenu, "expand", icons.AssembliesExpandNamespaces, t.TreeExpandNamespaces, any))
                 {
-                    Commands.ExpandNamespacesLater(ui.State, tree, Trees.ExpandNamespaces(tree));
+                    Commands.ExpandNamespacesLater(ui.State, tree, tree.ExpandNamespaces());
                 }
 
                 return;
@@ -187,7 +187,7 @@ internal static class TreePaneView
                 var label = inMenu ? t.TreeReloadAll : ui.Memo("reload-all-tip", t, static s => s.TreeReloadAllTip(Shortcuts.ReloadAll));
                 if (DrawTool(ui, inMenu, "reload-all", icons.AssembliesReloadAll, label, any, Shortcuts.ReloadAll))
                     {
-                        Commands.Start(ui.State, nameof(AssemblyReloading.RefreshAssembliesAsync), Trees.ListExpandedPaths(tree), static (a, expanded, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, expanded, ct));
+                        Commands.Start(ui.State, nameof(AssemblyReloading.RefreshAssembliesAsync), tree.ListExpandedPaths(), static (a, expanded, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, expanded, ct));
                     }
 
                     return;
@@ -268,7 +268,7 @@ internal static class TreePaneView
             return;
         }
 
-        Trees.RevealNode(ui.State.Tree, node);
+        ui.State.Tree.RevealNode(node);
         ui.Focus(ui.GetId(TreeId), takesText: false);
     }
 

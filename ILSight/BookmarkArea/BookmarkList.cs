@@ -5,7 +5,9 @@ namespace ILSight.BookmarkArea;
 
 /// <summary>The user's bookmarks in the order they were made. No two mark the same line, and
 /// <see cref="Revision"/> changes whenever the list or a bookmark in it does: the list is changed only
-/// through its methods, which keep both.</summary>
+/// through its methods, which keep both. It makes the bookmarks it holds (<see cref="CreateAt"/>,
+/// <see cref="CreateFromRecord"/>) and holds what changes in each (<see cref="BookmarkState"/>), which the bookmark
+/// handed out only reads.</summary>
 public sealed class BookmarkList
 {
     /// <summary>The lines of a document that bookmarks mark, as of <see cref="Revision"/>.</summary>
@@ -20,16 +22,63 @@ public sealed class BookmarkList
 
     private readonly ConditionalWeakTable<DecompiledDocument, Marks> _marksByDocument = new();
 
+    /// <summary>What changes in each bookmark made here, kept as long as the bookmark is.</summary>
+    private readonly ConditionalWeakTable<Bookmark, BookmarkState> _states = new();
+
     /// <summary>The bookmarks, in the order they were made.</summary>
     public IReadOnlyList<Bookmark> Items => _items;
 
     /// <summary>Changes whenever the list or a bookmark in it does.</summary>
     public int Revision => _items.Revision;
 
-    /// <summary>Adds <paramref name="bookmark"/>, unless a bookmark marks its line already; returns
+    /// <summary>The bookmark called <paramref name="name"/> made in the document of <paramref name="node"/>, to
+    /// add here.</summary>
+    public Bookmark CreateAt(BrowseNode node, DecompilationLanguage language, int line, CodeAnchor? anchor, string name, ILSpyBookmarkInfo ilspy)
+    {
+        var state = new BookmarkState { Place = node.Path, Name = name, Enabled = true };
+        return Hold(state, Bookmarks.CreateAt(state, language, line, anchor, ilspy));
+    }
+
+    /// <summary>The bookmark <paramref name="record"/> describes, made in the document of <paramref name="place"/>,
+    /// to add here.</summary>
+    public Bookmark CreateFromRecord(BookmarkRecord record, NodePath place)
+    {
+        var state = new BookmarkState { Place = place, Name = record.Name, Enabled = record.Enabled };
+        return Hold(state, Bookmarks.CreateFromRecord(state, record));
+    }
+
+    private Bookmark Hold(BookmarkState state, Bookmark bookmark)
+    {
+        _states.Add(bookmark, state);
+        return bookmark;
+    }
+
+    /// <summary>What changes in <paramref name="bookmark"/>, made here.</summary>
+    private BookmarkState GetState(Bookmark bookmark)
+    {
+        if (!_states.TryGetValue(bookmark, out var state))
+        {
+            throw new InvalidOperationException($"Bookmark '{bookmark.Name}' was not made by this list.");
+        }
+
+        return state;
+    }
+
+    /// <summary>Throws unless <paramref name="bookmark"/> was made here, so that the list holds what changes in each
+    /// bookmark it lists.</summary>
+    private void ThrowIfNotMadeHere(Bookmark bookmark)
+    {
+        if (!_states.TryGetValue(bookmark, out _))
+        {
+            throw new InvalidOperationException($"Bookmark '{bookmark.Name}' was not made by this list.");
+        }
+    }
+
+    /// <summary>Adds <paramref name="bookmark"/>, made here, unless a bookmark marks its line already; returns
     /// whether it was added.</summary>
     public bool TryAdd(Bookmark bookmark)
     {
+        ThrowIfNotMadeHere(bookmark);
         if (IsMarked(bookmark))
         {
             return false;
@@ -59,12 +108,13 @@ public sealed class BookmarkList
 
     public void SetEnabled(Bookmark bookmark, bool enabled)
     {
-        if (bookmark.Enabled == enabled)
+        var state = GetState(bookmark);
+        if (state.Enabled == enabled)
         {
             return;
         }
 
-        bookmark.Enabled = enabled;
+        state.Enabled = enabled;
         _items.NoteChange();
     }
 
@@ -82,7 +132,7 @@ public sealed class BookmarkList
             return;
         }
 
-        bookmark.Rename(trimmed);
+        GetState(bookmark).Name = trimmed;
         _items.NoteChange();
     }
 
@@ -90,21 +140,27 @@ public sealed class BookmarkList
     /// so that it is saved with the labels the node shows now.</summary>
     public void Resolve(Bookmark bookmark, BrowseNode node)
     {
-        bookmark.MoveTo(node.Path);
+        GetState(bookmark).Place = node.Path;
         _items.NoteChange();
     }
 
-    /// <summary>Adds <paramref name="bookmarks"/>, after dropping every bookmark first when replacing,
+    /// <summary>Adds <paramref name="bookmarks"/>, made here, after dropping every bookmark first when replacing,
     /// leaving out the ones that mark a line already marked. Returns how many were left out.</summary>
     public int Import(IEnumerable<Bookmark> bookmarks, BookmarkImportMode mode)
     {
+        var adding = bookmarks.ToList();
+        foreach (var bookmark in adding)
+        {
+            ThrowIfNotMadeHere(bookmark);
+        }
+
         if (mode == BookmarkImportMode.Replace)
         {
             _items.Clear();
         }
 
         var leftOut = 0;
-        foreach (var bookmark in bookmarks)
+        foreach (var bookmark in adding)
         {
             if (IsMarked(bookmark))
             {
@@ -120,7 +176,7 @@ public sealed class BookmarkList
     /// Returns how many were left out because one before them marks the same line.</summary>
     public int Restore(IEnumerable<BookmarkRecord>? saved)
     {
-        var bookmarks = (saved ?? []).Select(static r => r.Location is not null ? Bookmarks.CreateFromRecord(r, r.Location) : null)
+        var bookmarks = (saved ?? []).Select(r => r.Location is not null ? CreateFromRecord(r, r.Location) : null)
             .OfType<Bookmark>();
         return Import(bookmarks, BookmarkImportMode.Replace);
     }

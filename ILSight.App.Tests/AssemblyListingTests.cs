@@ -255,7 +255,7 @@ public sealed class AssemblyListingTests
         d.Settle();
 
         d.SwitchList(SavedAssemblyLists.DefaultName);
-        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, Trees.ListExpandedPaths(d.Ui.Tree), ct));
+        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, d.Ui.Tree.ListExpandedPaths(), ct));
         d.Settle();
 
         Assert.Equal([AppStateDriver.FixturePath], d.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
@@ -267,9 +267,9 @@ public sealed class AssemblyListingTests
         var d = AppStateDriver.Opened();
         var tree = d.Ui.Tree;
         var root = tree.Roots[0];
-        Trees.CollapseTree(tree);
+        tree.CollapseAll();
 
-        Commands.StartExpandingNamespaces(d.AppState, tree, Trees.ExpandNamespaces(tree));
+        Commands.StartExpandingNamespaces(d.AppState, tree, tree.ExpandNamespaces());
         var ns = d.Node(AppStateDriver.FixturesNamespace);
         d.RunUntil(() => tree.View.IsExpanded(ns));
 
@@ -374,7 +374,7 @@ public sealed class AssemblyListingTests
         var app = AppDriver.Opened();
         var greeter = app.Fixture("Greeter");
         app.Show(greeter, 2);
-        Trees.CollapseTree(app.Ui.Tree);
+        app.Ui.Tree.CollapseAll();
         app.Ui.Tree.View.Select(app.Ui.Tree.Roots[0]);
         app.Run(2);
 

@@ -154,7 +154,7 @@ public sealed class MetadataGridTests
         var app = AppDriver.Opened(width: 1800f);
         var greeter = app.Node(AppStateDriver.FixturesNamespace, "Greeter");
         app.Show(greeter, 3);
-        Trees.RevealNode(app.Ui.Tree, greeter);
+        app.Ui.Tree.RevealNode(greeter);
         app.Run(2);
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -180,7 +180,7 @@ public sealed class MetadataGridTests
         var app = AppDriver.Opened(width: 1800f);
         var greeter = app.Node(AppStateDriver.FixturesNamespace, "Greeter");
         app.Show(greeter, 3);
-        Trees.RevealNode(app.Ui.Tree, greeter);
+        app.Ui.Tree.RevealNode(greeter);
         app.Run(2);
 
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Greeter"), PointerButton.Right).Frame();

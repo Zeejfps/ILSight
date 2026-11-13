@@ -56,7 +56,7 @@ public sealed class MatchingBracketsTests
         builder.Write("if (", SpanKind.Plain);
         builder.Write("\")\"", SpanKind.String);
         builder.Write(")", SpanKind.Plain);
-        var document = DocumentWriting.BuildDocument(builder, "t");
+        var document = builder.BuildDocument("t");
 
         Assert.Equal(Pair(0, 3, 0, 7), Find(document, 0, 3));
         Assert.Null(Find(document, 0, 5));

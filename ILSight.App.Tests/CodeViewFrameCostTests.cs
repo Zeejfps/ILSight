@@ -214,7 +214,7 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
             builder.MarkFoldEnd();
             builder.WriteLine();
         }
-        return DocumentWriting.BuildDocument(builder, "folded");
+        return builder.BuildDocument("folded");
     }
 
     private static void Frame(CodeViewDriver view, bool scrolling)

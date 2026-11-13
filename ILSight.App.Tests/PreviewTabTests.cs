@@ -11,7 +11,7 @@ public sealed class PreviewTabTests
     private static AppDriver Revealed()
     {
         var app = AppDriver.Opened();
-        Trees.RevealNode(app.Ui.Tree, app.Fixture("Greeter"));
+        app.Ui.Tree.RevealNode(app.Fixture("Greeter"));
         app.Ui.Tree.View.ClearSelection();
         app.Run(2);
         return app;

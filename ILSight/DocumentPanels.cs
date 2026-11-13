@@ -266,7 +266,7 @@ public static class DocumentPanels
             return;
         }
 
-        Comparisons.RestoreRowsView(view.Comparison, saved);
+        view.Comparison.RestoreView(saved);
     }
 
     /// <summary>Scrolls the code of <paramref name="tab"/>, an open tab, to <paramref name="line"/> and flashes it.</summary>
@@ -334,7 +334,7 @@ public static class DocumentPanels
 
         if (tab.Content is TabContent.Comparison)
         {
-            return new TabPanelView.Comparison(Comparisons.SaveRowsView(view.Comparison));
+            return new TabPanelView.Comparison(view.Comparison.SaveView());
         }
 
         return new TabPanelView.None();

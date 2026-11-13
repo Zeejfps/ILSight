@@ -86,7 +86,7 @@ public sealed class Navigation
 
     public bool IsOpen(DocumentTab tab)
     {
-        return Tabs.IsOpen(_tabs, tab);
+        return _tabs.IsOpen(tab);
     }
 
     /// <summary>Whether <paramref name="ticket"/> is the newest request's.</summary>
@@ -205,7 +205,7 @@ public sealed class Navigation
         {
             return ShowNode(node, setup);
         }
-        Tabs.MakeActive(_tabs, showing);
+        _tabs.MakeActive(showing);
         ViewCommands.Enqueue(new ViewCommand.ShowTab { Tab = showing, Beside = null });
         RecordShownPlace(showing, setup.Language);
         return null;
@@ -258,7 +258,7 @@ public sealed class Navigation
     /// <summary>Keeps <paramref name="tab"/> open, so that what is picked next shows in another tab.</summary>
     public void KeepTabOpen(DocumentTab tab)
     {
-        Tabs.Keep(_tabs, tab);
+        _tabs.Keep(tab);
     }
 
     /// <summary>Has what is picked and followed shown in the preview tab, or, when <paramref name="on"/>
@@ -274,7 +274,7 @@ public sealed class Navigation
         var preview = _tabs.Preview;
         if (preview is not null)
         {
-            Tabs.Keep(_tabs, preview);
+            _tabs.Keep(preview);
         }
     }
 
@@ -285,13 +285,13 @@ public sealed class Navigation
     /// <see cref="DecompileIntoTabHandler"/> to bring in; null when none did.</summary>
     public DecompileTicket? FocusTab(DocumentTab tab, DecompilerSetup setup)
     {
-        if (!Tabs.IsOpen(_tabs, tab))
+        if (!_tabs.IsOpen(tab))
         {
             return null;
         }
 
         _intent.Begin();
-        Tabs.MakeActive(_tabs, tab);
+        _tabs.MakeActive(tab);
         RecordShownPlace(tab, setup.Language);
         return StartDecompilingAgainIfOutdated(tab, setup.Language, setup.Options);
     }
@@ -409,7 +409,7 @@ public sealed class Navigation
     {
         _intent.Begin();
         LeaveActiveTab();
-        Tabs.MakeActive(_tabs, tab);
+        _tabs.MakeActive(tab);
         ViewCommands.Enqueue(new ViewCommand.ShowTab { Tab = tab, Beside = null });
         RecordShownPlace(tab, tab.Load.Language);
     }
@@ -424,8 +424,8 @@ public sealed class Navigation
         var tab = GetOrOpenEmptyTab();
         var id = ++_documents;
         _tabs.GetDocument(tab).ShowDiagram(diagram, title, id);
-        Tabs.Keep(_tabs, tab);
-        Tabs.MakeActive(_tabs, tab);
+        _tabs.Keep(tab);
+        _tabs.MakeActive(tab);
         _history.RecordDiagram(id, diagram, title);
         return tab;
     }
@@ -441,7 +441,7 @@ public sealed class Navigation
             return;
         }
 
-        Tabs.MakeActive(_tabs, tab);
+        _tabs.MakeActive(tab);
     }
 
     /// <summary>Shows <paramref name="comparison"/>, titled <paramref name="title"/>, its saved one compared again, in
@@ -461,8 +461,8 @@ public sealed class Navigation
         var tab = GetOrOpenEmptyTab();
         var id = ++_documents;
         _tabs.GetDocument(tab).ShowComparison(comparison, title, id);
-        Tabs.Keep(_tabs, tab);
-        Tabs.MakeActive(_tabs, tab);
+        _tabs.Keep(tab);
+        _tabs.MakeActive(tab);
         _history.RecordComparison(id, comparison, title);
         return tab;
     }
@@ -475,7 +475,7 @@ public sealed class Navigation
         LeaveActiveTab();
         var tab = OpenNewTab();
         _tabs.GetDocument(tab).ShowReport(report);
-        Tabs.MakeActive(_tabs, tab);
+        _tabs.MakeActive(tab);
         _history.RecordReport(report);
     }
 
@@ -483,7 +483,7 @@ public sealed class Navigation
     public void OpenFirstTab()
     {
         var first = _tabs.AddNew();
-        Tabs.MakeActive(_tabs, first);
+        _tabs.MakeActive(first);
     }
 
     /// <summary>Opens an empty tab for a panel the screen made for itself.</summary>
@@ -527,14 +527,14 @@ public sealed class Navigation
     /// when they were saved.</summary>
     public void RestoreActiveTab(DocumentTab tab)
     {
-        Tabs.MakeActive(_tabs, tab);
+        _tabs.MakeActive(tab);
     }
 
     /// <summary>Makes <paramref name="tab"/>, reopened from the saved documents, the preview tab, as it was when they
     /// were saved.</summary>
     public void RestorePreviewTab(DocumentTab tab)
     {
-        Tabs.MakePreview(_tabs, tab);
+        _tabs.MakePreview(tab);
     }
 
     /// <summary>Closes <paramref name="tab"/>, cancelling what it was doing, unless it is closed already: a new intent.
@@ -542,7 +542,7 @@ public sealed class Navigation
     /// Returns whether it was the active tab, which leaves none active until the view focuses another.</summary>
     public ClosedTab CloseTab(DocumentTab tab)
     {
-        if (!Tabs.IsOpen(_tabs, tab))
+        if (!_tabs.IsOpen(tab))
         {
             return new ClosedTab { WasActive = false };
         }
@@ -550,7 +550,7 @@ public sealed class Navigation
         _intent.Begin();
         var wasActive = tab == _tabs.Active;
         KeepDocumentOf(tab);
-        Tabs.Remove(_tabs, tab);
+        _tabs.Remove(tab);
         return new ClosedTab { WasActive = wasActive };
     }
 
@@ -585,7 +585,7 @@ public sealed class Navigation
 
         KeepDocumentOf(kept);
         _tabs.GetDocument(kept).Clear();
-        Tabs.MakeActive(_tabs, kept);
+        _tabs.MakeActive(kept);
     }
 
     private DocumentTab GetTabToKeep()
@@ -857,8 +857,8 @@ public sealed class Navigation
         var id = ++_documents;
         var tab = GetOrOpenEmptyTab();
         _tabs.GetDocument(tab).ShowDiagram(diagram, place.Title, id);
-        Tabs.Keep(_tabs, tab);
-        Tabs.MakeActive(_tabs, tab);
+        _tabs.Keep(tab);
+        _tabs.MakeActive(tab);
         _history.ReplaceCurrent(place with { Id = id });
         Diagrams.StartReading(diagram);
         return new HistoryMove.ReadCards { Read = new DiagramPlaceRead { Diagram = diagram, Types = place.Types, Title = place.Title } };
@@ -883,8 +883,8 @@ public sealed class Navigation
         var id = ++_documents;
         var tab = GetOrOpenEmptyTab();
         _tabs.GetDocument(tab).ShowComparison(comparison, place.Title, id);
-        Tabs.Keep(_tabs, tab);
-        Tabs.MakeActive(_tabs, tab);
+        _tabs.Keep(tab);
+        _tabs.MakeActive(tab);
         _history.ReplaceCurrent(place with { Id = id });
         var run = Comparisons.StartComparing(assemblies, comparison);
         if (run is null)
@@ -915,7 +915,7 @@ public sealed class Navigation
         _intent.Begin();
         var tab = OpenNewTab();
         _tabs.GetDocument(tab).ShowReport(report);
-        Tabs.MakeActive(_tabs, tab);
+        _tabs.MakeActive(tab);
     }
 
     /// <summary>Brings <paramref name="tab"/>, showing the diagram, comparison or report of the history entry gone to,
@@ -923,7 +923,7 @@ public sealed class Navigation
     private void BringToFront(DocumentTab tab)
     {
         _intent.Begin();
-        Tabs.MakeActive(_tabs, tab);
+        _tabs.MakeActive(tab);
         ViewCommands.Enqueue(new ViewCommand.ShowTab { Tab = tab, Beside = null });
     }
 
@@ -1039,7 +1039,7 @@ public sealed class Navigation
         int? row = null)
     {
         var shownIn = GetOrOpenTab(destination);
-        Tabs.MakeActive(_tabs, shownIn);
+        _tabs.MakeActive(shownIn);
         var load = StartDecompiling(shownIn, node, setup, new Arrival
         {
             Position = position,
@@ -1083,7 +1083,7 @@ public sealed class Navigation
 
         if (IsPreviewed(destination))
         {
-            Tabs.MakePreview(_tabs, tab);
+            _tabs.MakePreview(tab);
         }
 
         return tab;
@@ -1110,7 +1110,7 @@ public sealed class Navigation
     /// which nothing replaces; else null.</summary>
     private DocumentTab? FindOriginToReplace(DocumentTab? origin)
     {
-        var open = Tabs.KeepIfOpen(_tabs, origin);
+        var open = _tabs.KeepIfOpen(origin);
         if (open is null)
         {
             return null;

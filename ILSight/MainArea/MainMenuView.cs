@@ -269,7 +269,7 @@ internal static class MainMenuView
             SaveDialogs.PickActiveCodeFile(ui, appState.Navigation, appState.Decompiler.Setup.Language);
         }
 
-        var anyOpen = ui.State.Tree.Roots.Length > 0;
+        var anyOpen = ui.State.Tree.Roots.Count > 0;
         if (ui.MenuItem(t.FileExport, Shortcuts.Export, enabled: anyOpen, id: "export", icon: new UiIcon(ui.State.Icons.FileExportProject)))
         {
             Exports.OpenExportSetup(ui.State.ExportSetup, appState.Assemblies.Assemblies, FindActiveAssembly(appState.Navigation));

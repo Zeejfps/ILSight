@@ -129,15 +129,15 @@ public sealed class DisplayOptionsTests
         var a = new CodeReference.Local { Name = "a", Key = 0, Scope = null };
         var b = new CodeReference.Local { Name = "b", Key = 1, Scope = null };
         var builder = new DocumentBuilder { Language = DecompilationLanguage.CSharp };
-        DocumentWriting.Write(builder, "a", SpanKind.Local, a, isDefinition: true);
-        DocumentWriting.Write(builder, " = ", SpanKind.Plain);
-        DocumentWriting.Write(builder, "b", SpanKind.Local, b);
-        DocumentWriting.Write(builder, " + ", SpanKind.Plain);
-        DocumentWriting.Write(builder, "a", SpanKind.Local, a);
-        DocumentWriting.Write(builder, ";", SpanKind.Plain);
-        DocumentWriting.WriteLine(builder);
-        DocumentWriting.Write(builder, "          ", SpanKind.Plain);
-        return DocumentWriting.BuildDocument(builder, "locals");
+        builder.Write("a", SpanKind.Local, a, isDefinition: true);
+        builder.Write(" = ", SpanKind.Plain);
+        builder.Write("b", SpanKind.Local, b);
+        builder.Write(" + ", SpanKind.Plain);
+        builder.Write("a", SpanKind.Local, a);
+        builder.Write(";", SpanKind.Plain);
+        builder.WriteLine();
+        builder.Write("          ", SpanKind.Plain);
+        return builder.BuildDocument("locals");
     }
 
     private static CodeViewDriver ClickedOnB(DisplayOptions display)
@@ -353,7 +353,7 @@ public sealed class DisplayOptionsTests
         Assert.True(IsBold(app, "Nested namespaces"));
         Assert.Contains(outermost, app.Ui.Tree.GetChildren(root).Nodes);
         Assert.DoesNotContain(fixtures, app.Ui.Tree.GetChildren(root).Nodes);
-        Assert.Equal("Fixtures", Trees.GetRowLabel(app.Ui.Tree, fixtures));
+        Assert.Equal("Fixtures", app.Ui.Tree.GetRowLabel(fixtures));
     }
 
     [Fact]

@@ -86,7 +86,7 @@ public sealed class TargetFrameworkTests
         tree.View.Refresh();
         var greeter = app.Fixture("Greeter");
         app.Show(greeter, 2);
-        var before = Trees.ListExpandedPaths(tree);
+        var before = tree.ListExpandedPaths();
         var shapes = new List<List<NodePath>>();
 
         app.Start((a, ct) => a.AssemblyReloading.SetTargetFrameworkAsync(a.ListSession, a.Reopens, a.Decompiler, fixtures, Net48, ct));
@@ -105,7 +105,7 @@ public sealed class TargetFrameworkTests
         void RunFrame()
         {
             app.Run();
-            shapes.Add(Trees.ListExpandedPaths(tree));
+            shapes.Add(tree.ListExpandedPaths());
         }
     }
 
@@ -133,12 +133,12 @@ public sealed class TargetFrameworkTests
 
         tree.View.Refresh();
         app.Show(assembly.Child(AppStateDriver.FixturesNamespace, "Greeter"), 2);
-        var before = Trees.ListExpandedPaths(tree);
+        var before = tree.ListExpandedPaths();
 
         app.Start((a, ct) => a.AssemblyReloading.SetTargetFrameworkAsync(a.ListSession, a.Reopens, a.Decompiler, Assert.IsType<LoadedModule>(assembly.Assembly), Net48, ct));
         app.Settle(3);
 
-        Assert.Equal(before, Trees.ListExpandedPaths(tree));
+        Assert.Equal(before, tree.ListExpandedPaths());
         Assert.Equal("Greeter", app.AppState.Navigation.ActiveTab?.Node?.Text);
         Assert.Empty(app.AppState.Errors.Entries);
     }

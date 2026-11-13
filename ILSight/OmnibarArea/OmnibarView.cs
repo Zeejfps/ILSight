@@ -399,7 +399,7 @@ internal static class OmnibarView
         using var id = ui.Id(RuntimeHelpers.GetHashCode(child));
         using var row = list.Row(index, ui.GetId("child"), new Box { Gap = theme.GapTight });
         var color = row.Selected ? theme.SelectionText : CrumbColor(theme, child);
-        var label = Trees.GetRowLabel(ui.State.Tree, child);
+        var label = ui.State.Tree.GetRowLabel(child);
         NodeIcons.Draw(ui, child);
         ui.Text(label, new Box { Width = Sizing.Grow() }, color: color, overflow: TextOverflow.Ellipsis);
         RecordChildPath(ui, row.Interaction.Id, label);

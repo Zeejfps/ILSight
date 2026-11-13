@@ -76,7 +76,7 @@ public sealed class BrowseTreeTests
         var tree = new BrowseTree { Session = TestSession.Shared };
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath);
         var reopens = new Reopens();
-        Trees.ShowReopening(tree, reopens.Files);
+        tree.ShowReopening(reopens.Files);
         var idle = tree.Row(assembly.Root).Spinning;
 
         reopens.Start(assembly.FilePath);
@@ -94,13 +94,13 @@ public sealed class BrowseTreeTests
         var root = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).Root;
         var ns = root.Child(AppStateDriver.FixturesNamespace);
         var secret = ns.Child("Hidden", "Secret() : int");
-        Trees.ShowApi(tree, ApiVisibility.PublicOnly);
+        tree.ShowApi(ApiVisibility.PublicOnly);
 
-        Trees.RevealNode(tree, secret);
+        tree.RevealNode(secret);
         Assert.Same(ns, tree.View.Selected);
 
-        Trees.ShowApi(tree, ApiVisibility.AllButCompilerGenerated);
-        Trees.RevealNode(tree, secret);
+        tree.ShowApi(ApiVisibility.AllButCompilerGenerated);
+        tree.RevealNode(secret);
         Assert.Same(secret, tree.View.Selected);
     }
 
@@ -115,7 +115,7 @@ public sealed class BrowseTreeTests
         Assert.True(backingField.IsCompilerGenerated);
         Assert.DoesNotContain(backingField, tree.GetChildren(counter).Nodes);
 
-        Trees.ShowApi(tree, ApiVisibility.All);
+        tree.ShowApi(ApiVisibility.All);
 
         Assert.Contains(backingField, tree.GetChildren(counter).Nodes);
     }
@@ -124,7 +124,7 @@ public sealed class BrowseTreeTests
     public void The_public_children_cache_does_not_keep_closed_assemblies_alive()
     {
         var tree = new BrowseTree { Session = TestSession.Shared };
-        Trees.ShowApi(tree, ApiVisibility.PublicOnly);
+        tree.ShowApi(ApiVisibility.PublicOnly);
         var assembly = FilterAndClose(tree);
 
         for (var i = 0; i < 100 && assembly.IsAlive; i++)

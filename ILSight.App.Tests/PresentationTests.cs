@@ -60,7 +60,7 @@ public sealed class PresentationTests
         var original = list.Open(AppStateDriver.FixturePath);
         var duplicate = list.Open(copy);
         var tree = new BrowseTree { Session = TestSession.Shared };
-        Trees.TrySyncRoots(tree, list);
+        tree.TrySyncRoots(list);
 
         var first = tree.Row(original.Root);
         var second = tree.Row(duplicate.Root);
@@ -69,7 +69,7 @@ public sealed class PresentationTests
         Assert.StartsWith(original.Name, first.Label);
         Assert.Equal($"{duplicate.Name} (copy)", second.Label);
         Assert.Equal(first.Secondary, second.Secondary);
-        Assert.Equal(second.Label, Trees.GetLabel(tree, duplicate.Root));
+        Assert.Equal(second.Label, tree.GetLabel(duplicate.Root));
         Assert.Contains(original.FilePath.Text, first.Tooltip);
         Assert.Contains(duplicate.FilePath.Text, second.Tooltip);
         Assert.Contains(original.FullName, first.Tooltip);
@@ -81,7 +81,7 @@ public sealed class PresentationTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var assembly = list.Open(AppStateDriver.FixturePath);
         var tree = new BrowseTree { Session = TestSession.Shared };
-        Trees.TrySyncRoots(tree, list);
+        tree.TrySyncRoots(list);
 
         Assert.Equal(assembly.Name, tree.Row(assembly.Root).Label);
     }
@@ -92,7 +92,7 @@ public sealed class PresentationTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var assembly = list.Open(AppStateDriver.FixturePath);
         var tree = new BrowseTree { Session = TestSession.Shared };
-        Trees.TrySyncRoots(tree, list);
+        tree.TrySyncRoots(list);
 
         var row = tree.Row(assembly.Root);
 
@@ -108,7 +108,7 @@ public sealed class PresentationTests
         var ns = root.Child(AppStateDriver.FixturesNamespace);
         var privateField = ns.Child("Outline").Children.Single(c => c.Icon == NodeIcon.Field && c.Accessibility == NodeAccessibility.Private);
         var tree = new BrowseTree { Session = TestSession.Shared };
-        Trees.SetTreeStyle(tree, UiTheme.Light, Light.Icons, Icons);
+        tree.SetStyle(UiTheme.Light, Light.Icons, Icons);
 
         var field = tree.Row(privateField);
         var hidden = tree.Row(ns.Child("Hidden"));
@@ -132,16 +132,16 @@ public sealed class PresentationTests
         var greeter = assembly.Root.Child(AppStateDriver.FixturesNamespace, "Greeter");
         var member = greeter.Children.First(c => c.Token is not null);
         var tree = new BrowseTree { Session = TestSession.Shared };
-        Trees.TrySyncRoots(tree, list);
+        tree.TrySyncRoots(list);
         var identity = tree.Row(assembly.Root).Secondary;
 
         Assert.Null(tree.Row(greeter).Secondary);
-        Trees.ShowTokens(tree, TokenFormat.Hex);
+        tree.ShowTokens(TokenFormat.Hex);
         Assert.Equal($"@{greeter.Token:X8}", tree.Row(greeter).Secondary);
         Assert.StartsWith("@02", tree.Row(greeter).Secondary);
         Assert.Equal($"@{member.Token:X8}", tree.Row(member).Secondary);
         Assert.Equal(identity, tree.Row(assembly.Root).Secondary);
-        Trees.ShowTokens(tree, TokenFormat.Decimal);
+        tree.ShowTokens(TokenFormat.Decimal);
         Assert.Equal($"@{greeter.Token}", tree.Row(greeter).Secondary);
     }
 

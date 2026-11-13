@@ -19,7 +19,7 @@ internal static class AnalyzerPanelView
     {
         var t = ui.State.Strings;
         var rows = ui.State.Analyzer;
-        Analysis.SetRowStyle(rows, ui.Theme, ui.State.NodeIconPalette, ui.State.Icons, t);
+        rows.SetStyle(ui.Theme, ui.State.NodeIconPalette, ui.State.Icons, t);
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         Toolbar(ui, analyzer, rows);
         ui.Separator();
@@ -37,17 +37,17 @@ internal static class AnalyzerPanelView
         var t = ui.State.Strings;
         var theme = ui.Theme;
         var any = analyzer.Roots.Count > 0;
-        var root = Analysis.FindSelectedRoot(rows);
+        var root = rows.FindSelectedRoot();
         using (ui.PaneToolbar())
         {
             if (ui.IconButton("collapse", ui.State.Icons.AnalyzerCollapseAll, t.CodeCollapseAll, any))
             {
-                Analysis.CollapseAllRows(rows);
+                rows.CollapseAll();
             }
 
             if (ui.IconButton("expand", ui.State.Icons.AnalyzerExpandAll, t.CodeExpandAll, any))
             {
-                Analysis.ExpandAllRows(rows);
+                rows.ExpandAll();
             }
 
             ui.Separator(theme.IconSize);
@@ -108,7 +108,7 @@ internal static class AnalyzerPanelView
 
     private static void RemoveSelectedAnalysis(UiState screen, AnalyzerRows rows)
     {
-        var root = Analysis.FindSelectedRoot(rows);
+        var root = rows.FindSelectedRoot();
         if (root is not null)
         {
             Commands.Later(screen, root, static (a, r) => a.Analyzer.RemoveRoot(r));
@@ -190,7 +190,7 @@ internal static class AnalyzerPanelView
     public static void ShowAnalysis(UiState screen, AnalyzerSymbolNode root)
     {
         OpenPanel(screen, DockView.Analyzer);
-        Analysis.ShowRoot(screen.Analyzer, root);
+        screen.Analyzer.ShowRoot(root);
     }
 
     /// <summary>Opens the analyzer if it is not, where the root of <paramref name="pending"/> shows as loading while

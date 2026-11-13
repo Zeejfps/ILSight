@@ -20,6 +20,13 @@ public sealed class BookmarkImportingTests
         return d.AppState.Bookmarks.Items.ToList();
     }
 
+    /// <summary><paramref name="bookmark"/> as <paramref name="list"/> makes it, to add to it: a list holds only
+    /// the bookmarks it made.</summary>
+    private static Bookmark MadeBy(BookmarkList list, Bookmark bookmark)
+    {
+        return list.CreateFromRecord(Bookmarks.CreateRecord(bookmark), bookmark.Place);
+    }
+
     private static BookmarksRead FileOf(IEnumerable<Bookmark> bookmarks)
     {
         var records = bookmarks
@@ -61,7 +68,7 @@ public sealed class BookmarkImportingTests
         var file = TwoBookmarks();
         var ports = new FakeBookmarkImportingPorts { File = FileOf(file) };
         var bookmarks = new BookmarkList();
-        bookmarks.TryAdd(file[0]);
+        bookmarks.TryAdd(MadeBy(bookmarks, file[0]));
         var imports = new BookmarkImports();
 
         var importing = new BookmarkImporting(ports).ImportAsync(bookmarks, imports, Path, CancellationToken.None);
@@ -80,7 +87,7 @@ public sealed class BookmarkImportingTests
         var file = TwoBookmarks();
         var ports = new FakeBookmarkImportingPorts { File = FileOf([file[0], file[0], file[1]]) };
         var bookmarks = new BookmarkList();
-        bookmarks.TryAdd(file[1]);
+        bookmarks.TryAdd(MadeBy(bookmarks, file[1]));
         var imports = new BookmarkImports();
         var importing = new BookmarkImporting(ports);
         var reading = importing.ImportAsync(bookmarks, imports, Path, CancellationToken.None);

@@ -77,7 +77,7 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
         }).ToList();
         ReportLostBookmarks(found, file);
         var imported = found
-            .Select(CreateBookmark)
+            .Select(f => CreateBookmark(bookmarks, f))
             .OfType<Bookmark>()
             .ToList();
         if (imported.Count == 0)
@@ -116,15 +116,16 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
         return $"{record.Name}: {location} ({record.FileName})";
     }
 
-    /// <summary>The bookmark of <paramref name="found"/>, or null when its place wasn't found.</summary>
-    private static Bookmark? CreateBookmark(FoundBookmark found)
+    /// <summary>The bookmark of <paramref name="found"/>, made by <paramref name="bookmarks"/>, or null when its place
+    /// wasn't found.</summary>
+    private static Bookmark? CreateBookmark(BookmarkList bookmarks, FoundBookmark found)
     {
         if (found.Place is not Lookup<NodePath>.Found place)
         {
             return null;
         }
 
-        return Bookmarks.CreateFromRecord(found.Record, place.Value);
+        return bookmarks.CreateFromRecord(found.Record, place.Value);
     }
 
     /// <summary>Takes the bookmarks <paramref name="import"/> waits with into <paramref name="bookmarks"/> as

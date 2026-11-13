@@ -233,7 +233,7 @@ internal static class DocumentsView
             return tab.Title ?? screen.Strings.DocumentNewTab;
         }
 
-        return Trees.GetLabel(screen.Tree, node);
+        return screen.Tree.GetLabel(node);
     }
 
     /// <summary>Muted <paramref name="text"/> centered in a pane or area with nothing to show yet.</summary>

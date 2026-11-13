@@ -35,6 +35,6 @@ public sealed class ExpandNamespacesHandler(ExpandNamespacesHandler.IPorts ports
             return;
         }
 
-        Trees.ExpandNamespacesIn(tree, loaded.Children);
+        tree.ExpandNamespacesIn(loaded.Children);
     }
 }

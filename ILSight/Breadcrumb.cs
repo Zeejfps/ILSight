@@ -31,7 +31,7 @@ public sealed class Breadcrumb
             return [];
         }
 
-        return Trees.ListPathTo(tree, node)
+        return tree.ListPathTo(node)
             .Select(n => new Crumb { Node = n, Label = GetCrumbLabel(n, tree) })
             .ToArray();
     }
@@ -42,9 +42,9 @@ public sealed class Breadcrumb
     {
         if (node.Subject is NodeSubject.Module)
         {
-            return Trees.GetLabel(tree, node);
+            return tree.GetLabel(node);
         }
 
-        return Trees.GetRowLabel(tree, node);
+        return tree.GetRowLabel(node);
     }
 }

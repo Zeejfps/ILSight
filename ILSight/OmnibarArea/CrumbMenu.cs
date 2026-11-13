@@ -65,7 +65,7 @@ public sealed class CrumbMenu
 
     private void FilterChildren(IReadOnlyList<BrowseNode> children, BrowseTree tree)
     {
-        var shown = children.Where(c => HoldsFilter(Trees.GetRowLabel(tree, c))).ToList();
+        var shown = children.Where(c => HoldsFilter(tree.GetRowLabel(c))).ToList();
         _listed = new Memo<(ByReference<IReadOnlyList<BrowseNode>>, string), IReadOnlyList<BrowseNode>>((new ByReference<IReadOnlyList<BrowseNode>>(children), Filter), shown);
         SelectWaitingChild();
         ItemSelections.DropIfGone(Selection, Shown);

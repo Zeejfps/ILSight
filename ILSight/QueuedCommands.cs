@@ -67,7 +67,7 @@ internal static class QueuedCommands
             return;
         }
 
-        Trees.RevealNode(uiState.Tree, node);
+        uiState.Tree.RevealNode(node);
     }
 
     private static void ExpandListed(UiState uiState, AppState appState, IReadOnlyList<BrowseNode> nodes)
@@ -75,7 +75,7 @@ internal static class QueuedCommands
         var listed = nodes
             .Where(n => appState.Assemblies.IsListed(n.Root.Assembly))
             .ToList();
-        Trees.ExpandNodes(uiState.Tree, listed);
+        uiState.Tree.ExpandNodes(listed);
     }
 
     /// <summary>Expands <paramref name="root"/> and selects it, unless it was removed meanwhile.</summary>
@@ -86,7 +86,7 @@ internal static class QueuedCommands
             return;
         }
 
-        Analysis.ShowRoot(uiState.Analyzer, root);
+        uiState.Analyzer.ShowRoot(root);
     }
 
     private static void RestoreView(UiState uiState, AppState appState, DocumentTab tab, ViewPosition position)

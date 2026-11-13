@@ -74,7 +74,7 @@ public sealed class SavedComparisonTests : IDisposable
         Assert.NotNull(comparison);
         app.StartComparing(SwapComparedAssemblies(app.AppState.Assemblies, comparison));
         app.StartComparing(ChangeComparedScope(app.AppState.Assemblies, comparison, ApiScope.AllDeclared));
-        Comparisons.ShowOnlyDifferences(DocumentPanels.GetView(app.Ui.Documents, tab).Comparison, false);
+        DocumentPanels.GetView(app.Ui.Documents, tab).Comparison.ShowOnlyDifferences(false);
         app.Settle(2);
         var panel = DocumentPanels.GetPanel(app.Ui.Documents, tab);
 
@@ -107,7 +107,7 @@ public sealed class SavedComparisonTests : IDisposable
         app.Settle(2);
         Assert.Equal(RightPath, ReadSavedComparison().LeftPath.Text);
 
-        Comparisons.ShowOnlyDifferences(DocumentPanels.GetView(app.Ui.Documents, tab).Comparison, false);
+        DocumentPanels.GetView(app.Ui.Documents, tab).Comparison.ShowOnlyDifferences(false);
         app.Settle(2);
         var savedView = ReadSavedComparison().View;
         Assert.NotNull(savedView);

@@ -141,7 +141,7 @@ public static class Bookmarks
         var anchor = Documents.FindAnchorAt(tab.Document, line);
         var name = appState.Bookmarks.CreateName(nameOf);
         var info = Describe(node, anchor, tab.Document);
-        var bookmark = Bookmarks.CreateAt(node, tab.Load.Language, line, anchor, name, info);
+        var bookmark = appState.Bookmarks.CreateAt(node, tab.Load.Language, line, anchor, name, info);
         appState.Bookmarks.TryAdd(bookmark);
         return new BookmarkToggle.Added(bookmark);
     }
@@ -204,32 +204,32 @@ public static class Bookmarks
         return path;
     }
 
-    private static Bookmark CreateBookmark(NodePath place, DecompilationLanguage language, int line, CodeAnchor? anchor, string name,
-        ILSpyBookmarkInfo ilspy, BookmarkViewState? viewState, bool enabled)
+    private static Bookmark CreateBookmark(BookmarkState state, DecompilationLanguage language, int line, CodeAnchor? anchor,
+        ILSpyBookmarkInfo ilspy, BookmarkViewState? viewState)
     {
-        return new Bookmark
+        var place = state.Place;
+        return new Bookmark(state)
         {
-            Place = place,
             Language = language,
             Line = line,
             Anchor = anchor,
-            Name = name,
             ILSpy = ilspy,
             ViewState = viewState,
-            Enabled = enabled,
             Location = $"{place.Label}:{line + 1}",
             Module = place.FilePath.FileName,
         };
     }
 
-    /// <summary>The bookmark made in the document of <paramref name="node"/>.</summary>
-    public static Bookmark CreateAt(BrowseNode node, DecompilationLanguage language, int line, CodeAnchor? anchor, string name, ILSpyBookmarkInfo ilspy)
+    /// <summary>The bookmark made in a document, at <paramref name="state"/>'s place, which the list holding
+    /// <paramref name="state"/> makes.</summary>
+    public static Bookmark CreateAt(BookmarkState state, DecompilationLanguage language, int line, CodeAnchor? anchor, ILSpyBookmarkInfo ilspy)
     {
-        return CreateBookmark(node.Path, language, line, anchor, name, ilspy, null, true);
+        return CreateBookmark(state, language, line, anchor, ilspy, null);
     }
 
-    /// <summary>The bookmark <paramref name="record"/> describes, made in the document of <paramref name="place"/>.</summary>
-    public static Bookmark CreateFromRecord(BookmarkRecord record, NodePath place)
+    /// <summary>The bookmark <paramref name="record"/> describes, made in the document of <paramref name="state"/>'s
+    /// place, which the list holding <paramref name="state"/> makes.</summary>
+    public static Bookmark CreateFromRecord(BookmarkState state, BookmarkRecord record)
     {
         CodeAnchor? anchor = record.Kind switch
         {
@@ -257,8 +257,8 @@ public static class Bookmarks
             LocationNodeName = record.LocationNodeName,
             TreePath = record.ViewState?.SelectedTreeNodePath,
         };
-        return CreateBookmark(place, record.Language ?? DecompilationLanguage.CSharp, Math.Max(0, record.LineNumber - 1), anchor,
-            record.Name, ilspy, record.ViewState, record.Enabled);
+        return CreateBookmark(state, record.Language ?? DecompilationLanguage.CSharp, Math.Max(0, record.LineNumber - 1), anchor,
+            ilspy, record.ViewState);
     }
 
     /// <summary>This bookmark as ILSpy's bookmarks file holds it, with this app's place and language.</summary>
