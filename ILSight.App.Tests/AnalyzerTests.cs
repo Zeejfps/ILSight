@@ -62,7 +62,7 @@ public sealed class AnalyzerTests
         Assert.NotNull(symbol);
         var kind = new AnalyzerKindNode { Subject = symbol, Kind = symbol.Kinds.Single(k => Core.Analysis.Analyzers.GetHeader(k) == "Used By") };
 
-        Commands.StartAnalysis(d.AppState, StartRun(kind));
+        d.InTurn(() => Commands.StartAnalysis(d.AppState, StartRun(kind)));
         d.RunUntil(() => kind.IsDone);
 
         var message = Assert.IsType<AnalyzerMessageNode>(Assert.Single(kind.Found));
@@ -115,7 +115,7 @@ public sealed class AnalyzerTests
 
         app.DoubleClickOn(Selector.WithText(app.Frames.Canvas.Texts.Last(t => t.Inputs.Text.StartsWith("Third()")).Inputs.Text));
         d.Settle();
-        Commands.Analyze(app.AppState, app.Ui, caller.Symbol);
+        d.InTurn(() => Commands.Analyze(app.AppState, app.Ui, caller.Symbol));
 
         Assert.StartsWith("Third()", d.AppState.Navigation.ActiveTab?.Node?.Text);
         Assert.Equal(2, analyzer.Roots.Count);
@@ -227,7 +227,7 @@ public sealed class AnalyzerTests
         Assert.NotNull(reference);
         var listedBefore = ListedPaths(d);
 
-        Commands.Analyze(d.AppState, d.Ui, append.Symbol);
+        d.InTurn(() => Commands.Analyze(d.AppState, d.Ui, append.Symbol));
         var waiting = analyzer.Roots.ToList();
         d.Settle();
         var followed = AppStateDriver.Opened();
@@ -255,7 +255,7 @@ public sealed class AnalyzerTests
             Reference = null, Kinds = [], Accessors = [], File = null, Definition = null,
         };
 
-        Commands.Analyze(d.AppState, d.Ui, nowhere);
+        d.InTurn(() => Commands.Analyze(d.AppState, d.Ui, nowhere));
         d.Settle();
 
         Assert.Empty(d.AppState.Analyzer.Roots);
@@ -287,7 +287,7 @@ public sealed class AnalyzerTests
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
         d.TakeViewCommands();
 
-        Commands.StartAnalyzing(d.AppState, BeginAnalyzing(d.AppState.Analyzer, reference));
+        d.InTurn(() => Commands.StartAnalyzing(d.AppState, BeginAnalyzing(d.AppState.Analyzer, reference)));
         d.Settle();
 
         var root = Assert.Single(d.AppState.Analyzer.Found());
@@ -357,7 +357,7 @@ public sealed class AnalyzerTests
         var greeter = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(SymbolOf(await d.FixtureAsync("Greeter")))).Root;
         d.TakeViewCommands();
 
-        Commands.StartAnalyzing(d.AppState, BeginAnalyzing(analyzer, reference));
+        d.InTurn(() => Commands.StartAnalyzing(d.AppState, BeginAnalyzing(analyzer, reference)));
         d.Settle();
 
         Assert.Equal<AnalyzerNode>([first, greeter], analyzer.Roots);
@@ -392,7 +392,7 @@ public sealed class AnalyzerTests
         var document = await outline.DecompileAsync(DecompilationLanguage.CSharp);
         var (line, column) = document.GetPosition("return First();");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
-        Commands.CloseAssemblies(d.AppState, [assembly]);
+        d.InTurn(() => Commands.CloseAssemblies(d.AppState, [assembly]));
         File.Delete(copy);
 
         d.Analyze(reference);
@@ -412,7 +412,7 @@ public sealed class AnalyzerTests
 
         analyzer.RemoveRoot(analyzer.Roots[0]);
         var left = analyzer.Found().Select(r => r.Symbol.Label).ToList();
-        Commands.CloseAllAssemblies(d.AppState);
+        d.InTurn(() => Commands.CloseAllAssemblies(d.AppState));
 
         Assert.Equal(["Greeter"], left);
         Assert.Empty(analyzer.Roots);

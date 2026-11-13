@@ -177,6 +177,69 @@ internal sealed class AppStateDriver
         return _posted.Install();
     }
 
+    /// <summary>Does <paramref name="change"/>, the app's code a test calls itself, in a turn of the driver's loop, as the
+    /// app's edge runs it: what it starts comes back to the loop, which the test's pumps and frames run.</summary>
+    public void InTurn(Action change)
+    {
+        using var turn = _posted.Install();
+        change();
+    }
+
+    /// <summary>Runs <paramref name="work"/>, the app's work a test starts itself (a use case, a handler), as the app's
+    /// edge starts it: begun in a turn of the driver's loop, each wait comes back to the loop, whose posts the driver
+    /// runs until the work ends, and nothing else a frame does; answers what it came to.</summary>
+    public async Task<T> RunAsync<T>(Func<Task<T>> work)
+    {
+        return await EndAsync(BeginAsync(work));
+    }
+
+    /// <summary>As <see cref="RunAsync{T}(Func{Task{T}})"/>, for work that answers nothing.</summary>
+    public async Task RunAsync(Func<Task> work)
+    {
+        await EndAsync(BeginAsync(work));
+    }
+
+    /// <summary>Begins <paramref name="work"/> in a turn of the driver's loop and answers it under way, for a test that
+    /// acts while it waits, then ends it with <see cref="EndAsync{T}(Task{T})"/>.</summary>
+    public Task<T> BeginAsync<T>(Func<Task<T>> work)
+    {
+        using var turn = _posted.Install();
+        return work();
+    }
+
+    /// <summary>As <see cref="BeginAsync{T}(Func{Task{T}})"/>, for work that answers nothing.</summary>
+    public Task BeginAsync(Func<Task> work)
+    {
+        using var turn = _posted.Install();
+        return work();
+    }
+
+    /// <summary>Runs what is posted to the driver's loop until <paramref name="work"/>, begun in a turn
+    /// (<see cref="BeginAsync{T}(Func{Task{T}})"/>), has ended, then answers what it came to.</summary>
+    public async Task<T> EndAsync<T>(Task<T> work)
+    {
+        RunPostsUntil(work);
+        return await work;
+    }
+
+    /// <summary>As <see cref="EndAsync{T}(Task{T})"/>, for work that answers nothing.</summary>
+    public async Task EndAsync(Task work)
+    {
+        RunPostsUntil(work);
+        await work;
+    }
+
+    /// <summary>Runs what was posted, each run a turn, until <paramref name="work"/> has ended; nothing when it has.</summary>
+    private void RunPostsUntil(Task work)
+    {
+        if (work.IsCompleted)
+        {
+            return;
+        }
+
+        Poll.Until(() => work.IsCompleted, _posted.Run);
+    }
+
     /// <summary>Has <paramref name="wake"/> called whenever something is posted to the test's queue.</summary>
     public void WakeOnPost(Action wake)
     {

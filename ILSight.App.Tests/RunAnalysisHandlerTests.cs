@@ -37,7 +37,7 @@ public sealed class RunAnalysisHandlerTests
         var ports = new FakeRunAnalysisHandlerPorts { Found = [Batch(farewell), Batch(outline)] };
         var findings = analyzer.Findings;
 
-        await new RunAnalysisHandler(ports).HandleAsync(analyzer, run, CancellationToken.None);
+        await d.RunAsync(() => new RunAnalysisHandler(ports).HandleAsync(analyzer, run, CancellationToken.None));
 
         var found = run.Kind.Found.OfType<AnalyzerSymbolNode>().Select(static n => n.Symbol).ToList();
         Assert.Equal([farewell, outline], found);
@@ -57,7 +57,7 @@ public sealed class RunAnalysisHandlerTests
             Found = [Batch(await SymbolOfAsync(d, "Farewell")), new Outcome<IReadOnlyList<AnalysisFind>>.Failed(error)],
         };
 
-        await new RunAnalysisHandler(ports).HandleAsync(d.AppState.Analyzer, run, CancellationToken.None);
+        await d.RunAsync(() => new RunAnalysisHandler(ports).HandleAsync(d.AppState.Analyzer, run, CancellationToken.None));
 
         Assert.IsType<AnalyzerSymbolNode>(run.Kind.Found[0]);
         Assert.Equal("unreadable", Assert.IsType<AnalyzerMessageNode>(run.Kind.Found[1]).Error);
@@ -73,7 +73,7 @@ public sealed class RunAnalysisHandlerTests
         var ports = new FakeRunAnalysisHandlerPorts { Found = [Batch(await SymbolOfAsync(d, "Farewell"))] };
         Analysis.CancelNode(run.Kind);
 
-        await new RunAnalysisHandler(ports).HandleAsync(d.AppState.Analyzer, run, CancellationToken.None);
+        await d.RunAsync(() => new RunAnalysisHandler(ports).HandleAsync(d.AppState.Analyzer, run, CancellationToken.None));
 
         Assert.Empty(run.Kind.Found);
         Assert.IsType<AnalyzerRun.Stopped>(run.Kind.Run);

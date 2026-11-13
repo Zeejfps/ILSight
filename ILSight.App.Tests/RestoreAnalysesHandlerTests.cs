@@ -37,7 +37,7 @@ public sealed class RestoreAnalysesHandlerTests
         var greeter = await SymbolOfAsync(d, "Greeter");
         var ports = new FakeRestoreAnalysesHandlerPorts { Found = new Outcome<List<Lookup<AnalysisSymbol>>>.Ok([new Lookup<AnalysisSymbol>.Found { Value = greeter }, new Lookup<AnalysisSymbol>.NotFound()]) };
 
-        await new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.Analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None);
+        await d.RunAsync(() => new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.Analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None));
 
         Assert.Equal(greeter, Assert.Single(d.AppState.Analyzer.Found()).Symbol);
         var gone = Assert.IsType<AnalyzerFailedNode>(d.AppState.Analyzer.Roots[1]);
@@ -55,7 +55,7 @@ public sealed class RestoreAnalysesHandlerTests
         var error = new IOException("unreadable");
         var ports = new FakeRestoreAnalysesHandlerPorts { Found = new Outcome<List<Lookup<AnalysisSymbol>>>.Failed(error) };
 
-        await new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.Analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None);
+        await d.RunAsync(() => new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.Analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None));
 
         Assert.Same(error, Assert.IsType<AppProblem.AnalysesNotRestored>(Assert.Single(ports.Reported)).Error);
         Assert.All(d.AppState.Analyzer.Roots, static r => Assert.Equal("unreadable", Assert.IsType<RestoreFailure.Failed>(Assert.IsType<AnalyzerFailedNode>(r).Failure).Why));
@@ -73,7 +73,7 @@ public sealed class RestoreAnalysesHandlerTests
             WhileLooking = () => LoadedAssemblies.Release(d.AppState.Assemblies.CloseAll()),
         };
 
-        await new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.Analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None);
+        await d.RunAsync(() => new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.Analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None));
 
         Assert.Empty(ports.Reported);
         Assert.Equal(2, d.AppState.Analyzer.Roots.Count);
@@ -93,7 +93,7 @@ public sealed class RestoreAnalysesHandlerTests
             WhileLooking = () => Commands.CloseAssemblies(d.AppState, [assembly]),
         };
 
-        await new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.Analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None);
+        await d.RunAsync(() => new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.Analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None));
 
         Assert.Empty(d.AppState.Analyzer.Roots);
         Assert.Empty(d.AppState.Analyzer.ListSavedAnalyses());
@@ -114,7 +114,7 @@ public sealed class RestoreAnalysesHandlerTests
         Assert.NotNull(restore);
         var ports = new FakeRestoreAnalysesHandlerPorts { Found = new Outcome<List<Lookup<AnalysisSymbol>>>.Ok([new Lookup<AnalysisSymbol>.Found { Value = greeter }]) };
 
-        await new RestoreAnalysesHandler(ports).HandleAsync(analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None);
+        await d.RunAsync(() => new RestoreAnalysesHandler(ports).HandleAsync(analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None));
 
         Assert.Empty(d.AppState.Assemblies.Listed);
         Assert.Equal(greeter, Assert.Single(analyzer.Found()).Symbol);
