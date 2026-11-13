@@ -33,8 +33,6 @@ public sealed class ShowInMetadataHandler(ShowInMetadataHandler.IPorts ports)
         return ShowResolvedRow(appState, reference, appState.Navigation.EndResolving(ticket.Intent, found), ticket.Destination);
     }
 
-    /// <summary>Shows the row <paramref name="resolved"/> found, or reports it unresolved. Returns the load it
-    /// started in the tab; null when it started none.</summary>
     private DecompileTicket? ShowResolvedRow(AppState appState, CodeReference reference, Resolution<MetadataTarget> resolved, TabDestination destination)
     {
         return resolved.Match<DecompileTicket?>(

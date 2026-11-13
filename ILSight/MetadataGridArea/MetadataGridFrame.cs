@@ -86,8 +86,6 @@ internal ref struct MetadataGridFrame
         return _result;
     }
 
-    /// <summary>Under the rows while a sort or filter is worked out off the screen's thread: that it is under way;
-    /// or why the newest one could not be worked out. Nothing otherwise.</summary>
     private void UnderWay()
     {
         var failure = State.ArrangeFailure;
@@ -330,19 +328,18 @@ internal ref struct MetadataGridFrame
         }
     }
 
-    /// <summary>A row of a paged grid not read yet: while its assembly is open, on its way, "Loading…" in its first
-    /// cell, muted, as the tree shows children on their way, and its page asked for, for the frame edge to read; once it
-    /// was closed, "Closed", asking for nothing (the tab's bar says which assembly).</summary>
     private void UnreadRow(TableRow cells, int row)
     {
         var muted = Ui.Theme.TextMuted;
         if (ClosedAssembly is not null)
         {
+            // The tab's bar says which assembly.
             cells.TextCell(0, Strings.MetadataClosed, muted);
         }
         else
         {
             MetadataGridWidget.AskForPage(Pages, Grid, row);
+            // Muted, as the tree shows children on their way.
             cells.TextCell(0, Strings.MetadataLoading, muted);
         }
 
@@ -352,7 +349,7 @@ internal ref struct MetadataGridFrame
         }
     }
 
-    /// <summary>That the grid's assembly, <paramref name="closed"/>, was closed, as the tab's bar says it.</summary>
+    // Worded as the tab's bar says it.
     private string ClosedText(string closed)
     {
         return Ui.Memo("closed", (closed, t: Strings), static a => a.t.DocumentClosed(a.closed));
@@ -383,7 +380,6 @@ internal ref struct MetadataGridFrame
         return MetadataGrids.GetLines(Grid, row, column).MoreLines > 0;
     }
 
-    /// <summary>Does what the user asked of the rows this frame: open, copy or show the menu.</summary>
     private void Answer(TableBody body)
     {
         if (body.Activated)
@@ -402,8 +398,6 @@ internal ref struct MetadataGridFrame
         }
     }
 
-    /// <summary>Goes to the row the token of <paramref name="row"/>'s cell in <paramref name="column"/> names, when it names
-    /// one; once the grid's assembly was closed, says why where the user pressed, going nowhere.</summary>
     private MetadataGridResult? GoToToken(int row, int column)
     {
         var target = MetadataGrids.FindLink(Grid, row, column);
@@ -420,8 +414,6 @@ internal ref struct MetadataGridFrame
         return new MetadataGridResult { Target = target, Definition = null, InNewTab = false };
     }
 
-    /// <summary>Opens what <paramref name="row"/> defines, when it defines something; once the grid's assembly was closed,
-    /// says why where the user pressed, opening nothing.</summary>
     private void OpenDefinition(int row, bool inNewTab)
     {
         var definition = MetadataGrids.FindDefinition(Grid, row);
@@ -438,8 +430,7 @@ internal ref struct MetadataGridFrame
         _result = new MetadataGridResult { Target = null, Definition = definition, InNewTab = inNewTab };
     }
 
-    /// <summary>Whether the grid's assembly was closed, which a link would read: then has the user told so, as a command
-    /// unavailable says why where it was pressed.</summary>
+    // A link would read the closed assembly, so it is refused where it was pressed, as an unavailable command is.
     private bool TryRefuseClosed()
     {
         var closed = ClosedAssembly;
@@ -488,7 +479,6 @@ internal ref struct MetadataGridFrame
 
         Tooltip(row, c, cellId);
     }
-    /// <summary>How many lines a closed multi-line cell hides, as its suffix; null for a single line.</summary>
     private string? MoreLines(int row, int column, int cellId)
     {
         var more = MetadataGrids.GetLines(Grid, row, column).MoreLines;

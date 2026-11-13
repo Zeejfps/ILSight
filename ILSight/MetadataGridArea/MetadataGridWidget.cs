@@ -242,7 +242,6 @@ public static class MetadataGridWidget
         DrawFunnel(ui, in heading, filter, column);
     }
 
-    /// <summary>What the heading shows of its column: a text filter being edited or typed, else the column's name.</summary>
     private static void DrawHeadingText(Ui ui, int column, bool hovered, in MetadataGridHeading heading, MetadataColumnFilter filter, int textId)
     {
         if (filter is MetadataColumnFilter.ByText text)
@@ -348,7 +347,6 @@ public static class MetadataGridWidget
             _ => state.Flyout.Toggle(column));
     }
 
-    /// <summary>Clears a typed filter, else starts typing one.</summary>
     private static void ClickTextFunnel(MetadataGridState state, MetadataColumnFilter.ByText text, int column)
     {
         if (text.Text.Length > 0)

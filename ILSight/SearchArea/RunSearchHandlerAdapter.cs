@@ -34,7 +34,6 @@ public sealed class RunSearchHandlerAdapter(ErrorLog errors, BrowseSession sessi
         }
     }
 
-    /// <summary>The next batch of <paramref name="batches"/>, or what reading it threw; null at the end.</summary>
     private static async Task<Outcome<IReadOnlyList<SearchFind>>?> ReadNextAsync(IAsyncEnumerator<IReadOnlyList<SearchFind>> batches,
         CancellationToken ct)
     {

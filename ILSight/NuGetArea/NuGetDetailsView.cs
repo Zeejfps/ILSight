@@ -58,11 +58,10 @@ internal static class NuGetDetailsView
         }
     }
 
-    /// <summary>The package's identity and the version to open, kept in place over the rest, which
-    /// scrolls; each package scrolls on its own, so another one starts at its top.</summary>
     private static void Details(Ui<UiState> ui, NuGetPicker picker, FeedPackage package)
     {
         var theme = ui.Theme;
+        // Each package scrolls on its own, so another one starts at its top.
         using (ui.Id(package.Id.Text))
         {
             var details = picker.Browser.Version != null ? picker.Browser.EnsureDetails(package, picker.Browser.Version) : null;
@@ -79,7 +78,6 @@ internal static class NuGetDetailsView
         }
     }
 
-    /// <summary>Warnings about the version picked, the whole description, the facts, and the dependencies.</summary>
     private static void Body(Ui<UiState> ui, NuGetPicker picker, FeedPackage package, VersionDetails? details)
     {
         var theme = ui.Theme;
@@ -96,7 +94,6 @@ internal static class NuGetDetailsView
         }
     }
 
-    /// <summary>The icon beside the package's id, a verified mark, and who made it.</summary>
     private static void Header(Ui<UiState> ui, NuGetPicker picker, FeedPackage package)
     {
         var theme = ui.Theme;
@@ -134,9 +131,6 @@ internal static class NuGetDetailsView
         }
     }
 
-    /// <summary>The version to open, picked from those the package lists, newest first, while the
-    /// packages shown are what was asked for; then whether its details are loading, or why they could
-    /// not be read, with a button that reads them again.</summary>
     private static void VersionRow(Ui<UiState> ui, NuGetPicker picker, FeedPackage package, VersionDetails? details)
     {
         var t = ui.State.Strings;
@@ -154,7 +148,6 @@ internal static class NuGetDetailsView
         }
     }
 
-    /// <summary>The button that picks the version to open from those <paramref name="choice"/> offers.</summary>
     private static void VersionSelect(Ui<UiState> ui, NuGetPicker picker, VersionChoice choice)
     {
         var t = ui.State.Strings;
@@ -186,7 +179,6 @@ internal static class NuGetDetailsView
             failed: static (s, _) => RetryStatus(s.ui, s.picker, s.package));
     }
 
-    /// <summary>That the version's details are being read.</summary>
     private static void LoadingStatus(Ui<UiState> ui)
     {
         var theme = ui.Theme;
@@ -194,7 +186,6 @@ internal static class NuGetDetailsView
         ui.Text(ui.State.Strings.NugetLoadingDetails, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
     }
 
-    /// <summary>A button that reads the version's details again, after they could not be read.</summary>
     private static void RetryStatus(Ui<UiState> ui, NuGetPicker picker, FeedPackage package)
     {
         if (ui.Button(ui.State.Strings.NugetRetry, id: "retry-details", variant: ButtonVariant.Ghost) && picker.Browser.Version != null)
@@ -203,8 +194,6 @@ internal static class NuGetDetailsView
         }
     }
 
-    /// <summary>That the version's details could not be read; or why the version should not be opened
-    /// lightly: it is deprecated, or has known vulnerabilities.</summary>
     private static void Warnings(Ui<UiState> ui, VersionDetails? details)
     {
         if (details is VersionDetails.Failed failed)
@@ -252,7 +241,6 @@ internal static class NuGetDetailsView
         }
     }
 
-    /// <summary>The facts the search gave, then those the catalog gives for the version picked, once read.</summary>
     private static void Facts(Ui<UiState> ui, NuGetPicker picker, FeedPackage package, VersionDetails? details)
     {
         var t = ui.State.Strings;
@@ -286,15 +274,13 @@ internal static class NuGetDetailsView
         return ui.Memo("tags", tags, static list => string.Join(", ", list));
     }
 
-    /// <summary>When the version picked was published, its license, project page and size. Until the
-    /// catalog is read, the license and project the search gave, which are the latest version's, show
-    /// only while that is the version picked.</summary>
     private static void CatalogFacts(Ui<UiState> ui, NuGetPicker picker, FeedPackage package, VersionDetails? details)
     {
         var t = ui.State.Strings;
         var read = ReadOf(details);
         if (read == null)
         {
+            // Until the catalog is read, the license and project the search gave are the latest version's.
             if (picker.Browser.Version != package.Version)
             {
                 return;
@@ -327,7 +313,6 @@ internal static class NuGetDetailsView
         return ui.Memo("size", (bytes, ui.State.Strings.Culture), static a => FormatSize(a.bytes, a.Culture));
     }
 
-    /// <summary>The details read; null while they load, could not be read, or none are asked for.</summary>
     private static PackageVersionDetails? ReadOf(VersionDetails? details)
     {
         if (details is not VersionDetails.Read read)
@@ -343,7 +328,6 @@ internal static class NuGetDetailsView
         return date.ToLocalTime().ToString("d", culture);
     }
 
-    /// <summary>The size in kilobytes, or megabytes once it reaches one.</summary>
     private static string FormatSize(long bytes, CultureInfo culture)
     {
         var kilobytes = bytes / Kilobyte;
@@ -355,7 +339,6 @@ internal static class NuGetDetailsView
         return string.Format(culture, "{0:N1} MB", kilobytes / Kilobyte);
     }
 
-    /// <summary>The license as its SPDX expression, else as the URL it is described at.</summary>
     private static string LicenseText(PackageVersionDetails details)
     {
         if (details.License.Length > 0)
@@ -381,7 +364,6 @@ internal static class NuGetDetailsView
         }
     }
 
-    /// <summary>A fact whose value opens <paramref name="url"/> in the browser; nothing when there is no text to show.</summary>
     private static void LinkFact(Ui<UiState> ui, string id, string label, string text, WebUrl? url)
     {
         if (text.Length == 0)
@@ -397,8 +379,6 @@ internal static class NuGetDetailsView
         }
     }
 
-    /// <summary>Text in the accent color that opens <paramref name="url"/> in the browser when clicked;
-    /// plain text when there is no URL.</summary>
     private static void Link(Ui<UiState> ui, string id, string text, WebUrl? url)
     {
         var theme = ui.Theme;
@@ -416,7 +396,7 @@ internal static class NuGetDetailsView
         }
     }
 
-    /// <summary>The runs of a link, kept while its text, URL and style stay the same, as rich text asks.</summary>
+    // Rich text asks for the same runs while a link's text, URL and style stay the same.
     private static IReadOnlyList<RichTextRun> LinkRunsOf(Ui<UiState> ui, string id, string text, string url, TextStyle style)
     {
         var kept = ui.GetState<LinkRuns>(ui.GetId(id + "-runs"));
@@ -444,7 +424,6 @@ internal static class NuGetDetailsView
         kept.Runs = [new RichTextRun(text, style, Link: url)];
     }
 
-    /// <summary>What the version picked depends on, for each framework it names, once its details are read.</summary>
     private static void Dependencies(Ui<UiState> ui, VersionDetails? details)
     {
         var t = ui.State.Strings;
@@ -467,7 +446,6 @@ internal static class NuGetDetailsView
         }
     }
 
-    /// <summary>A framework's name, then each package it depends on with the versions it takes.</summary>
     private static void Group(Ui<UiState> ui, DependencyGroup group, int index)
     {
         var t = ui.State.Strings;

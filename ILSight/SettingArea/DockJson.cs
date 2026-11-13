@@ -36,7 +36,6 @@ internal static class DockJson
         return new DockLayoutRead.Parsed { Layout = layout };
     }
 
-    /// <summary>The highest id of a node or window of <paramref name="layout"/>; 0 when none has one.</summary>
     private static int CalculateHighestId(DockLayout layout)
     {
         var highest = CalculateHighestId(layout.Root);
@@ -57,7 +56,6 @@ internal static class DockJson
         return Math.Max(node.Id, Math.Max(CalculateHighestId(split.First), CalculateHighestId(split.Second)));
     }
 
-    /// <summary>The layout, or null when it is missing a part.</summary>
     private static DockLayout? Parse(DockLayoutJson json)
     {
         var root = Parse(json.Root);
@@ -95,7 +93,6 @@ internal static class DockJson
         };
     }
 
-    /// <summary>The node, or null when it is held as null or is missing a part.</summary>
     private static DockNode? Parse(DockNodeJson? json)
     {
         if (json is null)

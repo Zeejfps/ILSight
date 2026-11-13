@@ -21,8 +21,7 @@ internal static class ProcessPickerView
     private static readonly ConditionalWeakTable<Strings, string[]> ProcessHeaders = new();
     private static readonly ConditionalWeakTable<Strings, string[]> ModuleHeaders = new();
 
-    /// <summary>The share of the dialog's width the processes take; the assemblies, whose folders are
-    /// shown too, take the rest.</summary>
+    // The assemblies, whose folders are shown too, take the rest.
     private const float ProcessPaneShare = 0.4f;
 
     /// <summary>Opens the dialog, drawn scanning from this frame on, and asks for the processes to be looked for
@@ -33,8 +32,7 @@ internal static class ProcessPickerView
         Scan(uiState, picker.Browser, picker.Open());
     }
 
-    /// <summary>Asks for the processes to be looked for once the frame is drawn, as <paramref name="scan"/>, which
-    /// the dialog draws from this frame on; another scan or closing the dialog cancels it.</summary>
+    // Runs once the frame is drawn; another scan or closing the dialog cancels it.
     private static void Scan(UiState uiState, ProcessBrowser browser, WorkTicket scan)
     {
         Commands.Start(uiState, nameof(ProcessBrowser.ScanAsync), (Browser: browser, Scan: scan), static (_, s, ct) => s.Browser.ScanAsync(s.Scan, ct), scan.Token);
@@ -126,8 +124,6 @@ internal static class ProcessPickerView
         }
     }
 
-    /// <summary>Follows the process selected (<see cref="ProcessBrowser.FollowSelection"/>), and asks for its modules
-    /// to be listed once the frame is drawn, when it is another than the one whose modules were shown.</summary>
     private static void FollowSelection(UiState uiState, ProcessBrowser browser)
     {
         var listing = browser.FollowSelection();
@@ -137,9 +133,8 @@ internal static class ProcessPickerView
         }
     }
 
-    /// <summary>Asks for the modules <paramref name="listing"/> is of to be listed once the frame is drawn, on a token
-    /// that picking another process and closing the dialog cancel too. A method of its own, so that the frames that
-    /// list nothing allocate no closure.</summary>
+    // A method of its own, so that the frames that list nothing allocate no closure. Picking another process and
+    // closing the dialog cancel the listing's token too.
     private static void ListLater(UiState uiState, ProcessBrowser browser, ModuleListingTicket listing)
     {
         Commands.Start(uiState, nameof(ProcessBrowser.ListModulesAsync), (Browser: browser, Listing: listing),
@@ -151,8 +146,7 @@ internal static class ProcessPickerView
         return $"{t.ProcessPickerCount(processes)} · {t.PickerCount(modules)} · {t.PickerSelected(selected)}";
     }
 
-    /// <summary>A pane taking <paramref name="share"/> of the row, whatever its rows hold, so that neither
-    /// pane changes width as rows scroll into view.</summary>
+    // A share of the row whatever its rows hold, so that neither pane changes width as rows scroll into view.
     private static Ui.Scope Pane(Ui<UiState> ui, float share)
     {
         var theme = ui.Theme;
@@ -163,7 +157,6 @@ internal static class ProcessPickerView
         });
     }
 
-    /// <summary>Walks the processes from the filter, leaving Home and End to its text.</summary>
     private static void MoveSelectionFromFilter(Ui<UiState> ui, ProcessBrowser browser, int listId)
     {
         var page = ui.MeasureListPage(listId, ui.Theme.RowHeight);
@@ -188,7 +181,6 @@ internal static class ProcessPickerView
         ui.Text(text, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) }, color: theme.TextMuted, wrap: true);
     }
 
-    /// <summary>The processes, or why there are none. True when one was activated.</summary>
     private static bool Processes(Ui<UiState> ui, ProcessBrowser browser, int listId)
     {
         return browser.Scan.Match((ui, browser, listId),
@@ -198,15 +190,12 @@ internal static class ProcessPickerView
             failed: static (s, failed) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerScanFailed, failed.Error));
     }
 
-    /// <summary>Notes <paramref name="text"/> where the rows would be. False: none was activated.</summary>
     private static bool NoteInstead(Ui<UiState> ui, string text)
     {
         Note(ui, text);
         return false;
     }
 
-    /// <summary>Notes <paramref name="text"/> and then <paramref name="detail"/> where the rows would be. False: none
-    /// was activated.</summary>
     private static bool NoteInstead(Ui<UiState> ui, string text, string detail)
     {
         Note(ui, text);
@@ -214,8 +203,6 @@ internal static class ProcessPickerView
         return false;
     }
 
-    /// <summary>The processes <paramref name="scanned"/> found, or that there are none. True when one was
-    /// activated.</summary>
     private static bool ScannedProcesses(Ui<UiState> ui, ProcessBrowser browser, int listId, ProcessScan.Scanned scanned)
     {
         if (scanned.Processes.Count == 0)
@@ -226,8 +213,6 @@ internal static class ProcessPickerView
         return ProcessRows(ui, browser, listId);
     }
 
-    /// <summary>The processes as a table whose columns can be resized: name, id, entry assembly and runtime.
-    /// True when one was activated.</summary>
     private static bool ProcessRows(Ui<UiState> ui, ProcessBrowser browser, int listId)
     {
         var t = ui.State.Strings;
@@ -256,7 +241,6 @@ internal static class ProcessPickerView
         return body.Activated;
     }
 
-    /// <summary>The selected process's assemblies, or why they aren't shown. True when some were activated.</summary>
     private static bool Modules(Ui<UiState> ui, ProcessBrowser browser)
     {
         return browser.Modules.Match((ui, browser),
@@ -267,8 +251,6 @@ internal static class ProcessPickerView
             unreadable: static (s, unreadable) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerUnreadable, unreadable.Detail));
     }
 
-    /// <summary>The assemblies as a table whose columns can be resized: name, and the folder or that it is
-    /// only in memory. True when the picked-out ones were activated.</summary>
     private static bool ModuleRows(Ui<UiState> ui, ProcessBrowser browser, IReadOnlyList<RunningModule> modules)
     {
         var t = ui.State.Strings;

@@ -15,12 +15,10 @@ public sealed class SearchResults
     private readonly HashSet<LoadedAssembly> _searchedAssemblies = new(ReferenceEqualityComparer.Instance);
     private readonly List<SearchFind.Unsearched> _unsearched = new();
 
-    /// <summary>The runs that may still deliver hits.</summary>
     private readonly SearchRuns _runs = new();
 
     private readonly TypedText _typed = new();
 
-    /// <summary>The order the results are in and the one asked for.</summary>
     private readonly SearchSorting _sorting = new();
 
     /// <summary>The hits so far, in the order the sort says, of the assemblies searched only.</summary>
@@ -158,8 +156,7 @@ public sealed class SearchResults
         return added;
     }
 
-    /// <summary>Asks for <paramref name="searched"/> to be run over <paramref name="within"/>, unless it can find
-    /// nothing; the edge starts it once the frame is drawn (<see cref="RunSearchHandler"/>).</summary>
+    // The edge starts the run once the frame is drawn (RunSearchHandler).
     private void Ask(SearchedQuery searched, IReadOnlyList<LoadedModule> within)
     {
         var query = SearchQueries.ParseQuery(searched.Query, searched.Kinds);
@@ -221,8 +218,6 @@ public sealed class SearchResults
         _unsearched.Add(unsearched);
     }
 
-    /// <summary>The hits of <paramref name="batch"/> still wanted, in the order the rows are in, which a comparer
-    /// is made for per batch.</summary>
     private List<SearchResult> SortArrived(IReadOnlyList<SearchResult> batch)
     {
         var applied = _sorting.Applied;
@@ -233,8 +228,7 @@ public sealed class SearchResults
             .ToList();
     }
 
-    /// <summary>Merges the sorted <paramref name="arrived"/> into the sorted rows, each after the
-    /// rows it ties with, filling from the end so no row moves more than once.</summary>
+    // Fills from the end so no row moves more than once; an arrived row goes after the rows it ties with.
     private void MergeIntoRows(List<SearchResult> arrived)
     {
         var rows = _rows;

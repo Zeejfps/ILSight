@@ -50,8 +50,6 @@ internal static class OmnibarView
         ui.Separator();
     }
 
-    /// <summary>Whether the bar of <paramref name="panel"/> searches: its box takes focus when the search
-    /// just started, and the search stops once the box lost focus.</summary>
     private static bool ContinueSearch(Ui<UiState> ui, string panel)
     {
         var omnibar = ui.State.Omnibar;
@@ -110,7 +108,6 @@ internal static class OmnibarView
         ChildrenMenu(ui, navigation, setup, panel, menuOwner);
     }
 
-    /// <summary>The tools of what the tab shows that no node stands for: a diagram's or a comparison's.</summary>
     private static void ContentTools(Ui<UiState> ui, AssemblyList assemblies, DocumentTab tab)
     {
         if (tab.Content is TabContent.Diagram)
@@ -125,8 +122,6 @@ internal static class OmnibarView
         }
     }
 
-    /// <summary>The node's icon and name, which gives up room, earlier crumbs first, while the path is
-    /// too long for the bar.</summary>
     private static void CrumbButton(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup,
         Crumb crumb, int depth)
     {
@@ -134,6 +129,7 @@ internal static class OmnibarView
         var node = crumb.Node;
         var i = ui.Interact("crumb");
         RecordDepthPath(ui, i.Id, depth, "crumb");
+        // Earlier crumbs give up room first while the path is too long for the bar.
         var width = Sizing.Shrink(CrumbMinWidth) with { Priority = depth };
         using (ui.Row(i.Id, new Box
         {
@@ -161,8 +157,7 @@ internal static class OmnibarView
         }
     }
 
-    /// <summary>A crumb of a tab whose assembly was closed (<see cref="TabLoad.ShowClosed"/>), which would read it: shown
-    /// unavailable, muted, saying why when hovered, starting nothing when clicked; no arrow lists its children.</summary>
+    // A crumb of a tab whose assembly was closed (TabLoad.ShowClosed) would read it, so it starts nothing when clicked.
     private static void ClosedCrumb(Ui<UiState> ui, Crumb crumb, int depth, string closed)
     {
         var theme = ui.Theme;
@@ -183,8 +178,8 @@ internal static class OmnibarView
         ui.Tooltip(i.Id, ui.Memo("closed-crumb", (closed, t: ui.State.Strings), static a => a.t.DocumentClosed(a.closed)));
     }
 
-    /// <summary>Has tests find a crumb's <paramref name="name"/>d part by the crumb's depth, as <c>#1/crumb</c>, since
-    /// two crumbs can read the same, such as an assembly and its namespace of one name.</summary>
+    // By the crumb's depth, not its label: two crumbs can read the same, such as an assembly and its namespace of one
+    // name.
     private static void RecordDepthPath(Ui<UiState> ui, int id, int depth, string name)
     {
         if (!ui.WantsSemantics)
@@ -195,7 +190,7 @@ internal static class OmnibarView
         ui.RecordTestPath(id, new TestPath([new TestSegment.Keyed(depth.ToString(CultureInfo.InvariantCulture)), new TestSegment.Named(name)]));
     }
 
-    /// <summary>Public API in the text color, the rest muted, as the tree shows them.</summary>
+    // As the tree shows them.
     private static uint CrumbColor(UiTheme theme, BrowseNode node)
     {
         var visibility = node.Visibility;
@@ -207,8 +202,6 @@ internal static class OmnibarView
         return theme.TextMuted;
     }
 
-    /// <summary>Shows <paramref name="node"/> as one picked in the tree is, or in a new tab when <paramref name="inNewTab"/>.
-    /// Returns the load it started in the tab; null when it started none.</summary>
     private static DecompileTicket? PickNode(Navigation navigation, BrowseNode node, bool inNewTab, DecompilerSetup setup)
     {
         if (inNewTab)
@@ -223,8 +216,6 @@ internal static class OmnibarView
         return (ui.Input.Modifiers & Shortcut.CommandModifier) != 0;
     }
 
-    /// <summary>The arrow after a crumb that has children, which opens and closes the list of them, pointing
-    /// down while it is open. Returns the arrow's id while its list is open, else 0.</summary>
     private static int ChildrenButton(Ui<UiState> ui, string panel, IReadOnlyList<Crumb> crumbs, int index)
     {
         var node = crumbs[index].Node;
@@ -271,7 +262,6 @@ internal static class OmnibarView
         return open ? UiGlyph.DisclosureOpen : UiGlyph.DisclosureClosed;
     }
 
-    /// <summary>The room left after the path, which starts a search when clicked.</summary>
     private static void SearchArea(Ui<UiState> ui, string panel)
     {
         var i = ui.Interact("search-area");
@@ -297,9 +287,6 @@ internal static class OmnibarView
         }
     }
 
-    /// <summary>The list of the open crumb's children under its arrow <paramref name="owner"/>, with a
-    /// filter over them; 0 when no list is open in this bar, which forgets one left open on a crumb gone
-    /// from it.</summary>
     private static void ChildrenMenu(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup,
         string panel, int owner)
     {
@@ -310,6 +297,7 @@ internal static class OmnibarView
             return;
         }
 
+        // No list is open in this bar: forget one left open on a crumb gone from it.
         if (owner == 0)
         {
             omnibar.CloseMenuIn(panel);
@@ -353,8 +341,6 @@ internal static class OmnibarView
         Commands.DecompileLater(ui.State, PickNode(navigation, node, picked.InNewTab, setup));
     }
 
-    /// <summary>The filter, which takes focus as the list opens and walks the list with Up and Down.
-    /// Returns whether Enter was pressed in it.</summary>
     private static bool Filter(Ui<UiState> ui, CrumbMenu menu, IReadOnlyList<BrowseNode> shown)
     {
         var fieldId = ui.GetId(FilterFieldId);
@@ -390,7 +376,6 @@ internal static class OmnibarView
         }
     }
 
-    /// <summary>A child picked from the list, and whether it is to open in a new tab.</summary>
     private readonly record struct PickedChild
     {
         public required BrowseNode? Node { get; init; }
@@ -398,8 +383,6 @@ internal static class OmnibarView
         public required bool InNewTab { get; init; }
     }
 
-    /// <summary>The children listed, as tall as up to <see cref="MenuRows"/> of them; returns the one
-    /// clicked, if any.</summary>
     private static PickedChild ChildRows(Ui<UiState> ui, CrumbMenu menu, IReadOnlyList<BrowseNode> shown, int listId)
     {
         var rowHeight = ui.Theme.RowHeight;
@@ -445,7 +428,6 @@ internal static class OmnibarView
         return new PickedChild { Node = null, InNewTab = false };
     }
 
-    /// <summary>Has tests find a child's row by its label, as <c>child/#Greeter</c>.</summary>
     private static void RecordChildPath(Ui<UiState> ui, int id, string label)
     {
         if (!ui.WantsSemantics)
@@ -456,8 +438,6 @@ internal static class OmnibarView
         ui.RecordTestPath(id, new TestPath([new TestSegment.Named("child"), new TestSegment.Keyed(label)]));
     }
 
-    /// <summary>The search box, whose Enter goes to the selected match, else the best, and whose Up and
-    /// Down walk the matches suggested under it.</summary>
     private static void SearchBar(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup)
     {
         var t = ui.State.Strings;
@@ -486,9 +466,9 @@ internal static class OmnibarView
         Commands.DecompileLater(ui.State, navigation.ShowNode(match.Node, setup, clicked.InNewTab));
     }
 
-    /// <summary>The query syntax, over the box while it is empty, so it never covers the suggestions.</summary>
     private static void SyntaxTooltip(Ui<UiState> ui, Omnibar omnibar, int fieldId)
     {
+        // Only while the box is empty, so it never covers the suggestions.
         if (omnibar.Search.Query.Length > 0)
         {
             return;
@@ -524,7 +504,6 @@ internal static class OmnibarView
         }
     }
 
-    /// <summary>A match picked from the suggestions, and whether it is to open in a new tab.</summary>
     private readonly record struct PickedMatch
     {
         public required SearchResult? Match { get; init; }
@@ -532,8 +511,6 @@ internal static class OmnibarView
         public required bool InNewTab { get; init; }
     }
 
-    /// <summary>The best matches of the query under the box, as wide as it, or a note while there are
-    /// none yet or none at all; nothing while the box is empty. Returns the match clicked, if any.</summary>
     private static PickedMatch Suggestions(Ui<UiState> ui, Omnibar omnibar, int fieldId)
     {
         var picked = new PickedMatch { Match = null, InNewTab = false };
@@ -568,7 +545,6 @@ internal static class OmnibarView
         return picked;
     }
 
-    /// <summary>Searching, while the query has not settled or its first matches are still coming; else no matches.</summary>
     private static void SuggestionNote(Ui<UiState> ui, Omnibar omnibar)
     {
         var t = ui.State.Strings;
@@ -577,13 +553,13 @@ internal static class OmnibarView
         ui.Text(note, new Box { Height = theme.RowHeight, Padding = new Spacing(theme.ShellPaddingX, 0f), AlignY = Align.Center }, color: theme.TextMuted);
     }
 
-    /// <summary>A match's icon, name and where it is; a press keeps the box focused, so the click lands.</summary>
     private static PickedMatch SuggestionRow(Ui<UiState> ui, Omnibar omnibar, SearchResult match, int fieldId)
     {
         var theme = ui.Theme;
         var node = match.Node;
         var selected = ReferenceEquals(match, omnibar.SelectedSuggestion);
         var i = ui.Interact(RuntimeHelpers.GetHashCode(node));
+        // A press keeps the box focused, so the click lands.
         if (i.Pressed)
         {
             ui.Focus(fieldId);
@@ -610,8 +586,6 @@ internal static class OmnibarView
         return new PickedMatch { Match = null, InNewTab = false };
     }
 
-    /// <summary>Has tests find a suggestion by its text, as <c>suggestion/#Farewell</c>, as a list item that is
-    /// selected while it is the one Enter goes to.</summary>
     private static void DescribeSuggestion(Ui<UiState> ui, int id, string text, bool selected)
     {
         if (!ui.WantsSemantics)
@@ -623,7 +597,6 @@ internal static class OmnibarView
         ui.Semantics(SemanticRole.ListItem, text, selected ? SemanticStates.Selected : SemanticStates.None);
     }
 
-    /// <summary>A row of a list that has focus, as the search box holds it for the suggestions.</summary>
     private static Box SuggestionBox(UiTheme theme, bool selected, bool hovered)
     {
         return new Box()
@@ -632,6 +605,7 @@ internal static class OmnibarView
             Padding = new Spacing(theme.ShellPaddingX, 0f),
             Gap = theme.GapTight,
             AlignY = Align.Center,
+            // Focused, as the search box holds focus for the suggestions.
             Background = theme.PickRowBackground(selected, focused: true, hovered),
         };
     }

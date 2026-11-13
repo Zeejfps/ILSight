@@ -41,7 +41,6 @@ public sealed class RunSearchHandler(RunSearchHandler.IPorts ports)
         results.EndRun(run);
     }
 
-    /// <summary>Reports why <paramref name="run"/> failed, unless a new query replaced it.</summary>
     private void ReportFailure(SearchResults results, SearchRun run, Exception error)
     {
         if (!results.IsCurrent(run))

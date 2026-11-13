@@ -27,8 +27,6 @@ public sealed class SettingsReading(SettingsReading.IPorts ports)
         return new SettingsLoadResult { Settings = settings, Problem = problem };
     }
 
-    /// <summary>Whether the settings may be saved over the file: not when it could not be read whole and could not
-    /// be kept either.</summary>
     private static bool CanSaveOverFile(SettingsProblem problem)
     {
         var kept = problem.FindKept();

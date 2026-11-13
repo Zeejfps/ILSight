@@ -67,8 +67,7 @@ internal static class NuGetPickerView
         picker.IsOpen = false;
     }
 
-    /// <summary>Has the next frame come at once while icons or details shown for the first time wait to be
-    /// fetched, which the frame edge starts (see <see cref="AppFrames.StartFetching"/>).</summary>
+    // The frame edge starts fetching the icons and details shown for the first time (AppFrames.StartFetching).
     private static void AskForFetchingFrame(Ui<UiState> ui, NuGetBrowser browser)
     {
         if (!browser.HasDownloadsToStart)
@@ -79,10 +78,9 @@ internal static class NuGetPickerView
         ui.RequestUpdateIn(0);
     }
 
-    /// <summary>Frees the images of the icons the dialog showed. Goes through them by index, as it runs every
-    /// frame: a foreach over the list would allocate its enumerator.</summary>
     private static void FreeImages(Ui<UiState> ui, IReadOnlyList<string> images)
     {
+        // By index, as it runs every frame: a foreach over the list would allocate its enumerator.
         for (var i = 0; i < images.Count; i++)
         {
             ui.RemoveImage(images[i]);
@@ -115,8 +113,7 @@ internal static class NuGetPickerView
         }
     }
 
-    /// <summary>Asks for <paramref name="download"/>, which the dialog draws from this frame on, to be fetched
-    /// once the frame is drawn; nothing when no download started. Closing the dialog cancels it.</summary>
+    // Fetched once the frame is drawn; closing the dialog cancels it.
     private static void Download(Ui<UiState> ui, NuGetBrowser browser, PackageDownloadTicket? download)
     {
         if (download is null)
@@ -128,8 +125,6 @@ internal static class NuGetPickerView
             static (_, d, ct) => d.Handler.HandleAsync(d.Browser, d.Download, ct), download.Work.Token);
     }
 
-    /// <summary>The query, whether prereleases count, and the feed. Enter in the query opens the
-    /// selected package, or searches what was typed first; Enter in the feed searches it at once.</summary>
     private static void TopRow(Ui<UiState> ui, NuGetPicker picker)
     {
         var t = ui.State.Strings;
@@ -166,10 +161,10 @@ internal static class NuGetPickerView
         }
     }
 
-    /// <summary>Downloads the package picked, or searches what was typed first; either shows from this frame on.</summary>
     private static void Submit(Ui<UiState> ui, NuGetPicker picker)
     {
         Download(ui, picker.Browser, picker.Browser.Submit());
+        // The download or the search shows from this frame on.
         ui.RequestUpdateIn(0);
     }
 
@@ -193,7 +188,6 @@ internal static class NuGetPickerView
         }
     }
 
-    /// <summary>Walks the packages from the query, leaving Home and End to its text.</summary>
     private static void MoveSelectionFromQuery(Ui<UiState> ui, NuGetPicker picker)
     {
         var results = picker.Browser.Results;
@@ -221,7 +215,6 @@ internal static class NuGetPickerView
         ItemSelections.Select(selection, results[index], results);
     }
 
-    /// <summary>A package's row: its name line and the lines of its description.</summary>
     private static float RowHeight(Ui<UiState> ui)
     {
         var theme = ui.Theme;
@@ -230,7 +223,6 @@ internal static class NuGetPickerView
         return name + description + theme.Gap * 2;
     }
 
-    /// <summary>The packages, and the pager under them. True when a package was activated.</summary>
     private static bool PackagesColumn(Ui<UiState> ui, NuGetPicker picker)
     {
         var theme = ui.Theme;
@@ -242,9 +234,6 @@ internal static class NuGetPickerView
         }
     }
 
-    /// <summary>The packages found, under the strip that slides while another page or search loads
-    /// over them, a note when another page failed to load and one naming what the feed sent that couldn't be read; or
-    /// why there are none. True when one was activated.</summary>
     private static bool Packages(Ui<UiState> ui, NuGetPicker picker)
     {
         var theme = ui.Theme;
@@ -303,8 +292,6 @@ internal static class NuGetPickerView
             size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
     }
 
-    /// <summary>A thin sliding bar while a search runs over packages already shown; the same room,
-    /// empty, otherwise, so the list never moves.</summary>
     private static void LoadingStrip(Ui<UiState> ui, NuGetPicker picker)
     {
         var refreshing = picker.Browser.IsSearching && picker.Browser.Results.Count > 0;
@@ -313,6 +300,7 @@ internal static class NuGetPickerView
             ui.SlidingBar(height: LoadingStripHeight);
             return;
         }
+        // The same room, empty, so the list never moves.
         ui.Leaf(new Box { Width = Sizing.Grow(), Height = LoadingStripHeight });
     }
 
@@ -332,7 +320,6 @@ internal static class NuGetPickerView
         return list.Activated;
     }
 
-    /// <summary>A package's icon beside its name, authors and latest version over its description.</summary>
     private static void Row(Ui<UiState> ui, NuGetPicker picker, ListScope list, FeedPackage package, int index)
     {
         var theme = ui.Theme;
@@ -396,7 +383,6 @@ internal static class NuGetPickerView
         return icon.IsDarkOnClear;
     }
 
-    /// <summary>Gives the canvas the icon's pixels unless it holds them already.</summary>
     private static void Upload(Ui<UiState> ui, ShownIcon icon)
     {
         if (ui.HasImage(icon.ImageId))
@@ -408,7 +394,6 @@ internal static class NuGetPickerView
         ui.SetImage(icon.ImageId, pixels.Width, pixels.Height, pixels.Rgba);
     }
 
-    /// <summary>A tile with the package glyph, for a package with no icon, or whose icon is loading.</summary>
     private static void StandIn(Ui<UiState> ui, float side)
     {
         var theme = ui.Theme;
@@ -427,7 +412,6 @@ internal static class NuGetPickerView
         }
     }
 
-    /// <summary>The package's id in bold, a mark when its owners are verified, who made it, and its latest version.</summary>
     private static void NameLine(Ui<UiState> ui, FeedPackage package, bool selected)
     {
         var theme = ui.Theme;
@@ -445,7 +429,6 @@ internal static class NuGetPickerView
         }
     }
 
-    /// <summary>"by" the package's authors, taking what room the line has left; nothing when it names none.</summary>
     private static void Authors(Ui<UiState> ui, FeedPackage package)
     {
         var theme = ui.Theme;
@@ -459,7 +442,6 @@ internal static class NuGetPickerView
         ui.Text(authors, box, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
     }
 
-    /// <summary>What the package says it is, over as many lines as its row has.</summary>
     private static void Description(Ui<UiState> ui, FeedPackage package, bool selected)
     {
         var theme = ui.Theme;
@@ -467,14 +449,12 @@ internal static class NuGetPickerView
         ui.Text(package.Description, color: color, size: theme.FontSizeSmall, wrap: true, maxLines: DescriptionLines);
     }
 
-    /// <summary>How many packages matched, and how many of them the pages reach when fewer; then the
-    /// page shown, or the one loading, between the buttons that step through them. The row keeps its
-    /// height while there is nothing to page through.</summary>
     private static void Pager(Ui<UiState> ui, NuGetPicker picker)
     {
         var theme = ui.Theme;
         using (ui.Row(new Box { Height = theme.ControlHeight, Gap = theme.GapTight, AlignY = Align.Center }))
         {
+            // The row keeps its height while there is nothing to page through.
             if (picker.Browser.TotalHits == 0)
             {
                 return;
@@ -534,8 +514,7 @@ internal static class NuGetPickerView
         return t.NugetPage(page + 1, count);
     }
 
-    /// <summary>As wide as the widest label the pager shows for <paramref name="pageCount"/> pages, the
-    /// last page shown or loading, so the buttons beside it never move.</summary>
+    // As wide as the widest label the pager shows, so the buttons beside it never move.
     private static float PageLabelWidth(Ui<UiState> ui, int pageCount)
     {
         var t = ui.State.Strings;
@@ -545,7 +524,6 @@ internal static class NuGetPickerView
         return MathF.Max(ui.MeasureText(shown, size), ui.MeasureText(loading, size));
     }
 
-    /// <summary>What is being downloaded, Cancel and Open. True when Open was pressed.</summary>
     private static bool Footer(Ui<UiState> ui, NuGetPicker picker)
     {
         var t = ui.State.Strings;

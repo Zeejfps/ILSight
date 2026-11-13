@@ -153,8 +153,7 @@ public static class SavedPlaces
         return new MetadataPartKey.Table(table.Value);
     }
 
-    /// <summary>A debug directory entry as <c>2 CodeView</c>: where it stands, then its type, which for a
-    /// type .NET does not name is its number.</summary>
+    // Held as "2 CodeView": where the entry stands, then its type, which for a type .NET does not name is its number.
     private static MetadataPartKey.DebugEntry? ParseDebugEntry(string text)
     {
         var (index, type) = Split(text);
@@ -171,11 +170,10 @@ public static class SavedPlaces
         return new MetadataPartKey.DebugEntry { Index = at, Type = parsed };
     }
 
-    /// <summary>The value of <typeparamref name="T"/> named <paramref name="name"/>; null for any other
-    /// text, a number among them.</summary>
     private static T? ParseName<T>(string name) where T : struct, Enum
     {
         var names = Enum.GetNames<T>();
+        // A number is no name, though Enum.Parse would take it.
         if (!names.Contains(name))
         {
             return null;
@@ -184,7 +182,6 @@ public static class SavedPlaces
         return Enum.Parse<T>(name);
     }
 
-    /// <summary>The text before the first space, and what follows it; all of it and nothing without one.</summary>
     private static (string Head, string Tail) Split(string text)
     {
         var space = text.IndexOf(' ');

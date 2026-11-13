@@ -11,7 +11,6 @@ public sealed class Omnibar
     /// <summary>How many of the best matches the search suggests.</summary>
     public const int MaxSuggestions = 10;
 
-    /// <summary>The search a bar runs, or null while every bar shows its path.</summary>
     private OmnibarSearch? _searching;
 
     /// <summary>The query typed into the bar and its matches, the closest first.</summary>
@@ -196,7 +195,6 @@ public sealed class Omnibar
         }
     }
 
-    /// <summary>The search one bar runs, and whether its box is yet to take focus.</summary>
     private sealed class OmnibarSearch
     {
         public required string Panel { get; init; }

@@ -53,8 +53,6 @@ public sealed class SettingsSaving(SettingsSaving.IPorts ports)
             });
     }
 
-    /// <summary>Moves the wait on, starting it if this is the first time it is asked for after a failure,
-    /// and returns the seconds left at <paramref name="now"/> before a failed write is tried again.</summary>
     private static double AdvanceRetry(AppState appState, double now)
     {
         return appState.SaveRetry.Match<(AppState appState, double now), double>((appState, now),
@@ -63,8 +61,6 @@ public sealed class SettingsSaving(SettingsSaving.IPorts ports)
             static (s, waiting) => Math.Max(0, SaveRetry.DelaySeconds - (s.now - waiting.Since)));
     }
 
-    /// <summary>Starts the wait for the next try of a failed write at <paramref name="now"/>, and returns its
-    /// seconds.</summary>
     private static double StartWaiting(AppState appState, double now)
     {
         appState.SaveRetry = new SaveRetry.Waiting(now);
@@ -102,14 +98,12 @@ public sealed class SettingsSaving(SettingsSaving.IPorts ports)
             failed => ReportWriteFailure(appState, failed.Reason));
     }
 
-    /// <summary>Counts what the settings were copied from as saved, and writes as going through.</summary>
     private static void TakeWritten(AppState appState, SavedSources sources)
     {
         appState.LastSaved = sources;
         appState.SaveRetry = new SaveRetry.Clear();
     }
 
-    /// <summary>Reports a failed write, unless writes were failing already.</summary>
     private void ReportWriteFailure(AppState appState, string error)
     {
         var wasFailing = appState.SaveRetry is not SaveRetry.Clear;

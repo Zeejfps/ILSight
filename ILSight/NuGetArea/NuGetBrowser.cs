@@ -721,7 +721,7 @@ public sealed class NuGetBrowser
         return images;
     }
 
-    /// <summary>Clears what was found once the feed typed is no URL, so nothing shows from another feed.</summary>
+    // For when the feed typed is no URL, so nothing shows from another feed.
     private void DropResults()
     {
         StopSearch();
@@ -736,7 +736,6 @@ public sealed class NuGetBrowser
         ItemSelections.Clear(Selection);
     }
 
-    /// <summary>The search running or last run; null before any, or once it was stopped or dropped.</summary>
     private FeedSearch? FindLastSearched()
     {
         return _run.Match<FeedSearch?>(
@@ -756,7 +755,7 @@ public sealed class NuGetBrowser
         return _shown.Search;
     }
 
-    /// <summary>The search the next one is weighed against: the one running or last run, else the one shown.</summary>
+    // The search the next one is weighed against.
     private FeedSearch? FindLastAsked()
     {
         var searched = FindLastSearched();
@@ -768,8 +767,6 @@ public sealed class NuGetBrowser
         return FindShownSearch();
     }
 
-    /// <summary>Whether <paramref name="wanted"/> asks for other packages than the last search, not
-    /// just another page of them.</summary>
     private bool IsNewSearch(FeedSearch wanted)
     {
         var last = FindLastAsked();
@@ -817,7 +814,6 @@ public sealed class NuGetBrowser
         return wanted.Page == last.Page;
     }
 
-    /// <summary>Has the settings keep the feed searched and whether prereleases count, once either changed.</summary>
     private void KeepSearched(FeedSearch searched)
     {
         var kept = new SavedNuGetSearch
@@ -834,7 +830,6 @@ public sealed class NuGetBrowser
         SearchChanges++;
     }
 
-    /// <summary>Shows the page found in place of the one shown.</summary>
     private SearchRun.Found ShowFoundPage(FeedSearch searched, FeedPage page)
     {
         _shown = new ShownPage { Search = searched, Found = page };
@@ -847,8 +842,6 @@ public sealed class NuGetBrowser
         return new SearchRun.Found(searched);
     }
 
-    /// <summary>Says why the search failed, keeping the page shown only when the search asked for another page
-    /// of it.</summary>
     private SearchRun.Failed ShowSearchFailure(FeedSearch searched, Exception error)
     {
         var shown = FindShownSearch();
@@ -860,7 +853,6 @@ public sealed class NuGetBrowser
         return new SearchRun.Failed { Search = searched, Error = error.Message };
     }
 
-    /// <summary>The page of packages shown, and the search that found it.</summary>
     private sealed record ShownPage
     {
         public required FeedSearch Search { get; init; }
@@ -868,7 +860,6 @@ public sealed class NuGetBrowser
         public required FeedPage Found { get; init; }
     }
 
-    /// <summary>Whether the user's NuGet.Config is read yet.</summary>
     private abstract record SetupState
     {
         private SetupState()
@@ -882,7 +873,7 @@ public sealed class NuGetBrowser
         public sealed record Ready(NuGetSetup Setup) : SetupState;
     }
 
-    /// <summary>A download: none, one running, or the package file one fetched, until it is taken.</summary>
+    // Done holds the package file fetched until it is taken.
     private abstract record DownloadState
     {
         private DownloadState()

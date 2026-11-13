@@ -79,7 +79,6 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
         ReportNewErrors(known);
     }
 
-    /// <summary>The theme files in the folder whose names are ids, read; none without a folder.</summary>
     private List<TFile> ReadUserThemes()
     {
         var files = new List<TFile>();
@@ -100,18 +99,12 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
         return files;
     }
 
-    /// <summary>The theme <paramref name="id"/> of the file at <paramref name="path"/>, as the kind reads it: what its
-    /// text says, then the files it names read and taken in (<see cref="IUserThemeFile{TSelf, TContents, TTheme}.Parse"/>,
-    /// <see cref="IUserThemeFile{TSelf, TContents, TTheme}.Complete"/>); a file that cannot be read has no contents and
-    /// says why.</summary>
     private TFile ReadTheme(ThemeId<TFile> id, string path)
     {
         var text = ports.ReadThemeFile(path);
         return text.Match(ok => Complete(TFile.Parse(id, path, ok.Value), path), failed => TFile.CreateUnreadable(id, path, failed.Error.Message));
     }
 
-    /// <summary><paramref name="parsed"/>, read from the file at <paramref name="path"/>, finished with the files it
-    /// names, read.</summary>
     private TFile Complete(TFile parsed, string path)
     {
         var named = ListNamedPaths(parsed.NamedFiles);
@@ -123,7 +116,6 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
         return TFile.Complete(parsed, ports.ReadNamedFiles(path, named));
     }
 
-    /// <summary>The paths of <paramref name="named"/>, each once.</summary>
     private static List<string> ListNamedPaths(IReadOnlyList<ThemeNamedFile> named)
     {
         return named
@@ -132,7 +124,6 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
             .ToList();
     }
 
-    /// <summary>Reports the errors of <see cref="Themes"/> not in <paramref name="known"/>, one report per file.</summary>
     private void ReportNewErrors(IReadOnlyList<ThemeError> known)
     {
         var byFile = Themes.Errors
@@ -195,8 +186,6 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
         return new CustomTheme<TFile> { Id = id, Path = path };
     }
 
-    /// <summary><paramref name="parent"/> followed by <c>-custom</c>, numbered from 2 while a theme or a file
-    /// in <paramref name="folder"/> already has that id.</summary>
     private ThemeId<TFile> GetFreeCustomId(string folder, ThemeId<TFile> parent)
     {
         var id = ThemeId<TFile>.Of(parent.Text + CustomSuffix);
@@ -209,8 +198,6 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
         return id;
     }
 
-    /// <summary>True when a theme has the id <paramref name="id"/>, or a file in <paramref name="folder"/> is
-    /// named by it.</summary>
     private bool IsTaken(string folder, ThemeId<TFile> id)
     {
         var index = Themes.FindThemeIndex(id);
@@ -263,8 +250,6 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
         }
     }
 
-    /// <summary>Makes the folder and watches it; false when there is none to watch, or after reporting why it
-    /// cannot be made or watched.</summary>
     private bool TryStartWatching()
     {
         var folder = PrepareFolder();
@@ -282,9 +267,6 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
         return false;
     }
 
-    /// <summary>Watches the folder again after the watch was lost, as when the folder was removed. Once it was
-    /// restarted with no change seen since, it gives up rather than lose it again and again, and reports
-    /// <paramref name="reason"/>.</summary>
     private bool TryRestartWatching(string reason, bool restartedSinceChange)
     {
         if (!restartedSinceChange)
@@ -292,6 +274,7 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
             return TryStartWatching();
         }
 
+        // Gives up rather than lose the watch again and again.
         ReportUnwatched(reason);
         return false;
     }

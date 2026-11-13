@@ -188,9 +188,6 @@ internal static class FlagsFilterView
         return 0u;
     }
 
-    /// <summary>What a group selects after a click on <paramref name="value"/>, or on its "any" chip
-    /// when null: the value alone, or with Shift the selection with it added or taken away; null for
-    /// "any", which an empty or full selection also is.</summary>
     private static ImmutableHashSet<uint>? Pick(MutexGroup group, ImmutableHashSet<uint>? selection, uint? value, bool shift)
     {
         if (value is null)

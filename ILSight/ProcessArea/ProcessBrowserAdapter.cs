@@ -26,9 +26,8 @@ public sealed class ProcessBrowserAdapter(Action<AppProblem> reportError) : Proc
         return CatchAsync(Background.Wait(Task.Run(() => ScanModulesAsync(process, ct), ct)), ct);
     }
 
-    /// <summary>What <paramref name="listing"/> gave, or the failure it ended with when the system refused it
-    /// (<see cref="Win32Exception"/>, <see cref="UnauthorizedAccessException"/>), a file it read could not be read
-    /// (<see cref="IOException"/>), or its process went meanwhile (<see cref="InvalidOperationException"/>).</summary>
+    // The system refused the listing (Win32Exception, UnauthorizedAccessException), a file it read could not be read
+    // (IOException), or its process went meanwhile (InvalidOperationException).
     private static async Task<Outcome<T>> CatchAsync<T>(BackgroundWork<T> listing, CancellationToken ct)
     {
         try

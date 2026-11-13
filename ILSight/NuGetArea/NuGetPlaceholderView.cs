@@ -55,7 +55,6 @@ internal static class NuGetPlaceholderView
         ui.Text(text, color: ui.Theme.TextMuted, wrap: true);
     }
 
-    /// <summary>That the search failed and why, and a button that runs it again.</summary>
     private static void SearchFailed(Ui<UiState> ui, NuGetPicker picker, string error)
     {
         var t = ui.State.Strings;
@@ -68,7 +67,6 @@ internal static class NuGetPlaceholderView
         }
     }
 
-    /// <summary>That nothing matched the query, with a button that clears it; or that the feed lists nothing.</summary>
     private static void NothingFound(Ui<UiState> ui, NuGetPicker picker)
     {
         var t = ui.State.Strings;

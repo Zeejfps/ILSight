@@ -75,7 +75,6 @@ internal static class SettingsJson
         return $"{location}[{index}]";
     }
 
-    /// <summary>Where the entry keyed <paramref name="key"/> of what is at <paramref name="location"/> is.</summary>
     private static string At(string location, string key)
     {
         return $"{location}[\"{key}\"]";
@@ -179,8 +178,6 @@ internal static class SettingsJson
         return picks?.ToDictionary(static p => p.Key.Text, static string? (p) => p.Value);
     }
 
-    /// <summary>The picks at <paramref name="location"/> that name a file and pick something, each other left out
-    /// where it is.</summary>
     private static Dictionary<AssemblyPath, string>? ParsePicks(Dictionary<string, string?>? picks, SettingsReader file, string location)
     {
         if (picks is null)
@@ -217,9 +214,6 @@ internal static class SettingsJson
         };
     }
 
-    /// <summary>The documents at <paramref name="location"/>, without tabs docked as a view, or docked as a panel
-    /// another tab was; null without tabs. A tab that is not one at all, or is missing what it shows, is left out where
-    /// it is (<c>Tabs[0]</c>), as is a layout missing a part or giving two parts one id (<c>Layout</c>).</summary>
     private static DocumentsRecord? Parse(DocumentsJson json, SettingsReader file, string location)
     {
         if (json.Tabs is null)
@@ -240,7 +234,6 @@ internal static class SettingsJson
         };
     }
 
-    /// <summary>The tabs at <paramref name="location"/> that can be read, each other left out where it is.</summary>
     private static List<DocumentRecord> ListTabs(List<JsonElement> tabs, SettingsReader file, string location)
     {
         var read = new List<DocumentRecord>();
@@ -255,8 +248,6 @@ internal static class SettingsJson
         return read;
     }
 
-    /// <summary>The tab at <paramref name="location"/>; null, the tab left out, when it is not one or is missing what it
-    /// shows.</summary>
     private static DocumentRecord? ParseTab(JsonElement tab, SettingsReader file, string location)
     {
         var json = Parse(file, tab, AppSettingsJson.Default.DocumentJson, location);
@@ -302,7 +293,6 @@ internal static class SettingsJson
         };
     }
 
-    /// <summary>The tab; <paramref name="leaveOut"/> is told when what it shows cannot be read.</summary>
     private static DocumentRecord? Parse(DocumentJson json, Action leaveOut)
     {
         return json switch
@@ -359,7 +349,6 @@ internal static class SettingsJson
         };
     }
 
-    /// <summary>The view's place as the file keeps it: a code view's, else a grid's, else none.</summary>
     private static ViewPosition? ParseView(CodeViewPositionJson? code, GridPositionJson? grid)
     {
         if (code is not null)
@@ -387,8 +376,6 @@ internal static class SettingsJson
         };
     }
 
-    /// <summary>The diagram tab; <paramref name="leaveOut"/> is told when a type or an assembly of its own can't be
-    /// read, which it is kept without.</summary>
     private static DocumentRecord? Parse(DiagramDocumentJson json, Action leaveOut)
     {
         if (json.Panel is null || json.Types is null)
@@ -458,8 +445,6 @@ internal static class SettingsJson
         return ListPaths(paths, i => LeaveOut(file, At(location, i)));
     }
 
-    /// <summary>The absolute paths among <paramref name="paths"/>; none when there are none. <paramref name="leaveOut"/>
-    /// is told the index of each that is no absolute path.</summary>
     private static List<AssemblyPath> ListPaths(List<string?>? paths, Action<int> leaveOut)
     {
         var read = new List<AssemblyPath>();
@@ -475,8 +460,6 @@ internal static class SettingsJson
         return read;
     }
 
-    /// <summary>Adds the path <paramref name="text"/> names to <paramref name="read"/>; nothing for none, and
-    /// <paramref name="leaveOut"/> is told <paramref name="index"/> for one that is no absolute path.</summary>
     private static void AddIfRead(List<AssemblyPath> read, string? text, int index, Action<int> leaveOut)
     {
         if (text is null)
@@ -528,8 +511,6 @@ internal static class SettingsJson
         read.Add(anchor.Value);
     }
 
-    /// <summary>The types among <paramref name="types"/> that name a file and a type; <paramref name="leaveOut"/> is
-    /// told when one doesn't.</summary>
     private static List<TypeAnchor> ListTypes(List<TypeAnchorJson?> types, Action leaveOut)
     {
         var read = new List<TypeAnchor>();
@@ -557,9 +538,6 @@ internal static class SettingsJson
         read.Add(type.Value);
     }
 
-    /// <summary>Where a tab or bookmark in the file at <paramref name="filePath"/> was, as
-    /// <paramref name="path"/> says. Null when there is none, or when it cannot be read, which
-    /// <paramref name="leaveOut"/> is told; never the root for a path that cannot be read.</summary>
     private static NodePath? FindLocation(AssemblyPath filePath, SavedPathJson? path, Action leaveOut)
     {
         if (path is null)
@@ -568,6 +546,7 @@ internal static class SettingsJson
         }
 
         var location = Parse(path, filePath);
+        // Never the root for a path that cannot be read.
         if (location is null)
         {
             leaveOut();
@@ -576,7 +555,6 @@ internal static class SettingsJson
         return location;
     }
 
-    /// <summary><paramref name="place"/> as the files keep it.</summary>
     private static SavedPathJson Write(NodePath place)
     {
         return new SavedPathJson
@@ -590,8 +568,6 @@ internal static class SettingsJson
         };
     }
 
-    /// <summary>The path down from the root of the file at <paramref name="filePath"/>; null when it
-    /// cannot be read.</summary>
     private static NodePath? Parse(SavedPathJson json, AssemblyPath filePath)
     {
         if (json.Version != SavedPathJson.CurrentVersion || json.Steps is null)
@@ -705,7 +681,6 @@ internal static class SettingsJson
         };
     }
 
-    /// <summary>The view state, without missing foldings; a tree path missing a step is no path.</summary>
     private static BookmarkViewState Parse(BookmarkViewStateJson json)
     {
         var foldings = json.ExpandedFoldings?.OfType<BookmarkFoldingRangeJson>().Select(static f => Parse(f)).ToList();
@@ -1176,8 +1151,6 @@ internal static class SettingsJson
         return new SettingsTextContent.Values { Settings = settings, LeftOut = file.LeftOut, LayoutProblem = layoutProblem };
     }
 
-    /// <summary>The settings <paramref name="file"/> holds, with what older files kept moved to where
-    /// it is kept now, and windows sized within reason.</summary>
     private static AppSettings ParseSettings(SettingsReader file, out SettingsProblem layoutProblem)
     {
         var json = AppSettingsJson.Default;
@@ -1263,8 +1236,6 @@ internal static class SettingsJson
         return SettingsJson.Parse(saved);
     }
 
-    /// <summary>The lists the file holds, each read on its own; one that can't be read, or has no name, is left out
-    /// where it is (<c>AssemblyLists[1]</c>).</summary>
     private static List<AssemblyListRecord> ReadAssemblyLists(SettingsReader file)
     {
         const string field = nameof(SettingsFile.AssemblyLists);
@@ -1281,8 +1252,6 @@ internal static class SettingsJson
         return lists;
     }
 
-    /// <summary>The list at <paramref name="location"/>; null for a list that holds nothing (null), and for one left
-    /// out.</summary>
     private static AssemblyListRecord? ParseAssemblyList(SettingsReader file, JsonElement list, string location)
     {
         if (list.ValueKind == JsonValueKind.Null)
@@ -1299,8 +1268,6 @@ internal static class SettingsJson
         return SettingsJson.Parse(saved, file, location);
     }
 
-    /// <summary>The bookmarks the file holds, each read on its own; one that can't be read, names no assembly file, or
-    /// whose place can't be read, is left out where it is (<c>Bookmarks[0]</c>).</summary>
     private static List<BookmarkRecord> ReadBookmarks(SettingsReader file)
     {
         const string field = nameof(SettingsFile.Bookmarks);
@@ -1317,8 +1284,6 @@ internal static class SettingsJson
         return bookmarks;
     }
 
-    /// <summary>The bookmark at <paramref name="location"/>; null for one that holds nothing (null), and for one left
-    /// out.</summary>
     private static BookmarkRecord? ParseBookmark(SettingsReader file, JsonElement bookmark, string location)
     {
         if (bookmark.ValueKind == JsonValueKind.Null)
@@ -1346,8 +1311,7 @@ internal static class SettingsJson
         return names?.OfType<string>().ToList();
     }
 
-    /// <summary>The layout the file holds, or null, with why, when the dock space cannot be given
-    /// it, for the panels to be where they start out.</summary>
+    // Null when the dock space cannot be given the layout, for the panels to be where they start out.
     private static DockLayout? ReadLayout(SettingsReader file, out SettingsProblem problem)
     {
         problem = new SettingsProblem.None();
@@ -1364,7 +1328,6 @@ internal static class SettingsJson
         return layout;
     }
 
-    /// <summary>The flags filters the file holds, without missing ones.</summary>
     private static Dictionary<string, SavedFilterState>? ReadFlagsFilters(SettingsReader file)
     {
         var saved = SettingsJson.Read(file, nameof(SettingsFile.FlagsFilters), AppSettingsJson.Default.DictionaryStringSavedFilterStateJson);
@@ -1384,8 +1347,7 @@ internal static class SettingsJson
         return filters;
     }
 
-    /// <summary>Makes the one list of a file from before lists had names the default list, unless
-    /// the file has named lists too.</summary>
+    // Files from before lists had names kept one unnamed list.
     private static void MoveUnnamedListIntoDefault(List<AssemblyListRecord> lists, List<string?>? unnamed, SettingsReader file)
     {
         if (unnamed is null)
@@ -1405,7 +1367,7 @@ internal static class SettingsJson
         });
     }
 
-    /// <summary>Gives the analyses saved before each list kept its own to the open list, unless it has some.</summary>
+    // Files from before each list kept its own analyses kept them apart from the lists.
     private static void MoveAnalysesIntoActiveList(List<AssemblyListRecord> lists, string? active, List<CodeAnchorJson?>? analyzed, SettingsReader file)
     {
         if (analyzed is null)
@@ -1433,7 +1395,6 @@ internal static class SettingsJson
         lists[index] = list with { Analyzed = SettingsJson.ListAnchors(analyzed, file, SettingsFile.OldAnalyzed) };
     }
 
-    /// <summary>Where the list <paramref name="active"/> names is, else the first.</summary>
     private static int GetActiveListIndex(List<AssemblyListRecord> lists, string? active)
     {
         if (active is null)
@@ -1450,10 +1411,9 @@ internal static class SettingsJson
         return index;
     }
 
-    /// <summary>The visibility saved, or for a file from before it had three choices, what its
-    /// non-public switch said.</summary>
     private static ApiVisibility GetApiVisibility(ApiVisibility? saved, bool? showNonPublic)
     {
+        // Files from before the visibility had three choices kept a non-public switch.
         if (showNonPublic == false)
         {
             return ApiVisibility.PublicOnly;
@@ -1462,8 +1422,6 @@ internal static class SettingsJson
         return saved ?? ApiVisibility.AllButCompilerGenerated;
     }
 
-    /// <summary>The id of the theme <paramref name="saved"/> names, as the name from before themes
-    /// were files or as the id of its file; the default theme for none or one that is no id.</summary>
     private static ThemeId<ThemeFile> GetThemeId(string? saved)
     {
         if (saved is null)
@@ -1471,6 +1429,7 @@ internal static class SettingsJson
             return Theming.DarkId;
         }
 
+        // Files from before themes were files kept the theme's name, not its id.
         var old = FindOldThemeId(saved);
         if (old is not null)
         {
@@ -1497,8 +1456,6 @@ internal static class SettingsJson
         };
     }
 
-    /// <summary>The id of the icon theme <paramref name="saved"/> names; the reference theme for none or
-    /// one that is no id.</summary>
     private static ThemeId<IconThemeFile> GetIconThemeId(string? saved)
     {
         if (saved is null)

@@ -28,7 +28,6 @@ public static class Searches
         return Task.Run(() => Sort(rows, order), ct);
     }
 
-    /// <summary><paramref name="rows"/> in <paramref name="order"/>, as a list of their own.</summary>
     private static List<SearchResult> Sort(IReadOnlyList<SearchResult> rows, SearchOrder order)
     {
         var sorted = rows.ToList();

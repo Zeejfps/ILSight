@@ -7,7 +7,6 @@ namespace ILSight.OmnibarArea;
 /// it lists them unfiltered and its filter takes focus.</summary>
 public sealed class CrumbMenu
 {
-    /// <summary>The children listed, by what they were filtered from and by.</summary>
     private Memo<(ByReference<IReadOnlyList<BrowseNode>>, string), IReadOnlyList<BrowseNode>> _listed;
 
     private BrowseNode? _toSelect;
@@ -77,7 +76,6 @@ public sealed class CrumbMenu
         return name.Contains(Filter, StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>Selects the crumb after this one once the children built hold it.</summary>
     private void SelectWaitingChild()
     {
         var toSelect = _toSelect;
@@ -95,7 +93,7 @@ public sealed class CrumbMenu
         _toSelect = null;
     }
 
-    /// <summary>Selects the first child listed while a filter leaves none selected, for Enter to go to.</summary>
+    // So Enter has a child to go to while a filter leaves none selected.
     private void SelectFirstMatch()
     {
         if (Filter.Length == 0)

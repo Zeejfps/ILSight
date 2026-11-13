@@ -220,9 +220,9 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
         return StartListing(selected);
     }
 
-    /// <summary>Whether the modules shown, listed or not, are the selected process's: none for no process.</summary>
     private bool ShowsSelectedProcess()
     {
+        // With no process selected, no modules shown count as its.
         return FindSelectedProcess()?.Id == ProcessPicking.FindProcess(Modules)?.Id;
     }
 
@@ -264,7 +264,7 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
         ModuleSelection.Clear();
     }
 
-    /// <summary>Picks out the entry assembly's module, so that Open opens it unless another is picked.</summary>
+    // So that Open opens the entry assembly unless another module is picked.
     private void SelectEntryModule()
     {
         if (Modules is not ModuleScan.Loaded loaded || loaded.EntryAssembly == null)

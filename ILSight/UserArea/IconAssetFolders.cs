@@ -46,9 +46,6 @@ public static class IconAssetFolders
         return new IconAsset { Bytes = File.ReadAllBytes(full), Family = FamilyPrefix + full };
     }
 
-    /// <summary>True for what reading a file can throw, a path with characters no path may hold included.</summary>
-    /// <summary>The full path of <paramref name="path"/> inside the folder; null when it is absolute or
-    /// leaves the folder.</summary>
     private static string? Resolve(string root, string path)
     {
         if (Path.IsPathRooted(path))

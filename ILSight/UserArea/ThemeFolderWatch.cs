@@ -25,7 +25,7 @@ public sealed class ThemeFolderWatch
         Kind = ThemeFolderEventKind.Stopped,
     });
 
-    /// <summary>What the file system's threads and the UI thread share, reachable only holding its lock.</summary>
+    // Shared by the file system's threads and the UI thread.
     private readonly Guarded<Shared> _held = new(new Shared());
 
     /// <summary>The files watched, such as <c>*.json</c>.</summary>
@@ -107,13 +107,13 @@ public sealed class ThemeFolderWatch
         }
     }
 
-    /// <summary>Watches the folder holding the one <paramref name="watcher"/> watches, to lose the watch
-    /// once that folder is removed or renamed away: macOS tells its own watcher nothing of either. Null
-    /// for a folder at the root of a drive, which cannot be removed.</summary>
+    // Watches the parent folder to lose the watch once the folder is removed or renamed away: macOS tells the
+    // folder's own watcher nothing of either.
     private FileSystemWatcher? WatchRemoval(FileSystemWatcher watcher)
     {
         var folder = Path.TrimEndingDirectorySeparator(Path.GetFullPath(watcher.Path));
         var parent = Path.GetDirectoryName(folder);
+        // A folder at the root of a drive cannot be removed.
         if (parent is null)
         {
             return null;
@@ -134,7 +134,6 @@ public sealed class ThemeFolderWatch
         return removalWatcher;
     }
 
-    /// <summary>Stops watching after starting failed, and says why.</summary>
     private string StopFailed(string folder, Exception e)
     {
         Stop();
@@ -182,9 +181,6 @@ public sealed class ThemeFolderWatch
         waiter?.TrySetResult(new ThemeFolderEvent { Kind = ThemeFolderEventKind.Stopped });
     }
 
-    /// <summary>Lets go of the watcher and its timer and drops what is pending, keeping
-    /// <paramref name="loss"/> pending when no one waits to be told; returns the waiter to tell. Does
-    /// nothing when <paramref name="lost"/>, the watcher that failed, is no longer the one watching.</summary>
     private TaskCompletionSource<ThemeFolderEvent>? CloseWatch(string? loss, FileSystemWatcher? lost = null)
     {
         FileSystemWatcher? watcher;
@@ -221,11 +217,10 @@ public sealed class ThemeFolderWatch
         WaitForQuiet();
     }
 
-    /// <summary>Reads the folder again after the system dropped changes it could not keep up with; on
-    /// any other error the system has stopped telling, so the watch is lost.</summary>
     private void OnError(object sender, ErrorEventArgs e)
     {
         var error = e.GetException();
+        // An overflow only dropped changes the system could not keep up with: the folder is read again.
         if (error is InternalBufferOverflowException)
         {
             WaitForQuiet();
@@ -236,6 +231,7 @@ public sealed class ThemeFolderWatch
             throw new UnreachableException("Only a FileSystemWatcher raises its own Error event.");
         }
 
+        // On any other error the system has stopped telling, so the watch is lost.
         LoseWatch(watcher, DescribeWatchFailure(watcher.Path, error.Message));
     }
 
@@ -266,7 +262,6 @@ public sealed class ThemeFolderWatch
         held.Value.Quiet?.Change(QuietMilliseconds, Timeout.Infinite);
     }
 
-    /// <summary>Hands the settled change to whoever waits for it, else keeps it pending.</summary>
     private void OnQuiet(object? state)
     {
         TaskCompletionSource<ThemeFolderEvent>? waiter;
@@ -288,7 +283,6 @@ public sealed class ThemeFolderWatch
         waiter?.TrySetResult(new ThemeFolderEvent { Kind = ThemeFolderEventKind.Changed });
     }
 
-    /// <summary>What is watching, who waits to be told, and what happened while no one did.</summary>
     private sealed class Shared
     {
         public FileSystemWatcher? Watcher;

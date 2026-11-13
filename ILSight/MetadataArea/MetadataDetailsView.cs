@@ -42,7 +42,6 @@ internal static class MetadataDetailsView
             static (at, _) => at.Ui.Theme.RowHeight + at.Padding);
     }
 
-    /// <summary>How big <paramref name="row"/>'s <paramref name="text"/> is, measured once.</summary>
     private static TextSize MeasureText(DetailTexts texts, int row, string text)
     {
         if (texts.Sizes.TryGetValue(row, out var size))
@@ -55,7 +54,6 @@ internal static class MetadataDetailsView
         return size;
     }
 
-    /// <summary>How many lines <paramref name="text"/> has, and how many characters its longest one.</summary>
     private static TextSize MeasureText(string text)
     {
         var lines = text.Split('\n');
@@ -63,9 +61,6 @@ internal static class MetadataDetailsView
         return new TextSize { Lines = lines.Length, Longest = longest };
     }
 
-    /// <summary>How tall a text is in a code view <paramref name="width"/> wide: a code line per
-    /// line, up to <see cref="MaxTextLines"/> before it scrolls, plus the horizontal scrollbar's room
-    /// when its longest line is wider.</summary>
     private static float TextHeight(Ui<UiState> ui, TextSize size, float width)
     {
         var theme = ui.Theme;
@@ -101,7 +96,6 @@ internal static class MetadataDetailsView
             static (at, failed) => Failed(at.Ui, failed));
     }
 
-    /// <summary><paramref name="row"/>'s <paramref name="text"/> as a document, made once.</summary>
     private static DetailText GetText(DetailTexts texts, int row, string title, string text)
     {
         if (texts.Texts.TryGetValue(row, out var shown))
@@ -121,7 +115,6 @@ internal static class MetadataDetailsView
         CodeViewWidget.RenderCodeView(ui, "details", shown.Document, shown.View, gutter: false);
     }
 
-    /// <summary>Why the row's details could not be read, in their place.</summary>
     private static void Failed(Ui<UiState> ui, MetadataRowDetails.Failed failed)
     {
         var theme = ui.Theme;

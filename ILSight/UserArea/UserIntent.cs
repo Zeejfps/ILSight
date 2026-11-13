@@ -89,12 +89,11 @@ public sealed class UserIntent
         return TakeResolution(ticket, outcome.Match(static ok => Resolve(ok.Value), static failed => new Resolution<T>.Failed(failed.Error)));
     }
 
-    /// <summary><paramref name="resolution"/>, unless another request began since <paramref name="ticket"/>: then
-    /// stale, the request begun since left resolving as it is.</summary>
     private Resolution<T> TakeResolution<T>(int ticket, Resolution<T> resolution)
     {
         if (IsStale(ticket))
         {
+            // The request begun since is left resolving as it is.
             return new Resolution<T>.Stale();
         }
 

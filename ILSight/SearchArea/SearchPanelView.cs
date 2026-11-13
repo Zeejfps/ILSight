@@ -39,7 +39,6 @@ internal static class SearchPanelView
         Results(ui, navigation, setup);
     }
 
-    /// <summary>A line for each assembly the search couldn't search, saying why, above the hits.</summary>
     private static void Unsearched(Ui<UiState> ui, SearchResults results)
     {
         var t = ui.State.Strings;
@@ -121,8 +120,6 @@ internal static class SearchPanelView
         return $"{t.SearchMode}:\n{string.Join("\n", labels)}";
     }
 
-    /// <summary>A check item for all kinds over one per kind, kept open so several can be flipped
-    /// in a row; <see cref="SearchKindChoice"/> decides what each leaves picked.</summary>
     private static void KindsMenu(Ui<UiState> ui)
     {
         var search = ui.State.Search;
@@ -135,13 +132,13 @@ internal static class SearchPanelView
         search.LookFor(kinds);
     }
 
-    /// <summary>The kinds the menu's items leave picked, <paramref name="kinds"/> picked before.</summary>
     private static SearchKinds PickKinds(Ui<UiState> ui, SearchKinds kinds)
     {
         var t = ui.State.Strings;
         var checkAll = kinds == SearchKinds.All;
         var palette = ui.State.NodeIconPalette;
         var allIcon = new UiIcon(ui.State.Icons.SearchAllKinds, ui.Theme.TextMuted);
+        // The items keep the menu open, so several can be flipped in a row.
         if (ui.MenuItem(t.SearchModeAll, ref checkAll, keepOpen: true, icon: allIcon))
         {
             kinds = SearchKinds.All;
@@ -221,8 +218,6 @@ internal static class SearchPanelView
         ui.Text(count, color: theme.TextMuted, size: theme.FontSizeSmall);
     }
 
-    /// <summary>In place of the count: that the query's <c>/regex/</c> is invalid, so nothing is found,
-    /// in the warning colour, with why in its tooltip.</summary>
     private static void InvalidRegexNotice(Ui<UiState> ui, SearchMatcher.InvalidRegex invalidRegex)
     {
         var theme = ui.Theme;
