@@ -13,13 +13,18 @@ only to frame-driven UIs.
   (`dotnet_diagnostic.RLxxxx.severity = error`) where the build must reject it.
 - **`.editorconfig` keys:** `rulelab.ambient_types` (R001), `rulelab.untrusted_libraries` (R009),
   `rulelab.widget_context_types` (R003), `rulelab.infrastructure = true` (a folder of only edge or I/O code),
-  `rulelab.test_code = true`, `rulelab.one_type_per_file = false` (R013). The project declares `EdgeAttribute` and
-  `MustUseAttribute` itself.
+  `rulelab.test_code = true`, `rulelab.test_input = true`, `rulelab.one_type_per_file = false` (R013). The project
+  declares `EdgeAttribute` and `MustUseAttribute` itself.
 - **Edges** are where the framework hands control to the app: `Main` and the composition root, a command dispatcher,
   an HTTP endpoint, middleware, a worker's loop, an `async void` event handler, tests. Only edges start work and
   create its token (R010), catch everything a unit of work throws (R009), and build use cases and adapters (R001).
   Mark each edge type `[Edge]` (the mark moves with the type when a file is split). Everything else takes its token
   as a parameter, lets unexpected exceptions through and reaches the world through its port.
+- **Edges stay thin** (the checks treat their code as the world's): they translate, start work and catch. A branch on
+  what the world or the state answered is a use case over a port (the edge's I/O its adapter) or pure code: would a
+  second edge for the same input repeat it? Ordinary code may hand an edge work to start, never take an answer from
+  one (RL0106: a call's value, a property, indexer or field read). Startup and test hosts running the whole app build
+  it through one root entry point; other edges receive what they call; focused tests keep their seams.
 - **Tests** follow R002, R003, R005, R007, R008, R010 (test methods needn't take a token), R012, R013 and R009's ban
   on empty catches; not R001, R004 or R011 (a test is a composition root; fakes implementing a port are expected).
   - Names: the codebase's convention; a new one uses `Method_Scenario_Expected`. Own assertion helpers carry
@@ -34,13 +39,15 @@ only to frame-driven UIs.
     copy of the edge's composition in the test driver.
   - **Seams:** use cases through their public methods with a fake port; domain types and calculations directly, no
     fakes; adapters and queries against a real or local database. Never private methods; no interface only to fake.
+- **Test input** (code a test reads as input: fixtures it compiles and reads back) is data, exempt from every rule:
+  its folder is marked `rulelab.test_input = true`, the build's other analyzer IDs `none` there.
 
 ## R001: A decision-making class reaches the outside world through one port
 
 Build: RL0101 (time, randomness, I/O or listed services outside adapters, the root, tests and edges), RL0103 (a
 static class whose functions take the same port), RL0105 (infrastructure, or a type holding it, in a port signature);
 suggestions: RL0102 (a use case or adapter built outside the root), RL0104 (another use case reached around the
-port).
+port), RL0106 (ordinary code taking an answer from an `[Edge]` type).
 
 - **One port.** A class that makes decisions touches I/O, time, randomness, configuration, logging and shared mutable
   state only through a nested `public interface IPorts` it declares, its only constructor parameter. That includes the
@@ -70,16 +77,21 @@ port).
 - **Library objects that read lazily are I/O wherever they're read** (only adapters and their shared I/O code; types
   listed). What decides is what a read can reach as the app made the object: one decoding bytes already read, each read
   bounded, is data, readable anywhere, a draw included (failures caught per unit, R009; work over all of it is a wait);
-  one reaching a file or the network is I/O. List only types whose every instance is I/O; a type the app also makes as
-  data isn't listed, its reaching instances kept on the I/O side by review. Where the app keeps one, the state holds a
-  **handle** (values read once: name, path, rows) and the I/O side keeps the object against it: in a
+  one reaching a file or the network is I/O, read only on the I/O side (whole or streamed as its reader needs; a
+  frame-driven view's window is paged: last section). List only types whose every instance is I/O; a type the app
+  also makes as data isn't listed, its reaching instances kept on the I/O side by review. Where the app keeps one, the
+  state holds a **handle** (values read once: name, path, rows) and the I/O side keeps the object against it: in a
   `ConditionalWeakTable` when it holds only memory; when it holds a resource (a mapped file, a stream), released
   deterministically: closing is a method of the type keeping the list's rule, returning what it removed (`[MustUse]`)
   for the edge to have the I/O side dispose. Never the object in the state, a store keyed by a value beside it, or a
-  port passed into the library's hook.
-- **The composition root** (`Program.cs`, DI registration, `AppRoot.Build`) is an edge; tests build the app through
-  it with fakes. Ordinary code never constructs a use case or an adapter; per-document objects come from a factory the
-  root builds (DI: scoped); a function taking the state only to reach a use case is the edge's call.
+  port passed into the library's hook. **Release waits for readers:** the close request refuses new reads (`Closed`);
+  each read holds a lease until it ends, however it ends; once closed and unleased, the owner disposes it exactly once,
+  on the thread its API requires. The close completes at the request, or awaits the release where its contract needs
+  the resource free (a CLI rewriting the file next). Never dispose what a running read may reach (freed memory can end
+  the process, uncaught), nor an object holding only memory.
+- **The composition root** (`Program.cs`, DI registration, `AppRoot.Build`) is an edge; a test that builds the app
+  builds it through it, with fakes. Ordinary code never constructs a use case or an adapter; per-document objects come
+  from a factory the root builds (DI: scoped); a function taking the state only to reach a use case is the edge's call.
   **Configuration becomes initial values** (`required init`, no default on the object), never a settings pass over
   live objects; a setting changed at run time is a command on its owner.
 - **Adapters** take concrete infrastructure and only translate (a status code, a wire format, an exception). The
@@ -144,8 +156,9 @@ RL0307 (a `Get*` returning -1 or `default` of a struct).
 
 ## R004: A type must earn its place
 
-Build: RL0401 (vague names); suggestion: RL0403 (a public field or collection the type changes itself, unless a widget
-binds it by `ref`).
+Build: RL0401 (vague names); suggestions: RL0403 (a public field or collection the type changes itself, unless a widget
+binds it by `ref`), RL0404 (a public field or auto-property only other types write, on a type with methods;
+framework-facing data may keep both).
 
 | You have | Make |
 |----------|------|
@@ -167,12 +180,17 @@ binds it by `ref`).
   without two real implementations (ports excepted). No public setter, mutable field or collection that skips the rule.
 - **Use cases that share a step** (a private method reaching the port) are one class; any other has its own class
   and port.
+- **One kind of input, one path.** Input that arrives at more than one moment (a command line at start and handed to
+  the running instance, a deep link, a replayed message) has one handler, the first copy included, handed it once
+  what the handler decides from is in place: the start recorded (it decides from what is under way) or the restore
+  finished (from restored contents). A shared inbox is one way.
 - **A helper lives where what it knows belongs**: a rule's change on the type keeping the rule, a calculation on its
   concept, even with one caller; only a caller's own policy (its wording) is its private method. When its last caller
   moves, it moves; with none, delete it.
 - **A rule across parts is kept by one type holding every part privately** (a setting it spans included), every change
   its method: exempted ones named for what they are (`Restore`), a step callers take before their I/O
-  (`BeginOpening`). Not public parts, not a second type over them.
+  (`BeginOpening`). Not public parts, not a second type over them, nor another type's functions setting them (those
+  are its methods; a framework's interface is no exception).
 - **Which changes it covers is read from the domain contract** (what the rule promises), not from whether a user asked
   for the transition directly, nor from which kinds had a shape for it: every kind it is about; a transition outside it
   is named and left out on purpose. Each covered transition is handled alike for every kind,
@@ -250,7 +268,8 @@ dropped `[MustUse]` value).
   the type owns → an abstract member; another layer → `Match`; the same kind of effect per case → `Match` returning a
   value, act once; async effects → `Match` returning `Task`; sync effects that differ → `Switch`. A question only some
   cases answer: a virtual member with a "doesn't apply" default (where harmless for a future case), or one `is` check
-  per case in another layer. A union you can't change with no `Match` gets one, written once as an extension method.
+  per case in another layer. For a question every case answers, a union you can't change with no `Match` gets one,
+  written once as an extension method.
   Outside the union, never `switch` with `_`; inside (or in that extension), `Match` / `Switch` dispatch with a `_` arm
   that throws `UnreachableException` (RL0801 exempts both).
 - **A value the caller must act on** is a result union, or, when its loss leaves state stuck (a ticket for work only the
@@ -310,8 +329,9 @@ Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100
   A task that has ended is read from a local inside its check (`var ended = task; if (ended.IsCompletedSuccessfully)
   { ... ended.Result ... }`: VSTHRD002 accepts it). **The one blocking wait:** a thread that must stay its own with
   nothing else to do (the entry thread a UI framework needs; the holder of a named `Mutex`) waits once, in an edge, for
-  work run elsewhere (the thread pool, another thread), VSTHRD002 suppressed with the reason. Not async `Main`; never
-  release a thread-affine lock after an `await`.
+  work run where no continuation needs the blocked thread (`Task.Run`, a task another thread completes; never work
+  that posts back to it), VSTHRD002 suppressed with the reason. Not async `Main`; never release a thread-affine lock
+  after an `await`.
 - **Every async method takes `CancellationToken ct` last and passes it to every async call**, port members included.
   Exceptions: framework-facing signatures, test methods, and clean-up that must finish whatever stopped the work,
   which is `DisposeAsync` under `await using`, with no token.
@@ -369,10 +389,10 @@ return `bool` in a condition).
 
 ## R013: One type per file, named after it; `partial` only where a tool writes the other half
 
-Build: RL1301 (a second top-level type in a file), RL1302 (a file named after none of its types), RL1303 (a type
-written in several hand-written places), RL1305 (a nested type that is a unit of its own); suggestions: RL1304 (a
-top-level shape only one type uses), RL1306 (a namespace named like a type), RL1307 (a nested type its container keeps
-and calls, reaching its privates). Generated code doesn't count.
+Build: RL1301 (a second top-level type in a file), RL1302 (a file named after none of its types), RL1303 (a type written
+in several hand-written places), RL1308 (`partial` with no generated half), RL1305 (a nested type that is a unit of its
+own); suggestions: RL1304 (a top-level shape only one type uses), RL1306 (a namespace named like a type), RL1307 (a
+nested type its container keeps and calls, reaching its privates). Generated code doesn't count.
 
 - One top-level type per file, named after it (`Result` and `Result<T>` share one). Related types share a folder and
   namespace, not a file: grouped by cohesive concept, in the layout the project or framework already has (don't
@@ -386,8 +406,8 @@ and calls, reaching its privates). Generated code doesn't count.
   name, gets its own file, even with one user. A file-only helper that can't nest (extension methods) is a `file` type.
 - `partial` only where a tool writes the other half (`[GeneratedRegex]`, a `JsonSerializerContext`, a designer file).
   A class too big for one file is split into types by what each knows (R004), not by topic.
-- Files whose layout is data (fixtures a test reads as source; scenario variants) opt out with
-  `rulelab.one_type_per_file = false`.
+- Files whose layout alone is data (scenario variants paired on purpose) opt out with
+  `rulelab.one_type_per_file = false` (RL1303 and RL1308 stay on); test input is exempt from every rule (Scope).
 
 ## Frame-driven UIs (only if your UI redraws from state every frame)
 

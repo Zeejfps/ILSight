@@ -23,7 +23,7 @@ namespace ILSight.ILSightAppArea;
 /// carries the commands each queues for the other. Neither state sees the other; only the app and the views
 /// see both.</summary>
 [Edge]
-public sealed partial class ILSightApp : ImmediateGuiApp<UiState>
+public sealed class ILSightApp : ImmediateGuiApp<UiState>
 {
     private const string MonoFontFile = "JetBrainsMono-Regular.ttf";
     private const string ItalicFontFile = "Inter-Italic.ttf";

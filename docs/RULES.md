@@ -11,6 +11,7 @@ the evidence lives in `rules/<id>/README.md`.
 |------|------------------|
 | Production code | All rules. |
 | Tests and test helpers | **R002, R003, R005, R007, R008, R010, R012, R013** (except RL1001: test methods needn't take a token), and R009's ban on empty catches. These are what keep tests readable: no `!`, names that say what is tested, labelled test data, braces, honest states, a test class found by its file name. **Not R001, R004 or R011.** A test is a composition root: it builds the code under test with real or fake infrastructure, may open databases, build DI containers, write output and catch exceptions directly. Fakes that implement a port are expected (they are the port's second adapter). |
+| Test input: code a test reads as its input (fixtures it compiles and reads back, source it parses) | **None.** It is data: its form (a positional record, a type compiled without nullable annotations, its files and namespaces) is what the test checks, so a rule that reshapes it removes what is tested, and the test still passes (R013 S11). Its folder is marked `rulelab.test_input = true` (every RuleLab check off), with the build's other analyzers' IDs at `none` in the same `.editorconfig` section. Only files that are input: the test's own code and helpers follow the test rules. |
 
 Test conventions:
 
@@ -68,7 +69,8 @@ Test conventions:
   another process, have callers the repository doesn't show, so "only tests call it" is evidence only for internal
   code with no such caller. Whether only tests call a member takes a view across projects (one compilation sees no
   test's call).
-- **Test data uses object initializers** (R005), so every value in a fixture is labelled.
+- **Test data uses object initializers** (R005), so every value in a fixture the test builds is labelled. (Code the
+  code under test reads as its input is another thing: test input, which no rule reshapes, above.)
 - **Shared helpers live in one place** (a shared test project), not copied into each test project.
 
 ## Edges
@@ -97,6 +99,27 @@ and left off the list, `Commands.cs` was reported 4 times by RL0101 and the othe
 7 edge types reproduced every count of its file list). `rulelab.infrastructure = true` in `.editorconfig` is for a
 folder whose every file is edge or I/O code (an Infrastructure project).
 
+**Edges stay thin.** The checks treat an edge's code as the world's side (R001's are off for it), so an edge does only
+what needs that: it translates (the framework's input into a call, the answer into what the framework takes), starts
+work with its token and catches, and, at the composition root alone, builds. A decision in an edge, a branch on what
+the world or the app's state answered, goes where the checks see it and a test reaches it without the world: a use case
+over a port, the edge's I/O becoming its adapter, or pure code on its concept. The test is the adapter's (R001): would a
+second edge for the same input (another platform's entry point, a test) have to repeat the branch? Then it is a
+decision. Edges call ordinary code, never the other way: ordinary code may hand an edge work to start (a command it
+queues, R010) but takes no answer from one (RL0106); code the framework hands control to is itself an edge, marked.
+Composition is the root's alone: startup and every test host that runs the whole app (an app-level test driver, an
+integration test's host) build it through one entry point of the root's; an edge that assembles the root's steps itself
+(reads the settings, builds a session, calls three of the root's functions) is a second composition, which a test
+driver then copies (Scope: tests drive what the app runs; R004 S20). Other edges don't build the app: they receive what
+they call from the root (an endpoint its handler, a command the use cases on the state it is handed; R001 "Lifetime
+decides who builds"), and focused tests keep their seams (a use case with a fake port, domain code directly: R004
+"Testing follows the seams"). In testing (R001 S34, a new run deciding where its arguments go: take the role, stand
+by for a new window, hand them over, stand by when the running app doesn't answer), the decision in the edge, and in
+ordinary code taking each answer from the edge
+(ILSight's), was reached only through real I/O: its 4 cases needed 3 OS objects and 318 ms, the hand-over timeout
+included; as a use case over a port, the 4 cases and what each sent were checked with a fake in about a millisecond, and
+the adapter once against the OS.
+
 The framework also meets the app through **state it reads or writes directly**: fields a widget binds by `ref`,
 properties a serializer or binder sets, members it calls in its own order. That state is shaped as the framework
 requires and kept apart from state with rules: see R004 "Framework-facing state".
@@ -111,15 +134,15 @@ The build checks what can be checked mechanically (`analyzers/`, wired in throug
 | R003 | missing `Async` (RL0301), `Find*` not `T?` or a union with a not-found case (RL0302), `Get*` returning `T?` (RL0303), `Is*`... not `bool` (RL0304), `Load*` / `Fetch*` (RL0305); suggestions while measured: a `bool` method named as an action (RL0306: also `bool CloseTab`, `bool Set`), a `Get*` returning -1 or `default` of a struct (RL0307) | whether a name is a verb; choosing the right pattern; sentinels that come from elsewhere (`Array.IndexOf`, `FirstOrDefault`) or travel through the codebase's own parameters (-1 for "no row"); a `TrySet` that should count changes; a placeholder returned to fill a generic `T` |
 | R007 | braces and block bodies (`.editorconfig`), target-typed `new()` (RL0701), two statements on one line (RL0702), `var` for locals (IDE0007) | – |
 | R008 | `switch` on a union (RL0801; the union's own code, and a `Match` / `Switch` extension method of it, written once for a union the code can't change, excepted), discarded `To*`/`With*` results (RL0802), `if` / `else if` chain over union cases (RL0803), discarded result union (RL0804), a `Status` / `State` / `Kind` enum next to nullable properties (RL0805; rows, saved forms and wire shapes named for their role are skipped: `*Row`, `*Record`, `*Dto`, `*Json`, `*Request`, `*Response`), a case added from outside a union (RL0806); each of them for a union another project declares too (seen through its reference assembly, which keeps no private constructor); suggestion while measured: a dropped value of a type marked `[MustUse]`, a `Task<T>` of one taken as a plain `Task` included (RL0807) | whether nullable fields really depend on the status; whether a question every case answers or only some (and whether a default is harmless for a future case); whether a union with no `Match` really can't be changed (else its `Match` goes on it); which types leave state stuck when dropped (the marker is put by hand); a value passed to code that ignores it; whether a value carrying several kinds of work makes its consumer handle each (a handler per kind); RL0807 at error (`dotnet_diagnostic.RL0807.severity = error`) where a drop must fail the build |
-| R004 | vague type names (RL0401); suggestion while measured: a public field or collection the type changes in its own methods, unless a widget binds it by `ref` (RL0403) | classification; one-implementation interfaces (an analyzer can't see across projects); framework-facing data mixed with rules kept elsewhere; something depending on a framework-facing method having run; whether use cases share a step (one class) or not (a class each); where a helper with no port lives (the compiler keeps a rule's type private once it's there: CS0122); whether a rule's type holds every part the rule spans, a setting included, and names the changes it exempts; which changes its rule covers (read from the domain contract, every kind it covers included, not from whether a user asked for the transition), and whether each covered transition is handled alike for every kind, restoration and late results included; where its parts end (what a caller could break the rule through, in what it hands out, a change landing late included, checked again against the prerequisite's pending, completed or removed state, which the domain rule reads); whether per-object state is held where only the holder reaches it; whether what the rule keeps about a place is a value; duplicate execution paths only tests use, and internal members confirmed dead (another project's calls; external contracts stay) |
+| R004 | vague type names (RL0401); suggestions while measured: a public field or collection the type changes in its own methods, unless a widget binds it by `ref` (RL0403); a public field or auto-property only other types' code writes, on a type with instance methods of its own (RL0404) | classification; one-implementation interfaces (an analyzer can't see across projects); framework-facing data mixed with rules kept elsewhere; something depending on a framework-facing method having run; whether use cases share a step (one class) or not (a class each); where a helper with no port lives (the compiler keeps a rule's type private once it's there: CS0122); whether a rule's type holds every part the rule spans, a setting included, and names the changes it exempts; which changes its rule covers (read from the domain contract, every kind it covers included, not from whether a user asked for the transition), and whether each covered transition is handled alike for every kind, restoration and late results included; where its parts end (what a caller could break the rule through, in what it hands out, a change landing late included, checked again against the prerequisite's pending, completed or removed state, which the domain rule reads); whether per-object state is held where only the holder reaches it; whether what the rule keeps about a place is a value; duplicate execution paths only tests use, and internal members confirmed dead (another project's calls; external contracts stay); whether an input that arrives at more than one moment has one handler, its first copy fed through it once the handler's prerequisites are in place; a rule kept by another type's functions through a setter with a body or a method it calls |
 | R005 | positional records with 2+ values (RL0501) | rules spanning several values |
-| R001 | direct time / randomness / I/O, and the codebase's own services listed in `rulelab.ambient_types` (static, or reached through an object passed in), outside adapters (and types only adapters or listed services use: I/O code they share), the composition root, tests and edge code (`[Edge]` types, `rulelab.infrastructure` folders) (RL0101); a static class whose functions take the same port (RL0103); a port member whose signature is, or holds, infrastructure or a listed service, through a union's cases too (RL0105); suggestions while measured: a use case or adapter constructed outside the composition root (RL0102), another use case reached around the port: its port taken as a parameter or extended, or a constructor taking more than its port (RL0104) | an effect reached through an unlisted method of an object passed in; another feature's use case called as a static function over the state; a decision inside I/O code adapters share; pure code that differs per kind injected or passed per call instead of on the kind (a closed set; an open one chosen at run time, such as plugins, is a strategy interface); whether a library object kept against a handle holds a resource its owner must release when the handle goes; whether a table whose reads reach a file is paged whatever its size (its first window read with its content), not read whole under a threshold; whether a record of functions is standing in for a port; whether a function takes the whole state (and narrowing it bottom-up); a settings pass setting values on live objects; what lives per document or request; a decision that relied on an object's identity once the port passes values (a key's hand-written `Equals` without `GetHashCode` is CS8851); ports, adapters, what counts as a decision (would a second adapter of the port repeat the branch?); a caller converted before its callee (passes the state on, no port member carrying it); whole-state work called outside an edge; which of a library's types are I/O code another project's adapters use, or read past memory as the app makes them (listed by hand: one compilation sees no other project's uses, no library says which of its members read, and a type made both ways, as an image in memory and a mapped file, can't be listed); whether a value read after a wait is read from its owner; whether the content decides what else to read (the kind says what it names); a function that takes the state only to reach a use case |
+| R001 | direct time / randomness / I/O, and the codebase's own services listed in `rulelab.ambient_types` (static, or reached through an object passed in), outside adapters (and types only adapters or listed services use: I/O code they share), the composition root, tests and edge code (`[Edge]` types, `rulelab.infrastructure` folders) (RL0101); a static class whose functions take the same port (RL0103); a port member whose signature is, or holds, infrastructure or a listed service, through a union's cases too (RL0105); suggestions while measured: a use case or adapter constructed outside the composition root (RL0102), another use case reached around the port: its port taken as a parameter or extended, or a constructor taking more than its port (RL0104), ordinary code taking an answer from a member of an `[Edge]` type: a call's value, a property, indexer or field read (RL0106) | an effect reached through an unlisted method of an object passed in; another feature's use case called as a static function over the state; a decision inside I/O code adapters share; pure code that differs per kind injected or passed per call instead of on the kind (a closed set; an open one chosen at run time, such as plugins, is a strategy interface); whether a library object kept against a handle holds a resource its owner must release when the handle goes, and whether that release waits for every read of it (a lease per read, new reads refused once it is closed; an object holding only memory never disposed), is done once on the thread its API requires, and is awaited by a close whose completion contract needs the resource free; whether a table a view shows a window of, whose reads reach a file, is paged whatever its size (its first window read with its content), not read whole under a threshold; whether a record of functions is standing in for a port; whether a function takes the whole state (and narrowing it bottom-up); a settings pass setting values on live objects; what lives per document or request; a decision that relied on an object's identity once the port passes values (a key's hand-written `Equals` without `GetHashCode` is CS8851); ports, adapters, what counts as a decision (would a second adapter of the port repeat the branch?); a caller converted before its callee (passes the state on, no port member carrying it); whole-state work called outside an edge; which of a library's types are I/O code another project's adapters use, or read past memory as the app makes them (listed by hand: one compilation sees no other project's uses, no library says which of its members read, and a type made both ways, as an image in memory and a mapped file, can't be listed); whether a value read after a wait is read from its owner; whether the content decides what else to read (the kind says what it names); a function that takes the state only to reach a use case; a decision inside an edge (R001's checks are off there; a second edge for the same input would repeat the branch), work an edge's void member does for ordinary code, and an edge that assembles the root's steps itself |
 | R006 | – | all, including whether an input is read all-or-nothing or leniently |
 | R010 | async method without a token (RL1001), `_ =` fire-and-forget (RL1002), token not passed on (CA2016), blocking waits (VSTHRD002: a task's value read from a local inside the check that it ended isn't one), `async void` (VSTHRD100), un-awaited tasks (VSTHRD110), sync calls in async code (VSTHRD103, CA1849); a job runner listed in `rulelab.ambient_types` started from a draw (RL0101); an I/O step called without what its state change returned (the compiler: CS1503 / CS7036); edge code outside a type marked `[Edge]` (RL0101, RL0102, RL0902 report it, and say so); a shortcut past the type that keeps a rule across the parts a draw changes (the compiler, once the type holds them: CS0122) | parallel queries on one `DbContext`; moving async work out of sync-only callers; whether a suppressed blocking wait is a thread that must stay its own (an entry thread a framework needs, the holder of a lock only it may release) waiting for work run where no continuation needs it, in an edge; a thread-affine lock released after an `await`; what the input's frame must show (and where a workflow's first wait is); what a draw takes (the parts it changes, or the type that keeps their rule; never the whole state below the draw's root); work started from a draw by other means; state drawn before the widget that changes it; whether a frame follows a change in a UI that draws on demand; where the edge's read-back of the screen is kept, and whether its key is unique across every owner the store holds; what a workflow's completion contract needs (awaited) and what is independent of it (handed back), and work handed back partway held by a later wait; clean-up a catch runs instead of `DisposeAsync`; a warm-up started outside an edge (`ThreadPool` and `Task.Run` aren't listed), or a second read beside the one it warms up; follow-up work a state's own change implies, handed back by each workflow that makes it or started by the change |
 | R009 | empty catch (RL0901), catch-all outside an edge (RL0902; accepted around a read by a library listed in `rulelab.untrusted_libraries`, in the try or through the compilation's own methods it calls, when the catch uses the exception, throws nothing and lets cancellation through), `throw ex` (CA2200), throwing `Exception` (CA2201), discarded result union (RL0804), `SuppressThrowing` on a `Task<T>` (CA2261); suggestions while measured: an adapter's catch that turns cancellation into a result (RL0903), an adapter's port member returning a sequence that isn't its own iterator (RL0904), a dropped ticket handed back (RL0807) | which failures are expected; which libraries read the user's data and fail on it in any way (listed by hand), and whether only the read is inside their catch (a delegate handed in isn't followed); whether a shared read's value is matched by the unit before its sync read (the sync wait itself is VSTHRD002); whether an ending is no news (a wait that doesn't throw) or news (not caught); whether a failure the user must hear is reported while something can show it (shutdown); specific catches in decision code (a listed library's read of the user's data aside); log-and-rethrow; a library object whose reads reach past memory leaving the I/O side (one the app keeps stays behind a handle, released by its owner if it holds a resource: R001, RL0101 / RL0105 once its types are listed; one that only decodes bytes already read is data); another call to a stream's source inside its loop; cancellation turned into a result without a catch (an awaiter or continuation); whether a workflow's token is linked to everything that cancels it on purpose, and to nothing else (a deadline is a timeout), and a canceller found partway handed back to the edge; where an effect can't be undone, and whether what follows it is one transaction or a durable record's, under a key the effect's provider honours; whether a newest-wins result is checked against the current ticket, not only an issued one |
 | R011 | – (suggestions while measured: a loop doing a lower level's work between steps, RL1101; a condition written in mechanics between steps, RL1102; in a draw or an `[Edge]` type, a capturing lambda whose closure is allocated on paths that never make it, RL1103) | whether a call goes up a level; what the levels are; whether code is a hot path (code a frame runs outside draws and edge types, per-row loops) |
 | R012 | null checks written as property patterns, at the top of a pattern or on a member inside one (RL1201), calls that don't return `bool` inside a condition (RL1202) | – |
-| R013 | a second top-level type in a file (RL1301), a file named after none of its types (RL1302), a type written in two or more hand-written places (RL1303), a nested type that is a unit of its own: code that uses none of its container's private members, a type code outside its container names or reaches through members, or code on its container's private members that code outside makes (RL1305); suggestions while measured: a top-level shape only one type uses (RL1304), a namespace named like a type (RL1306), a nested type its container keeps in a field and calls while it reaches the container's private members (RL1307); generated code doesn't count | how types are grouped into folders (by cohesive concept, in the project's or framework's established layout, or by a convention the project adopted: R013's README); whether a nested type's private reach is its container's own operation (made and handed out, not held); narrowing a member to its users (another project's calls aren't seen); how to split a class that was split across files (by what each part knows, R004); whether code is a test's input |
+| R013 | a second top-level type in a file (RL1301), a file named after none of its types (RL1302), a type written in two or more hand-written places (RL1303), a nested type that is a unit of its own: code that uses none of its container's private members, a type code outside its container names or reaches through members, or code on its container's private members that code outside makes (RL1305), a type marked `partial` written in one hand-written place with no half a tool writes (RL1308); suggestions while measured: a top-level shape only one type uses (RL1304), a namespace named like a type (RL1306), a nested type its container keeps in a field and calls while it reaches the container's private members (RL1307); generated code doesn't count | how types are grouped into folders (by cohesive concept, in the project's or framework's established layout, or by a convention the project adopted: R013's README); whether a nested type's private reach is its container's own operation (made and handed out, not held); narrowing a member to its users (another project's calls aren't seen); how to split a class that was split across files (by what each part knows, R004); whether code is a test's input |
 
 To break a rule on purpose, suppress it with the reason written down:
 `#pragma warning disable RL0802 // Deliberate: demonstrates the discarded-result trap`, or on a member
@@ -127,9 +150,12 @@ To break a rule on purpose, suppress it with the reason written down:
 
 Mark edge types with the project's own `[Edge]` attribute (Edges), folders whose every file is I/O or edge code (an
 Infrastructure project) with `rulelab.infrastructure = true` in `.editorconfig`, and test folders with
-`rulelab.test_code = true`. Files whose layout is itself data (test fixtures a test compiles and reads back or reads as
-source, scenario files that pair variants on purpose) opt out of R013's layout checks with
-`rulelab.one_type_per_file = false` (R013).
+`rulelab.test_code = true`. Test input (fixtures a test compiles and reads back or reads as source) is exempt from every
+rule (Scope): `rulelab.test_input = true` turns every RuleLab check off for its folder; the build's other analyzers
+don't read that key, so the same section sets their IDs to `none` (a bulk `dotnet_analyzer_diagnostic.severity` there
+doesn't override a per-ID severity set for `[*.cs]`). Files whose layout alone is data (scenario files that pair
+variants on purpose) opt out of R013's layout checks with `rulelab.one_type_per_file = false`, every other rule on
+(RL1303 and RL1308 included: they are about how a type is written, not where its file puts it).
 
 ---
 
@@ -339,8 +365,33 @@ one's port, extends it, or takes something beside its own.
    - **A resource that must be released** (a mapped file, an open stream, a native decoder): owned deterministically.
      Dropping the handle is a change of the type that keeps the open list's rule (closing one, closing all: R004), which
      returns what it removed as a value the caller must act on (`[MustUse]`, R008), and the edge hands it to the I/O
-     side, which disposes the library's objects for it (a lease the handle's owner ends). Not left to the weak table:
-     the file stays open until a collection happens to finalize it.
+     side, which disposes the library's objects for it. Not left to the weak table: the file stays open until a
+     collection happens to finalize it.
+   - **Released when nothing can read it any more, not when it closes.** Closing is two events. The **close
+     request** drops the handle at once, and from then the I/O side refuses a read of it (a `Closed` answer, an
+     expected outcome: R009); what showed the closed item keeps what it showed or not, as the product decides. The
+     **release** disposes the library's objects. Every read holds a **lease**, taken on the I/O side as the read
+     begins (refused once the handle is closed) and given back however it ends (`using`, `finally`). The handle closed
+     and its last lease ended, whichever comes last, makes the release eligible; the owner (the I/O side) then disposes
+     exactly once, on the thread or scheduler the resource's API requires: a renderer's resource on its render thread,
+     an apartment-bound object on its own, the last lease's end posting the disposal there. Only where the API lets any
+     thread dispose may the last lease's end dispose directly. **When the close completes is its completion contract's
+     (R010 point 4).** Where its caller is told the resource is free (a CLI command that rewrites the file next, an
+     API's `CloseAsync` promising it released, a test deleting its folder), the close requests, then awaits the
+     release; where nothing it promises needs the release (a desktop tab closed: ILSight's choice, R001's README), it
+     completes at the request and the release follows the last lease. Work whose only purpose was the closed item may
+     also be cancelled on purpose (a closed document's tab stops its load, R009), which ends its lease sooner;
+     cancelling saves work and decides nothing about safety. A library that reads through memory it frees on release (a mapped view, an image
+     read into native memory) turns a read after release into an access violation, which ends the process and no catch
+     stops; whether it throws an ordinary exception instead isn't documented, and can differ by offset within one
+     object. So the lease is what makes release safe: not a check before reading (a read already past it reads on),
+     not a wait for the readers in its place (it covers only the readers it knows of, and a library read that doesn't
+     look at its token holds the close as long as a lease would; a close that must complete released awaits the
+     release the leases give), and not a release only where a late read throws (kept, the file stays held; released,
+     the reads under way report the user's own close as a failure). An object that holds only memory is
+     never disposed while it can be reached: the collector frees it once nothing reads it, which is the same lease, kept
+     by the runtime. Where the library can make its object from bytes the app holds anyway (an image read whole), that
+     form has nothing to release.
 
    List the library's types whose reads reach past memory (below) in `rulelab.ambient_types` too (a third party's are listed by name): RL0101 then reports decision code
    reading them, and RL0105 a port member carrying a type that holds one, through a union's cases too. Not the library's object in
@@ -369,6 +420,28 @@ one's port, extends it, or takes something beside its own.
    the list's close (the closed handles returned `[MustUse]`, the I/O side disposing them), the file was replaceable at
    once after either way of closing, each disposed once. A memory-only index in the weak table was collected once the
    handles went (2 of 2).
+   In S33 (a library document over the user's file, its pages read through native memory it frees when disposed; a
+   tab's decompile and a search under way when the document closes, a second search reaching it after the close, then
+   a language switch), disposed at the close with nothing checked (S31's form), released memory was read by the reads
+   under way (6 pages), the search reaching the closed document (4) and the closed tab's load started again (4); with
+   every new read checked (the tab marked closed, a closed document refused) but disposed at the close, the reads under
+   way still read 4. Closing that cancelled and awaited the readers read none, but waited 72 ms for a page the library
+   reads without looking at its token, and the search under way lost the closed document's hits; released at the
+   close only where a late read throws, a library that reads freed memory was never disposed (its file held once every
+   read had ended), and one that throws made the search under way report "Shop couldn't be searched
+   (ObjectDisposedException)", the user's own close as a failure. A private copy in memory held no file and read no
+   freed memory. A lease per read read none: the close ended at once, the file was held while reads were under way and
+   replaceable once they had ended, disposed once, by the last read. With ILSpy 11.1 (a probe outside the sandbox): a
+   `PEFile` read whole into memory, read after `Dispose`, was an `AccessViolationException` ("Fatal error", the process
+   gone); `WebCilFile` threw `NullReferenceException` within its first 64 KB (its view's pointer nulled), and ILSight
+   met an access violation past it; 200 such `PEFile`s of 3 MB dropped undisposed were freed by the collector.
+   In S35 (S33's lease under two other contracts), a CLI command that closes a document and rewrites its file while an
+   export reads it couldn't rewrite it with the close completing at the request (the file still held by the read), and
+   rewrote it with the close awaiting the release, the export finishing its read and no freed memory read; disposed at
+   the close instead, the rewrite worked and the export read freed memory. A resource its API must dispose on its
+   owner's thread, disposed by the last lease's end, was disposed on the reader's thread; with the last lease posting
+   the disposal to the owner's thread, it was disposed there once, after the read; disposed by the owner at the close,
+   on its thread, the read under way read freed memory.
    **What a read can reach decides it, as the app made the object, not the type.** A library object is I/O when a read
    of it can reach past the memory the app already read (a file, through a mapping or a hook; the network) or take
    longer than a frame. The same type can be made both ways: ILSpy's `MetadataFile` is an assembly's image read whole
@@ -376,10 +449,14 @@ one's port, extends it, or takes something beside its own.
    An object that only decodes bytes the app already read, each read bounded (a row, a cell, an entity of a type system
    already built), is data: read where it's needed, a draw included. Its failure on the data is the unit's (R009: the
    cell says why, never an empty cell), and what goes over all of it grows with the data (a sort, a filter, a cache sized
-   to the table, an index the library builds on first use): a wait (R010). So a large table a view shows a window of
-   (a virtualized grid) reads the cells it draws in the frame when its image is in memory, and is paged when its reads
-   reach a file: the draw records the pages it finds missing as pending, and the frame edge reads them (R010 "Work the
-   draw finds"; not R009's stream, which one loop reads in order). Not read whole when opened (every cell held, memory
+   to the table, an index the library builds on first use): a wait (R010). **Where a read that reaches a file runs is
+   the rule; how its reader buffers is the reader's.** Such reads run on the I/O side, never in decision code or a
+   draw. A reader that goes over all of it (an export, a CLI printing every row, a batch job) reads it there whole or
+   as a stream (R009 "An adapter may stream"), as its size and its consumer need; paging isn't asked of it.
+   **Windowed access** is what the rest of this paragraph decides: a large table a view shows a window of (a
+   virtualized grid, in a frame-driven UI) reads the cells it draws in the frame when its image is in memory, and is
+   paged when its reads reach a file: the draw records the pages it finds missing as pending, and the frame edge reads
+   them (R010 "Work the draw finds"; not R009's stream, which one loop reads in order). Not read whole when opened (every cell held, memory
    growing with the table, and a cell's tooltip can't be read ahead: 17 ms for 40 rows of a large ILSight grid), and
    not paged when nothing waits (a frame of "loading" per page, for nothing). Paged whatever its size: the pages its
    first window shows are read as its content is made (a wait already, shown as one), so a table of a window or less
@@ -582,8 +659,8 @@ one's port, extends it, or takes something beside its own.
 
 The code that builds the application's long-lived objects (its state, use cases and adapters) and chooses the adapters
 is the **composition root**: `Program.cs` and DI registration, or without a DI container a function such as
-`AppRoot.Build`. It is an edge (see Edges): its type is marked `[Edge]`, and tests build the application through the same
-code, swapping adapters for fakes.
+`AppRoot.Build`. It is an edge (see Edges): its type is marked `[Edge]`, and a test that builds the application builds it
+through the same code, swapping adapters for fakes.
 
 - **Ordinary code never constructs a use case or an adapter.** It is handed what it calls.
 - **Without a DI container,** the root builds each use case once and hands it to the edges that call it, on the object
@@ -634,7 +711,9 @@ outside the composition root.
   save, the live objects' values back into one; it never sets values on live objects. A setting the user changes
   while the app runs is a command on the object it belongs to (`view.ChangeFontSize(18)`): where a rule spans the
   setting and other state (turning previews off keeps the preview tab open), the type that keeps that rule (R004
-  step 3 and S16: `navigation.UsePreviewTabs(false)`).
+  step 3 and S16: `navigation.UsePreviewTabs(false)`). Input that can also arrive while the app runs (a command line a
+  running instance is handed) isn't configuration: its first copy goes through its one handler (R004 "One kind of
+  input, one path").
   ```csharp
   public static AppState Build(Settings settings, Session session)   // settings read first, defaults filled in (R006)
   {
@@ -674,11 +753,13 @@ outside the composition root.
 - [ ] Functions that share a port are one class taking it in its constructor; only a lone function takes its port as a parameter (an interface, not a record of functions or the whole state).
 - [ ] Effects reached through an object passed in (a method that reads the disk, runs work, reports an error) are on the port; plain data and pure methods on it are used directly.
 - [ ] Another use case is reached through a member of this one's port, and the adapter calls it; never its port, its effects, or the use case itself beside the port.
-- [ ] Only the composition root, an edge (`[Edge]`), constructs use cases and adapters; tests build the application through it.
+- [ ] Only the composition root, an edge (`[Edge]`), constructs use cases and adapters; a test that builds the application builds it through it.
+- [ ] Edges stay thin: they translate, start work and catch; a branch on what the world or the state answered is a use case over a port (the edge's I/O its adapter) or pure code; ordinary code hands an edge work but takes no answer from one (a call's value, a property, indexer or field read). Startup and the test hosts that run the whole app build it through one entry point of the root's; other edges receive what they call; focused tests keep their seams.
 - [ ] Only edges and functions that work on the whole state take it; callees were narrowed first, then their callers (a caller converted first passes the state on as before, never through a port member). Whole-state work (saving the session) is called by edges only: a use case it must follow ends, and the edge's step runs it (an autosave), or the use case hands it back.
 - [ ] I/O code a library declares for another project's adapters is listed in `rulelab.ambient_types`, and holds nothing else (members others call for what they know live on their concept).
 - [ ] A library object that reads lazily is read only on the I/O side; the state keeps a handle (the values read when it was read), the library's object kept against it by I/O code (a `ConditionalWeakTable` for one that holds only memory; one holding a resource is released when the owner of closing drops the handle, on every way of closing), and the library's types whose reads reach past memory are listed.
-- [ ] Whether a library object is I/O is read from what its reads can reach as the app made it: one decoding bytes the app already read, each read bounded, is data (a draw reads the cells it shows, each cell's failure shown in place; a sort or filter over all of it is a wait); one whose reads reach a file is paged by the frame edge whatever its size (its first window read with its content), never read in a draw nor read whole under a size. A value made from a handle's values alone is its owner's, off the listed type.
+- [ ] A resource is released when nothing can read it: the close request drops the handle and the I/O side refuses new reads (`Closed`); each read under way holds a lease, given back however it ends; once closed and its last lease ended, the owner disposes it exactly once, on the thread or scheduler its API requires. The close completes at the request, or awaits the release where its completion contract needs the resource free. Nothing a running read may reach is disposed at the close; an object holding only memory is never disposed while reachable.
+- [ ] Whether a library object is I/O is read from what its reads can reach as the app made it: one decoding bytes the app already read, each read bounded, is data (a draw reads the cells it shows, each cell's failure shown in place; a sort or filter over all of it is a wait); one whose reads reach a file is read only on the I/O side: a view showing a window of it (a virtualized grid in a frame-driven UI) has it paged by the frame edge whatever its size (its first window read with its content), never read in a draw nor read whole under a size; a reader of all of it reads it there whole or streamed, as it needs. A value made from a handle's values alone is its owner's, off the listed type.
 - [ ] When the content decides what else to read, the kind's pure code says what it names (with where), and the use case reads it through its port; no reading delegate handed to the kind's reader.
 - [ ] A value a function reads after its wait, as it stands then, is taken as its owner (made if missing), not as a value taken at the start; a function that takes the state only to reach a use case is the edge's call.
 - [ ] Per-document / per-request objects come from a factory the root built; configured values arrive through constructors or `required init`, never a settings pass.
@@ -1115,6 +1196,32 @@ Work top to bottom and take the first match.
   one with its own member (3 members either way), turned the step into a third use case reached through ports, and
   went from 1 port to 3 (6 members) plus an adapter that forwards to the step.
 - **Knowledge shared by use cases lives on the type it's about.** Which status transitions are allowed belongs on `Order`, not repeated in each handler.
+- **One kind of input, one path.** An input that can reach the app at more than one moment (a command line the first
+  run applies and a later run hands to the instance already running, a deep link that opens the app or reaches it open,
+  a message replayed at startup and received live, a game's launch options and the same commands typed in its console)
+  is handled by one handler, whatever brought it: its meaning is written once, and the first copy goes through the
+  handler as the later ones do. Not a second set of startup steps (each path changes on its own, and the same input
+  gives a different result depending on whether the app was running). **The handler's prerequisites are explicit:**
+  the first copy is handed to it once what it decides from is in place, and the edge that starts the app orders the
+  start around that, saying so where it does. What that is depends on the handler. One that decides from what the
+  start has under way (a clear that drops the saved list's files on their way) needs the start recorded on the state,
+  nothing read: handed it after the start's reads began, those reads are wasted. One that decides from restored contents (a
+  withdrawal checked against the stock a service restores, a console command acting on a game's saved world) needs the
+  restore finished: handed it before, it decides from incomplete state. Feeding the first copy into the inbox the
+  later ones use is one way to reach the one handler, not the rule. Configuration that only ever arrives at start
+  stays initial values (R001). In testing (S28, a list to open, a clear and files, at startup and handed to the open
+  window), the two paths (ILSight's form) differed on a
+  clear: at startup the saved list's analyses stayed, waiting for files that never came; handed over, they were
+  dropped. One handler fed through the inbox after the start was recorded ended alike in all five argument sets and
+  read no more than before; taken after the start's reads began, alike but reading the saved list's 2 files for
+  nothing; taken before the start was recorded, the switch saved the open list as empty and a clear was undone by the
+  reopening begun after it. On a copy of ILSight (6 argument sets, with saved analyses and documents), the two paths
+  ended alike, by different routes: in the arguments' frame, startup held the list's analysis pending and the open
+  window had dropped it; a later check (R004's late change, AK1) refused the pending one. Those arguments decide from
+  what the start has under way, so their prerequisite is the start recorded (ILSight's order is a worked example in
+  R004's README). In S28's second part (a stock restored from its store, a withdrawal replayed at startup and received
+  live), the same order had the handler refuse the replayed withdrawal (no stock restored yet) that the live one took;
+  handed it once the restore finished, both took it.
 - **Type count is not the goal.** Sorting a grab bag into well-named homes adds types; removing pass-through layers removes them. Both are right.
 - **Where a type's code lives is R013:** one type per file, and a class too big for one file is split here, by what each
   part knows, not across files by topic with `partial`.
@@ -1156,6 +1263,18 @@ Work top to bottom and take the first match.
   language) stays a value they take. A step several callers take before their I/O (beginning a request: a new intent
   and its ticket) is a change under the rule like any other: the type's method (`intent.BeginOpening(paths)`), not a
   static on the use case that does the I/O (S15: a caller with no I/O would be handed the use case) nor the ticket's.
+  **Functions of another type over its members are its methods.** A static class that sets a type's public members and
+  keeps the rule about them (starting a receiver's thread and setting its `Thread`, stopping it in the order the rule
+  needs) holds the rule outside the type, where every new function over those members can skip it: the members go
+  private and the functions become the type's methods. A type whose methods a framework's interface demands
+  (`ITreeModel`, a decompiler's `ITextOutput`) is no exception: its methods keep the rule rather than forward to a static
+  class that does. In testing (S29, a receiver whose listener must stop before it is released), a way of starting it
+  written later left the public field unset, and its listener outlived `Dispose`; with the thread the receiver's own,
+  every start went through it and none outlived it (`DEMO_CS1061` for the shortcut); the receiver's thread is a worker
+  loop, so the receiver is marked `[Edge]` (only edges start work, R010) and owns that work's lifecycle privately. RL0404
+  suggests a public field or auto-property only other types write, on a type with methods of its own; methods prove no
+  rule, so framework-facing data, whose methods only read, delegate or offer a convenience (below), keeps its public
+  members.
   In testing (S16, ILSight's `Navigation`, whose tabs, history and intent are public), a diagram opened through the
   tabs while a lookup ran, and the lookup took the tab away from it, with the parts public and with restoring as a
   type of its own over the same tabs; with the parts private and restoring a method, the diagram kept the tab,
@@ -1330,6 +1449,8 @@ public sealed class AssemblyChoice                     // owns its rule: Selecte
 
 - [ ] Every new type matches a row in step 1.
 - [ ] Use cases share a class only when they share a step; one that shares none has its own class and port.
+- [ ] An input that can arrive at more than one moment (at startup and while running) has one handler, the first copy included, handed it once what the handler decides from is in place (the start recorded, for one deciding from what is under way; the restore finished, for one deciding from restored contents), the edge ordering the start around it.
+- [ ] No other type's functions keep a rule over a type's public members (a static class setting its fields); they are its methods, the members private, a framework's interface no exception.
 - [ ] A helper that reaches no port lives on the type whose rule it keeps (or the concept it computes), even with one caller; only its one caller's own policy (its wording, its choices) is a private method of that caller.
 - [ ] A type that keeps a rule across parts holds them all privately, a setting the rule spans included; every change to them is its method, the ones the rule exempts named for what they are (`Restore`), and a step callers take before their I/O (beginning a request) is one of them.
 - [ ] Which changes the rule covers is read from the domain contract (what it promises), not from whether a user asked for the transition directly or which kinds had a shape for it: every kind the contract covers is under it, with what it needs; a transition outside the contract is named and left out on purpose. What a covered transition does is decided once for every kind, without a wait, restoration and late results included; what the rule keeps about a place is a value, not the document. (What a history records and what Back does are the product's choices.)
@@ -2169,7 +2290,9 @@ while (!stoppingToken.IsCancellationRequested)
   asked for (one member's code, one module's search, one node's children, one picture, one cell),
   carrying why, and that case is shown where the unit's answer would be. Only the read is inside the catch (code the
   library calls back while it reads, a writer it fills, is part of the read): the app's own code on the answer runs
-  after it, so its bugs still reach the edge.
+  after it, so its bugs still reach the edge. A read of memory the library already released is not the data's failure:
+  it may be no exception at all (an access violation ends the process, past every catch), so it is prevented where
+  the object is released (R001 point 2: a lease per read), never caught.
   ```csharp
   try
   {
@@ -2896,7 +3019,8 @@ the contract it declares for others to name through it (a union's cases, a use c
 its own has its own file, even when one type uses it. A type is written in one place: `partial` only where a tool writes
 the other half (a source generator: `[GeneratedRegex]`, `[LibraryImport]`, a `JsonSerializerContext`, a UI framework's
 generator; a designer file). A class too big for one file is too big: split it into types by what each knows (R004),
-not into files by topic. Code a test reads as its input keeps the layout the test checks.
+not into files by topic. Code a test reads as its input keeps the layout the test checks, as it keeps every other form
+(Scope: no rule applies to test input).
 
 **Why.** A call site names a type; the file name should say where it is, for a person and for an agent searching
 files. In ILSight, which grouped types into files by feature, 411 of its 757 top-level types have no file named after
@@ -2987,7 +3111,9 @@ code of its own brings the same bug back (S05).
    ```
 6. **`partial` only where a tool writes the other half.** One declaration by hand, the rest generated (a `.g.cs` file,
    an `<auto-generated>` header, `[GeneratedCode]`). A type that contains a generated nested type is partial for the
-   same reason (`FeedJson` holding its `JsonSerializerContext`): still one declaration by hand.
+   same reason (`FeedJson` holding its `JsonSerializerContext`): still one declaration by hand. A type marked `partial`
+   that no tool writes another half of says a second half exists, and invites a hand-written one: the keyword goes
+   (RL1308; ILSight's `ILSightApp`, left partial after its frame code moved to a type of its own).
 7. **A class too big for one file is split by what it knows**, not by topic into files: state with a rule becomes a type
    that keeps it (S01's `Tabs`, whose list the assemblies code can no longer reach: `DEMO_CS0122`), and each group of
    functions about one concept a static class named for it (R004). Merging the parts into one file is not the fix: in
@@ -2995,7 +3121,11 @@ code of its own brings the same bug back (S05).
 8. **Code a test reads as its input is data.** Fixtures a test compiles and reads back (a decompiler's tests) or reads
    as source keep the layout the test checks: their files, nesting and namespaces are its subject (S08: laid out by
    this rule, the fixtures no longer show a nested namespace or a nested type, so the test loses what it tests,
-   verified). Mark their folder `rulelab.one_type_per_file = false`, which turns R013's layout checks off for it.
+   verified). Layout is one form among many, and no rule applies to test input (Scope): in S11, fixtures made to
+   follow R005 and R002 lost the only positional record and the only type compiled without nullable annotations, and
+   bugs planted in the decompiler's two branches for them passed the suite; an opt-out per rule, taken for R005 when
+   it bit, caught the first and still passed the second. Mark their folder `rulelab.test_input = true`, which turns
+   every RuleLab check off for it (R013's included), and set the build's other analyzers' IDs to `none` there.
 
 **What it costs.** More files: S02's format of 8 DTOs, a reader and a context went from 1 file to 10 (or stayed 1, with
 the DTOs nested in the reader); S06's group with a converter from 1 to 3. An edit to one feature touches several files
@@ -3005,15 +3135,17 @@ without the container's: ILSight's three test fakes named `FakeLookup` would col
 `using` to each file outside it that uses its types (what a convention's folders cost ILSight: R013's README).
 
 **Enforcement.** RL1301 reports a second top-level type in a file, RL1302 a file named after none of its types, RL1303
-a type declared in two or more hand-written places, RL1305 a nested type that is a unit of its own (code that uses none
+a type declared in two or more hand-written places, RL1308 a type marked `partial` in one hand-written place with no
+half a tool writes, RL1305 a nested type that is a unit of its own (code that uses none
 of its containers' private members; a type code outside its container names, or reaches through members without naming
 it; code on its container's private members that code outside makes; a union's cases and `IPorts` aside).
 Suggestions while measured: RL1304, a top-level shape that only one type names and none of its members shows (another
 project's uses, a test's, aren't seen), RL1306, a namespace named like a type in it or around it, and RL1307, a nested
 type with code that reaches its container's private members while the container keeps it in a field or property. Code a tool
-generated doesn't count. Files whose layout is itself data opt out of the layout checks (all but RL1303) with
-`rulelab.one_type_per_file = false` (the sandbox's scenario files, which pair variants on purpose; a decompiler's test
-fixtures). Measured: on the sandbox 6 findings in 3 files for RL1301 / RL1302, and 3 nested collaborators and a type
+generated doesn't count. Files whose layout alone is data opt out of the layout checks (all but RL1303 and RL1308,
+which are about how a type is written: a pairing of variants in one file needs no `partial`) with
+`rulelab.one_type_per_file = false` (the sandbox's scenario files, which pair variants on purpose); test input (a
+decompiler's test fixtures) is exempt from every check with `rulelab.test_input = true` (point 8). RL1308, measured 2026-11-12 (RULE-ISSUES AT): 1 on ILSight, real (`ILSightApp`; its 10 other partial types each have a generated half), 0 on the sandbox, so it ships as an error. Measured: on the sandbox 6 findings in 3 files for RL1301 / RL1302, and 3 nested collaborators and a type
 named outside its container for RL1305, all real; on ILSight 486 for RL1301-RL1303 and 53 for RL1305 (and 1 in its
 fixtures, where the option belongs), no false alarms; RL1304 found 2 there, one named by a test; RL1307 0 there (of its 9
 nested types that reach their container's privates, 7 are handed out and 2 are made outside) and S05's strip in the
@@ -3032,6 +3164,6 @@ ILSight 430 of the 597 members whose own project calls them only from their own 
 - [ ] Related types share a folder, not a file, grouped by cohesive concept in the project's or framework's established layout (or the convention the project adopted, such as R013's README's); no folder is named like a type in it, around it, or a library type the code around it names.
 - [ ] Nested types are their container's parts: private, shapes only it uses and code that works on its private members as what it makes and hands out (a scope, an enumerator, a callback), never code it keeps and calls or code others make; public, a union's cases and a use case's `IPorts`; any other type with code of its own, or that others name or reach through members, has its own file (members narrowed to their users first).
 - [ ] A helper only one file uses that can't be nested (extension methods) is a `file` type.
-- [ ] `partial` appears only where a tool writes the other half; no type is written by hand in two places.
+- [ ] `partial` appears only where a tool writes the other half; no type is written by hand in two places, and none is marked `partial` with no generated half.
 - [ ] A class too big for one file is split into types by what each knows (R004), not into files by topic.
-- [ ] Code a test reads as input keeps its layout, in a folder marked `rulelab.one_type_per_file = false`.
+- [ ] Code a test reads as input keeps its layout and every other form the test reads (no rule applies to it), in a folder marked `rulelab.test_input = true`, the build's other analyzers' IDs at `none` there.
