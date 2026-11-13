@@ -40,11 +40,6 @@ public sealed class DiagramViewTests
 
     private static bool IsLaidOut(AppDriver app)
     {
-        if (app.AppState.IsDiagramming)
-        {
-            return false;
-        }
-
         var tab = app.AppState.Navigation.ActiveTab;
         if (tab is null)
         {
@@ -52,7 +47,7 @@ public sealed class DiagramViewTests
         }
 
         var diagram = tab.Diagram;
-        if (diagram is null)
+        if (diagram is null || diagram.IsBusy)
         {
             return false;
         }

@@ -6,6 +6,8 @@ using ILSight.AppSettingArea;
 using ILSight.ILSightAppArea;
 using ILSight.SettingArea;
 using ILSight.AssemblyListArea;
+using ILSight.FrameworkArea;
+using ILSight.ProcessArea;
 using static ILSight.Analysis;
 using static ILSight.Navigation;
 using static ILSight.SettingArea.Settings;
@@ -34,19 +36,23 @@ internal sealed class AppStateDriver
 
     /// <param name="settings">The settings the app starts with.</param>
     /// <param name="nuGetRequests">Sends the "open from NuGet" dialog's requests; the app's shared connections when null.</param>
-    public AppStateDriver(AppSettings? settings = null, HttpMessageHandler? nuGetRequests = null)
-        : this(NoProblem(settings), CommandLines.Parse([]).Arguments, withScreen: true, nuGetRequests)
+    /// <param name="runtimeScan">Scans the runtime for the "open from framework" dialog; the installed runtime's when null.</param>
+    /// <param name="processes">Lists the running processes for the "open from process" dialog; this machine's when null.</param>
+    public AppStateDriver(AppSettings? settings = null, HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null,
+        ProcessBrowser.IPorts? processes = null)
+        : this(NoProblem(settings), CommandLines.Parse([]).Arguments, withScreen: true, nuGetRequests, runtimeScan, processes)
     {
     }
 
-    private AppStateDriver(SettingsLoadResult loadResult, RunArguments arguments, bool withScreen, HttpMessageHandler? nuGetRequests = null)
+    private AppStateDriver(SettingsLoadResult loadResult, RunArguments arguments, bool withScreen, HttpMessageHandler? nuGetRequests = null,
+        FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null)
     {
         Step = Pump;
         loadResult.Settings.Locale ??= Locale.En;
         AppState = AppRoot.RestoreAppState(loadResult, arguments, TestSession.Shared);
         if (withScreen)
         {
-            _ui = AppRoot.CreateScreen(AppState, nuGetRequests);
+            _ui = AppRoot.CreateScreen(AppState, nuGetRequests, runtimeScan, processes);
         }
 
         Commands.StartRestoringAnalyses(AppState, Analysis.BeginRestoring(AppState.Analyzer, AppState.Assemblies));
@@ -172,7 +178,27 @@ internal sealed class AppStateDriver
     private bool IsSettled()
     {
         var appState = AppState;
-        return appState.Work.Outstanding.Count == 0 && !appState.IsReloading && !appState.IsReopening && !appState.IsFindingDocuments && !appState.IsFindingAnalyses &&!appState.IsResolving && !appState.IsImporting && !appState.IsExporting && !appState.IsDiagramming && !appState.IsComparing && !IsSearching() && appState.Navigation.OpenTabs.All(static t => !t.Load.IsBusy) && _posted.IsEmpty;
+        return appState.Work.Outstanding.Count == 0 && !appState.IsReloading && !appState.IsReopening && !appState.IsResolving && !appState.Export.IsRunning
+            && !IsSearching() && appState.Navigation.OpenTabs.All(IsShownWhole) && _posted.IsEmpty;
+    }
+
+    /// <summary>Whether <paramref name="tab"/> shows nothing on its way, as it draws it: no code loading, no diagram
+    /// reading cards or laying them out, no comparison running.</summary>
+    private static bool IsShownWhole(DocumentTab tab)
+    {
+        if (tab.Load.IsBusy)
+        {
+            return false;
+        }
+
+        var diagram = tab.Diagram;
+        if (diagram is not null && diagram.IsBusy)
+        {
+            return false;
+        }
+
+        var comparison = tab.Comparison;
+        return comparison is null || !comparison.IsComparing;
     }
 
     private bool IsSearching()

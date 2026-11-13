@@ -7,6 +7,9 @@ namespace ILSight.App.Tests;
 
 public sealed class PresentationTests
 {
+    /// <summary>The built-in light theme, as the app finds it among the themes it lists.</summary>
+    private static readonly AppTheme Light = Theming.CreateCatalog(BuiltInThemes.Files).GetTheme(Theming.LightId);
+
     [Fact]
     public void Every_node_kind_has_its_own_icon_font_glyph_and_a_colored_role_in_both_palettes()
     {
@@ -18,7 +21,7 @@ public sealed class PresentationTests
             Assert.Equal(1, glyph.Length);
             Assert.InRange((int)glyph[0], 0xE000, 0xF8FF);
             Assert.NotEqual(0u, NodeIcons.GetColor(BuiltInThemes.Dark.Icons, kind));
-            Assert.NotEqual(0u, NodeIcons.GetColor(BuiltInThemes.Light.Icons, kind));
+            Assert.NotEqual(0u, NodeIcons.GetColor(Light.Icons, kind));
         }
         Assert.Equal(kinds.Length, kinds.Select(k => NodeIcons.Glyph(k, Icons)).Distinct().Count());
     }
@@ -105,14 +108,14 @@ public sealed class PresentationTests
         var ns = root.Child(AppStateDriver.FixturesNamespace);
         var privateField = ns.Child("Outline").Children.Single(c => c.Icon == NodeIcon.Field && c.Accessibility == NodeAccessibility.Private);
         var tree = new BrowseTree { Session = TestSession.Shared };
-        Trees.SetTreeStyle(tree, UiTheme.Light, BuiltInThemes.Light.Icons, Icons);
+        Trees.SetTreeStyle(tree, UiTheme.Light, Light.Icons, Icons);
 
         var field = tree.Row(privateField);
         var hidden = tree.Row(ns.Child("Hidden"));
         var greeter = tree.Row(ns.Child("Greeter"));
 
         Assert.Equal(Icons.OverlayPrivate, field.Icon?.Overlay);
-        Assert.Equal(BuiltInThemes.Light.Icons.Restricted, field.Icon?.OverlayColor);
+        Assert.Equal(Light.Icons.Restricted, field.Icon?.OverlayColor);
         Assert.Equal(IconTheming.ReferenceId.Text, field.Icon?.Glyph.Family);
         Assert.Equal(UiTheme.Light.TextMuted, field.LabelColor);
         Assert.Equal(Icons.OverlayInternal, hidden.Icon?.Overlay);

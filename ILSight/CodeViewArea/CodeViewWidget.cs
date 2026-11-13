@@ -42,13 +42,6 @@ public static class CodeViewWidget
         return state.Document is null ? "" : CodeHtml.Between(state.Document, state.Selection.Start, state.Selection.End, style);
     }
 
-    /// <summary>Whether fold <paramref name="fold"/> of the shown document's
-    /// <see cref="DecompiledDocument.Folds"/> is collapsed.</summary>
-    public static bool IsCollapsed(CodeViewState state, int fold)
-    {
-        return CodeFolding.IsCollapsed(state.Folds, fold);
-    }
-
     public static void SetCollapsed(CodeViewState state, int fold, bool collapsed)
     {
         var top = GetTopAnchor(state);

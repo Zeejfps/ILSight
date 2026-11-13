@@ -73,7 +73,7 @@ public sealed class FrameworkBrowser(FrameworkBrowser.IPorts ports)
     private RuntimeScan.Failed ReportFailedScan(Outcome<IReadOnlyList<RuntimeAssembly>>.Failed failed)
     {
         ports.ReportError(new AppProblem.RuntimeNotScanned(failed.Error));
-        return new RuntimeScan.Failed(failed.Error.ToString());
+        return new RuntimeScan.Failed(failed.Error.Message);
     }
 
     /// <summary>True once after <see cref="Open"/>: the filter box should take focus.</summary>

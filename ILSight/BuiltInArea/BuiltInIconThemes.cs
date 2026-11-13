@@ -21,9 +21,6 @@ public static class BuiltInIconThemes
     /// hands it the chosen icon theme.</summary>
     public static IconTheme Reference { get; } = Catalog.GetTheme(IconTheming.ReferenceId);
 
-    /// <summary>What was wrong in the built-in icon theme files; nothing, unless one was broken by an edit.</summary>
-    public static IReadOnlyList<ThemeError> Errors => Catalog.Errors;
-
     /// <summary>The JSON schema icon theme files name in <c>$schema</c>, for editors to complete and check their keys.</summary>
     public static string ReadSchema()
     {

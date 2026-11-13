@@ -84,7 +84,7 @@ public sealed class LayoutPersistenceTests : IDisposable
 
         var next = new AppStateDriver(_temp.Settings());
         next.Start(AppStateDriver.OpenAtStartupAsync);
-        next.RunUntil(() => !next.AppState.IsFindingAnalyses);
+        next.Settle();
 
         Assert.Equal(["First() : int", "Greeter"], next.AppState.Analyzer.Found().Select(r => r.Symbol.Label));
     }

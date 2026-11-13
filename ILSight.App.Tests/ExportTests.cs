@@ -296,7 +296,8 @@ public sealed class ExportTests : IDisposable
 
         Assert.True(File.Exists(greeter));
         Assert.True(File.Exists(farewell));
-        Assert.False(d.AppState.IsExporting);
+        Assert.Null(d.AppState.Export.Running);
+        Assert.Equal(0, d.AppState.Export.WaitingCount);
     }
 
     [Fact]
@@ -310,7 +311,6 @@ public sealed class ExportTests : IDisposable
         d.AppState.Export.CancelRunning();
         d.Settle();
 
-        Assert.False(d.AppState.IsExporting);
         Assert.Null(d.AppState.Export.Running);
         Assert.Empty(d.AppState.Errors.Entries);
     }

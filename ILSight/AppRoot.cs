@@ -176,10 +176,14 @@ internal static class AppRoot
     /// and any other tab in the place of the documents. It takes the theme and strings with its first frame.</summary>
     /// <param name="appState">The app state the screen shows.</param>
     /// <param name="nuGetRequests">Sends the "open from NuGet" dialog's requests; the app's shared connections when null.</param>
-    internal static UiState CreateScreen(AppState appState, HttpMessageHandler? nuGetRequests = null)
+    /// <param name="runtimeScan">Scans the runtime for the "open from framework" dialog; the installed runtime's when null.</param>
+    /// <param name="processes">Lists the running processes for the "open from process" dialog; this machine's when null.</param>
+    internal static UiState CreateScreen(AppState appState, HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null,
+        ProcessBrowser.IPorts? processes = null)
     {
-        var uiState = CreateUiState(appState.View, appState.Work, problem => Errors.Report(appState, problem), appState.Session, appState.Assemblies.Runtime,
-            nuGetRequests);
+        var reportError = (AppProblem problem) => Errors.Report(appState, problem);
+        var uiState = CreateUiState(appState.View, appState.Work, reportError, appState.Session, nuGetRequests,
+            runtimeScan ?? new FrameworkPickerAdapter(reportError, appState.Assemblies.Runtime), processes ?? new ProcessBrowserAdapter(reportError));
         ScreenSettings.RestoreScreen(uiState, appState.View);
         AppFrames.FollowRestoredAppState(uiState, appState);
         return uiState;
@@ -191,10 +195,11 @@ internal static class AppRoot
     /// <param name="work">Where the work the screen starts in the background is counted.</param>
     /// <param name="reportError">Tells the user that something done in the background failed.</param>
     /// <param name="session">The browse tree the tree and searches show nodes of.</param>
-    /// <param name="runtime">What this machine has installed.</param>
     /// <param name="nuGetRequests">Sends the "open from NuGet" dialog's requests; the app's shared connections when null.</param>
-    private static UiState CreateUiState(ViewSettings saved, BackgroundWork work, Action<AppProblem> reportError, BrowseSession session, InstalledRuntime runtime,
-        HttpMessageHandler? nuGetRequests)
+    /// <param name="runtimeScan">Scans the runtime for the "open from framework" dialog.</param>
+    /// <param name="processes">Lists the running processes for the "open from process" dialog.</param>
+    private static UiState CreateUiState(ViewSettings saved, BackgroundWork work, Action<AppProblem> reportError, BrowseSession session,
+        HttpMessageHandler? nuGetRequests, FrameworkBrowser.IPorts runtimeScan, ProcessBrowser.IPorts processes)
     {
         var appCommands = new Queue<AppCommand>();
         var nuGet = new NuGetClient(nuGetRequests);
@@ -209,14 +214,14 @@ internal static class AppRoot
             ArrangeMetadataGridHandler = new ArrangeMetadataGridHandler(new ArrangeMetadataGridHandlerAdapter()),
             ReadMetadataPageHandler = new ReadMetadataPageHandler(new ReadMetadataPageHandlerAdapter()),
             ShippedLicenses = FindShippedLicenses(),
-            Picker = new FrameworkPicker { Browser = new FrameworkBrowser(new FrameworkPickerAdapter(reportError, runtime)) },
+            Picker = new FrameworkPicker { Browser = new FrameworkBrowser(runtimeScan) },
             NuGetPicker = new NuGetPicker { Browser = new NuGetBrowser() },
             ReadNuGetSetupHandler = new ReadNuGetSetupHandler(new ReadNuGetSetupHandlerAdapter(reportError)),
             SearchNuGetFeedHandler = new SearchNuGetFeedHandler(new SearchNuGetFeedHandlerAdapter(reportError, nuGet)),
             DownloadNuGetPackageHandler = new DownloadNuGetPackageHandler(new DownloadNuGetPackageHandlerAdapter(reportError, nuGet)),
             FetchNuGetIconHandler = new FetchNuGetIconHandler(new FetchNuGetIconHandlerAdapter(nuGet)),
             ReadNuGetDetailsHandler = new ReadNuGetDetailsHandler(new ReadNuGetDetailsHandlerAdapter(nuGet)),
-            ProcessPicker = new ProcessPicker { Browser = new ProcessBrowser(new ProcessBrowserAdapter(reportError)) },
+            ProcessPicker = new ProcessPicker { Browser = new ProcessBrowser(processes) },
             Display = saved.Display ?? DisplayOptions.Default,
             Analyzer = new AnalyzerRows { AppCommands = appCommands },
             MainLayout = new MainLayout { Dock = DockPanels.Restore(saved.Layout) },

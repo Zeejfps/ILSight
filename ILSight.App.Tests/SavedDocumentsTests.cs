@@ -108,15 +108,10 @@ public sealed class SavedDocumentsTests : IDisposable
 
     private static bool IsLaidOut(AppDriver app, DocumentTab tab)
     {
-        if (app.AppState.IsDiagramming)
-        {
-            return false;
-        }
-
         var view = DiagramOf(app, tab);
         var diagram = tab.Diagram;
         Assert.NotNull(diagram);
-        if (view.LaidOutVersion != diagram.Version)
+        if (diagram.IsBusy || view.LaidOutVersion != diagram.Version)
         {
             return false;
         }

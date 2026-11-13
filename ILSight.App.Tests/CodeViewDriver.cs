@@ -32,15 +32,18 @@ internal sealed class CodeViewDriver
     private static readonly Lazy<DecompiledDocument> s_outline = new(() => Decompile(typeof(Outline)));
 
     private readonly PostedActions _posted = PostedActions.OfThisTest();
-    private readonly WorkflowRunner _workflows = new(new BackgroundWork(), new ErrorLog());
+    private readonly BackgroundWork _work = new();
+    private readonly WorkflowRunner _workflows;
 
     /// <summary>A view of <paramref name="document"/>. What background work posts back, such as a
     /// tooltip's lookup, runs on the test's thread at the start of each frame, as the app runs it, and wakes the
-    /// frames, so waiting for the UI runs the frame that takes it in.</summary>
+    /// frames, so waiting for the UI runs the frame that takes it in; the frames are ready once the work the view
+    /// started is done.</summary>
     public CodeViewDriver(DecompiledDocument document, float height = 300f)
     {
         Document = document;
-        Frames = new UiFrames(Screens.Blank(), height: height, body: Render) { FrameTime = 1f / 60f, BeforeFrame = _posted.Run };
+        _workflows = new WorkflowRunner(_work, new ErrorLog());
+        Frames = new UiFrames(Screens.Blank(), height: height, body: Render, background: _work) { FrameTime = 1f / 60f, BeforeFrame = _posted.Run };
         var ui = Frames.Run(0f, static ui => ui);
         _posted.WakeOnPost(ui.RequestFrame);
     }

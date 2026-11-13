@@ -51,9 +51,7 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
         }
 
         var records = bookmarksRead.Bookmarks;
-        imports.Finding++;
         var found = await ports.LookUpPlacesAsync(records, ct);
-        imports.Finding--;
         TakeImported(bookmarks, imports, records, found, file);
     }
 

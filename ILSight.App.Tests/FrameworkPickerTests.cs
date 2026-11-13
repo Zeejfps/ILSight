@@ -168,6 +168,22 @@ public sealed class FrameworkPickerTests
     }
 
     [Fact]
+    public void OpenFromFramework_ScanFailed_ShowsInTheDialogThatItFailedAndWhy()
+    {
+        var runtime = new FakeFrameworkBrowserPorts { Failure = new InvalidDataException("No shared framework folder.") };
+        var app = new AppDriver(runtimeScan: runtime);
+        app.Settle();
+
+        app.Frames.ClickOn(Selector.WithText(Strings.En.MenuFile));
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, Strings.En.FileOpenFromFramework));
+        app.Settle();
+
+        // The note wraps over lines; joined, they read as it does, and the error comes after it.
+        Assert.Contains($"{Strings.En.PickerScanFailed} No shared framework folder.", string.Join(" ", app.Frames.TextRects().Select(static t => t.Text)));
+        Assert.Single(runtime.Reported);
+    }
+
+    [Fact]
     public void Only_an_open_tab_can_be_active_or_the_preview()
     {
         var tabs = new DocumentTabs();

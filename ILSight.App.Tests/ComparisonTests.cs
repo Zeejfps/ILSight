@@ -298,7 +298,7 @@ public sealed class ComparisonTests
 
         Assert.True(comparison.Work.IsClosed);
         Assert.IsType<ComparisonResult.NotYet>(comparison.Result);
-        Assert.False(d.AppState.IsComparing);
+        Assert.False(comparison.IsComparing);
     }
 
     [Fact]

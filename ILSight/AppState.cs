@@ -218,17 +218,8 @@ public sealed class AppState
     /// <summary>True while a file of the list is read again, the list still holding it as it was.</summary>
     public bool IsReopening => Reopens.IsRunning;
 
-    /// <summary>True while the nodes the tabs reopened from the saved documents showed are being found.</summary>
-    public bool IsFindingDocuments => Reopened.IsFinding;
-
-    /// <summary>True while analyzer roots wait for their symbols to be found.</summary>
-    public bool IsFindingAnalyses => Analyzer.IsFinding;
-
-    /// <summary>The bookmark imports finding their places or waiting for the user to say how to take them.</summary>
+    /// <summary>The bookmark imports waiting for the user to say how to take them.</summary>
     public BookmarkImports Imports { get; } = new();
-
-    /// <summary>True while imported bookmarks' places are being found in the background.</summary>
-    public bool IsImporting => Imports.IsFinding;
 
     /// <summary>The code, projects, solutions and PDBs being written in the background, one at a time.</summary>
     public ExportQueue Export { get; } = new();
@@ -236,41 +227,4 @@ public sealed class AppState
     /// <summary>The reports of the exports that finished, oldest first, until they are taken off the
     /// exports panel.</summary>
     public List<ExportReport> FinishedExports { get; } = new();
-
-    /// <summary>True while <see cref="Export"/> runs.</summary>
-    public bool IsExporting => Export.IsRunning;
-
-    /// <summary>True while the diagram of an open tab reads cards or lays them out in the background.</summary>
-    public bool IsDiagramming
-    {
-        get
-        {
-            foreach (var tab in Navigation.OpenTabs)
-            {
-                var diagram = tab.Diagram;
-                if (diagram is not null && diagram.IsBusy)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
-    /// <summary>True while an open tab compares two assemblies in the background.</summary>
-    public bool IsComparing
-    {
-        get
-        {
-            foreach (var tab in Navigation.OpenTabs)
-            {
-                var comparison = tab.Comparison;
-                if (comparison is not null && comparison.IsComparing)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
 }

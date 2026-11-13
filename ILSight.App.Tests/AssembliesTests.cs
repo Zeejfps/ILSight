@@ -399,7 +399,6 @@ public sealed class AssembliesTests
         var waiting = Assert.Single(Assert.Single(ListLookups(loads)).Nodes);
         Assert.Same(reopened, waiting.Reopened);
         Assert.Equal(place, waiting.Place);
-        Assert.False(d.AppState.IsFindingDocuments);
         Assert.IsType<TabContent.Reloading>(tab.Content);
         Assert.Empty(ListDecompiles(loads));
     }

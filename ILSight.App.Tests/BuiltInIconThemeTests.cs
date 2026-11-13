@@ -10,7 +10,6 @@ public sealed class BuiltInIconThemeTests
         var catalog = IconTheming.CreateCatalog(BuiltInIconThemes.Files);
         var reference = catalog.GetTheme(IconTheming.ReferenceId);
 
-        Assert.Empty(BuiltInIconThemes.Errors);
         Assert.Empty(catalog.Errors);
         Assert.Equal(["lucide"], catalog.Ids.Select(static i => i.Text));
         Assert.All(AppIcons.Keys, k => Assert.True(reference.Set.Contains(k.Key), k.Key));

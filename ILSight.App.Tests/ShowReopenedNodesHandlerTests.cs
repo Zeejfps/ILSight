@@ -33,7 +33,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
         var showing = new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None);
-        Assert.True(d.AppState.IsFindingDocuments);
+        Assert.IsType<TabContent.Reloading>(waiting.Reopened.Tab.Content);
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<BrowseNode>>>.Ok([new Lookup<BrowseNode>.Found { Value = greeter }]));
         var loads = await showing;
 
@@ -41,7 +41,6 @@ public sealed class ShowReopenedNodesHandlerTests
         var load = Assert.Single(loads);
         Assert.Same(waiting.Reopened.Tab, load.Tab);
         Assert.Same(greeter, load.Node);
-        Assert.False(d.AppState.IsFindingDocuments);
         Assert.Empty(d.AppState.Reopened.Tabs);
     }
 
@@ -58,7 +57,6 @@ public sealed class ShowReopenedNodesHandlerTests
 
         Assert.Empty(loads);
         Assert.IsType<TabContent.Gone>(waiting.Reopened.Tab.Content);
-        Assert.False(d.AppState.IsFindingDocuments);
     }
 
     [Fact]
@@ -109,6 +107,5 @@ public sealed class ShowReopenedNodesHandlerTests
 
         Assert.Empty(loads);
         Assert.Empty(ports.Asked);
-        Assert.False(d.AppState.IsFindingDocuments);
     }
 }

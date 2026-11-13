@@ -25,7 +25,6 @@ public sealed class BuiltInThemeTests
     {
         var catalog = Theming.CreateCatalog(BuiltInThemes.Files);
 
-        Assert.Empty(BuiltInThemes.Errors);
         Assert.Empty(catalog.Errors);
         Assert.Equal(
             ["dark", "light", "catppuccin-mocha", "dracula", "github-dark", "monokai", "one-dark-pro", "github-light", "solarized-light"],

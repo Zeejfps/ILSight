@@ -60,7 +60,7 @@ internal static class FrameworkPickerView
                     notStarted: static (s, _) => NoteScanning(s.ui),
                     scanning: static (s, _) => NoteScanning(s.ui),
                     scanned: static (s, _) => Rows(s.ui, s.browser, s.listId),
-                    failed: static (s, _) => NoteScanFailed(s.ui));
+                    failed: static (s, failed) => NoteScanFailed(s.ui, failed.Error));
             }
 
             using (ui.Row(new Box { Gap = theme.GapTight }))
@@ -107,12 +107,14 @@ internal static class FrameworkPickerView
         return false;
     }
 
-    /// <summary>Notes that scanning the runtime failed, where its assemblies would be. False: none was opened.</summary>
-    private static bool NoteScanFailed(Ui<UiState> ui)
+    /// <summary>Notes that scanning the runtime failed, and then <paramref name="error"/>, why, where its assemblies
+    /// would be. False: none was opened.</summary>
+    private static bool NoteScanFailed(Ui<UiState> ui, string error)
     {
         var theme = ui.Theme;
         ui.Text(ui.State.Strings.PickerScanFailed, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) },
             color: theme.TextMuted, wrap: true);
+        ui.Text(error, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) }, color: theme.TextMuted, wrap: true);
         return false;
     }
 

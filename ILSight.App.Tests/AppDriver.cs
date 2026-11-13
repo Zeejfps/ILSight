@@ -5,6 +5,8 @@ using ILSight.Core;
 using ILSight.CommandArea;
 using ILSight.AppSettingArea;
 using ILSight.ILSightAppArea;
+using ILSight.FrameworkArea;
+using ILSight.ProcessArea;
 
 namespace ILSight.App.Tests;
 
@@ -13,9 +15,9 @@ namespace ILSight.App.Tests;
 internal sealed class AppDriver
 {
     public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, RunArguments? queuedArguments = null, ITextMeasurer? measurer = null, Channel<RunArguments>? inbox = null,
-        HttpMessageHandler? nuGetRequests = null)
+        HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null)
     {
-        Driver = new AppStateDriver(settings, nuGetRequests);
+        Driver = new AppStateDriver(settings, nuGetRequests, runtimeScan, processes);
         inbox ??= Channel.CreateUnbounded<RunArguments>();
         if (queuedArguments != null)
         {

@@ -11,6 +11,9 @@ public sealed class CodeViewTests
 {
     private const float ViewHeight = 300f - 2 * CodeViewDriver.Origin;
 
+    /// <summary>The built-in light theme, as the app finds it among the themes it lists.</summary>
+    private static readonly AppTheme Light = Theming.CreateCatalog(BuiltInThemes.Files).GetTheme(Theming.LightId);
+
     private static (CodeViewDriver View, int Line, int Column) GreeterAt(string text)
     {
         var view = CodeViewDriver.Showing(CodeViewDriver.Greeter(), height: 1200f);
@@ -46,7 +49,7 @@ public sealed class CodeViewTests
         view.Frames.Run(1f / 60f, ui =>
         {
             ui.State.Theme = UiTheme.Light;
-            ui.State.CodeViewPalette = BuiltInThemes.Light.Code;
+            ui.State.CodeViewPalette = Light.Code;
             CodeViewWidget.RenderCodeView(ui, "code", view.Document, view.State);
             ui.State.Theme = UiTheme.Dark;
             ui.State.CodeViewPalette = BuiltInThemes.Dark.Code;
@@ -55,7 +58,7 @@ public sealed class CodeViewTests
 
         Assert.Equal(SpanKind.Keyword, view.Document.SpanAt(line, column).Kind);
         Assert.Equal(BuiltInThemes.Dark.Code[SpanKind.Keyword], dark);
-        Assert.Equal(BuiltInThemes.Light.Code[SpanKind.Keyword], light);
+        Assert.Equal(Light.Code[SpanKind.Keyword], light);
     }
 
     [Fact]

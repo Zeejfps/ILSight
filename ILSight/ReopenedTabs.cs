@@ -6,10 +6,4 @@ public sealed class ReopenedTabs
 {
     /// <summary>The tabs waiting, each once, in the order reopened; see <see cref="SavedDocuments"/>.</summary>
     public readonly List<ReopenedTab> Tabs = new();
-
-    /// <summary>How many searches for the nodes the tabs wait for are under way.</summary>
-    public int Finding;
-
-    /// <summary>True while the nodes the tabs waited for are being found.</summary>
-    public bool IsFinding => Finding > 0;
 }

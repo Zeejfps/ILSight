@@ -172,7 +172,7 @@ internal static class ProcessPickerView
             notStarted: static (s, _) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerScanning),
             scanning: static (s, _) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerScanning),
             scanned: static (s, scanned) => ScannedProcesses(s.ui, s.browser, s.listId, scanned),
-            failed: static (s, _) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerScanFailed));
+            failed: static (s, failed) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerScanFailed, failed.Error));
     }
 
     /// <summary>Notes <paramref name="text"/> where the rows would be. False: none was activated.</summary>

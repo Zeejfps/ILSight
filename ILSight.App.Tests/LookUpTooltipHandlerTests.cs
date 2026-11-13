@@ -25,7 +25,6 @@ public sealed class LookUpTooltipHandlerTests
 
         Assert.True(tooltips.TryGetTooltip(lookup.Reference, out var kept));
         Assert.Same(tooltip, kept);
-        Assert.False(tooltips.IsLookingUp);
     }
 
     [Fact]
@@ -68,9 +67,10 @@ public sealed class LookUpTooltipHandlerTests
         var lookup = AskForGreeter(d, tooltips);
 
         var found = tooltips.TryGetTooltip(lookup.Reference, out _);
+        var shown = tooltips.FindShown(lookup.Reference);
 
         Assert.False(found);
+        Assert.Null(shown);
         Assert.False(tooltips.HasAsked);
-        Assert.True(tooltips.IsLookingUp);
     }
 }

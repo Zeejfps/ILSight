@@ -44,13 +44,11 @@ public sealed class BookmarkImportingTests
         var imports = new BookmarkImports();
 
         var importing = new BookmarkImporting(ports).ImportAsync(bookmarks, imports, Path, CancellationToken.None);
-        Assert.True(imports.IsFinding);
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<NodePath>>>.Ok([new Lookup<NodePath>.Found { Value = file[0].Place }, new Lookup<NodePath>.NotFound()]));
         await importing;
 
         Assert.Equal([Path], ports.Read);
         Assert.Equal(["Bookmark 1"], bookmarks.Items.Select(static b => b.Name));
-        Assert.False(imports.IsFinding);
         Assert.Null(imports.Asking);
         var lost = Assert.IsType<AppProblem.ImportedBookmarksLost>(Assert.Single(ports.Reported));
         Assert.Equal("exported.json", lost.File);
@@ -110,7 +108,6 @@ public sealed class BookmarkImportingTests
         Assert.Equal(Path, Assert.IsType<AppProblem.NotBookmarksFile>(Assert.Single(ports.Reported)).Path);
         Assert.Empty(ports.Answers);
         Assert.Empty(bookmarks.Items);
-        Assert.False(imports.IsFinding);
     }
 
     [Fact]
@@ -126,6 +123,5 @@ public sealed class BookmarkImportingTests
 
         Assert.Equal("exported.json", Assert.IsType<AppProblem.BookmarksNotImported>(Assert.Single(ports.Reported)).File);
         Assert.Empty(bookmarks.Items);
-        Assert.False(imports.IsFinding);
     }
 }

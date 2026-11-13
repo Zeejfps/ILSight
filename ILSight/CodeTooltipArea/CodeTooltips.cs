@@ -24,9 +24,6 @@ public sealed class CodeTooltips
         init => _version = value;
     }
 
-    /// <summary>Whether a lookup is still running in the background, or asked for and not started yet.</summary>
-    public bool IsLookingUp => _pending.Count > 0;
-
     /// <summary>Whether lookups were asked for that have not been started yet.</summary>
     public bool HasAsked => _asked.Count > 0;
 

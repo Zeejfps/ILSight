@@ -41,22 +41,6 @@ public sealed class AnalyzerTree
     /// <summary>Changes whenever an analysis under a root finds more or ends.</summary>
     public int Findings { get; private set; }
 
-    /// <summary>True while a root waits for its symbol to be found.</summary>
-    public bool IsFinding
-    {
-        get
-        {
-            foreach (var root in _roots)
-            {
-                if (root is AnalyzerPendingNode)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
     /// <summary>Counts that an analysis under a root found more or ended.</summary>
     public void NoteFindings()
     {

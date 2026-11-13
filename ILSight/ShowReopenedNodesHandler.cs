@@ -33,9 +33,7 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
         var places = nodes
             .Select(static n => n.Place)
             .ToList();
-        appState.Reopened.Finding++;
         var found = await ports.LookUpListedPlacesAsync(places, ct);
-        appState.Reopened.Finding--;
         var shown = found.Match(static ok => ok.Value, _ => places.ConvertAll(static _ => (Lookup<BrowseNode>)new Lookup<BrowseNode>.NotFound()));
         return ShowReopenedNodes(appState, nodes, shown);
     }

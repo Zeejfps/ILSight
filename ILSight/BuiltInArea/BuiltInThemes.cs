@@ -25,11 +25,6 @@ public static class BuiltInThemes
     /// hands it the chosen theme.</summary>
     public static AppTheme Dark { get; } = Catalog.GetTheme(Theming.DarkId);
 
-    public static AppTheme Light { get; } = Catalog.GetTheme(Theming.LightId);
-
-    /// <summary>What was wrong in the built-in theme files; nothing, unless one was broken by an edit.</summary>
-    public static IReadOnlyList<ThemeError> Errors => Catalog.Errors;
-
     /// <summary>The JSON schema theme files name in <c>$schema</c>, for editors to complete and check their keys.</summary>
     public static string ReadSchema()
     {

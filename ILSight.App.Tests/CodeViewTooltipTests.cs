@@ -28,12 +28,23 @@ public sealed class CodeViewTooltipTests
     /// tooltip shows what the lookup found; then <paramref name="text"/> is drawn.</summary>
     private static void RunUntilDrawn(CodeViewDriver view, string text)
     {
-        view.Frames.Settle(SettleSeconds);
-        var tooltips = view.Tooltips;
-        Assert.NotNull(tooltips);
-        view.Frames.WaitUntil(() => !tooltips.IsLookingUp, Patience);
-        view.Frames.Settle(SettleSeconds);
+        RunOut(view);
         Assert.True(view.Frames.Drew(text), $"'{text}' was not drawn");
+    }
+
+    /// <summary>Runs the hover out: its delay, any lookup it starts in the background, and the delay before the
+    /// tooltip shows what the lookup found.</summary>
+    private static void RunOut(CodeViewDriver view)
+    {
+        view.Frames.Settle(SettleSeconds);
+        view.Frames.WaitUntilReady(Patience);
+        view.Frames.Settle(SettleSeconds);
+    }
+
+    /// <summary>Whether a tooltip is drawn: text in the tooltip's text size, not the code's.</summary>
+    private static bool DrewTooltip(CodeViewDriver view)
+    {
+        return view.Frames.Canvas.Texts.Any(static t => t.Inputs.Style.FontSize.Value != UiTheme.Dark.MonoFontSize);
     }
 
     private static void RestOn(CodeViewDriver view, string text)
@@ -107,11 +118,14 @@ public sealed class CodeViewTooltipTests
         var view = Farewell();
         RestOn(view, "Say()");
         RunUntilDrawn(view, "Says ");
+        var shown = DrewTooltip(view);
 
         view.MoveTo(0, 0);
         view.Frames.Wait(LeaveGraceSeconds).Frame(2);
 
+        Assert.True(shown);
         Assert.False(view.Frames.Drew("Says "));
+        Assert.False(DrewTooltip(view));
     }
 
     [Fact]
@@ -121,9 +135,8 @@ public sealed class CodeViewTooltipTests
 
         RestOn(view, "public class");
         view.Frames.Wait(RestSeconds).Frame(2);
+        RunOut(view);
 
-        Assert.NotNull(view.Tooltips);
-        Assert.False(view.Tooltips.IsLookingUp);
-        Assert.False(view.Frames.Drew("Says "));
+        Assert.False(DrewTooltip(view));
     }
 }

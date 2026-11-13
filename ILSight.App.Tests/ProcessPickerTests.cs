@@ -414,6 +414,25 @@ public sealed class ProcessPickerTests
     }
 
     [Fact]
+    public void OpenFromProcess_ListingFailed_ShowsInTheDialogThatItFailedAndWhy()
+    {
+        var ports = new FakePorts
+        {
+            Scan = static _ => Task.FromResult<Outcome<IReadOnlyList<RunningProcess>>>(new Outcome<IReadOnlyList<RunningProcess>>.Failed(new InvalidDataException("broken"))),
+        };
+        var app = new AppDriver(processes: ports);
+        app.Settle();
+
+        app.Frames.ClickOn(Selector.WithText(Strings.En.MenuFile));
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, Strings.En.FileOpenFromProcess));
+        app.Settle();
+
+        // The note wraps over lines; joined, they read as it does, and the error comes after it.
+        Assert.Contains($"{Strings.En.ProcessPickerScanFailed} broken", string.Join(" ", app.Frames.TextRects().Select(static t => t.Text)));
+        Assert.IsType<AppProblem.Unexpected>(Assert.Single(ports.Reported));
+    }
+
+    [Fact]
     public async Task Open_AfterAFailedScan_ShowsItScanningFromThatFrameNotTheFailure()
     {
         var scans = 0;
