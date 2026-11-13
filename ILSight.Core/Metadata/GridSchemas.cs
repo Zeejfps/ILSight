@@ -28,9 +28,8 @@ public static class GridSchemas
         return loaded;
     }
 
-    /// <summary><paramref name="row"/> as the <typeparamref name="TRow"/> it is. A grid's rows are erased to
-    /// <see cref="object"/> so that one grid can list any kind; each is handed back only to the columns and
-    /// details of the schema that read it, so it is always of that schema's row type.</summary>
+    // A grid's rows are erased to object so that one grid can list any kind; each is handed back only to the columns
+    // and details of the schema that read it, so it is always of that schema's row type.
     private static TRow GetRow<TRow>(object row)
     {
         if (row is not TRow typed)

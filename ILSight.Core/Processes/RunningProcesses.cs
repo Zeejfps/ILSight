@@ -275,8 +275,6 @@ public static class RunningProcesses
         return tokens;
     }
 
-    /// <summary>The absolute path <paramref name="text"/> names, when <paramref name="exists"/> says a file
-    /// is there; null for an empty, relative or malformed path, or one with no file.</summary>
     private static AssemblyPath? FindExistingFile(string text, Func<string, bool> exists)
     {
         if (text.Length == 0)
@@ -293,7 +291,7 @@ public static class RunningProcesses
         return path;
     }
 
-    /// <summary>Whether a file is at <paramref name="path"/> that this user can see.</summary>
+    // File.Exists is false too for a file this user can't see.
     private static bool IsFile(string path)
     {
         return File.Exists(path);
@@ -389,10 +387,10 @@ public static class RunningProcesses
         return new DiagnosticsEndpoint.UnixSocket(socket);
     }
 
-    /// <summary>The pipe file system lists like a folder. Listing it all and filtering beats a search pattern
-    /// there, as the official diagnostics client does. A pipe's name is just <c>dotnet-diagnostic-{pid}</c>.</summary>
     private static void ScanPipes(HashSet<int> ids)
     {
+        // The pipe file system lists like a folder. Listing it all and filtering beats a search pattern there, as the
+        // official diagnostics client does.
         foreach (var path in Directory.GetFiles(@"\\.\pipe\"))
         {
             var name = Path.GetFileName(path);
@@ -401,6 +399,7 @@ public static class RunningProcesses
                 continue;
             }
 
+            // A pipe's name is just dotnet-diagnostic-{pid}.
             var digits = name.AsSpan(DiagnosticsIpc.TransportPrefix.Length);
             if (int.TryParse(digits, out var id))
             {
@@ -409,14 +408,13 @@ public static class RunningProcesses
         }
     }
 
-    /// <summary>A runtime puts its socket in <c>TMPDIR</c>, else <c>/tmp</c>, which is what
-    /// <see cref="Path.GetTempPath"/> gives. The socket of a process that exited can linger, so a name alone
-    /// doesn't prove a process is running.</summary>
     private static void ScanSockets(HashSet<int> ids)
     {
+        // A runtime puts its socket in TMPDIR, else /tmp, which is what Path.GetTempPath gives.
         foreach (var path in Directory.EnumerateFiles(Path.GetTempPath(), DiagnosticsIpc.TransportPrefix + "*"))
         {
             var id = ParseSocketProcessId(Path.GetFileName(path));
+            // The socket of a process that exited can linger, so a name alone doesn't prove a process is running.
             if (id is not null && IsAlive(id.Value))
             {
                 ids.Add(id.Value);
@@ -424,8 +422,7 @@ public static class RunningProcesses
         }
     }
 
-    /// <summary>The socket to reach process <paramref name="id"/> by, or null when it has none. When a socket
-    /// left by an earlier process with the same id is there too, the newest is the live runtime's.</summary>
+    // When a socket left by an earlier process with the same id is there too, the newest is the live runtime's.
     private static string? FindSocketPath(ProcessId id)
     {
         try

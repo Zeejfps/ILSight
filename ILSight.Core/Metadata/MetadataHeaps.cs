@@ -61,11 +61,8 @@ internal static class MetadataHeaps
         }));
     }
 
-    /// <summary>
-    /// The entries of an offset-chained heap (#Strings, #US, #Blob). Handle 0 is a real first entry
-    /// (the heap's empty slot) even though it is the nil handle, so each entry is added before
-    /// <paramref name="next"/> is consulted; the walk ends at the next nil handle.
-    /// </summary>
+    // Handle 0 is a real first entry (the heap's empty slot) even though it is the nil handle, so each entry is yielded
+    // before next is consulted.
     private static IEnumerable<T> Walk<T>(T first, Func<T, T> next, Func<T, bool> isNil)
     {
         var handle = first;

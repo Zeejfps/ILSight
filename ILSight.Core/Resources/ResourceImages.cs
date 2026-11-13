@@ -53,8 +53,7 @@ public static class ResourceImages
         return rgba;
     }
 
-    /// <summary>Gives pixel <paramref name="x"/>, <paramref name="y"/> of the shrunk picture the average
-    /// of the pixels it covers, their colors weighed by their alpha so clear pixels lend no color.</summary>
+    // Colors are weighed by their alpha, so clear pixels lend no color.
     private static void AverageOverCell(ResourceImage image, byte[] target, int x, int y, int width, int height)
     {
         var left = x * image.Width / width;
@@ -156,8 +155,6 @@ public static class ResourceImages
         return new ResourceImageRead.Decoded { Image = image };
     }
 
-    /// <summary>The picture in <paramref name="data"/>, decoded by the format its first bytes name; null when they name
-    /// none of these.</summary>
     private static ResourceImage? DecodeKnown(byte[] data)
     {
         ReadOnlySpan<byte> span = data;
@@ -194,8 +191,7 @@ public static class ResourceImages
         return null;
     }
 
-    /// <summary>Whether <paramref name="span"/> starts as an icon or a cursor file does: a reserved zero, then type 1
-    /// (icon) or 2 (cursor), with the count after it.</summary>
+    // An icon or a cursor file starts with a reserved zero, then type 1 (icon) or 2 (cursor), with the count after it.
     private static bool IsIcon(ReadOnlySpan<byte> span)
     {
         return span.Length >= 6 && span[0] == 0 && span[1] == 0 && span[2] is 1 or 2;
@@ -366,8 +362,6 @@ public static class ResourceImages
         return DecodeDib(data[14..], format, isIcon: false, pixelOffset: pixels - 14);
     }
 
-    /// <summary>A device-independent bitmap: a BMP after its file header, or a picture of an icon,
-    /// whose height counts its AND mask too.</summary>
     private static ResourceImage DecodeDib(ReadOnlySpan<byte> dib, string format, bool isIcon, int pixelOffset = -1)
     {
         var headerSize = BinaryPrimitives.ReadInt32LittleEndian(dib);
@@ -388,6 +382,7 @@ public static class ResourceImages
         }
         var topDown = height < 0;
         height = Math.Abs(height);
+        // An icon's picture's height counts its AND mask too.
         if (isIcon)
         {
             height /= 2;

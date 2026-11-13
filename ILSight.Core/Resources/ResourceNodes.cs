@@ -109,8 +109,8 @@ internal static class ResourceNodes
             static (info, baml) => Encoding.UTF8.GetBytes(DecompileBaml(info.Module, baml.Data)));
     }
 
-    /// <summary>The BAML in <paramref name="data"/> as XAML text: read in the unit reading the resource, which holds
-    /// <paramref name="module"/>; what its types resolve to is read under this conversion's own reading.</summary>
+    // Read in the unit reading the resource, which holds module; what the BAML's types resolve to is read under this
+    // conversion's own reading.
     private static string DecompileBaml(LoadedModule module, byte[] data)
     {
         using var reading = LoadedAssemblies.BeginReading();
@@ -162,8 +162,6 @@ internal static class ResourceNodes
             .ToArray();
     }
 
-    /// <summary>What a manifest resource stands for: the entries of a <c>.resources</c> file or of
-    /// Avalonia's asset container, or the resource itself.</summary>
     private static NodeSubject CreateSubject(LoadedModule module, MetadataResource resource)
     {
         if (AvaloniaResources.IsContainerName(resource.Name))

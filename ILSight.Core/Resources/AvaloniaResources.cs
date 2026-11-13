@@ -79,8 +79,8 @@ internal static class AvaloniaResources
         return entries;
     }
 
-    /// <summary>The index Avalonia 0.10 wrote with a <c>DataContractSerializer</c>, which follows
-    /// the version up to the end of the index.</summary>
+    // Avalonia 0.10 wrote the index with a DataContractSerializer, which follows the version up to the end of the
+    // index.
     private static List<IndexEntry> ReadXmlIndex(byte[] container, int indexLength)
     {
         var xmlStart = 2 * sizeof(int);

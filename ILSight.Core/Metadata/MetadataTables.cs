@@ -497,7 +497,6 @@ internal static class MetadataTables
     private const char StringQuote = '"';
     private const char CharQuote = '\'';
 
-    /// <summary>The literal <paramref name="constant"/> holds, as C# writes it; null when its blob cannot be read.</summary>
     private static string? ConstantText(MetadataReader metadata, Constant constant)
     {
         try
@@ -534,8 +533,6 @@ internal static class MetadataTables
         return quote + DisassemblerHelpers.EscapeString(text) + quote;
     }
 
-    /// <summary>The locals a signature of local variables declares, a line each as <c>[index] type</c>; null
-    /// for a signature of another kind, or one that cannot be read.</summary>
     private static string? LocalsText(MetadataFile file, StandaloneSignature signature)
     {
         var kind = signature.GetKind();
@@ -573,8 +570,6 @@ internal static class MetadataTables
         return output.ToString();
     }
 
-    /// <summary>A property's signature as IL declares it: <c>instance</c> unless static, its type, its name
-    /// and the types of its index parameters, e.g. <c>instance string Item(int32)</c>; null when it cannot be read.</summary>
     private static string? PropertySignatureText(MetadataFile file, PropertyDefinition property)
     {
         try
@@ -609,8 +604,7 @@ internal static class MetadataTables
         return output.ToString();
     }
 
-    /// <summary>The type that declares <paramref name="property"/>, found through an accessor, so that its
-    /// generic parameters are written by name; null for a property without accessors.</summary>
+    // Found so that the declaring type's generic parameters are written by name.
     private static TypeDefinitionHandle? FindDeclaringType(MetadataReader metadata, PropertyDefinition property)
     {
         var accessor = GetAccessor(property);
@@ -676,13 +670,13 @@ internal static class MetadataTables
         }
     }
 
-    /// <summary>The StateMachineMethod rows, read from the table: System.Reflection.Metadata has no
-    /// reader for them. A MethodDef index is two bytes or four, as half the row is.</summary>
+    // Read from the table: System.Reflection.Metadata has no reader for StateMachineMethod rows.
     private static IEnumerable<(MethodDefinitionHandle MoveNext, MethodDefinitionHandle Kickoff)> StateMachineMethods(MetadataReader metadata)
     {
         var length = metadata.GetTableRowCount(TableIndex.StateMachineMethod);
         var reader = metadata.AsBlobReader();
         reader.Offset = metadata.GetTableMetadataOffset(TableIndex.StateMachineMethod);
+        // A MethodDef index is two bytes or four, as half the row is.
         var methodDefSize = metadata.GetTableRowSize(TableIndex.StateMachineMethod) / 2;
         var rows = new List<(MethodDefinitionHandle, MethodDefinitionHandle)>(length);
         for (var rid = 1; rid <= length; rid++)

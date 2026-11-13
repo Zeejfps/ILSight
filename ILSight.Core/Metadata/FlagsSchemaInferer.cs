@@ -22,17 +22,15 @@ namespace ILSight.Core.Metadata
 	{
 		static readonly ConcurrentDictionary<Type, FlagsSchema> cache = new();
 
-		/// <summary>
-		/// Bits that exist in ECMA-335 but have no member in the runtime's enum, so the
-		/// field walk cannot surface them. Appended to the inferred independent flags.
-		/// </summary>
+		// Bits that exist in ECMA-335 but have no member in the runtime's enum, so the
+		// field walk cannot surface them.
 		static readonly Dictionary<Type, IndependentFlag[]> extraFlags = new() {
 			// ECMA-335 II.23.1.15 Forwarder: set on ExportedType rows that forward the
 			// type to another assembly.
 			[typeof(TypeAttributes)] = [new IndependentFlag { Name = "IsTypeForwarder", Bit = 0x00200000 }],
 		};
 
-		/// <summary>Masks that gather independent flags rather than mutually exclusive values.</summary>
+		// Masks that gather independent flags rather than mutually exclusive values.
 		static readonly HashSet<string> flagMasks = ["ReservedMask", "SpecialConstraintMask"];
 
         /// <summary>Whether <paramref name="type"/> is an enum of bits: one marked
@@ -188,7 +186,6 @@ namespace ILSight.Core.Metadata
             return maskName[..^"Mask".Length];
         }
 
-        /// <summary>A value's name without its group's prefix: <c>Ansi</c> of <c>CharSetAnsi</c>.</summary>
         static string ValueName(string name, string maskName)
 		{
 			var group = GroupName(maskName);

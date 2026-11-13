@@ -30,7 +30,6 @@ internal static class ApiKeys
         };
     }
 
-    /// <summary>A conversion operator also keys by the type it converts to, as only that sets apart its overloads.</summary>
     private static string OfMethod(IMethod method)
     {
         var parameters = ParameterList(method.Parameters);
@@ -40,6 +39,7 @@ internal static class ApiKeys
             return key;
         }
 
+        // Only the type a conversion operator converts to sets apart its overloads.
         return key + ":" + method.ReturnType.ReflectionName;
     }
 

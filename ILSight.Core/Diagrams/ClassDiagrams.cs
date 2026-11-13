@@ -125,7 +125,6 @@ public static partial class ClassDiagrams
         return stream;
     }
 
-    /// <summary>How many of an assembly's types are built, reported as the share of them done.</summary>
     private sealed class BuiltTypes
     {
         public required string AssemblyName { get; init; }
@@ -198,8 +197,6 @@ public static partial class ClassDiagrams
         return IdentifyType(naming, type).Id;
     }
 
-    /// <summary>The id of <paramref name="type"/>, which for a closed generic type is the id of its
-    /// open one, returned beside it.</summary>
     private static (string Id, IType? OpenGeneric) IdentifyType(DiagramNames naming, IType type)
     {
         var openGeneric = FindOpenGeneric(type);
@@ -316,9 +313,6 @@ public static partial class ClassDiagrams
         return keyword;
     }
 
-    /// <summary>A reference to <paramref name="type"/>, labelled with <paramref name="propertyName"/>
-    /// for a property's relation, else with the closed generic type for a base type. Records the type
-    /// as an outside reference when the diagram leaves it out.</summary>
     private static DiagramReference ReferTo(DiagramNames naming, IType type, string? propertyName = null)
     {
         var (id, openGeneric) = IdentifyType(naming, type);
@@ -520,9 +514,6 @@ public static partial class ClassDiagrams
         return MemberSeparator + string.Join(MemberSeparator, lines) + MemberSeparator;
     }
 
-    /// <summary>The methods <paramref name="type"/> shows: its own and those it inherits, but no
-    /// operators, nothing compiler-generated, and nothing object declares or a base type overrides
-    /// from it.</summary>
     private static IMethod[] ListMethods(ITypeDefinition type)
     {
         return type
@@ -555,8 +546,6 @@ public static partial class ClassDiagrams
         return !TypeFacts.OverridesObject(method);
     }
 
-    /// <summary>The fields <paramref name="type"/> shows: none compiler-generated, and none that
-    /// looks like the backing field of one of <paramref name="properties"/>.</summary>
     private static IField[] ListFields(DiagramTypes diagram, ITypeDefinition type, IProperty[] properties)
     {
         return type
@@ -705,8 +694,8 @@ public static partial class ClassDiagrams
         return [];
     }
 
-    /// <summary>The members <paramref name="type"/> inherits, by the id of each base type declaring
-    /// them, written as members of <paramref name="id"/> for the diagrammer to add.</summary>
+    // Inherited members are kept apart by the base type declaring them, so the diagrammer can leave out those a base
+    // type it draws already shows, and are written as members of id for it to add.
     private static Dictionary<string, InheritedMembers> ListInherited(DiagramTypes diagram, ITypeDefinition type, string id, DeclaredMembers members)
     {
         var prefix = id + " : ";
@@ -800,7 +789,6 @@ public static partial class ClassDiagrams
         relations[label] = reference.To;
     }
 
-    /// <summary>The class <paramref name="type"/> derives from, unless that is object.</summary>
     private static Dictionary<string, string?>? MapBaseType(DiagramTypes diagram, ITypeDefinition type)
     {
         var baseType = type.DirectBaseTypes.FirstOrDefault(IsBaseClass);
@@ -823,8 +811,6 @@ public static partial class ClassDiagrams
         return !TypeFacts.IsObject(type);
     }
 
-    /// <summary>The interfaces <paramref name="type"/> implements directly, each with the labels of
-    /// the closed generic forms it implements.</summary>
     private static Dictionary<string, string?[]>? MapInterfaces(DiagramTypes diagram, ITypeDefinition type)
     {
         var references = type.DirectBaseTypes
@@ -836,6 +822,7 @@ public static partial class ClassDiagrams
             return null;
         }
 
+        // The closed generic forms of one interface share its open one's id; each keeps its label.
         return references
             .GroupBy(static r => r.To)
             .ToDictionary(static g => g.Key, ListLabels);
@@ -959,8 +946,6 @@ public static partial class ClassDiagrams
     [JsonSerializable(typeof(DiagramModel))]
     private sealed partial class DiagramJson : JsonSerializerContext;
 
-    /// <summary>A reference from one type of a diagram to another: the id it points to, and the label it
-    /// is drawn with, when it has one.</summary>
     private readonly record struct DiagramReference
     {
         public required string To { get; init; }
@@ -968,10 +953,6 @@ public static partial class ClassDiagrams
         public required string? Label { get; init; }
     }
 
-    /// <summary>The types of a diagram, each as a mermaid class definition of its own members, with
-    /// properties holding diagram types drawn as relations instead, and the members it inherits kept
-    /// apart by the type declaring them, so the diagrammer can leave out those a base type it draws
-    /// already shows.</summary>
     private sealed class DiagramTypes
     {
         public required DiagramNames Names { get; init; }
@@ -984,7 +965,6 @@ public static partial class ClassDiagrams
         public required MermaidMembers Members { get; init; }
     }
 
-    /// <summary>A property holding many of a diagram's types, and the type it holds.</summary>
     private readonly record struct ManyRelation
     {
         public required IProperty Property { get; init; }
@@ -992,8 +972,6 @@ public static partial class ClassDiagrams
         public required IType ElementType { get; init; }
     }
 
-    /// <summary>A type's members as the diagram splits them, each kind by the type declaring it:
-    /// plain properties, properties holding one or many diagram types, methods and fields.</summary>
     private sealed record DeclaredMembers
     {
         public required Dictionary<IType, IProperty[]> FlatProperties { get; init; }

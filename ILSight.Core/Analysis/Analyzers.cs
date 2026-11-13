@@ -11,8 +11,7 @@ namespace ILSight.Core.Analysis;
 /// </summary>
 public static class Analyzers
 {
-    /// <summary>The library's symbol of each <see cref="AnalysisSymbol"/> described here, kept against it, so it lives as
-    /// long as the handle does.</summary>
+    // Weak, keyed by the AnalysisSymbol handle, so the library's symbol lives as long as the handle does.
     private static readonly ConditionalWeakTable<AnalysisSymbol, ISymbol> Symbols = new();
 
     private static readonly AnalysisKind[] Kinds =
@@ -93,7 +92,6 @@ public static class Analyzers
             packageFile: static _ => null);
     }
 
-    /// <summary>The definition a base type resolves to; null when it resolves to none.</summary>
     private static AnalysisSymbol? DescribeBase(BaseTypeInfo baseType)
     {
         var definition = NodeDefinitions.GetSymbols(baseType).Definition;
@@ -161,7 +159,6 @@ public static class Analyzers
         }
     }
 
-    /// <summary>The analyses that apply to <paramref name="symbol"/>, in the order they are offered.</summary>
     private static IReadOnlyList<AnalysisKind> ListKinds(ISymbol symbol)
     {
         return Kinds.Where(k => k.Prepare(symbol) is not null).OrderBy(static k => k.Order).ToArray();
@@ -212,7 +209,6 @@ public static class Analyzers
         }, cancellationToken);
     }
 
-    /// <summary>The module of <paramref name="list"/> the analyzed <paramref name="symbol"/> is in, or is.</summary>
     private static LoadedModule OwnModuleOf(AssemblyList list, ISymbol symbol)
     {
         var file = symbol switch
@@ -268,8 +264,6 @@ public static class Analyzers
         return Keep(described, entity);
     }
 
-    /// <summary>Where <paramref name="entity"/>, in the file at <paramref name="path"/>, is defined; null when it has
-    /// no token or is in no file.</summary>
     private static CodeAnchor? DefinitionOf(IEntity entity, AssemblyPath? path)
     {
         if (path is null || entity.MetadataToken.IsNil)
@@ -285,14 +279,12 @@ public static class Analyzers
         };
     }
 
-    /// <summary><paramref name="described"/>, with the library's <paramref name="symbol"/> kept against it.</summary>
     private static AnalysisSymbol Keep(AnalysisSymbol described, ISymbol symbol)
     {
         Symbols.Add(described, symbol);
         return described;
     }
 
-    /// <summary>The library's symbol kept against <paramref name="symbol"/>; throws for one not described here.</summary>
     private static ISymbol GetSymbol(AnalysisSymbol symbol)
     {
         if (!Symbols.TryGetValue(symbol, out var kept))

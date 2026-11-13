@@ -34,10 +34,9 @@ internal static class DiagnosticsIpc
     private const byte CollectTracing2CommandId = 0x03;
     private const byte CollectTracing4CommandId = 0x05;
 
-    /// <summary>The rundown events the runtime sends as the session stops: the loader's, sent at the end.
-    /// The runtime's default, 0x80020139, also asks for the JIT, NGen and IL-to-native rundown, which in a
-    /// process that has run a while outweighs the module list by orders of magnitude and can overrun the
-    /// session's buffer, losing the loader events this is for.</summary>
+    // Only the loader's rundown. The runtime's default, 0x80020139, also asks for the JIT, NGen and IL-to-native
+    // rundown, which in a process that has run a while outweighs the module list by orders of magnitude and can overrun
+    // the session's buffer, losing the loader events this is for.
     private const ulong LoaderRundownKeyword = 0x80000108;
 
     private const string RuntimeProviderName = "Microsoft-Windows-DotNETRuntime";
@@ -45,12 +44,12 @@ internal static class DiagnosticsIpc
     private const uint InformationalLevel = 4;
     private const uint NetTraceFormat = 1;
 
-    /// <summary>The session carries only loader events and the rundown, so a small buffer is ample; a
-    /// larger one would have the target reserve memory for nothing.</summary>
+    // The session carries only loader events and the rundown, so a small buffer is ample; a larger one would have the
+    // target reserve memory for nothing.
     private const uint CircularBufferMB = 16;
 
-    /// <summary>A string longer than this is no command line or version, so the response is corrupt, and
-    /// isn't allowed to allocate without bound.</summary>
+    // A string longer than this is no command line or version, so the response is corrupt, and isn't allowed to
+    // allocate without bound.
     private const int MaxStringLength = 1024 * 1024;
 
     public const string TransportPrefix = "dotnet-diagnostic-";
@@ -124,9 +123,8 @@ internal static class DiagnosticsIpc
         return new string(chars, 0, end);
     }
 
-    /// <summary>One response, read off <paramref name="stream"/>. For a streaming command, as EventPipe's,
-    /// what follows the sized message stays in the stream for the caller.</summary>
-    /// <exception cref="IOException">What came back is no response of the protocol.</exception>
+    // Reads only the sized message: for a streaming command, as EventPipe's, what follows stays in the stream for the
+    // caller.
     private static async Task<IpcResponse> ReadResponseAsync(Stream stream, CancellationToken cancellationToken)
     {
         var header = new byte[HeaderSize];
@@ -176,7 +174,6 @@ internal static class DiagnosticsIpc
         return info;
     }
 
-    /// <summary>The answer to one of the ProcessInfo commands, or null when the runtime refused it.</summary>
     private static Task<ProcessInfo?> QueryProcessInfoAsync(DiagnosticsEndpoint endpoint, byte commandId, TimeSpan budget, CancellationToken cancellationToken)
     {
         return RunWithinAsync(budget, cancellationToken, async token =>
@@ -240,7 +237,6 @@ internal static class DiagnosticsIpc
         return trace;
     }
 
-    /// <summary>The trace of one session, or null when the runtime refused the command that starts it.</summary>
     private static Task<MemoryStream?> CollectAsync(DiagnosticsEndpoint endpoint, byte commandId, TimeSpan budget, CancellationToken cancellationToken)
     {
         return RunWithinAsync(budget, cancellationToken, async token =>
@@ -315,9 +311,6 @@ internal static class DiagnosticsIpc
         return buffer.ToArray();
     }
 
-    /// <summary>Runs <paramref name="command"/> under <paramref name="budget"/>, and turns the budget running
-    /// out into a <see cref="TimeoutException"/>. That keeps the two apart: the caller cancelling is the
-    /// caller's business, while a runtime that never answered is a fact about the process.</summary>
     private static async Task<T> RunWithinAsync<T>(TimeSpan budget, CancellationToken cancellationToken, Func<CancellationToken, Task<T>> command)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -328,6 +321,8 @@ internal static class DiagnosticsIpc
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
+            // A timeout, not a cancellation, keeps the two apart: the caller cancelling is the caller's business,
+            // while a runtime that never answered is a fact about the process.
             throw new TimeoutException($"The diagnostics endpoint did not answer within {budget.TotalSeconds:0.###} seconds.");
         }
     }
@@ -378,8 +373,7 @@ internal static class DiagnosticsIpc
         }
     }
 
-    /// <summary>How a runtime answered one command: with the command's payload, or by refusing it with an
-    /// HRESULT, as an older runtime refuses a command it doesn't know.</summary>
+    // A refusal is an answer too: an older runtime refuses, with an HRESULT, a command it doesn't know.
     private abstract record IpcResponse
     {
         private IpcResponse()

@@ -23,8 +23,7 @@ public abstract class ApiEntry
     /// <summary>Whether it, or anything it holds, differs.</summary>
     public bool HasChanges => Change != ApiChange.Unchanged || _holdsChanges;
 
-    /// <summary>Whether anything it holds differs, worked out once from <see cref="Children"/>, which the tree asks
-    /// of every row it shows.</summary>
+    // Worked out once from Children, as the tree asks HasChanges of every row it shows.
     private bool _holdsChanges;
 
     public required IReadOnlyList<ApiEntry> Children

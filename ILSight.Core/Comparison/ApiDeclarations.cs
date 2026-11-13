@@ -32,7 +32,7 @@ internal static class ApiDeclarations
     private const string TrueText = "true";
     private const string FalseText = "false";
 
-    /// <summary>The attributes that change how callers use what they are applied to.</summary>
+    // Only the attributes that change how callers use what they are applied to.
     private static readonly HashSet<string> NotableAttributes = new(StringComparer.Ordinal)
     {
         "System.ObsoleteAttribute",
@@ -99,8 +99,6 @@ internal static class ApiDeclarations
         return declaration + " : " + string.Join(", ", bases);
     }
 
-    /// <summary>The types <paramref name="type"/> derives from as C# declares them: the base class, then
-    /// the interfaces sorted by name; for an enum, its underlying type unless it is <c>int</c>.</summary>
     private static List<string> ListBases(ITypeDefinition type)
     {
         if (type.Kind == TypeKind.Enum)
@@ -131,8 +129,7 @@ internal static class ApiDeclarations
         return [EntityText.TypeName(underlying)];
     }
 
-    /// <summary>Whether <paramref name="type"/> is a base class C# writes out: none of the implicit ones
-    /// classes, structs, enums and delegates derive from.</summary>
+    // C# doesn't write out the implicit bases classes, structs, enums and delegates derive from.
     private static bool IsDeclaredBaseClass(IType type)
     {
         if (type.Kind == TypeKind.Interface)
@@ -170,7 +167,6 @@ internal static class ApiDeclarations
         return declaration + " = " + WriteValue(value);
     }
 
-    /// <summary>The property, then its accessors, each with its accessibility when it differs from the property's.</summary>
     private static string DeclareProperty(IProperty property)
     {
         var text = new StringBuilder(Convert(property, MemberFlags));

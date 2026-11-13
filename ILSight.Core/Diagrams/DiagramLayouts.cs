@@ -150,8 +150,6 @@ public static class DiagramLayouts
         return link.LabelHeight > 0f;
     }
 
-    /// <summary>Lays out <paramref name="graph"/>, stopping with <see cref="OperationCanceledException"/>
-    /// once <paramref name="cancellationToken"/> is cancelled.</summary>
     private static void Calculate(GeometryGraph graph, CancellationToken cancellationToken)
     {
         var settings = new SugiyamaLayoutSettings { LayerSeparation = LayerSeparation, NodeSeparation = NodeSeparation };
@@ -182,9 +180,8 @@ public static class DiagramLayouts
         return places;
     }
 
-    /// <summary>The corner of <paramref name="box"/> nearest <paramref name="origin"/>, which the layout
-    /// draws at its top-left: MSAGL's Y runs up, with the types derived from lowest, and the layout is
-    /// drawn with it running down.</summary>
+    // The corner nearest origin (Left, Bottom) is drawn at the top-left: MSAGL's Y runs up, with the types derived from
+    // lowest, and the layout is drawn with it running down.
     private static PointF TopLeftOf(MsaglRectangle box, MsaglPoint origin)
     {
         return Place(new MsaglPoint(box.Left, box.Bottom), origin);
@@ -256,8 +253,6 @@ public static class DiagramLayouts
         return Place(edge.Label.Center, origin);
     }
 
-    /// <summary>Adds <paramref name="curve"/> as pieces: its lines and Bézier segments as they are, and
-    /// any other segment as lines through points along it.</summary>
     private static void AddPieces(List<RoutePiece> pieces, ICurve curve, MsaglPoint origin)
     {
         switch (curve)

@@ -120,7 +120,6 @@ namespace ILSight.Core.Metadata
 				: label;
 		}
 
-		/// <summary>The values picked in each group that has any picked, in order.</summary>
 		private static Dictionary<string, uint[]> SaveGroups(FilterState state)
 		{
 			var groups = new Dictionary<string, uint[]>();

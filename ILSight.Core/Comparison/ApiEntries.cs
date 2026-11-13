@@ -51,8 +51,6 @@ public static class ApiEntries
         return names;
     }
 
-    /// <summary>The top-level types of <paramref name="module"/> that <paramref name="scope"/> takes in, by
-    /// namespace, each by its key.</summary>
     private static Dictionary<string, Dictionary<string, Compared>> ListTypesByNamespace(MetadataModule module, ApiScope scope)
     {
         var byNamespace = new Dictionary<string, Dictionary<string, Compared>>(StringComparer.Ordinal);
@@ -74,9 +72,8 @@ public static class ApiEntries
         return byNamespace;
     }
 
-    /// <summary>Adds <paramref name="entity"/> under its key, numbered when others took the key before
-    /// it, so none is dropped; those that share a key are matched in the order the metadata lists them.
-    /// Leaves out an entity with no metadata file or token to be referenced by.</summary>
+    // Numbered when others took the key before it, so none is dropped; those that share a key are matched in the order
+    // the metadata lists them.
     private static void AddByKey(Dictionary<string, Compared> entities, IEntity entity)
     {
         var reference = CodeReferences.Find(entity);
@@ -89,8 +86,6 @@ public static class ApiEntries
         AddUnderFreeKey(entities, ApiKeys.Of(entity), compared);
     }
 
-    /// <summary>Adds <paramref name="compared"/> under <paramref name="key"/>, or when that is taken under the first of
-    /// <c>key#2</c>, <c>key#3</c>, ... that isn't.</summary>
     private static void AddUnderFreeKey(Dictionary<string, Compared> entities, string key, Compared compared)
     {
         var candidate = key;
@@ -102,8 +97,7 @@ public static class ApiEntries
         }
     }
 
-    /// <summary>Whether <paramref name="type"/> is the type every module has to hold its global members,
-    /// which C# never declares.</summary>
+    // Every module has a <Module> type to hold its global members, which C# never declares.
     private static bool IsModuleType(ITypeDefinition type)
     {
         if (type.Namespace.Length > 0)
@@ -114,8 +108,6 @@ public static class ApiEntries
         return type.Name == ModuleTypeName;
     }
 
-    /// <summary>Whether <paramref name="scope"/> takes in <paramref name="entity"/>: never what has no
-    /// metadata of its own or what the compiler made up.</summary>
     private static bool IsTakenIn(IEntity entity, ApiScope scope)
     {
         if (Members.IsHidden(entity))
@@ -153,8 +145,6 @@ public static class ApiEntries
         return name;
     }
 
-    /// <summary>The entities of <paramref name="left"/> and <paramref name="right"/>, matched by key,
-    /// sorted as the tree sorts them: types, then fields, properties, events and methods, each by name.</summary>
     private static List<ApiEntry> CompareAll(Dictionary<string, Compared> left, Dictionary<string, Compared> right, ApiScope scope,
         CancellationToken cancellationToken)
     {
@@ -179,6 +169,7 @@ public static class ApiEntries
                 entries.Add(Added(rightOne, scope, cancellationToken));
             }
         }
+        // Sorted as the tree sorts them.
         return entries
             .OrderBy(static e => SortGroup(e.Shape))
             .ThenBy(static e => e.Text, NaturalStringComparer.Instance)
@@ -197,7 +188,6 @@ public static class ApiEntries
         return EntryOf(right, new ApiSides.RightOnly(SideOf(right)), children);
     }
 
-    /// <summary>The entry of an entity on both sides, which <paramref name="right"/> labels.</summary>
     private static ApiEntry CompareBoth(Compared left, Compared right, ApiScope scope, CancellationToken cancellationToken)
     {
         var children = CompareAll(ListChildren(left, scope), ListChildren(right, scope), scope, cancellationToken);
@@ -276,8 +266,6 @@ public static class ApiEntries
         return new ApiSide { Reference = compared.Reference, Declaration = ApiDeclarations.Of(compared.Entity) };
     }
 
-    /// <summary>The nested types and members of <paramref name="compared"/> that <paramref name="scope"/>
-    /// takes in, each by its key, without accessors or an enum's value field; none for a member.</summary>
     private static Dictionary<string, Compared> ListChildren(Compared compared, ApiScope scope)
     {
         if (compared.Entity is not ITypeDefinition type)
@@ -307,7 +295,6 @@ public static class ApiEntries
             .Concat(methods);
     }
 
-    /// <summary>Whether <paramref name="field"/> holds the value of the enum <paramref name="type"/>.</summary>
     private static bool IsEnumValueField(ITypeDefinition type, IField field)
     {
         if (type.Kind != TypeKind.Enum)
@@ -315,11 +302,10 @@ public static class ApiEntries
             return false;
         }
 
+        // An enum's members are static fields; its one instance field holds the value.
         return !field.IsStatic;
     }
 
-    /// <summary>Where entries of <paramref name="shape"/> sort among a type's: nested types first, then
-    /// fields, properties, events and methods; namespaces among themselves.</summary>
     private static int SortGroup(SymbolShape shape)
     {
         return shape.Match(
@@ -365,7 +351,6 @@ public static class ApiEntries
         return own + Count(entry.Children, change);
     }
 
-    /// <summary>A type or member taken into a comparison, with the reference it is opened by.</summary>
     private readonly record struct Compared
     {
         public required IEntity Entity { get; init; }

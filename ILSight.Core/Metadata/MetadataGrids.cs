@@ -12,7 +12,6 @@ namespace ILSight.Core.Metadata;
 /// and filters arrange, over the cells' values alone.</summary>
 public static class MetadataGrids
 {
-    /// <summary>How many rows a sort or a filter goes through between looks at its token.</summary>
     private const int RowsBetweenChecks = 4096;
 
     /// <summary>The grid titled <paramref name="title"/> of what <paramref name="schema"/> reads from
@@ -375,8 +374,6 @@ public static class MetadataGrids
         return new MetadataAddress { Table = table, Row = Math.Min(token & 0xFFFFFF, count) - 1 };
     }
 
-    /// <summary>Whether this metadata's tables list <paramref name="table"/> as a grid of rows, as they
-    /// do a table they can read that has rows.</summary>
     private static bool IsTableListed(Dictionary<TableIndex, bool> listed, MetadataFile file, TableIndex table)
     {
         if (listed.TryGetValue(table, out var known))
@@ -465,7 +462,6 @@ public static class MetadataGrids
         return FormatValue(value, info.Format).Contains(text, StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>What the flags set in <paramref name="cell"/> mean; null for an empty cell.</summary>
     private static MetadataTooltip? ExplainFlags(FlagsSchema flags, object? cell)
     {
         if (cell is null)
@@ -506,8 +502,6 @@ public static class MetadataGrids
         });
     }
 
-    /// <summary>Whether <paramref name="value"/> passes a comparison such as <c>&gt;= 0x10</c>; null
-    /// when <paramref name="text"/> is not one, as a bare number is not.</summary>
     private static bool? Compare(object value, string text)
     {
         var (op, operand) = text switch
@@ -632,8 +626,6 @@ public static class MetadataGrids
         return unchecked((uint)Convert.ToInt64(value, CultureInfo.InvariantCulture));
     }
 
-    /// <summary>What a cell's read came to when the library threw reading it, as on a corrupt row: the cell shows "?"
-    /// and, hovered, <see cref="Reason"/>.</summary>
     private sealed class MetadataCellFailure
     {
         public required string Reason { get; init; }

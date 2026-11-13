@@ -19,8 +19,7 @@ internal static class NettraceRundown
     private const byte TagBeginPrivateObject = 5;
     private const byte TagEndObject = 6;
 
-    /// <summary>The newest container this reads. Version 5 only adds tags a version 4 reader may ignore;
-    /// past that, the layouts below are not known to hold.</summary>
+    // Version 5 only adds tags a version 4 reader may ignore; past that, the layouts below are not known to hold.
     private const int MaxSupportedTraceVersion = 5;
 
     private const int CompressedFlagMetadataId = 0x01;
@@ -64,7 +63,6 @@ internal static class NettraceRundown
         public required string NativePath { get; init; }
     }
 
-    /// <summary>What the events being read have told so far.</summary>
     private sealed class Reading
     {
         public readonly Dictionary<int, EventMetadata> Metadata = new();
@@ -169,8 +167,7 @@ internal static class NettraceRundown
         }
     }
 
-    /// <summary>The name of the type of the object begun. The type is an object itself: a begin tag, a null
-    /// type of its own, the version and the oldest version that reads it, the name, and an end tag.</summary>
+    // The type of the object begun is an object itself, with a null type of its own.
     private static string ReadTypeName(BinaryReader reader, out int version)
     {
         ExpectTag(reader, TagBeginObject, TagBeginPrivateObject);
@@ -217,16 +214,14 @@ internal static class NettraceRundown
         }
     }
 
-    /// <summary>Steps over the trace object: the sync time in UTC (8 shorts), the sync time and frequency of
-    /// the performance counter, and four ints: the pointer size, process id, processor count and sampling rate.</summary>
+    // The trace object: the sync time in UTC (8 shorts), the sync time and frequency of the performance counter, and
+    // four ints: the pointer size, process id, processor count and sampling rate.
     private static void SkipTraceObject(BinaryReader reader)
     {
         Skip(reader, 8 * sizeof(short) + 2 * sizeof(long) + 4 * sizeof(int));
     }
 
-    /// <summary>Walks the events of a metadata or event block, handing each one's payload to
-    /// <paramref name="onEvent"/> with its metadata id and the position where the payload ends, which no
-    /// field read out of it may pass.</summary>
+    // onEvent is given the position where the payload ends, which no field read out of it may pass.
     private static void ReadBlock(BinaryReader reader, Action<BinaryReader, int, long> onEvent)
     {
         var blockEnd = BeginBlock(reader, out var compressed);
@@ -269,16 +264,14 @@ internal static class NettraceRundown
         SeekTo(reader, blockEnd);
     }
 
-    /// <summary>Steps over a block by its size alone. Only event and metadata blocks begin with the header
-    /// <see cref="BeginBlock"/> reads: a stack block begins with its first id and count, a sequence point
-    /// block with a timestamp, so reading theirs as that header would take the wrong bytes for its size.</summary>
+    // By its size alone. Only event and metadata blocks begin with the header BeginBlock reads: a stack block begins
+    // with its first id and count, a sequence point block with a timestamp, so reading theirs as that header would take
+    // the wrong bytes for its size.
     private static void SkipBlock(BinaryReader reader)
     {
         SeekTo(reader, ReadBlockEnd(reader));
     }
 
-    /// <summary>Reads a block's size, and gives the position where the block ends. Blocks are aligned to 4
-    /// bytes from the start of the stream.</summary>
     private static long ReadBlockEnd(BinaryReader reader)
     {
         var blockSize = reader.ReadInt32();
@@ -287,6 +280,7 @@ internal static class NettraceRundown
             throw new InvalidDataException($"Implausible nettrace block size {blockSize}.");
         }
 
+        // Blocks are aligned to 4 bytes from the start of the stream.
         AlignTo4(reader);
         var blockEnd = reader.BaseStream.Position + blockSize;
         if (blockEnd > reader.BaseStream.Length)
@@ -297,8 +291,6 @@ internal static class NettraceRundown
         return blockEnd;
     }
 
-    /// <summary>Reads an event or metadata block's size and header, and gives the position where the block
-    /// ends.</summary>
     private static long BeginBlock(BinaryReader reader, out bool compressed)
     {
         var blockEnd = ReadBlockEnd(reader);
@@ -331,8 +323,8 @@ internal static class NettraceRundown
         }
     }
 
-    /// <summary>Moves past <paramref name="count"/> bytes, which must be there: a seek alone would go past the
-    /// end without a word, and the next read would fail far from the cause.</summary>
+    // The bytes must be there: a seek alone would go past the end without a word, and the next read would fail far from
+    // the cause.
     private static void Skip(BinaryReader reader, long count)
     {
         SeekTo(reader, reader.BaseStream.Position + count);
@@ -424,8 +416,8 @@ internal static class NettraceRundown
         }
     }
 
-    /// <summary>An event of a metadata block describes a kind of event: which provider and event the
-    /// metadata id given stands for in the event blocks after it.</summary>
+    // An event of a metadata block describes a kind of event: which provider and event the id it carries stands for in
+    // the event blocks after it.
     private static void ReadMetadataEvent(BinaryReader reader, int metadataId, long payloadEnd, Reading reading)
     {
         if (metadataId != 0)

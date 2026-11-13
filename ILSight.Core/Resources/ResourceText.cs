@@ -79,7 +79,6 @@ internal static class ResourceText
         return (text, SyntaxByExtension.TryGetValue(extension, out var syntax) ? syntax : Sniff(text));
     }
 
-    /// <summary>XML by the leading angle bracket, JSON by parsing it; anything else is plain.</summary>
     private static ResourceSyntax Sniff(string text)
     {
         var trimmed = text.AsSpan().TrimStart();
@@ -156,7 +155,6 @@ internal static class ResourceText
         }
     }
 
-    /// <summary>The document one node per line, its declaration kept as the first line.</summary>
     private static string IndentXml(XDocument document)
     {
         var builder = new StringBuilder();
@@ -193,7 +191,6 @@ internal static class ResourceText
         }
     }
 
-    /// <summary>The document one value per line, with its characters left unescaped.</summary>
     private static string IndentJson(JsonDocument document)
     {
         var options = new JsonWriterOptions
@@ -228,8 +225,6 @@ internal static class ResourceText
         }
     }
 
-    /// <summary>Colors markup: comments, declarations and processing instructions, element names,
-    /// attribute names and their quoted values; the rest is plain.</summary>
     private static void WriteXml(DocumentBuilder output, string text)
     {
         var i = 0;
@@ -330,8 +325,6 @@ internal static class ResourceText
         }
     }
 
-    /// <summary>Colors JSON: property names, string values, numbers and the literals true, false
-    /// and null; punctuation and anything unexpected stay plain.</summary>
     private static void WriteJson(DocumentBuilder output, string text)
     {
         var i = 0;

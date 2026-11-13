@@ -732,8 +732,6 @@ namespace ILSight.Core.Metadata
 			});
 		}
 
-        /// <summary>One row of a PE header: <see cref="Value"/> is <see cref="Size"/> bytes at
-        /// <see cref="Offset"/>, and <see cref="Flags"/> breaks a flags value down.</summary>
         private sealed record Entry
         {
             public required int Offset { get; init; }

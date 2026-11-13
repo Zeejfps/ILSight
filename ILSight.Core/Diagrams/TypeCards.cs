@@ -62,7 +62,6 @@ public static class TypeCards
         return ReadFound(definition);
     }
 
-    /// <summary>The card of the type <paramref name="definition"/> found; not found or unreadable as it is.</summary>
     private static Lookup<TypeCard> ReadFound(Lookup<ITypeDefinition> definition)
     {
         return definition.Match(
@@ -177,8 +176,8 @@ public static class TypeCards
         sections.Add(new CardSection { Kind = kind, Members = shown });
     }
 
-    /// <summary>The fields as the tree lists them: an enum's values in the order declared, else
-    /// sorted; never the field holding an enum's value.</summary>
+    // As the tree lists them: an enum's values in the order declared, without its one instance field, which holds the
+    // value.
     private static IEnumerable<IMember> ListFields(ITypeDefinition type)
     {
         if (type.Kind != TypeKind.Enum)
@@ -204,8 +203,6 @@ public static class TypeCards
         return !Members.IsHidden(entity);
     }
 
-    /// <summary>The card's line for <paramref name="member"/>; null when it has no metadata file or token
-    /// to be referenced by.</summary>
     private static CardMember? ToCardMember(IMember member)
     {
         var reference = CodeReferences.Find(member);
@@ -223,9 +220,8 @@ public static class TypeCards
         };
     }
 
-    /// <summary>What <paramref name="type"/> inherits from each of its base classes but object, nearest
-    /// first; for an interface, from the interfaces it extends. Base types it inherits nothing from are
-    /// left out.</summary>
+    // Nearest first: the library lists base types from object down. For an interface, they are the interfaces it
+    // extends.
     private static List<InheritedGroup> ReadInherited(ITypeDefinition type)
     {
         return type.GetNonInterfaceBaseTypes()
@@ -261,8 +257,6 @@ public static class TypeCards
         };
     }
 
-    /// <summary>Whether a type deriving from the one declaring <paramref name="member"/> inherits it: an
-    /// instance member it can reach, no constructor, and no override of what object declares.</summary>
     private static bool IsInherited(IMember member)
     {
         if (!IsShown(member))
@@ -318,8 +312,6 @@ public static class TypeCards
         return relation.ToLink(from, to);
     }
 
-    /// <summary>The types <paramref name="type"/> derives from, implements and holds in its own
-    /// properties, but the base types every class, struct or enum has.</summary>
     private static List<Relation> ListRelations(ITypeDefinition type)
     {
         var relations = new List<Relation>();
@@ -352,7 +344,6 @@ public static class TypeCards
         return definition.KnownTypeCode is KnownTypeCode.Object or KnownTypeCode.ValueType or KnownTypeCode.Enum;
     }
 
-    /// <summary>An interface implemented by a class or struct, else a type derived from or extended.</summary>
     private static Func<CodeReference.Entity, CodeReference.Entity, TypeLink> BaseLinkOf(ITypeDefinition type, ITypeDefinition baseType)
     {
         if (!TypeFacts.IsInterface(baseType))
@@ -385,9 +376,6 @@ public static class TypeCards
         }
     }
 
-    /// <summary>What <paramref name="property"/> holds: many of the elements of a generic enumerable,
-    /// else one of its type, or of the type it makes nullable. Null when that is no type defined in
-    /// metadata, or one built in, such as <c>int</c> or <c>string</c>.</summary>
     private static Relation? FindHeld(IProperty property)
     {
         if (TypeFacts.TryGetElementType(property, out var elementType))
@@ -420,8 +408,6 @@ public static class TypeCards
         return new Relation { Target = definition, ToLink = toLink };
     }
 
-    /// <summary>The types of <paramref name="type"/>'s own module it is related to, either way: those it
-    /// links to and those deriving from it or implementing it, each once, none compiler-generated.</summary>
     private static List<ITypeDefinition> ListNeighbours(ITypeDefinition type)
     {
         var linked = ListRelations(type)
@@ -436,8 +422,7 @@ public static class TypeCards
             .ToList();
     }
 
-    /// <summary>A type <see cref="Target"/> another is related to, and the link <see cref="ToLink"/> makes
-    /// between the two once both are found.</summary>
+    // ToLink is a function as the link is made only once both types' references are found.
     private readonly record struct Relation
     {
         public required ITypeDefinition Target { get; init; }

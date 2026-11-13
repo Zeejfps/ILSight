@@ -49,8 +49,6 @@ internal static class SvgPicture
         return reader.ReadToEnd();
     }
 
-    /// <summary>The size the document states, or a square of <see cref="FallbackSide"/> when it
-    /// states none.</summary>
     private static (float Width, float Height) OwnSize(SvgDocument document)
     {
         var width = document.IntrinsicWidth;

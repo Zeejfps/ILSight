@@ -45,7 +45,6 @@ internal static class CustomDebugInformationTable
         return table.ToSchema();
     }
 
-    /// <summary>What the value of <paramref name="row"/> holds, for embedded source; null for any other kind.</summary>
     private static string? FindInfo(MetadataReader metadata, CustomDebugInformation row)
     {
         if (row.Kind.IsNil)
@@ -102,11 +101,6 @@ internal static class CustomDebugInformationTable
         };
     }
 
-    /// <summary>
-    /// The parsed Value blob: structured kinds as a table; source-link blobs as the decoded JSON,
-    /// embedded source as the (decompressed) document text tagged with its document's file
-    /// extension, and everything else, including malformed blobs, as a hex dump.
-    /// </summary>
     private static MetadataRowDetails? Details(MetadataReader metadata, CustomDebugInformation row)
     {
         if (row.Value.IsNil || row.Kind.IsNil)
@@ -225,8 +219,7 @@ internal static class CustomDebugInformationTable
         return new MetadataRowDetails.Text { Content = reader.ToHexString(), Extension = null };
     }
 
-    /// <summary>The file extension of the Document an embedded-source row holds the text of, which
-    /// selects the syntax highlighting for it.</summary>
+    // The extension selects the syntax highlighting for the embedded source's text.
     private static string? EmbeddedSourceExtension(MetadataReader metadata, EntityHandle parent)
     {
         if (parent.Kind != HandleKind.Document)
@@ -244,8 +237,6 @@ internal static class CustomDebugInformationTable
         return string.IsNullOrEmpty(extension) ? null : extension;
     }
 
-    /// <summary>Reads a null-terminated UTF-8 string and advances past the terminator; throws
-    /// <see cref="BadImageFormatException"/> when no terminator remains.</summary>
     private static string ReadNullTerminatedUtf8(ref BlobReader reader)
     {
         var length = reader.IndexOf(0);
