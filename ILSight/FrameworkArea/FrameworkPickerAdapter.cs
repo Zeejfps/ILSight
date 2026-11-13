@@ -7,8 +7,7 @@ namespace ILSight.FrameworkArea;
 /// cancellation of the token the call was given, which it lets through.</summary>
 internal sealed class FrameworkPickerAdapter(Action<AppProblem> reportError, InstalledRuntime runtime) : FrameworkBrowser.IPorts
 {
-    /// <summary>The runtime's assemblies, scanned once, the first time they are asked for, and again the next time
-    /// when the scan failed.</summary>
+    // PublicationOnly, so a scan that failed runs again the next time the assemblies are asked for.
     private readonly Lazy<IReadOnlyList<RuntimeAssembly>> _assemblies = new(() => RuntimeFolders.ScanAssemblies(runtime.Directories), LazyThreadSafetyMode.PublicationOnly);
 
     public void ReportError(AppProblem problem)

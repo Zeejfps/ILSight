@@ -33,10 +33,7 @@ public static class AppStart
         CheckForUpdates(appState);
     }
 
-    /// <summary>Starts what the root recorded for the list the app starts with, <paramref name="start"/>: opening the
-    /// list's assemblies as the reload it began (<see cref="AppFrames.OpenStartupAssembliesAsync"/>), then the loads that
-    /// started in the tabs, and beside it the finding of the list's saved analyses, none waiting for another. A switch or
-    /// a clear since stopped them: they read nothing then.</summary>
+    // None waits for another. A switch or a clear since stopped them: they read nothing then.
     private static void StartOpeningStartupList(AppState appState, ListStart start)
     {
         Commands.StartShowing(appState, nameof(AppFrames.OpenStartupAssembliesAsync),
@@ -44,11 +41,9 @@ public static class AppStart
         Commands.StartRestoringAnalyses(appState, start.Analyses);
     }
 
-    /// <summary>Does what the arguments of later runs ask as they arrive, until the app shuts down, asking for the
-    /// window to come to the front for each (<see cref="AppState.FrontAsked"/>). Started on the UI thread, so it carries
-    /// on there, and each one arriving wakes the app. Each is a workflow of its own, so arguments that fail are reported
-    /// by the workflow runner rather than ending this loop, which would leave the pipe answering later runs with no one to
-    /// follow them.</summary>
+    // Started on the UI thread, so it carries on there, and each one arriving wakes the app. The work each asks for is
+    // a workflow of its own, so arguments that fail are reported by the workflow runner rather than ending this loop,
+    // which would leave the pipe answering later runs with no one to follow them.
     private static async Task TakeLaterRunsAsync(AppState appState, Channel<RunArguments> inbox, CancellationToken ct)
     {
         await foreach (var arguments in inbox.Reader.ReadAllAsync(ct))
@@ -58,21 +53,17 @@ public static class AppStart
         }
     }
 
-    /// <summary>Tells of the arguments of <paramref name="arguments"/> that were ignored, then does what the others
-    /// ask (<see cref="ApplyArguments"/>): the one path a run's arguments take, this run's and those handed over
-    /// alike.</summary>
+    // The one path a run's arguments take, this run's and those handed over alike.
     private static void TakeArguments(AppState appState, RunArguments arguments)
     {
         ReportIgnored(appState, arguments);
         ApplyArguments(appState, arguments);
     }
 
-    /// <summary>Does what the arguments of a run ask of the app: decompiles to their language,
-    /// switches to their list (added when there is none), clears the list, then opens their files and shows what they
-    /// name. Each change is made here, in that order, and the work each hands back starts at once as a workflow of its
-    /// own: the list's assemblies opening and the finding of its analyses, the lookup of the tabs clearing the list left
-    /// waiting, and opening the files. None waits for another: the tabs left waiting say what is gone while the files
-    /// open.</summary>
+    // Each change is made here, in this order, and the work each hands back starts at once as a workflow of its own:
+    // the list's assemblies opening and the finding of its analyses, the lookup of the tabs clearing the list left
+    // waiting, and opening the files. None waits for another: the tabs left waiting say what is gone while the files
+    // open.
     private static void ApplyArguments(AppState appState, RunArguments arguments)
     {
         if (arguments.Language is not null)
@@ -94,7 +85,6 @@ public static class AppStart
         Commands.StartShowing(appState, nameof(RunArgumentsActions.OpenRequestedFilesAsync), ct => RunArgumentsActions.OpenRequestedFilesAsync(appState, files, ct));
     }
 
-    /// <summary>Tells the user of the arguments of <paramref name="arguments"/> that were ignored, if any.</summary>
     private static void ReportIgnored(AppState appState, RunArguments arguments)
     {
         var ignored = RunArgumentsActions.FindIgnored(arguments);
@@ -106,15 +96,12 @@ public static class AppStart
         appState.Refusals.Show(ignored);
     }
 
-    /// <summary>Reads the user's themes and icon themes again whenever their folders change, from the app's start
-    /// until it shuts down.</summary>
     private static void WatchUserThemes(AppState appState)
     {
         appState.Workflows.StartUntilShutdown(appState.UserThemes.WatchAsync);
         appState.Workflows.StartUntilShutdown(appState.UserIconThemes.WatchAsync);
     }
 
-    /// <summary>Looks for a newer version as the app starts, unless the user turned that off.</summary>
     private static void CheckForUpdates(AppState appState)
     {
         if (!appState.IsUpdateCheckAutomatic)
@@ -132,7 +119,7 @@ public static class AppStart
         StartChecking(appState.Workflows, updates, check);
     }
 
-    /// <summary>A method of its own, so that the calls that start nothing allocate no closure.</summary>
+    // A method of its own, so that the calls that start nothing allocate no closure.
     private static void StartChecking(WorkflowRunner workflows, AppUpdates updates, UpdateCheck check)
     {
         workflows.Start(nameof(AppUpdates.CheckAsync), ct => updates.CheckAsync(check, ct));

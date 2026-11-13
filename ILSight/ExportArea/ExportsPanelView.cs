@@ -28,12 +28,11 @@ internal static class ExportsPanelView
     private const int RowSalt = 0x45585052;
     private const int PageRows = 5;
 
-    /// <summary>What every row of a frame needs: the list it is in, for focus and scrolling, the
-    /// menu its rows open, resolved outside their id scopes, and whether the panel is narrow.</summary>
     private readonly record struct Rows
     {
         public required int ListId { get; init; }
 
+        // Resolved outside the rows' id scopes, so every row opens the same menu.
         public required int MenuId { get; init; }
 
         public required bool Narrow { get; init; }
@@ -72,7 +71,7 @@ internal static class ExportsPanelView
         return finished.Count == 0;
     }
 
-    /// <summary>Whether the list was narrower than <see cref="NarrowWidth"/> on the last frame.</summary>
+    // Measured on the last frame: the list's width this frame is not known yet.
     private static bool IsNarrow(Ui<UiState> ui, int listId)
     {
         if (!ui.TryGetRect(listId, out var rect))
@@ -102,7 +101,6 @@ internal static class ExportsPanelView
         }
     }
 
-    /// <summary>How many exports run, wait and are finished, leaving out what there is none of.</summary>
     private static string Summarize(Strings t, bool running, int waiting, int finished)
     {
         var parts = new List<string>();
@@ -124,7 +122,6 @@ internal static class ExportsPanelView
         return string.Join(" · ", parts);
     }
 
-    /// <summary>Walks and acts on the selection with the keys pressed this frame, while the list has focus.</summary>
     private static void HandleKeys(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished, Rows rows)
     {
         if (!ui.HasFocus(rows.ListId))
@@ -152,8 +149,6 @@ internal static class ExportsPanelView
         MoveSelection(ui, rows, runs, stroke);
     }
 
-    /// <summary>Does what the key <paramref name="stroke"/> asks of the export <paramref name="selected"/>;
-    /// false when it asks nothing of it.</summary>
     private static bool ActOnSelected(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished, Rows rows, ExportRun selected, KeyStroke stroke, int index)
     {
         if (stroke.Key == KeyboardKey.Menu || ui.IsPressedAt(Shortcuts.ContextMenu, index))
@@ -198,7 +193,7 @@ internal static class ExportsPanelView
         }
     }
 
-    /// <summary>The id the row of the export <paramref name="run"/> is drawn under, apart from the sections' ids.</summary>
+    // Salted to keep the rows' ids apart from the sections' ids.
     private static int RowIdOf(ExportRun run)
     {
         return HashCode.Combine(run.Number, RowSalt);
@@ -235,8 +230,6 @@ internal static class ExportsPanelView
         ui.OpenContextMenu(rows.MenuId, at);
     }
 
-    /// <summary>The interaction of a whole row: a press selects it and focuses the list, a
-    /// double-click activates it, a right-click opens its menu.</summary>
     private static Interaction RowHit(Ui<UiState> ui, Rows rows, ExportRun run)
     {
         var hit = ui.Interact(ui.GetId("row"));
@@ -352,17 +345,14 @@ internal static class ExportsPanelView
         return kindText;
     }
 
-    /// <summary>How much of the running export is done, on its top line in a slot of its own so the
-    /// actions beside it stay put; empty while the export does not know its size.</summary>
     private static void Percent(Ui<UiState> ui, float? fraction)
     {
         var theme = ui.Theme;
         var percent = ui.Memo("percent", fraction, static f => FormatPercent(f));
+        // In a slot of its own, so the actions beside it stay put.
         ui.Text(percent, new Box { Width = Sizing.Fixed(PercentWidth) }, color: theme.TextMuted, size: theme.FontSizeSmall, align: Align.End);
     }
 
-    /// <summary>The bar of the running export, from the name's indent to the row's right edge; a
-    /// segment slides along it while the export does not know its size.</summary>
     private static void Bar(Ui<UiState> ui, float? fraction)
     {
         var theme = ui.Theme;
@@ -410,14 +400,13 @@ internal static class ExportsPanelView
 
             ahead++;
         }
+        // Taken out of the queue once it is no longer being walked.
         if (withdrawn is not null)
         {
             Commands.Later(ui.State, withdrawn, static (a, run) => a.Export.Withdraw(run));
         }
     }
 
-    /// <summary>Draws a waiting export; returns whether the user took it out of the queue, which
-    /// the caller does once the queue is no longer being walked.</summary>
     private static bool WaitingRow(Ui<UiState> ui, Rows rows, QueuedExport waiting, int ahead)
     {
         var t = ui.State.Strings;
@@ -444,7 +433,6 @@ internal static class ExportsPanelView
         return withdrawn;
     }
 
-    /// <summary>The button that takes a waiting export out of the queue; returns whether it was clicked.</summary>
     private static bool WithdrawAction(Ui<UiState> ui, Rows rows)
     {
         var t = ui.State.Strings;
@@ -504,7 +492,6 @@ internal static class ExportsPanelView
         return export.WaitingCount > 0;
     }
 
-    /// <summary>Draws a finished export; returns whether the user took it off the list.</summary>
     private static bool FinishedRow(Ui<UiState> ui, Rows rows, ExportReport report)
     {
         var t = ui.State.Strings;
@@ -533,8 +520,8 @@ internal static class ExportsPanelView
         return removed;
     }
 
-    /// <summary>Has tests find a finished export's row by its number, from 1 for the first export of the session, and
-    /// its buttons under it, as <c>#1/open-folder</c>, since every row has the same buttons.</summary>
+    // Has tests find a finished export's row by its number, from 1 for the first export of the session, and its buttons
+    // under it, as #1/open-folder, since every row has the same buttons.
     private static void RecordFinishedPaths(Ui<UiState> ui, int rowId, ExportRun run)
     {
         if (!ui.WantsSemantics)
@@ -558,9 +545,6 @@ internal static class ExportsPanelView
         return $"{kindText} · {outcome}";
     }
 
-    /// <summary>One labelled action that suits how the export ended, and the other as an icon:
-    /// the folder after a clean finish, the report after problems, a failure or a cancel. Both are
-    /// icons when the panel is narrow.</summary>
     private static void FinishedActions(Ui<UiState> ui, Rows rows, ExportReport report)
     {
         if (OpensFolderFirst(report))
@@ -641,8 +625,7 @@ internal static class ExportsPanelView
             static (th, _) => th.Danger);
     }
 
-    /// <summary>The color of the line about how the export ended: the outcome's own when something
-    /// went wrong, so the problem reads as well as the icon shows it; muted otherwise.</summary>
+    // The outcome's own color when something went wrong, so the problem reads as well as the icon shows it.
     private static uint OutcomeTextColor(UiTheme theme, ExportReport report)
     {
         return report.End.Match(theme,
@@ -651,7 +634,6 @@ internal static class ExportsPanelView
             static (th, _) => th.Danger);
     }
 
-    /// <summary>The color of a finished export: a warning's when it has problems, else <paramref name="clean"/>.</summary>
     private static uint FinishedColor(UiTheme theme, ExportEnd.Finished finished, uint clean)
     {
         if (finished.HasProblems)
@@ -662,7 +644,6 @@ internal static class ExportsPanelView
         return clean;
     }
 
-    /// <summary>The menu of the export it was opened on, with what can be done to it where it is.</summary>
     private static void Menu(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished, Rows rows)
     {
         using var menu = ui.ContextMenu(rows.MenuId);
@@ -744,8 +725,6 @@ internal static class ExportsPanelView
         }
     }
 
-
-    /// <summary>A muted heading over a group of rows, with how many it holds.</summary>
     private static void Section(Ui<UiState> ui, int id, string text)
     {
         var theme = ui.Theme;
@@ -764,14 +743,12 @@ internal static class ExportsPanelView
         ui.Glyph(glyph, color, theme.IconSize, new Box { Width = Sizing.Fixed(theme.IconSize) });
     }
 
-    /// <summary>The export's name, taking the top line's spare width and cut short when it runs out.</summary>
     private static void Name(Ui<UiState> ui, string name)
     {
         var theme = ui.Theme;
         ui.Text(name, new Box { Width = Sizing.Grow() }, color: theme.Text, overflow: TextOverflow.Ellipsis);
     }
 
-    /// <summary>A muted line under the name, in line with it.</summary>
     private static void Detail(Ui<UiState> ui, string text, uint? color = null)
     {
         var theme = ui.Theme;
@@ -779,16 +756,14 @@ internal static class ExportsPanelView
             overflow: TextOverflow.Ellipsis);
     }
 
-    /// <summary>The folder the export writes into, cut in the middle so its last folder stays; the
-    /// row's tooltip holds it whole.</summary>
     private static void Folder(Ui<UiState> ui, string folder)
     {
         var theme = ui.Theme;
+        // Cut in the middle so its last folder stays; the row's tooltip holds it whole.
         ui.Text(folder, new Box { Width = Sizing.Grow(), Padding = Indent(theme) }, color: theme.TextMuted, size: theme.FontSizeSmall,
             overflow: TextOverflow.EllipsisMiddle);
     }
 
-    /// <summary>Where the name and every line under it start: past the icon and the gap after it.</summary>
     private static float NameIndent(UiTheme theme)
     {
         return theme.IconSize + theme.Gap;
@@ -799,7 +774,6 @@ internal static class ExportsPanelView
         return new Spacing(NameIndent(theme), 0f, 0f, 0f);
     }
 
-    /// <summary>A row: its top line, then the lines under it, all within the panel's padding.</summary>
     private static Box RowBox(UiTheme theme, uint background)
     {
         return new Box()
@@ -811,7 +785,6 @@ internal static class ExportsPanelView
         };
     }
 
-    /// <summary>The row's top line: icon, name and actions, all centered on it.</summary>
     private static Box TopLine(UiTheme theme)
     {
         return new Box() { Width = Sizing.Grow(), Gap = theme.Gap, AlignY = Align.Center };

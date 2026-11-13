@@ -59,8 +59,6 @@ public static class Exports
         return ReportFinished(report, written, []);
     }
 
-    /// <summary><paramref name="report"/> of a finished export, listing <paramref name="written"/> and
-    /// <paramref name="problems"/>.</summary>
     private static ExportReport ReportFinished(ExportReport report, IReadOnlyList<string> written, IReadOnlyList<ExportProblem> problems)
     {
         return report with { End = new ExportEnd.Finished { Written = written, Problems = problems } };
@@ -370,7 +368,6 @@ public static class Exports
             static failed => new ExportBlocker.CheckFailed(failed.Why));
     }
 
-    /// <summary>What the disk says that keeps the export from starting: a key file named that is not there.</summary>
     private static ExportBlocker? FindFileBlocker(ExportFileFacts files)
     {
         if (files.IsKeyFileMissing)

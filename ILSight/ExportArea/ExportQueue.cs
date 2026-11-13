@@ -107,8 +107,6 @@ public sealed class ExportQueue
         turn.Started.SetResult(new ExportTurn.Started(run, progress, () => EndTurn(run), active.Cancel.Token));
     }
 
-    /// <summary>Ends the turn of the export <paramref name="run"/>, when it is the running one, and
-    /// starts the next.</summary>
     private void EndTurn(ExportRun run)
     {
         var active = FindActive(run);
@@ -140,8 +138,7 @@ public sealed class ExportQueue
         active.Shown = shown with { Progress = progress with { Fraction = furthest } };
     }
 
-    /// <summary>The further of two fractions of one export: reports sent from several threads can
-    /// arrive out of order, and the bar must not step back.</summary>
+    // Reports sent from several threads can arrive out of order, and the bar must not step back.
     private static float? FindFurthest(float? shown, float? reported)
     {
         if (shown is null)
@@ -157,7 +154,6 @@ public sealed class ExportQueue
         return Math.Max(shown.Value, reported.Value);
     }
 
-    /// <summary>The running export's state when <paramref name="run"/> is the running one; null otherwise.</summary>
     private Active? FindActive(ExportRun run)
     {
         var running = _running;
@@ -181,7 +177,6 @@ public sealed class ExportQueue
         public required TaskCompletionSource<ExportTurn> Started { get; init; }
     }
 
-    /// <summary>The running export as shown, with the source of the token that cancels it.</summary>
     private sealed class Active
     {
         public CancellationTokenSource Cancel { get; } = new();

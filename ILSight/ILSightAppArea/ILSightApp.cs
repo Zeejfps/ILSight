@@ -65,8 +65,8 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
         QuitIfAsked(ui);
     }
 
-    /// <summary>Closes the window when the app asked to (to restart into an update), as a request to close it does
-    /// (<see cref="TryClose"/>): a refusal leaves it open, and the next frame shows why.</summary>
+    // The app asks to quit to restart into an update; as with a request to close the window, a refusal leaves it open,
+    // and the next frame shows why.
     private void QuitIfAsked(Ui<UiState> ui)
     {
         if (!ui.State.QuitAsked)
@@ -84,7 +84,6 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
         ui.Quit();
     }
 
-    /// <summary>Draws the frame; a draw that fails is reported, and the frame that shows the report asked for.</summary>
     private void Draw(Ui<UiState> ui, Action<Ui<UiState>, AppState> draw)
     {
         try
@@ -146,8 +145,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
         host.RegisterFont(ReadFont(TextFonts.Italic, ItalicFontFile));
     }
 
-    /// <summary>Registers the chosen code font before the first frame, so code never shows in the
-    /// bundled one first.</summary>
+    // Before the first frame, so code never shows in the bundled font first.
     private void RegisterChosenCodeFont(ImmediateGuiAppHost<UiState> host)
     {
         var face = AppFrames.TakeCodeFontFace(UiState, _codeFonts);
@@ -159,8 +157,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
         host.RegisterFont(face);
     }
 
-    /// <summary>Hands the screen the chosen icon theme and registers its fonts before the first frame, so
-    /// icons never show in another font first and the first frame finds them registered.</summary>
+    // Before the first frame, so icons never show in another font first and the first frame finds them registered.
     private void RegisterChosenIconFonts(ImmediateGuiAppHost<UiState> host)
     {
         Appearance.ApplyIconTheme(UiState, IconTheming.ResolveIconTheme(_appState));

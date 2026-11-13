@@ -119,7 +119,6 @@ internal static class ExportReportText
         WriteProblems(text, t, kind, finished.Problems);
     }
 
-    /// <summary>Why the export failed, under the problems' heading, as a problem of a finished one would be.</summary>
     private static void WriteFailure(StringBuilder text, Strings t, ExportKind kind, ExportEnd.Failed failed)
     {
         text.AppendLine(t.ExportProblemsHeading);

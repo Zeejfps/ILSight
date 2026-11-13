@@ -37,7 +37,6 @@ internal static class AboutDialogView
         Actions(ui);
     }
 
-    /// <summary>The app's icon beside its name, its version and what can be done about updates.</summary>
     private static void Identity(Ui<UiState> ui, AppUpdates updates, bool isCheckAutomatic)
     {
         var theme = ui.Theme;
@@ -59,7 +58,7 @@ internal static class AboutDialogView
         ui.Text(version, color: theme.TextMuted, wrap: true);
     }
 
-    /// <summary>The update button with what came of a check beside it, so that the result moves nothing.</summary>
+    // What came of a check goes beside the button, so that the result moves nothing.
     private static void UpdateRow(Ui<UiState> ui, AppUpdates updates)
     {
         using var row = ui.Row(new Box { Width = Sizing.Grow(), Gap = ui.Theme.Gap, AlignY = Align.Center });
@@ -67,8 +66,6 @@ internal static class AboutDialogView
         UpdateResult(ui, updates.Status);
     }
 
-    /// <summary>Restarts into a downloaded update; else looks for one, in a copy that can update
-    /// itself, or says what is under way.</summary>
     private static void UpdateButton(Ui<UiState> ui, AppUpdates updates)
     {
         var t = ui.State.Strings;
@@ -89,8 +86,7 @@ internal static class AboutDialogView
         }
     }
 
-    /// <summary>Asks for <paramref name="check"/>, which the status shows from this frame on, to look for a newer
-    /// version once the frame is drawn; nothing when no check started.</summary>
+    // The status shows the check from this frame on; it looks for a newer version once the frame is drawn.
     private static void Check(Ui<UiState> ui, UpdateCheck? check)
     {
         if (check is null)
@@ -135,7 +131,6 @@ internal static class AboutDialogView
         return t.AboutCheckForUpdates;
     }
 
-    /// <summary>What a check the user asked for came to.</summary>
     private static void UpdateResult(Ui<UiState> ui, UpdateStatus status)
     {
         var t = ui.State.Strings;
@@ -164,7 +159,6 @@ internal static class AboutDialogView
         }
     }
 
-    /// <summary>A small row for each version, its name in a column as wide as the widest name.</summary>
     private static void Versions(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
@@ -196,7 +190,6 @@ internal static class AboutDialogView
         }
     }
 
-    /// <summary>The licenses folder at the left and Close at the right.</summary>
     private static void Actions(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
@@ -211,7 +204,6 @@ internal static class AboutDialogView
         }
     }
 
-    /// <summary>Opens the folder of the licenses the app ships beside it, when it has one.</summary>
     private static void LicensesButton(Ui<UiState> ui)
     {
         var t = ui.State.Strings;

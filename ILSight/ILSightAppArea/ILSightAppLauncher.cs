@@ -34,8 +34,6 @@ public static class ILSightAppLauncher
         host.Run();
     }
 
-    /// <summary>The main window's config: <paramref name="window"/> as it was left, or the default size,
-    /// centered, when there is none.</summary>
     private static StartupConfig CreateWindowConfig(WindowBounds? window)
     {
         var config = new StartupConfig

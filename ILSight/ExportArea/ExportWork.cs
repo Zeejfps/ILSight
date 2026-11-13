@@ -182,7 +182,6 @@ public abstract record ExportWork
         return ExportKind.ILFile;
     }
 
-    /// <summary>The folder of <paramref name="path"/>, which a save dialog gave, and so names a file in one.</summary>
     private static string FolderOf(string path)
     {
         var folder = Path.GetDirectoryName(path);

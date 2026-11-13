@@ -17,7 +17,7 @@ internal static class TreePaneView
     private const string MenuId = "tree-menu";
     private const string ToolbarId = "tree-toolbar";
 
-    /// <summary>How many tools <see cref="Tool"/> draws; the separators count as tools.</summary>
+    // The separators count as tools.
     private const int ToolCount = 10;
 
     /// <summary>The tree and its toolbar. A node picked or opened shows in <paramref name="navigation"/>'s tabs in this
@@ -46,12 +46,10 @@ internal static class TreePaneView
         ContextMenu(ui, navigation, assemblies, setup);
     }
 
-    /// <summary>The panel's toolbar: as many of its tools as fit, in order, and the rest in the menu of a
-    /// "more" button after them. What fits is worked out from the width the toolbar had last frame, so
-    /// the first frame shows them all.</summary>
     private static void Toolbar(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies)
     {
         var toolbarId = ui.GetId(ToolbarId);
+        // Worked out from the width the toolbar had last frame, so the first frame shows them all.
         var shown = CountShownTools(ui, toolbarId);
         using (ui.PaneToolbar(toolbarId, new Box { Width = Sizing.Grow(), Clip = true }))
         {
@@ -83,8 +81,6 @@ internal static class TreePaneView
         return index == 3 || index == 6;
     }
 
-    /// <summary>How many tools, from the first, fit in the toolbar as wide as it was last frame: all of
-    /// them if they fit together, else as many as fit beside the "more" button.</summary>
     private static int CountShownTools(Ui ui, int toolbarId)
     {
         if (!ui.TryGetRect(toolbarId, out var rect))
@@ -116,8 +112,6 @@ internal static class TreePaneView
         return shown;
     }
 
-    /// <summary>How wide the first <paramref name="count"/> tools are in the toolbar, with the gaps
-    /// between them.</summary>
     private static float MeasureTools(UiTheme theme, int count)
     {
         var width = 0f;
@@ -133,9 +127,6 @@ internal static class TreePaneView
         return width;
     }
 
-    /// <summary>The tool at <paramref name="index"/>, as a button in the toolbar or an item of the "more"
-    /// menu, the first <paramref name="shown"/> being in the toolbar. A separator is drawn only between
-    /// two tools in the same place.</summary>
     private static void Tool(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, int index, int shown, bool inMenu)
     {
         var t = ui.State.Strings;
@@ -215,8 +206,6 @@ internal static class TreePaneView
         }
     }
 
-    /// <summary>An icon button with <paramref name="label"/> as its tooltip, or a menu item showing the
-    /// icon, the label and <paramref name="shortcut"/>; true on the frame it is picked.</summary>
     private static bool DrawTool(Ui ui, bool inMenu, string id, IconGlyph glyph, string label, bool enabled, Shortcut? shortcut = null)
     {
         if (inMenu)
@@ -227,6 +216,7 @@ internal static class TreePaneView
         return ui.IconButton(id, glyph, label, enabled);
     }
 
+    // A separator is drawn only between two tools in the same place.
     private static void DrawToolSeparator(Ui ui, bool inMenu, int index, int shown)
     {
         if (inMenu)
@@ -244,7 +234,6 @@ internal static class TreePaneView
         }
     }
 
-    /// <summary>The node the active tab shows, or null when it shows none.</summary>
     private static BrowseNode? FindOpenedNode(Navigation navigation)
     {
         var tab = navigation.ActiveTab;
@@ -256,8 +245,6 @@ internal static class TreePaneView
         return tab.Node;
     }
 
-    /// <summary>Expands the tree down to <paramref name="node"/>, when its assembly is listed, selects it,
-    /// scrolls to it and focuses the tree.</summary>
     private static void SelectOpenedNode(Ui<UiState> ui, AssemblyList assemblies, BrowseNode node)
     {
         if (!assemblies.IsListed(node.Root.Assembly))
@@ -269,8 +256,6 @@ internal static class TreePaneView
         ui.Focus(ui.GetId(TreeId), takesText: false);
     }
 
-    /// <summary>The root selected in the tree, of an assembly, a package or a file that failed to
-    /// load, or null when none is or another node is.</summary>
     private static BrowseNode? FindPickedAssembly(BrowseTree tree)
     {
         var node = tree.View.Selected;
@@ -287,8 +272,7 @@ internal static class TreePaneView
         return node;
     }
 
-    /// <summary>Whether <paramref name="node"/> is the root of an item of the list; an assembly read out
-    /// of a package is not one.</summary>
+    // An assembly read out of a package is not the root of an item of the list.
     private static bool IsListedRoot(BrowseNode node)
     {
         return node.Parent is null;
@@ -377,7 +361,6 @@ internal static class TreePaneView
         }
     }
 
-    /// <summary>Whether the user picked the node, rather than pressed it for its menu.</summary>
     private static bool IsPicked(TreeViewResult<BrowseNode> result)
     {
         if (!result.SelectionChanged)
@@ -388,8 +371,6 @@ internal static class TreePaneView
         return !result.ContextMenuRequested;
     }
 
-    /// <summary>Shows <paramref name="node"/>, just picked, in the preview tab while tabs preview, and asks for the
-    /// load it started in the tab to be brought in.</summary>
     private static void Preview(UiState screen, Navigation navigation, BrowseNode node, DecompilerSetup setup)
     {
         if (!navigation.PreviewTabs)
@@ -400,8 +381,6 @@ internal static class TreePaneView
         Commands.DecompileLater(screen, navigation.PreviewNode(node, setup));
     }
 
-    /// <summary>Asks to go where <paramref name="node"/> points when it stands for a reference, else opens it in a
-    /// tab kept open.</summary>
     private static void Open(UiState screen, Navigation navigation, BrowseNode node, DecompilerSetup setup)
     {
         var activation = node.Activation;
@@ -521,8 +500,6 @@ internal static class TreePaneView
         }
     }
 
-    /// <summary>The items that show the type <paramref name="type"/> points at on the diagram last worked in,
-    /// or on a new one.</summary>
     private static void DiagramItems(Ui<UiState> ui, CodeReference.Entity type)
     {
         var t = ui.State.Strings;
@@ -537,8 +514,6 @@ internal static class TreePaneView
         }
     }
 
-    /// <summary>The item that opens the .NET API reference page of a namespace, or of a public type or
-    /// member, when it has one.</summary>
     private static void DocsItem(Ui<UiState> ui, BrowseNode node)
     {
         var t = ui.State.Strings;
@@ -554,8 +529,6 @@ internal static class TreePaneView
         }
     }
 
-    /// <summary>The items that write files out of a package: the file of an assembly read out of one,
-    /// or every file of a package or a folder of one.</summary>
     private static void ExtractItems(Ui<UiState> ui, BrowseNode node)
     {
         var t = ui.State.Strings;
@@ -572,8 +545,6 @@ internal static class TreePaneView
         }
     }
 
-    /// <summary>Where the assembly is read from, when <paramref name="node"/> is the root of one read
-    /// out of a package; else null.</summary>
     private static PackagePlace? PackedAssemblyOf(BrowseNode node)
     {
         if (node.Subject is not NodeSubject.Module module)
@@ -584,10 +555,9 @@ internal static class TreePaneView
         return module.Value.Place;
     }
 
-    /// <summary>Whether the menu offers to save the node's code: it shows code, and is no resource,
-    /// whose own Export item saves its bytes.</summary>
     private static bool OffersSaveCode(BrowseNode node)
     {
+        // A resource's own Export item saves its bytes.
         if (node.HasResource)
         {
             return false;
@@ -596,8 +566,6 @@ internal static class TreePaneView
         return node.IsCode;
     }
 
-    /// <summary>What only an assembly's node offers: exporting it, its PDBs, a diagram of it, comparing it
-    /// with another, the framework it resolves against, and opening what it references.</summary>
     private static void AssemblyItems(Ui<UiState> ui, AssemblyList assemblies, LoadedModule assembly)
     {
         var t = ui.State.Strings;
@@ -624,7 +592,6 @@ internal static class TreePaneView
         }
     }
 
-    /// <summary>Generating a portable PDB for the assembly, and picking the PDB it reads.</summary>
     private static void PdbItems(Ui<UiState> ui, LoadedModule assembly)
     {
         var t = ui.State.Strings;
@@ -639,8 +606,6 @@ internal static class TreePaneView
         }
     }
 
-    /// <summary>The submenu of the framework the assembly's references are resolved against: the one it
-    /// was built for, or one of the common ones, the one in use picked.</summary>
     private static void TargetFrameworkMenu(Ui<UiState> ui, LoadedModule assembly)
     {
         var t = ui.State.Strings;
@@ -688,7 +653,6 @@ internal static class TreePaneView
         return assembly.TargetFramework == framework;
     }
 
-    /// <summary>Asks for the PDB <paramref name="assembly"/> reads, starting in its folder, then has it read that one.</summary>
     private static void PickPdbToRead(Ui<UiState> ui, LoadedModule assembly)
     {
         var t = ui.State.Strings;
@@ -698,9 +662,9 @@ internal static class TreePaneView
         ui.PickFile(title, FindFolderOf(assembly), filters, path => Commands.Start(screen, nameof(AssemblyReloading.UsePdbAsync), (assembly, path), static (a, s, ct) => a.AssemblyReloading.UsePdbAsync(a.ListSession, a.Reopens, a.Decompiler, s.assembly, s.path, ct)));
     }
 
-    /// <summary>The folder the assembly's file is in; null for one read out of a package, whose path runs through it.</summary>
     private static string? FindFolderOf(LoadedModule assembly)
     {
+        // The path of an assembly read out of a package runs through the package.
         if (assembly.Place is not null)
         {
             return null;

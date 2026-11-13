@@ -133,8 +133,6 @@ public sealed class FrameworkBrowser(FrameworkBrowser.IPorts ports)
         }
     }
 
-    /// <summary>Whether <paramref name="assembly"/> is not open yet and its name matches
-    /// <paramref name="filter"/>.</summary>
     private bool Offers(RuntimeAssembly assembly, string filter)
     {
         if (_listed.Contains(assembly.FilePath))

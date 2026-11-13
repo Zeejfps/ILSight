@@ -98,8 +98,6 @@ internal static class FrameworkPickerView
             .ToList();
     }
 
-    /// <summary>Walks the list from the filter, leaving Home and End to its text.</summary>
-    /// <summary>Notes that the runtime is being scanned, where its assemblies will be. False: none was opened.</summary>
     private static bool NoteScanning(Ui<UiState> ui)
     {
         var theme = ui.Theme;
@@ -107,8 +105,6 @@ internal static class FrameworkPickerView
         return false;
     }
 
-    /// <summary>Notes that scanning the runtime failed, and then <paramref name="error"/>, why, where its assemblies
-    /// would be. False: none was opened.</summary>
     private static bool NoteScanFailed(Ui<UiState> ui, string error)
     {
         var theme = ui.Theme;

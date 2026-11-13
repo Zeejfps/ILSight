@@ -80,8 +80,7 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
             ct);
     }
 
-    /// <summary>Runs <paramref name="work"/> on the thread pool on a token that the cancellation of
-    /// <paramref name="start"/>'s turn and of <paramref name="ct"/> both cancel, and comes back on the UI thread.</summary>
+    // Runs work on the thread pool and comes back on the UI thread.
     private static async Task<ExportOutcome<T>> RunAsync<T>(Func<CancellationToken, T> work, ExportTurn.Started start, CancellationToken ct)
     {
         using var link = CancellationTokenSource.CreateLinkedTokenSource(start.Token, ct);
@@ -89,7 +88,6 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
         return await CatchAsync(Background.Run(() => work(token)), start, ct);
     }
 
-    /// <inheritdoc cref="RunAsync{T}(Func{CancellationToken, T}, ExportTurn.Started, CancellationToken)"/>
     private static async Task<ExportOutcome<T>> RunAsync<T>(Func<CancellationToken, Task<T>> work, ExportTurn.Started start, CancellationToken ct)
     {
         using var link = CancellationTokenSource.CreateLinkedTokenSource(start.Token, ct);
@@ -97,17 +95,14 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
         return await CatchAsync(Background.Wait(Task.Run(() => work(token), CancellationToken.None)), start, ct);
     }
 
-    /// <summary>What an export's <paramref name="work"/>, which decompiles the user's assemblies, came to: done with
-    /// what it gave; stopped when its turn, <paramref name="start"/>, was cancelled; else failed with what it threw
-    /// (<see cref="UntrustedReads"/>). The cancellation of <paramref name="ct"/>, the workflow's, is let through.</summary>
+    // The work decompiles the user's assemblies, so what it throws is its failure (UntrustedReads); the cancellation of
+    // ct, the workflow's, is let through.
     private static async Task<ExportOutcome<T>> CatchAsync<T>(BackgroundWork<T> work, ExportTurn.Started start, CancellationToken ct)
     {
         var outcome = await UntrustedReads.CatchAsync(work, ct);
         return outcome.Match(static ok => new ExportOutcome<T>.Done(ok.Value), failed => ToFailedOrStopped<T>(failed.Error, start));
     }
 
-    /// <summary>What <paramref name="error"/>, which an export's work ended with, means: it stopped when it is the
-    /// cancellation of <paramref name="start"/>'s turn, else it failed.</summary>
     private static ExportOutcome<T> ToFailedOrStopped<T>(Exception error, ExportTurn.Started start)
     {
         if (error is OperationCanceledException && start.Token.IsCancellationRequested)
@@ -118,8 +113,6 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
         return new ExportOutcome<T>.Failed(error);
     }
 
-    /// <summary>Runs <paramref name="work"/> over a module's type system as <see cref="RunAsync{T}(Func{CancellationToken, Task{T}}, ExportTurn.Started, CancellationToken)"/>
-    /// does; a module the library could not read fails it, saying why; one closed before it began stops it.</summary>
     private static async Task<ExportOutcome<T>> RunOverTypeSystemAsync<T>(Func<CancellationToken, Task<TypeSystemWork<T>>> work, ExportTurn.Started start,
         CancellationToken ct)
     {
@@ -133,9 +126,6 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
             static failed => new ExportOutcome<T>.Failed(failed.Error));
     }
 
-    /// <summary>Runs <paramref name="work"/> over the modules it reads as
-    /// <see cref="RunAsync{T}(Func{CancellationToken, Task{T}}, ExportTurn.Started, CancellationToken)"/> does; one closed before
-    /// it began stops it.</summary>
     private static async Task<ExportOutcome<T>> RunOverModulesAsync<T>(Func<CancellationToken, Task<ModuleRead<T>>> work, ExportTurn.Started start,
         CancellationToken ct)
     {

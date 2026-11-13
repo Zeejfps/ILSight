@@ -88,12 +88,11 @@ internal static class ExportDialogView
     private const float WindowWidth = 640f;
     private const float WindowHeight = 720f;
 
-    /// <summary>The columns of the table of ticked assemblies.</summary>
     private const int AssemblyColumn = 0;
     private const int VersionColumn = 1;
     private const int ProjectNameColumn = 2;
 
-    /// <summary>The decompiler's names for the toggles the dialog offers.</summary>
+    // The decompiler's names for the toggles the dialog offers.
     private const string SdkStyleProjects = "UseSdkStyleProjectFormat";
     private const string FolderPerNamespace = "UseNestedDirectoriesForNamespaces";
     private const string RemoveDeadCode = "RemoveDeadCode";
@@ -139,12 +138,11 @@ internal static class ExportDialogView
         };
     }
 
-    /// <summary>Everything above the buttons, scrolling when the window is too short for it, so the
-    /// buttons stay in reach.</summary>
     private static void Body(Ui<UiState> ui, DecompilerOptions options)
     {
         var theme = ui.Theme;
         var setup = ui.State.ExportSetup;
+        // Scrolls when the window is too short for it, so the buttons stay in reach.
         using (ui.Scroll("export-body", new Box { Height = Sizing.Grow(), Gap = theme.DialogGap }))
         {
             Chosen(ui);
@@ -155,20 +153,17 @@ internal static class ExportDialogView
         }
     }
 
-    /// <summary>A heading and the controls under it, set apart from the next section.</summary>
     private static Ui.Scope Section(Ui ui)
     {
         return ui.Column(new Box { Gap = ui.Theme.GapTight });
     }
 
-    /// <summary>A muted caption over a field in a section.</summary>
     private static void Caption(Ui ui, string text)
     {
         var theme = ui.Theme;
         ui.Text(text, color: theme.TextMuted, size: theme.FontSizeSmall);
     }
 
-    /// <summary>A bordered list on the field color, its rows clipped to its rounded corners.</summary>
     private static Box ListFrame(UiTheme theme)
     {
         return new Box()
@@ -182,9 +177,6 @@ internal static class ExportDialogView
         };
     }
 
-    /// <summary>The ticked assemblies as a table of their project names, its columns resized by
-    /// dragging their borders and its rows picked out to remove together, over a strip that adds and
-    /// removes assemblies and counts them.</summary>
     private static void Chosen(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
@@ -219,8 +211,6 @@ internal static class ExportDialogView
         ui.Text(t.ExportNoneChosen, box, color: theme.TextMuted);
     }
 
-    /// <summary>The table, its header naming the columns, a row per ticked assembly; the rows picked
-    /// out go once they are all recorded, when asked to.</summary>
     private static void ChosenTable(Ui<UiState> ui, List<ExportChoice> chosen)
     {
         var t = ui.State.Strings;
@@ -237,14 +227,13 @@ internal static class ExportDialogView
                 ChosenRow(ui, rows, i, setup, chosen, clashing);
             }
         }
+        // The rows picked out go only once they are all recorded.
         if (removeRequested)
         {
             Exports.RemoveSelectedRows(setup);
         }
     }
 
-    /// <summary>An assembly being exported: its name, its version, then its project's name, edited
-    /// in place, with what to do under it when it clashes with another's. Its path shows on hover.</summary>
     private static void ChosenRow(Ui<UiState> ui, TableRows<ExportChoice> rows, int index, ExportSetup setup, List<ExportChoice> chosen,
         ExportChoice? clashing)
     {
@@ -276,8 +265,7 @@ internal static class ExportDialogView
         PickOutWhileEditing(ui, setup, chosen, choice);
     }
 
-    /// <summary>Picks out the row of the project name being edited alone, so what Remove takes is
-    /// never in doubt.</summary>
+    // The row being edited is picked out alone, so what Remove takes is never in doubt.
     private static void PickOutWhileEditing(Ui<UiState> ui, ExportSetup setup, List<ExportChoice> chosen, ExportChoice choice)
     {
         var nameId = ui.GetId("name");
@@ -319,8 +307,6 @@ internal static class ExportDialogView
         ui.Text(t.ExportNameClash(choice.Name.Trim()), box, color: theme.Danger, size: theme.FontSizeSmall, wrap: true);
     }
 
-    /// <summary>The table's foot: + opens the Choose page, − removes the picked-out rows, and the
-    /// count of what is included.</summary>
     private static void TableStrip(Ui<UiState> ui, ExportSetup setup)
     {
         var t = ui.State.Strings;
@@ -349,8 +335,6 @@ internal static class ExportDialogView
         Caption(ui, t.ExportSelectedCount(setup.IncludedCount, setup.Assemblies.Choices.Count));
     }
 
-    /// <summary>Where the export goes: the folder, a warning when it holds files, and for several
-    /// assemblies the solution's name.</summary>
     private static void Destination(Ui<UiState> ui, ExportSetup setup)
     {
         var t = ui.State.Strings;
@@ -389,8 +373,7 @@ internal static class ExportDialogView
         ui.TextField("solution", ref setup.SolutionName, placeholder, width: Sizing.Grow());
     }
 
-    /// <summary>How the projects are laid out. Kept with the decompiler options, so they stay for the
-    /// next export, but only shown here.</summary>
+    // Kept with the decompiler options, so they stay for the next export, but only shown here.
     private static void ProjectOptions(Ui<UiState> ui, DecompilerOptions options)
     {
         var t = ui.State.Strings;
@@ -402,9 +385,8 @@ internal static class ExportDialogView
         }
     }
 
-    /// <summary>The decompiler options that matter most for exported code. They are the same as in
-    /// the decompiler options panel, so changing them changes the code being browsed too, which the
-    /// note under the heading says before they are changed.</summary>
+    // The same options as in the decompiler options panel, so changing them changes the code being browsed too, which
+    // the note under the heading says before they are changed.
     private static void CodeOptions(Ui<UiState> ui, DecompilerOptions options)
     {
         var t = ui.State.Strings;
@@ -418,8 +400,6 @@ internal static class ExportDialogView
         }
     }
 
-    /// <summary>A checkbox for the decompiler toggle named <paramref name="name"/>, labelled as the
-    /// decompiler options panel labels it.</summary>
     private static void Toggle(Ui<UiState> ui, DecompilerOptions options, string name)
     {
         var t = ui.State.Strings;
@@ -437,7 +417,6 @@ internal static class ExportDialogView
         }
     }
 
-    /// <summary>What is written besides the code: the strong-name key to sign with, and PDBs.</summary>
     private static void BuildOutput(Ui<UiState> ui, ExportSetup setup)
     {
         var t = ui.State.Strings;
@@ -449,15 +428,13 @@ internal static class ExportDialogView
         }
     }
 
-    /// <summary>Asks for the folder to export to, kept once picked. Its own method, so that the closure is made only
-    /// the frame Browse is pressed.</summary>
+    // Its own method, so that the closure is made only the frame Browse is pressed.
     private static void PickFolder(Ui<UiState> ui, ExportSetup setup)
     {
         ui.PickFolder(ui.State.Strings.ExportChooseFolderTitle, setup.Folder, path => setup.Folder = path);
     }
 
-    /// <summary>Asks for the strong name key file, kept once picked. Its own method, so that the closure is made only
-    /// the frame Browse is pressed.</summary>
+    // Its own method, so that the closure is made only the frame Browse is pressed.
     private static void PickKeyFile(Ui<UiState> ui, ExportSetup setup)
     {
         var t = ui.State.Strings;
@@ -484,7 +461,6 @@ internal static class ExportDialogView
         }
     }
 
-    /// <summary>Whether to write PDBs, and only once they are written, whether they embed the sources.</summary>
     private static void Pdbs(Ui<UiState> ui, ExportSetup setup)
     {
         var t = ui.State.Strings;
@@ -501,7 +477,6 @@ internal static class ExportDialogView
         }
     }
 
-    /// <summary>What stops the export, if anything, beside the buttons, set off from the body by a rule.</summary>
     private static void Footer(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
@@ -530,8 +505,7 @@ internal static class ExportDialogView
         }
     }
 
-    /// <summary>Asks the disk again about the folder and key file whose look failed, once the frame is drawn
-    /// (<see cref="CheckExportFilesHandler"/>): the dialog shows it being looked at from this frame on.</summary>
+    // The disk is asked once the frame is drawn, but the dialog shows it being looked at from this frame on.
     private static void RetryCheck(UiState uiState, ExportFileChecks files)
     {
         var check = files.Retry();
@@ -544,8 +518,7 @@ internal static class ExportDialogView
             static (a, s, ct) => a.CheckExportFilesHandler.HandleAsync(s.Files, s.Check, ct));
     }
 
-    /// <summary>Whether <paramref name="blocker"/> is something wrong rather than not yet given: typed wrong, or the
-    /// disk failing to say.</summary>
+    // A mistake is something wrong rather than not yet given: typed wrong, or the disk failing to say.
     private static bool IsMistake(ExportBlocker? blocker)
     {
         return blocker is ExportBlocker.Clash or ExportBlocker.KeyFileMissing or ExportBlocker.CheckFailed;
@@ -568,8 +541,6 @@ internal static class ExportDialogView
             checkFailed: static (_, failed) => failed.Why);
     }
 
-    /// <summary>All the open assemblies to tick, ticked ones first, narrowed by a filter. Only the list
-    /// scrolls, filling the window; Done or Escape goes back.</summary>
     private static void ChoosePage(Ui<UiState> ui, ExportSetup setup)
     {
         var theme = ui.Theme;
@@ -597,11 +568,11 @@ internal static class ExportDialogView
         }
     }
 
-    /// <summary>The box that ticks every shown assembly, lined up with the rows' boxes.</summary>
     private static void SelectShownRow(Ui<UiState> ui, AssemblyPicker picker)
     {
         var t = ui.State.Strings;
         var theme = ui.Theme;
+        // Padded to line up with the rows' boxes.
         using (ui.Row(new Box { Padding = new Spacing(theme.Gap + theme.BorderWidth, 0f, 0f, 0f) }))
         {
             var all = CalculateAllShownIncluded(picker);
@@ -633,7 +604,6 @@ internal static class ExportDialogView
         }
     }
 
-    /// <summary>Says that the filter hides every assembly, with a way to clear it.</summary>
     private static void NoMatch(Ui<UiState> ui, AssemblyPicker picker)
     {
         var t = ui.State.Strings;
@@ -648,8 +618,6 @@ internal static class ExportDialogView
         }
     }
 
-    /// <summary>An assembly to tick, with its version, and its file's path on hover. Shift-click ticks
-    /// the range from the last row clicked.</summary>
     private static void PickRow(Ui<UiState> ui, AssemblyPicker picker, List<ExportChoice> shown, ExportChoice choice)
     {
         var theme = ui.Theme;
@@ -671,7 +639,6 @@ internal static class ExportDialogView
         }
     }
 
-    /// <summary>How many are ticked beside Done, set off from the list by a rule.</summary>
     private static void ChooseFooter(Ui<UiState> ui, ExportSetup setup)
     {
         var t = ui.State.Strings;
@@ -702,10 +669,6 @@ internal static class ExportDialogView
         ExportCommands.StartExport(appState, Exports.CreateRequest(setup));
     }
 
-    /// <summary>How far the look at the disk for the folder and key file the dialog names has got, or null before one
-    /// was asked for, when a frame is asked for: the frame edge starts it (<see cref="AppFrames"/>).</summary>
-    /// <summary>What the disk said about the folder and key file the dialog names, once looked at
-    /// (<see cref="FindFiles"/>); null while it is looked at, or when the look failed.</summary>
     private static ExportFileFacts? FindFacts(Ui<UiState> ui, ExportSetup setup)
     {
         var look = FindFiles(ui, setup);
@@ -722,6 +685,7 @@ internal static class ExportDialogView
         var look = setup.Files.FindLook(setup.Folder, setup.StrongNameKeyFile);
         if (look is null)
         {
+            // The frame edge starts the look (AppFrames), so a frame is asked for.
             ui.RequestUpdate();
         }
 

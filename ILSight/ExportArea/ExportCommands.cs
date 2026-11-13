@@ -72,9 +72,6 @@ public static class ExportCommands
         StartWriting(appState, new ExportWork.PackageFolder { Name = name, Place = place, Folder = folder });
     }
 
-    /// <summary>Queues <paramref name="work"/> and brings the exports panel to the front (<see cref="Exports.Enter"/>),
-    /// then starts writing it once its turn comes (<see cref="ExportWriting"/>), counted in the app's background work
-    /// until it ends.</summary>
     private static void StartWriting(AppState appState, ExportWork work)
     {
         var ticket = Exports.Enter(appState.Export, appState.ViewCommands, work.Job);

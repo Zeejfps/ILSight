@@ -44,8 +44,6 @@ internal static class MainMenuView
         return ui.CanDrawTitleBar;
     }
 
-    /// <summary>The title bar: the menus, the window's under the app's icon first, then room that moves
-    /// the window up to the caption buttons.</summary>
     private static void RenderInTitleBar(Ui<UiState> ui, AppState appState)
     {
         var theme = ui.Theme;
@@ -68,7 +66,6 @@ internal static class MainMenuView
         }
     }
 
-    /// <summary>The menu under the app's icon: restoring, minimizing, maximizing and closing the window.</summary>
     private static void WindowMenu(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
@@ -102,8 +99,6 @@ internal static class MainMenuView
         }
     }
 
-    /// <summary>macOS's menu bar: the app's menu, the window's menus, then the Window menu and a Help
-    /// menu, which the system gives a search of every item.</summary>
     private static void RenderSystemMenuBar(Ui<UiState> ui, AppState appState)
     {
         var t = ui.State.Strings;
@@ -120,13 +115,13 @@ internal static class MainMenuView
                 SystemWindowMenu(ui);
             }
 
+            // Left empty: macOS gives a Help menu a search of every item.
             using (ui.Menu(t.MenuHelp, id: "help", role: AppMenuRole.Help))
             {
             }
         }
     }
 
-    /// <summary>The app's menu of macOS's menu bar: About and Settings, then what macOS does for every app.</summary>
     private static void AppMenu(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
@@ -142,6 +137,7 @@ internal static class MainMenuView
         }
 
         ui.MenuSeparator();
+        // Left empty: macOS fills it, as it does for every app.
         using (ui.SubMenu(t.AppMenuServices, id: "services", role: AppMenuRole.Services))
         {
         }
@@ -153,7 +149,7 @@ internal static class MainMenuView
         ui.SystemMenuItem(t.AppMenuQuit, AppMenuSystemAction.Quit, Shortcuts.Quit);
     }
 
-    /// <summary>macOS's Window menu, which the system ends with the open windows.</summary>
+    // macOS ends this menu with the open windows.
     private static void SystemWindowMenu(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
@@ -311,7 +307,6 @@ internal static class MainMenuView
         LanguageMenu(ui, appState.Locale);
     }
 
-    /// <summary>The submenu of the catalog's themes, built-in ones first, the one shown picked.</summary>
     private static void ThemeMenu(Ui<UiState> ui, ThemeCatalog<ThemeFile, ThemeContents, AppTheme> catalog, ThemeId<ThemeFile> current)
     {
         var t = ui.State.Strings;
@@ -332,7 +327,6 @@ internal static class MainMenuView
         }
     }
 
-    /// <summary>The submenu of which types and members the tree shows, the one shown picked.</summary>
     private static void ApiVisibilityMenu(Ui<UiState> ui, ApiVisibility current)
     {
         var t = ui.State.Strings;
@@ -356,7 +350,6 @@ internal static class MainMenuView
         }
     }
 
-    /// <summary>The submenu of the views, each checked while open, that opens the one picked.</summary>
     private static void PanelsMenu(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
@@ -403,8 +396,6 @@ internal static class MainMenuView
         }
     }
 
-    /// <summary>The item that opens <paramref name="view"/>, checked while it is open, with the
-    /// icon its tab shows.</summary>
     private static bool PanelItem(Ui<UiState> ui, string label, DockView view, Shortcut? shortcut = null)
     {
         var panel = DockPanels.NameOf(view);

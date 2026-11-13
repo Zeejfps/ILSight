@@ -117,10 +117,6 @@ internal static class DecompilerOptionsPanelView
         return DecompilerOptionLabels.Label(t, toggle.Name) ?? toggle.Name;
     }
 
-    /// <summary>Draws a section's header: a chevron and a checkbox that sets every toggle shown in it,
-    /// showing a square when only some are on. Returns true when the row besides the checkbox was
-    /// clicked to fold or unfold, which it can't while <paramref name="folded"/> is null, as during a
-    /// search.</summary>
     private static bool Header(Ui<UiState> ui, FoldedGroups? folded, DecompilerOptionSection section, DecompilerOptions options, float rowHeight,
         string? tooNew)
     {
@@ -159,10 +155,10 @@ internal static class DecompilerOptionsPanelView
             ui.Tooltip(item.Id, tooNew);
         }
 
+        // Folded is null during a search, when no section folds or unfolds.
         return folded is not null && item.Clicked;
     }
 
-    /// <summary>Whether <paramref name="section"/> is folded; none is while <paramref name="folded"/> is null.</summary>
     private static bool IsFolded(FoldedGroups? folded, DecompilerOptionSection section)
     {
         if (folded is null)
@@ -183,8 +179,6 @@ internal static class DecompilerOptionsPanelView
         return language.IntroducedIn <= options.LanguageVersion;
     }
 
-    /// <summary>The C# version the features of <paramref name="group"/> came with, or null for a group no
-    /// version holds back.</summary>
     private static CSharpVersion? FindVersion(DecompilerToggleGroup group)
     {
         if (group is not DecompilerToggleGroup.Language language)
@@ -195,7 +189,7 @@ internal static class DecompilerOptionsPanelView
         return language.IntroducedIn;
     }
 
-    /// <summary>What a section of <paramref name="group"/> is known by where its folding is kept.</summary>
+    // What a section is known by where its folding is kept.
     private static string GetKey(DecompilerToggleGroup group)
     {
         return group.Match(
@@ -205,7 +199,6 @@ internal static class DecompilerOptionsPanelView
             static _ => "ProjectExport");
     }
 
-    /// <summary>True when every toggle in <paramref name="section"/> is on, false when none is, null otherwise.</summary>
     private static bool? State(DecompilerOptionSection section, DecompilerOptions options)
     {
         var on = 0;
@@ -229,7 +222,6 @@ internal static class DecompilerOptionsPanelView
         return null;
     }
 
-    /// <summary>Whether any toggle in <paramref name="section"/> is set away from its default.</summary>
     private static bool HasChangedToggle(DecompilerOptionSection section, DecompilerOptions options)
     {
         foreach (var toggle in section.Toggles)
@@ -307,7 +299,6 @@ internal static class DecompilerOptionsPanelView
         return count;
     }
 
-    /// <summary>The section a row is in, and the toggle it shows, or null for the section's header.</summary>
     private static (DecompilerOptionSection Section, DecompilerToggle? Toggle) RowAt(DecompilerOptionSection[] sections, FoldedGroups? folded, int row)
     {
         foreach (var section in sections)

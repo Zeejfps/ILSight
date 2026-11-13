@@ -29,8 +29,6 @@ public sealed class RunArgumentsReceiver : IDisposable
 
     private bool _isDisposed;
 
-    /// <summary>A receiver of the role at <paramref name="address"/> whose thread does <paramref name="run"/>, not
-    /// started yet, putting what later runs send in <paramref name="inbox"/>.</summary>
     private RunArgumentsReceiver(RunArgumentsAddress address, Channel<RunArguments> inbox, Action<RunArgumentsReceiver> run)
     {
         _name = address.Name;

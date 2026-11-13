@@ -19,8 +19,6 @@ internal static class AppVersions
 
     public static string System { get; } = $"{RuntimeInformation.OSDescription} ({RuntimeInformation.OSArchitecture})";
 
-    /// <summary>The version <paramref name="assembly"/> was released as, without its commit, else
-    /// its assembly version.</summary>
     private static string GetVersion(Assembly assembly)
     {
         var informational = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
@@ -38,7 +36,6 @@ internal static class AppVersions
         return version.ToString();
     }
 
-    /// <summary>The version without the commit after its <c>+</c>.</summary>
     private static string WithoutCommit(string version)
     {
         var plus = version.IndexOf(BuildSeparator);

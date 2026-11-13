@@ -50,7 +50,6 @@ public static class MainView
         AboutDialogView.Render(ui, appState);
     }
 
-    /// <summary>Opens the files dropped on the window.</summary>
     private static void OpenDropped(Ui<UiState> ui)
     {
         var dropped = ui.Input.TakeDroppedFiles();
@@ -76,8 +75,6 @@ public static class MainView
         RemoveReleasedImages(ui);
     }
 
-    /// <summary>Runs the view commands the features queued while the documents were drawn, then asks for
-    /// the tab the user last pressed, docked or brought to front to become the active one.</summary>
     private static void SyncAfterDocuments(Ui<UiState> ui, AppState appState)
     {
         QueuedCommands.RunViewCommands(ui.State, appState);

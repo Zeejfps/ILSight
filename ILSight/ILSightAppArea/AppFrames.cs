@@ -51,12 +51,9 @@ internal static class AppFrames
         ShowNewErrors(uiState, appState.Errors);
     }
 
-    /// <summary>Revives the tabs whose assembly was closed once it is on the list again, whichever way it came back
-    /// (opened, reloaded, restored): each reads its node again, the bar saying it was closed gone
-    /// (<see cref="SavedDocuments.ReviveClosedTabs"/>), and starts the lookup of their nodes. Nothing, allocating
-    /// nothing, while there is none.</summary>
     private static void ReviveClosedTabs(UiState uiState, AppState appState)
     {
+        // Asked first, so the frames with no closed tab listed again allocate nothing.
         if (!SavedDocuments.HasClosedTabListedAgain(appState.Navigation, appState.Assemblies))
         {
             return;
@@ -65,9 +62,6 @@ internal static class AppFrames
         Commands.StartLoads(appState, SavedDocuments.ReviveClosedTabs(appState.ListSession, uiState.Documents));
     }
 
-    /// <summary>While the export dialog is open, starts looking at what it names on the disk now, before the frame
-    /// draws, when the names changed since the last look (<see cref="CheckExportFilesHandler"/>), counted in the app's
-    /// background work until it ends.</summary>
     private static void FollowExportSetup(ExportSetup setup, AppState appState)
     {
         if (!setup.IsOpen)
@@ -84,7 +78,7 @@ internal static class AppFrames
         StartCheckingFiles(appState, setup.Files, check);
     }
 
-    /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
+    // A method of its own, so that the frames that start nothing allocate no closure.
     private static void StartCheckingFiles(AppState appState, ExportFileChecks files, ExportFileCheck check)
     {
         appState.Workflows.StartSettling(nameof(CheckExportFilesHandler), ct => appState.CheckExportFilesHandler.HandleAsync(files, check, ct),
@@ -119,9 +113,8 @@ internal static class AppFrames
         }
     }
 
-    /// <summary>Starts <paramref name="wanted"/> now, before the frame draws, on a token that a newer search and
-    /// closing the dialog cancel too. A method of its own, so that the frames that start nothing allocate no
-    /// closure.</summary>
+    // Its token is cancelled too by a newer search and by closing the dialog. A method of its own, so that the frames
+    // that start nothing allocate no closure.
     private static void StartSearching(AppState appState, SearchNuGetFeedHandler searchFeed, NuGetBrowser browser, FeedSearch wanted)
     {
         var search = browser.StartSearch(wanted);
@@ -151,22 +144,19 @@ internal static class AppFrames
         }
     }
 
-    /// <summary>Starts fetching <paramref name="icon"/>, on a token <paramref name="closed"/> cancels too. Its own
-    /// method, so that the closure is made only for an icon asked for.</summary>
+    // Its own method, so that the closure is made only for an icon asked for.
     private static void StartFetchingIcon(WorkflowRunner workflows, FetchNuGetIconHandler fetchIcon, PackageIconFetch icon, CancellationToken closed)
     {
         workflows.Start(nameof(FetchNuGetIconHandler), ct => fetchIcon.HandleAsync(icon, ct), closed);
     }
 
-    /// <summary>Starts reading <paramref name="details"/>, on a token <paramref name="closed"/> cancels too. Its own
-    /// method, so that the closure is made only for details asked for.</summary>
+    // Its own method, so that the closure is made only for details asked for.
     private static void StartReadingDetails(WorkflowRunner workflows, ReadNuGetDetailsHandler readDetails, NuGetBrowser browser,
         VersionDetailsFetch details, CancellationToken closed)
     {
         workflows.Start(nameof(ReadNuGetDetailsHandler), ct => readDetails.HandleAsync(browser, details, ct), closed);
     }
 
-    /// <summary>Reads the open assemblies again, as F5 does, when the options that apply as they are read changed.</summary>
     private static void FollowLoadOptions(UiState uiState, AppState appState)
     {
         if (!AssemblyListing.TryChangeLoadOptions(appState.Assemblies, appState.Decompiler.Setup.Options))
@@ -177,22 +167,18 @@ internal static class AppFrames
         StartRefreshing(appState, uiState.Tree.ListExpandedPaths());
     }
 
-    /// <summary>Starts reading the open assemblies again now, before the frame draws, so that it draws them
-    /// reloading. A method of its own, so that the frames that start nothing allocate no closure.</summary>
+    // Started before the frame draws, so that it draws them reloading. A method of its own, so that the frames that
+    // start nothing allocate no closure.
     private static void StartRefreshing(AppState appState, List<NodePath> expanded)
     {
         Commands.StartShowing(appState, nameof(AssemblyReloading.RefreshAssembliesAsync), ct => appState.AssemblyReloading.RefreshAssembliesAsync(appState.Lists, appState.ListSession, appState.ViewCommands, appState.Decompiler, expanded, ct));
     }
 
-    /// <summary>Opens the error dialog on the newest error whenever one is reported.</summary>
     private static void ShowNewErrors(UiState uiState, ErrorLog errors)
     {
         uiState.ErrorDialog.ShowNewErrors(errors.Revision, errors.Entries);
     }
 
-    /// <summary>Decompiles each tab in front again once the language or the options changed, when it shows what they
-    /// would show otherwise; a tab whose assembly was closed keeps what it shows and reads nothing
-    /// (<see cref="TabLoad.ShowClosed"/>).</summary>
     private static void FollowDecompilation(UiState uiState, AppState appState)
     {
         var language = appState.Decompiler.Setup.Language;
@@ -232,8 +218,6 @@ internal static class AppFrames
         KeepFirstGridRows(uiState, appState);
     }
 
-    /// <summary>Works out from the tab area as the screen last laid it out how many rows a grid made for a tab reads
-    /// with its content (<see cref="AppState.FirstGridRows"/>); nothing before a document was drawn.</summary>
     private static void KeepFirstGridRows(UiState uiState, AppState appState)
     {
         var area = uiState.Documents.TabAreaHeight;
@@ -245,9 +229,6 @@ internal static class AppFrames
         appState.FirstGridRows = MetadataGridFrame.CalculateFirstReadRows(area.Value, uiState.Theme.RowHeight);
     }
 
-    /// <summary>Keeps where each tab's view stands with what it drew: on the tab while it still shows that, else on
-    /// the history entry left from it, as when the tab moved on while the frame was drawn. Allocates nothing while
-    /// each tab shows what its view drew.</summary>
     private static void KeepTabPositions(UiState uiState, Navigation navigation)
     {
         var open = navigation.OpenTabs;
@@ -277,6 +258,7 @@ internal static class AppFrames
             return;
         }
 
+        // The tab moved on while the frame was drawn: the history entry left from it keeps the position.
         navigation.KeepPositionLeft(shown, view.GetShownPosition());
     }
 
@@ -349,8 +331,6 @@ internal static class AppFrames
         }
     }
 
-    /// <summary>When the icons changed, lets go of the fonts they no longer draw in, registers those they
-    /// are drawn in, and lets go of the pictures of the icons they replace.</summary>
     private static void FollowIconTheme(Ui<UiState> ui)
     {
         var before = ui.State.ShownIcons?.Fonts ?? [];
@@ -409,8 +389,6 @@ internal static class AppFrames
         return codeFonts.Bundled;
     }
 
-    /// <summary>The face of <paramref name="font"/>, the bundled one when it is null; null when its file
-    /// cannot be read.</summary>
     private static FontFace? EnsureFace(CodeFontFaces faces, CodeFont? font)
     {
         if (font is null)
@@ -450,7 +428,6 @@ internal static class AppFrames
         }
     }
 
-    /// <summary>Runs what the screen asked of the app state while it drew, and draws again to show it.</summary>
     private static void RunAppCommandsAndRedraw(Ui<UiState> ui, AppState appState)
     {
         if (ui.State.AppCommands.Count == 0)

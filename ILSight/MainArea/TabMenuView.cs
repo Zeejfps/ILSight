@@ -101,13 +101,11 @@ internal static class TabMenuView
         }
     }
 
-    /// <summary>Whether a tab of <paramref name="group"/> stands right of the one at <paramref name="index"/>.</summary>
     private static bool HasTabsRightOf(List<DocumentTab> group, int index)
     {
         return index < group.Count - 1;
     }
 
-    /// <summary>The item keeping the tab open, with a separator after it, while it is the preview tab.</summary>
     private static void KeepOpenItem(Ui<UiState> ui, Navigation navigation, DocumentTab tab)
     {
         if (tab != navigation.PreviewTab)

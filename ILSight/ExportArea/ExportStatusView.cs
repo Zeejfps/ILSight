@@ -38,8 +38,6 @@ internal static class ExportStatusView
         }
     }
 
-    /// <summary>What the export writes, its bar and how many wait, as one button; returns whether it
-    /// was clicked.</summary>
     private static bool Glance(Ui<UiState> ui, RunningExport running, int waiting)
     {
         var progress = running.Progress;
@@ -92,7 +90,7 @@ internal static class ExportStatusView
         ui.Text(text, color: theme.TextMuted, size: theme.FontSizeSmall);
     }
 
-    /// <summary>An icon button that fits the status bar's height, which the theme's are too tall for.</summary>
+    // Fits the status bar's height, which the theme's icon buttons are too tall for.
     private static bool IconButton(Ui<UiState> ui, string id, IconGlyph glyph, string tooltip)
     {
         var theme = ui.Theme;

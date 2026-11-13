@@ -128,7 +128,6 @@ internal static class StatusBarView
         }
     }
 
-    /// <summary>What was refused and why, in the language shown; clicked, it goes.</summary>
     private static void RefusalNote(Ui<UiState> ui, Refusal refusal)
     {
         var t = ui.State.Strings;

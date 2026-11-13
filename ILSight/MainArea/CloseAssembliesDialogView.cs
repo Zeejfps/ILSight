@@ -100,7 +100,6 @@ internal static class CloseAssembliesDialogView
         }
     }
 
-    /// <summary>A bordered list on the field color that fills the dialog, its rows clipped to its corners.</summary>
     private static Box ListFrame(UiTheme theme)
     {
         return new Box()
@@ -115,7 +114,6 @@ internal static class CloseAssembliesDialogView
         };
     }
 
-    /// <summary>Says that the filter hides every item, with a way to clear it.</summary>
     private static void NoMatch(Ui<UiState> ui, AssemblyCloser closer)
     {
         var t = ui.State.Strings;
@@ -142,8 +140,6 @@ internal static class CloseAssembliesDialogView
         }
     }
 
-    /// <summary>An item to tick, with its version, and its file's path on hover. Shift-click ticks the range
-    /// from the last row clicked.</summary>
     private static void Row(Ui<UiState> ui, AssemblyCloser closer, List<CloseChoice> shown, CloseChoice choice)
     {
         var theme = ui.Theme;

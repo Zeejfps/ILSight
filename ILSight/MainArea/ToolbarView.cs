@@ -91,8 +91,6 @@ internal static class ToolbarView
         }
     }
 
-    /// <summary>Back and forward through <paramref name="session"/>'s history, each with a menu of the entries that
-    /// way; what they show again loads in <paramref name="setup"/>.</summary>
     private static void HistoryButtons(Ui<UiState> ui, OpenListSession session, IReadOnlyList<ExportArea.ExportReport> finishedExports, DecompilerSetup setup)
     {
         var t = ui.State.Strings;
@@ -126,8 +124,6 @@ internal static class ToolbarView
         }
     }
 
-    /// <summary>The open assembly list's name, opening a menu of every list to switch to, and of the
-    /// dialog that manages them. As wide as the longest name, within limits.</summary>
     private static void ListPicker(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
     {
         var t = ui.State.Strings;
@@ -151,7 +147,7 @@ internal static class ToolbarView
         }
     }
 
-    /// <summary>Measured again only when the lists or the theme changed, so a frame allocates nothing.</summary>
+    // Measured again only when the lists or the theme changed, so a frame allocates nothing.
     private static float ListPickerWidth(Ui<UiState> ui, SavedAssemblyLists lists)
     {
         var measured = ui.GetState<MeasuredWidth>(ui.GetId("list-width"));
@@ -169,7 +165,6 @@ internal static class ToolbarView
         return measured.Width;
     }
 
-    /// <summary>The width the list picker was last measured at, for which lists and theme.</summary>
     private sealed class MeasuredWidth
     {
         public int Revision = -1;
@@ -177,9 +172,6 @@ internal static class ToolbarView
         public float Width;
     }
 
-    /// <summary>The menu item of the list named <paramref name="name"/>; picked, the list is switched to in this
-    /// frame (<see cref="AssemblyLists.SwitchAssemblyList"/>, over the open list's session), and only opening its files
-    /// is queued. The picker drawn above shows the list next frame, which this asks for.</summary>
     private static void ListItem(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
         var active = name == lists.Active;
@@ -189,6 +181,7 @@ internal static class ToolbarView
         }
 
         Commands.OpenListLater(ui.State, AssemblyLists.SwitchAssemblyList(lists, session, view, name));
+        // The picker, drawn above this frame, shows the list only in the next one.
         ui.RequestUpdate();
     }
 
@@ -227,10 +220,6 @@ internal static class ToolbarView
         return ui.Row(new Box { Width = Sizing.Fit(), Gap = ui.Theme.Gap, AlignY = Align.Center });
     }
 
-    /// <summary>The entries of <paramref name="navigation"/>'s history before the current one, or after it when
-    /// <paramref name="direction"/> is positive; the one picked is gone to in this frame, and only its load or lookup is
-    /// queued. An entry that can't be shown (<see cref="Navigation.CanShow"/>) is drawn disabled, saying what is closed,
-    /// and offered to no click.</summary>
     private static void HistoryItems(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, IReadOnlyList<ExportArea.ExportReport> finished, DecompilerSetup setup,
         int direction)
     {
@@ -266,8 +255,6 @@ internal static class ToolbarView
             static (strings, _) => strings.ExportReportTitle);
     }
 
-    /// <summary><paramref name="text"/>, the label of <paramref name="entry"/>, which can't be shown, with why: what it
-    /// names that is closed, or for a report that its export was removed from the exports.</summary>
     private static string SayWhyNotShown(Strings strings, HistoryEntry entry, string text)
     {
         return entry.Match(

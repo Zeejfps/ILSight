@@ -103,7 +103,6 @@ public static class RunArgumentsPipe
         return args;
     }
 
-    /// <summary>A count read from <paramref name="pipe"/>, which no run sends past <paramref name="max"/>.</summary>
     private static async Task<int> ReadCountAsync(Stream pipe, int max, CancellationToken token)
     {
         var count = await ReadIntAsync(pipe, token);
@@ -195,9 +194,7 @@ public static class RunArgumentsPipe
         }
     }
 
-    /// <summary>Takes the arguments of the connected run into the inbox, unless <paramref name="taken"/> holds their
-    /// request already, then tells it so; a closed inbox refuses them. A run that goes away partway costs only its own
-    /// arguments.</summary>
+    // A run that goes away partway, sends nonsense or takes too long costs only its own arguments.
     private static async Task TakeArgumentsAsync(Channel<RunArguments> inbox, HashSet<Guid> taken, Stream pipe, CancellationToken stop)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(stop);
@@ -237,9 +234,6 @@ public static class RunArgumentsPipe
         return true;
     }
 
-    /// <summary>The arguments of the run connected to <paramref name="pipe"/>; null when it went away, sent nonsense or
-    /// took too long (<paramref name="timeout"/>), which costs only its own arguments. Stopping
-    /// (<paramref name="stop"/>) goes through.</summary>
     private static async Task<HandedArguments?> TryReceiveAsync(Stream pipe, CancellationToken stop, CancellationToken timeout)
     {
         try
@@ -268,8 +262,8 @@ public static class RunArgumentsPipe
         }
     }
 
-    /// <summary>Waits a moment after the server broke, so that one that stays broken is not retried in a tight loop;
-    /// stopping cuts it short, which the serving loop sees for itself.</summary>
+    // So that a server that stays broken is not retried in a tight loop; stopping cuts it short, which the serving loop
+    // sees for itself.
     private static async Task WaitForBrokenPipeAsync(CancellationToken token)
     {
         await Task.Delay(BrokenPipeWait, token).ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.SuppressThrowing);

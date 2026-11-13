@@ -75,9 +75,6 @@ public sealed class ExportWriting(ExportWriting.IPorts ports)
         finished.Add(report);
     }
 
-    /// <summary>Writes the export through <paramref name="write"/>, ends the turn, and reports how the export ended,
-    /// measured from <paramref name="started"/>: a finished one as <paramref name="complete"/> lists what it wrote, a
-    /// cancelled one as cancelled, a failed one as failing to export <paramref name="subject"/>.</summary>
     private async Task<ExportReport> WriteAsync<T>(Func<CancellationToken, Task<ExportOutcome<T>>> write, ExportTurn.Started start, ExportTicket ticket,
         string subject, long started, Func<ExportReport, T, ExportReport> complete, CancellationToken ct)
     {

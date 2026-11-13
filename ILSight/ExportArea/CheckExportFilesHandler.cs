@@ -29,7 +29,6 @@ public sealed class CheckExportFilesHandler(CheckExportFilesHandler.IPorts ports
             failed => FailAsync(checks, check, failed.Error, ct));
     }
 
-    /// <summary>Whether <paramref name="folder"/> holds files: none for one that is not a full path.</summary>
     private Task<Outcome<bool>> LookAtFolderAsync(string folder, CancellationToken ct)
     {
         if (!Path.IsPathFullyQualified(folder))
@@ -40,8 +39,6 @@ public sealed class CheckExportFilesHandler(CheckExportFilesHandler.IPorts ports
         return ports.LookInFolderAsync(folder, ct);
     }
 
-    /// <summary>Looks at the key file <paramref name="check"/> names, then hands what the disk says to
-    /// <paramref name="checks"/>.</summary>
     private async Task FinishAsync(ExportFileChecks checks, ExportFileCheck check, bool holdsFiles, CancellationToken ct)
     {
         var keyFile = check.KeyFile.Trim();
@@ -54,8 +51,7 @@ public sealed class CheckExportFilesHandler(CheckExportFilesHandler.IPorts ports
         checks.Finish(check, new ExportFileFacts { FolderHoldsFiles = holdsFiles, IsKeyFileMissing = isKeyFileMissing });
     }
 
-    /// <summary>Hands <paramref name="checks"/> that <paramref name="check"/> failed with <paramref name="error"/>; nothing
-    /// is left to wait for, so <paramref name="ct"/> stops nothing.</summary>
+    // Nothing is left to wait for, so ct stops nothing.
     private static Task FailAsync(ExportFileChecks checks, ExportFileCheck check, Exception error, CancellationToken ct)
     {
         checks.Fail(check, error.Message);
