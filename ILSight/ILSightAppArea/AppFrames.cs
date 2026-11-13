@@ -54,11 +54,26 @@ internal static class AppFrames
         FollowActiveTab(uiState, appState.Navigation.ActiveTab);
         QueuedCommands.RunViewCommands(uiState, appState);
         SyncTabViews(uiState, appState.Navigation);
+        ReviveClosedTabs(uiState, appState);
         FocusNextTabIfNone(uiState, appState.Navigation, appState.Decompiler.Setup);
         FollowLoadOptions(uiState, appState);
         FollowDecompilation(uiState, appState);
         FollowExportSetup(uiState.ExportSetup, appState);
         ShowNewErrors(uiState, appState.Errors);
+    }
+
+    /// <summary>Revives the tabs whose assembly was closed once it is on the list again, whichever way it came back
+    /// (opened, reloaded, restored): each reads its node again, the bar saying it was closed gone
+    /// (<see cref="SavedDocuments.ReviveClosedTabs"/>), and starts the lookup of their nodes. Nothing, allocating
+    /// nothing, while there is none.</summary>
+    private static void ReviveClosedTabs(UiState uiState, AppState appState)
+    {
+        if (!SavedDocuments.HasClosedTabListedAgain(appState.Navigation, appState.Assemblies))
+        {
+            return;
+        }
+
+        Commands.StartLoads(appState, SavedDocuments.ReviveClosedTabs(appState.ListSession, uiState.Documents));
     }
 
     /// <summary>While the export dialog is open, starts looking at what it names on the disk now, before the frame

@@ -324,4 +324,56 @@ public sealed class CloseAssembliesTests
         Assert.Equal(KeyboardFile, closed.Load.ClosedAssembly);
         Assert.Empty(app.AppState.Errors.Entries);
     }
+
+    [Fact]
+    public async Task Opening_a_closed_assembly_again_revives_its_tab_which_reads_again_without_the_closed_bar()
+    {
+        var app = await ShowingGreeterAndKeyboardKeyAsync();
+        CloseKeyboardFromTheDialog(app);
+        var closed = TabShowing(app, "KeyboardKey");
+        var before = closed.Node;
+        Assert.Equal(KeyboardFile, closed.Load.ClosedAssembly);
+
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(KeyboardPath)], ct));
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 2, Patience);
+        app.Settle(4);
+        app.Frames.ClickOn(GetTab("KeyboardKey")).Frame(2);
+        app.Settle(2);
+
+        Assert.Same(closed, TabShowing(app, "KeyboardKey"));
+        Assert.Null(closed.Load.ClosedAssembly);
+        Assert.NotNull(closed.Node);
+        Assert.NotSame(before, closed.Node);
+        Assert.Same(KeyboardOf(app), closed.Node.Assembly);
+        Assert.IsType<TabContent.Code>(closed.Content);
+        Assert.False(app.Frames.Drew($"{KeyboardFile} was closed."));
+        Assert.Empty(app.AppState.Errors.Entries);
+    }
+
+    [Fact]
+    public async Task A_tab_of_a_closed_assembly_is_left_out_of_the_saved_session_and_gone_after_a_restart()
+    {
+        using var temp = new TempDir();
+        var app = new AppDriver(settings: temp.Settings());
+        app.Driver.OpenFixtures();
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(KeyboardPath)], ct));
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 2, Patience);
+        app.Run(2);
+        app.Show(await app.FixtureAsync("Greeter"), 2);
+        app.Show(await KeyboardKeyOfAsync(app), 2, inNewTab: true);
+        app.Driver.Pump();
+        var savedOpen = (temp.Settings().AssemblyLists.Single().Documents?.Tabs ?? []).Select(static t => t.Title).ToList();
+
+        CloseKeyboardFromTheDialog(app);
+        app.Driver.Pump();
+        var saved = temp.Settings().AssemblyLists.Single().Documents?.Tabs ?? [];
+        var restarted = new AppStateDriver(temp.Settings());
+        restarted.Settle();
+
+        Assert.Equal(["Greeter", "KeyboardKey"], savedOpen);
+        Assert.Equal("KeyboardKey", TabShowing(app, "KeyboardKey").Title);
+        Assert.Equal(["Greeter"], saved.Select(static t => t.Title));
+        Assert.DoesNotContain(restarted.AppState.Navigation.OpenTabs, static t => t.Title == "KeyboardKey");
+        Assert.Contains(restarted.AppState.Navigation.OpenTabs, static t => t.Title == "Greeter");
+    }
 }
