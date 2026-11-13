@@ -1,12 +1,47 @@
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using ILSight.Core;
 
 namespace ILSight.Tests;
 
 public sealed class CodeTooltipTests
 {
+    private static MethodDefinitionHandle GetFirstParameterOwner(string path)
+    {
+        using var pe = new PEReader(File.OpenRead(path));
+        var metadata = pe.GetMetadataReader();
+        foreach (var handle in metadata.MethodDefinitions)
+        {
+            foreach (var parameter in metadata.GetMethodDefinition(handle).GetParameters())
+            {
+                var row = MetadataTokens.GetRowNumber(parameter);
+                var sequence = metadata.GetParameter(parameter).SequenceNumber;
+                if (row == 1 && sequence > 0)
+                {
+                    return handle;
+                }
+            }
+        }
+
+        throw new InvalidOperationException($"No method of '{path}' has the first row of its Param table as a named parameter.");
+    }
+
+    [Fact]
+    public async Task A_reference_whose_declaration_the_library_cannot_read_is_its_failure_saying_why()
+    {
+        using var temp = new TempDir();
+        var owner = GetFirstParameterOwner(Trees.TestAssemblyPath);
+        var path = BrokenAssemblies.WriteUnreadableParameterName(temp, Trees.TestAssemblyPath);
+        var method = CodeReferences.CreateEntity(EntityKind.Method, "the first parameter's method", AssemblyPath.Of(path), owner);
+
+        var described = await AssemblyListing.DescribeReferenceAsync(new AssemblyList { Runtime = TestRuntime.Installed }, method, CancellationToken.None);
+
+        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<Lookup<CodeTooltip>>.Failed>(described).Error);
+    }
     private static async Task<CodeTooltip> TooltipOfAsync(AssemblyList list, BrowseNode node)
     {
-        var tooltip = (await AssemblyListing.DescribeReferenceAsync(list, node.Definition, CancellationToken.None)).FoundOrNull;
+        var tooltip = (await AssemblyListing.DescribeReferenceAsync(list, node.Definition, CancellationToken.None)).GetValue().FoundOrNull;
         Assert.NotNull(tooltip);
         return tooltip;
     }
@@ -255,7 +290,8 @@ public sealed class CodeTooltipTests
         var document = await assembly.CalculatorAsync().GetChildAsync("Add(T) : void").DecompileAsync(DecompilationLanguage.CSharp);
         var call = document.Lines[document.LineContaining("_items.Add(item)")];
 
-        var tooltip = (await AssemblyListing.DescribeReferenceAsync(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("Add").Reference), CancellationToken.None)).FoundOrNull;
+        var tooltip = (await AssemblyListing.DescribeReferenceAsync(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("Add").Reference), CancellationToken.None))
+            .GetValue().FoundOrNull;
         Assert.NotNull(tooltip);
 
         Assert.StartsWith("public void List<T>.Add(T item)", tooltip.Signature.Line.Text);

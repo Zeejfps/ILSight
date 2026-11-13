@@ -39,8 +39,8 @@ public sealed class WebCilTests
         Assert.False(isReleasedWhileRead);
         Assert.Null(decompiled.Error);
         Assert.Contains("public int Add159(int left, int right)", Documents.GetText(decompiled));
-        Assert.IsType<ModuleRead<NodeContent>.Closed>(await NodeContentLoader.ReadContentAsync(TestSession.Shared, part, DecompilationLanguage.CSharp,
-            DecompilerOptions.Default, NodeQueries.FirstGridRows));
+        Assert.IsType<ModuleRead<NodeContent>.Closed>((await NodeContentLoader.ReadContentAsync(TestSession.Shared, part, DecompilationLanguage.CSharp,
+            DecompilerOptions.Default, NodeQueries.FirstGridRows)).GetValue());
         Assert.Empty(await SearchAsync(module, query));
     }
 

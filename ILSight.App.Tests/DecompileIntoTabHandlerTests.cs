@@ -111,6 +111,25 @@ public sealed class DecompileIntoTabHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_DecompileThrows_LetsItThroughToTheEdge()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var greeter = await d.FixtureAsync("Greeter");
+        var viewCommands = new Queue<ViewCommand>();
+        var (navigation, tab) = FirstTab(viewCommands);
+        var ports = new FakeDecompileIntoTabHandlerPorts();
+        var load = navigation.Restore(tab, greeter, In(DecompilationLanguage.CSharp), AtLineTen);
+        Assert.NotNull(load);
+        var bug = new InvalidOperationException("A bug in the core's own code on what it read.");
+
+        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None));
+        Assert.Single(ports.Requests).Answer.SetException(bug);
+
+        Assert.Same(bug, await Assert.ThrowsAsync<InvalidOperationException>(() => d.EndAsync(handling)));
+        Assert.Empty(ports.Reported);
+    }
+
+    [Fact]
     public async Task HandleAsync_NewerLoadStartedOnTheTab_DropsTheOlderOneAndShowsTheNewer()
     {
         var d = AppStateDriver.OpenedWithoutScreen();

@@ -1,3 +1,5 @@
+using ILSight.Core;
+
 
 namespace ILSight.ExportArea;
 

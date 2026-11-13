@@ -18,7 +18,7 @@ public sealed class LookUpTooltipHandlerTests
         var assemblies = d.AppState.Assemblies;
         var tooltips = new CodeTooltips { Assemblies = assemblies, Version = assemblies.Version };
         var lookup = await AskForGreeterAsync(d, tooltips);
-        var tooltip = await AssemblyListing.DescribeReferenceAsync(assemblies, lookup.Reference, CancellationToken.None);
+        var tooltip = (await AssemblyListing.DescribeReferenceAsync(assemblies, lookup.Reference, CancellationToken.None)).GetValue();
         var ports = new FakeLookUpTooltipHandlerPorts { Answer = new Outcome<Lookup<CodeTooltip>>.Ok(tooltip) };
 
         await d.RunAsync(() => new LookUpTooltipHandler(ports).HandleAsync(tooltips, lookup, CancellationToken.None));

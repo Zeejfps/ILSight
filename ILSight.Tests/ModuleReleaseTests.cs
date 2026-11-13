@@ -64,7 +64,7 @@ public sealed class ModuleReleaseTests
         LoadedAssemblies.Release(list.Close(left));
         var released = LoadedAssemblies.WaitForReleaseAsync(left, CancellationToken.None);
         var newReader = LoadedAssemblies.TryBeginReading(left);
-        var decompiled = await NodeContentLoader.DecompileAsync(TestSession.Shared, derived, DecompilationLanguage.CSharp, DecompilerOptions.Default);
+        var decompiled = (await NodeContentLoader.DecompileAsync(TestSession.Shared, derived, DecompilationLanguage.CSharp, DecompilerOptions.Default)).GetValue();
         var isReleasedWhileRead = released.IsCompleted;
         underWay.Dispose();
         await released.WaitAsync(Patience);

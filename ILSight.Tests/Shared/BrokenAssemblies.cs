@@ -14,23 +14,34 @@ internal static class BrokenAssemblies
     /// container's children cannot be built.</summary>
     public static string WriteUnreadableAvaloniaContainer(TempDir temp)
     {
-        byte[] container = [8, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0];
+        return WriteWithResource(temp, "Unreadable.dll", AvaloniaContainer, [8, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0]);
+    }
+
+    /// <summary>An assembly holding a <c>.resources</c> file whose bytes are no such file, so the library can't read
+    /// its entries.</summary>
+    public static string WriteUnreadableResourcesFile(TempDir temp)
+    {
+        return WriteWithResource(temp, "UnreadableResources.dll", "Broken.resources", "no resources file"u8.ToArray());
+    }
+
+    private static string WriteWithResource(TempDir temp, string fileName, string resourceName, byte[] content)
+    {
         var metadata = new MetadataBuilder();
         var name = metadata.GetOrAddString("Unreadable");
         metadata.AddModule(0, name, metadata.GetOrAddGuid(Guid.NewGuid()), default, default);
         metadata.AddAssembly(name, new Version(1, 0), default, default, 0, AssemblyHashAlgorithm.None);
         metadata.AddTypeDefinition(default, default, metadata.GetOrAddString("<Module>"), default,
             MetadataTokens.FieldDefinitionHandle(1), MetadataTokens.MethodDefinitionHandle(1));
-        metadata.AddManifestResource(ManifestResourceAttributes.Public, metadata.GetOrAddString(AvaloniaContainer), default, 0);
+        metadata.AddManifestResource(ManifestResourceAttributes.Public, metadata.GetOrAddString(resourceName), default, 0);
 
         var resources = new BlobBuilder();
-        resources.WriteInt32(container.Length);
-        resources.WriteBytes(container);
+        resources.WriteInt32(content.Length);
+        resources.WriteBytes(content);
         var pe = new ManagedPEBuilder(PEHeaderBuilder.CreateLibraryHeader(), new MetadataRootBuilder(metadata), new BlobBuilder(),
             managedResources: resources);
         var image = new BlobBuilder();
         pe.Serialize(image);
-        return temp.Write("Unreadable.dll", image.ToArray());
+        return temp.Write(fileName, image.ToArray());
     }
 
     /// <summary>A copy of the assembly at <paramref name="path"/> whose first parameter's name points past its string

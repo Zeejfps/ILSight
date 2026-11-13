@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Velopack;
 using Velopack.Locators;
 using Velopack.Sources;
+using ILSight.Core;
 
 namespace ILSight;
 

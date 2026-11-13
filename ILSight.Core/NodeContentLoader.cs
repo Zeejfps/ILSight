@@ -19,27 +19,38 @@ public static class NodeContentLoader
     /// rows read, what the app's first show of it needs: <see cref="MetadataGrids.CreateGrid"/>); for a resource named as a PNG, JPEG, BMP, GIF, ICO, CUR or
     /// SVG file its picture, or when that cannot be decoded the resource as a document with why first;
     /// else the node decompiled with <paramref name="options"/>, which only C# reads. A unit reading the node's module:
-    /// closed, reading nothing, when it was released (closed) before.</summary>
-    public static Task<ModuleRead<NodeContent>> ReadContentAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language,
+    /// closed, reading nothing, when it was released (closed) before. What the library throws reading the grid, or what
+    /// the document is made from, is the node's <see cref="Outcome{T}.Failed"/>; what the decompiler throws writing the
+    /// document becomes a document describing it.</summary>
+    public static Task<Outcome<ModuleRead<NodeContent>>> ReadContentAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language,
         DecompilerOptions options, int firstGridRows, CancellationToken cancellationToken = default)
     {
         return Task.Run(() => ReadContentUnderReadingAsync(session, node, language, options, firstGridRows, cancellationToken), cancellationToken);
     }
 
     /// <summary>Decompiles <paramref name="node"/> with <paramref name="options"/>, which only C# reads, once the read
-    /// of its module's type system ended. Throws <see cref="OperationCanceledException"/> when cancelled; any other
-    /// failure becomes a document describing it. A unit reading the node's module, as
+    /// of its module's type system ended. Throws <see cref="OperationCanceledException"/> when cancelled; what the
+    /// library throws reading what the document is made from is the node's <see cref="Outcome{T}.Failed"/>, and what the
+    /// decompiler throws writing it becomes a document describing it. A unit reading the node's module, as
     /// <see cref="ReadContentAsync(BrowseSession, BrowseNode, DecompilationLanguage, DecompilerOptions, int, CancellationToken)"/> is.</summary>
-    public static async Task<ModuleRead<DecompiledDocument>> DecompileAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language,
-        DecompilerOptions options, CancellationToken cancellationToken = default)
+    public static async Task<Outcome<ModuleRead<DecompiledDocument>>> DecompileAsync(BrowseSession session, BrowseNode node,
+        DecompilationLanguage language, DecompilerOptions options, CancellationToken cancellationToken = default)
     {
         using var reading = LoadedAssemblies.BeginReading();
         if (!TryReadModuleOf(reading, node, out var closed))
         {
-            return new ModuleRead<DecompiledDocument>.Closed { Module = closed };
+            return new Outcome<ModuleRead<DecompiledDocument>>.Ok(new ModuleRead<DecompiledDocument>.Closed { Module = closed });
         }
 
-        return new ModuleRead<DecompiledDocument>.Read { Value = await DecompileAsync(session, reading, node, language, options, cancellationToken) };
+        var decompiled = await DecompileAsync(session, reading, node, language, options, null, cancellationToken);
+        return ToModuleRead(decompiled);
+    }
+
+    private static Outcome<ModuleRead<T>> ToModuleRead<T>(Outcome<T> read)
+    {
+        return read.Match<Outcome<ModuleRead<T>>>(
+            static ok => new Outcome<ModuleRead<T>>.Ok(new ModuleRead<T>.Read { Value = ok.Value }),
+            static failed => new Outcome<ModuleRead<T>>.Failed(failed.Error));
     }
 
     private static bool TryReadModuleOf(ModuleReading reading, BrowseNode node, [NotNullWhen(false)] out LoadedModule? closed)
@@ -60,22 +71,56 @@ public static class NodeContentLoader
         return false;
     }
 
-    private static async Task<ModuleRead<NodeContent>> ReadContentUnderReadingAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language,
-        DecompilerOptions options, int firstGridRows, CancellationToken cancellationToken)
+    private static async Task<Outcome<ModuleRead<NodeContent>>> ReadContentUnderReadingAsync(BrowseSession session, BrowseNode node,
+        DecompilationLanguage language, DecompilerOptions options, int firstGridRows, CancellationToken cancellationToken)
     {
         using var reading = LoadedAssemblies.BeginReading();
         if (!TryReadModuleOf(reading, node, out var closed))
         {
-            return new ModuleRead<NodeContent>.Closed { Module = closed };
+            return new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Closed { Module = closed });
         }
 
-        return new ModuleRead<NodeContent>.Read { Value = await ReadContentAsync(session, reading, node, language, options, firstGridRows, cancellationToken) };
+        var content = await ReadContentAsync(session, reading, node, language, options, firstGridRows, cancellationToken);
+        return ToModuleRead(content);
     }
 
-    private static async Task<DecompiledDocument> DecompileAsync(BrowseSession session, ModuleReading reading, BrowseNode node,
-        DecompilationLanguage language, DecompilerOptions options, CancellationToken cancellationToken)
+    private static async Task<Outcome<DecompiledDocument>> DecompileAsync(BrowseSession session, ModuleReading reading, BrowseNode node,
+        DecompilationLanguage language, DecompilerOptions options, string? note, CancellationToken cancellationToken)
     {
-        return await NodeDecompiler.DecompileAsync(reading, await RequestOfAsync(session, node, cancellationToken), language, options, cancellationToken);
+        var request = await ReadRequestAsync(session, node, cancellationToken);
+        return await request.Match(
+            ok => DecompileRequestAsync(reading, ok.Value, language, options, note, cancellationToken),
+            static failed => Task.FromResult<Outcome<DecompiledDocument>>(new Outcome<DecompiledDocument>.Failed(failed.Error)));
+    }
+
+    private static async Task<Outcome<DecompiledDocument>> DecompileRequestAsync(ModuleReading reading, DocumentRequest request,
+        DecompilationLanguage language, DecompilerOptions options, string? note, CancellationToken cancellationToken)
+    {
+        return new Outcome<DecompiledDocument>.Ok(await NodeDecompiler.DecompileAsync(reading, request, language, options, cancellationToken, note));
+    }
+
+    private static Outcome<NodeContent>? FindGridContent(BrowseNode node, int firstRows, CancellationToken ct)
+    {
+        MetadataGrid? grid;
+        try
+        {
+            grid = GridOf(node, firstRows);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<NodeContent>.Failed(e);
+        }
+
+        if (grid is null)
+        {
+            return null;
+        }
+
+        return new Outcome<NodeContent>.Ok(new NodeContent.Table(grid));
     }
 
     private static MetadataGrid? GridOf(BrowseNode node, int firstRows)
@@ -93,56 +138,68 @@ public static class NodeContentLoader
         return null;
     }
 
-    private static async Task<NodeContent> ReadContentAsync(BrowseSession session, ModuleReading reading, BrowseNode node, DecompilationLanguage language,
-        DecompilerOptions options, int firstGridRows, CancellationToken cancellationToken)
+    private static async Task<Outcome<NodeContent>> ReadContentAsync(BrowseSession session, ModuleReading reading, BrowseNode node,
+        DecompilationLanguage language, DecompilerOptions options, int firstGridRows, CancellationToken cancellationToken)
     {
-        var grid = GridOf(node, firstGridRows);
+        var grid = FindGridContent(node, firstGridRows, cancellationToken);
         if (grid is not null)
         {
-            return new NodeContent.Table(grid);
+            return grid;
         }
 
         if (!BrowseNodes.IsImage(node.Subject))
         {
-            return new NodeContent.Code(await DecompileAsync(session, reading, node, language, options, cancellationToken));
+            return ToCode(await DecompileAsync(session, reading, node, language, options, null, cancellationToken));
         }
 
-        var read = ReadImage(node);
+        var read = ReadImage(node, cancellationToken);
         return await read.Match(
             decoded => GetPictureAsync(session, reading, node, decoded.Image, language, options, cancellationToken),
             unreadable => DecompileWithNoteAsync(session, reading, node, language, options, unreadable.Why, cancellationToken));
     }
 
-    private static async Task<NodeContent> DecompileWithNoteAsync(BrowseSession session, ModuleReading reading, BrowseNode node,
+    private static async Task<Outcome<NodeContent>> DecompileWithNoteAsync(BrowseSession session, ModuleReading reading, BrowseNode node,
         DecompilationLanguage language, DecompilerOptions options, string note, CancellationToken cancellationToken)
     {
-        var request = await RequestOfAsync(session, node, cancellationToken);
-        return new NodeContent.Code(await NodeDecompiler.DecompileAsync(reading, request, language, options, cancellationToken, note));
+        return ToCode(await DecompileAsync(session, reading, node, language, options, note, cancellationToken));
     }
 
-    private static ResourceImageRead ReadImage(BrowseNode node)
+    private static Outcome<NodeContent> ToCode(Outcome<DecompiledDocument> decompiled)
+    {
+        return decompiled.Match<Outcome<NodeContent>>(
+            static ok => new Outcome<NodeContent>.Ok(new NodeContent.Code(ok.Value)),
+            static failed => new Outcome<NodeContent>.Failed(failed.Error));
+    }
+
+    private static ResourceImageRead ReadImage(BrowseNode node, CancellationToken ct)
     {
         // The decompiler reads the resource's bytes, and the decoders the picture in them.
         try
         {
             return ResourceImages.DecodeImage(BrowseNodes.ReadResource(node));
         }
-        catch (Exception e) when (e is not OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
         {
             return new ResourceImageRead.Unreadable { Why = e.Message };
         }
     }
 
-    private static async Task<NodeContent> GetPictureAsync(BrowseSession session, ModuleReading reading, BrowseNode node, ResourceImage image,
+    private static async Task<Outcome<NodeContent>> GetPictureAsync(BrowseSession session, ModuleReading reading, BrowseNode node, ResourceImage image,
         DecompilationLanguage language, DecompilerOptions options, CancellationToken cancellationToken)
     {
         if (!image.IsVector)
         {
-            return new NodeContent.Picture { Image = image };
+            return new Outcome<NodeContent>.Ok(new NodeContent.Picture { Image = image });
         }
 
-        var source = await DecompileAsync(session, reading, node, language, options, cancellationToken);
-        return new NodeContent.Picture { Image = image, Source = source };
+        var source = await DecompileAsync(session, reading, node, language, options, null, cancellationToken);
+        return source.Match<Outcome<NodeContent>>(
+            ok => new Outcome<NodeContent>.Ok(new NodeContent.Picture { Image = image, Source = ok.Value }),
+            static failed => new Outcome<NodeContent>.Failed(failed.Error));
     }
 
     /// <summary>What saving <paramref name="node"/>'s code writes: for an assembly its whole module, for a namespace all
@@ -171,6 +228,24 @@ public static class NodeContentLoader
     {
         var children = await ListSummarizedChildrenAsync(session, node, ct);
         return RequestOf(node, children);
+    }
+
+    // The request is read from the library's objects as it is made (the symbols, references and resources it names).
+    private static async Task<Outcome<DocumentRequest>> ReadRequestAsync(BrowseSession session, BrowseNode node, CancellationToken ct)
+    {
+        var children = await ListSummarizedChildrenAsync(session, node, ct);
+        try
+        {
+            return new Outcome<DocumentRequest>.Ok(RequestOf(node, children));
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<DocumentRequest>.Failed(e);
+        }
     }
 
     private static async Task<SummarizedChildren> ListSummarizedChildrenAsync(BrowseSession session, BrowseNode node, CancellationToken ct)

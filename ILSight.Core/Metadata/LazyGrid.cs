@@ -1,15 +1,24 @@
+using ICSharpCode.Decompiler.Metadata;
+
 namespace ILSight.Core.Metadata;
 
 /// <summary>A grid made the first time it is asked for, with the rows its first show needs read
 /// (<see cref="MetadataGrids.CreateGrid"/>), then kept: every later ask gets the same grid, whatever rows it names.
-/// Safe to ask from several threads at once: the first ask makes it while the others wait for it.</summary>
+/// Safe to ask from several threads at once: the first ask makes it while the others wait for it. One whose making
+/// threw is made again by the next ask.</summary>
 public sealed class LazyGrid
 {
     private readonly Lock _gate = new();
     private MetadataGrid? _made;
 
-    /// <summary>Makes the grid with at least the number of rows given read, as its content is made.</summary>
-    public required Func<int, MetadataGrid> Make { private get; init; }
+    public required string Title { private get; init; }
+
+    public required LoadedModule Module { private get; init; }
+
+    /// <summary>The module's own metadata or its debug metadata, which <see cref="Schema"/> reads.</summary>
+    public required MetadataFile File { private get; init; }
+
+    public required GridSchema Schema { private get; init; }
 
     /// <summary>The grid, made now with at least <paramref name="firstRows"/> rows read when it wasn't made before.
     /// I/O for a grid over a file the library maps: call it off the screen's thread, as the node's content is made.</summary>
@@ -20,7 +29,7 @@ public sealed class LazyGrid
             var made = _made;
             if (made is null)
             {
-                made = Make(firstRows);
+                made = MetadataGrids.CreateGrid(Title, Module, File, Schema, firstRows);
                 _made = made;
             }
 

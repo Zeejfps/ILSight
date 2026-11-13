@@ -135,7 +135,7 @@ internal static class ResourceNodes
     internal static ResourceContainerInfo CreateResourcesFile(LoadedModule module, MetadataResource resource)
     {
         var entries = new Lazy<List<KeyValuePair<string, object?>>>(() => ResourceNodes.ReadEntries(resource));
-        var grid = new Metadata.LazyGrid { Make = firstRows => Metadata.MetadataGrids.CreateGrid(resource.Name, module, LoadedAssemblies.GetFile(module), ResourceNodes.Schema(module, entries), firstRows) };
+        var grid = new Metadata.LazyGrid { Title = resource.Name, Module = module, File = LoadedAssemblies.GetFile(module), Schema = ResourceNodes.Schema(module, entries) };
         return new ResourceContainerInfo
         {
             Module = module,

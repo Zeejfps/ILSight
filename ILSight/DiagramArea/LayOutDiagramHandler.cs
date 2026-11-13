@@ -1,3 +1,4 @@
+using ILSight.Core;
 using ILSight.Core.Diagrams;
 
 namespace ILSight.DiagramArea;

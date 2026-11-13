@@ -1,3 +1,5 @@
+using ILSight.Core;
+
 namespace ILSight;
 
 /// <summary>An adapter's read of the user's data through the decompiler (ICSharpCode, which

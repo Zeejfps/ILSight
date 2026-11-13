@@ -13,9 +13,9 @@ public sealed class ExpandNamespacesHandlerTests
         return (tree, root);
     }
 
-    private static async Task<Outcome<ChildrenState>> BuiltAsync(BrowseNode root)
+    private static async Task<ChildrenState> BuiltAsync(BrowseNode root)
     {
-        return new Outcome<ChildrenState>.Ok(new ChildrenState.Ready(await root.ListChildrenAsync()));
+        return new ChildrenState.Ready(await root.ListChildrenAsync());
     }
 
     [Fact]
@@ -51,11 +51,25 @@ public sealed class ExpandNamespacesHandlerTests
     {
         var (tree, root) = await OpenedTreeAsync();
         var expansion = tree.ExpandNamespaces();
-        var ports = new FakeExpandNamespacesHandlerPorts { Answer = new Outcome<ChildrenState>.Failed(new InvalidDataException("unreadable")) };
+        var ports = new FakeExpandNamespacesHandlerPorts { Answer = new ChildrenState.Failed(new InvalidDataException("unreadable")) };
 
         await new ExpandNamespacesHandler(ports).HandleAsync(tree, expansion, root, CancellationToken.None);
 
         Assert.True(tree.View.IsExpanded(root));
+        Assert.False(tree.View.IsExpanded(await root.GetChildAsync(AppStateDriver.FixturesNamespace)));
+    }
+
+    [Fact]
+    public async Task HandleAsync_BuildThrows_LetsItThroughToTheEdge()
+    {
+        var (tree, root) = await OpenedTreeAsync();
+        var expansion = tree.ExpandNamespaces();
+        var bug = new InvalidOperationException("A bug in the core's own code on what it read.");
+        var ports = new FakeExpandNamespacesHandlerPorts { Throws = bug };
+
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() => new ExpandNamespacesHandler(ports).HandleAsync(tree, expansion, root, CancellationToken.None));
+
+        Assert.Same(bug, thrown);
         Assert.False(tree.View.IsExpanded(await root.GetChildAsync(AppStateDriver.FixturesNamespace)));
     }
 }

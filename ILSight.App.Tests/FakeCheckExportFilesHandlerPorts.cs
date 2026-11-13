@@ -1,3 +1,4 @@
+using ILSight.Core;
 using ILSight.ExportArea;
 
 namespace ILSight.App.Tests;

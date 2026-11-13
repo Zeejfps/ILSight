@@ -10,9 +10,9 @@ public sealed class ExpandNamespacesHandler(ExpandNamespacesHandler.IPorts ports
     public interface IPorts
     {
         /// <summary>Builds the children of the assembly <paramref name="assembly"/>, unless they were built already,
-        /// without holding up the screen, and answers what they came to; a build that threw comes back as
-        /// <see cref="Outcome{T}.Failed"/>. The cancellation of <paramref name="ct"/> is let through.</summary>
-        Task<Outcome<ChildrenState>> BuildAssemblyChildrenAsync(BrowseNode assembly, CancellationToken ct);
+        /// without holding up the screen, and answers what they came to: <see cref="ChildrenState.Ready"/>, or
+        /// <see cref="ChildrenState.Failed"/> with why. The cancellation of <paramref name="ct"/> is let through.</summary>
+        Task<ChildrenState> BuildAssemblyChildrenAsync(BrowseNode assembly, CancellationToken ct);
     }
 
     /// <summary>Builds the children of <paramref name="root"/> and expands the namespaces among them in
@@ -25,12 +25,7 @@ public sealed class ExpandNamespacesHandler(ExpandNamespacesHandler.IPorts ports
             return;
         }
 
-        if (built is not Outcome<ChildrenState>.Ok ok)
-        {
-            return;
-        }
-
-        if (ok.Value is not ChildrenState.Ready loaded)
+        if (built is not ChildrenState.Ready loaded)
         {
             return;
         }

@@ -1,3 +1,5 @@
+using ILSight.Core;
+
 namespace ILSight;
 
 /// <summary>The failures an adapter fetching over the network expects, translated where it awaits the fetch: the

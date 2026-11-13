@@ -1,7 +1,6 @@
-using ILSight.Core;
 using System.Diagnostics;
 
-namespace ILSight;
+namespace ILSight.Core;
 
 /// <summary>What work run in the background gave: its value, or the error it failed with.</summary>
 public abstract record Outcome<T>

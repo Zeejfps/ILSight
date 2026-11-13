@@ -1,4 +1,5 @@
 using Velopack;
+using ILSight.Core;
 
 namespace ILSight;
 

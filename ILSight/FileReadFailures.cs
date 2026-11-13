@@ -1,3 +1,5 @@
+using ILSight.Core;
+
 namespace ILSight;
 
 /// <summary>The failures an adapter reading files expects, translated where it awaits the read: the file can't be

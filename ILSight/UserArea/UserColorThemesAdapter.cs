@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using ILSight.Core;
 using ILSight.BuiltInArea;
 
 namespace ILSight.UserArea;

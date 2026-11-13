@@ -1,3 +1,4 @@
+using ILSight.Core;
 using ILSight.UserArea;
 
 namespace ILSight.App.Tests;

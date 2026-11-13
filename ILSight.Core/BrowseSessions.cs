@@ -158,7 +158,7 @@ public static class BrowseSessions
         {
             var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, module, ct);
             return read.Match<ChildrenState>(
-                r => BuildChildren(session, node, new ChildrenReads { Main = r.TypeSystem.MainModule }),
+                r => BuildChildren(session, node, new ChildrenReads { Main = r.TypeSystem.MainModule }, ct),
                 static u => new ChildrenState.Failed(u.Thrown.SourceException),
                 static _ => new ChildrenState.Ready([]));
         }
@@ -167,20 +167,24 @@ public static class BrowseSessions
         if (derivedOf is not null)
         {
             var reachable = await DerivedTypes.ReadReachableAsync(reading, derivedOf, ct);
-            return BuildChildren(session, node, new ChildrenReads { Reachable = reachable });
+            return BuildChildren(session, node, new ChildrenReads { Reachable = reachable }, ct);
         }
 
-        return BuildChildren(session, node, ChildrenReads.None);
+        return BuildChildren(session, node, ChildrenReads.None, ct);
     }
 
-    private static ChildrenState BuildChildren(BrowseSession session, BrowseNode node, ChildrenReads reads)
+    private static ChildrenState BuildChildren(BrowseSession session, BrowseNode node, ChildrenReads reads, CancellationToken ct)
     {
         BrowseNode[] built;
         try
         {
             built = BrowseNodes.CreateChildren(node, reads);
         }
-        catch (Exception e) when (e is not OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
         {
             return new ChildrenState.Failed(e);
         }

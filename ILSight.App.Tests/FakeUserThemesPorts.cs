@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using ILSight.Core;
 using ILSight.UserArea;
 
 namespace ILSight.App.Tests;

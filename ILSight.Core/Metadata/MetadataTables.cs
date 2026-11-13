@@ -756,7 +756,7 @@ internal static class MetadataTables
             {
                 Role = role,
                 Schema = schema,
-                View = new LazyGrid { Make = firstRows => MetadataGrids.CreateGrid(title, module, file, schema, firstRows) },
+                View = new LazyGrid { Title = title, Module = module, File = file, Schema = schema },
             },
         };
     }
@@ -774,7 +774,7 @@ internal static class MetadataTables
             Part = new MetadataPart.DebugDirectory
             {
                 File = file,
-                View = new LazyGrid { Make = firstRows => MetadataGrids.CreateGrid(title, module, file, schema, firstRows) },
+                View = new LazyGrid { Title = title, Module = module, File = file, Schema = schema },
             },
         };
     }

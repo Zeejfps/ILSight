@@ -12,6 +12,19 @@ public sealed class ResourceTests
         return await assembly.ReadRootAsync().GetChildAsync("Resources");
     }
 
+    [Fact]
+    public async Task A_resources_file_the_library_cannot_read_is_its_nodes_failure_saying_why()
+    {
+        using var temp = new TempDir();
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(BrokenAssemblies.WriteUnreadableResourcesFile(temp));
+        var container = Assert.Single(await (await ResourcesAsync(assembly)).ListChildrenAsync());
+
+        var content = await NodeContentLoader.ReadContentAsync(TestSession.Shared, container, DecompilationLanguage.CSharp, DecompilerOptions.Default,
+            NodeQueries.FirstGridRows);
+
+        Assert.NotEmpty(Assert.IsType<Outcome<ModuleRead<NodeContent>>.Failed>(content).Error.Message);
+    }
+
     private static byte[] Fixture(string name)
     {
         using var stream = typeof(ResourceTests).Assembly.GetManifestResourceStream(name) ?? throw new InvalidOperationException($"No resource is embedded as '{name}'.");

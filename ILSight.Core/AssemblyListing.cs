@@ -190,24 +190,26 @@ public static class AssemblyListing
     /// <summary>
     /// What hovering <paramref name="reference"/> explains: the declaration and XML documentation of
     /// the type or member it points at. Not found when it cannot be resolved; unreadable when the library could not
-    /// read the type system of an assembly resolving it reads. Loads the files it needs without listing them, and
+    /// read the type system of an assembly resolving it reads; what the library throws resolving or describing it, or
+    /// reading its documentation, <see cref="Outcome{T}.Failed"/>. Loads the files it needs without listing them, and
     /// reads documentation files: call it off the UI thread.
     /// </summary>
-    public static async Task<Lookup<CodeTooltip>> DescribeReferenceAsync(AssemblyList list, CodeReference.Entity reference, CancellationToken ct)
+    public static async Task<Outcome<Lookup<CodeTooltip>>> DescribeReferenceAsync(AssemblyList list, CodeReference.Entity reference,
+        CancellationToken ct)
     {
+        using var reading = LoadedAssemblies.BeginReading();
         try
         {
-            using var reading = LoadedAssemblies.BeginReading();
             var resolved = await ResolveEntityAsync(list, reading, reference, ct);
-            return resolved.Select(static r => Documentation.CreateTooltip(r.Entity, r.Assembly, r.TypeSystem));
+            return new Outcome<Lookup<CodeTooltip>>.Ok(resolved.Select(static r => Documentation.CreateTooltip(r.Entity, r.Assembly, r.TypeSystem)));
         }
-        catch (BadImageFormatException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            return new Lookup<CodeTooltip>.NotFound();
+            throw;
         }
-        catch (IOException)
+        catch (Exception e)
         {
-            return new Lookup<CodeTooltip>.NotFound();
+            return new Outcome<Lookup<CodeTooltip>>.Failed(e);
         }
     }
 
