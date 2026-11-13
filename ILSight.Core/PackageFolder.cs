@@ -9,7 +9,7 @@ public sealed class PackageFolder
     /// <summary>The path from the package's root, with <c>/</c> between folders; empty for the root.</summary>
     public required string FullName { get; init; }
 
-    public List<PackageFolder> Folders { get; } = new();
+    public IReadOnlyList<PackageFolder> Folders { get; init; } = [];
 
-    public List<PackageFile> Files { get; } = new();
+    public IReadOnlyList<PackageFile> Files { get; init; } = [];
 }

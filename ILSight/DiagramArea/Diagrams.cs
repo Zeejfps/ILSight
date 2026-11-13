@@ -33,13 +33,6 @@ public static class Diagrams
         view.HiddenMembersFilter.Value = shows;
     }
 
-    /// <summary>Selects the card of <paramref name="type"/> and brings it into view once it is laid out.</summary>
-    public static void FocusCard(DiagramViewState view, CodeReference.Entity type)
-    {
-        view.Selected = type;
-        view.PendingFocus = type;
-    }
-
     /// <summary>What the settings keep of the view.</summary>
     public static DiagramViewRecord SaveView(DiagramViewState view)
     {
@@ -52,38 +45,6 @@ public static class Diagrams
             Folds = view.FlippedFolds.ToList(),
             ShowsHiddenMembers = view.ShowsHiddenMembers,
         };
-    }
-
-    /// <summary>Returns the view to how <paramref name="saved"/> says it was, which the first layout then
-    /// keeps rather than fitting itself to the view.</summary>
-    public static void RestoreView(DiagramViewState view, DiagramViewRecord saved)
-    {
-        view.Camera.Restore(new PointF(saved.X, saved.Y), saved.Zoom);
-        if (saved.Folds is not null)
-        {
-            RestoreFolds(view, saved.Folds);
-        }
-
-        view.HiddenMembersFilter.Value = saved.ShowsHiddenMembers;
-        view.IsFitPending = false;
-    }
-
-    /// <summary>Folds and opens the parts as <paramref name="flipped"/>, as the view saved them, says.</summary>
-    public static void RestoreFolds(DiagramViewState view, IEnumerable<CardFold> flipped)
-    {
-        view.FlippedFolds.Replace(flipped);
-    }
-
-    /// <summary>Keeps <paramref name="faces"/>, measured for <paramref name="key"/>, in place of those before.</summary>
-    public static void KeepFaces(DiagramViewState view, FaceKey key, IReadOnlyList<CardFace> faces)
-    {
-        view.Faces.Clear();
-        foreach (var face in faces)
-        {
-            view.Faces[face.Card.Type] = face;
-        }
-
-        view.MeasuredFor = key;
     }
 
     /// <summary>The face of the card of <paramref name="type"/>, or null when none was measured.</summary>

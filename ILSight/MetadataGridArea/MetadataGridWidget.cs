@@ -54,27 +54,6 @@ public static class MetadataGridWidget
             .ToArray();
     }
 
-    /// <summary>Returns the view to <paramref name="position"/> once it has been laid out.</summary>
-    public static void RestorePosition(MetadataGridState state, GridPosition position)
-    {
-        state.Pending = new PendingGridScroll.Restore(position);
-    }
-
-    /// <summary>Selects <paramref name="row"/> and scrolls it into view once laid out.</summary>
-    public static void RevealRow(MetadataGridState state, int row)
-    {
-        state.Pending = new PendingGridScroll.Reveal(row);
-    }
-
-    /// <summary>Asks to sort by <paramref name="column"/>, the other way when it already sorts by it, and to scroll
-    /// the selected row back into view once sorted (<see cref="UpdateView"/> asks for the rows).</summary>
-    internal static void SortBy(MetadataGridState state, int column)
-    {
-        state.Descending = state.SortColumn == column && !state.Descending;
-        state.SortColumn = column;
-        state.RevealWhenArranged = true;
-    }
-
     /// <summary>Asks <paramref name="pages"/> for the page <paramref name="row"/> of <paramref name="grid"/> is on, which
     /// the view found it has not read: a paged grid's, which the frame edge reads.</summary>
     internal static void AskForPage(MetadataGridPages pages, MetadataGrid grid, int row)
@@ -117,23 +96,21 @@ public static class MetadataGridWidget
 
     /// <summary>Asks <paramref name="views"/> for the rows sorted and filtered again when a filter or the sort
     /// changed: a wait, which the frame edge starts off the screen's thread, the view showing the rows it has until
-    /// they land (<see cref="ShowArranged"/>). The table's own rows, unsorted and unfiltered, read no cell, and show
+    /// they land (<see cref="MetadataGridState.ShowArranged"/>). The table's own rows, unsorted and unfiltered, read no cell, and show
     /// at once. The grid of a closed assembly (<paramref name="isClosed"/>) asks for nothing: a sort or filter stays
     /// unavailable, the view saying why.</summary>
     internal static void UpdateView(MetadataGridState state, MetadataFilters flags, MetadataGridViews views, bool isClosed)
     {
         var key = ComputeViewKey(state, flags);
-        if (key == state.ViewAskedKey)
+        if (!state.TryAskView(key))
         {
             return;
         }
 
-        state.ViewAskedKey = key;
-        state.ArrangeFailure = null;
         if (state.SortColumn == MetadataGridState.None && !HasActiveFilter(state))
         {
             views.Forget(state);
-            Show(state, key, null, Enumerable.Range(0, state.Grid.RowCount).ToArray());
+            state.ShowUnarranged(key, Enumerable.Range(0, state.Grid.RowCount).ToArray());
             return;
         }
 
@@ -143,7 +120,7 @@ public static class MetadataGridWidget
             return;
         }
 
-        var order = state.OrderColumn == state.SortColumn && state.OrderDescending == state.Descending ? state.Order : null;
+        var order = state.FindReusableOrder();
         views.Ask(new MetadataGridViewAsk
         {
             State = state,
@@ -167,84 +144,6 @@ public static class MetadataGridWidget
         return false;
     }
 
-    /// <summary>Shows the rows <paramref name="ask"/> asked for, worked out as <paramref name="arranged"/>, keeping
-    /// the row selected where the new view shows it; nothing when a newer view was asked for meanwhile.</summary>
-    internal static void ShowArranged(MetadataGridViewAsk ask, MetadataGridView arranged)
-    {
-        var state = ask.State;
-        if (ask.Key != state.ViewAskedKey)
-        {
-            return;
-        }
-
-        state.OrderColumn = ask.SortColumn;
-        state.OrderDescending = ask.Descending;
-        Show(state, ask.Key, arranged.Order, arranged.Rows);
-    }
-
-    /// <summary>Ends what <paramref name="ask"/> asked for with nothing new, the grid's module closed before the work
-    /// began: the rows it showed left as they were; nothing when a newer view was asked for meanwhile.</summary>
-    internal static void ShowArrangeStopped(MetadataGridViewAsk ask)
-    {
-        var state = ask.State;
-        if (ask.Key != state.ViewAskedKey)
-        {
-            return;
-        }
-
-        state.ViewKey = ask.Key;
-        state.RevealWhenArranged = false;
-    }
-
-    /// <summary>Ends what <paramref name="ask"/> asked for with <paramref name="error"/>, which the view says, the rows
-    /// it showed left as they were; nothing when a newer view was asked for meanwhile.</summary>
-    internal static void ShowArrangeFailed(MetadataGridViewAsk ask, Exception error)
-    {
-        var state = ask.State;
-        if (ask.Key != state.ViewAskedKey)
-        {
-            return;
-        }
-
-        state.ViewKey = ask.Key;
-        state.ArrangeFailure = error;
-        state.RevealWhenArranged = false;
-    }
-
-    private static void Show(MetadataGridState state, int key, int[]? order, int[] rows)
-    {
-        var selected = state.Selected;
-        state.ViewKey = key;
-        state.ArrangeFailure = null;
-        state.Order = order;
-        if (order is null)
-        {
-            state.OrderColumn = MetadataGridState.None;
-            state.OrderDescending = false;
-        }
-
-        state.View = rows;
-        KeepSelected(state, selected);
-        if (state.RevealWhenArranged && state.Selected != MetadataGridState.None)
-        {
-            state.Pending = new PendingGridScroll.Reveal(state.Selected);
-        }
-
-        state.RevealWhenArranged = false;
-    }
-
-    /// <summary>Selects <paramref name="row"/> where the new view shows it; nothing when it doesn't.</summary>
-    private static void KeepSelected(MetadataGridState state, int row)
-    {
-        var index = GetIndexOf(state, row);
-        if (index < 0)
-        {
-            state.Rows.Clear();
-            return;
-        }
-        state.Rows.Select(index, state.View.Length, reveal: false);
-    }
-
     private static int ComputeViewKey(MetadataGridState state, MetadataFilters flags)
     {
         var key = new HashCode();
@@ -259,57 +158,17 @@ public static class MetadataGridWidget
         return key.ToHashCode() | 1;
     }
 
-    internal static void StartEditingFilter(MetadataGridState state, int column)
-    {
-        state.EditingColumn = column;
-        state.BeginEdit = true;
-    }
-
-    internal static void StopEditingFilter(MetadataGridState state)
-    {
-        state.EditingColumn = MetadataGridState.None;
-    }
-
-    internal static void ToggleFlagsFlyout(MetadataGridState state, int column)
-    {
-        state.FlagsOpen = !IsFlagsFlyoutOpenFor(state, column);
-        state.FlagsColumn = column;
-    }
-
-    internal static bool IsFlagsFlyoutOpenFor(MetadataGridState state, int column)
-    {
-        return state.FlagsOpen && state.FlagsColumn == column;
-    }
-
     /// <summary>Makes <paramref name="row"/>'s cell in <paramref name="column"/> the current one
     /// with all its text selected, where the view shows the row.</summary>
     internal static void SelectCell(MetadataGridState state, int row, int column)
     {
-        var index = GetIndexOf(state, row);
+        var index = state.IndexOf(row);
         if (index < 0)
         {
             return;
         }
 
-        state.Cell.Select(index, state.View.Length, column, reveal: false);
-    }
-
-    internal static bool IsOpenAt(MetadataGridState state, int row, int column)
-    {
-        return state.Open.ContainsKey((row, column));
-    }
-
-    /// <summary>Opens <paramref name="row"/>'s multi-line cell in <paramref name="column"/> in place:
-    /// the cell grown downward to show every line, which leaves the rows above where they were.</summary>
-    internal static void ExpandCell(MetadataGridState state, int row, int column)
-    {
-        var lines = MetadataGrids.GetText(state.Grid, row, column).Count(static ch => ch == '\n') + 1;
-        state.Open[(row, column)] = lines;
-    }
-
-    internal static void CollapseCurrentCell(MetadataGridState state)
-    {
-        state.Open.Remove((state.Selected, state.CurrentColumn));
+        state.Cell.Select(index, state.RowCount, column, reveal: false);
     }
 
     /// <summary>The current cell's text as shown: all of it while open, else its first line.</summary>
@@ -335,7 +194,7 @@ public static class MetadataGridWidget
             return "";
         }
 
-        if (IsOpenAt(state, row, column))
+        if (state.IsOpenAt(row, column))
         {
             return MetadataGrids.GetText(state.Grid, row, column);
         }
@@ -367,60 +226,6 @@ public static class MetadataGridWidget
         var cells = Enumerable.Range(0, grid.Columns.Count)
             .Select(c => MetadataGrids.GetText(grid, row, c));
         return string.Join('\t', cells);
-    }
-
-    internal static int GetRowAt(MetadataGridState state, int index)
-    {
-        return state.View[index];
-    }
-
-    internal static int GetIndexOf(MetadataGridState state, int row)
-    {
-        return Array.IndexOf(state.View, row);
-    }
-
-    /// <summary>Works out which rows of <paramref name="state"/> are taller than one line: those with cells
-    /// open in place, as tall as their longest, and the selected row with the <paramref name="details"/>
-    /// under it.</summary>
-    internal static void MeasureTallRows(MetadataGridState state, float rowHeight, float details)
-    {
-        state.TallCellsByRow.Clear();
-        state.TallRowsByIndex.Clear();
-        state.TallRows.Clear();
-        MeasureOpenCells(state, rowHeight);
-        if (details > 0f)
-        {
-            state.TallCellsByRow.TryAdd(state.Selected, rowHeight);
-        }
-
-        foreach (var (row, cells) in state.TallCellsByRow)
-        {
-            AddTallRow(state, row, cells, details);
-        }
-
-        state.TallRows.Sort(static (a, b) => a.Index.CompareTo(b.Index));
-    }
-
-    private static void MeasureOpenCells(MetadataGridState state, float rowHeight)
-    {
-        foreach (var (cell, lines) in state.Open)
-        {
-            var tallest = state.TallCellsByRow.GetValueOrDefault(cell.Row, rowHeight);
-            state.TallCellsByRow[cell.Row] = MathF.Max(tallest, lines * rowHeight);
-        }
-    }
-
-    private static void AddTallRow(MetadataGridState state, int row, float cells, float details)
-    {
-        var index = GetIndexOf(state, row);
-        if (index < 0)
-        {
-            return;
-        }
-
-        var below = row == state.Selected ? details : 0f;
-        state.TallRowsByIndex[index] = new RowHeights { Cells = cells, Details = below };
-        state.TallRows.Add(new TallRow(index, cells + below));
     }
 
     internal static int GetFunnelId(int listId, int column)
@@ -472,12 +277,11 @@ public static class MetadataGridWidget
         var text = filter.Text;
         using (ui.Id(textId))
         {
-            var edit = ui.InlineEdit("filter", ref text, state.BeginEdit, Sizing.Grow());
-            state.BeginEdit = false;
+            var edit = ui.InlineEdit("filter", ref text, state.TryTakeBeginEdit(), Sizing.Grow());
             filter.Text = edit == InlineEditResult.Cancelled ? "" : text;
             if (edit != InlineEditResult.Editing)
             {
-                StopEditingFilter(state);
+                state.StopEditingFilter();
             }
         }
     }
@@ -493,7 +297,7 @@ public static class MetadataGridWidget
 
         if (shown.Clicked)
         {
-            StartEditingFilter(state, column);
+            state.StartEditingFilter(column);
         }
 
         ui.Text(filter.Text, new Box { Width = Sizing.Grow() }, color: theme.AccentText, size: theme.FontSizeSmall, id: shown.Id,
@@ -523,7 +327,7 @@ public static class MetadataGridWidget
             ui.Glyph(glyph, color, theme.FontSizeSmall);
         }
 
-        if (!IsFlagsFlyoutOpenFor(heading.State, column))
+        if (!heading.State.Flyout.IsOpenFor(column))
         {
             ui.Tooltip(funnel.Id, GetFunnelTooltip(ui, heading.Strings, funnel.Id, heading.Grid.Columns[column].Name));
         }
@@ -541,7 +345,7 @@ public static class MetadataGridWidget
     {
         filter.Switch(
             text => ClickTextFunnel(state, text, column),
-            _ => ToggleFlagsFlyout(state, column));
+            _ => state.Flyout.Toggle(column));
     }
 
     /// <summary>Clears a typed filter, else starts typing one.</summary>
@@ -550,11 +354,11 @@ public static class MetadataGridWidget
         if (text.Text.Length > 0)
         {
             text.Text = "";
-            StopEditingFilter(state);
+            state.StopEditingFilter();
             return;
         }
 
-        StartEditingFilter(state, column);
+        state.StartEditingFilter(column);
     }
 
     private static IconGlyph GetFunnelGlyph(AppIcons icons, MetadataColumnFilter filter)

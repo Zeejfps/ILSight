@@ -111,7 +111,7 @@ public sealed class AppStateTests
         var rows = table.RowCount;
         d.InTurn(() => Commands.CloseAllAssemblies(d.AppState));
         d.NextFrame();
-        var lineBefore = DocumentPanels.GetView(d.Ui.Documents, code).Code.Pending;
+        var lineBefore = DocumentPanels.GetView(d.Ui.Documents, code).Code.Reveal.Pending;
         var rowBefore = DocumentPanels.GetView(d.Ui.Documents, grid).GetGridState(table).Pending;
 
         d.AppState.ViewCommands.Enqueue(new ViewCommand.ExpandNodes([ns]));
@@ -120,7 +120,7 @@ public sealed class AppStateTests
         d.NextFrame();
 
         Assert.False(d.Ui.Tree.View.IsExpanded(ns));
-        Assert.Equal(lineBefore, DocumentPanels.GetView(d.Ui.Documents, code).Code.Pending);
+        Assert.Equal(lineBefore, DocumentPanels.GetView(d.Ui.Documents, code).Code.Reveal.Pending);
         Assert.Equal(rowBefore, DocumentPanels.GetView(d.Ui.Documents, grid).GetGridState(table).Pending);
     }
 
@@ -380,7 +380,7 @@ public sealed class AppStateTests
         Assert.Same(tab, d.AppState.Navigation.ActiveTab);
         Assert.False(tab.Load.IsBusy);
         Assert.Same(document, tab.Document);
-        Assert.IsType<PendingScroll.Restore>(view.Pending);
+        Assert.IsType<PendingScroll.Restore>(view.Reveal.Pending);
     }
 
     [Fact]
@@ -492,12 +492,12 @@ public sealed class AppStateTests
 
         d.StartShowing(await d.NodeAsync(AppStateDriver.FixturesNamespace));
         d.NextFrame();
-        Assert.IsNotType<PendingScroll.Reveal>(view.Pending);
+        Assert.IsNotType<PendingScroll.Reveal>(view.Reveal.Pending);
         d.Settle();
-        Assert.IsNotType<PendingScroll.Reveal>(view.Pending);
+        Assert.IsNotType<PendingScroll.Reveal>(view.Reveal.Pending);
 
         d.Show(await d.FixtureAsync("Greeter"));
-        var reveal = Assert.IsType<PendingScroll.Reveal>(view.Pending);
+        var reveal = Assert.IsType<PendingScroll.Reveal>(view.Reveal.Pending);
         Assert.NotNull(tab.Node);
         Assert.Equal(Documents.FindDefinitionLine(tab.Document, tab.Node), reveal.Line);
     }

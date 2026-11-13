@@ -40,10 +40,6 @@ public sealed class ThemeFile : IUserThemeFile<ThemeFile, ThemeContents, AppThem
     public IReadOnlyList<ThemeNamedFile> NamedFiles => [];
 
     public required ThemeJson Json { get; init; }
-    public readonly Dictionary<string, ThemeValue> Palette = new();
-    public readonly Dictionary<string, ThemeValue> Ui = new();
-    public readonly Dictionary<string, ThemeValue> Code = new();
-    public readonly Dictionary<string, ThemeValue> Icons = new();
 
     /// <summary>The file's name without its extension, which settings and <see cref="Extends"/> know it by.</summary>
     public required ThemeId<ThemeFile> Id { get; init; }
@@ -51,16 +47,16 @@ public sealed class ThemeFile : IUserThemeFile<ThemeFile, ThemeContents, AppThem
     /// <summary>Where the file is, as errors name it.</summary>
     public string File => Json.File;
 
-    public required ThemeName Name { get; set; }
+    public required ThemeName Name { get; init; }
 
     /// <summary>The theme's type, or null to take that of the theme it extends.</summary>
-    public ThemeType? Type { get; set; }
+    public ThemeType? Type { get; init; }
 
     /// <summary>The theme this one builds on, or null.</summary>
-    public ThemeParent<ThemeFile>? Extends { get; set; }
+    public ThemeParent<ThemeFile>? Extends { get; init; }
 
     /// <summary>The palette and colors the file sets; null when it could not be read as a JSON object.</summary>
-    public ThemeContents? Contents { get; set; }
+    public ThemeContents? Contents { get; init; }
 
     public IReadOnlyList<ThemeError> Errors => Json.Errors;
 }

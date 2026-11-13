@@ -24,7 +24,7 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
         var flags = MetadataFilters.From(null);
         var frames = new UiFrames(Screens.Blank(), width: 1200f, height: 300f, body: ui => Render(ui, grid, state, flags)) { FrameTime = 1f / 60f };
         frames.Frame();
-        MetadataGridWidget.RevealRow(state, 1);
+        state.RevealRow(1);
         frames.MovePointer(200f, 120f);
 
         frames.Canvas.Recording = false;
@@ -47,16 +47,16 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
         var grid = await OpenTableAsync("TypeRef");
         var state = MetadataGridWidget.CreateState(grid);
         MetadataGridWidget.UpdateView(state, MetadataFilters.From(null), new MetadataGridViews(), isClosed: false);
-        state.Open[(2, 1)] = 3;
-        state.Open[(1, 1)] = 2;
-        state.Open[(1, 2)] = 4;
+        state.OpenCell(2, 1, 3);
+        state.OpenCell(1, 1, 2);
+        state.OpenCell(1, 2, 4);
 
         for (var i = 0; i < WarmUpFrames; i++)
         {
-            MetadataGridWidget.MeasureTallRows(state, 20f, 0f);
+            state.MeasureTallRows(20f, 0f);
         }
 
-        var allocated = SteadyAllocations.PerFrame(MeasuredFrames, _ => MetadataGridWidget.MeasureTallRows(state, 20f, 0f));
+        var allocated = SteadyAllocations.PerFrame(MeasuredFrames, _ => state.MeasureTallRows(20f, 0f));
 
         output.WriteLine($"{allocated:N0} B/frame allocated");
         Assert.Equal(2, state.TallRows.Count);

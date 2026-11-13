@@ -11,9 +11,18 @@ public static class AssemblyPackages
     /// <summary>The folders and files of a package as they are listed, sorted into a tree once all are in.</summary>
     private sealed class FileTree
     {
-        public required PackageFolder Root { get; init; }
-        public required Dictionary<string, PackageFolder> Folders { get; init; }
+        public required ListedFolder Root { get; init; }
+        public required Dictionary<string, ListedFolder> Folders { get; init; }
         public readonly Dictionary<string, PackageFile> Files = new(StringComparer.Ordinal);
+    }
+
+    // Filled as entries are listed, in any order, so that each PackageFolder is made once, whole and sorted.
+    private sealed class ListedFolder
+    {
+        public required string Name { get; init; }
+        public required string FullName { get; init; }
+        public readonly List<ListedFolder> Folders = new();
+        public readonly List<PackageFile> Files = new();
     }
 
     /// <summary>The package at <paramref name="path"/>: a zip archive, else a single-file bundle; null
@@ -163,8 +172,8 @@ public static class AssemblyPackages
 
     private static FileTree CreateTree()
     {
-        var root = new PackageFolder { Name = "", FullName = "" };
-        return new FileTree { Root = root, Folders = new Dictionary<string, PackageFolder>(StringComparer.Ordinal) { [""] = root } };
+        var root = new ListedFolder { Name = "", FullName = "" };
+        return new FileTree { Root = root, Folders = new Dictionary<string, ListedFolder>(StringComparer.Ordinal) { [""] = root } };
     }
 
     private static void AddFile(FileTree tree, string fullName, long length)
@@ -180,7 +189,7 @@ public static class AssemblyPackages
         tree.Files.TryAdd(fullName, file);
     }
 
-    private static PackageFolder AddFolder(FileTree tree, string fullName)
+    private static ListedFolder AddFolder(FileTree tree, string fullName)
     {
         if (tree.Folders.TryGetValue(fullName, out var found))
         {
@@ -189,7 +198,7 @@ public static class AssemblyPackages
 
         var (parentName, name) = SplitName(fullName);
         var parent = AddFolder(tree, parentName);
-        var folder = new PackageFolder { Name = name, FullName = fullName };
+        var folder = new ListedFolder { Name = name, FullName = fullName };
         parent.Folders.Add(folder);
         tree.Folders.Add(fullName, folder);
         return folder;
@@ -197,18 +206,21 @@ public static class AssemblyPackages
 
     private static AssemblyPackage CreatePackage(FileTree tree, AssemblyPath path, bool isBundle, Func<PackageFile, byte[]> read)
     {
-        SortFolder(tree.Root);
-        return new AssemblyPackage { FilePath = path, IsBundle = isBundle, Root = tree.Root, Files = tree.Files, Read = read };
+        var root = CreateSortedFolder(tree.Root);
+        return new AssemblyPackage { FilePath = path, IsBundle = isBundle, Root = root, Files = tree.Files, Read = read };
     }
 
-    private static void SortFolder(PackageFolder folder)
+    private static PackageFolder CreateSortedFolder(ListedFolder listed)
     {
-        folder.Folders.Sort(static (a, b) => NaturalStringComparer.Instance.Compare(a.Name, b.Name));
-        folder.Files.Sort(static (a, b) => NaturalStringComparer.Instance.Compare(a.Name, b.Name));
-        foreach (var child in folder.Folders)
+        listed.Folders.Sort(static (a, b) => NaturalStringComparer.Instance.Compare(a.Name, b.Name));
+        listed.Files.Sort(static (a, b) => NaturalStringComparer.Instance.Compare(a.Name, b.Name));
+        var folders = new PackageFolder[listed.Folders.Count];
+        for (var i = 0; i < folders.Length; i++)
         {
-            SortFolder(child);
+            folders[i] = CreateSortedFolder(listed.Folders[i]);
         }
+
+        return new PackageFolder { Name = listed.Name, FullName = listed.FullName, Folders = folders, Files = listed.Files.ToArray() };
     }
 
     /// <summary>Every file of the package, folder by folder in the order <see cref="AssemblyPackage.Root"/> lists them:

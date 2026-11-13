@@ -17,17 +17,17 @@ public class GridSchema
     /// <summary>Reads every row, in order.</summary>
     public required Func<IReadOnlyList<object>> ReadRows { get; init; }
 
-    public readonly List<GridColumn> Columns = [];
+    public required IReadOnlyList<GridColumn> Columns { get; init; }
 
     /// <summary>The column naming each row, or -1.</summary>
-    internal int NameColumn = -1;
+    internal int NameColumn { get; init; } = -1;
 
     /// <summary>What is shown under a selected row, for a grid that shows something.</summary>
-    internal Func<object, MetadataRowDetails?>? Details;
+    internal Func<object, MetadataRowDetails?>? Details { get; init; }
 }
 
-/// <summary>A <see cref="GridSchema"/> over rows of <typeparamref name="TRow"/>, built a column at a
-/// time by <see cref="GridSchemas"/>.</summary>
+/// <summary>A <see cref="GridSchema"/> over rows of <typeparamref name="TRow"/>, made by a
+/// <see cref="GridSchemaBuilder{TRow}"/>.</summary>
 public sealed class GridSchema<TRow> : GridSchema
 {
     public required MetadataFile File { get; init; }

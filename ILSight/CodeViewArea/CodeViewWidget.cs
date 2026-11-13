@@ -20,26 +20,26 @@ public static class CodeViewWidget
     /// flashes it, expanding the folds that hide it, once the view has been laid out.</summary>
     public static void RevealLine(CodeViewState state, int line)
     {
-        state.Pending = new PendingScroll.Reveal(line);
+        state.Reveal.Ask(new PendingScroll.Reveal(line));
     }
 
     /// <summary>Returns the view to <paramref name="position"/> once the next document is shown —
     /// instead of revealing a line.</summary>
     public static void RestorePosition(CodeViewState state, CodeViewPosition position)
     {
-        state.Pending = new PendingScroll.Restore(position);
+        state.Reveal.Ask(new PendingScroll.Restore(position));
     }
 
     /// <summary>The selected text of the document last shown, lines joined by '\n', folded lines included.</summary>
     public static string GetSelectedText(CodeViewState state)
     {
-        return state.Document is null ? "" : CodeText.Between(state.Document, state.Selection.Start, state.Selection.End);
+        return state.Layout.Document is null ? "" : CodeText.Between(state.Layout.Document, state.Selection.Start, state.Selection.End);
     }
 
     /// <summary>The selected text as HTML in <paramref name="style"/>, a div per line.</summary>
     private static string GetSelectedHtml(CodeViewState state, CodeHtmlStyle style)
     {
-        return state.Document is null ? "" : CodeHtml.Between(state.Document, state.Selection.Start, state.Selection.End, style);
+        return state.Layout.Document is null ? "" : CodeHtml.Between(state.Layout.Document, state.Selection.Start, state.Selection.End, style);
     }
 
     public static void SetCollapsed(CodeViewState state, int fold, bool collapsed)
@@ -72,29 +72,20 @@ public static class CodeViewWidget
     /// <summary>Takes in <paramref name="document"/>, unless it is the one shown already.</summary>
     internal static void ShowDocument(CodeViewState state, DecompiledDocument document)
     {
-        if (ReferenceEquals(document, state.Document))
+        if (ReferenceEquals(document, state.Layout.Document))
         {
             return;
         }
 
-        state.Document = document;
+        state.Layout.Show(document);
         CodeFolding.Reset(state.Folds, document);
-        state.MaxColumns = CodeText.CalculateMaxColumns(document);
         state.Selection.Select(default, default);
-        state.Press = null;
-        state.ScrollX = state.ScrollY = state.LaidOutScrollX = state.LaidOutScrollY = 0f;
-        state.Marked = null;
-        state.Menu = CodeMenuTarget.None;
+        state.Pointer.Forget();
+        state.ScrollX = state.ScrollY = 0f;
         KeptTooltips.Forget(state.Tooltip);
-        if (state.Pending is PendingScroll.ShowMatch)
-        {
-            state.Pending = null;
-        }
-
-        state.Flash = null;
-        state.CurrentMatch = null;
-        state.KeyScrollRows = 0;
-        state.Goal = null;
+        state.Reveal.ForgetStale();
+        state.Find.ClearMatch();
+        state.Keys.Forget();
     }
 
     internal static void RevealFolds(CodeViewState state, int line)
@@ -116,20 +107,20 @@ public static class CodeViewWidget
     private static (int Line, float Within) GetTopAnchor(CodeViewState state)
     {
         var folds = state.Folds;
-        if (state.RowHeight <= 0f || folds.RowCount == 0)
+        if (state.Layout.RowHeight <= 0f || folds.RowCount == 0)
         {
             return (0, 0f);
         }
 
-        var row = CodeFolding.ClampRow(folds, GetRowAt(state.ScrollY, state.RowHeight));
-        return (CodeFolding.GetLineAt(folds, row), state.ScrollY - GetRowTop(row, state.RowHeight));
+        var row = CodeFolding.ClampRow(folds, GetRowAt(state.ScrollY, state.Layout.RowHeight));
+        return (CodeFolding.GetLineAt(folds, row), state.ScrollY - GetRowTop(row, state.Layout.RowHeight));
     }
 
     private static void KeepTop(CodeViewState state, (int Line, float Within) top)
     {
-        if (state.RowHeight > 0f)
+        if (state.Layout.RowHeight > 0f)
         {
-            state.ScrollY = GetRowTop(CodeFolding.GetRowOf(state.Folds, top.Line), state.RowHeight) + top.Within;
+            state.ScrollY = GetRowTop(CodeFolding.GetRowOf(state.Folds, top.Line), state.Layout.RowHeight) + top.Within;
         }
     }
 
@@ -146,73 +137,6 @@ public static class CodeViewWidget
         return row.Index * height;
     }
 
-    /// <summary>Scans again when the document or query changed since <paramref name="state"/> last did; returns
-    /// whether it did.</summary>
-    private static bool TryRescanMatches(CodeViewState state, DecompiledDocument document, string query)
-    {
-        var find = state.Find;
-        if (ReferenceEquals(document, find.Document) && string.Equals(query, find.Query, StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        state.Find = new CodeFindIndex { Matches = ScanForMatches(document, query), Document = document, Query = query };
-        return true;
-    }
-
-    private static List<TextPosition> ScanForMatches(DecompiledDocument document, string query)
-    {
-        var matches = new List<TextPosition>();
-        if (query.Length == 0)
-        {
-            return matches;
-        }
-
-        var lines = document.Lines;
-        for (var line = 0; line < lines.Length; line++)
-        {
-            var text = lines[line].Text;
-            var at = text.IndexOf(query, StringComparison.OrdinalIgnoreCase);
-            while (at >= 0)
-            {
-                matches.Add(new TextPosition { Line = line, Column = at });
-                at = text.IndexOf(query, at + query.Length, StringComparison.OrdinalIgnoreCase);
-            }
-        }
-        return matches;
-    }
-
-    /// <summary>The first match at or after <paramref name="at"/>, wrapping to the first; null when there are none.</summary>
-    private static int? FindFirstMatch(CodeFindIndex find, TextPosition at)
-    {
-        if (find.Matches.Count == 0)
-        {
-            return null;
-        }
-
-        var index = GetMatchOnOrAfter(find, at);
-        return index < find.Matches.Count ? index : 0;
-    }
-
-    /// <summary>The index of the first match at or after <paramref name="at"/>, or the count.</summary>
-    private static int GetMatchOnOrAfter(CodeFindIndex find, TextPosition at)
-    {
-        int low = 0, high = find.Matches.Count;
-        while (low < high)
-        {
-            var mid = (low + high) >> 1;
-            if (find.Matches[mid] < at)
-            {
-                low = mid + 1;
-            }
-            else
-            {
-                high = mid;
-            }
-        }
-        return low;
-    }
-
     private const double CaretBlinkSeconds = 0.53;
 
     /// <summary>Whether the caret shows this frame: only in a focused view, from when it last moved for half a
@@ -224,12 +148,8 @@ public static class CodeViewWidget
             return false;
         }
 
-        if (state.Selection.Caret != state.BlinkCaret)
-        {
-            state.BlinkCaret = state.Selection.Caret;
-            state.BlinkFrom = ui.RealTime;
-        }
-        var phase = (ui.RealTime - state.BlinkFrom) % (CaretBlinkSeconds * 2);
+        state.Blink.Follow(state.Selection.Caret, ui.RealTime);
+        var phase = (ui.RealTime - state.Blink.From) % (CaretBlinkSeconds * 2);
         ui.RequestUpdateIn(CaretBlinkSeconds - phase % CaretBlinkSeconds);
         return phase < CaretBlinkSeconds;
     }
@@ -271,7 +191,7 @@ public static class CodeViewWidget
         var cell = ui.MeasureCell(fontSize, family: MonoFonts.Code);
         var advance = cell.Advance;
         var rowHeight = RowHeightFor(theme, fontSize, cell);
-        state.RowHeight = rowHeight;
+        state.Layout.TakeRowHeight(rowHeight);
         var folds = state.Folds;
         var digits = LineNumberDigits(document, shown);
         var markWidth = gutter ? theme.IconSize + GutterPaddingLeft : 0f;
@@ -279,13 +199,13 @@ public static class CodeViewWidget
         var foldWidth = gutter && document.Folds.Length > 0 ? theme.IconSize : 0f;
         var gutterWidth = foldLeft + foldWidth;
         var textLeft = gutterWidth + CodePaddingLeft;
-        var contentWidth = textLeft + state.MaxColumns * advance + CodePaddingLeft;
+        var contentWidth = textLeft + state.Layout.MaxColumns * advance + CodePaddingLeft;
 
         var focusId = ui.GetId("focus");
         var findId = ui.GetId("find");
         var codeId = ui.GetId("code");
         var focused = ui.HasFocus(focusId);
-        var findFocused = state.FindOpen && ui.HasFocus(findId);
+        var findFocused = state.Find.IsOpen && ui.HasFocus(findId);
         CodeViewIntent? intent = null;
         var zoom = CodeZoom.None;
 
@@ -304,7 +224,7 @@ public static class CodeViewWidget
 
         using (ui.Column(new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Gap = 0f, Background = theme.EditorBackground }))
         {
-            if (state.FindOpen)
+            if (state.Find.IsOpen)
             {
                 FindBar(ui, state, document, focusId, findId);
                 ui.Separator();
@@ -322,8 +242,8 @@ public static class CodeViewWidget
 
             TextPosition PositionAt(float x, float y)
             {
-                var row = GetRowAt(y - rect.Y + state.LaidOutScrollY, rowHeight);
-                var column = (int)MathF.Round((x - rect.X - textLeft + state.LaidOutScrollX) / advance);
+                var row = GetRowAt(y - rect.Y + state.Layout.ScrollY, rowHeight);
+                var column = (int)MathF.Round((x - rect.X - textLeft + state.Layout.ScrollX) / advance);
                 if (row.Index < 0)
                 {
                     return CodeText.Clamp(document, new TextPosition { Line = 0, Column = 0 });
@@ -348,13 +268,13 @@ public static class CodeViewWidget
             var hover = CodeHover.Nothing;
             if (hasRect && folds.RowCount > 0 && (i.Hovered || i.Held) && pointer.X < content.Right && pointer.Y < content.Bottom)
             {
-                var row = GetRowAt(pointer.Y - rect.Y + state.LaidOutScrollY, rowHeight);
+                var row = GetRowAt(pointer.Y - rect.Y + state.Layout.ScrollY, rowHeight);
                 if (CodeFolding.HasRow(folds, row))
                 {
                     var line = CodeFolding.GetLineAt(folds, row);
                     if (pointer.X >= rect.X + gutterWidth)
                     {
-                        var column = (int)MathF.Floor((pointer.X - rect.X - textLeft + state.LaidOutScrollX) / advance);
+                        var column = (int)MathF.Floor((pointer.X - rect.X - textLeft + state.Layout.ScrollX) / advance);
                         if (column >= 0)
                         {
                             var span = CodeText.SpanAt(document.Lines[line].Spans, column);
@@ -391,14 +311,14 @@ public static class CodeViewWidget
 
             if (i.Hovered || i.Held)
             {
-                ui.SetCursor((hoverNavigable || hover.IsOnControl) && !state.PressMoved ? MouseCursor.Hand : MouseCursor.Text);
+                ui.SetCursor((hoverNavigable || hover.IsOnControl) && !state.Pointer.PressMoved ? MouseCursor.Hand : MouseCursor.Text);
             }
 
             var scrollDeltaY = 0f;
             if (i.Pressed && hasRect)
             {
                 ui.Focus(focusId, takesText: false);
-                state.Press = new CodePress.OnControl();
+                state.Pointer.PressOn(new CodePress.OnControl());
                 var mark = hover.Mark;
                 var chevron = hover.Chevron;
                 var chip = hover.Chip;
@@ -418,11 +338,11 @@ public static class CodeViewWidget
                 {
                     var at = PositionAt(pointer.X, pointer.Y);
                     var forNewTab = (ui.Input.Modifiers & (KeyModifiers.Control | KeyModifiers.Super)) != 0;
-                    state.Press = new CodePress.OnText { At = at, ForNewTab = forNewTab, Span = hoverSpan };
+                    state.Pointer.PressOn(new CodePress.OnText { At = at, ForNewTab = forNewTab, Span = hoverSpan });
                     state.Selection.Press(document, at, i.ClickCount, (ui.Input.Modifiers & KeyModifiers.Shift) != 0);
                 }
             }
-            else if (i.Held && hasRect && state.Press is CodePress.OnText held)
+            else if (i.Held && hasRect && state.Pointer.Press is CodePress.OnText held)
             {
                 var at = PositionAt(pointer.X, pointer.Y);
                 if (!held.Moved && at != held.At)
@@ -446,7 +366,7 @@ public static class CodeViewWidget
                 }
             }
 
-            if (i.Clicked && state.Press is CodePress.OnText clicked && !clicked.Moved && state.Selection.Clicks == 1 && (ui.Input.Modifiers & KeyModifiers.Shift) == 0)
+            if (i.Clicked && state.Pointer.Press is CodePress.OnText clicked && !clicked.Moved && state.Selection.Clicks == 1 && (ui.Input.Modifiers & KeyModifiers.Shift) == 0)
             {
                 var pressedSpan = clicked.Span;
                 var reference = pressedSpan is not null ? document.Lines[pressedSpan.Value.Line].Spans[pressedSpan.Value.Span] : default;
@@ -456,7 +376,7 @@ public static class CodeViewWidget
                 }
                 else
                 {
-                    state.Marked = reference.Reference;
+                    state.Pointer.Mark(reference.Reference);
                 }
             }
             if (i.ClickedWith(PointerButton.Middle) && hoverTarget != null)
@@ -469,21 +389,30 @@ public static class CodeViewWidget
                 ui.Focus(focusId, takesText: false);
                 var onDefinition = hoverSpan is not null && hovered.IsDefinition;
                 int? menuLine = hasRect ? PositionAt(pointer.X, pointer.Y).Line : null;
-                state.Menu = new CodeMenuTarget
+                state.Pointer.OpenMenuOn(new CodeMenuTarget
                 {
                     Reference = hoverReference,
                     OnDefinition = onDefinition,
                     Line = menuLine,
                     Analyzable = AnalyzableIn(hovered),
-                };
+                });
                 ui.OpenContextMenu("menu");
             }
 
             Scroll(ui, state, document, rowHeight, advance, textLeft, content, scrollDeltaY);
-            var marked = shown.HighlightUsagesAtCaret ? FindReferenceAt(document, state.Selection.Caret) : state.Marked;
-            FillFrame(ui, state, document, theme, palette, cell, rowHeight, markWidth, foldLeft, foldWidth, gutterWidth, textLeft, digits,
-                focused || findFocused, bookmarks, hover, hoverReference ?? marked, hoverNavigable);
-            state.Frame.Caret = IsCaretShown(ui, state, focused) ? state.Selection.Caret : null;
+            var marked = shown.HighlightUsagesAtCaret ? FindReferenceAt(document, state.Selection.Caret) : state.Pointer.Marked;
+            var codeGutter = new CodeGutter
+            {
+                MarkWidth = markWidth,
+                Digits = digits,
+                FoldLeft = foldLeft,
+                FoldWidth = foldWidth,
+                Width = gutterWidth,
+                TextLeft = textLeft,
+            };
+            FillFrame(ui, state, document, theme, palette, cell, rowHeight, codeGutter, focused || findFocused, bookmarks, hover, hoverReference ?? marked,
+                hoverNavigable);
+            state.Frame.ShowCaret(IsCaretShown(ui, state, focused) ? state.Selection.Caret : null);
             FillDisplayAids(state, document, shown, fontSize);
 
             using (ui.Box(new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Gap = 0f }))
@@ -523,8 +452,7 @@ public static class CodeViewWidget
                     }
                 }
             }
-            state.LaidOutScrollX = state.ScrollX;
-            state.LaidOutScrollY = state.ScrollY;
+            state.Layout.KeepScroll(state.ScrollX, state.ScrollY);
         }
 
         var picked = ContextMenu(ui, state, document, bookmarks is not null, closedAssembly);
@@ -626,11 +554,9 @@ public static class CodeViewWidget
     /// brackets matching at the caret.</summary>
     private static void FillDisplayAids(CodeViewState state, DecompiledDocument document, DisplayOptions display, float fontSize)
     {
-        var frame = state.Frame;
         var caret = state.Selection.Caret;
-        frame.FontSize = fontSize;
-        frame.CurrentLine = display.HighlightCurrentLine ? caret.Line : null;
-        frame.Brackets = FindBracketsToShow(state, document, display, caret);
+        int? currentLine = display.HighlightCurrentLine ? caret.Line : null;
+        state.Frame.ShowAids(fontSize, currentLine, FindBracketsToShow(state, document, display, caret));
     }
 
     private static BracketPair? FindBracketsToShow(CodeViewState state, DecompiledDocument document, DisplayOptions display, TextPosition caret)
@@ -745,7 +671,7 @@ public static class CodeViewWidget
             return null;
         }
 
-        if (state.PressMoved)
+        if (state.Pointer.PressMoved)
         {
             return null;
         }
@@ -770,8 +696,8 @@ public static class CodeViewWidget
         }
 
         var span = document.Lines[at.Value.Line].Spans[at.Value.Span];
-        var x = hovered.TextX - state.LaidOutScrollX + span.Start * advance;
-        var y = hovered.TextY + GetRowTop(CodeFolding.GetRowOf(state.Folds, at.Value.Line), rowHeight) - state.LaidOutScrollY;
+        var x = hovered.TextX - state.Layout.ScrollX + span.Start * advance;
+        var y = hovered.TextY + GetRowTop(CodeFolding.GetRowOf(state.Folds, at.Value.Line), rowHeight) - state.Layout.ScrollY;
         return new UiRect(x, y, span.Length * advance, rowHeight);
     }
 
@@ -781,78 +707,47 @@ public static class CodeViewWidget
     }
 
     private static void FillFrame(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, UiTheme theme, CodeViewPalette palette, CellMetrics cell,
-        float rowHeight, float markWidth, float foldLeft, float foldWidth, float gutterWidth, float textLeft, int digits, bool active,
-        IReadOnlyDictionary<int, bool>? bookmarks, CodeHover hover, CodeReference? highlight, bool hoverNavigable)
+        float rowHeight, CodeGutter gutter, bool active, IReadOnlyDictionary<int, bool>? bookmarks, CodeHover hover, CodeReference? highlight,
+        bool hoverNavigable)
     {
         var frame = state.Frame;
-        frame.Document = document;
-        frame.Folds = state.Folds.Layout;
-        frame.Palette = palette;
-        frame.Background = theme.EditorBackground;
-        frame.GutterHover = theme.Text;
-        frame.Selection = active ? theme.TextSelection : theme.SelectionInactive;
-        frame.CaretColor = theme.Text;
-        frame.CaretWidth = theme.CaretWidth;
-        frame.ErrorText = theme.Danger;
-        frame.SeparatorWidth = theme.SeparatorWidth;
-        frame.OutlineWidth = theme.BorderWidth;
-        frame.ChipRadius = theme.RadiusSmall;
-        frame.GutterPaddingLeft = markWidth;
-        frame.MarkWidth = markWidth;
-        frame.IconSize = theme.IconSize;
-        frame.BookmarkGlyph = ui.State.Icons.CodeBookmark;
-        frame.Bookmarks = bookmarks;
-        frame.HoverMark = hover.Mark;
-        frame.Advance = cell.Advance;
-        frame.CellHeight = cell.Height;
-        frame.RowHeight = rowHeight;
-        frame.FoldLeft = foldLeft;
-        frame.FoldWidth = foldWidth;
-        frame.GutterWidth = gutterWidth;
-        frame.TextLeft = textLeft;
-        frame.Digits = digits;
-        frame.SelectionStart = state.Selection.Start;
-        frame.SelectionEnd = state.Selection.End;
-        frame.Highlight = highlight;
-        frame.Underline = hoverNavigable && !state.PressMoved ? hover.Span : null;
-        frame.HoverFold = hover.Chevron;
-        frame.HoverChip = hover.Chip;
+        frame.Lay(document, state.Folds.Layout, palette, theme, cell, rowHeight, gutter, ui.State.Icons.CodeBookmark, active);
+        var underline = hoverNavigable && !state.Pointer.PressMoved ? hover.Span : null;
+        frame.Mark(state.Selection.Start, state.Selection.End, highlight, underline, hover, bookmarks);
+        var findActive = state.Find.IsOpen && state.Query.Length > 0;
+        frame.ShowMatches(state.Find.Index.Matches, findActive ? state.Find.Index.Length : 0, state.Find.CurrentMatch);
+        ShowFlash(ui, state, theme, palette);
+    }
 
-        var findActive = state.FindOpen && state.Query.Length > 0;
-        frame.Matches = state.Find.Matches;
-        frame.MatchLength = findActive ? state.Find.Length : 0;
-        frame.CurrentMatch = state.CurrentMatch;
-
-        frame.FlashLine = null;
-        var flash = state.Flash;
-        if (flash is not null)
+    // The flash fades over FlashSeconds, and is let go once it has faded.
+    private static void ShowFlash(Ui<UiState> ui, CodeViewState state, UiTheme theme, CodeViewPalette palette)
+    {
+        var flash = state.Reveal.Flash;
+        if (flash is null)
         {
-            var t = (float)((ui.RealTime - flash.Value.From) / FlashSeconds);
-            if (t >= 1f)
-            {
-                state.Flash = null;
-            }
-            else
-            {
-                frame.FlashLine = flash.Value.Line;
-                frame.Flash = UiColor.Mix(theme.EditorBackground, palette.Flash, 1f - t);
-                ui.RequestAnimationFrame();
-            }
+            state.Frame.ShowFlash(null, 0u);
+            return;
         }
+
+        var t = (float)((ui.RealTime - flash.Value.From) / FlashSeconds);
+        if (t >= 1f)
+        {
+            state.Reveal.EndFlash();
+            state.Frame.ShowFlash(null, 0u);
+            return;
+        }
+
+        state.Frame.ShowFlash(flash.Value.Line, UiColor.Mix(theme.EditorBackground, palette.Flash, 1f - t));
+        ui.RequestAnimationFrame();
     }
 
     private static void Scroll(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, float rowHeight, float advance, float textLeft,
         UiRect content, float deltaY)
     {
         var viewport = content.Height;
-        if (viewport > 0f)
-        {
-            state.PageRows = (int)MathF.Max(1f, MathF.Floor(viewport / rowHeight) - 1f);
-        }
-
-        deltaY += state.KeyScrollRows * rowHeight;
-        state.KeyScrollRows = 0;
-        var pending = state.Pending;
+        state.Layout.TakeViewport(viewport, rowHeight);
+        deltaY += state.Keys.TakeScrollRows() * rowHeight;
+        var pending = state.Reveal.Pending;
         if (pending is null)
         {
             ScrollBy(state, rowHeight, viewport, deltaY);
@@ -908,7 +803,7 @@ public static class CodeViewWidget
             return;
         }
 
-        state.Pending = null;
+        state.Reveal.Arrive();
         var top = Math.Clamp(restore.TopLine, 0, Math.Max(0, document.Lines.Length - 1));
         RevealFolds(state, top);
         state.ScrollY = GetRowTop(CodeFolding.GetRowOf(state.Folds, top), rowHeight);
@@ -929,9 +824,13 @@ public static class CodeViewWidget
         var line = Math.Clamp(reveal.Line, 0, Math.Max(0, document.Lines.Length - 1));
         RevealFolds(state, line);
         state.ScrollY = MathF.Max(0f, GetRowTop(CodeFolding.GetRowOf(state.Folds, line), rowHeight) - viewport / 3f);
-        state.Flash = new CodeFlash { Line = line, From = ui.RealTime };
-        state.Pending = null;
+        state.Reveal.ArriveFlashing(line, ui.RealTime);
         ui.RequestUpdate();
+    }
+
+    private static bool IsRowInView(float top, float rowHeight, float scrollY, float viewport)
+    {
+        return top >= scrollY && top + rowHeight <= scrollY + viewport;
     }
 
     private static void ScrollToMatch(Ui<UiState> ui, CodeViewState state, float rowHeight, float advance, float textLeft, UiRect content,
@@ -946,7 +845,7 @@ public static class CodeViewWidget
 
         RevealFolds(state, match.Line);
         var top = GetRowTop(CodeFolding.GetRowOf(state.Folds, match.Line), rowHeight);
-        if (top < state.ScrollY || top + rowHeight > state.ScrollY + viewport)
+        if (!IsRowInView(top, rowHeight, state.ScrollY, viewport))
         {
             state.ScrollY = MathF.Max(0f, top - viewport / 3f);
         }
@@ -963,7 +862,7 @@ public static class CodeViewWidget
             state.ScrollX = to - visible + 4f * advance;
         }
 
-        state.Pending = null;
+        state.Reveal.Arrive();
     }
 
     private static void ShowCaretOnceLaidOut(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, float rowHeight, float advance,
@@ -976,7 +875,7 @@ public static class CodeViewWidget
         }
 
         ShowCaret(state, document, rowHeight, advance, textLeft, content);
-        state.Pending = null;
+        state.Reveal.Arrive();
     }
 
     /// <summary>Scrolls as little as brings the caret's row, and its column on a line that is shown, into view.</summary>
@@ -1099,9 +998,9 @@ public static class CodeViewWidget
                 continue;
             }
 
-            if (keys[k].Key == KeyboardKey.Escape && state.FindOpen)
+            if (keys[k].Key == KeyboardKey.Escape && state.Find.IsOpen)
             {
-                state.FindOpen = false;
+                state.Find.Close();
                 ui.Focus(focusId, takesText: false);
                 continue;
             }
@@ -1169,10 +1068,10 @@ public static class CodeViewWidget
                 to = CodeCaret.GetEnd(document, folds);
                 break;
             case KeyboardKey.UpArrow when !mac && command:
-                state.KeyScrollRows--;
+                state.Keys.ScrollRows(-1);
                 return;
             case KeyboardKey.DownArrow when !mac && command:
-                state.KeyScrollRows++;
+                state.Keys.ScrollRows(1);
                 return;
             case KeyboardKey.UpArrow:
                 MoveRows(state, document, caret, -1, extend);
@@ -1181,12 +1080,12 @@ public static class CodeViewWidget
                 MoveRows(state, document, caret, 1, extend);
                 return;
             case KeyboardKey.PageUp:
-                state.KeyScrollRows -= state.PageRows;
-                MoveRows(state, document, caret, -state.PageRows, extend);
+                state.Keys.ScrollRows(-state.Layout.PageRows);
+                MoveRows(state, document, caret, -state.Layout.PageRows, extend);
                 return;
             case KeyboardKey.PageDown:
-                state.KeyScrollRows += state.PageRows;
-                MoveRows(state, document, caret, state.PageRows, extend);
+                state.Keys.ScrollRows(state.Layout.PageRows);
+                MoveRows(state, document, caret, state.Layout.PageRows, extend);
                 return;
             default:
                 return;
@@ -1198,21 +1097,18 @@ public static class CodeViewWidget
     /// began moving it.</summary>
     private static void MoveRows(CodeViewState state, DecompiledDocument document, TextPosition caret, int rows, bool extend)
     {
-        var goal = state.Goal;
+        var goal = state.Keys.Goal;
         var column = goal is not null && goal.Value.At == state.Selection.Caret ? goal.Value.Column : caret.Column;
         var to = CodeCaret.MoveRows(document, state.Folds, caret, rows, column);
         PutCaret(state, to, extend);
-        state.Goal = new CaretGoal { At = to, Column = column };
+        state.Keys.AimAt(new CaretGoal { At = to, Column = column });
     }
 
     private static void PutCaret(CodeViewState state, TextPosition to, bool extend)
     {
         var selection = state.Selection;
         selection.Select(extend ? selection.Anchor : to, to);
-        if (state.Pending is null)
-        {
-            state.Pending = new PendingScroll.ShowCaret();
-        }
+        state.Reveal.AskUnlessAsked(new PendingScroll.ShowCaret());
     }
 
     /// <summary>Runs the code's shortcut the key at <paramref name="index"/> completes, if any; false
@@ -1221,18 +1117,17 @@ public static class CodeViewWidget
     {
         if (ui.IsPressedAt(Shortcuts.Find, index))
         {
-            if (!state.FindOpen && state.HasSelection && state.Selection.Anchor.Line == state.Selection.Caret.Line)
+            if (!state.Find.IsOpen && state.HasSelection && state.Selection.Anchor.Line == state.Selection.Caret.Line)
             {
                 state.Query = GetSelectedText(state);
             }
 
-            state.FindOpen = true;
-            state.FocusFind = true;
+            state.Find.OpenToType();
             return true;
         }
         if (state.Query.Length > 0 && (ui.IsPressedAt(Shortcuts.FindNext, index) || ui.IsPressedAt(Shortcuts.FindPrevious, index)))
         {
-            state.FindOpen = true;
+            state.Find.Open();
             Step(state, document, ui.IsPressedAt(Shortcuts.FindPrevious, index) ? -1 : 1);
             return true;
         }
@@ -1323,17 +1218,24 @@ public static class CodeViewWidget
         var theme = ui.Theme;
         using (ui.PaneToolbar())
         {
-            if (state.FocusFind)
+            if (state.Find.TryTakeFocus())
             {
                 ui.Focus(findId);
-                state.FocusFind = false;
             }
 
             var submitted = ui.TextField("find", ref state.Query, t.FindPlaceholder, Sizing.Grow(AppLayout.FindMinWidth, AppLayout.FindWidth), clearable: true);
-            var queryChanged = !string.Equals(state.Query, state.Find.Query, StringComparison.Ordinal);
-            if (TryRescanMatches(state, document, state.Query))
+            var queryChanged = !string.Equals(state.Query, state.Find.Index.Query, StringComparison.Ordinal);
+            if (state.Find.TryRescan(document, state.Query))
             {
-                state.CurrentMatch = queryChanged ? FindFirstMatch(state.Find, state.Selection.Start) : null;
+                if (queryChanged)
+                {
+                    state.Find.SelectFirstMatchFrom(state.Selection.Start);
+                }
+                else
+                {
+                    state.Find.ClearMatch();
+                }
+
                 ShowMatch(state);
             }
             if (submitted)
@@ -1341,10 +1243,10 @@ public static class CodeViewWidget
                 Step(state, document, (ui.Input.Modifiers & KeyModifiers.Shift) != 0 ? -1 : 1);
             }
 
-            var count = state.Find.Matches.Count;
+            var count = state.Find.Index.Matches.Count;
             var label = state.Query.Length == 0 ? ""
                 : count == 0 ? t.FindNoResults
-                : ui.Memo("count", (state.CurrentMatch, count, t), static a => a.CurrentMatch is not null ? a.t.FindPosition(a.CurrentMatch.Value + 1, a.count) : a.t.FindMatches(a.count));
+                : ui.Memo("count", (state.Find.CurrentMatch, count, t), static a => a.CurrentMatch is not null ? a.t.FindPosition(a.CurrentMatch.Value + 1, a.count) : a.t.FindMatches(a.count));
             ui.Text(label, new Box { Width = Sizing.Grow() }, color: count == 0 && state.Query.Length > 0 ? theme.Warning : theme.TextMuted,
                 size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
             var previousTip = ui.Memo("previous-tip", t, static s => s.FindPrevious("Shift+F3"));
@@ -1362,7 +1264,7 @@ public static class CodeViewWidget
             var closeTip = ui.Memo("close-tip", t, static s => s.FindClose("Esc"));
             if (ui.IconButton("close", ui.State.Icons.CodeFindClose, closeTip))
             {
-                state.FindOpen = false;
+                state.Find.Close();
                 ui.Focus(focusId, takesText: false);
             }
         }
@@ -1370,47 +1272,29 @@ public static class CodeViewWidget
 
     private static void Step(CodeViewState state, DecompiledDocument document, int direction)
     {
-        TryRescanMatches(state, document, state.Query);
-        var count = state.Find.Matches.Count;
-        if (count == 0)
-        {
-            state.CurrentMatch = null;
-            return;
-        }
-        var current = state.CurrentMatch;
-        if (current is not null)
-        {
-            state.CurrentMatch = (current.Value + direction + count) % count;
-        }
-        else if (direction > 0)
-        {
-            state.CurrentMatch = FindFirstMatch(state.Find, state.Selection.Caret);
-        }
-        else
-        {
-            state.CurrentMatch = (GetMatchOnOrAfter(state.Find, state.Selection.Caret) - 1 + count) % count;
-        }
-
+        state.Find.TryRescan(document, state.Query);
+        state.Find.Step(direction, state.Selection.Caret);
         ShowMatch(state);
     }
 
     private static void ShowMatch(CodeViewState state)
     {
-        var current = state.CurrentMatch;
+        var current = state.Find.CurrentMatch;
         if (current is null)
         {
             return;
         }
 
-        var match = state.Find.Matches[current.Value];
-        state.Selection.Select(match, match with { Column = match.Column + state.Find.Length });
+        var index = state.Find.Index;
+        var match = index.Matches[current.Value];
+        state.Selection.Select(match, match with { Column = match.Column + index.Length });
         RevealFolds(state, match.Line);
-        state.Pending = new PendingScroll.ShowMatch
+        state.Reveal.Ask(new PendingScroll.ShowMatch
         {
             Line = match.Line,
             ColumnStart = match.Column,
-            ColumnEnd = match.Column + state.Find.Length,
-        };
+            ColumnEnd = match.Column + index.Length,
+        });
     }
 
     /// <summary>The items that show <paramref name="entity"/> on a diagram, when it is a type; disabled, saying
@@ -1450,7 +1334,7 @@ public static class CodeViewWidget
             return picked;
         }
 
-        var target = state.Menu;
+        var target = state.Pointer.Menu;
 
         if (ui.MenuItem(t.CodeCopy, Shortcuts.Copy, enabled: state.HasSelection, id: "copy"))
         {
@@ -1637,7 +1521,7 @@ public static class CodeViewWidget
             var chipLeft = x0 + chipStart * frame.Advance;
             p.FillRect(new UiRect(chipLeft - frame.Advance / 2, cellTop, (chipText.Length + 1) * frame.Advance, frame.CellHeight),
                 collapsedFold == frame.HoverChip ? frame.Palette.FoldChipHovered : frame.Palette.FoldChip, frame.ChipRadius);
-            p.GlyphRun(new PointF(chipLeft, cellTop), GetCells(frame, chipText, 0, chipText.Length), frame.Advance, collapsedFold == frame.HoverChip ? frame.GutterHover : frame.Palette.GutterText,
+            p.GlyphRun(new PointF(chipLeft, cellTop), frame.GetCells(chipText, 0, chipText.Length), frame.Advance, collapsedFold == frame.HoverChip ? frame.GutterHover : frame.Palette.GutterText,
                 frame.FontSize, family: MonoFonts.Code);
         }
 
@@ -1657,7 +1541,7 @@ public static class CodeViewWidget
                     continue;
                 }
 
-                var cells = GetCells(frame, text, start, end);
+                var cells = frame.GetCells(text, start, end);
                 p.GlyphRun(new PointF(x0 + start * frame.Advance, cellTop), cells, frame.Advance, error ? frame.ErrorText : frame.Palette[span.Kind],
                     frame.FontSize, family: MonoFonts.Code, underline: s == underlined);
             }
@@ -1718,7 +1602,7 @@ public static class CodeViewWidget
     /// <summary>The line's number, right-aligned, brighter on the highlighted current line.</summary>
     private static void PaintLineNumber(UiPainter p, CodeViewFrame frame, float left, float cellTop, int index)
     {
-        var number = GetNumberCells(frame, index + 1);
+        var number = frame.GetNumberCells(index + 1);
         var color = index == frame.CurrentLine ? frame.GutterHover : frame.Palette.GutterText;
         var x = left + frame.GutterPaddingLeft + (frame.Digits - number.Length) * frame.Advance;
         p.GlyphRun(new PointF(x, cellTop), number, frame.Advance, color, frame.FontSize, family: MonoFonts.Code);
@@ -1769,45 +1653,5 @@ public static class CodeViewWidget
             }
         }
         return low;
-    }
-
-    private static ReadOnlySpan<int> GetCells(CodeViewFrame frame, string text, int start, int end)
-    {
-        var count = end - start;
-        if (frame.CodePoints.Length < count)
-        {
-            frame.CodePoints = new int[Math.Max(count, frame.CodePoints.Length * 2)];
-        }
-
-        for (var i = 0; i < count; i++)
-        {
-            var at = start + i;
-            var c = text[at];
-            if (char.IsHighSurrogate(c) && at + 1 < text.Length && char.IsLowSurrogate(text[at + 1]))
-            {
-                frame.CodePoints[i] = char.ConvertToUtf32(c, text[at + 1]);
-                if (i + 1 < count)
-                {
-                    frame.CodePoints[++i] = ' ';
-                }
-            }
-            else
-            {
-                frame.CodePoints[i] = char.IsSurrogate(c) ? ' ' : c;
-            }
-        }
-        return frame.CodePoints.AsSpan(0, count);
-    }
-
-    private static ReadOnlySpan<int> GetNumberCells(CodeViewFrame frame, int value)
-    {
-        var digits = CodeText.Digits(value);
-        var cells = frame.CodePoints.AsSpan(0, digits);
-        for (var i = digits - 1; i >= 0; i--)
-        {
-            cells[i] = '0' + value % 10;
-            value /= 10;
-        }
-        return cells;
     }
 }

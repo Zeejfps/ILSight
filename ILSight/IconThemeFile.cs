@@ -38,14 +38,15 @@ public sealed class IconThemeFile : IUserThemeFile<IconThemeFile, IconThemeConte
     }
 
     public required ThemeJson Json { get; init; }
-    public readonly Dictionary<string, IconFont> Fonts = new();
-    public readonly Dictionary<string, IconValue> Icons = new();
+    public IReadOnlyDictionary<string, IconFont> Fonts { get; init; } = new Dictionary<string, IconFont>();
+
+    public IReadOnlyDictionary<string, IconValue> Icons { get; init; } = new Dictionary<string, IconValue>();
 
     /// <summary>The fonts the file names by id, to be read and loaded as <see cref="Fonts"/>.</summary>
-    public readonly Dictionary<string, ThemeNamedFile> NamedFonts = new();
+    public IReadOnlyDictionary<string, ThemeNamedFile> NamedFonts { get; init; } = new Dictionary<string, ThemeNamedFile>();
 
     /// <summary>The pictures the file names by icon key, to be read and loaded as <see cref="Icons"/>.</summary>
-    public readonly Dictionary<string, ThemeNamedFile> NamedPictures = new();
+    public IReadOnlyDictionary<string, ThemeNamedFile> NamedPictures { get; init; } = new Dictionary<string, ThemeNamedFile>();
 
     public IReadOnlyList<ThemeNamedFile> NamedFiles => [.. NamedFonts.Values, .. NamedPictures.Values];
 
@@ -53,12 +54,12 @@ public sealed class IconThemeFile : IUserThemeFile<IconThemeFile, IconThemeConte
 
     public string File => Json.File;
 
-    public required ThemeName Name { get; set; }
+    public required ThemeName Name { get; init; }
 
-    public ThemeParent<IconThemeFile>? Extends { get; set; }
+    public ThemeParent<IconThemeFile>? Extends { get; init; }
 
     /// <summary>The fonts and icons the file sets; null when it could not be read as a JSON object.</summary>
-    public IconThemeContents? Contents { get; set; }
+    public IconThemeContents? Contents { get; init; }
 
     public IReadOnlyList<ThemeError> Errors => Json.Errors;
 }

@@ -22,10 +22,8 @@ public sealed class SettingsReading(SettingsReading.IPorts ports)
     public SettingsLoadResult ReadFile(FullFilePath file)
     {
         var read = ReadSettings(file);
-        var settings = read.Settings;
         var problem = read.Problem;
-        settings.FilePath = file;
-        settings.CanSaveOverFile = CanSaveOverFile(problem);
+        var settings = read.Settings with { FilePath = file, CanSaveOverFile = CanSaveOverFile(problem) };
         return new SettingsLoadResult { Settings = settings, Problem = problem };
     }
 

@@ -42,7 +42,7 @@ public sealed class MetadataGridTests
     {
         var (app, tab, grid) = await ShowTableAsync("TypeDef", frames: 0);
         var row = grid.RowNamed("Greeter");
-        MetadataGridWidget.RevealRow(GridOf(app, tab), row);
+        GridOf(app, tab).RevealRow(row);
         app.Run(3);
         return (app, tab, grid, row);
     }
@@ -309,10 +309,10 @@ public sealed class MetadataGridTests
         var views = new MetadataGridViews();
         var name = grid.Column("Name");
         MetadataGridWidget.UpdateView(state, app.Ui.MetadataFilters, views, isClosed: false);
-        MetadataGridWidget.SortBy(state, name);
+        state.SortBy(name);
         MetadataGridWidget.UpdateView(state, app.Ui.MetadataFilters, views, isClosed: false);
         var older = Assert.Single(views.TakeAsked());
-        MetadataGridWidget.SortBy(state, name);
+        state.SortBy(name);
         MetadataGridWidget.UpdateView(state, app.Ui.MetadataFilters, views, isClosed: false);
         var newer = Assert.Single(views.TakeAsked());
         var handler = new ArrangeMetadataGridHandler(new FakeArrangeMetadataGridHandlerPorts());
@@ -394,7 +394,7 @@ public sealed class MetadataGridTests
 
         Assert.Contains("Greeter", filtered);
         Assert.All(filtered, n => Assert.Contains("greet", n, StringComparison.OrdinalIgnoreCase));
-        Assert.Equal(grid.RowCount, GridOf(app, tab).View.Length);
+        Assert.Equal(grid.RowCount, GridOf(app, tab).View.Count);
     }
 
     [Fact]
@@ -509,7 +509,7 @@ public sealed class MetadataGridTests
         var kind = grid.Column("KindString");
         var options = Enumerable.Range(0, grid.RowCount).Single(r => MetadataGrids.GetText(grid, r, kind).StartsWith("Compilation Options"));
 
-        MetadataGridWidget.RevealRow(GridOf(app, tab), options);
+        GridOf(app, tab).RevealRow(options);
         app.Run(4);
 
         Assert.Equal(options, GridOf(app, tab).Selected);
@@ -530,9 +530,9 @@ public sealed class MetadataGridTests
         var state = GridOf(app, tab);
         var line = state.RowHeight;
 
-        state.Open[(3, grid.Column("Name"))] = 2;
-        state.Open[(1, grid.Column("Name"))] = 3;
-        state.Open[(1, grid.Column("Namespace"))] = 5;
+        state.OpenCell(3, grid.Column("Name"), 2);
+        state.OpenCell(1, grid.Column("Name"), 3);
+        state.OpenCell(1, grid.Column("Namespace"), 5);
         app.Run(3);
 
         var tops = FindTops(app, grid, 0, 1, 2, 3, 4);
@@ -548,10 +548,10 @@ public sealed class MetadataGridTests
         var (app, tab, grid) = await ShowTableAsync("TypeDef");
         var state = GridOf(app, tab);
         var name = grid.Column("Name");
-        state.Open[(3, name)] = 2;
-        state.Open[(1, name)] = 3;
+        state.OpenCell(3, name, 2);
+        state.OpenCell(1, name, 3);
 
-        MetadataGridWidget.MeasureTallRows(state, 10f, 0f);
+        state.MeasureTallRows(10f, 0f);
 
         Assert.Equal([new TallRow(1, 30f), new TallRow(3, 20f)], state.TallRows);
         Assert.Equal(new RowHeights { Cells = 30f, Details = 0f }, state.TallRowsByIndex[1]);
@@ -566,9 +566,9 @@ public sealed class MetadataGridTests
         state.Filters[name] = new MetadataColumnFilter.ByText { Text = MetadataGrids.GetText(grid, 1, name) };
         app.Run();
         app.Settle(1);
-        state.Open[(2, name)] = 4;
+        state.OpenCell(2, name, 4);
 
-        MetadataGridWidget.MeasureTallRows(state, 10f, 0f);
+        state.MeasureTallRows(10f, 0f);
 
         Assert.Empty(state.TallRows);
         Assert.Empty(state.TallRowsByIndex);
@@ -583,7 +583,7 @@ public sealed class MetadataGridTests
         var line = state.RowHeight;
 
         state.Filters[name] = new MetadataColumnFilter.ByText { Text = $"/^({MetadataGrids.GetText(grid, 1, name)}|{MetadataGrids.GetText(grid, 3, name)})$/" };
-        state.Open[(2, name)] = 4;
+        state.OpenCell(2, name, 4);
         app.Run();
         app.Settle(3);
 
@@ -603,11 +603,11 @@ public sealed class MetadataGridTests
         var state = GridOf(app, tab);
         var kind = grid.Column("KindString");
         var selected = Enumerable.Range(0, grid.RowCount - 1).First(r => MetadataGrids.GetText(grid, r, kind).StartsWith("Compilation Options"));
-        MetadataGridWidget.RevealRow(state, selected);
+        state.RevealRow(selected);
         app.Run(4);
         var closed = FindTops(app, grid, selected, selected + 1);
 
-        state.Open[(selected, kind)] = 3;
+        state.OpenCell(selected, kind, 3);
         app.Run(3);
 
         var open = FindTops(app, grid, selected, selected + 1);

@@ -10,7 +10,7 @@ using ICSharpCode.Decompiler.Metadata;
 
 namespace ILSight.Core.Metadata;
 
-/// <summary>Building a <see cref="GridSchema"/> a column at a time. A table's starts with its RID and Token.</summary>
+/// <summary>Building a <see cref="GridSchema"/> a column at a time (<see cref="GridSchemaBuilder{TRow}"/>). A table's starts with its RID and Token.</summary>
 public static class GridSchemas
 {
     private static IReadOnlyList<object> ListRows<TRow>(Func<IEnumerable<TRow>> rows)
@@ -42,36 +42,36 @@ public static class GridSchemas
     }
 
     /// <summary>A schema named <paramref name="key"/> of what <paramref name="rows"/> reads from <paramref name="file"/>.</summary>
-    public static GridSchema<TRow> CreateGrid<TRow>(string key, MetadataFile file, Func<IEnumerable<TRow>> rows)
+    public static GridSchemaBuilder<TRow> CreateGrid<TRow>(string key, MetadataFile file, Func<IEnumerable<TRow>> rows)
     {
-        return new GridSchema<TRow> { Key = key, Table = null, File = file, ReadRows = () => ListRows(rows) };
+        return new GridSchemaBuilder<TRow> { Key = key, Table = null, File = file, ReadRows = () => ListRows(rows) };
     }
 
     /// <summary>The schema of <paramref name="table"/> of <paramref name="file"/>, which <paramref name="rows"/> reads.</summary>
-    public static GridSchema<TRow> CreateTable<TRow>(TableIndex table, MetadataFile file, Func<IEnumerable<TRow>> rows)
+    public static GridSchemaBuilder<TRow> CreateTable<TRow>(TableIndex table, MetadataFile file, Func<IEnumerable<TRow>> rows)
     {
-        var schema = new GridSchema<TRow> { Key = table.ToString(), Table = table, File = file, ReadRows = () => ListRows(rows) };
+        var schema = new GridSchemaBuilder<TRow> { Key = table.ToString(), Table = table, File = file, ReadRows = () => ListRows(rows) };
         AddColumn(schema, "RID", null, (_, rid) => rid, null);
         AddColumn(schema, "Token", "X8", (_, rid) => (int)table << 24 | rid, null);
         return schema;
     }
 
-    /// <summary><paramref name="schema"/>, with what <paramref name="columns"/> adds to it.</summary>
-    public static GridSchema<TRow> AddColumns<TRow>(GridSchema<TRow> schema, Action<GridSchema<TRow>> columns)
+    /// <summary>The schema <paramref name="schema"/> builds, with what <paramref name="columns"/> adds to it.</summary>
+    public static GridSchema<TRow> AddColumns<TRow>(GridSchemaBuilder<TRow> schema, Action<GridSchemaBuilder<TRow>> columns)
     {
         columns(schema);
-        return schema;
+        return schema.ToSchema();
     }
 
     /// <summary>A column of what <paramref name="get"/> reads, in <paramref name="format"/>.</summary>
-    public static void AddValue<TRow, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T>(GridSchema<TRow> schema, string name, Func<TRow, T> get, string? format = null,
+    public static void AddValue<TRow, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T>(GridSchemaBuilder<TRow> schema, string name, Func<TRow, T> get, string? format = null,
         Func<TRow, object?>? tooltip = null)
     {
         AddColumn(schema, name, format, (r, _) => get(r), tooltip is null ? null : (r, _) => tooltip(r));
     }
 
     /// <summary>Where each row of <paramref name="table"/>, which <paramref name="schema"/> lists, starts in the file.</summary>
-    public static void AddOffset<TRow>(GridSchema<TRow> schema, TableIndex table)
+    public static void AddOffset<TRow>(GridSchemaBuilder<TRow> schema, TableIndex table)
     {
         var metadata = schema.File.Metadata;
         var start = schema.File.MetadataOffset + metadata.GetTableMetadataOffset(table);
@@ -80,7 +80,7 @@ public static class GridSchemas
     }
 
     /// <summary>A string of the #Strings heap, explained by its offset.</summary>
-    public static void AddString<TRow>(GridSchema<TRow> schema, string name, Func<TRow, StringHandle> get)
+    public static void AddString<TRow>(GridSchemaBuilder<TRow> schema, string name, Func<TRow, StringHandle> get)
     {
         var file = schema.File;
         AddValue(schema, name, r => file.Metadata.GetString(get(r)),
@@ -88,15 +88,15 @@ public static class GridSchemas
     }
 
     /// <summary>The row's name: a <see cref="AddString"/> column the row is known by.</summary>
-    public static void AddName<TRow>(GridSchema<TRow> schema, Func<TRow, StringHandle> get)
+    public static void AddName<TRow>(GridSchemaBuilder<TRow> schema, Func<TRow, StringHandle> get)
     {
-        schema.NameColumn = schema.Columns.Count;
+        schema.NameNextColumn();
         AddString(schema, "Name", get);
     }
 
     /// <summary>A token that links to its row, explained by what it points at unless
     /// <paramref name="tooltip"/> says otherwise.</summary>
-    public static void AddHandle<TRow>(GridSchema<TRow> schema, string name, Func<TRow, EntityHandle> get, Func<TRow, object?>? tooltip = null)
+    public static void AddHandle<TRow>(GridSchemaBuilder<TRow> schema, string name, Func<TRow, EntityHandle> get, Func<TRow, object?>? tooltip = null)
     {
         var file = schema.File;
         AddColumn(schema, name, "X8", (r, _) => MetadataTokens.GetToken(get(r)),
@@ -105,7 +105,7 @@ public static class GridSchemas
 
     /// <summary>The start of a run of rows of <paramref name="table"/>, as a token, explained by the
     /// row it starts at or, for an empty run, by <paramref name="empty"/>.</summary>
-    public static void AddList<TRow>(GridSchema<TRow> schema, string name, TableIndex table, Func<TRow, int> get, Func<TRow, EntityHandle> first, string empty)
+    public static void AddList<TRow>(GridSchemaBuilder<TRow> schema, string name, TableIndex table, Func<TRow, int> get, Func<TRow, EntityHandle> first, string empty)
     {
         var file = schema.File;
         AddColumn(schema, name, "X8", (r, _) => (int)table << 24 | get(r),
@@ -117,7 +117,7 @@ public static class GridSchemas
     }
 
     /// <summary>The offset of a blob in the #Blob heap.</summary>
-    public static void AddBlob<TRow>(GridSchema<TRow> schema, string name, Func<TRow, BlobHandle> get, Func<TRow, object?>? tooltip = null)
+    public static void AddBlob<TRow>(GridSchemaBuilder<TRow> schema, string name, Func<TRow, BlobHandle> get, Func<TRow, object?>? tooltip = null)
     {
         AddValue(schema, name, r => MetadataTokens.GetHeapOffset(get(r)), "X8", tooltip);
     }
@@ -125,7 +125,7 @@ public static class GridSchemas
     /// <summary>The offset of a signature blob, explained by what <paramref name="decode"/> reads from the
     /// blob, else by the row of <paramref name="table"/>, which <paramref name="schema"/> lists, it is the
     /// signature of.</summary>
-    public static void AddSignature<TRow>(GridSchema<TRow> schema, TableIndex table, string name, Func<TRow, BlobHandle> get, Func<TRow, string?>? decode = null)
+    public static void AddSignature<TRow>(GridSchemaBuilder<TRow> schema, TableIndex table, string name, Func<TRow, BlobHandle> get, Func<TRow, string?>? decode = null)
     {
         AddColumn(schema, name, "X8", (r, _) => MetadataTokens.GetHeapOffset(get(r)), (r, rid) => ExplainSignature(schema.File, r, MetadataTokens.EntityHandle(table, rid), decode), isToken: false);
     }
@@ -153,7 +153,7 @@ public static class GridSchemas
 
     /// <summary>The index of a GUID in the #GUID heap, explained by the GUID unless
     /// <paramref name="tooltip"/> says otherwise.</summary>
-    public static void AddGuid<TRow>(GridSchema<TRow> schema, string name, Func<TRow, GuidHandle> get, Func<TRow, object?>? tooltip = null)
+    public static void AddGuid<TRow>(GridSchemaBuilder<TRow> schema, string name, Func<TRow, GuidHandle> get, Func<TRow, object?>? tooltip = null)
     {
         var file = schema.File;
         AddValue(schema, name, r => MetadataTokens.GetHeapOffset(get(r)), "X8",
@@ -165,18 +165,18 @@ public static class GridSchemas
     }
 
     /// <summary>What is shown under a selected row.</summary>
-    public static void SetDetails<TRow>(GridSchema<TRow> schema, Func<TRow, MetadataRowDetails?> get)
+    public static void SetDetails<TRow>(GridSchemaBuilder<TRow> schema, Func<TRow, MetadataRowDetails?> get)
     {
-        schema.Details = r => get(GetRow<TRow>(r));
+        schema.KeepDetails(r => get(GetRow<TRow>(r)));
     }
 
-    private static void AddColumn<TRow, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T>(GridSchema<TRow> schema, string name, string? format, Func<TRow, int, T> value,
+    private static void AddColumn<TRow, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T>(GridSchemaBuilder<TRow> schema, string name, string? format, Func<TRow, int, T> value,
         Func<TRow, int, object?>? tooltip, bool isToken = false)
     {
         var type = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
         var numeric = type.IsEnum || Type.GetTypeCode(type) is >= TypeCode.SByte and <= TypeCode.Decimal;
         var flags = FlagsSchemaInferer.IsFlags(typeof(T)) ? FlagsSchemaInferer.For(typeof(T)) : null;
-        schema.Columns.Add(new GridColumn
+        schema.AddColumn(new GridColumn
         {
             Column = new MetadataColumn
             {

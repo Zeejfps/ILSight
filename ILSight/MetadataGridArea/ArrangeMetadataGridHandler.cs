@@ -22,7 +22,7 @@ public sealed class ArrangeMetadataGridHandler(ArrangeMetadataGridHandler.IPorts
     {
         var arranged = await ports.ArrangeAsync(ask, ct);
         arranged.Switch(
-            ok => ok.Value.Switch(read => MetadataGridWidget.ShowArranged(ask, read.Value), _ => MetadataGridWidget.ShowArrangeStopped(ask)),
-            failed => MetadataGridWidget.ShowArrangeFailed(ask, failed.Error));
+            ok => ok.Value.Switch(read => ask.State.ShowArranged(ask, read.Value), _ => ask.State.StopArranging(ask.Key)),
+            failed => ask.State.FailArranging(ask.Key, failed.Error));
     }
 }

@@ -33,7 +33,7 @@ internal static class CustomDebugInformationTable
         (KnownGuids.TypeDefinitionDocuments, "Type Definition Documents (C# / VB)"),
     ];
 
-    public static GridSchema<CustomDebugInformation> Columns(GridSchema<CustomDebugInformation> table, MetadataFile file)
+    public static GridSchema<CustomDebugInformation> Columns(GridSchemaBuilder<CustomDebugInformation> table, MetadataFile file)
     {
         var m = file.Metadata;
         AddOffset(table, TableIndex.CustomDebugInformation);
@@ -45,7 +45,7 @@ internal static class CustomDebugInformationTable
         AddBlob(table, "Value", r => r.Value, r => r.Value.IsNil ? "<nil>" : m.GetBlobReader(r.Value).ToHexString());
         AddValue(table, "ValueLength", r => m.GetBlobReader(r.Value).Length, "X8");
         SetDetails(table, r => Details(m, r));
-        return table;
+        return table.ToSchema();
     }
 
     /// <summary>What the value of <paramref name="row"/> holds, for embedded source; null for any other kind.</summary>

@@ -189,11 +189,7 @@ internal static class DiagramView
     /// is of the diagram as it was last measured.</summary>
     private static void FollowLayout(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)
     {
-        if (view.Transition.TryFollowLayout(diagram.Layout))
-        {
-            view.LaidOutVersion = view.MeasuredVersion;
-        }
-
+        view.FollowLayout(diagram.Layout);
         view.Transition.Advance(ui.DeltaTime);
         if (view.Transition.IsMoving)
         {
@@ -230,57 +226,13 @@ internal static class DiagramView
             return;
         }
 
-        FitFirstLayout(view, layout, rect);
+        view.FitFirstLayout(layout, rect);
         if (view.LaidOutVersion != diagram.Version)
         {
             return;
         }
 
-        FocusPendingCard(view, layout, rect);
-    }
-
-    private static void FitFirstLayout(DiagramViewState view, TypeLayout layout, UiRect rect)
-    {
-        if (!view.IsFitPending)
-        {
-            return;
-        }
-
-        if (layout.Places.Count == 0)
-        {
-            return;
-        }
-
-        view.Camera.Fit(layout.Width, layout.Height, rect);
-        view.IsFitPending = false;
-    }
-
-    private static void FocusPendingCard(DiagramViewState view, TypeLayout layout, UiRect rect)
-    {
-        var type = view.PendingFocus;
-        if (type == null)
-        {
-            return;
-        }
-
-        view.PendingFocus = null;
-        if (!layout.Places.TryGetValue(type, out var place))
-        {
-            return;
-        }
-
-        var face = FindFace(view, type);
-        if (face is null)
-        {
-            return;
-        }
-
-        if (view.Camera.Shows(place, face.Width, face.Height, rect))
-        {
-            return;
-        }
-
-        view.Camera.CenterOn(new PointF(place.X + face.Width / 2, place.Y + face.Height / 2), rect);
+        view.FocusPendingCard(layout, rect);
     }
 
     /// <summary>The card and row under the pointer, while it is over the cards or holds a press on them.</summary>
@@ -414,8 +366,7 @@ internal static class DiagramView
             return;
         }
 
-        view.PressedOn = hit;
-        view.PressMoved = false;
+        view.PressOn(hit);
     }
 
     /// <summary>Begins opening the code <paramref name="row"/> stands for, when it stands for a type or member
@@ -447,11 +398,7 @@ internal static class DiagramView
         var pointer = ui.Input.Pointer;
         var dx = pointer.X - ui.PressPosition.X;
         var dy = pointer.Y - ui.PressPosition.Y;
-        if (!view.PressMoved)
-        {
-            view.PressMoved = dx * dx + dy * dy >= PanThreshold * PanThreshold;
-        }
-
+        view.TrackPress(dx, dy, PanThreshold);
         if (!view.PressMoved)
         {
             return;
@@ -524,8 +471,7 @@ internal static class DiagramView
             return;
         }
 
-        view.Selected = face.Card.Type;
-        view.MenuCard = face.Card;
+        view.OpenMenuOn(face.Card);
         ui.OpenContextMenu(MenuId);
     }
 
@@ -536,10 +482,10 @@ internal static class DiagramView
         var face = FaceOf(hit);
         if (face is null)
         {
-            view.Selected = null;
+            view.Select(null);
             return;
         }
-        view.Selected = face.Card.Type;
+        view.Select(face.Card.Type);
         var row = RowOf(hit);
         if (row is null)
         {
@@ -589,11 +535,7 @@ internal static class DiagramView
     private static void FillFrame(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram, DiagramHit hit)
     {
         var frame = view.Frame;
-        frame.Corner = view.Camera.Corner;
-        frame.Zoom = view.Camera.Zoom;
-        frame.Theme = ui.Theme;
-        frame.Palette = ui.State.NodeIconPalette;
-        frame.Icons = ui.State.Icons;
+        frame.Lay(view.Camera.Corner, view.Camera.Zoom, ui.Theme, ui.State.NodeIconPalette, ui.State.Icons);
         FillLinks(ui, view, diagram, frame);
         FillCards(view, diagram, hit, frame);
     }
@@ -601,7 +543,6 @@ internal static class DiagramView
     /// <summary>The links of the layout drawn whose cards the diagram still shows, each as it is drawn now.</summary>
     private static void FillLinks(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram, DiagramFrame frame)
     {
-        frame.Links.Clear();
         var layout = view.Transition.Layout;
         if (layout is null)
         {
@@ -617,7 +558,7 @@ internal static class DiagramView
                 continue;
             }
 
-            frame.Links.Add(DrawnLinkOf(ui, view, route));
+            frame.AddLink(DrawnLinkOf(ui, view, route));
         }
     }
 
@@ -654,7 +595,6 @@ internal static class DiagramView
     /// <summary>The cards the layout drawn places, each where it is drawn now.</summary>
     private static void FillCards(DiagramViewState view, TypeDiagram diagram, DiagramHit hit, DiagramFrame frame)
     {
-        frame.Cards.Clear();
         for (var i = 0; i < diagram.Cards.Count; i++)
         {
             var card = diagram.Cards[i];
@@ -671,7 +611,7 @@ internal static class DiagramView
             }
 
             var isSelected = card.Type == view.Selected;
-            frame.Cards.Add(new DrawnCard
+            frame.AddCard(new DrawnCard
             {
                 Face = face,
                 Place = place.Value,
@@ -897,23 +837,21 @@ internal static class DiagramView
     private static void Remove(DiagramViewState view, TypeDiagram diagram, TypeCard card)
     {
         diagram.RemoveCard(card.Type);
-        view.MenuCard = null;
-        if (view.Selected == card.Type)
-        {
-            view.Selected = null;
-        }
+        view.ForgetRemoved(card.Type);
     }
 
     private static void Paint(UiPainter p, DiagramFrame frame)
     {
-        foreach (var link in frame.Links)
+        var links = frame.Links;
+        for (var i = 0; i < links.Count; i++)
         {
-            PaintLink(p, frame, link);
+            PaintLink(p, frame, links[i]);
         }
 
-        foreach (var card in frame.Cards)
+        var cards = frame.Cards;
+        for (var i = 0; i < cards.Count; i++)
         {
-            PaintCard(p, frame, card);
+            PaintCard(p, frame, cards[i]);
         }
     }
 

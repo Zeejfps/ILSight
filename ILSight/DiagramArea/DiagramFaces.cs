@@ -40,8 +40,7 @@ internal static class DiagramFaces
         }
 
         var faces = Measure(ui, view, diagram);
-        Diagrams.KeepFaces(view, key, faces);
-        view.MeasuredVersion = diagram.Version;
+        view.KeepFaces(key, faces, diagram.Version);
         LayOutLater(ui.State, diagram, MeasuresOf(ui, diagram, faces));
     }
 

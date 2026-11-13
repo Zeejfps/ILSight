@@ -104,7 +104,7 @@ public static class DocumentPanels
         var grid = position.Grid;
         if (grid is not null)
         {
-            MetadataGridWidget.RestorePosition(view.GetGridState(shown), grid.Value);
+            view.GetGridState(shown).RestorePosition(grid.Value);
         }
     }
 
@@ -118,7 +118,7 @@ public static class DocumentPanels
             return;
         }
 
-        Diagrams.RestoreView(view.Diagram, saved);
+        view.Diagram.RestoreView(saved);
     }
 
     /// <summary>Returns the view of the comparison <paramref name="tab"/>, an open tab, shows to how
@@ -168,7 +168,7 @@ public static class DocumentPanels
         }
 
         view.RecordShown(tab);
-        MetadataGridWidget.RevealRow(view.GetGridState(grid), row);
+        view.GetGridState(grid).RevealRow(row);
     }
 
     /// <summary>Selects the card of <paramref name="type"/> on the diagram <paramref name="tab"/>, an open tab,
@@ -181,7 +181,7 @@ public static class DocumentPanels
             return;
         }
 
-        Diagrams.FocusCard(view.Diagram, type);
+        view.Diagram.FocusCard(type);
     }
 
     /// <summary>What <paramref name="view"/> counts toward <see cref="DocumentViews.Revision"/>.</summary>

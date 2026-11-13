@@ -296,7 +296,7 @@ public sealed class ExportsPanelTests : IDisposable
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         Assert.Equal(german.ExportReportTitle, DocumentsView.Tab(app.Ui, app.AppState.Navigation, tab).Title);
-        var document = DocumentPanels.GetView(app.Ui.Documents, tab).Code.Document;
+        var document = DocumentPanels.GetView(app.Ui.Documents, tab).Code.Layout.Document;
         Assert.NotNull(document);
         Assert.Contains(german.ExportWritten, Documents.GetText(document));
     }

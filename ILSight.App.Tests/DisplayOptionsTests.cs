@@ -53,7 +53,7 @@ public sealed class DisplayOptionsTests
 
         var run = view.Frames.Canvas.GlyphRuns.First(r => r.Text == "line 0");
         Assert.Equal(24f, run.Style.FontSize.Value);
-        Assert.True(view.State.RowHeight > CodeViewDriver.Row);
+        Assert.True(view.State.Layout.RowHeight > CodeViewDriver.Row);
     }
 
     [Fact]

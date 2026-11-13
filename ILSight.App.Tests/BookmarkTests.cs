@@ -147,7 +147,7 @@ public sealed class BookmarkTests : IDisposable
         app.Settle(4);
 
         Assert.Equal("Outline", tab.Node?.Text);
-        Assert.Equal(line, DocumentPanels.GetView(app.Ui.Documents, tab).Code.Flash?.Line);
+        Assert.Equal(line, DocumentPanels.GetView(app.Ui.Documents, tab).Code.Reveal.Flash?.Line);
         Assert.Equal("Outline", Assert.IsType<HistoryEntry.Node>(d.AppState.Navigation.HistoryEntries[d.AppState.Navigation.HistoryIndex]).Place.Label);
     }
 
@@ -258,7 +258,7 @@ public sealed class BookmarkTests : IDisposable
         app.Settle(4);
 
         Assert.Equal("Outline", tab.Node?.Text);
-        Assert.Equal(line, DocumentPanels.GetView(app.Ui.Documents, tab).Code.Flash?.Line);
+        Assert.Equal(line, DocumentPanels.GetView(app.Ui.Documents, tab).Code.Reveal.Flash?.Line);
     }
 
     private static void Click(AppDriver app, string text, KeyModifiers modifiers = KeyModifiers.None)

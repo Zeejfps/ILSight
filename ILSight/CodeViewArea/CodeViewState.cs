@@ -3,41 +3,32 @@ using ILSight.Core;
 namespace ILSight.CodeViewArea;
 
 /// <summary>Everything a <see cref="CodeViewWidget.CodeView"/> keeps between frames: scroll,
-/// selection, folds, find. One per open tab, owned by the app.</summary>
+/// selection, folds, find. One per open tab, owned by the app. The scroll and the find's query are fields its
+/// widgets take by <c>ref</c>; what keeps a rule is a part of its own.</summary>
 public sealed class CodeViewState
 {
     internal readonly CodeViewFrame Frame = new();
-    internal CodeFindIndex Find = CodeFindIndex.None;
 
     /// <summary>The bracket at the caret or just before it and the one matching it, by the document and the
     /// caret they were looked up for; see <see cref="MatchingBrackets"/>.</summary>
     internal Memo<(ByReference<DecompiledDocument>, TextPosition), BracketPair?> Brackets;
 
-    internal DecompiledDocument? Document;
-    internal int MaxColumns;
-    internal CodePress? Press;
     internal float ScrollX;
     internal float ScrollY;
-    internal float RowHeight;
-    internal float LaidOutScrollY;
-    internal float LaidOutScrollX;
-    internal CodeReference? Marked;
-    internal CodeMenuTarget Menu = CodeMenuTarget.None;
-    internal readonly KeptTooltip Tooltip = new();
-    internal PendingScroll? Pending;
-    internal CodeFlash? Flash;
-    internal bool FindOpen;
-    internal bool FocusFind;
     internal string Query = "";
-    /// <summary>The index of the find match selected, or null; kept while find is closed, for F3 to go on from.</summary>
-    internal int? CurrentMatch;
-    internal int KeyScrollRows;
-    /// <summary>How many rows Page Up and Page Down move, a view less one, as last laid out.</summary>
-    internal int PageRows = 1;
-    internal CaretGoal? Goal;
-    /// <summary>When the caret, at <see cref="BlinkCaret"/>, last moved: it shows from then for half a blink.</summary>
-    internal double BlinkFrom;
-    internal TextPosition BlinkCaret;
+    internal readonly KeptTooltip Tooltip = new();
+
+    internal CodeFind Find { get; } = new();
+
+    internal CaretBlink Blink { get; } = new();
+
+    internal CodeLayout Layout { get; } = new();
+
+    internal CodePointer Pointer { get; } = new();
+
+    internal CodeKeys Keys { get; } = new();
+
+    internal CodeReveal Reveal { get; } = new();
 
     public CodeSelection Selection { get; } = new();
 
@@ -48,12 +39,13 @@ public sealed class CodeViewState
     {
         get
         {
-            if (Pending is PendingScroll.Restore restoring)
+            if (Reveal.Pending is PendingScroll.Restore restoring)
             {
                 return restoring.Position;
             }
 
-            var top = RowHeight > 0f && Folds.RowCount > 0 ? CodeFolding.GetLineAt(Folds, CodeFolding.ClampRow(Folds, CodeViewWidget.GetRowAt(ScrollY, RowHeight))) : 0;
+            var rowHeight = Layout.RowHeight;
+            var top = rowHeight > 0f && Folds.RowCount > 0 ? CodeFolding.GetLineAt(Folds, CodeFolding.ClampRow(Folds, CodeViewWidget.GetRowAt(ScrollY, rowHeight))) : 0;
             return new CodeViewPosition
             {
                 TopLine = top,
@@ -63,9 +55,6 @@ public sealed class CodeViewState
             };
         }
     }
-
-    /// <summary>Whether a press on the text has moved off where it started, dragging a selection.</summary>
-    internal bool PressMoved => Press is CodePress.OnText text && text.Moved;
 
     public bool HasSelection => Selection.HasSelection;
 }

@@ -52,8 +52,14 @@ internal ref struct MetadataGridFrame
 
     public MetadataGridResult Render()
     {
-        var columns = State.Columns ??= Measure();
-        State.RowHeight = Ui.Theme.RowHeight;
+        var columns = State.Columns;
+        if (columns is null)
+        {
+            columns = Measure();
+            State.KeepColumns(columns);
+        }
+
+        State.TakeRowHeight(Ui.Theme.RowHeight);
         MetadataGridWidget.UpdateView(State, Flags, Views, ClosedAssembly is not null);
 
         using var pane = Ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = Ui.Theme.PaneBackground });
@@ -63,7 +69,7 @@ internal ref struct MetadataGridFrame
         MetadataGridWidget.UpdateView(State, Flags, Views, ClosedAssembly is not null);
 
         _focused = table.Focused;
-        table.TakeKeys(State.View.Length);
+        table.TakeKeys(State.RowCount);
         if (_focused)
         {
             _result = Keys();
@@ -167,21 +173,21 @@ internal ref struct MetadataGridFrame
             return;
         }
 
-        MetadataGridWidget.SortBy(State, clicked);
+        State.SortBy(clicked);
     }
 
     private void FlagsFlyout()
     {
-        if (State.FlagsColumn < 0)
+        if (State.Flyout.Column < 0)
         {
             return;
         }
 
         var theme = Ui.Theme;
-        var filter = Flags.GetFilter(Grid, State.FlagsColumn);
+        var filter = Flags.GetFilter(Grid, State.Flyout.Column);
         var width = FlagsFilterView.ContentWidth + theme.TooltipPaddingX * 2 + theme.ScrollBarHitWidth;
-        var funnelId = MetadataGridWidget.GetFunnelId(ListId, State.FlagsColumn);
-        using var flyout = Ui.Flyout(HashCode.Combine(ListId, FlyoutSalt), ref State.FlagsOpen, funnelId,
+        var funnelId = MetadataGridWidget.GetFunnelId(ListId, State.Flyout.Column);
+        using var flyout = Ui.Flyout(HashCode.Combine(ListId, FlyoutSalt), ref State.Flyout.IsOpen, funnelId,
             new Box { Width = Sizing.Fit(FlyoutMinWidth, width), Gap = theme.Gap });
         if (!flyout.IsOpen)
         {
@@ -193,7 +199,7 @@ internal ref struct MetadataGridFrame
 
     private MetadataGridResult Keys()
     {
-        if (State.View.Length == 0)
+        if (State.RowCount == 0)
         {
             return default;
         }
@@ -208,11 +214,11 @@ internal ref struct MetadataGridFrame
             {
                 case (0, KeyboardKey.Space) when State.IsOpen:
                 case (0, KeyboardKey.Escape) when State.IsOpen:
-                    MetadataGridWidget.CollapseCurrentCell(State);
+                    State.CollapseCurrentCell();
                     MetadataGridWidget.SelectAllText(State);
                     continue;
                 case (0, KeyboardKey.Space) when State.HasCurrentCell && MetadataGrids.GetLines(Grid, State.Selected, State.CurrentColumn).MoreLines > 0:
-                    MetadataGridWidget.ExpandCell(State, State.Selected, State.CurrentColumn);
+                    State.ExpandCell(State.Selected, State.CurrentColumn);
                     MetadataGridWidget.SelectAllText(State);
                     continue;
             }
@@ -238,12 +244,12 @@ internal ref struct MetadataGridFrame
         var rowHeight = State.RowHeight;
         var width = columns.TotalWidth + Ui.Theme.ShellPaddingX * 2;
         var details = MetadataDetailsView.Height(Ui, Grid, State.Details, State.Selected, width);
-        MetadataGridWidget.MeasureTallRows(State, rowHeight, details);
-        using var body = table.Body(State.View.Length, tall: State.TallRows);
+        State.MeasureTallRows(rowHeight, details);
+        using var body = table.Body(State.RowCount, tall: State.TallRows);
         Arrive(body, rowHeight);
         for (var index = body.First; index < body.End; index++)
         {
-            var row = MetadataGridWidget.GetRowAt(State, index);
+            var row = State.GetRowAt(index);
             var height = State.TallRowsByIndex.GetValueOrDefault(index);
             if (height.Cells <= 0f)
             {
@@ -269,13 +275,12 @@ internal ref struct MetadataGridFrame
             return;
         }
 
-        var pending = State.Pending;
+        var pending = State.TakePending();
         if (pending is null)
         {
             return;
         }
 
-        State.Pending = null;
         pending.Switch((state: State, body, rowHeight),
             reveal: static (s, reveal) => ArriveAtRevealed(s.state, s.body, s.rowHeight, reveal.Row),
             restore: static (s, restore) => ArriveAtRestored(s.state, s.body, s.rowHeight, restore.Position));
@@ -295,7 +300,7 @@ internal ref struct MetadataGridFrame
     private static void ArriveAtRevealed(MetadataGridState state, TableBody body, float rowHeight, int row)
     {
         MetadataGridWidget.SelectCell(state, row, state.CurrentColumn);
-        var index = MetadataGridWidget.GetIndexOf(state, row);
+        var index = state.IndexOf(row);
         if (index < 0)
         {
             return;
@@ -365,12 +370,12 @@ internal ref struct MetadataGridFrame
             return;
         }
 
-        MetadataGridWidget.ExpandCell(State, row, column);
+        State.ExpandCell(row, column);
     }
 
     private bool CanExpand(int row, int column)
     {
-        if (MetadataGridWidget.IsOpenAt(State, row, column))
+        if (State.IsOpenAt(row, column))
         {
             return false;
         }
@@ -453,7 +458,7 @@ internal ref struct MetadataGridFrame
         var column = Grid.Columns[c];
         var cellId = cells.CellAt(c).Id;
         var target = column.IsToken && ClosedAssembly is null ? MetadataGrids.FindLink(Grid, row, c) : null;
-        var expanded = MetadataGridWidget.IsOpenAt(State, row, c);
+        var expanded = State.IsOpenAt(row, c);
         uint? color = theme.Text;
         UiIcon? link = null;
         if (target is not null)

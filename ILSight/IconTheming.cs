@@ -12,6 +12,20 @@ namespace ILSight;
 /// theme built over the ones it extends and the reference one.</summary>
 public static class IconTheming
 {
+    // Read key by key, and held here until all are in, so that the IconThemeFile is made once, whole.
+    private sealed class ParsedIconTheme
+    {
+        public required ThemeId<IconThemeFile> Id { get; init; }
+        public required ThemeJson Json { get; init; }
+        public string File => Json.File;
+        public required ThemeName Name;
+        public ThemeParent<IconThemeFile>? Extends;
+        public readonly Dictionary<string, IconFont> Fonts = new();
+        public readonly Dictionary<string, IconValue> Icons = new();
+        public readonly Dictionary<string, ThemeNamedFile> NamedFonts = new();
+        public readonly Dictionary<string, ThemeNamedFile> NamedPictures = new();
+    }
+
     /// <summary>The reference icon theme: every theme can draw in its fonts, and a key no theme in a chain
     /// draws is drawn as it draws it.</summary>
     public static readonly ThemeId<IconThemeFile> ReferenceId = ThemeId<IconThemeFile>.Of("lucide");
@@ -105,10 +119,21 @@ public static class IconTheming
     /// (<see cref="Complete"/>).</summary>
     public static IconThemeFile Parse(ThemeId<IconThemeFile> id, string file, byte[] json)
     {
-        var theme = CreateFile(id, file);
+        var theme = new ParsedIconTheme { Id = id, Json = new ThemeJson { File = file }, Name = new ThemeName.Plain(id.Text) };
         Theming.ReadJson(theme.Json, json, (ref Utf8JsonReader r, string k, int l) => ReadThemeKey(theme, ref r, k, l));
-        IconTheming.KeepThemeContents(theme);
-        return theme;
+        var contents = theme.Json.IsUnreadable ? null : new IconThemeContents { Fonts = theme.Fonts, Icons = theme.Icons };
+        return new IconThemeFile
+        {
+            Id = id,
+            Json = theme.Json,
+            Name = theme.Name,
+            Extends = theme.Extends,
+            Fonts = theme.Fonts,
+            Icons = theme.Icons,
+            NamedFonts = theme.NamedFonts,
+            NamedPictures = theme.NamedPictures,
+            Contents = contents,
+        };
     }
 
     /// <summary><paramref name="theme"/>, as <see cref="Parse"/> read it, with the fonts and pictures it names loaded
@@ -116,9 +141,11 @@ public static class IconTheming
     /// is wrong with one told at the line naming it; one missing there is unreadable.</summary>
     public static IconThemeFile Complete(IconThemeFile theme, IReadOnlyDictionary<string, IconAsset> named)
     {
+        var fonts = new Dictionary<string, IconFont>(theme.Fonts);
+        var icons = new Dictionary<string, IconValue>(theme.Icons);
         foreach (var (id, font) in theme.NamedFonts)
         {
-            theme.Fonts[id] = BuildFont(theme, id, font, GetReadOrDefault(named, font.Path));
+            fonts[id] = BuildFont(theme, id, font, GetReadOrDefault(named, font.Path));
         }
 
         foreach (var (key, picture) in theme.NamedPictures)
@@ -126,10 +153,23 @@ public static class IconTheming
             var value = BuildPicture(theme, picture, GetReadOrDefault(named, picture.Path));
             if (value is not null)
             {
-                theme.Icons[key] = value;
+                icons[key] = value;
             }
         }
-        return theme;
+
+        var contents = theme.Contents is null ? null : new IconThemeContents { Fonts = fonts, Icons = icons };
+        return new IconThemeFile
+        {
+            Id = theme.Id,
+            Json = theme.Json,
+            Name = theme.Name,
+            Extends = theme.Extends,
+            Fonts = fonts,
+            Icons = icons,
+            NamedFonts = theme.NamedFonts,
+            NamedPictures = theme.NamedPictures,
+            Contents = contents,
+        };
     }
 
     /// <summary>What reading <paramref name="path"/> came to, among <paramref name="named"/>; by default, when it is
@@ -144,17 +184,7 @@ public static class IconTheming
         return CreateFailedAsset(ThemeProblem.AssetUnreadable, path);
     }
 
-    private static void KeepThemeContents(IconThemeFile theme)
-    {
-        if (theme.Json.IsUnreadable)
-        {
-            return;
-        }
-
-        theme.Contents = new IconThemeContents { Fonts = theme.Fonts, Icons = theme.Icons };
-    }
-
-    private static void ReadThemeKey(IconThemeFile theme, ref Utf8JsonReader reader, string key, int line)
+    private static void ReadThemeKey(ParsedIconTheme theme, ref Utf8JsonReader reader, string key, int line)
     {
         switch (key)
         {
@@ -179,7 +209,7 @@ public static class IconTheming
         }
     }
 
-    private static void ReadThemeName(IconThemeFile theme, ref Utf8JsonReader reader, int line)
+    private static void ReadThemeName(ParsedIconTheme theme, ref Utf8JsonReader reader, int line)
     {
         var name = Theming.ReadJsonName(theme.Json, ref reader, line, theme.Id.Text);
         if (name is not null)
@@ -188,7 +218,7 @@ public static class IconTheming
         }
     }
 
-    private static void ReadExtends(IconThemeFile theme, ref Utf8JsonReader reader, int line)
+    private static void ReadExtends(ParsedIconTheme theme, ref Utf8JsonReader reader, int line)
     {
         var parent = Theming.ReadJsonString(theme.Json, ref reader, ThemeJson.ExtendsKey, line);
         if (parent is null)
@@ -205,7 +235,7 @@ public static class IconTheming
         theme.Extends = new ThemeParent<IconThemeFile> { Id = id, Line = line };
     }
 
-    private static void ReadFonts(IconThemeFile theme, ref Utf8JsonReader reader, int line)
+    private static void ReadFonts(ParsedIconTheme theme, ref Utf8JsonReader reader, int line)
     {
         if (!Theming.IsJsonObject(theme.Json, ref reader, FontsKey, line))
         {
@@ -246,7 +276,7 @@ public static class IconTheming
         return new IconFont.Loaded { Path = named.Path, Face = face, Characters = characters };
     }
 
-    private static void ReadIcons(IconThemeFile theme, ref Utf8JsonReader reader, int line)
+    private static void ReadIcons(ParsedIconTheme theme, ref Utf8JsonReader reader, int line)
     {
         if (!Theming.IsJsonObject(theme.Json, ref reader, IconsKey, line))
         {
@@ -259,7 +289,7 @@ public static class IconTheming
         }
     }
 
-    private static void ReadIcon(IconThemeFile theme, ref Utf8JsonReader reader, string key, int line)
+    private static void ReadIcon(ParsedIconTheme theme, ref Utf8JsonReader reader, string key, int line)
     {
         var subject = IconsKey + "." + key;
         if (RetiredKeys.Contains(key))
@@ -291,7 +321,7 @@ public static class IconTheming
         public string? Svg { get; init; }
     }
 
-    private static IconFields ReadIconFields(IconThemeFile theme, ref Utf8JsonReader reader, string subject)
+    private static IconFields ReadIconFields(ParsedIconTheme theme, ref Utf8JsonReader reader, string subject)
     {
         var fields = new IconFields();
         while (Theming.TryReadJsonKey(theme.Json, ref reader, out var name, out var nameLine))
@@ -319,7 +349,7 @@ public static class IconTheming
     /// <summary>Takes the icon <paramref name="fields"/> make: one drawn in a font at once, a picture named for reading
     /// (<see cref="IconThemeFile.NamedPictures"/>); nothing after reporting why they make none. The one written last
     /// for a key wins.</summary>
-    private static void TakeIcon(IconThemeFile theme, string key, string subject, IconFields fields, int line)
+    private static void TakeIcon(ParsedIconTheme theme, string key, string subject, IconFields fields, int line)
     {
         var font = fields.Font;
         var glyph = fields.Glyph;
@@ -339,7 +369,7 @@ public static class IconTheming
         Theming.AddJsonError(theme.Json, line, ThemeProblem.InvalidIcon, subject);
     }
 
-    private static void TakeGlyph(IconThemeFile theme, string key, IconValue? value)
+    private static void TakeGlyph(ParsedIconTheme theme, string key, IconValue? value)
     {
         if (value is null)
         {
@@ -350,7 +380,7 @@ public static class IconTheming
         theme.Icons[key] = value;
     }
 
-    private static IconValue? MakeGlyph(IconThemeFile theme, string subject, string font, string glyph, int line)
+    private static IconValue? MakeGlyph(ParsedIconTheme theme, string subject, string font, string glyph, int line)
     {
         var codepoint = ParseCodepoint(glyph);
         if (codepoint is null)

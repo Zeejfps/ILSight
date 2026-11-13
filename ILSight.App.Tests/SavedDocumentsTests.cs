@@ -66,7 +66,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var grid = tab.Grid;
         Assert.NotNull(grid);
         var row = grid.RowNamed("Greeter");
-        MetadataGridWidget.RevealRow(GridOf(app, tab), row);
+        GridOf(app, tab).RevealRow(row);
         app.Run(3);
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
         return row;
@@ -303,7 +303,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var grid = tab.Grid;
         Assert.NotNull(grid);
         var row = grid.RowNamed("Greeter");
-        MetadataGridWidget.RevealRow(GridOf(app, tab), row);
+        GridOf(app, tab).RevealRow(row);
         app.Run(3);
         app.Show(await app.FixtureAsync("Greeter"), 4, inNewTab: true);
         app.Run(3);

@@ -9,6 +9,21 @@ namespace ILSight;
 /// read leniently, every problem kept with its line, and each theme built over the themes it extends.</summary>
 public static class Theming
 {
+    // Read key by key, and held here until all are in, so that the ThemeFile is made once, whole.
+    private sealed class ParsedTheme
+    {
+        public required ThemeId<ThemeFile> Id { get; init; }
+        public required ThemeJson Json { get; init; }
+        public string File => Json.File;
+        public required ThemeName Name;
+        public ThemeType? Type;
+        public ThemeParent<ThemeFile>? Extends;
+        public readonly Dictionary<string, ThemeValue> Palette = new();
+        public readonly Dictionary<string, ThemeValue> Ui = new();
+        public readonly Dictionary<string, ThemeValue> Code = new();
+        public readonly Dictionary<string, ThemeValue> Icons = new();
+    }
+
     /// <summary>The built-in dark theme, which settings start on and an id no theme has shows.</summary>
     public static readonly ThemeId<ThemeFile> DarkId = ThemeId<ThemeFile>.Of("dark");
     public static readonly ThemeId<ThemeFile> LightId = ThemeId<ThemeFile>.Of("light");
@@ -614,29 +629,27 @@ public static class Theming
     /// <paramref name="file"/>.</summary>
     public static ThemeFile ReadTheme(ThemeId<ThemeFile> id, string file, byte[] json)
     {
-        var theme = CreateFile(id, file);
+        var theme = new ParsedTheme { Id = id, Json = new ThemeJson { File = file }, Name = new ThemeName.Plain(id.Text) };
         Theming.ReadJson(theme.Json, json, (ref Utf8JsonReader r, string k, int l) => ReadThemeKey(theme, ref r, k, l));
-        Theming.KeepThemeContents(theme);
-        return theme;
-    }
-
-    private static void KeepThemeContents(ThemeFile theme)
-    {
-        if (theme.Json.IsUnreadable)
-        {
-            return;
-        }
-
-        theme.Contents = new ThemeContents
+        var contents = theme.Json.IsUnreadable ? null : new ThemeContents
         {
             Palette = theme.Palette,
             Ui = theme.Ui,
             Code = theme.Code,
             Icons = theme.Icons,
         };
+        return new ThemeFile
+        {
+            Id = id,
+            Json = theme.Json,
+            Name = theme.Name,
+            Type = theme.Type,
+            Extends = theme.Extends,
+            Contents = contents,
+        };
     }
 
-    private static void ReadThemeKey(ThemeFile theme, ref Utf8JsonReader reader, string key, int line)
+    private static void ReadThemeKey(ParsedTheme theme, ref Utf8JsonReader reader, string key, int line)
     {
         switch (key)
         {
@@ -670,7 +683,7 @@ public static class Theming
         }
     }
 
-    private static void ReadThemeName(ThemeFile theme, ref Utf8JsonReader reader, int line)
+    private static void ReadThemeName(ParsedTheme theme, ref Utf8JsonReader reader, int line)
     {
         var name = Theming.ReadJsonName(theme.Json, ref reader, line, theme.Id.Text);
         if (name is not null)
@@ -679,7 +692,7 @@ public static class Theming
         }
     }
 
-    private static void ReadType(ThemeFile theme, ref Utf8JsonReader reader, int line)
+    private static void ReadType(ParsedTheme theme, ref Utf8JsonReader reader, int line)
     {
         var type = Theming.ReadJsonString(theme.Json, ref reader, TypeKey, line);
         if (type is null)
@@ -704,7 +717,7 @@ public static class Theming
         };
     }
 
-    private static void ReadExtends(ThemeFile theme, ref Utf8JsonReader reader, int line)
+    private static void ReadExtends(ParsedTheme theme, ref Utf8JsonReader reader, int line)
     {
         var parent = Theming.ReadJsonString(theme.Json, ref reader, ThemeJson.ExtendsKey, line);
         if (parent is null)
@@ -722,7 +735,7 @@ public static class Theming
     }
 
     /// <summary>Reads the palette, whose colors must be written out, not named.</summary>
-    private static void ReadPalette(ThemeFile theme, ref Utf8JsonReader reader, int line)
+    private static void ReadPalette(ParsedTheme theme, ref Utf8JsonReader reader, int line)
     {
         if (!Theming.IsJsonObject(theme.Json, ref reader, PaletteKey, line))
         {
@@ -748,7 +761,7 @@ public static class Theming
     }
 
     /// <summary>Reads a section of colors whose keys are <paramref name="keys"/>, each a color or a palette name.</summary>
-    private static void ReadColors(ThemeFile theme, ref Utf8JsonReader reader, string section, int line, Dictionary<string, ThemeValue> colors, HashSet<string> keys)
+    private static void ReadColors(ParsedTheme theme, ref Utf8JsonReader reader, string section, int line, Dictionary<string, ThemeValue> colors, HashSet<string> keys)
     {
         if (!Theming.IsJsonObject(theme.Json, ref reader, section, line))
         {
@@ -761,7 +774,7 @@ public static class Theming
         }
     }
 
-    private static void ReadColor(ThemeFile theme, ref Utf8JsonReader reader, string section, string name, int line, Dictionary<string, ThemeValue> colors, HashSet<string> keys)
+    private static void ReadColor(ParsedTheme theme, ref Utf8JsonReader reader, string section, string name, int line, Dictionary<string, ThemeValue> colors, HashSet<string> keys)
     {
         var key = section + "." + name;
         if (!keys.Contains(name))
@@ -785,7 +798,7 @@ public static class Theming
     }
 
     /// <summary>True when <paramref name="color"/> is a color a theme can hold; else reports why not.</summary>
-    private static bool IsValidColor(ThemeFile theme, string key, string color, int line)
+    private static bool IsValidColor(ParsedTheme theme, string key, string color, int line)
     {
         if (!UiColor.TryParse(color, out _))
         {

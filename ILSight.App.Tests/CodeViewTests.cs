@@ -419,7 +419,7 @@ public sealed class CodeViewTests
         view.Document = Documents.CreateFromText("t", "alpha beta");
         view.Run();
 
-        Assert.Same(CodeMenuTarget.None, view.State.Menu);
+        Assert.Same(CodeMenuTarget.None, view.State.Pointer.Menu);
         Assert.DoesNotContain(view.Frames.Canvas.Texts, t => t.Inputs.Text == "Analyze");
     }
 

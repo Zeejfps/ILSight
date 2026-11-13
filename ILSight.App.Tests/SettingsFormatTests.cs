@@ -43,8 +43,7 @@ public sealed class SettingsFormatTests : IDisposable
     public void Settings_with_every_field_set_are_written_as_the_fixture()
     {
         var path = _temp.PathOf(SettingsFixture);
-        var settings = ExpectedSettings();
-        settings.FilePath = FullFilePath.Of(path);
+        var settings = ExpectedSettings() with { FilePath = FullFilePath.Of(path) };
 
         Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
 

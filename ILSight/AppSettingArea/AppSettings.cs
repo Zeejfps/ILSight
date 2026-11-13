@@ -10,7 +10,7 @@ namespace ILSight.AppSettingArea;
 
 /// <summary>What persists between runs, in the user's app-data folder, as read from its file by
 /// <see cref="SettingsReading"/>: whatever the file held, every value here is one the app can use.</summary>
-public sealed class AppSettings
+public sealed record AppSettings
 {
     /// <summary>The settings file in the user's app-data folder; under this process's folder when the
     /// system names no app-data folder.</summary>
@@ -19,11 +19,11 @@ public sealed class AppSettings
 
     /// <summary>The settings file, with the user's themes and icon themes beside it; null keeps the settings
     /// in memory only.</summary>
-    public FullFilePath? FilePath { get; set; }
+    public FullFilePath? FilePath { get; init; }
 
     /// <summary>Whether <see cref="SettingsSaving.WriteSettings"/> writes to <see cref="FilePath"/>; false when the
     /// file there could be neither read whole nor copied aside, so writing over it would lose what it holds.</summary>
-    public bool CanSaveOverFile { get; set; } = true;
+    public bool CanSaveOverFile { get; init; } = true;
 
     /// <summary>The named assembly lists, the open one's as it was left.</summary>
     public List<AssemblyListRecord> AssemblyLists { get; set; } = new();
