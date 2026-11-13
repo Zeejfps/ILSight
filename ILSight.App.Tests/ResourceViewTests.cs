@@ -259,4 +259,26 @@ public sealed class ResourceViewTests
         Assert.Equal(BrowseNodes.ReadResource(node), await File.ReadAllBytesAsync(path));
         Assert.Empty(app.AppState.Errors.Entries);
     }
+
+    [Fact]
+    public async Task Saving_a_resource_whose_assembly_closed_before_it_was_read_says_why_in_the_language_shown_and_reports_no_error()
+    {
+        var (app, _) = await ShowResourceAsync("data.json");
+        var node = await app.NodeAsync("Resources", "data.json");
+        var module = Assert.IsType<LoadedModule>(node.Assembly);
+        using var temp = new TempDir();
+        Directory.CreateDirectory(temp.Path);
+        var path = temp.PathOf("data.json");
+        app.AppState.Locale = Locale.De;
+        var t = Strings.For(Locale.De);
+
+        app.Driver.InTurn(() => CommandArea.Commands.CloseAssemblies(app.AppState, [module]));
+        app.Driver.InTurn(() => SaveResource(app.AppState, node, path));
+        app.Run(2);
+
+        Assert.True(app.Frames.Drew(t.ErrorSaveResource("data.json")));
+        Assert.True(app.Frames.Drew(t.DocumentClosed(module.FilePath.FileName)));
+        Assert.Empty(app.AppState.Errors.Entries);
+        Assert.False(File.Exists(path));
+    }
 }

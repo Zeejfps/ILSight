@@ -560,6 +560,7 @@
   "status.exporting_part": "Exportando {part}/{parts} · {name}",
   "status.cancel_export": "Cancelar a exportação",
   "status.show_exports": "Mostrar as exportações",
+  "status.dismiss_refusal": "Dispensar",
   "status.export_queued": {"one": "mais {count:N0} na fila", "other": "mais {count:N0} na fila"},
   "status.resolving": "Resolvendo…",
   "status.restart_to_update": "Reiniciar para atualizar",

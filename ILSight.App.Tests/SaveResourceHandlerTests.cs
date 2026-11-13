@@ -7,23 +7,37 @@ public sealed class SaveResourceHandlerTests
     public async Task Handle_Saved_ReportsNothing()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var ports = new FakeSaveResourceHandlerPorts { Answer = new Outcome.Done() };
+        var ports = new FakeSaveResourceHandlerPorts { Answer = new ResourceSave.Saved() };
 
         new SaveResourceHandler(ports).Handle(await d.NodeAsync("Resources", "data.json"), "data.json");
 
         Assert.Empty(ports.Reported);
+        Assert.Empty(ports.Refused);
     }
 
     [Fact]
     public async Task Handle_NotWritten_ReportsTheResourceAndWhy()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var ports = new FakeSaveResourceHandlerPorts { Answer = new Outcome.Failed(new IOException("Disk full.")) };
+        var ports = new FakeSaveResourceHandlerPorts { Answer = new ResourceSave.Failed { Error = new IOException("Disk full.") } };
 
         new SaveResourceHandler(ports).Handle(await d.NodeAsync("Resources", "data.json"), "data.json");
 
         var problem = Assert.IsType<AppProblem.ResourceNotSaved>(Assert.Single(ports.Reported));
         Assert.Equal("data.json", problem.Resource);
         Assert.Equal("Disk full.", problem.Reason);
+        Assert.Empty(ports.Refused);
+    }
+
+    [Fact]
+    public async Task Handle_AssemblyClosed_SaysWhyAndReportsNothing()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var ports = new FakeSaveResourceHandlerPorts { Answer = new ResourceSave.Closed { Assembly = "Shop.dll" } };
+
+        new SaveResourceHandler(ports).Handle(await d.NodeAsync("Resources", "data.json"), "data.json");
+
+        Assert.Equal([new Refusal.ResourceNotSaved { Resource = "data.json", Assembly = "Shop.dll" }], ports.Refused);
+        Assert.Empty(ports.Reported);
     }
 }

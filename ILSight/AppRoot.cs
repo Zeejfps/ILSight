@@ -129,6 +129,7 @@ internal static class AppRoot
         var closable = new ClosableAssemblyList(runtime);
         var assemblies = closable.List;
         var errors = new ErrorLog();
+        var refusals = new RefusalLine();
         var work = new BackgroundWork();
         var opens = new OpenRequests();
         var settingsPlace = new SettingsPlace { FilePath = settings.FilePath, CanSaveOverFile = settings.CanSaveOverFile };
@@ -136,11 +137,11 @@ internal static class AppRoot
         var iconThemes = IconTheming.CreateCatalog(BuiltInIconThemes.Files);
         var decompileIntoTab = new DecompileIntoTabHandler(new DecompileIntoTabHandlerAdapter(errors, session));
         var navigation = new NavigationInfrastructure(errors, assemblies, session, opens);
-        var assemblyList = new AssemblyListInfrastructure(errors, assemblies, session);
+        var assemblyList = new AssemblyListInfrastructure(errors, refusals, assemblies, session);
         var diagrams = new DiagramInfrastructure(errors, assemblies);
         var bookmarks = new BookmarkInfrastructure(errors, assemblies, session);
         var analysis = new AnalysisInfrastructure(errors, assemblies);
-        var exports = new ExportInfrastructure(errors, session);
+        var exports = new ExportInfrastructure(errors, refusals, session);
         var tree = new TreeInfrastructure(session);
         var viewCommands = new Queue<ViewCommand>();
         var appState = new AppState
@@ -189,6 +190,7 @@ internal static class AppRoot
             View = Settings.ReadViewSettings(settings),
             Window = settings.Window,
             Errors = errors,
+            Refusals = refusals,
             Tooltips = new CodeTooltips { Assemblies = assemblies, Version = assemblies.Version },
             Themes = themes,
             UserThemes = new UserThemes<ThemeFile, ThemeContents, AppTheme>(new UserColorThemesAdapter(errors)) { Themes = themes, Folder = settingsPlace.ThemesFolder },

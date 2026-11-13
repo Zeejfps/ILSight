@@ -560,6 +560,7 @@
   "status.exporting_part": "Экспорт {part}/{parts} · {name}",
   "status.cancel_export": "Отменить экспорт",
   "status.show_exports": "Показать экспорт",
+  "status.dismiss_refusal": "Скрыть",
   "status.export_queued": {"one": "ещё {count:N0} в очереди", "few": "ещё {count:N0} в очереди", "many": "ещё {count:N0} в очереди", "other": "ещё {count:N0} в очереди"},
   "status.resolving": "Поиск определения…",
   "status.restart_to_update": "Перезапустить для обновления",

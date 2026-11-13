@@ -560,6 +560,7 @@
   "status.exporting_part": "正在导出 {part}/{parts} · {name}",
   "status.cancel_export": "取消导出",
   "status.show_exports": "显示导出",
+  "status.dismiss_refusal": "关闭",
   "status.export_queued": {"other": "另有 {count:N0} 个排队中"},
   "status.resolving": "正在解析…",
   "status.restart_to_update": "重启以更新",

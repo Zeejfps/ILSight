@@ -1,12 +1,13 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
+using ILSight.CommandArea;
 using ILSight.Core;
 using ILSight.ExportArea;
 
 namespace ILSight.MainArea;
 
 /// <summary>The shown node's full name at the left, ellipsized, and a content-sized cluster at the
-/// right: activity, errors, language and the assembly count.</summary>
+/// right: a refused request and why, activity, errors, language and the assembly count.</summary>
 internal static class StatusBarView
 {
     public static void Render(Ui<UiState> ui, AppState appState)
@@ -31,6 +32,13 @@ internal static class StatusBarView
             {
                 if (ExportStatusView.Render(ui, appState.Export))
                 {
+                    Dot(ui);
+                }
+
+                var refusal = appState.Refusals.Shown;
+                if (refusal is not null)
+                {
+                    RefusalNote(ui, refusal);
                     Dot(ui);
                 }
 
@@ -118,6 +126,35 @@ internal static class StatusBarView
         {
             ui.Text(t.StatusRestartToUpdate, color: theme.AccentText, size: theme.FontSizeSmall);
         }
+    }
+
+    /// <summary>What was refused and why, in the language shown; clicked, it goes.</summary>
+    private static void RefusalNote(Ui<UiState> ui, Refusal refusal)
+    {
+        var t = ui.State.Strings;
+        var theme = ui.Theme;
+        var i = ui.Clickable("refusal");
+        if (i.Clicked)
+        {
+            Commands.Later(ui.State, static a => a.Refusals.Dismiss());
+        }
+
+        var what = ui.Memo("status-refused", (refusal, t), static a => a.refusal.Words(a.t).What);
+        var why = ui.Memo("status-refused-why", (refusal, t), static a => a.refusal.Words(a.t).Why);
+        using (ui.Row(i.Id, new Box
+        {
+            Width = Sizing.Fit(),
+            Height = Sizing.Grow(),
+            Gap = theme.GapTight,
+            Padding = new Spacing(theme.GapTight, 0f),
+            AlignY = Align.Center,
+            Background = i.Held ? theme.Pressed(theme.Surface) : i.Hovered ? theme.RowHover : 0u,
+        }))
+        {
+            ui.Text(what, color: theme.Warning, size: theme.FontSizeSmall);
+            ui.Text(why, color: theme.TextMuted, size: theme.FontSizeSmall);
+        }
+        ui.Tooltip(i.Id, t.StatusDismissRefusal);
     }
 
     private static void ErrorIndicator(Ui<UiState> ui, ErrorLog errors)

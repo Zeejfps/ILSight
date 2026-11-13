@@ -5,10 +5,10 @@ namespace ILSight.App.Tests;
 
 /// <summary>Answers each port member of <see cref="AssemblyReloading"/> with what the test set, doing
 /// <see cref="WhileWorking"/> before it answers; keeps what was asked, the tokens it was asked with, and the problems
-/// reported.</summary>
+/// reported and the refusals shown.</summary>
 internal sealed class FakeAssemblyReloadingPorts : AssemblyReloading.IPorts
 {
-    public Outcome<PdbCheck> PdbChecked { get; init; } = new Outcome<PdbCheck>.Ok(PdbCheck.Matches);
+    public PdbChecking PdbChecked { get; init; } = new PdbChecking.Checked { Check = PdbCheck.Matches };
 
     public Func<LoadedAssembly, IReadOnlyList<NodePath>, Task<Outcome<ReopenedFile>>> ReadAgain { get; init; } =
         static (_, _) => Task.FromResult<Outcome<ReopenedFile>>(new Outcome<ReopenedFile>.Failed(new IOException("Reading again was not expected.")));
@@ -28,6 +28,8 @@ internal sealed class FakeAssemblyReloadingPorts : AssemblyReloading.IPorts
 
     public List<AppProblem> Reported { get; } = [];
 
+    public List<Refusal> Refused { get; } = [];
+
     /// <summary>The modules each release was handed, in order.</summary>
     public List<RemovedModules> Released { get; } = [];
 
@@ -36,13 +38,18 @@ internal sealed class FakeAssemblyReloadingPorts : AssemblyReloading.IPorts
         Reported.Add(problem);
     }
 
+    public void ShowRefusal(Refusal refusal)
+    {
+        Refused.Add(refusal);
+    }
+
     public void ReleaseModules(RemovedModules removed)
     {
         Released.Add(removed);
         LoadedAssemblies.Release(removed);
     }
 
-    public Task<Outcome<PdbCheck>> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct)
+    public Task<PdbChecking> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct)
     {
         return AnswerAsync(nameof(CheckPdbAsync), PdbChecked, ct);
     }

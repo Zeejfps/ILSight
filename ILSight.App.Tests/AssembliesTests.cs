@@ -141,8 +141,8 @@ public sealed class AssembliesTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var fixtures = FixturesOf(d);
-        var otherBuild = new FakeAssemblyReloadingPorts { PdbChecked = new Outcome<PdbCheck>.Ok(PdbCheck.OtherBuild) };
-        var failed = new FakeAssemblyReloadingPorts { PdbChecked = new Outcome<PdbCheck>.Failed(new IOException("unreadable")) };
+        var otherBuild = new FakeAssemblyReloadingPorts { PdbChecked = new PdbChecking.Checked { Check = PdbCheck.OtherBuild } };
+        var failed = new FakeAssemblyReloadingPorts { PdbChecked = new PdbChecking.Failed { Error = new IOException("unreadable") } };
 
         var otherBuildLoads = await d.RunAsync(() => new AssemblyReloading(otherBuild).UsePdbAsync(d.AppState.ListSession, d.AppState.Reopens, d.AppState.Decompiler, fixtures, "other.pdb", CancellationToken.None));
         var failedLoads = await d.RunAsync(() => new AssemblyReloading(failed).UsePdbAsync(d.AppState.ListSession, d.AppState.Reopens, d.AppState.Decompiler, fixtures, "broken.pdb", CancellationToken.None));
@@ -156,6 +156,22 @@ public sealed class AssembliesTests
         Assert.Empty(d.AppState.Assemblies.Pdbs.All);
         Assert.Empty(otherBuildLoads);
         Assert.Empty(failedLoads);
+    }
+
+    [Fact]
+    public async Task UsePdbAsync_AssemblyClosedBeforeTheCheck_SaysWhyAndPicksNothing()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var fixtures = FixturesOf(d);
+        var ports = new FakeAssemblyReloadingPorts { PdbChecked = new PdbChecking.Closed { Assembly = "ILSight.Fixtures.dll" } };
+
+        var loads = await d.RunAsync(() => new AssemblyReloading(ports).UsePdbAsync(d.AppState.ListSession, d.AppState.Reopens, d.AppState.Decompiler, fixtures, "picked.pdb", CancellationToken.None));
+
+        Assert.Equal([new Refusal.PdbNotRead { Pdb = "picked.pdb", Assembly = "ILSight.Fixtures.dll" }], ports.Refused);
+        Assert.Empty(ports.Reported);
+        Assert.DoesNotContain(nameof(IPorts.ReadAgainAsync), ports.Asked);
+        Assert.Empty(d.AppState.Assemblies.Pdbs.All);
+        Assert.Empty(loads);
     }
 
     [Fact]

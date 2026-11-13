@@ -5,12 +5,17 @@ namespace ILSight.AssemblyListArea;
 
 /// <summary>Reaches the app's error reports, the file system and the open assemblies off the UI thread, for
 /// <see cref="AssemblyOpening"/>, <see cref="AssemblyReloading"/> and <see cref="OpenAssembliesAsReloadHandler"/>.</summary>
-public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList assemblies, BrowseSession session)
+public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refusals, AssemblyList assemblies, BrowseSession session)
     : AssemblyOpening.IPorts, AssemblyReloading.IPorts, OpenAssembliesAsReloadHandler.IPorts
 {
     public void ReportError(AppProblem problem)
     {
         Errors.Report(errors, problem);
+    }
+
+    public void ShowRefusal(Refusal refusal)
+    {
+        refusals.Show(refusal);
     }
 
     public void ReleaseModules(RemovedModules removed)
@@ -57,17 +62,18 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, AssemblyList ass
     }
 
     /// <summary>Checks on the thread pool, under a reading of the assembly, and comes back on the UI thread, with
-    /// whatever the check threw as <see cref="Outcome{T}.Failed"/>; an assembly closed before fails the check, saying
-    /// so.</summary>
-    public async Task<Outcome<PdbCheck>> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct)
+    /// whatever the check threw as <see cref="PdbChecking.Failed"/>; an assembly closed before answers
+    /// <see cref="PdbChecking.Closed"/>.</summary>
+    public async Task<PdbChecking> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct)
     {
         using var reading = LoadedAssemblies.TryBeginReading(assembly);
         if (reading is null)
         {
-            return new Outcome<PdbCheck>.Failed(new IOException($"{assembly.FilePath.FileName} was closed."));
+            return new PdbChecking.Closed { Assembly = assembly.FilePath.FileName };
         }
 
-        return await Background.Wait(Task.Run(() => PdbFiles.Check(assembly, pdbPath), ct));
+        var checking = await Background.Wait(Task.Run(() => PdbFiles.Check(assembly, pdbPath), ct));
+        return checking.Match<PdbChecking>(static ok => new PdbChecking.Checked { Check = ok.Value }, static failed => new PdbChecking.Failed { Error = failed.Error });
     }
 
     /// <summary>Reads on the thread pool and comes back on the UI thread, with whatever the reading threw as

@@ -79,6 +79,9 @@ public sealed class AppState
 
     public required ErrorLog Errors { get; init; }
 
+    /// <summary>The last request refused, said in the status bar.</summary>
+    public required RefusalLine Refusals { get; init; }
+
     /// <summary>Where the work the app starts in the background is counted until it ends, so a harness waiting
     /// for the UI to be ready waits for it.</summary>
     public required BackgroundWork Work { get; init; }

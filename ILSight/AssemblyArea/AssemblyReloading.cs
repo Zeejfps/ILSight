@@ -18,9 +18,13 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         /// <summary>Tells the user something went wrong.</summary>
         void ReportError(AppProblem problem);
 
+        /// <summary>Tells the user, where they acted, what was refused and why.</summary>
+        void ShowRefusal(Refusal refusal);
+
         /// <summary>Whether the PDB at <paramref name="pdbPath"/> can be read for <paramref name="assembly"/>, checked
-        /// without holding up the screen; a check that failed comes back as <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<PdbCheck>> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct);
+        /// without holding up the screen; the assembly closed before it was read comes back as
+        /// <see cref="PdbChecking.Closed"/>, a check that failed as <see cref="PdbChecking.Failed"/>.</summary>
+        Task<PdbChecking> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct);
 
         /// <summary>Reads the file of <paramref name="item"/> again, its nodes loaded as far as the item's are, and
         /// finds the nodes at <paramref name="places"/> in it, without holding up the screen. The list keeps the
@@ -40,12 +44,19 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
 
     /// <summary>Checks that the PDB at <paramref name="pdbPath"/> can be read for <paramref name="assembly"/>,
     /// then has the assembly read it in place of the one it finds itself, kept with the list, and reopens the
-    /// assembly to show it. Reports why when it cannot be read. Returns the loads that started in the tabs.</summary>
+    /// assembly to show it. Reports why when it cannot be read, and says why when the assembly was closed. Returns the
+    /// loads that started in the tabs.</summary>
     public async Task<List<DecompileTicket>> UsePdbAsync(OpenListSession session, Reopens reopens, DecompilerChoice decompiler, LoadedModule assembly,
         string pdbPath, CancellationToken ct)
     {
         var checking = await ports.CheckPdbAsync(assembly, pdbPath, ct);
-        var check = checking.Match(static ok => ok.Value, static _ => PdbCheck.Unreadable);
+        if (checking is PdbChecking.Closed closed)
+        {
+            ports.ShowRefusal(new Refusal.PdbNotRead { Pdb = Path.GetFileName(pdbPath), Assembly = closed.Assembly });
+            return [];
+        }
+
+        var check = checking.Match(static c => c.Check, static _ => PdbCheck.Unreadable, static _ => PdbCheck.Unreadable);
         if (check != PdbCheck.Matches)
         {
             ports.ReportError(new AppProblem.PdbUnusable

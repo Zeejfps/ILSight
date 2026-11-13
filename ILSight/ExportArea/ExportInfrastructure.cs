@@ -10,7 +10,7 @@ namespace ILSight.ExportArea;
 /// token its turn's cancellation and the workflow's both cancel: whatever it threw comes back as
 /// <see cref="ExportOutcome{T}.Failed"/>, its turn's cancellation as <see cref="ExportOutcome{T}.Stopped"/>, and the
 /// workflow's own cancellation is let through.</summary>
-public sealed class ExportInfrastructure(ErrorLog errors, BrowseSession session)
+public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, BrowseSession session)
     : ExportWriting.IPorts, SaveResourceHandler.IPorts, ExtractPackageFileHandler.IPorts, CheckExportFilesHandler.IPorts
 {
     public long Now => Stopwatch.GetTimestamp();
@@ -28,6 +28,11 @@ public sealed class ExportInfrastructure(ErrorLog errors, BrowseSession session)
     public void ReportError(AppProblem problem)
     {
         Errors.Report(errors, problem);
+    }
+
+    public void ShowRefusal(Refusal refusal)
+    {
+        refusals.Show(refusal);
     }
 
     /// <remarks>A module the library could not read, for code that reads it, fails the export, saying why.</remarks>
@@ -135,32 +140,33 @@ public sealed class ExportInfrastructure(ErrorLog errors, BrowseSession session)
         return new ExportOutcome<T>.Failed(error);
     }
 
-    /// <remarks>Reads the resource under a reading of its module; one closed before fails the save, saying so.</remarks>
-    public Outcome SaveResource(BrowseNode node, string path)
+    /// <remarks>Reads the resource under a reading of its module; one closed before answers
+    /// <see cref="ResourceSave.Closed"/>.</remarks>
+    public ResourceSave SaveResource(BrowseNode node, string path)
     {
         using var reading = LoadedAssemblies.BeginReading();
         if (node.Assembly is LoadedModule module && !LoadedAssemblies.TryRead(reading, module))
         {
-            return new Outcome.Failed(new IOException($"{module.FilePath.FileName} was closed."));
+            return new ResourceSave.Closed { Assembly = module.FilePath.FileName };
         }
 
         try
         {
             var bytes = BrowseNodes.ReadResource(node);
             File.WriteAllBytes(path, bytes);
-            return new Outcome.Done();
+            return new ResourceSave.Saved();
         }
         catch (IOException e)
         {
-            return new Outcome.Failed(e);
+            return new ResourceSave.Failed { Error = e };
         }
         catch (UnauthorizedAccessException e)
         {
-            return new Outcome.Failed(e);
+            return new ResourceSave.Failed { Error = e };
         }
         catch (InvalidDataException e)
         {
-            return new Outcome.Failed(e);
+            return new ResourceSave.Failed { Error = e };
         }
     }
 

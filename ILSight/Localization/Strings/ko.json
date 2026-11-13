@@ -560,6 +560,7 @@
   "status.exporting_part": "내보내는 중 {part}/{parts} · {name}",
   "status.cancel_export": "내보내기 취소",
   "status.show_exports": "내보내기 표시",
+  "status.dismiss_refusal": "닫기",
   "status.export_queued": {"other": "{count:N0}개 더 대기 중"},
   "status.resolving": "확인하는 중…",
   "status.restart_to_update": "다시 시작하여 업데이트",

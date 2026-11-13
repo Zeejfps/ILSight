@@ -572,6 +572,7 @@
   "status.exporting_part": "Exporting {part}/{parts} · {name}",
   "status.cancel_export": "Cancel the export",
   "status.show_exports": "Show the exports",
+  "status.dismiss_refusal": "Dismiss",
   "status.export_queued": {"one": "{count:N0} more queued", "other": "{count:N0} more queued"},
   "status.resolving": "Resolving…",
   "status.restart_to_update": "Restart to update",
