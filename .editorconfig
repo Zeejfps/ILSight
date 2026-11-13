@@ -91,9 +91,9 @@ dotnet_diagnostic.RL1002.severity = error
 dotnet_diagnostic.RL1201.severity = error
 dotnet_diagnostic.RL1202.severity = error
 dotnet_diagnostic.RL0102.severity = error
-dotnet_diagnostic.RL0403.severity = suggestion
+dotnet_diagnostic.RL0403.severity = error
 dotnet_diagnostic.RL0306.severity = error
-dotnet_diagnostic.RL0307.severity = suggestion
+dotnet_diagnostic.RL0307.severity = error
 dotnet_diagnostic.RL0103.severity = error
 dotnet_diagnostic.RL0105.severity = error
 dotnet_diagnostic.RL0104.severity = suggestion
@@ -102,7 +102,7 @@ dotnet_diagnostic.RL0904.severity = suggestion
 dotnet_diagnostic.RL1301.severity = error
 dotnet_diagnostic.RL1302.severity = error
 dotnet_diagnostic.RL1303.severity = error
-dotnet_diagnostic.RL1304.severity = suggestion
+dotnet_diagnostic.RL1304.severity = error
 dotnet_diagnostic.RL1305.severity = error
 dotnet_diagnostic.RL1306.severity = suggestion
 dotnet_diagnostic.RL1307.severity = suggestion
@@ -117,9 +117,9 @@ dotnet_diagnostic.RL0906.severity = suggestion
 dotnet_diagnostic.RL0406.severity = suggestion
 dotnet_diagnostic.RL1309.severity = suggestion
 dotnet_diagnostic.RL1401.severity = suggestion
-# R011's checks are suggestions while their precision is measured (RULES.md R011).
-dotnet_diagnostic.RL1101.severity = suggestion
-dotnet_diagnostic.RL1102.severity = suggestion
+# R011's checks (RULES.md R011).
+dotnet_diagnostic.RL1101.severity = error
+dotnet_diagnostic.RL1102.severity = error
 dotnet_diagnostic.RL1103.severity = error
 
 # Test code (RULES.md Scope): R001, R004 and R011 checks skip it, and test methods needn't take a token.
