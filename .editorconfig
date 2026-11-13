@@ -109,6 +109,14 @@ dotnet_diagnostic.RL1307.severity = suggestion
 dotnet_diagnostic.RL1308.severity = error
 dotnet_diagnostic.RL0106.severity = error
 dotnet_diagnostic.RL0404.severity = error
+dotnet_diagnostic.RL0405.severity = suggestion
+dotnet_diagnostic.RL0601.severity = suggestion
+dotnet_diagnostic.RL0905.severity = error
+dotnet_diagnostic.RL0906.severity = suggestion
+# Batch Y's pass (comments, static) raises these once it has cleared them.
+dotnet_diagnostic.RL0406.severity = suggestion
+dotnet_diagnostic.RL1309.severity = suggestion
+dotnet_diagnostic.RL1401.severity = suggestion
 # R011's checks are suggestions while their precision is measured (RULES.md R011).
 dotnet_diagnostic.RL1101.severity = suggestion
 dotnet_diagnostic.RL1102.severity = suggestion
