@@ -34,8 +34,10 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     private async Task<AppDriver> TwoFinishedAsync(float width = 1000f)
     {
         var app = AppDriver.Opened(width: width, height: TallWindow);
-        SaveCode(app.AppState, await app.FixtureAsync("Greeter"), Path.Combine(Folder("First"), "Greeter.cs"));
-        SaveCode(app.AppState, await app.FixtureAsync("Farewell"), Path.Combine(Folder("Second"), "Farewell.cs"));
+        var greeterNode = await app.FixtureAsync("Greeter");
+        app.Driver.InTurn(() => SaveCode(app.AppState, greeterNode, Path.Combine(Folder("First"), "Greeter.cs")));
+        var farewellNode = await app.FixtureAsync("Farewell");
+        app.Driver.InTurn(() => SaveCode(app.AppState, farewellNode, Path.Combine(Folder("Second"), "Farewell.cs")));
         app.Settle(2);
         return app;
     }
@@ -133,8 +135,8 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     {
         var app = AppDriver.Opened(height: TallWindow);
         OpenPanel(app.Ui, DockView.Exports);
-        var running = Assert.IsType<ExportTurn.Started>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
-        Assert.False(app.AppState.Export.Enter(TestJobs.Named("Later")).Turn.IsCompleted);
+        var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
+        Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Later"))).Turn.IsCompleted);
         app.Run(2);
 
         app.Frames.Wait(1).Click(app.TextRect("Running")).Frame();
@@ -145,7 +147,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
         app.Frames.Key(KeyboardKey.DownArrow).Frame();
         app.Frames.Key(KeyboardKey.Delete).Frame();
         Assert.Equal(0, app.AppState.Export.WaitingCount);
-        running.EndTurn();
+        app.Driver.InTurn(running.EndTurn);
     }
 
     [Fact]
@@ -153,15 +155,15 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     {
         var app = AppDriver.Opened(height: TallWindow);
         OpenPanel(app.Ui, DockView.Exports);
-        var running = Assert.IsType<ExportTurn.Started>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
-        Assert.False(app.AppState.Export.Enter(TestJobs.Named("Second")).Turn.IsCompleted);
-        Assert.False(app.AppState.Export.Enter(TestJobs.Named("Third")).Turn.IsCompleted);
+        var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
+        Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Second"))).Turn.IsCompleted);
+        Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Third"))).Turn.IsCompleted);
         app.Run(2);
 
         app.Frames.Wait(1).Click(app.TextRect("Remove from queue")).Frame(2);
 
         Assert.Equal(["Third"], app.AppState.Export.Waiting.Select(q => q.Job.Name));
-        running.EndTurn();
+        app.Driver.InTurn(running.EndTurn);
     }
 
     [Fact]
@@ -180,7 +182,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
         var app = AppDriver.Opened(height: TallWindow);
         var theme = app.Theme;
         OpenPanel(app.Ui, DockView.Exports);
-        var running = Assert.IsType<ExportTurn.Started>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
+        var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
         running.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.5f });
         app.Run(2);
 
@@ -199,7 +201,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
         Assert.Equal(name.X, track.X, 1f);
         Assert.True(track.Right >= cancel.Right);
         Assert.Equal(name.X - theme.IconSize - theme.Gap, summary.X, 1f);
-        running.EndTurn();
+        app.Driver.InTurn(running.EndTurn);
     }
 
     [Fact]
@@ -207,11 +209,11 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     {
         var app = AppDriver.Opened();
         OpenPanel(app.Ui, DockView.Exports);
-        var running = Assert.IsType<ExportTurn.Started>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
+        var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
         app.Run(2);
 
         Assert.False(app.Frames.Drew(Text(Icons.StatusLoading)));
         Assert.True(app.Frames.WakeAt - app.Frames.RealTime <= 1.0 / 30.0 + 1e-6);
-        running.EndTurn();
+        app.Driver.InTurn(running.EndTurn);
     }
 }

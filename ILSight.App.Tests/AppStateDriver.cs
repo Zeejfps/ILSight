@@ -195,6 +195,14 @@ internal sealed class AppStateDriver
         change();
     }
 
+    /// <summary>As <see cref="InTurn(Action)"/>, for a change that answers what it made (an export's ticket, whose
+    /// progress reports post back to the loop).</summary>
+    public T InTurn<T>(Func<T> change)
+    {
+        using var turn = _posted.Install();
+        return change();
+    }
+
     /// <summary>Runs <paramref name="work"/>, the app's work a test starts itself (a use case, a handler), as the app's
     /// edge starts it: begun in a turn of the driver's loop, each wait comes back to the loop, whose posts the driver
     /// runs until the work ends, and nothing else a frame does; answers what it came to.</summary>

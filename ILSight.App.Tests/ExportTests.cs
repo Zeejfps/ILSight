@@ -49,7 +49,9 @@ public sealed class ExportTests : IDisposable
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         var path = _temp.PathOf("Greeter.il");
 
-        SaveCode(d.AppState, await d.FixtureAsync("Greeter"), path);
+        var saved = await d.FixtureAsync("Greeter");
+
+        d.InTurn(() => SaveCode(d.AppState, saved, path));
         d.Settle();
 
         Assert.Contains(".class public auto ansi beforefieldinit ILSight.App.Tests.Fixtures.Greeter", await File.ReadAllTextAsync(path));
@@ -62,7 +64,9 @@ public sealed class ExportTests : IDisposable
         var d = OpenedSample();
         var path = _temp.PathOf("SampleApp.csproj");
 
-        SaveCode(d.AppState, await SampleOf(d).ReadRootAsync(), path);
+        var saved = await SampleOf(d).ReadRootAsync();
+
+        d.InTurn(() => SaveCode(d.AppState, saved, path));
         d.Settle();
 
         var code = await File.ReadAllTextAsync(path);
@@ -206,15 +210,17 @@ public sealed class ExportTests : IDisposable
     [Fact]
     public async Task An_export_asked_for_while_another_runs_waits_its_turn()
     {
-        var queue = new AppStateDriver().AppState.Export;
-        var first = queue.Enter(TestJobs.Named("First")).Turn;
-        var second = queue.Enter(TestJobs.Named("Second")).Turn;
+        var d = new AppStateDriver();
+        var queue = d.AppState.Export;
+        var first = d.InTurn(() => queue.Enter(TestJobs.Named("First"))).Turn;
+        var second = d.InTurn(() => queue.Enter(TestJobs.Named("Second"))).Turn;
 
         Assert.True(first.IsCompleted);
         Assert.False(second.IsCompleted);
         Assert.Equal(1, queue.WaitingCount);
 
-        Assert.IsType<ExportTurn.Started>(await first).EndTurn();
+        var started = Assert.IsType<ExportTurn.Started>(await first);
+        d.InTurn(started.EndTurn);
 
         Assert.True(second.IsCompleted);
         Assert.Equal(0, queue.WaitingCount);
@@ -224,12 +230,13 @@ public sealed class ExportTests : IDisposable
     [Fact]
     public async Task Only_the_running_export_can_end_its_turn()
     {
-        var queue = new AppStateDriver().AppState.Export;
-        var first = Assert.IsType<ExportTurn.Started>(await queue.Enter(TestJobs.Named("First")).Turn);
-        first.EndTurn();
-        var second = Assert.IsType<ExportTurn.Started>(await queue.Enter(TestJobs.Named("Second")).Turn);
+        var d = new AppStateDriver();
+        var queue = d.AppState.Export;
+        var first = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("First"))).Turn);
+        d.InTurn(first.EndTurn);
+        var second = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("Second"))).Turn);
 
-        first.EndTurn();
+        d.InTurn(first.EndTurn);
 
         Assert.True(queue.IsRunning);
         Assert.False(second.Token.IsCancellationRequested);
@@ -239,9 +246,10 @@ public sealed class ExportTests : IDisposable
     [Fact]
     public async Task A_waiting_export_taken_out_of_the_queue_is_withdrawn_without_starting()
     {
-        var queue = new AppStateDriver().AppState.Export;
-        var first = Assert.IsType<ExportTurn.Started>(await queue.Enter(TestJobs.Named("First")).Turn);
-        var second = queue.Enter(TestJobs.Named("Second")).Turn;
+        var d = new AppStateDriver();
+        var queue = d.AppState.Export;
+        var first = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("First"))).Turn);
+        var second = d.InTurn(() => queue.Enter(TestJobs.Named("Second"))).Turn;
 
         queue.Withdraw(Assert.Single(queue.Waiting).Run);
 
@@ -253,15 +261,16 @@ public sealed class ExportTests : IDisposable
     [Fact]
     public async Task CancelRunning_with_an_export_waiting_cancels_only_the_running_one()
     {
-        var queue = new AppStateDriver().AppState.Export;
-        var first = Assert.IsType<ExportTurn.Started>(await queue.Enter(TestJobs.Named("First")).Turn);
-        var second = queue.Enter(TestJobs.Named("Second")).Turn;
+        var d = new AppStateDriver();
+        var queue = d.AppState.Export;
+        var first = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("First"))).Turn);
+        var second = d.InTurn(() => queue.Enter(TestJobs.Named("Second"))).Turn;
 
         queue.CancelRunning();
 
         Assert.True(first.Token.IsCancellationRequested);
         Assert.Equal(true, queue.Running?.IsCancelling);
-        first.EndTurn();
+        d.InTurn(first.EndTurn);
         var next = Assert.IsType<ExportTurn.Started>(await second);
         Assert.False(next.Token.IsCancellationRequested);
         Assert.Equal(false, queue.Running?.IsCancelling);
@@ -272,10 +281,10 @@ public sealed class ExportTests : IDisposable
     {
         var d = new AppStateDriver();
         var queue = d.AppState.Export;
-        var first = Assert.IsType<ExportTurn.Started>(await queue.Enter(TestJobs.Named("First")).Turn);
+        var first = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("First"))).Turn);
         first.Progress.Report(new ExportProgress { Name = "First", Part = 1, Parts = 1, Fraction = 0.5f });
-        first.EndTurn();
-        Assert.True(queue.Enter(TestJobs.Named("Second")).Turn.IsCompletedSuccessfully);
+        d.InTurn(first.EndTurn);
+        Assert.True(d.InTurn(() => queue.Enter(TestJobs.Named("Second"))).Turn.IsCompletedSuccessfully);
 
         d.Pump();
 
@@ -293,9 +302,12 @@ public sealed class ExportTests : IDisposable
     {
         var d = new AppStateDriver();
         var queue = d.AppState.Export;
-        var start = Assert.IsType<ExportTurn.Started>(await queue.Enter(TestJobs.Named("Fixtures")).Turn);
+        var start = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("Fixtures"))).Turn);
 
         start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.75f });
+        var beforePump = queue.Running;
+        Assert.NotNull(beforePump);
+        Assert.Null(beforePump.Progress.Fraction);
         d.Pump();
 
         Assert.Equal(0.75f, queue.Running?.Progress.Fraction);
@@ -306,10 +318,13 @@ public sealed class ExportTests : IDisposable
     {
         var d = new AppStateDriver();
         var queue = d.AppState.Export;
-        var start = Assert.IsType<ExportTurn.Started>(await queue.Enter(TestJobs.Named("Fixtures")).Turn);
+        var start = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("Fixtures"))).Turn);
 
         start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.6f });
         start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.4f });
+        var beforePump = queue.Running;
+        Assert.NotNull(beforePump);
+        Assert.Null(beforePump.Progress.Fraction);
         d.Pump();
 
         Assert.Equal(0.6f, queue.Running?.Progress.Fraction);
@@ -322,8 +337,10 @@ public sealed class ExportTests : IDisposable
         var greeter = _temp.PathOf("Greeter.cs");
         var farewell = _temp.PathOf("Farewell.cs");
 
-        SaveCode(d.AppState, await d.FixtureAsync("Greeter"), greeter);
-        SaveCode(d.AppState, await d.FixtureAsync("Farewell"), farewell);
+        var greeterNode = await d.FixtureAsync("Greeter");
+        var farewellNode = await d.FixtureAsync("Farewell");
+        d.InTurn(() => SaveCode(d.AppState, greeterNode, greeter));
+        d.InTurn(() => SaveCode(d.AppState, farewellNode, farewell));
         Assert.Equal(1, d.AppState.Export.WaitingCount);
         d.Settle();
 
@@ -352,8 +369,8 @@ public sealed class ExportTests : IDisposable
     public async Task The_status_bar_shows_the_export_and_how_many_wait_and_cancels_it()
     {
         var app = AppDriver.Opened();
-        var start = Assert.IsType<ExportTurn.Started>(await app.AppState.Export.Enter(TestJobs.Named("Fixtures")).Turn);
-        Assert.False(app.AppState.Export.Enter(TestJobs.Named("Later")).Turn.IsCompleted);
+        var start = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Fixtures"))).Turn);
+        Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Later"))).Turn.IsCompleted);
         start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 2, Parts = 3, Fraction = 0.5f });
         app.Run(2);
 
@@ -369,7 +386,9 @@ public sealed class ExportTests : IDisposable
         var d = AppStateDriver.Opened();
         var path = _temp.PathOf("Greeter.cs");
 
-        SaveCode(d.AppState, await d.FixtureAsync("Greeter"), path);
+        var saved = await d.FixtureAsync("Greeter");
+
+        d.InTurn(() => SaveCode(d.AppState, saved, path));
         d.Settle();
 
         var report = Assert.Single(d.AppState.FinishedExports);
@@ -401,7 +420,9 @@ public sealed class ExportTests : IDisposable
         var d = AppStateDriver.Opened();
         var path = _temp.PathOf(Path.Combine("missing", "Greeter.cs"));
 
-        SaveCode(d.AppState, await d.FixtureAsync("Greeter"), path);
+        var saved = await d.FixtureAsync("Greeter");
+
+        d.InTurn(() => SaveCode(d.AppState, saved, path));
         d.Settle();
 
         var report = Assert.Single(d.AppState.FinishedExports);
