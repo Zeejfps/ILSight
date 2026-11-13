@@ -21,7 +21,7 @@ internal static class CloseAssembliesDialogView
         var wasOpen = closer.IsOpen;
         if (wasOpen)
         {
-            Update(closer, assemblies);
+            closer.Rows.Update(assemblies);
         }
 
         var t = ui.State.Strings;
@@ -39,10 +39,10 @@ internal static class CloseAssembliesDialogView
 
         if (close)
         {
-            var included = CountIncluded(closer);
+            var included = closer.Rows.CountIncluded();
             if (included > 0)
             {
-                Commands.Later(ui.State, ListToClose(closer), static (a, items) => Commands.CloseAssemblies(a, items));
+                Commands.Later(ui.State, closer.Rows.ListToClose(), static (a, items) => Commands.CloseAssemblies(a, items));
                 cancel = true;
             }
         }
@@ -50,10 +50,10 @@ internal static class CloseAssembliesDialogView
         var dismissed = wasOpen && !closer.IsOpen;
         if (cancel || dismissed)
         {
-            CloseCloser(closer);
+            closer.Close();
         }
 
-        DialogWindows.Settle(closer.Window, ui.Input.IsDown(PointerButton.Left));
+        closer.Window.Settle(ui.Input.IsDown(PointerButton.Left));
     }
 
     private static void Content(Ui<UiState> ui, AssemblyCloser closer, ref bool close, ref bool cancel)
@@ -63,7 +63,7 @@ internal static class CloseAssembliesDialogView
         var shown = ListShown(closer);
         using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
         {
-            if (TryTakeFilterFocus(closer))
+            if (closer.Rows.TryTakeFilterFocus())
             {
                 ui.Focus(ui.GetId(FilterId));
             }
@@ -93,7 +93,7 @@ internal static class CloseAssembliesDialogView
 
         using (ui.Row(new Box { Gap = theme.GapTight }))
         {
-            var count = CountIncluded(closer);
+            var count = closer.Rows.CountIncluded();
             var summary = ui.Memo("close-count", (count, t), static a => a.t.PickerSelected(a.count));
             ui.Text(summary, color: theme.TextMuted, size: theme.FontSizeSmall);
             ui.Spacer();
@@ -127,7 +127,7 @@ internal static class CloseAssembliesDialogView
             ui.Text(t.ExportNoMatch, color: theme.TextMuted);
             if (ui.Button(t.ExportClearFilter, id: "close-clear-filter", variant: ButtonVariant.Ghost))
             {
-                ClearFilter(closer);
+                closer.ClearFilter();
             }
         }
     }
@@ -156,7 +156,7 @@ internal static class CloseAssembliesDialogView
             var width = Sizing.Grow();
             if (ui.Checkbox(assembly.Name, ref choice.Included, id: "include", width: width, compact: true))
             {
-                TickClicked(closer, shown, choice, (ui.Input.Modifiers & KeyModifiers.Shift) != 0);
+                closer.Rows.TickClicked(shown, choice, (ui.Input.Modifiers & KeyModifiers.Shift) != 0);
             }
 
             ui.Tooltip(ui.GetId("include"), assembly.FilePath.Text, TooltipAnchor.Pointer);

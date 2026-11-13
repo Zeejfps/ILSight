@@ -45,7 +45,7 @@ internal static class NuGetPickerView
         Dialog(ui, picker);
         FreeImages(ui, picker.Browser.StopUnlessOpen(picker.IsOpen));
         AskForFetchingFrame(ui, picker.Browser);
-        DialogWindows.Settle(picker.Window, ui.Input.IsDown(PointerButton.Left));
+        picker.Window.Settle(ui.Input.IsDown(PointerButton.Left));
     }
 
     /// <summary>Begins a request in <paramref name="navigation"/> to open the package the dialog downloaded, asks for it to

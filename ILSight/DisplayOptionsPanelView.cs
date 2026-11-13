@@ -92,7 +92,7 @@ internal static class DisplayOptionsPanelView
 
     private static void ListInstalledFontsOnce(Ui<UiState> ui)
     {
-        if (!CodeDisplay.TryTakeListingRequest(ui.State.CodeFonts))
+        if (!ui.State.CodeFonts.TryTakeListingRequest())
         {
             return;
         }
@@ -105,7 +105,7 @@ internal static class DisplayOptionsPanelView
     private static void ListInstalledFonts(Ui<UiState> ui)
     {
         var screen = ui.State;
-        ui.ListSystemFonts(families => KeepInstalledFonts(screen, families));
+        ui.ListSystemFonts(families => screen.CodeFonts.KeepFonts(families));
     }
 
     /// <summary>The theme, the icon theme, the scale, the language and the title bar, those the search

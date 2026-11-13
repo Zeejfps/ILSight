@@ -62,7 +62,7 @@ public sealed class AnalyzerTests
         Assert.NotNull(symbol);
         var kind = new AnalyzerKindNode { Subject = symbol, Kind = symbol.Kinds.Single(k => Core.Analysis.Analyzers.GetHeader(k) == "Used By") };
 
-        d.InTurn(() => Commands.StartAnalysis(d.AppState, StartRun(kind)));
+        d.InTurn(() => Commands.StartAnalysis(d.AppState, kind.StartRun()));
         d.RunUntil(() => kind.IsDone);
 
         var message = Assert.IsType<AnalyzerMessageNode>(Assert.Single(kind.Found));
@@ -439,11 +439,16 @@ public sealed class AnalyzerTests
         return new AnalyzerKindNode { Subject = symbol, Kind = symbol.Kinds[0] };
     }
 
-    private static async Task<AnalyzerKindNode> RunningKindAsync(AppStateDriver d)
+    private static async Task<AnalysisRun> StartedRunAsync(AppStateDriver d)
     {
         var kind = await NewKindAsync(d);
-        kind.Run = new AnalyzerRun.Running(new CancellationTokenSource());
-        return kind;
+        return kind.StartRun() ?? throw new InvalidOperationException("A new analysis did not start.");
+    }
+
+    private static async Task<AnalyzerKindNode> RunningKindAsync(AppStateDriver d)
+    {
+        var run = await StartedRunAsync(d);
+        return run.Kind;
     }
 
     [Fact]
@@ -478,18 +483,17 @@ public sealed class AnalyzerTests
     public async Task Cancelling_an_analysis_cancels_its_run_and_the_analyses_under_what_it_found()
     {
         var d = AppStateDriver.Opened();
-        var kind = await RunningKindAsync(d);
-        var nested = await RunningKindAsync(d);
-        kind.Found.Add(new AnalyzerSymbolNode { Symbol = kind.Subject, Children = [nested] });
-        var work = kind.Work;
-        Assert.NotNull(work);
-        var nestedWork = nested.Work;
-        Assert.NotNull(nestedWork);
+        var run = await StartedRunAsync(d);
+        var kind = run.Kind;
+        AddFound(d.AppState.Analyzer, run, [new AnalysisFind.Found { Symbol = kind.Subject }]);
+        var found = Assert.IsType<AnalyzerSymbolNode>(Assert.Single(kind.Found));
+        var nested = EnsureChildren(found).OfType<AnalyzerKindNode>().First();
+        var nestedRun = nested.StartRun() ?? throw new InvalidOperationException("The analysis under what was found did not start.");
 
         CancelNode(kind);
 
-        Assert.True(work.IsCancellationRequested);
-        Assert.True(nestedWork.IsCancellationRequested);
+        Assert.True(run.Work.IsCancellationRequested);
+        Assert.True(nestedRun.Work.IsCancellationRequested);
     }
 
     [Fact]
@@ -497,7 +501,7 @@ public sealed class AnalyzerTests
     {
         var d = AppStateDriver.Opened();
         var kind = await RunningKindAsync(d);
-        kind.Run = new AnalyzerRun.Stopped();
+        CancelNode(kind);
 
         CancelNode(kind);
 
@@ -540,8 +544,10 @@ public sealed class AnalyzerTests
     [Fact]
     public async Task An_analysis_done_has_started_and_no_longer_runs()
     {
-        var kind = await RunningKindAsync(AppStateDriver.Opened());
-        kind.Run = new AnalyzerRun.Done();
+        var d = AppStateDriver.Opened();
+        var run = await StartedRunAsync(d);
+        var kind = run.Kind;
+        FinishRun(d.AppState.Analyzer, run, error: null);
 
         Assert.True(kind.HasStarted);
         Assert.True(kind.IsDone);

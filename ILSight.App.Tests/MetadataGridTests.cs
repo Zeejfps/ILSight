@@ -35,7 +35,7 @@ public sealed class MetadataGridTests
     {
         var grid = tab.Grid;
         Assert.NotNull(grid);
-        return DocumentPanels.GetGridState(DocumentPanels.GetView(app.Ui.Documents, tab), grid);
+        return DocumentPanels.GetView(app.Ui.Documents, tab).GetGridState(grid);
     }
 
     private static async Task<(AppDriver App, DocumentTab Tab, MetadataGrid Grid, int Row)> ShowGreeterRowAsync()
@@ -414,10 +414,10 @@ public sealed class MetadataGridTests
 
         using var temp = new TempDir();
         var settings = temp.Settings();
-        settings.FlagsFilters = MetadataGridWidget.ListSaved(app.Ui.MetadataFilters);
+        settings.FlagsFilters = app.Ui.MetadataFilters.ListSaved();
         Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
         var saved = temp.Settings().FlagsFilters;
-        var restored = MetadataGridWidget.GetFilter(MetadataGridWidget.CreateFilters(saved), grid, attributes);
+        var restored = MetadataFilters.From(saved).GetFilter(grid, attributes);
         Assert.Equal("Visibility = Public", FilterStatePresenter.Describe(restored));
     }
 

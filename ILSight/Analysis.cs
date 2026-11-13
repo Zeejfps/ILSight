@@ -45,7 +45,7 @@ public static class Analysis
                 CancelAll(symbol.Children);
                 break;
             case AnalyzerKindNode kind:
-                CancelRun(kind);
+                kind.CancelRun();
                 CancelAll(kind.Found);
                 break;
             case AnalyzerMessageNode or AnalyzerPendingNode or AnalyzerFailedNode:
@@ -55,56 +55,28 @@ public static class Analysis
         }
     }
 
-    private static void CancelAll(List<AnalyzerNode>? nodes)
+    private static void CancelAll(IReadOnlyList<AnalyzerNode>? nodes)
     {
         if (nodes is null)
         {
             return;
         }
 
-        foreach (var node in nodes)
+        for (var i = 0; i < nodes.Count; i++)
         {
-            CancelNode(node);
+            CancelNode(nodes[i]);
         }
-    }
-
-    private static void CancelRun(AnalyzerKindNode kind)
-    {
-        if (kind.Run is not AnalyzerRun.Running running)
-        {
-            return;
-        }
-
-        kind.Run = new AnalyzerRun.Stopped();
-        running.Work.Cancel();
-    }
-
-    /// <summary>Marks the analysis <paramref name="kind"/> stands for as running, unless it already started. Returns
-    /// the run, for <see cref="RunAnalysisHandler"/> to run over the open assemblies; null when it started
-    /// before.</summary>
-    public static AnalysisRun? StartRun(AnalyzerKindNode kind)
-    {
-        if (kind.HasStarted)
-        {
-            return null;
-        }
-
-        var work = new CancellationTokenSource();
-        kind.Run = new AnalyzerRun.Running(work);
-        return new AnalysisRun { Kind = kind, Work = work };
     }
 
     /// <summary>Adds <paramref name="found"/>, what <paramref name="run"/> found so far, to its analysis, and notes in
     /// <paramref name="analyzer"/> that it found more; nothing once the run was stopped.</summary>
     public static void AddFound(AnalyzerTree analyzer, AnalysisRun run, IReadOnlyList<AnalysisFind> found)
     {
-        var kind = run.Kind;
-        if (kind.Work != run.Work)
+        if (!run.Kind.TryAddFound(run, found))
         {
             return;
         }
 
-        kind.Found.AddRange(CreateNodes(found));
         analyzer.NoteFindings();
     }
 
@@ -112,27 +84,12 @@ public static class Analysis
     /// when it failed, and notes it in <paramref name="analyzer"/>; nothing once the run was stopped.</summary>
     public static void FinishRun(AnalyzerTree analyzer, AnalysisRun run, string? error)
     {
-        var kind = run.Kind;
-        if (kind.Work != run.Work)
+        if (!run.Kind.TryFinishRun(run, error))
         {
             return;
         }
 
-        if (error is not null)
-        {
-            kind.Found.Add(new AnalyzerMessageNode { Error = error });
-        }
-
-        kind.Run = new AnalyzerRun.Done();
-        run.Work.Dispose();
         analyzer.NoteFindings();
-    }
-
-    private static List<AnalyzerNode> CreateNodes(IReadOnlyList<AnalysisFind> found)
-    {
-        return found
-            .Select(static f => f.Match<AnalyzerNode>(static s => new AnalyzerSymbolNode { Symbol = s.Symbol }, static u => new AnalyzerMessageNode { Unreadable = u }))
-            .ToList();
     }
 
     /// <summary>Whether analyzing <paramref name="symbol"/> in <paramref name="analyzer"/> runs, or is unavailable now

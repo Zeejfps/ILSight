@@ -31,9 +31,7 @@ public sealed class ExportSetup
     /// <summary>Where the dialog's window is on the screen.</summary>
     public DialogWindow Window { get; } = new();
 
-    public List<ExportChoice> Choices { get; } = new();
-
-    public ExportPage Page;
+    public ExportAssemblies Assemblies { get; } = new();
 
     public AssemblyPicker Picker { get; } = new();
 
@@ -44,7 +42,7 @@ public sealed class ExportSetup
     /// <summary>The rows of the ticked assemblies picked out on the main page, to remove together.</summary>
     public MultiSelection<ExportChoice> RowSelection { get; } = new();
 
-    public int IncludedCount => Choices.Count(static c => c.Included);
+    public int IncludedCount => Assemblies.Choices.Count(static c => c.Included);
 
     /// <summary>Whether the export writes a solution: more than one assembly is ticked.</summary>
     public bool IsSolution => IncludedCount > 1;
@@ -60,7 +58,7 @@ public sealed class ExportSetup
                 return false;
             }
 
-            if (count == Choices.Count)
+            if (count == Assemblies.Choices.Count)
             {
                 return true;
             }
@@ -81,7 +79,7 @@ public sealed class ExportSetup
         get
         {
             var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var choice in Choices)
+            foreach (var choice in Assemblies.Choices)
             {
                 if (!choice.Included)
                 {
@@ -98,8 +96,40 @@ public sealed class ExportSetup
         }
     }
 
-    public bool HasNamelessProject => Choices.Any(static c => c.Included && c.Name.Trim().Length == 0);
+    public bool HasNamelessProject => Assemblies.Choices.Any(static c => c.Included && c.Name.Trim().Length == 0);
 
     /// <summary>Whether the folder is a full path.</summary>
     public bool HasFolder => Path.IsPathFullyQualified(Folder.Trim());
+
+    /// <summary>Opens the dialog on <paramref name="assemblies"/> with <paramref name="picked"/>
+    /// ticked, or the only one when there is just one, unless there are none. The folder stays as it
+    /// was last time.</summary>
+    public void Open(IReadOnlyList<LoadedModule> assemblies, LoadedModule? picked)
+    {
+        if (assemblies.Count == 0)
+        {
+            return;
+        }
+
+        Assemblies.Offer(assemblies, picked);
+        RowSelection.Clear();
+        SolutionName = "";
+        IsOpen = true;
+        if (IncludedCount == 0)
+        {
+            ChooseAssemblies();
+        }
+    }
+
+    public void Close()
+    {
+        IsOpen = false;
+    }
+
+    /// <summary>Shows the Choose page, its list arranged afresh, with no filter.</summary>
+    public void ChooseAssemblies()
+    {
+        Assemblies.StartChoosing(Picker.Rows);
+        Picker.ClearFilter();
+    }
 }

@@ -22,11 +22,11 @@ public static class ScreenSettings
         uiState.ProcessColumns.Restore(saved.ProcessColumns);
         uiState.ProcessModuleColumns.Restore(saved.ProcessModuleColumns);
         uiState.NuGetPicker.RestoreSearch(saved.NuGet);
-        DialogWindows.Restore(uiState.NuGetPicker.Window, saved.NuGetWindow);
-        DialogWindows.Restore(uiState.ExportSetup.Window, saved.ExportWindow);
-        DialogWindows.Restore(uiState.ProcessPicker.Window, saved.ProcessWindow);
-        DialogWindows.Restore(uiState.Closer.Window, saved.CloseWindow);
-        DocumentPanels.SkipPanels(uiState.Documents, Docking.ListDocumentPanels(uiState.MainLayout));
+        uiState.NuGetPicker.Window.Restore(saved.NuGetWindow);
+        uiState.ExportSetup.Window.Restore(saved.ExportWindow);
+        uiState.ProcessPicker.Window.Restore(saved.ProcessWindow);
+        uiState.Closer.Window.Restore(saved.CloseWindow);
+        uiState.Documents.SkipPanels(Docking.ListDocumentPanels(uiState.MainLayout));
         uiState.KeptView = CaptureViewSources(uiState);
     }
 
@@ -59,15 +59,15 @@ public static class ScreenSettings
             FoldedOptionGroups = uiState.FoldedOptionGroups.Revision,
             SearchKinds = uiState.Search.Kinds,
             FlagsFilters = uiState.MetadataFilters.Revision,
-            ExportWindow = uiState.ExportSetup.Window.Changes,
+            ExportWindow = uiState.ExportSetup.Window.Rest.Changes,
             Layout = uiState.Layout.Changes,
             Display = uiState.Display,
             NuGetSearch = uiState.NuGetPicker.Browser.SearchChanges,
-            NuGetWindow = uiState.NuGetPicker.Window.Changes,
-            ProcessWindow = uiState.ProcessPicker.Window.Changes,
+            NuGetWindow = uiState.NuGetPicker.Window.Rest.Changes,
+            ProcessWindow = uiState.ProcessPicker.Window.Rest.Changes,
             ProcessColumns = uiState.ProcessColumns.Changes,
             ProcessModuleColumns = uiState.ProcessModuleColumns.Changes,
-            CloseWindow = uiState.Closer.Window.Changes,
+            CloseWindow = uiState.Closer.Window.Rest.Changes,
             Documents = uiState.Documents.Revision,
         };
     }
@@ -79,9 +79,9 @@ public static class ScreenSettings
             BookmarkColumns = uiState.BookmarkColumns.Weights.ToList(),
             SearchColumns = uiState.SearchColumns.Weights.ToList(),
             ExportColumns = uiState.ExportColumns.Weights.ToList(),
-            FoldedOptionGroups = OptionFolds.ListInOrder(uiState.FoldedOptionGroups),
+            FoldedOptionGroups = uiState.FoldedOptionGroups.ListInOrder(),
             SearchKinds = uiState.Search.Kinds,
-            FlagsFilters = MetadataGridWidget.ListSaved(uiState.MetadataFilters),
+            FlagsFilters = uiState.MetadataFilters.ListSaved(),
             ExportWindow = uiState.ExportSetup.Window.Bounds,
             Layout = uiState.Layout.CopyArrangement(),
             Display = uiState.Display,

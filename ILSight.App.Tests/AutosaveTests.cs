@@ -76,7 +76,7 @@ public sealed class AutosaveTests : IDisposable
                 screen.Search.LookFor(SearchKinds.Types);
                 break;
             case nameof(AppSettings.FoldedOptionGroups):
-                OptionFolds.Fold(screen.FoldedOptionGroups, ["Other"]);
+                screen.FoldedOptionGroups.Fold(["Other"]);
                 break;
             case nameof(AppSettings.BookmarkColumns):
                 screen.BookmarkColumns.Restore([1f, 1f, 4f, 1f]);

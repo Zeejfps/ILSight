@@ -32,7 +32,7 @@ internal static class BookmarksPanelView
     {
         var t = ui.State.Strings;
         var panel = ui.State.BookmarksPanel;
-        FollowList(panel, bookmarks.Items);
+        panel.Renaming.FollowList(bookmarks.Items);
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         Toolbar(ui, bookmarks);
         ui.Separator();
@@ -59,7 +59,7 @@ internal static class BookmarksPanelView
     {
         var panel = ui.State.BookmarksPanel;
         var palette = ui.State.CodeViewPalette;
-        var renaming = panel.Renaming is not null;
+        var renaming = panel.Renaming.Bookmark is not null;
         Bookmark? removed = null;
         var selected = panel.Selected;
         if (table.Focused && !renaming && selected is not null && ui.Input.TakeKey(KeyboardKey.F2))
@@ -94,14 +94,14 @@ internal static class BookmarksPanelView
             return;
         }
 
-        if (body.Activated && panel.Renaming is null)
+        if (body.Activated && panel.Renaming.Bookmark is null)
         {
             Commands.Start(ui.State, nameof(GoToBookmarkHandler), selected, static (a, b, ct) => a.GoToBookmarkHandler.HandleAsync(a, b, ct));
         }
 
         if (body.EditRequested && panel.Cells.Column == NameColumn)
         {
-            StartRename(panel, selected);
+            panel.StartRename(selected);
         }
 
         if (body.CopyRequested && panel.Cells.HasCell)
@@ -244,7 +244,7 @@ internal static class BookmarksPanelView
 
     private static void NameCell(Ui<UiState> ui, BookmarksPanel panel, TableRow row, Bookmark bookmark, bool listed)
     {
-        if (panel.Renaming != bookmark)
+        if (panel.Renaming.Bookmark != bookmark)
         {
             TextCell(ui, row, bookmark, listed, NameColumn);
             return;
@@ -334,8 +334,7 @@ internal static class BookmarksPanelView
 
     private static void RenameField(Ui<UiState> ui, BookmarksPanel panel)
     {
-        var begin = panel.FocusRename;
-        panel.FocusRename = false;
+        var begin = panel.Renaming.TryTakeFocus();
         var result = ui.InlineEdit("name", ref panel.RenameText, begin, Sizing.Grow());
         if (result == InlineEditResult.Editing)
         {
@@ -349,7 +348,7 @@ internal static class BookmarksPanelView
         }
         else
         {
-            panel.Renaming = null;
+            panel.Renaming.End();
         }
 
         panel.Cells.StopEditing();
@@ -453,7 +452,7 @@ internal static class BookmarksPanelView
             return;
         }
 
-        TakeRemoved(panel, bookmark, row.Value, bookmarks.Items);
+        panel.TakeRemoved(bookmark, row.Value, bookmarks.Items);
     }
 
     /// <summary>Selects the next enabled bookmark after the selected one, or the previous when
@@ -475,13 +474,13 @@ internal static class BookmarksPanelView
     {
         panel.Cells.SelectColumn(NameColumn);
         panel.Cells.Edit();
-        StartRename(panel, bookmark);
+        panel.StartRename(bookmark);
     }
 
     /// <summary>Gives the bookmark being renamed the name typed, unless it is blank, and ends the rename.</summary>
     private static void CommitRename(UiState screen, BookmarksPanel panel)
     {
-        var bookmark = EndRename(panel);
+        var bookmark = panel.Renaming.End();
         if (bookmark is null)
         {
             return;

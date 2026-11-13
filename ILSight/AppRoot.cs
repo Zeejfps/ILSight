@@ -320,7 +320,7 @@ internal static class AppRoot
             FoldedOptionGroups = new FoldedGroups { Folded = new HashSet<string>(saved.FoldedOptionGroups ?? []) },
             Search = new Search(),
             Omnibar = new Omnibar { Search = new Search() },
-            MetadataFilters = MetadataGridWidget.CreateFilters(saved.FlagsFilters),
+            MetadataFilters = MetadataFilters.From(saved.FlagsFilters),
             ArrangeMetadataGridHandler = new ArrangeMetadataGridHandler(new ArrangeMetadataGridHandlerAdapter()),
             ReadMetadataPageHandler = new ReadMetadataPageHandler(new ReadMetadataPageHandlerAdapter()),
             ShippedLicenses = FindShippedLicenses(),

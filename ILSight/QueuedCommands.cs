@@ -163,7 +163,7 @@ internal static class QueuedCommands
         }
 
         var tab = appState.Navigation.OpenEmptyTab();
-        DocumentPanels.AddView(uiState.Documents, tab, panel);
+        uiState.Documents.AddView(tab, panel);
         var becomesActive = focus || uiState.Layout.Focused == panel;
         if (becomesActive)
         {

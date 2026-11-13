@@ -142,7 +142,7 @@ public sealed class OptionSearchTests
     public void Searching_the_decompiler_options_opens_a_folded_group_and_clearing_folds_it_again()
     {
         var app = AppDriver.Opened(width: 1600f);
-        OptionFolds.Fold(app.Ui.FoldedOptionGroups, Enum.GetNames<CSharpVersion>().Append("Other").Append("FSharp"));
+        app.Ui.FoldedOptionGroups.Fold(Enum.GetNames<CSharpVersion>().Append("Other").Append("FSharp"));
         OpenPanel(app.Ui, DockView.DecompilerOptions);
         app.Run();
         Assert.False(app.Frames.Drew("switch expressions"));

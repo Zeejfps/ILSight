@@ -38,11 +38,11 @@ public sealed class CloseAssembliesTests
         var d = OpenedThree();
         var closer = d.Ui.Closer;
 
-        OpenCloser(closer, d.AppState.Assemblies, Listed(d, KeyboardPath));
+        closer.Open(d.AppState.Assemblies, Listed(d, KeyboardPath));
 
         Assert.True(closer.IsOpen);
-        Assert.Equal(ListedPaths(d), closer.Order.Select(static c => c.Assembly.FilePath.Text));
-        Assert.Equal([false, true, false], closer.Order.Select(static c => c.Included));
+        Assert.Equal(ListedPaths(d), closer.Rows.Order.Select(static c => c.Assembly.FilePath.Text));
+        Assert.Equal([false, true, false], closer.Rows.Order.Select(static c => c.Included));
     }
 
     [Fact]
@@ -52,11 +52,11 @@ public sealed class CloseAssembliesTests
         var closer = d.Ui.Closer;
         var core = Listed(d, CorePath);
 
-        OpenCloser(closer, d.AppState.Assemblies, null);
-        Assert.All(closer.Order, static c => Assert.False(c.Included));
+        closer.Open(d.AppState.Assemblies, null);
+        Assert.All(closer.Rows.Order, static c => Assert.False(c.Included));
 
-        OpenCloser(closer, d.AppState.Assemblies, core);
-        Assert.Equal([core], ListToClose(closer));
+        closer.Open(d.AppState.Assemblies, core);
+        Assert.Equal([core], closer.Rows.ListToClose());
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public sealed class CloseAssembliesTests
     {
         var d = OpenedThree();
         var closer = d.Ui.Closer;
-        OpenCloser(closer, d.AppState.Assemblies, Listed(d, AppStateDriver.FixturePath));
+        closer.Open(d.AppState.Assemblies, Listed(d, AppStateDriver.FixturePath));
 
         closer.Filter = "ILSight.Core";
         var shown = ListShown(closer);
@@ -72,7 +72,7 @@ public sealed class CloseAssembliesTests
 
         Assert.Equal([CorePath], shown.Select(static c => c.Assembly.FilePath.Text));
         Assert.Equal(true, CalculateAllShownIncluded(shown));
-        Assert.Equal([AppStateDriver.FixturePath, CorePath], ListToClose(closer).Select(static a => a.FilePath.Text));
+        Assert.Equal([AppStateDriver.FixturePath, CorePath], closer.Rows.ListToClose().Select(static a => a.FilePath.Text));
     }
 
     [Fact]
@@ -80,12 +80,12 @@ public sealed class CloseAssembliesTests
     {
         var d = OpenedThree();
         var closer = d.Ui.Closer;
-        OpenCloser(closer, d.AppState.Assemblies, Listed(d, KeyboardPath));
+        closer.Open(d.AppState.Assemblies, Listed(d, KeyboardPath));
 
         closer.SelectedOnly = true;
         Assert.Equal([KeyboardPath], ListShown(closer).Select(static c => c.Assembly.FilePath.Text));
 
-        ClearFilter(closer);
+        closer.ClearFilter();
         Assert.Equal(3, ListShown(closer).Count);
     }
 
@@ -94,16 +94,16 @@ public sealed class CloseAssembliesTests
     {
         var d = OpenedThree();
         var closer = d.Ui.Closer;
-        OpenCloser(closer, d.AppState.Assemblies, null);
+        closer.Open(d.AppState.Assemblies, null);
         var shown = ListShown(closer);
 
         shown[0].Included = true;
-        TickClicked(closer, shown, shown[0], extend: false);
+        closer.Rows.TickClicked(shown, shown[0], extend: false);
         shown[2].Included = true;
-        TickClicked(closer, shown, shown[2], extend: true);
+        closer.Rows.TickClicked(shown, shown[2], extend: true);
 
-        Assert.Equal([true, true, true], closer.Order.Select(static c => c.Included));
-        Assert.Equal(3, CountIncluded(closer));
+        Assert.Equal([true, true, true], closer.Rows.Order.Select(static c => c.Included));
+        Assert.Equal(3, closer.Rows.CountIncluded());
     }
 
     [Fact]
@@ -111,10 +111,10 @@ public sealed class CloseAssembliesTests
     {
         var d = OpenedThree();
         var closer = d.Ui.Closer;
-        OpenCloser(closer, d.AppState.Assemblies, Listed(d, KeyboardPath));
-        closer.Order[2].Included = true;
+        closer.Open(d.AppState.Assemblies, Listed(d, KeyboardPath));
+        closer.Rows.Order[2].Included = true;
 
-        d.InTurn(() => Commands.CloseAssemblies(d.AppState, ListToClose(closer)));
+        d.InTurn(() => Commands.CloseAssemblies(d.AppState, closer.Rows.ListToClose()));
 
         Assert.Equal([AppStateDriver.FixturePath], ListedPaths(d));
     }
@@ -133,7 +133,7 @@ public sealed class CloseAssembliesTests
         Assert.Equal(2, app.AppState.Analyzer.Roots.Count);
 
         var fixtures = app.AppState.Assemblies.Listed.Single(static a => a.FilePath.Text == AppStateDriver.FixturePath);
-        OpenCloser(app.Ui.Closer, app.AppState.Assemblies, fixtures);
+        app.Ui.Closer.Open(app.AppState.Assemblies, fixtures);
         app.Run(2);
         app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 1, Patience);
@@ -150,14 +150,14 @@ public sealed class CloseAssembliesTests
         d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(KeyboardPath)], ct));
         d.RunUntil(() => d.AppState.Assemblies.Listed.Count == 2);
         var closer = d.Ui.Closer;
-        OpenCloser(closer, d.AppState.Assemblies, Listed(d, KeyboardPath));
+        closer.Open(d.AppState.Assemblies, Listed(d, KeyboardPath));
 
         d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(CorePath)], ct));
         d.RunUntil(() => d.AppState.Assemblies.Listed.Count == 3);
-        Update(closer, d.AppState.Assemblies);
+        closer.Rows.Update(d.AppState.Assemblies);
 
-        Assert.Equal(ListedPaths(d), closer.Order.Select(static c => c.Assembly.FilePath.Text));
-        Assert.Equal([KeyboardPath], ListToClose(closer).Select(static a => a.FilePath.Text));
+        Assert.Equal(ListedPaths(d), closer.Rows.Order.Select(static c => c.Assembly.FilePath.Text));
+        Assert.Equal([KeyboardPath], closer.Rows.ListToClose().Select(static a => a.FilePath.Text));
     }
 
     [Fact]
@@ -171,7 +171,7 @@ public sealed class CloseAssembliesTests
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly")).Frame(2);
         var closer = app.Ui.Closer;
         Assert.True(closer.IsOpen);
-        closer.Order[1].Included = true;
+        closer.Rows.Order[1].Included = true;
         app.Run(2);
         app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 1, Patience);
@@ -213,7 +213,7 @@ public sealed class CloseAssembliesTests
     /// <summary>Closes ZGF.KeyboardModule from the close dialog, as the user does.</summary>
     private static void CloseKeyboardFromTheDialog(AppDriver app)
     {
-        OpenCloser(app.Ui.Closer, app.AppState.Assemblies, KeyboardOf(app));
+        app.Ui.Closer.Open(app.AppState.Assemblies, KeyboardOf(app));
         app.Run(2);
         app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 1, Patience);

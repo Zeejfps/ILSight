@@ -281,64 +281,6 @@ public static class Exports
 
     private const string DefaultSolutionName = "Solution";
 
-    /// <summary>Opens the dialog on <paramref name="assemblies"/> with <paramref name="picked"/>
-    /// ticked, or the only one when there is just one, unless there are none. The folder stays as it
-    /// was last time.</summary>
-    public static void OpenExportSetup(ExportSetup setup, IReadOnlyList<LoadedModule> assemblies, LoadedModule? picked)
-    {
-        if (assemblies.Count == 0)
-        {
-            return;
-        }
-
-        setup.Choices.Clear();
-        foreach (var project in ExportNames.NameProjects(assemblies))
-        {
-            setup.Choices.Add(new ExportChoice { Assembly = project.Assembly, Name = project.Name });
-        }
-
-        TickFirstChoice(setup, picked);
-        setup.RowSelection.Clear();
-        setup.SolutionName = "";
-        setup.IsOpen = true;
-        setup.Page = ExportPage.Main;
-        if (setup.IncludedCount == 0)
-        {
-            ChooseAssemblies(setup);
-        }
-    }
-
-    private static void TickFirstChoice(ExportSetup setup, LoadedModule? picked)
-    {
-        foreach (var choice in setup.Choices)
-        {
-            choice.Included = choice.Assembly == picked;
-        }
-
-        if (setup.Choices.Count == 1)
-        {
-            setup.Choices[0].Included = true;
-        }
-    }
-
-    public static void CloseExportSetup(ExportSetup setup)
-    {
-        setup.IsOpen = false;
-    }
-
-    /// <summary>Shows the Choose page, its list arranged afresh.</summary>
-    public static void ChooseAssemblies(ExportSetup setup)
-    {
-        ExportDialogView.Arrange(setup.Picker, setup.Choices);
-        setup.Page = ExportPage.Choose;
-    }
-
-    /// <summary>Goes back from the Choose page to what is exported.</summary>
-    public static void FinishChoosing(ExportSetup setup)
-    {
-        setup.Page = ExportPage.Main;
-    }
-
     /// <summary>Unticks the assemblies whose rows are picked out, and picks out the row now where the
     /// first of them was.</summary>
     public static void RemoveSelectedRows(ExportSetup setup)
@@ -362,7 +304,7 @@ public static class Exports
     /// <summary>The ticked assemblies, in the order they were opened.</summary>
     public static List<ExportChoice> ListIncludedChoices(ExportSetup setup)
     {
-        return setup.Choices
+        return setup.Assemblies.Choices
             .Where(static c => c.Included)
             .ToList();
     }
@@ -472,7 +414,7 @@ public static class Exports
     /// <summary>The ticked assemblies as the projects to export, in the dialog's order.</summary>
     public static List<SolutionProject> ListIncludedProjects(ExportSetup setup)
     {
-        return setup.Choices
+        return setup.Assemblies.Choices
             .Where(static c => c.Included)
             .Select(static c => new SolutionProject { Assembly = c.Assembly, Name = c.Name.Trim() })
             .ToList();

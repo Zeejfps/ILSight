@@ -35,9 +35,9 @@ internal static class DocumentsView
     private static void Content(Ui<UiState> ui, Navigation navigation, BrowseSession session, AssemblyList assemblies, DecompilerSetup setup, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
     {
         var areaId = ui.GetId("tab-area");
-        ui.State.Documents.TabAreaHeight = ui.TryGetRect(areaId, out var area) ? area.Height : ui.Height;
+        ui.State.Documents.RecordTabAreaHeight(ui.TryGetRect(areaId, out var area) ? area.Height : ui.Height);
         using var content = ui.Column(areaId, new Box { Height = Sizing.Grow(), Gap = 0f });
-        DocumentPanels.RecordShown(DocumentPanels.GetView(ui.State.Documents, tab), tab);
+        DocumentPanels.GetView(ui.State.Documents, tab).RecordShown(tab);
         ClosedBanner(ui, tab.ClosedAssembly);
         tab.Content.Switch((ui, navigation, session, assemblies, setup, bookmarks, tooltips, tab),
             empty: static (s, _) => Hint(s.ui, s.ui.State.Strings.DocumentsHint),
@@ -105,7 +105,7 @@ internal static class DocumentsView
         DocumentTab tab, MetadataGrid grid)
     {
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
-        var picked = MetadataGridWidget.RenderMetadataGrid(ui, "grid", DocumentPanels.GetGridState(view, grid), ui.State.MetadataFilters,
+        var picked = MetadataGridWidget.RenderMetadataGrid(ui, "grid", view.GetGridState(grid), ui.State.MetadataFilters,
             tab.Load.ClosedAssembly);
         var node = tab.Node;
         if (picked.Target is not null && node is not null)
@@ -204,7 +204,7 @@ internal static class DocumentsView
     private static void ToggleLineBookmark(UiState screen, AppState appState, DocumentTab tab, int line, Strings t)
     {
         var toggle = ToggleBookmark(appState, tab, line, number => t.BookmarksDefaultName(number));
-        TakeToggle(screen.BookmarksPanel, toggle, appState.Bookmarks.Items);
+        screen.BookmarksPanel.TakeToggle(toggle, appState.Bookmarks.Items);
     }
 
     public static DockTab Tab(UiState screen, Navigation navigation, DocumentTab tab)

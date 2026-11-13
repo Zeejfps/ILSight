@@ -178,7 +178,7 @@ internal ref struct MetadataGridFrame
         }
 
         var theme = Ui.Theme;
-        var filter = MetadataGridWidget.GetFilter(Flags, Grid, State.FlagsColumn);
+        var filter = Flags.GetFilter(Grid, State.FlagsColumn);
         var width = FlagsFilterView.ContentWidth + theme.TooltipPaddingX * 2 + theme.ScrollBarHitWidth;
         var funnelId = MetadataGridWidget.GetFunnelId(ListId, State.FlagsColumn);
         using var flyout = Ui.Flyout(HashCode.Combine(ListId, FlyoutSalt), ref State.FlagsOpen, funnelId,

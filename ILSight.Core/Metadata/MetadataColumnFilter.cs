@@ -36,23 +36,9 @@ public abstract class MetadataColumnFilter
         return this switch
         {
             ByText text => new ByText { Text = text.Text },
-            ByFlags flags => new ByFlags { Flags = CopyFlags(flags.Flags) },
+            ByFlags flags => new ByFlags { Flags = flags.Flags.Copy() },
             _ => throw new UnreachableException(),
         };
-    }
-
-    private static FilterState CopyFlags(FilterState state)
-    {
-        var copy = new FilterState { Schema = state.Schema, Mode = state.Mode, Revision = state.Revision };
-        foreach (var (name, group) in state.Groups)
-        {
-            copy.Groups[name] = group;
-        }
-        foreach (var (name, flag) in state.Flags)
-        {
-            copy.Flags[name] = flag;
-        }
-        return copy;
     }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>

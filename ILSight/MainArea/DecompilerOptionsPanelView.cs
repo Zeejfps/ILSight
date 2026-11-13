@@ -30,12 +30,12 @@ internal static class DecompilerOptionsPanelView
             var searching = ui.State.DecompilerOptionsQuery.Trim().Length > 0;
             if (ui.IconButton("collapse", ui.State.Icons.OptionsCollapseAll, t.CodeCollapseAll, !searching && !AllFolded(folded)))
             {
-                OptionFolds.Fold(folded, Sections.Select(static s => s.Key));
+                folded.Fold(Sections.Select(static s => s.Key));
             }
 
             if (ui.IconButton("expand", ui.State.Icons.OptionsExpandAll, t.CodeExpandAll, !searching && folded.Count > 0))
             {
-                OptionFolds.UnfoldAll(folded);
+                folded.UnfoldAll();
             }
 
             ui.Separator(theme.IconSize);
@@ -90,7 +90,7 @@ internal static class DecompilerOptionsPanelView
         }
         if (flipped is not null)
         {
-            OptionFolds.Flip(folded, flipped);
+            folded.Flip(flipped);
         }
     }
 
@@ -171,7 +171,7 @@ internal static class DecompilerOptionsPanelView
             return false;
         }
 
-        return OptionFolds.IsFolded(folded, section.Key);
+        return folded.IsFolded(section.Key);
     }
 
     private static bool IsAllowed(DecompilerOptionSection section, DecompilerOptions options)
@@ -289,7 +289,7 @@ internal static class DecompilerOptionsPanelView
     {
         foreach (var section in Sections)
         {
-            if (!OptionFolds.IsFolded(folded, section.Key))
+            if (!folded.IsFolded(section.Key))
             {
                 return false;
             }

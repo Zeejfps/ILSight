@@ -1,7 +1,6 @@
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System;
 using System.Linq;
 
@@ -63,7 +62,7 @@ namespace ILSight.Core.Metadata
             var clauses = new System.Collections.Generic.List<string>();
 			foreach (var group in state.Schema.MutexGroups)
 			{
-				if (!state.Groups.TryGetValue(group.Name, out var sel) || sel is null)
+				if (!state.MutexSelections.TryGetValue(group.Name, out var sel) || sel is null)
                 {
                     continue;
                 }
@@ -82,11 +81,11 @@ namespace ILSight.Core.Metadata
 					: $"{group.Name} ∈ {{{string.Join(", ", labels)}}}");
 			}
 			var requiredFlags = state.Schema.IndependentFlags
-				.Where(f => state.Flags.TryGetValue(f.Name, out var t) && t == TriState.Required)
+				.Where(f => state.FlagStates.TryGetValue(f.Name, out var t) && t == TriState.Required)
 				.Select(f => f.Name)
 				.ToList();
 			var excludedFlags = state.Schema.IndependentFlags
-				.Where(f => state.Flags.TryGetValue(f.Name, out var t) && t == TriState.Excluded)
+				.Where(f => state.FlagStates.TryGetValue(f.Name, out var t) && t == TriState.Excluded)
 				.Select(f => f.Name)
 				.ToList();
 			if (requiredFlags.Count > 0)
@@ -121,112 +120,11 @@ namespace ILSight.Core.Metadata
 				: label;
 		}
 
-		public static FilterState CreateFilterState(FlagsSchema schema)
-		{
-			ArgumentNullException.ThrowIfNull(schema);
-			var state = new FilterState { Schema = schema };
-			foreach (var group in schema.MutexGroups)
-            {
-                state.Groups[group.Name] = null;
-            }
-
-            foreach (var flag in schema.IndependentFlags)
-            {
-                state.Flags[flag.Name] = TriState.DontCare;
-            }
-
-            return state;
-		}
-
-		public static void SetIndependentMode(FilterState state, MatchMode mode)
-		{
-			if (state.Mode == mode)
-            {
-                return;
-            }
-
-            state.Mode = mode;
-			state.Revision++;
-		}
-
-		public static void SetMutexSelection(FilterState state, string groupName, ImmutableHashSet<uint>? values)
-		{
-			state.Groups[groupName] = values;
-			state.Revision++;
-		}
-
-		public static void SetFlagState(FilterState state, string flagName, TriState flagState)
-		{
-			state.Flags[flagName] = flagState;
-			state.Revision++;
-		}
-
-		/// <summary>Resets every group to "any" and every flag to don't-care.</summary>
-		public static void ClearFilter(FilterState state)
-		{
-			foreach (var key in state.Groups.Keys.ToArray())
-            {
-                state.Groups[key] = null;
-            }
-
-            foreach (var key in state.Flags.Keys.ToArray())
-            {
-                state.Flags[key] = TriState.DontCare;
-            }
-
-            state.Mode = MatchMode.All;
-			state.Revision++;
-		}
-
-		/// <summary>Whether a row whose flags are <paramref name="value"/> passes: it holds an allowed
-		/// value of every narrowed group, none of the excluded flags, and all or any of the required ones.</summary>
-		public static bool MatchesFilter(FilterState state, uint value)
-		{
-			if (state.CompiledRevision != state.Revision)
-            {
-                CompileFilter(state);
-            }
-
-            if ((value & state.ExcludedMask) != 0)
-            {
-                return false;
-            }
-
-            foreach (var group in state.Schema.MutexGroups)
-			{
-				var allowed = state.Groups.GetValueOrDefault(group.Name);
-				if (allowed is not null && !allowed.Contains(value & group.Mask))
-                {
-                    return false;
-                }
-            }
-			return state.RequiredMask == 0
-				|| (state.Mode == MatchMode.All ? (value & state.RequiredMask) == state.RequiredMask : (value & state.RequiredMask) != 0);
-		}
-
-		private static void CompileFilter(FilterState state)
-		{
-			state.RequiredMask = state.ExcludedMask = 0;
-			foreach (var flag in state.Schema.IndependentFlags)
-			{
-				var wanted = state.Flags.GetValueOrDefault(flag.Name);
-				if (wanted == TriState.Required)
-                {
-                    state.RequiredMask |= flag.Bit;
-                }
-                else if (wanted == TriState.Excluded)
-                {
-                    state.ExcludedMask |= flag.Bit;
-                }
-            }
-			state.CompiledRevision = state.Revision;
-		}
-
 		/// <summary>The values picked in each group that has any picked, in order.</summary>
 		private static Dictionary<string, uint[]> SaveGroups(FilterState state)
 		{
 			var groups = new Dictionary<string, uint[]>();
-			foreach (var (name, values) in state.Groups)
+			foreach (var (name, values) in state.MutexSelections)
 			{
 				if (values is not null)
                 {
@@ -244,30 +142,9 @@ namespace ILSight.Core.Metadata
     				: new SavedFilterState
     				{
     					Groups = SaveGroups(state),
-    					Flags = state.Flags.Where(static f => f.Value != TriState.DontCare).ToDictionary(static f => f.Key, static f => f.Value),
+    					Flags = state.FlagStates.Where(static f => f.Value != TriState.DontCare).ToDictionary(static f => f.Key, static f => f.Value),
     					Mode = state.Mode,
     				};
     }
-
-		/// <summary>Applies what <see cref="SaveFilter"/> kept, skipping groups and flags the schema no longer has.</summary>
-		public static void RestoreFilter(FilterState state, SavedFilterState saved)
-		{
-			foreach (var (group, values) in saved.Groups ?? new Dictionary<string, uint[]>())
-			{
-				if (state.Groups.ContainsKey(group))
-                {
-                    state.Groups[group] = values.ToImmutableHashSet();
-                }
-            }
-			foreach (var (flag, wanted) in saved.Flags ?? new Dictionary<string, TriState>())
-			{
-				if (state.Flags.ContainsKey(flag))
-                {
-                    state.Flags[flag] = wanted;
-                }
-            }
-			state.Mode = saved.Mode;
-			state.Revision++;
-		}
 }
 }

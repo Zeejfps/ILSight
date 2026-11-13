@@ -2,7 +2,7 @@ using ILSight.Core.Analysis;
 
 namespace ILSight;
 
-/// <summary>Runs one analysis <see cref="Analysis.StartRun"/> started over the open assemblies through
+/// <summary>Runs one analysis <see cref="AnalyzerKindNode.StartRun"/> started over the open assemblies through
 /// <see cref="IPorts"/>, without holding up the screen, showing what it finds as it comes in; when it fails, it ends
 /// with a row telling why, and the whole error is reported.</summary>
 public sealed class RunAnalysisHandler(RunAnalysisHandler.IPorts ports)

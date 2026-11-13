@@ -100,7 +100,7 @@ public static class ScreenLayout
     /// <summary>A new document panel, with an empty tab asked for to be opened in it as the active tab.</summary>
     private static string OpenActiveTabPanel(UiState uiState)
     {
-        var panel = DocumentPanels.CreatePanel(uiState.Documents);
+        var panel = uiState.Documents.CreatePanel();
         Commands.Later(uiState, (uiState, panel), static (a, s) => QueuedCommands.OpenTabIn(s.uiState, a, s.panel, focus: true));
         return panel;
     }

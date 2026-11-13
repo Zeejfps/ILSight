@@ -74,18 +74,18 @@ internal static class ResourceImageView
         var theme = ui.Theme;
         if (ui.IconButton("zoom-out", ui.State.Icons.ResourceZoomOut, t.ResourceZoomOut, zoom.CanZoomOut))
         {
-            picture.Zoom = zoom.StepOut();
+            picture.ZoomOut();
         }
 
         ui.Text(t.ResourceZoomPercent(zoom.Percent), color: theme.TextMuted);
         if (ui.IconButton("zoom-in", ui.State.Icons.ResourceZoomIn, t.ResourceZoomIn, zoom.CanZoomIn))
         {
-            picture.Zoom = zoom.StepIn();
+            picture.ZoomIn();
         }
 
         if (ui.IconButton("zoom-reset", ui.State.Icons.ResourceZoomReset, t.ResourceZoomReset, !zoom.IsOwnSize))
         {
-            picture.Zoom = default;
+            picture.ResetZoom();
         }
 
         ui.Separator(theme.IconSize);
@@ -100,7 +100,7 @@ internal static class ResourceImageView
         var glyph = picture.ShowsSource ? icons.ResourceShowPicture : icons.ResourceShowSource;
         if (ui.Button(label, id: "source", icon: new UiIcon(glyph)))
         {
-            PictureViews.ToggleSource(picture);
+            picture.ToggleSource();
         }
     }
 

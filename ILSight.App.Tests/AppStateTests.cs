@@ -112,7 +112,7 @@ public sealed class AppStateTests
         d.InTurn(() => Commands.CloseAllAssemblies(d.AppState));
         d.NextFrame();
         var lineBefore = DocumentPanels.GetView(d.Ui.Documents, code).Code.Pending;
-        var rowBefore = DocumentPanels.GetGridState(DocumentPanels.GetView(d.Ui.Documents, grid), table).Pending;
+        var rowBefore = DocumentPanels.GetView(d.Ui.Documents, grid).GetGridState(table).Pending;
 
         d.AppState.ViewCommands.Enqueue(new ViewCommand.ExpandNodes([ns]));
         d.AppState.ViewCommands.Enqueue(new ViewCommand.RevealLine { Tab = code, Line = lines });
@@ -121,7 +121,7 @@ public sealed class AppStateTests
 
         Assert.False(d.Ui.Tree.View.IsExpanded(ns));
         Assert.Equal(lineBefore, DocumentPanels.GetView(d.Ui.Documents, code).Code.Pending);
-        Assert.Equal(rowBefore, DocumentPanels.GetGridState(DocumentPanels.GetView(d.Ui.Documents, grid), table).Pending);
+        Assert.Equal(rowBefore, DocumentPanels.GetView(d.Ui.Documents, grid).GetGridState(table).Pending);
     }
 
     [Fact]
@@ -133,14 +133,14 @@ public sealed class AppStateTests
         Assert.NotNull(grid);
         var documents = d.Ui.Documents;
         var panel = DocumentPanels.GetPanel(documents, grid);
-        DocumentPanels.RemoveView(documents, grid);
+        documents.RemoveView(grid);
 
-        DocumentPanels.AddView(documents, grid, panel);
+        documents.AddView(grid, panel);
         DocumentPanels.RevealRow(documents, grid, 2);
         d.NextFrame();
 
         Assert.NotNull(grid.Grid);
-        Assert.Equal(new PendingGridScroll.Reveal(2), DocumentPanels.GetGridState(DocumentPanels.GetView(documents, grid), grid.Grid).Pending);
+        Assert.Equal(new PendingGridScroll.Reveal(2), DocumentPanels.GetView(documents, grid).GetGridState(grid.Grid).Pending);
     }
 
     [Fact]

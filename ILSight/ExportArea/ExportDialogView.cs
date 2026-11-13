@@ -21,30 +21,15 @@ namespace ILSight.ExportArea;
 /// </summary>
 internal static class ExportDialogView
 {
-    /// <summary>Lists <paramref name="choices"/> afresh, ticked first, with no filter.</summary>
-    public static void Arrange(AssemblyPicker picker, IReadOnlyList<ExportChoice> choices)
-    {
-        picker.Order.Clear();
-        picker.Order.AddRange(choices.Where(static c => c.Included));
-        picker.Order.AddRange(choices.Where(static c => !c.Included));
-        picker.Anchor = null;
-        ClearFilter(picker);
-    }
-
-    /// <summary>Shows every assembly again.</summary>
-    private static void ClearFilter(AssemblyPicker picker)
-    {
-        picker.Filter = "";
-        picker.SelectedOnly = false;
-    }
-
     /// <summary>The assemblies the page shows, in its order. Runs each frame the page shows, so it is a loop:
     /// a lambda here would capture the picker.</summary>
     public static List<ExportChoice> ListShown(AssemblyPicker picker)
     {
         var shown = new List<ExportChoice>();
-        foreach (var choice in picker.Order)
+        var order = picker.Rows.Order;
+        for (var i = 0; i < order.Count; i++)
         {
+            var choice = order[i];
             if (IsShown(picker, choice))
             {
                 shown.Add(choice);
@@ -102,47 +87,6 @@ internal static class ExportDialogView
         }
     }
 
-    /// <summary>Follows a click that set <paramref name="clicked"/>'s tick: with <paramref name="extend"/>
-    /// (Shift held), every row in <paramref name="shown"/> from the anchor to it takes the same tick, as
-    /// in a list of checkboxes elsewhere; rows outside the range keep theirs. Without an anchor among
-    /// <paramref name="shown"/>, only <paramref name="clicked"/> changes. Either way it becomes the
-    /// anchor. <paramref name="shown"/> is the list as shown before the click, so a row that
-    /// Selected only hides once unticked still counts.</summary>
-    public static void TickClicked(AssemblyPicker picker, IReadOnlyList<ExportChoice> shown, ExportChoice clicked, bool extend)
-    {
-        var anchor = picker.Anchor;
-        picker.Anchor = clicked;
-        if (!extend || anchor is null)
-        {
-            return;
-        }
-
-        var from = IndexOf(shown, anchor);
-        var to = IndexOf(shown, clicked);
-        if (from < 0 || to < 0)
-        {
-            return;
-        }
-
-        for (var i = Math.Min(from, to); i <= Math.Max(from, to); i++)
-        {
-            shown[i].Included = clicked.Included;
-        }
-    }
-
-    /// <summary>Where <paramref name="choice"/> is in <paramref name="shown"/>, by identity, or -1.</summary>
-    private static int IndexOf(IReadOnlyList<ExportChoice> shown, ExportChoice choice)
-    {
-        for (var i = 0; i < shown.Count; i++)
-        {
-            if (shown[i] == choice)
-            {
-                return i;
-            }
-        }
-        return -1;
-    }
-
     private const float WindowWidth = 640f;
     private const float WindowHeight = 720f;
 
@@ -161,14 +105,14 @@ internal static class ExportDialogView
     public static void Render(Ui<UiState> ui, DecompilerOptions options)
     {
         Dialog(ui, options);
-        DialogWindows.Settle(ui.State.ExportSetup.Window, ui.Input.IsDown(PointerButton.Left));
+        ui.State.ExportSetup.Window.Settle(ui.Input.IsDown(PointerButton.Left));
     }
 
     private static void Dialog(Ui<UiState> ui, DecompilerOptions options)
     {
         var setup = ui.State.ExportSetup;
-        var choosing = setup.Page == ExportPage.Choose;
-        var title = PageTitle(ui.State.Strings, setup.Page);
+        var choosing = setup.Assemblies.Page == ExportPage.Choose;
+        var title = PageTitle(ui.State.Strings, setup.Assemblies.Page);
         using (var dialog = ui.WindowDialog("export-setup", title, ref setup.IsOpen, WindowWidth, WindowHeight, ref setup.Window.Bounds,
             closeOnEscape: !choosing))
         {
@@ -387,7 +331,7 @@ internal static class ExportDialogView
         {
             if (ui.IconButton("add", ui.State.Icons.ExportAdd, t.ExportAdd))
             {
-                Exports.ChooseAssemblies(setup);
+                setup.ChooseAssemblies();
             }
 
             var anyPicked = setup.RowSelection.Count > 0;
@@ -404,7 +348,7 @@ internal static class ExportDialogView
     private static void SelectedCount(Ui<UiState> ui, ExportSetup setup)
     {
         var t = ui.State.Strings;
-        Caption(ui, t.ExportSelectedCount(setup.IncludedCount, setup.Choices.Count));
+        Caption(ui, t.ExportSelectedCount(setup.IncludedCount, setup.Assemblies.Choices.Count));
     }
 
     /// <summary>Where the export goes: the folder, a warning when it holds files, and for several
@@ -578,7 +522,7 @@ internal static class ExportDialogView
 
             if (ui.Button(t.ExportCancel, id: "export-cancel", variant: ButtonVariant.Ghost))
             {
-                Exports.CloseExportSetup(setup);
+                setup.Close();
             }
 
             if (ui.Button(t.ExportConfirm, enabled: blocker is null, id: "export-start", variant: ButtonVariant.Primary))
@@ -633,7 +577,7 @@ internal static class ExportDialogView
         var theme = ui.Theme;
         if (ui.Input.TakeKey(KeyboardKey.Escape))
         {
-            Exports.FinishChoosing(setup);
+            setup.Assemblies.FinishChoosing();
         }
 
         using (ui.Column(new Box { Height = Sizing.Grow(), Gap = theme.Gap }))
@@ -701,7 +645,7 @@ internal static class ExportDialogView
             ui.Text(t.ExportNoMatch, color: theme.TextMuted);
             if (ui.Button(t.ExportClearFilter, id: "clear-filter", variant: ButtonVariant.Ghost))
             {
-                ClearFilter(picker);
+                picker.ClearFilter();
             }
         }
     }
@@ -717,7 +661,7 @@ internal static class ExportDialogView
             var width = Sizing.Grow();
             if (ui.Checkbox(choice.Assembly.Name, ref choice.Included, id: "include", width: width, compact: true))
             {
-                TickClicked(picker, shown, choice, (ui.Input.Modifiers & KeyModifiers.Shift) != 0);
+                picker.Rows.TickClicked(shown, choice, (ui.Input.Modifiers & KeyModifiers.Shift) != 0);
             }
 
             ui.Tooltip(ui.GetId("include"), choice.Assembly.FilePath.Text, TooltipAnchor.Pointer);
@@ -741,7 +685,7 @@ internal static class ExportDialogView
             ui.Leaf(new Box { Width = Sizing.Grow(), Height = 0f });
             if (ui.Button(t.ExportDone, id: "done", variant: ButtonVariant.Primary))
             {
-                Exports.FinishChoosing(setup);
+                setup.Assemblies.FinishChoosing();
             }
         }
     }
@@ -756,7 +700,7 @@ internal static class ExportDialogView
             return;
         }
 
-        Exports.CloseExportSetup(setup);
+        setup.Close();
         ExportCommands.StartExport(appState, Exports.CreateRequest(setup));
     }
 

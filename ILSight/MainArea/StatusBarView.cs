@@ -164,7 +164,7 @@ internal static class StatusBarView
         var i = ui.Clickable("errors");
         if (i.Clicked)
         {
-            ErrorDialogView.Open(ui.State.ErrorDialog, errors.Entries);
+            ui.State.ErrorDialog.Open(errors.Entries);
         }
 
         using (ui.Row(i.Id, new Box
@@ -181,6 +181,6 @@ internal static class StatusBarView
             ui.Text(ui.Memo("status-errors", (errors.Entries.Count, t), static a => a.t.StatusErrors(a.Count)), color: theme.Danger,
                 size: theme.FontSizeSmall);
         }
-        ui.Tooltip(i.Id, ErrorDialogView.GetText(ui.State.ErrorDialog, errors.Entries[^1], t).Summary);
+        ui.Tooltip(i.Id, ui.State.ErrorDialog.Texts.GetText(errors.Entries[^1], t).Summary);
     }
 }

@@ -73,7 +73,7 @@ internal static class ProcessPickerView
         }
 
         browser.StopUnlessOpen(picker.IsOpen);
-        DialogWindows.Settle(picker.Window, ui.Input.IsDown(PointerButton.Left));
+        picker.Window.Settle(ui.Input.IsDown(PointerButton.Left));
     }
 
     private static void Content(Ui<UiState> ui, ProcessPicker picker, ref bool open, ref bool close)

@@ -18,11 +18,50 @@ public sealed class BookmarksPanel
 
     public Bookmark? Selected => Selection.Item;
 
-    /// <summary>The bookmark whose name is being edited, and the name typed so far.</summary>
-    public Bookmark? Renaming { get; set; }
+    public BookmarkRenaming Renaming { get; } = new();
 
+    /// <summary>The name typed so far for the bookmark being renamed. A field, for the edit box to take by
+    /// <c>ref</c>.</summary>
     public string RenameText = "";
 
-    /// <summary>True once after a rename starts: the name field should take focus.</summary>
-    public bool FocusRename { get; set; }
+    /// <summary>Starts renaming <paramref name="bookmark"/>, from its name.</summary>
+    public void StartRename(Bookmark bookmark)
+    {
+        RenameText = bookmark.Name;
+        Renaming.Start(bookmark);
+    }
+
+    /// <summary>Selects the bookmark a toggle added, or passes the selection of the one it removed to
+    /// the bookmark now in its row.</summary>
+    public void TakeToggle(BookmarkToggle toggle, IReadOnlyList<Bookmark> bookmarks)
+    {
+        toggle.Switch(
+            unchanged: static _ => { },
+            added: added => ItemSelections.Select(Selection, added.Bookmark, bookmarks),
+            removed: removed => TakeRemoved(removed.Bookmark, removed.Row, bookmarks));
+    }
+
+    /// <summary>Passes the selection of <paramref name="bookmark"/>, removed from <paramref name="row"/>, to the
+    /// bookmark now in its row, and ends its rename.</summary>
+    public void TakeRemoved(Bookmark bookmark, int row, IReadOnlyList<Bookmark> bookmarks)
+    {
+        Renaming.Drop(bookmark);
+        if (Selection.Item != bookmark)
+        {
+            return;
+        }
+
+        SelectInRow(row, bookmarks);
+    }
+
+    private void SelectInRow(int row, IReadOnlyList<Bookmark> bookmarks)
+    {
+        var kept = Math.Min(row, bookmarks.Count - 1);
+        if (kept < 0)
+        {
+            ItemSelections.Clear(Selection);
+            return;
+        }
+        ItemSelections.Select(Selection, bookmarks[kept], bookmarks, reveal: false);
+    }
 }

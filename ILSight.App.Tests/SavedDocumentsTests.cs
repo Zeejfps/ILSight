@@ -47,7 +47,7 @@ public sealed class SavedDocumentsTests : IDisposable
     {
         var grid = tab.Grid;
         Assert.NotNull(grid);
-        return DocumentPanels.GetGridState(DocumentPanels.GetView(app.Ui.Documents, tab), grid);
+        return DocumentPanels.GetView(app.Ui.Documents, tab).GetGridState(grid);
     }
 
     private static DocumentTab GridTab(AppDriver app)
@@ -262,7 +262,7 @@ public sealed class SavedDocumentsTests : IDisposable
         Assert.NotNull(diagram);
         SettleDiagram(app, diagram);
         var view = DiagramOf(app, diagram);
-        DiagramCameras.Restore(view.Camera, new PointF(-30f, 12f), 1.5f);
+        view.Camera.Restore(new PointF(-30f, 12f), 1.5f);
         Assert.NotNull(diagram.Diagram);
         var fields = new CardFold.Own { Card = diagram.Diagram.Cards[0].Anchor, Section = MemberSection.Fields };
         Diagrams.ToggleFold(view, fields);
@@ -564,9 +564,9 @@ public sealed class SavedDocumentsTests : IDisposable
     {
         var documents = new DocumentViews();
 
-        DocumentPanels.SkipPanels(documents, ["document-1", "document-2", "document-2147483647"]);
+        documents.SkipPanels(["document-1", "document-2", "document-2147483647"]);
 
-        Assert.Equal("document-3", DocumentPanels.CreatePanel(documents));
+        Assert.Equal("document-3", documents.CreatePanel());
     }
 
     [Fact]

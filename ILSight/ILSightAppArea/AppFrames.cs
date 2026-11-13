@@ -31,7 +31,7 @@ internal static class AppFrames
     /// frame.</summary>
     internal static void FollowRestoredAppState(UiState uiState, AppState appState)
     {
-        DocumentPanels.SkipPanels(uiState.Documents, appState.Lists.ListDocumentPanels());
+        uiState.Documents.SkipPanels(appState.Lists.ListDocumentPanels());
         FollowActiveTab(uiState, appState.Navigation.ActiveTab);
         QueuedCommands.RunViewCommands(uiState, appState);
         ShowInRestoredDocuments(uiState, appState.Navigation);
@@ -196,7 +196,7 @@ internal static class AppFrames
     /// <summary>Opens the error dialog on the newest error whenever one is reported.</summary>
     private static void ShowNewErrors(UiState uiState, ErrorLog errors)
     {
-        ErrorDialogView.ShowNewErrors(uiState.ErrorDialog, errors.Revision, errors.Entries);
+        uiState.ErrorDialog.ShowNewErrors(errors.Revision, errors.Entries);
     }
 
     /// <summary>Decompiles each tab in front again once the language or the options changed, when it shows what they
@@ -282,11 +282,11 @@ internal static class AppFrames
 
         if (shown.IsShownBy(tab))
         {
-            tab.Load.KeepPosition(DocumentPanels.GetPosition(view, tab));
+            tab.Load.KeepPosition(view.GetPosition(tab));
             return;
         }
 
-        navigation.KeepPositionLeft(shown, DocumentPanels.GetShownPosition(view));
+        navigation.KeepPositionLeft(shown, view.GetShownPosition());
     }
 
     private static void KeepChangedViewSettings(UiState uiState, AppState appState)

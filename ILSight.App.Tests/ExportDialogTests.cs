@@ -59,7 +59,7 @@ public sealed class ExportDialogTests : IDisposable
     /// box does.</summary>
     private static void TickAll(ExportSetup setup, bool all)
     {
-        foreach (var choice in setup.Choices)
+        foreach (var choice in setup.Assemblies.Choices)
         {
             choice.Included = all;
         }
@@ -74,7 +74,7 @@ public sealed class ExportDialogTests : IDisposable
 
         var setup = d.Ui.ExportSetup;
         Assert.True(setup.IsOpen);
-        Assert.Equal([true, false], setup.Choices.Select(c => c.Included));
+        Assert.Equal([true, false], setup.Assemblies.Choices.Select(c => c.Included));
         Assert.False(setup.IsSolution);
     }
 
@@ -85,7 +85,7 @@ public sealed class ExportDialogTests : IDisposable
 
         d.OpenExportSetup(null);
 
-        Assert.True(Assert.Single(d.Ui.ExportSetup.Choices).Included);
+        Assert.True(Assert.Single(d.Ui.ExportSetup.Assemblies.Choices).Included);
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public sealed class ExportDialogTests : IDisposable
         var setup = d.Ui.ExportSetup;
         setup.Folder = _temp.PathOf("Out");
 
-        setup.Choices[1].Included = true;
+        setup.Assemblies.Choices[1].Included = true;
 
         Assert.True(setup.IsSolution);
         Assert.Equal("Out.sln", setup.SolutionFileName);
@@ -113,11 +113,11 @@ public sealed class ExportDialogTests : IDisposable
         setup.Folder = _temp.Path;
         TickAll(setup, true);
 
-        setup.Choices[1].Name = setup.Choices[0].Name.ToUpperInvariant();
+        setup.Assemblies.Choices[1].Name = setup.Assemblies.Choices[0].Name.ToUpperInvariant();
 
         Assert.NotNull(setup.Clash);
         Assert.False(Exports.CanExport(setup, Looked(d.CheckExportFiles())));
-        setup.Choices[1].Name = "Other";
+        setup.Assemblies.Choices[1].Name = "Other";
         Assert.Null(setup.Clash);
         Assert.True(Exports.CanExport(setup, Looked(d.CheckExportFiles())));
     }
@@ -143,7 +143,7 @@ public sealed class ExportDialogTests : IDisposable
         var d = AppStateDriver.Opened();
         d.OpenExportSetup(null);
         var setup = d.Ui.ExportSetup;
-        var choice = Assert.Single(setup.Choices);
+        var choice = Assert.Single(setup.Assemblies.Choices);
 
         TickAll(setup, false);
         Assert.IsType<ExportBlocker.NoAssembly>(Exports.FindBlocker(setup, Looked(NothingAmiss)));
@@ -213,11 +213,11 @@ public sealed class ExportDialogTests : IDisposable
         var d = OpenedTwo();
         var setup = ReadyToExport(d);
         TickAll(setup, true);
-        setup.Choices[1].Name = setup.Choices[0].Name;
+        setup.Assemblies.Choices[1].Name = setup.Assemblies.Choices[0].Name;
 
         var blocker = Exports.FindBlocker(setup, Looked(NothingAmiss with { IsKeyFileMissing = true }));
 
-        Assert.Equal(setup.Choices[0].Name, Assert.IsType<ExportBlocker.Clash>(blocker).Name);
+        Assert.Equal(setup.Assemblies.Choices[0].Name, Assert.IsType<ExportBlocker.Clash>(blocker).Name);
     }
 
     [Fact]
@@ -242,7 +242,7 @@ public sealed class ExportDialogTests : IDisposable
         d.OpenExportSetup(null);
         var setup = d.Ui.ExportSetup;
         setup.Folder = _temp.Path;
-        setup.Choices[0].Name = "Renamed";
+        setup.Assemblies.Choices[0].Name = "Renamed";
 
         d.StartExport();
         d.Settle();
@@ -268,7 +268,7 @@ public sealed class ExportDialogTests : IDisposable
         d.Settle();
 
         Assert.True(File.Exists(_temp.PathOf("Both.sln")));
-        foreach (var choice in setup.Choices)
+        foreach (var choice in setup.Assemblies.Choices)
         {
             Assert.True(File.Exists(_temp.PathOf(Path.Combine(choice.Name, choice.Name + ".csproj"))));
         }
@@ -280,10 +280,10 @@ public sealed class ExportDialogTests : IDisposable
         var d = OpenedTwo();
 
         d.OpenExportSetup(null);
-        Assert.Equal(ExportPage.Choose, d.Ui.ExportSetup.Page);
+        Assert.Equal(ExportPage.Choose, d.Ui.ExportSetup.Assemblies.Page);
 
         d.OpenExportSetup(await FixturesAsync(d));
-        Assert.Equal(ExportPage.Main, d.Ui.ExportSetup.Page);
+        Assert.Equal(ExportPage.Main, d.Ui.ExportSetup.Assemblies.Page);
     }
 
     [Fact]
@@ -294,7 +294,7 @@ public sealed class ExportDialogTests : IDisposable
         d.OpenExportSetup(second);
         var setup = d.Ui.ExportSetup;
 
-        Exports.ChooseAssemblies(setup);
+        setup.ChooseAssemblies();
         var first = ExportDialogView.ListShown(setup.Picker);
         first[1].Included = true;
 
@@ -315,7 +315,7 @@ public sealed class ExportDialogTests : IDisposable
         ExportDialogView.IncludeShown(picker, true);
 
         Assert.Equal(second, shown.Assembly);
-        Assert.Equal([false, true], d.Ui.ExportSetup.Choices.Select(c => c.Included));
+        Assert.Equal([false, true], d.Ui.ExportSetup.Assemblies.Choices.Select(c => c.Included));
         Assert.Equal(true, ExportDialogView.CalculateAllShownIncluded(picker));
     }
 
@@ -332,7 +332,7 @@ public sealed class ExportDialogTests : IDisposable
     private static void Click(AssemblyPicker picker, List<ExportChoice> shown, ExportChoice choice, bool shift)
     {
         choice.Included = !choice.Included;
-        ExportDialogView.TickClicked(picker, shown, choice, shift);
+        picker.Rows.TickClicked(shown, choice, shift);
     }
 
     [Fact]
@@ -400,7 +400,7 @@ public sealed class ExportDialogTests : IDisposable
         var d = OpenedTwo();
         d.OpenExportSetup(await FixturesAsync(d));
         var setup = d.Ui.ExportSetup;
-        Exports.ChooseAssemblies(setup);
+        setup.ChooseAssemblies();
 
         setup.Picker.SelectedOnly = true;
 
@@ -433,14 +433,14 @@ public sealed class ExportDialogTests : IDisposable
         var setup = app.Ui.ExportSetup;
 
         app.Frames.ClickOn(Selector.AtPath("add")).Frame(2);
-        Assert.Equal(ExportPage.Choose, setup.Page);
+        Assert.Equal(ExportPage.Choose, setup.Assemblies.Page);
         app.Frames.ClickOn(Selector.WithText("Done")).Frame(2);
-        Assert.Equal(ExportPage.Main, setup.Page);
+        Assert.Equal(ExportPage.Main, setup.Assemblies.Page);
 
         app.Frames.ClickOn(Selector.AtPath("add")).Frame(2);
         app.Frames.Key(KeyboardKey.Escape).Frame(2);
 
-        Assert.Equal(ExportPage.Main, setup.Page);
+        Assert.Equal(ExportPage.Main, setup.Assemblies.Page);
         Assert.True(setup.IsOpen);
     }
 
@@ -450,7 +450,7 @@ public sealed class ExportDialogTests : IDisposable
         var app = AppDriver.Opened(height: 1400f);
         app.OpenExportSetup(null);
         var setup = app.Ui.ExportSetup;
-        Exports.ChooseAssemblies(setup);
+        setup.ChooseAssemblies();
         setup.Picker.Filter = "nothing-is-called-this";
         app.Run(2);
 
@@ -471,7 +471,7 @@ public sealed class ExportDialogTests : IDisposable
 
         app.Frames.ClickOn(Selector.AtPath("add")).Frame(2);
 
-        Assert.Equal(ExportPage.Choose, app.Ui.ExportSetup.Page);
+        Assert.Equal(ExportPage.Choose, app.Ui.ExportSetup.Assemblies.Page);
     }
 
     private static AppDriver WithTwoIncluded()
@@ -481,7 +481,7 @@ public sealed class ExportDialogTests : IDisposable
         app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 2);
         app.OpenExportSetup(null);
         TickAll(app.Ui.ExportSetup, true);
-        Exports.FinishChoosing(app.Ui.ExportSetup);
+        app.Ui.ExportSetup.Assemblies.FinishChoosing();
         app.Run(2);
         return app;
     }
@@ -510,8 +510,8 @@ public sealed class ExportDialogTests : IDisposable
         ClickRowOf(app, first);
         app.Frames.ClickOn(Selector.AtPath("remove-selected")).Frame(2);
 
-        Assert.Equal([false, true], setup.Choices.Select(c => c.Included));
-        Assert.True(setup.RowSelection.IsOnly(setup.Choices[1]));
+        Assert.Equal([false, true], setup.Assemblies.Choices.Select(c => c.Included));
+        Assert.True(setup.RowSelection.IsOnly(setup.Assemblies.Choices[1]));
         Assert.Equal(second, Exports.ListIncludedChoices(setup)[0].Assembly);
     }
 
@@ -566,7 +566,7 @@ public sealed class ExportDialogTests : IDisposable
 
         var setup = app.Ui.ExportSetup;
         Assert.True(setup.IsOpen);
-        Assert.Equal([false, true], setup.Choices.Select(c => c.Included));
+        Assert.Equal([false, true], setup.Assemblies.Choices.Select(c => c.Included));
     }
 
     [Fact]

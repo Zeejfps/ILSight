@@ -21,7 +21,7 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
     {
         var grid = await OpenTableAsync("TypeRef");
         var state = MetadataGridWidget.CreateState(grid);
-        var flags = MetadataGridWidget.CreateFilters(null);
+        var flags = MetadataFilters.From(null);
         var frames = new UiFrames(Screens.Blank(), width: 1200f, height: 300f, body: ui => Render(ui, grid, state, flags)) { FrameTime = 1f / 60f };
         frames.Frame();
         MetadataGridWidget.RevealRow(state, 1);
@@ -46,7 +46,7 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
     {
         var grid = await OpenTableAsync("TypeRef");
         var state = MetadataGridWidget.CreateState(grid);
-        MetadataGridWidget.UpdateView(state, MetadataGridWidget.CreateFilters(null), new MetadataGridViews(), isClosed: false);
+        MetadataGridWidget.UpdateView(state, MetadataFilters.From(null), new MetadataGridViews(), isClosed: false);
         state.Open[(2, 1)] = 3;
         state.Open[(1, 1)] = 2;
         state.Open[(1, 2)] = 4;

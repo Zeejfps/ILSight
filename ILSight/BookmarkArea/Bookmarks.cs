@@ -3,81 +3,11 @@ using ILSight.Core;
 
 namespace ILSight.BookmarkArea;
 
-/// <summary>Marking lines with bookmarks, the bookmarks panel's selection and rename, and making bookmarks and the
-/// records the bookmarks file keeps of them. Going to them is <see cref="GoToBookmarkHandler"/>'s, importing them
+/// <summary>Marking lines with bookmarks, and making bookmarks and the records the bookmarks file keeps of them.
+/// Going to them is <see cref="GoToBookmarkHandler"/>'s, importing them
 /// <see cref="BookmarkImporting"/>'s and exporting them <see cref="ExportBookmarksHandler"/>'s.</summary>
 public static class Bookmarks
 {
-    /// <summary>Selects the bookmark a toggle added, or passes the selection of the one it removed to
-    /// the bookmark now in its row.</summary>
-    public static void TakeToggle(BookmarksPanel panel, BookmarkToggle toggle, IReadOnlyList<Bookmark> bookmarks)
-    {
-        toggle.Switch(
-            unchanged: static _ => { },
-            added: added => ItemSelections.Select(panel.Selection, added.Bookmark, bookmarks),
-            removed: removed => TakeRemoved(panel, removed.Bookmark, removed.Row, bookmarks));
-    }
-
-    /// <summary>Passes the selection of <paramref name="bookmark"/>, removed from <paramref name="row"/>, to the
-    /// bookmark now in its row, and ends its rename.</summary>
-    public static void TakeRemoved(BookmarksPanel panel, Bookmark bookmark, int row, IReadOnlyList<Bookmark> bookmarks)
-    {
-        if (panel.Renaming == bookmark)
-        {
-            panel.Renaming = null;
-        }
-
-        if (panel.Selection.Item != bookmark)
-        {
-            return;
-        }
-
-        SelectInRow(panel, row, bookmarks);
-    }
-
-    /// <summary>Selects the bookmark in <paramref name="row"/>, or the last when there are fewer.</summary>
-    private static void SelectInRow(BookmarksPanel panel, int row, IReadOnlyList<Bookmark> bookmarks)
-    {
-        var kept = Math.Min(row, bookmarks.Count - 1);
-        if (kept < 0)
-        {
-            ItemSelections.Clear(panel.Selection);
-            return;
-        }
-        ItemSelections.Select(panel.Selection, bookmarks[kept], bookmarks, reveal: false);
-    }
-
-    /// <summary>Forgets the rename of a bookmark that is gone, as importing in its place drops it.</summary>
-    public static void FollowList(BookmarksPanel panel, IReadOnlyList<Bookmark> bookmarks)
-    {
-        if (panel.Renaming is null)
-        {
-            return;
-        }
-
-        if (bookmarks.Contains(panel.Renaming))
-        {
-            return;
-        }
-
-        panel.Renaming = null;
-    }
-
-    public static void StartRename(BookmarksPanel panel, Bookmark bookmark)
-    {
-        panel.Renaming = bookmark;
-        panel.RenameText = bookmark.Name;
-        panel.FocusRename = true;
-    }
-
-    /// <summary>Ends the rename, returning the bookmark that was being renamed, or null.</summary>
-    public static Bookmark? EndRename(BookmarksPanel panel)
-    {
-        var bookmark = panel.Renaming;
-        panel.Renaming = null;
-        return bookmark;
-    }
-
     /// <summary>Removes the bookmark marking <paramref name="line"/> of <paramref name="tab"/>'s
     /// document, or bookmarks the line, naming the bookmark by the statement or definition on it
     /// when it has one. Returns which it did. <paramref name="nameOf"/> names a new bookmark by a number,

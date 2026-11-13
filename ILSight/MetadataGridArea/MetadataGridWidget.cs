@@ -107,7 +107,7 @@ public static class MetadataGridWidget
             return new MetadataColumnFilter.ByText();
         }
 
-        return new MetadataColumnFilter.ByFlags { Flags = GetFilter(flags, state.Grid, column) };
+        return new MetadataColumnFilter.ByFlags { Flags = flags.GetFilter(state.Grid, column) };
     }
 
     private static bool IsFlagsColumn(MetadataGridState state, int column)
@@ -377,61 +377,6 @@ public static class MetadataGridWidget
     internal static int GetIndexOf(MetadataGridState state, int row)
     {
         return Array.IndexOf(state.View, row);
-    }
-
-    /// <summary>Filters starting from a copy of <paramref name="saved"/>, what the settings kept.</summary>
-    public static MetadataFilters CreateFilters(Dictionary<string, SavedFilterState>? saved)
-    {
-        var copied = saved is not null ? new Dictionary<string, SavedFilterState>(saved) : new Dictionary<string, SavedFilterState>();
-        return new MetadataFilters { Saved = copied };
-    }
-
-    /// <summary>The filter of <paramref name="column"/>, a column of flags, as last left.</summary>
-    public static FilterState GetFilter(MetadataFilters filters, MetadataGrid grid, int column)
-    {
-        var key = GetKey(grid, column);
-        if (filters.States.TryGetValue(key, out var state))
-        {
-            return state;
-        }
-
-        var schema = grid.Columns[column].Flags;
-        if (schema == null)
-        {
-            throw new ArgumentException($"{key} is not a flags column.", nameof(column));
-        }
-
-        state = FilterStatePresenter.CreateFilterState(schema);
-        if (filters.Saved.TryGetValue(key, out var saved))
-        {
-            FilterStatePresenter.RestoreFilter(state, saved);
-        }
-
-        filters.States.Add(key, state);
-        return state;
-    }
-
-    private static string GetKey(MetadataGrid grid, int column)
-    {
-        return $"{grid.Key}/{grid.Columns[column].Name}";
-    }
-
-    /// <summary>Every filter that filters something, to save.</summary>
-    public static Dictionary<string, SavedFilterState> ListSaved(MetadataFilters filters)
-    {
-        foreach (var (key, state) in filters.States)
-        {
-            var saved = FilterStatePresenter.SaveFilter(state);
-            if (saved != null)
-            {
-                filters.Saved[key] = saved;
-            }
-            else
-            {
-                filters.Saved.Remove(key);
-            }
-        }
-        return new Dictionary<string, SavedFilterState>(filters.Saved);
     }
 
     /// <summary>Works out which rows of <paramref name="state"/> are taller than one line: those with cells

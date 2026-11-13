@@ -94,12 +94,6 @@ public static class CodeDisplay
         SetDisplayOptions(uiState, chosen);
     }
 
-    /// <summary>Offers the installed fonts of <paramref name="families"/> that code can be drawn in.</summary>
-    public static void KeepInstalledFonts(UiState uiState, IReadOnlyList<SystemFontFamily> families)
-    {
-        CodeDisplay.KeepFonts(uiState.CodeFonts, families);
-    }
-
     /// <summary>Draws the whole interface at <paramref name="scale"/>, or the offered scale nearest it.</summary>
     public static void SetUiScale(UiState uiState, float scale)
     {
@@ -142,33 +136,6 @@ public static class CodeDisplay
         SetDisplayOptions(uiState, DisplayOptions.Default);
     }
 
-    /// <summary>True the first time only: the installed fonts should be listed.</summary>
-    public static bool TryTakeListingRequest(CodeFontChoices choices)
-    {
-        if (choices.ListingAsked)
-        {
-            return false;
-        }
-
-        choices.ListingAsked = true;
-        return true;
-    }
-
-    /// <summary>Offers the families of <paramref name="families"/> code can be drawn in after the bundled font.</summary>
-    public static void KeepFonts(CodeFontChoices choices, IReadOnlyList<SystemFontFamily> families)
-    {
-        var installed = families
-            .Where(IsOfferedFont)
-            .Select(CodeDisplay.CreateFont);
-        choices.Fonts = new CodeFont?[] { null }
-            .Concat(installed)
-            .ToArray();
-        choices.Labels = choices.Fonts
-            .Select(GetFontName)
-            .ToArray();
-        choices.IsListed = true;
-    }
-
     /// <summary>The name <paramref name="font"/> is offered by: the bundled font's when it is null.</summary>
     public static string GetFontName(CodeFont? font)
     {
@@ -178,28 +145,5 @@ public static class CodeDisplay
         }
 
         return font.Family;
-    }
-
-    /// <summary>Whether <paramref name="family"/> lines code up in columns and draws letters, and is not
-    /// the bundled font installed again.</summary>
-    private static bool IsOfferedFont(SystemFontFamily family)
-    {
-        if (!family.IsMonospaced)
-        {
-            return false;
-        }
-
-        if (family.IsSymbol)
-        {
-            return false;
-        }
-
-        var regular = family.FindRegular();
-        if (regular is null)
-        {
-            return false;
-        }
-
-        return family.Name != CodeFontChoices.BundledName;
     }
 }

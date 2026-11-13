@@ -394,7 +394,7 @@ public sealed class AssemblyListingTests
 
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly")).Frame(2);
         Assert.True(app.Ui.Closer.IsOpen);
-        Assert.True(Assert.Single(app.Ui.Closer.Order).Included);
+        Assert.True(Assert.Single(app.Ui.Closer.Rows.Order).Included);
         Assert.Single(app.AppState.Assemblies.Assemblies);
 
         app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);

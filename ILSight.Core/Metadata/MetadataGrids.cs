@@ -437,7 +437,7 @@ public static class MetadataGrids
 
         return filter.Match((grid, column, value),
             static (s, text) => MatchesText(s.grid, s.column, s.value, text.Text),
-            static (s, flags) => flags.Flags.IsEmpty || FilterStatePresenter.MatchesFilter(flags.Flags, GetBits(s.value)));
+            static (s, flags) => flags.Flags.IsEmpty || flags.Flags.Matches(GetBits(s.value)));
     }
 
     private static bool MatchesText(MetadataGrid grid, int column, object value, string text)

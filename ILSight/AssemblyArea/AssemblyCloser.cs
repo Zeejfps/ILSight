@@ -11,16 +11,32 @@ public sealed class AssemblyCloser
     public DialogWindow Window { get; } = new();
 
     public bool IsOpen;
-    public bool FocusFilter;
     public string Filter = "";
     public bool SelectedOnly;
 
-    /// <summary>The items of the list, in its order.</summary>
-    public readonly List<CloseChoice> Order = new();
+    public CloserRows Rows { get; } = new();
 
-    /// <summary>The <see cref="AssemblyList.Version"/> <see cref="Order"/> was made from.</summary>
-    public int ListedVersion = -1;
+    /// <summary>Opens the dialog on <paramref name="assemblies"/>' items, none filtered out, with
+    /// <paramref name="picked"/>, the assembly of the node selected in the tree, ticked when it is an item of
+    /// the list; one read out of a package ticks nothing, so that its package is never closed unasked.</summary>
+    public void Open(AssemblyList assemblies, LoadedAssembly? picked)
+    {
+        IsOpen = true;
+        Filter = "";
+        SelectedOnly = false;
+        Rows.Start(assemblies, picked);
+    }
 
-    /// <summary>The row last clicked, which a Shift-click's range runs from, or null.</summary>
-    public CloseChoice? Anchor;
+    public void Close()
+    {
+        IsOpen = false;
+        Rows.Clear();
+    }
+
+    /// <summary>Shows every item again.</summary>
+    public void ClearFilter()
+    {
+        Filter = "";
+        SelectedOnly = false;
+    }
 }

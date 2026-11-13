@@ -46,7 +46,7 @@ internal static class FlagsFilterView
             ui.Text(t.MetadataFilterHint, new Box { Width = Sizing.Grow() }, color: theme.TextMuted, size: theme.FontSizeSmall, wrap: true);
             if (ui.Button(t.MetadataFilterClear, id: "clear"))
             {
-                FilterStatePresenter.ClearFilter(filter);
+                filter.Clear();
             }
         }
     }
@@ -132,7 +132,7 @@ internal static class FlagsFilterView
                 var on = IsOn(chip, selection);
                 if (Chip(ui, chip.Label, on, i))
                 {
-                    FilterStatePresenter.SetMutexSelection(filter, group.Name, Pick(group, selection, chip.Value, shift));
+                    filter.SetMutexSelection(group.Name, Pick(group, selection, chip.Value, shift));
                 }
             }
         }
@@ -255,7 +255,7 @@ internal static class FlagsFilterView
             ReadOnlySpan<Segment<MatchMode>> modes = [new Segment<MatchMode>(MatchMode.All, t.MetadataFilterAll), new Segment<MatchMode>(MatchMode.Any, t.MetadataFilterAny)];
             if (ui.SegmentedControl("mode", ref mode, modes))
             {
-                FilterStatePresenter.SetIndependentMode(filter, mode);
+                filter.UseIndependentMode(mode);
             }
         }
     }
@@ -266,7 +266,7 @@ internal static class FlagsFilterView
         var current = filter.FlagStates.GetValueOrDefault(flag);
         if (Pill(ui, current))
         {
-            FilterStatePresenter.SetFlagState(filter, flag, Next(current));
+            filter.SetFlagState(flag, Next(current));
         }
 
         var color = current == TriState.DontCare ? theme.TextMuted : theme.Text;

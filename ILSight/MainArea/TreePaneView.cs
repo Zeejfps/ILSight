@@ -195,7 +195,7 @@ internal static class TreePaneView
             case 7:
                 if (DrawTool(ui, inMenu, "close-assembly", icons.AssembliesCloseAssembly, t.TreeCloseAssemblies, any))
                 {
-                    AssemblyClosing.OpenCloser(ui.State.Closer, assemblies, tree.View.Selected?.Assembly);
+                    ui.State.Closer.Open(assemblies, tree.View.Selected?.Assembly);
                 }
 
                 return;
@@ -606,7 +606,7 @@ internal static class TreePaneView
         var t = ui.State.Strings;
         if (ui.MenuItem(t.FileExport, id: "export", icon: new UiIcon(ui.State.Icons.FileExportProject)))
         {
-            Exports.OpenExportSetup(ui.State.ExportSetup, assemblies.Assemblies, assembly);
+            ui.State.ExportSetup.Open(assemblies.Assemblies, assembly);
         }
 
         PdbItems(ui, assembly);

@@ -16,80 +16,6 @@ internal static class ErrorDialogView
         errors.Entries.Add(new AppError { Problem = problem, Time = time });
     }
 
-    /// <summary>Opens the dialog on the newest of <paramref name="errors"/>, unless there are none.</summary>
-    public static void Open(ErrorDialog dialog, IReadOnlyList<AppError> errors)
-    {
-        if (errors.Count == 0)
-        {
-            return;
-        }
-
-        ItemSelections.Select(dialog.Selection, errors[^1], errors);
-        dialog.IsOpen = true;
-    }
-
-    /// <summary>Opens the dialog on the newest of <paramref name="errors"/> when an error was added since
-    /// it last saw the log, at <paramref name="revision"/>.</summary>
-    public static void ShowNewErrors(ErrorDialog dialog, int revision, IReadOnlyList<AppError> errors)
-    {
-        if (revision == dialog.ShownRevision)
-        {
-            return;
-        }
-
-        dialog.ShownRevision = revision;
-        Open(dialog, errors);
-    }
-
-    /// <summary><paramref name="error"/> in the words of <paramref name="t"/>, put into them once per language.</summary>
-    public static ProblemText GetText(ErrorDialog dialog, AppError error, Strings t)
-    {
-        if (!dialog.Texts.TryGet(new ByReference<Strings>(t), out var texts))
-        {
-            texts = new Dictionary<AppError, ProblemText>(ReferenceEqualityComparer.Instance);
-            dialog.Texts = new Memo<ByReference<Strings>, Dictionary<AppError, ProblemText>>(new ByReference<Strings>(t), texts);
-            dialog.Document = default;
-        }
-        if (!texts.TryGetValue(error, out var text))
-        {
-            text = ProblemTexts.Describe(t, error.Problem);
-            texts[error] = text;
-        }
-        return text;
-    }
-
-    /// <summary>The selected error's details, or its title when it has none, in the words of
-    /// <paramref name="t"/>, as a document for the dialog's code view.</summary>
-    private static DecompiledDocument GetSelectedDocument(ErrorDialog dialog, Strings t)
-    {
-        var error = dialog.SelectedError;
-        if (error is null)
-        {
-            return DecompiledDocument.Empty;
-        }
-
-        var text = GetText(dialog, error, t);
-        if (dialog.Document.TryGet(new ByReference<AppError>(error), out var document))
-        {
-            return document;
-        }
-
-        document = CreateDocument(text);
-        dialog.Document = new Memo<ByReference<AppError>, DecompiledDocument>(new ByReference<AppError>(error), document);
-        return document;
-    }
-
-    private static DecompiledDocument CreateDocument(ProblemText text)
-    {
-        var body = text.Details;
-        if (body.Length == 0)
-        {
-            body = text.Title;
-        }
-
-        return Documents.CreateFromText(text.Title, body);
-    }
-
     public static void Render(Ui<UiState> ui, ErrorLog errors)
     {
         var t = ui.State.Strings;
@@ -123,7 +49,7 @@ internal static class ErrorDialogView
             using (ui.Row(new Box { Gap = theme.GapTight, AlignY = Align.Center }))
             {
                 ui.Glyph(ui.State.Icons.StatusError, theme.Danger, theme.IconSize);
-                ui.Text(GetText(shown, selected, t).Title, new Box { Width = Sizing.Grow() }, bold: true, overflow: TextOverflow.Ellipsis);
+                ui.Text(shown.Texts.GetText(selected, t).Title, new Box { Width = Sizing.Grow() }, bold: true, overflow: TextOverflow.Ellipsis);
             }
         }
 
@@ -136,7 +62,7 @@ internal static class ErrorDialogView
         {
             if (ui.Button(t.ErrorsCopy, id: "error-copy") && selected is not null)
             {
-                ui.ClipboardText = GetText(shown, selected, t).FullText;
+                ui.ClipboardText = shown.Texts.GetText(selected, t).FullText;
             }
 
             ui.Tooltip(ui.GetId("error-copy"), t.ErrorsCopyTooltip);
@@ -151,6 +77,17 @@ internal static class ErrorDialogView
                 shown.IsOpen = false;
             }
         }
+    }
+
+    private static DecompiledDocument GetSelectedDocument(ErrorDialog dialog, Strings t)
+    {
+        var error = dialog.SelectedError;
+        if (error is null)
+        {
+            return DecompiledDocument.Empty;
+        }
+
+        return dialog.Texts.GetDocument(error, t);
     }
 
     /// <summary>Forgets every error and closes the dialog.</summary>
@@ -178,7 +115,7 @@ internal static class ErrorDialogView
             {
                 var titleColor = row.Selected ? theme.SelectionText : theme.Text;
                 ui.Text(ui.Memo("time", (entry.Time, t), static a => a.Time.ToString("T", a.t.Culture)), color: theme.TextMuted);
-                ui.Text(GetText(shown, entry, t).Title, new Box { Width = Sizing.Grow() }, color: titleColor, overflow: TextOverflow.Ellipsis);
+                ui.Text(shown.Texts.GetText(entry, t).Title, new Box { Width = Sizing.Grow() }, color: titleColor, overflow: TextOverflow.Ellipsis);
             }
         }
         ItemSelections.TakeFrom(shown.Selection, entries);

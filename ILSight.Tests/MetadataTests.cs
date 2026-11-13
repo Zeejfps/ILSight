@@ -352,11 +352,11 @@ public sealed class MetadataTests
         var grid = await TypeDefsAsync();
         var schema = grid.Columns[grid.Column("Attributes")].Flags;
         Assert.NotNull(schema);
-        var state = FilterStatePresenter.CreateFilterState(schema);
+        var state = FilterState.From(schema);
         var filters = Filters(grid, "Attributes", new MetadataColumnFilter.ByFlags { Flags = state });
 
-        FilterStatePresenter.SetMutexSelection(state, "Visibility", [(uint)System.Reflection.TypeAttributes.NotPublic]);
-        FilterStatePresenter.SetFlagState(state, "Abstract", TriState.Excluded);
+        state.SetMutexSelection("Visibility", [(uint)System.Reflection.TypeAttributes.NotPublic]);
+        state.SetFlagState("Abstract", TriState.Excluded);
         var names = NamesOf(grid, MetadataGrids.FilterRows(grid, null, filters));
 
         Assert.Contains("Visibility", schema.MutexGroups.Select(g => g.Name));
@@ -372,12 +372,12 @@ public sealed class MetadataTests
         var grid = await TypeDefsAsync();
         var schema = grid.Columns[grid.Column("Attributes")].Flags;
         Assert.NotNull(schema);
-        var state = FilterStatePresenter.CreateFilterState(schema);
+        var state = FilterState.From(schema);
         var before = state.Revision;
 
-        FilterStatePresenter.SetIndependentMode(state, state.Mode);
+        state.UseIndependentMode(state.Mode);
         var unchanged = state.Revision;
-        FilterStatePresenter.SetIndependentMode(state, MatchMode.Any);
+        state.UseIndependentMode(MatchMode.Any);
 
         Assert.Equal(before, unchanged);
         Assert.Equal(before + 1, state.Revision);
@@ -399,23 +399,23 @@ public sealed class MetadataTests
     public void A_flags_filter_round_trips_through_its_saved_form()
     {
         var schema = FlagsSchemaInferer.For(typeof(System.Reflection.TypeAttributes));
-        var state = FilterStatePresenter.CreateFilterState(schema);
-        FilterStatePresenter.SetMutexSelection(state, "Visibility", [1u, 2u]);
-        FilterStatePresenter.SetFlagState(state, "Abstract", TriState.Required);
-        FilterStatePresenter.SetIndependentMode(state, MatchMode.Any);
+        var state = FilterState.From(schema);
+        state.SetMutexSelection("Visibility", [1u, 2u]);
+        state.SetFlagState("Abstract", TriState.Required);
+        state.UseIndependentMode(MatchMode.Any);
 
         var saved = FilterStatePresenter.SaveFilter(state);
         Assert.NotNull(saved);
-        var restored = FilterStatePresenter.CreateFilterState(schema);
+        var restored = FilterState.From(schema);
         Assert.NotNull(saved.Groups);
         Assert.NotNull(saved.Flags);
-        FilterStatePresenter.RestoreFilter(restored, saved with { Groups = new Dictionary<string, uint[]>(saved.Groups) { ["Gone"] = [1u] }, Flags = new Dictionary<string, TriState>(saved.Flags) { ["Missing"] = TriState.Required } });
+        restored.Restore(saved with { Groups = new Dictionary<string, uint[]>(saved.Groups) { ["Gone"] = [1u] }, Flags = new Dictionary<string, TriState>(saved.Flags) { ["Missing"] = TriState.Required } });
 
         Assert.Equal(FilterStatePresenter.Describe(state), FilterStatePresenter.Describe(restored));
         Assert.Equal(MatchMode.Any, restored.Mode);
         Assert.Equal(["Abstract"], saved.Flags.Keys);
         Assert.Equal(["Visibility"], saved.Groups.Keys);
-        Assert.Null(FilterStatePresenter.SaveFilter(FilterStatePresenter.CreateFilterState(schema)));
+        Assert.Null(FilterStatePresenter.SaveFilter(FilterState.From(schema)));
     }
 
     [Fact]

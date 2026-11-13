@@ -372,7 +372,7 @@ public sealed class BookmarkTests : IDisposable
         Click(app, "Bookmark 1");
         app.Frames.Frame(2);
 
-        Assert.Null(d.Ui.BookmarksPanel.Renaming);
+        Assert.Null(d.Ui.BookmarksPanel.Renaming.Bookmark);
         Assert.True(d.Ui.BookmarksPanel.Cells.IsAt(0, BookmarksPanelView.NameColumn));
     }
 
@@ -386,7 +386,7 @@ public sealed class BookmarkTests : IDisposable
         app.Frames.Key(KeyboardKey.Enter).Frame(2);
 
         Assert.Equal("Calls First", d.AppState.Bookmarks.Items[0].Name);
-        Assert.Null(d.Ui.BookmarksPanel.Renaming);
+        Assert.Null(d.Ui.BookmarksPanel.Renaming.Bookmark);
         Assert.True(app.Frames.Drew("Calls First"));
     }
 
@@ -400,7 +400,7 @@ public sealed class BookmarkTests : IDisposable
         app.Frames.Key(KeyboardKey.Escape).Frame(2);
 
         Assert.Equal("Bookmark 1", d.AppState.Bookmarks.Items[0].Name);
-        Assert.Null(d.Ui.BookmarksPanel.Renaming);
+        Assert.Null(d.Ui.BookmarksPanel.Renaming.Bookmark);
     }
 
     [Fact]
@@ -413,7 +413,7 @@ public sealed class BookmarkTests : IDisposable
         app.Frames.Key(Shortcuts.Copy).Frame();
 
         Assert.Equal(location, app.Frames.Clipboard.Text);
-        Assert.Null(d.Ui.BookmarksPanel.Renaming);
+        Assert.Null(d.Ui.BookmarksPanel.Renaming.Bookmark);
     }
 
     [Fact]
@@ -427,7 +427,7 @@ public sealed class BookmarkTests : IDisposable
         app.Frames.Key(KeyboardKey.Enter).Frame(2);
 
         Assert.Equal("Calls First", d.AppState.Bookmarks.Items[0].Name);
-        Assert.Null(d.Ui.BookmarksPanel.Renaming);
+        Assert.Null(d.Ui.BookmarksPanel.Renaming.Bookmark);
         Assert.True(app.Frames.Drew("Calls First"));
     }
 

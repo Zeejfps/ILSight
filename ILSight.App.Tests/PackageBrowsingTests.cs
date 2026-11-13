@@ -67,13 +67,13 @@ public sealed class PackageBrowsingTests
         app.Ui.Tree.View.Select(await (await GreeterAsync(app)).Assembly.ReadRootAsync());
         app.Run(2);
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly")).Frame(2);
-        Assert.False(Assert.Single(app.Ui.Closer.Order).Included);
-        AssemblyClosing.CloseCloser(app.Ui.Closer);
+        Assert.False(Assert.Single(app.Ui.Closer.Rows.Order).Included);
+        app.Ui.Closer.Close();
 
         app.Ui.Tree.View.Select(await package.ReadRootAsync());
         app.Run(2);
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly")).Frame(2);
-        Assert.True(Assert.Single(app.Ui.Closer.Order).Included);
+        Assert.True(Assert.Single(app.Ui.Closer.Rows.Order).Included);
         app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);
 
         Assert.Empty(app.AppState.Assemblies.Listed);
@@ -100,7 +100,7 @@ public sealed class PackageBrowsingTests
 
         app.OpenExportSetup(assembly);
 
-        var choice = Assert.Single(app.Ui.ExportSetup.Choices);
+        var choice = Assert.Single(app.Ui.ExportSetup.Assemblies.Choices);
         Assert.Same(assembly, choice.Assembly);
         Assert.True(choice.Included);
     }

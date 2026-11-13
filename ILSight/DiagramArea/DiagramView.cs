@@ -88,13 +88,13 @@ internal static class DiagramView
         {
             if (ui.IconButton("zoom-out", icons.ResourceZoomOut, t.ResourceZoomOut, camera.CanZoomOut))
             {
-                DiagramCameras.ZoomOut(camera, area);
+                camera.ZoomOut(area);
             }
 
             ui.Text(t.ResourceZoomPercent(camera.Percent), color: ui.Theme.TextMuted);
             if (ui.IconButton("zoom-in", icons.ResourceZoomIn, t.ResourceZoomIn, camera.CanZoomIn))
             {
-                DiagramCameras.ZoomIn(camera, area);
+                camera.ZoomIn(area);
             }
 
             if (ui.Button(t.DiagramFit, id: "fit"))
@@ -131,7 +131,7 @@ internal static class DiagramView
             return;
         }
 
-        DiagramCameras.Fit(view.Camera, layout.Width, layout.Height, area);
+        view.Camera.Fit(layout.Width, layout.Height, area);
     }
 
     private static void EmptyHint(Ui<UiState> ui, TypeDiagram diagram)
@@ -182,19 +182,19 @@ internal static class DiagramView
             return null;
         }
 
-        return Diagrams.FindCardPlace(view.Transition, selected);
+        return view.Transition.FindCardPlace(selected);
     }
 
     /// <summary>Moves toward the diagram's newest layout, drawing again until the move ends; a new layout
     /// is of the diagram as it was last measured.</summary>
     private static void FollowLayout(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)
     {
-        if (Diagrams.TryFollowLayout(view.Transition, diagram.Layout))
+        if (view.Transition.TryFollowLayout(diagram.Layout))
         {
             view.LaidOutVersion = view.MeasuredVersion;
         }
 
-        Diagrams.AdvanceTransition(view.Transition, ui.DeltaTime);
+        view.Transition.Advance(ui.DeltaTime);
         if (view.Transition.IsMoving)
         {
             ui.RequestAnimationFrame();
@@ -217,7 +217,7 @@ internal static class DiagramView
         }
 
         var corner = view.Camera.Corner;
-        DiagramCameras.LookFrom(view.Camera, new PointF(corner.X + after.Value.X - before.Value.X, corner.Y + after.Value.Y - before.Value.Y));
+        view.Camera.LookFrom(new PointF(corner.X + after.Value.X - before.Value.X, corner.Y + after.Value.Y - before.Value.Y));
     }
 
     /// <summary>Fits the first layout that places cards to <paramref name="rect"/>, then brings the card
@@ -251,7 +251,7 @@ internal static class DiagramView
             return;
         }
 
-        DiagramCameras.Fit(view.Camera, layout.Width, layout.Height, rect);
+        view.Camera.Fit(layout.Width, layout.Height, rect);
         view.IsFitPending = false;
     }
 
@@ -275,12 +275,12 @@ internal static class DiagramView
             return;
         }
 
-        if (DiagramCameras.Shows(view.Camera, place, face.Width, face.Height, rect))
+        if (view.Camera.Shows(place, face.Width, face.Height, rect))
         {
             return;
         }
 
-        DiagramCameras.CenterOn(view.Camera, new PointF(place.X + face.Width / 2, place.Y + face.Height / 2), rect);
+        view.Camera.CenterOn(new PointF(place.X + face.Width / 2, place.Y + face.Height / 2), rect);
     }
 
     /// <summary>The card and row under the pointer, while it is over the cards or holds a press on them.</summary>
@@ -296,7 +296,7 @@ internal static class DiagramView
             return new DiagramHit.Nothing();
         }
 
-        var point = DiagramCameras.ToDiagram(view.Camera, ui.Input.Pointer, rect);
+        var point = view.Camera.ToDiagram(ui.Input.Pointer, rect);
         return HitAt(view, diagram, point);
     }
 
@@ -322,7 +322,7 @@ internal static class DiagramView
             return new DiagramHit.Nothing();
         }
 
-        var place = Diagrams.FindCardPlace(view.Transition, card.Type);
+        var place = view.Transition.FindCardPlace(card.Type);
         if (place is null)
         {
             return new DiagramHit.Nothing();
@@ -384,11 +384,11 @@ internal static class DiagramView
 
         if (IsCommandHeld(input.Modifiers))
         {
-            DiagramCameras.ZoomAt(view.Camera, input.Pointer, rect, MathF.Pow(WheelZoomStep, input.ScrollY));
+            view.Camera.ZoomAt(input.Pointer, rect, MathF.Pow(WheelZoomStep, input.ScrollY));
             return;
         }
         var step = ui.Theme.ScrollWheelStep;
-        DiagramCameras.Pan(view.Camera, input.ScrollX * step, input.ScrollY * step);
+        view.Camera.Pan(input.ScrollX * step, input.ScrollY * step);
     }
 
     private static bool HasScrolled(UiInput input)
@@ -458,7 +458,7 @@ internal static class DiagramView
         }
 
         var zoom = view.Camera.Zoom;
-        DiagramCameras.LookFrom(view.Camera, new PointF(start.X - dx / zoom, start.Y - dy / zoom));
+        view.Camera.LookFrom(new PointF(start.X - dx / zoom, start.Y - dy / zoom));
     }
 
     /// <summary>Counts the camera's move as done once no press drags it and the cards stopped moving it along.</summary>
@@ -474,7 +474,7 @@ internal static class DiagramView
             return;
         }
 
-        DiagramCameras.FinishMoving(view.Camera);
+        view.Camera.FinishMoving();
     }
 
     private static bool IsPanning(DiagramViewState view, Interaction i)
@@ -633,7 +633,7 @@ internal static class DiagramView
 
     private static DrawnLink DrawnLinkOf(Ui<UiState> ui, DiagramViewState view, LinkRoute route)
     {
-        var shape = Diagrams.ShapeRoute(view.Transition, route);
+        var shape = view.Transition.ShapeRoute(route);
         var label = DiagramFaces.LabelOf(route.Link);
         if (label is null)
         {
@@ -664,7 +664,7 @@ internal static class DiagramView
                 continue;
             }
 
-            var place = Diagrams.FindCardPlace(view.Transition, card.Type);
+            var place = view.Transition.FindCardPlace(card.Type);
             if (place is null)
             {
                 continue;

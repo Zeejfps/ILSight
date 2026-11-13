@@ -135,7 +135,7 @@ public static class MainView
             return DockPanels.Tab(t, screen.Icons, view.Value);
         }
 
-        var tab = DocumentPanels.FindTab(screen.Documents, panel);
+        var tab = screen.Documents.FindTab(panel);
         if (tab is not null)
         {
             return DocumentsView.Tab(screen, appState.Navigation, tab);
@@ -187,7 +187,7 @@ public static class MainView
 
     private static void Document(Ui<UiState> ui, AppState appState, string panel)
     {
-        var tab = DocumentPanels.FindTab(ui.State.Documents, panel);
+        var tab = ui.State.Documents.FindTab(panel);
         if (tab is null)
         {
             return;
@@ -199,7 +199,7 @@ public static class MainView
 
     private static void RemoveReleasedImages(Ui<UiState> ui)
     {
-        var released = DocumentPanels.TakeReleasedImages(ui.State.Documents);
+        var released = ui.State.Documents.TakeReleasedImages();
         for (var i = 0; i < released.Count; i++)
         {
             ui.RemoveImage(released[i]);

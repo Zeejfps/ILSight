@@ -1,5 +1,3 @@
-using ILSight.ExportArea;
-
 namespace ILSight.AssemblyArea;
 
 /// <summary>
@@ -10,12 +8,15 @@ namespace ILSight.AssemblyArea;
 /// </summary>
 public sealed class AssemblyPicker
 {
-    /// <summary>The assemblies in the order of the page.</summary>
-    public readonly List<ExportChoice> Order = new();
-
     public string Filter = "";
     public bool SelectedOnly;
 
-    /// <summary>The row last clicked, which a Shift-click's range runs from, or null.</summary>
-    public ExportChoice? Anchor;
+    public PickerRows Rows { get; } = new();
+
+    /// <summary>Shows every assembly again.</summary>
+    public void ClearFilter()
+    {
+        Filter = "";
+        SelectedOnly = false;
+    }
 }

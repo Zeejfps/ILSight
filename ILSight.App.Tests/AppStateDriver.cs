@@ -545,6 +545,6 @@ internal sealed class AppStateDriver
     public void OpenExportSetup(LoadedModule? picked)
     {
         using var turn = _posted.Install();
-        Exports.OpenExportSetup(Ui.ExportSetup, AppState.Assemblies.Assemblies, picked);
+        Ui.ExportSetup.Open(AppState.Assemblies.Assemblies, picked);
     }
 }

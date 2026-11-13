@@ -65,7 +65,7 @@ public sealed class WebCilGridTests
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = Assert.IsType<MetadataGrid.Paged>(tab.Grid);
-        var state = DocumentPanels.GetGridState(DocumentPanels.GetView(app.Ui.Documents, tab), grid);
+        var state = DocumentPanels.GetView(app.Ui.Documents, tab).GetGridState(grid);
         var loading = app.Ui.Strings.MetadataLoading;
         var last = grid.RowCount - 1;
         var before = app.Frames.Drew(loading);
@@ -109,7 +109,7 @@ public sealed class WebCilGridTests
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = Assert.IsType<MetadataGrid.Paged>(tab.Grid);
-        var columns = DocumentPanels.GetGridState(DocumentPanels.GetView(app.Ui.Documents, tab), grid).Columns;
+        var columns = DocumentPanels.GetView(app.Ui.Documents, tab).GetGridState(grid).Columns;
         Assert.NotNull(columns);
         var widest = MetadataGrids.GetText(grid, MetadataGridFrame.SampleRows - 1, grid.Column("RID"));
         Assert.True(grid.IsRowRead(MetadataGridFrame.SampleRows - 1));

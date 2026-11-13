@@ -19,7 +19,7 @@ internal static class TabMenuView
             return;
         }
 
-        var tab = DocumentPanels.FindTab(ui.State.Documents, request.Value.Panel);
+        var tab = ui.State.Documents.FindTab(request.Value.Panel);
         if (tab is null)
         {
             return;
@@ -37,7 +37,7 @@ internal static class TabMenuView
             return;
         }
 
-        var tab = DocumentPanels.FindTab(ui.State.Documents, panel);
+        var tab = ui.State.Documents.FindTab(panel);
         if (tab is null)
         {
             return;

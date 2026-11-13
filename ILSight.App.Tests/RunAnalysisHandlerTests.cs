@@ -16,7 +16,7 @@ public sealed class RunAnalysisHandlerTests
     {
         var symbol = await SymbolOfAsync(d, "Greeter");
         var kind = new AnalyzerKindNode { Subject = symbol, Kind = symbol.Kinds[0] };
-        var run = Analysis.StartRun(kind);
+        var run = kind.StartRun();
         Assert.NotNull(run);
         return run;
     }
@@ -85,7 +85,7 @@ public sealed class RunAnalysisHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var run = await StartGreeterAnalysisAsync(d);
 
-        var again = Analysis.StartRun(run.Kind);
+        var again = run.Kind.StartRun();
 
         Assert.Null(again);
         Assert.Same(run.Work, run.Kind.Work);
