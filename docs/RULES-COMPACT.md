@@ -23,8 +23,10 @@ only to frame-driven UIs.
 - **Edges stay thin** (the checks treat their code as the world's): they translate, start work and catch. A branch on
   what the world or the state answered is a use case over a port (the edge's I/O its adapter) or pure code: would a
   second edge for the same input repeat it? Ordinary code may hand an edge work to start, never take an answer from
-  one (RL0106: a call's value, a property, indexer or field read). Startup and test hosts running the whole app build
-  it through one root entry point; other edges receive what they call; focused tests keep their seams.
+  one (RL0106: a call's value, a property, indexer or field read); an adapter's I/O may go through an edge. Startup and
+  test hosts running the whole app build it through one root entry point and start it through one start function (a
+  window's startup hook calls it after its own setup; building starts nothing); other edges receive what they call;
+  focused tests keep their seams.
 - **Tests** follow R002, R003, R005, R007, R008, R010 (test methods needn't take a token), R012, R013 and R009's ban
   on empty catches; not R001, R004 or R011 (a test is a composition root; fakes implementing a port are expected).
   - Names: the codebase's convention; a new one uses `Method_Scenario_Expected`. Own assertion helpers carry
@@ -36,7 +38,9 @@ only to frame-driven UIs.
   - **Tests drive what the app runs** (an edge's command or input, a use case's public method). A duplicate execution
     path only tests use is deleted and its tests drive the edge; internal code confirmed dead goes too. External
     contracts stay (a library's public API; members reached by reflection, serialization or another process). Never a
-    copy of the edge's composition in the test driver.
+    copy of the edge's composition in the test driver. "Reads none" is tested through a test adapter of the port the
+    read would cross (the app built through the root with it where an edge's order decides it), never a production
+    counter.
   - **Seams:** use cases through their public methods with a fake port; domain types and calculations directly, no
     fakes; adapters and queries against a real or local database. Never private methods; no interface only to fake.
 - **Test input** (code a test reads as input: fixtures it compiles and reads back) is data, exempt from every rule:
@@ -78,18 +82,19 @@ port), RL0106 (ordinary code taking an answer from an `[Edge]` type).
   listed). What decides is what a read can reach as the app made the object: one decoding bytes already read, each read
   bounded, is data, readable anywhere, a draw included (failures caught per unit, R009; work over all of it is a wait);
   one reaching a file or the network is I/O, read only on the I/O side (whole or streamed as its reader needs; a
-  frame-driven view's window is paged: last section). List only types whose every instance is I/O; a type the app
-  also makes as data isn't listed, its reaching instances kept on the I/O side by review. Where the app keeps one, the
-  state holds a **handle** (values read once: name, path, rows) and the I/O side keeps the object against it: in a
+  frame-driven view's window is paged: last section). List only types whose every instance is I/O; a type the app also
+  makes as data isn't listed, its reaching instances kept on the I/O side by review. Where the app keeps one, the state
+  holds a **handle** (values read once: name, path, rows) and the I/O side keeps the object against it: in a
   `ConditionalWeakTable` when it holds only memory; when it holds a resource (a mapped file, a stream), released
   deterministically: closing is a method of the type keeping the list's rule, returning what it removed (`[MustUse]`)
   for the edge to have the I/O side dispose. Never the object in the state, a store keyed by a value beside it, or a
   port passed into the library's hook. **Release waits for readers:** the close request refuses new reads (`Closed`);
   each read holds a lease until it ends, however it ends; once closed and unleased, the owner disposes it exactly once,
-  on the thread its API requires. The close completes at the request, or awaits the release where its contract needs
-  the resource free (a CLI rewriting the file next). Never dispose what a running read may reach (freed memory can end
-  the process, uncaught), nor an object holding only memory. A view of a closed item asks for nothing more: what would
-  read shows unavailable, saying why, never "loading".
+  on the thread its API requires. A cache keeping another item's object leases it at each use, a refusal dropping the
+  cache; never a count for the cache's life (a cycle never releases). The close completes at the request, or awaits the
+  release where its contract needs the resource free (a CLI rewriting the file next). Never dispose what a running read
+  may reach (freed memory can end the process, uncaught), nor an object holding only memory. A view of a closed item
+  asks for nothing more: what would read shows unavailable, saying why, never "loading".
 - **The composition root** (`Program.cs`, DI registration, `AppRoot.Build`) is an edge; a test that builds the app
   builds it through it, with fakes. Ordinary code never constructs a use case or an adapter; per-document objects come
   from a factory the root builds (DI: scoped); a function taking the state only to reach a use case is the edge's call.
@@ -184,7 +189,8 @@ framework-facing data may keep both).
 - **One kind of input, one path.** Input that arrives at more than one moment (a command line at start and handed to
   the running instance, a deep link, a replayed message) has one handler, the first copy included, handed it once
   what the handler decides from is in place: the start recorded (it decides from what is under way) or the restore
-  finished (from restored contents). A shared inbox is one way.
+  finished (from restored contents), and before whatever accepts later copies opens (the inbox made holding it). A
+  shared inbox is one way.
 - **A helper lives where what it knows belongs**: a rule's change on the type keeping the rule, a calculation on its
   concept, even with one caller; only a caller's own policy (its wording) is its private method. When its last caller
   moves, it moves; with none, delete it.
@@ -288,7 +294,8 @@ result), RL0904 (an adapter's sequence that isn't its own iterator).
 - Throw only for bugs (bad argument, wrong state, impossible case, corrupt data), with a built-in type and a message
   saying what was expected (a custom type only if something catches it). Expected failures are returned (a union per
   operation, `Result<T>`, `Find*`, `Try*`; no library result types) and never discarded: a user's action the code
-  refuses says why where they acted, or is offered as unavailable with the reason, never nothing; every input of a
+  refuses says why where they acted, or is offered as unavailable with the reason, never nothing (an outcome the
+  port's answer lacks, `Closed`, gets a case on that answer, never a made-up exception); every input of a
   command reads one decision (unavailable: says why where pressed; not offered: its key does nothing). Restored state
   whose source can't be read now is kept as saved, failed in place, read again later. Infrastructure failures propagate.
 - **Catch only at the edge**, around one unit of work, logging once; no log-and-rethrow. Decision code catches
