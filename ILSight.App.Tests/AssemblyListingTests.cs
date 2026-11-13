@@ -41,9 +41,8 @@ public sealed class AssemblyListingTests
             Name = SavedAssemblyLists.DefaultName,
             Assemblies = [PathOf(AppStateDriver.FixturePath), PathOf(other)],
         }];
-        var d = new AppStateDriver(settings);
+        var d = AppStateDriver.Starting(settings);
 
-        d.Start(AppStateDriver.OpenAtStartupAsync);
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         Assert.Equal([AppStateDriver.FixturePath, other], Assert.Single(temp.Settings().AssemblyLists).Assemblies.Select(static p => p.Text));
@@ -64,7 +63,6 @@ public sealed class AssemblyListingTests
         }];
         var d = new AppStateDriver(settings);
 
-        d.Start(AppStateDriver.OpenAtStartupAsync);
         d.Settle();
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 

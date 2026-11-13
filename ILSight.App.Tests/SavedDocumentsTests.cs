@@ -207,7 +207,6 @@ public sealed class SavedDocumentsTests : IDisposable
 
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
-        next.Start(AppStateDriver.OpenAtStartupAsync);
         next.Settle(4);
         Assert.Equal(position, CodeOf(next, TabTitled(next, "Outline")).Position);
     }
@@ -229,12 +228,10 @@ public sealed class SavedDocumentsTests : IDisposable
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
 
         var hidden = new AppDriver(height: 360f, settings: _temp.Settings());
-        hidden.Start(AppStateDriver.OpenAtStartupAsync);
         hidden.Settle(4);
         Assert.True(hidden.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
 
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
-        next.Start(AppStateDriver.OpenAtStartupAsync);
         next.Settle(4);
         ActivateTab(next.Ui, next.AppState.Navigation, next.AppState.Decompiler.Setup, TabTitled(next, "Outline"));
         next.Run(4);
@@ -275,7 +272,6 @@ public sealed class SavedDocumentsTests : IDisposable
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
 
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
-        next.Start(AppStateDriver.OpenAtStartupAsync);
         next.Settle(4);
 
         Assert.Equal(ListTabPanels(app), ListTabPanels(next));
@@ -314,12 +310,10 @@ public sealed class SavedDocumentsTests : IDisposable
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
 
         var hidden = new AppDriver(height: 360f, settings: _temp.Settings());
-        hidden.Start(AppStateDriver.OpenAtStartupAsync);
         hidden.Settle(4);
         Assert.True(hidden.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
 
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
-        next.Start(AppStateDriver.OpenAtStartupAsync);
         next.Settle(4);
         ActivateTab(next.Ui, next.AppState.Navigation, next.AppState.Decompiler.Setup, GridTab(next));
         next.Run(4);
@@ -334,7 +328,6 @@ public sealed class SavedDocumentsTests : IDisposable
 
         Assert.Contains("\"GridPosition\"", File.ReadAllText(_temp.PathOf("settings.json")));
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
-        next.Start(AppStateDriver.OpenAtStartupAsync);
         next.Settle(4);
 
         Assert.Equal(row, GridOf(next, GridTab(next)).Selected);
@@ -362,7 +355,6 @@ public sealed class SavedDocumentsTests : IDisposable
         documents.Tabs[documents.Tabs.IndexOf(saved)] = older;
 
         var next = new AppDriver(height: 360f, settings: settings);
-        next.Start(AppStateDriver.OpenAtStartupAsync);
         next.Settle(4);
 
         Assert.Equal(MetadataGridState.None, GridOf(next, GridTab(next)).Selected);
@@ -387,7 +379,6 @@ public sealed class SavedDocumentsTests : IDisposable
             Layout = null,
         }));
 
-        d.Start(AppStateDriver.OpenAtStartupAsync);
         d.Settle();
 
         var tab = Assert.Single(d.AppState.Navigation.OpenTabs);
@@ -408,7 +399,7 @@ public sealed class SavedDocumentsTests : IDisposable
             Language = DecompilationLanguage.CSharp,
             View = null,
         };
-        var d = new AppStateDriver(SettingsWith(new DocumentsRecord
+        var d = AppStateDriver.Starting(SettingsWith(new DocumentsRecord
         {
             Tabs = [greeter],
             Active = MissingPanel,
@@ -416,7 +407,6 @@ public sealed class SavedDocumentsTests : IDisposable
             Layout = null,
         }));
 
-        d.Start(AppStateDriver.OpenAtStartupAsync);
         Commands.CloseAllAssemblies(d.AppState);
         d.Settle();
 
@@ -444,7 +434,6 @@ public sealed class SavedDocumentsTests : IDisposable
             Layout = null,
         }));
 
-        d.Start(AppStateDriver.OpenAtStartupAsync);
         d.Settle();
 
         var tab = Assert.Single(d.AppState.Navigation.OpenTabs);

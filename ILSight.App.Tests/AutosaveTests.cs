@@ -189,8 +189,7 @@ public sealed class AutosaveTests : IDisposable
         var first = AppStateDriver.Opened(_temp.Settings());
         first.Analyze(first.Fixture("Greeter"));
         first.Pump();
-        var next = new AppStateDriver(_temp.Settings());
-        next.Start(AppStateDriver.OpenAtStartupAsync);
+        var next = AppStateDriver.Starting(_temp.Settings());
 
         next.Analyze(first.Fixture("Outline"));
         next.Settle();

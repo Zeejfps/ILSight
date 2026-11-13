@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.CommandArea;
@@ -15,6 +16,7 @@ public sealed class RunArgumentsTests
 {
     private const string Other = "Other";
     private static readonly string OtherAssembly = typeof(AppState).Assembly.Location;
+    private static readonly string CoreAssembly = typeof(AssemblyPath).Assembly.Location;
 
     [Fact]
     public void Options_are_read_apart_from_the_files_to_open()
@@ -225,6 +227,36 @@ public sealed class RunArgumentsTests
         Assert.Equal([OtherAssembly], Assert.Single(temp.Settings().AssemblyLists).Assemblies.Select(static p => p.Text));
     }
 
+    [Fact]
+    public void A_list_switched_to_and_cleared_at_startup_reads_none_of_the_saved_list_s_files_and_ends_as_handed_over()
+    {
+        using var startedTemp = new TempDir();
+        using var openTemp = new TempDir();
+        var arguments = CommandLines.Parse([$"--list={Other}", "--clear-list", CoreAssembly]).Arguments;
+
+        var started = new AppDriver(settings: DefaultAndOther(startedTemp), queuedArguments: arguments);
+        Assert.DoesNotContain(PathOf(AppStateDriver.FixturePath), started.AppState.Assemblies.Arriving);
+        Assert.False(started.AppState.IsReloading);
+        started.Frames.WaitUntil(() => AreListed(started.AppState, arguments.Files.Paths), Patience);
+        started.Settle();
+
+        var inbox = Channel.CreateUnbounded<RunArguments>();
+        var handed = new AppDriver(settings: DefaultAndOther(openTemp), inbox: inbox);
+        handed.Frames.WaitUntil(() => handed.AppState.Assemblies.IsListed(PathOf(AppStateDriver.FixturePath)), Patience);
+        handed.Settle();
+        Assert.True(inbox.Writer.TryWrite(arguments));
+        handed.Frames.WaitUntil(() => AreListed(handed.AppState, arguments.Files.Paths), Patience);
+        handed.Settle();
+
+        Assert.Equal(Other, started.AppState.Lists.Active);
+        Assert.Equal([CoreAssembly], started.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
+        Assert.Empty(started.AppState.Errors.Entries);
+        Assert.Equal(Describe(handed), Describe(started));
+        Assert.Equal(DescribeSaved(handed, openTemp), DescribeSaved(started, startedTemp));
+        Assert.Equal([AppStateDriver.FixturePath], startedTemp.Settings().AssemblyLists.Single(static l => l.Name == SavedAssemblyLists.DefaultName)
+            .Assemblies.Select(static p => p.Text));
+    }
+
     private static AppSettings SettingsWith(TempDir temp, params AssemblyListRecord[] lists)
     {
         var settings = temp.Settings();
@@ -232,20 +264,47 @@ public sealed class RunArgumentsTests
         return settings;
     }
 
-    /// <summary>Starts over <paramref name="settings"/> with the command line of <paramref name="args"/>
-    /// the way the app does, and opens the list and the files it names.</summary>
-    private static AppStateDriver Start(AppSettings settings, params string[] args)
+    /// <summary>Settings whose open list, Default, has the fixture assembly, beside a list named Other with this app's
+    /// own.</summary>
+    private static AppSettings DefaultAndOther(TempDir temp)
+    {
+        return SettingsWith(temp,
+            new AssemblyListRecord { Name = SavedAssemblyLists.DefaultName, Assemblies = [PathOf(AppStateDriver.FixturePath)] },
+            new AssemblyListRecord { Name = Other, Assemblies = [PathOf(OtherAssembly)] });
+    }
+
+    /// <summary>Starts over <paramref name="settings"/> with the command line of <paramref name="args"/> the way the
+    /// launcher does: its arguments in the app's inbox before the app takes them, ahead of its first frame; then waits
+    /// for the files they name to open and the app to settle.</summary>
+    private static AppDriver Start(AppSettings settings, params string[] args)
     {
         var arguments = CommandLines.Parse(args).Arguments;
-        var d = AppStateDriver.Started(new SettingsLoadResult
-        {
-            Settings = settings,
-            Problem = new SettingsProblem.None(),
-        }, arguments);
-        d.Start((a, ct) => AppFrames.OpenStartupAssembliesAsync(a, arguments.Files, ct));
-        d.RunUntil(() => AreListed(d.AppState, arguments.Files.Paths));
-        d.Settle();
-        return d;
+        var app = new AppDriver(settings: settings, queuedArguments: arguments);
+        app.Frames.WaitUntil(() => AreListed(app.AppState, arguments.Files.Paths), Patience);
+        app.Settle();
+        return app;
+    }
+
+    /// <summary>What a user sees of <paramref name="app"/>'s lists: the open one, its assemblies, its analyses, the
+    /// errors and the tabs' titles.</summary>
+    private static string Describe(AppDriver app)
+    {
+        var appState = app.AppState;
+        var assemblies = string.Join(",", appState.Assemblies.ListFilePaths().Select(static p => p.Text));
+        var analyses = string.Join(",", appState.Analyzer.ListSavedAnalyses());
+        var errors = string.Join(",", appState.Errors.Entries.Select(static e => e.Words().Title));
+        var tabs = string.Join(",", appState.Navigation.OpenTabs.Select(static t => t.Title));
+        return $"{appState.Lists.Active}: [{assemblies}] analyses [{analyses}] errors [{errors}] tabs [{tabs}]";
+    }
+
+    /// <summary>Every list as <paramref name="app"/> saves it into <paramref name="temp"/>'s settings: its name, files
+    /// and analyses.</summary>
+    private static List<string> DescribeSaved(AppDriver app, TempDir temp)
+    {
+        Assert.IsType<SettingsWriteResult.Written>(app.AppState.SettingsSaving.Save(app.AppState));
+        return temp.Settings().AssemblyLists
+            .Select(static l => $"{l.Name}: [{string.Join(",", l.Assemblies.Select(static p => p.Text))}] analyses [{string.Join(",", l.Analyzed ?? [])}]")
+            .ToList();
     }
 
     private static bool AreListed(AppState appState, List<AssemblyPath> paths)

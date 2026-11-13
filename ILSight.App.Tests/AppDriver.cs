@@ -2,7 +2,6 @@ using System.Threading.Channels;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Testing;
 using ILSight.Core;
-using ILSight.CommandArea;
 using ILSight.AppSettingArea;
 using ILSight.ILSightAppArea;
 using ILSight.FrameworkArea;
@@ -14,6 +13,10 @@ namespace ILSight.App.Tests;
 /// it pumps before each frame.</summary>
 internal sealed class AppDriver
 {
+    /// <summary>The whole app as the root builds it (<see cref="AppRoot.BuildApp"/>), started as it starts once its
+    /// window opens (<see cref="ILSightApp.StartTakingArguments"/>), once the list it starts with is open
+    /// (<see cref="AppStateDriver.WaitForTheStart"/>): <paramref name="queuedArguments"/>, when given, wait in
+    /// <paramref name="inbox"/> first, as the launcher puts a run's own arguments there.</summary>
     public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, RunArguments? queuedArguments = null, ITextMeasurer? measurer = null, Channel<RunArguments>? inbox = null,
         HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null)
     {
@@ -24,8 +27,7 @@ internal sealed class AppDriver
             inbox.Writer.TryWrite(queuedArguments);
         }
 
-        var built = AppRoot.BuildApp(AppStateDriver.NoProblem(settings), CommandLines.Parse([]).Arguments, inbox, TestSession.Shared, nuGetRequests,
-            runtimeScan, processes);
+        var built = AppRoot.BuildApp(AppStateDriver.NoProblem(settings), inbox, TestSession.Shared, nuGetRequests, runtimeScan, processes);
         Driver = AppStateDriver.Over(posted, built.Restored);
         App = built.App;
         Frames = UiFrames.Running(App, measurer, width: width, height: height, background: AppState.Work);
@@ -35,7 +37,8 @@ internal sealed class AppDriver
         // so one empty frame, which takes no time, fetches it.
         var ui = Frames.Run(0f, static ui => ui);
         Driver.WakeOnPost(ui.RequestFrame);
-        AppState.Workflows.StartUntilShutdown(App.ApplyPendingArgumentsAsync);
+        App.StartTakingArguments();
+        Driver.WaitForTheStart();
         Frames.BeforeFrame = PumpAtFrameTime;
         Driver.Step = RunFramesInPlace;
     }

@@ -168,7 +168,6 @@ public sealed class TargetFrameworkTests
         ];
         var d = new AppStateDriver(settings);
 
-        d.Start(AppStateDriver.OpenAtStartupAsync);
         d.Settle();
 
         Assert.Equal(Net48, FixturesOf(d.AppState).TargetFramework);
@@ -190,7 +189,6 @@ public sealed class TargetFrameworkTests
         ];
         var d = new AppStateDriver(settings);
 
-        d.Start(AppStateDriver.OpenAtStartupAsync);
         d.Settle();
 
         var assembly = FixturesOf(d.AppState);

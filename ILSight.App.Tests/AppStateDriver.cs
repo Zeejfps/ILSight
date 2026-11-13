@@ -35,33 +35,36 @@ internal sealed class AppStateDriver
     private readonly UiState? _ui;
 
     /// <summary>A driver over the app state and screen the root restores (<see cref="AppRoot.RestoreApp"/>) from
-    /// <paramref name="settings"/>, with no window, before the app opens any assemblies.</summary>
+    /// <paramref name="settings"/>, with no window, which has started what the app starts as it starts with no
+    /// arguments, the active list's assemblies opening and its saved analyses being found, and waited for the list to
+    /// open (<see cref="WaitForTheStart"/>).</summary>
     /// <param name="settings">The settings the app starts with.</param>
     /// <param name="nuGetRequests">Sends the "open from NuGet" dialog's requests; the app's shared connections when null.</param>
     /// <param name="runtimeScan">Scans the runtime for the "open from framework" dialog; the installed runtime's when null.</param>
     /// <param name="processes">Lists the running processes for the "open from process" dialog; this machine's when null.</param>
     public AppStateDriver(AppSettings? settings = null, HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null,
         ProcessBrowser.IPorts? processes = null)
-        : this(PostedActions.OfThisTest(), AppRoot.RestoreApp(NoProblem(settings), CommandLines.Parse([]).Arguments, TestSession.Shared, nuGetRequests,
-            runtimeScan, processes))
+        : this(PostedActions.OfThisTest(), AppRoot.RestoreApp(NoProblem(settings), TestSession.Shared, nuGetRequests, runtimeScan, processes))
     {
+        WaitForTheStart();
     }
 
+    /// <summary>A driver over <paramref name="restored"/>, which starts what the root recorded for the list it starts
+    /// with, as the app does once it has taken its arguments (none here).</summary>
     private AppStateDriver(PostedActions posted, RestoredApp restored)
         : this(posted, restored.AppState, restored.Screen)
     {
+        AppFrames.StartOpeningStartupList(AppState, restored.Start);
     }
 
     /// <summary>A driver over <paramref name="appState"/> and <paramref name="ui"/>, the screen over it, if any, which
-    /// <paramref name="posted"/> took the test's posts for before the root built them. It starts restoring the analyses
-    /// the settings kept, as the app does as it starts.</summary>
+    /// <paramref name="posted"/> took the test's posts for before the root built them.</summary>
     private AppStateDriver(PostedActions posted, AppState appState, UiState? ui)
     {
         _posted = posted;
         Step = Pump;
         AppState = appState;
         _ui = ui;
-        Commands.StartRestoringAnalyses(AppState, Analysis.BeginRestoring(AppState.Analyzer, AppState.Assemblies));
     }
 
     /// <summary>What reading <paramref name="settings"/> gave, with nothing wrong (new settings when null), speaking
@@ -83,27 +86,41 @@ internal sealed class AppStateDriver
         loadResult.Settings.Locale ??= Locale.En;
     }
 
-    /// <summary>A driver over the app state and screen the app starts with, from <paramref name="loadResult"/>
-    /// and <paramref name="arguments"/>, before the app opens any assemblies.</summary>
-    public static AppStateDriver Started(SettingsLoadResult loadResult, RunArguments arguments)
+    /// <summary>A driver over the app state and screen the app starts with from <paramref name="loadResult"/>, which
+    /// has started what the app starts as it starts with no arguments and waited for the list to open, as
+    /// <see cref="AppStateDriver(AppSettings?, HttpMessageHandler?, FrameworkBrowser.IPorts?, ProcessBrowser.IPorts?)"/>
+    /// does.</summary>
+    public static AppStateDriver Started(SettingsLoadResult loadResult)
     {
         var posted = PostedActions.OfThisTest();
         SpeakEnglishUnlessNamed(loadResult);
-        return new AppStateDriver(posted, AppRoot.RestoreApp(loadResult, arguments, TestSession.Shared));
+        var driver = new AppStateDriver(posted, AppRoot.RestoreApp(loadResult, TestSession.Shared));
+        driver.WaitForTheStart();
+        return driver;
+    }
+
+    /// <summary>A driver as <see cref="AppStateDriver(AppSettings?, HttpMessageHandler?, FrameworkBrowser.IPorts?,
+    /// ProcessBrowser.IPorts?)"/> makes it, returned while the list it starts with is still opening, for a test of
+    /// what happens meanwhile.</summary>
+    public static AppStateDriver Starting(AppSettings? settings = null)
+    {
+        return new AppStateDriver(PostedActions.OfThisTest(), AppRoot.RestoreApp(NoProblem(settings), TestSession.Shared));
+    }
+
+    /// <summary>Runs what was posted, and nothing else a frame does, until the reload the app's start began (or the
+    /// one its arguments switched to) has ended: a test then begins from an app whose list is open, whatever the thread
+    /// pool's pace.</summary>
+    public void WaitForTheStart()
+    {
+        Poll.Until(() => !AppState.IsReloading, _posted.Run);
     }
 
     /// <summary>A driver over <paramref name="restored"/>, the app state and screen an <see cref="AppDriver"/> had the
-    /// root build with its app, which <paramref name="posted"/> took the test's posts for before.</summary>
+    /// root build with its app, which <paramref name="posted"/> took the test's posts for before. The app starts what
+    /// the root recorded, once it has taken its arguments (<see cref="ILSightApp.StartTakingArguments"/>).</summary>
     public static AppStateDriver Over(PostedActions posted, RestoredApp restored)
     {
-        return new AppStateDriver(posted, restored);
-    }
-
-    /// <summary>What the app starts as it starts with no files asked for: opening the active list
-    /// (<see cref="AppFrames.OpenStartupAssembliesAsync"/>).</summary>
-    public static Task<TabLoads> OpenAtStartupAsync(AppState appState, CancellationToken ct)
-    {
-        return AppFrames.OpenStartupAssembliesAsync(appState, new FilesToOpen { Paths = [], NavigateTo = null }, ct);
+        return new AppStateDriver(posted, restored.AppState, restored.Screen);
     }
 
     /// <summary>A driver that has opened the fixture assembly.</summary>
@@ -114,12 +131,15 @@ internal sealed class AppStateDriver
         return driver;
     }
 
-    /// <summary>A driver with an app state and no screen, which shows that the features need none.</summary>
+    /// <summary>A driver with an app state and no screen, which shows that the features need none. It starts restoring
+    /// the analyses the settings kept, and opens no list.</summary>
     public static AppStateDriver WithoutScreen(AppSettings? settings = null)
     {
         var posted = PostedActions.OfThisTest();
-        var appState = AppRoot.RestoreStartingState(NoProblem(settings), CommandLines.Parse([]).Arguments, TestSession.Shared);
-        return new AppStateDriver(posted, appState, ui: null);
+        var appState = AppRoot.RestoreStartingState(NoProblem(settings), TestSession.Shared);
+        var driver = new AppStateDriver(posted, appState, ui: null);
+        Commands.StartRestoringAnalyses(appState, Analysis.BeginRestoring(appState.Analyzer, appState.Assemblies));
+        return driver;
     }
 
     /// <summary>A driver with no screen that has opened the fixture assembly.</summary>

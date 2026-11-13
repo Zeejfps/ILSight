@@ -24,11 +24,17 @@ public sealed class RestoreAnalysesHandler(RestoreAnalysesHandler.IPorts ports)
     /// <summary>Finds the symbols of the roots of <paramref name="restore"/> and turns each into the analysis of its
     /// symbol in <paramref name="analyzer"/>, which <paramref name="viewCommands"/> has the view show, or removes it
     /// when its symbol is gone or in a module that could not be read, which it names; drops them all when
-    /// <paramref name="assemblies"/> was cleared meanwhile. Reports why the symbols could not be found, and removes the
-    /// roots then.</summary>
+    /// <paramref name="assemblies"/> was cleared since <paramref name="restore"/> began, reading nothing when that was
+    /// before it starts (the app's start, its arguments switching or clearing the list first). Reports why the symbols
+    /// could not be found, and removes the roots then.</summary>
     public async Task HandleAsync(AnalyzerTree analyzer, AssemblyList assemblies, Queue<ViewCommand> viewCommands, AnalysesRestore restore,
         CancellationToken ct)
     {
+        if (assemblies.Generation != restore.Generation)
+        {
+            return;
+        }
+
         var found = await ports.LookUpAnalyzedAsync(restore.Analyzed, ct);
         if (assemblies.Generation != restore.Generation)
         {

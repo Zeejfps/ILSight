@@ -10,33 +10,6 @@ namespace ILSight.AssemblyListArea;
 /// <summary>Switching between the named assembly lists, and creating, renaming and deleting them.</summary>
 public static class AssemblyLists
 {
-    /// <summary>Opens the list named <paramref name="name"/> as the app starts, in place of the one the
-    /// settings had open, with the analyses and documents it had. A list by that name is added when there is none.</summary>
-    public static void StartWithAssemblyList(AppState appState, string name)
-    {
-        if (!appState.Lists.HasList(name))
-        {
-            appState.Lists.Add(name);
-        }
-
-        if (!appState.Lists.TryActivate(name))
-        {
-            return;
-        }
-
-        appState.Analyzer.ClearRoots();
-        appState.Analyzer.AddPending(appState.Lists.ActiveAnalyses);
-        ReopenDocuments(appState.Lists, appState.ListSession);
-    }
-
-    /// <summary>Takes every assembly, and what was picked for it, off the open list before the app starts opening it.</summary>
-    public static void EmptyActiveAssemblyList(AppState appState)
-    {
-        appState.Lists.RememberActivePaths([]);
-        appState.Lists.RememberActivePdbs(new Dictionary<AssemblyPath, string>());
-        appState.Lists.RememberActiveFrameworks(new Dictionary<AssemblyPath, TargetFrameworkId>());
-    }
-
     /// <summary>Records the open assemblies and what was picked for them as the open list's, unless
     /// they are being reopened, when the list still holds them all.</summary>
     public static void RememberOpenAssemblies(SavedAssemblyLists lists, OpenListSession session)

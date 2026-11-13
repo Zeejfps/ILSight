@@ -39,7 +39,6 @@ public sealed class SavedPlacesTests : IDisposable
         var settings = read.Settings;
         var problem = read.Problem;
         var d = new AppStateDriver(settings);
-        d.Start(AppStateDriver.OpenAtStartupAsync);
         d.Settle();
         return (d, problem);
     }

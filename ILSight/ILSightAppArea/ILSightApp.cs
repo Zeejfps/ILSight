@@ -30,7 +30,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     private const string AppIconFile = "app_icon.rgba";
 
     private readonly AppState _appState;
-    private readonly FilesToOpen _startupFiles;
+    private readonly ListStart _start;
     private readonly Channel<RunArguments> _inbox;
     private readonly CodeFontFaces _codeFonts = new() { Bundled = ReadFont(MonoFonts.Code, MonoFontFile) };
 
@@ -38,14 +38,18 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     /// not, the user having been told.</summary>
     private bool _closeRefused;
 
+    /// <param name="appState">The app state, its start recorded on it.</param>
+    /// <param name="uiState">The screen over it.</param>
+    /// <param name="start">The start the root recorded on <paramref name="appState"/>, for this app to start.</param>
+    /// <param name="inbox">Where the arguments of this run, put there first, and of the runs handed to it arrive.</param>
     internal ILSightApp(
         AppState appState,
         UiState uiState,
-        FilesToOpen startupFiles,
+        ListStart start,
         Channel<RunArguments> inbox) : base(uiState)
     {
         _appState = appState;
-        _startupFiles = startupFiles;
+        _start = start;
         _inbox = inbox;
     }
 
@@ -55,11 +59,26 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
         RegisterFonts(host);
         RegisterChosenCodeFont(host);
         RegisterChosenIconFonts(host);
-        Commands.StartShowing(_appState, nameof(OpenStartupAssembliesAsync), ct => OpenStartupAssembliesAsync(_appState, _startupFiles, ct));
         StartRedrawingOnAssemblyChanges(host);
-        Commands.StartRestoringAnalyses(_appState, Analysis.BeginRestoring(_appState.Analyzer, _appState.Assemblies));
+        StartTakingArguments();
         WatchUserThemesOnStartup(_appState);
         CheckForUpdatesOnStartup(_appState);
+    }
+
+    /// <summary>Takes the arguments already waiting in the inbox, this run's first, then starts the reading the start
+    /// recorded and the loop that takes the arguments of later runs (<see cref="ApplyPendingArgumentsAsync"/>).</summary>
+    internal void StartTakingArguments()
+    {
+        // The run arguments decide from the list as on its way (a switch remembers it, a clear drops its files on their
+        // way), so their handler's prerequisite is the start recorded: the root restored the state with the active list's
+        // reopening begun and nothing read. Taken here, before the reading starts, a switch or a clear stops that
+        // reading before it reads a file of the list it leaves.
+        while (_inbox.Reader.TryRead(out var arguments))
+        {
+            TakeArguments(arguments);
+        }
+
+        StartOpeningStartupList(_appState, _start);
         _appState.Workflows.StartUntilShutdown(ApplyPendingArgumentsAsync);
     }
 
@@ -209,23 +228,30 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
         _appState.Assemblies.Changed += host.Invalidate;
     }
 
-    /// <summary>Leaves the arguments of later runs to windows of their own once this one closes.</summary>
     /// <summary>Does what the arguments of later runs ask as they arrive, until this window closes,
     /// bringing the window to the front for each. Started on the UI thread, so it carries on there, and
     /// each one arriving wakes the app. Each is a workflow of its own, so arguments that fail are reported by
     /// the workflow runner rather than ending this loop, which would leave the pipe answering later runs with no
     /// one to follow them.</summary>
-    internal async Task ApplyPendingArgumentsAsync(CancellationToken ct)
+    private async Task ApplyPendingArgumentsAsync(CancellationToken ct)
     {
         await foreach (var arguments in _inbox.Reader.ReadAllAsync(ct))
         {
-            ReportIgnored(arguments);
-            ApplyArguments(arguments);
+            TakeArguments(arguments);
             UiState.FrontAsked = true;
         }
     }
 
-    /// <summary>Does what the arguments a later run handed over ask of the open window: decompiles to their language,
+    /// <summary>Tells of the arguments of <paramref name="arguments"/> that were ignored, then does what the others
+    /// ask (<see cref="ApplyArguments"/>): the one path a run's arguments take, this run's and those handed over
+    /// alike.</summary>
+    private void TakeArguments(RunArguments arguments)
+    {
+        ReportIgnored(arguments);
+        ApplyArguments(arguments);
+    }
+
+    /// <summary>Does what the arguments of a run ask of the app: decompiles to their language,
     /// switches to their list (added when there is none), clears the list, then opens their files and shows what they
     /// name. Each change is made here, in that order, and the work each hands back starts at once as a workflow of its
     /// own: the list's assemblies opening and the finding of its analyses, the lookup of the tabs clearing the list left

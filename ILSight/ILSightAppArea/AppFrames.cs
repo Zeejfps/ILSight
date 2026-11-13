@@ -13,7 +13,6 @@ using static ILSight.SettingArea.Settings;
 using static ILSight.ILSightAppArea.Appearance;
 using static ILSight.DocumentPanels;
 
-using static ILSight.ILSightAppArea.RunArgumentsActions;
 using static ILSight.IconTheming;
 using static ILSight.ILSightAppArea.ScreenSettings;
 using static ILSight.Theming;
@@ -511,17 +510,22 @@ internal static class AppFrames
         appState.Workflows.StartUntilShutdown(appState.UserIconThemes.WatchAsync);
     }
 
-    /// <summary>Opens the active list's assemblies as a reload, so that the list is saved whole until they are all open
-    /// (files that are gone or fail to load stay listed as failed), and <paramref name="files"/> while it opens, once
-    /// the app is running. Returns the loads that started in the tabs: those reopened from the list's saved documents,
-    /// and the one showing what the files ask for.</summary>
-    internal static async Task<TabLoads> OpenStartupAssembliesAsync(AppState appState, FilesToOpen files, CancellationToken ct)
+    /// <summary>Starts what the root recorded for the list the app starts with, <paramref name="start"/>, once the app
+    /// runs: opening the list's assemblies as the reload it began (<see cref="OpenStartupAssembliesAsync"/>), then the
+    /// loads that started in the tabs, and beside it the finding of the list's saved analyses, none waiting for
+    /// another. A switch or a clear since stopped them: they read nothing then.</summary>
+    internal static void StartOpeningStartupList(AppState appState, ListStart start)
     {
-        var reopening = appState.ListSession.BeginReopening(appState.Lists);
-        var restoring = appState.OpenAssembliesAsReloadHandler.HandleAsync(appState.ListSession, reopening.Paths, reopening.Reload, ct);
-        var opening = OpenRequestedFilesAsync(appState, files, ct);
-        await Task.WhenAll(restoring, opening);
-        return (await restoring).With(await opening);
+        Commands.StartShowing(appState, nameof(OpenStartupAssembliesAsync), ct => OpenStartupAssembliesAsync(appState, start.Reopening, ct));
+        Commands.StartRestoringAnalyses(appState, start.Analyses);
+    }
+
+    /// <summary>Opens the active list's assemblies <paramref name="reopening"/> began reopening as a reload, so that the
+    /// list is saved whole until they are all open (files that are gone or fail to load stay listed as failed), once the
+    /// app is running. Returns the loads that started in the tabs reopened from the list's saved documents.</summary>
+    internal static Task<TabLoads> OpenStartupAssembliesAsync(AppState appState, ListReopening reopening, CancellationToken ct)
+    {
+        return appState.OpenAssembliesAsReloadHandler.HandleAsync(appState.ListSession, reopening.Paths, reopening.Reload, ct);
     }
 
     private static void SaveChangedSettings(Ui<UiState> ui, AppState appState)
