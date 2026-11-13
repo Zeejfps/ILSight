@@ -7,11 +7,11 @@ public sealed class ExportWritingTests
 {
     private static readonly string Folder = Path.Combine(Path.GetTempPath(), "exported");
 
-    private static ExportWork.CodeFile GreeterCode(AppStateDriver d)
+    private static async Task<ExportWork.CodeFile> GreeterCodeAsync(AppStateDriver d)
     {
         return new ExportWork.CodeFile
         {
-            Node = d.Fixture("Greeter"),
+            Node = await d.FixtureAsync("Greeter"),
             Language = DecompilationLanguage.CSharp,
             Options = DecompilerOptions.Default,
             File = Path.Combine(Folder, "Greeter.cs"),
@@ -22,7 +22,7 @@ public sealed class ExportWritingTests
     public async Task HandleAsync_Written_ReportsWhatItWroteAndEndsItsTurn()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var work = GreeterCode(d);
+        var work = await GreeterCodeAsync(d);
         var queue = new ExportQueue();
         var ticket = queue.Enter(work.Job);
         var ports = new FakeExportWritingPorts { CodeFile = new ExportOutcome<string>.Done(work.File) };
@@ -44,7 +44,7 @@ public sealed class ExportWritingTests
     public async Task HandleAsync_Stopped_ReportsItCancelled()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var work = GreeterCode(d);
+        var work = await GreeterCodeAsync(d);
         var queue = new ExportQueue();
         var ticket = queue.Enter(work.Job);
         var ports = new FakeExportWritingPorts { CodeFile = new ExportOutcome<string>.Stopped(), AreFoldersThere = false };
@@ -62,7 +62,7 @@ public sealed class ExportWritingTests
     public async Task HandleAsync_Failed_ReportsWhyAndWhatItWasExporting()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var work = GreeterCode(d);
+        var work = await GreeterCodeAsync(d);
         var queue = new ExportQueue();
         var ticket = queue.Enter(work.Job);
         var error = new IOException("Disk full.");
@@ -80,7 +80,7 @@ public sealed class ExportWritingTests
     public async Task HandleAsync_WithdrawnBeforeItsTurn_WritesNothing()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var work = GreeterCode(d);
+        var work = await GreeterCodeAsync(d);
         var queue = new ExportQueue();
         var running = queue.Enter(TestJobs.Named("Running"));
         var ticket = queue.Enter(work.Job);
@@ -99,7 +99,7 @@ public sealed class ExportWritingTests
     public async Task HandleAsync_DiagramWritten_OpensItsPage()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var assembly = Assert.IsType<LoadedModule>(d.Node().Assembly);
+        var assembly = Assert.IsType<LoadedModule>((await d.NodeAsync()).Assembly);
         var work = new ExportWork.Diagram { Assembly = assembly, Folder = Exports.GetDiagramFolder(assembly, Folder) };
         var page = Path.Combine(work.Folder, "index.html");
         var queue = new ExportQueue();

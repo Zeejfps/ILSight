@@ -13,13 +13,13 @@ public sealed class CodeViewTooltipTests
     private const double LeaveGraceSeconds = 0.3;
     private const string Context = "ILSight.App.Tests.Fixtures.Farewell";
 
-    private static CodeViewDriver Farewell()
+    private static async Task<CodeViewDriver> FarewellAsync()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var type = typeof(Farewell);
         Assert.NotNull(type.Namespace);
-        var node = list.Open(type.Assembly.Location).Root.Child(type.Namespace, type.Name);
-        var view = new CodeViewDriver(node.Decompile(DecompilationLanguage.CSharp), WindowHeight) { Tooltips = new CodeTooltips { Assemblies = list, Version = list.Version } };
+        var node = await list.Open(type.Assembly.Location).ReadRootAsync().GetChildAsync(type.Namespace, type.Name);
+        var view = new CodeViewDriver(await node.DecompileAsync(DecompilationLanguage.CSharp), WindowHeight) { Tooltips = new CodeTooltips { Assemblies = list, Version = list.Version } };
         view.Run();
         return view;
     }
@@ -54,9 +54,9 @@ public sealed class CodeViewTooltipTests
     }
 
     [Fact]
-    public void Resting_on_a_member_shows_its_declaration_and_documentation()
+    public async Task Resting_on_a_member_shows_its_declaration_and_documentation()
     {
-        var view = Farewell();
+        var view = await FarewellAsync();
 
         RestOn(view, "Say()");
 
@@ -70,9 +70,9 @@ public sealed class CodeViewTooltipTests
     }
 
     [Fact]
-    public void A_signature_too_wide_for_one_line_puts_each_parameter_on_a_line_of_its_own()
+    public async Task A_signature_too_wide_for_one_line_puts_each_parameter_on_a_line_of_its_own()
     {
-        var view = Farewell();
+        var view = await FarewellAsync();
 
         RestOn(view, "Compose(");
         RunUntilDrawn(view, Context);
@@ -95,9 +95,9 @@ public sealed class CodeViewTooltipTests
     }
 
     [Fact]
-    public void Clicking_a_type_in_the_tooltip_navigates_to_it_and_closes_the_tooltip()
+    public async Task Clicking_a_type_in_the_tooltip_navigates_to_it_and_closes_the_tooltip()
     {
-        var view = Farewell();
+        var view = await FarewellAsync();
         RestOn(view, "Say()");
         RunUntilDrawn(view, "Says ");
 
@@ -113,9 +113,9 @@ public sealed class CodeViewTooltipTests
     }
 
     [Fact]
-    public void The_tooltip_waits_for_the_pointer_to_rest_and_closes_when_it_leaves()
+    public async Task The_tooltip_waits_for_the_pointer_to_rest_and_closes_when_it_leaves()
     {
-        var view = Farewell();
+        var view = await FarewellAsync();
         RestOn(view, "Say()");
         RunUntilDrawn(view, "Says ");
         var shown = DrewTooltip(view);
@@ -129,9 +129,9 @@ public sealed class CodeViewTooltipTests
     }
 
     [Fact]
-    public void A_keyword_has_no_tooltip()
+    public async Task A_keyword_has_no_tooltip()
     {
-        var view = Farewell();
+        var view = await FarewellAsync();
 
         RestOn(view, "public class");
         view.Frames.Wait(RestSeconds).Frame(2);

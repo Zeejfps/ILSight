@@ -7,17 +7,12 @@ namespace ILSight.App.Tests;
 internal static class RunPipes
 {
     /// <summary>A receiver of the role at <paramref name="address"/>; null when another run holds it.</summary>
-    public static RunArgumentsReceiver? Claim(RunArgumentsAddress address)
+    public static Task<RunArgumentsReceiver?> ClaimAsync(RunArgumentsAddress address)
     {
-        return TestWaits.Wait(() => RunArgumentsReceiver.TryClaimAsync(address, CancellationToken.None));
+        return RunArgumentsReceiver.TryClaimAsync(address, CancellationToken.None);
     }
 
     /// <summary>Whether the run holding the role at <paramref name="address"/> took <paramref name="arguments"/>.</summary>
-    public static bool Send(RunArgumentsAddress address, RunArguments arguments)
-    {
-        return TestWaits.Wait(() => new RunRoutingAdapter(address).TrySendAsync(arguments, CancellationToken.None));
-    }
-
     public static Task<bool> SendAsync(RunArgumentsAddress address, RunArguments arguments)
     {
         return new RunRoutingAdapter(address).TrySendAsync(arguments, CancellationToken.None);

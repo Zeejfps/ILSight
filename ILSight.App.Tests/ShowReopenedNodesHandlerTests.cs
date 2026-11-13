@@ -7,9 +7,9 @@ public sealed class ShowReopenedNodesHandlerTests
 {
     /// <summary>A tab of <paramref name="d"/>'s reopened to wait for the fixture Greeter, as the saved documents
     /// keep it.</summary>
-    private static WaitingNode WaitForGreeter(AppStateDriver d)
+    private static async Task<WaitingNode> WaitForGreeterAsync(AppStateDriver d)
     {
-        var place = d.Fixture("Greeter").Path;
+        var place = (await d.FixtureAsync("Greeter")).Path;
         var record = new NodeDocumentRecord
         {
             Panel = "document-9",
@@ -28,8 +28,8 @@ public sealed class ShowReopenedNodesHandlerTests
     public async Task HandleAsync_NodeFound_PointsTheTabAtItAndReturnsTheLoad()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var waiting = WaitForGreeter(d);
-        var greeter = d.Fixture("Greeter");
+        var waiting = await WaitForGreeterAsync(d);
+        var greeter = await d.FixtureAsync("Greeter");
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
         var showing = new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None);
@@ -48,7 +48,7 @@ public sealed class ShowReopenedNodesHandlerTests
     public async Task HandleAsync_LookupFailed_ShowsTheTabsPlaceGone()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var waiting = WaitForGreeter(d);
+        var waiting = await WaitForGreeterAsync(d);
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
         var showing = new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None);
@@ -63,7 +63,7 @@ public sealed class ShowReopenedNodesHandlerTests
     public async Task HandleAsync_PlaceInAModuleThatCouldNotBeRead_ShowsTheTabSayingWhichAndWhy()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var waiting = WaitForGreeter(d);
+        var waiting = await WaitForGreeterAsync(d);
         var module = d.AppState.Assemblies.Assemblies.OfType<LoadedModule>().Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
         var unreadable = new UnreadableModule { Module = module, Why = new BadImageFormatException("Bad namespace.") };
         var ports = new FakeShowReopenedNodesHandlerPorts();
@@ -85,12 +85,12 @@ public sealed class ShowReopenedNodesHandlerTests
     public async Task HandleAsync_TabPointedElsewhereMeanwhile_LeavesItAlone()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var waiting = WaitForGreeter(d);
+        var waiting = await WaitForGreeterAsync(d);
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
         var showing = new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None);
         d.AppState.Navigation.RestoreDiagram(waiting.Reopened.Tab, new TypeDiagram(), "Other diagram");
-        Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<BrowseNode>>>.Ok([new Lookup<BrowseNode>.Found { Value = d.Fixture("Greeter") }]));
+        Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<BrowseNode>>>.Ok([new Lookup<BrowseNode>.Found { Value = await d.FixtureAsync("Greeter") }]));
         var loads = await showing;
 
         Assert.Empty(loads);

@@ -18,16 +18,16 @@ public sealed class WebCilGridTests
         return app;
     }
 
-    private static BrowseNode Metadata(AppDriver app, params ReadOnlySpan<string> labels)
+    private static async Task<BrowseNode> MetadataAsync(AppDriver app, params string[] labels)
     {
-        return app.AppState.Assemblies.Assemblies.Single().Root.Child("Metadata").Child(labels);
+        return await app.AppState.Assemblies.Assemblies.Single().ReadRootAsync().GetChildAsync("Metadata").GetChildAsync(labels);
     }
 
     [Fact]
-    public void A_webcil_modules_grid_opens_showing_its_rows_with_no_frame_of_loading_after_its_contents()
+    public async Task A_webcil_modules_grid_opens_showing_its_rows_with_no_frame_of_loading_after_its_contents()
     {
         var app = OpenWebCil();
-        var typeDefs = Metadata(app, "Tables").Table("TypeDef");
+        var typeDefs = await (await MetadataAsync(app, "Tables")).TableAsync("TypeDef");
         var loading = app.Ui.Strings.MetadataLoading;
         // What each frame drew, read before the next one pumps the app state: whether the tab showed its grid then.
         var frames = new List<(bool Grid, bool Rows, bool Loading)>();
@@ -49,10 +49,10 @@ public sealed class WebCilGridTests
     }
 
     [Fact]
-    public void Scrolling_a_webcil_grid_larger_than_a_window_shows_loading_for_the_page_then_its_rows()
+    public async Task Scrolling_a_webcil_grid_larger_than_a_window_shows_loading_for_the_page_then_its_rows()
     {
         var app = OpenWebCil();
-        app.Show(Metadata(app, "String Heap (100)"), 2);
+        app.Show(await MetadataAsync(app, "String Heap (100)"), 2);
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = Assert.IsType<MetadataGrid.Paged>(tab.Grid);
@@ -77,7 +77,7 @@ public sealed class WebCilGridTests
     public async Task A_page_that_could_not_be_read_shows_why_in_each_of_its_cells()
     {
         var app = OpenWebCil();
-        app.Show(Metadata(app, "String Heap (100)"), 1);
+        app.Show(await MetadataAsync(app, "String Heap (100)"), 1);
         var grid = Assert.IsType<MetadataGrid.Paged>(app.AppState.Navigation.ActiveTab?.Grid);
         var row = MetadataGrid.Paged.RowsPerPage;
         var handler = new ReadMetadataPageHandler(new FailingReadMetadataPageHandlerPorts());

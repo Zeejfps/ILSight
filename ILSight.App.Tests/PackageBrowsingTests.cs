@@ -30,11 +30,11 @@ public sealed class PackageBrowsingTests
     }
 
     [Fact]
-    public void Going_to_a_type_in_a_package_reveals_it_in_the_tree_under_the_package()
+    public async Task Going_to_a_type_in_a_package_reveals_it_in_the_tree_under_the_package()
     {
         using var temp = new TempDir();
         var app = OpenedPackage(temp);
-        var greeter = Greeter(app);
+        var greeter = await GreeterAsync(app);
 
         app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, greeter.Definition, a.Navigation.BeginResolving(inNewTab: false), ct));
         app.Settle(2);
@@ -44,12 +44,12 @@ public sealed class PackageBrowsingTests
     }
 
     [Fact]
-    public void Closing_from_a_node_inside_a_package_closes_the_package()
+    public async Task Closing_from_a_node_inside_a_package_closes_the_package()
     {
         using var temp = new TempDir();
         var app = OpenedPackage(temp);
 
-        Commands.CloseAssemblies(app.AppState, [Greeter(app).Assembly]);
+        Commands.CloseAssemblies(app.AppState, [(await GreeterAsync(app)).Assembly]);
         app.Run(2);
 
         Assert.Empty(app.AppState.Assemblies.Listed);
@@ -57,19 +57,19 @@ public sealed class PackageBrowsingTests
     }
 
     [Fact]
-    public void The_close_button_ticks_a_selected_package_but_not_for_an_assembly_inside_it()
+    public async Task The_close_button_ticks_a_selected_package_but_not_for_an_assembly_inside_it()
     {
         using var temp = new TempDir();
         var app = OpenedPackage(temp);
         var package = app.AppState.Assemblies.Listed[0];
 
-        app.Ui.Tree.View.Select(Greeter(app).Assembly.Root);
+        app.Ui.Tree.View.Select(await (await GreeterAsync(app)).Assembly.ReadRootAsync());
         app.Run(2);
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly")).Frame(2);
         Assert.False(Assert.Single(app.Ui.Closer.Order).Included);
         AssemblyClosing.CloseCloser(app.Ui.Closer);
 
-        app.Ui.Tree.View.Select(package.Root);
+        app.Ui.Tree.View.Select(await package.ReadRootAsync());
         app.Run(2);
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly")).Frame(2);
         Assert.True(Assert.Single(app.Ui.Closer.Order).Included);
@@ -79,11 +79,11 @@ public sealed class PackageBrowsingTests
     }
 
     [Fact]
-    public void An_assembly_in_a_package_is_named_in_results_with_the_folder_it_sits_in()
+    public async Task An_assembly_in_a_package_is_named_in_results_with_the_folder_it_sits_in()
     {
         using var temp = new TempDir();
         var app = OpenedPackage(temp);
-        var assembly = Greeter(app).Assembly;
+        var assembly = (await GreeterAsync(app)).Assembly;
 
         var label = NodeText.AssemblyLabel(assembly);
 
@@ -91,11 +91,11 @@ public sealed class PackageBrowsingTests
     }
 
     [Fact]
-    public void Exporting_offers_the_assemblies_of_an_open_package_with_the_picked_one_ticked()
+    public async Task Exporting_offers_the_assemblies_of_an_open_package_with_the_picked_one_ticked()
     {
         using var temp = new TempDir();
         var app = OpenedPackage(temp);
-        var assembly = Assert.IsType<LoadedModule>(Greeter(app).Assembly);
+        var assembly = Assert.IsType<LoadedModule>((await GreeterAsync(app)).Assembly);
 
         app.OpenExportSetup(assembly);
 
@@ -105,20 +105,20 @@ public sealed class PackageBrowsingTests
     }
 
     [Fact]
-    public void The_tree_menu_extracts_the_file_of_an_assembly_in_a_package()
+    public async Task The_tree_menu_extracts_the_file_of_an_assembly_in_a_package()
     {
         using var temp = new TempDir();
         var app = OpenedPackage(temp);
-        var assembly = Greeter(app).Assembly;
+        var assembly = (await GreeterAsync(app)).Assembly;
         var path = temp.PathOf("Extracted.dll");
-        app.Ui.Tree.RevealNode(assembly.Root);
+        app.Ui.Tree.RevealNode(await assembly.ReadRootAsync());
         app.Run(2);
 
         app.Frames.FilePicker.Answer = path;
         app.PickFromTreeMenu(assembly.Name, "Extract file…");
 
         Assert.Equal(Path.GetFileName(AppStateDriver.FixturePath), app.Frames.FilePicker.LastSave.FileName);
-        Assert.Equal(File.ReadAllBytes(AppStateDriver.FixturePath), File.ReadAllBytes(path));
+        Assert.Equal(await File.ReadAllBytesAsync(AppStateDriver.FixturePath), await File.ReadAllBytesAsync(path));
     }
 
     [Fact]
@@ -150,11 +150,11 @@ public sealed class PackageBrowsingTests
         return app;
     }
 
-    private static BrowseNode Greeter(AppDriver app)
+    private static async Task<BrowseNode> GreeterAsync(AppDriver app)
     {
         var package = app.AppState.Assemblies.Listed[0];
-        var fixtures = package.Root.Child(LibFolder).Children.Single(IsAssembly);
-        return fixtures.Child(AppStateDriver.FixturesNamespace, "Greeter");
+        var fixtures = (await package.ReadRootAsync().GetChildAsync(LibFolder).ListChildrenAsync()).Single(IsAssembly);
+        return await fixtures.GetChildAsync(AppStateDriver.FixturesNamespace, "Greeter");
     }
 
     private static bool IsAssembly(BrowseNode node)

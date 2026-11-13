@@ -1,3 +1,4 @@
+using ZGF.Gui.Immediate;
 using ILSight.App.Tests.Fixtures;
 using ILSight.Core;
 using ILSight.ExportArea;
@@ -54,6 +55,7 @@ internal sealed class AppStateDriver
     private AppStateDriver(PostedActions posted, RestoredApp restored)
         : this(posted, restored.AppState, restored.Screen)
     {
+        using var turn = _posted.Install();
         AppFrames.StartOpeningStartupList(AppState, restored.Start);
     }
 
@@ -138,7 +140,11 @@ internal sealed class AppStateDriver
         var posted = PostedActions.OfThisTest();
         var appState = AppRoot.RestoreStartingState(NoProblem(settings), TestSession.Shared);
         var driver = new AppStateDriver(posted, appState, ui: null);
-        Commands.StartRestoringAnalyses(appState, Analysis.BeginRestoring(appState.Analyzer, appState.Assemblies));
+        using (driver.Turn())
+        {
+            Commands.StartRestoringAnalyses(appState, Analysis.BeginRestoring(appState.Analyzer, appState.Assemblies));
+        }
+
         return driver;
     }
 
@@ -164,6 +170,13 @@ internal sealed class AppStateDriver
 
     public static string FixturePath => typeof(Greeter).Assembly.Location;
 
+    /// <summary>Installs the test's UI context for a turn of the app's code run outside <see cref="Pump"/>, as the app's
+    /// loop installs it for its own turns, until the returned scope is disposed.</summary>
+    public UiSynchronizationContext.Scope Turn()
+    {
+        return _posted.Install();
+    }
+
     /// <summary>Has <paramref name="wake"/> called whenever something is posted to the test's queue.</summary>
     public void WakeOnPost(Action wake)
     {
@@ -174,6 +187,7 @@ internal sealed class AppStateDriver
     /// then the autosave, keeping what it came to (<see cref="Autosaved"/>).</summary>
     public void Pump()
     {
+        using var turn = _posted.Install();
         _posted.Run();
         if (_ui is not null)
         {
@@ -189,6 +203,7 @@ internal sealed class AppStateDriver
     /// the screen asked of the app state.</summary>
     public void NextFrame()
     {
+        using var turn = _posted.Install();
         AppFrames.StartFrame(Ui, AppState);
         AppFrames.KeepScreenChanges(Ui, AppState);
         AppFrames.StartAskedWork(Ui, AppState);
@@ -277,15 +292,15 @@ internal sealed class AppStateDriver
     }
 
     /// <summary>The listed node at the labels under the fixture assembly's root.</summary>
-    public BrowseNode Node(params ReadOnlySpan<string> labels)
+    public async Task<BrowseNode> NodeAsync(params string[] labels)
     {
         var fixtures = AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == FixturePath);
-        return fixtures.Root.Child(labels);
+        return await fixtures.ReadRootAsync().GetChildAsync(labels);
     }
 
-    public BrowseNode Fixture(string type)
+    public async Task<BrowseNode> FixtureAsync(string type)
     {
-        return Node(FixturesNamespace, type);
+        return await NodeAsync(FixturesNamespace, type);
     }
 
     public void Show(BrowseNode node, bool inNewTab = false)
@@ -298,6 +313,7 @@ internal sealed class AppStateDriver
     /// starts decompiling it there, without waiting for that.</summary>
     public void StartShowing(BrowseNode node, bool inNewTab = false)
     {
+        using var turn = _posted.Install();
         Commands.StartDecompiling(AppState, AppState.Navigation.ShowNode(node, AppState.Decompiler.Setup, inNewTab));
     }
 
@@ -305,6 +321,7 @@ internal sealed class AppStateDriver
     /// the frame, then the frame's edge starts opening it, without waiting for that.</summary>
     public void SwitchList(string name)
     {
+        using var turn = _posted.Install();
         Commands.OpenListLater(Ui, AssemblyLists.SwitchAssemblyList(AppState.Lists, AppState.ListSession, AppState.View, name));
         NextFrame();
     }
@@ -313,6 +330,7 @@ internal sealed class AppStateDriver
     /// edge starts opening the list that takes its place when it was open, without waiting for that.</summary>
     public void DeleteList(string name)
     {
+        using var turn = _posted.Install();
         Commands.OpenListLater(Ui, AssemblyLists.DeleteAssemblyList(AppState.Lists, AppState.ListSession, AppState.View, name));
         NextFrame();
     }
@@ -339,6 +357,7 @@ internal sealed class AppStateDriver
 
     private void StartMoving(HistoryMove? move)
     {
+        using var turn = _posted.Install();
         if (move is null)
         {
             return;
@@ -352,6 +371,7 @@ internal sealed class AppStateDriver
     /// <see cref="Settle"/> waits out, until it ends.</summary>
     public void Start(Func<AppState, CancellationToken, Task> workflow)
     {
+        using var turn = _posted.Install();
         var appState = AppState;
         appState.Workflows.Start(nameof(Start), ct => workflow(appState, ct));
     }
@@ -360,6 +380,7 @@ internal sealed class AppStateDriver
     /// what it is to show: the load it returns is started once it ends, as the app's commands start it.</summary>
     public void Start(Func<AppState, CancellationToken, Task<DecompileTicket?>> show)
     {
+        using var turn = _posted.Install();
         var appState = AppState;
         Commands.StartShowing(appState, nameof(Start), ct => show(appState, ct));
     }
@@ -368,6 +389,7 @@ internal sealed class AppStateDriver
     /// points several tabs.</summary>
     public void Start(Func<AppState, CancellationToken, Task<List<DecompileTicket>>> show)
     {
+        using var turn = _posted.Install();
         var appState = AppState;
         Commands.StartShowing(appState, nameof(Start), ct => show(appState, ct));
     }
@@ -376,6 +398,7 @@ internal sealed class AppStateDriver
     /// returns the loads it started in tabs of every kind, each started once it ends, as the app's commands start them.</summary>
     public void Start(Func<AppState, CancellationToken, Task<TabLoads>> show)
     {
+        using var turn = _posted.Install();
         var appState = AppState;
         Commands.StartShowing(appState, nameof(Start), ct => show(appState, ct));
     }
@@ -384,6 +407,7 @@ internal sealed class AppStateDriver
     /// is drawn, then starts the loads it returns, as the app's commands start them.</summary>
     public void Change(Func<AppState, TabLoads> change)
     {
+        using var turn = _posted.Install();
         Commands.StartLoads(AppState, change(AppState));
     }
 
@@ -391,6 +415,7 @@ internal sealed class AppStateDriver
     /// start it once the frame is drawn.</summary>
     public void StartComparing(ComparisonRun? run)
     {
+        using var turn = _posted.Install();
         if (run is null)
         {
             return;
@@ -402,12 +427,14 @@ internal sealed class AppStateDriver
     /// <summary>Analyzes what <paramref name="node"/> stands for as the views do.</summary>
     public void Analyze(BrowseNode node)
     {
+        using var turn = _posted.Install();
         Commands.Analyze(AppState, Ui, node.Analysis ?? throw new InvalidOperationException($"{node.Text} stands for nothing to analyze."));
     }
 
     /// <summary>Analyzes what <paramref name="reference"/> points at as the views do.</summary>
     public void Analyze(CodeReference.Navigable reference)
     {
+        using var turn = _posted.Install();
         Commands.StartAnalyzing(AppState, AnalyzerPanelView.Analyze(Ui, AppState.Analyzer, reference));
     }
 
@@ -430,6 +457,7 @@ internal sealed class AppStateDriver
     /// command the button queues does.</summary>
     public void StartExport()
     {
+        using var turn = _posted.Install();
         LookAtExportFiles();
         ExportDialogView.Start(Ui.ExportSetup, AppState);
     }
@@ -443,6 +471,7 @@ internal sealed class AppStateDriver
     /// <summary>Opens the export dialog on the open assemblies, with <paramref name="picked"/> ticked.</summary>
     public void OpenExportSetup(LoadedModule? picked)
     {
+        using var turn = _posted.Install();
         Exports.OpenExportSetup(Ui.ExportSetup, AppState.Assemblies.Assemblies, picked);
     }
 }

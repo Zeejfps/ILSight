@@ -31,7 +31,7 @@ public sealed class TargetFrameworkTests
     }
 
     [Fact]
-    public void A_framework_picked_from_the_tree_menu_resolves_the_assembly_after_the_reload_and_shows_in_its_row()
+    public async Task A_framework_picked_from_the_tree_menu_resolves_the_assembly_after_the_reload_and_shows_in_its_row()
     {
         using var temp = new TempDir();
         var app = new AppDriver(width: 1600f, settings: temp.Settings());
@@ -44,14 +44,14 @@ public sealed class TargetFrameworkTests
         var assembly = FixturesOf(app.AppState);
         Assert.True(assembly.IsTargetFrameworkPicked);
         Assert.Equal(Net48, assembly.TargetFramework);
-        Assert.Equal("net48", NodeText.PickedFramework(assembly.Root));
-        Assert.DoesNotContain("net48", NodeText.Secondary(assembly.Root));
+        Assert.Equal("net48", NodeText.PickedFramework(await assembly.ReadRootAsync()));
+        Assert.DoesNotContain("net48", NodeText.Secondary(await assembly.ReadRootAsync()));
         Assert.Equal(FontWeight.Bold, app.Frames.Canvas.Texts.Single(t => t.Inputs.Text == "net48").Inputs.Style.FontWeight.Value);
         Assert.Equal(Net48.Text, Assert.Single(temp.Settings().AssemblyLists).Frameworks?[PathOf(AppStateDriver.FixturePath)]);
     }
 
     [Fact]
-    public void Picking_detected_goes_back_to_the_framework_the_assembly_was_built_for()
+    public async Task Picking_detected_goes_back_to_the_framework_the_assembly_was_built_for()
     {
         var app = AppDriver.Opened(width: 1600f);
         app.Settle(2);
@@ -64,13 +64,13 @@ public sealed class TargetFrameworkTests
         var assembly = FixturesOf(app.AppState);
         Assert.False(assembly.IsTargetFrameworkPicked);
         Assert.Equal(assembly.DetectedTargetFramework, assembly.TargetFramework);
-        Assert.Null(NodeText.PickedFramework(assembly.Root));
-        Assert.Contains(detected, NodeText.Secondary(assembly.Root));
+        Assert.Null(NodeText.PickedFramework(await assembly.ReadRootAsync()));
+        Assert.Contains(detected, NodeText.Secondary(await assembly.ReadRootAsync()));
         Assert.Empty(app.AppState.Assemblies.TargetFrameworks.All);
     }
 
     [Fact]
-    public void Picking_a_framework_reopens_only_that_assembly_with_the_tree_as_it_was_on_every_frame()
+    public async Task Picking_a_framework_reopens_only_that_assembly_with_the_tree_as_it_was_on_every_frame()
     {
         var app = AppDriver.Opened(width: 1600f);
         app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SampleAppPath)], ct));
@@ -78,13 +78,13 @@ public sealed class TargetFrameworkTests
         var fixtures = FixturesOf(app.AppState);
         var sample = SampleOf(app.AppState);
         var tree = app.Ui.Tree;
-        foreach (var node in new[] { fixtures.Root, fixtures.Root.Child(AppStateDriver.FixturesNamespace), sample.Root })
+        foreach (var node in new[] { await fixtures.ReadRootAsync(), await fixtures.ReadRootAsync().GetChildAsync(AppStateDriver.FixturesNamespace), await sample.ReadRootAsync() })
         {
             tree.View.SetExpanded(node, true);
         }
 
         tree.View.Refresh();
-        var greeter = app.Fixture("Greeter");
+        var greeter = await app.FixtureAsync("Greeter");
         app.Show(greeter, 2);
         var before = tree.ListExpandedPaths();
         var shapes = new List<List<NodePath>>();
@@ -115,24 +115,24 @@ public sealed class TargetFrameworkTests
     }
 
     [Fact]
-    public void Picking_a_framework_for_an_assembly_in_a_package_keeps_the_tree_expanded_and_the_tab_on_what_it_showed()
+    public async Task Picking_a_framework_for_an_assembly_in_a_package_keeps_the_tree_expanded_and_the_tab_on_what_it_showed()
     {
         using var temp = new TempDir();
         var app = new AppDriver();
         app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(WritePackage(temp))], ct));
         app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, Patience);
         app.Settle(2);
-        var package = app.AppState.Assemblies.Listed[0].Root;
-        var folder = package.Child("lib/net10.0");
-        var assembly = folder.Children.Single(c => c.Icon == NodeIcon.Assembly);
+        var package = await app.AppState.Assemblies.Listed[0].ReadRootAsync();
+        var folder = await package.GetChildAsync("lib/net10.0");
+        var assembly = (await folder.ListChildrenAsync()).Single(c => c.Icon == NodeIcon.Assembly);
         var tree = app.Ui.Tree;
-        foreach (var node in new[] { package, folder, assembly, assembly.Child(AppStateDriver.FixturesNamespace) })
+        foreach (var node in new[] { package, folder, assembly, await assembly.GetChildAsync(AppStateDriver.FixturesNamespace) })
         {
             tree.View.SetExpanded(node, true);
         }
 
         tree.View.Refresh();
-        app.Show(assembly.Child(AppStateDriver.FixturesNamespace, "Greeter"), 2);
+        app.Show(await assembly.GetChildAsync(AppStateDriver.FixturesNamespace, "Greeter"), 2);
         var before = tree.ListExpandedPaths();
 
         app.Start((a, ct) => a.AssemblyReloading.SetTargetFrameworkAsync(a.ListSession, a.Reopens, a.Decompiler, Assert.IsType<LoadedModule>(assembly.Assembly), Net48, ct));

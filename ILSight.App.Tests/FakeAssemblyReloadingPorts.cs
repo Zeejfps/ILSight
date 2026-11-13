@@ -10,8 +10,8 @@ internal sealed class FakeAssemblyReloadingPorts : AssemblyReloading.IPorts
 {
     public Outcome<PdbCheck> PdbChecked { get; init; } = new Outcome<PdbCheck>.Ok(PdbCheck.Matches);
 
-    public Func<LoadedAssembly, IReadOnlyList<NodePath>, Outcome<ReopenedFile>> ReadAgain { get; init; } =
-        static (_, _) => new Outcome<ReopenedFile>.Failed(new IOException("Reading again was not expected."));
+    public Func<LoadedAssembly, IReadOnlyList<NodePath>, Task<Outcome<ReopenedFile>>> ReadAgain { get; init; } =
+        static (_, _) => Task.FromResult<Outcome<ReopenedFile>>(new Outcome<ReopenedFile>.Failed(new IOException("Reading again was not expected.")));
 
     public Func<IReadOnlyList<NodePath>, Outcome<ReloadedNodes>> Reopen { get; init; } =
         static _ => new Outcome<ReloadedNodes>.Failed(new IOException("Reopening was not expected."));
@@ -47,9 +47,10 @@ internal sealed class FakeAssemblyReloadingPorts : AssemblyReloading.IPorts
         return AnswerAsync(nameof(CheckPdbAsync), PdbChecked, ct);
     }
 
-    public Task<Outcome<ReopenedFile>> ReadAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
+    public async Task<Outcome<ReopenedFile>> ReadAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
     {
-        return AnswerAsync(nameof(ReadAgainAsync), ReadAgain(item, places), ct);
+        var read = await ReadAgain(item, places);
+        return await AnswerAsync(nameof(ReadAgainAsync), read, ct);
     }
 
     public Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded, IReadOnlyList<NodePath> places,

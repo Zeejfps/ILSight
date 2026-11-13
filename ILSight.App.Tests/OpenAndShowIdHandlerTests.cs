@@ -8,7 +8,7 @@ public sealed class OpenAndShowIdHandlerTests
     public async Task HandleAsync_IdFound_ShowsTheNode()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var greeter = d.Fixture("Greeter");
+        var greeter = await d.FixtureAsync("Greeter");
         var opening = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(greeter)) };
 
         var load = await new OpenAndShowIdHandler(opening).HandleAsync(d.AppState, [], "T:Greeter", CancellationToken.None);
@@ -38,7 +38,7 @@ public sealed class OpenAndShowIdHandlerTests
         var shown = d.AppState.Navigation.ActiveTab?.Node;
         Assert.NotNull(shown);
         var appState = d.AppState;
-        var found = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(d.Fixture("Greeter"))), WhileOpening = () => appState.Navigation.BeginRequest() };
+        var found = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(await d.FixtureAsync("Greeter"))), WhileOpening = () => appState.Navigation.BeginRequest() };
         var missing = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)), WhileOpening = () => appState.Navigation.BeginRequest() };
 
         var foundLoad = await new OpenAndShowIdHandler(found).HandleAsync(appState, [], "T:Greeter", CancellationToken.None);

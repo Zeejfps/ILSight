@@ -73,11 +73,11 @@ public sealed class AssemblyListingTests
     }
 
     [Fact]
-    public void The_frame_a_list_is_picked_in_from_the_toolbar_says_the_app_is_reloading_and_empties_the_tree()
+    public async Task The_frame_a_list_is_picked_in_from_the_toolbar_says_the_app_is_reloading_and_empties_the_tree()
     {
         var app = AppDriver.Opened();
         app.AppState.Lists.Add(Other);
-        var fixtures = app.Fixture("Greeter").Root.Text;
+        var fixtures = (await app.FixtureAsync("Greeter")).Root.Text;
         app.Run(2);
 
         app.Frames.ClickOn(Selector.WithText(SavedAssemblyLists.DefaultName));
@@ -91,11 +91,11 @@ public sealed class AssemblyListingTests
     }
 
     [Fact]
-    public void Switching_lists_keeps_the_analyses_of_the_last_run_still_being_found_with_their_list()
+    public async Task Switching_lists_keeps_the_analyses_of_the_last_run_still_being_found_with_their_list()
     {
         using var temp = new TempDir();
         var first = AppStateDriver.Opened(temp.Settings());
-        first.Analyze(first.Fixture("Greeter"));
+        first.Analyze(await first.FixtureAsync("Greeter"));
         Assert.IsType<SettingsWriteResult.Written>(first.AppState.SettingsSaving.Save(first.AppState));
         var d = new AppStateDriver(temp.Settings());
         d.AppState.Lists.Add(Other);
@@ -115,10 +115,10 @@ public sealed class AssemblyListingTests
     }
 
     [Fact]
-    public void Switching_back_to_a_list_analyzes_again_what_was_analyzed_in_it()
+    public async Task Switching_back_to_a_list_analyzes_again_what_was_analyzed_in_it()
     {
         var d = AppStateDriver.Opened();
-        d.Analyze(d.Fixture("Greeter"));
+        d.Analyze(await d.FixtureAsync("Greeter"));
         d.AppState.Lists.Add(Other);
 
         d.SwitchList(Other);
@@ -132,10 +132,10 @@ public sealed class AssemblyListingTests
     }
 
     [Fact]
-    public void A_duplicated_list_has_the_analyses_of_the_one_it_copies()
+    public async Task A_duplicated_list_has_the_analyses_of_the_one_it_copies()
     {
         var d = AppStateDriver.Opened();
-        d.Analyze(d.Fixture("Greeter"));
+        d.Analyze(await d.FixtureAsync("Greeter"));
         var copy = DuplicateAssemblyList(d.AppState, SavedAssemblyLists.DefaultName, "Copy");
 
         d.SwitchList(copy);
@@ -147,11 +147,11 @@ public sealed class AssemblyListingTests
     }
 
     [Fact]
-    public void Switching_lists_closes_the_assemblies_documents_and_history_of_the_one_before_and_switching_back_reopens_them()
+    public async Task Switching_lists_closes_the_assemblies_documents_and_history_of_the_one_before_and_switching_back_reopens_them()
     {
         var d = AppStateDriver.Opened();
-        d.Show(d.Fixture("Greeter"));
-        d.Show(d.Fixture("Farewell"), inNewTab: true);
+        d.Show(await d.FixtureAsync("Greeter"));
+        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
         d.AppState.Lists.Add(Other);
 
         d.SwitchList(Other);
@@ -262,7 +262,7 @@ public sealed class AssemblyListingTests
     }
 
     [Fact]
-    public void Expanding_the_tree_expands_the_assemblies_and_their_namespaces()
+    public async Task Expanding_the_tree_expands_the_assemblies_and_their_namespaces()
     {
         var d = AppStateDriver.Opened();
         var tree = d.Ui.Tree;
@@ -270,18 +270,18 @@ public sealed class AssemblyListingTests
         tree.CollapseAll();
 
         Commands.StartExpandingNamespaces(d.AppState, tree, tree.ExpandNamespaces());
-        var ns = d.Node(AppStateDriver.FixturesNamespace);
+        var ns = await d.NodeAsync(AppStateDriver.FixturesNamespace);
         d.RunUntil(() => tree.View.IsExpanded(ns));
 
         Assert.True(tree.View.IsExpanded(root));
-        Assert.False(tree.View.IsExpanded(d.Fixture("Greeter")));
+        Assert.False(tree.View.IsExpanded(await d.FixtureAsync("Greeter")));
     }
 
     [Fact]
-    public void Collapsing_the_tree_above_the_shown_node_keeps_the_tab_on_it()
+    public async Task Collapsing_the_tree_above_the_shown_node_keeps_the_tab_on_it()
     {
         var app = AppDriver.Opened();
-        var greeter = app.Fixture("Greeter");
+        var greeter = await app.FixtureAsync("Greeter");
         app.Show(greeter, 2);
 
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/collapse")).Frame(2);
@@ -291,11 +291,11 @@ public sealed class AssemblyListingTests
     }
 
     [Fact]
-    public void Opening_a_node_in_a_new_tab_from_its_menu_leaves_the_shown_document_alone()
+    public async Task Opening_a_node_in_a_new_tab_from_its_menu_leaves_the_shown_document_alone()
     {
         var app = AppDriver.Opened();
-        var greeter = app.Fixture("Greeter");
-        var farewell = app.Fixture("Farewell");
+        var greeter = await app.FixtureAsync("Greeter");
+        var farewell = await app.FixtureAsync("Farewell");
         app.Show(greeter, 2);
         var first = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(first);
@@ -311,12 +311,12 @@ public sealed class AssemblyListingTests
     }
 
     [Fact]
-    public void Without_preview_tabs_clicking_a_node_selects_it_and_double_clicking_opens_it_in_the_active_tab()
+    public async Task Without_preview_tabs_clicking_a_node_selects_it_and_double_clicking_opens_it_in_the_active_tab()
     {
         var app = AppDriver.Opened();
         app.Driver.TurnOffPreviewTabs();
-        var greeter = app.Fixture("Greeter");
-        var farewell = app.Fixture("Farewell");
+        var greeter = await app.FixtureAsync("Greeter");
+        var farewell = await app.FixtureAsync("Farewell");
         app.Show(greeter, 2);
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -334,11 +334,11 @@ public sealed class AssemblyListingTests
     }
 
     [Fact]
-    public void The_tree_menu_opens_a_node_in_the_active_tab()
+    public async Task The_tree_menu_opens_a_node_in_the_active_tab()
     {
         var app = AppDriver.Opened();
-        var farewell = app.Fixture("Farewell");
-        app.Show(app.Fixture("Greeter"), 2);
+        var farewell = await app.FixtureAsync("Farewell");
+        app.Show(await app.FixtureAsync("Greeter"), 2);
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
@@ -351,11 +351,11 @@ public sealed class AssemblyListingTests
     }
 
     [Fact]
-    public void Switching_tabs_leaves_the_tree_selection_alone()
+    public async Task Switching_tabs_leaves_the_tree_selection_alone()
     {
         var app = AppDriver.Opened();
-        var greeter = app.Fixture("Greeter");
-        var farewell = app.Fixture("Farewell");
+        var greeter = await app.FixtureAsync("Greeter");
+        var farewell = await app.FixtureAsync("Farewell");
         app.Show(greeter, 2);
         var first = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(first);
@@ -369,10 +369,10 @@ public sealed class AssemblyListingTests
     }
 
     [Fact]
-    public void The_select_opened_node_button_reveals_what_the_active_tab_shows()
+    public async Task The_select_opened_node_button_reveals_what_the_active_tab_shows()
     {
         var app = AppDriver.Opened();
-        var greeter = app.Fixture("Greeter");
+        var greeter = await app.FixtureAsync("Greeter");
         app.Show(greeter, 2);
         app.Ui.Tree.CollapseAll();
         app.Ui.Tree.View.Select(app.Ui.Tree.Roots[0]);
@@ -381,15 +381,15 @@ public sealed class AssemblyListingTests
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/select-opened")).Frame(2);
 
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
-        Assert.True(app.Ui.Tree.View.IsExpanded(app.Node(AppStateDriver.FixturesNamespace)));
+        Assert.True(app.Ui.Tree.View.IsExpanded(await app.NodeAsync(AppStateDriver.FixturesNamespace)));
         Assert.Same(greeter, app.AppState.Navigation.ActiveTab?.Node);
     }
 
     [Fact]
-    public void The_assemblies_panels_remove_button_offers_the_assembly_of_the_selected_node_to_close()
+    public async Task The_assemblies_panels_remove_button_offers_the_assembly_of_the_selected_node_to_close()
     {
         var app = AppDriver.Opened();
-        app.Ui.Tree.View.Select(app.Node(AppStateDriver.FixturesNamespace));
+        app.Ui.Tree.View.Select(await app.NodeAsync(AppStateDriver.FixturesNamespace));
         app.Run(2);
 
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly")).Frame(2);

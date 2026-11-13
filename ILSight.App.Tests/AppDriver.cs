@@ -37,7 +37,11 @@ internal sealed class AppDriver
         // so one empty frame, which takes no time, fetches it.
         var ui = Frames.Run(0f, static ui => ui);
         Driver.WakeOnPost(ui.RequestFrame);
-        App.StartTakingArguments();
+        using (Driver.Turn())
+        {
+            App.StartTakingArguments();
+        }
+
         Driver.WaitForTheStart();
         Frames.BeforeFrame = PumpAtFrameTime;
         Driver.Step = RunFramesInPlace;
@@ -66,14 +70,14 @@ internal sealed class AppDriver
     public UiFrames Frames { get; }
     public UiTheme Theme => Theming.ResolveTheme(AppState).Ui;
 
-    public BrowseNode Node(params ReadOnlySpan<string> labels)
+    public async Task<BrowseNode> NodeAsync(params string[] labels)
     {
-        return Driver.Node(labels);
+        return await Driver.NodeAsync(labels);
     }
 
-    public BrowseNode Fixture(string type)
+    public async Task<BrowseNode> FixtureAsync(string type)
     {
-        return Driver.Fixture(type);
+        return await Driver.FixtureAsync(type);
     }
 
     public void Run(int frames = 1)

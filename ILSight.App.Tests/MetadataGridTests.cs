@@ -14,15 +14,15 @@ namespace ILSight.App.Tests;
 
 public sealed class MetadataGridTests
 {
-    private static BrowseNode Table(AppDriver app, string name)
+    private static async Task<BrowseNode> TableAsync(AppDriver app, string name)
     {
-        return app.Node("Metadata", "Tables").Table(name);
+        return await (await app.NodeAsync("Metadata", "Tables")).TableAsync(name);
     }
 
-    private static (AppDriver App, DocumentTab Tab, MetadataGrid Grid) ShowTable(string name, int frames = 3)
+    private static async Task<(AppDriver App, DocumentTab Tab, MetadataGrid Grid)> ShowTableAsync(string name, int frames = 3)
     {
         var app = AppDriver.Opened(width: 2400f);
-        app.Show(Table(app, name), frames);
+        app.Show(await TableAsync(app, name), frames);
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = tab.Grid;
@@ -37,9 +37,9 @@ public sealed class MetadataGridTests
         return DocumentPanels.GetGridState(DocumentPanels.GetView(app.Ui.Documents, tab), grid);
     }
 
-    private static (AppDriver App, DocumentTab Tab, MetadataGrid Grid, int Row) ShowGreeterRow()
+    private static async Task<(AppDriver App, DocumentTab Tab, MetadataGrid Grid, int Row)> ShowGreeterRowAsync()
     {
-        var (app, tab, grid) = ShowTable("TypeDef", frames: 0);
+        var (app, tab, grid) = await ShowTableAsync("TypeDef", frames: 0);
         var row = grid.RowNamed("Greeter");
         MetadataGridWidget.RevealRow(GridOf(app, tab), row);
         app.Run(3);
@@ -61,9 +61,9 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void A_table_opens_as_a_grid_of_ILSpys_columns_that_switching_language_leaves_alone()
+    public async Task A_table_opens_as_a_grid_of_ILSpys_columns_that_switching_language_leaves_alone()
     {
-        var (app, tab, grid) = ShowTable("TypeDef", frames: 0);
+        var (app, tab, grid) = await ShowTableAsync("TypeDef", frames: 0);
 
         app.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         app.Settle(2);
@@ -75,10 +75,10 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void Columns_wider_than_the_view_scroll_sideways_with_their_headers()
+    public async Task Columns_wider_than_the_view_scroll_sideways_with_their_headers()
     {
         var app = AppDriver.Opened(width: 700f);
-        app.Show(Table(app, "TypeDef"), 2);
+        app.Show(await TableAsync(app, "TypeDef"), 2);
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = tab.Grid;
@@ -95,11 +95,11 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void A_text_node_of_the_metadata_decompiles_to_comments()
+    public async Task A_text_node_of_the_metadata_decompiles_to_comments()
     {
         var d = AppStateDriver.Opened();
 
-        d.Show(d.Node("Metadata", "Tables"));
+        d.Show(await d.NodeAsync("Metadata", "Tables"));
 
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -108,9 +108,9 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void Going_back_to_a_grid_after_switching_language_returns_to_the_row_it_left()
+    public async Task Going_back_to_a_grid_after_switching_language_returns_to_the_row_it_left()
     {
-        var (app, tab, grid, row) = ShowGreeterRow();
+        var (app, tab, grid, row) = await ShowGreeterRowAsync();
         var baseType = MetadataGrids.GetText(grid, row, grid.Column("BaseType"));
         app.Frames.Click(TextBeside(app, "Greeter", "Greeter"));
         app.Frames.Click(TextBeside(app, baseType, "Greeter"), modifiers: KeyModifiers.Control);
@@ -121,14 +121,14 @@ public sealed class MetadataGridTests
         app.GoBack();
         app.Settle(3);
 
-        Assert.Same(Table(app, "TypeDef"), tab.Node);
+        Assert.Same(await TableAsync(app, "TypeDef"), tab.Node);
         Assert.Equal(row, GridOf(app, tab).Selected);
     }
 
     [Fact]
-    public void Ctrl_clicking_a_token_shows_its_row_and_going_back_returns_to_the_row_it_left()
+    public async Task Ctrl_clicking_a_token_shows_its_row_and_going_back_returns_to_the_row_it_left()
     {
-        var (app, tab, grid, row) = ShowGreeterRow();
+        var (app, tab, grid, row) = await ShowGreeterRowAsync();
         var baseType = MetadataGrids.GetText(grid, row, grid.Column("BaseType"));
         app.Frames.Click(TextBeside(app, "Greeter", "Greeter"));
 
@@ -137,22 +137,22 @@ public sealed class MetadataGridTests
 
         var typeRefs = tab.Grid;
         Assert.NotNull(typeRefs);
-        Assert.Same(Table(app, "TypeRef"), tab.Node);
+        Assert.Same(await TableAsync(app, "TypeRef"), tab.Node);
         Assert.Equal("Object", MetadataGrids.GetText(typeRefs, GridOf(app, tab).Selected, typeRefs.Column("Name")));
         app.TextRect("Object");
 
         app.GoBack();
         app.Settle(3);
 
-        Assert.Same(Table(app, "TypeDef"), tab.Node);
+        Assert.Same(await TableAsync(app, "TypeDef"), tab.Node);
         Assert.Equal(row, GridOf(app, tab).Selected);
     }
 
     [Fact]
-    public void The_tree_menu_shows_a_type_in_metadata_and_going_back_returns_to_its_code()
+    public async Task The_tree_menu_shows_a_type_in_metadata_and_going_back_returns_to_its_code()
     {
         var app = AppDriver.Opened(width: 1800f);
-        var greeter = app.Node(AppStateDriver.FixturesNamespace, "Greeter");
+        var greeter = await app.NodeAsync(AppStateDriver.FixturesNamespace, "Greeter");
         app.Show(greeter, 3);
         app.Ui.Tree.RevealNode(greeter);
         app.Run(2);
@@ -165,7 +165,7 @@ public sealed class MetadataGridTests
 
         var typeDefs = tab.Grid;
         Assert.NotNull(typeDefs);
-        Assert.Same(Table(app, "TypeDef"), tab.Node);
+        Assert.Same(await TableAsync(app, "TypeDef"), tab.Node);
         Assert.Equal("Greeter", MetadataGrids.GetText(typeDefs, GridOf(app, tab).Selected, typeDefs.Column("Name")));
 
         app.GoBack();
@@ -175,10 +175,10 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void The_frame_show_in_metadata_is_picked_in_says_the_app_is_resolving()
+    public async Task The_frame_show_in_metadata_is_picked_in_says_the_app_is_resolving()
     {
         var app = AppDriver.Opened(width: 1800f);
-        var greeter = app.Node(AppStateDriver.FixturesNamespace, "Greeter");
+        var greeter = await app.NodeAsync(AppStateDriver.FixturesNamespace, "Greeter");
         app.Show(greeter, 3);
         app.Ui.Tree.RevealNode(greeter);
         app.Run(2);
@@ -188,26 +188,26 @@ public sealed class MetadataGridTests
 
         Assert.True(app.Frames.Drew(app.Ui.Strings.StatusResolving));
         app.Settle(3);
-        Assert.Same(Table(app, "TypeDef"), app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(await TableAsync(app, "TypeDef"), app.AppState.Navigation.ActiveTab?.Node);
     }
 
     [Fact]
-    public void Clicking_the_link_icon_of_a_hovered_token_shows_its_row()
+    public async Task Clicking_the_link_icon_of_a_hovered_token_shows_its_row()
     {
-        var (app, tab, grid, row) = ShowGreeterRow();
+        var (app, tab, grid, row) = await ShowGreeterRowAsync();
         var token = TextBeside(app, MetadataGrids.GetText(grid, row, grid.Column("BaseType")), "Greeter");
 
         app.Frames.MovePointer(token.X + 2f, token.Y + token.Height / 2).Frame(2);
         app.Frames.Click(TextBeside(app, Text(Icons.LinkToken), "Greeter"));
         app.Settle(3);
 
-        Assert.Same(Table(app, "TypeRef"), tab.Node);
+        Assert.Same(await TableAsync(app, "TypeRef"), tab.Node);
     }
 
     [Fact]
-    public void A_row_stays_highlighted_while_its_link_icon_is_hovered()
+    public async Task A_row_stays_highlighted_while_its_link_icon_is_hovered()
     {
-        var (app, _, grid) = ShowTable("TypeDef");
+        var (app, _, grid) = await ShowTableAsync("TypeDef");
         var baseType = grid.Column("BaseType");
         var row = Enumerable.Range(0, grid.RowCount).First(r => MetadataGrids.FindLink(grid, r, baseType) is not null);
         var name = MetadataGrids.GetText(grid, row, grid.Column("Name"));
@@ -223,21 +223,21 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void Double_clicking_a_cell_selects_its_text_instead_of_decompiling_its_row()
+    public async Task Double_clicking_a_cell_selects_its_text_instead_of_decompiling_its_row()
     {
-        var (app, tab, _, _) = ShowGreeterRow();
+        var (app, tab, _, _) = await ShowGreeterRowAsync();
 
         app.Frames.DoubleClick(TextBeside(app, "Greeter", "Greeter"));
         app.Settle();
 
-        Assert.Same(Table(app, "TypeDef"), tab.Node);
+        Assert.Same(await TableAsync(app, "TypeDef"), tab.Node);
         Assert.Contains(app.Frames.Canvas.Rects, r => r.Inputs.Style.BackgroundColor == app.Theme.TextSelection);
     }
 
     [Fact]
-    public void Enter_on_the_selected_row_decompiles_it_and_Ctrl_C_copies_the_current_cell()
+    public async Task Enter_on_the_selected_row_decompiles_it_and_Ctrl_C_copies_the_current_cell()
     {
-        var (app, tab, _, _) = ShowGreeterRow();
+        var (app, tab, _, _) = await ShowGreeterRowAsync();
         app.Frames.Click(TextBeside(app, "Greeter", "Greeter"));
 
         app.Frames.Key(Shortcuts.Copy).Frame();
@@ -246,13 +246,13 @@ public sealed class MetadataGridTests
         app.Settle();
 
         Assert.Equal("Greeter", copied);
-        Assert.Same(app.Fixture("Greeter"), tab.Node);
+        Assert.Same(await app.FixtureAsync("Greeter"), tab.Node);
     }
 
     [Fact]
-    public void Clicking_a_header_sorts_by_its_column_and_again_the_other_way()
+    public async Task Clicking_a_header_sorts_by_its_column_and_again_the_other_way()
     {
-        var (app, tab, grid, _) = ShowGreeterRow();
+        var (app, tab, grid, _) = await ShowGreeterRowAsync();
         var name = grid.Column("Name");
 
         app.Frames.ClickOn(Selector.WithText("Name"));
@@ -271,7 +271,7 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void Sorting_a_large_table_shows_it_sorting_until_the_sorted_rows_land()
+    public async Task Sorting_a_large_table_shows_it_sorting_until_the_sorted_rows_land()
     {
         var app = AppDriver.Opened(width: 2400f);
         var path = typeof(object).Assembly.Location;
@@ -279,7 +279,7 @@ public sealed class MetadataGridTests
         app.Driver.RunUntil(() => app.AppState.Assemblies.IsListed(PathOf(path)));
         app.Settle();
         var coreLib = app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == path);
-        app.Show(coreLib.Root.Child("Metadata", "Tables").Table("Param"), 3);
+        app.Show(await (await coreLib.ReadRootAsync().GetChildAsync("Metadata", "Tables")).TableAsync("Param"), 3);
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = tab.Grid;
@@ -303,7 +303,7 @@ public sealed class MetadataGridTests
     [Fact]
     public async Task Only_the_newest_sort_asked_for_lands()
     {
-        var (app, _, grid) = ShowTable("TypeDef");
+        var (app, _, grid) = await ShowTableAsync("TypeDef");
         var state = MetadataGridWidget.CreateState(grid);
         var views = new MetadataGridViews();
         var name = grid.Column("Name");
@@ -326,9 +326,9 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void Hovering_a_flags_cell_breaks_its_bits_down()
+    public async Task Hovering_a_flags_cell_breaks_its_bits_down()
     {
-        var (app, _, grid, row) = ShowGreeterRow();
+        var (app, _, grid, row) = await ShowGreeterRowAsync();
         var attributes = TextBeside(app, MetadataGrids.GetText(grid, row, grid.Column("Attributes")), "Greeter");
 
         app.Frames.MovePointer(attributes.X + 2f, attributes.Y + attributes.Height / 2).Frame(90);
@@ -350,9 +350,9 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void Typing_in_a_columns_filter_keeps_the_rows_that_match_and_Escape_clears_it()
+    public async Task Typing_in_a_columns_filter_keeps_the_rows_that_match_and_Escape_clears_it()
     {
-        var (app, tab, grid) = ShowTable("TypeDef");
+        var (app, tab, grid) = await ShowTableAsync("TypeDef");
         var name = grid.Column("Name");
 
         app.Frames.Click(FunnelOf(app, "Name"));
@@ -368,9 +368,9 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void A_flags_filter_picks_values_in_its_popup_and_is_kept_for_that_column_of_every_table_of_the_kind()
+    public async Task A_flags_filter_picks_values_in_its_popup_and_is_kept_for_that_column_of_every_table_of_the_kind()
     {
-        var (app, tab, grid) = ShowTable("TypeDef");
+        var (app, tab, grid) = await ShowTableAsync("TypeDef");
         var attributes = grid.Column("Attributes");
 
         app.Frames.Click(FunnelOf(app, "Attributes"));
@@ -392,10 +392,10 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void Hovering_a_headers_flags_value_breaks_its_bits_down()
+    public async Task Hovering_a_headers_flags_value_breaks_its_bits_down()
     {
         var app = AppDriver.Opened(width: 1800f, height: 1200f);
-        app.Show(app.Node("Metadata", "COFF Header"), 3);
+        app.Show(await app.NodeAsync("Metadata", "COFF Header"), 3);
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = tab.Grid;
@@ -410,9 +410,9 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void Dragging_across_a_cell_selects_part_of_its_text_for_Ctrl_C()
+    public async Task Dragging_across_a_cell_selects_part_of_its_text_for_Ctrl_C()
     {
-        var (app, tab, _, row) = ShowGreeterRow();
+        var (app, tab, _, row) = await ShowGreeterRowAsync();
         var name = TextBeside(app, "Greeter", "Greeter");
         var advance = name.Width / "Greeter".Length;
 
@@ -424,9 +424,9 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void The_selected_cells_outline_is_drawn_over_the_text_selected_in_it()
+    public async Task The_selected_cells_outline_is_drawn_over_the_text_selected_in_it()
     {
-        var (app, _, _, _) = ShowGreeterRow();
+        var (app, _, _, _) = await ShowGreeterRowAsync();
         var name = TextBeside(app, "Greeter", "Greeter");
 
         Drag(app, name.X + 1f, name.X + name.Width - 1f, name.Y + name.Height / 2);
@@ -439,23 +439,23 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void Clicking_a_token_selects_its_cell_for_Ctrl_C_instead_of_following_it()
+    public async Task Clicking_a_token_selects_its_cell_for_Ctrl_C_instead_of_following_it()
     {
-        var (app, tab, grid, row) = ShowGreeterRow();
+        var (app, tab, grid, row) = await ShowGreeterRowAsync();
         var baseType = MetadataGrids.GetText(grid, row, grid.Column("BaseType"));
 
         app.Frames.Click(TextBeside(app, baseType, "Greeter"));
         app.Settle();
         app.Frames.Key(Shortcuts.Copy).Frame();
 
-        Assert.Same(Table(app, "TypeDef"), tab.Node);
+        Assert.Same(await TableAsync(app, "TypeDef"), tab.Node);
         Assert.Equal(baseType, app.Frames.Clipboard.Text);
     }
 
     [Fact]
-    public void Moving_to_another_cell_drops_the_text_selected_in_the_last()
+    public async Task Moving_to_another_cell_drops_the_text_selected_in_the_last()
     {
-        var (app, _, _, _) = ShowGreeterRow();
+        var (app, _, _, _) = await ShowGreeterRowAsync();
         var name = TextBeside(app, "Greeter", "Greeter");
         Drag(app, name.X + 1f, name.X + name.Width / 2, name.Y + name.Height / 2);
 
@@ -467,10 +467,10 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void Selecting_debug_information_shows_its_decoded_value_under_it()
+    public async Task Selecting_debug_information_shows_its_decoded_value_under_it()
     {
         var app = AppDriver.Opened(width: 1800f, height: 900f);
-        var table = app.Node("Debug Metadata (From portable PDB)", "Tables").Table("CustomDebugInformation");
+        var table = await (await app.NodeAsync("Debug Metadata (From portable PDB)", "Tables")).TableAsync("CustomDebugInformation");
         app.Show(table);
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -494,9 +494,9 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void An_open_cell_makes_its_row_as_tall_as_its_longest_and_leaves_the_others_alone()
+    public async Task An_open_cell_makes_its_row_as_tall_as_its_longest_and_leaves_the_others_alone()
     {
-        var (app, tab, grid) = ShowTable("TypeDef");
+        var (app, tab, grid) = await ShowTableAsync("TypeDef");
         var state = GridOf(app, tab);
         var line = state.RowHeight;
 
@@ -513,9 +513,9 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void Tall_rows_are_listed_in_view_order_as_a_virtual_scroll_needs_them()
+    public async Task Tall_rows_are_listed_in_view_order_as_a_virtual_scroll_needs_them()
     {
-        var (app, tab, grid) = ShowTable("TypeDef");
+        var (app, tab, grid) = await ShowTableAsync("TypeDef");
         var state = GridOf(app, tab);
         var name = grid.Column("Name");
         state.Open[(3, name)] = 2;
@@ -528,9 +528,9 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void A_row_the_filter_hides_is_no_tall_row()
+    public async Task A_row_the_filter_hides_is_no_tall_row()
     {
-        var (app, tab, grid) = ShowTable("TypeDef");
+        var (app, tab, grid) = await ShowTableAsync("TypeDef");
         var state = GridOf(app, tab);
         var name = grid.Column("Name");
         state.Filters[name] = new MetadataColumnFilter.ByText { Text = MetadataGrids.GetText(grid, 1, name) };
@@ -545,9 +545,9 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void An_open_cell_in_a_row_the_filter_hides_makes_no_row_taller()
+    public async Task An_open_cell_in_a_row_the_filter_hides_makes_no_row_taller()
     {
-        var (app, tab, grid) = ShowTable("TypeDef");
+        var (app, tab, grid) = await ShowTableAsync("TypeDef");
         var state = GridOf(app, tab);
         var name = grid.Column("Name");
         var line = state.RowHeight;
@@ -562,10 +562,10 @@ public sealed class MetadataGridTests
     }
 
     [Fact]
-    public void The_selected_rows_details_go_under_its_tallest_cell()
+    public async Task The_selected_rows_details_go_under_its_tallest_cell()
     {
         var app = AppDriver.Opened(width: 1800f, height: 900f);
-        app.Show(app.Node("Debug Metadata (From portable PDB)", "Tables").Table("CustomDebugInformation"));
+        app.Show(await (await app.NodeAsync("Debug Metadata (From portable PDB)", "Tables")).TableAsync("CustomDebugInformation"));
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = tab.Grid;

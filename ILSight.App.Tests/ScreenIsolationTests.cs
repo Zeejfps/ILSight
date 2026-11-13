@@ -46,14 +46,14 @@ public sealed class ScreenIsolationTests : IDisposable
     }
 
     [Fact]
-    public void The_app_state_reaches_no_object_of_the_screen_over_it()
+    public async Task The_app_state_reaches_no_object_of_the_screen_over_it()
     {
         var d = AppStateDriver.Opened(_temp.Settings());
-        d.Show(d.Fixture("Greeter"));
-        d.Show(d.Fixture("Farewell"), inNewTab: true);
+        d.Show(await d.FixtureAsync("Greeter"));
+        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
         OpenPanel(d.Ui, DockView.Bookmarks);
-        d.Analyze(d.Fixture("Greeter"));
-        ScopeSearch(d.Ui, d.Node(AppStateDriver.FixturesNamespace));
+        d.Analyze(await d.FixtureAsync("Greeter"));
+        ScopeSearch(d.Ui, await d.NodeAsync(AppStateDriver.FixturesNamespace));
         d.Ui.BookmarkColumns.Restore([1f, 1f, 4f, 1f]);
         d.Settle();
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));

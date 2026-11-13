@@ -119,15 +119,15 @@ public sealed class CloseAssembliesTests
     }
 
     [Fact]
-    public void Closing_an_analyzed_assembly_from_the_dialog_drops_its_analysis_and_keeps_the_others()
+    public async Task Closing_an_analyzed_assembly_from_the_dialog_drops_its_analysis_and_keeps_the_others()
     {
         var app = AppDriver.Opened();
         app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(KeyboardPath)], ct));
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 2, Patience);
         app.Run(2);
         var keyboard = Assert.IsType<LoadedModule>(app.AppState.Assemblies.Listed.Single(static a => a.FilePath.Text == KeyboardPath));
-        app.Analyze(app.Fixture("Greeter"));
-        app.Analyze(keyboard.Root.Child("ZGF.KeyboardModule", "KeyboardKey"));
+        app.Analyze(await app.FixtureAsync("Greeter"));
+        app.Analyze(await keyboard.ReadRootAsync().GetChildAsync("ZGF.KeyboardModule", "KeyboardKey"));
         app.Settle(2);
         Assert.Equal(2, app.AppState.Analyzer.Roots.Count);
 
@@ -183,14 +183,14 @@ public sealed class CloseAssembliesTests
 
     /// <summary>The app with the fixture and ZGF.KeyboardModule open, Greeter shown, then KeyboardKey in a tab of its
     /// own, active.</summary>
-    private static AppDriver ShowingGreeterAndKeyboardKey()
+    private static async Task<AppDriver> ShowingGreeterAndKeyboardKeyAsync()
     {
         var app = AppDriver.Opened();
         app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(KeyboardPath)], ct));
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 2, Patience);
         app.Run(2);
-        app.Show(app.Fixture("Greeter"), 2);
-        app.Show(KeyboardKeyOf(app), 2, inNewTab: true);
+        app.Show(await app.FixtureAsync("Greeter"), 2);
+        app.Show(await KeyboardKeyOfAsync(app), 2, inNewTab: true);
         return app;
     }
 
@@ -199,9 +199,9 @@ public sealed class CloseAssembliesTests
         return Assert.IsType<LoadedModule>(app.AppState.Assemblies.Listed.Single(static a => a.FilePath.Text == KeyboardPath));
     }
 
-    private static BrowseNode KeyboardKeyOf(AppDriver app)
+    private static async Task<BrowseNode> KeyboardKeyOfAsync(AppDriver app)
     {
-        return KeyboardOf(app).Root.Child("ZGF.KeyboardModule", "KeyboardKey");
+        return await KeyboardOf(app).ReadRootAsync().GetChildAsync("ZGF.KeyboardModule", "KeyboardKey");
     }
 
     private static DocumentTab TabShowing(AppDriver app, string title)
@@ -220,9 +220,9 @@ public sealed class CloseAssembliesTests
     }
 
     [Fact]
-    public void Closing_an_assembly_leaves_its_tab_with_its_last_code_and_says_it_was_closed()
+    public async Task Closing_an_assembly_leaves_its_tab_with_its_last_code_and_says_it_was_closed()
     {
-        var app = ShowingGreeterAndKeyboardKey();
+        var app = await ShowingGreeterAndKeyboardKeyAsync();
         var tab = TabShowing(app, "KeyboardKey");
         var shown = Assert.IsType<TabContent.Code>(tab.Content);
         Assert.Null(tab.Load.ClosedAssembly);
@@ -238,9 +238,9 @@ public sealed class CloseAssembliesTests
     }
 
     [Fact]
-    public void Switching_the_language_after_a_close_decompiles_the_tabs_of_listed_assemblies_but_not_the_closed_ones()
+    public async Task Switching_the_language_after_a_close_decompiles_the_tabs_of_listed_assemblies_but_not_the_closed_ones()
     {
-        var app = ShowingGreeterAndKeyboardKey();
+        var app = await ShowingGreeterAndKeyboardKeyAsync();
         CloseKeyboardFromTheDialog(app);
         var closed = TabShowing(app, "KeyboardKey");
         var code = closed.Document;
@@ -259,9 +259,9 @@ public sealed class CloseAssembliesTests
     }
 
     [Fact]
-    public void Changing_a_decompiler_option_after_a_close_decompiles_the_tabs_of_listed_assemblies_but_not_the_closed_ones()
+    public async Task Changing_a_decompiler_option_after_a_close_decompiles_the_tabs_of_listed_assemblies_but_not_the_closed_ones()
     {
-        var app = ShowingGreeterAndKeyboardKey();
+        var app = await ShowingGreeterAndKeyboardKeyAsync();
         CloseKeyboardFromTheDialog(app);
         var closed = TabShowing(app, "KeyboardKey");
         var code = closed.Document;
@@ -288,11 +288,11 @@ public sealed class CloseAssembliesTests
     }
 
     [Fact]
-    public void A_decompile_still_on_its_way_when_its_assembly_closes_is_dropped_and_the_tab_says_it_was_closed()
+    public async Task A_decompile_still_on_its_way_when_its_assembly_closes_is_dropped_and_the_tab_says_it_was_closed()
     {
-        var app = ShowingGreeterAndKeyboardKey();
+        var app = await ShowingGreeterAndKeyboardKeyAsync();
         var keyboard = KeyboardOf(app);
-        var keyboardKey = KeyboardKeyOf(app);
+        var keyboardKey = await KeyboardKeyOfAsync(app);
         app.Driver.StartShowing(keyboardKey, inNewTab: true);
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -310,9 +310,9 @@ public sealed class CloseAssembliesTests
     }
 
     [Fact]
-    public void Reading_the_list_again_leaves_the_tab_of_a_closed_assembly_as_it_was()
+    public async Task Reading_the_list_again_leaves_the_tab_of_a_closed_assembly_as_it_was()
     {
-        var app = ShowingGreeterAndKeyboardKey();
+        var app = await ShowingGreeterAndKeyboardKeyAsync();
         CloseKeyboardFromTheDialog(app);
         var closed = TabShowing(app, "KeyboardKey");
         var shown = closed.Content;

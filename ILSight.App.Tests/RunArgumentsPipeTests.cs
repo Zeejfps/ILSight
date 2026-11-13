@@ -34,7 +34,7 @@ public sealed class RunArgumentsPipeTests
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
-        using var receiver = RunPipes.Claim(address);
+        using var receiver = await RunPipes.ClaimAsync(address);
         Assert.NotNull(receiver);
 
         var handedOver = await RunPipes.SendAsync(address, Arguments("--navigateto=T:Some.Type", "relative.dll"));
@@ -46,26 +46,26 @@ public sealed class RunArgumentsPipeTests
     }
 
     [Fact]
-    public void A_later_run_is_refused_once_the_inbox_closes()
+    public async Task A_later_run_is_refused_once_the_inbox_closes()
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
-        using var receiver = RunPipes.Claim(address);
+        using var receiver = await RunPipes.ClaimAsync(address);
         Assert.NotNull(receiver);
         receiver.Inbox.Writer.TryComplete();
 
-        var handedOver = RunPipes.Send(address, Arguments("a.dll"));
+        var handedOver = await RunPipes.SendAsync(address, Arguments("a.dll"));
 
         Assert.False(handedOver);
     }
 
     [Fact]
-    public void A_run_with_no_one_listening_cannot_hand_over()
+    public async Task A_run_with_no_one_listening_cannot_hand_over()
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
 
-        var handedOver = RunPipes.Send(address, Arguments("a.dll"));
+        var handedOver = await RunPipes.SendAsync(address, Arguments("a.dll"));
 
         Assert.False(handedOver);
     }
@@ -75,7 +75,7 @@ public sealed class RunArgumentsPipeTests
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
-        using var receiver = RunPipes.Claim(address);
+        using var receiver = await RunPipes.ClaimAsync(address);
         Assert.NotNull(receiver);
 
         var sends = Enumerable.Range(0, 16).Select(i => Task.Run(() => RunPipes.SendAsync(address, Arguments(i + ".dll")))).ToArray();
@@ -86,33 +86,33 @@ public sealed class RunArgumentsPipeTests
     }
 
     [Fact]
-    public void A_run_that_goes_away_partway_does_not_stop_the_receiver()
+    public async Task A_run_that_goes_away_partway_does_not_stop_the_receiver()
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
-        using var receiver = RunPipes.Claim(address);
+        using var receiver = await RunPipes.ClaimAsync(address);
         Assert.NotNull(receiver);
         using (var gone = new NamedPipeClientStream(".", address.Name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly))
         {
-            gone.Connect(5000);
+            await gone.ConnectAsync(5000);
         }
 
-        var handedOver = RunPipes.Send(address, Arguments("a.dll"));
+        var handedOver = await RunPipes.SendAsync(address, Arguments("a.dll"));
 
         Assert.True(handedOver);
     }
 
     [Fact]
-    public void Arguments_handed_to_the_open_window_open_their_files_show_their_member_and_bring_the_window_to_the_front()
+    public async Task Arguments_handed_to_the_open_window_open_their_files_show_their_member_and_bring_the_window_to_the_front()
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
-        using var receiver = RunPipes.Claim(address);
+        using var receiver = await RunPipes.ClaimAsync(address);
         Assert.NotNull(receiver);
         var app = new AppDriver(inbox: receiver.Inbox);
         app.Run();
 
-        Assert.True(RunPipes.Send(address, Arguments("--navigateto=" + GreetId, AppStateDriver.FixturePath)));
+        Assert.True(await RunPipes.SendAsync(address, Arguments("--navigateto=" + GreetId, AppStateDriver.FixturePath)));
         app.Frames.WaitUntil(() => app.Frames.FrontRequested, Patience);
         app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Method, Patience);
         app.Settle(1);

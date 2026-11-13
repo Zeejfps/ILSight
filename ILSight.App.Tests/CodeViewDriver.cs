@@ -28,8 +28,8 @@ internal sealed class CodeViewDriver
     public static readonly float Row = UiTheme.Dark.CodeLineHeight;
     private static readonly float CellInset = MathF.Floor((Row - CellHeight) / 2);
 
-    private static readonly Lazy<DecompiledDocument> s_greeter = new(() => Decompile(typeof(Greeter)));
-    private static readonly Lazy<DecompiledDocument> s_outline = new(() => Decompile(typeof(Outline)));
+    private static readonly SharedRead<DecompiledDocument> s_greeter = new(() => DecompileAsync(typeof(Greeter)));
+    private static readonly SharedRead<DecompiledDocument> s_outline = new(() => DecompileAsync(typeof(Outline)));
 
     private readonly PostedActions _posted = PostedActions.OfThisTest();
     private readonly BackgroundWork _work = new();
@@ -201,23 +201,23 @@ internal sealed class CodeViewDriver
         return Documents.CreateFromText("numbered", string.Join('\n', Enumerable.Range(0, count).Select(i => prefix + i)));
     }
 
-    public static DecompiledDocument Greeter()
+    public static Task<DecompiledDocument> GreeterAsync()
     {
-        return s_greeter.Value;
+        return s_greeter.ReadAsync();
     }
 
-    public static DecompiledDocument Outline()
+    public static Task<DecompiledDocument> OutlineAsync()
     {
-        return s_outline.Value;
+        return s_outline.ReadAsync();
     }
 
     /// <summary>A document of <paramref name="type"/> decompiled through an assembly list of its own.</summary>
-    public static DecompiledDocument Decompile(Type type)
+    public static async Task<DecompiledDocument> DecompileAsync(Type type)
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(type.Assembly.Location);
         Assert.NotNull(type.Namespace);
-        var node = assembly.Root.Child(type.Namespace, type.Name);
-        return node.Decompile(DecompilationLanguage.CSharp);
+        var node = await assembly.ReadRootAsync().GetChildAsync(type.Namespace, type.Name);
+        return await node.DecompileAsync(DecompilationLanguage.CSharp);
     }
 
     private static int CodeTextDigits(int value)

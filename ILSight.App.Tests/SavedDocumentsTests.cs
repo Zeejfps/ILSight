@@ -56,12 +56,12 @@ public sealed class SavedDocumentsTests : IDisposable
     }
 
     /// <summary>An app showing the TypeDef table with Greeter's row selected, saved on exit; the row.</summary>
-    private int SaveGridOnGreeter()
+    private async Task<int> SaveGridOnGreeterAsync()
     {
         var app = new AppDriver(height: 360f, settings: _temp.Settings());
         app.Driver.OpenFixtures();
         app.Run(3);
-        app.Show(app.Node("Metadata", "Tables").Table("TypeDef"), 4);
+        app.Show(await (await app.NodeAsync("Metadata", "Tables")).TableAsync("TypeDef"), 4);
         var tab = GridTab(app);
         var grid = tab.Grid;
         Assert.NotNull(grid);
@@ -189,21 +189,21 @@ public sealed class SavedDocumentsTests : IDisposable
     }
 
     [Fact]
-    public void Scrolling_alone_writes_no_settings_and_the_next_save_keeps_where_the_view_stands()
+    public async Task Scrolling_alone_writes_no_settings_and_the_next_save_keeps_where_the_view_stands()
     {
         var app = new AppDriver(height: 360f, settings: _temp.Settings());
         app.Driver.OpenFixtures();
         app.Run(3);
-        app.Show(app.Fixture("Outline"), 4);
+        app.Show(await app.FixtureAsync("Outline"), 4);
         var outline = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(outline);
         app.Run(3);
         var file = _temp.PathOf("settings.json");
-        var before = File.ReadAllText(file);
+        var before = await File.ReadAllTextAsync(file);
 
         var position = ScrollTo(app, outline, 20, new TextPosition { Line = 21, Column = 4 }, new TextPosition { Line = 22, Column = 8 });
         app.Run(3);
-        Assert.Equal(before, File.ReadAllText(file));
+        Assert.Equal(before, await File.ReadAllTextAsync(file));
 
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
@@ -212,18 +212,18 @@ public sealed class SavedDocumentsTests : IDisposable
     }
 
     [Fact]
-    public void A_tab_never_shown_after_a_restart_keeps_where_its_view_was_through_the_next_save()
+    public async Task A_tab_never_shown_after_a_restart_keeps_where_its_view_was_through_the_next_save()
     {
         var app = new AppDriver(height: 360f, settings: _temp.Settings());
         app.Driver.OpenFixtures();
         app.Run(3);
-        app.Show(app.Fixture("Outline"), 4);
+        app.Show(await app.FixtureAsync("Outline"), 4);
         var outline = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(outline);
         app.AppState.Navigation.KeepTabOpen(outline);
         var outlinePosition = ScrollTo(app, outline, 20,
             new TextPosition { Line = 21, Column = 4 }, new TextPosition { Line = 22, Column = 8 });
-        app.Show(app.Fixture("Greeter"), 4, inNewTab: true);
+        app.Show(await app.FixtureAsync("Greeter"), 4, inNewTab: true);
         app.Run(3);
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
 
@@ -240,23 +240,23 @@ public sealed class SavedDocumentsTests : IDisposable
     }
 
     [Fact]
-    public void After_a_restart_the_tabs_come_back_in_their_panels_and_groups_with_their_views_where_they_were()
+    public async Task After_a_restart_the_tabs_come_back_in_their_panels_and_groups_with_their_views_where_they_were()
     {
         var app = new AppDriver(height: 360f, settings: _temp.Settings());
         app.Driver.OpenFixtures();
         app.Run(3);
-        app.Show(app.Fixture("Outline"), 4);
+        app.Show(await app.FixtureAsync("Outline"), 4);
         var outline = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(outline);
         app.AppState.Navigation.KeepTabOpen(outline);
         var outlinePosition = ScrollTo(app, outline, 20,
             new TextPosition { Line = 21, Column = 4 }, new TextPosition { Line = 22, Column = 8 });
-        app.Show(app.Fixture("Greeter"), 4, inNewTab: true);
+        app.Show(await app.FixtureAsync("Greeter"), 4, inNewTab: true);
         var greeter = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(greeter);
         MoveRightOf(app, greeter, outline);
-        app.Show(app.Fixture("Farewell"), 4);
-        DiagramView.ShowInNewDiagramLater(app.Ui, app.Fixture("Vehicle").Definition, Names.Diagram(app.Fixture("Vehicle").Definition));
+        app.Show(await app.FixtureAsync("Farewell"), 4);
+        DiagramView.ShowInNewDiagramLater(app.Ui, (await app.FixtureAsync("Vehicle")).Definition, Names.Diagram((await app.FixtureAsync("Vehicle")).Definition));
         app.Settle(2);
         var diagram = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(diagram);
@@ -292,12 +292,12 @@ public sealed class SavedDocumentsTests : IDisposable
     }
 
     [Fact]
-    public void A_grid_never_shown_after_a_restart_keeps_the_row_it_was_left_on_through_the_next_save()
+    public async Task A_grid_never_shown_after_a_restart_keeps_the_row_it_was_left_on_through_the_next_save()
     {
         var app = new AppDriver(height: 360f, settings: _temp.Settings());
         app.Driver.OpenFixtures();
         app.Run(3);
-        app.Show(app.Node("Metadata", "Tables").Table("TypeDef"), 4);
+        app.Show(await (await app.NodeAsync("Metadata", "Tables")).TableAsync("TypeDef"), 4);
         var tab = GridTab(app);
         app.AppState.Navigation.KeepTabOpen(tab);
         var grid = tab.Grid;
@@ -305,7 +305,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var row = grid.RowNamed("Greeter");
         MetadataGridWidget.RevealRow(GridOf(app, tab), row);
         app.Run(3);
-        app.Show(app.Fixture("Greeter"), 4, inNewTab: true);
+        app.Show(await app.FixtureAsync("Greeter"), 4, inNewTab: true);
         app.Run(3);
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
 
@@ -322,11 +322,11 @@ public sealed class SavedDocumentsTests : IDisposable
     }
 
     [Fact]
-    public void A_grid_comes_back_after_a_restart_on_the_row_it_was_left_on()
+    public async Task A_grid_comes_back_after_a_restart_on_the_row_it_was_left_on()
     {
-        var row = SaveGridOnGreeter();
+        var row = await SaveGridOnGreeterAsync();
 
-        Assert.Contains("\"GridPosition\"", File.ReadAllText(_temp.PathOf("settings.json")));
+        Assert.Contains("\"GridPosition\"", await File.ReadAllTextAsync(_temp.PathOf("settings.json")));
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
         next.Settle(4);
 
@@ -334,9 +334,9 @@ public sealed class SavedDocumentsTests : IDisposable
     }
 
     [Fact]
-    public void A_grid_saved_with_a_code_views_position_by_an_older_build_comes_back_at_the_top()
+    public async Task A_grid_saved_with_a_code_views_position_by_an_older_build_comes_back_at_the_top()
     {
-        var row = SaveGridOnGreeter();
+        var row = await SaveGridOnGreeterAsync();
         var settings = _temp.Settings();
         var documents = Assert.Single(settings.AssemblyLists).Documents;
         Assert.NotNull(documents);
@@ -446,17 +446,17 @@ public sealed class SavedDocumentsTests : IDisposable
     }
 
     [Fact]
-    public void Switching_lists_swaps_their_documents()
+    public async Task Switching_lists_swaps_their_documents()
     {
         var d = AppStateDriver.Opened();
-        d.Show(d.Fixture("Greeter"));
+        d.Show(await d.FixtureAsync("Greeter"));
         d.AppState.Lists.Add(Other);
         d.SwitchList(Other);
         d.Settle();
         d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(AppStateDriver.FixturePath)], ct));
         d.RunUntil(() => d.AppState.Assemblies.ListFilePaths().Contains(PathOf(AppStateDriver.FixturePath)));
         d.Settle();
-        d.Show(d.Fixture("Farewell"));
+        d.Show(await d.FixtureAsync("Farewell"));
 
         d.SwitchList(SavedAssemblyLists.DefaultName);
         d.Settle();
@@ -474,15 +474,15 @@ public sealed class SavedDocumentsTests : IDisposable
     }
 
     [Fact]
-    public void Switching_back_to_a_list_docks_its_documents_side_by_side_as_they_were()
+    public async Task Switching_back_to_a_list_docks_its_documents_side_by_side_as_they_were()
     {
         var d = AppStateDriver.Opened();
-        d.Show(d.Fixture("Greeter"));
+        d.Show(await d.FixtureAsync("Greeter"));
         var greeter = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(greeter);
         d.AppState.Navigation.KeepTabOpen(greeter);
         var greeterPanel = DocumentPanels.GetPanel(d.Ui.Documents, greeter);
-        d.Show(d.Fixture("Farewell"), inNewTab: true);
+        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
         var layout = d.Ui.Layout;
         var farewell = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(farewell);
@@ -586,13 +586,13 @@ public sealed class SavedDocumentsTests : IDisposable
     }
 
     [Fact]
-    public void A_tab_opened_is_saved_with_the_next_frame()
+    public async Task A_tab_opened_is_saved_with_the_next_frame()
     {
         var app = new AppDriver(settings: _temp.Settings());
         app.Driver.OpenFixtures();
         app.Run(2);
 
-        app.Show(app.Fixture("Greeter"), 1, inNewTab: true);
+        app.Show(await app.FixtureAsync("Greeter"), 1, inNewTab: true);
 
         var documents = Assert.Single(_temp.Settings().AssemblyLists).Documents;
         Assert.NotNull(documents);

@@ -8,10 +8,10 @@ public sealed class PreviewTabTests
 {
     /// <summary>The app with the fixture types showing in the tree, none of them selected, and the
     /// assembly shown in the preview tab.</summary>
-    private static AppDriver Revealed()
+    private static async Task<AppDriver> RevealedAsync()
     {
         var app = AppDriver.Opened();
-        app.Ui.Tree.RevealNode(app.Fixture("Greeter"));
+        app.Ui.Tree.RevealNode(await app.FixtureAsync("Greeter"));
         app.Ui.Tree.View.ClearSelection();
         app.Run(2);
         return app;
@@ -44,9 +44,9 @@ public sealed class PreviewTabTests
     }
 
     [Fact]
-    public void Clicking_a_node_shows_it_in_the_preview_tab_and_clicking_another_shows_that_in_its_place()
+    public async Task Clicking_a_node_shows_it_in_the_preview_tab_and_clicking_another_shows_that_in_its_place()
     {
-        var app = Revealed();
+        var app = await RevealedAsync();
         Pick(app, "Greeter");
         var preview = app.AppState.Navigation.PreviewTab;
         var shownFirst = preview?.Node?.Text;
@@ -60,9 +60,9 @@ public sealed class PreviewTabTests
     }
 
     [Fact]
-    public void The_frame_a_node_is_clicked_in_draws_the_preview_tab_showing_it()
+    public async Task The_frame_a_node_is_clicked_in_draws_the_preview_tab_showing_it()
     {
-        var app = Revealed();
+        var app = await RevealedAsync();
         Pick(app, "Greeter");
         var preview = app.AppState.Navigation.PreviewTab;
         Assert.NotNull(preview);
@@ -76,9 +76,9 @@ public sealed class PreviewTabTests
     }
 
     [Fact]
-    public void Double_clicking_a_node_keeps_its_tab_open_and_the_next_node_picked_opens_a_new_preview_tab()
+    public async Task Double_clicking_a_node_keeps_its_tab_open_and_the_next_node_picked_opens_a_new_preview_tab()
     {
-        var app = Revealed();
+        var app = await RevealedAsync();
         app.DoubleClickOn(Selector.WithText("Greeter")).Frame(2);
         app.Settle(2);
         var kept = app.AppState.Navigation.ActiveTab;
@@ -95,10 +95,10 @@ public sealed class PreviewTabTests
     }
 
     [Fact]
-    public void Clicking_a_node_a_kept_tab_shows_brings_that_tab_forward_instead_of_previewing_it()
+    public async Task Clicking_a_node_a_kept_tab_shows_brings_that_tab_forward_instead_of_previewing_it()
     {
-        var app = Revealed();
-        app.Show(app.Fixture("Greeter"), 2);
+        var app = await RevealedAsync();
+        app.Show(await app.FixtureAsync("Greeter"), 2);
         var kept = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(kept);
         app.AppState.Navigation.KeepTabOpen(kept);
@@ -114,16 +114,16 @@ public sealed class PreviewTabTests
     }
 
     [Fact]
-    public void Following_a_reference_from_a_kept_tab_shows_it_in_the_preview_tab_and_leaves_the_kept_tab_alone()
+    public async Task Following_a_reference_from_a_kept_tab_shows_it_in_the_preview_tab_and_leaves_the_kept_tab_alone()
     {
         var app = AppDriver.Opened();
-        var greeter = app.Fixture("Greeter");
+        var greeter = await app.FixtureAsync("Greeter");
         app.Show(greeter, 2);
         var kept = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(kept);
         app.AppState.Navigation.KeepTabOpen(kept);
 
-        var farewell = app.Fixture("Farewell").Definition;
+        var farewell = (await app.FixtureAsync("Farewell")).Definition;
         app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, farewell, a.Navigation.BeginResolving(inNewTab: false), ct));
         app.Settle(2);
 
@@ -133,10 +133,10 @@ public sealed class PreviewTabTests
     }
 
     [Fact]
-    public void The_preview_tabs_title_is_in_italics_until_the_tab_is_double_clicked()
+    public async Task The_preview_tabs_title_is_in_italics_until_the_tab_is_double_clicked()
     {
         var app = AppDriver.Opened();
-        app.Show(app.Fixture("Greeter"), 2);
+        app.Show(await app.FixtureAsync("Greeter"), 2);
         var title = PreviewTitle(app, "Greeter");
 
         app.Frames.DoubleClick(title).Frame(2);
@@ -146,10 +146,10 @@ public sealed class PreviewTabTests
     }
 
     [Fact]
-    public void The_preview_tabs_menu_keeps_it_open()
+    public async Task The_preview_tabs_menu_keeps_it_open()
     {
         var app = AppDriver.Opened();
-        app.Show(app.Fixture("Greeter"), 2);
+        app.Show(await app.FixtureAsync("Greeter"), 2);
         var title = PreviewTitle(app, "Greeter");
 
         app.Frames.Click(title.X + 2f, title.Y + title.Height / 2, PointerButton.Right).Frame();
@@ -160,9 +160,9 @@ public sealed class PreviewTabTests
     }
 
     [Fact]
-    public void An_empty_tab_made_active_shows_what_is_picked_next_and_the_preview_tab_before_it_stays_open()
+    public async Task An_empty_tab_made_active_shows_what_is_picked_next_and_the_preview_tab_before_it_stays_open()
     {
-        var app = Revealed();
+        var app = await RevealedAsync();
         Pick(app, "Greeter");
         var before = app.AppState.Navigation.PreviewTab;
         Assert.NotNull(before);

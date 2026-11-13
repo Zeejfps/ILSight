@@ -18,9 +18,9 @@ public sealed class HistoryTests
         return app;
     }
 
-    private static void Show(AppDriver app, string type)
+    private static async Task ShowAsync(AppDriver app, string type)
     {
-        app.Show(app.Fixture(type), 4);
+        app.Show(await app.FixtureAsync(type), 4);
     }
 
     private static CodeViewPosition ScrollTo(AppDriver app, int topLine, TextPosition anchor, TextPosition caret)
@@ -46,12 +46,12 @@ public sealed class HistoryTests
     }
 
     [Fact]
-    public void Going_back_and_forward_returns_each_place_to_where_it_was_left()
+    public async Task Going_back_and_forward_returns_each_place_to_where_it_was_left()
     {
         var app = Opened();
-        Show(app, "Outline");
+        await ShowAsync(app, "Outline");
         var outline = ScrollTo(app, 20, new TextPosition { Line = 21, Column = 4 }, new TextPosition { Line = 22, Column = 8 });
-        Show(app, "Greeter");
+        await ShowAsync(app, "Greeter");
         var greeter = ScrollTo(app, 3, new TextPosition { Line = 4, Column = 0 }, new TextPosition { Line = 4, Column = 6 });
 
         app.GoBack();
@@ -73,11 +73,11 @@ public sealed class HistoryTests
     }
 
     [Fact]
-    public void The_frame_back_is_pressed_in_says_the_app_is_resolving_the_place_its_tab_left()
+    public async Task The_frame_back_is_pressed_in_says_the_app_is_resolving_the_place_its_tab_left()
     {
         var app = Opened();
-        Show(app, "Outline");
-        Show(app, "Greeter");
+        await ShowAsync(app, "Outline");
+        await ShowAsync(app, "Greeter");
 
         app.Frames.Key(Shortcuts.Back).Frame();
 
@@ -87,25 +87,25 @@ public sealed class HistoryTests
     }
 
     [Fact]
-    public void The_frame_back_is_pressed_in_shows_the_tab_that_still_shows_the_entry()
+    public async Task The_frame_back_is_pressed_in_shows_the_tab_that_still_shows_the_entry()
     {
         var app = Opened();
-        Show(app, "Outline");
+        await ShowAsync(app, "Outline");
         var outline = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(outline);
-        app.Show(app.Fixture("Greeter"), 4, inNewTab: true);
+        app.Show(await app.FixtureAsync("Greeter"), 4, inNewTab: true);
 
         app.Frames.Key(Shortcuts.Back).Frame();
 
-        Assert.True(app.Frames.Drew(app.Fixture("Outline").FullName));
+        Assert.True(app.Frames.Drew((await app.FixtureAsync("Outline")).FullName));
         Assert.Same(outline, app.AppState.Navigation.ActiveTab);
     }
 
     [Fact]
-    public void Going_back_from_a_followed_reference_returns_to_where_it_was_followed_from()
+    public async Task Going_back_from_a_followed_reference_returns_to_where_it_was_followed_from()
     {
         var app = Opened();
-        Show(app, "Outline");
+        await ShowAsync(app, "Outline");
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var (line, column) = tab.Document.GetPosition("return First();");
@@ -126,10 +126,10 @@ public sealed class HistoryTests
     }
 
     [Fact]
-    public void Where_the_view_stood_when_its_tab_moved_on_in_the_frame_is_where_going_back_returns_to()
+    public async Task Where_the_view_stood_when_its_tab_moved_on_in_the_frame_is_where_going_back_returns_to()
     {
         var app = Opened();
-        Show(app, "Outline");
+        await ShowAsync(app, "Outline");
         ScrollTo(app, 20, new TextPosition { Line = 21, Column = 4 }, new TextPosition { Line = 22, Column = 8 });
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -151,7 +151,7 @@ public sealed class HistoryTests
         };
         CodeViewWidget.RestorePosition(CodeOf(app, tab), scrolled);
 
-        app.Driver.Show(app.Fixture("Greeter"));
+        app.Driver.Show(await app.FixtureAsync("Greeter"));
         AppFrames.KeepScreenChanges(app.Ui, app.AppState);
         app.Settle(4);
         app.GoBack();
@@ -162,12 +162,12 @@ public sealed class HistoryTests
     }
 
     [Fact]
-    public void A_position_left_in_another_language_is_not_applied()
+    public async Task A_position_left_in_another_language_is_not_applied()
     {
         var app = Opened();
-        Show(app, "Outline");
+        await ShowAsync(app, "Outline");
         ScrollTo(app, 20, new TextPosition { Line = 21, Column = 4 }, new TextPosition { Line = 22, Column = 8 });
-        Show(app, "Greeter");
+        await ShowAsync(app, "Greeter");
 
         app.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         app.Settle(4);
@@ -183,14 +183,14 @@ public sealed class HistoryTests
     }
 
     [Fact]
-    public void Going_to_an_entry_jumps_over_the_ones_between_and_keeps_them_all()
+    public async Task Going_to_an_entry_jumps_over_the_ones_between_and_keeps_them_all()
     {
         var app = Opened();
         var navigation = app.AppState.Navigation;
-        Show(app, "Outline");
+        await ShowAsync(app, "Outline");
         var first = navigation.HistoryIndex;
-        Show(app, "Greeter");
-        Show(app, "Outline");
+        await ShowAsync(app, "Greeter");
+        await ShowAsync(app, "Outline");
         var count = navigation.HistoryEntries.Count;
 
         app.GoToEntry(first);
@@ -204,13 +204,13 @@ public sealed class HistoryTests
     }
 
     [Fact]
-    public void The_back_dropdown_lists_earlier_places_nearest_first_and_goes_to_the_one_picked()
+    public async Task The_back_dropdown_lists_earlier_places_nearest_first_and_goes_to_the_one_picked()
     {
         var app = Opened();
-        Show(app, "Outline");
+        await ShowAsync(app, "Outline");
         var first = app.AppState.Navigation.HistoryIndex;
-        Show(app, "Greeter");
-        Show(app, "Outline");
+        await ShowAsync(app, "Greeter");
+        await ShowAsync(app, "Outline");
 
         ClickBackDropdown(app);
         var greeter = app.Frames.Canvas.Texts.Last(t => t.Inputs.Text == "Greeter").Inputs.Position;
@@ -224,11 +224,11 @@ public sealed class HistoryTests
     }
 
     [Fact]
-    public void Going_somewhere_while_the_back_dropdown_is_open_closes_it()
+    public async Task Going_somewhere_while_the_back_dropdown_is_open_closes_it()
     {
         var app = Opened();
-        Show(app, "Outline");
-        Show(app, "Greeter");
+        await ShowAsync(app, "Outline");
+        await ShowAsync(app, "Greeter");
         ClickBackDropdown(app);
         var row = app.Frames.Canvas.Texts.Last(t => t.Inputs.Text == "Outline").Inputs.Position;
 
@@ -240,12 +240,12 @@ public sealed class HistoryTests
     }
 
     [Fact]
-    public void The_back_dropdown_shows_each_place_with_its_tree_icon()
+    public async Task The_back_dropdown_shows_each_place_with_its_tree_icon()
     {
         var app = Opened();
-        var outline = app.Fixture("Outline");
+        var outline = await app.FixtureAsync("Outline");
         app.Show(outline, 4);
-        Show(app, "Greeter");
+        await ShowAsync(app, "Greeter");
 
         ClickBackDropdown(app);
         var row = app.Frames.Canvas.Texts.Last(t => t.Inputs.Text == "Outline").Inputs.Position;
@@ -256,12 +256,12 @@ public sealed class HistoryTests
     }
 
     /// <summary>Greeter, then ApiDiffSample's Account, then Farewell shown; then ApiDiffSample closed.</summary>
-    private static AppDriver ShowAccountThenCloseItsAssembly()
+    private static async Task<AppDriver> ShowAccountThenCloseItsAssemblyAsync()
     {
         var app = Opened();
-        Show(app, "Greeter");
-        app.Show(OpenApiDiffSample(app).Root.Child("ApiDiffSample", "Account"), 4);
-        Show(app, "Farewell");
+        await ShowAsync(app, "Greeter");
+        app.Show(await OpenApiDiffSample(app).ReadRootAsync().GetChildAsync("ApiDiffSample", "Account"), 4);
+        await ShowAsync(app, "Farewell");
         Commands.CloseAssemblies(app.AppState, [ApiDiffSampleOf(app)]);
         app.Run(4);
         return app;
@@ -281,9 +281,9 @@ public sealed class HistoryTests
     }
 
     [Fact]
-    public void Going_back_passes_over_a_place_whose_assembly_was_closed_and_opens_nothing()
+    public async Task Going_back_passes_over_a_place_whose_assembly_was_closed_and_opens_nothing()
     {
-        var app = ShowAccountThenCloseItsAssembly();
+        var app = await ShowAccountThenCloseItsAssemblyAsync();
 
         app.GoBack();
         app.Settle(4);
@@ -293,9 +293,9 @@ public sealed class HistoryTests
     }
 
     [Fact]
-    public void The_back_dropdown_marks_a_place_whose_assembly_was_closed_and_offers_it_no_click()
+    public async Task The_back_dropdown_marks_a_place_whose_assembly_was_closed_and_offers_it_no_click()
     {
-        var app = ShowAccountThenCloseItsAssembly();
+        var app = await ShowAccountThenCloseItsAssemblyAsync();
         var current = app.AppState.Navigation.HistoryIndex;
 
         ClickBackDropdown(app);
@@ -310,9 +310,9 @@ public sealed class HistoryTests
     }
 
     [Fact]
-    public void Going_back_reaches_a_passed_over_place_again_once_its_assembly_is_open_again()
+    public async Task Going_back_reaches_a_passed_over_place_again_once_its_assembly_is_open_again()
     {
-        var app = ShowAccountThenCloseItsAssembly();
+        var app = await ShowAccountThenCloseItsAssemblyAsync();
 
         OpenApiDiffSample(app);
         app.GoBack();
@@ -326,9 +326,9 @@ public sealed class HistoryTests
     }
 
     [Fact]
-    public void Picking_an_entry_from_the_dropdown_goes_to_that_entry_only()
+    public async Task Picking_an_entry_from_the_dropdown_goes_to_that_entry_only()
     {
-        var app = ShowAccountThenCloseItsAssembly();
+        var app = await ShowAccountThenCloseItsAssemblyAsync();
         var account = app.AppState.Navigation.HistoryIndex - 1;
 
         app.GoToEntry(account);

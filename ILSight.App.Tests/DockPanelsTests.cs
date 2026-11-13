@@ -108,12 +108,12 @@ public sealed class DockPanelsTests
     }
 
     [Fact]
-    public void Scoping_the_search_to_a_namespace_keeps_the_terms_typed()
+    public async Task Scoping_the_search_to_a_namespace_keeps_the_terms_typed()
     {
         var driver = AppStateDriver.Opened();
         driver.Ui.Search.Query = "inassembly:Old Greet";
 
-        ScopeSearch(driver.Ui, driver.Node(AppStateDriver.FixturesNamespace));
+        ScopeSearch(driver.Ui, await driver.NodeAsync(AppStateDriver.FixturesNamespace));
 
         Assert.Equal($"innamespace:{AppStateDriver.FixturesNamespace} inassembly:Old Greet ", driver.Ui.Search.Query);
         Assert.True(driver.Ui.Layout.Contains(DockPanels.Search));

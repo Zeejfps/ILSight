@@ -5,11 +5,11 @@ namespace ILSight.App.Tests;
 public sealed class GoToHistoryEntryHandlerTests
 {
     /// <summary>A driver that showed Greeter, then Farewell in its place, so that going back to Greeter looks it up.</summary>
-    private static AppStateDriver ShowGreeterThenFarewell()
+    private static async Task<AppStateDriver> ShowGreeterThenFarewellAsync()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        d.Show(d.Fixture("Greeter"));
-        d.Show(d.Fixture("Farewell"));
+        d.Show(await d.FixtureAsync("Greeter"));
+        d.Show(await d.FixtureAsync("Farewell"));
         return d;
     }
 
@@ -29,8 +29,8 @@ public sealed class GoToHistoryEntryHandlerTests
     [Fact]
     public async Task HandleAsync_PlaceFound_ShowsItAndMovesToTheEntry()
     {
-        var d = ShowGreeterThenFarewell();
-        var greeter = d.Fixture("Greeter");
+        var d = await ShowGreeterThenFarewellAsync();
+        var greeter = await d.FixtureAsync("Greeter");
         var back = d.AppState.Navigation.HistoryIndex - 1;
         var lookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(greeter)) };
 
@@ -47,8 +47,8 @@ public sealed class GoToHistoryEntryHandlerTests
     [Fact]
     public async Task HandleAsync_PlaceGone_ReportsThePlaceGone()
     {
-        var d = ShowGreeterThenFarewell();
-        var farewell = d.Fixture("Farewell");
+        var d = await ShowGreeterThenFarewellAsync();
+        var farewell = await d.FixtureAsync("Farewell");
         var back = d.AppState.Navigation.HistoryIndex - 1;
         var lookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)) };
 
@@ -65,7 +65,7 @@ public sealed class GoToHistoryEntryHandlerTests
     [Fact]
     public async Task HandleAsync_LookupFailed_ReportsThePlaceGoneWithTheError()
     {
-        var d = ShowGreeterThenFarewell();
+        var d = await ShowGreeterThenFarewellAsync();
         var back = d.AppState.Navigation.HistoryIndex - 1;
         var error = new IOException("unreadable");
         var lookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(error) };
@@ -80,15 +80,15 @@ public sealed class GoToHistoryEntryHandlerTests
     [Fact]
     public async Task HandleAsync_SomethingElseAskedForMeanwhile_NeitherShowsNorReports()
     {
-        var found = ShowGreeterThenFarewell();
-        var missing = ShowGreeterThenFarewell();
-        var foundLookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(found.Fixture("Greeter"))), WhileLooking = () => found.AppState.Navigation.BeginRequest() };
+        var found = await ShowGreeterThenFarewellAsync();
+        var missing = await ShowGreeterThenFarewellAsync();
+        var foundLookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(await found.FixtureAsync("Greeter"))), WhileLooking = () => found.AppState.Navigation.BeginRequest() };
         var missingLookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)), WhileLooking = () => missing.AppState.Navigation.BeginRequest() };
 
         var foundLoad = await new GoToHistoryEntryHandler(foundLookup).HandleAsync(found.AppState, GoTo(found.AppState, found.AppState.Navigation.HistoryIndex - 1), CancellationToken.None);
         var missingLoad = await new GoToHistoryEntryHandler(missingLookup).HandleAsync(missing.AppState, GoTo(missing.AppState, missing.AppState.Navigation.HistoryIndex - 1), CancellationToken.None);
 
-        Assert.Same(found.Fixture("Farewell"), found.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(await found.FixtureAsync("Farewell"), found.AppState.Navigation.ActiveTab?.Node);
         Assert.Empty(foundLookup.Reported);
         Assert.Empty(missingLookup.Reported);
         Assert.Null(foundLoad);

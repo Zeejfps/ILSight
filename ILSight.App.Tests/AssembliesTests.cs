@@ -38,9 +38,9 @@ public sealed class AssembliesTests
     public async Task OpenAssembliesAsync_FileOpened_ShowsItsRoot()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        d.Show(d.Fixture("Greeter"));
+        d.Show(await d.FixtureAsync("Greeter"));
         var fixtures = FixturesOf(d);
-        var ports = new FakeAssemblyOpeningPorts { Opened = new Outcome<BrowseNode?>.Ok(TestWaits.Wait(() => BrowseSessions.EnsureRootAsync(d.AppState.Session, fixtures))) };
+        var ports = new FakeAssemblyOpeningPorts { Opened = new Outcome<BrowseNode?>.Ok(await BrowseSessions.EnsureRootAsync(d.AppState.Session, fixtures)) };
         using var shutdown = new CancellationTokenSource();
         var path = PathTo("Opened.dll");
 
@@ -49,7 +49,7 @@ public sealed class AssembliesTests
         Assert.Equal(path, Assert.Single(Assert.Single(ports.OpenedPaths)));
         Assert.Equal(d.AppState.Opens.Token, Assert.Single(ports.Stops));
         Assert.Equal(shutdown.Token, Assert.Single(ports.Tokens));
-        Assert.Same(TestWaits.Wait(() => BrowseSessions.EnsureRootAsync(d.AppState.Session, fixtures)), d.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(await BrowseSessions.EnsureRootAsync(d.AppState.Session, fixtures), d.AppState.Navigation.ActiveTab?.Node);
         Assert.Empty(ports.Reported);
         var active = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(active);
@@ -80,11 +80,11 @@ public sealed class AssembliesTests
     public async Task OpenAssembliesAsync_SomethingElseAskedForMeanwhile_DoesNotShowIt()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        d.Show(d.Fixture("Greeter"));
+        d.Show(await d.FixtureAsync("Greeter"));
         var shown = d.AppState.Navigation.ActiveTab?.Node;
         Assert.NotNull(shown);
         var appState = d.AppState;
-        var ports = new FakeAssemblyOpeningPorts { Opened = new Outcome<BrowseNode?>.Ok(TestWaits.Wait(() => BrowseSessions.EnsureRootAsync(d.AppState.Session, FixturesOf(d)))), WhileWorking = () => appState.Navigation.BeginRequest() };
+        var ports = new FakeAssemblyOpeningPorts { Opened = new Outcome<BrowseNode?>.Ok(await BrowseSessions.EnsureRootAsync(d.AppState.Session, FixturesOf(d))), WhileWorking = () => appState.Navigation.BeginRequest() };
 
         var load = await new AssemblyOpening(ports).OpenAssembliesAsync(appState, [PathTo("Opened.dll")], CancellationToken.None);
 
@@ -164,7 +164,7 @@ public sealed class AssembliesTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var fixtures = FixturesOf(d);
         var error = new IOException("unreadable");
-        var ports = new FakeAssemblyReloadingPorts { ReadAgain = (_, _) => new Outcome<ReopenedFile>.Failed(error) };
+        var ports = new FakeAssemblyReloadingPorts { ReadAgain = (_, _) => Task.FromResult<Outcome<ReopenedFile>>(new Outcome<ReopenedFile>.Failed(error)) };
         using var shutdown = new CancellationTokenSource();
 
         var loads = await new AssemblyReloading(ports).UsePdbAsync(d.AppState.ListSession, d.AppState.Reopens, d.AppState.Decompiler, fixtures, "matching.pdb", shutdown.Token);
@@ -199,14 +199,14 @@ public sealed class AssembliesTests
         var fixtures = FixturesOf(d);
         var tab = appState.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        var ports = new FakeAssemblyReloadingPorts { ReadAgain = (item, places) => ReadAgain(appState, item, places) };
+        var ports = new FakeAssemblyReloadingPorts { ReadAgain = (item, places) => ReadAgainAsync(appState, item, places) };
 
         var loads = await new AssemblyReloading(ports).SetTargetFrameworkAsync(appState.ListSession, appState.Reopens, appState.Decompiler, fixtures, Frameworks.Net48, CancellationToken.None);
 
         var fresh = Assert.Single(appState.Assemblies.Assemblies, a => a.FilePath.Text == AppStateDriver.FixturePath);
         Assert.NotSame(fixtures, fresh);
         Assert.Equal(Frameworks.Net48, appState.Assemblies.TargetFrameworks.All[fixtures.FilePath]);
-        Assert.Same(TestWaits.Wait(() => BrowseSessions.EnsureRootAsync(appState.Session, fresh)), tab.Node);
+        Assert.Same(await BrowseSessions.EnsureRootAsync(appState.Session, fresh), tab.Node);
         Assert.False(appState.IsReopening);
         Assert.Empty(ports.Reported);
         Assert.Same(tab, Assert.Single(loads).Tab);
@@ -221,7 +221,7 @@ public sealed class AssembliesTests
         var other = appState.Decompiler.Setup.Language == DecompilationLanguage.IL ? DecompilationLanguage.CSharp : DecompilationLanguage.IL;
         var ports = new FakeAssemblyReloadingPorts
         {
-            ReadAgain = (item, places) => ReadAgain(appState, item, places),
+            ReadAgain = (item, places) => ReadAgainAsync(appState, item, places),
             WhileWorking = () => appState.Decompiler.UseLanguage(other),
         };
 
@@ -231,13 +231,16 @@ public sealed class AssembliesTests
         Assert.Equal(other, Assert.Single(loads).Language);
     }
 
-    private static Outcome<ReopenedFile> ReadAgain(AppState appState, LoadedAssembly item, IReadOnlyList<NodePath> places)
+    private static async Task<Outcome<ReopenedFile>> ReadAgainAsync(AppState appState, LoadedAssembly item, IReadOnlyList<NodePath> places)
     {
         var fresh = AssemblyListing.ReadAgain(appState.Assemblies, item);
-        var found = places
-            .Select(p => TestWaits.Wait(() => BrowseSessions.FindNodeAsync(appState.Session, fresh.Item, p)))
-            .ToArray();
-        return new Outcome<ReopenedFile>.Ok(new ReopenedFile { Fresh = fresh, Places = found });
+        var found = new List<Lookup<BrowseNode>>();
+        foreach (var place in places)
+        {
+            found.Add(await BrowseSessions.FindNodeAsync(appState.Session, fresh.Item, place));
+        }
+
+        return new Outcome<ReopenedFile>.Ok(new ReopenedFile { Fresh = fresh, Places = [.. found] });
     }
 
     [Fact]
@@ -248,7 +251,7 @@ public sealed class AssembliesTests
         var fixtures = FixturesOf(d);
         var ports = new FakeAssemblyReloadingPorts
         {
-            ReadAgain = (_, _) => new Outcome<ReopenedFile>.Failed(new IOException("unreadable")),
+            ReadAgain = (_, _) => Task.FromResult<Outcome<ReopenedFile>>(new Outcome<ReopenedFile>.Failed(new IOException("unreadable"))),
             WhileWorking = () => appState.Reopens.Start(fixtures.FilePath),
         };
 
@@ -381,7 +384,7 @@ public sealed class AssembliesTests
     public async Task HandleAsync_TabsWaitingForNodes_HandsBackTheLookupOfThemUnstarted()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var place = d.Fixture("Greeter").Path;
+        var place = (await d.FixtureAsync("Greeter")).Path;
         var record = new NodeDocumentRecord
         {
             Panel = "document-9",

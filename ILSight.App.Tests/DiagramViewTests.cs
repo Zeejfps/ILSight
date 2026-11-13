@@ -21,10 +21,10 @@ public sealed class DiagramViewTests
 
     /// <summary>An app that picked <paramref name="item"/> from the tree menu of the fixture
     /// <paramref name="type"/>, with the diagram it shows laid out.</summary>
-    private static AppDriver PickFromTree(string type, string item)
+    private static async Task<AppDriver> PickFromTreeAsync(string type, string item)
     {
         var app = AppDriver.Opened();
-        app.Ui.Tree.RevealNode(app.Fixture(type));
+        app.Ui.Tree.RevealNode(await app.FixtureAsync(type));
         app.Run(2);
         app.PickFromTreeMenu(type, item);
         SettleDiagram(app);
@@ -167,9 +167,9 @@ public sealed class DiagramViewTests
     }
 
     [Fact]
-    public void Show_in_diagram_from_the_tree_draws_the_type_and_its_relations_as_cards_and_links()
+    public async Task Show_in_diagram_from_the_tree_draws_the_type_and_its_relations_as_cards_and_links()
     {
-        var app = PickFromTree("Vehicle", "Show in diagram");
+        var app = await PickFromTreeAsync("Vehicle", "Show in diagram");
 
         Assert.True(app.Frames.Drew(VehicleDiagram));
         Assert.True(WasDrawnOnDiagram(app, "Car"));
@@ -182,11 +182,11 @@ public sealed class DiagramViewTests
     }
 
     [Fact]
-    public void Showing_another_type_adds_it_to_the_diagram_and_show_in_new_diagram_opens_another()
+    public async Task Showing_another_type_adds_it_to_the_diagram_and_show_in_new_diagram_opens_another()
     {
-        var app = PickFromTree("Vehicle", "Show in diagram");
-        app.Ui.Tree.RevealNode(app.Fixture("Greeter"));
-        app.Ui.Tree.RevealNode(app.Fixture("Counter"));
+        var app = await PickFromTreeAsync("Vehicle", "Show in diagram");
+        app.Ui.Tree.RevealNode(await app.FixtureAsync("Greeter"));
+        app.Ui.Tree.RevealNode(await app.FixtureAsync("Counter"));
         app.Run(2);
 
         app.PickFromTreeMenu("Greeter", "Show in diagram");
@@ -201,9 +201,9 @@ public sealed class DiagramViewTests
     }
 
     [Fact]
-    public void Clicking_a_card_s_name_or_a_member_opens_its_code_beside_the_diagram()
+    public async Task Clicking_a_card_s_name_or_a_member_opens_its_code_beside_the_diagram()
     {
-        var app = PickFromTree("Vehicle", "Show in diagram");
+        var app = await PickFromTreeAsync("Vehicle", "Show in diagram");
 
         ClickAt(app, CardText(app, "Bike"));
         app.Settle(2);
@@ -217,9 +217,9 @@ public sealed class DiagramViewTests
     }
 
     [Fact]
-    public void Links_saying_what_a_type_is_take_the_type_color_and_links_saying_what_it_has_the_data_color()
+    public async Task Links_saying_what_a_type_is_take_the_type_color_and_links_saying_what_it_has_the_data_color()
     {
-        var app = PickFromTree("Car", "Show in diagram");
+        var app = await PickFromTreeAsync("Car", "Show in diagram");
         PickFromCardMenu(app, "Vehicle", "Add the types its properties hold");
         var palette = app.Ui.NodeIconPalette;
 
@@ -232,9 +232,9 @@ public sealed class DiagramViewTests
     }
 
     [Fact]
-    public void Going_back_from_code_opened_on_a_diagram_returns_to_the_diagram_and_forward_to_the_code()
+    public async Task Going_back_from_code_opened_on_a_diagram_returns_to_the_diagram_and_forward_to_the_code()
     {
-        var app = PickFromTree("Vehicle", "Show in diagram");
+        var app = await PickFromTreeAsync("Vehicle", "Show in diagram");
         var diagram = DiagramTab(app);
         ClickAt(app, CardText(app, "Mileage() : int"));
         app.Settle(2);
@@ -252,13 +252,13 @@ public sealed class DiagramViewTests
     }
 
     [Fact]
-    public void Going_back_to_a_diagram_whose_tab_was_closed_shows_it_again_with_its_cards()
+    public async Task Going_back_to_a_diagram_whose_tab_was_closed_shows_it_again_with_its_cards()
     {
-        var app = PickFromTree("Vehicle", "Show in diagram");
+        var app = await PickFromTreeAsync("Vehicle", "Show in diagram");
         var tab = DiagramTab(app);
         var cards = ListCardTypes(tab);
         Assert.NotEmpty(cards);
-        app.Show(app.Fixture("Greeter"), inNewTab: true);
+        app.Show(await app.FixtureAsync("Greeter"), inNewTab: true);
         app.Settle(2);
         app.AppState.Navigation.CloseTab(tab);
         app.Run(2);
@@ -273,16 +273,16 @@ public sealed class DiagramViewTests
     }
 
     [Fact]
-    public void Going_back_passes_over_a_diagram_whose_tab_was_closed_and_whose_assembly_was_closed()
+    public async Task Going_back_passes_over_a_diagram_whose_tab_was_closed_and_whose_assembly_was_closed()
     {
-        var app = PickFromTree("Vehicle", "Show in diagram");
+        var app = await PickFromTreeAsync("Vehicle", "Show in diagram");
         var tab = DiagramTab(app);
-        app.Show(app.Fixture("Greeter"), inNewTab: true);
+        app.Show(await app.FixtureAsync("Greeter"), inNewTab: true);
         app.Settle(2);
         app.AppState.Navigation.CloseTab(tab);
         var diagramAt = app.AppState.Navigation.HistoryIndex - 1;
         Assert.IsType<HistoryEntry.Diagram>(app.AppState.Navigation.HistoryEntries[diagramAt]);
-        Commands.CloseAssemblies(app.AppState, [app.Fixture("Greeter").Root.Assembly]);
+        Commands.CloseAssemblies(app.AppState, [(await app.FixtureAsync("Greeter")).Root.Assembly]);
         app.Run(2);
 
         app.GoBack();
@@ -302,17 +302,17 @@ public sealed class DiagramViewTests
     }
 
     [Fact]
-    public void A_diagram_s_tab_shows_the_diagram_icon()
+    public async Task A_diagram_s_tab_shows_the_diagram_icon()
     {
-        var app = PickFromTree("Vehicle", "Show in diagram");
+        var app = await PickFromTreeAsync("Vehicle", "Show in diagram");
 
         Assert.True(app.Frames.Drew(Text(Icons.TabDiagram)));
     }
 
     [Fact]
-    public void Hovering_a_member_underlines_it_with_a_hand_cursor()
+    public async Task Hovering_a_member_underlines_it_with_a_hand_cursor()
     {
-        var app = PickFromTree("Vehicle", "Show in diagram");
+        var app = await PickFromTreeAsync("Vehicle", "Show in diagram");
         var member = CardText(app, "Mileage() : int");
         Assert.DoesNotContain(app.Frames.Canvas.Lines, l => IsUnderOf(app, l, member));
 
@@ -323,9 +323,9 @@ public sealed class DiagramViewTests
     }
 
     [Fact]
-    public void Hovering_between_cards_shows_no_hand_cursor()
+    public async Task Hovering_between_cards_shows_no_hand_cursor()
     {
-        var app = PickFromTree("Vehicle", "Show in diagram");
+        var app = await PickFromTreeAsync("Vehicle", "Show in diagram");
         var member = CardText(app, "Mileage() : int");
 
         app.Frames.MovePointer(member.X - 200f, member.Y).Frame();
@@ -361,9 +361,9 @@ public sealed class DiagramViewTests
     }
 
     [Fact]
-    public void The_diagram_draws_its_tools_in_the_bar_over_it_or_itself_while_that_bar_is_hidden()
+    public async Task The_diagram_draws_its_tools_in_the_bar_over_it_or_itself_while_that_bar_is_hidden()
     {
-        var app = PickFromTree("Car", "Show in diagram");
+        var app = await PickFromTreeAsync("Car", "Show in diagram");
         Assert.True(app.Frames.Drew("Fit to view"));
 
         app.Ui.Display = app.Ui.Display with { ShowOmnibar = false };
@@ -373,9 +373,9 @@ public sealed class DiagramViewTests
     }
 
     [Fact]
-    public void A_card_s_menu_adds_the_types_it_holds_while_the_card_stays_where_it_is()
+    public async Task A_card_s_menu_adds_the_types_it_holds_while_the_card_stays_where_it_is()
     {
-        var app = PickFromTree("Car", "Show in diagram");
+        var app = await PickFromTreeAsync("Car", "Show in diagram");
         var vehicle = CardText(app, "Vehicle");
         Assert.False(WasDrawnOnDiagram(app, "Vehicles *"));
 
@@ -392,9 +392,9 @@ public sealed class DiagramViewTests
     }
 
     [Fact]
-    public void A_card_s_menu_takes_it_off_the_diagram()
+    public async Task A_card_s_menu_takes_it_off_the_diagram()
     {
-        var app = PickFromTree("Car", "Show in diagram");
+        var app = await PickFromTreeAsync("Car", "Show in diagram");
         Assert.True(WasDrawnOnDiagram(app, "IDriven"));
 
         PickFromCardMenu(app, "IDriven", "Remove from diagram");
@@ -404,9 +404,9 @@ public sealed class DiagramViewTests
     }
 
     [Fact]
-    public void Clicking_a_part_of_a_card_folds_it_and_clicking_again_unfolds_it()
+    public async Task Clicking_a_part_of_a_card_folds_it_and_clicking_again_unfolds_it()
     {
-        var app = PickFromTree("Vehicle", "Show in diagram");
+        var app = await PickFromTreeAsync("Vehicle", "Show in diagram");
         var fields = CardText(app, "Fields (2)");
 
         app.Frames.Click(fields);
@@ -419,9 +419,9 @@ public sealed class DiagramViewTests
     }
 
     [Fact]
-    public void Members_other_assemblies_cannot_reach_show_only_on_the_diagram_s_own_types_until_the_filter_shows_them()
+    public async Task Members_other_assemblies_cannot_reach_show_only_on_the_diagram_s_own_types_until_the_filter_shows_them()
     {
-        var app = PickFromTree("Breakdown", "Show in diagram");
+        var app = await PickFromTreeAsync("Breakdown", "Show in diagram");
         PickFromCardMenu(app, "Breakdown", "Add base types");
         var tab = DiagramTab(app);
         var view = ViewOf(app, tab);
@@ -451,9 +451,9 @@ public sealed class DiagramViewTests
     }
 
     [Fact]
-    public void Resting_on_a_member_shows_its_documentation()
+    public async Task Resting_on_a_member_shows_its_documentation()
     {
-        var app = PickFromTree("Vehicle", "Show in diagram");
+        var app = await PickFromTreeAsync("Vehicle", "Show in diagram");
 
         app.Frames.MovePointer(CardText(app, "Mileage() : int"));
         app.RunOut();
@@ -462,9 +462,9 @@ public sealed class DiagramViewTests
     }
 
     [Fact]
-    public void Dragging_pans_the_diagram_and_the_wheel_scrolls_it()
+    public async Task Dragging_pans_the_diagram_and_the_wheel_scrolls_it()
     {
-        var app = PickFromTree("Vehicle", "Show in diagram");
+        var app = await PickFromTreeAsync("Vehicle", "Show in diagram");
         var camera = ViewOf(app, DiagramTab(app)).Camera;
         var corner = camera.Corner;
         var from = CenterOf(CardText(app, "Garage"));
@@ -480,9 +480,9 @@ public sealed class DiagramViewTests
     }
 
     [Fact]
-    public void The_zoom_buttons_zoom_and_fit_brings_the_whole_diagram_into_view()
+    public async Task The_zoom_buttons_zoom_and_fit_brings_the_whole_diagram_into_view()
     {
-        var app = PickFromTree("Vehicle", "Show in diagram");
+        var app = await PickFromTreeAsync("Vehicle", "Show in diagram");
         var camera = ViewOf(app, DiagramTab(app)).Camera;
         var fitted = camera.Zoom;
 

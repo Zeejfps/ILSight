@@ -6,10 +6,10 @@ public sealed class ExportBookmarksHandlerTests
 {
     private const string Path = "C:/bookmarks/exported.json";
 
-    private static BookmarkList OutlineBookmarked()
+    private static async Task<BookmarkList> OutlineBookmarkedAsync()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        d.Show(d.Fixture("Outline"));
+        d.Show(await d.FixtureAsync("Outline"));
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark));
@@ -17,9 +17,9 @@ public sealed class ExportBookmarksHandlerTests
     }
 
     [Fact]
-    public void Handle_Written_WritesEachBookmarkAndReportsNothing()
+    public async Task Handle_Written_WritesEachBookmarkAndReportsNothing()
     {
-        var bookmarks = OutlineBookmarked();
+        var bookmarks = await OutlineBookmarkedAsync();
         var ports = new FakeExportBookmarksHandlerPorts { Answer = new BookmarksWriteResult.Written() };
 
         new ExportBookmarksHandler(ports).Handle(bookmarks, Path);
@@ -31,9 +31,9 @@ public sealed class ExportBookmarksHandlerTests
     }
 
     [Fact]
-    public void Handle_WriteFailed_ReportsWhy()
+    public async Task Handle_WriteFailed_ReportsWhy()
     {
-        var bookmarks = OutlineBookmarked();
+        var bookmarks = await OutlineBookmarkedAsync();
         var ports = new FakeExportBookmarksHandlerPorts { Answer = new BookmarksWriteResult.Failed { Reason = "Disk full." } };
 
         new ExportBookmarksHandler(ports).Handle(bookmarks, Path);

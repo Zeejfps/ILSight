@@ -22,9 +22,9 @@ public sealed class CompareAssembliesHandlerTests
         return new AssemblyComparison { LeftPath = path, RightPath = path };
     }
 
-    private static ApiDiff Diff(ComparisonRun run)
+    private static async Task<ApiDiff> DiffAsync(ComparisonRun run)
     {
-        var compared = TestWaits.Wait(() => ApiEntries.CompareAsync(run.Left, run.Right, run.Scope, CancellationToken.None));
+        var compared = await ApiEntries.CompareAsync(run.Left, run.Right, run.Scope, CancellationToken.None);
         return Assert.IsType<TypeSystemWork<ApiDiff>.Done>(compared).Value;
     }
 
@@ -35,7 +35,7 @@ public sealed class CompareAssembliesHandlerTests
         var comparison = NewComparison(d);
         var run = StartComparing(d, comparison);
         var ports = new FakeCompareAssembliesHandlerPorts();
-        var diff = Diff(run);
+        var diff = await DiffAsync(run);
 
         var comparing = new CompareAssembliesHandler(ports).HandleAsync(run, CancellationToken.None);
         Assert.True(comparison.IsComparing);
@@ -76,9 +76,9 @@ public sealed class CompareAssembliesHandlerTests
         var olderComparing = handler.HandleAsync(older, CancellationToken.None);
         var newer = StartComparing(d, comparison);
         var newerComparing = handler.HandleAsync(newer, CancellationToken.None);
-        var newerDiff = Diff(newer);
+        var newerDiff = await DiffAsync(newer);
 
-        ports.Answers[0].SetResult(new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Read { Value = Diff(older) }));
+        ports.Answers[0].SetResult(new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Read { Value = await DiffAsync(older) }));
         await olderComparing;
         Assert.IsType<ComparisonResult.NotYet>(comparison.Result);
         ports.Answers[1].SetResult(new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Read { Value = newerDiff }));

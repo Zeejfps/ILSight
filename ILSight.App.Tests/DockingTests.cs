@@ -21,10 +21,10 @@ public sealed class DockingTests
     }
 
     [Fact]
-    public void A_view_docks_as_a_tab_beside_a_document_and_the_document_stays_the_active_tab()
+    public async Task A_view_docks_as_a_tab_beside_a_document_and_the_document_stays_the_active_tab()
     {
         var app = AppDriver.Opened();
-        app.Show(app.Fixture("Greeter"));
+        app.Show(await app.FixtureAsync("Greeter"));
         var greeter = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(greeter);
         var greeterPanel = DocumentPanels.GetPanel(app.Ui.Documents, greeter);
@@ -80,7 +80,7 @@ public sealed class DockingTests
     }
 
     [Fact]
-    public void Closing_the_last_document_frees_its_area_and_the_next_one_opens_right_of_the_views()
+    public async Task Closing_the_last_document_frees_its_area_and_the_next_one_opens_right_of_the_views()
     {
         var d = AppStateDriver.Opened();
         var layout = d.Ui.Layout;
@@ -90,7 +90,7 @@ public sealed class DockingTests
         d.AppState.Navigation.CloseTab(active);
         d.NextFrame();
         var left = Assert.IsType<DockGroup>(layout.Root).Panels.ToList();
-        d.Show(d.Fixture("Greeter"));
+        d.Show(await d.FixtureAsync("Greeter"));
 
         Assert.Equal([DockPanels.Assemblies], left);
         var split = Assert.IsType<DockSplit>(layout.Root);
@@ -116,12 +116,12 @@ public sealed class DockingTests
     }
 
     [Fact]
-    public void Reset_layout_in_the_View_menu_once_confirmed_puts_the_assemblies_left_of_every_open_document_and_closes_the_rest()
+    public async Task Reset_layout_in_the_View_menu_once_confirmed_puts_the_assemblies_left_of_every_open_document_and_closes_the_rest()
     {
         var app = AppDriver.Opened();
         var d = app.Driver;
-        d.Show(d.Fixture("Greeter"));
-        d.Show(d.Fixture("Farewell"), inNewTab: true);
+        d.Show(await d.FixtureAsync("Greeter"));
+        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
         var farewell = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(farewell);
         var layout = d.Ui.Layout;

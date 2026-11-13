@@ -319,11 +319,11 @@ public sealed class DisplayOptionsTests
     }
 
     [Fact]
-    public void The_tree_lists_the_empty_metadata_tables_once_the_panel_switches_them_on()
+    public async Task The_tree_lists_the_empty_metadata_tables_once_the_panel_switches_them_on()
     {
         var app = AppDriver.Opened(width: 1600f, height: TallWindow);
-        var tables = app.Node("Metadata", "Tables");
-        var empty = tables.Table("FieldPtr");
+        var tables = await app.NodeAsync("Metadata", "Tables");
+        var empty = await tables.TableAsync("FieldPtr");
         OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
         Assert.DoesNotContain(empty, app.Ui.Tree.GetChildren(tables).Nodes);
@@ -336,12 +336,12 @@ public sealed class DisplayOptionsTests
     }
 
     [Fact]
-    public void The_tree_nests_namespaces_once_the_panel_switches_it_on()
+    public async Task The_tree_nests_namespaces_once_the_panel_switches_it_on()
     {
         var app = AppDriver.Opened(width: 1600f, height: TallWindow);
-        var root = app.Node();
-        var outermost = app.Node("ILSight");
-        var fixtures = app.Node(AppStateDriver.FixturesNamespace);
+        var root = await app.NodeAsync();
+        var outermost = await app.NodeAsync("ILSight");
+        var fixtures = await app.NodeAsync(AppStateDriver.FixturesNamespace);
         OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
         Assert.Contains(fixtures, app.Ui.Tree.GetChildren(root).Nodes);
@@ -637,10 +637,10 @@ public sealed class DisplayOptionsTests
     }
 
     [Fact]
-    public void Ctrl_equals_in_a_document_makes_its_code_larger()
+    public async Task Ctrl_equals_in_a_document_makes_its_code_larger()
     {
         var app = AppDriver.Opened();
-        app.Show(app.Fixture("Greeter"));
+        app.Show(await app.FixtureAsync("Greeter"));
         app.Settle();
         app.Run(3);
         var size = app.Ui.Theme.MonoFontSize;

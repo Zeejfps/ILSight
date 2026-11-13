@@ -274,7 +274,10 @@ public sealed class UserThemeTests : IDisposable
         var settings = Settings();
         settings.Theme = Id("back");
         var d = new AppStateDriver(settings);
-        d.AppState.Workflows.StartUntilShutdown(d.AppState.UserThemes.WatchAsync);
+        using (d.Turn())
+        {
+            d.AppState.Workflows.StartUntilShutdown(d.AppState.UserThemes.WatchAsync);
+        }
         var folder = _temp.PathOf("themes");
 
         Directory.Delete(folder, recursive: true);
@@ -292,7 +295,10 @@ public sealed class UserThemeTests : IDisposable
         var settings = Settings();
         settings.Theme = Id("live");
         var d = new AppStateDriver(settings);
-        d.AppState.Workflows.StartUntilShutdown(d.AppState.UserThemes.WatchAsync);
+        using (d.Turn())
+        {
+            d.AppState.Workflows.StartUntilShutdown(d.AppState.UserThemes.WatchAsync);
+        }
         Assert.Same(d.AppState.Themes.GetTheme(Id("dark")), ResolveTheme(d.AppState));
 
         WriteTheme("live", """{ "extends": "dark", "ui": { "accent": "#FF00FF" } }""");

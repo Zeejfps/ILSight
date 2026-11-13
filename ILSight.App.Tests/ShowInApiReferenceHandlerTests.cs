@@ -11,7 +11,7 @@ public sealed class ShowInApiReferenceHandlerTests
         d.TakeViewCommands();
         var reference = new FakeShowInApiReferenceHandlerPorts { Page = new Outcome<Lookup<string>>.Ok(Lookup.FromNullable<string>("https://learn.microsoft.com/dotnet/api/greeter")) };
 
-        await new ShowInApiReferenceHandler(reference).HandleAsync(d.AppState.ViewCommands, d.Fixture("Greeter").Definition, CancellationToken.None);
+        await new ShowInApiReferenceHandler(reference).HandleAsync(d.AppState.ViewCommands, (await d.FixtureAsync("Greeter")).Definition, CancellationToken.None);
 
         var opened = Assert.IsType<ViewCommand.OpenWebPage>(Assert.Single(d.TakeViewCommands()));
         Assert.Equal("https://learn.microsoft.com/dotnet/api/greeter", opened.Url);
@@ -23,7 +23,7 @@ public sealed class ShowInApiReferenceHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         d.TakeViewCommands();
-        var hidden = d.Fixture("Hidden").Definition;
+        var hidden = (await d.FixtureAsync("Hidden")).Definition;
         var none = new FakeShowInApiReferenceHandlerPorts { Page = new Outcome<Lookup<string>>.Ok(Lookup.FromNullable<string>(null)) };
         var failed = new FakeShowInApiReferenceHandlerPorts { Page = new Outcome<Lookup<string>>.Failed(new IOException("unreadable")) };
 

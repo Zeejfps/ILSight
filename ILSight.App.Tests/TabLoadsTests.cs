@@ -14,12 +14,12 @@ public sealed class TabLoadsTests
     }
 
     [Fact]
-    public void Loads_put_together_go_to_the_handler_of_their_kind_in_the_order_they_were_put_together()
+    public async Task Loads_put_together_go_to_the_handler_of_their_kind_in_the_order_they_were_put_together()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var navigation = new Navigation { ViewCommands = new Queue<ViewCommand>(), PreviewTabs = false };
-        var first = StartLoading(navigation, d.Fixture("Greeter"));
-        var second = StartLoading(navigation, d.Fixture("Farewell"));
+        var first = StartLoading(navigation, await d.FixtureAsync("Greeter"));
+        var second = StartLoading(navigation, await d.FixtureAsync("Farewell"));
         var decompiled = new List<DecompileTicket>();
         var read = new List<SavedDiagramRead>();
         var found = new List<ReopenedNodesLookup>();

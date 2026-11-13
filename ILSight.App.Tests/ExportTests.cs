@@ -43,52 +43,52 @@ public sealed class ExportTests : IDisposable
     }
 
     [Fact]
-    public void Saving_code_writes_the_node_in_the_current_language()
+    public async Task Saving_code_writes_the_node_in_the_current_language()
     {
         var d = AppStateDriver.Opened();
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         var path = _temp.PathOf("Greeter.il");
 
-        SaveCode(d.AppState, d.Fixture("Greeter"), path);
+        SaveCode(d.AppState, await d.FixtureAsync("Greeter"), path);
         d.Settle();
 
-        Assert.Contains(".class public auto ansi beforefieldinit ILSight.App.Tests.Fixtures.Greeter", File.ReadAllText(path));
+        Assert.Contains(".class public auto ansi beforefieldinit ILSight.App.Tests.Fixtures.Greeter", await File.ReadAllTextAsync(path));
         Assert.Empty(d.AppState.Errors.Entries);
     }
 
     [Fact]
-    public void Saving_an_assembly_writes_one_code_file_even_under_a_project_name()
+    public async Task Saving_an_assembly_writes_one_code_file_even_under_a_project_name()
     {
         var d = OpenedSample();
         var path = _temp.PathOf("SampleApp.csproj");
 
-        SaveCode(d.AppState, SampleOf(d).Root, path);
+        SaveCode(d.AppState, await SampleOf(d).ReadRootAsync(), path);
         d.Settle();
 
-        var code = File.ReadAllText(path);
+        var code = await File.ReadAllTextAsync(path);
         Assert.Contains("public class Counter", code);
         Assert.False(code.TrimStart().StartsWith("<Project", StringComparison.Ordinal));
         Assert.Equal([path], Directory.EnumerateFiles(_temp.Path));
     }
 
     [Fact]
-    public void Saving_a_resource_writes_its_bytes_as_they_are()
+    public async Task Saving_a_resource_writes_its_bytes_as_they_are()
     {
         var d = AppStateDriver.Opened();
-        var node = d.Node("Resources", "data.json");
+        var node = await d.NodeAsync("Resources", "data.json");
         var path = _temp.PathOf("data.json");
 
         Assert.True(CanSaveCode(node));
         SaveCode(d.AppState, node, path);
 
-        Assert.Equal(BrowseNodes.ReadResource(node), File.ReadAllBytes(path));
+        Assert.Equal(BrowseNodes.ReadResource(node), await File.ReadAllBytesAsync(path));
     }
 
     [Fact]
-    public void Saving_a_resource_names_its_bytes_for_the_file_picked()
+    public async Task Saving_a_resource_names_its_bytes_for_the_file_picked()
     {
         var d = AppStateDriver.Opened();
-        var node = d.Node("Resources", "data.json");
+        var node = await d.NodeAsync("Resources", "data.json");
         var path = _temp.PathOf("data.json");
         var setup = new DecompilerSetup { Language = DecompilationLanguage.CSharp, Options = DecompilerOptions.Default };
 
@@ -100,10 +100,10 @@ public sealed class ExportTests : IDisposable
     }
 
     [Fact]
-    public void Saving_a_node_that_is_no_resource_names_its_code_in_the_setup_language_as_one_file()
+    public async Task Saving_a_node_that_is_no_resource_names_its_code_in_the_setup_language_as_one_file()
     {
         var d = AppStateDriver.Opened();
-        var node = d.Fixture("Greeter");
+        var node = await d.FixtureAsync("Greeter");
         var path = _temp.PathOf("Greeter.il");
         var setup = new DecompilerSetup { Language = DecompilationLanguage.IL, Options = DecompilerOptions.Default };
 
@@ -152,10 +152,10 @@ public sealed class ExportTests : IDisposable
     }
 
     [Fact]
-    public void Ctrl_S_saves_the_active_tab_where_the_user_picks()
+    public async Task Ctrl_S_saves_the_active_tab_where_the_user_picks()
     {
         var app = AppDriver.Opened();
-        app.Show(app.Fixture("Greeter"), frames: 2);
+        app.Show(await app.FixtureAsync("Greeter"), frames: 2);
         var path = _temp.PathOf("Greeter.cs");
         app.Frames.FilePicker.Answer = path;
 
@@ -163,18 +163,18 @@ public sealed class ExportTests : IDisposable
         app.Settle();
 
         Assert.Equal(["Save code"], app.Frames.FilePicker.Titles);
-        Assert.Contains("public class Greeter", File.ReadAllText(path));
+        Assert.Contains("public class Greeter", await File.ReadAllTextAsync(path));
     }
 
     [Fact]
-    public void Ctrl_S_on_baml_offers_to_save_it_as_xaml()
+    public async Task Ctrl_S_on_baml_offers_to_save_it_as_xaml()
     {
         var app = AppDriver.Opened();
         var sample = Path.Combine(AppContext.BaseDirectory, "Fixtures", "SampleApp", "SampleApp.dll");
         app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(sample)], ct));
         app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Any(a => a.FilePath.Text == sample));
         var assembly = app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == sample);
-        var baml = assembly.Root.Child("Resources", "SampleApp.g.resources", "mainwindow.baml");
+        var baml = await assembly.ReadRootAsync().GetChildAsync("Resources", "SampleApp.g.resources", "mainwindow.baml");
         app.Show(baml, frames: 2);
         var path = _temp.PathOf("mainwindow.xaml");
         app.Frames.FilePicker.Answer = path;
@@ -186,7 +186,7 @@ public sealed class ExportTests : IDisposable
         Assert.Equal("mainwindow.xaml", fileName);
         Assert.NotNull(filters);
         Assert.Equal(["*.xaml"], filters[0].Patterns);
-        Assert.Contains("x:Class=\"SampleApp.MainWindow\"", File.ReadAllText(path));
+        Assert.Contains("x:Class=\"SampleApp.MainWindow\"", await File.ReadAllTextAsync(path));
     }
 
     [Fact]
@@ -315,14 +315,14 @@ public sealed class ExportTests : IDisposable
     }
 
     [Fact]
-    public void Exports_asked_for_together_all_run_one_after_another()
+    public async Task Exports_asked_for_together_all_run_one_after_another()
     {
         var d = AppStateDriver.Opened();
         var greeter = _temp.PathOf("Greeter.cs");
         var farewell = _temp.PathOf("Farewell.cs");
 
-        SaveCode(d.AppState, d.Fixture("Greeter"), greeter);
-        SaveCode(d.AppState, d.Fixture("Farewell"), farewell);
+        SaveCode(d.AppState, await d.FixtureAsync("Greeter"), greeter);
+        SaveCode(d.AppState, await d.FixtureAsync("Farewell"), farewell);
         Assert.Equal(1, d.AppState.Export.WaitingCount);
         d.Settle();
 
@@ -363,12 +363,12 @@ public sealed class ExportTests : IDisposable
         Assert.True(start.Token.IsCancellationRequested);
     }
     [Fact]
-    public void A_finished_export_reports_what_it_wrote()
+    public async Task A_finished_export_reports_what_it_wrote()
     {
         var d = AppStateDriver.Opened();
         var path = _temp.PathOf("Greeter.cs");
 
-        SaveCode(d.AppState, d.Fixture("Greeter"), path);
+        SaveCode(d.AppState, await d.FixtureAsync("Greeter"), path);
         d.Settle();
 
         var report = Assert.Single(d.AppState.FinishedExports);
@@ -395,12 +395,12 @@ public sealed class ExportTests : IDisposable
     }
 
     [Fact]
-    public void A_failed_export_reports_why_instead_of_logging_an_error()
+    public async Task A_failed_export_reports_why_instead_of_logging_an_error()
     {
         var d = AppStateDriver.Opened();
         var path = _temp.PathOf(Path.Combine("missing", "Greeter.cs"));
 
-        SaveCode(d.AppState, d.Fixture("Greeter"), path);
+        SaveCode(d.AppState, await d.FixtureAsync("Greeter"), path);
         d.Settle();
 
         var report = Assert.Single(d.AppState.FinishedExports);

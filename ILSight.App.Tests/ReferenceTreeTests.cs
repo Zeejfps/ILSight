@@ -6,10 +6,10 @@ namespace ILSight.App.Tests;
 public sealed class ReferenceTreeTests
 {
     [Fact]
-    public void A_reference_of_a_reference_shown_is_revealed_in_the_tree_though_its_assembly_is_not_listed()
+    public async Task A_reference_of_a_reference_shown_is_revealed_in_the_tree_though_its_assembly_is_not_listed()
     {
         var app = AppDriver.Opened();
-        var coreLib = app.Node("References", "System.Runtime", "System.Private.CoreLib");
+        var coreLib = await app.NodeAsync("References", "System.Runtime", "System.Private.CoreLib");
 
         app.Show(coreLib, 2);
         app.Settle(2);
@@ -20,11 +20,11 @@ public sealed class ReferenceTreeTests
     }
 
     [Fact]
-    public void The_frame_go_to_target_is_picked_in_says_the_app_is_resolving()
+    public async Task The_frame_go_to_target_is_picked_in_says_the_app_is_resolving()
     {
         var app = AppDriver.Opened();
-        var greeter = app.Fixture("Greeter");
-        var baseType = greeter.Child("Base Types").Children[0];
+        var greeter = await app.FixtureAsync("Greeter");
+        var baseType = (await greeter.GetChildAsync("Base Types").ListChildrenAsync())[0];
         app.Show(greeter, 3);
         app.Ui.Tree.RevealNode(baseType);
         app.Run(2);

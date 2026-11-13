@@ -29,12 +29,12 @@ public sealed class AppTests
         return app;
     }
 
-    private static AppDriver ExpandedTree(string until)
+    private static async Task<AppDriver> ExpandedTreeAsync(string until)
     {
         var app = AppDriver.Opened(height: 800f);
         var view = app.Ui.Tree.View;
-        view.SetExpanded(app.Node(), true);
-        view.SetExpanded(app.Node(AppStateDriver.FixturesNamespace), true);
+        view.SetExpanded(await app.NodeAsync(), true);
+        view.SetExpanded(await app.NodeAsync(AppStateDriver.FixturesNamespace), true);
         view.Refresh();
         app.Frames.WaitUntil(() => app.Frames.Drew(until), Patience);
         return app;
@@ -62,9 +62,9 @@ public sealed class AppTests
     }
 
     [Fact]
-    public void Double_clicking_a_type_in_the_tree_shows_it_in_one_tab()
+    public async Task Double_clicking_a_type_in_the_tree_shows_it_in_one_tab()
     {
-        var app = ExpandedTree(until: "Greeter");
+        var app = await ExpandedTreeAsync(until: "Greeter");
 
         app.DoubleClickOn(Selector.WithText("Greeter"));
         app.Settle();
@@ -272,10 +272,10 @@ public sealed class AppTests
     }
 
     [Fact]
-    public void The_language_control_switches_the_active_tab_to_IL_with_CSharp_and_keeps_the_CSharp_options()
+    public async Task The_language_control_switches_the_active_tab_to_IL_with_CSharp_and_keeps_the_CSharp_options()
     {
         var app = AppDriver.Opened();
-        app.Show(app.Fixture("Greeter"), 1);
+        app.Show(await app.FixtureAsync("Greeter"), 1);
 
         app.Frames.ClickOn(Selector.WithText("IL+C#"));
         app.Settle(1);
@@ -320,10 +320,10 @@ public sealed class AppTests
     }
 
     [Fact]
-    public void A_decompiler_option_ticked_in_its_panel_shows_in_the_open_document_and_resets()
+    public async Task A_decompiler_option_ticked_in_its_panel_shows_in_the_open_document_and_resets()
     {
         var app = AppDriver.Opened(width: 1600f);
-        app.Show(app.Fixture("Greeter"), 1);
+        app.Show(await app.FixtureAsync("Greeter"), 1);
         FoldOptionGroupsBut(app, nameof(CSharpVersion.CSharp1));
         var shown = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(shown);
@@ -352,11 +352,11 @@ public sealed class AppTests
     }
 
     [Fact]
-    public void Turning_debug_symbols_off_disassembles_an_open_IL_document_again()
+    public async Task Turning_debug_symbols_off_disassembles_an_open_IL_document_again()
     {
         var app = AppDriver.Opened();
         app.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
-        app.Show(app.Fixture("Outline"), 1);
+        app.Show(await app.FixtureAsync("Outline"), 1);
         var outline = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(outline);
         var named = Documents.GetText(outline.Document);
@@ -733,11 +733,11 @@ public sealed class AppTests
     }
 
     [Fact]
-    public void Tree_rows_show_assembly_secondary_text_and_an_overlay_on_non_public_types()
+    public async Task Tree_rows_show_assembly_secondary_text_and_an_overlay_on_non_public_types()
     {
-        var app = ExpandedTree(until: "Hidden");
+        var app = await ExpandedTreeAsync(until: "Hidden");
 
-        var secondary = NodeText.Secondary(app.Node());
+        var secondary = NodeText.Secondary(await app.NodeAsync());
         Assert.NotNull(secondary);
         Assert.True(app.TextRect(secondary).X > app.TextRect(app.AppState.Assemblies.Assemblies[0].Name).Right);
         Assert.True(app.Frames.Drew(Text(Icons.OverlayInternal)));

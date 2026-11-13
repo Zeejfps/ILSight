@@ -184,14 +184,14 @@ public sealed class AutosaveTests : IDisposable
     }
 
     [Fact]
-    public void An_analysis_made_while_saved_ones_are_restoring_is_saved()
+    public async Task An_analysis_made_while_saved_ones_are_restoring_is_saved()
     {
         var first = AppStateDriver.Opened(_temp.Settings());
-        first.Analyze(first.Fixture("Greeter"));
+        first.Analyze(await first.FixtureAsync("Greeter"));
         first.Pump();
         var next = AppStateDriver.Starting(_temp.Settings());
 
-        next.Analyze(first.Fixture("Outline"));
+        next.Analyze(await first.FixtureAsync("Outline"));
         next.Settle();
         next.Pump();
 
@@ -201,10 +201,10 @@ public sealed class AutosaveTests : IDisposable
     }
 
     [Fact]
-    public void An_analysis_asked_for_by_reference_is_saved_once_it_is_found()
+    public async Task An_analysis_asked_for_by_reference_is_saved_once_it_is_found()
     {
         var d = AppStateDriver.Opened(_temp.Settings());
-        d.Show(d.Fixture("Outline"));
+        d.Show(await d.FixtureAsync("Outline"));
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var document = tab.Document;
@@ -224,10 +224,10 @@ public sealed class AutosaveTests : IDisposable
     }
 
     [Fact]
-    public void A_saved_analysis_that_is_not_found_again_leaves_the_settings_with_the_next_save()
+    public async Task A_saved_analysis_that_is_not_found_again_leaves_the_settings_with_the_next_save()
     {
         var first = AppStateDriver.Opened(_temp.Settings());
-        first.Analyze(first.Fixture("Greeter"));
+        first.Analyze(await first.FixtureAsync("Greeter"));
         first.Pump();
         var settings = _temp.Settings();
         var list = settings.AssemblyLists.Single();

@@ -8,9 +8,9 @@ namespace ILSight.App.Tests;
 
 public sealed class DiagramTests
 {
-    private static CodeReference.Entity TypeOf(AppStateDriver d, string type)
+    private static async Task<CodeReference.Entity> TypeOfAsync(AppStateDriver d, string type)
     {
-        return d.Fixture(type).Definition;
+        return (await d.FixtureAsync(type)).Definition;
     }
 
     private static List<string> CardNames(TypeDiagram diagram)
@@ -21,9 +21,9 @@ public sealed class DiagramTests
             .ToList();
     }
 
-    private static TypeDiagram ShowInNew(AppStateDriver d, string type)
+    private static async Task<TypeDiagram> ShowInNewAsync(AppStateDriver d, string type)
     {
-        DiagramView.ShowInNewDiagramLater(d.Ui, TypeOf(d, type), Names.Diagram(TypeOf(d, type)));
+        DiagramView.ShowInNewDiagramLater(d.Ui, await TypeOfAsync(d, type), Names.Diagram(await TypeOfAsync(d, type)));
         d.Settle();
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -34,9 +34,9 @@ public sealed class DiagramTests
 
     /// <summary>Shows the fixture <paramref name="type"/> on the diagram last worked in, as the views ask for it, and
     /// waits until its cards are in.</summary>
-    private static void ShowIn(AppStateDriver d, string type)
+    private static async Task ShowInAsync(AppStateDriver d, string type)
     {
-        DiagramView.ShowInDiagramLater(d.Ui, TypeOf(d, type), Names.Diagram(TypeOf(d, type)));
+        DiagramView.ShowInDiagramLater(d.Ui, await TypeOfAsync(d, type), Names.Diagram(await TypeOfAsync(d, type)));
         d.Settle();
     }
 
@@ -48,11 +48,11 @@ public sealed class DiagramTests
     }
 
     [Fact]
-    public void Show_in_diagram_opens_a_tab_with_the_type_and_the_types_of_its_assembly_it_is_related_to()
+    public async Task Show_in_diagram_opens_a_tab_with_the_type_and_the_types_of_its_assembly_it_is_related_to()
     {
         var d = AppStateDriver.Opened();
 
-        ShowIn(d, "Vehicle");
+        await ShowInAsync(d, "Vehicle");
 
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -65,29 +65,30 @@ public sealed class DiagramTests
     }
 
     [Fact]
-    public void The_links_drawn_are_those_between_the_cards_shown()
+    public async Task The_links_drawn_are_those_between_the_cards_shown()
     {
         var d = AppStateDriver.Opened();
 
-        var diagram = ShowInNew(d, "Vehicle");
+        var diagram = await ShowInNewAsync(d, "Vehicle");
 
         Assert.Equal(4, diagram.Links.Count);
-        Assert.Contains(new TypeLink.Inherits { From = TypeOf(d, "Car"), To = TypeOf(d, "Vehicle") }, diagram.Links);
-        Assert.Contains(new TypeLink.HoldsMany { From = TypeOf(d, "Garage"), To = TypeOf(d, "Vehicle"), Property = "Vehicles" }, diagram.Links);
-        Assert.Contains(new TypeLink.HoldsOne { From = TypeOf(d, "Vehicle"), To = TypeOf(d, "Garage"), Property = "Garage" }, diagram.Links);
-        Assert.DoesNotContain(diagram.Links, l => l.To == TypeOf(d, "IDriven"));
+        Assert.Contains(new TypeLink.Inherits { From = await TypeOfAsync(d, "Car"), To = await TypeOfAsync(d, "Vehicle") }, diagram.Links);
+        Assert.Contains(new TypeLink.HoldsMany { From = await TypeOfAsync(d, "Garage"), To = await TypeOfAsync(d, "Vehicle"), Property = "Vehicles" }, diagram.Links);
+        Assert.Contains(new TypeLink.HoldsOne { From = await TypeOfAsync(d, "Vehicle"), To = await TypeOfAsync(d, "Garage"), Property = "Garage" }, diagram.Links);
+        var driven = await TypeOfAsync(d, "IDriven");
+        Assert.DoesNotContain(diagram.Links, l => l.To == driven);
     }
 
     [Fact]
-    public void Showing_another_type_in_the_diagram_adds_it_to_the_same_tab_brought_to_the_front()
+    public async Task Showing_another_type_in_the_diagram_adds_it_to_the_same_tab_brought_to_the_front()
     {
         var d = AppStateDriver.Opened();
-        ShowIn(d, "Vehicle");
+        await ShowInAsync(d, "Vehicle");
         var diagramTab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(diagramTab);
-        d.Show(d.Fixture("Greeter"));
+        d.Show(await d.FixtureAsync("Greeter"));
 
-        ShowIn(d, "Counter");
+        await ShowInAsync(d, "Counter");
 
         Assert.Same(diagramTab, d.AppState.Navigation.ActiveTab);
         Assert.Single(ListDiagramTabs(d));
@@ -96,13 +97,13 @@ public sealed class DiagramTests
     }
 
     [Fact]
-    public void Show_in_new_diagram_starts_another_which_types_shown_in_a_diagram_then_go_to()
+    public async Task Show_in_new_diagram_starts_another_which_types_shown_in_a_diagram_then_go_to()
     {
         var d = AppStateDriver.Opened();
-        var first = ShowInNew(d, "Vehicle");
+        var first = await ShowInNewAsync(d, "Vehicle");
 
-        var second = ShowInNew(d, "Greeter");
-        ShowIn(d, "Counter");
+        var second = await ShowInNewAsync(d, "Greeter");
+        await ShowInAsync(d, "Counter");
 
         Assert.Equal(2, ListDiagramTabs(d).Count);
         Assert.Equal(["Counter", "Greeter"], CardNames(second));
@@ -110,26 +111,26 @@ public sealed class DiagramTests
     }
 
     [Fact]
-    public void A_new_diagram_takes_the_active_tab_while_it_shows_nothing()
+    public async Task A_new_diagram_takes_the_active_tab_while_it_shows_nothing()
     {
         var d = AppStateDriver.Opened();
         var empty = d.AppState.Navigation.OpenEmptyTab();
         Assert.Null(d.AppState.Navigation.FocusTab(empty, d.AppState.Decompiler.Setup));
         var tabs = d.AppState.Navigation.OpenTabs.Count;
 
-        ShowInNew(d, "Greeter");
+        await ShowInNewAsync(d, "Greeter");
 
         Assert.Equal(tabs, d.AppState.Navigation.OpenTabs.Count);
         Assert.NotNull(empty.Diagram);
     }
 
     [Fact]
-    public void A_card_grows_the_diagram_by_its_bases_interfaces_held_types_and_derived_types()
+    public async Task A_card_grows_the_diagram_by_its_bases_interfaces_held_types_and_derived_types()
     {
         var d = AppStateDriver.Opened();
-        var diagram = ShowInNew(d, "Car");
+        var diagram = await ShowInNewAsync(d, "Car");
         Assert.Equal(["Car", "IDriven", "Vehicle"], CardNames(diagram));
-        var vehicleType = TypeOf(d, "Vehicle");
+        var vehicleType = await TypeOfAsync(d, "Vehicle");
         var vehicle = diagram.Cards.Single(c => c.Type == vehicleType);
 
         d.Start((a, ct) => a.DiagramGrowing.ExpandHeldAsync(diagram, vehicle, ct));
@@ -138,15 +139,15 @@ public sealed class DiagramTests
         d.Settle();
 
         Assert.Equal(["Bike", "Car", "Garage", "IDriven", "Vehicle"], CardNames(diagram));
-        Assert.Contains(new TypeLink.Inherits { From = TypeOf(d, "Bike"), To = TypeOf(d, "Vehicle") }, diagram.Links);
-        Assert.Contains(new TypeLink.Implements { From = TypeOf(d, "Car"), To = TypeOf(d, "IDriven") }, diagram.Links);
+        Assert.Contains(new TypeLink.Inherits { From = await TypeOfAsync(d, "Bike"), To = await TypeOfAsync(d, "Vehicle") }, diagram.Links);
+        Assert.Contains(new TypeLink.Implements { From = await TypeOfAsync(d, "Car"), To = await TypeOfAsync(d, "IDriven") }, diagram.Links);
     }
 
     [Fact]
-    public void A_base_type_of_another_assembly_is_added_only_when_asked_for()
+    public async Task A_base_type_of_another_assembly_is_added_only_when_asked_for()
     {
         var d = AppStateDriver.Opened();
-        var diagram = ShowInNew(d, "Breakdown");
+        var diagram = await ShowInNewAsync(d, "Breakdown");
         Assert.Equal(["Breakdown"], CardNames(diagram));
         var breakdown = diagram.Cards[0];
         Assert.True(HasMissingBases(diagram, breakdown));
@@ -162,38 +163,39 @@ public sealed class DiagramTests
     }
 
     [Fact]
-    public void The_implementations_of_an_interface_are_its_derived_types()
+    public async Task The_implementations_of_an_interface_are_its_derived_types()
     {
         var d = AppStateDriver.Opened();
-        var diagram = ShowInNew(d, "IDriven");
+        var diagram = await ShowInNewAsync(d, "IDriven");
 
         var idriven = diagram.Cards[0];
         d.Start((a, ct) => a.DiagramGrowing.ExpandDerivedAsync(diagram, idriven, ct));
         d.Settle();
 
         Assert.Equal(["Car", "IDriven"], CardNames(diagram));
-        Assert.Equal([new TypeLink.Implements { From = TypeOf(d, "Car"), To = TypeOf(d, "IDriven") }], diagram.Links);
+        Assert.Equal([new TypeLink.Implements { From = await TypeOfAsync(d, "Car"), To = await TypeOfAsync(d, "IDriven") }], diagram.Links);
     }
 
     [Fact]
-    public void Removing_a_card_takes_its_links_with_it()
+    public async Task Removing_a_card_takes_its_links_with_it()
     {
         var d = AppStateDriver.Opened();
-        var diagram = ShowInNew(d, "Vehicle");
+        var diagram = await ShowInNewAsync(d, "Vehicle");
         var version = diagram.Version;
 
-        RemoveFromDiagram(d.AppState, diagram, TypeOf(d, "Garage"));
+        RemoveFromDiagram(d.AppState, diagram, await TypeOfAsync(d, "Garage"));
 
         Assert.Equal(["Bike", "Car", "Vehicle"], CardNames(diagram));
-        Assert.DoesNotContain(diagram.Links, l => l.From == TypeOf(d, "Garage") || l.To == TypeOf(d, "Garage"));
+        var garage = await TypeOfAsync(d, "Garage");
+        Assert.DoesNotContain(diagram.Links, l => l.From == garage || l.To == garage);
         Assert.NotEqual(version, diagram.Version);
     }
 
     [Fact]
-    public void A_newer_layout_supersedes_one_in_flight()
+    public async Task A_newer_layout_supersedes_one_in_flight()
     {
         var d = AppStateDriver.Opened();
-        var diagram = ShowInNew(d, "Vehicle");
+        var diagram = await ShowInNewAsync(d, "Vehicle");
         var all = diagram.Cards
             .Select(static c => new MeasuredCard { Type = c.Type, Width = 120f, Height = 80f })
             .ToList();
@@ -210,10 +212,10 @@ public sealed class DiagramTests
     }
 
     [Fact]
-    public void Closing_a_diagram_drops_what_it_was_reading()
+    public async Task Closing_a_diagram_drops_what_it_was_reading()
     {
         var d = AppStateDriver.Opened();
-        DiagramView.ShowInNewDiagramLater(d.Ui, TypeOf(d, "Vehicle"), Names.Diagram(TypeOf(d, "Vehicle")));
+        DiagramView.ShowInNewDiagramLater(d.Ui, await TypeOfAsync(d, "Vehicle"), Names.Diagram(await TypeOfAsync(d, "Vehicle")));
         d.NextFrame();
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -230,15 +232,15 @@ public sealed class DiagramTests
     }
 
     [Fact]
-    public void Going_to_code_from_a_diagram_never_replaces_it()
+    public async Task Going_to_code_from_a_diagram_never_replaces_it()
     {
         var d = AppStateDriver.Opened();
         d.TurnOffPreviewTabs();
-        ShowInNew(d, "Vehicle");
+        await ShowInNewAsync(d, "Vehicle");
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
-        var greeter = TypeOf(d, "Greeter");
+        var greeter = await TypeOfAsync(d, "Greeter");
         d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, greeter, a.Navigation.BeginResolving(inNewTab: false), ct));
         d.Settle();
 
@@ -248,10 +250,10 @@ public sealed class DiagramTests
     }
 
     [Fact]
-    public void A_type_that_cannot_be_read_is_reported()
+    public async Task A_type_that_cannot_be_read_is_reported()
     {
         var d = AppStateDriver.Opened();
-        var member = d.Fixture("Greeter").Child("Twice() : int").Definition;
+        var member = (await d.FixtureAsync("Greeter").GetChildAsync("Twice() : int")).Definition;
 
         DiagramView.ShowInNewDiagramLater(d.Ui, member, Names.Diagram(member));
         d.Settle();

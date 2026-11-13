@@ -11,10 +11,10 @@ namespace ILSight.App.Tests;
 
 public sealed class ResourceViewTests
 {
-    private static (AppDriver App, DocumentTab Tab) ShowResource(params string[] path)
+    private static async Task<(AppDriver App, DocumentTab Tab)> ShowResourceAsync(params string[] path)
     {
         var app = AppDriver.Opened(width: 1400f);
-        app.Show(app.Node(["Resources", .. path]), 3);
+        app.Show(await app.NodeAsync(["Resources", .. path]), 3);
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         return (app, tab);
@@ -26,9 +26,9 @@ public sealed class ResourceViewTests
     }
 
     [Fact]
-    public void A_picture_shows_at_its_size_under_what_it_is()
+    public async Task A_picture_shows_at_its_size_under_what_it_is()
     {
-        var (app, tab) = ShowResource("logo.png");
+        var (app, tab) = await ShowResourceAsync("logo.png");
 
         var drawn = Assert.Single(app.Frames.Canvas.Images, i => i.Inputs.ImageId == ImageOf(app, tab));
 
@@ -42,9 +42,9 @@ public sealed class ResourceViewTests
     }
 
     [Fact]
-    public void A_picture_in_a_resources_file_shows_too()
+    public async Task A_picture_in_a_resources_file_shows_too()
     {
-        var (app, tab) = ShowResource("Mixed.resources", "Picture.png");
+        var (app, tab) = await ShowResourceAsync("Mixed.resources", "Picture.png");
 
         Assert.NotNull(tab.Image);
         Assert.Equal((2, 2), (tab.Image.Width, tab.Image.Height));
@@ -63,9 +63,9 @@ public sealed class ResourceViewTests
     }
 
     [Fact]
-    public void Zoom_buttons_draw_the_picture_larger_and_back_at_its_own_size()
+    public async Task Zoom_buttons_draw_the_picture_larger_and_back_at_its_own_size()
     {
-        var (app, tab) = ShowResource("logo.png");
+        var (app, tab) = await ShowResourceAsync("logo.png");
 
         app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-in")).Frame();
         app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-in")).Frame();
@@ -79,9 +79,9 @@ public sealed class ResourceViewTests
     }
 
     [Fact]
-    public void A_zoomed_svg_is_drawn_again_at_the_larger_size()
+    public async Task A_zoomed_svg_is_drawn_again_at_the_larger_size()
     {
-        var (app, tab) = ShowResource("shape.svg");
+        var (app, tab) = await ShowResourceAsync("shape.svg");
 
         app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-in")).Frame();
 
@@ -90,13 +90,13 @@ public sealed class ResourceViewTests
     }
 
     [Fact]
-    public void A_zoom_lasts_until_another_picture_arrives_in_the_tab()
+    public async Task A_zoom_lasts_until_another_picture_arrives_in_the_tab()
     {
-        var (app, tab) = ShowResource("shape.svg");
+        var (app, tab) = await ShowResourceAsync("shape.svg");
         app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-in")).Frame();
         var zoomedBefore = !DocumentPanels.GetView(app.Ui.Documents, tab).Picture.Zoom.IsOwnSize;
 
-        app.Show(app.Node(["Resources", "logo.png"]), 3);
+        app.Show(await app.NodeAsync(["Resources", "logo.png"]), 3);
 
         Assert.True(zoomedBefore);
         Assert.True(DocumentPanels.GetView(app.Ui.Documents, tab).Picture.Zoom.IsOwnSize);
@@ -104,9 +104,9 @@ public sealed class ResourceViewTests
     }
 
     [Fact]
-    public void An_svg_switches_to_its_markup_and_back()
+    public async Task An_svg_switches_to_its_markup_and_back()
     {
-        var (app, tab) = ShowResource("shape.svg");
+        var (app, tab) = await ShowResourceAsync("shape.svg");
 
         app.Frames.ClickOn(Selector.WithText("Source")).Frame(2);
         var showsSource = DocumentPanels.GetView(app.Ui.Documents, tab).Picture.ShowsSource;
@@ -121,17 +121,17 @@ public sealed class ResourceViewTests
     }
 
     [Fact]
-    public void A_raster_picture_offers_no_markup()
+    public async Task A_raster_picture_offers_no_markup()
     {
-        var (app, _) = ShowResource("logo.png");
+        var (app, _) = await ShowResourceAsync("logo.png");
 
         Assert.False(app.Frames.Drew("Source"));
     }
 
     [Fact]
-    public void Closing_its_tab_frees_the_picture()
+    public async Task Closing_its_tab_frees_the_picture()
     {
-        var (app, tab) = ShowResource("logo.png");
+        var (app, tab) = await ShowResourceAsync("logo.png");
         var image = ImageOf(app, tab);
         Assert.True(app.Frames.Canvas.HasImage(image));
 
@@ -142,9 +142,9 @@ public sealed class ResourceViewTests
     }
 
     [Fact]
-    public void A_picture_that_cannot_be_read_shows_why_and_its_bytes()
+    public async Task A_picture_that_cannot_be_read_shows_why_and_its_bytes()
     {
-        var (_, tab) = ShowResource("broken.png");
+        var (_, tab) = await ShowResourceAsync("broken.png");
 
         Assert.Null(tab.Image);
         var text = Documents.GetText(tab.Document);
@@ -153,9 +153,9 @@ public sealed class ResourceViewTests
     }
 
     [Fact]
-    public void A_resources_file_shows_its_entries_as_a_grid()
+    public async Task A_resources_file_shows_its_entries_as_a_grid()
     {
-        var (app, tab) = ShowResource("Mixed.resources");
+        var (app, tab) = await ShowResourceAsync("Mixed.resources");
 
         Assert.NotNull(tab.Grid);
         Assert.Equal(["Name", "Value", "Type"], tab.Grid.Columns.Select(c => c.Name));
@@ -164,9 +164,9 @@ public sealed class ResourceViewTests
     }
 
     [Fact]
-    public void A_multi_line_string_shows_its_first_line_and_how_many_more_follow()
+    public async Task A_multi_line_string_shows_its_first_line_and_how_many_more_follow()
     {
-        var (app, _) = ShowResource("Mixed.resources");
+        var (app, _) = await ShowResourceAsync("Mixed.resources");
         var first = app.TextRect("first line");
         var more = app.TextRect("+1 lines");
 
@@ -181,9 +181,9 @@ public sealed class ResourceViewTests
     }
 
     [Fact]
-    public void Clicking_a_multi_line_string_grows_its_cell_to_show_every_line_as_the_cell_shows_its_first()
+    public async Task Clicking_a_multi_line_string_grows_its_cell_to_show_every_line_as_the_cell_shows_its_first()
     {
-        var (app, _) = ShowResource("Mixed.resources");
+        var (app, _) = await ShowResourceAsync("Mixed.resources");
         var theme = app.Theme;
         var before = app.TextRect("first line");
         var color = app.Frames.TextColor("first line");
@@ -201,9 +201,9 @@ public sealed class ResourceViewTests
     }
 
     [Fact]
-    public void Escape_stops_editing_an_open_string_then_closes_it()
+    public async Task Escape_stops_editing_an_open_string_then_closes_it()
     {
-        var (app, _) = ShowResource("Mixed.resources");
+        var (app, _) = await ShowResourceAsync("Mixed.resources");
 
         Click(app, app.TextRect("first line"));
         app.Frames.Key(KeyboardKey.F2).Frame(2);
@@ -214,9 +214,9 @@ public sealed class ResourceViewTests
     }
 
     [Fact]
-    public void Several_strings_stay_open_while_other_cells_are_selected_and_no_row_moves_under_the_pointer()
+    public async Task Several_strings_stay_open_while_other_cells_are_selected_and_no_row_moves_under_the_pointer()
     {
-        var (app, _) = ShowResource("Mixed.resources");
+        var (app, _) = await ShowResourceAsync("Mixed.resources");
 
         Click(app, app.TextRect("first line"));
         var roses = app.TextRect("roses");
@@ -231,9 +231,9 @@ public sealed class ResourceViewTests
     }
 
     [Fact]
-    public void A_click_selects_a_whole_multi_line_string_for_Ctrl_C_and_a_double_click_a_word_of_a_name()
+    public async Task A_click_selects_a_whole_multi_line_string_for_Ctrl_C_and_a_double_click_a_word_of_a_name()
     {
-        var (app, _) = ShowResource("Mixed.resources");
+        var (app, _) = await ShowResourceAsync("Mixed.resources");
 
         Click(app, app.TextRect("first line"));
         app.Frames.Key(Shortcuts.Copy).Frame();
@@ -246,17 +246,17 @@ public sealed class ResourceViewTests
     }
 
     [Fact]
-    public void Saving_a_resource_writes_its_bytes()
+    public async Task Saving_a_resource_writes_its_bytes()
     {
-        var (app, _) = ShowResource("data.json");
-        var node = app.Node("Resources", "data.json");
+        var (app, _) = await ShowResourceAsync("data.json");
+        var node = await app.NodeAsync("Resources", "data.json");
         using var temp = new TempDir();
         Directory.CreateDirectory(temp.Path);
         var path = temp.PathOf("data.json");
 
         SaveResource(app.AppState, node, path);
 
-        Assert.Equal(BrowseNodes.ReadResource(node), File.ReadAllBytes(path));
+        Assert.Equal(BrowseNodes.ReadResource(node), await File.ReadAllBytesAsync(path));
         Assert.Empty(app.AppState.Errors.Entries);
     }
 }

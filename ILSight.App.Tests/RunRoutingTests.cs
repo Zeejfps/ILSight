@@ -58,22 +58,22 @@ public sealed class RunRoutingTests
     }
 
     [Fact]
-    public void The_adapter_claims_a_free_role_is_refused_a_held_one_and_sends_to_its_holder_until_it_stops_taking()
+    public async Task The_adapter_claims_a_free_role_is_refused_a_held_one_and_sends_to_its_holder_until_it_stops_taking()
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
         var first = new RunRoutingAdapter(address);
         var later = new RunRoutingAdapter(address);
 
-        var isFirstClaimed = TestWaits.Wait(() => first.TryClaimAsync(CancellationToken.None));
+        var isFirstClaimed = await first.TryClaimAsync(CancellationToken.None);
         using var holder = first.Claimed;
-        var isLaterClaimed = TestWaits.Wait(() => later.TryClaimAsync(CancellationToken.None));
-        var answered = TestWaits.Wait(() => later.TrySendAsync(Arguments("a.dll"), CancellationToken.None));
+        var isLaterClaimed = await later.TryClaimAsync(CancellationToken.None);
+        var answered = await later.TrySendAsync(Arguments("a.dll"), CancellationToken.None);
         Assert.NotNull(holder);
         holder.Inbox.Writer.TryComplete();
-        var refused = TestWaits.Wait(() => later.TrySendAsync(Arguments("b.dll"), CancellationToken.None));
+        var refused = await later.TrySendAsync(Arguments("b.dll"), CancellationToken.None);
         holder.Dispose();
-        var unanswered = TestWaits.Wait(() => later.TrySendAsync(Arguments("c.dll"), CancellationToken.None));
+        var unanswered = await later.TrySendAsync(Arguments("c.dll"), CancellationToken.None);
 
         Assert.True(isFirstClaimed);
         Assert.False(isLaterClaimed);

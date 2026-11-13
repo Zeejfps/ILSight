@@ -17,9 +17,9 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void A_metadata_grid_with_a_row_selected_allocates_nothing_per_frame(bool scrolling)
+    public async Task A_metadata_grid_with_a_row_selected_allocates_nothing_per_frame(bool scrolling)
     {
-        var grid = OpenTable("TypeRef");
+        var grid = await OpenTableAsync("TypeRef");
         var state = MetadataGridWidget.CreateState(grid);
         var flags = MetadataGridWidget.CreateFilters(null);
         var frames = new UiFrames(Screens.Blank(), width: 1200f, height: 300f, body: ui => Render(ui, grid, state, flags)) { FrameTime = 1f / 60f };
@@ -42,9 +42,9 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
     /// <summary>Measuring alone, as drawing the rows it finds allocates for reasons of its own: ZGF walks the
     /// tall rows through an interface, which boxes an enumerator, and an open cell's text isn't kept.</summary>
     [Fact]
-    public void Measuring_the_tall_rows_of_a_metadata_grid_allocates_nothing()
+    public async Task Measuring_the_tall_rows_of_a_metadata_grid_allocates_nothing()
     {
-        var grid = OpenTable("TypeRef");
+        var grid = await OpenTableAsync("TypeRef");
         var state = MetadataGridWidget.CreateState(grid);
         MetadataGridWidget.UpdateView(state, MetadataGridWidget.CreateFilters(null), new MetadataGridViews());
         state.Open[(2, 1)] = 3;
@@ -63,10 +63,10 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
         Assert.Equal(0, allocated);
     }
 
-    private static MetadataGrid OpenTable(string name)
+    private static async Task<MetadataGrid> OpenTableAsync(string name)
     {
         var app = AppDriver.Opened(width: 1800f);
-        app.Show(app.Node("Metadata", "Tables").Table(name), 3);
+        app.Show(await (await app.NodeAsync("Metadata", "Tables")).TableAsync(name), 3);
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = tab.Grid;

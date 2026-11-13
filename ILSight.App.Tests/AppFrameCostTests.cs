@@ -11,11 +11,11 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void A_frame_of_the_app_showing_a_document_allocates_nothing(bool errorsOpen)
+    public async Task A_frame_of_the_app_showing_a_document_allocates_nothing(bool errorsOpen)
     {
         var app = AppDriver.Opened();
         app.Settle(2);
-        app.Show(app.Fixture("Greeter"), 2);
+        app.Show(await app.FixtureAsync("Greeter"), 2);
         app.Settle(5);
         if (errorsOpen)
         {
@@ -53,16 +53,16 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void A_frame_of_the_app_with_a_crumbs_children_listed_allocates_nothing()
+    public async Task A_frame_of_the_app_with_a_crumbs_children_listed_allocates_nothing()
     {
         var app = AppDriver.Opened();
         app.Settle(2);
-        app.Show(app.Fixture("Greeter"), 2);
+        app.Show(await app.FixtureAsync("Greeter"), 2);
         app.Settle(5);
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var panel = DocumentPanels.GetPanel(app.Ui.Documents, tab);
-        app.Ui.Omnibar.OpenMenu(panel, app.Node(AppStateDriver.FixturesNamespace), app.Fixture("Greeter"));
+        app.Ui.Omnibar.OpenMenu(panel, await app.NodeAsync(AppStateDriver.FixturesNamespace), await app.FixtureAsync("Greeter"));
         app.Settle(5);
 
         app.Frames.Canvas.Recording = false;

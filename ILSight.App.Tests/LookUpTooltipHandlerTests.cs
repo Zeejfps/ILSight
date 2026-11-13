@@ -5,9 +5,9 @@ namespace ILSight.App.Tests;
 
 public sealed class LookUpTooltipHandlerTests
 {
-    private static TooltipLookup AskForGreeter(AppStateDriver d, CodeTooltips tooltips)
+    private static async Task<TooltipLookup> AskForGreeterAsync(AppStateDriver d, CodeTooltips tooltips)
     {
-        Assert.False(tooltips.TryGetTooltip(d.Fixture("Greeter").Definition, out _));
+        Assert.False(tooltips.TryGetTooltip((await d.FixtureAsync("Greeter")).Definition, out _));
         return Assert.Single(tooltips.TakeAsked());
     }
 
@@ -17,8 +17,8 @@ public sealed class LookUpTooltipHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var assemblies = d.AppState.Assemblies;
         var tooltips = new CodeTooltips { Assemblies = assemblies, Version = assemblies.Version };
-        var lookup = AskForGreeter(d, tooltips);
-        var tooltip = TestWaits.Wait(() => AssemblyListing.DescribeReferenceAsync(assemblies, lookup.Reference, CancellationToken.None));
+        var lookup = await AskForGreeterAsync(d, tooltips);
+        var tooltip = await AssemblyListing.DescribeReferenceAsync(assemblies, lookup.Reference, CancellationToken.None);
         var ports = new FakeLookUpTooltipHandlerPorts { Answer = new Outcome<Lookup<CodeTooltip>>.Ok(tooltip) };
 
         await new LookUpTooltipHandler(ports).HandleAsync(tooltips, lookup, CancellationToken.None);
@@ -33,7 +33,7 @@ public sealed class LookUpTooltipHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var assemblies = d.AppState.Assemblies;
         var tooltips = new CodeTooltips { Assemblies = assemblies, Version = assemblies.Version };
-        var lookup = AskForGreeter(d, tooltips);
+        var lookup = await AskForGreeterAsync(d, tooltips);
         var ports = new FakeLookUpTooltipHandlerPorts { Answer = new Outcome<Lookup<CodeTooltip>>.Failed(new InvalidDataException("unreadable")) };
 
         await new LookUpTooltipHandler(ports).HandleAsync(tooltips, lookup, CancellationToken.None);
@@ -48,7 +48,7 @@ public sealed class LookUpTooltipHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var assemblies = d.AppState.Assemblies;
         var tooltips = new CodeTooltips { Assemblies = assemblies, Version = assemblies.Version };
-        var lookup = AskForGreeter(d, tooltips);
+        var lookup = await AskForGreeterAsync(d, tooltips);
         var module = assemblies.Assemblies.OfType<LoadedModule>().Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
         var unreadable = new Lookup<CodeTooltip>.Unreadable { Module = new UnreadableModule { Module = module, Why = new BadImageFormatException("Bad namespace.") } };
         var ports = new FakeLookUpTooltipHandlerPorts { Answer = new Outcome<Lookup<CodeTooltip>>.Ok(unreadable) };
@@ -59,12 +59,12 @@ public sealed class LookUpTooltipHandlerTests
     }
 
     [Fact]
-    public void TryGetTooltip_AskedAgainBeforeItsLookupEnds_AsksOnce()
+    public async Task TryGetTooltip_AskedAgainBeforeItsLookupEnds_AsksOnce()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var assemblies = d.AppState.Assemblies;
         var tooltips = new CodeTooltips { Assemblies = assemblies, Version = assemblies.Version };
-        var lookup = AskForGreeter(d, tooltips);
+        var lookup = await AskForGreeterAsync(d, tooltips);
 
         var found = tooltips.TryGetTooltip(lookup.Reference, out _);
         var shown = tooltips.FindShown(lookup.Reference);

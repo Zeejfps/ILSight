@@ -10,7 +10,7 @@ public sealed class AnalyzeReferenceHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var analyzer = d.AppState.Analyzer;
-        var greeter = d.Fixture("Greeter");
+        var greeter = await d.FixtureAsync("Greeter");
         var pending = Analysis.BeginAnalyzing(analyzer, greeter.Definition);
         var ports = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(greeter)) };
         d.TakeViewCommands();
@@ -28,7 +28,7 @@ public sealed class AnalyzeReferenceHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var analyzer = d.AppState.Analyzer;
-        var reference = d.Fixture("Greeter").Definition;
+        var reference = (await d.FixtureAsync("Greeter")).Definition;
         var error = new IOException("unreadable");
         var missing = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)) };
         var failed = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(error) };
@@ -46,7 +46,7 @@ public sealed class AnalyzeReferenceHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var analyzer = d.AppState.Analyzer;
-        var greeter = d.Fixture("Greeter");
+        var greeter = await d.FixtureAsync("Greeter");
         var pending = Analysis.BeginAnalyzing(analyzer, greeter.Definition);
         var ports = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(new IOException("unreadable")), WhileLooking = () => analyzer.RemoveRoot(pending.Root) };
 
@@ -61,7 +61,7 @@ public sealed class AnalyzeReferenceHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var analyzer = d.AppState.Analyzer;
-        var greeter = d.Fixture("Greeter");
+        var greeter = await d.FixtureAsync("Greeter");
         var assembly = d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
         var pending = Analysis.BeginAnalyzing(analyzer, greeter.Definition);
         var ports = new FakeAnalyzeReferenceHandlerPorts

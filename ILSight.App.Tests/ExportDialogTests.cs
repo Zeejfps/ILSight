@@ -50,9 +50,9 @@ public sealed class ExportDialogTests : IDisposable
         return d;
     }
 
-    private static LoadedModule Fixtures(AppStateDriver d)
+    private static async Task<LoadedModule> FixturesAsync(AppStateDriver d)
     {
-        return Assert.IsType<LoadedModule>(d.Node().Assembly);
+        return Assert.IsType<LoadedModule>((await d.NodeAsync()).Assembly);
     }
 
     /// <summary>Ticks every assembly of <paramref name="setup"/> when <paramref name="all"/>, else none, as ticking each
@@ -66,11 +66,11 @@ public sealed class ExportDialogTests : IDisposable
     }
 
     [Fact]
-    public void The_dialog_opens_with_the_picked_assembly_ticked()
+    public async Task The_dialog_opens_with_the_picked_assembly_ticked()
     {
         var d = OpenedTwo();
 
-        d.OpenExportSetup(Fixtures(d));
+        d.OpenExportSetup(await FixturesAsync(d));
 
         var setup = d.Ui.ExportSetup;
         Assert.True(setup.IsOpen);
@@ -89,10 +89,10 @@ public sealed class ExportDialogTests : IDisposable
     }
 
     [Fact]
-    public void Ticking_a_second_assembly_makes_the_export_a_solution_named_after_the_folder()
+    public async Task Ticking_a_second_assembly_makes_the_export_a_solution_named_after_the_folder()
     {
         var d = OpenedTwo();
-        d.OpenExportSetup(Fixtures(d));
+        d.OpenExportSetup(await FixturesAsync(d));
         var setup = d.Ui.ExportSetup;
         setup.Folder = _temp.PathOf("Out");
 
@@ -259,14 +259,14 @@ public sealed class ExportDialogTests : IDisposable
     }
 
     [Fact]
-    public void With_nothing_ticked_the_dialog_opens_on_the_Choose_page()
+    public async Task With_nothing_ticked_the_dialog_opens_on_the_Choose_page()
     {
         var d = OpenedTwo();
 
         d.OpenExportSetup(null);
         Assert.Equal(ExportPage.Choose, d.Ui.ExportSetup.Page);
 
-        d.OpenExportSetup(Fixtures(d));
+        d.OpenExportSetup(await FixturesAsync(d));
         Assert.Equal(ExportPage.Main, d.Ui.ExportSetup.Page);
     }
 
@@ -379,16 +379,16 @@ public sealed class ExportDialogTests : IDisposable
     }
 
     [Fact]
-    public void Selected_only_hides_the_unticked_assemblies()
+    public async Task Selected_only_hides_the_unticked_assemblies()
     {
         var d = OpenedTwo();
-        d.OpenExportSetup(Fixtures(d));
+        d.OpenExportSetup(await FixturesAsync(d));
         var setup = d.Ui.ExportSetup;
         Exports.ChooseAssemblies(setup);
 
         setup.Picker.SelectedOnly = true;
 
-        Assert.Equal(Fixtures(d), Assert.Single(ExportDialogView.ListShown(setup.Picker)).Assembly);
+        Assert.Equal(await FixturesAsync(d), Assert.Single(ExportDialogView.ListShown(setup.Picker)).Assembly);
     }
 
     [Fact]
@@ -537,7 +537,7 @@ public sealed class ExportDialogTests : IDisposable
     }
 
     [Fact]
-    public void Export_on_an_assembly_in_the_tree_opens_the_dialog_with_that_assembly_ticked()
+    public async Task Export_on_an_assembly_in_the_tree_opens_the_dialog_with_that_assembly_ticked()
     {
         var app = AppDriver.Opened();
         app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SecondPath)], ct));
@@ -545,7 +545,7 @@ public sealed class ExportDialogTests : IDisposable
         app.Settle(2);
         var second = app.AppState.Assemblies.Assemblies[1];
 
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, app.Ui.Tree.GetLabel(second.Root)), PointerButton.Right).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, app.Ui.Tree.GetLabel(await second.ReadRootAsync())), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Export…")).Frame(2);
 
         var setup = app.Ui.ExportSetup;

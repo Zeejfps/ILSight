@@ -83,9 +83,9 @@ public sealed class SplitDocumentTests
     }
 
     [Fact]
-    public void Two_tabs_on_one_type_scroll_apart_and_switching_between_them_leaves_the_tree_alone()
+    public async Task Two_tabs_on_one_type_scroll_apart_and_switching_between_them_leaves_the_tree_alone()
     {
-        var (app, left, right) = SideBySide();
+        var (app, left, right) = await SideBySideAsync();
         var d = app.Driver;
 
         app.Frames.MovePointer(250f, 400f).Frame().Wheel(-5).Frame(2);
@@ -94,7 +94,7 @@ public sealed class SplitDocumentTests
 
         app.Frames.Click(750f, 400f).Frame();
         Assert.Same(right, d.AppState.Navigation.ActiveTab);
-        app.Show(app.Fixture("Greeter"), 2);
+        app.Show(await app.FixtureAsync("Greeter"), 2);
         Assert.Equal("Outline", left.Node?.Text);
         Assert.Equal("Greeter", right.Node?.Text);
 
@@ -104,9 +104,9 @@ public sealed class SplitDocumentTests
     }
 
     [Fact]
-    public void Only_the_active_documents_tab_is_marked_in_the_accent()
+    public async Task Only_the_active_documents_tab_is_marked_in_the_accent()
     {
-        var (app, left, _) = SideBySide();
+        var (app, left, _) = await SideBySideAsync();
         var theme = app.Theme;
 
         Assert.Equal(theme.Accent, Indicator(app, app.LastTabTitleRect("Outline")));
@@ -120,9 +120,9 @@ public sealed class SplitDocumentTests
     }
 
     [Fact]
-    public void Closing_all_documents_from_the_view_menu_closes_the_tabs_of_every_group()
+    public async Task Closing_all_documents_from_the_view_menu_closes_the_tabs_of_every_group()
     {
-        var (app, left, right) = SideBySide();
+        var (app, left, right) = await SideBySideAsync();
         Assert.NotSame(app.Ui.Layout.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, left)), app.Ui.Layout.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, right)));
 
         app.Frames.ClickOn(Selector.WithText("View"));
@@ -132,17 +132,17 @@ public sealed class SplitDocumentTests
         Assert.Empty(app.AppState.Navigation.OpenTabs);
     }
 
-    private static (AppDriver App, DocumentTab Left, DocumentTab Right) SideBySide()
+    private static async Task<(AppDriver App, DocumentTab Left, DocumentTab Right)> SideBySideAsync()
     {
         var app = AppDriver.Opened();
         var d = app.Driver;
         var layout = d.Ui.Layout;
         layout.Close(DockPanels.Assemblies);
         d.TurnOffPreviewTabs();
-        d.Show(d.Fixture("Outline"));
+        d.Show(await d.FixtureAsync("Outline"));
         var left = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(left);
-        d.Show(d.Fixture("Outline"), inNewTab: true);
+        d.Show(await d.FixtureAsync("Outline"), inNewTab: true);
         var right = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(right);
         var leftGroup = layout.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, left));

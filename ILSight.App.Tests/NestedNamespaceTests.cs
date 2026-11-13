@@ -25,19 +25,19 @@ public sealed class NestedNamespaceTests
 
     /// <summary>Whether the tree shows <paramref name="node"/> down the nested namespaces: each one
     /// expanded and listing the next, and the fixtures' namespace listing the node.</summary>
-    private static bool IsShownNested(AppDriver app, BrowseNode node)
+    private static async Task<bool> IsShownNestedAsync(AppDriver app, BrowseNode node)
     {
         var tree = app.Ui.Tree;
-        var parent = app.Node();
+        var parent = await app.NodeAsync();
         foreach (var name in EnclosingNamespaces.Append(AppStateDriver.FixturesNamespace))
         {
-            var ns = app.Node(name);
+            var ns = await app.NodeAsync(name);
             if (!tree.View.IsExpanded(parent))
             {
                 return false;
             }
 
-            var shown = ShownChildren(app, parent);
+            var shown = await ShownChildrenAsync(app, parent);
             if (!shown.Contains(ns))
             {
                 return false;
@@ -50,50 +50,53 @@ public sealed class NestedNamespaceTests
             return false;
         }
 
-        return ShownChildren(app, parent).Contains(node);
+        return (await ShownChildrenAsync(app, parent)).Contains(node);
     }
 
     /// <summary>The children the tree shows under <paramref name="node"/>, built first rather than
     /// shown loading.</summary>
-    private static IReadOnlyList<BrowseNode> ShownChildren(AppDriver app, BrowseNode node)
+    private static async Task<IReadOnlyList<BrowseNode>> ShownChildrenAsync(AppDriver app, BrowseNode node)
     {
-        node.EnsureChildren();
+        await node.EnsureChildrenAsync();
         return app.Ui.Tree.GetChildren(node).Nodes;
     }
 
     [Fact]
-    public void Each_namespace_shows_under_the_one_its_name_extends_by_its_last_segment()
+    public async Task Each_namespace_shows_under_the_one_its_name_extends_by_its_last_segment()
     {
         var app = OpenedNested();
         var tree = app.Ui.Tree;
-        var ilsight = app.Node("ILSight");
-        var fixtures = app.Node(AppStateDriver.FixturesNamespace);
+        var ilsight = await app.NodeAsync("ILSight");
+        var fixtures = await app.NodeAsync(AppStateDriver.FixturesNamespace);
 
         Commands.StartExpandingNamespaces(app.AppState, tree, tree.ExpandNamespaces());
         app.Frames.WaitUntil(() => tree.View.IsExpanded(fixtures), Patience);
 
-        Assert.All(EnclosingNamespaces, name => Assert.True(tree.View.IsExpanded(app.Node(name))));
+        foreach (var name in EnclosingNamespaces)
+        {
+            Assert.True(tree.View.IsExpanded(await app.NodeAsync(name)));
+        }
         Assert.True(tree.View.IsExpanded(fixtures));
-        Assert.Equal([app.Node("ILSight.App"), app.Node("ILSight.Tests")], ShownChildren(app, ilsight));
+        Assert.Equal([await app.NodeAsync("ILSight.App"), await app.NodeAsync("ILSight.Tests")], await ShownChildrenAsync(app, ilsight));
         Assert.True(tree.HasChildren(ilsight));
-        Assert.Contains(fixtures, ShownChildren(app, app.Node("ILSight.App.Tests")));
+        Assert.Contains(fixtures, await ShownChildrenAsync(app, await app.NodeAsync("ILSight.App.Tests")));
         Assert.Equal("ILSight", tree.GetRowLabel(ilsight));
-        Assert.Equal("App", tree.GetRowLabel(app.Node("ILSight.App")));
+        Assert.Equal("App", tree.GetRowLabel(await app.NodeAsync("ILSight.App")));
         Assert.Equal("Fixtures", tree.GetRowLabel(fixtures));
         Assert.Equal(AppStateDriver.FixturesNamespace, tree.GetLabel(fixtures));
-        Assert.True(IsShownNested(app, app.Fixture("Greeter")));
+        Assert.True(await IsShownNestedAsync(app, await app.FixtureAsync("Greeter")));
     }
 
     [Fact]
-    public void Showing_public_api_a_namespace_of_internal_types_is_hidden_unless_a_namespace_nested_in_it_shows()
+    public async Task Showing_public_api_a_namespace_of_internal_types_is_hidden_unless_a_namespace_nested_in_it_shows()
     {
         var tree = new BrowseTree { Session = TestSession.Shared };
-        var root = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).Root;
-        var fixtures = root.Child(AppStateDriver.FixturesNamespace);
-        var vault = root.Child(AppStateDriver.FixturesNamespace + ".Vault");
-        var door = root.Child(AppStateDriver.FixturesNamespace + ".Vault.Door");
-        fixtures.EnsureChildren();
-        vault.EnsureChildren();
+        var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync();
+        var fixtures = await root.GetChildAsync(AppStateDriver.FixturesNamespace);
+        var vault = await root.GetChildAsync(AppStateDriver.FixturesNamespace + ".Vault");
+        var door = await root.GetChildAsync(AppStateDriver.FixturesNamespace + ".Vault.Door");
+        await fixtures.EnsureChildrenAsync();
+        await vault.EnsureChildrenAsync();
         tree.ShowApi(ApiVisibility.PublicOnly);
 
         Assert.DoesNotContain(vault, tree.GetChildren(root).Nodes);
@@ -109,23 +112,23 @@ public sealed class NestedNamespaceTests
     }
 
     [Fact]
-    public void Switching_the_tree_to_nested_namespaces_keeps_the_selected_node_in_view()
+    public async Task Switching_the_tree_to_nested_namespaces_keeps_the_selected_node_in_view()
     {
         var app = AppDriver.Opened();
-        var greeter = app.Fixture("Greeter");
+        var greeter = await app.FixtureAsync("Greeter");
         app.Show(greeter, 2);
 
         Nest(app, true);
 
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
-        Assert.True(IsShownNested(app, greeter));
+        Assert.True(await IsShownNestedAsync(app, greeter));
     }
 
     [Fact]
-    public void Following_a_reference_reveals_the_type_under_its_nested_namespaces()
+    public async Task Following_a_reference_reveals_the_type_under_its_nested_namespaces()
     {
         var app = OpenedNested();
-        var farewell = app.Fixture("Farewell");
+        var farewell = await app.FixtureAsync("Farewell");
         app.Ui.Tree.CollapseAll();
 
         app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, farewell.Definition, a.Navigation.BeginResolving(inNewTab: false), ct));
@@ -133,16 +136,16 @@ public sealed class NestedNamespaceTests
 
         Assert.Same(farewell, app.AppState.Navigation.ActiveTab?.Node);
         Assert.Same(farewell, app.Ui.Tree.View.Selected);
-        Assert.True(IsShownNested(app, farewell));
+        Assert.True(await IsShownNestedAsync(app, farewell));
     }
 
     [Fact]
-    public void Going_back_in_nested_namespaces_to_a_place_shown_with_flat_ones_reveals_it_nested()
+    public async Task Going_back_in_nested_namespaces_to_a_place_shown_with_flat_ones_reveals_it_nested()
     {
         var app = AppDriver.Opened();
-        var greeter = app.Fixture("Greeter");
+        var greeter = await app.FixtureAsync("Greeter");
         app.Show(greeter, 2);
-        app.Show(app.Fixture("Farewell"), 2);
+        app.Show(await app.FixtureAsync("Farewell"), 2);
         Nest(app, true);
         app.Ui.Tree.CollapseAll();
 
@@ -151,64 +154,64 @@ public sealed class NestedNamespaceTests
 
         Assert.Same(greeter, app.AppState.Navigation.ActiveTab?.Node);
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
-        Assert.True(IsShownNested(app, greeter));
+        Assert.True(await IsShownNestedAsync(app, greeter));
     }
 
     [Fact]
-    public void A_bookmark_made_with_nested_namespaces_names_the_namespace_whole_and_opens_with_flat_ones()
+    public async Task A_bookmark_made_with_nested_namespaces_names_the_namespace_whole_and_opens_with_flat_ones()
     {
         var app = OpenedNested();
-        var outline = app.Fixture("Outline");
+        var outline = await app.FixtureAsync("Outline");
         app.Show(outline, 2);
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         Assert.IsType<BookmarkToggle.Added>(ToggleBookmark(app.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark));
         var bookmark = Assert.Single(app.AppState.Bookmarks.Items);
-        app.Show(app.Fixture("Greeter"), 2);
+        app.Show(await app.FixtureAsync("Greeter"), 2);
         Nest(app, false);
         app.Ui.Tree.CollapseAll();
 
         app.Start((a, ct) => a.GoToBookmarkHandler.HandleAsync(a, bookmark, ct));
         app.Settle(1);
 
-        var fixtures = app.Node(AppStateDriver.FixturesNamespace);
+        var fixtures = await app.NodeAsync(AppStateDriver.FixturesNamespace);
         Assert.Equal([new NodePathSegment.Namespace(AppStateDriver.FixturesNamespace), new NodePathSegment.Definition($"T:{AppStateDriver.FixturesNamespace}.Outline")],
             bookmark.Place.Steps.Select(static s => s.Segment));
         Assert.Same(outline, app.AppState.Navigation.ActiveTab?.Node);
         Assert.Same(outline, app.Ui.Tree.View.Selected);
         Assert.True(app.Ui.Tree.View.IsExpanded(fixtures));
-        Assert.Contains(fixtures, ShownChildren(app, app.Node()));
+        Assert.Contains(fixtures, await ShownChildrenAsync(app, await app.NodeAsync()));
     }
 
     [Fact]
-    public void Reloading_with_nested_namespaces_keeps_them_expanded_and_the_tab_revealed()
+    public async Task Reloading_with_nested_namespaces_keeps_them_expanded_and_the_tab_revealed()
     {
         var app = OpenedNested();
-        var before = app.Node("ILSight.App");
-        app.Show(app.Fixture("Greeter"), 2);
+        var before = await app.NodeAsync("ILSight.App");
+        app.Show(await app.FixtureAsync("Greeter"), 2);
 
         app.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, app.Ui.Tree.ListExpandedPaths(), ct));
         app.Settle(1);
 
-        var greeter = app.Fixture("Greeter");
-        Assert.NotSame(before, app.Node("ILSight.App"));
+        var greeter = await app.FixtureAsync("Greeter");
+        Assert.NotSame(before, await app.NodeAsync("ILSight.App"));
         Assert.Same(greeter, app.AppState.Navigation.ActiveTab?.Node);
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
-        Assert.True(IsShownNested(app, greeter));
+        Assert.True(await IsShownNestedAsync(app, greeter));
     }
 
     [Fact]
-    public void A_namespace_that_only_encloses_others_selects_its_assembly_once_namespaces_are_flat()
+    public async Task A_namespace_that_only_encloses_others_selects_its_assembly_once_namespaces_are_flat()
     {
         var app = OpenedNested();
-        var enclosing = app.Node("ILSight.App");
+        var enclosing = await app.NodeAsync("ILSight.App");
         app.Show(enclosing, 2);
         Assert.Same(enclosing, app.Ui.Tree.View.Selected);
 
         Nest(app, false);
 
-        Assert.Same(app.Node(), app.Ui.Tree.View.Selected);
-        Assert.DoesNotContain(enclosing, ShownChildren(app, app.Node()));
+        Assert.Same(await app.NodeAsync(), app.Ui.Tree.View.Selected);
+        Assert.DoesNotContain(enclosing, await ShownChildrenAsync(app, await app.NodeAsync()));
         Assert.Same(enclosing, app.AppState.Navigation.ActiveTab?.Node);
     }
 }

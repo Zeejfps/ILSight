@@ -7,11 +7,11 @@ namespace ILSight.App.Tests;
 public sealed class RestoreAnalysesHandlerTests
 {
     /// <summary>Two roots restored from saved analyses, of Greeter and Farewell, waiting to be found.</summary>
-    private static AnalysesRestore WaitForGreeterAndFarewell(AppStateDriver d)
+    private static async Task<AnalysesRestore> WaitForGreeterAndFarewellAsync(AppStateDriver d)
     {
         var analyzer = d.AppState.Analyzer;
-        var greeter = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(SymbolOf(d, "Greeter"))).Root;
-        var farewell = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(SymbolOf(d, "Farewell"))).Root;
+        var greeter = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(await SymbolOfAsync(d, "Greeter"))).Root;
+        var farewell = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(await SymbolOfAsync(d, "Farewell"))).Root;
         Assert.Equal<AnalyzerNode>([greeter, farewell], analyzer.Roots);
         var saved = analyzer.ListSavedAnalyses();
         analyzer.ClearRoots();
@@ -21,9 +21,9 @@ public sealed class RestoreAnalysesHandlerTests
         return restoring;
     }
 
-    private static AnalysisSymbol SymbolOf(AppStateDriver d, string type)
+    private static async Task<AnalysisSymbol> SymbolOfAsync(AppStateDriver d, string type)
     {
-        var symbol = d.Fixture(type).Analysis;
+        var symbol = (await d.FixtureAsync(type)).Analysis;
         Assert.NotNull(symbol);
         return symbol;
     }
@@ -32,8 +32,8 @@ public sealed class RestoreAnalysesHandlerTests
     public async Task HandleAsync_SymbolsFound_AnalyzesEachAgainAndRemovesThoseGone()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var restore = WaitForGreeterAndFarewell(d);
-        var greeter = SymbolOf(d, "Greeter");
+        var restore = await WaitForGreeterAndFarewellAsync(d);
+        var greeter = await SymbolOfAsync(d, "Greeter");
         var ports = new FakeRestoreAnalysesHandlerPorts { Found = new Outcome<List<Lookup<AnalysisSymbol>>>.Ok([new Lookup<AnalysisSymbol>.Found { Value = greeter }, new Lookup<AnalysisSymbol>.NotFound()]) };
 
         await new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.Analyzer, d.AppState.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None);
@@ -47,7 +47,7 @@ public sealed class RestoreAnalysesHandlerTests
     public async Task HandleAsync_LookupFailed_ReportsItAndRemovesTheRoots()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var restore = WaitForGreeterAndFarewell(d);
+        var restore = await WaitForGreeterAndFarewellAsync(d);
         var error = new IOException("unreadable");
         var ports = new FakeRestoreAnalysesHandlerPorts { Found = new Outcome<List<Lookup<AnalysisSymbol>>>.Failed(error) };
 
@@ -61,7 +61,7 @@ public sealed class RestoreAnalysesHandlerTests
     public async Task HandleAsync_ListClearedMeanwhile_LeavesTheRootsAlone()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var restore = WaitForGreeterAndFarewell(d);
+        var restore = await WaitForGreeterAndFarewellAsync(d);
         var ports = new FakeRestoreAnalysesHandlerPorts
         {
             Found = new Outcome<List<Lookup<AnalysisSymbol>>>.Failed(new IOException("unreadable")),
@@ -78,9 +78,9 @@ public sealed class RestoreAnalysesHandlerTests
     public async Task HandleAsync_AssemblyClosedWhileLooking_RestoresNoAnalysisOfIt()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var restore = WaitForGreeterAndFarewell(d);
-        var greeter = SymbolOf(d, "Greeter");
-        var farewell = SymbolOf(d, "Farewell");
+        var restore = await WaitForGreeterAndFarewellAsync(d);
+        var greeter = await SymbolOfAsync(d, "Greeter");
+        var farewell = await SymbolOfAsync(d, "Farewell");
         var assembly = d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
         var ports = new FakeRestoreAnalysesHandlerPorts
         {
@@ -99,7 +99,7 @@ public sealed class RestoreAnalysesHandlerTests
     public async Task HandleAsync_FilesStillOnTheirWay_AnalyzesEachAsItsLookupAnswers()
     {
         var opened = AppStateDriver.OpenedWithoutScreen();
-        var greeter = SymbolOf(opened, "Greeter");
+        var greeter = await SymbolOfAsync(opened, "Greeter");
         var d = AppStateDriver.WithoutScreen();
         var analyzer = d.AppState.Analyzer;
         d.AppState.Lists.RememberActivePaths([AssemblyPath.Of(AppStateDriver.FixturePath)]);

@@ -10,8 +10,8 @@ public sealed class ShowInMetadataHandlerTests
     public async Task HandleAsync_RowFound_ShowsTheTableItIsIn()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var reference = d.Fixture("Greeter").Definition;
-        var row = Assert.IsType<Lookup<MetadataTarget>.Found>(TestWaits.Wait(() => NodeLookup.FindMetadataRowAsync(d.AppState.Assemblies, d.AppState.Session, reference, CancellationToken.None))).Value;
+        var reference = (await d.FixtureAsync("Greeter")).Definition;
+        var row = Assert.IsType<Lookup<MetadataTarget>.Found>(await NodeLookup.FindMetadataRowAsync(d.AppState.Assemblies, d.AppState.Session, reference, CancellationToken.None)).Value;
         var lookup = new FakeShowInMetadataHandlerPorts { Found = new Outcome<Lookup<MetadataTarget>>.Ok(Lookup.FromNullable<MetadataTarget>(row)) };
 
         var load = await new ShowInMetadataHandler(lookup).HandleAsync(d.AppState, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None);
@@ -28,7 +28,7 @@ public sealed class ShowInMetadataHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var shown = d.AppState.Navigation.ActiveTab?.Node;
         Assert.NotNull(shown);
-        var reference = d.Fixture("Greeter").Definition;
+        var reference = (await d.FixtureAsync("Greeter")).Definition;
         var error = new IOException("unreadable");
         var missing = new FakeShowInMetadataHandlerPorts { Found = new Outcome<Lookup<MetadataTarget>>.Ok(Lookup.FromNullable<MetadataTarget>(null)) };
         var failed = new FakeShowInMetadataHandlerPorts { Found = new Outcome<Lookup<MetadataTarget>>.Failed(error) };
@@ -51,8 +51,8 @@ public sealed class ShowInMetadataHandlerTests
         var appState = d.AppState;
         var shown = appState.Navigation.ActiveTab?.Node;
         Assert.NotNull(shown);
-        var reference = d.Fixture("Greeter").Definition;
-        var row = TestWaits.Wait(() => NodeLookup.FindMetadataRowAsync(appState.Assemblies, appState.Session, reference, CancellationToken.None)).FoundValueOrNull;
+        var reference = (await d.FixtureAsync("Greeter")).Definition;
+        var row = (await NodeLookup.FindMetadataRowAsync(appState.Assemblies, appState.Session, reference, CancellationToken.None)).FoundValueOrNull;
         var found = new FakeShowInMetadataHandlerPorts { Found = new Outcome<Lookup<MetadataTarget>>.Ok(Lookup.FromNullable<MetadataTarget>(row)), WhileLooking = () => appState.Navigation.BeginRequest() };
         var missing = new FakeShowInMetadataHandlerPorts { Found = new Outcome<Lookup<MetadataTarget>>.Ok(Lookup.FromNullable<MetadataTarget>(null)), WhileLooking = () => appState.Navigation.BeginRequest() };
 

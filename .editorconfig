@@ -48,6 +48,8 @@ dotnet_diagnostic.CA2201.severity = warning
 # RL0301; VSTHRD003 is about Visual Studio's JoinableTaskFactory.
 dotnet_diagnostic.CA2016.severity = warning
 dotnet_diagnostic.CA1849.severity = warning
+# R010: no blocking wait on a task (VSTHRD002); the one allowed wait is suppressed in place with its reason.
+dotnet_diagnostic.VSTHRD002.severity = error
 dotnet_diagnostic.VSTHRD200.severity = none
 dotnet_diagnostic.VSTHRD003.severity = none
 

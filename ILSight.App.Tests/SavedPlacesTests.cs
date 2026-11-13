@@ -84,15 +84,15 @@ public sealed class SavedPlacesTests : IDisposable
     }
 
     [Fact]
-    public void A_tab_saved_with_a_versioned_path_shows_its_node_again()
+    public async Task A_tab_saved_with_a_versioned_path_shows_its_node_again()
     {
         var d = Restored(WithTab($"\"Path\": {GreeterPath}"));
 
-        Assert.Same(d.Fixture("Greeter"), Assert.Single(d.AppState.Navigation.OpenTabs).Node);
+        Assert.Same(await d.FixtureAsync("Greeter"), Assert.Single(d.AppState.Navigation.OpenTabs).Node);
     }
 
     [Fact]
-    public void A_bookmark_saved_with_a_versioned_path_goes_to_its_node_again()
+    public async Task A_bookmark_saved_with_a_versioned_path_goes_to_its_node_again()
     {
         var d = Restored(WithBookmark($"\"Path\": {GreeterPath}"));
 
@@ -100,7 +100,7 @@ public sealed class SavedPlacesTests : IDisposable
         d.Start((a, ct) => a.GoToBookmarkHandler.HandleAsync(a, bookmark, ct));
         d.Settle();
 
-        Assert.Same(d.Fixture("Greeter"), d.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(await d.FixtureAsync("Greeter"), d.AppState.Navigation.ActiveTab?.Node);
     }
 
     [Theory]

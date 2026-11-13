@@ -75,11 +75,11 @@ public sealed class LayoutPersistenceTests : IDisposable
     }
 
     [Fact]
-    public void The_symbols_being_analyzed_are_analyzed_again_after_a_restart()
+    public async Task The_symbols_being_analyzed_are_analyzed_again_after_a_restart()
     {
         var first = AppStateDriver.Opened(_temp.Settings());
-        first.Analyze(first.Fixture("Outline").Children.Single(c => c.Text.StartsWith("First()")));
-        first.Analyze(first.Fixture("Greeter"));
+        first.Analyze((await first.FixtureAsync("Outline").ListChildrenAsync()).Single(c => c.Text.StartsWith("First()")));
+        first.Analyze(await first.FixtureAsync("Greeter"));
         first.Pump();
 
         var next = new AppStateDriver(_temp.Settings());

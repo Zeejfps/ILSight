@@ -31,11 +31,11 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     }
 
     /// <summary>An app with two finished saves, Greeter then Farewell, in folders of their own.</summary>
-    private AppDriver TwoFinished(float width = 1000f)
+    private async Task<AppDriver> TwoFinishedAsync(float width = 1000f)
     {
         var app = AppDriver.Opened(width: width, height: TallWindow);
-        SaveCode(app.AppState, app.Fixture("Greeter"), Path.Combine(Folder("First"), "Greeter.cs"));
-        SaveCode(app.AppState, app.Fixture("Farewell"), Path.Combine(Folder("Second"), "Farewell.cs"));
+        SaveCode(app.AppState, await app.FixtureAsync("Greeter"), Path.Combine(Folder("First"), "Greeter.cs"));
+        SaveCode(app.AppState, await app.FixtureAsync("Farewell"), Path.Combine(Folder("Second"), "Farewell.cs"));
         app.Settle(2);
         return app;
     }
@@ -53,9 +53,9 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     }
 
     [Fact]
-    public void Clicking_a_row_selects_it_and_the_arrow_keys_walk_the_list()
+    public async Task Clicking_a_row_selects_it_and_the_arrow_keys_walk_the_list()
     {
-        var app = TwoFinished();
+        var app = await TwoFinishedAsync();
 
         app.Frames.Wait(1).Click(app.TextRect("Farewell")).Frame();
         Assert.Equal(RunOf(app, "Farewell"), app.Ui.SelectedExport);
@@ -67,9 +67,9 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     }
 
     [Fact]
-    public void Enter_and_a_double_click_open_the_report_of_a_finished_export()
+    public async Task Enter_and_a_double_click_open_the_report_of_a_finished_export()
     {
-        var app = TwoFinished();
+        var app = await TwoFinishedAsync();
         app.Frames.Wait(1).Click(app.TextRect("Greeter")).Frame();
 
         app.Frames.Key(KeyboardKey.Enter).Frame(2);
@@ -83,9 +83,9 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     }
 
     [Fact]
-    public void Delete_takes_the_selected_export_off_the_history()
+    public async Task Delete_takes_the_selected_export_off_the_history()
     {
-        var app = TwoFinished();
+        var app = await TwoFinishedAsync();
         app.Frames.Wait(1).Click(app.TextRect("Greeter")).Frame();
 
         app.Frames.Key(KeyboardKey.Delete).Frame();
@@ -94,9 +94,9 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     }
 
     [Fact]
-    public void Ctrl_C_copies_the_folder_of_the_selected_export()
+    public async Task Ctrl_C_copies_the_folder_of_the_selected_export()
     {
-        var app = TwoFinished();
+        var app = await TwoFinishedAsync();
         app.Frames.Wait(1).Click(app.TextRect("Greeter")).Frame();
 
         app.Frames.Key(Shortcuts.Copy).Frame();
@@ -105,9 +105,9 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     }
 
     [Fact]
-    public void The_context_menu_offers_what_suits_a_finished_export()
+    public async Task The_context_menu_offers_what_suits_a_finished_export()
     {
-        var app = TwoFinished();
+        var app = await TwoFinishedAsync();
 
         app.Frames.Wait(1).Click(app.TextRect("Greeter"), button: PointerButton.Right).Frame(2);
         Assert.True(app.Frames.Drew("Copy folder path"));
@@ -117,9 +117,9 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     }
 
     [Fact]
-    public void Shift_F10_opens_the_menu_of_the_selected_export()
+    public async Task Shift_F10_opens_the_menu_of_the_selected_export()
     {
-        var app = TwoFinished();
+        var app = await TwoFinishedAsync();
         app.Frames.Wait(1).Click(app.TextRect("Greeter")).Frame();
 
         app.Frames.Key(KeyboardKey.F10, KeyModifiers.Shift).Frame(2);
@@ -165,9 +165,9 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     }
 
     [Fact]
-    public void A_narrow_panel_shows_its_actions_as_icons()
+    public async Task A_narrow_panel_shows_its_actions_as_icons()
     {
-        var app = TwoFinished(width: 560f);
+        var app = await TwoFinishedAsync(width: 560f);
         app.Run(2);
 
         Assert.False(app.Frames.Drew("Open folder"));

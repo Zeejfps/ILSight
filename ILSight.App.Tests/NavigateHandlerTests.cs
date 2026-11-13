@@ -10,7 +10,7 @@ public sealed class NavigateHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var appState = d.AppState;
-        var farewell = d.Fixture("Farewell");
+        var farewell = await d.FixtureAsync("Farewell");
         var reference = farewell.Definition;
         var resolvingWhileLooking = false;
         var lookup = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(farewell)), WhileLooking = () => resolvingWhileLooking = appState.IsResolving };
@@ -34,7 +34,7 @@ public sealed class NavigateHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var shown = d.AppState.Navigation.ActiveTab?.Node;
         Assert.NotNull(shown);
-        var reference = d.Fixture("Farewell").Definition;
+        var reference = (await d.FixtureAsync("Farewell")).Definition;
         var error = new IOException("unreadable");
         var missing = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)) };
         var failed = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(error) };
@@ -59,7 +59,7 @@ public sealed class NavigateHandlerTests
         var appState = d.AppState;
         var shown = appState.Navigation.ActiveTab?.Node;
         Assert.NotNull(shown);
-        var farewell = d.Fixture("Farewell");
+        var farewell = await d.FixtureAsync("Farewell");
         var found = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(farewell)), WhileLooking = () => appState.Navigation.BeginRequest() };
         var missing = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)), WhileLooking = () => appState.Navigation.BeginRequest() };
 
@@ -99,7 +99,7 @@ public sealed class NavigateHandlerTests
     public async Task HandleAsync_ReferenceIntoAModuleThatCouldNotBeRead_ReportsTheModuleNotTheReference()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var greeter = d.Fixture("Greeter");
+        var greeter = await d.FixtureAsync("Greeter");
         var module = d.AppState.Assemblies.Assemblies.OfType<LoadedModule>().Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
         var why = new BadImageFormatException("Bad namespace.");
         var unreadable = new Lookup<BrowseNode>.Unreadable { Module = new UnreadableModule { Module = module, Why = why } };

@@ -9,10 +9,10 @@ public sealed class BookmarkImportingTests
 
     /// <summary>Two bookmarks, as a file keeps them, of the fixture Outline's "return First();" and "foreach"
     /// lines.</summary>
-    private static List<Bookmark> TwoBookmarks()
+    private static async Task<List<Bookmark>> TwoBookmarksAsync()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        d.Show(d.Fixture("Outline"));
+        d.Show(await d.FixtureAsync("Outline"));
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark));
@@ -45,7 +45,7 @@ public sealed class BookmarkImportingTests
     [Fact]
     public async Task ImportAsync_NoBookmarksYet_TakesThoseFoundAtOnceAndReportsTheLost()
     {
-        var file = TwoBookmarks();
+        var file = await TwoBookmarksAsync();
         var ports = new FakeBookmarkImportingPorts { File = FileOf(file) };
         var bookmarks = new BookmarkList();
         var imports = new BookmarkImports();
@@ -65,7 +65,7 @@ public sealed class BookmarkImportingTests
     [Fact]
     public async Task ImportAsync_BookmarksThere_WaitsForTheUserToSayHow()
     {
-        var file = TwoBookmarks();
+        var file = await TwoBookmarksAsync();
         var ports = new FakeBookmarkImportingPorts { File = FileOf(file) };
         var bookmarks = new BookmarkList();
         bookmarks.TryAdd(MadeBy(bookmarks, file[0]));
@@ -84,7 +84,7 @@ public sealed class BookmarkImportingTests
     [Fact]
     public async Task FinishImport_Replace_TakesThemAndReportsThoseLeftOut()
     {
-        var file = TwoBookmarks();
+        var file = await TwoBookmarksAsync();
         var ports = new FakeBookmarkImportingPorts { File = FileOf([file[0], file[0], file[1]]) };
         var bookmarks = new BookmarkList();
         bookmarks.TryAdd(MadeBy(bookmarks, file[1]));
@@ -120,7 +120,7 @@ public sealed class BookmarkImportingTests
     [Fact]
     public async Task ImportAsync_LookupFailed_ReportsTheFileNotImported()
     {
-        var ports = new FakeBookmarkImportingPorts { File = FileOf(TwoBookmarks()) };
+        var ports = new FakeBookmarkImportingPorts { File = FileOf(await TwoBookmarksAsync()) };
         var bookmarks = new BookmarkList();
         var imports = new BookmarkImports();
 

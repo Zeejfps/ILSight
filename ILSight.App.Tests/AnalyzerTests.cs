@@ -13,9 +13,9 @@ namespace ILSight.App.Tests;
 
 public sealed class AnalyzerTests
 {
-    private static BrowseNode First(AppStateDriver d)
+    private static async Task<BrowseNode> FirstAsync(AppStateDriver d)
     {
-        return d.Fixture("Outline").Children.Single(c => c.Text.StartsWith("First()"));
+        return (await d.FixtureAsync("Outline").ListChildrenAsync()).Single(c => c.Text.StartsWith("First()"));
     }
 
     private static AnalyzerKindNode Expand(AppStateDriver d, AnalyzerSymbolNode symbol, string header)
@@ -39,11 +39,11 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void Analyzing_a_member_docks_the_analyzer_and_its_analyses_find_what_uses_it()
+    public async Task Analyzing_a_member_docks_the_analyzer_and_its_analyses_find_what_uses_it()
     {
         var d = AppStateDriver.Opened();
 
-        d.Analyze(First(d));
+        d.Analyze(await FirstAsync(d));
         var root = Assert.Single(d.AppState.Analyzer.Found());
         var usedBy = Expand(d, root, "Used By");
 
@@ -54,10 +54,10 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void A_failed_analysis_tells_why_in_its_row_and_reports_the_whole_error()
+    public async Task A_failed_analysis_tells_why_in_its_row_and_reports_the_whole_error()
     {
         var d = AppStateDriver.Opened();
-        var elsewhere = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).Root.Child(AppStateDriver.FixturesNamespace, "Outline");
+        var elsewhere = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync().GetChildAsync(AppStateDriver.FixturesNamespace, "Outline");
         var symbol = elsewhere.Analysis;
         Assert.NotNull(symbol);
         var kind = new AnalyzerKindNode { Subject = symbol, Kind = symbol.Kinds.Single(k => Core.Analysis.Analyzers.GetHeader(k) == "Used By") };
@@ -76,10 +76,10 @@ public sealed class AnalyzerTests
     [Theory]
     [InlineData("Count", "Increment()")]
     [InlineData("Changed", "Watch(")]
-    public void Used_By_a_property_or_event_finds_each_member_using_its_accessors_once(string member, string user)
+    public async Task Used_By_a_property_or_event_finds_each_member_using_its_accessors_once(string member, string user)
     {
         var d = AppStateDriver.Opened();
-        var node = d.Fixture("Counter").Children
+        var node = (await d.FixtureAsync("Counter").ListChildrenAsync())
             .Where(c => !c.IsCompilerGenerated)
             .Single(c => c.Text.StartsWith(member + " "));
 
@@ -91,11 +91,11 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void Applied_To_finds_members_that_carry_a_security_attribute()
+    public async Task Applied_To_finds_members_that_carry_a_security_attribute()
     {
         var d = AppStateDriver.Opened();
 
-        d.Analyze(d.Fixture("GuardAttribute"));
+        d.Analyze(await d.FixtureAsync("GuardAttribute"));
         var appliedTo = Expand(d, Assert.Single(d.AppState.Analyzer.Found()), "Applied To");
 
         var member = Assert.IsType<AnalyzerSymbolNode>(Assert.Single(appliedTo.Found));
@@ -103,11 +103,11 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void A_result_opens_its_member_when_activated_and_can_be_analyzed_in_turn()
+    public async Task A_result_opens_its_member_when_activated_and_can_be_analyzed_in_turn()
     {
         var app = AppDriver.Opened(height: 600f);
         var d = app.Driver;
-        d.Analyze(First(d));
+        d.Analyze(await FirstAsync(d));
         var analyzer = d.AppState.Analyzer;
         var caller = (AnalyzerSymbolNode)Expand(d, analyzer.Found()[0], "Used By").Found[0];
         app.Ui.Analyzer.View.Select(caller);
@@ -123,13 +123,13 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void Ctrl_R_analyzes_the_node_selected_in_the_focused_tree()
+    public async Task Ctrl_R_analyzes_the_node_selected_in_the_focused_tree()
     {
         var app = AppDriver.Opened();
         var d = app.Driver;
-        d.Ui.Tree.RevealNode(First(d));
+        d.Ui.Tree.RevealNode(await FirstAsync(d));
         app.Run(2);
-        app.Frames.ClickOn(GetFixtureRow("Outline", First(d).Text));
+        app.Frames.ClickOn(GetFixtureRow("Outline", (await FirstAsync(d)).Text));
         d.Settle();
 
         app.Frames.Key(Shortcuts.Analyze).Frame(2);
@@ -138,9 +138,9 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void Ctrl_R_in_the_code_analyzes_the_reference_at_the_caret()
+    public async Task Ctrl_R_in_the_code_analyzes_the_reference_at_the_caret()
     {
-        var view = CodeViewDriver.Showing(CodeViewDriver.Outline(), 1200f, frames: 2);
+        var view = CodeViewDriver.Showing(await CodeViewDriver.OutlineAsync(), 1200f, frames: 2);
         var (line, column) = view.Document.GetPosition("return First();");
 
         view.Click(line, column + "return First".Length);
@@ -150,11 +150,11 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void Ctrl_R_in_the_analyzer_analyzes_the_result_it_has_selected()
+    public async Task Ctrl_R_in_the_analyzer_analyzes_the_result_it_has_selected()
     {
         var app = AppDriver.Opened(height: 600f);
         var d = app.Driver;
-        ShowFirstCaller(app);
+        await ShowFirstCallerAsync(app);
         app.Frames.ClickOn(GetAnalyzerRow("First() : int", "Used By", "Third() : int")).Frame();
 
         app.Frames.Key(Shortcuts.Analyze).Frame(2);
@@ -164,11 +164,11 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void Analyzing_a_result_in_an_assembly_loaded_only_to_resolve_references_lists_it_as_following_it_does_and_analyzes_it_there()
+    public async Task Analyzing_a_result_in_an_assembly_loaded_only_to_resolve_references_lists_it_as_following_it_does_and_analyzes_it_there()
     {
         var d = AppStateDriver.Opened();
         var analyzer = d.AppState.Analyzer;
-        d.Analyze(d.Fixture("Outline").Children.Single(c => c.Text.StartsWith("Second()")));
+        d.Analyze((await d.FixtureAsync("Outline").ListChildrenAsync()).Single(c => c.Text.StartsWith("Second()")));
         var uses = Expand(d, analyzer.Found()[0], "Uses");
         var append = uses.Found.OfType<AnalyzerSymbolNode>().First(n => n.Symbol.Label.StartsWith("Append("));
         var file = append.Symbol.File;
@@ -214,11 +214,11 @@ public sealed class AnalyzerTests
         Assert.Equal("Its assembly isn't open, and nothing names its definition to open it by.", error.Words().Details);
     }
 
-    private static void ShowFirstCaller(AppDriver app)
+    private static async Task ShowFirstCallerAsync(AppDriver app)
     {
         var d = app.Driver;
         var analyzer = d.AppState.Analyzer;
-        d.Analyze(First(d));
+        d.Analyze(await FirstAsync(d));
         var caller = Expand(d, analyzer.Found()[0], "Used By").Found[0];
         d.Ui.Analyzer.View.ScrollIntoView(caller);
         app.Run(3);
@@ -226,10 +226,10 @@ public sealed class AnalyzerTests
 
 
     [Fact]
-    public void A_reference_in_the_code_is_analyzed_once_it_is_found()
+    public async Task A_reference_in_the_code_is_analyzed_once_it_is_found()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        d.Show(d.Fixture("Outline"));
+        d.Show(await d.FixtureAsync("Outline"));
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var document = tab.Document;
@@ -245,9 +245,9 @@ public sealed class AnalyzerTests
         Assert.Equal([new ViewCommand.ShowAnalysis(root)], d.TakeViewCommands());
     }
 
-    private static CodeReference.Entity ReferenceTo(AppStateDriver d, string type, string text, int offset = 0)
+    private static async Task<CodeReference.Entity> ReferenceToAsync(AppStateDriver d, string type, string text, int offset = 0)
     {
-        d.Show(d.Fixture(type));
+        d.Show(await d.FixtureAsync(type));
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var document = tab.Document;
@@ -255,16 +255,16 @@ public sealed class AnalyzerTests
         return Assert.IsType<CodeReference.Entity>(document.SpanAt(line, column + offset).Reference);
     }
 
-    private static CodeReference.Entity ReferenceToFirst(AppStateDriver d)
+    private static async Task<CodeReference.Entity> ReferenceToFirstAsync(AppStateDriver d)
     {
-        return ReferenceTo(d, "Outline", "return First();", "return ".Length);
+        return await ReferenceToAsync(d, "Outline", "return First();", "return ".Length);
     }
 
     [Fact]
-    public void A_reference_shows_a_loading_root_at_once_that_is_saved_once_it_is_found()
+    public async Task A_reference_shows_a_loading_root_at_once_that_is_saved_once_it_is_found()
     {
         var d = AppStateDriver.Opened();
-        var reference = ReferenceToFirst(d);
+        var reference = await ReferenceToFirstAsync(d);
         var analyzer = d.AppState.Analyzer;
 
         d.Analyze(reference);
@@ -281,11 +281,11 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void Two_analyses_asked_for_by_reference_both_add_their_roots_in_the_order_asked()
+    public async Task Two_analyses_asked_for_by_reference_both_add_their_roots_in_the_order_asked()
     {
         var d = AppStateDriver.Opened();
-        var length = ReferenceTo(d, "Greeter", "Length");
-        var greet = ReferenceTo(d, "Greeter", "Greet(2)");
+        var length = await ReferenceToAsync(d, "Greeter", "Length");
+        var greet = await ReferenceToAsync(d, "Greeter", "Greet(2)");
 
         d.Analyze(length);
         d.Analyze(greet);
@@ -298,13 +298,13 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void A_reference_to_a_symbol_analyzed_already_selects_its_root()
+    public async Task A_reference_to_a_symbol_analyzed_already_selects_its_root()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var reference = ReferenceToFirst(d);
+        var reference = await ReferenceToFirstAsync(d);
         var analyzer = d.AppState.Analyzer;
-        var first = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(SymbolOf(First(d)))).Root;
-        var greeter = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(SymbolOf(d.Fixture("Greeter")))).Root;
+        var first = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(SymbolOf(await FirstAsync(d)))).Root;
+        var greeter = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(SymbolOf(await d.FixtureAsync("Greeter")))).Root;
         d.TakeViewCommands();
 
         Commands.StartAnalyzing(d.AppState, BeginAnalyzing(analyzer, reference));
@@ -315,10 +315,10 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void A_reference_whose_root_was_removed_meanwhile_is_dropped()
+    public async Task A_reference_whose_root_was_removed_meanwhile_is_dropped()
     {
         var d = AppStateDriver.Opened();
-        var reference = ReferenceToFirst(d);
+        var reference = await ReferenceToFirstAsync(d);
         var analyzer = d.AppState.Analyzer;
 
         d.Analyze(reference);
@@ -329,17 +329,17 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void A_reference_that_does_not_resolve_removes_its_root_and_is_reported()
+    public async Task A_reference_that_does_not_resolve_removes_its_root_and_is_reported()
     {
         using var temp = new TempDir();
-        var copy = temp.Write("Copy.dll", File.ReadAllBytes(AppStateDriver.FixturePath));
+        var copy = temp.Write("Copy.dll", await File.ReadAllBytesAsync(AppStateDriver.FixturePath));
         var d = new AppStateDriver();
         d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(copy)], ct));
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 1);
         d.Settle();
         var assembly = d.AppState.Assemblies.Assemblies.Single();
-        var outline = assembly.Root.Child(AppStateDriver.FixturesNamespace, "Outline");
-        var document = outline.Decompile(DecompilationLanguage.CSharp);
+        var outline = await assembly.ReadRootAsync().GetChildAsync(AppStateDriver.FixturesNamespace, "Outline");
+        var document = await outline.DecompileAsync(DecompilationLanguage.CSharp);
         var (line, column) = document.GetPosition("return First();");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
         Commands.CloseAssemblies(d.AppState, [assembly]);
@@ -353,12 +353,12 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void Removing_a_root_or_clearing_the_assembly_list_empties_the_analyzer()
+    public async Task Removing_a_root_or_clearing_the_assembly_list_empties_the_analyzer()
     {
         var d = AppStateDriver.Opened();
         var analyzer = d.AppState.Analyzer;
-        d.Analyze(First(d));
-        d.Analyze(d.Fixture("Greeter"));
+        d.Analyze(await FirstAsync(d));
+        d.Analyze(await d.FixtureAsync("Greeter"));
 
         analyzer.RemoveRoot(analyzer.Roots[0]);
         var left = analyzer.Found().Select(r => r.Symbol.Label).ToList();
@@ -369,11 +369,11 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void Removing_a_root_leaves_the_analyses_of_results_never_expanded_unlisted()
+    public async Task Removing_a_root_leaves_the_analyses_of_results_never_expanded_unlisted()
     {
         var d = AppStateDriver.Opened();
         var analyzer = d.AppState.Analyzer;
-        d.Analyze(First(d));
+        d.Analyze(await FirstAsync(d));
         var root = analyzer.Found()[0];
         var caller = (AnalyzerSymbolNode)Expand(d, root, "Used By").Found[0];
 
@@ -382,25 +382,25 @@ public sealed class AnalyzerTests
         Assert.Null(caller.Children);
     }
 
-    private static AnalyzerKindNode NewKind(AppStateDriver d)
+    private static async Task<AnalyzerKindNode> NewKindAsync(AppStateDriver d)
     {
-        var symbol = First(d).Analysis;
+        var symbol = (await FirstAsync(d)).Analysis;
         Assert.NotNull(symbol);
         return new AnalyzerKindNode { Subject = symbol, Kind = symbol.Kinds[0] };
     }
 
-    private static AnalyzerKindNode RunningKind(AppStateDriver d)
+    private static async Task<AnalyzerKindNode> RunningKindAsync(AppStateDriver d)
     {
-        var kind = NewKind(d);
+        var kind = await NewKindAsync(d);
         kind.Run = new AnalyzerRun.Running(new CancellationTokenSource());
         return kind;
     }
 
     [Fact]
-    public void Cancelling_a_symbol_cancels_the_analyses_listed_under_it()
+    public async Task Cancelling_a_symbol_cancels_the_analyses_listed_under_it()
     {
         var d = AppStateDriver.Opened();
-        var running = RunningKind(d);
+        var running = await RunningKindAsync(d);
         var work = running.Work;
         Assert.NotNull(work);
         var symbol = new AnalyzerSymbolNode { Symbol = running.Subject, Children = [running] };
@@ -412,10 +412,10 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void Cancelling_a_symbol_whose_children_were_never_listed_leaves_them_unlisted()
+    public async Task Cancelling_a_symbol_whose_children_were_never_listed_leaves_them_unlisted()
     {
         var d = AppStateDriver.Opened();
-        var analyzed = First(d).Analysis;
+        var analyzed = (await FirstAsync(d)).Analysis;
         Assert.NotNull(analyzed);
         var symbol = new AnalyzerSymbolNode { Symbol = analyzed };
 
@@ -425,11 +425,11 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void Cancelling_an_analysis_cancels_its_run_and_the_analyses_under_what_it_found()
+    public async Task Cancelling_an_analysis_cancels_its_run_and_the_analyses_under_what_it_found()
     {
         var d = AppStateDriver.Opened();
-        var kind = RunningKind(d);
-        var nested = RunningKind(d);
+        var kind = await RunningKindAsync(d);
+        var nested = await RunningKindAsync(d);
         kind.Found.Add(new AnalyzerSymbolNode { Symbol = kind.Subject, Children = [nested] });
         var work = kind.Work;
         Assert.NotNull(work);
@@ -443,10 +443,10 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void Cancelling_an_analysis_that_is_not_running_does_nothing()
+    public async Task Cancelling_an_analysis_that_is_not_running_does_nothing()
     {
         var d = AppStateDriver.Opened();
-        var kind = RunningKind(d);
+        var kind = await RunningKindAsync(d);
         kind.Run = new AnalyzerRun.Stopped();
 
         CancelNode(kind);
@@ -455,9 +455,9 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void An_analysis_not_started_is_neither_running_nor_done_and_can_start()
+    public async Task An_analysis_not_started_is_neither_running_nor_done_and_can_start()
     {
-        var kind = NewKind(AppStateDriver.Opened());
+        var kind = await NewKindAsync(AppStateDriver.Opened());
 
         Assert.False(kind.HasStarted);
         Assert.False(kind.IsDone);
@@ -465,9 +465,9 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void An_analysis_running_has_started_and_is_not_done()
+    public async Task An_analysis_running_has_started_and_is_not_done()
     {
-        var kind = RunningKind(AppStateDriver.Opened());
+        var kind = await RunningKindAsync(AppStateDriver.Opened());
 
         Assert.True(kind.HasStarted);
         Assert.False(kind.IsDone);
@@ -475,9 +475,9 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void An_analysis_stopped_has_started_and_neither_runs_nor_is_done()
+    public async Task An_analysis_stopped_has_started_and_neither_runs_nor_is_done()
     {
-        var kind = RunningKind(AppStateDriver.Opened());
+        var kind = await RunningKindAsync(AppStateDriver.Opened());
 
         CancelNode(kind);
 
@@ -488,9 +488,9 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void An_analysis_done_has_started_and_no_longer_runs()
+    public async Task An_analysis_done_has_started_and_no_longer_runs()
     {
-        var kind = RunningKind(AppStateDriver.Opened());
+        var kind = await RunningKindAsync(AppStateDriver.Opened());
         kind.Run = new AnalyzerRun.Done();
 
         Assert.True(kind.HasStarted);
@@ -504,11 +504,11 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void A_symbol_row_lists_what_can_be_asked_of_it()
+    public async Task A_symbol_row_lists_what_can_be_asked_of_it()
     {
         var d = AppStateDriver.Opened();
         var rows = NewRows();
-        var analyzed = First(d).Analysis;
+        var analyzed = (await FirstAsync(d)).Analysis;
         Assert.NotNull(analyzed);
         var symbol = new AnalyzerSymbolNode { Symbol = analyzed };
 
@@ -518,11 +518,11 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void An_analysis_row_lists_a_loading_row_and_asks_once_to_run()
+    public async Task An_analysis_row_lists_a_loading_row_and_asks_once_to_run()
     {
         var d = AppStateDriver.Opened();
         var rows = NewRows();
-        var kind = NewKind(d);
+        var kind = await NewKindAsync(d);
 
         Assert.True(rows.HasChildren(kind));
         Assert.Same(rows.Loading, Assert.Single(rows.ListChildren(kind)));
@@ -566,11 +566,11 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void Its_menu_clears_the_analyzer()
+    public async Task Its_menu_clears_the_analyzer()
     {
         var app = AppDriver.Opened(height: 600f);
         var d = app.Driver;
-        d.Analyze(First(d));
+        d.Analyze(await FirstAsync(d));
         app.Run(3);
         app.Frames.ClickOn(GetAnalyzerRow("First() : int"), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Clear")).Frame(2);
@@ -579,12 +579,12 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void The_toolbar_expands_and_runs_every_analysis_of_the_roots_then_collapses_them()
+    public async Task The_toolbar_expands_and_runs_every_analysis_of_the_roots_then_collapses_them()
     {
         var app = AppDriver.Opened(height: 600f);
         var d = app.Driver;
         var analyzer = d.AppState.Analyzer;
-        d.Analyze(First(d));
+        d.Analyze(await FirstAsync(d));
         app.Run(3);
         var root = analyzer.Roots[0];
         var rows = app.Ui.Analyzer;
@@ -601,14 +601,14 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void The_toolbar_removes_the_analysis_the_selection_is_in_or_every_analysis()
+    public async Task The_toolbar_removes_the_analysis_the_selection_is_in_or_every_analysis()
     {
         var app = AppDriver.Opened(height: 600f);
         var d = app.Driver;
         var analyzer = d.AppState.Analyzer;
-        d.Analyze(First(d));
+        d.Analyze(await FirstAsync(d));
         var caller = (AnalyzerSymbolNode)Expand(d, analyzer.Found()[0], "Used By").Found[0];
-        d.Analyze(d.Fixture("Greeter"));
+        d.Analyze(await d.FixtureAsync("Greeter"));
         app.Ui.Analyzer.View.Select(caller);
         app.Run(3);
 
@@ -621,11 +621,11 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public void Delete_in_the_analyzer_removes_the_analysis_the_selection_is_in()
+    public async Task Delete_in_the_analyzer_removes_the_analysis_the_selection_is_in()
     {
         var app = AppDriver.Opened(height: 600f);
         var d = app.Driver;
-        ShowFirstCaller(app);
+        await ShowFirstCallerAsync(app);
         app.Frames.ClickOn(GetAnalyzerRow("First() : int", "Used By", "Third() : int")).Frame();
 
         app.Frames.Key(KeyboardKey.Delete).Frame(2);

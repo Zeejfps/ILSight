@@ -4,11 +4,13 @@ using ZGF.Gui.Immediate;
 namespace ILSight.App.Tests;
 
 /// <summary>Actions posted from other threads, queued until the test runs them. A test's drivers
-/// share one, which is also where <c>await</c> on the test's thread continues. Each app's frames are woken
-/// when something is posted, so one waiting for its UI to be ready runs a frame, which runs the queue.</summary>
+/// share one; it is the UI context only while the drivers run the app's turns (<see cref="Run"/>,
+/// <see cref="Install"/>), as the app's loop installs it for its own, so a test's own <c>await</c> never waits
+/// on it. Each app's frames are woken when something is posted, so one waiting for its UI to be ready runs a
+/// frame, which runs the queue.</summary>
 internal sealed class PostedActions
 {
-    [ThreadStatic] private static PostedActions? _ofThisTest;
+    private static readonly AsyncLocal<PostedActions?> s_ofThisTest = new();
 
     private readonly ConcurrentQueue<Action> _queue = new();
     private readonly object _gate = new();
@@ -22,20 +24,25 @@ internal sealed class PostedActions
 
     public bool IsEmpty => _queue.IsEmpty;
 
-    /// <summary>The queue of the test running on this thread. xUnit gives every test a context of
-    /// its own, so a test that has not made one yet gets a new queue.</summary>
+    /// <summary>The queue of the test running in this flow: found again after the test awaits, on whatever thread it
+    /// continues. xUnit runs every test in a flow of its own, so a test that has not made one yet gets a new queue.</summary>
     public static PostedActions OfThisTest()
     {
-        var existing = _ofThisTest;
-        if (existing is not null && SynchronizationContext.Current == existing._context)
+        var existing = s_ofThisTest.Value;
+        if (existing is not null)
         {
             return existing;
         }
 
         var posted = new PostedActions();
-        SynchronizationContext.SetSynchronizationContext(posted._context);
-        _ofThisTest = posted;
+        s_ofThisTest.Value = posted;
         return posted;
+    }
+
+    /// <summary>Makes this queue the thread's UI context for a turn of the app's code, until the scope is disposed.</summary>
+    public UiSynchronizationContext.Scope Install()
+    {
+        return _context.Install();
     }
 
     public void Post(Action action)
@@ -65,6 +72,7 @@ internal sealed class PostedActions
     /// <summary>Runs what was posted so far, and what that posts.</summary>
     public void Run()
     {
+        using var turn = _context.Install();
         while (_queue.TryDequeue(out var action))
         {
             action();

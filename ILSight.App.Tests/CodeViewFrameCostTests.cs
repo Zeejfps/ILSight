@@ -80,9 +80,9 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
     [InlineData("mark")]
     [InlineData("find")]
     [InlineData("brackets")]
-    public void A_frame_with_what_the_pointer_find_or_the_caret_marks_allocates_nothing(string marked)
+    public async Task A_frame_with_what_the_pointer_find_or_the_caret_marks_allocates_nothing(string marked)
     {
-        var view = Marking(marked);
+        var view = await MarkingAsync(marked);
         Assert.True(IsMarked(view, marked));
 
         view.Frames.Canvas.Recording = false;
@@ -98,16 +98,16 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
         Assert.Equal(0, allocated);
     }
 
-    private static CodeViewDriver Marking(string marked)
+    private static async Task<CodeViewDriver> MarkingAsync(string marked)
     {
         return marked switch
         {
-            "reference" => HoverReference(),
+            "reference" => await HoverReferenceAsync(),
             "chevron" => HoverChevron(),
             "chip" => HoverChip(),
             "mark" => HoverMark(),
             "find" => OpenFind(),
-            "brackets" => PutCaretOnBracket(),
+            "brackets" => await PutCaretOnBracketAsync(),
             _ => throw new UnreachableException(),
         };
     }
@@ -127,9 +127,9 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
         };
     }
 
-    private static CodeViewDriver HoverReference()
+    private static async Task<CodeViewDriver> HoverReferenceAsync()
     {
-        var view = CodeViewDriver.Showing(CodeViewDriver.Greeter(), Height, frames: 2);
+        var view = CodeViewDriver.Showing(await CodeViewDriver.GreeterAsync(), Height, frames: 2);
         var (line, column) = GetReference(view.Document);
         view.MoveTo(line, column + 1);
         return view;
@@ -186,9 +186,9 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
         return view;
     }
 
-    private static CodeViewDriver PutCaretOnBracket()
+    private static async Task<CodeViewDriver> PutCaretOnBracketAsync()
     {
-        var view = CodeViewDriver.Showing(CodeViewDriver.Greeter(), Height, frames: 2);
+        var view = CodeViewDriver.Showing(await CodeViewDriver.GreeterAsync(), Height, frames: 2);
         view.Display = new DisplayOptions();
         var (line, column) = view.Document.GetPosition("{");
         view.Click(line, column);

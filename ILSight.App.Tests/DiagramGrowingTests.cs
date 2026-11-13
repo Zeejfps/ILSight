@@ -6,14 +6,14 @@ namespace ILSight.App.Tests;
 
 public sealed class DiagramGrowingTests
 {
-    private static CodeReference.Entity TypeOf(AppStateDriver d, string type)
+    private static async Task<CodeReference.Entity> TypeOfAsync(AppStateDriver d, string type)
     {
-        return d.Fixture(type).Definition;
+        return (await d.FixtureAsync(type)).Definition;
     }
 
-    private static TypeCard CardOf(AppStateDriver d, string type)
+    private static async Task<TypeCard> CardOfAsync(AppStateDriver d, string type)
     {
-        var card = TestWaits.Wait(() => TypeCards.ReadAsync(d.AppState.Assemblies, TypeOf(d, type), CancellationToken.None)).FoundOrNull;
+        var card = (await TypeCards.ReadAsync(d.AppState.Assemblies, await TypeOfAsync(d, type), CancellationToken.None)).FoundOrNull;
         Assert.NotNull(card);
         return card;
     }
@@ -27,13 +27,13 @@ public sealed class DiagramGrowingTests
     }
 
     [Fact]
-    public void ShowInNewDiagram_LookupStillRunning_IsANewIntentThatDropsItsAnswer()
+    public async Task ShowInNewDiagram_LookupStillRunning_IsANewIntentThatDropsItsAnswer()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var navigation = d.AppState.Navigation;
         var lookup = navigation.BeginResolving(inNewTab: false);
 
-        var read = Diagrams.ShowInNewDiagram(d.AppState, TypeOf(d, "Vehicle"), "Vehicle diagram");
+        var read = Diagrams.ShowInNewDiagram(d.AppState, await TypeOfAsync(d, "Vehicle"), "Vehicle diagram");
 
         Assert.Same(read.Tab, navigation.ActiveTab);
         Assert.True(navigation.IsStale(lookup.Intent));
@@ -41,14 +41,14 @@ public sealed class DiagramGrowingTests
     }
 
     [Fact]
-    public void ShowInDiagram_LookupStillRunning_IsANewIntentThatDropsItsAnswer()
+    public async Task ShowInDiagram_LookupStillRunning_IsANewIntentThatDropsItsAnswer()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var navigation = d.AppState.Navigation;
-        var first = Diagrams.ShowInNewDiagram(d.AppState, TypeOf(d, "Vehicle"), "Vehicle diagram");
+        var first = Diagrams.ShowInNewDiagram(d.AppState, await TypeOfAsync(d, "Vehicle"), "Vehicle diagram");
         var lookup = navigation.BeginResolving(inNewTab: false);
 
-        var read = Diagrams.ShowInDiagram(d.AppState, TypeOf(d, "Greeter"), "Greeter diagram");
+        var read = Diagrams.ShowInDiagram(d.AppState, await TypeOfAsync(d, "Greeter"), "Greeter diagram");
 
         Assert.Same(first.Tab, read.Tab);
         Assert.Same(read.Tab, navigation.ActiveTab);
@@ -60,7 +60,7 @@ public sealed class DiagramGrowingTests
     public async Task AddWithNeighboursAsync_Read_TakesTheTypeHomeAddsTheCardsAndFocusesTheTypes()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var vehicle = TypeOf(d, "Vehicle");
+        var vehicle = await TypeOfAsync(d, "Vehicle");
         var read = Diagrams.ShowInNewDiagram(d.AppState, vehicle, "Vehicle diagram");
         var viewCommands = new Queue<ViewCommand>();
         var ports = new FakeDiagramGrowingPorts();
@@ -68,7 +68,7 @@ public sealed class DiagramGrowingTests
 
         var adding = new DiagramGrowing(ports).AddWithNeighboursAsync(viewCommands, read, CancellationToken.None);
         var request = Assert.Single(ports.Requests);
-        request.Answer.SetResult(new Outcome<List<TypeCard>>.Ok([CardOf(d, "Vehicle"), CardOf(d, "Car")]));
+        request.Answer.SetResult(new Outcome<List<TypeCard>>.Ok([await CardOfAsync(d, "Vehicle"), await CardOfAsync(d, "Car")]));
         await adding;
 
         Assert.Equal(nameof(FakeDiagramGrowingPorts.ReadWithNeighboursAsync), request.Read);
@@ -84,7 +84,7 @@ public sealed class DiagramGrowingTests
     public async Task AddWithNeighboursAsync_NothingRead_ReportsTheTypeUnreadable()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var member = d.Fixture("Greeter").Child("Twice() : int").Definition;
+        var member = (await d.FixtureAsync("Greeter").GetChildAsync("Twice() : int")).Definition;
         var read = Diagrams.ShowInNewDiagram(d.AppState, member, "Twice diagram");
         var viewCommands = new Queue<ViewCommand>();
         var ports = new FakeDiagramGrowingPorts();
@@ -104,7 +104,7 @@ public sealed class DiagramGrowingTests
     public async Task AddWithNeighboursAsync_DiagramClosedMeanwhile_DropsWhatArrives()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var read = Diagrams.ShowInNewDiagram(d.AppState, TypeOf(d, "Vehicle"), "Vehicle diagram");
+        var read = Diagrams.ShowInNewDiagram(d.AppState, await TypeOfAsync(d, "Vehicle"), "Vehicle diagram");
         var viewCommands = new Queue<ViewCommand>();
         var ports = new FakeDiagramGrowingPorts();
 
@@ -124,18 +124,18 @@ public sealed class DiagramGrowingTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var diagram = new TypeDiagram();
-        var car = CardOf(d, "Car");
+        var car = await CardOfAsync(d, "Car");
         Diagrams.AddCards(diagram, [car]);
         var ports = new FakeDiagramGrowingPorts();
 
         var adding = new DiagramGrowing(ports).ExpandBasesAsync(diagram, car, CancellationToken.None);
         var request = Assert.Single(ports.Requests);
         Assert.True(diagram.IsBusy);
-        request.Answer.SetResult(new Outcome<List<TypeCard>>.Ok([CardOf(d, "Vehicle")]));
+        request.Answer.SetResult(new Outcome<List<TypeCard>>.Ok([await CardOfAsync(d, "Vehicle")]));
         await adding;
 
         Assert.Equal(nameof(FakeDiagramGrowingPorts.ReadCardsAsync), request.Read);
-        Assert.Equal([TypeOf(d, "Vehicle")], request.Types);
+        Assert.Equal([await TypeOfAsync(d, "Vehicle")], request.Types);
         Assert.Equal(["Car", "Vehicle"], CardNames(diagram));
         Assert.False(diagram.IsBusy);
         Assert.Empty(ports.Reported);
@@ -146,8 +146,8 @@ public sealed class DiagramGrowingTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var diagram = new TypeDiagram();
-        var car = CardOf(d, "Car");
-        Diagrams.AddCards(diagram, [car, CardOf(d, "Vehicle")]);
+        var car = await CardOfAsync(d, "Car");
+        Diagrams.AddCards(diagram, [car, await CardOfAsync(d, "Vehicle")]);
         var ports = new FakeDiagramGrowingPorts();
 
         await new DiagramGrowing(ports).ExpandBasesAsync(diagram, car, CancellationToken.None);
@@ -161,7 +161,7 @@ public sealed class DiagramGrowingTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var diagram = new TypeDiagram();
-        var vehicle = CardOf(d, "Vehicle");
+        var vehicle = await CardOfAsync(d, "Vehicle");
         Diagrams.AddCards(diagram, [vehicle]);
         var ports = new FakeDiagramGrowingPorts();
         var error = new InvalidOperationException("Unreadable.");
@@ -184,7 +184,7 @@ public sealed class DiagramGrowingTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var diagram = new TypeDiagram();
-        var vehicle = CardOf(d, "Vehicle");
+        var vehicle = await CardOfAsync(d, "Vehicle");
         Diagrams.AddCards(diagram, [vehicle]);
         var module = d.AppState.Assemblies.Assemblies.OfType<LoadedModule>().Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
         var why = new BadImageFormatException("Bad namespace.");
@@ -193,7 +193,7 @@ public sealed class DiagramGrowingTests
 
         var adding = new DiagramGrowing(ports).ExpandDerivedAsync(diagram, vehicle, CancellationToken.None);
         var request = Assert.Single(ports.Requests);
-        request.Answer.SetResult(new Outcome<List<TypeCard>>.Ok([CardOf(d, "Bike"), CardOf(d, "Car")]));
+        request.Answer.SetResult(new Outcome<List<TypeCard>>.Ok([await CardOfAsync(d, "Bike"), await CardOfAsync(d, "Car")]));
         await adding;
 
         Assert.Equal(nameof(FakeDiagramGrowingPorts.ReadDerivedAsync), request.Read);

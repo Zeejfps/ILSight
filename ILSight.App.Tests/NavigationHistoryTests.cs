@@ -18,15 +18,15 @@ public sealed class NavigationHistoryTests
     }
 
     [Fact]
-    public void A_position_read_back_is_kept_on_the_entry_left_from_that_tab_and_not_on_another_tab_left_at_the_same_version()
+    public async Task A_position_read_back_is_kept_on_the_entry_left_from_that_tab_and_not_on_another_tab_left_at_the_same_version()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var history = new NavigationHistory();
         var first = new TabVersion { TabId = 1, Version = 1 };
         var second = new TabVersion { TabId = 2, Version = 1 };
-        history.RecordPlace(d.Fixture("Outline"), DecompilationLanguage.CSharp);
+        history.RecordPlace(await d.FixtureAsync("Outline"), DecompilationLanguage.CSharp);
         history.LeaveEntry(DecompilationLanguage.CSharp, AtLine(5), first);
-        history.RecordPlace(d.Fixture("Greeter"), DecompilationLanguage.CSharp);
+        history.RecordPlace(await d.FixtureAsync("Greeter"), DecompilationLanguage.CSharp);
         history.LeaveEntry(DecompilationLanguage.CSharp, AtLine(7), second);
 
         history.KeepPosition(second, AtLine(9));
@@ -37,11 +37,11 @@ public sealed class NavigationHistoryTests
     }
 
     [Fact]
-    public void A_position_read_back_for_what_no_entry_was_left_from_changes_no_entry()
+    public async Task A_position_read_back_for_what_no_entry_was_left_from_changes_no_entry()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var history = new NavigationHistory();
-        history.RecordPlace(d.Fixture("Outline"), DecompilationLanguage.CSharp);
+        history.RecordPlace(await d.FixtureAsync("Outline"), DecompilationLanguage.CSharp);
         history.LeaveEntry(DecompilationLanguage.CSharp, AtLine(5), new TabVersion { TabId = 1, Version = 1 });
 
         history.KeepPosition(new TabVersion { TabId = 1, Version = 2 }, AtLine(9));

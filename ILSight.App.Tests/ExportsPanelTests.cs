@@ -33,12 +33,12 @@ public sealed class ExportsPanelTests : IDisposable
     }
 
     [Fact]
-    public void Starting_an_export_brings_the_exports_panel_to_the_front()
+    public async Task Starting_an_export_brings_the_exports_panel_to_the_front()
     {
         var d = AppStateDriver.Opened();
         OpenPanel(d.Ui, DockView.Bookmarks);
 
-        SaveCode(d.AppState, d.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
+        SaveCode(d.AppState, await d.FixtureAsync("Greeter"), _temp.PathOf("Greeter.cs"));
         d.NextFrame();
 
         var layout = d.Ui.Layout;
@@ -48,12 +48,12 @@ public sealed class ExportsPanelTests : IDisposable
     }
 
     [Fact]
-    public void Each_finished_export_opens_its_own_folder()
+    public async Task Each_finished_export_opens_its_own_folder()
     {
         var app = AppDriver.Opened(height: TallWindow);
         var first = Folder("First");
-        SaveCode(app.AppState, app.Fixture("Greeter"), Path.Combine(first, "Greeter.cs"));
-        SaveCode(app.AppState, app.Fixture("Farewell"), Path.Combine(Folder("Second"), "Farewell.cs"));
+        SaveCode(app.AppState, await app.FixtureAsync("Greeter"), Path.Combine(first, "Greeter.cs"));
+        SaveCode(app.AppState, await app.FixtureAsync("Farewell"), Path.Combine(Folder("Second"), "Farewell.cs"));
         app.Settle(2);
 
         app.Frames.ClickOn(Selector.AtPath("dock/exports/#1/open-folder")).Frame();
@@ -62,12 +62,12 @@ public sealed class ExportsPanelTests : IDisposable
     }
 
     [Fact]
-    public void Show_report_opens_the_report_of_that_export_alone()
+    public async Task Show_report_opens_the_report_of_that_export_alone()
     {
         var app = AppDriver.Opened(height: TallWindow);
         var path = _temp.PathOf("Greeter.cs");
-        SaveCode(app.AppState, app.Fixture("Greeter"), path);
-        SaveCode(app.AppState, app.Fixture("Farewell"), _temp.PathOf("Farewell.cs"));
+        SaveCode(app.AppState, await app.FixtureAsync("Greeter"), path);
+        SaveCode(app.AppState, await app.FixtureAsync("Farewell"), _temp.PathOf("Farewell.cs"));
         app.Settle(2);
 
         app.Frames.ClickOn(Selector.AtPath("dock/exports/#1/show-report")).Frame(2);
@@ -84,11 +84,11 @@ public sealed class ExportsPanelTests : IDisposable
     }
 
     [Fact]
-    public void A_finished_export_can_be_taken_off_the_list_and_all_cleared()
+    public async Task A_finished_export_can_be_taken_off_the_list_and_all_cleared()
     {
         var d = AppStateDriver.Opened();
-        SaveCode(d.AppState, d.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
-        SaveCode(d.AppState, d.Fixture("Farewell"), _temp.PathOf("Farewell.cs"));
+        SaveCode(d.AppState, await d.FixtureAsync("Greeter"), _temp.PathOf("Greeter.cs"));
+        SaveCode(d.AppState, await d.FixtureAsync("Farewell"), _temp.PathOf("Farewell.cs"));
         d.Settle();
 
         RemoveFinishedExport(d.AppState, d.AppState.FinishedExports[0]);
@@ -99,12 +99,12 @@ public sealed class ExportsPanelTests : IDisposable
     }
 
     [Fact]
-    public void A_waiting_export_taken_out_of_the_queue_leaves_nothing_behind()
+    public async Task A_waiting_export_taken_out_of_the_queue_leaves_nothing_behind()
     {
         var d = AppStateDriver.Opened();
         var farewell = _temp.PathOf("Farewell.cs");
-        SaveCode(d.AppState, d.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
-        SaveCode(d.AppState, d.Fixture("Farewell"), farewell);
+        SaveCode(d.AppState, await d.FixtureAsync("Greeter"), _temp.PathOf("Greeter.cs"));
+        SaveCode(d.AppState, await d.FixtureAsync("Farewell"), farewell);
         var waiting = Assert.Single(d.AppState.Export.Waiting);
 
         d.AppState.Export.Withdraw(waiting.Run);
@@ -119,7 +119,7 @@ public sealed class ExportsPanelTests : IDisposable
     public async Task The_panel_lists_the_running_waiting_and_finished_exports()
     {
         var app = AppDriver.Opened(height: TallWindow);
-        SaveCode(app.AppState, app.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
+        SaveCode(app.AppState, await app.FixtureAsync("Greeter"), _temp.PathOf("Greeter.cs"));
         app.Settle();
         var running = Assert.IsType<ExportStart>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
         Assert.False(app.AppState.Export.Enter(TestJobs.Named("Later")).Turn.IsCompleted);
@@ -151,10 +151,10 @@ public sealed class ExportsPanelTests : IDisposable
     }
 
     [Fact]
-    public void A_clean_finish_offers_the_folder_first_and_the_report_as_an_icon()
+    public async Task A_clean_finish_offers_the_folder_first_and_the_report_as_an_icon()
     {
         var app = AppDriver.Opened();
-        SaveCode(app.AppState, app.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
+        SaveCode(app.AppState, await app.FixtureAsync("Greeter"), _temp.PathOf("Greeter.cs"));
         app.Settle(2);
 
         Assert.True(app.Frames.Drew("Open folder"));
@@ -163,10 +163,10 @@ public sealed class ExportsPanelTests : IDisposable
     }
 
     [Fact]
-    public void A_failed_export_offers_the_report_first()
+    public async Task A_failed_export_offers_the_report_first()
     {
         var app = AppDriver.Opened();
-        SaveCode(app.AppState, app.Fixture("Greeter"), _temp.PathOf(Path.Combine("missing", "Greeter.cs")));
+        SaveCode(app.AppState, await app.FixtureAsync("Greeter"), _temp.PathOf(Path.Combine("missing", "Greeter.cs")));
         app.Settle(2);
 
         Assert.True(app.Frames.Drew("Show report"));
@@ -182,17 +182,17 @@ public sealed class ExportsPanelTests : IDisposable
     /// finished and failed, add less to a frame than one allocation each would. The panel allocates a little
     /// per frame of its own once anything finished, which this leaves out.</summary>
     [Fact]
-    public void Render_MoreFinishedAndFailedExportsListed_AllocatesNothingPerRow()
+    public async Task Render_MoreFinishedAndFailedExportsListed_AllocatesNothingPerRow()
     {
         var app = AppDriver.Opened(height: TallWindow);
-        SaveCode(app.AppState, app.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
+        SaveCode(app.AppState, await app.FixtureAsync("Greeter"), _temp.PathOf("Greeter.cs"));
         app.Settle(2);
         var withOne = MeasureFrames(app);
 
-        SaveCode(app.AppState, app.Fixture("Farewell"), _temp.PathOf(Path.Combine("missing", "Farewell.cs")));
-        SaveCode(app.AppState, app.Fixture("Farewell"), _temp.PathOf("Farewell.cs"));
-        SaveCode(app.AppState, app.Fixture("Greeter"), _temp.PathOf(Path.Combine("missing", "Greeter.cs")));
-        SaveCode(app.AppState, app.Fixture("Greeter"), _temp.PathOf("Greeter2.cs"));
+        SaveCode(app.AppState, await app.FixtureAsync("Farewell"), _temp.PathOf(Path.Combine("missing", "Farewell.cs")));
+        SaveCode(app.AppState, await app.FixtureAsync("Farewell"), _temp.PathOf("Farewell.cs"));
+        SaveCode(app.AppState, await app.FixtureAsync("Greeter"), _temp.PathOf(Path.Combine("missing", "Greeter.cs")));
+        SaveCode(app.AppState, await app.FixtureAsync("Greeter"), _temp.PathOf("Greeter2.cs"));
         app.Settle(2);
         var withFive = MeasureFrames(app);
 
@@ -213,7 +213,7 @@ public sealed class ExportsPanelTests : IDisposable
     public async Task The_toolbar_counts_the_exports_and_sections_part_the_queue_and_history()
     {
         var app = AppDriver.Opened(height: TallWindow);
-        SaveCode(app.AppState, app.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
+        SaveCode(app.AppState, await app.FixtureAsync("Greeter"), _temp.PathOf("Greeter.cs"));
         app.Settle();
         var running = Assert.IsType<ExportStart>(await app.AppState.Export.Enter(TestJobs.Named("Running")).Turn);
         Assert.False(app.AppState.Export.Enter(TestJobs.Named("Second")).Turn.IsCompleted);
@@ -253,11 +253,11 @@ public sealed class ExportsPanelTests : IDisposable
     }
 
     [Fact]
-    public void A_finished_export_keeps_the_run_it_had_in_the_queue()
+    public async Task A_finished_export_keeps_the_run_it_had_in_the_queue()
     {
         var d = AppStateDriver.Opened();
 
-        SaveCode(d.AppState, d.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
+        SaveCode(d.AppState, await d.FixtureAsync("Greeter"), _temp.PathOf("Greeter.cs"));
         var running = d.AppState.Export.Running;
         Assert.NotNull(running);
         var run = running.Export.Run;
@@ -281,10 +281,10 @@ public sealed class ExportsPanelTests : IDisposable
     }
 
     [Fact]
-    public void The_report_tab_is_written_in_the_interface_language_chosen_after_it_opened()
+    public async Task The_report_tab_is_written_in_the_interface_language_chosen_after_it_opened()
     {
         var app = AppDriver.Opened(height: TallWindow);
-        SaveCode(app.AppState, app.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
+        SaveCode(app.AppState, await app.FixtureAsync("Greeter"), _temp.PathOf("Greeter.cs"));
         app.Settle(2);
         ShowExportReport(app.AppState, app.AppState.FinishedExports[0]);
         app.Run(2);
@@ -302,10 +302,10 @@ public sealed class ExportsPanelTests : IDisposable
     }
 
     [Fact]
-    public void Showing_a_report_is_a_new_intent_that_refuses_what_was_still_being_looked_up()
+    public async Task Showing_a_report_is_a_new_intent_that_refuses_what_was_still_being_looked_up()
     {
         var d = AppStateDriver.Opened();
-        SaveCode(d.AppState, d.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
+        SaveCode(d.AppState, await d.FixtureAsync("Greeter"), _temp.PathOf("Greeter.cs"));
         d.Settle();
         var lookup = d.AppState.Navigation.BeginResolving(inNewTab: false);
 
@@ -316,15 +316,15 @@ public sealed class ExportsPanelTests : IDisposable
     }
 
     [Fact]
-    public void Going_back_to_a_report_brings_its_tab_to_the_front()
+    public async Task Going_back_to_a_report_brings_its_tab_to_the_front()
     {
         var d = AppStateDriver.Opened();
-        SaveCode(d.AppState, d.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
+        SaveCode(d.AppState, await d.FixtureAsync("Greeter"), _temp.PathOf("Greeter.cs"));
         d.Settle();
         ShowExportReport(d.AppState, d.AppState.FinishedExports[0]);
         var report = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(report);
-        d.Show(d.Fixture("Farewell"), inNewTab: true);
+        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
 
         d.GoBack();
         d.Settle();
@@ -333,16 +333,16 @@ public sealed class ExportsPanelTests : IDisposable
     }
 
     [Fact]
-    public void Going_back_to_a_report_whose_tab_was_closed_shows_it_again_while_the_panel_has_it()
+    public async Task Going_back_to_a_report_whose_tab_was_closed_shows_it_again_while_the_panel_has_it()
     {
         var d = AppStateDriver.Opened();
-        SaveCode(d.AppState, d.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
+        SaveCode(d.AppState, await d.FixtureAsync("Greeter"), _temp.PathOf("Greeter.cs"));
         d.Settle();
         var finished = d.AppState.FinishedExports[0];
         ShowExportReport(d.AppState, finished);
         var report = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(report);
-        d.Show(d.Fixture("Farewell"), inNewTab: true);
+        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
         d.AppState.Navigation.CloseTab(report);
 
         d.GoBack();
@@ -355,17 +355,17 @@ public sealed class ExportsPanelTests : IDisposable
     }
 
     [Fact]
-    public void Going_back_passes_over_a_report_whose_tab_was_closed_and_whose_export_the_panel_no_longer_has()
+    public async Task Going_back_passes_over_a_report_whose_tab_was_closed_and_whose_export_the_panel_no_longer_has()
     {
         var d = AppStateDriver.Opened();
-        SaveCode(d.AppState, d.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
+        SaveCode(d.AppState, await d.FixtureAsync("Greeter"), _temp.PathOf("Greeter.cs"));
         d.Settle();
         var finished = d.AppState.FinishedExports[0];
         ShowExportReport(d.AppState, finished);
         var report = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(report);
         var reportAt = d.AppState.Navigation.HistoryIndex;
-        d.Show(d.Fixture("Farewell"), inNewTab: true);
+        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
         d.AppState.Navigation.CloseTab(report);
         RemoveFinishedExport(d.AppState, finished);
 
@@ -377,10 +377,10 @@ public sealed class ExportsPanelTests : IDisposable
     }
 
     [Fact]
-    public void The_report_tab_stays_as_it_is_when_the_language_changes()
+    public async Task The_report_tab_stays_as_it_is_when_the_language_changes()
     {
         var d = AppStateDriver.Opened();
-        SaveCode(d.AppState, d.Fixture("Greeter"), _temp.PathOf("Greeter.cs"));
+        SaveCode(d.AppState, await d.FixtureAsync("Greeter"), _temp.PathOf("Greeter.cs"));
         d.Settle();
         ShowExportReport(d.AppState, d.AppState.FinishedExports[0]);
         var active = d.AppState.Navigation.ActiveTab;

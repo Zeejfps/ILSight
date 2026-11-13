@@ -8,9 +8,9 @@ namespace ILSight.App.Tests;
 
 public sealed class CodeViewFoldTests
 {
-    private static CodeViewDriver Outline(float height = 1200f)
+    private static async Task<CodeViewDriver> OutlineAsync(float height = 1200f)
     {
-        return CodeViewDriver.Showing(CodeViewDriver.Outline(), height, frames: 2);
+        return CodeViewDriver.Showing(await CodeViewDriver.OutlineAsync(), height, frames: 2);
     }
 
     private static List<string> Numbers(CodeViewDriver view)
@@ -42,9 +42,9 @@ public sealed class CodeViewFoldTests
     }
 
     [Fact]
-    public void The_usings_start_collapsed_behind_a_chip_and_line_numbers_stay_real()
+    public async Task The_usings_start_collapsed_behind_a_chip_and_line_numbers_stay_real()
     {
-        var view = Outline();
+        var view = await OutlineAsync();
         var document = view.Document;
 
         var numbers = Numbers(view);
@@ -57,9 +57,9 @@ public sealed class CodeViewFoldTests
     }
 
     [Fact]
-    public void Clicking_a_chevron_folds_a_body_onto_its_signature_and_clicking_the_chip_unfolds_it()
+    public async Task Clicking_a_chevron_folds_a_body_onto_its_signature_and_clicking_the_chip_unfolds_it()
     {
-        var view = Outline();
+        var view = await OutlineAsync();
         var document = view.Document;
         var first = document.GetPosition("public int First()").Line;
         var row = CodeFolding.GetRowOf(view.State.Folds, first);
@@ -86,9 +86,9 @@ public sealed class CodeViewFoldTests
     }
 
     [Fact]
-    public void Ctrl_m_m_toggles_the_fold_at_the_caret_and_ctrl_shift_brackets_collapse_and_expand()
+    public async Task Ctrl_m_m_toggles_the_fold_at_the_caret_and_ctrl_shift_brackets_collapse_and_expand()
     {
-        var view = Outline();
+        var view = await OutlineAsync();
         var document = view.Document;
         var (line, column) = document.GetPosition("builder.Append");
         view.Click(line, column);
@@ -115,9 +115,9 @@ public sealed class CodeViewFoldTests
     }
 
     [Fact]
-    public void The_context_menu_collapses_and_expands_everything_and_toggles_the_fold_under_the_pointer()
+    public async Task The_context_menu_collapses_and_expands_everything_and_toggles_the_fold_under_the_pointer()
     {
-        var view = Outline();
+        var view = await OutlineAsync();
         var document = view.Document;
 
         void Pick(int line, string item)
@@ -144,9 +144,9 @@ public sealed class CodeViewFoldTests
     }
 
     [Fact]
-    public void Copying_across_a_collapsed_fold_copies_what_it_hides()
+    public async Task Copying_across_a_collapsed_fold_copies_what_it_hides()
     {
-        var view = Outline();
+        var view = await OutlineAsync();
         var document = view.Document;
         var first = document.GetPosition("public int First()").Line;
         var end = document.FoldAt("public int First()").EndLine + 2;
@@ -165,9 +165,9 @@ public sealed class CodeViewFoldTests
     }
 
     [Fact]
-    public void A_find_match_inside_a_collapsed_fold_expands_it_when_it_becomes_current()
+    public async Task A_find_match_inside_a_collapsed_fold_expands_it_when_it_becomes_current()
     {
-        var view = Outline();
+        var view = await OutlineAsync();
         var document = view.Document;
         var second = document.FoldIndexAt("public string Second()");
         CodeViewWidget.SetCollapsed(view.State, second, true);
@@ -183,9 +183,9 @@ public sealed class CodeViewFoldTests
     }
 
     [Fact]
-    public void RevealLine_into_nested_collapsed_folds_expands_them_all()
+    public async Task RevealLine_into_nested_collapsed_folds_expands_them_all()
     {
-        var view = Outline();
+        var view = await OutlineAsync();
         var document = view.Document;
         var inner = document.FoldIndexAt("public class Inner");
         var deep = document.FoldIndexAt("public int Deep()");
@@ -203,9 +203,9 @@ public sealed class CodeViewFoldTests
     }
 
     [Fact]
-    public void Folding_above_the_view_keeps_the_top_line_in_place()
+    public async Task Folding_above_the_view_keeps_the_top_line_in_place()
     {
-        var view = Outline(height: 200f);
+        var view = await OutlineAsync(height: 200f);
         var document = view.Document;
         var target = document.GetPosition("public string Second()").Line;
         CodeViewWidget.RestorePosition(view.State, new CodeViewPosition
@@ -227,13 +227,13 @@ public sealed class CodeViewFoldTests
     }
 
     [Fact]
-    public void A_new_document_starts_from_its_own_default_folds()
+    public async Task A_new_document_starts_from_its_own_default_folds()
     {
-        var view = Outline();
+        var view = await OutlineAsync();
         CodeViewWidget.ExpandAll(view.State);
         view.Run();
 
-        view.Document = CodeViewDriver.Decompile(typeof(Fixtures.Outline));
+        view.Document = await CodeViewDriver.DecompileAsync(typeof(Fixtures.Outline));
         view.Run();
 
         Assert.True(ShowsFolded(view, "using System.Collections.Generic;"));
@@ -241,9 +241,9 @@ public sealed class CodeViewFoldTests
     }
 
     [Fact]
-    public void The_rows_follow_what_is_collapsed_through_each_function_that_changes_it()
+    public async Task The_rows_follow_what_is_collapsed_through_each_function_that_changes_it()
     {
-        var document = CodeViewDriver.Outline();
+        var document = await CodeViewDriver.OutlineAsync();
         var folds = new CodeFolds();
         CodeFolding.Reset(folds, document);
         var fold = document.Folds[0];
@@ -266,9 +266,9 @@ public sealed class CodeViewFoldTests
     }
 
     [Fact]
-    public void A_layout_stays_as_it_was_when_the_folds_change_after_it()
+    public async Task A_layout_stays_as_it_was_when_the_folds_change_after_it()
     {
-        var document = CodeViewDriver.Outline();
+        var document = await CodeViewDriver.OutlineAsync();
         var folds = new CodeFolds();
         CodeFolding.Reset(folds, document);
         CodeFolding.SetAll(folds, false);
@@ -283,9 +283,9 @@ public sealed class CodeViewFoldTests
     }
 
     [Fact]
-    public void Revealing_a_line_no_fold_hides_leaves_the_layout_as_it_is()
+    public async Task Revealing_a_line_no_fold_hides_leaves_the_layout_as_it_is()
     {
-        var document = CodeViewDriver.Outline();
+        var document = await CodeViewDriver.OutlineAsync();
         var folds = new CodeFolds();
         CodeFolding.Reset(folds, document);
         CodeFolding.SetAll(folds, false);
@@ -299,9 +299,9 @@ public sealed class CodeViewFoldTests
     }
 
     [Fact]
-    public void The_rows_of_a_layout_are_only_the_rows_shown()
+    public async Task The_rows_of_a_layout_are_only_the_rows_shown()
     {
-        var document = CodeViewDriver.Outline();
+        var document = await CodeViewDriver.OutlineAsync();
         var folds = new CodeFolds();
         CodeFolding.Reset(folds, document);
         CodeFolding.SetAll(folds, false);

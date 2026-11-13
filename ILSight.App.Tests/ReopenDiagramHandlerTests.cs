@@ -8,9 +8,9 @@ public sealed class ReopenDiagramHandlerTests
 {
     /// <summary>A tab of <paramref name="d"/>'s, reopened to wait for a diagram of the fixture Vehicle titled
     /// "Vehicle diagram", and the read of its cards that reopening it started.</summary>
-    private static SavedDiagramRead Reopen(AppStateDriver d)
+    private static async Task<SavedDiagramRead> ReopenAsync(AppStateDriver d)
     {
-        var vehicle = TestWaits.Wait(() => TypeCards.ReadAsync(d.AppState.Assemblies, d.Fixture("Vehicle").Definition, CancellationToken.None)).FoundOrNull;
+        var vehicle = (await TypeCards.ReadAsync(d.AppState.Assemblies, (await d.FixtureAsync("Vehicle")).Definition, CancellationToken.None)).FoundOrNull;
         Assert.NotNull(vehicle);
         var saved = new DiagramDocumentRecord
         {
@@ -32,9 +32,9 @@ public sealed class ReopenDiagramHandlerTests
     public async Task HandleAsync_Read_AddsTheCardsAndStopsTheTabWaiting()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var read = Reopen(d);
+        var read = await ReopenAsync(d);
         var ports = new FakeReopenDiagramHandlerPorts();
-        var vehicle = TestWaits.Wait(() => TypeCards.ReadAsync(d.AppState.Assemblies, d.Fixture("Vehicle").Definition, CancellationToken.None)).FoundOrNull;
+        var vehicle = (await TypeCards.ReadAsync(d.AppState.Assemblies, (await d.FixtureAsync("Vehicle")).Definition, CancellationToken.None)).FoundOrNull;
         Assert.NotNull(vehicle);
         Assert.True(read.Diagram.IsBusy);
 
@@ -53,7 +53,7 @@ public sealed class ReopenDiagramHandlerTests
     public async Task HandleAsync_TabPointedElsewhereMeanwhile_DropsWhatArrives()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var read = Reopen(d);
+        var read = await ReopenAsync(d);
         var ports = new FakeReopenDiagramHandlerPorts();
 
         var reading = new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None);
@@ -69,7 +69,7 @@ public sealed class ReopenDiagramHandlerTests
     public async Task HandleAsync_ReadFailed_ReportsTheDiagramNotReopened()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var read = Reopen(d);
+        var read = await ReopenAsync(d);
         var ports = new FakeReopenDiagramHandlerPorts();
         var error = new InvalidOperationException("Unreadable.");
 

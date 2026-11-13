@@ -97,6 +97,7 @@ public sealed class NuGetPickerTests : IDisposable
     /// <paramref name="now"/>, and returns the seconds left before what is typed settles, or 0.</summary>
     private double Update(NuGetPicker picker, double now)
     {
+        using var turn = PostedActions.OfThisTest().Install();
         var wanted = picker.Update(now);
         if (wanted is not null)
         {
@@ -122,6 +123,7 @@ public sealed class NuGetPickerTests : IDisposable
     /// of the work it was started as, leaving it to run as the test pumps.</summary>
     private void StartDownload(NuGetPicker picker)
     {
+        using var turn = PostedActions.OfThisTest().Install();
         var download = picker.Browser.StartDownload();
         Assert.NotNull(download);
         Start(CreateDownloadPackage().HandleAsync(picker.Browser, download, download.Work.Token));
@@ -368,8 +370,12 @@ public sealed class NuGetPickerTests : IDisposable
         }
         Assert.IsType<VersionDetails.Loading>(DetailsNow());
         var work = new BackgroundWork();
-        AppFrames.StartFetching(new WorkflowRunner(work, new ErrorLog()), new FetchNuGetIconHandler(new FetchNuGetIconHandlerAdapter(_client)),
-            new ReadNuGetDetailsHandler(new ReadNuGetDetailsHandlerAdapter(_client)), picker.Browser);
+        using (posted.Install())
+        {
+            AppFrames.StartFetching(new WorkflowRunner(work, new ErrorLog()), new FetchNuGetIconHandler(new FetchNuGetIconHandlerAdapter(_client)),
+                new ReadNuGetDetailsHandler(new ReadNuGetDetailsHandlerAdapter(_client)), picker.Browser);
+        }
+
         Poll.Until(() => work.Outstanding.Count == 0, posted.Run);
         var details = DetailsNow();
         Assert.NotNull(details);

@@ -12,11 +12,11 @@ public sealed class OmnibarTests
     private const string FixturesAssembly = "ILSight.App.Tests";
 
     /// <summary>The app showing the fixture type <paramref name="type"/> in its active tab.</summary>
-    private static AppDriver Showing(string type)
+    private static async Task<AppDriver> ShowingAsync(string type)
     {
         var app = AppDriver.Opened();
         app.Settle(2);
-        app.Show(app.Fixture(type), 2);
+        app.Show(await app.FixtureAsync(type), 2);
         app.Settle(2);
         return app;
     }
@@ -76,9 +76,9 @@ public sealed class OmnibarTests
     }
 
     [Fact]
-    public void A_document_shows_the_path_to_its_node_from_the_assembly_over_its_code()
+    public async Task A_document_shows_the_path_to_its_node_from_the_assembly_over_its_code()
     {
-        var app = Showing("Greeter");
+        var app = await ShowingAsync("Greeter");
 
         var labels = ActiveCrumbs(app)
             .Select(c => c.Label)
@@ -90,9 +90,9 @@ public sealed class OmnibarTests
     }
 
     [Fact]
-    public void With_nested_namespaces_the_path_steps_through_each_enclosing_namespace()
+    public async Task With_nested_namespaces_the_path_steps_through_each_enclosing_namespace()
     {
-        var app = Showing("Greeter");
+        var app = await ShowingAsync("Greeter");
 
         SetDisplayOptions(app.Ui, app.Ui.Display with { NestedNamespaces = true });
         app.Run(2);
@@ -104,37 +104,37 @@ public sealed class OmnibarTests
     }
 
     [Fact]
-    public void The_frame_a_crumb_is_clicked_in_draws_the_tab_pointed_at_its_node()
+    public async Task The_frame_a_crumb_is_clicked_in_draws_the_tab_pointed_at_its_node()
     {
-        var app = Showing("Greeter");
+        var app = await ShowingAsync("Greeter");
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
         ClickCrumb(app, AppStateDriver.FixturesNamespace);
         var drawn = DocumentPanels.GetView(app.Ui.Documents, tab).Shown;
 
-        Assert.Same(app.Node(AppStateDriver.FixturesNamespace), tab.Node);
+        Assert.Same(await app.NodeAsync(AppStateDriver.FixturesNamespace), tab.Node);
         Assert.NotNull(drawn);
         Assert.True(drawn.IsShownBy(tab));
     }
 
     [Fact]
-    public void Clicking_a_crumb_shows_its_node_in_the_preview_tab_as_a_pick_in_the_tree_does()
+    public async Task Clicking_a_crumb_shows_its_node_in_the_preview_tab_as_a_pick_in_the_tree_does()
     {
-        var app = Showing("Greeter");
+        var app = await ShowingAsync("Greeter");
 
         ClickCrumb(app, AppStateDriver.FixturesNamespace).Frame(2);
         app.Settle(2);
 
-        Assert.Same(app.Node(AppStateDriver.FixturesNamespace), app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(await app.NodeAsync(AppStateDriver.FixturesNamespace), app.AppState.Navigation.ActiveTab?.Node);
         Assert.Same(app.AppState.Navigation.ActiveTab, app.AppState.Navigation.PreviewTab);
-        Assert.Same(app.Node(AppStateDriver.FixturesNamespace), app.Ui.Tree.View.Selected);
+        Assert.Same(await app.NodeAsync(AppStateDriver.FixturesNamespace), app.Ui.Tree.View.Selected);
     }
 
     [Fact]
-    public void The_arrow_after_a_crumb_lists_its_children_with_the_next_crumb_selected_and_picking_one_shows_it()
+    public async Task The_arrow_after_a_crumb_lists_its_children_with_the_next_crumb_selected_and_picking_one_shows_it()
     {
-        var app = Showing("Greeter");
+        var app = await ShowingAsync("Greeter");
 
         ClickArrowAfter(app, AppStateDriver.FixturesNamespace);
         var menu = app.Ui.Omnibar.Menu;
@@ -143,15 +143,15 @@ public sealed class OmnibarTests
         app.Frames.ClickOn(GetCrumbChild("document-1", "Farewell")).Frame(2);
         app.Settle(2);
 
-        Assert.Same(app.Fixture("Greeter"), selected);
+        Assert.Same(await app.FixtureAsync("Greeter"), selected);
         Assert.Null(app.Ui.Omnibar.Menu);
-        Assert.Same(app.Fixture("Farewell"), app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(await app.FixtureAsync("Farewell"), app.AppState.Navigation.ActiveTab?.Node);
     }
 
     [Fact]
-    public void Typing_in_the_arrows_filter_lists_the_children_whose_name_holds_it_and_Enter_shows_the_first()
+    public async Task Typing_in_the_arrows_filter_lists_the_children_whose_name_holds_it_and_Enter_shows_the_first()
     {
-        var app = Showing("Greeter");
+        var app = await ShowingAsync("Greeter");
 
         ClickArrowAfter(app, AppStateDriver.FixturesNamespace);
         var menu = app.Ui.Omnibar.Menu;
@@ -161,14 +161,14 @@ public sealed class OmnibarTests
         app.Frames.Key(KeyboardKey.Enter).Frame(2);
         app.Settle(2);
 
-        Assert.Equal([app.Fixture("Farewell")], shown);
-        Assert.Same(app.Fixture("Farewell"), app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Equal([await app.FixtureAsync("Farewell")], shown);
+        Assert.Same(await app.FixtureAsync("Farewell"), app.AppState.Navigation.ActiveTab?.Node);
     }
 
     [Fact]
-    public void Ctrl_L_turns_the_active_bar_into_a_search_whose_Enter_shows_the_best_match_and_brings_the_path_back()
+    public async Task Ctrl_L_turns_the_active_bar_into_a_search_whose_Enter_shows_the_best_match_and_brings_the_path_back()
     {
-        var app = Showing("Greeter");
+        var app = await ShowingAsync("Greeter");
         var omnibar = app.Ui.Omnibar;
 
         SearchFor(app, "Farewell");
@@ -179,15 +179,15 @@ public sealed class OmnibarTests
         var active = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(active);
         Assert.Equal(DocumentPanels.GetPanel(app.Ui.Documents, active), searchedIn);
-        Assert.Same(app.Fixture("Farewell"), active.Node);
+        Assert.Same(await app.FixtureAsync("Farewell"), active.Node);
         Assert.False(omnibar.IsSearching);
         GetCrumb(app, "Farewell");
     }
 
     [Fact]
-    public void Down_walks_the_suggestions_and_Escape_puts_the_path_back()
+    public async Task Down_walks_the_suggestions_and_Escape_puts_the_path_back()
     {
-        var app = Showing("Greeter");
+        var app = await ShowingAsync("Greeter");
         var omnibar = app.Ui.Omnibar;
         SearchFor(app, "Gree", moreThan: 1);
 
@@ -200,27 +200,27 @@ public sealed class OmnibarTests
         Assert.Same(omnibar.Search.Rows[0], first);
         Assert.Same(omnibar.Search.Rows[1], second);
         Assert.False(omnibar.IsSearching);
-        Assert.Same(app.Fixture("Greeter"), app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(await app.FixtureAsync("Greeter"), app.AppState.Navigation.ActiveTab?.Node);
         GetCrumb(app, "Greeter");
     }
 
     [Fact]
-    public void Clicking_a_suggestion_shows_it()
+    public async Task Clicking_a_suggestion_shows_it()
     {
-        var app = Showing("Greeter");
+        var app = await ShowingAsync("Greeter");
         SearchFor(app, "Farewell");
 
         app.Frames.ClickOn(GetSuggestion("document-1", "Farewell")).Frame(2);
         app.Settle(2);
 
-        Assert.Same(app.Fixture("Farewell"), app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(await app.FixtureAsync("Farewell"), app.AppState.Navigation.ActiveTab?.Node);
         Assert.False(app.Ui.Omnibar.IsSearching);
     }
 
     [Fact]
-    public void The_search_button_at_the_end_of_the_bar_starts_a_search_there()
+    public async Task The_search_button_at_the_end_of_the_bar_starts_a_search_there()
     {
-        var app = Showing("Greeter");
+        var app = await ShowingAsync("Greeter");
 
         app.Frames.ClickOn(Selector.AtPath("dock/document-1/search")).Frame(2);
 
@@ -231,9 +231,9 @@ public sealed class OmnibarTests
     }
 
     [Fact]
-    public void With_the_bar_turned_off_no_path_shows_and_Ctrl_L_opens_the_search_panel()
+    public async Task With_the_bar_turned_off_no_path_shows_and_Ctrl_L_opens_the_search_panel()
     {
-        var app = Showing("Greeter");
+        var app = await ShowingAsync("Greeter");
 
         SetDisplayOptions(app.Ui, app.Ui.Display with { ShowOmnibar = false });
         app.Run(2);
@@ -248,9 +248,9 @@ public sealed class OmnibarTests
     }
 
     [Fact]
-    public void Ctrl_M_then_Ctrl_L_in_the_code_still_folds_everything_rather_than_searching()
+    public async Task Ctrl_M_then_Ctrl_L_in_the_code_still_folds_everything_rather_than_searching()
     {
-        var app = Showing("Greeter");
+        var app = await ShowingAsync("Greeter");
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var view = DocumentPanels.GetView(app.Ui.Documents, tab);
@@ -267,26 +267,26 @@ public sealed class OmnibarTests
     private const string OtherPanel = "document-2";
 
     /// <summary>The crumbs from the fixture assembly down to the fixture type <paramref name="type"/>, as a tab showing it has them.</summary>
-    private static IReadOnlyList<Crumb> CrumbsTo(AppStateDriver d, string type)
+    private static async Task<IReadOnlyList<Crumb>> CrumbsToAsync(AppStateDriver d, string type)
     {
         var breadcrumb = new Breadcrumb();
-        breadcrumb.Follow(d.Fixture(type), d.Ui.Tree);
+        breadcrumb.Follow(await d.FixtureAsync(type), d.Ui.Tree);
         return breadcrumb.Crumbs;
     }
 
-    private static CrumbMenu OpenMenu(AppStateDriver d, BrowseNode? next)
+    private static async Task<CrumbMenu> OpenMenuAsync(AppStateDriver d, BrowseNode? next)
     {
         var omnibar = d.Ui.Omnibar;
-        omnibar.OpenMenu(Panel, d.Node(AppStateDriver.FixturesNamespace), next);
+        omnibar.OpenMenu(Panel, await d.NodeAsync(AppStateDriver.FixturesNamespace), next);
         return Assert.IsType<CrumbMenu>(omnibar.Menu);
     }
 
     [Fact]
-    public void StartSearch_WithAListOfChildrenOpen_SearchesInThatBarAndClosesTheList()
+    public async Task StartSearch_WithAListOfChildrenOpen_SearchesInThatBarAndClosesTheList()
     {
         var d = AppStateDriver.Opened();
         var omnibar = d.Ui.Omnibar;
-        OpenMenu(d, null);
+        await OpenMenuAsync(d, null);
 
         omnibar.StartSearch(OtherPanel);
 
@@ -313,11 +313,11 @@ public sealed class OmnibarTests
     }
 
     [Fact]
-    public void ToggleMenu_TwiceOnOneCrumb_OpensItWithTheNextCrumbToSelectThenClosesIt()
+    public async Task ToggleMenu_TwiceOnOneCrumb_OpensItWithTheNextCrumbToSelectThenClosesIt()
     {
         var d = AppStateDriver.Opened();
         var omnibar = d.Ui.Omnibar;
-        var crumbs = CrumbsTo(d, "Greeter");
+        var crumbs = await CrumbsToAsync(d, "Greeter");
         var namespaceIndex = crumbs.Count - 2;
 
         omnibar.ToggleMenu(Panel, crumbs, namespaceIndex);
@@ -325,32 +325,32 @@ public sealed class OmnibarTests
         omnibar.ToggleMenu(Panel, crumbs, namespaceIndex);
 
         Assert.NotNull(opened);
-        Assert.Same(d.Node(AppStateDriver.FixturesNamespace), opened.Node);
-        Assert.Same(d.Fixture("Greeter"), opened.ToSelect);
+        Assert.Same(await d.NodeAsync(AppStateDriver.FixturesNamespace), opened.Node);
+        Assert.Same(await d.FixtureAsync("Greeter"), opened.ToSelect);
         Assert.Null(omnibar.Menu);
     }
 
     [Fact]
-    public void ToggleMenu_OnTheLastCrumb_OpensItWithNothingToSelect()
+    public async Task ToggleMenu_OnTheLastCrumb_OpensItWithNothingToSelect()
     {
         var d = AppStateDriver.Opened();
         var omnibar = d.Ui.Omnibar;
-        var crumbs = CrumbsTo(d, "Greeter");
+        var crumbs = await CrumbsToAsync(d, "Greeter");
 
         omnibar.ToggleMenu(Panel, crumbs, crumbs.Count - 1);
 
-        Assert.True(omnibar.IsMenuOpenAt(Panel, d.Fixture("Greeter")));
+        Assert.True(omnibar.IsMenuOpenAt(Panel, await d.FixtureAsync("Greeter")));
         var menu = omnibar.Menu;
         Assert.NotNull(menu);
         Assert.Null(menu.ToSelect);
     }
 
     [Fact]
-    public void CloseMenuIn_AnotherPanel_LeavesTheListOpen()
+    public async Task CloseMenuIn_AnotherPanel_LeavesTheListOpen()
     {
         var d = AppStateDriver.Opened();
         var omnibar = d.Ui.Omnibar;
-        var menu = OpenMenu(d, null);
+        var menu = await OpenMenuAsync(d, null);
 
         omnibar.CloseMenuIn(OtherPanel);
         var afterOther = omnibar.Menu;
@@ -361,40 +361,40 @@ public sealed class OmnibarTests
     }
 
     [Fact]
-    public void ListShown_HoldingTheNextCrumb_SelectsItOnce()
+    public async Task ListShown_HoldingTheNextCrumb_SelectsItOnce()
     {
         var d = AppStateDriver.Opened();
-        var children = new[] { d.Fixture("Farewell"), d.Fixture("Greeter") };
-        var menu = OpenMenu(d, d.Fixture("Greeter"));
+        var children = new[] { await d.FixtureAsync("Farewell"), await d.FixtureAsync("Greeter") };
+        var menu = await OpenMenuAsync(d, await d.FixtureAsync("Greeter"));
 
         var shown = menu.ListShown(children, d.Ui.Tree);
 
         Assert.Equal(children, shown);
-        Assert.Same(d.Fixture("Greeter"), menu.Selection.Item);
+        Assert.Same(await d.FixtureAsync("Greeter"), menu.Selection.Item);
         Assert.Null(menu.ToSelect);
     }
 
     [Fact]
-    public void ListShown_WithAFilter_ListsTheChildrenHoldingItAndSelectsTheFirst()
+    public async Task ListShown_WithAFilter_ListsTheChildrenHoldingItAndSelectsTheFirst()
     {
         var d = AppStateDriver.Opened();
-        var children = new[] { d.Fixture("Greeter"), d.Fixture("Farewell") };
-        var menu = OpenMenu(d, null);
+        var children = new[] { await d.FixtureAsync("Greeter"), await d.FixtureAsync("Farewell") };
+        var menu = await OpenMenuAsync(d, null);
         menu.ListShown(children, d.Ui.Tree);
 
         menu.Filter = "AREW";
         var shown = menu.ListShown(children, d.Ui.Tree);
 
-        Assert.Equal([d.Fixture("Farewell")], shown);
-        Assert.Same(d.Fixture("Farewell"), menu.Selection.Item);
+        Assert.Equal([await d.FixtureAsync("Farewell")], shown);
+        Assert.Same(await d.FixtureAsync("Farewell"), menu.Selection.Item);
     }
 
     [Fact]
-    public void ListShown_SameChildrenAndFilter_GivesTheListAlreadyFiltered()
+    public async Task ListShown_SameChildrenAndFilter_GivesTheListAlreadyFiltered()
     {
         var d = AppStateDriver.Opened();
-        var children = new[] { d.Fixture("Greeter"), d.Fixture("Farewell") };
-        var menu = OpenMenu(d, null);
+        var children = new[] { await d.FixtureAsync("Greeter"), await d.FixtureAsync("Farewell") };
+        var menu = await OpenMenuAsync(d, null);
 
         var first = menu.ListShown(children, d.Ui.Tree);
         var again = menu.ListShown(children, d.Ui.Tree);
@@ -403,28 +403,28 @@ public sealed class OmnibarTests
     }
 
     [Fact]
-    public void MoveSelection_PastTheLastChild_StaysWithinThoseListed()
+    public async Task MoveSelection_PastTheLastChild_StaysWithinThoseListed()
     {
         var d = AppStateDriver.Opened();
-        var children = new[] { d.Fixture("Greeter"), d.Fixture("Farewell") };
-        var menu = OpenMenu(d, d.Fixture("Greeter"));
+        var children = new[] { await d.FixtureAsync("Greeter"), await d.FixtureAsync("Farewell") };
+        var menu = await OpenMenuAsync(d, await d.FixtureAsync("Greeter"));
         menu.ListShown(children, d.Ui.Tree);
 
         menu.MoveSelection(1);
         menu.MoveSelection(1);
 
-        Assert.Same(d.Fixture("Farewell"), menu.Selection.Item);
+        Assert.Same(await d.FixtureAsync("Farewell"), menu.Selection.Item);
     }
 
     [Fact]
-    public void Follow_TheSameNodeAndTree_KeepsTheCrumbsBuilt()
+    public async Task Follow_TheSameNodeAndTree_KeepsTheCrumbsBuilt()
     {
         var d = AppStateDriver.Opened();
         var breadcrumb = new Breadcrumb();
 
-        breadcrumb.Follow(d.Fixture("Greeter"), d.Ui.Tree);
+        breadcrumb.Follow(await d.FixtureAsync("Greeter"), d.Ui.Tree);
         var first = breadcrumb.Crumbs;
-        breadcrumb.Follow(d.Fixture("Greeter"), d.Ui.Tree);
+        breadcrumb.Follow(await d.FixtureAsync("Greeter"), d.Ui.Tree);
 
         Assert.Same(first, breadcrumb.Crumbs);
         Assert.Equal(["ILSight.App.Tests", AppStateDriver.FixturesNamespace, "Greeter"], first.Select(static c => c.Label));

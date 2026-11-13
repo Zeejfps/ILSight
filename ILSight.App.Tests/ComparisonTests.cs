@@ -108,11 +108,11 @@ public sealed class ComparisonTests
     }
 
     [Fact]
-    public void Going_back_from_a_comparison_opened_after_two_places_returns_to_the_second()
+    public async Task Going_back_from_a_comparison_opened_after_two_places_returns_to_the_second()
     {
         var d = OpenWithFixtures();
-        d.Show(d.Fixture("Outline"));
-        d.Show(d.Fixture("Greeter"));
+        d.Show(await d.FixtureAsync("Outline"));
+        d.Show(await d.FixtureAsync("Greeter"));
         Compare(d, LeftPath, RightPath);
 
         d.GoBack();
@@ -122,15 +122,15 @@ public sealed class ComparisonTests
     }
 
     [Fact]
-    public void Going_back_from_code_followed_out_of_a_comparison_clicked_again_returns_to_the_comparison()
+    public async Task Going_back_from_code_followed_out_of_a_comparison_clicked_again_returns_to_the_comparison()
     {
         var d = OpenWithFixtures();
         d.TurnOffPreviewTabs();
-        d.Show(d.Fixture("Greeter"));
+        d.Show(await d.FixtureAsync("Greeter"));
         var comparison = Compare(d, LeftPath, RightPath);
         var comparisonTab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(comparisonTab);
-        d.Show(d.Fixture("Farewell"), inNewTab: true);
+        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
         ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup, comparisonTab);
         d.Settle();
         var account = Entry(DiffOf(comparison), "ApiDiffSample", "Account");
@@ -145,10 +145,10 @@ public sealed class ComparisonTests
     }
 
     [Fact]
-    public void Going_forward_to_a_comparison_brings_its_tab_to_the_front()
+    public async Task Going_forward_to_a_comparison_brings_its_tab_to_the_front()
     {
         var d = OpenWithFixtures();
-        d.Show(d.Fixture("Greeter"));
+        d.Show(await d.FixtureAsync("Greeter"));
         Compare(d, LeftPath, RightPath);
         var compared = d.AppState.Navigation.ActiveTab;
         d.GoBack();
@@ -162,7 +162,7 @@ public sealed class ComparisonTests
     }
 
     [Fact]
-    public void Going_back_to_a_comparison_whose_tab_was_closed_compares_it_again_as_it_was_left()
+    public async Task Going_back_to_a_comparison_whose_tab_was_closed_compares_it_again_as_it_was_left()
     {
         var d = OpenWithFixtures();
         var compared = Compare(d, LeftPath, RightPath);
@@ -170,7 +170,7 @@ public sealed class ComparisonTests
         d.Settle();
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        d.Show(d.Fixture("Greeter"), inNewTab: true);
+        d.Show(await d.FixtureAsync("Greeter"), inNewTab: true);
         d.Settle();
         d.AppState.Navigation.CloseTab(tab);
 
@@ -185,14 +185,14 @@ public sealed class ComparisonTests
     }
 
     [Fact]
-    public void Going_back_passes_over_a_comparison_whose_tab_was_closed_and_whose_assemblies_were_closed()
+    public async Task Going_back_passes_over_a_comparison_whose_tab_was_closed_and_whose_assemblies_were_closed()
     {
         var d = OpenWithFixtures();
-        d.Show(d.Fixture("Greeter"));
+        d.Show(await d.FixtureAsync("Greeter"));
         Compare(d, LeftPath, RightPath);
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        d.Show(d.Fixture("Farewell"), inNewTab: true);
+        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
         d.Settle();
         d.AppState.Navigation.CloseTab(tab);
         Commands.CloseAssemblies(d.AppState, [Opened(d, LeftPath), Opened(d, RightPath)]);

@@ -7,22 +7,22 @@ public sealed class GoToBookmarkHandlerTests
 {
     /// <summary>A driver with no screen that shows the fixture Outline with its "return First();" line bookmarked,
     /// then the fixture Greeter; and the bookmark.</summary>
-    private static (AppStateDriver Driver, Bookmark Bookmark) Bookmarked()
+    private static async Task<(AppStateDriver Driver, Bookmark Bookmark)> BookmarkedAsync()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        d.Show(d.Fixture("Outline"));
+        d.Show(await d.FixtureAsync("Outline"));
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark));
-        d.Show(d.Fixture("Greeter"));
+        d.Show(await d.FixtureAsync("Greeter"));
         return (d, Assert.Single(d.AppState.Bookmarks.Items));
     }
 
     [Fact]
     public async Task HandleAsync_PlaceFound_ShowsItLoadingAndRecordsItInTheHistory()
     {
-        var (d, bookmark) = Bookmarked();
-        var outline = d.Fixture("Outline");
+        var (d, bookmark) = await BookmarkedAsync();
+        var outline = await d.FixtureAsync("Outline");
         var ports = new FakeGoToBookmarkHandlerPorts();
         var history = d.AppState.Navigation.HistoryEntries.Count;
 
@@ -43,7 +43,7 @@ public sealed class GoToBookmarkHandlerTests
     [Fact]
     public async Task HandleAsync_PlaceGone_ReportsTheBookmarkGone()
     {
-        var (d, bookmark) = Bookmarked();
+        var (d, bookmark) = await BookmarkedAsync();
         var ports = new FakeGoToBookmarkHandlerPorts();
 
         var going = new GoToBookmarkHandler(ports).HandleAsync(d.AppState, bookmark, CancellationToken.None);
@@ -60,13 +60,13 @@ public sealed class GoToBookmarkHandlerTests
     [Fact]
     public async Task HandleAsync_SomethingElseAskedForMeanwhile_ShowsAndReportsNothing()
     {
-        var (d, bookmark) = Bookmarked();
+        var (d, bookmark) = await BookmarkedAsync();
         var ports = new FakeGoToBookmarkHandlerPorts();
         var shown = d.AppState.Navigation.ActiveTab;
 
         var going = new GoToBookmarkHandler(ports).HandleAsync(d.AppState, bookmark, CancellationToken.None);
         d.AppState.Navigation.BeginRequest();
-        Assert.Single(ports.Answers).SetResult(new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(d.Fixture("Outline"))));
+        Assert.Single(ports.Answers).SetResult(new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(await d.FixtureAsync("Outline"))));
         var load = await going;
 
         Assert.Null(load);

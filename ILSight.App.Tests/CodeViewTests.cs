@@ -14,9 +14,9 @@ public sealed class CodeViewTests
     /// <summary>The built-in light theme, as the app finds it among the themes it lists.</summary>
     private static readonly AppTheme Light = Theming.CreateCatalog(BuiltInThemes.Files).GetTheme(Theming.LightId);
 
-    private static (CodeViewDriver View, int Line, int Column) GreeterAt(string text)
+    private static async Task<(CodeViewDriver View, int Line, int Column)> GreeterAtAsync(string text)
     {
-        var view = CodeViewDriver.Showing(CodeViewDriver.Greeter(), height: 1200f);
+        var view = CodeViewDriver.Showing(await CodeViewDriver.GreeterAsync(), height: 1200f);
         var (line, column) = view.Document.GetPosition(text);
         return (view, line, column);
     }
@@ -40,9 +40,9 @@ public sealed class CodeViewTests
     }
 
     [Fact]
-    public void Lines_are_drawn_in_the_syntax_colors_of_the_provided_palette()
+    public async Task Lines_are_drawn_in_the_syntax_colors_of_the_provided_palette()
     {
-        var (view, line, column) = GreeterAt("public class Greeter");
+        var (view, line, column) = await GreeterAtAsync("public class Greeter");
 
         view.Run();
         var dark = view.Frames.Canvas.GlyphRuns.First(r => r.Text == "public").Style.TextColor.Value;
@@ -84,9 +84,9 @@ public sealed class CodeViewTests
     }
 
     [Fact]
-    public void Hovering_a_reference_underlines_it_with_a_hand_cursor()
+    public async Task Hovering_a_reference_underlines_it_with_a_hand_cursor()
     {
-        var (view, line, column) = GreeterAt("Greet(2)");
+        var (view, line, column) = await GreeterAtAsync("Greet(2)");
 
         view.MoveTo(line, column + 1);
 
@@ -96,9 +96,9 @@ public sealed class CodeViewTests
     }
 
     [Fact]
-    public void Clicking_a_reference_navigates_to_it()
+    public async Task Clicking_a_reference_navigates_to_it()
     {
-        var (view, line, column) = GreeterAt("Greet(2)");
+        var (view, line, column) = await GreeterAtAsync("Greet(2)");
 
         var result = view.Click(line, column + 2);
 
@@ -109,9 +109,9 @@ public sealed class CodeViewTests
     }
 
     [Fact]
-    public void Ctrl_click_and_middle_click_navigate_in_a_new_tab()
+    public async Task Ctrl_click_and_middle_click_navigate_in_a_new_tab()
     {
-        var (view, line, column) = GreeterAt("Greet(2)");
+        var (view, line, column) = await GreeterAtAsync("Greet(2)");
 
         var ctrl = view.Click(line, column, modifiers: KeyModifiers.Control);
         view.Frames.Wait(1);
@@ -127,9 +127,9 @@ public sealed class CodeViewTests
     }
 
     [Fact]
-    public void Clicking_a_local_highlights_its_occurrences_without_navigating()
+    public async Task Clicking_a_local_highlights_its_occurrences_without_navigating()
     {
-        var (view, line, column) = GreeterAt("text = ");
+        var (view, line, column) = await GreeterAtAsync("text = ");
 
         var result = view.Click(line, column);
         view.Frames.MovePointer(1000f, 1000f).Frame();
@@ -156,9 +156,9 @@ public sealed class CodeViewTests
     }
 
     [Fact]
-    public void Ctrl_c_copies_html_in_the_code_views_colors_and_font()
+    public async Task Ctrl_c_copies_html_in_the_code_views_colors_and_font()
     {
-        var (view, _, _) = GreeterAt("public class Greeter");
+        var (view, _, _) = await GreeterAtAsync("public class Greeter");
         var palette = BuiltInThemes.Dark.Code;
 
         view.Key(KeyboardKey.Tab).Frame();
@@ -342,9 +342,9 @@ public sealed class CodeViewTests
     }
 
     [Fact]
-    public void The_context_menu_goes_to_the_definition_under_the_pointer()
+    public async Task The_context_menu_goes_to_the_definition_under_the_pointer()
     {
-        var (view, line, column) = GreeterAt("Greet(2)");
+        var (view, line, column) = await GreeterAtAsync("Greet(2)");
 
         view.Click(line, column, PointerButton.Right);
         view.Run();
@@ -357,11 +357,11 @@ public sealed class CodeViewTests
     }
 
     [Fact]
-    public void The_context_menu_shows_the_reference_or_definition_under_the_pointer_in_metadata()
+    public async Task The_context_menu_shows_the_reference_or_definition_under_the_pointer_in_metadata()
     {
         foreach (var text in new[] { "Greet(2)", "public class Greeter" })
         {
-            var (view, line, column) = GreeterAt(text);
+            var (view, line, column) = await GreeterAtAsync(text);
             column += text.IndexOf("Greet", StringComparison.Ordinal);
 
             view.Click(line, column, PointerButton.Right);
@@ -375,9 +375,9 @@ public sealed class CodeViewTests
     }
 
     [Fact]
-    public void The_context_menu_shows_the_type_or_member_under_the_pointer_in_the_api_reference()
+    public async Task The_context_menu_shows_the_type_or_member_under_the_pointer_in_the_api_reference()
     {
-        var (view, line, column) = GreeterAt("Greet(2)");
+        var (view, line, column) = await GreeterAtAsync("Greet(2)");
 
         view.Click(line, column, PointerButton.Right);
         view.Run();
@@ -389,9 +389,9 @@ public sealed class CodeViewTests
     }
 
     [Fact]
-    public void Another_document_shown_under_an_open_context_menu_leaves_nothing_of_the_old_one_to_act_on()
+    public async Task Another_document_shown_under_an_open_context_menu_leaves_nothing_of_the_old_one_to_act_on()
     {
-        var (view, line, column) = GreeterAt("Greet(2)");
+        var (view, line, column) = await GreeterAtAsync("Greet(2)");
         view.Click(line, column, PointerButton.Right);
         view.Run();
         Assert.Contains(view.Frames.Canvas.Texts, t => t.Inputs.Text == "Analyze");

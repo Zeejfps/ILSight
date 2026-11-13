@@ -211,7 +211,10 @@ public sealed class UserIconThemeTests : IDisposable
         var settings = Settings();
         settings.IconTheme = Id("live");
         var d = new AppStateDriver(settings);
-        d.AppState.Workflows.StartUntilShutdown(d.AppState.UserIconThemes.WatchAsync);
+        using (d.Turn())
+        {
+            d.AppState.Workflows.StartUntilShutdown(d.AppState.UserIconThemes.WatchAsync);
+        }
         var before = ResolveIconTheme(d.AppState).Icons.NodeClass.Svg;
 
         _temp.Write(ClassPicture, MemoryIconAssets.Picture.Replace("currentColor", "#FF0000"));
@@ -232,7 +235,10 @@ public sealed class UserIconThemeTests : IDisposable
         var settings = Settings();
         settings.IconTheme = Id("live");
         var app = new AppDriver(settings: settings);
-        app.AppState.Workflows.StartUntilShutdown(app.AppState.UserIconThemes.WatchAsync);
+        using (app.Driver.Turn())
+        {
+            app.AppState.Workflows.StartUntilShutdown(app.AppState.UserIconThemes.WatchAsync);
+        }
         app.Run(2);
         var family = "icon-font:" + Path.GetFullPath(font);
         Assert.Contains(app.Frames.RegisteredFonts, f => f.Family == family);

@@ -42,7 +42,7 @@ public sealed class DecompileIntoTabHandlerTests
     [Fact]
     public async Task HandleAsync_ModuleClosedBeforeTheDecompileBegan_StopsTheLoadAndSaysTheAssemblyWasClosed()
     {
-        var greeter = AppStateDriver.OpenedWithoutScreen().Fixture("Greeter");
+        var greeter = await AppStateDriver.OpenedWithoutScreen().FixtureAsync("Greeter");
         var module = Assert.IsType<LoadedModule>(greeter.Assembly);
         var viewCommands = new Queue<ViewCommand>();
         var (navigation, tab) = FirstTab(viewCommands);
@@ -64,7 +64,7 @@ public sealed class DecompileIntoTabHandlerTests
     [Fact]
     public async Task HandleAsync_Decompiled_ShowsItAndCommandsTheViewWhereToStand()
     {
-        var greeter = AppStateDriver.OpenedWithoutScreen().Fixture("Greeter");
+        var greeter = await AppStateDriver.OpenedWithoutScreen().FixtureAsync("Greeter");
         var viewCommands = new Queue<ViewCommand>();
         var (navigation, tab) = FirstTab(viewCommands);
         var ports = new FakeDecompileIntoTabHandlerPorts();
@@ -90,7 +90,7 @@ public sealed class DecompileIntoTabHandlerTests
     [Fact]
     public async Task HandleAsync_CorruptFile_ShowsAndReportsTheFailure()
     {
-        var greeter = AppStateDriver.OpenedWithoutScreen().Fixture("Greeter");
+        var greeter = await AppStateDriver.OpenedWithoutScreen().FixtureAsync("Greeter");
         var viewCommands = new Queue<ViewCommand>();
         var (navigation, tab) = FirstTab(viewCommands);
         var ports = new FakeDecompileIntoTabHandlerPorts();
@@ -113,8 +113,8 @@ public sealed class DecompileIntoTabHandlerTests
     public async Task HandleAsync_NewerLoadStartedOnTheTab_DropsTheOlderOneAndShowsTheNewer()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var greeter = d.Fixture("Greeter");
-        var farewell = d.Fixture("Farewell");
+        var greeter = await d.FixtureAsync("Greeter");
+        var farewell = await d.FixtureAsync("Farewell");
         var viewCommands = new Queue<ViewCommand>();
         var (navigation, tab) = FirstTab(viewCommands);
         var ports = new FakeDecompileIntoTabHandlerPorts();
@@ -142,7 +142,7 @@ public sealed class DecompileIntoTabHandlerTests
     [Fact]
     public async Task HandleAsync_TabClosedMeanwhile_DropsWhatArrives()
     {
-        var greeter = AppStateDriver.OpenedWithoutScreen().Fixture("Greeter");
+        var greeter = await AppStateDriver.OpenedWithoutScreen().FixtureAsync("Greeter");
         var viewCommands = new Queue<ViewCommand>();
         var (navigation, tab) = FirstTab(viewCommands);
         var ports = new FakeDecompileIntoTabHandlerPorts();
@@ -164,7 +164,7 @@ public sealed class DecompileIntoTabHandlerTests
     [Fact]
     public async Task HandleAsync_CancelledAtShutdown_EndsCancelledShowingAndReportingNothing()
     {
-        var greeter = AppStateDriver.OpenedWithoutScreen().Fixture("Greeter");
+        var greeter = await AppStateDriver.OpenedWithoutScreen().FixtureAsync("Greeter");
         var viewCommands = new Queue<ViewCommand>();
         var (navigation, tab) = FirstTab(viewCommands);
         var ports = new FakeDecompileIntoTabHandlerPorts();
@@ -183,10 +183,10 @@ public sealed class DecompileIntoTabHandlerTests
     }
 
     [Fact]
-    public void Restore_TabShowsTheNodeAlready_OnlyCommandsTheViewWhereToStand()
+    public async Task Restore_TabShowsTheNodeAlready_OnlyCommandsTheViewWhereToStand()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var greeter = d.Fixture("Greeter");
+        var greeter = await d.FixtureAsync("Greeter");
         d.Show(greeter);
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);

@@ -4,17 +4,17 @@ namespace ILSight.App.Tests;
 
 public sealed class RunAnalysisHandlerTests
 {
-    private static AnalysisSymbol SymbolOf(AppStateDriver d, string type)
+    private static async Task<AnalysisSymbol> SymbolOfAsync(AppStateDriver d, string type)
     {
-        var symbol = d.Fixture(type).Analysis;
+        var symbol = (await d.FixtureAsync(type)).Analysis;
         Assert.NotNull(symbol);
         return symbol;
     }
 
     /// <summary>The first analysis of Greeter, started.</summary>
-    private static AnalysisRun StartGreeterAnalysis(AppStateDriver d)
+    private static async Task<AnalysisRun> StartGreeterAnalysisAsync(AppStateDriver d)
     {
-        var symbol = SymbolOf(d, "Greeter");
+        var symbol = await SymbolOfAsync(d, "Greeter");
         var kind = new AnalyzerKindNode { Subject = symbol, Kind = symbol.Kinds[0] };
         var run = Analysis.StartRun(kind);
         Assert.NotNull(run);
@@ -31,9 +31,9 @@ public sealed class RunAnalysisHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var analyzer = d.AppState.Analyzer;
-        var run = StartGreeterAnalysis(d);
-        var farewell = SymbolOf(d, "Farewell");
-        var outline = SymbolOf(d, "Outline");
+        var run = await StartGreeterAnalysisAsync(d);
+        var farewell = await SymbolOfAsync(d, "Farewell");
+        var outline = await SymbolOfAsync(d, "Outline");
         var ports = new FakeRunAnalysisHandlerPorts { Found = [Batch(farewell), Batch(outline)] };
         var findings = analyzer.Findings;
 
@@ -50,11 +50,11 @@ public sealed class RunAnalysisHandlerTests
     public async Task HandleAsync_Failed_EndsWithARowTellingWhyAndReportsIt()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var run = StartGreeterAnalysis(d);
+        var run = await StartGreeterAnalysisAsync(d);
         var error = new InvalidOperationException("unreadable");
         var ports = new FakeRunAnalysisHandlerPorts
         {
-            Found = [Batch(SymbolOf(d, "Farewell")), new Outcome<IReadOnlyList<AnalysisFind>>.Failed(error)],
+            Found = [Batch(await SymbolOfAsync(d, "Farewell")), new Outcome<IReadOnlyList<AnalysisFind>>.Failed(error)],
         };
 
         await new RunAnalysisHandler(ports).HandleAsync(d.AppState.Analyzer, run, CancellationToken.None);
@@ -69,8 +69,8 @@ public sealed class RunAnalysisHandlerTests
     public async Task HandleAsync_AnalysisCancelledMeanwhile_AddsNothing()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var run = StartGreeterAnalysis(d);
-        var ports = new FakeRunAnalysisHandlerPorts { Found = [Batch(SymbolOf(d, "Farewell"))] };
+        var run = await StartGreeterAnalysisAsync(d);
+        var ports = new FakeRunAnalysisHandlerPorts { Found = [Batch(await SymbolOfAsync(d, "Farewell"))] };
         Analysis.CancelNode(run.Kind);
 
         await new RunAnalysisHandler(ports).HandleAsync(d.AppState.Analyzer, run, CancellationToken.None);
@@ -80,10 +80,10 @@ public sealed class RunAnalysisHandlerTests
     }
 
     [Fact]
-    public void StartRun_StartedBefore_StartsNothing()
+    public async Task StartRun_StartedBefore_StartsNothing()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var run = StartGreeterAnalysis(d);
+        var run = await StartGreeterAnalysisAsync(d);
 
         var again = Analysis.StartRun(run.Kind);
 

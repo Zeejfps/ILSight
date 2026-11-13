@@ -43,11 +43,11 @@ public sealed class AssemblyMenuTests
     }
 
     [Fact]
-    public void The_tree_menu_opens_the_api_reference_page_of_a_public_type_and_offers_none_for_an_internal_one()
+    public async Task The_tree_menu_opens_the_api_reference_page_of_a_public_type_and_offers_none_for_an_internal_one()
     {
         var app = AppDriver.Opened();
-        var greeter = app.Fixture("Greeter");
-        var hidden = app.Fixture("Hidden");
+        var greeter = await app.FixtureAsync("Greeter");
+        var hidden = await app.FixtureAsync("Hidden");
         app.Ui.Tree.RevealNode(hidden);
         app.Ui.Tree.RevealNode(greeter);
         app.Run(2);
@@ -64,10 +64,10 @@ public sealed class AssemblyMenuTests
     }
 
     [Fact]
-    public void A_reference_in_code_opens_its_api_reference_page_and_a_private_one_reports_it_has_none()
+    public async Task A_reference_in_code_opens_its_api_reference_page_and_a_private_one_reports_it_has_none()
     {
         var app = AppDriver.Opened();
-        app.Show(app.Fixture("Greeter"), 2);
+        app.Show(await app.FixtureAsync("Greeter"), 2);
         app.Settle(2);
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -78,7 +78,7 @@ public sealed class AssemblyMenuTests
             .Where(r => r.Kind == EntityKind.Type)
             .ToList();
         var greeter = references.First(r => r.Name == "Greeter");
-        var internalType = app.Fixture("Hidden").Definition;
+        var internalType = (await app.FixtureAsync("Hidden")).Definition;
 
         app.Start((a, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, greeter, ct));
         app.Frames.WaitUntil(() => app.Frames.OpenedUrls.Count == 1, Patience);

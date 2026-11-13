@@ -3,11 +3,11 @@ namespace ILSight.App.Tests;
 public sealed class NamespacePageTests
 {
     [Fact]
-    public void A_type_named_on_its_namespaces_page_opens_when_clicked()
+    public async Task A_type_named_on_its_namespaces_page_opens_when_clicked()
     {
         var app = AppDriver.Opened();
         var d = app.Driver;
-        d.Show(d.Node(AppStateDriver.FixturesNamespace));
+        d.Show(await d.NodeAsync(AppStateDriver.FixturesNamespace));
         var tab = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var (line, column) = tab.Document.GetPosition("Greeter");
