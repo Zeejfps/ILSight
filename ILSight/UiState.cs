@@ -142,9 +142,7 @@ public sealed class UiState : IUiState
     /// <summary>The fonts the display options offer to draw code in.</summary>
     public CodeFontChoices CodeFonts { get; } = new();
 
-    /// <summary>What the settings last kept of the screen, by what it was made from, so that it is handed
-    /// over again only once something in it changed.</summary>
-    public ViewSources KeptView;
+    public KeptViewSources KeptView { get; } = new();
 
     public BookmarksPanel BookmarksPanel { get; } = new();
 

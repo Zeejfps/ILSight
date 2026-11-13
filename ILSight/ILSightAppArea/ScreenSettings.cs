@@ -27,14 +27,14 @@ public static class ScreenSettings
         uiState.ProcessPicker.Window.Restore(saved.ProcessWindow);
         uiState.Closer.Window.Restore(saved.CloseWindow);
         uiState.Documents.SkipPanels(Docking.ListDocumentPanels(uiState.MainLayout));
-        uiState.KeptView = CaptureViewSources(uiState);
+        uiState.KeptView.Keep(CaptureViewSources(uiState));
     }
 
     /// <summary>What the settings keep of the screen, when that changed since it was last taken; else null.</summary>
     public static ViewSettings? TakeChangedViewSettings(UiState uiState)
     {
         var sources = CaptureViewSources(uiState);
-        if (sources == uiState.KeptView)
+        if (!uiState.KeptView.HasChanged(sources))
         {
             return null;
         }
@@ -45,7 +45,7 @@ public static class ScreenSettings
     /// <summary>What the settings keep of the screen as it is now, changed or not, as before the last save.</summary>
     public static ViewSettings TakeViewSettings(UiState uiState)
     {
-        uiState.KeptView = CaptureViewSources(uiState);
+        uiState.KeptView.Keep(CaptureViewSources(uiState));
         return CreateViewSettings(uiState);
     }
 
