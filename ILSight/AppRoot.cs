@@ -36,7 +36,7 @@ internal static class AppRoot
 
     /// <summary>Where this run's <paramref name="arguments"/> go (<see cref="RunRouting"/>), over the role and the
     /// hand-over of the settings at <paramref name="settingsPath"/>: null when they were handed to the window already
-    /// open, the inbox dropped unread; else the receiver of later runs' arguments this run holds, the role claimed, or
+    /// open, or the hand-over stayed unconfirmed (said), the inbox dropped unread; else the receiver of later runs' arguments this run holds, the role claimed, or
     /// standing by to take it, a <paramref name="newInstance"/> asked for never handing over. Its inbox holds this run's
     /// arguments first, put there before the role is claimed, so a later run's, sent as soon as it is, come after
     /// them.</summary>
@@ -49,7 +49,7 @@ internal static class AppRoot
         inbox.Writer.TryWrite(arguments);
         var routing = new RunRoutingAdapter(address, inbox);
         var route = await new RunRouting(routing).RouteAsync(arguments, newInstance, ct);
-        if (route == RunRoute.HandedOver)
+        if (route is RunRoute.HandedOver or RunRoute.Unconfirmed)
         {
             return null;
         }

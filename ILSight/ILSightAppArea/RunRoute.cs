@@ -11,4 +11,8 @@ public enum RunRoute
 
     /// <summary>This run opens its own window and takes the role when it comes free.</summary>
     StandsBy,
+
+    /// <summary>The running app never said whether it took the arguments, sent to it again and again: this run said so
+    /// and ends, opening no second window.</summary>
+    Unconfirmed,
 }

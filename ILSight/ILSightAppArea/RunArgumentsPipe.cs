@@ -18,38 +18,62 @@ public static class RunArgumentsPipe
     private const int IntBytes = 4;
     private const int MaxArguments = 4096;
     private const int MaxArgumentBytes = 1 << 20;
+    private const byte Refused = 0;
     private const byte Received = 1;
+    private const int RequestIdBytes = 16;
 
     /// <summary>How long either side waits for the other.</summary>
     internal static readonly TimeSpan HandOverTimeout = TimeSpan.FromSeconds(5);
 
-    /// <summary>Hands <paramref name="arguments"/> to the receiver at <paramref name="address"/> and lends it the right to
-    /// come to the front; whether it took them. What the pipe throws goes through, for the caller to translate.</summary>
-    internal static async Task<bool> TrySendAsync(RunArgumentsAddress address, RunArguments arguments, CancellationToken token)
+    /// <summary>The end a run sends its arguments through to the receiver at <paramref name="address"/>.</summary>
+    internal static NamedPipeClientStream CreateClient(RunArgumentsAddress address)
     {
-        await using var pipe = new NamedPipeClientStream(".", address.Name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+        return new NamedPipeClientStream(".", address.Name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+    }
+
+    /// <summary>Connects <paramref name="pipe"/> to the receiver and lends it the right to come to the front; nothing of
+    /// the arguments is sent yet. What the pipe throws goes through, for the caller to translate.</summary>
+    internal static async Task ReachAsync(NamedPipeClientStream pipe, CancellationToken token)
+    {
         await pipe.ConnectAsync(token);
         var processId = await ReadIntAsync(pipe, token);
         ForegroundRights.LendTo(processId);
-        await WriteArgumentsAsync(pipe, CommandLines.ListArguments(arguments), token);
+    }
+
+    /// <summary>Sends <paramref name="handed"/> to the receiver <paramref name="pipe"/> reached; whether it took them
+    /// (false: it refused them). What the pipe throws goes through, for the caller to translate.</summary>
+    internal static async Task<bool> TryHandOverAsync(Stream pipe, HandedArguments handed, CancellationToken token)
+    {
+        await pipe.WriteAsync(handed.RequestId.ToByteArray(), token);
+        await WriteArgumentsAsync(pipe, CommandLines.ListArguments(handed.Arguments), token);
         var answer = await ReadByteAsync(pipe, token);
         return answer == Received;
     }
 
-    /// <summary>The arguments of the run connected to <paramref name="pipe"/>, once told where to lend the
-    /// right to come to the front.</summary>
-    internal static async Task<RunArguments> ReceiveAsync(Stream pipe, CancellationToken token)
+    /// <summary>The arguments of the run connected to <paramref name="pipe"/>, and the request that carried them, once
+    /// told where to lend the right to come to the front.</summary>
+    internal static async Task<HandedArguments> ReceiveAsync(Stream pipe, CancellationToken token)
     {
         await WriteIntAsync(pipe, Environment.ProcessId, token);
+        var id = new byte[RequestIdBytes];
+        await pipe.ReadExactlyAsync(id, token);
         var args = await ReadArgumentsAsync(pipe, token);
-        return CommandLines.Parse(args).Arguments;
+        return new HandedArguments { RequestId = new Guid(id), Arguments = CommandLines.Parse(args).Arguments };
     }
 
-    /// <summary>Tells the run connected to <paramref name="pipe"/> its arguments were taken. Hanging up
-    /// without this tells it to open a window of its own.</summary>
+    /// <summary>Tells the run connected to <paramref name="pipe"/> its arguments were taken, now or by an earlier send of
+    /// the same request.</summary>
     internal static async Task AcknowledgeAsync(Stream pipe, CancellationToken token)
     {
         await pipe.WriteAsync(new[] { Received }, token);
+        await pipe.FlushAsync(token);
+    }
+
+    /// <summary>Tells the run connected to <paramref name="pipe"/> its arguments were refused (the app is closing), for it
+    /// to open a window of its own.</summary>
+    internal static async Task RefuseAsync(Stream pipe, CancellationToken token)
+    {
+        await pipe.WriteAsync(new[] { Refused }, token);
         await pipe.FlushAsync(token);
     }
 
@@ -121,17 +145,18 @@ public static class RunArgumentsPipe
     private static readonly TimeSpan BrokenPipeWait = TimeSpan.FromMilliseconds(100);
 
     /// <summary>Listens at <paramref name="name"/> until stopped, on one server, putting the arguments each run sends in
-    /// <paramref name="inbox"/>: replacing the server for each run would drop the runs already waiting in its
-    /// backlog.</summary>
+    /// <paramref name="inbox"/>, each request once however often it is sent: replacing the server for each run would
+    /// drop the runs already waiting in its backlog.</summary>
     internal static async Task ServeAsync(string name, Channel<RunArguments> inbox, CancellationToken token)
     {
+        var taken = new HashSet<Guid>();
         while (!token.IsCancellationRequested)
         {
             try
             {
                 await using var pipe = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte,
                     PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
-                await ServeRunsAsync(inbox, pipe, token);
+                await ServeRunsAsync(inbox, taken, pipe, token);
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested)
             {
@@ -160,42 +185,62 @@ public static class RunArgumentsPipe
         }
     }
 
-    private static async Task ServeRunsAsync(Channel<RunArguments> inbox, NamedPipeServerStream pipe, CancellationToken stop)
+    private static async Task ServeRunsAsync(Channel<RunArguments> inbox, HashSet<Guid> taken, NamedPipeServerStream pipe, CancellationToken stop)
     {
         while (true)
         {
             await pipe.WaitForConnectionAsync(stop);
-            await TakeArgumentsAsync(inbox, pipe, stop);
+            await TakeArgumentsAsync(inbox, taken, pipe, stop);
             pipe.Disconnect();
         }
     }
 
-    /// <summary>Takes the arguments of the connected run, then tells it so. A run that goes away partway
-    /// costs only its own arguments, and a closed inbox hangs up on it unanswered.</summary>
-    private static async Task TakeArgumentsAsync(Channel<RunArguments> inbox, Stream pipe, CancellationToken stop)
+    /// <summary>Takes the arguments of the connected run into the inbox, unless <paramref name="taken"/> holds their
+    /// request already, then tells it so; a closed inbox refuses them. A run that goes away partway costs only its own
+    /// arguments.</summary>
+    private static async Task TakeArgumentsAsync(Channel<RunArguments> inbox, HashSet<Guid> taken, Stream pipe, CancellationToken stop)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(stop);
         timeout.CancelAfter(RunArgumentsPipe.HandOverTimeout);
-        var arguments = await RunArgumentsPipe.TryReceiveAsync(pipe, stop, timeout.Token);
-        if (arguments is null)
+        var handed = await RunArgumentsPipe.TryReceiveAsync(pipe, stop, timeout.Token);
+        if (handed is null)
         {
             return;
         }
 
-        if (!inbox.Writer.TryWrite(arguments))
+        if (!TryTake(inbox, taken, handed))
         {
+            await RunArgumentsPipe.RefuseAsync(pipe, timeout.Token)
+                .ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.SuppressThrowing);
             return;
         }
 
-        // A run that gets no acknowledgement, or a broken one, opens a window of its own: nothing more follows here.
+        // Written to the inbox before acknowledged: a run whose acknowledgement is lost sends again under the same
+        // request, which is acknowledged then without being taken twice. Nothing more follows here.
         await RunArgumentsPipe.AcknowledgeAsync(pipe, timeout.Token)
             .ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.SuppressThrowing);
+    }
+
+    private static bool TryTake(Channel<RunArguments> inbox, HashSet<Guid> taken, HandedArguments handed)
+    {
+        if (taken.Contains(handed.RequestId))
+        {
+            return true;
+        }
+
+        if (!inbox.Writer.TryWrite(handed.Arguments))
+        {
+            return false;
+        }
+
+        taken.Add(handed.RequestId);
+        return true;
     }
 
     /// <summary>The arguments of the run connected to <paramref name="pipe"/>; null when it went away, sent nonsense or
     /// took too long (<paramref name="timeout"/>), which costs only its own arguments. Stopping
     /// (<paramref name="stop"/>) goes through.</summary>
-    private static async Task<RunArguments?> TryReceiveAsync(Stream pipe, CancellationToken stop, CancellationToken timeout)
+    private static async Task<HandedArguments?> TryReceiveAsync(Stream pipe, CancellationToken stop, CancellationToken timeout)
     {
         try
         {

@@ -13,9 +13,18 @@ internal static class RunPipes
         return RunArgumentsReceiver.TryClaimAsync(address, Channel.CreateUnbounded<RunArguments>(), CancellationToken.None);
     }
 
-    /// <summary>Whether the run holding the role at <paramref name="address"/> took <paramref name="arguments"/>.</summary>
-    public static Task<bool> TrySendAsync(RunArgumentsAddress address, RunArguments arguments)
+    /// <summary>Whether the run holding the role at <paramref name="address"/> took <paramref name="arguments"/>, sent once
+    /// as a request of their own.</summary>
+    public static async Task<bool> TrySendAsync(RunArgumentsAddress address, RunArguments arguments)
     {
-        return new RunRoutingAdapter(address, Channel.CreateUnbounded<RunArguments>()).TrySendAsync(arguments, CancellationToken.None);
+        var answer = await SendAsync(address, arguments, Guid.NewGuid());
+        return answer == HandOverAnswer.Taken;
+    }
+
+    /// <summary>What the run holding the role at <paramref name="address"/> answered to <paramref name="arguments"/>, sent
+    /// as request <paramref name="requestId"/>.</summary>
+    public static Task<HandOverAnswer> SendAsync(RunArgumentsAddress address, RunArguments arguments, Guid requestId)
+    {
+        return new RunRoutingAdapter(address, Channel.CreateUnbounded<RunArguments>()).SendAsync(arguments, requestId, CancellationToken.None);
     }
 }

@@ -46,6 +46,64 @@ public sealed class RunArgumentsPipeTests
     }
 
     [Fact]
+    public async Task A_request_sent_again_is_acknowledged_again_and_taken_once()
+    {
+        using var temp = new TempDir();
+        var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
+        using var receiver = await RunPipes.ClaimAsync(address);
+        Assert.NotNull(receiver);
+        var request = Guid.NewGuid();
+
+        var first = await RunPipes.SendAsync(address, Arguments("a.dll"), request);
+        var again = await RunPipes.SendAsync(address, Arguments("a.dll"), request);
+        var other = await RunPipes.SendAsync(address, Arguments("a.dll"), Guid.NewGuid());
+
+        Assert.Equal(HandOverAnswer.Taken, first);
+        Assert.Equal(HandOverAnswer.Taken, again);
+        Assert.Equal(HandOverAnswer.Taken, other);
+        await TakeArrivedAsync(receiver.Inbox, 2);
+    }
+
+    [Fact]
+    public async Task Arguments_sent_whose_acknowledgement_never_comes_are_unknown()
+    {
+        using var temp = new TempDir();
+        var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
+        await using var server = new NamedPipeServerStream(address.Name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte,
+            PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+        var serving = TakeWithoutAnsweringAsync(server);
+
+        var answer = await RunPipes.SendAsync(address, Arguments("a.dll"), Guid.NewGuid());
+        await serving;
+
+        Assert.Equal(HandOverAnswer.Unknown, answer);
+    }
+
+    // Reads what a run sends as the receiver does, then hangs up without answering: an acknowledgement lost after the
+    // receiver took them.
+    private static async Task TakeWithoutAnsweringAsync(NamedPipeServerStream server)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await server.WaitForConnectionAsync(timeout.Token);
+        await server.WriteAsync(BitConverter.GetBytes(Environment.ProcessId), timeout.Token);
+        await server.ReadExactlyAsync(new byte[16], timeout.Token);
+        var count = await ReadIntAsync(server, timeout.Token);
+        for (var i = 0; i < count; i++)
+        {
+            await server.ReadExactlyAsync(new byte[await ReadIntAsync(server, timeout.Token)], timeout.Token);
+        }
+
+        server.Disconnect();
+    }
+
+    private static async Task<int> ReadIntAsync(Stream pipe, CancellationToken ct)
+    {
+        var bytes = new byte[4];
+        await pipe.ReadExactlyAsync(bytes, ct);
+        return BitConverter.ToInt32(bytes);
+    }
+
+    [Fact]
     public async Task A_later_run_is_refused_once_the_inbox_closes()
     {
         using var temp = new TempDir();
