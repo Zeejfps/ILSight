@@ -840,17 +840,17 @@ public sealed class AppTests
         app.Frames.ClickOn(Selector.WithText("Help"));
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "About ILSight")).Frame(2);
 
-        Assert.True(app.Ui.IsAboutOpen);
+        Assert.True(app.Ui.About.IsOpen);
         Assert.True(app.Frames.Drew(AppVersions.Decompiler));
         Assert.True(app.Frames.Drew(AppVersions.Runtime));
         Assert.DoesNotContain('+', AppVersions.App);
         Assert.DoesNotContain('+', AppVersions.Decompiler);
         app.Frames.ClickOn(Selector.WithText("Check for updates")).Frame(2);
-        Assert.True(app.Ui.IsAboutOpen);
+        Assert.True(app.Ui.About.IsOpen);
 
         app.Frames.ClickOn(Selector.AtPath("about-close")).Frame(2);
 
-        Assert.False(app.Ui.IsAboutOpen);
+        Assert.False(app.Ui.About.IsOpen);
         Assert.False(app.Frames.Drew(AppVersions.Decompiler));
     }
 
@@ -859,12 +859,12 @@ public sealed class AppTests
     {
         var app = AppDriver.Opened(width: 1600f);
         app.Run();
-        Dialogs.OpenAbout(app.Ui);
+        app.Ui.About.Open();
         app.Run(2);
 
         app.Frames.Key(Shortcuts.Search).Frame(2);
 
-        Assert.True(app.Ui.IsAboutOpen);
+        Assert.True(app.Ui.About.IsOpen);
         Assert.False(app.Ui.Layout.Contains(DockPanels.Search));
     }
 }

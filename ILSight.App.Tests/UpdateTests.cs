@@ -31,7 +31,7 @@ public sealed class UpdateTests : IDisposable
 
     private static void OpenAbout(AppDriver app)
     {
-        Dialogs.OpenAbout(app.Ui);
+        app.Ui.About.Open();
         app.Run(2);
     }
 

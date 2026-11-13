@@ -127,7 +127,7 @@ internal static class MainMenuView
         var t = ui.State.Strings;
         if (ui.MenuItem(t.HelpAbout, id: "about"))
         {
-            Dialogs.OpenAbout(ui.State);
+            ui.State.About.Open();
         }
 
         ui.MenuSeparator();
@@ -430,7 +430,7 @@ internal static class MainMenuView
         var t = ui.State.Strings;
         if (ui.MenuItem(t.HelpAbout, id: "about"))
         {
-            Dialogs.OpenAbout(ui.State);
+            ui.State.About.Open();
         }
     }
 

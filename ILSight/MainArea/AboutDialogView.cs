@@ -16,14 +16,14 @@ internal static class AboutDialogView
     public static void Render(Ui<UiState> ui, AppState appState)
     {
         var screen = ui.State;
-        if (!screen.IsAboutOpen)
+        if (!screen.About.IsOpen)
         {
             return;
         }
 
         var t = screen.Strings;
         var box = new Box { Width = Sizing.Grow(0f, AppLayout.AboutDialogWidth) };
-        using var dialog = ui.Dialog("about", t.AboutTitle, ref screen.IsAboutOpen, box);
+        using var dialog = ui.Dialog("about", t.AboutTitle, ref screen.About.IsOpen, box);
         if (!dialog.IsOpen)
         {
             return;
@@ -199,7 +199,7 @@ internal static class AboutDialogView
             ui.Spacer();
             if (ui.Button(t.AboutClose, id: "about-close", variant: ButtonVariant.Neutral))
             {
-                Dialogs.CloseAbout(ui.State);
+                ui.State.About.Close();
             }
         }
     }
