@@ -161,7 +161,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     private void RegisterChosenIconFonts(ImmediateGuiAppHost<UiState> host)
     {
         Appearance.ApplyIconTheme(UiState, IconTheming.ResolveIconTheme(_appState));
-        if (!ShownChanges.TryTakeIcons(UiState, UiState.Icons, UiState.IconFonts))
+        if (!UiState.Shown.TryTakeIcons(UiState.Icons, UiState.IconFonts))
         {
             return;
         }

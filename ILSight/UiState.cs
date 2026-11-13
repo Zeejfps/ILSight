@@ -39,8 +39,8 @@ public sealed class UiState : IUiState
     /// <summary>The fonts <see cref="Icons"/> are drawn in, which must be registered for them to show.</summary>
     public IReadOnlyList<FontFace> IconFonts { get; set; } = BuiltInIconThemes.Reference.Fonts;
 
-    /// <summary>The icons the screen was last drawn with.</summary>
-    public (AppIcons Icons, IReadOnlyList<FontFace> Fonts)? ShownIcons;
+    /// <summary>What the screen last showed: the icons, the decompilation, the list, the code font.</summary>
+    internal ShownChanges Shown { get; } = new();
     public Strings Strings { get; set; } = Strings.En;
 
     /// <summary>What the screen asked of the app state while it drew, for the app to run once the frame is drawn.</summary>
@@ -61,9 +61,6 @@ public sealed class UiState : IUiState
     /// <summary>When to try focusing another tab while none is active.</summary>
     public TabFocusTry LastTabFocusTry = new TabFocusTry { LayoutChanges = -1, TabCount = -1 };
 
-    /// <summary>The language and options the tabs in front were last brought up to date with.</summary>
-    public (DecompilationLanguage Language, DecompilerOptions Options)? ShownDecompilation;
-
     /// <summary>Whether to reset the layout, asked of the user.</summary>
     public Confirmation LayoutReset { get; } = new();
 
@@ -71,9 +68,6 @@ public sealed class UiState : IUiState
 
     /// <summary>The browse tree over the open assemblies, with the view's expansion and selection.</summary>
     public required BrowseTree Tree { get; init; }
-
-    /// <summary>Which assembly list the tree last showed.</summary>
-    public int ShownListGeneration;
 
     /// <summary>The node the tree's context menu was opened on.</summary>
     public BrowseNode? MenuTarget;
@@ -147,9 +141,6 @@ public sealed class UiState : IUiState
 
     /// <summary>The fonts the display options offer to draw code in.</summary>
     public CodeFontChoices CodeFonts { get; } = new();
-
-    /// <summary>The font code was last drawn in.</summary>
-    public CodeFont? ShownCodeFont;
 
     /// <summary>What the settings last kept of the screen, by what it was made from, so that it is handed
     /// over again only once something in it changed.</summary>

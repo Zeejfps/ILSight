@@ -182,7 +182,7 @@ internal static class AppFrames
     private static void FollowDecompilation(UiState uiState, AppState appState)
     {
         var language = appState.Decompiler.Setup.Language;
-        if (!ShownChanges.TryTakeDecompilation(uiState, language, appState.Decompiler.Setup.Options))
+        if (!uiState.Shown.TryTakeDecompilation(language, appState.Decompiler.Setup.Options))
         {
             return;
         }
@@ -333,8 +333,8 @@ internal static class AppFrames
 
     private static void FollowIconTheme(Ui<UiState> ui)
     {
-        var before = ui.State.ShownIcons?.Fonts ?? [];
-        if (!ShownChanges.TryTakeIcons(ui.State, ui.State.Icons, ui.State.IconFonts))
+        var before = ui.State.Shown.IconFonts;
+        if (!ui.State.Shown.TryTakeIcons(ui.State.Icons, ui.State.IconFonts))
         {
             return;
         }
@@ -373,7 +373,7 @@ internal static class AppFrames
     internal static FontFace? TakeCodeFontFace(UiState uiState, CodeFontFaces codeFonts)
     {
         var chosen = uiState.Display.Font;
-        if (!ShownChanges.TryTakeCodeFont(uiState, chosen))
+        if (!uiState.Shown.TryTakeCodeFont(chosen))
         {
             return null;
         }
@@ -385,7 +385,7 @@ internal static class AppFrames
         }
 
         CodeDisplay.SetCodeFont(uiState, null);
-        ShownChanges.TryTakeCodeFont(uiState, null);
+        uiState.Shown.TryTakeCodeFont(null);
         return codeFonts.Bundled;
     }
 

@@ -3,57 +3,65 @@ using ZGF.Gui.Immediate;
 
 namespace ILSight;
 
-/// <summary>Whether what the screen last showed is out of date. Each records what it is handed when it
-/// differs, so that what follows from a change happens once.</summary>
-internal static class ShownChanges
+/// <summary>What the screen last showed, to tell whether it is out of date. Each <c>TryTake*</c> records what it is
+/// handed when it differs, so that what follows from a change happens once.</summary>
+internal sealed class ShownChanges
 {
+    private CodeFont? _codeFont;
+    private int _listGeneration;
+    private (DecompilationLanguage Language, DecompilerOptions Options)? _decompilation;
+    private (AppIcons Icons, IReadOnlyList<FontFace> Fonts)? _icons;
+
+    /// <summary>The fonts of the icons the screen was last drawn with; none before the first.</summary>
+    public IReadOnlyList<FontFace> IconFonts => _icons?.Fonts ?? [];
+
     /// <summary>A newly chosen font is registered once.</summary>
-    public static bool TryTakeCodeFont(UiState uiState, CodeFont? font)
+    public bool TryTakeCodeFont(CodeFont? font)
     {
-        if (font == uiState.ShownCodeFont)
+        if (font == _codeFont)
         {
             return false;
         }
 
-        uiState.ShownCodeFont = font;
+        _codeFont = font;
         return true;
     }
 
-    public static bool TryTakeListGeneration(UiState uiState, int generation)
+    public bool TryTakeListGeneration(int generation)
     {
-        if (generation == uiState.ShownListGeneration)
+        if (generation == _listGeneration)
         {
             return false;
         }
 
-        uiState.ShownListGeneration = generation;
+        _listGeneration = generation;
         return true;
     }
 
     /// <summary>By reference for the options: a record's equality would take new options with the same
     /// values as no change, and a tab would keep what was decompiled with the old ones.</summary>
-    public static bool TryTakeDecompilation(UiState uiState, DecompilationLanguage language, DecompilerOptions options)
+    public bool TryTakeDecompilation(DecompilationLanguage language, DecompilerOptions options)
     {
-        var shown = uiState.ShownDecompilation;
+        var shown = _decompilation;
         if (shown is not null && language == shown.Value.Language && ReferenceEquals(options, shown.Value.Options))
         {
             return false;
         }
 
-        uiState.ShownDecompilation = (language, options);
+        _decompilation = (language, options);
         return true;
     }
 
     /// <summary>By reference: reloaded icons are new ones, even with the same values.</summary>
-    public static bool TryTakeIcons(UiState uiState, AppIcons icons, IReadOnlyList<FontFace> fonts)
+    public bool TryTakeIcons(AppIcons icons, IReadOnlyList<FontFace> fonts)
     {
-        var shown = uiState.ShownIcons;
+        var shown = _icons;
         if (shown is not null && ReferenceEquals(icons, shown.Value.Icons))
         {
             return false;
         }
 
-        uiState.ShownIcons = (icons, fonts);
+        _icons = (icons, fonts);
         return true;
     }
 

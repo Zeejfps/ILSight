@@ -22,7 +22,7 @@ public static class Trees
 
     private static void ForgetClearedList(UiState uiState, AssemblyList assemblies)
     {
-        if (!ShownChanges.TryTakeListGeneration(uiState, assemblies.Generation))
+        if (!uiState.Shown.TryTakeListGeneration(assemblies.Generation))
         {
             return;
         }
