@@ -113,7 +113,7 @@ public sealed class CloseAssembliesTests
         OpenCloser(closer, d.AppState.Assemblies, Listed(d, KeyboardPath));
         closer.Order[2].Included = true;
 
-        Commands.CloseAssemblies(d.AppState, ListToClose(closer));
+        d.InTurn(() => Commands.CloseAssemblies(d.AppState, ListToClose(closer)));
 
         Assert.Equal([AppStateDriver.FixturePath], ListedPaths(d));
     }
@@ -298,7 +298,7 @@ public sealed class CloseAssembliesTests
         Assert.NotNull(tab);
         Assert.IsType<TabContent.Loading>(tab.Content);
 
-        Commands.CloseAssemblies(app.AppState, [keyboard]);
+        app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [keyboard]));
         app.Settle(2);
 
         Assert.Same(tab, app.AppState.Navigation.ActiveTab);

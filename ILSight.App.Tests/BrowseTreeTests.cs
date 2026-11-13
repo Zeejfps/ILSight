@@ -21,7 +21,7 @@ public sealed class BrowseTreeTests
         Assert.Equal("Loading…", loading.Label);
         Assert.True(loading.Spinning);
         Assert.True(tree.Builds.HasAsked);
-        Commands.StartBuildingChildren(d.AppState, tree);
+        d.InTurn(() => Commands.StartBuildingChildren(d.AppState, tree));
         d.RunUntil(() => tree.GetChildren(root).PlaceholderRow is null);
         Assert.Contains(tree.GetChildren(root).Nodes, c => c.Text == AppStateDriver.FixturesNamespace);
     }
@@ -36,7 +36,7 @@ public sealed class BrowseTreeTests
         var container = await root.GetChildAsync("Resources", BrokenAssemblies.AvaloniaContainer);
 
         tree.GetChildren(container);
-        Commands.StartBuildingChildren(d.AppState, tree);
+        d.InTurn(() => Commands.StartBuildingChildren(d.AppState, tree));
         d.RunUntil(() => container.ChildrenState is ChildrenState.Failed);
 
         var children = tree.GetChildren(container);

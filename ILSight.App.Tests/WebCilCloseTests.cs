@@ -36,7 +36,7 @@ public sealed class WebCilCloseTests
         var part158 = await module.ReadRootAsync().GetChildAsync("LargeApp", "Part158");
         app.Driver.StartShowing(part158, inNewTab: true);
         var decompiling = app.AppState.Navigation.ActiveTab ?? throw new InvalidOperationException("Part158 was shown in no tab.");
-        Commands.CloseAssemblies(app.AppState, [module]);
+        app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [module]));
         app.Settle(2);
         var released = LoadedAssemblies.WaitForReleaseAsync(module, CancellationToken.None);
         app.Frames.WaitUntil(() => released.IsCompleted, Patience);
@@ -56,7 +56,7 @@ public sealed class WebCilCloseTests
         var (app, module, _) = await ShowingLargeAppAsync(folder);
         var tab = app.AppState.Navigation.ActiveTab ?? throw new InvalidOperationException("Part159 was shown in no tab.");
         var code = tab.Document;
-        Commands.CloseAssemblies(app.AppState, [module]);
+        app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [module]));
         app.Settle(2);
 
         app.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
@@ -104,7 +104,7 @@ public sealed class WebCilCloseTests
         var state = DocumentPanels.GetGridState(DocumentPanels.GetView(app.Ui.Documents, tab), grid);
         var last = grid.RowCount - 1;
         var closed = app.Ui.Strings.DocumentClosed("LargeApp.wasm");
-        Commands.CloseAssemblies(app.AppState, [module]);
+        app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [module]));
         app.Settle(2);
 
         state.Scroll.Y = 100000f;

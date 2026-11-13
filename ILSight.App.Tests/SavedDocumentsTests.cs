@@ -407,7 +407,7 @@ public sealed class SavedDocumentsTests : IDisposable
             Layout = null,
         }));
 
-        Commands.CloseAllAssemblies(d.AppState);
+        d.InTurn(() => Commands.CloseAllAssemblies(d.AppState));
         d.Settle();
 
         var tab = Assert.Single(d.AppState.Navigation.OpenTabs);

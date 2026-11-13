@@ -269,7 +269,7 @@ public sealed class AssemblyListingTests
         var root = tree.Roots[0];
         tree.CollapseAll();
 
-        Commands.StartExpandingNamespaces(d.AppState, tree, tree.ExpandNamespaces());
+        d.InTurn(() => Commands.StartExpandingNamespaces(d.AppState, tree, tree.ExpandNamespaces()));
         var ns = await d.NodeAsync(AppStateDriver.FixturesNamespace);
         d.RunUntil(() => tree.View.IsExpanded(ns));
 

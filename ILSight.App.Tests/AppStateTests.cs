@@ -86,7 +86,7 @@ public sealed class AppStateTests
         var ns = await d.NodeAsync(AppStateDriver.FixturesNamespace);
         d.StartShowing(await d.FixtureAsync("Greeter"));
 
-        Commands.CloseAllAssemblies(d.AppState);
+        d.InTurn(() => Commands.CloseAllAssemblies(d.AppState));
         d.NextFrame();
 
         Assert.False(d.Ui.Tree.View.HasSelection);
@@ -109,7 +109,7 @@ public sealed class AppStateTests
         var table = grid.Grid;
         Assert.NotNull(table);
         var rows = table.RowCount;
-        Commands.CloseAllAssemblies(d.AppState);
+        d.InTurn(() => Commands.CloseAllAssemblies(d.AppState));
         d.NextFrame();
         var lineBefore = DocumentPanels.GetView(d.Ui.Documents, code).Code.Pending;
         var rowBefore = DocumentPanels.GetGridState(DocumentPanels.GetView(d.Ui.Documents, grid), table).Pending;
@@ -425,7 +425,7 @@ public sealed class AppStateTests
         d.Show(await d.FixtureAsync("Outline"), inNewTab: true);
         var outline = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(outline);
-        QueuedCommands.CloseTabAndFocusNext(d.Ui, d.AppState, outline);
+        d.InTurn(() => QueuedCommands.CloseTabAndFocusNext(d.Ui, d.AppState, outline));
         d.Settle();
         var focused = d.AppState.Navigation.ActiveTab?.Node?.Text;
         Assert.NotNull(focused);
@@ -554,7 +554,7 @@ public sealed class AppStateTests
         Assert.NotNull(selectedRow);
         var selected = selectedRow.Node;
 
-        Commands.CloseAssemblies(d.AppState, [d.AppState.Assemblies.Assemblies.Single(a => a.Name == "System.Private.CoreLib")]);
+        d.InTurn(() => Commands.CloseAssemblies(d.AppState, [d.AppState.Assemblies.Assemblies.Single(a => a.Name == "System.Private.CoreLib")]));
         Searches.Update(search, d.AppState.Assemblies, 2, true);
         d.Settle();
 

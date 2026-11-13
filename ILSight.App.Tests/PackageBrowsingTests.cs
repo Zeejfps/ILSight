@@ -49,7 +49,8 @@ public sealed class PackageBrowsingTests
         using var temp = new TempDir();
         var app = OpenedPackage(temp);
 
-        Commands.CloseAssemblies(app.AppState, [(await GreeterAsync(app)).Assembly]);
+        var assembly = (await GreeterAsync(app)).Assembly;
+        app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [assembly]));
         app.Run(2);
 
         Assert.Empty(app.AppState.Assemblies.Listed);

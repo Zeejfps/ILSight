@@ -69,7 +69,7 @@ public sealed class NestedNamespaceTests
         var ilsight = await app.NodeAsync("ILSight");
         var fixtures = await app.NodeAsync(AppStateDriver.FixturesNamespace);
 
-        Commands.StartExpandingNamespaces(app.AppState, tree, tree.ExpandNamespaces());
+        app.Driver.InTurn(() => Commands.StartExpandingNamespaces(app.AppState, tree, tree.ExpandNamespaces()));
         app.Frames.WaitUntil(() => tree.View.IsExpanded(fixtures), Patience);
 
         foreach (var name in EnclosingNamespaces)

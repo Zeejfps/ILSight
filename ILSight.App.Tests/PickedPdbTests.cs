@@ -69,7 +69,7 @@ public sealed class PickedPdbTests
         var d = OpenedCopy(temp, copy);
         Pick(d, FixturePdb);
 
-        Commands.CloseAllAssemblies(d.AppState);
+        d.InTurn(() => Commands.CloseAllAssemblies(d.AppState));
         RememberOpenAssemblies(d.AppState.Lists, d.AppState.ListSession);
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 

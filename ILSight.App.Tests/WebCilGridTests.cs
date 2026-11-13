@@ -92,7 +92,7 @@ public sealed class WebCilGridTests
         Assert.False(grid.IsRowRead(row));
         var handler = new ReadMetadataPageHandler(new FailingReadMetadataPageHandlerPorts());
 
-        await handler.HandleAsync(new MetadataGridPageAsk { Grid = grid, Page = MetadataGrid.Paged.PageOf(row) }, CancellationToken.None);
+        await app.Driver.RunAsync(() => handler.HandleAsync(new MetadataGridPageAsk { Grid = grid, Page = MetadataGrid.Paged.PageOf(row) }, CancellationToken.None));
 
         Assert.True(grid.IsRowRead(row));
         Assert.Equal("?", MetadataGrids.GetText(grid, row, grid.Column("Value")));
