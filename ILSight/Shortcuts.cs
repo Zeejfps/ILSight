@@ -6,9 +6,6 @@ using ILSight.CommandArea;
 using ILSight.MainArea;
 using ILSight.AssemblyArea;
 using static ZGF.Desktop.ShortcutModifiers;
-using static ILSight.ExportArea.Exports;
-using static ILSight.DocumentPanels;
-using static ILSight.ScreenLayout;
 
 namespace ILSight;
 
@@ -92,18 +89,18 @@ internal static class Shortcuts
 
     private static readonly Binding[] Bindings =
     [
-        new Binding { Keys = Search, Run = static (ui, _) => OpenSearch(ui.State), WhileTyping = true },
+        new Binding { Keys = Search, Run = static (ui, _) => ScreenLayout.OpenSearch(ui.State), WhileTyping = true },
         new Binding { Keys = OmnibarSearch, Run = static (ui, _) => SearchInOmnibarUnlessFolding(ui), WhileTyping = true },
         new Binding { Keys = Back, Run = static (ui, appState) => GoBack(ui.State, appState), WhileTyping = true },
         new Binding { Keys = Forward, Run = static (ui, appState) => GoForward(ui.State, appState), WhileTyping = true },
         new Binding { Keys = Open, Run = static (ui, appState) => MainMenuView.OpenFile(ui, appState.Navigation) },
-        new Binding { Keys = Settings, Run = static (ui, _) => OpenPanel(ui.State, DockView.DisplayOptions), WhileTyping = true },
+        new Binding { Keys = Settings, Run = static (ui, _) => ScreenLayout.OpenPanel(ui.State, DockView.DisplayOptions), WhileTyping = true },
         new Binding { Keys = SaveCode, Run = static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, appState.Navigation, appState.Decompiler.Setup.Language) },
-        new Binding { Keys = Export, Run = static (ui, appState) => ui.State.ExportSetup.Open(appState.Assemblies.Assemblies, FindActiveAssembly(appState.Navigation)) },
+        new Binding { Keys = Export, Run = static (ui, appState) => ui.State.ExportSetup.Open(appState.Assemblies.Assemblies, Exports.FindActiveAssembly(appState.Navigation)) },
         new Binding { Keys = ReloadAll, Run = static (ui, _) => Commands.Start(ui.State, nameof(AssemblyReloading.RefreshAssembliesAsync), ui.State.Tree.ListExpandedPaths(), static (a, expanded, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, expanded, ct)) },
-        new Binding { Keys = CloseTab, Run = static (ui, _) => CloseActiveTab(ui.State) },
-        new Binding { Keys = NextTab, Run = static (ui, appState) => CycleTab(ui.State, appState.Navigation, appState.Decompiler.Setup, 1) },
-        new Binding { Keys = PreviousTab, Run = static (ui, appState) => CycleTab(ui.State, appState.Navigation, appState.Decompiler.Setup, -1) },
+        new Binding { Keys = CloseTab, Run = static (ui, _) => DocumentPanels.CloseActiveTab(ui.State) },
+        new Binding { Keys = NextTab, Run = static (ui, appState) => DocumentPanels.CycleTab(ui.State, appState.Navigation, appState.Decompiler.Setup, 1) },
+        new Binding { Keys = PreviousTab, Run = static (ui, appState) => DocumentPanels.CycleTab(ui.State, appState.Navigation, appState.Decompiler.Setup, -1) },
     ];
 
     /// <summary>Goes to the history entry before the current one in this frame, and asks for its load or lookup to be
@@ -156,7 +153,7 @@ internal static class Shortcuts
             return;
         }
 
-        SearchInOmnibar(ui.State);
+        ScreenLayout.SearchInOmnibar(ui.State);
     }
 
     /// <summary>Whether any of <paramref name="shortcuts"/> was pressed this frame.</summary>

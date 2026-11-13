@@ -1,6 +1,5 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
-using static ILSight.ScreenLayout;
 
 namespace ILSight.MainArea;
 
@@ -21,19 +20,19 @@ internal static class LayoutResetDialogView
                 {
                     if (ui.Button(t.ViewResetLayoutCancel, id: "reset-cancel", variant: ButtonVariant.Ghost))
                     {
-                        FinishLayoutReset(screen, false);
+                        ScreenLayout.FinishLayoutReset(screen, false);
                     }
 
                     if (ui.Button(t.ViewResetLayoutConfirm, id: "reset-confirm", variant: ButtonVariant.Primary))
                     {
-                        FinishLayoutReset(screen, true);
+                        ScreenLayout.FinishLayoutReset(screen, true);
                     }
                 }
             }
         }
         if (!open && screen.ConfirmingLayoutReset)
         {
-            FinishLayoutReset(screen, false);
+            ScreenLayout.FinishLayoutReset(screen, false);
         }
     }
 }

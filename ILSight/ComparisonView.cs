@@ -5,7 +5,6 @@ using ILSight.Core.Comparison;
 using ILSight.CommandArea;
 using ILSight.DocumentViewArea;
 using ILSight.AssemblyArea;
-using static ILSight.Comparisons;
 
 namespace ILSight;
 
@@ -79,7 +78,7 @@ internal static class ComparisonView
             ui.Separator(ui.Theme.IconSize);
             if (ui.IconButton("swap", icons.ComparisonSwap, why ?? t.ComparisonSwap, enabled: why is null))
             {
-                Commands.CompareLater(ui.State, SwapComparedAssemblies(assemblies, comparison));
+                Commands.CompareLater(ui.State, Comparisons.SwapComparedAssemblies(assemblies, comparison));
             }
 
             ui.Separator(ui.Theme.IconSize);
@@ -102,7 +101,7 @@ internal static class ComparisonView
         var all = comparison.Scope == ApiScope.AllDeclared;
         if (ui.Checkbox(ui.State.Strings.ComparisonShowHiddenMembers, ref all, id: "show-hidden-members", enabled: enabled))
         {
-            Commands.CompareLater(ui.State, ChangeComparedScope(assemblies, comparison, ScopeOf(all)));
+            Commands.CompareLater(ui.State, Comparisons.ChangeComparedScope(assemblies, comparison, ScopeOf(all)));
         }
     }
 

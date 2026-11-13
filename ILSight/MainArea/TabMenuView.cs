@@ -1,7 +1,6 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.CommandArea;
-using static ILSight.DocumentPanels;
 
 namespace ILSight.MainArea;
 
@@ -72,33 +71,33 @@ internal static class TabMenuView
     {
         var t = ui.State.Strings;
         var screen = ui.State;
-        var group = ListTabsInGroup(screen, tab);
+        var group = DocumentPanels.ListTabsInGroup(screen, tab);
         var index = group.IndexOf(tab);
         KeepOpenItem(ui, navigation, tab);
         if (ui.MenuItem(t.TabClose, Shortcuts.CloseTab, id: "close"))
         {
-            CloseTab(screen, tab);
+            DocumentPanels.CloseTab(screen, tab);
         }
 
         if (ui.MenuItem(t.TabCloseOthers, enabled: group.Count > 1, id: "close-others"))
         {
-            CloseOtherTabs(screen, tab);
+            DocumentPanels.CloseOtherTabs(screen, tab);
         }
 
         if (ui.MenuItem(t.TabCloseAll, id: "close-all"))
         {
-            CloseTabsInGroup(screen, tab);
+            DocumentPanels.CloseTabsInGroup(screen, tab);
         }
 
         ui.MenuSeparator();
         if (ui.MenuItem(t.TabCloseLeft, enabled: index > 0, id: "close-left"))
         {
-            CloseTabsLeftOf(screen, tab);
+            DocumentPanels.CloseTabsLeftOf(screen, tab);
         }
 
         if (ui.MenuItem(t.TabCloseRight, enabled: HasTabsRightOf(group, index), id: "close-right"))
         {
-            CloseTabsRightOf(screen, tab);
+            DocumentPanels.CloseTabsRightOf(screen, tab);
         }
     }
 

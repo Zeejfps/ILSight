@@ -1,5 +1,4 @@
 using ILSight.Core;
-using static ILSight.SavedDocuments;
 
 namespace ILSight.AssemblyArea;
 
@@ -49,7 +48,7 @@ public sealed class OpenAssembliesAsReloadHandler(OpenAssembliesAsReloadHandler.
             return TabLoads.None;
         }
 
-        var reopened = ShowReopenedDocuments(session.Navigation, session.Reopened, session.Assemblies);
+        var reopened = SavedDocuments.ShowReopenedDocuments(session.Navigation, session.Reopened, session.Assemblies);
         if (outcome is Outcome<LoadedAssembly?>.Failed failed)
         {
             ports.ReportError(new AppProblem.OpenFailed(failed.Error));

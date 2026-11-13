@@ -2,7 +2,6 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.CommandArea;
 using ILSight.SearchArea;
-using static ILSight.DocumentPanels;
 
 namespace ILSight;
 
@@ -16,8 +15,8 @@ public static class ScreenLayout
     internal static void ConnectLayout(UiState uiState)
     {
         var dock = uiState.MainLayout.Dock;
-        dock.NewPanel = () => OpenTabForPanel(uiState);
-        dock.PanelClosed += panel => OnPanelClosed(uiState, panel);
+        dock.NewPanel = () => DocumentPanels.OpenTabForPanel(uiState);
+        dock.PanelClosed += panel => DocumentPanels.OnPanelClosed(uiState, panel);
     }
 
     /// <summary>Docks <paramref name="view"/> if it is not, by the active document where it goes there, and
@@ -30,14 +29,14 @@ public static class ScreenLayout
             return;
         }
 
-        Docking.Open(uiState.MainLayout, view, FindActivePanel(uiState));
+        Docking.Open(uiState.MainLayout, view, DocumentPanels.FindActivePanel(uiState));
     }
 
     /// <summary>Docks the search panel under the documents if it is closed, brings it to the front
     /// and puts the caret in its search box.</summary>
     public static void OpenSearch(UiState uiState)
     {
-        Docking.Open(uiState.MainLayout, DockView.Search, FindActivePanel(uiState));
+        Docking.Open(uiState.MainLayout, DockView.Search, DocumentPanels.FindActivePanel(uiState));
         uiState.Search.AskForFocus();
     }
 
@@ -53,7 +52,7 @@ public static class ScreenLayout
     /// instead while no document is active or the omnibar is hidden.</summary>
     public static void SearchInOmnibar(UiState uiState)
     {
-        var panel = FindActivePanel(uiState);
+        var panel = DocumentPanels.FindActivePanel(uiState);
         if (panel is null)
         {
             OpenSearch(uiState);
@@ -94,7 +93,7 @@ public static class ScreenLayout
         }
 
         Docking.ResetLayout(uiState.MainLayout, documents);
-        ActivateActivePanel(uiState);
+        DocumentPanels.ActivateActivePanel(uiState);
     }
 
     /// <summary>A new document panel, with an empty tab asked for to be opened in it as the active tab.</summary>

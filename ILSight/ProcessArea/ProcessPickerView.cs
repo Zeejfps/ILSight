@@ -7,7 +7,6 @@ using ILSight.Core.Processes;
 using ILSight.CommandArea;
 using ILSight.UserArea;
 using ILSight.ILSightAppArea;
-using static ILSight.ProcessArea.ProcessPicking;
 
 namespace ILSight.ProcessArea;
 
@@ -113,7 +112,7 @@ internal static class ProcessPickerView
 
         using (ui.Row(new Box { Gap = theme.GapTight }))
         {
-            var counts = (Processes: browser.Filtered.Count, Modules: GetModules(browser.Modules).Count, Selected: browser.ModuleSelection.Count, t);
+            var counts = (Processes: browser.Filtered.Count, Modules: ProcessPicking.GetModules(browser.Modules).Count, Selected: browser.ModuleSelection.Count, t);
             var summary = ui.Memo("process-count", counts, static a => Summary(a.t, a.Processes, a.Modules, a.Selected));
             ui.Text(summary, color: theme.TextMuted, size: theme.FontSizeSmall);
             ui.Spacer();

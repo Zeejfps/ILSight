@@ -1,7 +1,6 @@
 using System.Threading.Channels;
 using ILSight.AssemblyListArea;
 using ILSight.CommandArea;
-using static ILSight.ILSightAppArea.RunArgumentsActions;
 
 namespace ILSight.ILSightAppArea;
 
@@ -92,13 +91,13 @@ public static class AppStart
         }
 
         var files = arguments.Files;
-        Commands.StartShowing(appState, nameof(OpenRequestedFilesAsync), ct => OpenRequestedFilesAsync(appState, files, ct));
+        Commands.StartShowing(appState, nameof(RunArgumentsActions.OpenRequestedFilesAsync), ct => RunArgumentsActions.OpenRequestedFilesAsync(appState, files, ct));
     }
 
     /// <summary>Tells the user of the arguments of <paramref name="arguments"/> that were ignored, if any.</summary>
     private static void ReportIgnored(AppState appState, RunArguments arguments)
     {
-        var ignored = FindIgnored(arguments);
+        var ignored = RunArgumentsActions.FindIgnored(arguments);
         if (ignored is null)
         {
             return;

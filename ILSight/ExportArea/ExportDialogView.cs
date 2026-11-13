@@ -7,8 +7,6 @@ using ZGF.KeyboardModule;
 using ILSight.CommandArea;
 using ILSight.ILSightAppArea;
 using ILSight.AssemblyArea;
-using static ILSight.ExportArea.Exports;
-using static ILSight.Preferences;
 
 namespace ILSight.ExportArea;
 
@@ -435,7 +433,7 @@ internal static class ExportDialogView
         var on = DecompilerToggles.IsOn(options, toggle);
         if (ui.Checkbox(label, ref on, id: name, compact: true))
         {
-            Commands.Later(ui.State, (toggle, on), static (a, s) => SetDecompilerToggle(a, s.toggle, s.on));
+            Commands.Later(ui.State, (toggle, on), static (a, s) => Preferences.SetDecompilerToggle(a, s.toggle, s.on));
         }
     }
 

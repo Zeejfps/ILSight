@@ -4,10 +4,6 @@ using ILSight.Core;
 using ILSight.DiagramArea;
 using ILSight.AssemblyArea;
 using ILSight.DocumentViewArea;
-using static ILSight.Comparisons;
-using static ILSight.Decompilation;
-using static ILSight.DiagramArea.Diagrams;
-using static ILSight.Docking;
 
 namespace ILSight;
 
@@ -422,10 +418,10 @@ public static class SavedDocuments
                 nodes.Add(new WaitingNode { Reopened = reopened, Record = node, Place = FindListedPlace(assemblies, node) });
                 break;
             case DiagramDocumentRecord diagram:
-                AddStarted(diagramReads, ReopenDiagram(navigation, reopenedTabs, reopened, diagram));
+                AddStarted(diagramReads, Diagrams.ReopenDiagram(navigation, reopenedTabs, reopened, diagram));
                 break;
             case ComparisonDocumentRecord comparison:
-                AddStarted(comparisonRuns, ReopenComparison(navigation, reopenedTabs, assemblies, reopened, comparison));
+                AddStarted(comparisonRuns, Comparisons.ReopenComparison(navigation, reopenedTabs, assemblies, reopened, comparison));
                 break;
         }
     }

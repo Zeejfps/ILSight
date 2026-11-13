@@ -1,7 +1,6 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.CommandArea;
-using static ILSight.AssemblyListArea.AssemblyLists;
 
 namespace ILSight.AssemblyListArea;
 
@@ -59,7 +58,7 @@ internal static class AssemblyListDeleteDialogView
     /// place when it was open. Returns what is left to open of it then; null when it was not open.</summary>
     private static ListOpening? Delete(AssemblyListsDialog dialog, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
-        var opening = DeleteAssemblyList(lists, session, view, name);
+        var opening = AssemblyLists.DeleteAssemblyList(lists, session, view, name);
         AssemblyLists.PickList(dialog, lists, lists.Active);
         return opening;
     }

@@ -4,8 +4,6 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.CommandArea;
 using ILSight.AssemblyArea;
-using static ILSight.AssemblyArea.AssemblyClosing;
-using static ILSight.AssemblyArea.Assemblies;
 
 namespace ILSight.MainArea;
 
@@ -60,7 +58,7 @@ internal static class CloseAssembliesDialogView
     {
         var t = ui.State.Strings;
         var theme = ui.Theme;
-        var shown = ListShown(closer);
+        var shown = AssemblyClosing.ListShown(closer);
         using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
         {
             if (closer.Rows.TryTakeFilterFocus())
@@ -73,10 +71,10 @@ internal static class CloseAssembliesDialogView
         }
         using (ui.Row(new Box { Padding = new Spacing(theme.Gap + theme.BorderWidth, 0f, 0f, 0f) }))
         {
-            var all = CalculateAllShownIncluded(shown);
+            var all = AssemblyClosing.CalculateAllShownIncluded(shown);
             if (ui.Checkbox(t.ExportSelectShown, ref all, id: "close-all", compact: true))
             {
-                IncludeShown(shown, all == true);
+                AssemblyClosing.IncludeShown(shown, all == true);
             }
         }
         using (ui.Column(ListFrame(theme)))

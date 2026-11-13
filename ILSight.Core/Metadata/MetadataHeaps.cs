@@ -1,6 +1,3 @@
-// Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
-
-using static ILSight.Core.Metadata.GridSchemas;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using ICSharpCode.Decompiler.Metadata;
@@ -20,11 +17,11 @@ internal static class MetadataHeaps
             return Walk(MetadataTokens.StringHandle(0), m.GetNextHandle, static h => h.IsNil);
         }
 
-        yield return ($"String Heap ({Strings().Count()})", AddColumns(CreateGrid<StringHandle>("String Heap", file, Strings), columns =>
+        yield return ($"String Heap ({Strings().Count()})", GridSchemas.AddColumns(GridSchemas.CreateGrid<StringHandle>("String Heap", file, Strings), columns =>
         {
-            AddValue(columns, "Offset", h => m.GetHeapOffset(h), "X8");
-            AddValue(columns, "Length", h => m.GetString(h).Length);
-            AddValue(columns, "Value", h => m.GetString(h));
+            GridSchemas.AddValue(columns, "Offset", h => m.GetHeapOffset(h), "X8");
+            GridSchemas.AddValue(columns, "Length", h => m.GetString(h).Length);
+            GridSchemas.AddValue(columns, "Value", h => m.GetString(h));
         }));
 
         IEnumerable<UserStringHandle> UserStrings()
@@ -32,11 +29,11 @@ internal static class MetadataHeaps
             return Walk(MetadataTokens.UserStringHandle(0), m.GetNextHandle, static h => h.IsNil);
         }
 
-        yield return ($"UserString Heap ({UserStrings().Count()})", AddColumns(CreateGrid<UserStringHandle>("UserString Heap", file, UserStrings), columns =>
+        yield return ($"UserString Heap ({UserStrings().Count()})", GridSchemas.AddColumns(GridSchemas.CreateGrid<UserStringHandle>("UserString Heap", file, UserStrings), columns =>
         {
-            AddValue(columns, "Offset", h => m.GetHeapOffset(h), "X8");
-            AddValue(columns, "Length", h => m.GetUserString(h).Length);
-            AddValue(columns, "Value", h => m.GetUserString(h));
+            GridSchemas.AddValue(columns, "Offset", h => m.GetHeapOffset(h), "X8");
+            GridSchemas.AddValue(columns, "Length", h => m.GetUserString(h).Length);
+            GridSchemas.AddValue(columns, "Value", h => m.GetUserString(h));
         }));
 
         IEnumerable<GuidHandle> Guids()
@@ -44,11 +41,11 @@ internal static class MetadataHeaps
             return Enumerable.Range(1, m.GetHeapSize(HeapIndex.Guid) >> 4).Select(MetadataTokens.GuidHandle);
         }
 
-        yield return ($"Guid Heap ({Guids().Count()})", AddColumns(CreateGrid<GuidHandle>("Guid Heap", file, Guids), columns =>
+        yield return ($"Guid Heap ({Guids().Count()})", GridSchemas.AddColumns(GridSchemas.CreateGrid<GuidHandle>("Guid Heap", file, Guids), columns =>
         {
-            AddValue(columns, "Index", h => m.GetHeapOffset(h));
-            AddValue(columns, "Length", _ => 16);
-            AddValue(columns, "Value", h => m.GetGuid(h).ToString());
+            GridSchemas.AddValue(columns, "Index", h => m.GetHeapOffset(h));
+            GridSchemas.AddValue(columns, "Length", _ => 16);
+            GridSchemas.AddValue(columns, "Value", h => m.GetGuid(h).ToString());
         }));
 
         IEnumerable<BlobHandle> Blobs()
@@ -56,11 +53,11 @@ internal static class MetadataHeaps
             return Walk(MetadataTokens.BlobHandle(0), m.GetNextHandle, static h => h.IsNil);
         }
 
-        yield return ($"Blob Heap ({Blobs().Count()})", AddColumns(CreateGrid<BlobHandle>("Blob Heap", file, Blobs), columns =>
+        yield return ($"Blob Heap ({Blobs().Count()})", GridSchemas.AddColumns(GridSchemas.CreateGrid<BlobHandle>("Blob Heap", file, Blobs), columns =>
         {
-            AddValue(columns, "Offset", h => m.GetHeapOffset(h), "X8");
-            AddValue(columns, "Length", h => m.GetBlobReader(h).Length);
-            AddValue(columns, "Value", h => m.GetBlobReader(h).ToHexString());
+            GridSchemas.AddValue(columns, "Offset", h => m.GetHeapOffset(h), "X8");
+            GridSchemas.AddValue(columns, "Length", h => m.GetBlobReader(h).Length);
+            GridSchemas.AddValue(columns, "Value", h => m.GetBlobReader(h).ToHexString());
         }));
     }
 

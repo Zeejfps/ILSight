@@ -6,7 +6,6 @@ using ILSight.BookmarkArea;
 using ILSight.ExportArea;
 using ILSight.DiagramArea;
 using ILSight.UserArea;
-using static ILSight.Decompilation;
 
 namespace ILSight;
 
@@ -294,7 +293,7 @@ public sealed class Navigation
         _intent.Begin();
         _tabs.MakeActive(tab);
         RecordShownPlace(tab, setup.Language);
-        return StartDecompilingAgainIfOutdated(tab, setup.Language, setup.Options);
+        return Decompilation.StartDecompilingAgainIfOutdated(tab, setup.Language, setup.Options);
     }
 
     /// <summary>Records the place <paramref name="tab"/> shows as where the user is now, as showing it records it: its
@@ -1071,7 +1070,7 @@ public sealed class Navigation
     {
         if (tab.Load.IsShowing(node, setup.Language, setup.Options))
         {
-            Arrive(ViewCommands, tab, arrival);
+            Decompilation.Arrive(ViewCommands, tab, arrival);
             return null;
         }
 

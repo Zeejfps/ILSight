@@ -1,7 +1,6 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.CommandArea;
-using static ILSight.MainArea.Dialogs;
 
 namespace ILSight.MainArea;
 
@@ -207,7 +206,7 @@ internal static class AboutDialogView
             ui.Spacer();
             if (ui.Button(t.AboutClose, id: "about-close", variant: ButtonVariant.Neutral))
             {
-                CloseAbout(ui.State);
+                Dialogs.CloseAbout(ui.State);
             }
         }
     }

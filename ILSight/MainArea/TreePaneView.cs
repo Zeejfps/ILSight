@@ -8,9 +8,6 @@ using ILSight.ExportArea;
 using ILSight.CommandArea;
 using ILSight.DiagramArea;
 using ILSight.AssemblyArea;
-using static ILSight.AssemblyArea.Assemblies;
-using static ILSight.DiagramArea.Diagrams;
-using static ILSight.ScreenLayout;
 
 namespace ILSight.MainArea;
 
@@ -501,12 +498,12 @@ internal static class TreePaneView
 
         if (node.Subject is NodeSubject.Module && ui.MenuItem(t.TreeScopeSearchToAssembly, id: "scope-search"))
         {
-            ScopeSearch(ui.State, node);
+            ScreenLayout.ScopeSearch(ui.State, node);
         }
 
         if (node.Subject is NodeSubject.Namespace && ui.MenuItem(t.TreeScopeSearchToNamespace, id: "scope-search"))
         {
-            ScopeSearch(ui.State, node);
+            ScreenLayout.ScopeSearch(ui.State, node);
         }
 
         if (IsListedRoot(node) && ui.MenuItem(t.TreeOpenContainingFolder, id: "open-containing-folder", icon: new UiIcon(ui.State.Icons.AssembliesOpenContainingFolder)))

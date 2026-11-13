@@ -2,7 +2,6 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.CommandArea;
-using static ILSight.ScreenLayout;
 
 namespace ILSight.ExportArea;
 
@@ -30,7 +29,7 @@ internal static class ExportStatusView
         var t = ui.State.Strings;
         if (Glance(ui, running, waiting))
         {
-            OpenPanel(ui.State, DockView.Exports);
+            ScreenLayout.OpenPanel(ui.State, DockView.Exports);
         }
 
         if (!running.IsCancelling && IconButton(ui, "cancel-export", ui.State.Icons.ExportCancel, t.StatusCancelExport))

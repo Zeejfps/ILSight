@@ -1,9 +1,6 @@
 using System.Diagnostics;
 using ILSight.Core;
 using ILSight.CommandArea;
-using static ILSight.Analysis;
-using static ILSight.AssemblyArea.Assemblies;
-using static ILSight.SavedDocuments;
 
 namespace ILSight.AssemblyListArea;
 
@@ -31,7 +28,7 @@ public static class AssemblyLists
         RememberOpenAssemblies(lists, session);
         var analyzed = session.Analyzer.ListSavedAnalyses();
         lists.RememberActiveAnalyses(analyzed);
-        lists.RememberActiveDocuments(SaveDocuments(session, view));
+        lists.RememberActiveDocuments(SavedDocuments.SaveDocuments(session, view));
     }
 
     /// <summary>Makes the list named <paramref name="name"/> the open one, with the analyses and documents it had,
@@ -67,7 +64,7 @@ public static class AssemblyLists
     private static ListOpening BeginOpeningActiveList(SavedAssemblyLists lists, OpenListSession session)
     {
         var closing = session.CloseAllAssemblies();
-        ReopenDocuments(lists, session);
+        SavedDocuments.ReopenDocuments(lists, session);
         session.Navigation.ClearHistory();
         var reopening = session.BeginReopening(lists);
         session.Analyzer.AddPending(lists.ActiveAnalyses);

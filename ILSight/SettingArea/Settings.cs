@@ -1,9 +1,6 @@
 using System.Diagnostics;
 using ZGF.Desktop;
 using ILSight.Core;
-using static ILSight.AssemblyListArea.AssemblyLists;
-using static ILSight.BookmarkArea.Bookmarks;
-using static ILSight.SavedDocuments;
 using ILSight.AppSettingArea;
 
 namespace ILSight.SettingArea;
@@ -21,7 +18,7 @@ public static class Settings
         appState.Lists.Restore(settings.AssemblyLists, settings.ActiveAssemblyList);
         var leftOutBookmarks = appState.Bookmarks.Restore(settings.Bookmarks);
         appState.Analyzer.AddPending(appState.Lists.ActiveAnalyses);
-        ReopenDocuments(appState.Lists, appState.ListSession);
+        SavedDocuments.ReopenDocuments(appState.Lists, appState.ListSession);
         appState.LastSaved = CaptureSavedSources(appState);
         if (leftOutBookmarks == 0)
         {

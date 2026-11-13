@@ -1,7 +1,6 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.CommandArea;
-using static ILSight.BookmarkArea.Bookmarks;
 
 namespace ILSight.BookmarkArea;
 

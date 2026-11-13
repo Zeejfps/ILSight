@@ -6,8 +6,6 @@ using ZGF.KeyboardModule;
 using ILSight.Core;
 using ILSight.CommandArea;
 
-using static ILSight.ScreenLayout;
-
 namespace ILSight.SearchArea;
 
 internal static class SearchPanelView

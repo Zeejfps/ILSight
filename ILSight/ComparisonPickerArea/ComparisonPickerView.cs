@@ -3,7 +3,6 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.CommandArea;
-using static ILSight.Comparisons;
 
 namespace ILSight.ComparisonPickerArea;
 
@@ -174,7 +173,7 @@ internal static class ComparisonPickerView
             return false;
         }
 
-        Commands.CompareLater(screen, CompareAssemblies(navigation, assemblies, compared, other, t.ComparisonTitle(compared.Name)));
+        Commands.CompareLater(screen, Comparisons.CompareAssemblies(navigation, assemblies, compared, other, t.ComparisonTitle(compared.Name)));
         return true;
     }
 }

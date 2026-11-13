@@ -1,6 +1,3 @@
-// Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
-
-using static ILSight.Core.Metadata.GridSchemas;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using ICSharpCode.Decompiler.DebugInfo;
@@ -36,15 +33,15 @@ internal static class CustomDebugInformationTable
     public static GridSchema<CustomDebugInformation> Columns(GridSchemaBuilder<CustomDebugInformation> table, MetadataFile file)
     {
         var m = file.Metadata;
-        AddOffset(table, TableIndex.CustomDebugInformation);
-        AddHandle(table, "Parent", r => r.Parent);
-        AddValue(table, "Kind", r => MetadataTokens.GetHeapOffset(r.Kind), "X2");
-        AddValue(table, "KindGUID", r => m.GetGuid(r.Kind), "D");
-        AddValue(table, "KindString", r => KindString(m, r.Kind));
-        AddValue(table, "Info", r => FindInfo(m, r));
-        AddBlob(table, "Value", r => r.Value, r => r.Value.IsNil ? "<nil>" : m.GetBlobReader(r.Value).ToHexString());
-        AddValue(table, "ValueLength", r => m.GetBlobReader(r.Value).Length, "X8");
-        SetDetails(table, r => Details(m, r));
+        GridSchemas.AddOffset(table, TableIndex.CustomDebugInformation);
+        GridSchemas.AddHandle(table, "Parent", r => r.Parent);
+        GridSchemas.AddValue(table, "Kind", r => MetadataTokens.GetHeapOffset(r.Kind), "X2");
+        GridSchemas.AddValue(table, "KindGUID", r => m.GetGuid(r.Kind), "D");
+        GridSchemas.AddValue(table, "KindString", r => KindString(m, r.Kind));
+        GridSchemas.AddValue(table, "Info", r => FindInfo(m, r));
+        GridSchemas.AddBlob(table, "Value", r => r.Value, r => r.Value.IsNil ? "<nil>" : m.GetBlobReader(r.Value).ToHexString());
+        GridSchemas.AddValue(table, "ValueLength", r => m.GetBlobReader(r.Value).Length, "X8");
+        GridSchemas.SetDetails(table, r => Details(m, r));
         return table.ToSchema();
     }
 

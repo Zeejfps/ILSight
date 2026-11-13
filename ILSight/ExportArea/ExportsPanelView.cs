@@ -7,7 +7,6 @@ using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.CommandArea;
 using ILSight.DocumentViewArea;
-using static ILSight.ExportArea.Exports;
 
 namespace ILSight.ExportArea;
 
@@ -96,7 +95,7 @@ internal static class ExportsPanelView
             ui.Spacer();
             if (ui.Button(t.ExportsClearFinished, enabled: finished.Count > 0, id: "clear", variant: ButtonVariant.Ghost))
             {
-                Commands.Later(ui.State, static a => ClearFinishedExports(a));
+                Commands.Later(ui.State, static a => Exports.ClearFinishedExports(a));
             }
 
             ui.Tooltip(ui.GetId("clear"), t.ExportsClearFinishedTooltip);
@@ -133,7 +132,7 @@ internal static class ExportsPanelView
             return;
         }
 
-        var runs = ListExports(queue, finished);
+        var runs = Exports.ListExports(queue, finished);
         var keys = ui.Input.Keys;
         for (var i = 0; i < keys.Count; i++)
         {
@@ -164,7 +163,7 @@ internal static class ExportsPanelView
         }
         if (stroke.Key == KeyboardKey.Enter)
         {
-            Commands.Later(ui.State, selected, static (a, run) => ActivateExport(a, run));
+            Commands.Later(ui.State, selected, static (a, run) => Exports.ActivateExport(a, run));
             return true;
         }
         if (ui.IsPressedAt(Shortcuts.Copy, index))
@@ -174,7 +173,7 @@ internal static class ExportsPanelView
         }
         if (stroke.Key == KeyboardKey.Delete)
         {
-            Commands.Later(ui.State, selected, static (a, run) => RemoveExport(a, run));
+            Commands.Later(ui.State, selected, static (a, run) => Exports.RemoveExport(a, run));
             return true;
         }
         return false;
@@ -207,7 +206,7 @@ internal static class ExportsPanelView
 
     private static void CopyFolder(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished, ExportRun run)
     {
-        var folder = FindExportFolder(queue, finished, run);
+        var folder = Exports.FindExportFolder(queue, finished, run);
         if (folder is null)
         {
             return;
@@ -248,7 +247,7 @@ internal static class ExportsPanelView
         }
         if (hit.DoubleClicked)
         {
-            Commands.Later(ui.State, run, static (a, r) => ActivateExport(a, r));
+            Commands.Later(ui.State, run, static (a, r) => Exports.ActivateExport(a, r));
         }
 
         if (hit.ClickedWith(PointerButton.Right))
@@ -491,7 +490,7 @@ internal static class ExportsPanelView
         }
         if (removed is not null)
         {
-            Commands.Later(ui.State, removed, static (a, report) => RemoveFinishedExport(a, report));
+            Commands.Later(ui.State, removed, static (a, report) => Exports.RemoveFinishedExport(a, report));
         }
     }
 
@@ -596,12 +595,12 @@ internal static class ExportsPanelView
         var t = ui.State.Strings;
         if (labelled && ui.Button(t.ExportShowReport, id: "show-report", icon: new UiIcon(ui.State.Icons.ExportShowReport)))
         {
-            Commands.Later(ui.State, report, static (a, r) => ShowExportReport(a, r));
+            Commands.Later(ui.State, report, static (a, r) => Exports.ShowExportReport(a, r));
         }
 
         if (!labelled && ui.IconButton("show-report", ui.State.Icons.ExportShowReport, t.ExportShowReport))
         {
-            Commands.Later(ui.State, report, static (a, r) => ShowExportReport(a, r));
+            Commands.Later(ui.State, report, static (a, r) => Exports.ShowExportReport(a, r));
         }
     }
 
@@ -678,7 +677,7 @@ internal static class ExportsPanelView
             return;
         }
 
-        var report = FindFinishedExport(finished, run);
+        var report = Exports.FindFinishedExport(finished, run);
         if (report is not null)
         {
             FinishedMenu(ui, report);
@@ -694,7 +693,7 @@ internal static class ExportsPanelView
         var t = ui.State.Strings;
         if (ui.MenuItem(t.ExportShowReport, Shortcuts.Enter, id: "show-report", icon: new UiIcon(ui.State.Icons.ExportShowReport)))
         {
-            Commands.Later(ui.State, report, static (a, r) => ShowExportReport(a, r));
+            Commands.Later(ui.State, report, static (a, r) => Exports.ShowExportReport(a, r));
         }
 
         if (ui.MenuItem(t.ExportOpenFolder, enabled: report.FolderExists, id: "open-folder", icon: new UiIcon(ui.State.Icons.ExportOpenFolder)))
@@ -710,14 +709,14 @@ internal static class ExportsPanelView
         ui.MenuSeparator();
         if (ui.MenuItem(t.ExportsRemove, Shortcuts.Delete, id: "remove"))
         {
-            Commands.Later(ui.State, report, static (a, r) => RemoveFinishedExport(a, r));
+            Commands.Later(ui.State, report, static (a, r) => Exports.RemoveFinishedExport(a, r));
         }
     }
 
     private static void QueuedMenu(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished, ExportRun run)
     {
         var t = ui.State.Strings;
-        var folder = FindExportFolder(queue, finished, run);
+        var folder = Exports.FindExportFolder(queue, finished, run);
         if (folder is null)
         {
             return;

@@ -1,5 +1,4 @@
 using ILSight.Core;
-using static ILSight.SavedDocuments;
 
 namespace ILSight;
 
@@ -189,6 +188,6 @@ public sealed class OpenListSession
         _analyzer.ClearRoots();
         Assemblies.Pdbs.ForgetAll();
         Assemblies.TargetFrameworks.ForgetAll();
-        return new ListClosing { Loads = ShowReopenedDocuments(Navigation, Reopened, Assemblies), Removed = removed };
+        return new ListClosing { Loads = SavedDocuments.ShowReopenedDocuments(Navigation, Reopened, Assemblies), Removed = removed };
     }
 }

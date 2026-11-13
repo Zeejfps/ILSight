@@ -4,9 +4,6 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.CommandArea;
 using ILSight.AssemblyListArea;
-using static ILSight.AssemblyListArea.AssemblyLists;
-using static ILSight.Preferences;
-using static ILSight.ScreenLayout;
 
 namespace ILSight.MainArea;
 
@@ -55,7 +52,7 @@ internal static class ToolbarView
                 var searchTip = ui.Memo("search-tip", t, static s => s.SearchFieldTooltip(Shortcuts.Search));
                 if (ui.IconButton("search", ui.State.Icons.ToolbarSearch, searchTip, variant: ButtonVariant.Neutral))
                 {
-                    OpenSearch(ui.State);
+                    ScreenLayout.OpenSearch(ui.State);
                 }
             }
 
@@ -78,7 +75,7 @@ internal static class ToolbarView
                     LanguageVersion(ui, decompiler.Setup.Options);
                     if (ui.IconButton("decompiler-options", ui.State.Icons.ToolbarDecompilerOptions, t.PanelDecompilerOptions, variant: ButtonVariant.Neutral))
                     {
-                        OpenPanel(ui.State, DockView.DecompilerOptions);
+                        ScreenLayout.OpenPanel(ui.State, DockView.DecompilerOptions);
                     }
                 }
             }
@@ -89,7 +86,7 @@ internal static class ToolbarView
             var displayOptionsTip = ui.Memo("display-options-tip", t, static s => s.ToolbarDisplayOptions(Shortcuts.Settings));
             if (ui.IconButton("display-options", ui.State.Icons.ToolbarDisplayOptions, displayOptionsTip, variant: ButtonVariant.Neutral))
             {
-                OpenPanel(ui.State, DockView.DisplayOptions);
+                ScreenLayout.OpenPanel(ui.State, DockView.DisplayOptions);
             }
         }
     }
@@ -191,7 +188,7 @@ internal static class ToolbarView
             return;
         }
 
-        Commands.OpenListLater(ui.State, SwitchAssemblyList(lists, session, view, name));
+        Commands.OpenListLater(ui.State, AssemblyLists.SwitchAssemblyList(lists, session, view, name));
         ui.RequestUpdate();
     }
 
@@ -220,7 +217,7 @@ internal static class ToolbarView
         {
             if (ui.MenuRadioItem(label, version == current))
             {
-                Commands.Later(ui.State, version, static (a, v) => SetLanguageVersion(a, v));
+                Commands.Later(ui.State, version, static (a, v) => Preferences.SetLanguageVersion(a, v));
             }
         }
     }

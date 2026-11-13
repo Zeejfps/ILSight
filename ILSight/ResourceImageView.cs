@@ -7,8 +7,6 @@ using ILSight.BookmarkArea;
 using ILSight.CodeTooltipArea;
 using ILSight.CommandArea;
 using ILSight.DocumentViewArea;
-using static ILSight.ExportArea.Exports;
-using static ILSight.ExportArea.ExportCommands;
 
 namespace ILSight;
 
@@ -162,7 +160,7 @@ internal static class ResourceImageView
         var fileName = node.ResourceFileName ?? throw new InvalidOperationException($"{node.Text} is no resource.");
         var screen = ui.State;
         ui.PickSaveFile(t.ResourceExportTitle, null, fileName, ExportFilters(t, fileName),
-            path => Commands.Later(screen, (node, path), static (a, s) => SaveResource(a, s.node, s.path)));
+            path => Commands.Later(screen, (node, path), static (a, s) => ExportArea.ExportCommands.SaveResource(a, s.node, s.path)));
     }
 
     private const string XamlExtension = ".xaml";

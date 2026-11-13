@@ -1,8 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using ILSight.Core;
-using static ILSight.AssemblyListArea.AssemblyLists;
-using static ILSight.Decompilation;
-using static ILSight.SavedDocuments;
+using ILSight.AssemblyListArea;
 
 namespace ILSight.AssemblyArea;
 
@@ -220,7 +218,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     public async Task<TabLoads> RefreshAssembliesAsync(SavedAssemblyLists lists, OpenListSession session, Queue<ViewCommand> viewCommands,
         DecompilerChoice decompiler, IReadOnlyList<NodePath> expanded, CancellationToken ct)
     {
-        RememberOpenAssemblies(lists, session);
+        AssemblyLists.RememberOpenAssemblies(lists, session);
         var intent = session.Navigation.BeginRequest();
         var ticket = session.Reload.Start();
 
@@ -295,7 +293,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     /// found, and reports why the reload failed. Returns the loads it started in the tabs.</summary>
     private TabLoads ShowNotReloaded(OpenListSession session, Exception error)
     {
-        var reopened = ShowReopenedDocuments(session.Navigation, session.Reopened, session.Assemblies);
+        var reopened = SavedDocuments.ShowReopenedDocuments(session.Navigation, session.Reopened, session.Assemblies);
         ports.ReportError(new AppProblem.AssembliesNotReloaded(error));
         return reopened;
     }
@@ -313,7 +311,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             ReshowTab(session.Navigation, viewCommands, decompiler, tabs[i], reloaded.Places[i], intent, loads);
         }
 
-        var reopened = ShowReopenedDocuments(session.Navigation, session.Reopened, session.Assemblies);
+        var reopened = SavedDocuments.ShowReopenedDocuments(session.Navigation, session.Reopened, session.Assemblies);
         return TabLoads.None.With(loads).With(reopened).With(Analysis.BeginRetrying(session.Analyzer, session.Assemblies));
     }
 

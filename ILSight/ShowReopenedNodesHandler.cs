@@ -1,5 +1,4 @@
 using ILSight.Core;
-using static ILSight.Decompilation;
 
 namespace ILSight;
 

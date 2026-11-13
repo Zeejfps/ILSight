@@ -3,7 +3,6 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ZGF.KeyboardModule;
 using ILSight.CommandArea;
-using static ILSight.AssemblyListArea.AssemblyLists;
 
 namespace ILSight.AssemblyListArea;
 
@@ -269,7 +268,7 @@ internal static class AssemblyListsDialogView
     /// drawn above show it as the active list next frame, which this asks for.</summary>
     private static void Switch(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
-        Commands.OpenListLater(ui.State, SwitchAssemblyList(lists, session, view, name));
+        Commands.OpenListLater(ui.State, AssemblyLists.SwitchAssemblyList(lists, session, view, name));
         ui.RequestUpdate();
     }
 
@@ -416,21 +415,21 @@ internal static class AssemblyListsDialogView
     /// open one open.</summary>
     private static void AddPreset(AssemblyListsDialog dialog, AppState appState, AssemblyListPreset preset)
     {
-        var name = AddAssemblyListPreset(appState, preset);
+        var name = AssemblyLists.AddAssemblyListPreset(appState, preset);
         AssemblyLists.PickToRename(dialog, appState.Lists, name);
     }
 
     /// <summary>Opens the dialog with the open list picked, its assemblies counted as they are now.</summary>
     internal static void Open(AssemblyListsDialog dialog, AppState appState)
     {
-        RememberOpenAssemblies(appState.Lists, appState.ListSession);
+        AssemblyLists.RememberOpenAssemblies(appState.Lists, appState.ListSession);
         AssemblyLists.OpenListsDialog(dialog, appState.Lists);
     }
 
     /// <summary>Adds an empty list, picked to be named, leaving the open one open.</summary>
     private static void Create(AssemblyListsDialog dialog, AppState appState, string newName)
     {
-        var name = CreateAssemblyList(appState, newName);
+        var name = AssemblyLists.CreateAssemblyList(appState, newName);
         AssemblyLists.PickToRename(dialog, appState.Lists, name);
     }
 
@@ -438,7 +437,7 @@ internal static class AssemblyListsDialogView
     /// open one open.</summary>
     private static void Duplicate(AssemblyListsDialog dialog, AppState appState, string name, string copyName)
     {
-        var copy = DuplicateAssemblyList(appState, name, copyName);
+        var copy = AssemblyLists.DuplicateAssemblyList(appState, name, copyName);
         AssemblyLists.PickToRename(dialog, appState.Lists, copy);
     }
 

@@ -1,6 +1,3 @@
-// Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
-
-using static ILSight.Core.Metadata.GridSchemas;
 using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 using System.Reflection.Metadata;
@@ -28,7 +25,7 @@ internal static class MetadataTables
 
         GridSchemaBuilder<T> Table<T>(Func<IEnumerable<T>> rows)
         {
-            return CreateTable(table, file, rows);
+            return GridSchemas.CreateTable(table, file, rows);
         }
 
         IEnumerable<int> Rids()
@@ -49,180 +46,180 @@ internal static class MetadataTables
 
         return table switch
         {
-            TableIndex.Module => AddColumns(Table<ModuleDefinition>(() => [m.GetModuleDefinition()]), columns =>
+            TableIndex.Module => GridSchemas.AddColumns(Table<ModuleDefinition>(() => [m.GetModuleDefinition()]), columns =>
             {
-                AddOffset(columns, table);
-                AddValue(columns, "Generation", r => r.Generation);
-                AddName(columns, r => r.Name);
-                AddGuid(columns, "Mvid", r => r.Mvid, r => m.GetGuid(r.Mvid).ToString());
-                AddGuid(columns, "GenerationId", r => r.GenerationId);
-                AddGuid(columns, "BaseGenerationId", r => r.BaseGenerationId);
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddValue(columns, "Generation", r => r.Generation);
+                GridSchemas.AddName(columns, r => r.Name);
+                GridSchemas.AddGuid(columns, "Mvid", r => r.Mvid, r => m.GetGuid(r.Mvid).ToString());
+                GridSchemas.AddGuid(columns, "GenerationId", r => r.GenerationId);
+                GridSchemas.AddGuid(columns, "BaseGenerationId", r => r.BaseGenerationId);
             }),
 
-            TableIndex.TypeRef => AddColumns(Table(() => m.TypeReferences.Select(m.GetTypeReference)), columns =>
+            TableIndex.TypeRef => GridSchemas.AddColumns(Table(() => m.TypeReferences.Select(m.GetTypeReference)), columns =>
             {
-                AddOffset(columns, table);
-                AddHandle(columns, "ResolutionScope", r => r.ResolutionScope);
-                AddName(columns, r => r.Name);
-                AddString(columns, "Namespace", r => r.Namespace);
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddHandle(columns, "ResolutionScope", r => r.ResolutionScope);
+                GridSchemas.AddName(columns, r => r.Name);
+                GridSchemas.AddString(columns, "Namespace", r => r.Namespace);
             }),
 
-            TableIndex.TypeDef => AddColumns(Table(() => m.GetTypeDefListColumns().Select(c => (Type: m.GetTypeDefinition(c.Type), c.FieldList, c.MethodList))), columns =>
+            TableIndex.TypeDef => GridSchemas.AddColumns(Table(() => m.GetTypeDefListColumns().Select(c => (Type: m.GetTypeDefinition(c.Type), c.FieldList, c.MethodList))), columns =>
             {
-                AddOffset(columns, table);
-                AddValue(columns, "Attributes", r => r.Type.Attributes, "X8");
-                AddName(columns, r => r.Type.Name);
-                AddString(columns, "Namespace", r => r.Type.Namespace);
-                AddHandle(columns, "BaseType", r => r.Type.BaseType, r => BaseTypeTooltip(file, r.Type.BaseType));
-                AddList(columns, "FieldList", TableIndex.Field, r => r.FieldList, r => r.Type.GetFields().FirstOrDefault(),
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddValue(columns, "Attributes", r => r.Type.Attributes, "X8");
+                GridSchemas.AddName(columns, r => r.Type.Name);
+                GridSchemas.AddString(columns, "Namespace", r => r.Type.Namespace);
+                GridSchemas.AddHandle(columns, "BaseType", r => r.Type.BaseType, r => BaseTypeTooltip(file, r.Type.BaseType));
+                GridSchemas.AddList(columns, "FieldList", TableIndex.Field, r => r.FieldList, r => r.Type.GetFields().FirstOrDefault(),
                     "(type has no fields; the stored value is the start of its empty field list: the next type's first field row, or one past the end of the Field table)");
-                AddList(columns, "MethodList", TableIndex.MethodDef, r => r.MethodList, r => r.Type.GetMethods().FirstOrDefault(),
+                GridSchemas.AddList(columns, "MethodList", TableIndex.MethodDef, r => r.MethodList, r => r.Type.GetMethods().FirstOrDefault(),
                     "(type has no methods; the stored value is the start of its empty method list: the next type's first method row, or one past the end of the MethodDef table)");
             }),
 
-            TableIndex.Field => AddColumns(Table(() => m.FieldDefinitions.Select(m.GetFieldDefinition)), columns =>
+            TableIndex.Field => GridSchemas.AddColumns(Table(() => m.FieldDefinitions.Select(m.GetFieldDefinition)), columns =>
             {
-                AddOffset(columns, table);
-                AddValue(columns, "Attributes", r => r.Attributes, "X8");
-                AddName(columns, r => r.Name);
-                AddSignature(columns, table, "Signature", r => r.Signature);
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddValue(columns, "Attributes", r => r.Attributes, "X8");
+                GridSchemas.AddName(columns, r => r.Name);
+                GridSchemas.AddSignature(columns, table, "Signature", r => r.Signature);
             }),
 
-            TableIndex.MethodDef => AddColumns(Table(() => m.GetMethodDefParamLists().Select(c => (Method: m.GetMethodDefinition(c.Method), c.ParamList))), columns =>
+            TableIndex.MethodDef => GridSchemas.AddColumns(Table(() => m.GetMethodDefParamLists().Select(c => (Method: m.GetMethodDefinition(c.Method), c.ParamList))), columns =>
             {
-                AddOffset(columns, table);
-                AddValue(columns, "Attributes", r => r.Method.Attributes, "X8");
-                AddValue(columns, "ImplAttributes", r => r.Method.ImplAttributes, "X8");
-                AddValue(columns, "RVA", r => r.Method.RelativeVirtualAddress, "X8");
-                AddName(columns, r => r.Method.Name);
-                AddSignature(columns, table, "Signature", r => r.Method.Signature);
-                AddList(columns, "ParamList", TableIndex.Param, r => r.ParamList, r => r.Method.GetParameters().FirstOrDefault(),
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddValue(columns, "Attributes", r => r.Method.Attributes, "X8");
+                GridSchemas.AddValue(columns, "ImplAttributes", r => r.Method.ImplAttributes, "X8");
+                GridSchemas.AddValue(columns, "RVA", r => r.Method.RelativeVirtualAddress, "X8");
+                GridSchemas.AddName(columns, r => r.Method.Name);
+                GridSchemas.AddSignature(columns, table, "Signature", r => r.Method.Signature);
+                GridSchemas.AddList(columns, "ParamList", TableIndex.Param, r => r.ParamList, r => r.Method.GetParameters().FirstOrDefault(),
                     "(method has no Param rows; the stored value is the start of its empty parameter list: the next method's first Param row, or one past the end of the Param table)");
             }),
 
-            TableIndex.Param => AddColumns(Table(() => Rids().Select(rid => m.GetParameter(MetadataTokens.ParameterHandle(rid)))), columns =>
+            TableIndex.Param => GridSchemas.AddColumns(Table(() => Rids().Select(rid => m.GetParameter(MetadataTokens.ParameterHandle(rid)))), columns =>
             {
-                AddOffset(columns, table);
-                AddValue(columns, "Attributes", r => r.Attributes, "X8");
-                AddValue(columns, "Sequence", r => r.SequenceNumber);
-                AddName(columns, r => r.Name);
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddValue(columns, "Attributes", r => r.Attributes, "X8");
+                GridSchemas.AddValue(columns, "Sequence", r => r.SequenceNumber);
+                GridSchemas.AddName(columns, r => r.Name);
             }),
 
-            TableIndex.InterfaceImpl => AddColumns(Table(m.GetInterfaceImplRows), columns =>
+            TableIndex.InterfaceImpl => GridSchemas.AddColumns(Table(m.GetInterfaceImplRows), columns =>
             {
-                AddHandle(columns, "Class", r => r.Class);
-                AddHandle(columns, "Interface", r => r.Interface);
+                GridSchemas.AddHandle(columns, "Class", r => r.Class);
+                GridSchemas.AddHandle(columns, "Interface", r => r.Interface);
             }),
 
-            TableIndex.MemberRef => AddColumns(Table(() => m.MemberReferences.Select(m.GetMemberReference)), columns =>
+            TableIndex.MemberRef => GridSchemas.AddColumns(Table(() => m.MemberReferences.Select(m.GetMemberReference)), columns =>
             {
-                AddOffset(columns, table);
-                AddHandle(columns, "Parent", r => r.Parent);
-                AddName(columns, r => r.Name);
-                AddSignature(columns, table, "Signature", r => r.Signature);
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddHandle(columns, "Parent", r => r.Parent);
+                GridSchemas.AddName(columns, r => r.Name);
+                GridSchemas.AddSignature(columns, table, "Signature", r => r.Signature);
             }),
 
-            TableIndex.Constant => AddColumns(Table(() => Rids().Select(rid => m.GetConstant(MetadataTokens.ConstantHandle(rid)))), columns =>
+            TableIndex.Constant => GridSchemas.AddColumns(Table(() => Rids().Select(rid => m.GetConstant(MetadataTokens.ConstantHandle(rid)))), columns =>
             {
-                AddOffset(columns, table);
-                AddValue(columns, "Type", r => r.TypeCode, "X8", r => r.TypeCode.ToString());
-                AddHandle(columns, "Parent", r => r.Parent);
-                AddBlob(columns, "Value", r => r.Value, r => ConstantText(m, r));
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddValue(columns, "Type", r => r.TypeCode, "X8", r => r.TypeCode.ToString());
+                GridSchemas.AddHandle(columns, "Parent", r => r.Parent);
+                GridSchemas.AddBlob(columns, "Value", r => r.Value, r => ConstantText(m, r));
             }),
 
-            TableIndex.CustomAttribute => AddColumns(Table(() => m.CustomAttributes.Select(m.GetCustomAttribute)), columns =>
+            TableIndex.CustomAttribute => GridSchemas.AddColumns(Table(() => m.CustomAttributes.Select(m.GetCustomAttribute)), columns =>
             {
-                AddOffset(columns, table);
-                AddHandle(columns, "Parent", r => r.Parent);
-                AddHandle(columns, "Constructor", r => r.Constructor);
-                AddBlob(columns, "Value", r => r.Value);
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddHandle(columns, "Parent", r => r.Parent);
+                GridSchemas.AddHandle(columns, "Constructor", r => r.Constructor);
+                GridSchemas.AddBlob(columns, "Value", r => r.Value);
             }),
 
-            TableIndex.FieldMarshal => AddColumns(Table(m.GetFieldMarshals), columns =>
+            TableIndex.FieldMarshal => GridSchemas.AddColumns(Table(m.GetFieldMarshals), columns =>
             {
-                AddHandle(columns, "Parent", r => r.Parent);
-                AddBlob(columns, "NativeType", r => r.NativeType);
+                GridSchemas.AddHandle(columns, "Parent", r => r.Parent);
+                GridSchemas.AddBlob(columns, "NativeType", r => r.NativeType);
             }),
 
-            TableIndex.DeclSecurity => AddColumns(Table(() => m.DeclarativeSecurityAttributes.Select(m.GetDeclarativeSecurityAttribute)), columns =>
+            TableIndex.DeclSecurity => GridSchemas.AddColumns(Table(() => m.DeclarativeSecurityAttributes.Select(m.GetDeclarativeSecurityAttribute)), columns =>
             {
-                AddOffset(columns, table);
-                AddHandle(columns, "Parent", r => r.Parent);
-                AddValue(columns, "Action", r => r.Action, "X8", r => r.Action.ToString());
-                AddBlob(columns, "PermissionSet", r => r.PermissionSet);
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddHandle(columns, "Parent", r => r.Parent);
+                GridSchemas.AddValue(columns, "Action", r => r.Action, "X8", r => r.Action.ToString());
+                GridSchemas.AddBlob(columns, "PermissionSet", r => r.PermissionSet);
             }),
 
-            TableIndex.ClassLayout => AddColumns(Table(m.GetClassLayouts), columns =>
+            TableIndex.ClassLayout => GridSchemas.AddColumns(Table(m.GetClassLayouts), columns =>
             {
-                AddHandle(columns, "Parent", r => r.Parent);
-                AddValue(columns, "PackingSize", r => (ushort)r.PackingSize);
-                AddValue(columns, "ClassSize", r => r.ClassSize);
+                GridSchemas.AddHandle(columns, "Parent", r => r.Parent);
+                GridSchemas.AddValue(columns, "PackingSize", r => (ushort)r.PackingSize);
+                GridSchemas.AddValue(columns, "ClassSize", r => r.ClassSize);
             }),
 
-            TableIndex.FieldLayout => AddColumns(Table(m.GetFieldLayoutRows), columns =>
+            TableIndex.FieldLayout => GridSchemas.AddColumns(Table(m.GetFieldLayoutRows), columns =>
             {
-                AddHandle(columns, "Field", r => r.Field);
-                AddValue(columns, "FieldOffset", r => r.Offset, "X8");
+                GridSchemas.AddHandle(columns, "Field", r => r.Field);
+                GridSchemas.AddValue(columns, "FieldOffset", r => r.Offset, "X8");
             }),
 
-            TableIndex.StandAloneSig => AddColumns(Table(() => Rids().Select(rid => m.GetStandaloneSignature(MetadataTokens.StandaloneSignatureHandle(rid)))), columns =>
+            TableIndex.StandAloneSig => GridSchemas.AddColumns(Table(() => Rids().Select(rid => m.GetStandaloneSignature(MetadataTokens.StandaloneSignatureHandle(rid)))), columns =>
             {
-                AddOffset(columns, table);
-                AddSignature(columns, table, "Signature", r => r.Signature, r => LocalsText(file, r));
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddSignature(columns, table, "Signature", r => r.Signature, r => LocalsText(file, r));
             }),
 
-            TableIndex.EventMap => AddColumns(Table(m.GetEventMaps), columns =>
+            TableIndex.EventMap => GridSchemas.AddColumns(Table(m.GetEventMaps), columns =>
             {
-                AddHandle(columns, "Parent", r => r.Parent);
-                AddHandle(columns, "EventList", r => r.EventList);
+                GridSchemas.AddHandle(columns, "Parent", r => r.Parent);
+                GridSchemas.AddHandle(columns, "EventList", r => r.EventList);
             }),
 
-            TableIndex.Event => AddColumns(Table(() => m.EventDefinitions.Select(m.GetEventDefinition)), columns =>
+            TableIndex.Event => GridSchemas.AddColumns(Table(() => m.EventDefinitions.Select(m.GetEventDefinition)), columns =>
             {
-                AddOffset(columns, table);
-                AddValue(columns, "Attributes", r => r.Attributes, "X8");
-                AddName(columns, r => r.Name);
-                AddHandle(columns, "Type", r => r.Type);
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddValue(columns, "Attributes", r => r.Attributes, "X8");
+                GridSchemas.AddName(columns, r => r.Name);
+                GridSchemas.AddHandle(columns, "Type", r => r.Type);
             }),
 
-            TableIndex.PropertyMap => AddColumns(Table(m.GetPropertyMaps), columns =>
+            TableIndex.PropertyMap => GridSchemas.AddColumns(Table(m.GetPropertyMaps), columns =>
             {
-                AddHandle(columns, "Parent", r => r.Parent);
-                AddHandle(columns, "PropertyList", r => r.PropertyList);
+                GridSchemas.AddHandle(columns, "Parent", r => r.Parent);
+                GridSchemas.AddHandle(columns, "PropertyList", r => r.PropertyList);
             }),
 
-            TableIndex.Property => AddColumns(Table(() => m.PropertyDefinitions.Select(m.GetPropertyDefinition)), columns =>
+            TableIndex.Property => GridSchemas.AddColumns(Table(() => m.PropertyDefinitions.Select(m.GetPropertyDefinition)), columns =>
             {
-                AddOffset(columns, table);
-                AddValue(columns, "Attributes", r => r.Attributes, "X8");
-                AddName(columns, r => r.Name);
-                AddSignature(columns, table, "Signature", r => r.Signature, r => PropertySignatureText(file, r));
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddValue(columns, "Attributes", r => r.Attributes, "X8");
+                GridSchemas.AddName(columns, r => r.Name);
+                GridSchemas.AddSignature(columns, table, "Signature", r => r.Signature, r => PropertySignatureText(file, r));
             }),
 
-            TableIndex.MethodSemantics => AddColumns(Table(m.GetMethodSemantics), columns =>
+            TableIndex.MethodSemantics => GridSchemas.AddColumns(Table(m.GetMethodSemantics), columns =>
             {
-                AddValue(columns, "Semantics", r => r.Semantics, "X8");
-                AddHandle(columns, "Method", r => r.Method);
-                AddHandle(columns, "Association", r => r.Association);
+                GridSchemas.AddValue(columns, "Semantics", r => r.Semantics, "X8");
+                GridSchemas.AddHandle(columns, "Method", r => r.Method);
+                GridSchemas.AddHandle(columns, "Association", r => r.Association);
             }),
 
-            TableIndex.MethodImpl => AddColumns(Table(() => Rids().Select(rid => m.GetMethodImplementation(MetadataTokens.MethodImplementationHandle(rid)))), columns =>
+            TableIndex.MethodImpl => GridSchemas.AddColumns(Table(() => Rids().Select(rid => m.GetMethodImplementation(MetadataTokens.MethodImplementationHandle(rid)))), columns =>
             {
-                AddHandle(columns, "Type", r => r.Type);
-                AddHandle(columns, "MethodDeclaration", r => r.MethodDeclaration);
-                AddHandle(columns, "MethodBody", r => r.MethodBody);
+                GridSchemas.AddHandle(columns, "Type", r => r.Type);
+                GridSchemas.AddHandle(columns, "MethodDeclaration", r => r.MethodDeclaration);
+                GridSchemas.AddHandle(columns, "MethodBody", r => r.MethodBody);
             }),
 
-            TableIndex.ModuleRef => AddColumns(Table(() => m.GetModuleReferences().Select(m.GetModuleReference)), columns =>
+            TableIndex.ModuleRef => GridSchemas.AddColumns(Table(() => m.GetModuleReferences().Select(m.GetModuleReference)), columns =>
             {
-                AddOffset(columns, table);
-                AddName(columns, r => r.Name);
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddName(columns, r => r.Name);
             }),
 
-            TableIndex.TypeSpec => AddColumns(Table(() => m.GetTypeSpecifications().Select(m.GetTypeSpecification)), columns =>
+            TableIndex.TypeSpec => GridSchemas.AddColumns(Table(() => m.GetTypeSpecifications().Select(m.GetTypeSpecification)), columns =>
             {
-                AddOffset(columns, table);
-                AddBlob(columns, "Signature", r => r.Signature, r =>
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddBlob(columns, "Signature", r => r.Signature, r =>
                 {
                     ITextOutput output = new PlainTextOutput();
                     r.DecodeSignature(new DisassemblerSignatureTypeProvider(file, output), default)(ILNameSyntax.Signature);
@@ -230,86 +227,86 @@ internal static class MetadataTables
                 });
             }),
 
-            TableIndex.ImplMap => AddColumns(Table(m.GetImplMaps), columns =>
+            TableIndex.ImplMap => GridSchemas.AddColumns(Table(m.GetImplMaps), columns =>
             {
-                AddValue(columns, "MappingFlags", r => r.MappingFlags, "X8");
-                AddHandle(columns, "MemberForwarded", r => r.MemberForwarded);
-                AddString(columns, "ImportName", r => r.ImportName);
-                AddHandle(columns, "ImportScope", r => r.ImportScope);
+                GridSchemas.AddValue(columns, "MappingFlags", r => r.MappingFlags, "X8");
+                GridSchemas.AddHandle(columns, "MemberForwarded", r => r.MemberForwarded);
+                GridSchemas.AddString(columns, "ImportName", r => r.ImportName);
+                GridSchemas.AddHandle(columns, "ImportScope", r => r.ImportScope);
             }),
 
-            TableIndex.FieldRva => AddColumns(Table(m.GetFieldRvas), columns =>
+            TableIndex.FieldRva => GridSchemas.AddColumns(Table(m.GetFieldRvas), columns =>
             {
-                AddHandle(columns, "Field", r => r.Field);
-                AddValue(columns, "RVA", r => r.RelativeVirtualAddress, "X8");
+                GridSchemas.AddHandle(columns, "Field", r => r.Field);
+                GridSchemas.AddValue(columns, "RVA", r => r.RelativeVirtualAddress, "X8");
             }),
 
-            TableIndex.Assembly => AddColumns(Table<AssemblyDefinition>(() => m.IsAssembly ? [m.GetAssemblyDefinition()] : []), columns =>
+            TableIndex.Assembly => GridSchemas.AddColumns(Table<AssemblyDefinition>(() => m.IsAssembly ? [m.GetAssemblyDefinition()] : []), columns =>
             {
-                AddOffset(columns, table);
-                AddValue(columns, "HashAlgorithm", r => r.HashAlgorithm, "X4", r => r.HashAlgorithm.ToString());
-                AddValue(columns, "Flags", r => r.Flags, "X4");
-                AddValue(columns, "Version", r => r.Version);
-                AddName(columns, r => r.Name);
-                AddString(columns, "Culture", r => r.Culture);
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddValue(columns, "HashAlgorithm", r => r.HashAlgorithm, "X4", r => r.HashAlgorithm.ToString());
+                GridSchemas.AddValue(columns, "Flags", r => r.Flags, "X4");
+                GridSchemas.AddValue(columns, "Version", r => r.Version);
+                GridSchemas.AddName(columns, r => r.Name);
+                GridSchemas.AddString(columns, "Culture", r => r.Culture);
             }),
 
-            TableIndex.AssemblyRef => AddColumns(Table(() => m.AssemblyReferences.Select(m.GetAssemblyReference)), columns =>
+            TableIndex.AssemblyRef => GridSchemas.AddColumns(Table(() => m.AssemblyReferences.Select(m.GetAssemblyReference)), columns =>
             {
-                AddOffset(columns, table);
-                AddValue(columns, "Version", r => r.Version);
-                AddValue(columns, "Flags", r => r.Flags, "X8");
-                AddBlob(columns, "PublicKeyOrToken", r => r.PublicKeyOrToken, r => Hex(r.PublicKeyOrToken));
-                AddName(columns, r => r.Name);
-                AddString(columns, "Culture", r => r.Culture);
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddValue(columns, "Version", r => r.Version);
+                GridSchemas.AddValue(columns, "Flags", r => r.Flags, "X8");
+                GridSchemas.AddBlob(columns, "PublicKeyOrToken", r => r.PublicKeyOrToken, r => Hex(r.PublicKeyOrToken));
+                GridSchemas.AddName(columns, r => r.Name);
+                GridSchemas.AddString(columns, "Culture", r => r.Culture);
             }),
 
-            TableIndex.File => AddColumns(Table(() => m.AssemblyFiles.Select(m.GetAssemblyFile)), columns =>
+            TableIndex.File => GridSchemas.AddColumns(Table(() => m.AssemblyFiles.Select(m.GetAssemblyFile)), columns =>
             {
-                AddOffset(columns, table);
-                AddValue(columns, "Attributes", r => r.ContainsMetadata ? 1 : 0, "X8", r => r.ContainsMetadata ? "ContainsMetaData" : "ContainsNoMetaData");
-                AddName(columns, r => r.Name);
-                AddBlob(columns, "HashValue", r => r.HashValue, r => Hex(r.HashValue));
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddValue(columns, "Attributes", r => r.ContainsMetadata ? 1 : 0, "X8", r => r.ContainsMetadata ? "ContainsMetaData" : "ContainsNoMetaData");
+                GridSchemas.AddName(columns, r => r.Name);
+                GridSchemas.AddBlob(columns, "HashValue", r => r.HashValue, r => Hex(r.HashValue));
             }),
 
-            TableIndex.ExportedType => AddColumns(Table(() => m.ExportedTypes.Select(m.GetExportedType)), columns =>
+            TableIndex.ExportedType => GridSchemas.AddColumns(Table(() => m.ExportedTypes.Select(m.GetExportedType)), columns =>
             {
-                AddOffset(columns, table);
-                AddValue(columns, "Attributes", r => r.Attributes, "X8");
-                AddValue(columns, "TypeDefId", r => r.GetTypeDefinitionId(), "X8");
-                AddString(columns, "TypeName", r => r.Name);
-                AddString(columns, "TypeNamespace", r => r.Namespace);
-                AddHandle(columns, "Implementation", r => r.Implementation);
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddValue(columns, "Attributes", r => r.Attributes, "X8");
+                GridSchemas.AddValue(columns, "TypeDefId", r => r.GetTypeDefinitionId(), "X8");
+                GridSchemas.AddString(columns, "TypeName", r => r.Name);
+                GridSchemas.AddString(columns, "TypeNamespace", r => r.Namespace);
+                GridSchemas.AddHandle(columns, "Implementation", r => r.Implementation);
             }),
 
-            TableIndex.ManifestResource => AddColumns(Table(() => m.ManifestResources.Select(m.GetManifestResource)), columns =>
+            TableIndex.ManifestResource => GridSchemas.AddColumns(Table(() => m.ManifestResources.Select(m.GetManifestResource)), columns =>
             {
-                AddOffset(columns, table);
-                AddValue(columns, "Attributes", r => r.Attributes, "X8");
-                AddName(columns, r => r.Name);
-                AddHandle(columns, "Implementation", r => r.Implementation);
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddValue(columns, "Attributes", r => r.Attributes, "X8");
+                GridSchemas.AddName(columns, r => r.Name);
+                GridSchemas.AddHandle(columns, "Implementation", r => r.Implementation);
             }),
 
-            TableIndex.NestedClass => AddColumns(Table(m.GetNestedClasses), columns =>
+            TableIndex.NestedClass => GridSchemas.AddColumns(Table(m.GetNestedClasses), columns =>
             {
-                AddHandle(columns, "NestedClass", r => r.NestedClass);
-                AddHandle(columns, "EnclosingClass", r => r.EnclosingClass);
+                GridSchemas.AddHandle(columns, "NestedClass", r => r.NestedClass);
+                GridSchemas.AddHandle(columns, "EnclosingClass", r => r.EnclosingClass);
             }),
 
-            TableIndex.GenericParam => AddColumns(Table(() => Rids().Select(rid => m.GetGenericParameter(MetadataTokens.GenericParameterHandle(rid)))), columns =>
+            TableIndex.GenericParam => GridSchemas.AddColumns(Table(() => Rids().Select(rid => m.GetGenericParameter(MetadataTokens.GenericParameterHandle(rid)))), columns =>
             {
-                AddOffset(columns, table);
-                AddValue(columns, "Number", r => r.Index);
-                AddValue(columns, "Attributes", r => r.Attributes, "X8");
-                AddHandle(columns, "Owner", r => r.Parent);
-                AddName(columns, r => r.Name);
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddValue(columns, "Number", r => r.Index);
+                GridSchemas.AddValue(columns, "Attributes", r => r.Attributes, "X8");
+                GridSchemas.AddHandle(columns, "Owner", r => r.Parent);
+                GridSchemas.AddName(columns, r => r.Name);
             }),
 
-            TableIndex.MethodSpec => AddColumns(Table(() => m.GetMethodSpecifications().Select(m.GetMethodSpecification)), columns =>
+            TableIndex.MethodSpec => GridSchemas.AddColumns(Table(() => m.GetMethodSpecifications().Select(m.GetMethodSpecification)), columns =>
             {
-                AddOffset(columns, table);
-                AddHandle(columns, "Method", r => r.Method);
-                AddBlob(columns, "Signature", r => r.Signature, r =>
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddHandle(columns, "Method", r => r.Method);
+                GridSchemas.AddBlob(columns, "Signature", r => r.Signature, r =>
                 {
                     ITextOutput output = new PlainTextOutput();
                     var first = true;
@@ -330,10 +327,10 @@ internal static class MetadataTables
                 });
             }),
 
-            TableIndex.GenericParamConstraint => AddColumns(Table(() => Rids().Select(rid => m.GetGenericParameterConstraint(MetadataTokens.GenericParameterConstraintHandle(rid)))), columns =>
+            TableIndex.GenericParamConstraint => GridSchemas.AddColumns(Table(() => Rids().Select(rid => m.GetGenericParameterConstraint(MetadataTokens.GenericParameterConstraintHandle(rid)))), columns =>
             {
-                AddOffset(columns, table);
-                AddHandle(columns, "Owner", r => r.Parameter, r =>
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddHandle(columns, "Owner", r => r.Parameter, r =>
                 {
                     ITextOutput output = new PlainTextOutput();
                     var p = m.GetGenericParameter(r.Parameter);
@@ -341,13 +338,13 @@ internal static class MetadataTables
                     p.Parent.WriteTo(file, output, default);
                     return output.ToString();
                 });
-                AddHandle(columns, "Type", r => r.Type);
+                GridSchemas.AddHandle(columns, "Type", r => r.Type);
             }),
 
-            TableIndex.Document => AddColumns(Table(() => m.Documents.Select(m.GetDocument)), columns =>
+            TableIndex.Document => GridSchemas.AddColumns(Table(() => m.Documents.Select(m.GetDocument)), columns =>
             {
-                AddValue(columns, "Name", r => m.GetString(r.Name), tooltip: r => $"{MetadataTokens.GetHeapOffset(r.Name):X} \"{m.GetString(r.Name)}\"");
-                AddGuid(columns, "HashAlgorithm", r => r.HashAlgorithm, r =>
+                GridSchemas.AddValue(columns, "Name", r => m.GetString(r.Name), tooltip: r => $"{MetadataTokens.GetHeapOffset(r.Name):X} \"{m.GetString(r.Name)}\"");
+                GridSchemas.AddGuid(columns, "HashAlgorithm", r => r.HashAlgorithm, r =>
                 {
                     if (r.HashAlgorithm.IsNil)
                     {
@@ -367,8 +364,8 @@ internal static class MetadataTables
 
                     return "Unknown [" + guid + "]";
                 });
-                AddBlob(columns, "Hash", r => r.Hash, r => Hex(r.Hash));
-                AddGuid(columns, "Language", r => r.Language, r =>
+                GridSchemas.AddBlob(columns, "Hash", r => r.Hash, r => Hex(r.Hash));
+                GridSchemas.AddGuid(columns, "Language", r => r.Language, r =>
                 {
                     if (r.Language.IsNil)
                     {
@@ -395,9 +392,9 @@ internal static class MetadataTables
                 });
             }),
 
-            TableIndex.MethodDebugInformation => AddColumns(Table(() => m.MethodDebugInformation.Select(m.GetMethodDebugInformation)), columns =>
+            TableIndex.MethodDebugInformation => GridSchemas.AddColumns(Table(() => m.MethodDebugInformation.Select(m.GetMethodDebugInformation)), columns =>
             {
-                AddHandle(columns, "Document", r => r.Document, r =>
+                GridSchemas.AddHandle(columns, "Document", r => r.Document, r =>
                 {
                     if (r.Document.IsNil)
                     {
@@ -407,7 +404,7 @@ internal static class MetadataTables
                     var document = m.GetDocument(r.Document);
                     return $"{MetadataTokens.GetHeapOffset(document.Name):X} \"{m.GetString(document.Name)}\"";
                 });
-                AddBlob(columns, "SequencePoints", r => r.SequencePointsBlob, r =>
+                GridSchemas.AddBlob(columns, "SequencePoints", r => r.SequencePointsBlob, r =>
                 {
                     if (r.SequencePointsBlob.IsNil)
                     {
@@ -422,7 +419,7 @@ internal static class MetadataTables
 
                     return sb.ToString().TrimEnd();
                 });
-                AddHandle(columns, "LocalSignature", r => r.LocalSignature, r =>
+                GridSchemas.AddHandle(columns, "LocalSignature", r => r.LocalSignature, r =>
                 {
                     if (r.LocalSignature.IsNil)
                     {
@@ -433,59 +430,59 @@ internal static class MetadataTables
                 });
             }),
 
-            TableIndex.LocalScope => AddColumns(Table(() => m.LocalScopes.Select(m.GetLocalScope)), columns =>
+            TableIndex.LocalScope => GridSchemas.AddColumns(Table(() => m.LocalScopes.Select(m.GetLocalScope)), columns =>
             {
-                AddHandle(columns, "Method", r => r.Method);
-                AddHandle(columns, "ImportScope", r => r.ImportScope, NoTooltip);
-                AddHandle(columns, "VariableList", r => r.GetLocalVariables().FirstOrDefault(), NoTooltip);
-                AddHandle(columns, "ConstantList", r => r.GetLocalConstants().FirstOrDefault(), NoTooltip);
-                AddValue(columns, "StartOffset", r => r.StartOffset);
-                AddValue(columns, "Length", r => r.Length);
+                GridSchemas.AddHandle(columns, "Method", r => r.Method);
+                GridSchemas.AddHandle(columns, "ImportScope", r => r.ImportScope, NoTooltip);
+                GridSchemas.AddHandle(columns, "VariableList", r => r.GetLocalVariables().FirstOrDefault(), NoTooltip);
+                GridSchemas.AddHandle(columns, "ConstantList", r => r.GetLocalConstants().FirstOrDefault(), NoTooltip);
+                GridSchemas.AddValue(columns, "StartOffset", r => r.StartOffset);
+                GridSchemas.AddValue(columns, "Length", r => r.Length);
             }),
 
-            TableIndex.LocalVariable => AddColumns(Table(() => m.LocalVariables.Select(m.GetLocalVariable)), columns =>
+            TableIndex.LocalVariable => GridSchemas.AddColumns(Table(() => m.LocalVariables.Select(m.GetLocalVariable)), columns =>
             {
-                AddValue(columns, "Attributes", r => r.Attributes, "X8");
-                AddValue(columns, "Index", r => r.Index);
-                AddName(columns, r => r.Name);
+                GridSchemas.AddValue(columns, "Attributes", r => r.Attributes, "X8");
+                GridSchemas.AddValue(columns, "Index", r => r.Index);
+                GridSchemas.AddName(columns, r => r.Name);
             }),
 
-            TableIndex.LocalConstant => AddColumns(Table(() => m.LocalConstants.Select(m.GetLocalConstant)), columns =>
+            TableIndex.LocalConstant => GridSchemas.AddColumns(Table(() => m.LocalConstants.Select(m.GetLocalConstant)), columns =>
             {
-                AddName(columns, r => r.Name);
-                AddBlob(columns, "Signature", r => r.Signature);
+                GridSchemas.AddName(columns, r => r.Name);
+                GridSchemas.AddBlob(columns, "Signature", r => r.Signature);
             }),
 
-            TableIndex.ImportScope => AddColumns(Table(() => m.ImportScopes.Select(m.GetImportScope)), columns =>
+            TableIndex.ImportScope => GridSchemas.AddColumns(Table(() => m.ImportScopes.Select(m.GetImportScope)), columns =>
             {
-                AddHandle(columns, "Parent", r => r.Parent, NoTooltip);
-                AddBlob(columns, "Imports", r => r.ImportsBlob);
+                GridSchemas.AddHandle(columns, "Parent", r => r.Parent, NoTooltip);
+                GridSchemas.AddBlob(columns, "Imports", r => r.ImportsBlob);
             }),
 
-            TableIndex.StateMachineMethod => AddColumns(Table(() => StateMachineMethods(m)), columns =>
+            TableIndex.StateMachineMethod => GridSchemas.AddColumns(Table(() => StateMachineMethods(m)), columns =>
             {
-                AddHandle(columns, "MoveNextMethod", r => r.MoveNext);
-                AddHandle(columns, "KickoffMethod", r => r.Kickoff);
+                GridSchemas.AddHandle(columns, "MoveNextMethod", r => r.MoveNext);
+                GridSchemas.AddHandle(columns, "KickoffMethod", r => r.Kickoff);
             }),
 
             TableIndex.CustomDebugInformation => CustomDebugInformationTable.Columns(Table(() => m.CustomDebugInformation.Select(m.GetCustomDebugInformation)), file),
 
-            TableIndex.EncLog => AddColumns(Table(m.GetEditAndContinueLogEntries), columns =>
+            TableIndex.EncLog => GridSchemas.AddColumns(Table(m.GetEditAndContinueLogEntries), columns =>
             {
-                AddOffset(columns, table);
-                AddHandle(columns, "Handle", r => r.Handle);
-                AddValue(columns, "FuncCode", r => r.Operation, "X8", r => r.Operation.ToString());
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddHandle(columns, "Handle", r => r.Handle);
+                GridSchemas.AddValue(columns, "FuncCode", r => r.Operation, "X8", r => r.Operation.ToString());
             }),
 
-            TableIndex.EncMap => AddColumns(Table(m.GetEditAndContinueMapEntries), columns =>
+            TableIndex.EncMap => GridSchemas.AddColumns(Table(m.GetEditAndContinueMapEntries), columns =>
             {
-                AddOffset(columns, table);
-                AddHandle(columns, "Handle", r => r);
+                GridSchemas.AddOffset(columns, table);
+                GridSchemas.AddHandle(columns, "Handle", r => r);
             }),
 
-            TableIndex.FieldPtr or TableIndex.MethodPtr or TableIndex.ParamPtr or TableIndex.EventPtr or TableIndex.PropertyPtr => AddColumns(Table(() => m.GetPtrRows(table)), columns =>
+            TableIndex.FieldPtr or TableIndex.MethodPtr or TableIndex.ParamPtr or TableIndex.EventPtr or TableIndex.PropertyPtr => GridSchemas.AddColumns(Table(() => m.GetPtrRows(table)), columns =>
             {
-                AddHandle(columns, "Handle", r => r);
+                GridSchemas.AddHandle(columns, "Handle", r => r);
             }),
 
             _ => null,

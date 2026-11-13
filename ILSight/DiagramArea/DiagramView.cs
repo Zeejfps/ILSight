@@ -9,8 +9,6 @@ using ILSight.CodeTooltipArea;
 using ILSight.DiagramCameraArea;
 using ILSight.CommandArea;
 using ILSight.DocumentViewArea;
-using static ILSight.DiagramArea.Diagrams;
-using static ILSight.Navigation;
 
 namespace ILSight.DiagramArea;
 
@@ -268,7 +266,7 @@ internal static class DiagramView
 
     private static DiagramHit HitCard(DiagramViewState view, TypeCard card, PointF point)
     {
-        var face = FindFace(view, card.Type);
+        var face = Diagrams.FindFace(view, card.Type);
         if (face is null)
         {
             return new DiagramHit.Nothing();
@@ -285,7 +283,7 @@ internal static class DiagramView
             return new DiagramHit.Nothing();
         }
 
-        var row = FindRowAt(face, point.Y - place.Value.Y);
+        var row = Diagrams.FindRowAt(face, point.Y - place.Value.Y);
         if (row is null)
         {
             return new DiagramHit.Card(face);
@@ -497,7 +495,7 @@ internal static class DiagramView
             return;
         }
 
-        ToggleFold(view, fold.Part);
+        Diagrams.ToggleFold(view, fold.Part);
     }
 
     /// <summary>A hand over a row a click acts on: one that opens code or folds a part; none while panning.</summary>
@@ -598,7 +596,7 @@ internal static class DiagramView
         for (var i = 0; i < diagram.Cards.Count; i++)
         {
             var card = diagram.Cards[i];
-            var face = FindFace(view, card.Type);
+            var face = Diagrams.FindFace(view, card.Type);
             if (face is null)
             {
                 continue;
@@ -723,7 +721,7 @@ internal static class DiagramView
     /// token closing the diagram cancels.</summary>
     internal static void ShowInDiagramLater(UiState uiState, CodeReference.Entity type, string newTitle)
     {
-        Commands.StartSettlingLater(uiState, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, newTitle), static (a, s) => ShowInDiagram(a, s.type, s.newTitle),
+        Commands.StartSettlingLater(uiState, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, newTitle), static (a, s) => Diagrams.ShowInDiagram(a, s.type, s.newTitle),
             static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token,
             static (_, read, _) => read.Diagram.FinishReading(read.Read));
     }
@@ -732,7 +730,7 @@ internal static class DiagramView
     /// (<see cref="Diagrams.ShowInNewDiagram"/>).</summary>
     internal static void ShowInNewDiagramLater(UiState uiState, CodeReference.Entity type, string title)
     {
-        Commands.StartSettlingLater(uiState, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, title), static (a, s) => ShowInNewDiagram(a, s.type, s.title),
+        Commands.StartSettlingLater(uiState, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, title), static (a, s) => Diagrams.ShowInNewDiagram(a, s.type, s.title),
             static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token,
             static (_, read, _) => read.Diagram.FinishReading(read.Read));
     }
@@ -789,14 +787,14 @@ internal static class DiagramView
     {
         var t = ui.State.Strings;
         var open = why is null;
-        if (HasLinks(card, IsBaseLink) && ui.MenuItem(t.DiagramAddBases, enabled: open && HasMissingBases(diagram, card), id: "add-bases", detail: why))
+        if (HasLinks(card, Diagrams.IsBaseLink) && ui.MenuItem(t.DiagramAddBases, enabled: open && Diagrams.HasMissingBases(diagram, card), id: "add-bases", detail: why))
         {
             Commands.Start(ui.State, nameof(DiagramGrowing.ExpandBasesAsync), (diagram, card), static (a, s, ct) => a.DiagramGrowing.ExpandBasesAsync(s.diagram, s.card, ct),
                 diagram.Token);
         }
 
-        if (HasLinks(card, IsInterfaceLink)
-            && ui.MenuItem(t.DiagramAddInterfaces, enabled: open && HasMissingInterfaces(diagram, card), id: "add-interfaces", detail: why))
+        if (HasLinks(card, Diagrams.IsInterfaceLink)
+            && ui.MenuItem(t.DiagramAddInterfaces, enabled: open && Diagrams.HasMissingInterfaces(diagram, card), id: "add-interfaces", detail: why))
         {
             Commands.Start(ui.State, nameof(DiagramGrowing.ExpandInterfacesAsync), (diagram, card),
                 static (a, s, ct) => a.DiagramGrowing.ExpandInterfacesAsync(s.diagram, s.card, ct), diagram.Token);
@@ -812,7 +810,7 @@ internal static class DiagramView
             }
         }
 
-        if (HasLinks(card, IsHeldLink) && ui.MenuItem(t.DiagramAddHeld, enabled: open && HasMissingHeld(diagram, card), id: "add-held", detail: why))
+        if (HasLinks(card, Diagrams.IsHeldLink) && ui.MenuItem(t.DiagramAddHeld, enabled: open && Diagrams.HasMissingHeld(diagram, card), id: "add-held", detail: why))
         {
             Commands.Start(ui.State, nameof(DiagramGrowing.ExpandHeldAsync), (diagram, card), static (a, s, ct) => a.DiagramGrowing.ExpandHeldAsync(s.diagram, s.card, ct),
                 diagram.Token);

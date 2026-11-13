@@ -1,6 +1,5 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
-using static ILSight.CodeDisplay;
 
 namespace ILSight;
 
@@ -21,19 +20,19 @@ internal static class DisplayOptionsResetDialogView
                 {
                     if (ui.Button(t.DisplayOptionsResetCancel, id: "display-reset-cancel", variant: ButtonVariant.Ghost))
                     {
-                        FinishDisplayOptionsReset(screen, false);
+                        CodeDisplay.FinishDisplayOptionsReset(screen, false);
                     }
 
                     if (ui.Button(t.DisplayOptionsResetConfirm, id: "display-reset-confirm", variant: ButtonVariant.Primary))
                     {
-                        FinishDisplayOptionsReset(screen, true);
+                        CodeDisplay.FinishDisplayOptionsReset(screen, true);
                     }
                 }
             }
         }
         if (!open && screen.ConfirmingDisplayReset)
         {
-            FinishDisplayOptionsReset(screen, false);
+            CodeDisplay.FinishDisplayOptionsReset(screen, false);
         }
     }
 }

@@ -9,10 +9,6 @@ using ILSight.ProcessArea;
 using ILSight.FrameworkArea;
 using ILSight.UserArea;
 using ILSight.NuGetArea;
-using static ILSight.MainArea.Dialogs;
-using static ILSight.DocumentPanels;
-using static ILSight.ExportArea.Exports;
-using static ILSight.ScreenLayout;
 
 namespace ILSight.MainArea;
 
@@ -136,13 +132,13 @@ internal static class MainMenuView
         var t = ui.State.Strings;
         if (ui.MenuItem(t.HelpAbout, id: "about"))
         {
-            OpenAbout(ui.State);
+            Dialogs.OpenAbout(ui.State);
         }
 
         ui.MenuSeparator();
         if (ui.MenuItem(t.AppMenuSettings, Shortcuts.Settings, id: "settings"))
         {
-            OpenPanel(ui.State, DockView.DisplayOptions);
+            ScreenLayout.OpenPanel(ui.State, DockView.DisplayOptions);
         }
 
         ui.MenuSeparator();
@@ -263,7 +259,7 @@ internal static class MainMenuView
     private static void ExportItems(Ui<UiState> ui, AppState appState)
     {
         var t = ui.State.Strings;
-        var canSave = CanSaveCode(appState.Navigation.ActiveTab?.Node);
+        var canSave = Exports.CanSaveCode(appState.Navigation.ActiveTab?.Node);
         if (ui.MenuItem(t.FileSaveCode, Shortcuts.SaveCode, enabled: canSave, id: "save-code", icon: new UiIcon(ui.State.Icons.FileSaveCode)))
         {
             SaveDialogs.PickActiveCodeFile(ui, appState.Navigation, appState.Decompiler.Setup.Language);
@@ -272,7 +268,7 @@ internal static class MainMenuView
         var anyOpen = ui.State.Tree.Roots.Count > 0;
         if (ui.MenuItem(t.FileExport, Shortcuts.Export, enabled: anyOpen, id: "export", icon: new UiIcon(ui.State.Icons.FileExportProject)))
         {
-            ui.State.ExportSetup.Open(appState.Assemblies.Assemblies, FindActiveAssembly(appState.Navigation));
+            ui.State.ExportSetup.Open(appState.Assemblies.Assemblies, Exports.FindActiveAssembly(appState.Navigation));
         }
 
         if (ui.MenuItem(t.FileGeneratePdbs, enabled: anyOpen, id: "generate-pdbs", icon: new UiIcon(ui.State.Icons.FileGeneratePdb)))
@@ -302,12 +298,12 @@ internal static class MainMenuView
         PanelsMenu(ui);
         if (ui.MenuItem(t.ViewCloseAllDocuments, enabled: appState.Navigation.OpenTabs.Count > 0, id: "close-all-documents"))
         {
-            CloseAllTabs(ui.State);
+            DocumentPanels.CloseAllTabs(ui.State);
         }
 
         if (ui.MenuItem(t.ViewResetLayout, id: "reset-layout"))
         {
-            AskToResetLayout(ui.State);
+            ScreenLayout.AskToResetLayout(ui.State);
         }
 
         ui.MenuSeparator();
@@ -373,37 +369,37 @@ internal static class MainMenuView
 
         if (PanelItem(ui, t.PanelAssemblies, DockView.Assemblies))
         {
-            OpenPanel(screen, DockView.Assemblies);
+            ScreenLayout.OpenPanel(screen, DockView.Assemblies);
         }
 
         if (PanelItem(ui, t.ViewBookmarks, DockView.Bookmarks))
         {
-            OpenPanel(screen, DockView.Bookmarks);
+            ScreenLayout.OpenPanel(screen, DockView.Bookmarks);
         }
 
         if (PanelItem(ui, t.PanelAnalyzer, DockView.Analyzer))
         {
-            OpenPanel(screen, DockView.Analyzer);
+            ScreenLayout.OpenPanel(screen, DockView.Analyzer);
         }
 
         if (PanelItem(ui, t.PanelSearch, DockView.Search, Shortcuts.Search))
         {
-            OpenSearch(screen);
+            ScreenLayout.OpenSearch(screen);
         }
 
         if (PanelItem(ui, t.PanelDecompilerOptions, DockView.DecompilerOptions))
         {
-            OpenPanel(screen, DockView.DecompilerOptions);
+            ScreenLayout.OpenPanel(screen, DockView.DecompilerOptions);
         }
 
         if (PanelItem(ui, t.PanelDisplayOptions, DockView.DisplayOptions))
         {
-            OpenPanel(screen, DockView.DisplayOptions);
+            ScreenLayout.OpenPanel(screen, DockView.DisplayOptions);
         }
 
         if (PanelItem(ui, t.PanelExports, DockView.Exports))
         {
-            OpenPanel(screen, DockView.Exports);
+            ScreenLayout.OpenPanel(screen, DockView.Exports);
         }
     }
 
@@ -443,7 +439,7 @@ internal static class MainMenuView
         var t = ui.State.Strings;
         if (ui.MenuItem(t.HelpAbout, id: "about"))
         {
-            OpenAbout(ui.State);
+            Dialogs.OpenAbout(ui.State);
         }
     }
 

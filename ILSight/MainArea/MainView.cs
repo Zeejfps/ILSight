@@ -13,7 +13,6 @@ using ILSight.AssemblyListArea;
 using ILSight.NuGetArea;
 using ILSight.SearchArea;
 using ILSight.AssemblyArea;
-using static ILSight.DocumentPanels;
 
 namespace ILSight.MainArea;
 
@@ -82,7 +81,7 @@ public static class MainView
     private static void SyncAfterDocuments(Ui<UiState> ui, AppState appState)
     {
         QueuedCommands.RunViewCommands(ui.State, appState);
-        SyncActiveTab(ui.State, appState.Navigation, appState.Decompiler.Setup);
+        DocumentPanels.SyncActiveTab(ui.State, appState.Navigation, appState.Decompiler.Setup);
     }
 
     private static void UpdateSearches(Ui<UiState> ui, AppState appState)
