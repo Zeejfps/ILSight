@@ -395,7 +395,7 @@ public static class Theming
     internal static void ReadJson(ThemeJson json, byte[] bytes, TopLevelKeyReader readKey)
     {
         var content = SkipBom(bytes);
-        json.LineStarts = FindLineStarts(content);
+        json.IndexLines(content);
         var reader = new Utf8JsonReader(content, Options);
         try
         {
@@ -404,11 +404,11 @@ public static class Theming
         catch (JsonException e)
         {
             var lineFromZero = e.LineNumber ?? 0;
-            MarkJsonUnreadable(json, (int)lineFromZero + 1, ThemeProblem.InvalidJson, e.Message);
+            json.MarkUnreadable((int)lineFromZero + 1, ThemeProblem.InvalidJson, e.Message);
         }
         catch (InvalidOperationException e)
         {
-            MarkJsonUnreadable(json, GetLine(json, reader), ThemeProblem.InvalidJson, e.Message);
+            json.MarkUnreadable(GetLine(json, reader), ThemeProblem.InvalidJson, e.Message);
         }
     }
 
@@ -423,25 +423,12 @@ public static class Theming
         return content;
     }
 
-    private static List<int> FindLineStarts(ReadOnlySpan<byte> content)
-    {
-        var starts = new List<int> { 0 };
-        for (var i = 0; i < content.Length; i++)
-        {
-            if (content[i] == (byte)'\n')
-            {
-                starts.Add(i + 1);
-            }
-        }
-        return starts;
-    }
-
     private static void ReadJsonRoot(ThemeJson json, ref Utf8JsonReader reader, TopLevelKeyReader readKey)
     {
         reader.Read();
         if (reader.TokenType != JsonTokenType.StartObject)
         {
-            MarkJsonUnreadable(json, GetLine(json, reader), ThemeProblem.RootNotAnObject);
+            json.MarkUnreadable(GetLine(json, reader), ThemeProblem.RootNotAnObject);
             return;
         }
         while (TryReadJsonKey(json, ref reader, out var key, out var line))
@@ -468,7 +455,7 @@ public static class Theming
         var name = reader.GetString();
         if (name is null)
         {
-            AddJsonError(json, line, ThemeProblem.InvalidJson, detail: "A key is null.");
+            json.AddError(line, ThemeProblem.InvalidJson, detail: "A key is null.");
         }
         else
         {
@@ -488,14 +475,14 @@ public static class Theming
             var plain = reader.GetString();
             if (plain is null)
             {
-                AddJsonError(json, line, ThemeProblem.InvalidName);
+                json.AddError(line, ThemeProblem.InvalidName);
                 return null;
             }
             return new ThemeName.Plain(plain);
         }
         if (reader.TokenType != JsonTokenType.StartObject)
         {
-            AddJsonError(json, line, ThemeProblem.InvalidName);
+            json.AddError(line, ThemeProblem.InvalidName);
             reader.Skip();
             return null;
         }
@@ -517,7 +504,7 @@ public static class Theming
 
             if (!byTag.TryAdd(tag, name))
             {
-                AddJsonError(json, line, ThemeProblem.DuplicateLanguage, key);
+                json.AddError(line, ThemeProblem.DuplicateLanguage, key);
             }
         }
         return byTag;
@@ -531,7 +518,7 @@ public static class Theming
             return true;
         }
 
-        AddJsonError(json, line, ThemeProblem.NotAnObject, key);
+        json.AddError(line, ThemeProblem.NotAnObject, key);
         reader.Skip();
         return false;
     }
@@ -544,7 +531,7 @@ public static class Theming
             return reader.GetString();
         }
 
-        AddJsonError(json, line, ThemeProblem.NotAString, key);
+        json.AddError(line, ThemeProblem.NotAString, key);
         reader.Skip();
         return null;
     }
@@ -552,38 +539,13 @@ public static class Theming
     /// <summary>Skips the value of <paramref name="key"/> after reporting that no theme File takes it.</summary>
     internal static void SkipUnknownKey(ThemeJson json, ref Utf8JsonReader reader, string key, int line)
     {
-        AddJsonError(json, line, ThemeProblem.UnknownKey, key);
+        json.AddError(line, ThemeProblem.UnknownKey, key);
         reader.Skip();
     }
 
     private static int GetLine(ThemeJson json, Utf8JsonReader reader)
     {
-        var offset = (int)reader.TokenStartIndex;
-        var index = json.LineStarts.BinarySearch(offset);
-        if (index >= 0)
-        {
-            return index + 1;
-        }
-
-        return ~index;
-    }
-
-    internal static void MarkJsonUnreadable(ThemeJson json, int line, ThemeProblem problem, string detail = "")
-    {
-        json.IsUnreadable = true;
-        AddJsonError(json, line, problem, "", detail);
-    }
-
-    internal static void AddJsonError(ThemeJson json, int line, ThemeProblem problem, string subject = "", string detail = "")
-    {
-        json.FoundErrors.Add(new ThemeError
-        {
-            File = json.File,
-            Line = line,
-            Problem = problem,
-            Subject = subject,
-            Detail = detail,
-        });
+        return json.GetLineAt(reader.TokenStartIndex);
     }
 
     private const string TypeKey = "type";
@@ -604,7 +566,7 @@ public static class Theming
     public static ThemeFile CreateUnreadableTheme(ThemeId<ThemeFile> id, string file, string reason)
     {
         var theme = CreateFile(id, file);
-        Theming.MarkJsonUnreadable(theme.Json, 0, ThemeProblem.Unreadable, reason);
+        theme.Json.MarkUnreadable(0, ThemeProblem.Unreadable, reason);
         return theme;
     }
 
@@ -686,7 +648,7 @@ public static class Theming
         theme.Type = ParseThemeType(type);
         if (theme.Type is null)
         {
-            Theming.AddJsonError(theme.Json, line, ThemeProblem.UnknownType, type);
+            theme.Json.AddError(line, ThemeProblem.UnknownType, type);
         }
     }
 
@@ -711,7 +673,7 @@ public static class Theming
         var id = ThemeId<ThemeFile>.Parse(parent);
         if (id is null)
         {
-            Theming.AddJsonError(theme.Json, line, ThemeProblem.UnknownParent, parent);
+            theme.Json.AddError(line, ThemeProblem.UnknownParent, parent);
             return;
         }
         theme.Extends = new ThemeParent<ThemeFile> { Id = id, Line = line };
@@ -783,12 +745,12 @@ public static class Theming
     {
         if (!UiColor.TryParse(color, out _))
         {
-            Theming.AddJsonError(theme.Json, line, ThemeProblem.NotAColor, key, color);
+            theme.Json.AddError(line, ThemeProblem.NotAColor, key, color);
             return false;
         }
         if (color == TransparentBlack)
         {
-            Theming.AddJsonError(theme.Json, line, ThemeProblem.TransparentBlack, key);
+            theme.Json.AddError(line, ThemeProblem.TransparentBlack, key);
             return false;
         }
         return true;

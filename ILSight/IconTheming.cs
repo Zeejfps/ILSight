@@ -109,7 +109,7 @@ public static class IconTheming
     public static IconThemeFile CreateUnreadableTheme(ThemeId<IconThemeFile> id, string file, string reason)
     {
         var theme = CreateFile(id, file);
-        Theming.MarkJsonUnreadable(theme.Json, 0, ThemeProblem.Unreadable, reason);
+        theme.Json.MarkUnreadable(0, ThemeProblem.Unreadable, reason);
         return theme;
     }
 
@@ -227,7 +227,7 @@ public static class IconTheming
         var id = ThemeId<IconThemeFile>.Parse(parent);
         if (id is null)
         {
-            Theming.AddJsonError(theme.Json, line, ThemeProblem.UnknownParent, parent);
+            theme.Json.AddError(line, ThemeProblem.UnknownParent, parent);
             return;
         }
         theme.Extends = new ThemeParent<IconThemeFile> { Id = id, Line = line };
@@ -265,7 +265,7 @@ public static class IconTheming
         var characters = face.ReadCharacters();
         if (characters is null)
         {
-            Theming.AddJsonError(theme.Json, named.Line, ThemeProblem.NotAFont, named.Subject, named.Path);
+            theme.Json.AddError(named.Line, ThemeProblem.NotAFont, named.Subject, named.Path);
             return new IconFont.Broken { Path = named.Path };
         }
         return new IconFont.Loaded { Path = named.Path, Face = face, Characters = characters };
@@ -358,7 +358,7 @@ public static class IconTheming
             return;
         }
 
-        Theming.AddJsonError(theme.Json, line, ThemeProblem.InvalidIcon, subject);
+        theme.Json.AddError(line, ThemeProblem.InvalidIcon, subject);
     }
 
     private static void TakeGlyph(ParsedIconTheme theme, string key, IconValue? value)
@@ -377,7 +377,7 @@ public static class IconTheming
         var codepoint = ParseCodepoint(glyph);
         if (codepoint is null)
         {
-            Theming.AddJsonError(theme.Json, line, ThemeProblem.NotACodepoint, subject, glyph);
+            theme.Json.AddError(line, ThemeProblem.NotACodepoint, subject, glyph);
             return null;
         }
         return new IconValue.Glyph { Font = font, Codepoint = codepoint.Value, File = theme.File, Line = line };
@@ -419,7 +419,7 @@ public static class IconTheming
         var text = DecodeText(bytes);
         if (!SvgDocument.TryParse(text, out var svg, out var error))
         {
-            Theming.AddJsonError(theme.Json, named.Line, ThemeProblem.InvalidSvg, named.Subject, $"{named.Path}: {error}");
+            theme.Json.AddError(named.Line, ThemeProblem.InvalidSvg, named.Subject, $"{named.Path}: {error}");
             return null;
         }
         return new IconValue.Picture { SvgPath = named.Path, Svg = svg, File = theme.File, Line = named.Line };
@@ -440,7 +440,7 @@ public static class IconTheming
     {
         if (asset.Bytes is null)
         {
-            Theming.AddJsonError(theme.Json, named.Line, asset.Problem, named.Subject, asset.Detail);
+            theme.Json.AddError(named.Line, asset.Problem, named.Subject, asset.Detail);
         }
 
         return asset.Bytes;
