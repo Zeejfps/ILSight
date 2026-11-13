@@ -30,8 +30,8 @@ public sealed class CodeCaretTests
     private static CodeFolds FoldsOf(DecompiledDocument document, bool collapsed)
     {
         var folds = new CodeFolds();
-        CodeFolding.Reset(folds, document);
-        CodeFolding.SetAll(folds, collapsed);
+        folds.Reset(document);
+        folds.SetAll(collapsed);
         return folds;
     }
 

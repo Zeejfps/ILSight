@@ -244,16 +244,16 @@ public sealed class CodeViewFoldTests
     {
         var document = await CodeViewDriver.OutlineAsync();
         var folds = new CodeFolds();
-        CodeFolding.Reset(folds, document);
+        folds.Reset(document);
         var fold = document.Folds[0];
 
-        CodeFolding.SetAll(folds, false);
+        folds.SetAll(false);
         var allRows = folds.RowCount;
         var anyAfterExpanding = folds.AnyCollapsed;
-        CodeFolding.SetCollapsed(folds, 0, true);
+        folds.SetCollapsed(0, true);
         var collapsedRows = folds.RowCount;
         var shownFor = CodeFolding.GetVisibleLine(folds, fold.EndLine);
-        var revealed = CodeFolding.TryReveal(folds, fold.EndLine);
+        var revealed = folds.TryReveal(fold.EndLine);
 
         Assert.False(anyAfterExpanding);
         Assert.Equal(document.Lines.Length, allRows);
@@ -269,11 +269,11 @@ public sealed class CodeViewFoldTests
     {
         var document = await CodeViewDriver.OutlineAsync();
         var folds = new CodeFolds();
-        CodeFolding.Reset(folds, document);
-        CodeFolding.SetAll(folds, false);
+        folds.Reset(document);
+        folds.SetAll(false);
         var before = folds.Layout;
 
-        CodeFolding.SetCollapsed(folds, 0, true);
+        folds.SetCollapsed(0, true);
 
         Assert.NotSame(before, folds.Layout);
         Assert.False(before.Collapsed[0]);
@@ -286,12 +286,12 @@ public sealed class CodeViewFoldTests
     {
         var document = await CodeViewDriver.OutlineAsync();
         var folds = new CodeFolds();
-        CodeFolding.Reset(folds, document);
-        CodeFolding.SetAll(folds, false);
-        CodeFolding.SetCollapsed(folds, 0, true);
+        folds.Reset(document);
+        folds.SetAll(false);
+        folds.SetCollapsed(0, true);
         var before = folds.Layout;
 
-        var revealed = CodeFolding.TryReveal(folds, document.Folds[0].StartLine);
+        var revealed = folds.TryReveal(document.Folds[0].StartLine);
 
         Assert.False(revealed);
         Assert.Same(before, folds.Layout);
@@ -302,10 +302,10 @@ public sealed class CodeViewFoldTests
     {
         var document = await CodeViewDriver.OutlineAsync();
         var folds = new CodeFolds();
-        CodeFolding.Reset(folds, document);
-        CodeFolding.SetAll(folds, false);
+        folds.Reset(document);
+        folds.SetAll(false);
 
-        CodeFolding.SetCollapsed(folds, 0, true);
+        folds.SetCollapsed(0, true);
 
         Assert.Equal(folds.RowCount, folds.Rows.Length);
     }

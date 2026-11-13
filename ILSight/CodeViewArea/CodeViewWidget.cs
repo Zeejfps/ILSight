@@ -44,7 +44,7 @@ public static class CodeViewWidget
     public static void SetCollapsed(CodeViewState state, int fold, bool collapsed)
     {
         var top = GetTopAnchor(state);
-        CodeFolding.SetCollapsed(state.Folds, fold, collapsed);
+        state.Folds.SetCollapsed(fold, collapsed);
         KeepTop(state, top);
     }
 
@@ -77,7 +77,7 @@ public static class CodeViewWidget
         }
 
         state.Layout.Show(document);
-        CodeFolding.Reset(state.Folds, document);
+        state.Folds.Reset(document);
         state.Selection.Select(default, default);
         state.Pointer.Forget();
         state.ScrollX = state.ScrollY = 0f;
@@ -90,7 +90,7 @@ public static class CodeViewWidget
     internal static void RevealFolds(CodeViewState state, int line)
     {
         var top = GetTopAnchor(state);
-        if (CodeFolding.TryReveal(state.Folds, line))
+        if (state.Folds.TryReveal(line))
         {
             KeepTop(state, top);
         }
@@ -99,7 +99,7 @@ public static class CodeViewWidget
     private static void SetAll(CodeViewState state, bool collapsed)
     {
         var top = GetTopAnchor(state);
-        CodeFolding.SetAll(state.Folds, collapsed);
+        state.Folds.SetAll(collapsed);
         KeepTop(state, top);
     }
 
