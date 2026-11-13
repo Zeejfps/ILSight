@@ -163,18 +163,29 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     }
 
     /// <summary>Lists what the reopen read, unless another one started since, and shows each tab's place in it
-    /// again, or reports why it failed. Returns the loads it started in the tabs.</summary>
+    /// again, or reports why it failed. A read another reopen replaced is dropped, its fresh file released, as nothing
+    /// lists it. Returns the loads it started in the tabs.</summary>
     private List<DecompileTicket> FinishReopen(Reopens reopens, OpenListSession session, DecompilerSetup decompiler, LoadedAssembly item,
         Outcome<ReopenedFile> outcome, int ticket, List<ReloadingTab> tabs)
     {
         if (!reopens.TryFinish(item.FilePath, ticket))
         {
+            ReleaseUnlisted(outcome);
             return [];
         }
 
         return outcome.Match(
             ok => ShowReopened(session, session.Navigation, decompiler, item, ok.Value, tabs),
             failed => ReportNotReopened(item, failed.Error));
+    }
+
+    /// <summary>Releases the fresh file <paramref name="outcome"/> read, if it read one, which nothing lists.</summary>
+    private void ReleaseUnlisted(Outcome<ReopenedFile> outcome)
+    {
+        if (outcome is Outcome<ReopenedFile>.Ok read)
+        {
+            ports.ReleaseModules(read.Value.Fresh.ListModules());
+        }
     }
 
     /// <summary>Reports why <paramref name="item"/> could not be read again. Returns no loads: none started.</summary>

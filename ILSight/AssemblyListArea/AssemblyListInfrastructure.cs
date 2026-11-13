@@ -78,9 +78,29 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
 
     /// <summary>Reads on the thread pool and comes back on the UI thread, with what the read failed with (<see cref="UntrustedReads"/>) as
     /// <see cref="Outcome{T}.Failed"/>.</summary>
-    public Task<Outcome<ReopenedFile>> ReadAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
+    public async Task<Outcome<ReopenedFile>> ReadAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
     {
-        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => ReadItemAgainAsync(item, places, ct), ct)), ct);
+        var reading = Task.Run(() => ReadItemAgainAsync(item, places, ct), ct);
+        try
+        {
+            return await UntrustedReads.CatchAsync(Background.Wait(reading), ct);
+        }
+        catch (OperationCanceledException)
+        {
+            ReleaseIfRead(reading);
+            throw;
+        }
+    }
+
+    /// <summary>Releases the fresh file <paramref name="reading"/> read, when it read one to its end before the
+    /// cancellation that drops its answer: nothing lists it.</summary>
+    private static void ReleaseIfRead(Task<ReopenedFile> reading)
+    {
+        var ended = reading;
+        if (ended.IsCompletedSuccessfully)
+        {
+            LoadedAssemblies.Release(ended.Result.Fresh.ListModules());
+        }
     }
 
     /// <inheritdoc cref="OpenFilesAsync"/>
@@ -102,9 +122,32 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         return last;
     }
 
+    /// <summary>Reads <paramref name="item"/> again, its nodes loaded as far as they were, and finds
+    /// <paramref name="places"/> in it. The fresh file is this read's until the answer holding it is made: a read that
+    /// fails or is cancelled on its way releases it.</summary>
     private async Task<ReopenedFile> ReadItemAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
     {
         var fresh = AssemblyListing.ReadAgain(assemblies, item);
+        var handedOver = false;
+        try
+        {
+            var reopened = new ReopenedFile { Fresh = fresh, Places = await FindPlacesAgainAsync(item, fresh, places, ct) };
+            handedOver = true;
+            return reopened;
+        }
+        finally
+        {
+            if (!handedOver)
+            {
+                LoadedAssemblies.Release(fresh.ListModules());
+            }
+        }
+    }
+
+    /// <summary>Loads the nodes of <paramref name="fresh"/> as far as <paramref name="item"/>'s were, and finds
+    /// <paramref name="places"/> in it.</summary>
+    private async Task<Lookup<BrowseNode>[]> FindPlacesAgainAsync(LoadedAssembly item, FreshItem fresh, IReadOnlyList<NodePath> places, CancellationToken ct)
+    {
         var old = await BrowseSessions.EnsureRootAsync(session, item, ct);
         await EnsureChildrenAsLoadedAsync(old, await BrowseSessions.EnsureRootAsync(session, fresh.Item, ct), ct);
         var placeNodes = new Lookup<BrowseNode>[places.Count];
@@ -112,7 +155,7 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         {
             placeNodes[i] = await BrowseSessions.FindNodeAsync(session, fresh.Item, places[i], ct);
         }
-        return new ReopenedFile { Fresh = fresh, Places = placeNodes };
+        return placeNodes;
     }
 
     /// <summary>Loads the children of each node under <paramref name="fresh"/> whose counterpart under

@@ -259,13 +259,13 @@ public sealed class AssemblyList
             var now = held.Snapshot;
             if (!now.Listed.Contains(item))
             {
-                removed = ListModules(fresh);
+                removed = fresh.ListModules();
                 return false;
             }
 
             if (!TryForgetKnown(held.Value, item))
             {
-                removed = ListModules(fresh);
+                removed = fresh.ListModules();
                 return false;
             }
 
@@ -288,18 +288,6 @@ public sealed class AssemblyList
         AskTypeSystemRead(fresh.Item);
         Changed?.Invoke();
         return true;
-    }
-
-    /// <summary>The modules <paramref name="fresh"/> holds: itself when it is a module, else what was read out of
-    /// it.</summary>
-    private static RemovedModules ListModules(FreshItem fresh)
-    {
-        if (fresh.Item is LoadedModule module)
-        {
-            return new RemovedModules { Modules = [module] };
-        }
-
-        return new RemovedModules { Modules = fresh.ReadOutOf };
     }
 
     /// <summary>The modules of <paramref name="listed"/>, in its order: those listed <paramref name="before"/> for

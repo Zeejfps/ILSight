@@ -260,6 +260,32 @@ public sealed class AssembliesTests
     }
 
     [Fact]
+    public async Task SetTargetFrameworkAsync_ReopenedAgainWhileReadingTheFile_ReleasesTheFileItRead()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var appState = d.AppState;
+        var fixtures = FixturesOf(d);
+        FreshItem? read = null;
+        var ports = new FakeAssemblyReloadingPorts
+        {
+            ReadAgain = async (item, places) =>
+            {
+                var reopened = await ReadAgainAsync(appState, item, places);
+                read = Assert.IsType<Outcome<ReopenedFile>.Ok>(reopened).Value.Fresh;
+                return reopened;
+            },
+            WhileWorking = () => appState.Reopens.Start(fixtures.FilePath),
+        };
+
+        var loads = await d.RunAsync(() => new AssemblyReloading(ports).SetTargetFrameworkAsync(appState.ListSession, appState.Reopens, appState.Decompiler, fixtures, Frameworks.Net48, CancellationToken.None));
+
+        Assert.NotNull(read);
+        Assert.Same(fixtures, FixturesOf(d));
+        Assert.Equal([read.Item], Assert.Single(ports.Released).Modules);
+        Assert.Empty(loads);
+    }
+
+    [Fact]
     public async Task SetTargetFrameworkAsync_ReopenedAgainMeanwhile_NeitherListsNorReports()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
