@@ -282,6 +282,28 @@ public static class Commands
         workflows.Start(nameof(ArrangeMetadataGridHandler), ct => handler.HandleAsync(ask, ct));
     }
 
+    /// <summary>Starts reading the pages of paged metadata grids the views asked for while the screen drew
+    /// (<see cref="ReadMetadataPageHandler"/>), a workflow per page, each counted in the app's background work until it
+    /// ends. Allocates nothing while nothing is asked for.</summary>
+    public static void StartReadingGridPages(WorkflowRunner workflows, ReadMetadataPageHandler handler, MetadataGridPages pages)
+    {
+        if (!pages.HasAsked)
+        {
+            return;
+        }
+
+        foreach (var ask in pages.TakeAsked())
+        {
+            StartReadingPage(workflows, handler, ask);
+        }
+    }
+
+    /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
+    private static void StartReadingPage(WorkflowRunner workflows, ReadMetadataPageHandler handler, MetadataGridPageAsk ask)
+    {
+        workflows.Start(nameof(ReadMetadataPageHandler), ct => handler.HandleAsync(ask, ct));
+    }
+
     /// <summary>Asks for the files of the request <paramref name="opening"/> began to be opened once the frame is drawn
     /// (<see cref="AssemblyOpening"/>), then the load of the last one shown: the input began the request in its own
     /// frame, and only opening the files, which takes longer than a frame, waits for the edge. Nothing when

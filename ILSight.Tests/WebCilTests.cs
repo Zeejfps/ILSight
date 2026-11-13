@@ -34,20 +34,53 @@ public sealed class WebCilTests
     }
 
     [Fact]
-    public async Task A_webcil_modules_grid_is_read_whole_as_its_content_is_made()
+    public async Task A_webcil_modules_grid_is_paged_its_first_page_read_with_its_content()
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
 
         var tables = await assembly.ReadRootAsync().GetChildAsync("Metadata", "Tables");
         var grid = Assert.IsType<NodeContent.Table>(await tables.TableAsync("TypeDef").ReadContentAsync()).Grid;
 
-        var whole = Assert.IsType<MetadataGrid.ReadWhole>(grid);
+        Assert.IsType<MetadataGrid.Paged>(grid);
         var counter = grid.RowNamed("Counter");
-        Assert.Equal(grid.RowCount * grid.Columns.Count, whole.Values.Count);
-        Assert.Equal("Counter", whole.Values[counter * grid.Columns.Count + grid.Column("Name")]);
+        Assert.True(grid.IsRowRead(grid.RowCount - 1));
         Assert.NotNull(MetadataGrids.FindTooltip(grid, counter, grid.Column("Attributes")));
         Assert.NotNull(MetadataGrids.FindLink(grid, counter, grid.Column("BaseType")));
         Assert.NotNull(MetadataGrids.FindDefinition(grid, counter));
+    }
+
+    [Fact]
+    public async Task A_webcil_modules_rows_past_the_first_page_show_once_their_page_is_read()
+    {
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
+        var strings = await assembly.ReadRootAsync().GetChildAsync("Metadata", "String Heap (100)");
+        var grid = Assert.IsType<MetadataGrid.Paged>(Assert.IsType<NodeContent.Table>(await strings.ReadContentAsync()).Grid);
+        var last = grid.RowCount - 1;
+        var value = grid.Column("Offset");
+
+        var unread = (grid.IsRowRead(last), MetadataGrids.GetText(grid, last, value), MetadataGrids.FindTooltip(grid, last, value));
+        var asked = (grid.Ask(last), grid.Ask(MetadataGrid.Paged.RowsPerPage));
+        grid.AddPage(MetadataGrid.Paged.PageOf(last), MetadataGrids.ReadPage(grid, MetadataGrid.Paged.PageOf(last)));
+
+        Assert.True(grid.IsRowRead(MetadataGrid.Paged.RowsPerPage - 1));
+        Assert.Equal((false, "", null), unread);
+        Assert.Equal((true, false), asked);
+        Assert.True(grid.IsRowRead(last));
+        Assert.NotEqual("", MetadataGrids.GetText(grid, last, value));
+        Assert.False(grid.Ask(last));
+    }
+
+    [Fact]
+    public async Task Sorting_a_webcil_modules_grid_reads_every_row_through_its_file()
+    {
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
+        var strings = await assembly.ReadRootAsync().GetChildAsync("Metadata", "String Heap (100)");
+        var grid = Assert.IsType<NodeContent.Table>(await strings.ReadContentAsync()).Grid;
+
+        var order = MetadataGrids.OrderRows(grid, grid.Column("Value"), descending: false);
+
+        Assert.Equal(Enumerable.Range(0, grid.RowCount), order.Order());
+        Assert.False(grid.IsRowRead(grid.RowCount - 1));
     }
 
     [Fact]

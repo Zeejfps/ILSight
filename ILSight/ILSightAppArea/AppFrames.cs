@@ -227,8 +227,8 @@ internal static class AppFrames
 
     /// <summary>Starts the work the screen asked for while it drew, and that listing asked for since the last frame:
     /// the type systems of the modules listed, the children of the tree's nodes it showed loading, the searches of the
-    /// queries typed, the tooltips of the references hovered in code, and the presets the lists dialog's menu opened
-    /// to.</summary>
+    /// queries typed, the tooltips of the references hovered in code, the sorts and filters of the metadata grids and the
+    /// pages of their rows they showed loading, and the presets the lists dialog's menu opened to.</summary>
     internal static void StartAskedWork(UiState uiState, AppState appState)
     {
         Commands.StartReadingTypeSystems(appState.Workflows, appState.Assemblies);
@@ -237,6 +237,7 @@ internal static class AppFrames
         Commands.StartSearching(appState, uiState.Omnibar.Search);
         Commands.StartLookingUpTooltips(appState.Workflows, appState.LookUpTooltipHandler, appState.Tooltips);
         Commands.StartArrangingGrids(appState.Workflows, uiState.ArrangeMetadataGridHandler, uiState.MetadataGridViews);
+        Commands.StartReadingGridPages(appState.Workflows, uiState.ReadMetadataPageHandler, uiState.MetadataGridPages);
         Commands.StartScanningPresets(appState.Workflows, uiState.Presets);
     }
 

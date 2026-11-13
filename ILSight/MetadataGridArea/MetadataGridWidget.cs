@@ -22,6 +22,7 @@ public static class MetadataGridWidget
             State = state,
             Flags = flags,
             Views = ui.State.MetadataGridViews,
+            Pages = ui.State.MetadataGridPages,
             Strings = ui.State.Strings,
             ListId = listId,
             MenuId = HashCode.Combine(listId, MetadataGridFrame.MenuSalt),
@@ -70,6 +71,16 @@ public static class MetadataGridWidget
         state.Descending = state.SortColumn == column && !state.Descending;
         state.SortColumn = column;
         state.RevealWhenArranged = true;
+    }
+
+    /// <summary>Asks <paramref name="pages"/> for the page <paramref name="row"/> of <paramref name="grid"/> is on, which
+    /// the view found it has not read: a paged grid's, which the frame edge reads.</summary>
+    internal static void AskForPage(MetadataGridPages pages, MetadataGrid grid, int row)
+    {
+        if (grid is MetadataGrid.Paged paged)
+        {
+            pages.Ask(paged, row);
+        }
     }
 
     /// <summary>The filter of <paramref name="column"/>, made on first use; a column of flags gets

@@ -8,7 +8,8 @@ using ICSharpCode.Decompiler.Metadata;
 namespace ILSight.Core.Metadata;
 
 /// <summary>Reading the cells of a <see cref="MetadataGrid"/>: their text, links, tooltips and details, each worked out
-/// once per cell viewed and kept; and the rows a sort and filters arrange, over the cells' values alone.</summary>
+/// once per cell viewed and kept, or read with its page; the pages of a paged grid, on the I/O side; and the rows a sort
+/// and filters arrange, over the cells' values alone.</summary>
 public static class MetadataGrids
 {
     /// <summary>How many rows a sort or a filter goes through between looks at its token.</summary>
@@ -16,9 +17,9 @@ public static class MetadataGrids
 
     /// <summary>The grid titled <paramref name="title"/> of what <paramref name="schema"/> reads from
     /// <paramref name="file"/>, which is <paramref name="module"/>'s own metadata or its debug metadata. For a module
-    /// whose image is in memory, each cell is read when it is needed; for one whose file the library maps, every cell,
-    /// tooltip, link, detail and definition is read now (<see cref="MetadataGrid.ReadWhole"/>), so the draw reads
-    /// values. Call it off the screen's thread, as the node's content is made.</summary>
+    /// whose image is in memory, each cell is read when it is needed; for one whose file the library maps, the grid is
+    /// paged (<see cref="MetadataGrid.Paged"/>), and the page its view opens to is read now, so that a grid of a window
+    /// or less never shows its rows loading. Call it off the screen's thread, as the node's content is made.</summary>
     public static MetadataGrid CreateGrid(string title, LoadedModule module, MetadataFile file, GridSchema schema)
     {
         var columns = schema.Columns;
@@ -38,68 +39,78 @@ public static class MetadataGrids
             };
         }
 
-        var grid = new MetadataGrid.ReadWhole
+        var grid = new MetadataGrid.Paged
         {
             Title = title,
             Module = module,
+            File = file,
             Schema = schema,
             Rows = rows,
             GridColumns = columns,
             Columns = shown,
-            Values = ReadValues(rows, columns),
         };
-        ReadAllButValues(grid, file);
+        if (rows.Count > 0)
+        {
+            grid.AddPage(0, ReadPage(grid, 0));
+        }
+
         return grid;
     }
 
-    /// <summary>Every cell's value, by its index (row × columns + column), or its failure.</summary>
-    private static object?[] ReadValues(IReadOnlyList<object> rows, IReadOnlyList<GridColumn> columns)
+    /// <summary>The rows of <paramref name="grid"/> on the page at <paramref name="page"/>, read through its mapped
+    /// file: each cell's value, tooltip and link, each row's details and definition, what the library throws reading
+    /// one the cell's or row's failure, in its place. I/O: call it off the screen's thread.</summary>
+    public static MetadataGridPage ReadPage(MetadataGrid.Paged grid, int page)
     {
-        var values = new object?[rows.Count * columns.Count];
-        for (var row = 0; row < rows.Count; row++)
-        {
-            for (var column = 0; column < columns.Count; column++)
-            {
-                values[row * columns.Count + column] = ReadValue(columns[column], rows[row], row);
-            }
-        }
-        return values;
-    }
-
-    /// <summary>Keeps every tooltip, link, detail and definition of <paramref name="grid"/>'s cells and rows that has
-    /// something to show, read through <paramref name="file"/>; what is not kept has nothing.</summary>
-    private static void ReadAllButValues(MetadataGrid.ReadWhole grid, MetadataFile file)
-    {
+        var first = page * MetadataGrid.Paged.RowsPerPage;
+        var rows = Math.Clamp(grid.RowCount - first, 0, MetadataGrid.Paged.RowsPerPage);
         var columns = grid.GridColumns.Count;
-        for (var row = 0; row < grid.RowCount; row++)
+        var values = new object?[rows * columns];
+        var tooltips = new MetadataTooltip?[rows * columns];
+        var links = new MetadataAddress?[rows * columns];
+        var details = new MetadataRowDetails?[rows];
+        var definitions = new CodeReference.Navigable?[rows];
+        var listed = new Dictionary<TableIndex, bool>();
+        for (var r = 0; r < rows; r++)
         {
+            var row = first + r;
             for (var column = 0; column < columns; column++)
             {
-                var index = row * columns + column;
-                KeepFound(grid.Tooltips, index, ReadTooltip(grid, row, column));
-                var link = grid.GridColumns[column].Column.IsToken ? ReadLink(grid, file, row, column) : null;
-                if (link is not null)
-                {
-                    grid.Links[index] = link;
-                }
+                var index = r * columns + column;
+                var value = ReadValue(grid, row, column);
+                values[index] = value;
+                tooltips[index] = ReadTooltip(grid, row, column, value);
+                links[index] = grid.GridColumns[column].Column.IsToken ? ReadLink(grid.File, listed, value) : null;
             }
-            KeepFound(grid.DetailCells, row, ReadDetails(grid, row));
-            KeepFound(grid.Definitions, row, ReadDefinition(grid, file, row));
+
+            details[r] = ReadDetails(grid, row);
+            definitions[r] = ReadDefinition(grid, grid.File, row);
         }
+
+        return new MetadataGridPage { Values = values, Tooltips = tooltips, Links = links, Details = details, Definitions = definitions };
     }
 
-    private static void KeepFound<T>(Dictionary<int, T?> kept, int index, T? found)
-        where T : class
+    /// <summary>The page at <paramref name="page"/> of <paramref name="grid"/> when reading it failed with
+    /// <paramref name="why"/>: each of its cells that failure, in its place.</summary>
+    public static MetadataGridPage FailedPage(MetadataGrid.Paged grid, int page, string why)
     {
-        if (found is null)
+        var rows = Math.Clamp(grid.RowCount - page * MetadataGrid.Paged.RowsPerPage, 0, MetadataGrid.Paged.RowsPerPage);
+        var cells = rows * grid.GridColumns.Count;
+        var failure = new MetadataCellFailure { Reason = why };
+        var tooltip = new MetadataTooltip { Text = why, Groups = [] };
+        MetadataRowDetails? details = grid.HasDetails ? new MetadataRowDetails.Failed(why) : null;
+        return new MetadataGridPage
         {
-            return;
-        }
-
-        kept[index] = found;
+            Values = Enumerable.Repeat<object?>(failure, cells).ToArray(),
+            Tooltips = Enumerable.Repeat<MetadataTooltip?>(tooltip, cells).ToArray(),
+            Links = new MetadataAddress?[cells],
+            Details = Enumerable.Repeat(details, rows).ToArray(),
+            Definitions = new CodeReference.Navigable?[rows],
+        };
     }
 
-    /// <summary>The text of a cell: numbers in the column's format, often hex; "?" for a cell whose read failed.</summary>
+    /// <summary>The text of a cell: numbers in the column's format, often hex; "?" for a cell whose read failed; empty
+    /// for a row not read yet (<see cref="MetadataGrid.IsRowRead"/>).</summary>
     public static string GetText(MetadataGrid grid, int row, int column)
     {
         var index = row * grid.GridColumns.Count + column;
@@ -108,15 +119,21 @@ public static class MetadataGrids
             return known;
         }
 
-        var text = FormatValue(FindValue(grid, row, column), grid.GridColumns[column].Format);
+        if (!grid.IsRowRead(row))
+        {
+            return "";
+        }
+
+        var text = FormatValue(grid.FindValue(row, column), grid.GridColumns[column].Format);
         grid.TextCells[index] = text;
         return text;
     }
 
     /// <summary>The rows a grid shows sorted by <paramref name="sortColumn"/> (none when negative), descending when
     /// <paramref name="descending"/>, that pass every one of <paramref name="filters"/>. <paramref name="order"/>, when
-    /// given, is that sort, made before. Reads the cells' values alone, never what the grid keeps for the screen, so it
-    /// may run off the screen's thread; give it filters of its own (<see cref="CopyFilters"/>).</summary>
+    /// given, is that sort, made before. Reads the cells' values alone, through the grid's file, never what the grid keeps
+    /// for the screen, so it runs off the screen's thread (for a paged grid, I/O); give it filters of its own
+    /// (<see cref="CopyFilters"/>).</summary>
     public static MetadataGridView ArrangeRows(MetadataGrid grid, int sortColumn, bool descending, int[]? order,
         IReadOnlyList<MetadataColumnFilter?> filters, CancellationToken cancellationToken)
     {
@@ -141,7 +158,8 @@ public static class MetadataGrids
     }
 
     /// <summary>The rows of <paramref name="order"/>, or of the table in its own order, that pass
-    /// every one of <paramref name="filters"/>, one per column or null. Reads the cells' values alone.</summary>
+    /// every one of <paramref name="filters"/>, one per column or null. Reads the cells' values alone, through the
+    /// grid's file: off the screen's thread for a paged grid.</summary>
     public static int[] FilterRows(MetadataGrid grid, int[]? order, IReadOnlyList<MetadataColumnFilter?> filters, CancellationToken cancellationToken = default)
     {
         var active = new List<(int Column, MetadataColumnFilter Filter)>();
@@ -178,7 +196,7 @@ public static class MetadataGrids
     }
 
     /// <summary>What is shown under <paramref name="row"/> while it is selected; null when it has
-    /// nothing; why when reading it failed.</summary>
+    /// nothing, or its row was not read yet; why when reading it failed.</summary>
     public static MetadataRowDetails? FindDetails(MetadataGrid grid, int row)
     {
         if (!grid.HasDetails)
@@ -186,23 +204,12 @@ public static class MetadataGrids
             return null;
         }
 
-        if (grid.DetailCells.TryGetValue(row, out var known))
-        {
-            return known;
-        }
-
-        if (grid is not MetadataGrid.InMemory)
-        {
-            // Read whole: every row's details that had something to show were kept.
-            return null;
-        }
-
-        var result = ReadDetails(grid, row);
-        grid.DetailCells[row] = result;
-        return result;
+        return grid.FindDetails(row);
     }
 
-    private static MetadataRowDetails? ReadDetails(MetadataGrid grid, int row)
+    /// <summary>What is shown under <paramref name="row"/>, read through the grid's file; why when reading it
+    /// failed.</summary>
+    internal static MetadataRowDetails? ReadDetails(MetadataGrid grid, int row)
     {
         var details = grid.Schema.Details;
         if (details is null)
@@ -223,13 +230,18 @@ public static class MetadataGrids
     }
 
     /// <summary>A cell's text up to its first line break, and how many lines follow it — none for
-    /// text on one line.</summary>
+    /// text on one line, or a row not read yet.</summary>
     public static (string FirstLine, int MoreLines) GetLines(MetadataGrid grid, int row, int column)
     {
         var index = row * grid.GridColumns.Count + column;
         if (grid.LineCells.TryGetValue(index, out var known))
         {
             return known;
+        }
+
+        if (!grid.IsRowRead(row))
+        {
+            return ("", 0);
         }
 
         var text = GetText(grid, row, column).TrimEnd('\r', '\n');
@@ -240,7 +252,8 @@ public static class MetadataGrids
     }
 
     /// <summary>The order that sorts the rows by <paramref name="column"/>, as row indices; ties keep the table's
-    /// order, and cells whose read failed sort as empty ones. Reads the cells' values alone.</summary>
+    /// order, and cells whose read failed sort as empty ones. Reads the cells' values alone, through the grid's file:
+    /// off the screen's thread for a paged grid.</summary>
     public static int[] OrderRows(MetadataGrid grid, int column, bool descending, CancellationToken cancellationToken = default)
     {
         var keys = new object?[grid.Rows.Count];
@@ -251,7 +264,7 @@ public static class MetadataGrids
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
-            var value = FindValue(grid, row, column);
+            var value = ReadValue(grid, row, column);
             keys[row] = value is MetadataCellFailure ? null : value;
         }
 
@@ -266,29 +279,16 @@ public static class MetadataGrids
     }
 
     /// <summary>What hovering a cell explains: why its read failed, else what its column says of it; null when it
-    /// has nothing to say.</summary>
+    /// has nothing to say, or its row was not read yet.</summary>
     public static MetadataTooltip? FindTooltip(MetadataGrid grid, int row, int column)
     {
-        var index = row * grid.GridColumns.Count + column;
-        if (grid.Tooltips.TryGetValue(index, out var known))
-        {
-            return known;
-        }
-
-        if (grid is not MetadataGrid.InMemory)
-        {
-            // Read whole: every cell's tooltip that had something to say was kept.
-            return null;
-        }
-
-        var result = ReadTooltip(grid, row, column);
-        grid.Tooltips[index] = result;
-        return result;
+        return grid.FindTooltip(row, column);
     }
 
-    private static MetadataTooltip? ReadTooltip(MetadataGrid grid, int row, int column)
+    /// <summary>What hovering the cell whose value is <paramref name="value"/> explains, read through the grid's
+    /// file.</summary>
+    internal static MetadataTooltip? ReadTooltip(MetadataGrid grid, int row, int column, object? value)
     {
-        var value = FindValue(grid, row, column);
         if (value is MetadataCellFailure failed)
         {
             return new MetadataTooltip { Text = failed.Reason, Groups = [] };
@@ -322,7 +322,7 @@ public static class MetadataGrids
     }
 
     /// <summary>The row a token cell points at, in the table of this metadata it names; null for a
-    /// cell that is not a token, a nil token or a table this metadata lists no rows of. A row past
+    /// cell that is not a token, a nil token, a table this metadata lists no rows of, or a row not read yet. A row past
     /// the table's end, as the end of an empty member list is, leads to the last row.</summary>
     public static MetadataAddress? FindLink(MetadataGrid grid, int row, int column)
     {
@@ -331,33 +331,20 @@ public static class MetadataGrids
             return null;
         }
 
-        var index = row * grid.GridColumns.Count + column;
-        if (grid.Links.TryGetValue(index, out var known))
-        {
-            return known;
-        }
-
-        if (grid is not MetadataGrid.InMemory inMemory)
-        {
-            // Read whole: every link was kept.
-            return null;
-        }
-
-        var result = ReadLink(grid, inMemory.File, row, column);
-        grid.Links[index] = result;
-        return result;
+        return grid.FindLink(row, column);
     }
 
-    private static MetadataAddress? ReadLink(MetadataGrid grid, MetadataFile file, int row, int column)
+    /// <summary>The row the token <paramref name="value"/> points at in <paramref name="file"/>, which tables it
+    /// lists kept in <paramref name="listed"/>.</summary>
+    internal static MetadataAddress? ReadLink(MetadataFile file, Dictionary<TableIndex, bool> listed, object? value)
     {
-        var value = FindValue(grid, row, column);
         if (value is not int token || (token & 0xFFFFFF) == 0)
         {
             return null;
         }
 
         var table = (TableIndex)(token >>> 24);
-        if (!IsTableListed(grid, file, table))
+        if (!IsTableListed(listed, file, table))
         {
             return null;
         }
@@ -368,16 +355,16 @@ public static class MetadataGrids
 
     /// <summary>Whether this metadata's tables list <paramref name="table"/> as a grid of rows, as they
     /// do a table they can read that has rows.</summary>
-    private static bool IsTableListed(MetadataGrid grid, MetadataFile file, TableIndex table)
+    private static bool IsTableListed(Dictionary<TableIndex, bool> listed, MetadataFile file, TableIndex table)
     {
-        if (grid.Listed.TryGetValue(table, out var known))
+        if (listed.TryGetValue(table, out var known))
         {
             return known;
         }
 
-        var listed = Enum.IsDefined(table) && file.Metadata.GetTableRowCount(table) > 0 && MetadataTables.Create(table, file) is not null;
-        grid.Listed[table] = listed;
-        return listed;
+        var found = Enum.IsDefined(table) && file.Metadata.GetTableRowCount(table) > 0 && MetadataTables.Create(table, file) is not null;
+        listed[table] = found;
+        return found;
     }
 
     /// <summary>The row of <paramref name="token"/>'s table it is; null when this does not list
@@ -395,27 +382,15 @@ public static class MetadataGrids
     /// <summary>
     /// What the row stands for in the decompiled code, as the double-click on it goes to: the type,
     /// member or assembly it is — a reference resolved to its definition. Null for a row that is
-    /// none, or a row of debug metadata.
+    /// none, a row of debug metadata, or a row not read yet.
     /// </summary>
     public static CodeReference.Navigable? FindDefinition(MetadataGrid grid, int row)
     {
-        if (grid.Definitions.TryGetValue(row, out var known))
-        {
-            return known;
-        }
-
-        if (grid is not MetadataGrid.InMemory inMemory)
-        {
-            // Read whole: every row's definition was kept.
-            return null;
-        }
-
-        var result = ReadDefinition(grid, inMemory.File, row);
-        grid.Definitions[row] = result;
-        return result;
+        return grid.FindDefinition(row);
     }
 
-    private static CodeReference.Navigable? ReadDefinition(MetadataGrid grid, MetadataFile file, int row)
+    /// <summary>What <paramref name="row"/> stands for in the code, read through <paramref name="file"/>.</summary>
+    internal static CodeReference.Navigable? ReadDefinition(MetadataGrid grid, MetadataFile file, int row)
     {
         var own = LoadedAssemblies.GetFile(grid.Module);
         if (!ReferenceEquals(file, own) || grid.Schema.Table is null)
@@ -426,14 +401,14 @@ public static class MetadataGrids
         var token = (int)grid.Schema.Table << 24 | row + 1;
         var handle = MetadataTokens.EntityHandle(token);
         var name = handle.Kind == HandleKind.AssemblyDefinition ? grid.Module.Name
-            : grid.Schema.NameColumn >= 0 ? FormatValue(FindValue(grid, row, grid.Schema.NameColumn), grid.GridColumns[grid.Schema.NameColumn].Format)
+            : grid.Schema.NameColumn >= 0 ? FormatValue(ReadValue(grid, row, grid.Schema.NameColumn), grid.GridColumns[grid.Schema.NameColumn].Format)
             : token.ToString("X8");
         return CodeReferences.Find(file.Metadata, handle, name, AssemblyPath.Of(file.FileName));
     }
 
     private static bool MatchesCell(MetadataGrid grid, int row, int column, MetadataColumnFilter filter)
     {
-        var value = FindValue(grid, row, column);
+        var value = ReadValue(grid, row, column);
         if (value is null || value is MetadataCellFailure)
         {
             return false;
@@ -561,24 +536,14 @@ public static class MetadataGrids
         };
     }
 
-    /// <summary>A cell's value: read through the file in memory, or as read whole; a <see cref="MetadataCellFailure"/>
-    /// for one whose read failed.</summary>
-    private static object? FindValue(MetadataGrid grid, int row, int column)
-    {
-        if (grid is MetadataGrid.ReadWhole whole)
-        {
-            return whole.Values[row * grid.GridColumns.Count + column];
-        }
-
-        return ReadValue(grid.GridColumns[column], grid.Rows[row], row);
-    }
-
-    private static object? ReadValue(GridColumn column, object row, int index)
+    /// <summary>A cell's value, read through the grid's file (for a paged grid, I/O: off the screen's thread); a
+    /// <see cref="MetadataCellFailure"/> for one whose read failed.</summary>
+    internal static object? ReadValue(MetadataGrid grid, int row, int column)
     {
 #pragma warning disable RL0902 // The column's delegate reads ICSharpCode.Decompiler's metadata (a listed untrusted library): its failure is the cell's.
         try
         {
-            return column.Value(row, index + 1);
+            return grid.GridColumns[column].Value(grid.Rows[row], row + 1);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {

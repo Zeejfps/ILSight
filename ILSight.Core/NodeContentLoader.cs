@@ -14,7 +14,8 @@ namespace ILSight.Core;
 public static class NodeContentLoader
 {
     /// <summary>What <paramref name="node"/> shows, made on the thread pool: for metadata its grid of
-    /// rows, read the first time and kept; for a resource named as a PNG, JPEG, BMP, GIF, ICO, CUR or
+    /// rows, made the first time and kept (over a file the library maps, with the page of rows its view opens to read:
+    /// <see cref="MetadataGrids.CreateGrid"/>); for a resource named as a PNG, JPEG, BMP, GIF, ICO, CUR or
     /// SVG file its picture, or when that cannot be decoded the resource as a document with why first;
     /// else the node decompiled with <paramref name="options"/>, which only C# reads.</summary>
     public static Task<NodeContent> GetContentAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language, DecompilerOptions options,

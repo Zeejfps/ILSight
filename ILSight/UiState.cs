@@ -176,6 +176,12 @@ public sealed class UiState : IUiState
     /// <summary>Sorts and filters the rows <see cref="MetadataGridViews"/> asks for, off the screen's thread.</summary>
     public required ArrangeMetadataGridHandler ArrangeMetadataGridHandler { get; init; }
 
+    /// <summary>The pages of paged grids the views asked for while the screen drew, for the frame edge to start.</summary>
+    public MetadataGridPages MetadataGridPages { get; } = new();
+
+    /// <summary>Reads the pages <see cref="MetadataGridPages"/> asks for, off the screen's thread.</summary>
+    public required ReadMetadataPageHandler ReadMetadataPageHandler { get; init; }
+
     /// <summary>The export selected in the exports panel, or null; one that is gone is as none.</summary>
     public ExportRun? SelectedExport;
 

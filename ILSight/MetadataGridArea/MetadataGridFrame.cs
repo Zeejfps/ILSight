@@ -22,6 +22,7 @@ internal ref struct MetadataGridFrame
     public required MetadataGridState State { get; init; }
     public required MetadataFilters Flags { get; init; }
     public required MetadataGridViews Views { get; init; }
+    public required MetadataGridPages Pages { get; init; }
     public required Strings Strings { get; init; }
     public required int ListId { get; init; }
     public required int MenuId { get; init; }
@@ -287,10 +288,29 @@ internal ref struct MetadataGridFrame
     private void Row(TableBody body, int index, int row, float height)
     {
         using var cells = body.Row(index, row, height);
+        if (!Grid.IsRowRead(row))
+        {
+            LoadingRow(cells, row);
+            return;
+        }
+
         for (var c = 0; c < Grid.Columns.Count; c++)
         {
             ExpandOnPress(cells.CellAt(c), row, c);
             Cell(cells, row, c);
+        }
+    }
+
+    /// <summary>A row whose page of a paged grid is on its way: "Loading…" in its first cell, muted, as the tree shows
+    /// children on their way, and its page asked for, for the frame edge to read.</summary>
+    private void LoadingRow(TableRow cells, int row)
+    {
+        MetadataGridWidget.AskForPage(Pages, Grid, row);
+        var muted = Ui.Theme.TextMuted;
+        cells.TextCell(0, Strings.MetadataLoading, muted);
+        for (var c = 1; c < Grid.Columns.Count; c++)
+        {
+            cells.TextCell(c, "", muted);
         }
     }
 
