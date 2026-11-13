@@ -43,10 +43,12 @@ public sealed class NuGetFeedTests
             """);
         var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var package = Assert.Single((await NuGetFeeds.SearchAsync(feed, "evil", includePrerelease: false)).Packages);
+        var page = await NuGetFeeds.SearchAsync(feed, "evil", includePrerelease: false);
 
+        var package = Assert.Single(page.Packages);
         Assert.Equal("Tiny", package.Id.Text);
         Assert.Equal(["2.0.0", "1.0.0"], package.Versions.Select(v => v.Version.Text));
+        Assert.Equal(["data[0]", "data[1]", "data[2]", "data[3].versions[1]"], page.LeftOut);
     }
 
     [Fact]
@@ -169,9 +171,11 @@ public sealed class NuGetFeedTests
             """);
         var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
 
-        var package = Assert.Single((await NuGetFeeds.SearchAsync(feed, "tiny", includePrerelease: false)).Packages);
+        var page = await NuGetFeeds.SearchAsync(feed, "tiny", includePrerelease: false);
 
+        var package = Assert.Single(page.Packages);
         Assert.Equal("Tiny", package.Id.Text);
+        Assert.Equal(["data[0]", "data[1]"], page.LeftOut);
         Assert.Equal(42, package.TotalDownloads);
         Assert.Equal(["small", "tiny"], package.Tags);
     }
@@ -215,6 +219,7 @@ public sealed class NuGetFeedTests
         var found = await NuGetFeeds.SearchAsync(feed, "tiny", includePrerelease: false);
 
         Assert.Equal("Tiny", Assert.Single(found.Packages).Id.Text);
+        Assert.Equal(["resources[0]", "resources[1]"], found.LeftOut);
     }
 
     [Fact]
@@ -356,6 +361,18 @@ public sealed class NuGetFeedTests
         var error = await Assert.ThrowsAsync<InvalidDataException>(() => NuGetFeeds.SearchAsync(feed, "a", includePrerelease: false));
 
         Assert.Contains("SearchQueryService", error.Message);
+    }
+
+    [Fact]
+    public async Task A_feed_whose_index_names_no_search_names_the_resources_it_could_not_read()
+    {
+        var fake = new FakeFeed();
+        fake.Answer(FakeFeed.IndexUrl, """{ "version": "3.0.0", "resources": [ 7 ] }""");
+        var feed = NuGetFeeds.CreateFeed(fake.Source, fake);
+
+        var error = await Assert.ThrowsAsync<InvalidDataException>(() => NuGetFeeds.SearchAsync(feed, "a", includePrerelease: false));
+
+        Assert.Contains("resources[0] could not be read", error.Message);
     }
 
     [Fact]

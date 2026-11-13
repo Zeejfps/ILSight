@@ -12,6 +12,9 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
         /// <summary>Tells the user something went wrong.</summary>
         void ReportError(AppProblem problem);
 
+        /// <summary>Tells the user, where they acted, that what they asked for was refused, and why.</summary>
+        void ShowRefusal(Refusal refusal);
+
         /// <summary>Whether there is a file, rather than a folder or nothing, at <paramref name="path"/>.</summary>
         bool IsFile(string path);
 
@@ -94,7 +97,8 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
     }
 
     /// <summary>Opens the files among <paramref name="paths"/>, dropped on the window, as
-    /// <see cref="OpenAssembliesAsync"/> does; folders are left out.</summary>
+    /// <see cref="OpenAssembliesAsync"/> does; folders are left out, and a path that isn't a full one is refused, saying
+    /// so.</summary>
     public Task<DecompileTicket?> OpenDroppedFilesAsync(AppState appState, IReadOnlyList<string> paths, CancellationToken ct)
     {
         var files = paths
@@ -105,9 +109,19 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
 
     private Task<DecompileTicket?> OpenFilesAtAsync(AppState appState, IEnumerable<string> paths, CancellationToken ct)
     {
-        var files = paths
-            .Select(AssemblyPath.Parse)
-            .OfType<AssemblyPath>();
+        var files = new List<AssemblyPath>();
+        foreach (var path in paths)
+        {
+            var file = AssemblyPath.Parse(path);
+            if (file is null)
+            {
+                ports.ShowRefusal(new Refusal.NotFullPath { Path = path });
+                continue;
+            }
+
+            files.Add(file);
+        }
+
         return OpenAssembliesAsync(appState, files, ct);
     }
 

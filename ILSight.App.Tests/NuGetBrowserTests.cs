@@ -139,7 +139,7 @@ public sealed class NuGetBrowserTests
 
     private static FeedPage Page(string id, string? iconUrl = null)
     {
-        return new FeedPage { Packages = [Package(id, iconUrl)], TotalHits = 1 };
+        return new FeedPage { Packages = [Package(id, iconUrl)], TotalHits = 1, LeftOut = [] };
     }
 
     private static ResourceImage Pixels()
@@ -432,6 +432,7 @@ public sealed class NuGetBrowserTests
         {
             Packages = [Package("A", urls[0]), Package("B", urls[1]), Package("C", urls[2])],
             TotalHits = 3,
+            LeftOut = [],
         };
         var ports = new FakePorts
         {

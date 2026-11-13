@@ -7,15 +7,17 @@ namespace ILSight.Core;
 
 /// <summary>
 /// Reads what a NuGet feed answers in JSON: a page of its search, a version's registration and catalog
-/// entry, and the service index. What a feed leaves out reads as empty, 0 or null. A package or resource
-/// of another shape is left out on its own; an answer of another shape cannot be read.
+/// entry, and the service index. What a feed leaves out reads as empty, 0 or null. A package, version or resource
+/// of another shape is left out on its own, and where it was is said beside what was read; an answer of another shape
+/// cannot be read.
 /// </summary>
 internal static partial class FeedJson
 {
     /// <summary>The year a feed dates a version it unlisted.</summary>
     private const int UnlistedYear = 1900;
 
-    /// <summary>The page of packages <paramref name="root"/> holds, without those that cannot be read.</summary>
+    /// <summary>The page of packages <paramref name="root"/> holds, without those that cannot be read, and where each
+    /// package or version left out was.</summary>
     /// <exception cref="InvalidDataException">It is no page of a search.</exception>
     public static FeedPage ReadPage(JsonElement root)
     {
@@ -25,14 +27,19 @@ internal static partial class FeedJson
             throw new InvalidDataException("A page of a search holds no list named data.");
         }
 
-        var packages = page.Data
-            .Select(static p => TryRead(p, FeedJsonContext.Default.PackageJson))
-            .OfType<PackageJson>()
-            .Select(static p => Parse(p))
-            .OfType<FeedPackage>()
-            .ToList();
+        var packages = new List<FeedPackage>();
+        var leftOut = new List<string>();
+        for (var i = 0; i < page.Data.Count; i++)
+        {
+            var package = ReadPackage(page.Data[i], $"data[{i}]", leftOut);
+            if (package is not null)
+            {
+                packages.Add(package);
+            }
+        }
+
         var total = (int)Math.Min(page.TotalHits ?? 0, int.MaxValue);
-        return new FeedPage { Packages = packages, TotalHits = Math.Max(total, packages.Count) };
+        return new FeedPage { Packages = packages, TotalHits = Math.Max(total, packages.Count), LeftOut = leftOut };
     }
 
     /// <exception cref="InvalidDataException">It is no registration of a version.</exception>
@@ -54,9 +61,10 @@ internal static partial class FeedJson
         return Parse(Read(entry, FeedJsonContext.Default.CatalogEntryJson, "a catalog entry"), listedAt);
     }
 
-    /// <summary>The resources the service index <paramref name="root"/> lists, without those that cannot be read.</summary>
+    /// <summary>The resources the service index <paramref name="root"/> lists, without those that cannot be read, and
+    /// where each of those was.</summary>
     /// <exception cref="InvalidDataException">It is no service index.</exception>
-    public static List<FeedResource> ReadResources(JsonElement root)
+    public static Lenient<List<FeedResource>> ReadResources(JsonElement root)
     {
         var index = Read(root, FeedJsonContext.Default.ServiceIndexJson, "a service index");
         if (index.Resources is null)
@@ -64,11 +72,21 @@ internal static partial class FeedJson
             throw new InvalidDataException("A service index holds no list named resources.");
         }
 
-        return index.Resources
-            .Select(static r => TryRead(r, FeedJsonContext.Default.ResourceJson))
-            .OfType<ResourceJson>()
-            .Select(static r => Parse(r))
-            .ToList();
+        var resources = new List<FeedResource>();
+        var leftOut = new List<string>();
+        for (var i = 0; i < index.Resources.Count; i++)
+        {
+            var resource = TryRead(index.Resources[i], FeedJsonContext.Default.ResourceJson);
+            if (resource is null)
+            {
+                leftOut.Add($"resources[{i}]");
+                continue;
+            }
+
+            resources.Add(Parse(resource));
+        }
+
+        return new Lenient<List<FeedResource>> { Value = resources, LeftOut = leftOut };
     }
 
     /// <summary>When a version was published; null when the feed does not say, or dates it as unlisted.</summary>
@@ -111,8 +129,21 @@ internal static partial class FeedJson
         }
     }
 
-    /// <summary>The package; null when its id or version is none NuGet allows.</summary>
-    private static FeedPackage? Parse(PackageJson json)
+    private static FeedPackage? ReadPackage(JsonElement element, string location, List<string> leftOut)
+    {
+        var json = TryRead(element, FeedJsonContext.Default.PackageJson);
+        var package = json is null ? null : Parse(json, location, leftOut);
+        if (package is null)
+        {
+            leftOut.Add(location);
+        }
+
+        return package;
+    }
+
+    /// <summary>The package; null when its id or version is none NuGet allows. Where each version it lists that
+    /// can't be read was is added to <paramref name="leftOut"/>.</summary>
+    private static FeedPackage? Parse(PackageJson json, string location, List<string> leftOut)
     {
         var id = PackageId.Parse(json.Id ?? "");
         var version = PackageVersion.Parse(json.Version ?? "");
@@ -128,7 +159,7 @@ internal static partial class FeedJson
             Description = json.Description ?? "",
             Authors = JoinNames(json.Authors),
             IconUrl = WebUrl.Parse(json.IconUrl),
-            Versions = ListVersions(json.Versions, version),
+            Versions = ListVersions(json.Versions, version, location, leftOut),
             TotalDownloads = json.TotalDownloads ?? 0,
             Verified = json.Verified ?? false,
             Owners = JoinNames(json.Owners),
@@ -139,16 +170,32 @@ internal static partial class FeedJson
         };
     }
 
-    /// <summary>The versions listed, newest first, without those NuGet allows no such version of; just
-    /// <paramref name="latest"/> when the feed lists none.</summary>
-    private static List<FeedVersion> ListVersions(List<VersionJson?>? listed, PackageVersion latest)
+    /// <summary>The versions listed, newest first, without those NuGet allows no such version of, where each was
+    /// added to <paramref name="leftOut"/>; just <paramref name="latest"/> when the feed lists none. An entry that is
+    /// null holds nothing and is passed over.</summary>
+    private static List<FeedVersion> ListVersions(List<VersionJson?>? listed, PackageVersion latest, string location, List<string> leftOut)
     {
-        var versions = (listed ?? [])
-            .OfType<VersionJson>()
-            .Select(static v => Parse(v))
-            .OfType<FeedVersion>()
-            .Reverse()
-            .ToList();
+        var versions = new List<FeedVersion>();
+        var entries = listed ?? [];
+        for (var i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+            if (entry is null)
+            {
+                continue;
+            }
+
+            var version = Parse(entry);
+            if (version is null)
+            {
+                leftOut.Add($"{location}.versions[{i}]");
+                continue;
+            }
+
+            versions.Add(version);
+        }
+
+        versions.Reverse();
         if (versions.Count == 0)
         {
             versions.Add(new FeedVersion { Version = latest, Downloads = 0, DetailsUrl = null });

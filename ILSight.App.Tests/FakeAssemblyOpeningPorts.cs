@@ -26,9 +26,16 @@ internal sealed class FakeAssemblyOpeningPorts : AssemblyOpening.IPorts
 
     public List<AppProblem> Reported { get; } = [];
 
+    public List<Refusal> Refused { get; } = [];
+
     public void ReportError(AppProblem problem)
     {
         Reported.Add(problem);
+    }
+
+    public void ShowRefusal(Refusal refusal)
+    {
+        Refused.Add(refusal);
     }
 
     public bool IsFile(string path)

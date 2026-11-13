@@ -29,6 +29,12 @@ public abstract record Refusal
         public required string Assembly { get; init; }
     }
 
+    /// <summary>The file at <see cref="Path"/>, dropped on the window, was not opened: it is not a full path.</summary>
+    public sealed record NotFullPath : Refusal
+    {
+        public required string Path { get; init; }
+    }
+
     /// <summary>What was refused and why, in <paramref name="t"/>'s language.</summary>
     public (string What, string Why) Words(Strings t)
     {
@@ -36,6 +42,7 @@ public abstract record Refusal
         {
             ResourceNotSaved r => (t.ErrorSaveResource(r.Resource), t.DocumentClosed(r.Assembly)),
             PdbNotRead r => (t.ErrorSelectPdb(r.Pdb, r.Assembly), t.DocumentClosed(r.Assembly)),
+            NotFullPath r => (t.ErrorOpenFile(r.Path), t.ErrorNotFullPath),
             _ => throw new UnreachableException($"Refusal.Words does not handle {GetType().Name}."),
         };
     }

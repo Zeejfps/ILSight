@@ -243,8 +243,8 @@ internal static class NuGetPickerView
     }
 
     /// <summary>The packages found, under the strip that slides while another page or search loads
-    /// over them and a note when another page failed to load; or why there are none. True when one
-    /// was activated.</summary>
+    /// over them, a note when another page failed to load and one naming what the feed sent that couldn't be read; or
+    /// why there are none. True when one was activated.</summary>
     private static bool Packages(Ui<UiState> ui, NuGetPicker picker)
     {
         var theme = ui.Theme;
@@ -271,8 +271,22 @@ internal static class NuGetPickerView
                 NuGetPlaceholderView.PageFailed(ui, picker);
             }
 
+            LeftOutNote(ui, picker.Browser.LeftOut);
             return Rows(ui, picker);
         }
+    }
+
+    private static void LeftOutNote(Ui<UiState> ui, IReadOnlyList<string> leftOut)
+    {
+        if (leftOut.Count == 0)
+        {
+            return;
+        }
+
+        var theme = ui.Theme;
+        var note = ui.Memo("nuget-left-out", (leftOut, t: ui.State.Strings), static a => a.t.NugetLeftOut(string.Join(", ", a.leftOut)));
+        ui.Text(note, new Box { Width = Sizing.Grow(), Padding = new Spacing(theme.Gap, theme.GapTight) }, color: theme.TextMuted,
+            size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
     }
 
     /// <summary>A thin sliding bar while a search runs over packages already shown; the same room,

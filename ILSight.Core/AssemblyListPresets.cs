@@ -132,10 +132,7 @@ public static class AssemblyListPresets
 
     private static List<AssemblyPath> PathsOf(List<string> files)
     {
-        return files
-            .Select(AssemblyPath.Parse)
-            .OfType<AssemblyPath>()
-            .ToList();
+        return files.ConvertAll(static f => AssemblyPath.Parse(f) ?? throw new InvalidOperationException($"Expected a full path from listing a folder, found {f}."));
     }
 
     private static bool IsFrameworkAssemblyFile(string path)

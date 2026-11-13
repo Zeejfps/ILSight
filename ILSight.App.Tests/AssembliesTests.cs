@@ -120,6 +120,21 @@ public sealed class AssembliesTests
     }
 
     [Fact]
+    public async Task OpenDroppedFilesAsync_APathThatIsNotFull_IsRefusedSayingSoAndTheRestOpened()
+    {
+        var d = AppStateDriver.WithoutScreen();
+        var file = PathTo("Dropped.dll");
+        var ports = new FakeAssemblyOpeningPorts { Files = [file.Text, "Relative.dll"] };
+
+        var load = await d.RunAsync(() => new AssemblyOpening(ports).OpenDroppedFilesAsync(d.AppState, ["Relative.dll", file.Text], CancellationToken.None));
+
+        Assert.Equal(file, Assert.Single(Assert.Single(ports.OpenedPaths)));
+        Assert.Equal(new Refusal.NotFullPath { Path = "Relative.dll" }, Assert.Single(ports.Refused));
+        Assert.Empty(ports.Reported);
+        Assert.Null(load);
+    }
+
+    [Fact]
     public async Task OpenDependenciesAsync_OpeningFailedOrCancelled_ReportsOnlyTheFailure()
     {
         var d = AppStateDriver.OpenedWithoutScreen();

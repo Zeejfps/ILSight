@@ -61,7 +61,8 @@ public static class NuGetFeeds
         var index = await EnsureIndexAsync(feed, cancellationToken).ConfigureAwait(false);
         var url = ParseDerivedUrl(GetSearchUrl(index.Search, query, includePrerelease, page));
         using var document = await ReadJsonAsync(feed, url, cancellationToken).ConfigureAwait(false);
-        return FeedJson.ReadPage(document.RootElement);
+        var read = FeedJson.ReadPage(document.RootElement);
+        return read with { LeftOut = [.. index.LeftOut, .. read.LeftOut] };
     }
 
     private static string GetSearchUrl(WebUrl search, string query, bool includePrerelease, int page)
@@ -184,17 +185,28 @@ public static class NuGetFeeds
         var resources = FeedJson.ReadResources(document.RootElement);
         var search = GetResource(feed, resources, SearchType);
         var folder = GetResource(feed, resources, PackageFolderType);
-        var registrations = FindOptionalResource(resources, RegistrationsType);
-        return new ServiceIndex { Search = search, PackageFolder = folder, Registrations = registrations };
+        var registrations = FindOptionalResource(resources.Value, RegistrationsType);
+        return new ServiceIndex { Search = search, PackageFolder = folder, Registrations = registrations, LeftOut = resources.LeftOut };
     }
 
-    /// <summary>The URL of the first resource whose type is <paramref name="type"/>, or a version of it.</summary>
-    private static WebUrl GetResource(NuGetFeed feed, List<FeedResource> resources, string type)
+    private static string DescribeLeftOut(IReadOnlyList<string> leftOut)
     {
-        var url = FindOptionalResource(resources, type);
+        if (leftOut.Count == 0)
+        {
+            return "";
+        }
+
+        return $"; {string.Join(", ", leftOut)} could not be read";
+    }
+
+    /// <summary>The URL of the first resource whose type is <paramref name="type"/>, or a version of it; with none, the
+    /// failure names the resources that couldn't be read, which may have been it.</summary>
+    private static WebUrl GetResource(NuGetFeed feed, Lenient<List<FeedResource>> resources, string type)
+    {
+        var url = FindOptionalResource(resources.Value, type);
         if (url is null)
         {
-            throw new InvalidDataException($"The service index of {feed.Source.Url} names no {type}.");
+            throw new InvalidDataException($"The service index of {feed.Source.Url} names no {type}{DescribeLeftOut(resources.LeftOut)}.");
         }
 
         return url;

@@ -70,6 +70,20 @@ public sealed class NuGetBrowser
         }
     }
 
+    /// <summary>Where each part of what the feed sent for the page shown that couldn't be read was, left out of it.</summary>
+    public IReadOnlyList<string> LeftOut
+    {
+        get
+        {
+            if (_shown is null)
+            {
+                return [];
+            }
+
+            return _shown.Found.LeftOut;
+        }
+    }
+
     /// <summary>The page shown, from 0.</summary>
     public int Page
     {
