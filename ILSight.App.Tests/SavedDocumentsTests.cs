@@ -441,7 +441,7 @@ public sealed class SavedDocumentsTests : IDisposable
         Assert.Equal([vehicle], ListTypes(tab));
         var diagram = tab.Diagram;
         Assert.NotNull(diagram);
-        Assert.True(Diagrams.IsHome(diagram, PathOf(AppStateDriver.FixturePath)));
+        Assert.True(diagram.IsHome(PathOf(AppStateDriver.FixturePath)));
         Assert.Same(tab, d.AppState.Navigation.DiagramTab);
     }
 

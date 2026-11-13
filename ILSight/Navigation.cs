@@ -853,14 +853,14 @@ public sealed class Navigation
 
         _intent.Begin();
         var diagram = new TypeDiagram();
-        Diagrams.TakeHomes(diagram, place.HomeAssemblies);
+        diagram.TakeHomes(place.HomeAssemblies);
         var id = ++_documents;
         var tab = GetOrOpenEmptyTab();
         _tabs.GetDocument(tab).ShowDiagram(diagram, place.Title, id);
         _tabs.Keep(tab);
         _tabs.MakeActive(tab);
         _history.ReplaceCurrent(place with { Id = id });
-        Diagrams.StartReading(diagram);
+        diagram.StartReading();
         return new HistoryMove.ReadCards { Read = new DiagramPlaceRead { Diagram = diagram, Types = place.Types, Title = place.Title } };
     }
 

@@ -2,7 +2,7 @@ using ILSight.Core.Diagrams;
 
 namespace ILSight.DiagramArea;
 
-/// <summary>Lays out a diagram (<see cref="Diagrams.StartLayout"/>) through <see cref="IPorts"/>, without holding up
+/// <summary>Lays out a diagram (<see cref="TypeDiagram.StartLayout"/>) through <see cref="IPorts"/>, without holding up
 /// the screen, and holds the layout unless another was started meanwhile or the diagram was closed.</summary>
 public sealed class LayOutDiagramHandler(LayOutDiagramHandler.IPorts ports)
 {
@@ -24,13 +24,13 @@ public sealed class LayOutDiagramHandler(LayOutDiagramHandler.IPorts ports)
     public async Task HandleAsync(TypeDiagram diagram, WorkTicket layout, DiagramMeasures measures, CancellationToken ct)
     {
         var laidOut = await ports.ArrangeAsync(measures, ct);
-        if (!diagram.Work.TryFinish(layout))
+        if (!diagram.TryFinishLayout(layout))
         {
             return;
         }
 
         laidOut.Switch(
-            ok => Diagrams.ShowLayout(diagram, ok.Value),
+            ok => diagram.ShowLayout(ok.Value),
             failed => ports.ReportError(new AppProblem.DiagramNotLaidOut(failed.Error)));
     }
 }

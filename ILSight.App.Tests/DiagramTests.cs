@@ -158,8 +158,8 @@ public sealed class DiagramTests
         Assert.Equal(["Breakdown", "Exception"], CardNames(diagram));
         Assert.False(HasMissingBases(diagram, breakdown));
         Assert.Contains(diagram.Links, static l => l is TypeLink.Inherits);
-        Assert.False(Diagrams.IsHome(diagram, diagram.Cards[1].AssemblyPath));
-        Assert.True(Diagrams.IsHome(diagram, breakdown.AssemblyPath));
+        Assert.False(diagram.IsHome(diagram.Cards[1].AssemblyPath));
+        Assert.True(diagram.IsHome(breakdown.AssemblyPath));
     }
 
     [Fact]
@@ -183,7 +183,7 @@ public sealed class DiagramTests
         var diagram = await ShowInNewAsync(d, "Vehicle");
         var version = diagram.Version;
 
-        RemoveFromDiagram(d.AppState, diagram, await TypeOfAsync(d, "Garage"));
+        diagram.RemoveCard(await TypeOfAsync(d, "Garage"));
 
         Assert.Equal(["Bike", "Car", "Vehicle"], CardNames(diagram));
         var garage = await TypeOfAsync(d, "Garage");

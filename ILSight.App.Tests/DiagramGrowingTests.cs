@@ -74,7 +74,7 @@ public sealed class DiagramGrowingTests
         Assert.Equal(nameof(FakeDiagramGrowingPorts.ReadWithNeighboursAsync), request.Read);
         Assert.Equal([vehicle], request.Types);
         Assert.Equal(["Car", "Vehicle"], CardNames(read.Diagram));
-        Assert.True(Diagrams.IsHome(read.Diagram, read.Diagram.Cards[0].AssemblyPath));
+        Assert.True(read.Diagram.IsHome(read.Diagram.Cards[0].AssemblyPath));
         Assert.False(read.Diagram.IsBusy);
         Assert.Equal([new ViewCommand.FocusCard { Tab = read.Tab, Type = vehicle }], viewCommands);
         Assert.Empty(ports.Reported);
@@ -125,7 +125,7 @@ public sealed class DiagramGrowingTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var diagram = new TypeDiagram();
         var car = await CardOfAsync(d, "Car");
-        Diagrams.AddCards(diagram, [car]);
+        diagram.AddCards([car]);
         var ports = new FakeDiagramGrowingPorts();
 
         var adding = d.BeginAsync(() => new DiagramGrowing(ports).ExpandBasesAsync(diagram, car, CancellationToken.None));
@@ -147,7 +147,7 @@ public sealed class DiagramGrowingTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var diagram = new TypeDiagram();
         var car = await CardOfAsync(d, "Car");
-        Diagrams.AddCards(diagram, [car, await CardOfAsync(d, "Vehicle")]);
+        diagram.AddCards([car, await CardOfAsync(d, "Vehicle")]);
         var ports = new FakeDiagramGrowingPorts();
 
         await d.RunAsync(() => new DiagramGrowing(ports).ExpandBasesAsync(diagram, car, CancellationToken.None));
@@ -162,7 +162,7 @@ public sealed class DiagramGrowingTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var diagram = new TypeDiagram();
         var vehicle = await CardOfAsync(d, "Vehicle");
-        Diagrams.AddCards(diagram, [vehicle]);
+        diagram.AddCards([vehicle]);
         var ports = new FakeDiagramGrowingPorts();
         var error = new InvalidOperationException("Unreadable.");
 
@@ -185,7 +185,7 @@ public sealed class DiagramGrowingTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var diagram = new TypeDiagram();
         var vehicle = await CardOfAsync(d, "Vehicle");
-        Diagrams.AddCards(diagram, [vehicle]);
+        diagram.AddCards([vehicle]);
         var module = d.AppState.Assemblies.Assemblies.OfType<LoadedModule>().Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
         var why = new BadImageFormatException("Bad namespace.");
         var ports = new FakeDiagramGrowingPorts();

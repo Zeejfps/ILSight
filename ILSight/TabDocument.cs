@@ -145,7 +145,7 @@ public sealed class TabDocument
         _load.Cancel();
         if (_shown is TabContent.Diagram diagram)
         {
-            diagram.Types.Work.Close();
+            diagram.Types.Close();
         }
 
         if (_shown is TabContent.Comparison comparison)

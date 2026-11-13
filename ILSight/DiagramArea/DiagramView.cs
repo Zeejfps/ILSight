@@ -623,12 +623,12 @@ internal static class DiagramView
 
     private static bool ConnectsShownCards(TypeDiagram diagram, TypeLink link)
     {
-        if (!Diagrams.HasCard(diagram, link.From))
+        if (!diagram.HasCard(link.From))
         {
             return false;
         }
 
-        return Diagrams.HasCard(diagram, link.To);
+        return diagram.HasCard(link.To);
     }
 
     private static DrawnLink DrawnLinkOf(Ui<UiState> ui, DiagramViewState view, LinkRoute route)
@@ -655,8 +655,9 @@ internal static class DiagramView
     private static void FillCards(DiagramViewState view, TypeDiagram diagram, DiagramHit hit, DiagramFrame frame)
     {
         frame.Cards.Clear();
-        foreach (var card in diagram.Cards)
+        for (var i = 0; i < diagram.Cards.Count; i++)
         {
+            var card = diagram.Cards[i];
             var face = FindFace(view, card.Type);
             if (face is null)
             {
@@ -808,7 +809,7 @@ internal static class DiagramView
             return;
         }
 
-        if (!Diagrams.HasCard(diagram, card.Type))
+        if (!diagram.HasCard(card.Type))
         {
             return;
         }
@@ -834,7 +835,7 @@ internal static class DiagramView
         ui.MenuSeparator();
         if (ui.MenuItem(t.DiagramRemove, id: "remove"))
         {
-            Commands.Later(ui.State, (view, diagram, card), static (a, s) => Remove(a, s.view, s.diagram, s.card));
+            Commands.Later(ui.State, (view, diagram, card), static (_, s) => Remove(s.view, s.diagram, s.card));
         }
     }
 
@@ -889,9 +890,9 @@ internal static class DiagramView
         return t.DiagramAddDerived;
     }
 
-    private static void Remove(AppState appState, DiagramViewState view, TypeDiagram diagram, TypeCard card)
+    private static void Remove(DiagramViewState view, TypeDiagram diagram, TypeCard card)
     {
-        RemoveFromDiagram(appState, diagram, card.Type);
+        diagram.RemoveCard(card.Type);
         view.MenuCard = null;
         if (view.Selected == card.Type)
         {

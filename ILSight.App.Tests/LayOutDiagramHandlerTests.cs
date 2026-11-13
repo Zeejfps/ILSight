@@ -23,11 +23,11 @@ public sealed class LayOutDiagramHandlerTests
         var diagram = new TypeDiagram();
         var ports = new FakeLayOutDiagramHandlerPorts();
         var handler = new LayOutDiagramHandler(ports);
-        var older = Diagrams.StartLayout(diagram);
+        var older = diagram.StartLayout();
         Assert.NotNull(older);
         var olderMeasures = MeasuresOf(vehicle, car);
         var olderLaying = d.BeginAsync(() => handler.HandleAsync(diagram, older, olderMeasures, CancellationToken.None));
-        var newer = Diagrams.StartLayout(diagram);
+        var newer = diagram.StartLayout();
         Assert.NotNull(newer);
         var newerMeasures = MeasuresOf(vehicle);
         var newerLaying = d.BeginAsync(() => handler.HandleAsync(diagram, newer, newerMeasures, CancellationToken.None));
@@ -51,7 +51,7 @@ public sealed class LayOutDiagramHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var diagram = new TypeDiagram();
         var ports = new FakeLayOutDiagramHandlerPorts();
-        var layout = Diagrams.StartLayout(diagram);
+        var layout = diagram.StartLayout();
         Assert.NotNull(layout);
         var error = new InvalidOperationException("No room.");
 
@@ -69,8 +69,8 @@ public sealed class LayOutDiagramHandlerTests
     public void StartLayout_DiagramClosed_StartsNothing()
     {
         var diagram = new TypeDiagram();
-        diagram.Work.Close();
+        diagram.Close();
 
-        Assert.Null(Diagrams.StartLayout(diagram));
+        Assert.Null(diagram.StartLayout());
     }
 }

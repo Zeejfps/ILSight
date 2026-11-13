@@ -69,7 +69,7 @@ public sealed class NavigationHistory
         {
             Id = id,
             Title = title,
-            Types = Diagrams.ListAnchors(diagram),
+            Types = diagram.ListAnchors(),
             HomeAssemblies = diagram.HomeAssemblies.ToList(),
         };
         if (Current is HistoryEntry.Diagram current && current.Id == id)
@@ -135,7 +135,7 @@ public sealed class NavigationHistory
                 continue;
             }
 
-            _entries.ReplaceAt(i, entry with { Types = Diagrams.ListAnchors(diagram), HomeAssemblies = diagram.HomeAssemblies.ToList() });
+            _entries.ReplaceAt(i, entry with { Types = diagram.ListAnchors(), HomeAssemblies = diagram.HomeAssemblies.ToList() });
         }
     }
 

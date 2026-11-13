@@ -41,7 +41,7 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
     {
         var cards = await ports.ReadWithNeighboursAsync(read.Type, ct);
         var diagram = read.Diagram;
-        Diagrams.FinishReading(diagram);
+        diagram.FinishReading();
         if (diagram.IsClosed)
         {
             return;
@@ -63,8 +63,8 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
             return;
         }
 
-        Diagrams.TakeHome(read.Diagram, cards[0]);
-        Diagrams.AddCards(read.Diagram, cards);
+        read.Diagram.TakeHome(cards[0].AssemblyPath);
+        read.Diagram.AddCards(cards);
         viewCommands.Enqueue(new ViewCommand.FocusCard { Tab = read.Tab, Type = cards[0].Type });
     }
 
@@ -100,7 +100,7 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
             return;
         }
 
-        Diagrams.StartReading(diagram);
+        diagram.StartReading();
         var read = await ports.ReadCardsAsync(types, ct);
         FinishAdding(diagram, card, read);
     }
@@ -110,7 +110,7 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
     /// the search reached that could not be read.</summary>
     public async Task ExpandDerivedAsync(TypeDiagram diagram, TypeCard card, CancellationToken ct)
     {
-        Diagrams.StartReading(diagram);
+        diagram.StartReading();
         var read = await ports.ReadDerivedAsync(card.Type, ct);
         FinishAdding(diagram, card, read);
     }
@@ -120,7 +120,7 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
     /// read; reports a read that failed.</summary>
     private void FinishAdding(TypeDiagram diagram, TypeCard card, Outcome<ScopeSearch<TypeCard>> read)
     {
-        Diagrams.FinishReading(diagram);
+        diagram.FinishReading();
         if (diagram.IsClosed)
         {
             return;
@@ -133,7 +133,7 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
 
     private void AddFound(TypeDiagram diagram, ScopeSearch<TypeCard> search)
     {
-        Diagrams.AddCards(diagram, search.Found);
+        diagram.AddCards(search.Found);
         foreach (var unreadable in search.Unreadable)
         {
             ReportModuleUnreadable(unreadable);
@@ -145,7 +145,7 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
     /// those types is in; reports a read that failed.</summary>
     private void FinishAdding(TypeDiagram diagram, TypeCard card, Outcome<List<Lookup<TypeCard>>> read)
     {
-        Diagrams.FinishReading(diagram);
+        diagram.FinishReading();
         if (diagram.IsClosed)
         {
             return;
@@ -158,7 +158,7 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
 
     private void AddFound(TypeDiagram diagram, List<Lookup<TypeCard>> cards)
     {
-        Diagrams.AddCards(diagram, Lookup.ListFound(cards));
+        diagram.AddCards(Lookup.ListFound(cards));
         foreach (var unreadable in Lookup.ListUnreadable(cards))
         {
             ReportModuleUnreadable(unreadable);

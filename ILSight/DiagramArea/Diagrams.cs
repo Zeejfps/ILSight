@@ -134,7 +134,7 @@ public static class Diagrams
     /// <paramref name="diagram"/>, which <paramref name="tab"/> shows, as started.</summary>
     private static NeighboursRead StartReadingWithNeighbours(DocumentTab tab, TypeDiagram diagram, CodeReference.Entity type)
     {
-        StartReading(diagram);
+        diagram.StartReading();
         return new NeighboursRead { Tab = tab, Diagram = diagram, Type = type };
     }
 
@@ -182,15 +182,9 @@ public static class Diagrams
         return card.Links
             .Where(isKind)
             .Select(static l => l.To)
-            .Where(t => !Diagrams.HasCard(diagram, t))
+            .Where(t => !diagram.HasCard(t))
             .Distinct()
             .ToList();
-    }
-
-    /// <summary>Takes the card of <paramref name="type"/> off <paramref name="diagram"/>.</summary>
-    public static void RemoveFromDiagram(AppState appState, TypeDiagram diagram, CodeReference.Entity type)
-    {
-        RemoveCard(diagram, type);
     }
 
     /// <summary>Shows the diagram <paramref name="saved"/> kept in the tab <paramref name="reopened"/> waits in, one
@@ -208,157 +202,16 @@ public static class Diagrams
         var tab = reopened.Tab;
         var diagram = ShowSavedDiagram(navigation, tab, saved);
         var waiting = SavedDocuments.WaitFor(reopenedTabs, tab, saved);
-        StartReading(diagram);
+        diagram.StartReading();
         return new SavedDiagramRead { Reopened = waiting, Diagram = diagram, Saved = saved };
     }
 
     private static TypeDiagram ShowSavedDiagram(Navigation navigation, DocumentTab tab, DiagramDocumentRecord saved)
     {
         var diagram = new TypeDiagram();
-        TakeHomes(diagram, saved.HomeAssemblies);
+        diagram.TakeHomes(saved.HomeAssemblies);
         navigation.RestoreDiagram(tab, diagram, saved.Title ?? string.Empty);
         return diagram;
-    }
-
-    /// <summary>Takes each of <paramref name="assemblies"/>, if any, as one of the diagram's own.</summary>
-    public static void TakeHomes(TypeDiagram diagram, IReadOnlyList<AssemblyPath>? assemblies)
-    {
-        if (assemblies is null)
-        {
-            return;
-        }
-
-        foreach (var assembly in assemblies)
-        {
-            Diagrams.TakeHome(diagram, assembly);
-        }
-    }
-
-    /// <summary>Starts laying out <paramref name="diagram"/>, cancelling the layout in flight, whose result is then
-    /// dropped. Returns the work the layout runs as, for the edge to start (<see cref="LayOutDiagramHandler"/>) on a
-    /// token a newer layout and closing the diagram cancel; null when the diagram is closed.</summary>
-    public static WorkTicket? StartLayout(TypeDiagram diagram)
-    {
-        if (diagram.IsClosed)
-        {
-            return null;
-        }
-
-        return diagram.Work.Start();
-    }
-
-    public static bool HasCard(TypeDiagram diagram, CodeReference.Entity type)
-    {
-        return diagram.Types.Contains(type);
-    }
-
-    /// <summary>Adds the cards of <paramref name="cards"/> the diagram does not show yet, after the others.</summary>
-    public static void AddCards(TypeDiagram diagram, IReadOnlyList<TypeCard> cards)
-    {
-        var shown = diagram.Cards.Count;
-        foreach (var card in cards)
-        {
-            AddCardIfNew(diagram, card);
-        }
-
-        if (diagram.Cards.Count == shown)
-        {
-            return;
-        }
-
-        ChangeCards(diagram);
-    }
-
-    private static void AddCardIfNew(TypeDiagram diagram, TypeCard card)
-    {
-        if (!diagram.Types.Add(card.Type))
-        {
-            return;
-        }
-
-        diagram.Cards.Add(card);
-    }
-
-    public static void RemoveCard(TypeDiagram diagram, CodeReference.Entity type)
-    {
-        if (!diagram.Types.Remove(type))
-        {
-            return;
-        }
-
-        diagram.Cards.RemoveAll(c => c.Type == type);
-        ChangeCards(diagram);
-    }
-
-    private static void ChangeCards(TypeDiagram diagram)
-    {
-        diagram.Version++;
-        diagram.Links.Clear();
-        foreach (var card in diagram.Cards)
-        {
-            AddLinksAmongCards(diagram, card);
-        }
-    }
-
-    private static void AddLinksAmongCards(TypeDiagram diagram, TypeCard card)
-    {
-        foreach (var link in card.Links)
-        {
-            if (diagram.Types.Contains(link.To))
-            {
-                diagram.Links.Add(link);
-            }
-        }
-    }
-
-    /// <summary>Takes the assembly of <paramref name="card"/>, which the user put on the diagram, as one of
-    /// its own, whose members show even when hidden from other assemblies.</summary>
-    public static void TakeHome(TypeDiagram diagram, TypeCard card)
-    {
-        TakeHome(diagram, card.AssemblyPath);
-    }
-
-    /// <summary>Takes the assembly at <paramref name="assemblyPath"/> as one of the diagram's own.</summary>
-    public static void TakeHome(TypeDiagram diagram, AssemblyPath assemblyPath)
-    {
-        diagram.HomeAssemblies.Add(assemblyPath);
-    }
-
-    /// <summary>Whether the assembly at <paramref name="assemblyPath"/> is one of the diagram's own; false
-    /// for none.</summary>
-    public static bool IsHome(TypeDiagram diagram, AssemblyPath? assemblyPath)
-    {
-        if (assemblyPath == null)
-        {
-            return false;
-        }
-
-        return diagram.HomeAssemblies.Contains(assemblyPath);
-    }
-
-    /// <summary>The types the diagram shows, as its cards are in the order added, which make it again.</summary>
-    public static List<TypeAnchor> ListAnchors(TypeDiagram diagram)
-    {
-        return diagram.Cards
-            .Select(static c => c.Anchor)
-            .ToList();
-    }
-
-    /// <summary>Counts a read of cards for the diagram as started, until <see cref="FinishReading"/>.</summary>
-    public static void StartReading(TypeDiagram diagram)
-    {
-        diagram.Reading++;
-    }
-
-    public static void FinishReading(TypeDiagram diagram)
-    {
-        diagram.Reading--;
-    }
-
-    /// <summary>Holds <paramref name="layout"/>, which the newest layout finished with.</summary>
-    public static void ShowLayout(TypeDiagram diagram, TypeLayout layout)
-    {
-        diagram.Layout = layout;
     }
 
     /// <summary>Starts moving to <paramref name="layout"/> when it is another than <see cref="LayoutTransition.Layout"/>;

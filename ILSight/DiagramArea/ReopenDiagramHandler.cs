@@ -28,7 +28,7 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
     public async Task HandleAsync(ReopenedTabs reopened, SavedDiagramRead read, CancellationToken ct)
     {
         var cards = await ports.ReadCardsAsync(read.Saved.Types, ct);
-        Diagrams.FinishReading(read.Diagram);
+        read.Diagram.FinishReading();
         if (!SavedDocuments.TryFinishWaiting(reopened, read.Reopened))
         {
             return;
@@ -43,7 +43,7 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
     public async Task ShowPlaceAsync(DiagramPlaceRead read, CancellationToken ct)
     {
         var cards = await ports.ReadCardsAsync(read.Types, ct);
-        Diagrams.FinishReading(read.Diagram);
+        read.Diagram.FinishReading();
         TakeCards(read.Diagram, read.Title, cards);
     }
 
@@ -63,7 +63,7 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
 
     private void AddFound(TypeDiagram diagram, List<Lookup<TypeCard>> cards)
     {
-        Diagrams.AddCards(diagram, Lookup.ListFound(cards));
+        diagram.AddCards(Lookup.ListFound(cards));
         foreach (var unreadable in Lookup.ListUnreadable(cards))
         {
             ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable));

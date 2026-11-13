@@ -46,11 +46,11 @@ internal static class DiagramFaces
     }
 
     /// <summary>Asks for <paramref name="diagram"/> to be laid out once the frame is drawn, its cards and labels as
-    /// large as <paramref name="measures"/> says, cancelling the layout in flight (<see cref="Diagrams.StartLayout"/>),
+    /// large as <paramref name="measures"/> says, cancelling the layout in flight (<see cref="TypeDiagram.StartLayout"/>),
     /// on a token a newer layout and closing the diagram cancel.</summary>
     internal static void LayOutLater(UiState uiState, TypeDiagram diagram, DiagramMeasures measures)
     {
-        Commands.StartLater(uiState, nameof(LayOutDiagramHandler), (diagram, measures), static (_, s) => Diagrams.StartLayout(s.diagram),
+        Commands.StartLater(uiState, nameof(LayOutDiagramHandler), (diagram, measures), static (_, s) => s.diagram.StartLayout(),
             static (a, s, layout, ct) => a.LayOutDiagramHandler.HandleAsync(s.diagram, layout, s.measures, ct), static layout => layout.Token);
     }
 
@@ -179,7 +179,7 @@ internal static class DiagramFaces
             return members.ToList();
         }
 
-        if (Diagrams.IsHome(diagram, assemblyPath))
+        if (diagram.IsHome(assemblyPath))
         {
             return members.ToList();
         }

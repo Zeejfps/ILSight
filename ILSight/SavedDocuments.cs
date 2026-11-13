@@ -257,7 +257,7 @@ public static class SavedDocuments
 
     private static DiagramDocumentRecord SaveDiagram(DocumentTab tab, TypeDiagram diagram, TabPanel panel)
     {
-        var types = Diagrams.ListAnchors(diagram);
+        var types = diagram.ListAnchors();
         var homes = diagram.HomeAssemblies.ToList();
         var view = panel.View as TabPanelView.Diagram;
         return new DiagramDocumentRecord
