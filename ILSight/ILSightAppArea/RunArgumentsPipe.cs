@@ -10,7 +10,8 @@ namespace ILSight.ILSightAppArea;
 /// <summary>
 /// What a run and the receiver say to each other. A run sends its arguments and lends the receiver the
 /// right to come to the front, so that one window serves them all. Only the user who started the
-/// receiver can reach it.
+/// receiver can reach it. The receiver (<see cref="RunArgumentsReceiver"/>) holds the role and its thread; this is the
+/// wire and the serving loop that thread runs over its inbox.
 /// </summary>
 [Edge]
 public static class RunArgumentsPipe
@@ -151,103 +152,20 @@ public static class RunArgumentsPipe
         return bytes[0];
     }
 
-    private static readonly TimeSpan RoleCheck = TimeSpan.FromMilliseconds(250);
     private static readonly TimeSpan BrokenPipeWait = TimeSpan.FromMilliseconds(100);
 
-    private static RunArgumentsReceiver StartReceiver(RunArgumentsAddress address, Action<RunArgumentsReceiver> run)
-    {
-        var receiver = new RunArgumentsReceiver { Name = address.Name, Role = new Mutex(false, address.Name) };
-        var thread = new Thread(() => run(receiver)) { IsBackground = true, Name = "Run arguments" };
-        receiver.Thread = thread;
-        thread.Start();
-        return receiver;
-    }
-
-    /// <summary>A receiver already listening when the role at <paramref name="address"/> is free; null
-    /// when another run holds it. Never waits for the role.</summary>
-    public static RunArgumentsReceiver? TryClaim(RunArgumentsAddress address)
-    {
-        var claimed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var receiver = StartReceiver(address, r => RunArgumentsPipe.ClaimAndServe(r, claimed));
-#pragma warning disable VSTHRD002 // The entry thread must stay its own and has nothing to do until the role's thread answers; that thread sets the answer, its continuations run asynchronously.
-        var isClaimed = claimed.Task.GetAwaiter().GetResult();
-#pragma warning restore VSTHRD002
-        if (isClaimed)
-        {
-            return receiver;
-        }
-
-        receiver.Dispose();
-        return null;
-    }
-
-    /// <summary>A receiver that takes the role at <paramref name="address"/> whenever it comes free.
-    /// A run must only stand by once it will not send, or it could end up taking its own arguments.</summary>
-    public static RunArgumentsReceiver StandBy(RunArgumentsAddress address)
-    {
-        return StartReceiver(address, static r => RunArgumentsPipe.WaitAndServe(r));
-    }
-
-    private static void ClaimAndServe(RunArgumentsReceiver receiver, TaskCompletionSource<bool> claimed)
-    {
-        var holdsRole = TryTakeRole(receiver, TimeSpan.Zero);
-        claimed.SetResult(holdsRole);
-        if (holdsRole)
-        {
-            ServeThenRelease(receiver);
-        }
-    }
-
-    private static void WaitAndServe(RunArgumentsReceiver receiver)
-    {
-        while (!receiver.Stop.IsCancellationRequested)
-        {
-            if (TryTakeRole(receiver, RoleCheck))
-            {
-                ServeThenRelease(receiver);
-                return;
-            }
-        }
-    }
-
-    private static bool TryTakeRole(RunArgumentsReceiver receiver, TimeSpan wait)
-    {
-        try
-        {
-            return receiver.Role.WaitOne(wait);
-        }
-        catch (AbandonedMutexException)
-        {
-            // The holder crashed, and the wait took the role all the same.
-            return true;
-        }
-    }
-
-    private static void ServeThenRelease(RunArgumentsReceiver receiver)
-    {
-        try
-        {
-#pragma warning disable VSTHRD002 // Only the thread that took the role's named Mutex may release it, and holding it is this thread's job; the serving's continuations run on the thread pool.
-            ServeAsync(receiver, receiver.Stop.Token).GetAwaiter().GetResult();
-#pragma warning restore VSTHRD002
-        }
-        finally
-        {
-            receiver.Role.ReleaseMutex();
-        }
-    }
-
-    /// <summary>Listens until stopped, on one server: replacing it for each run would drop the runs
-    /// already waiting in its backlog.</summary>
-    private static async Task ServeAsync(RunArgumentsReceiver receiver, CancellationToken token)
+    /// <summary>Listens at <paramref name="name"/> until stopped, on one server, putting the arguments each run sends in
+    /// <paramref name="inbox"/>: replacing the server for each run would drop the runs already waiting in its
+    /// backlog.</summary>
+    internal static async Task ServeAsync(string name, Channel<RunArguments> inbox, CancellationToken token)
     {
         while (!token.IsCancellationRequested)
         {
             try
             {
-                await using var pipe = new NamedPipeServerStream(receiver.Name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte,
+                await using var pipe = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte,
                     PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
-                await ServeRunsAsync(receiver, pipe, token);
+                await ServeRunsAsync(inbox, pipe, token);
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested)
             {
@@ -276,19 +194,19 @@ public static class RunArgumentsPipe
         }
     }
 
-    private static async Task ServeRunsAsync(RunArgumentsReceiver receiver, NamedPipeServerStream pipe, CancellationToken stop)
+    private static async Task ServeRunsAsync(Channel<RunArguments> inbox, NamedPipeServerStream pipe, CancellationToken stop)
     {
         while (true)
         {
             await pipe.WaitForConnectionAsync(stop);
-            await TakeArgumentsAsync(receiver, pipe, stop);
+            await TakeArgumentsAsync(inbox, pipe, stop);
             pipe.Disconnect();
         }
     }
 
     /// <summary>Takes the arguments of the connected run, then tells it so. A run that goes away partway
     /// costs only its own arguments, and a closed inbox hangs up on it unanswered.</summary>
-    private static async Task TakeArgumentsAsync(RunArgumentsReceiver receiver, Stream pipe, CancellationToken stop)
+    private static async Task TakeArgumentsAsync(Channel<RunArguments> inbox, Stream pipe, CancellationToken stop)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(stop);
         timeout.CancelAfter(RunArgumentsPipe.HandOverTimeout);
@@ -298,7 +216,7 @@ public static class RunArgumentsPipe
             return;
         }
 
-        if (!receiver.Inbox.Writer.TryWrite(arguments))
+        if (!inbox.Writer.TryWrite(arguments))
         {
             return;
         }
@@ -344,14 +262,5 @@ public static class RunArgumentsPipe
     private static async Task WaitForBrokenPipeAsync(CancellationToken token)
     {
         await Task.Delay(BrokenPipeWait, token).ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.SuppressThrowing);
-    }
-
-    /// <summary>Stops listening, then releases the role, which the next receiver can then take.</summary>
-    public static void StopReceiver(RunArgumentsReceiver receiver)
-    {
-        receiver.Stop.Cancel();
-        receiver.Thread?.Join();
-        receiver.Stop.Dispose();
-        receiver.Role.Dispose();
     }
 }

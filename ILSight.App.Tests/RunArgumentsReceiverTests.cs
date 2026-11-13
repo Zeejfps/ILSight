@@ -17,8 +17,8 @@ public sealed class RunArgumentsReceiverTests
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
 
-        using var first = RunArgumentsPipe.TryClaim(address);
-        using var later = RunArgumentsPipe.TryClaim(address);
+        using var first = RunArgumentsReceiver.TryClaim(address);
+        using var later = RunArgumentsReceiver.TryClaim(address);
 
         Assert.NotNull(first);
         Assert.Null(later);
@@ -29,8 +29,8 @@ public sealed class RunArgumentsReceiverTests
     {
         using var temp = new TempDir();
 
-        using var one = RunArgumentsPipe.TryClaim(RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("one.json"))));
-        using var other = RunArgumentsPipe.TryClaim(RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("other.json"))));
+        using var one = RunArgumentsReceiver.TryClaim(RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("one.json"))));
+        using var other = RunArgumentsReceiver.TryClaim(RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("other.json"))));
 
         Assert.NotNull(one);
         Assert.NotNull(other);
@@ -41,11 +41,11 @@ public sealed class RunArgumentsReceiverTests
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
-        var first = RunArgumentsPipe.TryClaim(address);
+        var first = RunArgumentsReceiver.TryClaim(address);
         Assert.NotNull(first);
         first.Dispose();
 
-        using var next = RunArgumentsPipe.TryClaim(address);
+        using var next = RunArgumentsReceiver.TryClaim(address);
 
         Assert.NotNull(next);
     }
@@ -55,12 +55,12 @@ public sealed class RunArgumentsReceiverTests
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
-        var first = RunArgumentsPipe.TryClaim(address);
+        var first = RunArgumentsReceiver.TryClaim(address);
         Assert.NotNull(first);
-        Assert.Null(RunArgumentsPipe.TryClaim(address));
+        Assert.Null(RunArgumentsReceiver.TryClaim(address));
         first.Dispose();
 
-        using var next = RunArgumentsPipe.TryClaim(address);
+        using var next = RunArgumentsReceiver.TryClaim(address);
 
         Assert.NotNull(next);
     }
@@ -70,9 +70,9 @@ public sealed class RunArgumentsReceiverTests
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
-        var first = RunArgumentsPipe.TryClaim(address);
+        var first = RunArgumentsReceiver.TryClaim(address);
         Assert.NotNull(first);
-        using var standing = RunArgumentsPipe.StandBy(address);
+        using var standing = RunArgumentsReceiver.StandBy(address);
 
         first.Dispose();
         var handedOver = RunArgumentsPipe.TrySend(address, Arguments("a.dll"));
@@ -85,9 +85,9 @@ public sealed class RunArgumentsReceiverTests
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
-        using var first = RunArgumentsPipe.TryClaim(address);
+        using var first = RunArgumentsReceiver.TryClaim(address);
 
-        var standing = RunArgumentsPipe.StandBy(address);
+        var standing = RunArgumentsReceiver.StandBy(address);
         standing.Dispose();
 
         Assert.True(RunArgumentsPipe.TrySend(address, Arguments("a.dll")));

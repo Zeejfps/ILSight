@@ -30,7 +30,7 @@ public static class RunArgumentsRouting
     /// over, whether <paramref name="newInstance"/> asked for that or the running app could not be reached.</summary>
     public static RunArgumentsReceiver? ForwardOrReceive(RunArgumentsAddress address, RunArguments arguments, bool newInstance)
     {
-        var receiver = RunArgumentsPipe.TryClaim(address);
+        var receiver = RunArgumentsReceiver.TryClaim(address);
         if (receiver is not null)
         {
             return receiver;
@@ -38,7 +38,7 @@ public static class RunArgumentsRouting
 
         if (newInstance)
         {
-            return RunArgumentsPipe.StandBy(address);
+            return RunArgumentsReceiver.StandBy(address);
         }
 
         var handedOver = RunArgumentsPipe.TrySend(address, arguments);
@@ -47,6 +47,6 @@ public static class RunArgumentsRouting
             return null;
         }
 
-        return RunArgumentsPipe.StandBy(address);
+        return RunArgumentsReceiver.StandBy(address);
     }
 }
