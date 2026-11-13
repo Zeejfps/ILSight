@@ -13,7 +13,6 @@ namespace ILSight.ILSightAppArea;
 /// receiver can reach it. The receiver (<see cref="RunArgumentsReceiver"/>) holds the role and its thread; this is the
 /// wire and the serving loop that thread runs over its inbox.
 /// </summary>
-[Edge]
 public static class RunArgumentsPipe
 {
     private const int IntBytes = 4;
@@ -24,42 +23,9 @@ public static class RunArgumentsPipe
     /// <summary>How long either side waits for the other.</summary>
     internal static readonly TimeSpan HandOverTimeout = TimeSpan.FromSeconds(5);
 
-    /// <summary>Hands <paramref name="arguments"/> to the receiver at <paramref name="address"/> and lends
-    /// it the right to come to the front; false when it cannot be reached in time or refuses. Waits on
-    /// the thread pool, so a caller whose own thread runs the continuations is never blocked by them.</summary>
-    public static bool TrySend(RunArgumentsAddress address, RunArguments arguments)
-    {
-        try
-        {
-            using var timeout = new CancellationTokenSource(HandOverTimeout);
-            var token = timeout.Token;
-#pragma warning disable VSTHRD002 // The entry thread must stay its own for the window loop and has nothing to do until the arguments are handed over; the hand-over runs on the thread pool.
-            return Task.Run(() => TrySendAsync(address, arguments, token)).GetAwaiter().GetResult();
-#pragma warning restore VSTHRD002
-        }
-        catch (IOException)
-        {
-            return false;
-        }
-        catch (TimeoutException)
-        {
-            return false;
-        }
-        catch (OperationCanceledException)
-        {
-            return false;
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return false;
-        }
-        catch (InvalidDataException)
-        {
-            return false;
-        }
-    }
-
-    private static async Task<bool> TrySendAsync(RunArgumentsAddress address, RunArguments arguments, CancellationToken token)
+    /// <summary>Hands <paramref name="arguments"/> to the receiver at <paramref name="address"/> and lends it the right to
+    /// come to the front; whether it took them. What the pipe throws goes through, for the caller to translate.</summary>
+    internal static async Task<bool> SendAsync(RunArgumentsAddress address, RunArguments arguments, CancellationToken token)
     {
         await using var pipe = new NamedPipeClientStream(".", address.Name, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
         await pipe.ConnectAsync(token);

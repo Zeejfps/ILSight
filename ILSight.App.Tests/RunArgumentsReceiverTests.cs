@@ -17,8 +17,8 @@ public sealed class RunArgumentsReceiverTests
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
 
-        using var first = RunArgumentsReceiver.TryClaim(address);
-        using var later = RunArgumentsReceiver.TryClaim(address);
+        using var first = RunPipes.Claim(address);
+        using var later = RunPipes.Claim(address);
 
         Assert.NotNull(first);
         Assert.Null(later);
@@ -29,8 +29,8 @@ public sealed class RunArgumentsReceiverTests
     {
         using var temp = new TempDir();
 
-        using var one = RunArgumentsReceiver.TryClaim(RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("one.json"))));
-        using var other = RunArgumentsReceiver.TryClaim(RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("other.json"))));
+        using var one = RunPipes.Claim(RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("one.json"))));
+        using var other = RunPipes.Claim(RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("other.json"))));
 
         Assert.NotNull(one);
         Assert.NotNull(other);
@@ -41,11 +41,11 @@ public sealed class RunArgumentsReceiverTests
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
-        var first = RunArgumentsReceiver.TryClaim(address);
+        var first = RunPipes.Claim(address);
         Assert.NotNull(first);
         first.Dispose();
 
-        using var next = RunArgumentsReceiver.TryClaim(address);
+        using var next = RunPipes.Claim(address);
 
         Assert.NotNull(next);
     }
@@ -55,12 +55,12 @@ public sealed class RunArgumentsReceiverTests
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
-        var first = RunArgumentsReceiver.TryClaim(address);
+        var first = RunPipes.Claim(address);
         Assert.NotNull(first);
-        Assert.Null(RunArgumentsReceiver.TryClaim(address));
+        Assert.Null(RunPipes.Claim(address));
         first.Dispose();
 
-        using var next = RunArgumentsReceiver.TryClaim(address);
+        using var next = RunPipes.Claim(address);
 
         Assert.NotNull(next);
     }
@@ -70,12 +70,12 @@ public sealed class RunArgumentsReceiverTests
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
-        var first = RunArgumentsReceiver.TryClaim(address);
+        var first = RunPipes.Claim(address);
         Assert.NotNull(first);
         using var standing = RunArgumentsReceiver.StandBy(address);
 
         first.Dispose();
-        var handedOver = RunArgumentsPipe.TrySend(address, Arguments("a.dll"));
+        var handedOver = RunPipes.Send(address, Arguments("a.dll"));
 
         Assert.True(handedOver);
     }
@@ -85,55 +85,11 @@ public sealed class RunArgumentsReceiverTests
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
-        using var first = RunArgumentsReceiver.TryClaim(address);
+        using var first = RunPipes.Claim(address);
 
         var standing = RunArgumentsReceiver.StandBy(address);
         standing.Dispose();
 
-        Assert.True(RunArgumentsPipe.TrySend(address, Arguments("a.dll")));
-    }
-
-    [Fact]
-    public void A_run_is_forwarded_when_a_receiver_takes_its_arguments()
-    {
-        using var temp = new TempDir();
-        var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
-        using var first = RunArgumentsRouting.ForwardOrReceive(address, Arguments("a.dll"), newInstance: false);
-
-        using var later = RunArgumentsRouting.ForwardOrReceive(address, Arguments("b.dll"), newInstance: false);
-
-        Assert.NotNull(first);
-        Assert.Null(later);
-    }
-
-    [Fact]
-    public void A_run_asking_for_a_new_instance_stands_by_without_sending()
-    {
-        using var temp = new TempDir();
-        var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
-        using var first = RunArgumentsRouting.ForwardOrReceive(address, Arguments("a.dll"), newInstance: false);
-        Assert.NotNull(first);
-
-        using var later = RunArgumentsRouting.ForwardOrReceive(address, Arguments("b.dll"), newInstance: true);
-
-        Assert.NotNull(later);
-        first.Inbox.Writer.TryComplete();
-        Assert.Empty(first.Inbox.Reader.ReadAllAsync().ToBlockingEnumerable());
-    }
-
-    [Fact]
-    public void A_run_refused_by_a_closing_window_opens_its_own_and_takes_over()
-    {
-        using var temp = new TempDir();
-        var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
-        var first = RunArgumentsRouting.ForwardOrReceive(address, Arguments("a.dll"), newInstance: false);
-        Assert.NotNull(first);
-        first.Inbox.Writer.TryComplete();
-
-        using var later = RunArgumentsRouting.ForwardOrReceive(address, Arguments("b.dll"), newInstance: false);
-        Assert.NotNull(later);
-        first.Dispose();
-
-        Assert.True(RunArgumentsPipe.TrySend(address, Arguments("c.dll")));
+        Assert.True(RunPipes.Send(address, Arguments("a.dll")));
     }
 }

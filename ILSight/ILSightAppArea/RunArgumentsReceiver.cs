@@ -27,6 +27,8 @@ public sealed class RunArgumentsReceiver : IDisposable
 
     private readonly Thread _thread;
 
+    private bool _isDisposed;
+
     /// <summary>A receiver of the role at <paramref name="address"/> whose thread does <paramref name="run"/>, not
     /// started yet.</summary>
     private RunArgumentsReceiver(RunArgumentsAddress address, Action<RunArgumentsReceiver> run)
@@ -42,15 +44,23 @@ public sealed class RunArgumentsReceiver : IDisposable
     public Channel<RunArguments> Inbox { get; } = Channel.CreateUnbounded<RunArguments>();
 
     /// <summary>A receiver already listening when the role at <paramref name="address"/> is free; null
-    /// when another run holds it. Never waits for the role.</summary>
-    public static RunArgumentsReceiver? TryClaim(RunArgumentsAddress address)
+    /// when another run holds it. Never waits for the role: awaits the role thread's answer.</summary>
+    public static async Task<RunArgumentsReceiver?> TryClaimAsync(RunArgumentsAddress address, CancellationToken ct)
     {
         var claimed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var receiver = new RunArgumentsReceiver(address, r => r.ClaimAndServe(claimed));
         receiver._thread.Start();
-#pragma warning disable VSTHRD002 // The entry thread must stay its own and has nothing to do until the role's thread answers; that thread sets the answer, its continuations run asynchronously.
-        var isClaimed = claimed.Task.GetAwaiter().GetResult();
-#pragma warning restore VSTHRD002
+        bool isClaimed;
+        try
+        {
+            isClaimed = await claimed.Task.WaitAsync(ct);
+        }
+        catch (OperationCanceledException)
+        {
+            receiver.Dispose();
+            throw;
+        }
+
         if (isClaimed)
         {
             return receiver;
@@ -69,9 +79,15 @@ public sealed class RunArgumentsReceiver : IDisposable
         return receiver;
     }
 
-    /// <summary>Stops listening, then releases the role, which the next receiver can then take.</summary>
+    /// <summary>Stops listening, then releases the role, which the next receiver can then take; once.</summary>
     public void Dispose()
     {
+        if (_isDisposed)
+        {
+            return;
+        }
+
+        _isDisposed = true;
         _stop.Cancel();
         _thread.Join();
         _stop.Dispose();

@@ -15,12 +15,16 @@ public static class ILSightAppLauncher
     public static void LaunchApp(LaunchConfig config, RunArguments arguments)
     {
         var address = RunArgumentsRouting.GetAddress(config.SettingsPath);
-
-        using var receiver = RunArgumentsRouting.ForwardOrReceive(address, arguments, config.NewInstance);
-        if (receiver is null)
+        var routing = new RunRoutingAdapter(address);
+#pragma warning disable VSTHRD002 // The entry thread must stay its own for the window loop and has nothing to do until the run's route is known; the routing runs on the thread pool.
+        var route = Task.Run(() => new RunRouting(routing).RouteAsync(arguments, config.NewInstance, CancellationToken.None)).GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002
+        if (route == RunRoute.HandedOver)
         {
             return;
         }
+
+        using var receiver = routing.Claimed ?? RunArgumentsReceiver.StandBy(address);
 
         var loadResult = AppRoot.ReadSettingsFile(config.SettingsPath);
         var app = CreateApp(loadResult, arguments, receiver.Inbox);

@@ -4,7 +4,7 @@ using ILSight.Core;
 
 namespace ILSight.ILSightAppArea;
 
-/// <summary>Where a run's arguments go.</summary>
+/// <summary>Where runs meet to hand their arguments over (<see cref="RunRouting"/> decides where they go).</summary>
 public static class RunArgumentsRouting
 {
     private const string NamePrefix = "ILSight-";
@@ -22,31 +22,5 @@ public static class RunArgumentsRouting
 
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(path));
         return new RunArgumentsAddress(NamePrefix + Convert.ToHexString(hash, 0, HashBytes));
-    }
-
-    /// <summary>Null when the app already running at <paramref name="address"/> took
-    /// <paramref name="arguments"/>, and this run has nothing left to do. Otherwise this run opens a
-    /// window, with the receiver it gets: one listening already if none was, or one standing by to take
-    /// over, whether <paramref name="newInstance"/> asked for that or the running app could not be reached.</summary>
-    public static RunArgumentsReceiver? ForwardOrReceive(RunArgumentsAddress address, RunArguments arguments, bool newInstance)
-    {
-        var receiver = RunArgumentsReceiver.TryClaim(address);
-        if (receiver is not null)
-        {
-            return receiver;
-        }
-
-        if (newInstance)
-        {
-            return RunArgumentsReceiver.StandBy(address);
-        }
-
-        var handedOver = RunArgumentsPipe.TrySend(address, arguments);
-        if (handedOver)
-        {
-            return null;
-        }
-
-        return RunArgumentsReceiver.StandBy(address);
     }
 }
