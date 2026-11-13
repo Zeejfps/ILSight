@@ -624,13 +624,13 @@ internal static class DiagramView
         var tooltip = FindTooltip(tooltips, isPanning, hit);
         var part = PartOf(tooltip, hit);
         using var popup = ui.TooltipContentAtPointer(canvasId, part, out var shownPart, CodeTooltipView.Look);
-        KeptTooltips.Keep(view.Tooltip, tooltip, part, shownPart);
+        view.Tooltip.Keep(tooltip, part, shownPart);
         if (!popup.IsOpen)
         {
             return;
         }
 
-        var shown = KeptTooltips.Find(view.Tooltip, shownPart);
+        var shown = view.Tooltip.Find(shownPart);
         if (shown == null)
         {
             return;

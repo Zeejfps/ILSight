@@ -81,7 +81,7 @@ public static class CodeViewWidget
         state.Selection.Select(default, default);
         state.Pointer.Forget();
         state.ScrollX = state.ScrollY = 0f;
-        KeptTooltips.Forget(state.Tooltip);
+        state.Tooltip.Forget();
         state.Reveal.ForgetStale();
         state.Find.ClearMatch();
         state.Keys.Forget();
@@ -583,13 +583,13 @@ public static class CodeViewWidget
 
         var anchor = TooltipAnchor(state, document, hovered, advance, rowHeight);
         using var popup = ui.TooltipContent(codeId, part, anchor, out var shownPart, CodeTooltipView.Look);
-        KeptTooltips.Keep(state.Tooltip, tooltip, part, shownPart);
+        state.Tooltip.Keep(tooltip, part, shownPart);
         if (!popup.IsOpen)
         {
             return null;
         }
 
-        var shown = KeptTooltips.Find(state.Tooltip, shownPart);
+        var shown = state.Tooltip.Find(shownPart);
         if (shown == null)
         {
             return null;
