@@ -37,7 +37,7 @@ internal static class AssemblyListDeleteDialogView
                 {
                     if (ui.Button(t.ListsCancel, id: "delete-cancel", variant: ButtonVariant.Ghost))
                     {
-                        AssemblyLists.StopAsking(dialog);
+                        dialog.StopAsking();
                     }
 
                     if (ui.Button(t.ListsDeleteConfirm, id: "delete-confirm", variant: ButtonVariant.Primary))
@@ -50,14 +50,14 @@ internal static class AssemblyListDeleteDialogView
         }
         if (!open)
         {
-            AssemblyLists.StopAsking(dialog);
+            dialog.StopAsking();
         }
     }
 
     private static ListOpening? Delete(AssemblyListsDialog dialog, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
         var opening = AssemblyLists.DeleteAssemblyList(lists, session, view, name);
-        AssemblyLists.PickList(dialog, lists, lists.Active);
+        dialog.PickList(lists, lists.Active);
         return opening;
     }
 }

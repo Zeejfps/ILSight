@@ -50,7 +50,7 @@ internal static class AssemblyListsDialogView
         }
         if (!open)
         {
-            AssemblyLists.CloseListsDialog(dialog);
+            dialog.Close();
         }
     }
 
@@ -59,7 +59,7 @@ internal static class AssemblyListsDialogView
         var t = ui.State.Strings;
         var theme = ui.Theme;
         var dialog = ui.State.ListsDialog;
-        var picked = AssemblyLists.FindPickedList(dialog, lists);
+        var picked = dialog.FindPickedList(lists);
         var any = picked is not null;
         using (ui.Row(new Box { Width = Sizing.Grow(), Gap = theme.GapTight, AlignY = Align.Center }))
         {
@@ -76,12 +76,12 @@ internal static class AssemblyListsDialogView
 
             if (ui.IconButton("rename", ui.State.Icons.ListsRename, t.ListsRename, any) && picked is not null)
             {
-                AssemblyLists.StartRenaming(dialog, picked);
+                dialog.StartRenaming(picked);
             }
 
             if (ui.IconButton("delete", ui.State.Icons.ListsDelete, t.ListsDelete, any) && picked is not null)
             {
-                AssemblyLists.StartConfirmingDelete(dialog, picked);
+                dialog.StartConfirmingDelete(picked);
             }
         }
     }
@@ -215,7 +215,7 @@ internal static class AssemblyListsDialogView
             FinishRenaming(ui.State);
             return;
         }
-        AssemblyLists.StopAsking(ui.State.ListsDialog);
+        ui.State.ListsDialog.StopAsking();
     }
 
     private static void HandleKeys(Ui<UiState> ui, SavedAssemblyLists lists)
@@ -226,7 +226,7 @@ internal static class AssemblyListsDialogView
             return;
         }
 
-        var picked = AssemblyLists.FindPickedList(dialog, lists);
+        var picked = dialog.FindPickedList(lists);
         if (picked is null)
         {
             return;
@@ -234,12 +234,12 @@ internal static class AssemblyListsDialogView
 
         if (ui.Input.TakeKey(KeyboardKey.F2))
         {
-            AssemblyLists.StartRenaming(dialog, picked);
+            dialog.StartRenaming(picked);
         }
 
         if (ui.IsPressed(Shortcuts.Delete))
         {
-            AssemblyLists.StartConfirmingDelete(dialog, picked);
+            dialog.StartConfirmingDelete(picked);
         }
     }
 
@@ -247,7 +247,7 @@ internal static class AssemblyListsDialogView
     {
         if (doubleClicked)
         {
-            AssemblyLists.StartRenaming(ui.State.ListsDialog, name);
+            ui.State.ListsDialog.StartRenaming(name);
             return;
         }
         Switch(ui, lists, session, view, name);
@@ -268,7 +268,7 @@ internal static class AssemblyListsDialogView
             FinishRenaming(ui.State);
             return;
         }
-        AssemblyLists.StopAsking(dialog);
+        dialog.StopAsking();
     }
 
     private static void RenameProblem(Ui<UiState> ui, SavedAssemblyLists lists)
@@ -308,7 +308,7 @@ internal static class AssemblyListsDialogView
             return;
         }
 
-        var picked = AssemblyLists.FindPickedList(ui.State.ListsDialog, lists);
+        var picked = ui.State.ListsDialog.FindPickedList(lists);
         if (picked is null)
         {
             return;
@@ -329,7 +329,7 @@ internal static class AssemblyListsDialogView
 
         if (ui.MenuItem(t.ListsRename, Shortcuts.Rename, id: "rename"))
         {
-            AssemblyLists.StartRenaming(dialog, picked);
+            dialog.StartRenaming(picked);
         }
 
         if (ui.MenuItem(t.ListsDuplicate, id: "duplicate"))
@@ -340,7 +340,7 @@ internal static class AssemblyListsDialogView
         ui.MenuSeparator();
         if (ui.MenuItem(t.ListsDelete, Shortcuts.Delete, id: "delete"))
         {
-            AssemblyLists.StartConfirmingDelete(dialog, picked);
+            dialog.StartConfirmingDelete(picked);
         }
     }
 
@@ -354,7 +354,7 @@ internal static class AssemblyListsDialogView
             ui.Spacer();
             if (ui.Button(t.ListsClose, id: "close"))
             {
-                AssemblyLists.CloseListsDialog(dialog);
+                dialog.Close();
             }
         }
     }
@@ -397,26 +397,26 @@ internal static class AssemblyListsDialogView
     private static void AddPreset(AssemblyListsDialog dialog, AppState appState, AssemblyListPreset preset)
     {
         var name = AssemblyLists.AddAssemblyListPreset(appState, preset);
-        AssemblyLists.PickToRename(dialog, appState.Lists, name);
+        dialog.PickToRename(appState.Lists, name);
     }
 
     /// <summary>Opens the dialog with the open list picked, its assemblies counted as they are now.</summary>
     internal static void Open(AssemblyListsDialog dialog, AppState appState)
     {
         AssemblyLists.RememberOpenAssemblies(appState.Lists, appState.ListSession);
-        AssemblyLists.OpenListsDialog(dialog, appState.Lists);
+        dialog.Open(appState.Lists);
     }
 
     private static void Create(AssemblyListsDialog dialog, AppState appState, string newName)
     {
         var name = AssemblyLists.CreateAssemblyList(appState, newName);
-        AssemblyLists.PickToRename(dialog, appState.Lists, name);
+        dialog.PickToRename(appState.Lists, name);
     }
 
     private static void Duplicate(AssemblyListsDialog dialog, AppState appState, string name, string copyName)
     {
         var copy = AssemblyLists.DuplicateAssemblyList(appState, name, copyName);
-        AssemblyLists.PickToRename(dialog, appState.Lists, copy);
+        dialog.PickToRename(appState.Lists, copy);
     }
 
     private static void FinishRenaming(UiState screen)
@@ -427,7 +427,7 @@ internal static class AssemblyListsDialogView
             return;
         }
 
-        AssemblyLists.StopAsking(dialog);
+        dialog.StopAsking();
         Commands.Later(screen, (list: renaming.List, newName: renaming.NewName), static (a, s) => a.Lists.TryRename(s.list, s.newName));
     }
 }
