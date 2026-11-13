@@ -230,7 +230,7 @@ internal sealed class AnalyzerScope
                 var found = false;
                 foreach (var reference in module.AssemblyReferences)
                 {
-                    var known = AssemblyListing.FindKnown(List, reference, exactOrNewer: true);
+                    var known = List.FindKnown(reference, exactOrNewer: true, listedOnly: false);
                     var knownFile = known is null ? null : LoadedAssemblies.GetFile(known);
                     if (knownFile == current)
                     {

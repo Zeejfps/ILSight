@@ -73,20 +73,20 @@ public sealed class AssemblyResolver
     /// <summary>The listed assembly <paramref name="reference"/> names, one as new as it asks for first.</summary>
     private LoadedModule? FindListed(IAssemblyReference reference)
     {
-        var exact = AssemblyListing.FindKnown(List, reference, exactOrNewer: true, listedOnly: true);
+        var exact = List.FindKnown(reference, exactOrNewer: true, listedOnly: true);
         if (exact is not null)
         {
             return exact;
         }
 
-        return AssemblyListing.FindKnown(List, reference, exactOrNewer: false, listedOnly: true);
+        return List.FindKnown(reference, exactOrNewer: false, listedOnly: true);
     }
 
     /// <summary>The assembly <paramref name="reference"/> names, one read already as new as it asks for,
     /// else read from its file, else any read of its name; for loading it whatever the list's options.</summary>
     internal LoadedModule? FindAssembly(IAssemblyReference reference)
     {
-        var known = AssemblyListing.FindKnown(List, reference, exactOrNewer: true);
+        var known = List.FindKnown(reference, exactOrNewer: true, listedOnly: false);
         if (known is not null)
         {
             return known;
@@ -99,7 +99,7 @@ public sealed class AssemblyResolver
             return loaded;
         }
 
-        return AssemblyListing.FindKnown(List, reference, exactOrNewer: false);
+        return List.FindKnown(reference, exactOrNewer: false, listedOnly: false);
     }
 
     internal AssemblyPath? FindAssemblyFile(IAssemblyReference reference)
