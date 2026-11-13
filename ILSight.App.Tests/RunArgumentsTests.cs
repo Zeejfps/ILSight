@@ -233,8 +233,9 @@ public sealed class RunArgumentsTests
         using var startedTemp = new TempDir();
         using var openTemp = new TempDir();
         var arguments = CommandLines.Parse([$"--list={Other}", "--clear-list", CoreAssembly]).Arguments;
+        var listing = new ListingRecord();
 
-        var started = new AppDriver(settings: DefaultAndOther(startedTemp), queuedArguments: arguments);
+        var started = new AppDriver(settings: DefaultAndOther(startedTemp), queuedArguments: arguments, reopening: listing.Over);
         Assert.DoesNotContain(PathOf(AppStateDriver.FixturePath), started.AppState.Assemblies.Arriving);
         Assert.False(started.AppState.IsReloading);
         started.Frames.WaitUntil(() => AreListed(started.AppState, arguments.Files.Paths), Patience);
@@ -248,6 +249,7 @@ public sealed class RunArgumentsTests
         handed.Frames.WaitUntil(() => AreListed(handed.AppState, arguments.Files.Paths), Patience);
         handed.Settle();
 
+        Assert.DoesNotContain(PathOf(AppStateDriver.FixturePath), listing.Asked);
         Assert.Equal(Other, started.AppState.Lists.Active);
         Assert.Equal([CoreAssembly], started.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
         Assert.Empty(started.AppState.Errors.Entries);

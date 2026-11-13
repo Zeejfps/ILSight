@@ -22,11 +22,24 @@ public sealed class OpenAssembliesAsReloadHandler(OpenAssembliesAsReloadHandler.
     /// <summary>Opens <paramref name="paths"/> as the reload <paramref name="ticket"/> started (in the frame it was
     /// asked in), so that another reload or clearing the list stops it, then shows what the tabs reopened from the
     /// saved documents showed. Returns the loads that started in the tabs, for the edge that started this to start.
-    /// The frame edge's autosave saves what changed once the reload has ended.</summary>
+    /// The frame edge's autosave saves what changed once the reload has ended. A reload stopped before it began reads
+    /// none of the files.</summary>
     public async Task<TabLoads> HandleAsync(OpenListSession session, IReadOnlyList<AssemblyPath> paths, ReloadTicket ticket, CancellationToken ct)
     {
-        var opened = await ports.OpenFilesAsync(paths, ticket.Token, ct);
+        var opened = await OpenUnlessStoppedAsync(paths, ticket, ct);
         return FinishOpeningAsReload(session, opened, ticket);
+    }
+
+    /// <summary>What listing <paramref name="paths"/> came to; nothing listed, nothing read, when <paramref name="ticket"/>
+    /// was stopped before it began.</summary>
+    private Task<Outcome<LoadedAssembly?>> OpenUnlessStoppedAsync(IReadOnlyList<AssemblyPath> paths, ReloadTicket ticket, CancellationToken ct)
+    {
+        if (ticket.IsStopped)
+        {
+            return Task.FromResult<Outcome<LoadedAssembly?>>(new Outcome<LoadedAssembly?>.Ok(null));
+        }
+
+        return ports.OpenFilesAsync(paths, ticket.Token, ct);
     }
 
     private TabLoads FinishOpeningAsReload(OpenListSession session, Outcome<LoadedAssembly?> outcome, ReloadTicket ticket)

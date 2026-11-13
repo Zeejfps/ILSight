@@ -6,6 +6,7 @@ using ILSight.AppSettingArea;
 using ILSight.ILSightAppArea;
 using ILSight.FrameworkArea;
 using ILSight.ProcessArea;
+using ILSight.AssemblyArea;
 
 namespace ILSight.App.Tests;
 
@@ -17,10 +18,11 @@ internal sealed class AppDriver
     /// window opens (<see cref="AppStart.Start"/>), once the list it starts with is open
     /// (<see cref="AppStateDriver.WaitForTheStart"/>): <paramref name="queuedArguments"/>, when given, wait in
     /// <paramref name="inbox"/> first, as the launcher puts a run's own arguments there. It looks for a newer version
-    /// through <paramref name="updates"/>, else a copy that can't update itself (<see cref="AppStateDriver.NoUpdates"/>).</summary>
+    /// through <paramref name="updates"/>, else a copy that can't update itself (<see cref="AppStateDriver.NoUpdates"/>),
+    /// and a reopened list's files through the port <paramref name="reopening"/> makes from the real adapter, when given.</summary>
     public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, RunArguments? queuedArguments = null, ITextMeasurer? measurer = null, Channel<RunArguments>? inbox = null,
         HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null,
-        AppUpdates.IPorts? updates = null)
+        AppUpdates.IPorts? updates = null, Func<OpenAssembliesAsReloadHandler.IPorts, OpenAssembliesAsReloadHandler.IPorts>? reopening = null)
     {
         var posted = PostedActions.OfThisTest();
         inbox ??= Channel.CreateUnbounded<RunArguments>();
@@ -30,7 +32,7 @@ internal sealed class AppDriver
         }
 
         var built = AppRoot.BuildApp(AppStateDriver.NoProblem(settings), inbox, TestSession.Shared, nuGetRequests, runtimeScan, processes,
-            updates ?? AppStateDriver.NoUpdates());
+            updates ?? AppStateDriver.NoUpdates(), reopening);
         Driver = AppStateDriver.Over(posted, built.Restored);
         App = built.App;
         Frames = UiFrames.Running(App, measurer, width: width, height: height, background: AppState.Work);
