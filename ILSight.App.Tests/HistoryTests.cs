@@ -253,7 +253,6 @@ public sealed class HistoryTests
             && MathF.Abs(t.Inputs.Position.Top - t.Inputs.Position.Height / 2 - (row.Top - row.Height / 2)) < 2f);
     }
 
-    /// <summary>Greeter, then ApiDiffSample's Account, then Farewell shown; then ApiDiffSample closed.</summary>
     private static async Task<AppDriver> ShowAccountThenCloseItsAssemblyAsync()
     {
         var app = Opened();

@@ -6,7 +6,7 @@ namespace ILSight.App.Tests;
 
 public sealed class ExportsPanelTests : IDisposable
 {
-    /// <summary>Tall enough for the panel, docked below the documents, to show every row.</summary>
+    // Tall enough for the panel, docked below the documents, to show every row.
     private const float TallWindow = 1400f;
 
     private readonly TempDir _temp = new();
@@ -183,8 +183,8 @@ public sealed class ExportsPanelTests : IDisposable
         Assert.True(app.Frames.Drew("C# file · Failed"));
     }
 
-    /// <summary>The least any object takes on a 64-bit runtime: a row that allocated anything each frame would
-    /// add at least this to what a frame allocates.</summary>
+    // The least any object takes on a 64-bit runtime: a row that allocated anything each frame would add at least this
+    // to what a frame allocates.
     private const long SmallestAllocation = 24;
 
     /// <summary>Drawing a finished export's row, whichever way it ended, allocates nothing: four more rows,
@@ -212,7 +212,6 @@ public sealed class ExportsPanelTests : IDisposable
         Assert.True(withFive - withOne < 4 * SmallestAllocation, $"{withOne} B/frame with one row, {withFive} with five");
     }
 
-    /// <summary>What a frame of <paramref name="app"/> allocates once warmed up.</summary>
     private static long MeasureFrames(AppDriver app)
     {
         app.Frames.Canvas.Recording = false;

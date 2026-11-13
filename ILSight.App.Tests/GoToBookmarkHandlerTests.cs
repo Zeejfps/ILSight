@@ -5,8 +5,6 @@ namespace ILSight.App.Tests;
 
 public sealed class GoToBookmarkHandlerTests
 {
-    /// <summary>A driver with no screen that shows the fixture Outline with its "return First();" line bookmarked,
-    /// then the fixture Greeter; and the bookmark.</summary>
     private static async Task<(AppStateDriver Driver, Bookmark Bookmark)> BookmarkedAsync()
     {
         var d = AppStateDriver.OpenedWithoutScreen();

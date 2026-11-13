@@ -11,7 +11,6 @@ public sealed class FrameworkPickerTests
         return new FrameworkPicker { Browser = new FrameworkBrowser(runtime) };
     }
 
-    /// <summary>Opens <paramref name="picker"/> and runs the scan it starts, if any, as the edge does.</summary>
     private static Task OpenAsync(FrameworkPicker picker)
     {
         var scan = picker.Open();

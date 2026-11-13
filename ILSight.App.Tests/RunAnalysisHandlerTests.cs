@@ -11,7 +11,6 @@ public sealed class RunAnalysisHandlerTests
         return symbol;
     }
 
-    /// <summary>The first analysis of Greeter, started.</summary>
     private static async Task<AnalysisRun> StartGreeterAnalysisAsync(AppStateDriver d)
     {
         var symbol = await SymbolOfAsync(d, "Greeter");

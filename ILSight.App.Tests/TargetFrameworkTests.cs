@@ -17,8 +17,6 @@ public sealed class TargetFrameworkTests
         return appState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
     }
 
-    /// <summary>Right-clicks the fixture assembly's row and picks <paramref name="item"/> from its
-    /// Target framework submenu, then waits for the reload.</summary>
     private static void PickFramework(AppDriver app, string item)
     {
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, FixturesOf(app.AppState).Name), PointerButton.Right).Frame();
@@ -140,7 +138,6 @@ public sealed class TargetFrameworkTests
         Assert.Empty(app.AppState.Errors.Entries);
     }
 
-    /// <summary>A NuGet package holding the fixture assembly.</summary>
     private static string WritePackage(TempDir temp)
     {
         var path = temp.Write("Fixtures.1.0.0.nupkg", []);

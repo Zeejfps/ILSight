@@ -6,8 +6,6 @@ namespace ILSight.App.Tests;
 
 public sealed class ReopenDiagramHandlerTests
 {
-    /// <summary>A tab of <paramref name="d"/>'s, reopened to wait for a diagram of the fixture Vehicle titled
-    /// "Vehicle diagram", and the read of its cards that reopening it started.</summary>
     private static async Task<SavedDiagramRead> ReopenAsync(AppStateDriver d)
     {
         var vehicle = (await TypeCards.ReadAsync(d.AppState.Assemblies, (await d.FixtureAsync("Vehicle")).Definition, CancellationToken.None)).FoundOrNull;

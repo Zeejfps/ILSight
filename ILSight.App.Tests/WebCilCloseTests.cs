@@ -9,10 +9,9 @@ public sealed class WebCilCloseTests
 {
     private static readonly string LargeAppPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "WebCil", "LargeApp.wasm");
 
-    /// <summary>An app showing Part159 of a copy of the WebCIL fixture over 64 KB, put in <paramref name="folder"/>, so
-    /// the test may replace its file.</summary>
     private static async Task<(AppDriver App, LoadedModule Module, string Path)> ShowingLargeAppAsync(TempDir folder)
     {
+        // A copy, so the test may replace its file.
         var path = folder.Write("LargeApp.wasm", await File.ReadAllBytesAsync(LargeAppPath));
         var app = new AppDriver(height: 500f);
         app.Driver.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(path)], ct));
@@ -67,7 +66,6 @@ public sealed class WebCilCloseTests
         Assert.Empty(app.AppState.Errors.Entries);
     }
 
-    /// <summary>The crumb reading <paramref name="label"/> in the active document's bar, as the last frame drew it.</summary>
     private static Selector Crumb(AppDriver app, string label)
     {
         var crumb = app.Frames.Snapshot().Nodes.Single(n => IsCrumb(n) && n.SelfAndDescendants().Any(c => c.Label == label));

@@ -7,7 +7,6 @@ public sealed class TabMenuTests
 {
     private static readonly string[] Types = ["Greeter", "Farewell", "Outline"];
 
-    /// <summary>The fixture assembly's tab, then a tab for each of <see cref="Types"/> beside it, in one group.</summary>
     private static async Task<(AppDriver App, BrowseNode Assembly)> OpenTabsAsync()
     {
         var app = AppDriver.Opened(width: 1600f);

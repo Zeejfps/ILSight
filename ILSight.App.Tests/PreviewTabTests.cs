@@ -6,10 +6,9 @@ namespace ILSight.App.Tests;
 
 public sealed class PreviewTabTests
 {
-    /// <summary>The app with the fixture types showing in the tree, none of them selected, and the
-    /// assembly shown in the preview tab.</summary>
     private static async Task<AppDriver> RevealedAsync()
     {
+        // Leaves the assembly shown in the preview tab.
         var app = AppDriver.Opened();
         app.Ui.Tree.RevealNode(await app.FixtureAsync("Greeter"));
         app.Ui.Tree.View.ClearSelection();
@@ -23,9 +22,9 @@ public sealed class PreviewTabTests
         app.Settle(2);
     }
 
-    /// <summary>Where the preview tab's title, the one title drawn in italics, reads <paramref name="title"/>.</summary>
     private static UiRect PreviewTitle(AppDriver app, string title)
     {
+        // The preview tab's title is the one title drawn in italics.
         var drawn = app.Frames.Canvas.Texts
             .Where(t => t.Inputs.Text == title)
             .Single(IsItalic);

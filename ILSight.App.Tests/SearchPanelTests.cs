@@ -42,8 +42,8 @@ public sealed class SearchPanelTests : IDisposable
         Assert.Empty(app.AppState.Errors.Entries);
     }
 
-    /// <summary><paramref name="image"/> with the name of its first type after <c>&lt;Module&gt;</c> pointing past the
-    /// string heap: the file opens, and reading that name throws.</summary>
+    // The name of the first type after <Module> points past the string heap: the file opens, and reading that name
+    // throws.
     private static byte[] WithUnreadableTypeName(byte[] image)
     {
         using var pe = new PEReader(new MemoryStream(image));

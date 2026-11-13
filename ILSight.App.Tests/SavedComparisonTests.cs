@@ -20,8 +20,6 @@ public sealed class SavedComparisonTests : IDisposable
         _temp.Dispose();
     }
 
-    /// <summary>An app over the temporary settings that opened both versions of the sample library and
-    /// compared them, the older on the left.</summary>
     private AppDriver Compared()
     {
         var app = new AppDriver(settings: _temp.Settings());

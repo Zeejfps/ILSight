@@ -8,17 +8,14 @@ public sealed class WebCilGridTests
 {
     private static readonly string WebCilSamplePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "WebCil", "SampleApp.wasm");
 
-    /// <summary>A WebCIL fixture over 64 KB, whose string heap (357 rows) and MethodDef table (800 rows) are longer than
-    /// a grid's first read.</summary>
+    // Over 64 KB, its string heap (357 rows) and MethodDef table (800 rows) longer than a grid's first read.
     private static readonly string WebCilLargePath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "WebCil", "LargeApp.wasm");
 
-    /// <summary>An app that has opened the WebCIL sample, settled.</summary>
     private static AppDriver OpenWebCil()
     {
         return OpenWebCil(new AppDriver(height: 500f), WebCilSamplePath);
     }
 
-    /// <summary><paramref name="app"/> once it has opened the WebCIL file at <paramref name="path"/>, settled.</summary>
     private static AppDriver OpenWebCil(AppDriver app, string path)
     {
         app.Driver.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(path)], ct));

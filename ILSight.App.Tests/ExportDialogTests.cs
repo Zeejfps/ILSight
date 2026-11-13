@@ -11,8 +11,8 @@ public sealed class ExportDialogTests : IDisposable
 {
     private static readonly string SecondPath = typeof(KeyboardKey).Assembly.Location;
 
-    /// <summary>A small assembly, which exports in a moment: the fixture assembly is this test assembly, whose project
-    /// and PDB take seconds each.</summary>
+    // A small assembly, which exports in a moment: the fixture assembly is this test assembly, whose project and PDB
+    // take seconds each.
     private static readonly string SampleAppPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "SampleApp", "SampleApp.dll");
 
     private readonly TempDir _temp = new();
@@ -36,7 +36,6 @@ public sealed class ExportDialogTests : IDisposable
         return d;
     }
 
-    /// <summary>A driver that has opened only the sample app, so what it exports is written in a moment.</summary>
     private static AppStateDriver OpenedSample()
     {
         var d = new AppStateDriver();
@@ -51,8 +50,6 @@ public sealed class ExportDialogTests : IDisposable
         return Assert.IsType<LoadedModule>((await d.NodeAsync()).Assembly);
     }
 
-    /// <summary>Ticks every assembly of <paramref name="setup"/> when <paramref name="all"/>, else none, as ticking each
-    /// box does.</summary>
     private static void TickAll(ExportSetup setup, bool all)
     {
         foreach (var choice in setup.Assemblies.Choices)
@@ -152,12 +149,11 @@ public sealed class ExportDialogTests : IDisposable
         Assert.Null(Exports.FindBlocker(setup, Looked(NothingAmiss)));
     }
 
-    /// <summary>A folder path no test writes to: the decision never looks at the disk.</summary>
+    // No test writes to it: the decision never looks at the disk.
     private static readonly string FullPath = Path.Combine(Path.GetTempPath(), "ILSight-never-written");
 
     private static readonly ExportFileFacts NothingAmiss = new() { FolderHoldsFiles = false, IsKeyFileMissing = false };
 
-    /// <summary>A look at the disk made, which said <paramref name="facts"/>.</summary>
     private static ExportFileLook Looked(ExportFileFacts facts)
     {
         return new ExportFileLook.Checked { Facts = facts };
@@ -324,7 +320,6 @@ public sealed class ExportDialogTests : IDisposable
         return d;
     }
 
-    /// <summary>Flips <paramref name="choice"/>'s tick as its checkbox does, then follows the click.</summary>
     private static void Click(AssemblyPicker picker, List<ExportChoice> shown, ExportChoice choice, bool shift)
     {
         choice.Included = !choice.Included;
@@ -482,10 +477,9 @@ public sealed class ExportDialogTests : IDisposable
         return app;
     }
 
-    /// <summary>Clicks the assembly cell of <paramref name="assembly"/>'s row: the first of the texts
-    /// on the row of the last one drawn, which is its project name.</summary>
     private static void ClickRowOf(AppDriver app, LoadedAssembly assembly, KeyModifiers modifiers = KeyModifiers.None)
     {
+        // The last text drawn with the assembly's name is its project name; the assembly cell is the first on its row.
         var projectName = app.LastTextRect(assembly.Name);
         var cell = app.Frames.TextRects()
             .Where(t => t.Text == assembly.Name && t.Rect.Y == projectName.Y)

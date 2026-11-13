@@ -24,7 +24,6 @@ public sealed class TooltipLayoutsTests
 
     private static readonly Strings English = Strings.For(Locale.En);
 
-    /// <summary>A line of code made of <paramref name="parts"/>, each a span of its kind.</summary>
     private static DocumentLine Line(params (string Text, SpanKind Kind)[] parts)
     {
         var spans = ImmutableArray.CreateBuilder<DocumentSpan>();
@@ -51,14 +50,13 @@ public sealed class TooltipLayoutsTests
         };
     }
 
-    /// <summary><c>string Compose(string greeting, string name)</c>, its parameters starting at
-    /// each <c>string</c> inside the brackets.</summary>
     private static CodeSignature Compose()
     {
         var line = Line(
             ("string", SpanKind.Keyword), (" ", SpanKind.Plain), ("Compose", SpanKind.Method), ("(", SpanKind.Plain),
             ("string", SpanKind.Keyword), (" ", SpanKind.Plain), ("greeting", SpanKind.Parameter), (", ", SpanKind.Plain),
             ("string", SpanKind.Keyword), (" ", SpanKind.Plain), ("name", SpanKind.Parameter), (")", SpanKind.Plain));
+        // The parameters start at each string inside the brackets.
         return new CodeSignature { Line = line, ParameterStarts = [15, 32], Constraints = [] };
     }
 

@@ -35,8 +35,6 @@ public sealed class UserThemeTests : IDisposable
         return settings;
     }
 
-    /// <summary>Customizes the theme shown as the display options do, naming it in English: switches to the new
-    /// theme and returns its file, or null when none was written.</summary>
     private static string? CreateCustomTheme(AppState appState)
     {
         var themes = appState.Themes;

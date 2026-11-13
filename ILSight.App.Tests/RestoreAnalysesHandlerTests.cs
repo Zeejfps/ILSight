@@ -6,7 +6,6 @@ namespace ILSight.App.Tests;
 
 public sealed class RestoreAnalysesHandlerTests
 {
-    /// <summary>Two roots restored from saved analyses, of Greeter and Farewell, waiting to be found.</summary>
     private static async Task<AnalysesRestore> WaitForGreeterAndFarewellAsync(AppStateDriver d)
     {
         var analyzer = d.AppState.Analyzer;

@@ -16,8 +16,6 @@ public sealed class UpdateTests : IDisposable
         _temp.Dispose();
     }
 
-    /// <summary>An app that has opened the fixture assembly, looking for a newer version through <paramref name="feed"/>,
-    /// as it starts only when <paramref name="checkAtStartup"/>.</summary>
     private static AppDriver Opened(FakeAppUpdatesPorts feed, bool checkAtStartup = false, ITextMeasurer? measurer = null)
     {
         var app = new AppDriver(width: 1600f, settings: new AppSettings { CheckForUpdates = checkAtStartup }, measurer: measurer, updates: feed);
@@ -154,7 +152,6 @@ public sealed class UpdateTests : IDisposable
         return locales;
     }
 
-    /// <summary>Opens the dialog in <paramref name="locale"/> and lets it settle; where Close is then.</summary>
     private static float OpenAboutIn(AppDriver app, Locale locale)
     {
         app.Frames.WindowIcon = new WindowIcon([new WindowIconImage(16, 16, new byte[16 * 16 * 4])]);

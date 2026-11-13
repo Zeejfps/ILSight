@@ -12,8 +12,6 @@ public sealed class NuGetBrowserTests
     private const string FeedUrl = "https://feed.test/v3/index.json";
     private const string IconUrl = "https://feed.test/fixtures/icon";
 
-    /// <summary>Answers each port member with what the test set; keeps what was asked, the tokens it was asked
-    /// with, and the problems reported.</summary>
     private sealed class FakePorts : ReadNuGetSetupHandler.IPorts, SearchNuGetFeedHandler.IPorts, DownloadNuGetPackageHandler.IPorts,
         FetchNuGetIconHandler.IPorts, ReadNuGetDetailsHandler.IPorts
     {
@@ -27,7 +25,6 @@ public sealed class NuGetBrowserTests
 
         public Outcome<ResourceImage> Icon { get; init; } = new Outcome<ResourceImage>.Failed(new IOException("Downloading an icon was not expected."));
 
-        /// <summary>Answers an icon by its URL, in place of <see cref="Icon"/>, when set.</summary>
         public Func<WebUrl, Task<Outcome<ResourceImage>>>? IconAt { get; init; }
 
         public Outcome<string> Package { get; init; } = new Outcome<string>.Failed(new IOException("Downloading a package was not expected."));
@@ -157,8 +154,6 @@ public sealed class NuGetBrowserTests
         return Task.FromResult<Outcome<FeedPage>>(new Outcome<FeedPage>.Ok(page));
     }
 
-    /// <summary>A picker whose setup is read, its feed filled in, opened, and what it found told so, as each frame
-    /// does.</summary>
     private static NuGetPicker CreatePicker()
     {
         var picker = new NuGetPicker { Browser = new NuGetBrowser() };
@@ -168,7 +163,6 @@ public sealed class NuGetBrowserTests
         return picker;
     }
 
-    /// <summary>The search the picker asks for now, which must be one.</summary>
     private static FeedSearch AskSearch(NuGetPicker picker, double now)
     {
         var search = picker.Update(now);
@@ -176,25 +170,20 @@ public sealed class NuGetBrowserTests
         return search;
     }
 
-    /// <summary>Starts the search the picker asks for at <paramref name="now"/> and runs it over
-    /// <paramref name="ports"/> as the edge does, on the token of the work it was started as, which a newer search or
-    /// closing the dialog cancels.</summary>
     private static Task SearchAsync(FakePorts ports, NuGetPicker picker, double now)
     {
         var search = picker.Browser.StartSearch(AskSearch(picker, now));
+        // As the edge does, on the token of the work it was started as, which a newer search or closing the dialog
+        // cancels.
         return new SearchNuGetFeedHandler(ports).HandleAsync(picker.Browser, search, search.Work.Token);
     }
 
-    /// <summary>Closes the dialog as its close box does, then tells what it found, as the frame does; returns the
-    /// images it hands back to free.</summary>
     private static IReadOnlyList<string> Close(NuGetPicker picker)
     {
         picker.IsOpen = false;
         return picker.Browser.StopUnlessOpen(picker.IsOpen);
     }
 
-    /// <summary>Starts what the dialog asked to fetch as the frame edge does, a workflow for each, and returns the
-    /// errors reported once they all ended.</summary>
     private static async Task<ErrorLog> RunFetchesAsync(FakePorts ports, NuGetBrowser browser)
     {
         var work = new BackgroundWork();

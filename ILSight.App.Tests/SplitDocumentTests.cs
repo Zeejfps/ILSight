@@ -43,7 +43,6 @@ public sealed class SplitDocumentTests
         Assert.Equal(0.6f, beside.Ratio, 0.01f);
     }
 
-    /// <summary>The split one of whose sides is the group holding only <paramref name="panel"/>.</summary>
     private static DockSplit? FindSplitHolding(DockNode node, string panel)
     {
         if (node is not DockSplit split)

@@ -36,8 +36,6 @@ public sealed class UserIconThemeTests : IDisposable
         return settings;
     }
 
-    /// <summary>Customizes the icon theme shown as the display options do, naming it in English: switches to the
-    /// new icon theme and returns its file, or null when none was written.</summary>
     private static string? CreateCustomIconTheme(AppState appState)
     {
         var themes = appState.IconThemes;

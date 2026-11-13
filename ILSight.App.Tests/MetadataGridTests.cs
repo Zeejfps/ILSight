@@ -45,14 +45,12 @@ public sealed class MetadataGridTests
         return (app, tab, grid, row);
     }
 
-    /// <summary>Where <paramref name="text"/> was drawn on the same line as <paramref name="besides"/>.</summary>
     private static UiRect TextBeside(AppDriver app, string text, string besides)
     {
         var line = app.TextRect(besides);
         return app.Frames.TextRects().First(x => x.Text == text && Math.Abs(x.Rect.Y - line.Y) < 1f).Rect;
     }
 
-    /// <summary>Edits the cell at <paramref name="y"/> and drags across its text.</summary>
     private static void Drag(AppDriver app, float fromX, float toX, float y)
     {
         app.Frames.Wait(1).Click(fromX, y).Key(KeyboardKey.F2).Frame();
@@ -366,7 +364,6 @@ public sealed class MetadataGridTests
         app.TextRect("BeforeFieldInit (100000)");
     }
 
-    /// <summary>The funnel drawn in the header of <paramref name="column"/>.</summary>
     private static UiRect FunnelOf(AppDriver app, string column)
     {
         var header = app.TextRect(column);
@@ -514,7 +511,6 @@ public sealed class MetadataGridTests
         Assert.True(app.TextRect("language").Y > TextBeside(app, MetadataGrids.GetText(grid, options, kind), MetadataGrids.GetText(grid, options, kind)).Y);
     }
 
-    /// <summary>Where each of <paramref name="rows"/> stands, by its token cell.</summary>
     private static float[] FindTops(AppDriver app, MetadataGrid grid, params int[] rows)
     {
         var token = grid.Column("Token");

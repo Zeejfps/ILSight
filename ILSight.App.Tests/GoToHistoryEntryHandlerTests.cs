@@ -4,7 +4,7 @@ namespace ILSight.App.Tests;
 
 public sealed class GoToHistoryEntryHandlerTests
 {
-    /// <summary>A driver that showed Greeter, then Farewell in its place, so that going back to Greeter looks it up.</summary>
+    // Farewell shows in Greeter's place, so that going back to Greeter looks it up.
     private static async Task<AppStateDriver> ShowGreeterThenFarewellAsync()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
@@ -18,11 +18,10 @@ public sealed class GoToHistoryEntryHandlerTests
         return Assert.IsType<HistoryEntry.Node>(appState.Navigation.HistoryEntries[index]).Place;
     }
 
-    /// <summary>Goes to the history entry at <paramref name="index"/>, as the toolbar does in the frame it is picked in,
-    /// and takes the lookup of its place that this began, since the tab no longer shows it.</summary>
     private static HistoryMove.LookUp GoTo(AppState appState, int index)
     {
         var move = appState.Navigation.GoToEntry(index, appState.Assemblies, appState.FinishedExports, appState.Decompiler.Setup);
+        // The tab no longer shows the entry's place, so going to it begins a lookup.
         return Assert.IsType<HistoryMove.LookUp>(move);
     }
 

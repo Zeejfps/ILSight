@@ -41,7 +41,6 @@ public sealed class SavedPlacesTests : IDisposable
         return (d, problem);
     }
 
-    /// <summary>Settings listing the fixtures, with one tab whose place the file holds as <paramref name="place"/>.</summary>
     private static string WithTab(string place)
     {
         return $$"""
@@ -52,7 +51,6 @@ public sealed class SavedPlacesTests : IDisposable
         """;
     }
 
-    /// <summary>Settings listing the fixtures, with one bookmark whose place the file holds as <paramref name="place"/>.</summary>
     private static string WithBookmark(string place)
     {
         return $$"""
@@ -63,7 +61,6 @@ public sealed class SavedPlacesTests : IDisposable
         """;
     }
 
-    /// <summary>The settings file as <paramref name="d"/> saves it now.</summary>
     private JsonElement Saved(AppStateDriver d)
     {
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));

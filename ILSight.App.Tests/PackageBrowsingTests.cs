@@ -163,7 +163,6 @@ public sealed class PackageBrowsingTests
         return node.Icon == NodeIcon.Assembly;
     }
 
-    /// <summary>A NuGet package of the fixture assembly, beside a text file.</summary>
     private static string WritePackage(TempDir temp)
     {
         var path = temp.Write(PackageName, []);

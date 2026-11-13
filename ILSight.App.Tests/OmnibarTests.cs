@@ -10,7 +10,6 @@ public sealed class OmnibarTests
 {
     private const string FixturesAssembly = "ILSight.App.Tests";
 
-    /// <summary>The app showing the fixture type <paramref name="type"/> in its active tab.</summary>
     private static async Task<AppDriver> ShowingAsync(string type)
     {
         var app = AppDriver.Opened();
@@ -27,7 +26,6 @@ public sealed class OmnibarTests
         return DocumentPanels.GetView(app.Ui.Documents, tab).Breadcrumb.Crumbs;
     }
 
-    /// <summary>The crumb reading <paramref name="label"/>, in whichever document's bar shows it.</summary>
     private static SemanticNode GetCrumb(AppDriver app, string label)
     {
         return app.Frames.Snapshot().Nodes.Single(n => IsPart(n, "crumb") && n.SelfAndDescendants().Any(c => c.Label == label));
@@ -44,7 +42,6 @@ public sealed class OmnibarTests
         return path.Segments[^1] is TestSegment.Named named && named.Name == name;
     }
 
-    /// <summary>Clicks the crumb reading <paramref name="label"/>.</summary>
     private static UiFrames ClickCrumb(AppDriver app, string label)
     {
         var path = GetCrumb(app, label).Path;
@@ -52,17 +49,15 @@ public sealed class OmnibarTests
         return app.Frames.ClickOn(new Selector.ByPath(path));
     }
 
-    /// <summary>Clicks the arrow after the crumb reading <paramref name="label"/>, which shares its depth.</summary>
     private static void ClickArrowAfter(AppDriver app, string label)
     {
         var path = GetCrumb(app, label).Path;
         Assert.NotNull(path);
         var crumb = path.Segments;
+        // The arrow after a crumb shares its depth.
         app.Frames.ClickOn(Targets.GetPath([.. crumb.Take(crumb.Count - 1), new TestSegment.Named("children")])).Frame(2);
     }
 
-    /// <summary>Starts a search in the active bar with Ctrl+L and types <paramref name="query"/>, waiting
-    /// until more than <paramref name="moreThan"/> matches are suggested.</summary>
     private static void SearchFor(AppDriver app, string query, int moreThan = 0)
     {
         var omnibar = app.Ui.Omnibar;
@@ -265,7 +260,6 @@ public sealed class OmnibarTests
     private const string Panel = "document-1";
     private const string OtherPanel = "document-2";
 
-    /// <summary>The crumbs from the fixture assembly down to the fixture type <paramref name="type"/>, as a tab showing it has them.</summary>
     private static async Task<IReadOnlyList<Crumb>> CrumbsToAsync(AppStateDriver d, string type)
     {
         var breadcrumb = new Breadcrumb();

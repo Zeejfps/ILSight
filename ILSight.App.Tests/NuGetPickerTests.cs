@@ -93,8 +93,6 @@ public sealed class NuGetPickerTests : IDisposable
         return picker;
     }
 
-    /// <summary>What the frame does before the dialog draws: starts the search the picker asks for at
-    /// <paramref name="now"/>, and returns the seconds left before what is typed settles, or 0.</summary>
     private double Update(NuGetPicker picker, double now)
     {
         using var turn = PostedActions.OfThisTest().Install();
@@ -113,14 +111,11 @@ public sealed class NuGetPickerTests : IDisposable
         return picker.Browser.CalculateSecondsToSettle(now);
     }
 
-    /// <summary>Starts <paramref name="workflow"/> as the edge does, leaving it to run as the test pumps.</summary>
     private void Start(Task workflow)
     {
         _started.Add(workflow);
     }
 
-    /// <summary>Starts downloading the version picked, as Open does, and its download as the edge does, on the token
-    /// of the work it was started as, leaving it to run as the test pumps.</summary>
     private void StartDownload(NuGetPicker picker)
     {
         using var turn = PostedActions.OfThisTest().Install();
@@ -129,7 +124,6 @@ public sealed class NuGetPickerTests : IDisposable
         Start(CreateDownloadPackage().HandleAsync(picker.Browser, download, download.Work.Token));
     }
 
-    /// <summary>Closes the dialog as its close box does, then tells what it found, as the frame does.</summary>
     private static void Close(NuGetPicker picker)
     {
         picker.IsOpen = false;
@@ -359,7 +353,6 @@ public sealed class NuGetPickerTests : IDisposable
         Assert.Equal("MIT", Assert.IsType<VersionDetails.Read>(retried).Details.License);
     }
 
-    /// <summary>The details of version 2.0.0 of the package selected, once they are no longer loading.</summary>
     private VersionDetails ReadDetails(NuGetPicker picker, PostedActions posted)
     {
         VersionDetails? DetailsNow()

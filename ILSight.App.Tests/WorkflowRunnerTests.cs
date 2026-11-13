@@ -306,7 +306,6 @@ public sealed class WorkflowRunnerTests
         Assert.Empty(driver.AppState.Errors.Entries);
     }
 
-    /// <summary>What a workflow started through the commands did, and the token it was given.</summary>
     private sealed class SeenWorkflow
     {
         public List<string> Steps { get; } = [];

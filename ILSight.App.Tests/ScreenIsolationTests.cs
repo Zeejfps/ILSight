@@ -61,8 +61,6 @@ public sealed class ScreenIsolationTests : IDisposable
         Assert.Null(reached);
     }
 
-    /// <summary>The path from <paramref name="appState"/> to the first object of
-    /// <paramref name="screen"/> it reaches, or null.</summary>
     private static string? FindScreenObject(AppState appState, UiState screen)
     {
         var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);

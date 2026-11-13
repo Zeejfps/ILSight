@@ -19,7 +19,6 @@ public sealed class LayoutTransitionTests
 
     private static readonly SharedRead<VehicleTypes> s_vehicles = new(ReadVehiclesAsync);
 
-    /// <summary>The fixture's types the layouts arrange, and the link between them.</summary>
     private sealed class VehicleTypes
     {
         public required CodeReference.Entity Car { get; init; }

@@ -51,7 +51,6 @@ public sealed class SavedDocumentsTests : IDisposable
         return app.AppState.Navigation.OpenTabs.Single(t => t.Grid is not null);
     }
 
-    /// <summary>An app showing the TypeDef table with Greeter's row selected, saved on exit; the row.</summary>
     private async Task<int> SaveGridOnGreeterAsync()
     {
         var app = new AppDriver(height: 360f, settings: _temp.Settings());
@@ -86,7 +85,6 @@ public sealed class SavedDocumentsTests : IDisposable
         return CodeOf(app, tab).Position;
     }
 
-    /// <summary>Docks <paramref name="tab"/>'s panel in a group of its own right of <paramref name="beside"/>'s.</summary>
     private static void MoveRightOf(AppDriver app, DocumentTab tab, DocumentTab beside)
     {
         var layout = app.Ui.Layout;
@@ -96,7 +94,6 @@ public sealed class SavedDocumentsTests : IDisposable
         app.Run(2);
     }
 
-    /// <summary>Runs frames until the diagram of <paramref name="tab"/> is laid out and its cards stopped moving.</summary>
     private static void SettleDiagram(AppDriver app, DocumentTab tab)
     {
         app.Frames.WaitUntil(() => IsLaidOut(app, tab), AppStateDriver.Patience);
@@ -121,7 +118,6 @@ public sealed class SavedDocumentsTests : IDisposable
         return !view.Transition.IsMoving;
     }
 
-    /// <summary>Each open tab's title with the panel it is docked as, in the order the tabs opened.</summary>
     private static List<(string? Title, string Panel)> ListTabPanels(AppDriver app)
     {
         return app.AppState.Navigation
@@ -129,7 +125,6 @@ public sealed class SavedDocumentsTests : IDisposable
             .ToList();
     }
 
-    /// <summary>Each group of the layout as its panels and the one in front.</summary>
     private static List<string> ListGroups(AppDriver app)
     {
         return app.Ui.Layout.AllGroups()
@@ -166,7 +161,6 @@ public sealed class SavedDocumentsTests : IDisposable
         };
     }
 
-    /// <summary>Where the fixture type <paramref name="name"/> is, as this build saves it.</summary>
     private static NodePath FixturePlace(string name)
     {
         return NodePath.From(TestPaths.PathOf(AppStateDriver.FixturePath),

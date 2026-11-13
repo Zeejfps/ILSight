@@ -288,8 +288,6 @@ public sealed class RunArgumentsTests
         return settings;
     }
 
-    /// <summary>Settings whose open list, Default, has the fixture assembly, beside a list named Other with this app's
-    /// own.</summary>
     private static AppSettings DefaultAndOther(TempDir temp)
     {
         return SettingsWith(temp,
@@ -297,20 +295,17 @@ public sealed class RunArgumentsTests
             new AssemblyListRecord { Name = Other, Assemblies = [TestPaths.PathOf(OtherAssembly)] });
     }
 
-    /// <summary>Starts over <paramref name="settings"/> with the command line of <paramref name="args"/> the way the
-    /// launcher does: its arguments in the app's inbox before the app takes them, ahead of its first frame; then waits
-    /// for the files they name to open and the app to settle.</summary>
     private static AppDriver Start(AppSettings settings, params string[] args)
     {
         var arguments = CommandLines.Parse(args).Arguments;
+        // The way the launcher does: the arguments in the app's inbox before the app takes them, ahead of its first
+        // frame.
         var app = new AppDriver(settings: settings, queuedArguments: arguments);
         app.Frames.WaitUntil(() => AreListed(app.AppState, arguments.Files.Paths), AppStateDriver.Patience);
         app.Settle();
         return app;
     }
 
-    /// <summary>What a user sees of <paramref name="app"/>'s lists: the open one, its assemblies, its analyses, the
-    /// errors and the tabs' titles.</summary>
     private static string Describe(AppDriver app)
     {
         var appState = app.AppState;
@@ -321,8 +316,6 @@ public sealed class RunArgumentsTests
         return $"{appState.Lists.Active}: [{assemblies}] analyses [{analyses}] errors [{errors}] tabs [{tabs}]";
     }
 
-    /// <summary>Every list as <paramref name="app"/> saves it into <paramref name="temp"/>'s settings: its name, files
-    /// and analyses.</summary>
     private static List<string> DescribeSaved(AppDriver app, TempDir temp)
     {
         Assert.IsType<SettingsWriteResult.Written>(app.AppState.SettingsSaving.Save(app.AppState));

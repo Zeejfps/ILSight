@@ -21,8 +21,6 @@ public sealed class NestedNamespaceTests
         app.Run();
     }
 
-    /// <summary>Whether the tree shows <paramref name="node"/> down the nested namespaces: each one
-    /// expanded and listing the next, and the fixtures' namespace listing the node.</summary>
     private static async Task<bool> IsShownNestedAsync(AppDriver app, BrowseNode node)
     {
         var tree = app.Ui.Tree;
@@ -51,10 +49,9 @@ public sealed class NestedNamespaceTests
         return (await ShownChildrenAsync(app, parent)).Contains(node);
     }
 
-    /// <summary>The children the tree shows under <paramref name="node"/>, built first rather than
-    /// shown loading.</summary>
     private static async Task<IReadOnlyList<BrowseNode>> ShownChildrenAsync(AppDriver app, BrowseNode node)
     {
+        // Built first, so the tree shows them rather than shows them loading.
         await node.EnsureChildrenAsync();
         return app.Ui.Tree.GetChildren(node).Nodes;
     }

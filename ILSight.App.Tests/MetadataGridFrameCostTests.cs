@@ -80,8 +80,8 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
         MetadataGridWidget.RenderMetadataGrid(ui, "grid", state, flags);
     }
 
-    /// <summary>Scrolls down and back up the table in sweeps, so the measured frames show rows the
-    /// warm-up already showed once and their cells' text is already worked out.</summary>
+    // Scrolls down and back up in sweeps, so the measured frames show rows the warm-up already showed once and their
+    // cells' text is already worked out.
     private static void Frame(UiFrames frames, bool scrolling, int frame)
     {
         if (scrolling)

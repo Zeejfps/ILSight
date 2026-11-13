@@ -5,8 +5,6 @@ namespace ILSight.App.Tests;
 
 public sealed class ShowReopenedNodesHandlerTests
 {
-    /// <summary>A tab of <paramref name="d"/>'s reopened to wait for the fixture Greeter, as the saved documents
-    /// keep it.</summary>
     private static async Task<WaitingNode> WaitForGreeterAsync(AppStateDriver d)
     {
         var place = (await d.FixtureAsync("Greeter")).Path;

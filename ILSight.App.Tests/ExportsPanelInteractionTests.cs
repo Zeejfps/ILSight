@@ -11,7 +11,6 @@ public sealed class ExportsPanelInteractionTests : IDisposable
 {
     private const float TallWindow = 1400f;
 
-    /// <summary>How far below a row's name its lines reach.</summary>
     private const float RowReach = 100f;
 
     private readonly TempDir _temp = new();
@@ -26,7 +25,6 @@ public sealed class ExportsPanelInteractionTests : IDisposable
         _temp.Dispose();
     }
 
-    /// <summary>An app with two finished saves, Greeter then Farewell, in folders of their own.</summary>
     private async Task<AppDriver> TwoFinishedAsync(float width = 1000f)
     {
         var app = AppDriver.Opened(width: width, height: TallWindow);

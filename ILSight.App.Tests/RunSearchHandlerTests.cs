@@ -10,11 +10,10 @@ public sealed class RunSearchHandlerTests
 
     private static readonly AssemblyList NoAssemblies = new() { Runtime = TestRuntime.Installed };
 
-    /// <summary>A run of <paramref name="results"/> asked for, for <paramref name="query"/> typed at
-    /// <paramref name="typedAt"/> and settled a second later, and taken, as the edge takes it to start it.</summary>
     private static SearchRun AskRun(SearchResults results, string query = "Greet", double typedAt = 0)
     {
         results.Update(query, SearchKinds.TypesAndMembers, NoAssemblies, typedAt, shown: true);
+        // A second later, what was typed has settled.
         results.Update(query, SearchKinds.TypesAndMembers, NoAssemblies, typedAt + 1, shown: true);
         return Assert.Single(results.TakeAskedRuns());
     }

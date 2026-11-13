@@ -30,11 +30,9 @@ public sealed class ProcessPickerTests
     };
     private static readonly RunningModule Generated = new RunningModule.InMemory { Name = "Generated" };
 
-    /// <summary>Answers each port member with what the test set; keeps the tokens it was asked with, and the
-    /// problems reported.</summary>
     private sealed class FakePorts : ProcessBrowser.IPorts
     {
-        /// <summary>The processes the next scans find; a test changes it as processes come and go.</summary>
+        // A test changes it as processes come and go.
         public List<RunningProcess> Running { get; init; } = [];
 
         public Func<CancellationToken, Task<Outcome<IReadOnlyList<RunningProcess>>>>? Scan { get; init; }
@@ -101,14 +99,12 @@ public sealed class ProcessPickerTests
         };
     }
 
-    /// <summary>Runs <paramref name="scan"/> as the edge does, on the token of the work it was started as, which the
-    /// edge links to the app's shutdown.</summary>
+    // As the edge does, on the token of the work it was started as, which the edge links to the app's shutdown.
     private static Task ScanAsync(ProcessBrowser browser, WorkTicket scan)
     {
         return browser.ScanAsync(scan, scan.Token);
     }
 
-    /// <summary>A picker over <paramref name="ports"/>, opened, its processes found and filtered as the frame does.</summary>
     private static async Task<ProcessPicker> OpenAsync(FakePorts ports)
     {
         var picker = new ProcessPicker { Browser = new ProcessBrowser(ports) };
@@ -117,15 +113,12 @@ public sealed class ProcessPickerTests
         return picker;
     }
 
-    /// <summary>Takes in the filter typed and follows the process selected, as the dialog does in the frame they are
-    /// input; the listing of the process's modules it started, or null.</summary>
     private static ModuleListingTicket? Follow(ProcessPicker picker)
     {
         picker.Browser.TakeFilter(picker.Filter);
         return picker.Browser.FollowSelection();
     }
 
-    /// <summary>Closes the dialog as its close box does, then tells what it found, as each frame does.</summary>
     private static void Close(ProcessPicker picker)
     {
         picker.IsOpen = false;
@@ -139,8 +132,6 @@ public sealed class ProcessPickerTests
         return picker.Browser.Filtered.ToList();
     }
 
-    /// <summary>Selects <paramref name="process"/> as the list does; the listing of the modules the dialog then
-    /// starts, which must be its.</summary>
     private static ModuleListingTicket Select(ProcessPicker picker, RunningProcess process)
     {
         var filtered = picker.Browser.Filtered;
@@ -151,8 +142,6 @@ public sealed class ProcessPickerTests
         return listing;
     }
 
-    /// <summary>Selects <paramref name="process"/> and lists its modules, as the frame does, on the token of the work
-    /// the listing was started as.</summary>
     private static Task SelectAndListAsync(ProcessPicker picker, RunningProcess process)
     {
         var listing = Select(picker, process);

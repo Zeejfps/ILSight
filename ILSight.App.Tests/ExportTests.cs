@@ -22,8 +22,7 @@ public sealed class ExportTests : IDisposable
         _temp.Dispose();
     }
 
-    /// <summary>A driver that has opened the small sample app, for what works through a whole assembly,
-    /// which would take long on the fixtures, the whole test assembly.</summary>
+    // For what works through a whole assembly, which would take long on the fixtures, the whole test assembly.
     private static AppStateDriver OpenedSample()
     {
         var d = new AppStateDriver();

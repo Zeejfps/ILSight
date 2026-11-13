@@ -6,7 +6,6 @@ namespace ILSight.App.Tests;
 
 public sealed class PresentationTests
 {
-    /// <summary>The built-in light theme, as the app finds it among the themes it lists.</summary>
     private static readonly AppTheme Light = Theming.CreateCatalog(BuiltInThemes.Files).GetTheme(Theming.LightId);
 
     [Fact]

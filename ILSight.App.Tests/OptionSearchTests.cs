@@ -11,18 +11,17 @@ public sealed class OptionSearchTests
 {
     private static readonly Strings En = Strings.For(Locale.En);
 
-    /// <summary>Whether a line of the last frame reads <paramref name="text"/>: the texts drawn at one height
-    /// joined from left to right, as a marked label is drawn in pieces.</summary>
     private static bool WasLineDrawn(AppDriver app, string text)
     {
+        // A marked label is drawn in pieces, so a line is the texts drawn at one height joined from left to right.
         return app.Frames.TextRects()
             .GroupBy(t => MathF.Round(t.Rect.Y))
             .Any(line => string.Concat(line.OrderBy(t => t.Rect.X).Select(t => t.Text)).Contains(text, StringComparison.Ordinal));
     }
 
-    /// <summary>The rects of the last frame filled with the code's find-match color, as marks are.</summary>
     private static List<UiRect> Marks(AppDriver app)
     {
+        // Marks are filled with the code's find-match color.
         return app.Frames.Canvas.Rects.Where(r => r.Inputs.Style.BackgroundColor == BuiltInThemes.Dark.Code.FindMatch)
             .Select(r => app.Frames.ToUi(r.Inputs.Position)).ToList();
     }

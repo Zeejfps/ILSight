@@ -134,10 +134,9 @@ public sealed class SettingsFormatTests : IDisposable
         AssertSameJson(Fixture(BookmarksFixture), File.ReadAllText(path));
     }
 
-    /// <summary>The fixture file <paramref name="name"/>, its paths as this OS writes them: the files hold
-    /// them as Windows does, and on any other OS those are no absolute paths.</summary>
     private static string Fixture(string name)
     {
+        // The files hold their paths as Windows writes them, and on any other OS those are no absolute paths.
         return File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Settings", name))
             .Replace(FixtureFolderInFile, JsonEncodedText.Encode(TestPaths.Rooted("Fixture/")).Value);
     }

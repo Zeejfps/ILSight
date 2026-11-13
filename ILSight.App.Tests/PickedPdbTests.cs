@@ -75,7 +75,6 @@ public sealed class PickedPdbTests
         Assert.Null(Assert.Single(temp.Settings().AssemblyLists).Pdbs);
     }
 
-    /// <summary>The fixture assembly copied where no PDB is beside it.</summary>
     private static string CopyFixtureWithoutPdb(TempDir temp)
     {
         return temp.Copy(AppStateDriver.FixturePath, Path.GetFileName(AppStateDriver.FixturePath));
