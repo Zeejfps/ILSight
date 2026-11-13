@@ -66,10 +66,10 @@ public sealed class DiagramGrowingTests
         var ports = new FakeDiagramGrowingPorts();
         Assert.True(read.Diagram.IsBusy);
 
-        var adding = new DiagramGrowing(ports).AddWithNeighboursAsync(viewCommands, read, CancellationToken.None);
+        var adding = d.BeginAsync(() => new DiagramGrowing(ports).AddWithNeighboursAsync(viewCommands, read, CancellationToken.None));
         var request = Assert.Single(ports.Requests);
         request.Answer.SetResult(new Outcome<List<TypeCard>>.Ok([await CardOfAsync(d, "Vehicle"), await CardOfAsync(d, "Car")]));
-        await adding;
+        await d.EndAsync(adding);
 
         Assert.Equal(nameof(FakeDiagramGrowingPorts.ReadWithNeighboursAsync), request.Read);
         Assert.Equal([vehicle], request.Types);
@@ -89,9 +89,9 @@ public sealed class DiagramGrowingTests
         var viewCommands = new Queue<ViewCommand>();
         var ports = new FakeDiagramGrowingPorts();
 
-        var adding = new DiagramGrowing(ports).AddWithNeighboursAsync(viewCommands, read, CancellationToken.None);
+        var adding = d.BeginAsync(() => new DiagramGrowing(ports).AddWithNeighboursAsync(viewCommands, read, CancellationToken.None));
         Assert.Single(ports.Requests).Answer.SetResult(new Outcome<List<TypeCard>>.Ok([]));
-        await adding;
+        await d.EndAsync(adding);
 
         var problem = Assert.IsType<AppProblem.TypeNotDiagrammed>(Assert.Single(ports.Reported));
         Assert.Equal(member, problem.Type);
@@ -108,10 +108,10 @@ public sealed class DiagramGrowingTests
         var viewCommands = new Queue<ViewCommand>();
         var ports = new FakeDiagramGrowingPorts();
 
-        var adding = new DiagramGrowing(ports).AddWithNeighboursAsync(viewCommands, read, CancellationToken.None);
+        var adding = d.BeginAsync(() => new DiagramGrowing(ports).AddWithNeighboursAsync(viewCommands, read, CancellationToken.None));
         d.AppState.Navigation.CloseTab(read.Tab);
         Assert.Single(ports.Requests).Answer.SetResult(new Outcome<List<TypeCard>>.Failed(new InvalidOperationException("Gone.")));
-        await adding;
+        await d.EndAsync(adding);
 
         Assert.True(read.Diagram.IsClosed);
         Assert.Empty(read.Diagram.Cards);
@@ -128,11 +128,11 @@ public sealed class DiagramGrowingTests
         Diagrams.AddCards(diagram, [car]);
         var ports = new FakeDiagramGrowingPorts();
 
-        var adding = new DiagramGrowing(ports).ExpandBasesAsync(diagram, car, CancellationToken.None);
+        var adding = d.BeginAsync(() => new DiagramGrowing(ports).ExpandBasesAsync(diagram, car, CancellationToken.None));
         var request = Assert.Single(ports.Requests);
         Assert.True(diagram.IsBusy);
         request.Answer.SetResult(new Outcome<List<TypeCard>>.Ok([await CardOfAsync(d, "Vehicle")]));
-        await adding;
+        await d.EndAsync(adding);
 
         Assert.Equal(nameof(FakeDiagramGrowingPorts.ReadCardsAsync), request.Read);
         Assert.Equal([await TypeOfAsync(d, "Vehicle")], request.Types);
@@ -150,7 +150,7 @@ public sealed class DiagramGrowingTests
         Diagrams.AddCards(diagram, [car, await CardOfAsync(d, "Vehicle")]);
         var ports = new FakeDiagramGrowingPorts();
 
-        await new DiagramGrowing(ports).ExpandBasesAsync(diagram, car, CancellationToken.None);
+        await d.RunAsync(() => new DiagramGrowing(ports).ExpandBasesAsync(diagram, car, CancellationToken.None));
 
         Assert.Empty(ports.Requests);
         Assert.False(diagram.IsBusy);
@@ -166,10 +166,10 @@ public sealed class DiagramGrowingTests
         var ports = new FakeDiagramGrowingPorts();
         var error = new InvalidOperationException("Unreadable.");
 
-        var adding = new DiagramGrowing(ports).ExpandDerivedAsync(diagram, vehicle, CancellationToken.None);
+        var adding = d.BeginAsync(() => new DiagramGrowing(ports).ExpandDerivedAsync(diagram, vehicle, CancellationToken.None));
         var request = Assert.Single(ports.Requests);
         request.Answer.SetResult(new Outcome<List<TypeCard>>.Failed(error));
-        await adding;
+        await d.EndAsync(adding);
 
         Assert.Equal(nameof(FakeDiagramGrowingPorts.ReadDerivedAsync), request.Read);
         var problem = Assert.IsType<AppProblem.TypeNotDiagrammed>(Assert.Single(ports.Reported));
@@ -191,10 +191,10 @@ public sealed class DiagramGrowingTests
         var ports = new FakeDiagramGrowingPorts();
         ports.SearchedUnreadable.Add(new UnreadableModule { Module = module, Why = why });
 
-        var adding = new DiagramGrowing(ports).ExpandDerivedAsync(diagram, vehicle, CancellationToken.None);
+        var adding = d.BeginAsync(() => new DiagramGrowing(ports).ExpandDerivedAsync(diagram, vehicle, CancellationToken.None));
         var request = Assert.Single(ports.Requests);
         request.Answer.SetResult(new Outcome<List<TypeCard>>.Ok([await CardOfAsync(d, "Bike"), await CardOfAsync(d, "Car")]));
-        await adding;
+        await d.EndAsync(adding);
 
         Assert.Equal(nameof(FakeDiagramGrowingPorts.ReadDerivedAsync), request.Read);
         Assert.Equal(["Bike", "Car", "Vehicle"], CardNames(diagram));

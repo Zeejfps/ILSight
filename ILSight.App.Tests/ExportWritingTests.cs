@@ -28,7 +28,7 @@ public sealed class ExportWritingTests
         var ports = new FakeExportWritingPorts { CodeFile = new ExportOutcome<string>.Done(work.File) };
         var finished = new List<ExportReport>();
 
-        await new ExportWriting(ports).HandleAsync(finished, new Queue<ViewCommand>(), work, ticket, CancellationToken.None);
+        await d.RunAsync(() => new ExportWriting(ports).HandleAsync(finished, new Queue<ViewCommand>(), work, ticket, CancellationToken.None));
 
         var report = Assert.Single(finished);
         Assert.Equal(ticket.Run, report.Run);
@@ -50,7 +50,7 @@ public sealed class ExportWritingTests
         var ports = new FakeExportWritingPorts { CodeFile = new ExportOutcome<string>.Stopped(), AreFoldersThere = false };
         var finished = new List<ExportReport>();
 
-        await new ExportWriting(ports).HandleAsync(finished, new Queue<ViewCommand>(), work, ticket, CancellationToken.None);
+        await d.RunAsync(() => new ExportWriting(ports).HandleAsync(finished, new Queue<ViewCommand>(), work, ticket, CancellationToken.None));
 
         var report = Assert.Single(finished);
         Assert.IsType<ExportEnd.Cancelled>(report.End);
@@ -69,7 +69,7 @@ public sealed class ExportWritingTests
         var ports = new FakeExportWritingPorts { CodeFile = new ExportOutcome<string>.Failed(error) };
         var finished = new List<ExportReport>();
 
-        await new ExportWriting(ports).HandleAsync(finished, new Queue<ViewCommand>(), work, ticket, CancellationToken.None);
+        await d.RunAsync(() => new ExportWriting(ports).HandleAsync(finished, new Queue<ViewCommand>(), work, ticket, CancellationToken.None));
 
         var failed = Assert.IsType<ExportEnd.Failed>(Assert.Single(finished).End);
         Assert.Equal("Greeter", failed.Subject);
@@ -88,7 +88,7 @@ public sealed class ExportWritingTests
         var finished = new List<ExportReport>();
         queue.Withdraw(ticket.Run);
 
-        await new ExportWriting(ports).HandleAsync(finished, new Queue<ViewCommand>(), work, ticket, CancellationToken.None);
+        await d.RunAsync(() => new ExportWriting(ports).HandleAsync(finished, new Queue<ViewCommand>(), work, ticket, CancellationToken.None));
 
         Assert.Empty(finished);
         Assert.Empty(ports.Asked);
@@ -108,7 +108,7 @@ public sealed class ExportWritingTests
         var finished = new List<ExportReport>();
         var viewCommands = new Queue<ViewCommand>();
 
-        await new ExportWriting(ports).HandleAsync(finished, viewCommands, work, ticket, CancellationToken.None);
+        await d.RunAsync(() => new ExportWriting(ports).HandleAsync(finished, viewCommands, work, ticket, CancellationToken.None));
 
         Assert.Equal(page, Assert.IsType<ViewCommand.OpenFile>(Assert.Single(viewCommands)).Path);
         Assert.Equal([page], Assert.IsType<ExportEnd.Finished>(Assert.Single(finished).End).Written);

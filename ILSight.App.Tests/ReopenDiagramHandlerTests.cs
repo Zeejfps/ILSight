@@ -38,9 +38,9 @@ public sealed class ReopenDiagramHandlerTests
         Assert.NotNull(vehicle);
         Assert.True(read.Diagram.IsBusy);
 
-        var reading = new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None);
+        var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None));
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<TypeCard>>>.Ok([new Lookup<TypeCard>.Found { Value = vehicle }]));
-        await reading;
+        await d.EndAsync(reading);
 
         Assert.Equal([vehicle.Anchor], Assert.Single(ports.Asked));
         Assert.Equal(["Vehicle"], read.Diagram.Cards.Select(static c => c.Name));
@@ -56,10 +56,10 @@ public sealed class ReopenDiagramHandlerTests
         var read = await ReopenAsync(d);
         var ports = new FakeReopenDiagramHandlerPorts();
 
-        var reading = new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None);
+        var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None));
         d.AppState.Navigation.RestoreDiagram(read.Reopened.Tab, new TypeDiagram(), "Other diagram");
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<TypeCard>>>.Failed(new InvalidOperationException("Gone.")));
-        await reading;
+        await d.EndAsync(reading);
 
         Assert.Empty(read.Diagram.Cards);
         Assert.Empty(ports.Reported);
@@ -73,9 +73,9 @@ public sealed class ReopenDiagramHandlerTests
         var ports = new FakeReopenDiagramHandlerPorts();
         var error = new InvalidOperationException("Unreadable.");
 
-        var reading = new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None);
+        var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None));
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<TypeCard>>>.Failed(error));
-        await reading;
+        await d.EndAsync(reading);
 
         var problem = Assert.IsType<AppProblem.DiagramNotReopened>(Assert.Single(ports.Reported));
         Assert.Equal("Vehicle diagram", problem.Diagram);

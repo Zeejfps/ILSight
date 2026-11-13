@@ -317,9 +317,9 @@ public sealed class MetadataGridTests
         var newer = Assert.Single(views.TakeAsked());
         var handler = new ArrangeMetadataGridHandler(new FakeArrangeMetadataGridHandlerPorts());
 
-        await handler.HandleAsync(newer, CancellationToken.None);
+        await app.Driver.RunAsync(() => handler.HandleAsync(newer, CancellationToken.None));
         var landed = state.Order;
-        await handler.HandleAsync(older, CancellationToken.None);
+        await app.Driver.RunAsync(() => handler.HandleAsync(older, CancellationToken.None));
 
         Assert.Equal(MetadataGrids.OrderRows(grid, name, descending: true), landed);
         Assert.Same(landed, state.Order);

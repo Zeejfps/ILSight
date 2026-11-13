@@ -152,7 +152,7 @@ public sealed class HistoryTests
         CodeViewWidget.RestorePosition(CodeOf(app, tab), scrolled);
 
         app.Driver.Show(await app.FixtureAsync("Greeter"));
-        AppFrames.KeepScreenChanges(app.Ui, app.AppState);
+        app.Driver.InTurn(() => AppFrames.KeepScreenChanges(app.Ui, app.AppState));
         app.Settle(4);
         app.GoBack();
         app.Settle(4);
@@ -262,7 +262,7 @@ public sealed class HistoryTests
         await ShowAsync(app, "Greeter");
         app.Show(await OpenApiDiffSample(app).ReadRootAsync().GetChildAsync("ApiDiffSample", "Account"), 4);
         await ShowAsync(app, "Farewell");
-        Commands.CloseAssemblies(app.AppState, [ApiDiffSampleOf(app)]);
+        app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [ApiDiffSampleOf(app)]));
         app.Run(4);
         return app;
     }

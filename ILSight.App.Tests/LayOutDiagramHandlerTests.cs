@@ -26,18 +26,18 @@ public sealed class LayOutDiagramHandlerTests
         var older = Diagrams.StartLayout(diagram);
         Assert.NotNull(older);
         var olderMeasures = MeasuresOf(vehicle, car);
-        var olderLaying = handler.HandleAsync(diagram, older, olderMeasures, CancellationToken.None);
+        var olderLaying = d.BeginAsync(() => handler.HandleAsync(diagram, older, olderMeasures, CancellationToken.None));
         var newer = Diagrams.StartLayout(diagram);
         Assert.NotNull(newer);
         var newerMeasures = MeasuresOf(vehicle);
-        var newerLaying = handler.HandleAsync(diagram, newer, newerMeasures, CancellationToken.None);
+        var newerLaying = d.BeginAsync(() => handler.HandleAsync(diagram, newer, newerMeasures, CancellationToken.None));
 
         ports.Answers[0].SetResult(new Outcome<TypeLayout>.Ok(DiagramLayouts.Arrange(olderMeasures)));
-        await olderLaying;
+        await d.EndAsync(olderLaying);
         Assert.Null(diagram.Layout);
         var newerLayout = DiagramLayouts.Arrange(newerMeasures);
         ports.Answers[1].SetResult(new Outcome<TypeLayout>.Ok(newerLayout));
-        await newerLaying;
+        await d.EndAsync(newerLaying);
 
         Assert.True(older.Token.IsCancellationRequested);
         Assert.Same(newerLayout, diagram.Layout);
@@ -55,9 +55,10 @@ public sealed class LayOutDiagramHandlerTests
         Assert.NotNull(layout);
         var error = new InvalidOperationException("No room.");
 
-        var laying = new LayOutDiagramHandler(ports).HandleAsync(diagram, layout, MeasuresOf((await d.FixtureAsync("Vehicle")).Definition), CancellationToken.None);
+        var measures = MeasuresOf((await d.FixtureAsync("Vehicle")).Definition);
+        var laying = d.BeginAsync(() => new LayOutDiagramHandler(ports).HandleAsync(diagram, layout, measures, CancellationToken.None));
         Assert.Single(ports.Answers).SetResult(new Outcome<TypeLayout>.Failed(error));
-        await laying;
+        await d.EndAsync(laying);
 
         Assert.Same(error, Assert.IsType<AppProblem.DiagramNotLaidOut>(Assert.Single(ports.Reported)).Error);
         Assert.Null(diagram.Layout);

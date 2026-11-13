@@ -195,7 +195,7 @@ public sealed class ComparisonTests
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
         d.Settle();
         d.AppState.Navigation.CloseTab(tab);
-        Commands.CloseAssemblies(d.AppState, [Opened(d, LeftPath), Opened(d, RightPath)]);
+        d.InTurn(() => Commands.CloseAssemblies(d.AppState, [Opened(d, LeftPath), Opened(d, RightPath)]));
 
         d.GoBack();
         d.Settle();
@@ -275,7 +275,7 @@ public sealed class ComparisonTests
         var d = OpenBoth();
         var comparison = Compare(d, LeftPath, RightPath);
 
-        Commands.CloseAssemblies(d.AppState, [Opened(d, RightPath)]);
+        d.InTurn(() => Commands.CloseAssemblies(d.AppState, [Opened(d, RightPath)]));
         d.StartComparing(SwapComparedAssemblies(d.AppState.Assemblies, comparison));
         d.Settle();
 

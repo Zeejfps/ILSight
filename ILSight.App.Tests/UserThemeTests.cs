@@ -262,7 +262,7 @@ public sealed class UserThemeTests : IDisposable
         _temp.Write("themes", "not a folder");
         var d = new AppStateDriver(Settings());
 
-        await d.AppState.UserThemes.WatchAsync(CancellationToken.None);
+        await d.RunAsync(() => d.AppState.UserThemes.WatchAsync(CancellationToken.None));
 
         var error = Assert.Single(d.AppState.Errors.Entries);
         Assert.Equal("Cannot make the themes folder", error.Words().Title);

@@ -37,10 +37,10 @@ public sealed class CompareAssembliesHandlerTests
         var ports = new FakeCompareAssembliesHandlerPorts();
         var diff = await DiffAsync(run);
 
-        var comparing = new CompareAssembliesHandler(ports).HandleAsync(run, CancellationToken.None);
+        var comparing = d.BeginAsync(() => new CompareAssembliesHandler(ports).HandleAsync(run, CancellationToken.None));
         Assert.True(comparison.IsComparing);
         Assert.Single(ports.Answers).SetResult(new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Read { Value = diff }));
-        await comparing;
+        await d.EndAsync(comparing);
 
         Assert.Same(diff, Assert.IsType<ComparisonResult.Compared>(comparison.Result).Diff);
         Assert.False(comparison.IsComparing);
@@ -56,9 +56,9 @@ public sealed class CompareAssembliesHandlerTests
         var ports = new FakeCompareAssembliesHandlerPorts();
         var error = new BadImageFormatException("Unreadable.");
 
-        var comparing = new CompareAssembliesHandler(ports).HandleAsync(run, CancellationToken.None);
+        var comparing = d.BeginAsync(() => new CompareAssembliesHandler(ports).HandleAsync(run, CancellationToken.None));
         Assert.Single(ports.Answers).SetResult(new Outcome<ModuleRead<ApiDiff>>.Failed(error));
-        await comparing;
+        await d.EndAsync(comparing);
 
         var failed = Assert.IsType<ComparisonResult.Failed>(comparison.Result);
         Assert.IsType<ComparisonFailure.Failed>(failed.Failure);
@@ -73,16 +73,16 @@ public sealed class CompareAssembliesHandlerTests
         var ports = new FakeCompareAssembliesHandlerPorts();
         var handler = new CompareAssembliesHandler(ports);
         var older = StartComparing(d, comparison);
-        var olderComparing = handler.HandleAsync(older, CancellationToken.None);
+        var olderComparing = d.BeginAsync(() => handler.HandleAsync(older, CancellationToken.None));
         var newer = StartComparing(d, comparison);
-        var newerComparing = handler.HandleAsync(newer, CancellationToken.None);
+        var newerComparing = d.BeginAsync(() => handler.HandleAsync(newer, CancellationToken.None));
         var newerDiff = await DiffAsync(newer);
 
         ports.Answers[0].SetResult(new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Read { Value = await DiffAsync(older) }));
-        await olderComparing;
+        await d.EndAsync(olderComparing);
         Assert.IsType<ComparisonResult.NotYet>(comparison.Result);
         ports.Answers[1].SetResult(new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Read { Value = newerDiff }));
-        await newerComparing;
+        await d.EndAsync(newerComparing);
 
         Assert.True(older.Work.Token.IsCancellationRequested);
         Assert.Same(newerDiff, Assert.IsType<ComparisonResult.Compared>(comparison.Result).Diff);
@@ -94,7 +94,7 @@ public sealed class CompareAssembliesHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var comparison = NewComparison(d);
-        Commands.CloseAssemblies(d.AppState, [d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath)]);
+        d.InTurn(() => Commands.CloseAssemblies(d.AppState, [d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath)]));
 
         var run = Comparisons.SwapComparedAssemblies(d.AppState.Assemblies, comparison);
 
