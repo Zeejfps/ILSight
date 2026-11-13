@@ -1,4 +1,3 @@
-using static ILSight.Core.Metadata.GridSchemas;
 using System.Globalization;
 using System.Reflection;
 using System.Text;
@@ -81,11 +80,11 @@ internal static class ResourceNodes
     /// <summary>The grid of the entries: each one's name, its value as text, and the type of value.</summary>
     public static GridSchema<(string Name, string Value, string Type)> Schema(LoadedModule assembly, Lazy<List<KeyValuePair<string, object?>>> entries)
     {
-        return AddColumns(CreateGrid<(string Name, string Value, string Type)>("Resources", LoadedAssemblies.GetFile(assembly), () => entries.Value.Select(static e => Row(e.Key, e.Value))), columns =>
+        return GridSchemas.AddColumns(GridSchemas.CreateGrid<(string Name, string Value, string Type)>("Resources", LoadedAssemblies.GetFile(assembly), () => entries.Value.Select(static e => Row(e.Key, e.Value))), columns =>
         {
-            AddValue(columns, "Name", static r => r.Name);
-            AddValue(columns, "Value", static r => r.Value, tooltip: static r => r.Value.Length > 80 || r.Value.Contains('\n') ? r.Value : null);
-            AddValue(columns, "Type", static r => r.Type);
+            GridSchemas.AddValue(columns, "Name", static r => r.Name);
+            GridSchemas.AddValue(columns, "Value", static r => r.Value, tooltip: static r => r.Value.Length > 80 || r.Value.Contains('\n') ? r.Value : null);
+            GridSchemas.AddValue(columns, "Type", static r => r.Type);
         });
     }
 

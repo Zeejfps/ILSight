@@ -7,17 +7,6 @@ using ILSight.ProcessArea;
 using ILSight.NuGetArea;
 using ILSight.AssemblyArea;
 using ILSight.MetadataGridArea;
-using static ILSight.AssemblyListArea.AssemblyLists;
-using static ILSight.CodeDisplay;
-using static ILSight.Decompilation;
-using static ILSight.SettingArea.Settings;
-using static ILSight.ILSightAppArea.Appearance;
-using static ILSight.DocumentPanels;
-
-using static ILSight.IconTheming;
-using static ILSight.ILSightAppArea.ScreenSettings;
-using static ILSight.Theming;
-using static ILSight.Trees;
 
 namespace ILSight.ILSightAppArea;
 
@@ -32,9 +21,9 @@ internal static class AppFrames
     internal static void FollowRestoredAppState(UiState uiState, AppState appState)
     {
         uiState.Documents.SkipPanels(appState.Lists.ListDocumentPanels());
-        FollowActiveTab(uiState, appState.Navigation.ActiveTab);
+        DocumentPanels.FollowActiveTab(uiState, appState.Navigation.ActiveTab);
         QueuedCommands.RunViewCommands(uiState, appState);
-        ShowInRestoredDocuments(uiState, appState.Navigation);
+        DocumentPanels.ShowInRestoredDocuments(uiState, appState.Navigation);
     }
 
     /// <summary>Does what comes before drawing a frame: the screen takes the theme, icons and strings the
@@ -46,16 +35,16 @@ internal static class AppFrames
     /// export dialog's folder and key file when they changed.</summary>
     internal static void StartFrame(UiState uiState, AppState appState)
     {
-        ApplyThemeAndLanguage(uiState, ResolveTheme(appState), appState.Locale);
-        ApplyIconTheme(uiState, ResolveIconTheme(appState));
-        SyncTrees(uiState, appState.Assemblies, appState.Analyzer, appState.ApiVisibility, appState.Reopens.Files);
+        Appearance.ApplyThemeAndLanguage(uiState, Theming.ResolveTheme(appState), appState.Locale);
+        Appearance.ApplyIconTheme(uiState, IconTheming.ResolveIconTheme(appState));
+        Trees.SyncTrees(uiState, appState.Assemblies, appState.Analyzer, appState.ApiVisibility, appState.Reopens.Files);
         appState.Navigation.UsePreviewTabs(uiState.Display.PreviewTabs);
-        FollowTabContent(uiState);
-        FollowActiveTab(uiState, appState.Navigation.ActiveTab);
+        DocumentPanels.FollowTabContent(uiState);
+        DocumentPanels.FollowActiveTab(uiState, appState.Navigation.ActiveTab);
         QueuedCommands.RunViewCommands(uiState, appState);
-        SyncTabViews(uiState, appState.Navigation);
+        DocumentPanels.SyncTabViews(uiState, appState.Navigation);
         ReviveClosedTabs(uiState, appState);
-        FocusNextTabIfNone(uiState, appState.Navigation, appState.Decompiler.Setup);
+        DocumentPanels.FocusNextTabIfNone(uiState, appState.Navigation, appState.Decompiler.Setup);
         FollowLoadOptions(uiState, appState);
         FollowDecompilation(uiState, appState);
         FollowExportSetup(uiState.ExportSetup, appState);
@@ -212,9 +201,9 @@ internal static class AppFrames
             return;
         }
 
-        foreach (var tab in ListFrontTabs(uiState))
+        foreach (var tab in DocumentPanels.ListFrontTabs(uiState))
         {
-            Commands.StartDecompiling(appState, StartDecompilingAgainIfOutdated(tab, language, appState.Decompiler.Setup.Options));
+            Commands.StartDecompiling(appState, Decompilation.StartDecompilingAgainIfOutdated(tab, language, appState.Decompiler.Setup.Options));
         }
     }
 
@@ -293,13 +282,13 @@ internal static class AppFrames
 
     private static void KeepChangedViewSettings(UiState uiState, AppState appState)
     {
-        var view = TakeChangedViewSettings(uiState);
+        var view = ScreenSettings.TakeChangedViewSettings(uiState);
         if (view is null)
         {
             return;
         }
 
-        KeepViewSettings(appState, view);
+        SettingArea.Settings.KeepViewSettings(appState, view);
     }
 
     /// <summary>Does what comes after drawing a frame: keeps what the screen changed, runs what it asked of
@@ -415,7 +404,7 @@ internal static class AppFrames
             return face;
         }
 
-        SetCodeFont(uiState, null);
+        CodeDisplay.SetCodeFont(uiState, null);
         ShownChanges.TryTakeCodeFont(uiState, null);
         return codeFonts.Bundled;
     }

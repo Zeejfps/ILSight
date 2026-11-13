@@ -1,11 +1,6 @@
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.CommandArea;
-using static ILSight.Analysis;
-using static ILSight.DiagramArea.Diagrams;
-using static ILSight.Docking;
-using static ILSight.DocumentPanels;
-using static ILSight.ScreenLayout;
 
 namespace ILSight;
 
@@ -28,7 +23,7 @@ internal static class QueuedCommands
         command.Switch((uiState, appState),
             showTab: static (s, show) => ShowTabIfOpen(s.uiState, s.appState, show.Tab, show.Beside),
             showReopened: static (s, show) => ShowReopenedIfOpen(s.uiState, s.appState, show.Tabs, show.Layout),
-            openPanel: static (s, open) => OpenPanel(s.uiState, open.View),
+            openPanel: static (s, open) => ScreenLayout.OpenPanel(s.uiState, open.View),
             restoreView: static (s, restore) => RestoreView(s.uiState, s.appState, restore.Tab, restore.Position),
             revealLine: static (s, reveal) => RevealLine(s.uiState, s.appState, reveal.Tab, reveal.Line),
             revealRow: static (s, reveal) => RevealRow(s.uiState, s.appState, reveal.Tab, reveal.Row),
@@ -48,7 +43,7 @@ internal static class QueuedCommands
             return;
         }
 
-        ShowTab(uiState, tab, beside);
+        DocumentPanels.ShowTab(uiState, tab, beside);
     }
 
     /// <summary>Shows those of the reopened <paramref name="tabs"/> still open where they were docked.</summary>
@@ -57,7 +52,7 @@ internal static class QueuedCommands
         var open = tabs
             .Where(r => appState.Navigation.IsOpen(r.Tab))
             .ToList();
-        ShowReopenedTabs(uiState, open, layout);
+        DocumentPanels.ShowReopenedTabs(uiState, open, layout);
     }
 
     private static void RevealIfListed(UiState uiState, AppState appState, BrowseNode node)
@@ -179,6 +174,6 @@ internal static class QueuedCommands
             return;
         }
 
-        FocusNextTab(uiState, appState.Navigation, appState.Decompiler.Setup);
+        DocumentPanels.FocusNextTab(uiState, appState.Navigation, appState.Decompiler.Setup);
     }
 }

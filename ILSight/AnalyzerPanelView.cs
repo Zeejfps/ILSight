@@ -4,9 +4,6 @@ using ILSight.Core;
 using ILSight.Core.Analysis;
 using ILSight.CommandArea;
 using ILSight.DocumentViewArea;
-using static ILSight.Analysis;
-using static ILSight.Navigation;
-using static ILSight.ScreenLayout;
 
 namespace ILSight;
 
@@ -217,7 +214,7 @@ internal static class AnalyzerPanelView
     /// <summary>Opens the analyzer if it is not and shows <paramref name="root"/>, expanded and selected.</summary>
     public static void ShowAnalysis(UiState screen, AnalyzerSymbolNode root)
     {
-        OpenPanel(screen, DockView.Analyzer);
+        ScreenLayout.OpenPanel(screen, DockView.Analyzer);
         screen.Analyzer.ShowRoot(root);
     }
 
@@ -226,7 +223,7 @@ internal static class AnalyzerPanelView
     /// (<see cref="AnalyzeReferenceHandler"/>).</summary>
     public static PendingAnalysis ShowListing(UiState screen, PendingAnalysis pending)
     {
-        OpenPanel(screen, DockView.Analyzer);
+        ScreenLayout.OpenPanel(screen, DockView.Analyzer);
         return pending;
     }
 
@@ -235,7 +232,7 @@ internal static class AnalyzerPanelView
     /// edge to find and analyze (<see cref="AnalyzeReferenceHandler"/>).</summary>
     public static PendingAnalysis Analyze(UiState screen, AnalyzerTree analyzer, CodeReference.Navigable reference)
     {
-        OpenPanel(screen, DockView.Analyzer);
+        ScreenLayout.OpenPanel(screen, DockView.Analyzer);
         return Analysis.BeginAnalyzing(analyzer, reference);
     }
 }

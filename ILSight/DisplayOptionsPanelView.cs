@@ -5,9 +5,6 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.CommandArea;
 using ILSight.SettingArea;
-using static ILSight.CodeDisplay;
-using static ILSight.IconTheming;
-using static ILSight.Theming;
 
 namespace ILSight;
 
@@ -179,7 +176,7 @@ internal static class DisplayOptionsPanelView
         var changed = system != DisplayOptions.Default.SystemTitleBar;
         if (SwitchRow(ui, t.DisplayOptionsSystemTitleBar, ref system, "system-title-bar", changed))
         {
-            SetDisplayOptions(ui.State, display with { SystemTitleBar = system });
+            CodeDisplay.SetDisplayOptions(ui.State, display with { SystemTitleBar = system });
         }
     }
 
@@ -345,7 +342,7 @@ internal static class DisplayOptionsPanelView
         var picked = PickFrom(ui, "ui-scale", labels, current);
         if (picked is not null)
         {
-            SetUiScale(ui.State, scales[picked.Value]);
+            CodeDisplay.SetUiScale(ui.State, scales[picked.Value]);
         }
     }
 
@@ -486,7 +483,7 @@ internal static class DisplayOptionsPanelView
             var on = display.ShowLineNumbers;
             if (SwitchRow(ui, t.DisplayOptionsLineNumbers, ref on, "line-numbers", on != defaults.ShowLineNumbers))
             {
-                SetDisplayOptions(ui.State, display with { ShowLineNumbers = on });
+                CodeDisplay.SetDisplayOptions(ui.State, display with { ShowLineNumbers = on });
             }
         }
         if (currentLine)
@@ -495,7 +492,7 @@ internal static class DisplayOptionsPanelView
             var on = display.HighlightCurrentLine;
             if (SwitchRow(ui, t.DisplayOptionsCurrentLine, ref on, "current-line", on != defaults.HighlightCurrentLine))
             {
-                SetDisplayOptions(ui.State, display with { HighlightCurrentLine = on });
+                CodeDisplay.SetDisplayOptions(ui.State, display with { HighlightCurrentLine = on });
             }
         }
         if (brackets)
@@ -504,7 +501,7 @@ internal static class DisplayOptionsPanelView
             var on = display.HighlightMatchingBrackets;
             if (SwitchRow(ui, t.DisplayOptionsMatchingBrackets, ref on, "matching-brackets", on != defaults.HighlightMatchingBrackets))
             {
-                SetDisplayOptions(ui.State, display with { HighlightMatchingBrackets = on });
+                CodeDisplay.SetDisplayOptions(ui.State, display with { HighlightMatchingBrackets = on });
             }
         }
         if (usages)
@@ -513,7 +510,7 @@ internal static class DisplayOptionsPanelView
             var on = display.HighlightUsagesAtCaret;
             if (SwitchRow(ui, t.DisplayOptionsUsagesAtCaret, ref on, "usages-at-caret", on != defaults.HighlightUsagesAtCaret))
             {
-                SetDisplayOptions(ui.State, display with { HighlightUsagesAtCaret = on });
+                CodeDisplay.SetDisplayOptions(ui.State, display with { HighlightUsagesAtCaret = on });
             }
         }
         if (omnibar)
@@ -522,7 +519,7 @@ internal static class DisplayOptionsPanelView
             var on = display.ShowOmnibar;
             if (SwitchRow(ui, t.DisplayOptionsOmnibar, ref on, "omnibar", on != defaults.ShowOmnibar))
             {
-                SetDisplayOptions(ui.State, display with { ShowOmnibar = on });
+                CodeDisplay.SetDisplayOptions(ui.State, display with { ShowOmnibar = on });
             }
         }
         return true;
@@ -548,7 +545,7 @@ internal static class DisplayOptionsPanelView
         {
             if (ui.MenuRadioItem(choices.Labels[i], choices.Labels[i] == shown))
             {
-                SetCodeFont(ui.State, fonts[i]);
+                CodeDisplay.SetCodeFont(ui.State, fonts[i]);
             }
         }
         if (!choices.IsListed)
@@ -575,7 +572,7 @@ internal static class DisplayOptionsPanelView
         var smaller = ui.Memo("smaller", t, static s => s.DisplayOptionsSmaller(Shortcuts.ZoomOut.Label));
         if (ui.IconButton("smaller", ui.State.Icons.OptionsFontSmaller, smaller, CodeDisplay.CanZoomOut(display, theme), ButtonVariant.Neutral))
         {
-            ZoomCode(ui.State, -1);
+            CodeDisplay.ZoomCode(ui.State, -1);
         }
 
         var size = CodeDisplay.GetFontSize(display, theme);
@@ -584,7 +581,7 @@ internal static class DisplayOptionsPanelView
         var larger = ui.Memo("larger", t, static s => s.DisplayOptionsLarger(Shortcuts.ZoomIn.Label));
         if (ui.IconButton("larger", ui.State.Icons.OptionsFontLarger, larger, CodeDisplay.CanZoomIn(display, theme), ButtonVariant.Neutral))
         {
-            ZoomCode(ui.State, 1);
+            CodeDisplay.ZoomCode(ui.State, 1);
         }
     }
 
@@ -659,7 +656,7 @@ internal static class DisplayOptionsPanelView
             var on = display.ShowEmptyMetadataTables;
             if (SwitchRow(ui, t.DisplayOptionsEmptyTables, ref on, "empty-tables", on != defaults.ShowEmptyMetadataTables))
             {
-                SetDisplayOptions(ui.State, display with { ShowEmptyMetadataTables = on });
+                CodeDisplay.SetDisplayOptions(ui.State, display with { ShowEmptyMetadataTables = on });
             }
         }
         if (nested)
@@ -668,7 +665,7 @@ internal static class DisplayOptionsPanelView
             var on = display.NestedNamespaces;
             if (SwitchRow(ui, t.DisplayOptionsNestedNamespaces, ref on, "nested-namespaces", on != defaults.NestedNamespaces))
             {
-                SetDisplayOptions(ui.State, display with { NestedNamespaces = on });
+                CodeDisplay.SetDisplayOptions(ui.State, display with { NestedNamespaces = on });
             }
         }
         if (previewTabs)
@@ -677,7 +674,7 @@ internal static class DisplayOptionsPanelView
             var on = display.PreviewTabs;
             if (SwitchRow(ui, t.DisplayOptionsPreviewTabs, ref on, "preview-tabs", on != defaults.PreviewTabs))
             {
-                SetDisplayOptions(ui.State, display with { PreviewTabs = on });
+                CodeDisplay.SetDisplayOptions(ui.State, display with { PreviewTabs = on });
             }
         }
         return true;
@@ -691,7 +688,7 @@ internal static class DisplayOptionsPanelView
         var picked = PickFrom(ui, "tokens", labels, current);
         if (picked is not null)
         {
-            SetTreeTokens(ui.State, TokenFormats[picked.Value]);
+            CodeDisplay.SetTreeTokens(ui.State, TokenFormats[picked.Value]);
         }
     }
 
@@ -751,7 +748,7 @@ internal static class DisplayOptionsPanelView
         {
             if (ui.Button(t.DisplayOptionsReset, enabled: changed, id: "reset", variant: ButtonVariant.Ghost, icon: icon))
             {
-                AskToResetDisplayOptions(ui.State);
+                CodeDisplay.AskToResetDisplayOptions(ui.State);
             }
         }
     }

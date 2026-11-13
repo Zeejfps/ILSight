@@ -3,13 +3,7 @@ using ZGF.AppUtils;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ILSight.MainArea;
-using static ILSight.ILSightAppArea.AppFrames;
-using static ILSight.ILSightAppArea.Appearance;
 using ILSight.SettingArea;
-using static ILSight.IconTheming;
-using static ILSight.SettingArea.Settings;
-using static ILSight.ILSightAppArea.ScreenSettings;
-using static ILSight.Theming;
 
 namespace ILSight.ILSightAppArea;
 
@@ -64,10 +58,10 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     /// draw changed already says it has.</summary>
     internal void RunFrame(Ui<UiState> ui, Action<Ui<UiState>, AppState> draw)
     {
-        StartFrame(ui.State, _appState);
-        FollowNuGetPicker(ui, _appState);
+        AppFrames.StartFrame(ui.State, _appState);
+        AppFrames.FollowNuGetPicker(ui, _appState);
         Draw(ui, draw);
-        FinishFrame(ui, _appState, _codeFonts);
+        AppFrames.FinishFrame(ui, _appState, _codeFonts);
         QuitIfAsked(ui);
     }
 
@@ -156,7 +150,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     /// bundled one first.</summary>
     private void RegisterChosenCodeFont(ImmediateGuiAppHost<UiState> host)
     {
-        var face = TakeCodeFontFace(UiState, _codeFonts);
+        var face = AppFrames.TakeCodeFontFace(UiState, _codeFonts);
         if (face == null)
         {
             return;
@@ -169,7 +163,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     /// icons never show in another font first and the first frame finds them registered.</summary>
     private void RegisterChosenIconFonts(ImmediateGuiAppHost<UiState> host)
     {
-        ApplyIconTheme(UiState, ResolveIconTheme(_appState));
+        Appearance.ApplyIconTheme(UiState, IconTheming.ResolveIconTheme(_appState));
         if (!ShownChanges.TryTakeIcons(UiState, UiState.Icons, UiState.IconFonts))
         {
             return;
@@ -199,8 +193,8 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
 
     private SettingsWriteResult SaveOnExit(WindowBounds window)
     {
-        KeepWindow(_appState, window);
-        KeepViewSettings(_appState, TakeViewSettings(UiState));
+        Settings.KeepWindow(_appState, window);
+        Settings.KeepViewSettings(_appState, ScreenSettings.TakeViewSettings(UiState));
         return _appState.SettingsSaving.Save(_appState);
     }
 }

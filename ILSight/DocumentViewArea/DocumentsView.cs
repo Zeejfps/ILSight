@@ -10,9 +10,6 @@ using ILSight.CommandArea;
 using ILSight.MetadataGridArea;
 using ILSight.DiagramArea;
 using ILSight.MetadataArea;
-using static ILSight.BookmarkArea.Bookmarks;
-using static ILSight.CodeDisplay;
-using static ILSight.DiagramArea.Diagrams;
 
 namespace ILSight.DocumentViewArea;
 
@@ -165,13 +162,13 @@ internal static class DocumentsView
         switch (zoom)
         {
             case CodeZoom.In:
-                ZoomCode(uiState, 1);
+                CodeDisplay.ZoomCode(uiState, 1);
                 break;
             case CodeZoom.Out:
-                ZoomCode(uiState, -1);
+                CodeDisplay.ZoomCode(uiState, -1);
                 break;
             case CodeZoom.Reset:
-                ResetCodeZoom(uiState);
+                CodeDisplay.ResetCodeZoom(uiState);
                 break;
         }
     }
@@ -203,7 +200,7 @@ internal static class DocumentsView
     /// selection of the one removed on.</summary>
     private static void ToggleLineBookmark(UiState screen, AppState appState, DocumentTab tab, int line, Strings t)
     {
-        var toggle = ToggleBookmark(appState, tab, line, number => t.BookmarksDefaultName(number));
+        var toggle = Bookmarks.ToggleBookmark(appState, tab, line, number => t.BookmarksDefaultName(number));
         screen.BookmarksPanel.TakeToggle(toggle, appState.Bookmarks.Items);
     }
 
