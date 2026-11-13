@@ -299,7 +299,7 @@ internal static class MainMenuView
 
         if (ui.MenuItem(t.ViewResetLayout, id: "reset-layout"))
         {
-            ScreenLayout.AskToResetLayout(ui.State);
+            ui.State.LayoutReset.Ask();
         }
 
         ui.MenuSeparator();

@@ -64,8 +64,8 @@ public sealed class UiState : IUiState
     /// <summary>The language and options the tabs in front were last brought up to date with.</summary>
     public (DecompilationLanguage Language, DecompilerOptions Options)? ShownDecompilation;
 
-    /// <summary>Set while the user is asked whether to reset the layout.</summary>
-    public bool ConfirmingLayoutReset;
+    /// <summary>Whether to reset the layout, asked of the user.</summary>
+    public Confirmation LayoutReset { get; } = new();
 
     public AboutDialog About { get; } = new();
 

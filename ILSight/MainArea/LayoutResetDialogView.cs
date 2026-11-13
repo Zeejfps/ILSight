@@ -10,7 +10,7 @@ internal static class LayoutResetDialogView
     {
         var t = ui.State.Strings;
         var screen = ui.State;
-        var open = screen.ConfirmingLayoutReset;
+        var open = screen.LayoutReset.IsAsked;
         using (var dialog = ui.Dialog("layout-reset", t.ViewResetLayout, ref open, closeButton: false))
         {
             if (dialog.IsOpen)
@@ -30,7 +30,7 @@ internal static class LayoutResetDialogView
                 }
             }
         }
-        if (!open && screen.ConfirmingLayoutReset)
+        if (!open && screen.LayoutReset.IsAsked)
         {
             ScreenLayout.FinishLayoutReset(screen, false);
         }

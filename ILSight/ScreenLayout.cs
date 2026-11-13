@@ -66,16 +66,10 @@ public static class ScreenLayout
         uiState.Omnibar.StartSearch(panel);
     }
 
-    /// <summary>Asks the user whether to reset the layout before <see cref="ResetLayout"/> does.</summary>
-    public static void AskToResetLayout(UiState uiState)
-    {
-        uiState.ConfirmingLayoutReset = true;
-    }
-
     /// <summary>Stops asking, resetting the layout when <paramref name="confirmed"/>.</summary>
     public static void FinishLayoutReset(UiState uiState, bool confirmed)
     {
-        uiState.ConfirmingLayoutReset = false;
+        uiState.LayoutReset.Stop();
         if (confirmed)
         {
             ResetLayout(uiState);
