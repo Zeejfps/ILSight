@@ -492,7 +492,8 @@ public static class Commands
     /// <summary>A method of its own, so that the calls that start nothing allocate no closure.</summary>
     private static void StartBringingIn(AppState appState, DecompileTicket load)
     {
-        appState.Workflows.Start(nameof(DecompileIntoTabHandler), ct => appState.DecompileIntoTabHandler.HandleAsync(appState.ViewCommands, load, ct),
+        var firstGridRows = appState.FirstGridRows;
+        appState.Workflows.Start(nameof(DecompileIntoTabHandler), ct => appState.DecompileIntoTabHandler.HandleAsync(appState.ViewCommands, load, firstGridRows, ct),
             load.Work.Token);
     }
 

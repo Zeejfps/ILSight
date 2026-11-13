@@ -342,7 +342,7 @@ public sealed class DecompilationTests
 
         await Assert.ThrowsAsync<OperationCanceledException>(() => calculator.DecompileAsync(DecompilationLanguage.CSharp, cancelled.Token));
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            NodeContentLoader.ReadContentAsync(TestSession.Shared, calculator, DecompilationLanguage.IL, DecompilerOptions.Default, cancelled.Token));
+            NodeContentLoader.ReadContentAsync(TestSession.Shared, calculator, DecompilationLanguage.IL, DecompilerOptions.Default, NodeQueries.FirstGridRows, cancelled.Token));
     }
 
     [Fact]
@@ -363,7 +363,7 @@ public sealed class DecompilationTests
             }
         }
 
-        var concurrent = (await Task.WhenAll(types.SelectMany(t => languages.Select(l => NodeContentLoader.ReadContentAsync(TestSession.Shared, t, l, DecompilerOptions.Default).GetValueAsync()))))
+        var concurrent = (await Task.WhenAll(types.SelectMany(t => languages.Select(l => NodeContentLoader.ReadContentAsync(TestSession.Shared, t, l, DecompilerOptions.Default, NodeQueries.FirstGridRows).GetValueAsync()))))
             .Select(c => Assert.IsType<NodeContent.Code>(c).Document).ToArray();
 
         Assert.Equal(sequential, concurrent.Select(d => Documents.GetText(d)));

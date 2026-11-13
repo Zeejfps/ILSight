@@ -21,6 +21,10 @@ public sealed class DocumentViews
     /// <summary>Counts the panels handed out, which number the next.</summary>
     public int Panels;
 
+    /// <summary>How tall the tab area a document was last drawn in was as the screen laid it out; the window's height
+    /// while it had not been laid out yet; null before a document was drawn.</summary>
+    public float? TabAreaHeight;
+
     /// <summary>Counts the views made and dropped.</summary>
     public int OwnChanges;
 

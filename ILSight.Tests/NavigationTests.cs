@@ -90,8 +90,8 @@ public sealed class NavigationTests
         var field = Assert.NotNull(await list.FindMetadataRowAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(call.SpanAt("_items").Reference)));
         var self = Assert.NotNull(await list.FindMetadataRowAsync(CodeReferences.CreateAssembly(assembly.Name, assembly.FilePath)));
 
-        var methods = Assert.IsType<MetadataGrid.InMemory>(MetadataTables.EnsureGrid(TableOf(add.Node)));
-        var fields = Assert.IsType<MetadataGrid.InMemory>(MetadataTables.EnsureGrid(TableOf(field.Node)));
+        var methods = Assert.IsType<MetadataGrid.InMemory>(MetadataTables.EnsureGrid(TableOf(add.Node), NodeQueries.FirstGridRows));
+        var fields = Assert.IsType<MetadataGrid.InMemory>(MetadataTables.EnsureGrid(TableOf(field.Node), NodeQueries.FirstGridRows));
         Assert.Equal("System.Private.CoreLib", add.Node.Assembly.Name);
         Assert.Equal(TableIndex.MethodDef, TableOf(add.Node).ListedTable);
         Assert.Equal("Add", MetadataGrids.GetText(methods, add.Row, methods.Column("Name")));

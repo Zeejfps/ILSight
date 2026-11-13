@@ -14,7 +14,7 @@ public abstract record ContainerContents
     {
         public required Lazy<List<KeyValuePair<string, object?>>> Entries { get; init; }
 
-        public required Lazy<Metadata.MetadataGrid> Grid { get; init; }
+        public required Metadata.LazyGrid Grid { get; init; }
     }
 
     public sealed record AvaloniaAssets : ContainerContents;

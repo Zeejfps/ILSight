@@ -15,9 +15,9 @@ internal sealed class DecompileIntoTabHandlerAdapter(ErrorLog errors, BrowseSess
     /// <see cref="Outcome{T}.Failed"/>, the decompiler's lazy reads of a corrupt file among them, except the
     /// cancellation of <paramref name="ct"/>, which it lets through.</summary>
     public async Task<Outcome<ModuleRead<NodeContent>>> DecompileAsync(BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
-        CancellationToken ct)
+        int firstGridRows, CancellationToken ct)
     {
-        var loaded = await Background.Wait(NodeContentLoader.ReadContentAsync(session, node, language, options, ct));
+        var loaded = await Background.Wait(NodeContentLoader.ReadContentAsync(session, node, language, options, firstGridRows, ct));
         ct.ThrowIfCancellationRequested();
         return loaded;
     }

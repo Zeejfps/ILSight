@@ -6,6 +6,7 @@ using ILSight.CommandArea;
 using ILSight.ProcessArea;
 using ILSight.NuGetArea;
 using ILSight.AssemblyArea;
+using ILSight.MetadataGridArea;
 using static ILSight.AssemblyListArea.AssemblyLists;
 using static ILSight.CodeDisplay;
 using static ILSight.Decompilation;
@@ -249,6 +250,20 @@ internal static class AppFrames
     {
         KeepTabPositions(uiState, appState.Navigation);
         KeepChangedViewSettings(uiState, appState);
+        KeepFirstGridRows(uiState, appState);
+    }
+
+    /// <summary>Works out from the tab area as the screen last laid it out how many rows a grid made for a tab reads
+    /// with its content (<see cref="AppState.FirstGridRows"/>); nothing before a document was drawn.</summary>
+    private static void KeepFirstGridRows(UiState uiState, AppState appState)
+    {
+        var area = uiState.Documents.TabAreaHeight;
+        if (area is null)
+        {
+            return;
+        }
+
+        appState.FirstGridRows = MetadataGridFrame.CalculateFirstReadRows(area.Value, uiState.Theme.RowHeight);
     }
 
     /// <summary>Keeps where each tab's view stands with what it drew: on the tab while it still shows that, else on

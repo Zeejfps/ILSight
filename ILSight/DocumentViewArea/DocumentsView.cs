@@ -34,6 +34,9 @@ internal static class DocumentsView
 
     private static void Content(Ui<UiState> ui, Navigation navigation, BrowseSession session, AssemblyList assemblies, DecompilerSetup setup, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
     {
+        var areaId = ui.GetId("tab-area");
+        ui.State.Documents.TabAreaHeight = ui.TryGetRect(areaId, out var area) ? area.Height : ui.Height;
+        using var content = ui.Column(areaId, new Box { Height = Sizing.Grow(), Gap = 0f });
         DocumentPanels.RecordShown(DocumentPanels.GetView(ui.State.Documents, tab), tab);
         ClosedBanner(ui, tab.Load.ClosedAssembly);
         tab.Content.Switch((ui, navigation, session, assemblies, setup, bookmarks, tooltips, tab),

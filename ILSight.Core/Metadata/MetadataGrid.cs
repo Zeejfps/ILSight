@@ -156,8 +156,9 @@ public abstract class MetadataGrid
     /// (<see cref="Ask"/>), once each, for the frame edge to read.</summary>
     public sealed class Paged : MetadataGrid
     {
-        /// <summary>How many rows a page holds: more than a window of rows shows, so that the first page, read as the
-        /// grid is made, fills the view the grid opens to.</summary>
+        /// <summary>How many rows a page holds, the size of each read the frame edge makes for the draw. The first
+        /// read, as the grid is made, takes as many pages as its first show needs
+        /// (<see cref="MetadataGrids.CreateGrid"/>).</summary>
         public const int RowsPerPage = 64;
 
         private readonly Dictionary<int, MetadataGridPage> _pages = new();
@@ -170,6 +171,12 @@ public abstract class MetadataGrid
         public static int PageOf(int row)
         {
             return row / RowsPerPage;
+        }
+
+        /// <summary>How many pages the first <paramref name="rows"/> rows are on.</summary>
+        public static int CountPages(int rows)
+        {
+            return (rows + RowsPerPage - 1) / RowsPerPage;
         }
 
         public override bool IsRowRead(int row)

@@ -740,15 +740,16 @@ internal static class MetadataTables
         }
     }
 
-    /// <summary>The grid shown, made the first time it is asked for; null for a part shown as text.</summary>
-    internal static MetadataGrid? EnsureGrid(MetadataTableInfo table)
+    /// <summary>The grid shown, made the first time it is asked for with at least <paramref name="firstRows"/> rows
+    /// read (<see cref="LazyGrid"/>); null for a part shown as text.</summary>
+    internal static MetadataGrid? EnsureGrid(MetadataTableInfo table, int firstRows)
     {
-        return table.Part.Match<MetadataGrid?>(
-            static grid => grid.View.Value,
-            static directory => directory.View.Value,
-            static _ => null,
-            static _ => null,
-            static _ => null);
+        return table.Part.Match<int, MetadataGrid?>(firstRows,
+            static (rows, grid) => grid.View.Ensure(rows),
+            static (rows, directory) => directory.View.Ensure(rows),
+            static (_, _) => null,
+            static (_, _) => null,
+            static (_, _) => null);
     }
 
     internal static MetadataTableInfo CreateGridPart(LoadedModule module, MetadataFile file, string title, MetadataPartKey key, MetadataGridRole role,
@@ -764,7 +765,7 @@ internal static class MetadataTables
             {
                 Role = role,
                 Schema = schema,
-                View = new Lazy<MetadataGrid>(() => MetadataGrids.CreateGrid(title, module, file, schema)),
+                View = new LazyGrid { Make = firstRows => MetadataGrids.CreateGrid(title, module, file, schema, firstRows) },
             },
         };
     }
@@ -782,7 +783,7 @@ internal static class MetadataTables
             Part = new MetadataPart.DebugDirectory
             {
                 File = file,
-                View = new Lazy<MetadataGrid>(() => MetadataGrids.CreateGrid(title, module, file, schema)),
+                View = new LazyGrid { Make = firstRows => MetadataGrids.CreateGrid(title, module, file, schema, firstRows) },
             },
         };
     }

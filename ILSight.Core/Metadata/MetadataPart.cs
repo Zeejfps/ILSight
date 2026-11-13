@@ -20,14 +20,14 @@ public abstract record MetadataPart
 
         public required GridSchema Schema { get; init; }
 
-        public required Lazy<MetadataGrid> View { get; init; }
+        public required LazyGrid View { get; init; }
     }
 
     public sealed record DebugDirectory : MetadataPart
     {
         public required PEFile File { get; init; }
 
-        public required Lazy<MetadataGrid> View { get; init; }
+        public required LazyGrid View { get; init; }
     }
 
     public sealed record RowCount : MetadataPart

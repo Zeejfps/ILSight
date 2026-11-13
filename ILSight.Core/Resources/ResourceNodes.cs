@@ -115,19 +115,20 @@ internal static class ResourceNodes
         return ResourceNodes.Read(container.Resource);
     }
 
-    /// <summary>The grid of a <c>.resources</c> file's entries, made the first time it is asked for; null for an
-    /// asset container, which has none.</summary>
-    internal static Metadata.MetadataGrid? EnsureGrid(ResourceContainerInfo container)
+    /// <summary>The grid of a <c>.resources</c> file's entries, made the first time it is asked for with at least
+    /// <paramref name="firstRows"/> rows read (<see cref="Metadata.LazyGrid"/>); null for an asset container, which has
+    /// none.</summary>
+    internal static Metadata.MetadataGrid? EnsureGrid(ResourceContainerInfo container, int firstRows)
     {
-        return container.Contents.Match<Metadata.MetadataGrid?>(
-            static file => file.Grid.Value,
-            static _ => null);
+        return container.Contents.Match<int, Metadata.MetadataGrid?>(firstRows,
+            static (rows, file) => file.Grid.Ensure(rows),
+            static (_, _) => null);
     }
 
     internal static ResourceContainerInfo CreateResourcesFile(LoadedModule module, MetadataResource resource)
     {
         var entries = new Lazy<List<KeyValuePair<string, object?>>>(() => ResourceNodes.ReadEntries(resource));
-        var grid = new Lazy<Metadata.MetadataGrid>(() => Metadata.MetadataGrids.CreateGrid(resource.Name, module, LoadedAssemblies.GetFile(module), ResourceNodes.Schema(module, entries)));
+        var grid = new Metadata.LazyGrid { Make = firstRows => Metadata.MetadataGrids.CreateGrid(resource.Name, module, LoadedAssemblies.GetFile(module), ResourceNodes.Schema(module, entries), firstRows) };
         return new ResourceContainerInfo
         {
             Module = module,

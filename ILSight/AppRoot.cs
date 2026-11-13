@@ -203,6 +203,7 @@ internal static class AppRoot
             IsUpdateCheckAutomatic = settings.CheckForUpdates,
         };
         AssemblyListing.TryChangeLoadOptions(assemblies, settings.Decompiler);
+        appState.FirstGridRows = MetadataGridFrame.CalculateFirstReadRows(settings.Window?.Height ?? 0, Theming.ResolveTheme(appState).Ui.RowHeight);
         return appState;
     }
 

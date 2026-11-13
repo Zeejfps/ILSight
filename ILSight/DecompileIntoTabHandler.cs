@@ -13,11 +13,12 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
         void ReportError(AppProblem problem);
 
         /// <summary>What <paramref name="node"/> shows in <paramref name="language"/> with <paramref name="options"/>:
-        /// its code, grid or picture, made without holding up the screen, or that its module was closed before it
-        /// began, and nothing was read. What making it threw, such as a corrupt file, comes back as
-        /// <see cref="Outcome{T}.Failed"/>; the cancellation of <paramref name="ct"/> is let through.</summary>
+        /// its code, grid or picture (a grid made with at least <paramref name="firstGridRows"/> rows read), made
+        /// without holding up the screen, or that its module was closed before it began, and nothing was read. What
+        /// making it threw, such as a corrupt file, comes back as <see cref="Outcome{T}.Failed"/>; the cancellation of
+        /// <paramref name="ct"/> is let through.</summary>
         Task<Outcome<ModuleRead<NodeContent>>> DecompileAsync(BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
-            CancellationToken ct);
+            int firstGridRows, CancellationToken ct);
     }
 
     /// <summary>Brings in what <paramref name="ticket"/> started loading in its tab and shows it there, or that it
@@ -26,10 +27,12 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
     /// definition when it failed. Drops it when newer work started on the tab, or the tab closed, meanwhile. When the
     /// node's module was closed before the decompile began, the tab keeps what it shows and says its assembly was
     /// closed, as closing it does.
-    /// <paramref name="ct"/> is the workflow's token, which the edge that starts it links to the ticket's work.</summary>
-    public async Task HandleAsync(Queue<ViewCommand> viewCommands, DecompileTicket ticket, CancellationToken ct)
+    /// A grid it brings has its first <paramref name="firstGridRows"/> rows read, what the screen's first show of it
+    /// needs. <paramref name="ct"/> is the workflow's token, which the edge that starts it links to the ticket's
+    /// work.</summary>
+    public async Task HandleAsync(Queue<ViewCommand> viewCommands, DecompileTicket ticket, int firstGridRows, CancellationToken ct)
     {
-        var read = await ports.DecompileAsync(ticket.Node, ticket.Language, ticket.Options, ct);
+        var read = await ports.DecompileAsync(ticket.Node, ticket.Language, ticket.Options, firstGridRows, ct);
         var load = ticket.Load;
         var loaded = FindLoaded(load, ticket.Work, read);
         if (loaded is null || !TryShowLoaded(load, ticket.Work, loaded))

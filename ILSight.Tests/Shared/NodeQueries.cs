@@ -6,6 +6,10 @@ namespace ILSight.Tests;
 /// of a node still being read, so the reads chain): a child by its labels, what the node shows, the node decompiled.</summary>
 internal static class NodeQueries
 {
+    /// <summary>How many rows a grid these tests show reads with its content: as many as the app's first show of a grid
+    /// measures its columns over.</summary>
+    public const int FirstGridRows = 200;
+
     /// <summary>The node at <paramref name="path"/> under <paramref name="node"/>, one label a level, each level's
     /// children built when nobody built them yet; fails the test when a level has no such child.</summary>
     public static async Task<BrowseNode> GetChildAsync(this BrowseNode node, params string[] path)
@@ -55,7 +59,7 @@ internal static class NodeQueries
     /// <summary>What <paramref name="node"/> shows in <paramref name="language"/>.</summary>
     public static Task<NodeContent> ReadContentAsync(this BrowseNode node, DecompilationLanguage language = DecompilationLanguage.CSharp)
     {
-        return NodeContentLoader.ReadContentAsync(TestSession.Shared, node, language, DecompilerOptions.Default).GetValueAsync();
+        return NodeContentLoader.ReadContentAsync(TestSession.Shared, node, language, DecompilerOptions.Default, FirstGridRows).GetValueAsync();
     }
 
     public static async Task<NodeContent> ReadContentAsync(this Task<BrowseNode> read, DecompilationLanguage language = DecompilationLanguage.CSharp)

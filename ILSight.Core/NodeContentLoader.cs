@@ -14,15 +14,15 @@ namespace ILSight.Core;
 public static class NodeContentLoader
 {
     /// <summary>What <paramref name="node"/> shows, made on the thread pool: for metadata its grid of
-    /// rows, made the first time and kept (over a file the library maps, with the page of rows its view opens to read:
-    /// <see cref="MetadataGrids.CreateGrid"/>); for a resource named as a PNG, JPEG, BMP, GIF, ICO, CUR or
+    /// rows, made the first time and kept (over a file the library maps, with its first <paramref name="firstGridRows"/>
+    /// rows read, what the app's first show of it needs: <see cref="MetadataGrids.CreateGrid"/>); for a resource named as a PNG, JPEG, BMP, GIF, ICO, CUR or
     /// SVG file its picture, or when that cannot be decoded the resource as a document with why first;
     /// else the node decompiled with <paramref name="options"/>, which only C# reads. A unit reading the node's module:
     /// closed, reading nothing, when it was released (closed) before.</summary>
     public static Task<ModuleRead<NodeContent>> ReadContentAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language,
-        DecompilerOptions options, CancellationToken cancellationToken = default)
+        DecompilerOptions options, int firstGridRows, CancellationToken cancellationToken = default)
     {
-        return Task.Run(() => ReadContentUnderReadingAsync(session, node, language, options, cancellationToken), cancellationToken);
+        return Task.Run(() => ReadContentUnderReadingAsync(session, node, language, options, firstGridRows, cancellationToken), cancellationToken);
     }
 
     /// <summary>Decompiles <paramref name="node"/> with <paramref name="options"/>, which only C# reads, once the read
@@ -60,7 +60,7 @@ public static class NodeContentLoader
     }
 
     private static async Task<ModuleRead<NodeContent>> ReadContentUnderReadingAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language,
-        DecompilerOptions options, CancellationToken cancellationToken)
+        DecompilerOptions options, int firstGridRows, CancellationToken cancellationToken)
     {
         using var reading = LoadedAssemblies.BeginReading();
         var closed = FindClosed(reading, node);
@@ -69,7 +69,7 @@ public static class NodeContentLoader
             return new ModuleRead<NodeContent>.Closed { Module = closed };
         }
 
-        return new ModuleRead<NodeContent>.Read { Value = await ReadContentAsync(session, reading, node, language, options, cancellationToken) };
+        return new ModuleRead<NodeContent>.Read { Value = await ReadContentAsync(session, reading, node, language, options, firstGridRows, cancellationToken) };
     }
 
     private static async Task<DecompiledDocument> DecompileAsync(BrowseSession session, ModuleReading reading, BrowseNode node,
@@ -79,26 +79,27 @@ public static class NodeContentLoader
     }
 
     /// <summary>The grid <paramref name="node"/> shows: a metadata header, directory, table or heap's, or a
-    /// <c>.resources</c> file's entries; null for a node that shows none.</summary>
-    private static MetadataGrid? GridOf(BrowseNode node)
+    /// <c>.resources</c> file's entries, made with at least <paramref name="firstRows"/> rows read the first time; null
+    /// for a node that shows none.</summary>
+    private static MetadataGrid? GridOf(BrowseNode node, int firstRows)
     {
         if (node.Subject is NodeSubject.MetadataTable table)
         {
-            return MetadataTables.EnsureGrid(table.Value);
+            return MetadataTables.EnsureGrid(table.Value, firstRows);
         }
 
         if (node.Subject is NodeSubject.ResourceContainer container)
         {
-            return ResourceNodes.EnsureGrid(container.Value);
+            return ResourceNodes.EnsureGrid(container.Value, firstRows);
         }
 
         return null;
     }
 
     private static async Task<NodeContent> ReadContentAsync(BrowseSession session, ModuleReading reading, BrowseNode node, DecompilationLanguage language,
-        DecompilerOptions options, CancellationToken cancellationToken)
+        DecompilerOptions options, int firstGridRows, CancellationToken cancellationToken)
     {
-        var grid = GridOf(node);
+        var grid = GridOf(node, firstGridRows);
         if (grid is not null)
         {
             return new NodeContent.Table(grid);

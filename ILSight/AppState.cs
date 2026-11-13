@@ -35,6 +35,11 @@ public sealed class AppState
     /// <summary>The main window as it was left: as the settings held it until the app closes.</summary>
     public WindowBounds? Window;
 
+    /// <summary>How many rows a grid made for a tab reads with its content: what its first show needs, the rows it
+    /// measures its columns over or the window it opens to, the larger (<see cref="MetadataGridArea.MetadataGridFrame.CalculateFirstReadRows"/>),
+    /// as the frame edge last worked it out from the screen's layout; from the window the settings kept until then.</summary>
+    public int FirstGridRows;
+
     /// <summary>What the open list holds while it is open, which switching lists changes together.</summary>
     public required OpenListSession ListSession { get; init; }
 

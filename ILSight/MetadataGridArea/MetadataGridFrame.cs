@@ -11,7 +11,9 @@ namespace ILSight.MetadataGridArea;
 /// drawing it shares, kept on the stack.</summary>
 internal ref struct MetadataGridFrame
 {
-    private const int AutoFitRows = 200;
+    /// <summary>How many rows the columns are measured over as the grid is first shown, whatever its kind: a paged
+    /// grid reads them with its content (<see cref="CalculateFirstReadRows"/>).</summary>
+    public const int SampleRows = 200;
     private const float MaxAutoWidth = 480f;
     private const float FlyoutMinWidth = 320f;
     private const int FlyoutSalt = 0x4D44464C;
@@ -28,6 +30,19 @@ internal ref struct MetadataGridFrame
     public required int MenuId { get; init; }
     private bool _focused;
     private MetadataGridResult _result;
+
+    /// <summary>How many rows a grid reads with its content, so that its first show finds them read: the rows its
+    /// columns are measured over, or the window it opens to, <paramref name="windowHeight"/> tall in rows
+    /// <paramref name="rowHeight"/> tall, when that is more.</summary>
+    public static int CalculateFirstReadRows(float windowHeight, float rowHeight)
+    {
+        if (rowHeight <= 0f)
+        {
+            return SampleRows;
+        }
+
+        return Math.Max(SampleRows, (int)MathF.Ceiling(windowHeight / rowHeight));
+    }
 
     public MetadataGridResult Render()
     {
@@ -88,7 +103,7 @@ internal ref struct MetadataGridFrame
         var theme = Ui.Theme;
         var padding = theme.GapTight * 2;
         var widths = new float[Grid.Columns.Count];
-        var rows = Math.Min(Grid.RowCount, AutoFitRows);
+        var rows = Math.Min(Grid.RowCount, SampleRows);
         for (var c = 0; c < widths.Length; c++)
         {
             var width = MeasureColumn(c, rows);

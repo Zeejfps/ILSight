@@ -50,7 +50,7 @@ public sealed class DecompileIntoTabHandlerTests
         var load = navigation.Restore(tab, greeter, In(DecompilationLanguage.IL), AtLineTen);
         Assert.NotNull(load);
 
-        var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, CancellationToken.None);
+        var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None);
         Assert.Single(ports.Requests).Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Closed { Module = module }));
         await handling;
 
@@ -72,7 +72,7 @@ public sealed class DecompileIntoTabHandlerTests
         Assert.NotNull(load);
         var code = CodeOf("Greeter");
 
-        var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, CancellationToken.None);
+        var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None);
         var request = Assert.Single(ports.Requests);
         Assert.IsType<TabContent.Loading>(tab.Content);
         request.Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Read { Value = code }));
@@ -98,7 +98,7 @@ public sealed class DecompileIntoTabHandlerTests
         Assert.NotNull(load);
         var corrupt = new BadImageFormatException("Bad IL range.");
 
-        var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, CancellationToken.None);
+        var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None);
         Assert.Single(ports.Requests).Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Failed(corrupt));
         await handling;
 
@@ -121,10 +121,10 @@ public sealed class DecompileIntoTabHandlerTests
         var handler = new DecompileIntoTabHandler(ports);
         var older = navigation.Restore(tab, greeter, In(DecompilationLanguage.CSharp), position: null);
         Assert.NotNull(older);
-        var olderHandling = handler.HandleAsync(viewCommands, older, CancellationToken.None);
+        var olderHandling = handler.HandleAsync(viewCommands, older, NodeQueries.FirstGridRows, CancellationToken.None);
         var newer = navigation.Restore(tab, farewell, In(DecompilationLanguage.CSharp), position: null);
         Assert.NotNull(newer);
-        var newerHandling = handler.HandleAsync(viewCommands, newer, CancellationToken.None);
+        var newerHandling = handler.HandleAsync(viewCommands, newer, NodeQueries.FirstGridRows, CancellationToken.None);
         var farewellCode = CodeOf("Farewell");
 
         ports.Requests[0].Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Read { Value = CodeOf("Greeter") }));
@@ -150,7 +150,7 @@ public sealed class DecompileIntoTabHandlerTests
         Assert.NotNull(load);
         viewCommands.Clear();
 
-        var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, CancellationToken.None);
+        var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None);
         navigation.CloseTab(tab);
         Assert.Single(ports.Requests).Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Failed(new BadImageFormatException("Bad IL range.")));
         await handling;
@@ -173,7 +173,7 @@ public sealed class DecompileIntoTabHandlerTests
         viewCommands.Clear();
         using var shutdown = new CancellationTokenSource();
 
-        var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, shutdown.Token);
+        var handling = new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, shutdown.Token);
         ShutDown(shutdown);
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => handling);

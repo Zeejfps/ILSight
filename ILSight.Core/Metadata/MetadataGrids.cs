@@ -18,9 +18,11 @@ public static class MetadataGrids
     /// <summary>The grid titled <paramref name="title"/> of what <paramref name="schema"/> reads from
     /// <paramref name="file"/>, which is <paramref name="module"/>'s own metadata or its debug metadata. For a module
     /// whose image is in memory, each cell is read when it is needed; for one whose file the library maps, the grid is
-    /// paged (<see cref="MetadataGrid.Paged"/>), and the page its view opens to is read now, so that a grid of a window
-    /// or less never shows its rows loading. Call it off the screen's thread, as the node's content is made.</summary>
-    public static MetadataGrid CreateGrid(string title, LoadedModule module, MetadataFile file, GridSchema schema)
+    /// paged (<see cref="MetadataGrid.Paged"/>), and the pages of its first <paramref name="firstRows"/> rows are read
+    /// now: what its first show needs, which the app names (the window its view opens to, and the rows it measures its
+    /// columns over), so that it never shows those rows loading. Call it off the screen's thread, as the node's content
+    /// is made.</summary>
+    public static MetadataGrid CreateGrid(string title, LoadedModule module, MetadataFile file, GridSchema schema, int firstRows)
     {
         var columns = schema.Columns;
         var rows = schema.ReadRows();
@@ -49,9 +51,10 @@ public static class MetadataGrids
             GridColumns = columns,
             Columns = shown,
         };
-        if (rows.Count > 0)
+        var pages = MetadataGrid.Paged.CountPages(Math.Min(firstRows, rows.Count));
+        for (var page = 0; page < pages; page++)
         {
-            grid.AddPage(0, ReadPageUnderReading(grid, 0));
+            grid.AddPage(page, ReadPageUnderReading(grid, page));
         }
 
         return grid;
