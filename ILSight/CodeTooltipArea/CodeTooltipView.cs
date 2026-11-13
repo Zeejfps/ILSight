@@ -55,8 +55,6 @@ internal static class CodeTooltipView
             static (u, unreadable) => RenderUnreadable(u, unreadable.Module));
     }
 
-    /// <summary>Records that <paramref name="unreadable"/>, the module the hovered type or member is in, could not be
-    /// read, and why, where the tooltip's declaration would be.</summary>
     private static RichTextClick RenderUnreadable(Ui<UiState> ui, UnreadableModule unreadable)
     {
         using (ui.Column(new Box { Padding = new Spacing(PaddingX, SignaturePaddingY), Gap = 0f }))
@@ -97,7 +95,6 @@ internal static class CodeTooltipView
         return shown.Clicked;
     }
 
-    /// <summary>Records <paramref name="runs"/> with their links clickable, keeping a click on one.</summary>
     private static void Text(Ui<UiState> ui, ShownTooltip shown, IReadOnlyList<RichTextRun> runs)
     {
         var id = ui.GetId(RuntimeHelpers.GetHashCode(runs));
@@ -158,8 +155,6 @@ internal static class CodeTooltipView
         }
     }
 
-    /// <summary>Whether the declaration stays on one line: when it has no parameters to break
-    /// at, or fits the tooltip's width.</summary>
     private static bool FitsOnOneLine(Ui<UiState> ui, ShownTooltip shown)
     {
         if (shown.Layout.Parameters.Count == 0)
@@ -202,8 +197,6 @@ internal static class CodeTooltipView
         }
     }
 
-    /// <summary>The width of a group's label column: its widest label and the gap after it, at
-    /// most <see cref="MaxLabelWidth"/>.</summary>
     private static float LabelWidth(Ui<UiState> ui, List<TooltipEntry> entries)
     {
         var widest = 0f;
@@ -233,7 +226,6 @@ internal static class CodeTooltipView
         }
     }
 
-    /// <summary>The label in its column, its blocks beside it.</summary>
     private static void RenderColumnEntry(Ui<UiState> ui, ShownTooltip shown, IReadOnlyList<RichTextRun> label, IReadOnlyList<TooltipBlock> blocks,
         float labelWidth)
     {
@@ -251,7 +243,6 @@ internal static class CodeTooltipView
         }
     }
 
-    /// <summary>The label on a line of its own, its blocks indented under it.</summary>
     private static void RenderStackedEntry(Ui<UiState> ui, ShownTooltip shown, IReadOnlyList<RichTextRun> label, IReadOnlyList<TooltipBlock> blocks)
     {
         using (ui.Column(new Box { Gap = ExceptionGap }))
@@ -307,8 +298,8 @@ internal static class CodeTooltipView
         }
     }
 
-    /// <summary>Each row's lead — a marker, or a table's term — in a column of its own, so wrapped
-    /// lines hang under the text rather than the lead.</summary>
+    // Each row's lead (a marker, or a table's term) gets a column of its own so that wrapped lines hang under the text
+    // rather than the lead.
     private static void RenderList(Ui<UiState> ui, ShownTooltip shown, ListBlock list)
     {
         var leadWidth = LeadWidth(ui, list);
@@ -323,8 +314,6 @@ internal static class CodeTooltipView
         }
     }
 
-    /// <summary>A list's lead column: a table's widest term and the column gap, at most
-    /// <see cref="MaxLabelWidth"/>; a marker's width, and more for numbers that need it.</summary>
     private static float LeadWidth(Ui<UiState> ui, ListBlock list)
     {
         var widest = 0f;
@@ -359,8 +348,6 @@ internal static class CodeTooltipView
         }
     }
 
-    /// <summary>The tooltip shown, as rich text, kept until another tooltip, palette, theme or
-    /// language is shown, and the link clicked in it this frame.</summary>
     private sealed class ShownTooltip
     {
         public CodeTooltip? Tooltip;

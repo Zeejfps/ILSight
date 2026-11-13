@@ -56,8 +56,6 @@ public sealed class LayoutTransition
         return routes;
     }
 
-    /// <summary>How far into the move a move from <paramref name="from"/> starts: at its end when there is
-    /// nothing to move from.</summary>
     private static float GetTransitionStart(TypeLayout? from)
     {
         if (from is null)
@@ -166,8 +164,6 @@ public sealed class LayoutTransition
         return to with { Pieces = pieces, Tip = tip, LabelCenter = labelCenter, SourceTip = sourceTip };
     }
 
-    /// <summary><paramref name="pieces"/>, halved one after another, until there are at least
-    /// <paramref name="count"/> of them.</summary>
     private static List<RoutePiece> SubdivideRoute(IReadOnlyList<RoutePiece> pieces, int count)
     {
         var split = pieces.ToList();
@@ -182,8 +178,6 @@ public sealed class LayoutTransition
         return split;
     }
 
-    /// <summary>The point <paramref name="t"/> of the way between two a route may have: the one it moves
-    /// to when it had none, and none when it moves to none.</summary>
     private static PointF? BlendPoints(PointF? from, PointF? to, float t)
     {
         if (from is null)

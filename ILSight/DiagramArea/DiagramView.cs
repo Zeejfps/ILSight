@@ -34,7 +34,7 @@ internal static class DiagramView
     private const float MinIconSize = 4f;
     private const float TextRightPadding = 8f;
 
-    /// <summary>How far below the middle of its row a link's underline runs, in font sizes.</summary>
+    // In font sizes.
     private const float UnderlineDrop = 0.5f;
 
     private const string CanvasId = "diagram";
@@ -63,7 +63,6 @@ internal static class DiagramView
         CardMenu(ui, navigation, view, diagram, tab.ClosedAssembly);
     }
 
-    /// <summary>The tools in a bar of the tab's own, while the bar over documents, where they sit otherwise, is hidden.</summary>
     private static void OwnToolbar(Ui<UiState> ui, DocumentTab tab)
     {
         using (ui.PaneToolbar())
@@ -114,7 +113,7 @@ internal static class DiagramView
         }
     }
 
-    /// <summary>Where the cards were drawn on the last frame.</summary>
+    // Where the cards were drawn on the last frame: this one hasn't laid them out yet.
     private static UiRect GetCanvasRect(Ui<UiState> ui)
     {
         ui.TryGetRect(ui.GetId(CanvasId), out var rect);
@@ -171,7 +170,6 @@ internal static class DiagramView
         }
     }
 
-    /// <summary>Where the selected card is drawn now, before the layout moves on; null when none is.</summary>
     private static PointF? FindSelectedPlace(DiagramViewState view)
     {
         var selected = view.Selected;
@@ -183,8 +181,6 @@ internal static class DiagramView
         return view.Transition.FindCardPlace(selected);
     }
 
-    /// <summary>Moves toward the diagram's newest layout, drawing again until the move ends; a new layout
-    /// is of the diagram as it was last measured.</summary>
     private static void FollowLayout(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)
     {
         view.FollowLayout(diagram.Layout);
@@ -195,8 +191,7 @@ internal static class DiagramView
         }
     }
 
-    /// <summary>Moves the view along with the selected card, which was drawn at <paramref name="before"/>, so
-    /// that it stays where it is on the screen while the others move around it.</summary>
+    // So that the selected card stays where it is on the screen while the others move around it.
     private static void HoldSelectedCard(DiagramViewState view, PointF? before)
     {
         if (before is null)
@@ -214,8 +209,6 @@ internal static class DiagramView
         view.Camera.LookFrom(new PointF(corner.X + after.Value.X - before.Value.X, corner.Y + after.Value.Y - before.Value.Y));
     }
 
-    /// <summary>Fits the first layout that places cards to <paramref name="rect"/>, then brings the card
-    /// focused into it once a layout of the diagram as it is now places it.</summary>
     private static void BringIntoView(DiagramViewState view, TypeDiagram diagram, UiRect rect)
     {
         var layout = view.Transition.Layout;
@@ -225,6 +218,7 @@ internal static class DiagramView
         }
 
         view.FitFirstLayout(layout, rect);
+        // Only a layout of the diagram as it is now places the card to focus.
         if (view.LaidOutVersion != diagram.Version)
         {
             return;
@@ -233,7 +227,6 @@ internal static class DiagramView
         view.FocusPendingCard(layout, rect);
     }
 
-    /// <summary>The card and row under the pointer, while it is over the cards or holds a press on them.</summary>
     private static DiagramHit GetHit(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram, Interaction i, bool hasRect, UiRect rect)
     {
         if (!hasRect)
@@ -250,9 +243,9 @@ internal static class DiagramView
         return HitAt(view, diagram, point);
     }
 
-    /// <summary>The topmost card drawn at <paramref name="point"/> of the diagram, and its row there.</summary>
     private static DiagramHit HitAt(DiagramViewState view, TypeDiagram diagram, PointF point)
     {
+        // From the last: the cards drawn last are on top.
         for (var i = diagram.Cards.Count - 1; i >= 0; i--)
         {
             var hit = HitCard(view, diagram.Cards[i], point);
@@ -317,8 +310,6 @@ internal static class DiagramView
         return across && down;
     }
 
-    /// <summary>The wheel scrolls the diagram while the pointer is over it, and zooms it about the pointer
-    /// with Ctrl.</summary>
     private static void Scroll(Ui<UiState> ui, DiagramViewState view, UiRect rect, bool hovered)
     {
         if (!hovered)
@@ -356,7 +347,6 @@ internal static class DiagramView
         return (modifiers & (KeyModifiers.Control | KeyModifiers.Super)) != 0;
     }
 
-    /// <summary>Keeps what a press landed on.</summary>
     private static void Press(DiagramViewState view, Interaction i, DiagramHit hit)
     {
         if (!i.Pressed)
@@ -367,8 +357,6 @@ internal static class DiagramView
         view.PressOn(hit);
     }
 
-    /// <summary>Begins opening the code <paramref name="row"/> stands for, when it stands for a type or member
-    /// (<see cref="Navigation.BeginResolvingFromDiagram"/>), and asks for it to be looked up and shown.</summary>
     private static void OpenCode(UiState screen, Navigation navigation, TypeDiagram diagram, CardRow? row, bool inNewTab)
     {
         if (row is null)
@@ -385,7 +373,6 @@ internal static class DiagramView
         Commands.FollowLater(screen, target, navigation.BeginResolvingFromDiagram(diagram, inNewTab));
     }
 
-    /// <summary>A press dragged further than a click pans the diagram along with the pointer.</summary>
     private static void Pan(Ui<UiState> ui, DiagramViewState view, Interaction i)
     {
         if (!ui.TryGetDragStart(i, view.Camera.Corner, out var start))
@@ -406,7 +393,6 @@ internal static class DiagramView
         view.Camera.LookFrom(new PointF(start.X - dx / zoom, start.Y - dy / zoom));
     }
 
-    /// <summary>Counts the camera's move as done once no press drags it and the cards stopped moving it along.</summary>
     private static void SettleCamera(DiagramViewState view, Interaction i)
     {
         if (i.Held)
@@ -432,9 +418,6 @@ internal static class DiagramView
         return view.PressMoved;
     }
 
-    /// <summary>A right click opens the menu of the card under the pointer, a middle click opens its code in
-    /// a new tab, and a left click that did not pan picks what it was pressed on and opens the code of the
-    /// type or member there, in a new tab with Ctrl held.</summary>
     private static void Click(Ui<UiState> ui, Navigation navigation, DiagramViewState view, TypeDiagram diagram, Interaction i, DiagramHit hit)
     {
         if (i.ClickedWith(PointerButton.Right))
@@ -473,8 +456,6 @@ internal static class DiagramView
         ui.OpenContextMenu(MenuId);
     }
 
-    /// <summary>Selects the card <paramref name="hit"/> is on, or none off the cards, and folds or unfolds the
-    /// part whose row it is on.</summary>
     private static void Pick(DiagramViewState view, DiagramHit hit)
     {
         var face = FaceOf(hit);
@@ -498,7 +479,6 @@ internal static class DiagramView
         Diagrams.ToggleFold(view, fold.Part);
     }
 
-    /// <summary>A hand over a row a click acts on: one that opens code or folds a part; none while panning.</summary>
     private static void ShowHandOverClickable(Ui<UiState> ui, DiagramViewState view, Interaction i, DiagramHit hit)
     {
         if (IsPanning(view, i))
@@ -538,7 +518,6 @@ internal static class DiagramView
         FillCards(view, diagram, hit, frame);
     }
 
-    /// <summary>The links of the layout drawn whose cards the diagram still shows, each as it is drawn now.</summary>
     private static void FillLinks(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram, DiagramFrame frame)
     {
         var layout = view.Transition.Layout;
@@ -590,7 +569,6 @@ internal static class DiagramView
         };
     }
 
-    /// <summary>The cards the layout drawn places, each where it is drawn now.</summary>
     private static void FillCards(DiagramViewState view, TypeDiagram diagram, DiagramHit hit, DiagramFrame frame)
     {
         for (var i = 0; i < diagram.Cards.Count; i++)
@@ -619,7 +597,6 @@ internal static class DiagramView
         }
     }
 
-    /// <summary>The row of <paramref name="face"/> the pointer is on when it does something, else -1.</summary>
     private static int HoveredRowOf(CardFace face, DiagramHit hit)
     {
         if (hit is not DiagramHit.Row row)
@@ -632,6 +609,7 @@ internal static class DiagramView
             return -1;
         }
 
+        // A stereotype row does nothing, so it shows no hover.
         if (row.Value.Content is CardRowContent.Stereotype)
         {
             return -1;
@@ -640,8 +618,6 @@ internal static class DiagramView
         return row.Index;
     }
 
-    /// <summary>The declaration and documentation of the type or member under the pointer, once it has
-    /// rested there, under the pointer; none while the diagram pans.</summary>
     private static void MemberTooltip(Ui<UiState> ui, Navigation navigation, CodeTooltips tooltips, DiagramViewState view, TypeDiagram diagram, int canvasId,
         bool isPanning, DiagramHit hit)
     {
@@ -701,8 +677,6 @@ internal static class DiagramView
         return HashCode.Combine(row.Face.Card.Type, row.Index) | 1;
     }
 
-    /// <summary>A link clicked in the tooltip opens its code, in a new tab with a middle click or Ctrl, and
-    /// closes the tooltip.</summary>
     private static void FollowLink(Ui<UiState> ui, Navigation navigation, TypeDiagram diagram, RichTextClick click)
     {
         if (click.Link is not CodeReference.Entity reference)
@@ -780,9 +754,6 @@ internal static class DiagramView
         }
     }
 
-    /// <summary>The items that add the types <paramref name="card"/> is related to, each offered when it has
-    /// such relations, and enabled while the diagram lacks some of them; all unavailable, saying <paramref name="why"/>,
-    /// once an assembly the diagram reads was closed.</summary>
     private static void GrowItems(Ui<UiState> ui, TypeDiagram diagram, TypeCard card, string? why)
     {
         var t = ui.State.Strings;
@@ -822,7 +793,6 @@ internal static class DiagramView
         return card.Links.Any(isKind);
     }
 
-    /// <summary>Implementations for an interface, derived types for a class.</summary>
     private static string DerivedItemOf(Ui<UiState> ui, TypeCard card)
     {
         var t = ui.State.Strings;
@@ -860,8 +830,6 @@ internal static class DiagramView
         return new PointF(p.Rect.X + (point.X - frame.Corner.X) * frame.Zoom, p.Rect.Y + (point.Y - frame.Corner.Y) * frame.Zoom);
     }
 
-    /// <summary>Links that say what a type is, derived from or implemented, in the color of types; links
-    /// that say what it has, the types its properties hold, in the color of data.</summary>
     private static void PaintLink(UiPainter p, DiagramFrame frame, DrawnLink link)
     {
         var isHeld = link.Link.IsHeld;
@@ -892,8 +860,6 @@ internal static class DiagramView
         p.CubicBezier(start, control1, control2, end, stroke, color, dash, gap);
     }
 
-    /// <summary>A hollow triangle at the end of a link to a type derived from or implemented, an open
-    /// arrowhead at the end of one to a type held.</summary>
     private static void PaintArrowhead(UiPainter p, DiagramFrame frame, DrawnLink link, uint color, float stroke)
     {
         var tip = ToScreen(p, frame, link.Route.Tip);
@@ -907,9 +873,9 @@ internal static class DiagramView
         p.HollowArrowhead(tip, tail, length, HollowArrowWidth * frame.Zoom, stroke, color);
     }
 
-    /// <summary>A hollow diamond on the card of a type holding the other, where the route leaves room for one.</summary>
     private static void PaintDiamond(UiPainter p, DiagramFrame frame, LinkRoute route, uint color, float stroke)
     {
+        // No source tip: the route leaves no room for a diamond.
         if (route.SourceTip is null)
         {
             return;
@@ -926,7 +892,6 @@ internal static class DiagramView
         p.HollowDiamond(tip, back, length, DiamondWidth * frame.Zoom, stroke, color);
     }
 
-    /// <summary>Where the route's arrowhead starts: where its pieces end, or at its tip when it has none.</summary>
     private static PointF GetArrowTail(LinkRoute route)
     {
         if (route.Pieces.Count == 0)
@@ -937,7 +902,6 @@ internal static class DiagramView
         return route.Pieces[^1].End;
     }
 
-    /// <summary>The label of a link as a tag bordered in its color.</summary>
     private static void PaintLabel(UiPainter p, DiagramFrame frame, DrawnLink link, uint color)
     {
         if (link.Label is null)
@@ -1018,7 +982,6 @@ internal static class DiagramView
             member: static (s, member) => PaintIconRow(s.p, s.frame, s.rect, s.left, s.row, member.Icon, member.Accessibility, bold: false, s.underlined));
     }
 
-    /// <summary>A row of a type's or a member's icon and its text after it, bold for a type's name.</summary>
     private static void PaintIconRow(UiPainter p, DiagramFrame frame, UiRect rect, float left, CardRow row, NodeIcon icon,
         NodeAccessibility accessibility, bool bold, bool underlined)
     {
@@ -1043,8 +1006,6 @@ internal static class DiagramView
         p.Line(new PointF(left, y), new PointF(left + width, y), thickness, color);
     }
 
-    /// <summary>The icon of a node of <paramref name="kind"/> as the tree draws it, with the overlay of its
-    /// <paramref name="accessibility"/>.</summary>
     private static void PaintIcon(UiPainter p, DiagramFrame frame, UiRect row, float left, NodeIcon kind, NodeAccessibility accessibility)
     {
         var size = MathF.Round(frame.Theme.IconSize * frame.Zoom);

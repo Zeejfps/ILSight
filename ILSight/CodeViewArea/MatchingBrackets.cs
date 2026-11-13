@@ -58,7 +58,6 @@ public static class MatchingBrackets
         return null;
     }
 
-    /// <summary>The character at <paramref name="at"/> when it is code, not in a string or comment; else none.</summary>
     private static char BracketAt(DecompiledDocument document, TextPosition at)
     {
         if (at.Line < 0 || at.Line >= document.Lines.Length)

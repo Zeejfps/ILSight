@@ -123,8 +123,6 @@ public static class CommandLines
         }
     }
 
-    /// <summary>Takes <paramref name="arg"/>'s value as the settings file, made absolute from this process's
-    /// folder, so that finding the running app, reading and writing all use the same path.</summary>
     private static void ReadSettingsPath(Reader reader, string arg)
     {
         var name = ReadName(arg.Substring(SettingsOption.Length));
@@ -133,6 +131,8 @@ public static class CommandLines
             reader.Ignored.Add(arg);
             return;
         }
+        // Made absolute from this process's folder so that finding the running app, reading and writing all use the
+        // same path.
         var path = FullFilePath.Parse(Path.Combine(Environment.CurrentDirectory, name));
         if (path == null)
         {
@@ -175,7 +175,6 @@ public static class CommandLines
         reader.NavigateTo = id;
     }
 
-    /// <summary>Takes <paramref name="arg"/> as a file, made absolute from this process's folder.</summary>
     private static void AddAssemblyPath(Reader reader, string arg)
     {
         var path = AssemblyPath.Parse(Path.Combine(Environment.CurrentDirectory, arg));
@@ -187,7 +186,6 @@ public static class CommandLines
         reader.AssemblyPaths.Add(path);
     }
 
-    /// <summary>The language named <paramref name="name"/>, in any case; null for one the app does not have.</summary>
     private static DecompilationLanguage? ParseLanguage(string name)
     {
         var upper = name.ToUpperInvariant();
@@ -202,7 +200,6 @@ public static class CommandLines
         };
     }
 
-    /// <summary>The name without the spaces around it; null for a blank one.</summary>
     private static string? ReadName(string name)
     {
         var trimmed = name.Trim();
@@ -214,7 +211,6 @@ public static class CommandLines
         return trimmed;
     }
 
-    /// <summary>What has been read of the arguments so far.</summary>
     private sealed class Reader
     {
         public readonly List<AssemblyPath> AssemblyPaths = new();

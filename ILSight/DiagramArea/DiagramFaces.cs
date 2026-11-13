@@ -169,9 +169,6 @@ internal static class DiagramFaces
         AddFold(stack, view, new CardFold.Inherited { Card = card.Anchor, From = group.From }, title, members);
     }
 
-    /// <summary>The members of <paramref name="members"/>, of the assembly at <paramref name="assemblyPath"/>,
-    /// that the card shows: all of them for one of the diagram's own assemblies or while the filter shows
-    /// hidden ones, else those other assemblies can reach.</summary>
     private static List<CardMember> ListShown(DiagramViewState view, TypeDiagram diagram, AssemblyPath? assemblyPath, IReadOnlyList<CardMember> members)
     {
         if (view.ShowsHiddenMembers)
@@ -189,8 +186,6 @@ internal static class DiagramFaces
             .ToList();
     }
 
-    /// <summary>Adds the row of <paramref name="fold"/>, titled <paramref name="title"/> with how many members
-    /// it holds, and while it is open a row for each member; nothing when it holds none.</summary>
     private static void AddFold(RowStack stack, DiagramViewState view, CardFold fold, string title, List<CardMember> members)
     {
         if (members.Count == 0)
@@ -307,8 +302,6 @@ internal static class DiagramFaces
             member: static (stack, _) => stack.IconSize + IconGap);
     }
 
-    /// <summary>The rows of a card stacked from its top, and how wide the widest of them is, measured in
-    /// the screen's fonts.</summary>
     private sealed class RowStack
     {
         public required Ui<UiState> Ui { get; init; }

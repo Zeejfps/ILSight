@@ -111,7 +111,6 @@ public sealed class ComparisonChoice
             .OrderByDescending(a => string.Equals(a.Name, compared.Name, StringComparison.OrdinalIgnoreCase));
     }
 
-    /// <summary>Filters the candidates, selecting the first shown unless the one selected still is.</summary>
     private void ApplyFilter(string filter)
     {
         if (!IsOpen)

@@ -53,9 +53,6 @@ internal static class DocumentsView
             unreadable: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab));
     }
 
-    /// <summary>The bar over a tab whose assembly was closed, saying so: the tab keeps what it showed and reads it no
-    /// more (<see cref="TabLoad.ShowClosed"/>, <see cref="TabDocument.ShowClosed"/>). Nothing while <paramref name="assembly"/>, the closed file's name, is
-    /// null.</summary>
     private static void ClosedBanner(Ui<UiState> ui, string? assembly)
     {
         if (assembly is null)
@@ -84,8 +81,6 @@ internal static class DocumentsView
         return ui.Memo("closed", (closedAssembly, t: ui.State.Strings), static a => a.t.DocumentClosed(a.closedAssembly));
     }
 
-    /// <summary>The code view of <paramref name="tab"/>, whose node <paramref name="loading"/> is on its way, or a
-    /// hint while a node that shows a grid or a picture is.</summary>
     private static void RenderLoading(Ui<UiState> ui, Navigation navigation, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab,
         TabContent.Loading loading)
     {
@@ -134,8 +129,6 @@ internal static class DocumentsView
         Zoom(ui.State, result.Zoom);
     }
 
-    /// <summary>Does what the user asked the code view of <paramref name="tab"/> to do; once its assembly was closed, what
-    /// would read it is unavailable, and says why where the user acted.</summary>
     private static void Act(Ui<UiState> ui, Navigation navigation, DocumentTab tab, CodeViewIntent intent)
     {
         var closed = tab.Load.ClosedAssembly;
@@ -189,15 +182,12 @@ internal static class DocumentsView
         return TabPlaceholders.GetDocument(view.Placeholder, content, screen.Strings);
     }
 
-    /// <summary>Whether <paramref name="content"/> is shown as a note saying why there is no code.</summary>
     private static bool IsNote(TabContent content)
     {
         return content is TabContent.Loading or TabContent.Failed or TabContent.Reloading or TabContent.Reopening or TabContent.Gone
             or TabContent.Unreadable;
     }
 
-    /// <summary>Toggles the bookmark on <paramref name="line"/>, selecting the one made, or passing the
-    /// selection of the one removed on.</summary>
     private static void ToggleLineBookmark(UiState screen, AppState appState, DocumentTab tab, int line, Strings t)
     {
         var toggle = Bookmarks.ToggleBookmark(appState, tab, line, number => t.BookmarksDefaultName(number));
@@ -213,7 +203,6 @@ internal static class DocumentsView
         return new DockTab(title, Tooltip: tooltip, Current: tab == navigation.ActiveTab, Icon: icon, TitleFont: font);
     }
 
-    /// <summary>Italics for the preview tab's title, the theme's font for any other.</summary>
     private static string? TitleFontOf(Navigation navigation, DocumentTab tab)
     {
         if (tab != navigation.PreviewTab)
@@ -224,7 +213,6 @@ internal static class DocumentsView
         return TextFonts.Italic;
     }
 
-    /// <summary>The tab's icon: its node's as the tree shows it, a diagram's, else a page.</summary>
     private static UiIcon IconOf(UiState screen, DocumentTab tab)
     {
         if (tab.Diagram is not null)
@@ -241,7 +229,6 @@ internal static class DocumentsView
         return NodeIcons.Icon(node, screen.NodeIconPalette, screen.Icons);
     }
 
-    /// <summary>The tab's title: its node's name as the tree labels it, a report's, else its own title, else a new tab's.</summary>
     private static string TitleOf(UiState screen, DocumentTab tab)
     {
         if (tab.Content is TabContent.Report)

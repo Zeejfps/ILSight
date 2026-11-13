@@ -98,8 +98,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         return ReopenAssemblyAsync(session, reopens, decompiler, assembly, ct);
     }
 
-    /// <summary>Whether <paramref name="framework"/>, null for the one the assembly was built for, is
-    /// what its references are resolved against now.</summary>
+    // A null framework is the one the assembly was built for.
     private static bool IsInUse(LoadedModule assembly, TargetFrameworkId? framework)
     {
         if (!assembly.IsTargetFrameworkPicked)
@@ -120,9 +119,6 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         frameworks.Pick(assembly.FilePath, framework);
     }
 
-    /// <summary>Reads the item of the list holding <paramref name="assembly"/> again, its nodes loaded as far as
-    /// they were, then lists it where the item is and shows each tab's place in it again, returning the loads that
-    /// started in the tabs. The other assemblies stay as they are.</summary>
     private async Task<List<DecompileTicket>> ReopenAssemblyAsync(OpenListSession session, Reopens reopens, DecompilerChoice decompiler,
         LoadedAssembly assembly, CancellationToken ct)
     {
@@ -160,9 +156,6 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         return path.FilePath.Equals(item.FilePath);
     }
 
-    /// <summary>Lists what the reopen read, unless another one started since, and shows each tab's place in it
-    /// again, or reports why it failed. A read another reopen replaced is dropped, its fresh file released, as nothing
-    /// lists it. Returns the loads it started in the tabs.</summary>
     private List<DecompileTicket> FinishReopen(Reopens reopens, OpenListSession session, DecompilerSetup decompiler, LoadedAssembly item,
         Outcome<ReopenedFile> outcome, int ticket, List<ReloadingTab> tabs)
     {
@@ -177,7 +170,6 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             failed => ReportNotReopened(item, failed.Error));
     }
 
-    /// <summary>Releases the fresh file <paramref name="outcome"/> read, if it read one, which nothing lists.</summary>
     private void ReleaseUnlisted(Outcome<ReopenedFile> outcome)
     {
         if (outcome is Outcome<ReopenedFile>.Ok read)
@@ -186,7 +178,6 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         }
     }
 
-    /// <summary>Reports why <paramref name="item"/> could not be read again. Returns no loads: none started.</summary>
     private List<DecompileTicket> ReportNotReopened(LoadedAssembly item, Exception error)
     {
         ports.ReportError(new AppProblem.AssemblyNotReloaded { Assembly = item.Name, Error = error });
@@ -231,9 +222,8 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         return FinishReload(session, viewCommands, decompiler.Setup, reloaded, ticket, intent, tabs);
     }
 
-    /// <summary>Lets go of the node each tab shows, to find its place again in what the reload reads; a tab whose
-    /// assembly was closed (<see cref="TabLoad.ShowClosed"/>) keeps what it shows, reading nothing, unless its file
-    /// is on <paramref name="assemblies"/> again, where its place is found as any other's.</summary>
+    // Each tab lets go of its node so that its place is found again in what the reload reads; a tab whose assembly was
+    // closed keeps what it shows, as no file is read for it.
     private static List<ReloadingTab> ReleaseShownTabs(Navigation navigation, AssemblyList assemblies, DecompilationLanguage language)
     {
         var reloading = new List<ReloadingTab>();
@@ -257,8 +247,6 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         return reloading;
     }
 
-    /// <summary>Whether <paramref name="tab"/>, at <paramref name="location"/>, shows a node whose assembly was closed
-    /// and whose file <paramref name="assemblies"/> doesn't list again.</summary>
     private static bool IsKeptClosed(DocumentTab tab, AssemblyList assemblies, NodePath location)
     {
         if (tab.Load.ClosedAssembly is null)
@@ -274,8 +262,6 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         return Navigation.KeepPosition(tab.Load.Position, tab.Load.Language, language);
     }
 
-    /// <summary>Shows what the reload found, unless another one started since, or reports why it failed. Returns
-    /// the loads it started in the tabs.</summary>
     private TabLoads FinishReload(OpenListSession session, Queue<ViewCommand> viewCommands, DecompilerSetup decompiler, Outcome<ReloadedNodes> outcome,
         ReloadTicket ticket, int intent, List<ReloadingTab> tabs)
     {
@@ -289,8 +275,6 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
             failed => ShowNotReloaded(session, failed.Error));
     }
 
-    /// <summary>Shows what the tabs reopened from the saved documents showed, the nodes those wait for still to be
-    /// found, and reports why the reload failed. Returns the loads it started in the tabs.</summary>
     private TabLoads ShowNotReloaded(OpenListSession session, Exception error)
     {
         var reopened = SavedDocuments.ShowReopenedDocuments(session.Navigation, session.Reopened, session.Assemblies);
@@ -298,9 +282,6 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         return reopened;
     }
 
-    /// <summary>Shows each tab's place again and what the tabs reopened from the saved documents showed, the nodes
-    /// those wait for still to be found, and has the restored analyses that failed looked for again in what was read.
-    /// Returns the loads it started in the tabs, the lookup of those nodes and of those analyses among them.</summary>
     private TabLoads ShowReloaded(OpenListSession session, Queue<ViewCommand> viewCommands, DecompilerSetup decompiler, ReloadedNodes reloaded, int intent,
         List<ReloadingTab> tabs)
     {
@@ -329,10 +310,6 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         }
     }
 
-    /// <summary>Shows the node <paramref name="place"/> found, the tab's place found again, in the tab, or that its
-    /// place is gone, or in a module that could not be read, unless the tab was closed or shows something else now.
-    /// True when it shows the <paramref name="node"/>, adding the load it started in the tab to
-    /// <paramref name="loads"/>.</summary>
     private bool TryShowAgain(Navigation navigation, DecompilerSetup decompiler, ReloadingTab reloading, Lookup<BrowseNode> place,
         List<DecompileTicket> loads, [NotNullWhen(true)] out BrowseNode? node)
     {
@@ -386,7 +363,6 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable));
     }
 
-    /// <summary>A tab whose place is being found again, as it was when that started.</summary>
     private sealed record ReloadingTab
     {
         public required DocumentTab Tab { get; init; }

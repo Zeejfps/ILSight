@@ -36,7 +36,6 @@ public static class CodeViewWidget
         return state.Layout.Document is null ? "" : CodeText.Between(state.Layout.Document, state.Selection.Start, state.Selection.End);
     }
 
-    /// <summary>The selected text as HTML in <paramref name="style"/>, a div per line.</summary>
     private static string GetSelectedHtml(CodeViewState state, CodeHtmlStyle style)
     {
         return state.Layout.Document is null ? "" : CodeHtml.Between(state.Layout.Document, state.Selection.Start, state.Selection.End, style);
@@ -139,8 +138,6 @@ public static class CodeViewWidget
 
     private const double CaretBlinkSeconds = 0.53;
 
-    /// <summary>Whether the caret shows this frame: only in a focused view, from when it last moved for half a
-    /// blink, then off for as long, asking for the frame where that next changes.</summary>
     private static bool IsCaretShown(Ui<UiState> ui, CodeViewState state, bool focused)
     {
         if (!focused)
@@ -150,6 +147,7 @@ public static class CodeViewWidget
 
         state.Blink.Follow(state.Selection.Caret, ui.RealTime);
         var phase = (ui.RealTime - state.Blink.From) % (CaretBlinkSeconds * 2);
+        // Nothing else may draw a frame when the caret next shows or hides.
         ui.RequestUpdateIn(CaretBlinkSeconds - phase % CaretBlinkSeconds);
         return phase < CaretBlinkSeconds;
     }
@@ -464,7 +462,6 @@ public static class CodeViewWidget
         return new CodeViewResult { Intent = intent, Zoom = zoom };
     }
 
-    /// <summary>How many digits wide the line numbers are, at least three; none when they are hidden.</summary>
     private static int LineNumberDigits(DecompiledDocument document, DisplayOptions display)
     {
         if (!display.ShowLineNumbers)
@@ -476,8 +473,6 @@ public static class CodeViewWidget
         return Math.Max(3, digits);
     }
 
-    /// <summary>The height of a row of code at <paramref name="fontSize"/>: the theme's, grown or shrunk
-    /// with the size, and never less than the font's own.</summary>
     private static float RowHeightFor(UiTheme theme, float fontSize, CellMetrics cell)
     {
         var scaled = MathF.Ceiling(theme.CodeLineHeight * fontSize / theme.MonoFontSize);
@@ -485,7 +480,6 @@ public static class CodeViewWidget
         return MathF.Max(scaled, fontHeight);
     }
 
-    /// <summary>The size change asked this frame: Ctrl with =, - or 0 while focused, or Ctrl with the wheel while hovered.</summary>
     private static CodeZoom ZoomAsked(Ui<UiState> ui, bool focused, bool hovered)
     {
         if (focused)
@@ -550,8 +544,6 @@ public static class CodeViewWidget
         return (modifiers & (KeyModifiers.Control | KeyModifiers.Super)) != 0;
     }
 
-    /// <summary>Fills what <paramref name="display"/> draws around the text: the caret's line and the
-    /// brackets matching at the caret.</summary>
     private static void FillDisplayAids(CodeViewState state, DecompiledDocument document, DisplayOptions display, float fontSize)
     {
         var caret = state.Selection.Caret;
@@ -569,7 +561,6 @@ public static class CodeViewWidget
         return MatchingBrackets.Find(state, document, caret);
     }
 
-    /// <summary>The span under the pointer and where the view's text starts on screen.</summary>
     private readonly record struct HoveredSpan
     {
         public required CodeSpanAt? Span { get; init; }
@@ -579,8 +570,6 @@ public static class CodeViewWidget
         public required float TextY { get; init; }
     }
 
-    /// <summary>The tooltip of the type or member under the pointer, under its span once it has
-    /// been looked up.</summary>
     private static CodeViewIntent? ReferenceTooltip(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, CodeTooltips tooltips,
         int codeId, HoveredSpan hovered, float advance, float rowHeight)
     {
@@ -610,8 +599,6 @@ public static class CodeViewWidget
         return FollowLink(ui, click);
     }
 
-    /// <summary>The tooltip of the type or member under the pointer in the code of <paramref name="closedAssembly"/>, which
-    /// was closed: it says so, under the span, looking nothing up.</summary>
     private static void ClosedTooltip(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, int codeId, HoveredSpan hovered,
         float advance, float rowHeight, string closedAssembly)
     {
@@ -633,8 +620,6 @@ public static class CodeViewWidget
         CodeTooltipView.RenderClosed(ui, closedAssembly);
     }
 
-    /// <summary>A link clicked in the tooltip asks to navigate to it, in a new tab with a middle
-    /// click or Ctrl, and closes the tooltip.</summary>
     private static CodeViewIntent? FollowLink(Ui<UiState> ui, RichTextClick click)
     {
         if (click.Link is not CodeReference.Navigable reference)
@@ -648,8 +633,6 @@ public static class CodeViewWidget
         return new CodeViewIntent.Navigate { Target = reference, InNewTab = inNewTab };
     }
 
-    /// <summary>The tooltip of the span under the pointer when it points at a type or member and
-    /// its lookup is done; null otherwise, and while a press drags a selection.</summary>
     private static Lookup<CodeTooltip>? TooltipOf(CodeViewState state, DecompiledDocument document, CodeTooltips tooltips, HoveredSpan hovered)
     {
         var entity = FindHoveredEntity(state, document, hovered);
@@ -661,8 +644,6 @@ public static class CodeViewWidget
         return tooltips.FindShown(entity);
     }
 
-    /// <summary>The type or member the span under the pointer names; null for another span, none, and while a press
-    /// drags a selection.</summary>
     private static CodeReference.Entity? FindHoveredEntity(CodeViewState state, DecompiledDocument document, HoveredSpan hovered)
     {
         var span = hovered.Span;
@@ -679,8 +660,7 @@ public static class CodeViewWidget
         return document.Lines[span.Value.Line].Spans[span.Value.Span].Reference as CodeReference.Entity;
     }
 
-    /// <summary>The hovered span, widened to the left by the tooltip's padding so the tooltip's
-    /// text starts where the word does.</summary>
+    // Widened to the left by the tooltip's padding so that the tooltip's text starts where the word does.
     private static UiRect TooltipAnchor(CodeViewState state, DecompiledDocument document, HoveredSpan hovered, float advance, float rowHeight)
     {
         var span = SpanRect(state, document, hovered, advance, rowHeight);
@@ -757,8 +737,8 @@ public static class CodeViewWidget
         ScrollToPending(ui, state, pending, document, rowHeight, advance, textLeft, content, deltaY);
     }
 
-    /// <summary>Scrolls by <paramref name="deltaY"/> and where <paramref name="pending"/> asks, once the view is laid
-    /// out: a position restored first, so the scroll moves on from it; the others after it, so they win over it.</summary>
+    // A position restored goes before the scroll, so the scroll moves on from it; the others go after it, so they win
+    // over it.
     private static void ScrollToPending(Ui<UiState> ui, CodeViewState state, PendingScroll pending, DecompiledDocument document, float rowHeight,
         float advance, float textLeft, UiRect content, float deltaY)
     {
@@ -878,7 +858,6 @@ public static class CodeViewWidget
         state.Reveal.Arrive();
     }
 
-    /// <summary>Scrolls as little as brings the caret's row, and its column on a line that is shown, into view.</summary>
     private static void ShowCaret(CodeViewState state, DecompiledDocument document, float rowHeight, float advance, float textLeft, UiRect content)
     {
         var folds = state.Folds;
@@ -912,8 +891,6 @@ public static class CodeViewWidget
         }
     }
 
-    /// <summary>What the span at <paramref name="at"/> refers to, or else the span just before it, so a caret
-    /// at the end of a name finds it; null when neither refers to anything.</summary>
     private static CodeReference? FindReferenceAt(DecompiledDocument document, TextPosition at)
     {
         if (at.Line < 0 || at.Line >= document.Lines.Length)
@@ -922,6 +899,7 @@ public static class CodeViewWidget
         }
 
         var spans = document.Lines[at.Line].Spans;
+        // Or else the span just before it, so that a caret at the end of a name finds it.
         foreach (var column in (ReadOnlySpan<int>)[at.Column, at.Column - 1])
         {
             if (column < 0)
@@ -944,8 +922,6 @@ public static class CodeViewWidget
         return null;
     }
 
-    /// <summary>The type or member named at <paramref name="at"/> or just before it, as the caret
-    /// sits after a word as often as in it; punctuation linked to a member does not count.</summary>
     private static CodeReference.Entity? AnalyzableAt(DecompiledDocument document, TextPosition at)
     {
         if (at.Line < 0 || at.Line >= document.Lines.Length)
@@ -954,6 +930,7 @@ public static class CodeViewWidget
         }
 
         var spans = document.Lines[at.Line].Spans;
+        // Just before it too, as the caret sits after a word as often as in it.
         foreach (var column in (ReadOnlySpan<int>)[at.Column, at.Column - 1])
         {
             if (column < 0)
@@ -976,10 +953,10 @@ public static class CodeViewWidget
         return null;
     }
 
-    /// <summary>The type or member Analyze applies to on <paramref name="span"/>: one it names; null on punctuation
-    /// linked to a member, and on text naming nothing. The menu and the key both decide by it.</summary>
+    // The menu and the key both decide by it, so that they agree on what Analyze applies to.
     private static CodeReference.Entity? AnalyzableIn(DocumentSpan span)
     {
+        // Punctuation linked to a member is a plain span: Analyze doesn't apply to it.
         if (span.Kind != SpanKind.Plain && span.Reference is CodeReference.Entity entity)
         {
             return entity;
@@ -1011,12 +988,6 @@ public static class CodeViewWidget
         }
     }
 
-    /// <summary>Moves the caret as <paramref name="key"/> with <paramref name="modifiers"/> asks, extending the
-    /// selection with Shift, and scrolls it into view: the arrows by character, by word with Ctrl, or Option on
-    /// macOS, and by row; Home and End to the ends of the line, and with Ctrl, or Command on macOS, as Command
-    /// with the arrows, to the ends of the document; Page Up and Page Down by a view, scrolling with it.
-    /// Ctrl with Up or Down scrolls a row and leaves the caret. Alt with Left or Right goes back and forward,
-    /// outside macOS, and moves nothing here.</summary>
     private static void MoveCaret(CodeViewState state, DecompiledDocument document, KeyboardKey key, KeyModifiers modifiers)
     {
         if (document.Lines.Length == 0)
@@ -1036,6 +1007,7 @@ public static class CodeViewWidget
         TextPosition to;
         switch (key)
         {
+            // Alt with Left or Right goes back and forward outside macOS: it moves nothing here.
             case KeyboardKey.LeftArrow when !mac && alt:
             case KeyboardKey.RightArrow when !mac && alt:
                 return;
@@ -1093,8 +1065,6 @@ public static class CodeViewWidget
         PutCaret(state, to, extend);
     }
 
-    /// <summary>Moves the caret <paramref name="rows"/> rows, keeping to the column it held before Up and Down
-    /// began moving it.</summary>
     private static void MoveRows(CodeViewState state, DecompiledDocument document, TextPosition caret, int rows, bool extend)
     {
         var goal = state.Keys.Goal;
@@ -1111,8 +1081,6 @@ public static class CodeViewWidget
         state.Reveal.AskUnlessAsked(new PendingScroll.ShowCaret());
     }
 
-    /// <summary>Runs the code's shortcut the key at <paramref name="index"/> completes, if any; false
-    /// for a key that is none, which then moves the view.</summary>
     private static bool RunShortcut(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, bool focused, int index)
     {
         if (ui.IsPressedAt(Shortcuts.Find, index))
@@ -1191,7 +1159,6 @@ public static class CodeViewWidget
         }
     }
 
-    /// <summary>Copies the selection as plain text and as HTML in the colors and font it is drawn in.</summary>
     private static void CopySelection(Ui<UiState> ui, CodeViewState state)
     {
         var style = CopyStyleOf(ui, state.Frame);
@@ -1297,8 +1264,6 @@ public static class CodeViewWidget
         });
     }
 
-    /// <summary>The items that show <paramref name="entity"/> on a diagram, when it is a type; disabled, saying
-    /// <paramref name="why"/>, when given.</summary>
     private static CodeViewIntent? DiagramItems(Ui<UiState> ui, CodeReference.Entity entity, string? why)
     {
         if (entity.Kind != EntityKind.Type)
@@ -1321,8 +1286,6 @@ public static class CodeViewWidget
         return picked;
     }
 
-    /// <summary>The code view's menu; in the code of <paramref name="closedAssembly"/>, which was closed, what would read
-    /// it is shown disabled, saying so.</summary>
     private static CodeViewIntent? ContextMenu(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, bool bookmarkable,
         string? closedAssembly)
     {
@@ -1433,8 +1396,6 @@ public static class CodeViewWidget
         return picked;
     }
 
-    /// <summary>That <paramref name="closedAssembly"/>, the assembly the code is of, was closed, as its tab's bar says it;
-    /// null while it is open.</summary>
     private static string? ClosedText(Ui<UiState> ui, string? closedAssembly)
     {
         if (closedAssembly is null)
@@ -1577,9 +1538,6 @@ public static class CodeViewWidget
         }
     }
 
-    /// <summary><paramref name="caret"/>, on the line <paramref name="index"/> when it stands there, or after the chip of the
-    /// collapsed fold <paramref name="collapsedFold"/>, ending at column <paramref name="chipEnd"/>, when that
-    /// hides it.</summary>
     private static void PaintCaret(UiPainter p, CodeViewFrame frame, TextPosition caret, float x0, UiRect row, int index, int? collapsedFold, int chipEnd)
     {
         int column;
@@ -1599,7 +1557,6 @@ public static class CodeViewWidget
         p.FillRect(new UiRect(x0 + column * frame.Advance, row.Y, frame.CaretWidth, row.Height), frame.CaretColor);
     }
 
-    /// <summary>The line's number, right-aligned, brighter on the highlighted current line.</summary>
     private static void PaintLineNumber(UiPainter p, CodeViewFrame frame, float left, float cellTop, int index)
     {
         var number = frame.GetNumberCells(index + 1);

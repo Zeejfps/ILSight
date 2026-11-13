@@ -28,8 +28,6 @@ internal static class TooltipLayouts
         };
     }
 
-    /// <summary>The declaration cut where each parameter starts: each parameter with its comma,
-    /// the last with what follows it.</summary>
     private static List<IReadOnlyList<RichTextRun>> BuildParameters(TooltipStyles styles, CodeSignature signature)
     {
         var line = signature.Line;
@@ -85,8 +83,6 @@ internal static class TooltipLayouts
         return start;
     }
 
-    /// <summary>The line's text from <paramref name="from"/> to <paramref name="to"/> as runs in
-    /// its spans' colors, without the spaces it ends with.</summary>
     private static IReadOnlyList<RichTextRun> CodeRuns(TooltipStyles styles, DocumentLine line, int from, int to)
     {
         var end = TrimmedEnd(line.Text, from, to);
@@ -117,10 +113,9 @@ internal static class TooltipLayouts
         return end;
     }
 
-    /// <summary>"in class Namespace.Type" or "in namespace Namespace", worded as the language words
-    /// it, the keyword and name colored as code; nothing for the global namespace.</summary>
     private static IReadOnlyList<RichTextRun> ContainerRuns(TooltipStyles styles, Strings t, CodeContainer? container)
     {
+        // No container: the global namespace, which is not named.
         if (container is null)
         {
             return [];
@@ -161,7 +156,6 @@ internal static class TooltipLayouts
         }
     }
 
-    /// <summary>A new group for the sections of <paramref name="kind"/>, under the kind's heading.</summary>
     private static TooltipGroup GroupOf(TooltipStyles styles, Strings t, DocSectionKind kind)
     {
         var heading = HeadingRuns(styles, t, kind);
@@ -217,7 +211,6 @@ internal static class TooltipLayouts
         return new TooltipEntry { Label = label, Blocks = blocks };
     }
 
-    /// <summary>A parameter or type parameter by its name in code, an exception by its type.</summary>
     private static IReadOnlyList<RichTextRun>? LabelRuns(TooltipStyles styles, DocSection section)
     {
         if (section.Label is null)
@@ -259,8 +252,6 @@ internal static class TooltipLayouts
         return new ListBlock { IsTable = isTable, Rows = rows };
     }
 
-    /// <summary>A table's heading row, its term over the terms and description over the
-    /// descriptions; another list's leading item, without a marker.</summary>
     private static ListRow HeaderRow(TooltipStyles styles, DocListItem header, bool isTable)
     {
         if (!isTable)
@@ -285,7 +276,6 @@ internal static class TooltipLayouts
         return new ListRow { Lead = [new RichTextRun(marker, styles.Plain)], Content = TermAndDescription(styles, item) };
     }
 
-    /// <summary>The item's term in bold and its description after a dash, or the description alone.</summary>
     private static IReadOnlyList<RichTextRun> TermAndDescription(TooltipStyles styles, DocListItem item)
     {
         var description = Runs(styles, item.Description);
@@ -315,8 +305,6 @@ internal static class TooltipLayouts
         return converted;
     }
 
-    /// <summary>What a name links to: the type or member a reference points at; none for a local
-    /// or an assembly.</summary>
     private static CodeReference.Entity? LinkOf(CodeReference? reference)
     {
         return reference as CodeReference.Entity;

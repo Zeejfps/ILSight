@@ -34,7 +34,6 @@ public static class Bookmarks
         return AddBookmark(appState, tab, node, line, nameOf);
     }
 
-    /// <summary>Removes <paramref name="bookmark"/>, which marks the line, so is listed.</summary>
     private static BookmarkToggle RemoveBookmark(AppState appState, Bookmark bookmark)
     {
         var row = appState.Bookmarks.Remove(bookmark);
@@ -103,8 +102,6 @@ public static class Bookmarks
         };
     }
 
-    /// <summary>The full name of the entity <paramref name="anchor"/> names in <paramref name="document"/> when it is
-    /// one of the place's assembly at <paramref name="filePath"/>; null otherwise.</summary>
     private static string? FindAnchoredName(DecompiledDocument document, CodeAnchor anchor, AssemblyPath filePath)
     {
         if (!anchor.FilePath.Equals(filePath))
@@ -115,8 +112,7 @@ public static class Bookmarks
         return document.EntityNames.GetValueOrDefault((anchor.FilePath, anchor.Token));
     }
 
-    /// <summary>The names ILSpy's tree gives the nodes down from the assembly to <paramref name="node"/>, as it finds
-    /// a node by; null when one of them has no name there.</summary>
+    // ILSpy's tree finds a node by the names it gives the nodes down from the assembly.
     private static IReadOnlyList<string>? ListILSpyPath(BrowseNode node)
     {
         var path = new List<string>();

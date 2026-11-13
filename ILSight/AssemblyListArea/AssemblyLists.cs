@@ -59,8 +59,6 @@ public static class AssemblyLists
         return SwitchAssemblyList(lists, session, view, name);
     }
 
-    /// <summary>Puts the active list's documents and analyses in place of the open ones, each waiting, and begins
-    /// reopening its assemblies in place of the open ones. Returns what is left to open.</summary>
     private static ListOpening BeginOpeningActiveList(SavedAssemblyLists lists, OpenListSession session)
     {
         var closing = session.CloseAllAssemblies();
@@ -141,7 +139,6 @@ public static class AssemblyLists
         StopAsking(dialog);
     }
 
-    /// <summary>The row of the list named <paramref name="name"/>, ignoring case and surrounding spaces; null when there is none.</summary>
     private static int? FindListIndex(IReadOnlyList<string> names, string name)
     {
         var trimmed = name.Trim();

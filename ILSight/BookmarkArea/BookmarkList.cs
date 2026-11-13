@@ -10,7 +10,6 @@ namespace ILSight.BookmarkArea;
 /// handed out only reads.</summary>
 public sealed class BookmarkList
 {
-    /// <summary>The lines of a document that bookmarks mark, as of <see cref="Revision"/>.</summary>
     private sealed class Marks
     {
         public int Revision = -1;
@@ -22,7 +21,6 @@ public sealed class BookmarkList
 
     private readonly ConditionalWeakTable<DecompiledDocument, Marks> _marksByDocument = new();
 
-    /// <summary>What changes in each bookmark made here, kept as long as the bookmark is.</summary>
     private readonly ConditionalWeakTable<Bookmark, BookmarkState> _states = new();
 
     /// <summary>The bookmarks, in the order they were made.</summary>
@@ -53,7 +51,6 @@ public sealed class BookmarkList
         return bookmark;
     }
 
-    /// <summary>What changes in <paramref name="bookmark"/>, made here.</summary>
     private BookmarkState GetState(Bookmark bookmark)
     {
         if (!_states.TryGetValue(bookmark, out var state))
@@ -64,8 +61,7 @@ public sealed class BookmarkList
         return state;
     }
 
-    /// <summary>Throws unless <paramref name="bookmark"/> was made here, so that the list holds what changes in each
-    /// bookmark it lists.</summary>
+    // So that the list holds what changes in each bookmark it lists.
     private void ThrowIfNotMadeHere(Bookmark bookmark)
     {
         if (!_states.TryGetValue(bookmark, out _))
@@ -200,8 +196,6 @@ public sealed class BookmarkList
         return null;
     }
 
-    /// <summary>The row stepping starts from: <paramref name="from"/>'s, or just before the first or
-    /// after the last.</summary>
     private int GetStepStart(Bookmark? from, int direction)
     {
         var index = FindRow(from);

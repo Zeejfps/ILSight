@@ -42,8 +42,6 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => OpenFilesAndFindRootAsync(paths, stop, ct), ct)), ct);
     }
 
-    /// <summary>Lists the files, those that fail to load as failed, and gives the root of the last, or null for
-    /// none.</summary>
     private async Task<BrowseNode?> OpenFilesAndFindRootAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
     {
         var last = OpenFiles(paths, stop);
@@ -92,8 +90,7 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         }
     }
 
-    /// <summary>Releases the fresh file <paramref name="reading"/> read, when it read one to its end before the
-    /// cancellation that drops its answer: nothing lists it.</summary>
+    // A read that ended before the cancellation that drops its answer holds a fresh file nothing lists.
     private static void ReleaseIfRead(Task<ReopenedFile> reading)
     {
         var ended = reading;
@@ -110,7 +107,6 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => ReopenFilesAsync(paths, expanded, places, stop), ct)), ct);
     }
 
-    /// <summary>Lists the files, those that fail to load as failed, and returns the last.</summary>
     private LoadedAssembly? OpenFiles(IEnumerable<AssemblyPath> paths, CancellationToken stop)
     {
         LoadedAssembly? last = null;
@@ -122,9 +118,8 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         return last;
     }
 
-    /// <summary>Reads <paramref name="item"/> again, its nodes loaded as far as they were, and finds
-    /// <paramref name="places"/> in it. The fresh file is this read's until the answer holding it is made: a read that
-    /// fails or is cancelled on its way releases it.</summary>
+    // The fresh file is this read's until the answer holding it is made: a read that fails or is cancelled on its way
+    // releases it.
     private async Task<ReopenedFile> ReadItemAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
     {
         var fresh = AssemblyListing.ReadAgain(assemblies, item);
@@ -144,8 +139,6 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         }
     }
 
-    /// <summary>Loads the nodes of <paramref name="fresh"/> as far as <paramref name="item"/>'s were, and finds
-    /// <paramref name="places"/> in it.</summary>
     private async Task<Lookup<BrowseNode>[]> FindPlacesAgainAsync(LoadedAssembly item, FreshItem fresh, IReadOnlyList<NodePath> places, CancellationToken ct)
     {
         var old = await BrowseSessions.EnsureRootAsync(session, item, ct);
@@ -158,9 +151,7 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         return placeNodes;
     }
 
-    /// <summary>Loads the children of each node under <paramref name="fresh"/> whose counterpart under
-    /// <paramref name="old"/> has them loaded, so that the tree can show the fresh nodes as it showed
-    /// the old ones.</summary>
+    // So that the tree can show the fresh nodes as it showed the old ones.
     private async Task EnsureChildrenAsLoadedAsync(BrowseNode old, BrowseNode fresh, CancellationToken ct)
     {
         var oldChildren = session.PeekChildren(old);

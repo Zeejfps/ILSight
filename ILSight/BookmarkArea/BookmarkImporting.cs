@@ -116,8 +116,6 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
         return $"{record.Name}: {location} ({record.FileName})";
     }
 
-    /// <summary>The bookmark of <paramref name="found"/>, made by <paramref name="bookmarks"/>, or null when its place
-    /// wasn't found.</summary>
     private static Bookmark? CreateBookmark(BookmarkList bookmarks, FoundBookmark found)
     {
         if (found.Place is not Lookup<NodePath>.Found place)
@@ -146,8 +144,6 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
         TakeBookmarks(bookmarks, import.Bookmarks, mode.Value);
     }
 
-    /// <summary>Takes <paramref name="imported"/> in as <paramref name="mode"/> says. Those marking a line a bookmark
-    /// marks already are left out: quietly when merging, and reported when replacing.</summary>
     private void TakeBookmarks(BookmarkList bookmarks, IReadOnlyList<Bookmark> imported, BookmarkImportMode mode)
     {
         var leftOut = bookmarks.Import(imported, mode);
@@ -159,7 +155,6 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
         ReportLeftOutBookmarks(leftOut);
     }
 
-    /// <summary>Says how many bookmarks were left out because another marks the same line.</summary>
     private void ReportLeftOutBookmarks(int leftOut)
     {
         if (leftOut == 0)
@@ -170,7 +165,6 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
         ports.ReportError(new AppProblem.BookmarksLeftOut(leftOut));
     }
 
-    /// <summary>A bookmark read, and where it was found.</summary>
     private sealed record FoundBookmark
     {
         public required BookmarkRecord Record { get; init; }

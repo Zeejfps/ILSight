@@ -91,8 +91,6 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
         return AddCardsAsync(diagram, card, Diagrams.ListMissing(diagram, card, Diagrams.IsHeldLink), ct);
     }
 
-    /// <summary>Reads the cards of <paramref name="types"/>, which <paramref name="card"/> links to, and adds them
-    /// to <paramref name="diagram"/>; nothing when there are none.</summary>
     private async Task AddCardsAsync(TypeDiagram diagram, TypeCard card, List<CodeReference.Entity> types, CancellationToken ct)
     {
         if (types.Count == 0)
@@ -115,9 +113,6 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
         FinishAdding(diagram, reading, card, read);
     }
 
-    /// <summary>Adds the cards a search for the types deriving from <paramref name="card"/> found to
-    /// <paramref name="diagram"/>, unless it was closed meanwhile, and names each module it reached that could not be
-    /// read; reports a read that failed.</summary>
     private void FinishAdding(TypeDiagram diagram, CardRead reading, TypeCard card, Outcome<ScopeSearch<TypeCard>> read)
     {
         diagram.FinishReading(reading);
@@ -140,9 +135,6 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
         }
     }
 
-    /// <summary>Adds the cards a read of the types <paramref name="card"/> links to found to
-    /// <paramref name="diagram"/>, unless it was closed meanwhile, and names each module that could not be read one of
-    /// those types is in; reports a read that failed.</summary>
     private void FinishAdding(TypeDiagram diagram, CardRead reading, TypeCard card, Outcome<List<Lookup<TypeCard>>> read)
     {
         diagram.FinishReading(reading);

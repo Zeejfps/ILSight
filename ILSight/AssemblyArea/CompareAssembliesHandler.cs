@@ -42,8 +42,7 @@ public sealed class CompareAssembliesHandler(CompareAssembliesHandler.IPorts por
         ShowFailure(run, error);
     }
 
-    /// <summary>Shows what changed in <paramref name="comparison"/>, or, when one of its assemblies was closed before
-    /// the comparison began, that it was; nothing failed.</summary>
+    // An assembly closed before the comparison began is shown as such, but it is no failure: nothing to report.
     private static Exception? Show(AssemblyComparison comparison, ModuleRead<ApiDiff> compared)
     {
         compared.Switch(

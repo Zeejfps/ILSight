@@ -29,8 +29,6 @@ public sealed class OpenAssembliesAsReloadHandler(OpenAssembliesAsReloadHandler.
         return FinishOpeningAsReload(session, opened, ticket);
     }
 
-    /// <summary>What listing <paramref name="paths"/> came to; nothing listed, nothing read, when <paramref name="ticket"/>
-    /// was stopped before it began.</summary>
     private Task<Outcome<LoadedAssembly?>> OpenUnlessStoppedAsync(IReadOnlyList<AssemblyPath> paths, ReloadTicket ticket, CancellationToken ct)
     {
         if (ticket.IsStopped)

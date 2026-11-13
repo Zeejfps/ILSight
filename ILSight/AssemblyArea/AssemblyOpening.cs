@@ -53,8 +53,6 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
         return ShowOpened(appState, opened, opening.Intent);
     }
 
-    /// <summary>Shows the last assembly opened, unless something else was asked for meanwhile, or reports why
-    /// opening failed. Returns the load it started in the tab; null when it started none.</summary>
     private DecompileTicket? ShowOpened(AppState appState, Outcome<BrowseNode?> outcome, int ticket)
     {
         appState.Navigation.EndOpening(ticket);
@@ -67,8 +65,6 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
             });
     }
 
-    /// <summary>Shows <paramref name="node"/>, the last assembly opened, unless none was or something else was asked
-    /// for meanwhile. Returns the load it started in the tab; null when it started none.</summary>
     private static DecompileTicket? ShowLastOpened(AppState appState, BrowseNode? node, int ticket)
     {
         if (node is null)
@@ -84,7 +80,6 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
         return appState.Navigation.ShowNode(node, appState.Decompiler.Setup);
     }
 
-    /// <summary>Reports why opening failed, unless the opening was cancelled.</summary>
     private void ReportOpenFailure(Exception error)
     {
         var problem = Assemblies.FindOpenProblem(error);

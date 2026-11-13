@@ -49,8 +49,6 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
         TakeCards(read.Diagram, read.Title, read.Types, cards);
     }
 
-    /// <summary>Adds the cards read of <paramref name="types"/> to <paramref name="diagram"/>, titled
-    /// <paramref name="title"/>, unless it was closed meanwhile, or reports why they could not be read.</summary>
     private void TakeCards(TypeDiagram diagram, string title, IReadOnlyList<TypeAnchor> types, Outcome<List<Lookup<TypeCard>>> cards)
     {
         if (diagram.IsClosed)
@@ -73,8 +71,7 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
         }
     }
 
-    /// <summary>The types of <paramref name="types"/> whose lookups, <paramref name="cards"/> in the same order, found
-    /// nothing.</summary>
+    // The cards are the lookups of the types, in the same order.
     private static List<TypeAnchor> ListNotFound(IReadOnlyList<TypeAnchor> types, List<Lookup<TypeCard>> cards)
     {
         var notFound = new List<TypeAnchor>();

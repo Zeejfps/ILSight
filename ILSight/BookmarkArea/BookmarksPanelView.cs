@@ -17,7 +17,6 @@ internal static class BookmarksPanelView
 
     private const string MenuId = "bookmark-menu";
 
-    /// <summary>The name offered for a new export.</summary>
     private const string SuggestedExportName = "ILSight.Bookmarks.json";
 
     private const int MarkColumn = 0;
@@ -53,7 +52,6 @@ internal static class BookmarksPanelView
         }
     }
 
-    /// <summary>Returns the bookmark Delete asked to remove.</summary>
     private static Bookmark? List(Ui<UiState> ui, BookmarkList bookmarks, AssemblyList assemblies, TableFrame table)
     {
         var panel = ui.State.BookmarksPanel;
@@ -83,7 +81,6 @@ internal static class BookmarksPanelView
         return removed;
     }
 
-    /// <summary>Does what the user asked of the table this frame: go to, rename, copy or open the menu.</summary>
     private static void Answer(Ui<UiState> ui, TableBody body)
     {
         var panel = ui.State.BookmarksPanel;
@@ -179,8 +176,6 @@ internal static class BookmarksPanelView
         ui.PickFile(t.BookmarksImportTitle, null, Filters(t), path => Commands.Start(screen, nameof(BookmarkImporting.ImportAsync), path, static (a, p, ct) => a.BookmarkImporting.ImportAsync(a.Bookmarks, a.Imports, p, ct)));
     }
 
-    /// <summary>What <paramref name="column"/> shows of <paramref name="bookmark"/>; nothing for the
-    /// mark's column.</summary>
     private static string Shown(Bookmark bookmark, int column)
     {
         return column switch
@@ -212,7 +207,6 @@ internal static class BookmarksPanelView
         ModuleTooltip(ui, moduleId, bookmark, listed);
     }
 
-    /// <summary>A disabled bookmark, or one whose assembly is not in the active list, is shown muted.</summary>
     private static bool IsDimmed(Bookmark bookmark, bool listed)
     {
         return !bookmark.Enabled || !listed;
@@ -306,8 +300,6 @@ internal static class BookmarksPanelView
         }
     }
 
-    /// <summary>On the module of a bookmark whose assembly is not in the active list, says that going
-    /// to it adds the assembly.</summary>
     private static void ModuleTooltip(Ui<UiState> ui, int cellId, Bookmark bookmark, bool listed)
     {
         if (listed)
@@ -406,7 +398,6 @@ internal static class BookmarksPanelView
         return cells.Copied(shown, shown);
     }
 
-    /// <summary>Returns the bookmark Delete asked to remove.</summary>
     private static Bookmark? HandleKeys(Ui<UiState> ui, BookmarksPanel panel)
     {
         Bookmark? removed = null;
@@ -476,7 +467,6 @@ internal static class BookmarksPanelView
         panel.StartRename(bookmark);
     }
 
-    /// <summary>Gives the bookmark being renamed the name typed, unless it is blank, and ends the rename.</summary>
     private static void CommitRename(UiState screen, BookmarksPanel panel)
     {
         var bookmark = panel.Renaming.End();

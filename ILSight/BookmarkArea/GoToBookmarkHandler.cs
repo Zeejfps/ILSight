@@ -30,8 +30,6 @@ public sealed class GoToBookmarkHandler(GoToBookmarkHandler.IPorts ports)
         return ShowBookmarkPlace(appState, bookmark, resolved, ticket.Destination);
     }
 
-    /// <summary>Shows the place <paramref name="resolved"/> found, or reports the bookmark gone. Returns the load it
-    /// started in the tab; null when it started none.</summary>
     private DecompileTicket? ShowBookmarkPlace(AppState appState, Bookmark bookmark, Resolution<BrowseNode> resolved, TabDestination destination)
     {
         return resolved.Match<DecompileTicket?>(

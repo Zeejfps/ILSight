@@ -91,8 +91,6 @@ public static class Diagrams
         return StartReadingWithNeighbours(tab, diagram, type);
     }
 
-    /// <summary>Counts the read of the card of <paramref name="type"/> and its neighbours, for
-    /// <paramref name="diagram"/>, which <paramref name="tab"/> shows, as started.</summary>
     private static NeighboursRead StartReadingWithNeighbours(DocumentTab tab, TypeDiagram diagram, CodeReference.Entity type)
     {
         var read = diagram.StartReading();

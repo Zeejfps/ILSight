@@ -54,8 +54,6 @@ internal static class AssemblyListDeleteDialogView
         }
     }
 
-    /// <summary>Removes the list named <paramref name="name"/> and picks the open list, which takes its
-    /// place when it was open. Returns what is left to open of it then; null when it was not open.</summary>
     private static ListOpening? Delete(AssemblyListsDialog dialog, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
         var opening = AssemblyLists.DeleteAssemblyList(lists, session, view, name);

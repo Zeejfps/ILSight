@@ -54,7 +54,6 @@ internal static class AssemblyListsDialogView
         }
     }
 
-    /// <summary>New list on the left; what can be done to the picked list on the right.</summary>
     private static void Toolbar(Ui<UiState> ui, SavedAssemblyLists lists)
     {
         var t = ui.State.Strings;
@@ -87,8 +86,6 @@ internal static class AssemblyListsDialogView
         }
     }
 
-    /// <summary>A row per list. Enter activates the picked one; a double-click renames it, as F2 does,
-    /// and Delete asks to delete it. Picking another row keeps the name being typed, if it may be kept.</summary>
     private static void Rows(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
     {
         var theme = ui.Theme;
@@ -137,9 +134,6 @@ internal static class AssemblyListsDialogView
         }
     }
 
-    /// <summary>A check mark when the list is the active one, its name, or the box renaming it, how
-    /// many assemblies it holds, and its Activate button, disabled on the active list. True when the
-    /// row was double-clicked.</summary>
     private static bool Row(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, ListScope list, int listId, int index,
         string name)
     {
@@ -171,7 +165,6 @@ internal static class AssemblyListsDialogView
         }
     }
 
-    /// <summary>The column that marks the active list with a check, empty on the others.</summary>
     private static void ActiveMark(Ui<UiState> ui, bool active)
     {
         var theme = ui.Theme;
@@ -208,7 +201,6 @@ internal static class AssemblyListsDialogView
         }
     }
 
-    /// <summary>True once: the name box should take focus with the whole name selected.</summary>
     private static bool TryTakeFocus(ListsDialogMode.Renaming renaming)
     {
         var focus = renaming.IsFocusPending;
@@ -251,7 +243,6 @@ internal static class AssemblyListsDialogView
         }
     }
 
-    /// <summary>A double-click renames the row; Enter activates it.</summary>
     private static void ActOnRow(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name, bool doubleClicked)
     {
         if (doubleClicked)
@@ -262,15 +253,13 @@ internal static class AssemblyListsDialogView
         Switch(ui, lists, session, view, name);
     }
 
-    /// <summary>Switches to the list named <paramref name="name"/> in this frame and queues opening its files. The rows
-    /// drawn above show it as the active list next frame, which this asks for.</summary>
     private static void Switch(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
         Commands.OpenListLater(ui.State, AssemblyLists.SwitchAssemblyList(lists, session, view, name));
+        // The rows drawn above show it as the active list only next frame.
         ui.RequestUpdate();
     }
 
-    /// <summary>Keeps the name being typed when another row is picked, and drops a deletion being asked about.</summary>
     private static void LeavePickedRow(Ui<UiState> ui)
     {
         var dialog = ui.State.ListsDialog;
@@ -282,7 +271,6 @@ internal static class AssemblyListsDialogView
         AssemblyLists.StopAsking(dialog);
     }
 
-    /// <summary>Under the list, why the name typed for the list being renamed cannot be kept.</summary>
     private static void RenameProblem(Ui<UiState> ui, SavedAssemblyLists lists)
     {
         var t = ui.State.Strings;
@@ -356,7 +344,6 @@ internal static class AssemblyListsDialogView
         }
     }
 
-    /// <summary>Add preconfigured on the left, Close on the right.</summary>
     private static void Footer(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
@@ -372,9 +359,6 @@ internal static class AssemblyListsDialogView
         }
     }
 
-    /// <summary>The frameworks installed here, each with how many assemblies it holds; picking one adds
-    /// a list of them, picked to be named. The frameworks are looked for the first time the menu opens, by the frame
-    /// edge right after this draw, and the menu says so until they come.</summary>
     private static void PresetMenu(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
@@ -388,6 +372,7 @@ internal static class AssemblyListsDialogView
         var presets = scan.Found;
         if (presets is null)
         {
+            // The frame edge right after this draw looks for them; the menu says so until they come.
             scan.AskForPresets();
             ui.MenuItem(t.ListsLookingForPresets, enabled: false);
             return;
@@ -409,8 +394,6 @@ internal static class AssemblyListsDialogView
         }
     }
 
-    /// <summary>Adds a list of <paramref name="preset"/>'s assemblies, picked to be named, leaving the
-    /// open one open.</summary>
     private static void AddPreset(AssemblyListsDialog dialog, AppState appState, AssemblyListPreset preset)
     {
         var name = AssemblyLists.AddAssemblyListPreset(appState, preset);
@@ -424,22 +407,18 @@ internal static class AssemblyListsDialogView
         AssemblyLists.OpenListsDialog(dialog, appState.Lists);
     }
 
-    /// <summary>Adds an empty list, picked to be named, leaving the open one open.</summary>
     private static void Create(AssemblyListsDialog dialog, AppState appState, string newName)
     {
         var name = AssemblyLists.CreateAssemblyList(appState, newName);
         AssemblyLists.PickToRename(dialog, appState.Lists, name);
     }
 
-    /// <summary>Adds a copy of the list named <paramref name="name"/>, picked to be named, leaving the
-    /// open one open.</summary>
     private static void Duplicate(AssemblyListsDialog dialog, AppState appState, string name, string copyName)
     {
         var copy = AssemblyLists.DuplicateAssemblyList(appState, name, copyName);
         AssemblyLists.PickToRename(dialog, appState.Lists, copy);
     }
 
-    /// <summary>Gives the list being renamed the name typed, when it may have it, and stops renaming either way.</summary>
     private static void FinishRenaming(UiState screen)
     {
         var dialog = screen.ListsDialog;

@@ -83,7 +83,6 @@ internal static class ComparisonPickerView
         }
     }
 
-    /// <summary>Walks the list from the filter, leaving Home and End to its text.</summary>
     private static void MoveSelectionFromFilter(Ui<UiState> ui, ComparisonChoice choice, int listId)
     {
         var page = ui.MeasureListPage(listId, ui.Theme.RowHeight);
@@ -107,7 +106,6 @@ internal static class ComparisonPickerView
         }
     }
 
-    /// <summary>The assemblies offered, or why there are none. True when one was activated.</summary>
     private static bool ListOrHint(Ui<UiState> ui, ComparisonChoice choice, int listId)
     {
         if (choice.Filtered.Count > 0)
@@ -137,7 +135,6 @@ internal static class ComparisonPickerView
         return activated;
     }
 
-    /// <summary>The assembly's name and version, then its framework and, muted, its file, shortened in the middle so its folder and name stay.</summary>
     private static void Row(Ui<UiState> ui, ListScope list, int index, LoadedModule assembly)
     {
         var theme = ui.Theme;
@@ -148,6 +145,7 @@ internal static class ComparisonPickerView
             NodeIcons.Draw(ui, NodeIcon.Assembly);
             ui.Text(assembly.NameAndVersion, color: nameColor);
             FrameworkText(ui, assembly);
+            // Shortened in the middle so that its folder and name stay.
             ui.Text(assembly.FilePath.Text, new Box { Width = Sizing.Grow() }, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.EllipsisMiddle);
         }
     }
@@ -163,7 +161,6 @@ internal static class ComparisonPickerView
         ui.Text(moniker, color: ui.Theme.TextMuted, size: ui.Theme.FontSizeSmall);
     }
 
-    /// <summary>Compares the assembly to compare with the one selected, if any; true when it did.</summary>
     private static bool TryCompareWithSelected(UiState screen, Navigation navigation, AssemblyList assemblies, ComparisonChoice choice, LoadedModule compared,
         Strings t)
     {

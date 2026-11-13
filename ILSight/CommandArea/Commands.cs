@@ -135,7 +135,7 @@ public static class Commands
         StartRunningAnalysis(appState, run);
     }
 
-    /// <summary>A method of its own, so that the calls that start nothing allocate no closure.</summary>
+    // A method of its own, so that the calls that start nothing allocate no closure.
     private static void StartRunningAnalysis(AppState appState, AnalysisRun run)
     {
         appState.Workflows.StartSettling(nameof(RunAnalysisHandler), ct => appState.RunAnalysisHandler.HandleAsync(appState.Analyzer, run, ct),
@@ -155,7 +155,7 @@ public static class Commands
         StartFindingAnalysesSymbols(appState, restore);
     }
 
-    /// <summary>A method of its own, so that the calls that start nothing allocate no closure.</summary>
+    // A method of its own, so that the calls that start nothing allocate no closure.
     private static void StartFindingAnalysesSymbols(AppState appState, AnalysesRestore restore)
     {
         appState.Workflows.StartSettling(nameof(RestoreAnalysesHandler),
@@ -207,7 +207,7 @@ public static class Commands
         }
     }
 
-    /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
+    // A method of its own, so that the frames that start nothing allocate no closure.
     private static void StartBuildingChildren(AppState appState, BrowseTree tree, BrowseNode node)
     {
         appState.Workflows.Start(nameof(BuildChildrenHandler), ct => appState.BuildChildrenHandler.HandleAsync(tree, node, ct));
@@ -230,7 +230,7 @@ public static class Commands
         }
     }
 
-    /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
+    // A method of its own, so that the frames that start nothing allocate no closure.
     private static void StartReadingTypeSystem(WorkflowRunner workflows, LoadedModule module)
     {
         workflows.Start(nameof(LoadedAssemblies.ReadTypeSystemAheadAsync), ct => LoadedAssemblies.ReadTypeSystemAheadAsync(module, ct));
@@ -252,7 +252,7 @@ public static class Commands
         }
     }
 
-    /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
+    // A method of its own, so that the frames that start nothing allocate no closure.
     private static void StartSearchRun(AppState appState, SearchResults results, SearchRun run)
     {
         appState.Workflows.StartSettling(nameof(RunSearchHandler), ct => appState.RunSearchHandler.HandleAsync(results, run, ct), _ => results.EndRun(run),
@@ -275,7 +275,7 @@ public static class Commands
         }
     }
 
-    /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
+    // A method of its own, so that the frames that start nothing allocate no closure.
     private static void StartLookingUp(WorkflowRunner workflows, LookUpTooltipHandler handler, CodeTooltips tooltips, TooltipLookup lookup)
     {
         workflows.StartSettling(nameof(LookUpTooltipHandler), ct => handler.HandleAsync(tooltips, lookup, ct),
@@ -298,7 +298,7 @@ public static class Commands
         }
     }
 
-    /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
+    // A method of its own, so that the frames that start nothing allocate no closure.
     private static void StartArranging(WorkflowRunner workflows, ArrangeMetadataGridHandler handler, MetadataGridViewAsk ask)
     {
         workflows.StartSettling(nameof(ArrangeMetadataGridHandler), ct => handler.HandleAsync(ask, ct), error => ask.State.FailArranging(ask.Key, error));
@@ -320,7 +320,7 @@ public static class Commands
         }
     }
 
-    /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
+    // A method of its own, so that the frames that start nothing allocate no closure.
     private static void StartReadingPage(WorkflowRunner workflows, ReadMetadataPageHandler handler, MetadataGridPageAsk ask)
     {
         workflows.StartSettling(nameof(ReadMetadataPageHandler), ct => handler.HandleAsync(ask, ct), error => ask.Grid.FailPage(ask.Page, error.Message));
@@ -378,8 +378,6 @@ public static class Commands
         StartRestoringAnalyses(appState, opening.Analyses);
     }
 
-    /// <summary>Starts opening the open list's assemblies <paramref name="reopening"/> began reopening, as the reload it
-    /// holds, then the loads that started in the tabs.</summary>
     private static void StartReopening(AppState appState, ListReopening reopening)
     {
         var session = appState.ListSession;
@@ -518,7 +516,7 @@ public static class Commands
         };
     }
 
-    /// <summary>A method of its own, so that the calls that start nothing allocate no closure.</summary>
+    // A method of its own, so that the calls that start nothing allocate no closure.
     private static void StartWork<T, TWork>(AppState appState, string name, T subject, TWork work,
         Func<AppState, T, TWork, CancellationToken, Task> run, Func<TWork, CancellationToken> cancelledOnPurposeBy) where TWork : class
     {
@@ -538,11 +536,11 @@ public static class Commands
         StartBringingIn(appState, load);
     }
 
-    /// <summary>A method of its own, so that the calls that start nothing allocate no closure. A load that fails
-    /// unexpectedly shows failed in its tab, rather than loading for good.</summary>
+    // A method of its own, so that the calls that start nothing allocate no closure.
     private static void StartBringingIn(AppState appState, DecompileTicket load)
     {
         var firstGridRows = appState.FirstGridRows;
+        // A load that fails unexpectedly shows failed in its tab, rather than loading for good.
         appState.Workflows.StartSettling(nameof(DecompileIntoTabHandler), ct => appState.DecompileIntoTabHandler.HandleAsync(appState.ViewCommands, load, firstGridRows, ct),
             error => load.Load.TryShowFailed(load.Work, error.Message), load.Work.Token);
     }
@@ -605,15 +603,12 @@ public static class Commands
         StartScan(workflows, scan);
     }
 
-    /// <summary>Starts the scan <see cref="StartScanningPresets"/> took; apart, so a frame that starts none makes no
-    /// closure.</summary>
+    // Apart, so that a frame that starts no scan makes no closure.
     private static void StartScan(WorkflowRunner workflows, PresetScan scan)
     {
         workflows.Start(nameof(AssemblyListPresets.FindInstalled), async ct => scan.Take(await Task.Run(AssemblyListPresets.FindInstalled, ct)));
     }
 
-    /// <summary>Starts finding the nodes <paramref name="lookup"/>'s reopened tabs wait for
-    /// (<see cref="ShowReopenedNodesHandler"/>) as a workflow of its own, then each load it points a tab at.</summary>
     private static void StartFindingNodes(AppState appState, ReopenedNodesLookup lookup)
     {
         StartShowing(appState, nameof(ShowReopenedNodesHandler), ct => appState.ShowReopenedNodesHandler.HandleAsync(appState, lookup, ct));
