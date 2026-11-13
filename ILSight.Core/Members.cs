@@ -16,11 +16,10 @@ internal static class Members
 
     public static bool IsHidden(IEntity entity)
     {
-        return IsMissing(entity) || IsCompilerGenerated(entity);
+        return HasNoMetadata(entity) || IsCompilerGenerated(entity);
     }
 
-    /// <summary>Whether <paramref name="entity"/> has no metadata of its own to show.</summary>
-    public static bool IsMissing(IEntity entity)
+    public static bool HasNoMetadata(IEntity entity)
     {
         return entity.MetadataToken.IsNil;
     }

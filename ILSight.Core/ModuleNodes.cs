@@ -41,7 +41,7 @@ internal static class ModuleNodes
         var byNamespace = new Dictionary<string, List<ITypeDefinition>>(StringComparer.Ordinal);
         foreach (var type in main.TopLevelTypeDefinitions)
         {
-            if (Members.IsMissing(type))
+            if (Members.HasNoMetadata(type))
             {
                 continue;
             }

@@ -80,7 +80,7 @@ public static class Commands
     }
 
     /// <summary>Asks for what <paramref name="reference"/> points at to be analyzed once the frame is drawn: the analyzer
-    /// opens with a root that shows as loading (<see cref="AnalyzerPanelView.Analyze(UiState, AnalyzerTree, CodeReference.Navigable)"/>),
+    /// opens with a root that shows as loading (<see cref="AnalyzerPanelView.ShowAnalyzing(UiState, AnalyzerTree, CodeReference.Navigable)"/>),
     /// and what the reference points at is found and analyzed then (<see cref="StartAnalyzing"/>).</summary>
     public static void AnalyzeLater(UiState uiState, CodeReference.Navigable reference)
     {
@@ -91,7 +91,7 @@ public static class Commands
     {
         return appState =>
         {
-            StartAnalyzing(appState, AnalyzerPanelView.Analyze(uiState, appState.Analyzer, reference));
+            StartAnalyzing(appState, AnalyzerPanelView.ShowAnalyzing(uiState, appState.Analyzer, reference));
         };
     }
 

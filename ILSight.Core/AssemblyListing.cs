@@ -452,7 +452,6 @@ public static class AssemblyListing
         return [];
     }
 
-    /// <summary>The module of the list read from <paramref name="module"/>; throws for one it did not read.</summary>
     internal static LoadedModule GetLoadedFrom(AssemblyList list, MetadataFile module)
     {
         foreach (var assembly in list.ListRead())

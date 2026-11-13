@@ -414,7 +414,7 @@ public static class TypeCards
             .Select(static r => r.Target);
         var module = type.ParentModule;
         return linked
-            .Concat(DerivedTypes.FindInModule(type))
+            .Concat(DerivedTypes.FindDirectInOwnModule(type))
             .Where(t => t.ParentModule == module)
             .Where(t => !t.Equals(type))
             .Where(IsShown)

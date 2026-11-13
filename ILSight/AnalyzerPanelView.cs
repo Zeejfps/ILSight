@@ -220,10 +220,9 @@ internal static class AnalyzerPanelView
         return pending;
     }
 
-    /// <summary>Opens the analyzer if it is not, where a root shows as loading while what
-    /// <paramref name="reference"/> points at is found and analyzed. Returns the root with the reference, for the
-    /// edge to find and analyze (<see cref="AnalyzeReferenceHandler"/>).</summary>
-    public static PendingAnalysis Analyze(UiState screen, AnalyzerTree analyzer, CodeReference.Navigable reference)
+    /// <summary>Opens the analyzer if it is not. The root returned shows as loading until the edge finds and analyzes
+    /// what <paramref name="reference"/> points at (<see cref="AnalyzeReferenceHandler"/>).</summary>
+    public static PendingAnalysis ShowAnalyzing(UiState screen, AnalyzerTree analyzer, CodeReference.Navigable reference)
     {
         ScreenLayout.OpenPanel(screen, DockView.Analyzer);
         return Analysis.BeginAnalyzing(analyzer, reference);

@@ -184,8 +184,8 @@ public abstract class MetadataGrid
             return _pages.ContainsKey(PageOf(row));
         }
 
-        /// <summary>Asks for the page <paramref name="row"/> is on to be read. Returns whether that is new: false when
-        /// it was read, or asked for already.</summary>
+        /// <summary>Asks for the page <paramref name="row"/> is on to be read; false when it was read or asked for
+        /// already.</summary>
         public bool TryAsk(int row)
         {
             if (IsRowRead(row))

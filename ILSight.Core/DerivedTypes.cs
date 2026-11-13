@@ -47,8 +47,7 @@ internal static class DerivedTypes
         };
     }
 
-    /// <summary>The types of <paramref name="type"/>'s own module that derive from it directly.</summary>
-    public static List<ITypeDefinition> FindInModule(ITypeDefinition type)
+    public static List<ITypeDefinition> FindDirectInOwnModule(ITypeDefinition type)
     {
         return DecompilerFacts.GetModule(type).TypeDefinitions
             .Where(c => NamesAsBase(c, type))

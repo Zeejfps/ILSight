@@ -515,7 +515,7 @@ internal sealed class AppStateDriver
     public void Analyze(CodeReference.Navigable reference)
     {
         using var turn = _posted.Install();
-        Commands.StartAnalyzing(AppState, AnalyzerPanelView.Analyze(Ui, AppState.Analyzer, reference));
+        Commands.StartAnalyzing(AppState, AnalyzerPanelView.ShowAnalyzing(Ui, AppState.Analyzer, reference));
     }
 
     /// <summary>What the disk says about the folder and key file the export dialog names, once the frame edge has
