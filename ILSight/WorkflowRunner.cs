@@ -25,7 +25,17 @@ public sealed class WorkflowRunner(BackgroundWork work, ErrorLog errors)
     public void Start(string name, Func<CancellationToken, Task> workflow, params ReadOnlySpan<CancellationToken> cancelledOnPurposeBy)
     {
         var link = Link(cancelledOnPurposeBy);
-        work.Track(name, RunAsync(workflow, link, link.Token));
+        work.Track(name, RunAsync(workflow, null, link, link.Token));
+    }
+
+    /// <summary>As <see cref="Start"/>, for a workflow whose start recorded a pending state on the app state (a tab
+    /// loading): one that ends with an unexpected exception, reported, has <paramref name="settle"/> settle that state
+    /// with it, so that nothing stays pending for good.</summary>
+    public void StartSettling(string name, Func<CancellationToken, Task> workflow, Action<Exception> settle,
+        params ReadOnlySpan<CancellationToken> cancelledOnPurposeBy)
+    {
+        var link = Link(cancelledOnPurposeBy);
+        work.Track(name, RunAsync(workflow, settle, link, link.Token));
     }
 
     /// <summary>As <see cref="Start"/>, for a workflow that runs until the app shuts down, such as watching a
@@ -35,7 +45,7 @@ public sealed class WorkflowRunner(BackgroundWork work, ErrorLog errors)
     {
         _untilShutdown.RemoveAll(static running => running.IsCompleted);
         var link = Link([]);
-        _untilShutdown.Add(RunAsync(workflow, link, link.Token));
+        _untilShutdown.Add(RunAsync(workflow, null, link, link.Token));
     }
 
     /// <summary>Cancels the workflows running, and any started later, as the app shuts down. Their ending
@@ -53,8 +63,9 @@ public sealed class WorkflowRunner(BackgroundWork work, ErrorLog errors)
     }
 
     /// <summary>Runs <paramref name="workflow"/> on <paramref name="ct"/>, the token of <paramref name="link"/>,
-    /// which it lets go of once the workflow ends.</summary>
-    private async Task RunAsync(Func<CancellationToken, Task> workflow, IDisposable link, CancellationToken ct)
+    /// which it lets go of once the workflow ends; an unexpected exception it ends with is reported, then
+    /// <paramref name="settle"/>, if any, settles what its start left pending.</summary>
+    private async Task RunAsync(Func<CancellationToken, Task> workflow, Action<Exception>? settle, IDisposable link, CancellationToken ct)
     {
         using (link)
         {
@@ -70,6 +81,7 @@ public sealed class WorkflowRunner(BackgroundWork work, ErrorLog errors)
             catch (Exception ex)
             {
                 Errors.Report(errors, new AppProblem.Unexpected(ex));
+                settle?.Invoke(ex);
             }
         }
     }

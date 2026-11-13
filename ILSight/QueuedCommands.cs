@@ -129,13 +129,27 @@ internal static class QueuedCommands
         DocumentPanels.FocusCard(uiState.Documents, tab, type);
     }
 
-    /// <summary>Runs the commands <paramref name="uiState"/> queued for the app state, in the order queued.</summary>
+    /// <summary>Runs the commands <paramref name="uiState"/> queued for the app state, in the order queued, each a unit
+    /// of work of its own: one that throws is reported, and the rest still run, as the draw that queued them already
+    /// says their work has started.</summary>
     internal static void RunAppCommands(UiState uiState, AppState appState)
     {
         var commands = uiState.AppCommands;
         while (commands.TryDequeue(out var command))
         {
+            Run(command, appState);
+        }
+    }
+
+    private static void Run(AppCommand command, AppState appState)
+    {
+        try
+        {
             command(appState);
+        }
+        catch (Exception ex)
+        {
+            Errors.Report(appState, new AppProblem.Unexpected(ex));
         }
     }
 

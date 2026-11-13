@@ -496,12 +496,13 @@ public static class Commands
         StartBringingIn(appState, load);
     }
 
-    /// <summary>A method of its own, so that the calls that start nothing allocate no closure.</summary>
+    /// <summary>A method of its own, so that the calls that start nothing allocate no closure. A load that fails
+    /// unexpectedly shows failed in its tab, rather than loading for good.</summary>
     private static void StartBringingIn(AppState appState, DecompileTicket load)
     {
         var firstGridRows = appState.FirstGridRows;
-        appState.Workflows.Start(nameof(DecompileIntoTabHandler), ct => appState.DecompileIntoTabHandler.HandleAsync(appState.ViewCommands, load, firstGridRows, ct),
-            load.Work.Token);
+        appState.Workflows.StartSettling(nameof(DecompileIntoTabHandler), ct => appState.DecompileIntoTabHandler.HandleAsync(appState.ViewCommands, load, firstGridRows, ct),
+            error => load.Load.TryShowFailed(load.Work, error.Message), load.Work.Token);
     }
 
     /// <summary>Starts bringing in each of <paramref name="loads"/>, as <see cref="StartDecompiling(AppState, DecompileTicket?)"/>

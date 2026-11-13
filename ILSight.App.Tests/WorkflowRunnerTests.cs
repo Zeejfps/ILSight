@@ -28,6 +28,20 @@ public sealed class WorkflowRunnerTests
     }
 
     [Fact]
+    public async Task StartSettling_WorkflowFails_ReportsItAndSettlesWhatItsStartLeftPending()
+    {
+        var work = new BackgroundWork();
+        var errors = new ErrorLog();
+        Exception? settled = null;
+
+        new WorkflowRunner(work, errors).StartSettling("failing", static _ => Task.FromException(new InvalidOperationException("broken")), e => settled = e);
+        await WaitUntilEndedAsync(work);
+
+        Assert.NotNull(settled);
+        Assert.Same(GetReportedError(errors), settled);
+    }
+
+    [Fact]
     public async Task Start_WhileTheWorkflowRuns_CountsItUnderItsName()
     {
         var work = new BackgroundWork();
