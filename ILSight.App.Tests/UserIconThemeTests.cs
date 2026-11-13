@@ -45,7 +45,7 @@ public sealed class UserIconThemeTests : IDisposable
             return null;
         }
 
-        appState.IconTheme = custom.Id;
+        appState.ChosenThemes.ChooseIconTheme(custom.Id);
         return custom.Path;
     }
 
@@ -61,7 +61,7 @@ public sealed class UserIconThemeTests : IDisposable
         Assert.Equal("lucide", appState.IconTheme.Text);
         Assert.Equal(BuiltInIconThemes.Reference.Icons.NodeClass, IconTheming.ResolveIconTheme(appState).Icons.NodeClass);
 
-        appState.IconTheme = Id("mine");
+        appState.ChosenThemes.ChooseIconTheme(Id("mine"));
         Assert.IsType<Saving.Saved>(appState.SettingsSaving.SaveIfChanged(appState, 0));
 
         Assert.Equal("mine", Settings().IconTheme.Text);
@@ -249,7 +249,7 @@ public sealed class UserIconThemeTests : IDisposable
         app.Run(2);
         Assert.Empty(app.Frames.UnregisteredFonts);
 
-        app.AppState.IconTheme = Id("lucide");
+        app.AppState.ChosenThemes.ChooseIconTheme(Id("lucide"));
         app.Run(2);
 
         Assert.Equal(["icon-font:" + Path.GetFullPath(font)], app.Frames.UnregisteredFonts);

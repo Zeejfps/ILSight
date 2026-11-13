@@ -192,7 +192,7 @@ internal static class DisplayOptionsPanelView
         var picked = PickFrom(ui, "theme", labels, current, themes.Ids, themes.Revision);
         if (picked is not null)
         {
-            Commands.Later(ui.State, themes.Ids[picked.Value], static (a, theme) => a.Theme = theme);
+            Commands.Later(ui.State, themes.Ids[picked.Value], static (a, theme) => a.ChosenThemes.ChooseTheme(theme));
         }
     }
 
@@ -216,7 +216,7 @@ internal static class DisplayOptionsPanelView
             return;
         }
 
-        appState.Theme = custom.Id;
+        appState.ChosenThemes.ChooseTheme(custom.Id);
         screen.FilesToOpen.Enqueue(custom.Path);
     }
 
@@ -261,7 +261,7 @@ internal static class DisplayOptionsPanelView
         var picked = PickFrom(ui, "icon-theme", labels, current, themes.Ids, themes.Revision);
         if (picked is not null)
         {
-            Commands.Later(ui.State, themes.Ids[picked.Value], static (a, theme) => a.IconTheme = theme);
+            Commands.Later(ui.State, themes.Ids[picked.Value], static (a, theme) => a.ChosenThemes.ChooseIconTheme(theme));
         }
     }
 
@@ -285,7 +285,7 @@ internal static class DisplayOptionsPanelView
             return;
         }
 
-        appState.IconTheme = custom.Id;
+        appState.ChosenThemes.ChooseIconTheme(custom.Id);
         screen.FilesToOpen.Enqueue(custom.Path);
     }
 

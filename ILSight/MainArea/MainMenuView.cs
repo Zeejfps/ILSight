@@ -322,7 +322,7 @@ internal static class MainMenuView
             var id = catalog.Ids[i];
             if (ui.MenuRadioItem(names[i], current == id, id: id.Text))
             {
-                Commands.Later(ui.State, id, static (a, theme) => a.Theme = theme);
+                Commands.Later(ui.State, id, static (a, theme) => a.ChosenThemes.ChooseTheme(theme));
             }
         }
     }

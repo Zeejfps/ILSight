@@ -56,7 +56,7 @@ public sealed class AutosaveTests : IDisposable
         switch (field)
         {
             case nameof(AppSettings.Theme):
-                appState.Theme = ThemeId<ThemeFile>.Of("monokai");
+                appState.ChosenThemes.ChooseTheme(ThemeId<ThemeFile>.Of("monokai"));
                 break;
             case nameof(AppSettings.Language):
                 appState.Decompiler.UseLanguage(DecompilationLanguage.IL);

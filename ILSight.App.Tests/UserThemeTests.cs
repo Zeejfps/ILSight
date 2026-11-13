@@ -44,7 +44,7 @@ public sealed class UserThemeTests : IDisposable
             return null;
         }
 
-        appState.Theme = custom.Id;
+        appState.ChosenThemes.ChooseTheme(custom.Id);
         return custom.Path;
     }
 

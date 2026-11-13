@@ -204,11 +204,11 @@ public sealed class AppState
     /// icon theme there and watches it, the fonts and pictures in it too.</summary>
     public required UserThemes<IconThemeFile, IconThemeContents, IconTheme> UserIconThemes { get; init; }
 
-    /// <summary>The id of the chosen theme, kept even while no theme has it.</summary>
-    public required ThemeId<ThemeFile> Theme;
+    public required ChosenThemes ChosenThemes { get; init; }
 
-    /// <summary>The id of the chosen icon theme, kept even while no icon theme has it.</summary>
-    public required ThemeId<IconThemeFile> IconTheme;
+    public ThemeId<ThemeFile> Theme => ChosenThemes.Theme;
+
+    public ThemeId<IconThemeFile> IconTheme => ChosenThemes.IconTheme;
     public ApiVisibility ApiVisibility;
 
     /// <summary>The interface language.</summary>
