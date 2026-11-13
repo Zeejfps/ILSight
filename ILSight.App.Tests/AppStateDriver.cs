@@ -343,7 +343,7 @@ internal sealed class AppStateDriver
             return false;
         }
 
-        return _ui.Search.IsBusy;
+        return _ui.Search.Results.IsBusy;
     }
 
     /// <summary>The commands the features queued for the view since the last frame ran them, oldest first, taken

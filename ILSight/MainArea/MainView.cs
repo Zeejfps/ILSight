@@ -94,7 +94,7 @@ public static class MainView
 
     private static void UpdateSearch(Ui<UiState> ui, Search search, AssemblyList assemblies, bool shown)
     {
-        var wait = Searches.Update(search, assemblies, ui.RealTime, shown);
+        var wait = search.Update(assemblies, ui.RealTime, shown);
         if (wait > 0)
         {
             ui.RequestUpdateIn(wait);

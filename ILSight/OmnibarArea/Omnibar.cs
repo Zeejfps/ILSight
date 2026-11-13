@@ -26,20 +26,20 @@ public sealed class Omnibar
     public bool IsSearching => _searching is not null;
 
     /// <summary>How many matches are suggested.</summary>
-    public int SuggestionCount => Math.Min(Search.Rows.Count, MaxSuggestions);
+    public int SuggestionCount => Math.Min(Search.Results.Rows.Count, MaxSuggestions);
 
     /// <summary>Whether the matches of the query typed are in, and some of them are suggested.</summary>
     public bool HasSuggestions => Search.ShowsQuery && SuggestionCount > 0;
 
     /// <summary>Whether the query has not settled yet or its first matches are still coming.</summary>
-    public bool IsStillSearching => !Search.ShowsQuery || Search.IsBusy;
+    public bool IsStillSearching => !Search.ShowsQuery || Search.Results.IsBusy;
 
     /// <summary>The suggestion selected, or null when none of those suggested is.</summary>
     public SearchResult? SelectedSuggestion
     {
         get
         {
-            var index = ItemSelections.FindIndexIn(Search.Selection, Search.Rows);
+            var index = ItemSelections.FindIndexIn(Search.Results.Selection, Search.Results.Rows);
             if (index is null)
             {
                 return null;
@@ -50,7 +50,7 @@ public sealed class Omnibar
                 return null;
             }
 
-            return Search.Rows[index.Value];
+            return Search.Results.Rows[index.Value];
         }
     }
 
@@ -64,7 +64,7 @@ public sealed class Omnibar
     public void StartSearch(string panel)
     {
         _searching = new OmnibarSearch { Panel = panel };
-        Searches.Clear(Search);
+        Search.Clear();
         Menu = null;
     }
 
@@ -72,7 +72,7 @@ public sealed class Omnibar
     public void StopSearch()
     {
         _searching = null;
-        Searches.Clear(Search);
+        Search.Clear();
     }
 
     /// <summary>True once after <see cref="StartSearch"/>: the search box is to take focus now.</summary>
@@ -102,7 +102,7 @@ public sealed class Omnibar
             return null;
         }
 
-        return Search.Rows[0];
+        return Search.Results.Rows[0];
     }
 
     /// <summary>Selects the suggestion <paramref name="by"/> rows on from the selected one, kept within those suggested.</summary>
@@ -113,8 +113,8 @@ public sealed class Omnibar
             return;
         }
 
-        Searches.Move(Search, by);
-        var index = ItemSelections.FindIndexIn(Search.Selection, Search.Rows);
+        Search.Results.Move(by);
+        var index = ItemSelections.FindIndexIn(Search.Results.Selection, Search.Results.Rows);
         if (index is null)
         {
             return;
@@ -125,7 +125,7 @@ public sealed class Omnibar
             return;
         }
 
-        Searches.Select(Search, Search.Rows[SuggestionCount - 1]);
+        Search.Results.Select(Search.Results.Rows[SuggestionCount - 1]);
     }
 
     /// <summary>Whether the list of <paramref name="node"/>'s children is open in the bar of <paramref name="panel"/>.</summary>

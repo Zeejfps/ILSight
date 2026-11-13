@@ -545,7 +545,7 @@ public static class DocumentPanels
     {
         if (panel == DockPanels.Search)
         {
-            Searches.Clear(uiState.Search);
+            uiState.Search.Clear();
         }
 
         CloseTabOf(uiState, panel);

@@ -70,7 +70,7 @@ public sealed class OmnibarTests
         app.Frames.Key(Shortcuts.OmnibarSearch).Frame(2);
         app.Frames.Type(query).Frame();
         app.RunOut();
-        Assert.False(omnibar.Search.IsBusy);
+        Assert.False(omnibar.Search.Results.IsBusy);
         Assert.True(omnibar.Search.ShowsQuery);
         Assert.True(omnibar.SuggestionCount > moreThan, $"{omnibar.SuggestionCount} suggestions");
     }
@@ -197,8 +197,8 @@ public sealed class OmnibarTests
         var second = omnibar.SelectedSuggestion;
         app.Frames.Key(KeyboardKey.Escape).Frame(2);
 
-        Assert.Same(omnibar.Search.Rows[0], first);
-        Assert.Same(omnibar.Search.Rows[1], second);
+        Assert.Same(omnibar.Search.Results.Rows[0], first);
+        Assert.Same(omnibar.Search.Results.Rows[1], second);
         Assert.False(omnibar.IsSearching);
         Assert.Same(await app.FixtureAsync("Greeter"), app.AppState.Navigation.ActiveTab?.Node);
         GetCrumb(app, "Greeter");

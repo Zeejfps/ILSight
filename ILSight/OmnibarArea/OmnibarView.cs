@@ -558,7 +558,7 @@ internal static class OmnibarView
             }
             for (var i = 0; i < omnibar.SuggestionCount; i++)
             {
-                var row = SuggestionRow(ui, omnibar, omnibar.Search.Rows[i], fieldId);
+                var row = SuggestionRow(ui, omnibar, omnibar.Search.Results.Rows[i], fieldId);
                 if (row.Match != null)
                 {
                     picked = row;

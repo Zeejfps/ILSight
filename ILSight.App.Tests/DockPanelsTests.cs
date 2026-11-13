@@ -81,7 +81,7 @@ public sealed class DockPanelsTests
         using var temp = new TempDir();
         var d = new AppStateDriver(temp.Settings());
 
-        d.Ui.Search.Kinds = SearchKinds.Literals;
+        d.Ui.Search.LookFor(SearchKinds.Literals);
         d.NextFrame();
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
@@ -95,7 +95,7 @@ public sealed class DockPanelsTests
         var settings = temp.Settings();
         var d = new AppStateDriver(settings);
 
-        d.Ui.Search.Kinds = SearchKinds.Literals;
+        d.Ui.Search.LookFor(SearchKinds.Literals);
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         d.NextFrame();
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));

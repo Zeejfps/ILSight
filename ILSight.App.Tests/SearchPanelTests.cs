@@ -36,10 +36,10 @@ public sealed class SearchPanelTests : IDisposable
         app.RunOut();
 
         var search = app.Ui.Search;
-        Assert.False(search.IsBusy);
-        Assert.Contains(search.Rows, r => r.Node.Assembly == fixtures);
-        Assert.Contains(search.Rows, r => r.Node.Assembly == keyboard);
-        Assert.Same(middle, Assert.Single(search.Unsearched).Assembly);
+        Assert.False(search.Results.IsBusy);
+        Assert.Contains(search.Results.Rows, r => r.Node.Assembly == fixtures);
+        Assert.Contains(search.Results.Rows, r => r.Node.Assembly == keyboard);
+        Assert.Same(middle, Assert.Single(search.Results.Unsearched).Assembly);
         Assert.Contains(app.Frames.TextRects(), t => t.Text.StartsWith("Broken.dll: couldn't be searched (", StringComparison.Ordinal));
         Assert.Empty(app.AppState.Errors.Entries);
     }

@@ -73,7 +73,7 @@ public sealed class AutosaveTests : IDisposable
                 appState.Locale = Locale.De;
                 break;
             case nameof(AppSettings.SearchKinds):
-                screen.Search.Kinds = SearchKinds.Types;
+                screen.Search.LookFor(SearchKinds.Types);
                 break;
             case nameof(AppSettings.FoldedOptionGroups):
                 OptionFolds.Fold(screen.FoldedOptionGroups, ["Other"]);

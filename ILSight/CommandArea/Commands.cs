@@ -232,26 +232,26 @@ public static class Commands
         workflows.Start(nameof(LoadedAssemblies.ReadTypeSystemAheadAsync), ct => LoadedAssemblies.ReadTypeSystemAheadAsync(module, ct));
     }
 
-    /// <summary>Starts the runs <paramref name="search"/> asked for while the screen drew (<see cref="RunSearchHandler"/>)
+    /// <summary>Starts the runs <paramref name="results"/> asked for while the screen drew (<see cref="RunSearchHandler"/>)
     /// now, each counted in the app's background work until it ends, on a token that a new query cancels too.
     /// Allocates nothing while nothing is asked for.</summary>
-    public static void StartSearching(AppState appState, Search search)
+    public static void StartSearching(AppState appState, SearchResults results)
     {
-        if (!search.Runs.HasAsked)
+        if (!results.HasAskedRuns)
         {
             return;
         }
 
-        foreach (var run in search.Runs.TakeAsked())
+        foreach (var run in results.TakeAskedRuns())
         {
-            StartSearchRun(appState, search, run);
+            StartSearchRun(appState, results, run);
         }
     }
 
     /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
-    private static void StartSearchRun(AppState appState, Search search, SearchRun run)
+    private static void StartSearchRun(AppState appState, SearchResults results, SearchRun run)
     {
-        appState.Workflows.Start(nameof(RunSearchHandler), ct => appState.RunSearchHandler.HandleAsync(search, run, ct), run.Work.Token);
+        appState.Workflows.Start(nameof(RunSearchHandler), ct => appState.RunSearchHandler.HandleAsync(results, run, ct), run.Work.Token);
     }
 
     /// <summary>Starts looking up the tooltips <paramref name="tooltips"/> asked for while the code drew

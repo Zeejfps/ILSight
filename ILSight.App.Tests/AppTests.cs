@@ -24,8 +24,8 @@ public sealed class AppTests
         app.Run();
         app.Frames.Type(text).Frame();
         app.RunOut();
-        Assert.False(app.Ui.Search.IsBusy);
-        Assert.True(app.Ui.Search.Rows.Count > moreRowsThan, $"{app.Ui.Search.Rows.Count} rows");
+        Assert.False(app.Ui.Search.Results.IsBusy);
+        Assert.True(app.Ui.Search.Results.Rows.Count > moreRowsThan, $"{app.Ui.Search.Results.Rows.Count} rows");
         return app;
     }
 
@@ -464,13 +464,13 @@ public sealed class AppTests
 
         var search = app.Ui.Search;
         app.Frames.Key(KeyboardKey.DownArrow).Frame();
-        Assert.Same(search.Rows[0], search.SelectedRow);
+        Assert.Same(search.Results.Rows[0], search.Results.SelectedRow);
         app.Frames.Key(KeyboardKey.DownArrow).Frame();
-        Assert.Same(search.Rows[1], search.SelectedRow);
+        Assert.Same(search.Results.Rows[1], search.Results.SelectedRow);
         app.Frames.Key(KeyboardKey.Enter).Frame();
         app.Settle();
 
-        Assert.Same(app.Ui.Search.Rows[1].Node, app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(app.Ui.Search.Results.Rows[1].Node, app.AppState.Navigation.ActiveTab?.Node);
     }
 
     [Fact]
@@ -482,9 +482,9 @@ public sealed class AppTests
         app.Frames.Type("/[a/").Frame();
         app.RunOut();
 
-        var invalid = app.Ui.Search.InvalidRegex;
+        var invalid = app.Ui.Search.Results.InvalidRegex;
         Assert.NotNull(invalid);
-        Assert.Empty(app.Ui.Search.Rows);
+        Assert.Empty(app.Ui.Search.Results.Rows);
         Assert.True(app.Frames.Drew("Invalid regular expression"));
         Assert.False(app.Frames.Drew("0 results"));
         app.Frames.MoveTo(Selector.WithText("Invalid regular expression")).Frame().Wait(2).Frame(2);
@@ -493,7 +493,7 @@ public sealed class AppTests
         app.Frames.Type("]").Frame();
         app.RunOut();
 
-        Assert.Null(app.Ui.Search.InvalidRegex);
+        Assert.Null(app.Ui.Search.Results.InvalidRegex);
         Assert.False(app.Frames.Drew("Invalid regular expression"));
     }
 
@@ -502,43 +502,43 @@ public sealed class AppTests
     {
         var app = Searching("Greet", moreRowsThan: 2);
         var search = app.Ui.Search;
-        Searches.Select(search, search.Rows[search.Rows.Count - 1]);
-        var selectedRow = search.SelectedRow;
+        search.Results.Select(search.Results.Rows[search.Results.Rows.Count - 1]);
+        var selectedRow = search.Results.SelectedRow;
         Assert.NotNull(selectedRow);
         var selected = selectedRow.Node;
-        var names = search.Rows.Select(r => r.Text).ToList();
-        Assert.Equal(SearchSort.Relevance, search.Sorting.Asked.Sort);
-        Assert.Equal(search.Rows.Select(r => r.Fitness).OrderDescending(), search.Rows.Select(r => r.Fitness));
+        var names = search.Results.Rows.Select(r => r.Text).ToList();
+        Assert.Equal(SearchSort.Relevance, search.Results.AskedOrder.Sort);
+        Assert.Equal(search.Results.Rows.Select(r => r.Fitness).OrderDescending(), search.Results.Rows.Select(r => r.Fitness));
 
         app.Frames.ClickOn(Selector.WithText("Name")).Frame();
         app.RunOut();
-        Assert.Equal(names.Order(StringComparer.OrdinalIgnoreCase), search.Rows.Select(r => r.Text));
-        Assert.Same(selected, search.SelectedRow?.Node);
+        Assert.Equal(names.Order(StringComparer.OrdinalIgnoreCase), search.Results.Rows.Select(r => r.Text));
+        Assert.Same(selected, search.Results.SelectedRow?.Node);
         Assert.True(app.Frames.Drew(Text(Icons.SortAscending)));
 
         app.Frames.ClickOn(Selector.WithText("Name")).Frame();
         app.RunOut();
-        Assert.Equal(names.OrderDescending(StringComparer.OrdinalIgnoreCase), search.Rows.Select(r => r.Text));
-        Assert.Same(selected, search.SelectedRow?.Node);
+        Assert.Equal(names.OrderDescending(StringComparer.OrdinalIgnoreCase), search.Results.Rows.Select(r => r.Text));
+        Assert.Same(selected, search.Results.SelectedRow?.Node);
         Assert.True(app.Frames.Drew(Text(Icons.SortDescending)));
 
         app.Frames.ClickOn(Selector.WithText("Name")).Frame();
         app.RunOut();
-        Assert.Equal(SearchSort.Relevance, search.Sorting.Asked.Sort);
-        Assert.Equal(names, search.Rows.Select(r => r.Text));
-        Assert.Same(selected, search.SelectedRow?.Node);
+        Assert.Equal(SearchSort.Relevance, search.Results.AskedOrder.Sort);
+        Assert.Equal(names, search.Results.Rows.Select(r => r.Text));
+        Assert.Same(selected, search.Results.SelectedRow?.Node);
 
         app.Frames.ClickOn(Selector.WithText("Assembly")).Frame();
         app.RunOut();
-        Assert.Equal(SearchSort.Assembly, search.Sorting.Asked.Sort);
-        Assert.False(search.Sorting.Asked.Descending);
+        Assert.Equal(SearchSort.Assembly, search.Results.AskedOrder.Sort);
+        Assert.False(search.Results.AskedOrder.Descending);
     }
 
     [Fact]
     public void Search_kinds_are_checked_on_and_off_in_one_open_menu()
     {
         var app = Searching("Greet", moreRowsThan: 0);
-        Assert.Contains(app.Ui.Search.Rows, r => r.Node.Icon == NodeIcon.Class);
+        Assert.Contains(app.Ui.Search.Results.Rows, r => r.Node.Icon == NodeIcon.Class);
 
         app.Frames.ClickOn(Selector.WithText("Types and members")).Frame();
         foreach (var kind in new[] { "Types", "Fields", "Properties", "Events" })
@@ -552,10 +552,10 @@ public sealed class AppTests
         Assert.True(icon.Right <= events.X && events.X - icon.Right < 16f, $"the events icon ends at {icon.Right}, its label starts at {events.X}");
         Assert.True(MathF.Abs(icon.Y + icon.Height / 2 - (events.Y + events.Height / 2)) < 4f);
         app.Frames.Key(KeyboardKey.Escape).Frame(2);
-        app.Frames.WaitUntil(() => app.Ui.Search is { IsBusy: false, Rows.Count: > 0 }, Patience);
+        app.Frames.WaitUntil(() => app.Ui.Search.Results is { IsBusy: false, Rows.Count: > 0 }, Patience);
 
         Assert.Equal(SearchKinds.Methods, app.Ui.Search.Kinds);
-        Assert.All(app.Ui.Search.Rows, r => Assert.Equal(NodeIcon.Method, r.Node.Icon));
+        Assert.All(app.Ui.Search.Results.Rows, r => Assert.Equal(NodeIcon.Method, r.Node.Icon));
         Assert.True(app.Frames.Drew("Methods"));
         Assert.False(app.Frames.Drew("Namespaces"));
     }
@@ -749,7 +749,7 @@ public sealed class AppTests
         var app = Searching("Greeter", moreRowsThan: 0, width: 560f);
         app.Run(2);
 
-        var row = app.Ui.Search.Rows.First(r => r.Node.Icon == NodeIcon.Class);
+        var row = app.Ui.Search.Results.Rows.First(r => r.Node.Icon == NodeIcon.Class);
         var header = app.LastTextRect(Icons.SearchField);
         var texts = app.Frames.TextRects().ToList();
         var name = texts.Single(t => t.Text == row.Text && t.Rect.Y > header.Bottom).Rect;

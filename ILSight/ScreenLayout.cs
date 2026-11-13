@@ -38,14 +38,14 @@ public static class ScreenLayout
     public static void OpenSearch(UiState uiState)
     {
         Docking.Open(uiState.MainLayout, DockView.Search, FindActivePanel(uiState));
-        uiState.Search.IsFocusPending = true;
+        uiState.Search.AskForFocus();
     }
 
     /// <summary>Opens the search panel with its query kept to <paramref name="node"/>'s assembly, or to
     /// the namespace it is.</summary>
     public static void ScopeSearch(UiState uiState, BrowseNode node)
     {
-        Searches.ScopeTo(uiState.Search, node);
+        uiState.Search.ScopeTo(node);
         OpenSearch(uiState);
     }
 

@@ -1,47 +1,77 @@
-using ZGF.Gui.Immediate;
 using ILSight.Core;
 
 namespace ILSight.SearchArea;
 
-/// <summary>The search panel's query, streamed results and selection. While the panel is open a
-/// query runs once typing pauses; assemblies opened later are searched and their hits added, and
-/// hits in closed ones dropped, keeping the selection.</summary>
+/// <summary>The search box: the query typed in it, what it looks for, and whether it should take focus, which the
+/// widgets set; and the <see cref="Results"/> the query finds, which keep their own rules. While the panel is open, the
+/// results are told the query each frame, and search once typing pauses.</summary>
 public sealed class Search
 {
-    /// <summary>The hits so far, in the order the sort says, of the assemblies in
-    /// <see cref="SearchedAssemblies"/> only; <see cref="Searches"/> keeps them so.</summary>
-    public readonly List<SearchResult> Rows = new();
-    public readonly HashSet<LoadedAssembly> SearchedAssemblies = new(ReferenceEqualityComparer.Instance);
-    /// <summary>The assemblies of <see cref="SearchedAssemblies"/> the library failed on while they were searched, and
-    /// why, in the order they came in; <see cref="Searches"/> keeps them so.</summary>
-    public readonly List<SearchFind.Unsearched> Unsearched = new();
-    /// <summary>The runs that may still deliver hits.</summary>
-    public SearchRuns Runs { get; } = new();
-    public readonly TypedText Typed = new();
-    public SearchedQuery? LastSearched;
+    private const string NamespaceScope = "innamespace";
+    private const string AssemblyScope = "inassembly";
 
-    /// <summary>Why <see cref="LastSearched"/> finds nothing, when its <c>/regex/</c> is no valid
-    /// regular expression; else null.</summary>
-    public SearchMatcher.InvalidRegex? InvalidRegex;
-
-    public bool IsFocusPending;
-
+    /// <summary>The query as typed, which the search box's field is bound to.</summary>
     public string Query = "";
 
+    private bool _isFocusPending;
+
     /// <summary>What the query looks for, unless prefixes in it say otherwise.</summary>
-    public SearchKinds Kinds = SearchKinds.TypesAndMembers;
+    public SearchKinds Kinds { get; private set; } = SearchKinds.TypesAndMembers;
 
-    /// <summary>Whether results may still arrive, or be sorted into the order asked for.</summary>
-    public bool IsBusy => Runs.IsRunning || Sorting.IsSorting;
+    /// <summary>What the query finds.</summary>
+    public SearchResults Results { get; } = new();
 
-    /// <summary>Whether <see cref="Rows"/> are the hits of the query as typed, rather than of one typed
-    /// before it settled; more may still arrive.</summary>
-    public bool ShowsQuery => LastSearched?.Query == Query;
+    /// <summary>Whether the results are the hits of the query as typed, rather than of one typed before it settled;
+    /// more may still arrive.</summary>
+    public bool ShowsQuery => Results.LastSearched?.Query == Query;
 
-    public ItemSelection<SearchResult> Selection { get; } = new();
+    /// <summary>Starts a search when the query settled, or searches assemblies opened since, as
+    /// <see cref="SearchResults.Update"/> does. Runs every frame.</summary>
+    public double Update(AssemblyList assemblies, double now, bool shown)
+    {
+        return Results.Update(Query, Kinds, assemblies, now, shown);
+    }
 
-    public SearchResult? SelectedRow => Selection.Item;
+    /// <summary>Has the query look for <paramref name="kinds"/> from now on.</summary>
+    public void LookFor(SearchKinds kinds)
+    {
+        Kinds = kinds;
+    }
 
-    /// <summary>The order the results are in and the one asked for.</summary>
-    public SearchSorting Sorting { get; } = new();
+    /// <summary>Empties the query, and drops a focus asked for that the box has not taken yet.</summary>
+    public void Clear()
+    {
+        Query = "";
+        _isFocusPending = false;
+    }
+
+    /// <summary>Asks for the box to take focus when it is next drawn.</summary>
+    public void AskForFocus()
+    {
+        _isFocusPending = true;
+    }
+
+    /// <summary>True once after a focus was asked for, unless cleared since: the box should take focus.</summary>
+    public bool TryTakeFocus()
+    {
+        var focus = _isFocusPending;
+        _isFocusPending = false;
+        return focus;
+    }
+
+    /// <summary>Keeps the query to <paramref name="node"/>'s assembly, or to the namespace it is.</summary>
+    public void ScopeTo(BrowseNode node)
+    {
+        Query = CreateScopedQuery(node);
+    }
+
+    private string CreateScopedQuery(BrowseNode node)
+    {
+        if (node.Subject is NodeSubject.Namespace)
+        {
+            return SearchQueries.AddScope(Query, NamespaceScope, node.FullName);
+        }
+
+        return SearchQueries.AddScope(Query, AssemblyScope, node.Assembly.Name);
+    }
 }

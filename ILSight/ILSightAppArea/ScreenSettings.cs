@@ -15,7 +15,7 @@ public static class ScreenSettings
     /// <param name="saved">What the settings kept of the screen when they were last saved.</param>
     public static void RestoreScreen(UiState uiState, ViewSettings saved)
     {
-        uiState.Search.Kinds = saved.SearchKinds;
+        uiState.Search.LookFor(saved.SearchKinds);
         uiState.BookmarkColumns.Restore(saved.BookmarkColumns);
         uiState.SearchColumns.Restore(saved.SearchColumns);
         uiState.ExportColumns.Restore(saved.ExportColumns);

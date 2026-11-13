@@ -509,13 +509,13 @@ public sealed class AppStateTests
         d.Show(await d.FixtureAsync("Greeter"));
         var search = d.Ui.Search;
         search.Query = "IsLeapYear";
-        Searches.Update(search, d.AppState.Assemblies, 0, true);
-        Searches.Update(search, d.AppState.Assemblies, 1, true);
+        search.Update(d.AppState.Assemblies, 0, true);
+        search.Update(d.AppState.Assemblies, 1, true);
         d.Settle();
-        var rows = search.Rows.ToArray();
+        var rows = search.Results.Rows.ToArray();
         Assert.Single(rows);
-        Searches.Select(search, search.Rows[0]);
-        var selectedRow = search.SelectedRow;
+        search.Results.Select(search.Results.Rows[0]);
+        var selectedRow = search.Results.SelectedRow;
         Assert.NotNull(selectedRow);
         var selected = selectedRow.Node;
 
@@ -527,12 +527,12 @@ public sealed class AppStateTests
         d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: true), ct));
         d.Settle();
         Assert.Equal(2, d.AppState.Assemblies.Assemblies.Count);
-        Searches.Update(search, d.AppState.Assemblies, 2, true);
+        search.Update(d.AppState.Assemblies, 2, true);
         d.Settle();
 
-        Assert.All(rows, r => Assert.Contains(r, search.Rows));
-        Assert.True(search.Rows.Count > rows.Length);
-        Assert.Same(selected, search.SelectedRow?.Node);
+        Assert.All(rows, r => Assert.Contains(r, search.Results.Rows));
+        Assert.True(search.Results.Rows.Count > rows.Length);
+        Assert.Same(selected, search.Results.SelectedRow?.Node);
     }
 
     [Fact]
@@ -545,21 +545,21 @@ public sealed class AppStateTests
         Assert.NotNull(await d.AppState.Assemblies.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference)));
         var search = d.Ui.Search;
         search.Query = "IsLeapYear";
-        Searches.Update(search, d.AppState.Assemblies, 0, true);
-        Searches.Update(search, d.AppState.Assemblies, 1, true);
+        search.Update(d.AppState.Assemblies, 0, true);
+        search.Update(d.AppState.Assemblies, 1, true);
         d.Settle();
-        Assert.Contains(search.Rows, r => r.Node.Assembly != greeter.Assembly);
-        Searches.Select(search, search.Rows.First(r => r.Node.Assembly == greeter.Assembly));
-        var selectedRow = search.SelectedRow;
+        Assert.Contains(search.Results.Rows, r => r.Node.Assembly != greeter.Assembly);
+        search.Results.Select(search.Results.Rows.First(r => r.Node.Assembly == greeter.Assembly));
+        var selectedRow = search.Results.SelectedRow;
         Assert.NotNull(selectedRow);
         var selected = selectedRow.Node;
 
         d.InTurn(() => Commands.CloseAssemblies(d.AppState, [d.AppState.Assemblies.Assemblies.Single(a => a.Name == "System.Private.CoreLib")]));
-        Searches.Update(search, d.AppState.Assemblies, 2, true);
+        search.Update(d.AppState.Assemblies, 2, true);
         d.Settle();
 
-        Assert.All(search.Rows, r => Assert.Equal(greeter.Assembly, r.Node.Assembly));
-        Assert.Same(selected, search.SelectedRow?.Node);
+        Assert.All(search.Results.Rows, r => Assert.Equal(greeter.Assembly, r.Node.Assembly));
+        Assert.Same(selected, search.Results.SelectedRow?.Node);
     }
 
     [Fact]
@@ -569,11 +569,11 @@ public sealed class AppStateTests
         var search = d.Ui.Search;
         search.Query = "Greet";
 
-        Searches.Update(search, d.AppState.Assemblies, 0, false);
-        Searches.Update(search, d.AppState.Assemblies, 5, false);
+        search.Update(d.AppState.Assemblies, 0, false);
+        search.Update(d.AppState.Assemblies, 5, false);
 
-        Assert.False(search.IsBusy);
-        Assert.Empty(search.Rows);
+        Assert.False(search.Results.IsBusy);
+        Assert.Empty(search.Results.Rows);
     }
 
     [Fact]
@@ -584,7 +584,7 @@ public sealed class AppStateTests
 
         OnPanelClosed(d.Ui, DockPanels.Search);
 
-        Assert.False(Searches.TryTakeFocus(d.Ui.Search));
+        Assert.False(d.Ui.Search.TryTakeFocus());
     }
 
     [Fact]
@@ -593,19 +593,19 @@ public sealed class AppStateTests
         var d = AppStateDriver.Opened();
         var search = d.Ui.Search;
         search.Query = "e";
-        Searches.Update(search, d.AppState.Assemblies, 0, true);
-        Searches.Update(search, d.AppState.Assemblies, 1, true);
+        search.Update(d.AppState.Assemblies, 0, true);
+        search.Update(d.AppState.Assemblies, 1, true);
         d.Settle();
-        Assert.True(search.Rows.Count > 3);
+        Assert.True(search.Results.Rows.Count > 3);
 
-        Searches.Move(search, 1);
-        Assert.Same(search.Rows[0], search.SelectedRow);
-        Searches.Move(search, 2);
-        Assert.Same(search.Rows[2], search.SelectedRow);
-        Searches.Move(search, -10);
-        Assert.Same(search.Rows[0], search.SelectedRow);
-        Searches.Move(search, search.Rows.Count);
-        Assert.Same(search.Rows[search.Rows.Count - 1], search.SelectedRow);
+        search.Results.Move(1);
+        Assert.Same(search.Results.Rows[0], search.Results.SelectedRow);
+        search.Results.Move(2);
+        Assert.Same(search.Results.Rows[2], search.Results.SelectedRow);
+        search.Results.Move(-10);
+        Assert.Same(search.Results.Rows[0], search.Results.SelectedRow);
+        search.Results.Move(search.Results.Rows.Count);
+        Assert.Same(search.Results.Rows[search.Results.Rows.Count - 1], search.Results.SelectedRow);
     }
 
     [Fact]
@@ -614,24 +614,24 @@ public sealed class AppStateTests
         var d = AppStateDriver.Opened();
         var search = d.Ui.Search;
         search.Query = "e";
-        Searches.Update(search, d.AppState.Assemblies, 0, true);
-        Searches.Update(search, d.AppState.Assemblies, 1, true);
+        search.Update(d.AppState.Assemblies, 0, true);
+        search.Update(d.AppState.Assemblies, 1, true);
         d.Settle();
-        var found = search.Rows.ToList();
+        var found = search.Results.Rows.ToList();
 
-        var sorting = Searches.StartSort(search, SearchSort.Name);
+        var sorting = search.Results.StartSort(SearchSort.Name);
 
-        Assert.Equal(SearchSort.Name, search.Sorting.Asked.Sort);
-        Assert.Equal(SearchSort.Relevance, search.Sorting.Applied.Sort);
-        Assert.True(search.IsBusy);
-        Assert.Equal(found, search.Rows);
+        Assert.Equal(SearchSort.Name, search.Results.AskedOrder.Sort);
+        Assert.Equal(SearchSort.Relevance, search.Results.AppliedOrder.Sort);
+        Assert.True(search.Results.IsBusy);
+        Assert.Equal(found, search.Results.Rows);
 
-        d.Start((_, ct) => Searches.SortAsync(search, sorting, ct));
+        d.Start((_, ct) => Searches.SortAsync(search.Results, sorting, ct));
         d.Settle();
 
-        Assert.Equal(found.OrderBy(r => r.Text, StringComparer.OrdinalIgnoreCase).Select(r => r.Text), search.Rows.Select(r => r.Text));
-        Assert.Equal(SearchSort.Name, search.Sorting.Applied.Sort);
-        Assert.False(search.IsBusy);
+        Assert.Equal(found.OrderBy(r => r.Text, StringComparer.OrdinalIgnoreCase).Select(r => r.Text), search.Results.Rows.Select(r => r.Text));
+        Assert.Equal(SearchSort.Name, search.Results.AppliedOrder.Sort);
+        Assert.False(search.Results.IsBusy);
     }
 
     [Fact]
@@ -640,20 +640,20 @@ public sealed class AppStateTests
         var d = AppStateDriver.Opened();
         var search = d.Ui.Search;
         search.Query = "e";
-        Searches.Update(search, d.AppState.Assemblies, 0, true);
-        Searches.Update(search, d.AppState.Assemblies, 1, true);
+        search.Update(d.AppState.Assemblies, 0, true);
+        search.Update(d.AppState.Assemblies, 1, true);
         d.Settle();
 
-        var ascending = Searches.StartSort(search, SearchSort.Name);
-        var descending = Searches.StartSort(search, SearchSort.Name);
+        var ascending = search.Results.StartSort(SearchSort.Name);
+        var descending = search.Results.StartSort(SearchSort.Name);
 
         Assert.True(ascending.Work.Token.IsCancellationRequested);
         Assert.True(descending.Order.Descending);
-        d.Start((_, ct) => Searches.SortAsync(search, descending, ct));
+        d.Start((_, ct) => Searches.SortAsync(search.Results, descending, ct));
         d.Settle();
 
-        Assert.Equal(search.Rows.OrderByDescending(r => r.Text, StringComparer.OrdinalIgnoreCase).Select(r => r.Text), search.Rows.Select(r => r.Text));
-        Assert.True(search.Sorting.Applied.Descending);
+        Assert.Equal(search.Results.Rows.OrderByDescending(r => r.Text, StringComparer.OrdinalIgnoreCase).Select(r => r.Text), search.Results.Rows.Select(r => r.Text));
+        Assert.True(search.Results.AppliedOrder.Descending);
     }
 
     [Fact]
@@ -664,19 +664,19 @@ public sealed class AppStateTests
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 2);
         var search = d.Ui.Search;
         search.Query = "e";
-        Searches.Update(search, d.AppState.Assemblies, 0, true);
-        Searches.Update(search, d.AppState.Assemblies, 1, true);
+        search.Update(d.AppState.Assemblies, 0, true);
+        search.Update(d.AppState.Assemblies, 1, true);
 
-        var sorting = Searches.StartSort(search, SearchSort.Name);
-        d.Start((_, ct) => Searches.SortAsync(search, sorting, ct));
+        var sorting = search.Results.StartSort(SearchSort.Name);
+        d.Start((_, ct) => Searches.SortAsync(search.Results, sorting, ct));
         d.Settle();
 
-        var sorted = search.Rows
+        var sorted = search.Results.Rows
             .OrderBy(r => r.Text, StringComparer.OrdinalIgnoreCase)
             .ThenBy(r => r.Location, StringComparer.OrdinalIgnoreCase)
             .ThenBy(r => r.Node.Assembly.NameAndVersion, StringComparer.OrdinalIgnoreCase);
-        Assert.True(search.Rows.Count > 1000);
-        Assert.Equal(sorted, search.Rows);
+        Assert.True(search.Results.Rows.Count > 1000);
+        Assert.Equal(sorted, search.Results.Rows);
     }
 
     [Fact]
@@ -686,21 +686,21 @@ public sealed class AppStateTests
         d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(typeof(object).Assembly.Location)], ct));
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 2);
         var search = d.Ui.Search;
-        var sorting = Searches.StartSort(search, SearchSort.Name);
-        d.Start((_, ct) => Searches.SortAsync(search, sorting, ct));
+        var sorting = search.Results.StartSort(SearchSort.Name);
+        d.Start((_, ct) => Searches.SortAsync(search.Results, sorting, ct));
         d.Settle();
         search.Query = "e";
 
-        Searches.Update(search, d.AppState.Assemblies, 0, true);
-        Searches.Update(search, d.AppState.Assemblies, 1, true);
+        search.Update(d.AppState.Assemblies, 0, true);
+        search.Update(d.AppState.Assemblies, 1, true);
         d.Settle();
 
-        var sorted = search.Rows
+        var sorted = search.Results.Rows
             .OrderBy(r => r.Text, StringComparer.OrdinalIgnoreCase)
             .ThenBy(r => r.Location, StringComparer.OrdinalIgnoreCase)
             .ThenBy(r => r.Node.Assembly.NameAndVersion, StringComparer.OrdinalIgnoreCase);
-        Assert.True(search.Rows.Count > 1000);
-        Assert.Equal(sorted, search.Rows);
+        Assert.True(search.Results.Rows.Count > 1000);
+        Assert.Equal(sorted, search.Results.Rows);
     }
 
     [Fact]

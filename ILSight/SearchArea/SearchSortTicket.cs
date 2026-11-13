@@ -2,7 +2,7 @@ using ILSight.Core;
 
 namespace ILSight.SearchArea;
 
-/// <summary>A sort <see cref="Searches.StartSort"/> started, for <see cref="Searches.SortAsync"/> to run: the order
+/// <summary>A sort <see cref="SearchResults.StartSort"/> started, for <see cref="Searches.SortAsync"/> to run: the order
 /// asked for, the results as they were when it was asked for, and the work it runs as, which a newer sort or a new
 /// search cancels.</summary>
 [MustUse]

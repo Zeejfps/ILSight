@@ -18,33 +18,33 @@ public sealed class RunSearchHandler(RunSearchHandler.IPorts ports)
         IAsyncEnumerable<Outcome<IReadOnlyList<SearchFind>>> SearchAsync(SearchQuery query, IReadOnlyList<LoadedModule> within, CancellationToken ct);
     }
 
-    /// <summary>Runs <paramref name="run"/>, delivering what it finds to <paramref name="search"/>, then ends it.
+    /// <summary>Runs <paramref name="run"/>, delivering what it finds to <paramref name="results"/>, then ends it.
     /// <paramref name="ct"/> is the workflow's token, which the edge that starts it links to the run's work.</summary>
-    public async Task HandleAsync(Search search, SearchRun run, CancellationToken ct)
+    public async Task HandleAsync(SearchResults results, SearchRun run, CancellationToken ct)
     {
         await foreach (var found in ports.SearchAsync(run.Query, run.Within, ct))
         {
             var error = found.Match<Exception?>(
                 ok =>
                 {
-                    Searches.Deliver(search, ok.Value, run);
+                    results.Deliver(ok.Value, run);
                     return null;
                 },
                 static failed => failed.Error);
             if (error is not null)
             {
-                ReportFailure(search, run, error);
+                ReportFailure(results, run, error);
                 break;
             }
         }
 
-        search.Runs.End(run);
+        results.EndRun(run);
     }
 
     /// <summary>Reports why <paramref name="run"/> failed, unless a new query replaced it.</summary>
-    private void ReportFailure(Search search, SearchRun run, Exception error)
+    private void ReportFailure(SearchResults results, SearchRun run, Exception error)
     {
-        if (!search.Runs.IsCurrent(run))
+        if (!results.IsCurrent(run))
         {
             return;
         }
