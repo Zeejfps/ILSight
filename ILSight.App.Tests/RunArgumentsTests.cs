@@ -259,6 +259,29 @@ public sealed class RunArgumentsTests
             .Assemblies.Select(static p => p.Text));
     }
 
+    [Fact]
+    public async Task A_run_that_sends_a_file_as_soon_as_the_role_is_claimed_has_it_listed_in_the_list_the_first_run_switches_to()
+    {
+        using var temp = new TempDir();
+        var settingsPath = FullFilePath.Of(temp.PathOf("settings.json"));
+        var first = CommandLines.Parse([$"--list={Other}"]).Arguments;
+        var later = CommandLines.Parse([CoreAssembly]).Arguments;
+
+        // The later run sends as soon as a receiver listens: its hand-over waits for the pipe the claim opens.
+        var routing = Task.Run(() => AppRoot.RouteRunAsync(settingsPath, first, newInstance: false, CancellationToken.None));
+        var isTaken = await RunPipes.TrySendAsync(RunArgumentsRouting.GetAddress(settingsPath), later);
+        using var receiver = await routing;
+        Assert.NotNull(receiver);
+        var app = new AppDriver(settings: DefaultAndOther(temp), inbox: receiver.Inbox);
+        app.Frames.WaitUntil(() => AreListed(app.AppState, later.Files.Paths), Patience);
+        app.Settle();
+
+        Assert.True(isTaken);
+        Assert.Equal(Other, app.AppState.Lists.Active);
+        Assert.Equal([CoreAssembly, OtherAssembly], app.AppState.Assemblies.ListFilePaths().Select(static p => p.Text).Order());
+        Assert.Empty(app.AppState.Errors.Entries);
+    }
+
     private static AppSettings SettingsWith(TempDir temp, params AssemblyListRecord[] lists)
     {
         var settings = temp.Settings();

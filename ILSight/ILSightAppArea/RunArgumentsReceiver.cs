@@ -30,25 +30,28 @@ public sealed class RunArgumentsReceiver : IDisposable
     private bool _isDisposed;
 
     /// <summary>A receiver of the role at <paramref name="address"/> whose thread does <paramref name="run"/>, not
-    /// started yet.</summary>
-    private RunArgumentsReceiver(RunArgumentsAddress address, Action<RunArgumentsReceiver> run)
+    /// started yet, putting what later runs send in <paramref name="inbox"/>.</summary>
+    private RunArgumentsReceiver(RunArgumentsAddress address, Channel<RunArguments> inbox, Action<RunArgumentsReceiver> run)
     {
         _name = address.Name;
+        Inbox = inbox;
         _role = new Mutex(false, address.Name);
         _thread = new Thread(() => run(this)) { IsBackground = true, Name = "Run arguments" };
     }
 
-    /// <summary>The arguments of later runs waiting for the app. It exists before the app does, so those that
-    /// arrive while the app starts wait here; the app reads them on the UI thread once it runs, and completing
-    /// it refuses arguments from then on, so that the runs sending them open windows of their own.</summary>
-    public Channel<RunArguments> Inbox { get; } = Channel.CreateUnbounded<RunArguments>();
+    /// <summary>The arguments of later runs waiting for the app, after this run's own, which the launcher put there
+    /// before the role was claimed. It exists before the app does, so those that arrive while the app starts wait here;
+    /// the app reads them on the UI thread once it runs, and completing it refuses arguments from then on, so that the
+    /// runs sending them open windows of their own.</summary>
+    public Channel<RunArguments> Inbox { get; }
 
-    /// <summary>A receiver already listening when the role at <paramref name="address"/> is free; null
-    /// when another run holds it. Never waits for the role: awaits the role thread's answer.</summary>
-    public static async Task<RunArgumentsReceiver?> TryClaimAsync(RunArgumentsAddress address, CancellationToken ct)
+    /// <summary>A receiver already listening when the role at <paramref name="address"/> is free, putting what later
+    /// runs send in <paramref name="inbox"/>; null when another run holds it. Never waits for the role: awaits the role
+    /// thread's answer.</summary>
+    public static async Task<RunArgumentsReceiver?> TryClaimAsync(RunArgumentsAddress address, Channel<RunArguments> inbox, CancellationToken ct)
     {
         var claimed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var receiver = new RunArgumentsReceiver(address, r => r.ClaimAndServe(claimed));
+        var receiver = new RunArgumentsReceiver(address, inbox, r => r.ClaimAndServe(claimed));
         receiver._thread.Start();
         bool isClaimed;
         try
@@ -70,11 +73,12 @@ public sealed class RunArgumentsReceiver : IDisposable
         return null;
     }
 
-    /// <summary>A receiver that takes the role at <paramref name="address"/> whenever it comes free.
-    /// A run must only stand by once it will not send, or it could end up taking its own arguments.</summary>
-    public static RunArgumentsReceiver StandBy(RunArgumentsAddress address)
+    /// <summary>A receiver that takes the role at <paramref name="address"/> whenever it comes free, putting what later
+    /// runs send in <paramref name="inbox"/>. A run must only stand by once it will not send, or it could end up taking
+    /// its own arguments.</summary>
+    public static RunArgumentsReceiver StandBy(RunArgumentsAddress address, Channel<RunArguments> inbox)
     {
-        var receiver = new RunArgumentsReceiver(address, static r => r.WaitAndServe());
+        var receiver = new RunArgumentsReceiver(address, inbox, static r => r.WaitAndServe());
         receiver._thread.Start();
         return receiver;
     }

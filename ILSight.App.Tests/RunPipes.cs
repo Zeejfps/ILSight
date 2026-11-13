@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using ILSight.ILSightAppArea;
 
 namespace ILSight.App.Tests;
@@ -9,12 +10,12 @@ internal static class RunPipes
     /// <summary>A receiver of the role at <paramref name="address"/>; null when another run holds it.</summary>
     public static Task<RunArgumentsReceiver?> ClaimAsync(RunArgumentsAddress address)
     {
-        return RunArgumentsReceiver.TryClaimAsync(address, CancellationToken.None);
+        return RunArgumentsReceiver.TryClaimAsync(address, Channel.CreateUnbounded<RunArguments>(), CancellationToken.None);
     }
 
     /// <summary>Whether the run holding the role at <paramref name="address"/> took <paramref name="arguments"/>.</summary>
     public static Task<bool> TrySendAsync(RunArgumentsAddress address, RunArguments arguments)
     {
-        return new RunRoutingAdapter(address).TrySendAsync(arguments, CancellationToken.None);
+        return new RunRoutingAdapter(address, Channel.CreateUnbounded<RunArguments>()).TrySendAsync(arguments, CancellationToken.None);
     }
 }

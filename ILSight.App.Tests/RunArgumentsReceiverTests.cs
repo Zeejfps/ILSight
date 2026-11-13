@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using ILSight.Core;
 using ILSight.CommandArea;
 using ILSight.ILSightAppArea;
@@ -72,7 +73,7 @@ public sealed class RunArgumentsReceiverTests
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
         var first = await RunPipes.ClaimAsync(address);
         Assert.NotNull(first);
-        using var standing = RunArgumentsReceiver.StandBy(address);
+        using var standing = RunArgumentsReceiver.StandBy(address, Channel.CreateUnbounded<RunArguments>());
 
         first.Dispose();
         var handedOver = await RunPipes.TrySendAsync(address, Arguments("a.dll"));
@@ -87,7 +88,7 @@ public sealed class RunArgumentsReceiverTests
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
         using var first = await RunPipes.ClaimAsync(address);
 
-        var standing = RunArgumentsReceiver.StandBy(address);
+        var standing = RunArgumentsReceiver.StandBy(address, Channel.CreateUnbounded<RunArguments>());
         standing.Dispose();
 
         Assert.True(await RunPipes.TrySendAsync(address, Arguments("a.dll")));

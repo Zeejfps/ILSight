@@ -1,17 +1,20 @@
+using System.Threading.Channels;
+
 namespace ILSight.ILSightAppArea;
 
 /// <summary>Reaches the role and the hand-over at <paramref name="address"/> for <see cref="RunRouting"/>: the claim
-/// starts a receiver and awaits its role thread's answer, holding the receiver it claimed (<see cref="Claimed"/>); the
+/// starts a receiver putting what later runs send in <paramref name="inbox"/>, which holds this run's own arguments
+/// already, and awaits its role thread's answer, holding the receiver it claimed (<see cref="Claimed"/>); the
 /// send hands the arguments over the pipe, a run that can't be reached in time, refuses or breaks the hand-over
 /// answered as not taken. Decides nothing.</summary>
-public sealed class RunRoutingAdapter(RunArgumentsAddress address) : RunRouting.IPorts
+public sealed class RunRoutingAdapter(RunArgumentsAddress address, Channel<RunArguments> inbox) : RunRouting.IPorts
 {
     /// <summary>The receiver <see cref="TryClaimAsync"/> claimed; null until it claimed one.</summary>
     public RunArgumentsReceiver? Claimed { get; private set; }
 
     public async Task<bool> TryClaimAsync(CancellationToken ct)
     {
-        var claimed = await RunArgumentsReceiver.TryClaimAsync(address, ct);
+        var claimed = await RunArgumentsReceiver.TryClaimAsync(address, inbox, ct);
         Claimed = claimed;
         return claimed is not null;
     }

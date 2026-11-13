@@ -36,20 +36,25 @@ internal static class AppRoot
 
     /// <summary>Where this run's <paramref name="arguments"/> go (<see cref="RunRouting"/>), over the role and the
     /// hand-over of the settings at <paramref name="settingsPath"/>: null when they were handed to the window already
-    /// open; else the receiver of later runs' arguments this run holds, the role claimed, or standing by to take it, a
-    /// <paramref name="newInstance"/> asked for never handing over.</summary>
+    /// open, the inbox dropped unread; else the receiver of later runs' arguments this run holds, the role claimed, or
+    /// standing by to take it, a <paramref name="newInstance"/> asked for never handing over. Its inbox holds this run's
+    /// arguments first, put there before the role is claimed, so a later run's, sent as soon as it is, come after
+    /// them.</summary>
     internal static async Task<RunArgumentsReceiver?> RouteRunAsync(FullFilePath settingsPath, RunArguments arguments, bool newInstance,
         CancellationToken ct)
     {
         var address = RunArgumentsRouting.GetAddress(settingsPath);
-        var routing = new RunRoutingAdapter(address);
+        var inbox = Channel.CreateUnbounded<RunArguments>();
+        // Unbounded, and completed only by the app as its window closes: it takes them.
+        inbox.Writer.TryWrite(arguments);
+        var routing = new RunRoutingAdapter(address, inbox);
         var route = await new RunRouting(routing).RouteAsync(arguments, newInstance, ct);
         if (route == RunRoute.HandedOver)
         {
             return null;
         }
 
-        return routing.Claimed ?? RunArgumentsReceiver.StandBy(address);
+        return routing.Claimed ?? RunArgumentsReceiver.StandBy(address, inbox);
     }
 
     /// <summary>The whole app the launcher opens a window on: the settings at <paramref name="settingsPath"/> read, and

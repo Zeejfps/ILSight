@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using ILSight.Core;
 using ILSight.CommandArea;
 using ILSight.ILSightAppArea;
@@ -62,8 +63,8 @@ public sealed class RunRoutingTests
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
-        var first = new RunRoutingAdapter(address);
-        var later = new RunRoutingAdapter(address);
+        var first = new RunRoutingAdapter(address, Channel.CreateUnbounded<RunArguments>());
+        var later = new RunRoutingAdapter(address, Channel.CreateUnbounded<RunArguments>());
 
         var isFirstClaimed = await first.TryClaimAsync(CancellationToken.None);
         using var holder = first.Claimed;

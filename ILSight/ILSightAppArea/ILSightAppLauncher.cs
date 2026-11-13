@@ -20,11 +20,9 @@ public static class ILSightAppLauncher
             return;
         }
 
+        // This run's arguments wait in the inbox first, put there before the role was claimed: they take the path a
+        // later run's take.
         using var receiver = receiving;
-        // This run's arguments take the path a later run's take: into the inbox, before the window opens. The inbox is
-        // unbounded and only the app completes it, as its window closes, so it takes them.
-        receiver.Inbox.Writer.TryWrite(arguments);
-
         var launched = AppRoot.BuildLaunchedApp(config.SettingsPath, receiver.Inbox);
         OpenWindow(launched, config);
     }
