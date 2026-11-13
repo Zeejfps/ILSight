@@ -1,7 +1,5 @@
-using ILSight.Core;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
-using ILSight.SettingArea;
 
 namespace ILSight.ILSightAppArea;
 
@@ -10,33 +8,31 @@ public static class ILSightAppLauncher
 {
     /// <summary>Hands <paramref name="arguments"/> to the window already open with the same settings
     /// and leaves, unless <paramref name="config"/> asks for a new window or none can take it; else
-    /// opens the app, which takes them from its inbox as it takes those of the runs handed to it.</summary>
+    /// opens the app, which takes them from its inbox as it takes those of the runs handed to it. What it routes and
+    /// opens, the root builds (<see cref="AppRoot.RouteRunAsync"/>, <see cref="AppRoot.BuildLaunchedApp"/>).</summary>
     public static void LaunchApp(LaunchConfig config, RunArguments arguments)
     {
-        var address = RunArgumentsRouting.GetAddress(config.SettingsPath);
-        var routing = new RunRoutingAdapter(address);
 #pragma warning disable VSTHRD002 // The entry thread must stay its own for the window loop and has nothing to do until the run's route is known; the routing runs on the thread pool.
-        var route = Task.Run(() => new RunRouting(routing).RouteAsync(arguments, config.NewInstance, CancellationToken.None)).GetAwaiter().GetResult();
+        var receiving = Task.Run(() => AppRoot.RouteRunAsync(config.SettingsPath, arguments, config.NewInstance, CancellationToken.None)).GetAwaiter().GetResult();
 #pragma warning restore VSTHRD002
-        if (route == RunRoute.HandedOver)
+        if (receiving is null)
         {
             return;
         }
 
-        using var receiver = routing.Claimed ?? RunArgumentsReceiver.StandBy(address);
+        using var receiver = receiving;
         // This run's arguments take the path a later run's take: into the inbox, before the window opens. The inbox is
         // unbounded and only the app completes it, as its window closes, so it takes them.
         receiver.Inbox.Writer.TryWrite(arguments);
 
-        var loadResult = AppRoot.ReadSettingsFile(config.SettingsPath);
-        var built = AppRoot.BuildApp(loadResult, receiver.Inbox, new BrowseSession());
-        OpenWindow(built.App, loadResult, config);
+        var launched = AppRoot.BuildLaunchedApp(config.SettingsPath, receiver.Inbox);
+        OpenWindow(launched, config);
     }
 
-    private static void OpenWindow(ILSightApp app, SettingsLoadResult loadResult, LaunchConfig config)
+    private static void OpenWindow(LaunchedApp launched, LaunchConfig config)
     {
-        var windowConfig = CreateWindowConfig(loadResult.Settings.Window);
-        var host = new ImmediateGuiAppHost<UiState>(app, windowConfig, config.RenderBackend);
+        var windowConfig = CreateWindowConfig(launched.Window);
+        var host = new ImmediateGuiAppHost<UiState>(launched.App, windowConfig, config.RenderBackend);
         host.Run();
     }
 

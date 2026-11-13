@@ -25,12 +25,42 @@ using ILSight.MetadataArea;
 namespace ILSight;
 
 /// <summary>The composition root: builds the app state and the screen over it, the use cases on them and the
-/// adapters those reach the world through, choosing the desktop app's adapters. The launcher and the tests that run
-/// the whole app build it through <see cref="BuildApp"/>.</summary>
+/// adapters those reach the world through, choosing the desktop app's adapters. The launcher routes a run and builds the
+/// app through <see cref="RouteRunAsync"/> and <see cref="BuildLaunchedApp"/>, and the tests that run the whole app
+/// build it through <see cref="BuildApp"/>; building starts nothing, every host starting it through
+/// <see cref="AppStart.Start"/>.</summary>
 [Edge]
 internal static class AppRoot
 {
     private const string LicensesFolder = "licenses";
+
+    /// <summary>Where this run's <paramref name="arguments"/> go (<see cref="RunRouting"/>), over the role and the
+    /// hand-over of the settings at <paramref name="settingsPath"/>: null when they were handed to the window already
+    /// open; else the receiver of later runs' arguments this run holds, the role claimed, or standing by to take it, a
+    /// <paramref name="newInstance"/> asked for never handing over.</summary>
+    internal static async Task<RunArgumentsReceiver?> RouteRunAsync(FullFilePath settingsPath, RunArguments arguments, bool newInstance,
+        CancellationToken ct)
+    {
+        var address = RunArgumentsRouting.GetAddress(settingsPath);
+        var routing = new RunRoutingAdapter(address);
+        var route = await new RunRouting(routing).RouteAsync(arguments, newInstance, ct);
+        if (route == RunRoute.HandedOver)
+        {
+            return null;
+        }
+
+        return routing.Claimed ?? RunArgumentsReceiver.StandBy(address);
+    }
+
+    /// <summary>The whole app the launcher opens a window on: the settings at <paramref name="settingsPath"/> read, and
+    /// the app built from them over a browse tree of its own, taking each run's arguments, this one's first, from
+    /// <paramref name="inbox"/> (<see cref="BuildApp"/>).</summary>
+    internal static LaunchedApp BuildLaunchedApp(FullFilePath settingsPath, Channel<RunArguments> inbox)
+    {
+        var loadResult = ReadSettingsFile(settingsPath);
+        var built = BuildApp(loadResult, inbox, new BrowseSession());
+        return new LaunchedApp { App = built.App, Window = loadResult.Settings.Window };
+    }
 
     /// <summary>The whole app as it starts, from what the launcher has: the app state restored from
     /// <paramref name="loadResult"/> over <paramref name="session"/>, with its start recorded, the screen over it
@@ -42,10 +72,12 @@ internal static class AppRoot
     /// <param name="nuGetRequests">Sends the "open from NuGet" dialog's requests; the app's shared connections when null.</param>
     /// <param name="runtimeScan">Scans the runtime for the "open from framework" dialog; the installed runtime's when null.</param>
     /// <param name="processes">Lists the running processes for the "open from process" dialog; this machine's when null.</param>
+    /// <param name="updates">Looks for a newer version of the app; the release feed's when null.</param>
     internal static BuiltApp BuildApp(SettingsLoadResult loadResult, Channel<RunArguments> inbox, BrowseSession session,
-        HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null)
+        HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null,
+        AppUpdates.IPorts? updates = null)
     {
-        var restored = RestoreApp(loadResult, session, nuGetRequests, runtimeScan, processes);
+        var restored = RestoreApp(loadResult, session, nuGetRequests, runtimeScan, processes, updates);
         var app = new ILSightApp(restored.AppState, restored.Screen, restored.Start, inbox);
         return new BuiltApp { Restored = restored, App = app };
     }
@@ -58,13 +90,28 @@ internal static class AppRoot
     /// <param name="nuGetRequests">Sends the "open from NuGet" dialog's requests; the app's shared connections when null.</param>
     /// <param name="runtimeScan">Scans the runtime for the "open from framework" dialog; the installed runtime's when null.</param>
     /// <param name="processes">Lists the running processes for the "open from process" dialog; this machine's when null.</param>
+    /// <param name="updates">Looks for a newer version of the app; the release feed's when null.</param>
     internal static RestoredApp RestoreApp(SettingsLoadResult loadResult, BrowseSession session,
-        HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null)
+        HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null,
+        AppUpdates.IPorts? updates = null)
     {
-        var appState = RestoreStartingState(loadResult, session);
+        var appState = RestoreStartingState(loadResult, session, updates);
         var screen = CreateScreen(appState, nuGetRequests, runtimeScan, processes);
         var start = RecordStart(appState);
         return new RestoredApp { AppState = appState, Screen = screen, Start = start };
+    }
+
+    /// <summary>The app state restored from <paramref name="loadResult"/> over <paramref name="session"/>
+    /// (<see cref="RestoreStartingState"/>) and its start recorded on it, with no screen: what a host that runs the app
+    /// with no window starts (<see cref="AppStart.Start"/>).</summary>
+    /// <param name="loadResult">What reading the settings file gave.</param>
+    /// <param name="session">The browse tree the app's trees and searches show nodes of.</param>
+    /// <param name="updates">Looks for a newer version of the app; the release feed's when null.</param>
+    internal static RestoredState RestoreWithoutScreen(SettingsLoadResult loadResult, BrowseSession session, AppUpdates.IPorts? updates = null)
+    {
+        var appState = RestoreStartingState(loadResult, session, updates);
+        var start = RecordStart(appState);
+        return new RestoredState { AppState = appState, Start = start };
     }
 
     /// <summary>Records on <paramref name="appState"/> what starting implies, reading nothing: the active list's
@@ -90,18 +137,19 @@ internal static class AppRoot
     /// <summary>The app state to start from: what <paramref name="loadResult"/> describes, over
     /// <paramref name="session"/>, told of what was wrong with the settings. The screen is built over this; the run's
     /// arguments reach it once the app runs, through its inbox.</summary>
-    internal static AppState RestoreStartingState(SettingsLoadResult loadResult, BrowseSession session)
+    internal static AppState RestoreStartingState(SettingsLoadResult loadResult, BrowseSession session, AppUpdates.IPorts? updates = null)
     {
-        var appState = RestoreAppState(loadResult.Settings, session);
+        var appState = RestoreAppState(loadResult.Settings, session, updates);
         ReportProblem(appState, Settings.FindProblem(appState.SettingsPlace, loadResult.Problem));
         return appState;
     }
 
     /// <summary>The app state <paramref name="settings"/> describe over <paramref name="session"/>, with the tab
-    /// it starts with active, what the settings keep restored into it, and the user's themes and icon themes read.</summary>
-    internal static AppState RestoreAppState(AppSettings settings, BrowseSession session)
+    /// it starts with active, what the settings keep restored into it, and the user's themes and icon themes read; it
+    /// looks for a newer version through <paramref name="updates"/>, the release feed when null.</summary>
+    internal static AppState RestoreAppState(AppSettings settings, BrowseSession session, AppUpdates.IPorts? updates = null)
     {
-        var appState = CreateAppState(settings, session);
+        var appState = CreateAppState(settings, session, updates ?? new AppUpdatesAdapter());
         appState.Navigation.OpenFirstTab();
         ReportProblem(appState, Settings.Restore(appState, settings));
         appState.UserThemes.ReadThemes();
@@ -122,7 +170,7 @@ internal static class AppRoot
 
     /// <summary>The app state <paramref name="settings"/> describe, with its use cases over the adapters they
     /// reach the world through, before anything is restored into it.</summary>
-    private static AppState CreateAppState(AppSettings settings, BrowseSession session)
+    private static AppState CreateAppState(AppSettings settings, BrowseSession session, AppUpdates.IPorts updates)
     {
         var runtimeDirectories = RuntimeFolders.FindDirectories();
         var runtime = new InstalledRuntime { Directories = runtimeDirectories, FilesByName = RuntimeFolders.IndexFiles(runtimeDirectories) };
@@ -201,7 +249,7 @@ internal static class AppRoot
             Decompiler = new DecompilerChoice { Setup = new DecompilerSetup { Language = settings.Language, Options = settings.Decompiler } },
             Locale = ChooseLocale(settings),
             ApiVisibility = settings.ApiVisibility,
-            Updates = new AppUpdates(new AppUpdatesAdapter()),
+            Updates = new AppUpdates(updates),
             IsUpdateCheckAutomatic = settings.CheckForUpdates,
         };
         AssemblyListing.TryChangeLoadOptions(assemblies, settings.Decompiler);

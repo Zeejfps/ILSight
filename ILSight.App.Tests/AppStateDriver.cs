@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using ZGF.Gui.Immediate;
 using ILSight.App.Tests.Fixtures;
 using ILSight.Core;
@@ -45,18 +46,25 @@ internal sealed class AppStateDriver
     /// <param name="processes">Lists the running processes for the "open from process" dialog; this machine's when null.</param>
     public AppStateDriver(AppSettings? settings = null, HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null,
         ProcessBrowser.IPorts? processes = null)
-        : this(PostedActions.OfThisTest(), AppRoot.RestoreApp(NoProblem(settings), TestSession.Shared, nuGetRequests, runtimeScan, processes))
+        : this(PostedActions.OfThisTest(), AppRoot.RestoreApp(NoProblem(settings), TestSession.Shared, nuGetRequests, runtimeScan, processes, NoUpdates()))
     {
         WaitForTheStart();
     }
 
-    /// <summary>A driver over <paramref name="restored"/>, which starts what the root recorded for the list it starts
-    /// with, as the app does once it has taken its arguments (none here).</summary>
+    /// <summary>A driver over <paramref name="restored"/>, which starts the app as its window's startup does
+    /// (<see cref="AppStart.Start"/>), with no arguments waiting.</summary>
     private AppStateDriver(PostedActions posted, RestoredApp restored)
         : this(posted, restored.AppState, restored.Screen)
     {
         using var turn = _posted.Install();
-        AppFrames.StartOpeningStartupList(AppState, restored.Start);
+        AppStart.Start(AppState, restored.Start, Channel.CreateUnbounded<RunArguments>());
+    }
+
+    /// <summary>What looks for a newer version in a test host: a copy that can't update itself, as one run from a build
+    /// folder is, so it looks for nothing.</summary>
+    public static AppUpdates.IPorts NoUpdates()
+    {
+        return new FakeAppUpdatesPorts(null) { IsInstalledCopy = false };
     }
 
     /// <summary>A driver over <paramref name="appState"/> and <paramref name="ui"/>, the screen over it, if any, which
@@ -96,7 +104,7 @@ internal sealed class AppStateDriver
     {
         var posted = PostedActions.OfThisTest();
         SpeakEnglishUnlessNamed(loadResult);
-        var driver = new AppStateDriver(posted, AppRoot.RestoreApp(loadResult, TestSession.Shared));
+        var driver = new AppStateDriver(posted, AppRoot.RestoreApp(loadResult, TestSession.Shared, updates: NoUpdates()));
         driver.WaitForTheStart();
         return driver;
     }
@@ -106,7 +114,7 @@ internal sealed class AppStateDriver
     /// what happens meanwhile.</summary>
     public static AppStateDriver Starting(AppSettings? settings = null)
     {
-        return new AppStateDriver(PostedActions.OfThisTest(), AppRoot.RestoreApp(NoProblem(settings), TestSession.Shared));
+        return new AppStateDriver(PostedActions.OfThisTest(), AppRoot.RestoreApp(NoProblem(settings), TestSession.Shared, updates: NoUpdates()));
     }
 
     /// <summary>Runs what was posted, and nothing else a frame does, until the reload the app's start began (or the
@@ -118,8 +126,8 @@ internal sealed class AppStateDriver
     }
 
     /// <summary>A driver over <paramref name="restored"/>, the app state and screen an <see cref="AppDriver"/> had the
-    /// root build with its app, which <paramref name="posted"/> took the test's posts for before. The app starts what
-    /// the root recorded, once it has taken its arguments (<see cref="ILSightApp.StartTakingArguments"/>).</summary>
+    /// root build with its app, which <paramref name="posted"/> took the test's posts for before. The app driver starts
+    /// the app (<see cref="AppStart.Start"/>).</summary>
     public static AppStateDriver Over(PostedActions posted, RestoredApp restored)
     {
         return new AppStateDriver(posted, restored.AppState, restored.Screen);
@@ -133,18 +141,20 @@ internal sealed class AppStateDriver
         return driver;
     }
 
-    /// <summary>A driver with an app state and no screen, which shows that the features need none. It starts restoring
-    /// the analyses the settings kept, and opens no list.</summary>
+    /// <summary>A driver with an app state and no screen, which shows that the features need none, started as an app
+    /// with no window starts (<see cref="AppStart.Start"/>, with no arguments waiting), once the list it starts with is
+    /// open (<see cref="WaitForTheStart"/>).</summary>
     public static AppStateDriver WithoutScreen(AppSettings? settings = null)
     {
         var posted = PostedActions.OfThisTest();
-        var appState = AppRoot.RestoreStartingState(NoProblem(settings), TestSession.Shared);
-        var driver = new AppStateDriver(posted, appState, ui: null);
+        var restored = AppRoot.RestoreWithoutScreen(NoProblem(settings), TestSession.Shared, NoUpdates());
+        var driver = new AppStateDriver(posted, restored.AppState, ui: null);
         using (driver.Turn())
         {
-            Commands.StartRestoringAnalyses(appState, Analysis.BeginRestoring(appState.Analyzer, appState.Assemblies));
+            AppStart.Start(restored.AppState, restored.Start, Channel.CreateUnbounded<RunArguments>());
         }
 
+        driver.WaitForTheStart();
         return driver;
     }
 

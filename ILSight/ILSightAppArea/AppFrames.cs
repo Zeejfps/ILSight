@@ -344,17 +344,17 @@ internal static class AppFrames
         OpenAskedWebPages(ui);
         OpenAskedFiles(ui);
         OpenAskedFolders(ui);
-        BringToFrontIfAsked(ui);
+        BringToFrontIfAsked(ui, appState);
     }
 
-    private static void BringToFrontIfAsked(Ui<UiState> ui)
+    private static void BringToFrontIfAsked(Ui<UiState> ui, AppState appState)
     {
-        if (!ui.State.FrontAsked)
+        if (!appState.FrontAsked)
         {
             return;
         }
 
-        ui.State.FrontAsked = false;
+        appState.FrontAsked = false;
         ui.BringWindowToFront();
     }
 
@@ -506,48 +506,6 @@ internal static class AppFrames
         }
 
         ui.RequestUpdate();
-    }
-
-    /// <summary>Looks for a newer version as the app starts, unless the user turned that off.</summary>
-    internal static void CheckForUpdatesOnStartup(AppState appState)
-    {
-        if (!appState.IsUpdateCheckAutomatic)
-        {
-            return;
-        }
-
-        var updates = appState.Updates;
-        var check = updates.StartCheck(asked: false);
-        if (check is null)
-        {
-            return;
-        }
-
-        StartChecking(appState.Workflows, updates, check);
-    }
-
-    /// <summary>A method of its own, so that the calls that start nothing allocate no closure.</summary>
-    private static void StartChecking(WorkflowRunner workflows, AppUpdates updates, UpdateCheck check)
-    {
-        workflows.Start(nameof(AppUpdates.CheckAsync), ct => updates.CheckAsync(check, ct));
-    }
-
-    /// <summary>Reads the user's themes and icon themes again whenever their folders change, from the app's start
-    /// until it shuts down.</summary>
-    internal static void WatchUserThemesOnStartup(AppState appState)
-    {
-        appState.Workflows.StartUntilShutdown(appState.UserThemes.WatchAsync);
-        appState.Workflows.StartUntilShutdown(appState.UserIconThemes.WatchAsync);
-    }
-
-    /// <summary>Starts what the root recorded for the list the app starts with, <paramref name="start"/>, once the app
-    /// runs: opening the list's assemblies as the reload it began (<see cref="OpenStartupAssembliesAsync"/>), then the
-    /// loads that started in the tabs, and beside it the finding of the list's saved analyses, none waiting for
-    /// another. A switch or a clear since stopped them: they read nothing then.</summary>
-    internal static void StartOpeningStartupList(AppState appState, ListStart start)
-    {
-        Commands.StartShowing(appState, nameof(OpenStartupAssembliesAsync), ct => OpenStartupAssembliesAsync(appState, start.Reopening, ct));
-        Commands.StartRestoringAnalyses(appState, start.Analyses);
     }
 
     /// <summary>Opens the active list's assemblies <paramref name="reopening"/> began reopening as a reload, so that the

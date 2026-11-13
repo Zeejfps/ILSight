@@ -257,12 +257,11 @@ public sealed class UserThemeTests : IDisposable
     }
 
     [Fact]
-    public async Task A_themes_folder_that_cannot_be_made_is_reported_and_left_unwatched()
+    public void A_themes_folder_that_cannot_be_made_is_reported_and_left_unwatched()
     {
         _temp.Write("themes", "not a folder");
-        var d = new AppStateDriver(Settings());
 
-        await d.RunAsync(() => d.AppState.UserThemes.WatchAsync(CancellationToken.None));
+        var d = new AppStateDriver(Settings());
 
         var error = Assert.Single(d.AppState.Errors.Entries);
         Assert.Equal("Cannot make the themes folder", error.Words().Title);
@@ -274,10 +273,6 @@ public sealed class UserThemeTests : IDisposable
         var settings = Settings();
         settings.Theme = Id("back");
         var d = new AppStateDriver(settings);
-        using (d.Turn())
-        {
-            d.AppState.Workflows.StartUntilShutdown(d.AppState.UserThemes.WatchAsync);
-        }
         var folder = _temp.PathOf("themes");
 
         Directory.Delete(folder, recursive: true);
@@ -295,10 +290,6 @@ public sealed class UserThemeTests : IDisposable
         var settings = Settings();
         settings.Theme = Id("live");
         var d = new AppStateDriver(settings);
-        using (d.Turn())
-        {
-            d.AppState.Workflows.StartUntilShutdown(d.AppState.UserThemes.WatchAsync);
-        }
         Assert.Same(d.AppState.Themes.GetTheme(Id("dark")), ResolveTheme(d.AppState));
 
         WriteTheme("live", """{ "extends": "dark", "ui": { "accent": "#FF00FF" } }""");

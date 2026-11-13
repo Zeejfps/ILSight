@@ -79,6 +79,10 @@ public sealed class AppState
 
     public required ErrorLog Errors { get; init; }
 
+    /// <summary>Whether a later run's arguments asked for the window to come to the front, which it does once the
+    /// frame is drawn.</summary>
+    public bool FrontAsked { get; set; }
+
     /// <summary>The last request refused, said in the status bar.</summary>
     public required RefusalLine Refusals { get; init; }
 

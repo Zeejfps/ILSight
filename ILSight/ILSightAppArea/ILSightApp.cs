@@ -2,15 +2,10 @@ using System.Threading.Channels;
 using ZGF.AppUtils;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
-using ILSight.CommandArea;
 using ILSight.MainArea;
-using static ILSight.Analysis;
 using static ILSight.ILSightAppArea.AppFrames;
 using static ILSight.ILSightAppArea.Appearance;
-using ILSight.AssemblyListArea;
 using ILSight.SettingArea;
-using static ILSight.ILSightAppArea.RunArgumentsActions;
-using static ILSight.AssemblyArea.Assemblies;
 using static ILSight.IconTheming;
 using static ILSight.SettingArea.Settings;
 using static ILSight.ILSightAppArea.ScreenSettings;
@@ -56,26 +51,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
         RegisterChosenCodeFont(host);
         RegisterChosenIconFonts(host);
         StartRedrawingOnAssemblyChanges(host);
-        StartTakingArguments();
-        WatchUserThemesOnStartup(_appState);
-        CheckForUpdatesOnStartup(_appState);
-    }
-
-    /// <summary>Takes the arguments already waiting in the inbox, this run's first, then starts the reading the start
-    /// recorded and the loop that takes the arguments of later runs (<see cref="ApplyPendingArgumentsAsync"/>).</summary>
-    internal void StartTakingArguments()
-    {
-        // The run arguments decide from the list as on its way (a switch remembers it, a clear drops its files on their
-        // way), so their handler's prerequisite is the start recorded: the root restored the state with the active list's
-        // reopening begun and nothing read. Taken here, before the reading starts, a switch or a clear stops that
-        // reading before it reads a file of the list it leaves.
-        while (_inbox.Reader.TryRead(out var arguments))
-        {
-            TakeArguments(arguments);
-        }
-
-        StartOpeningStartupList(_appState, _start);
-        _appState.Workflows.StartUntilShutdown(ApplyPendingArgumentsAsync);
+        AppStart.Start(_appState, _start, _inbox);
     }
 
     protected override void OnUpdate(Ui<UiState> ui)
@@ -220,69 +196,6 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     private void StartRedrawingOnAssemblyChanges(ImmediateGuiAppHost<UiState> host)
     {
         _appState.Assemblies.Changed += host.Invalidate;
-    }
-
-    /// <summary>Does what the arguments of later runs ask as they arrive, until this window closes,
-    /// bringing the window to the front for each. Started on the UI thread, so it carries on there, and
-    /// each one arriving wakes the app. Each is a workflow of its own, so arguments that fail are reported by
-    /// the workflow runner rather than ending this loop, which would leave the pipe answering later runs with no
-    /// one to follow them.</summary>
-    private async Task ApplyPendingArgumentsAsync(CancellationToken ct)
-    {
-        await foreach (var arguments in _inbox.Reader.ReadAllAsync(ct))
-        {
-            TakeArguments(arguments);
-            UiState.FrontAsked = true;
-        }
-    }
-
-    /// <summary>Tells of the arguments of <paramref name="arguments"/> that were ignored, then does what the others
-    /// ask (<see cref="ApplyArguments"/>): the one path a run's arguments take, this run's and those handed over
-    /// alike.</summary>
-    private void TakeArguments(RunArguments arguments)
-    {
-        ReportIgnored(arguments);
-        ApplyArguments(arguments);
-    }
-
-    /// <summary>Does what the arguments of a run ask of the app: decompiles to their language,
-    /// switches to their list (added when there is none), clears the list, then opens their files and shows what they
-    /// name. Each change is made here, in that order, and the work each hands back starts at once as a workflow of its
-    /// own: the list's assemblies opening and the finding of its analyses, the lookup of the tabs clearing the list left
-    /// waiting, and opening the files. None waits for another: the tabs left waiting say what is gone while the files
-    /// open.</summary>
-    private void ApplyArguments(RunArguments arguments)
-    {
-        var appState = _appState;
-        if (arguments.Language is not null)
-        {
-            appState.Decompiler.UseLanguage(arguments.Language.Value);
-        }
-
-        if (arguments.AssemblyList is not null)
-        {
-            Commands.StartOpeningList(appState, AssemblyLists.SwitchToListNamed(appState.Lists, appState.ListSession, appState.View, arguments.AssemblyList));
-        }
-
-        if (arguments.ClearList)
-        {
-            Commands.CloseAllAssemblies(appState);
-        }
-
-        var files = arguments.Files;
-        Commands.StartShowing(appState, nameof(OpenRequestedFilesAsync), ct => OpenRequestedFilesAsync(appState, files, ct));
-    }
-
-    /// <summary>Tells the user of the arguments of <paramref name="arguments"/> that were ignored, if any.</summary>
-    private void ReportIgnored(RunArguments arguments)
-    {
-        var ignored = RunArgumentsActions.FindIgnored(arguments);
-        if (ignored is null)
-        {
-            return;
-        }
-
-        Errors.Report(_appState, ignored);
     }
 
     private SettingsWriteResult SaveOnExit(WindowBounds window)

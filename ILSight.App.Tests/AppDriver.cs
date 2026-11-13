@@ -14,11 +14,13 @@ namespace ILSight.App.Tests;
 internal sealed class AppDriver
 {
     /// <summary>The whole app as the root builds it (<see cref="AppRoot.BuildApp"/>), started as it starts once its
-    /// window opens (<see cref="ILSightApp.StartTakingArguments"/>), once the list it starts with is open
+    /// window opens (<see cref="AppStart.Start"/>), once the list it starts with is open
     /// (<see cref="AppStateDriver.WaitForTheStart"/>): <paramref name="queuedArguments"/>, when given, wait in
-    /// <paramref name="inbox"/> first, as the launcher puts a run's own arguments there.</summary>
+    /// <paramref name="inbox"/> first, as the launcher puts a run's own arguments there. It looks for a newer version
+    /// through <paramref name="updates"/>, else a copy that can't update itself (<see cref="AppStateDriver.NoUpdates"/>).</summary>
     public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, RunArguments? queuedArguments = null, ITextMeasurer? measurer = null, Channel<RunArguments>? inbox = null,
-        HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null)
+        HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null,
+        AppUpdates.IPorts? updates = null)
     {
         var posted = PostedActions.OfThisTest();
         inbox ??= Channel.CreateUnbounded<RunArguments>();
@@ -27,7 +29,8 @@ internal sealed class AppDriver
             inbox.Writer.TryWrite(queuedArguments);
         }
 
-        var built = AppRoot.BuildApp(AppStateDriver.NoProblem(settings), inbox, TestSession.Shared, nuGetRequests, runtimeScan, processes);
+        var built = AppRoot.BuildApp(AppStateDriver.NoProblem(settings), inbox, TestSession.Shared, nuGetRequests, runtimeScan, processes,
+            updates ?? AppStateDriver.NoUpdates());
         Driver = AppStateDriver.Over(posted, built.Restored);
         App = built.App;
         Frames = UiFrames.Running(App, measurer, width: width, height: height, background: AppState.Work);
@@ -39,7 +42,7 @@ internal sealed class AppDriver
         Driver.WakeOnPost(ui.RequestFrame);
         using (Driver.Turn())
         {
-            App.StartTakingArguments();
+            AppStart.Start(built.Restored.AppState, built.Restored.Start, inbox);
         }
 
         Driver.WaitForTheStart();

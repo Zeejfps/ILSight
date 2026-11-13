@@ -1,7 +1,7 @@
 using ZGF.Desktop;
 using ZGF.Gui.Testing;
 using ILSight.MainArea;
-using static ILSight.ILSightAppArea.AppFrames;
+using ILSight.AppSettingArea;
 
 namespace ILSight.App.Tests;
 
@@ -16,11 +16,12 @@ public sealed class UpdateTests : IDisposable
         _temp.Dispose();
     }
 
-    private static AppDriver Opened(FakeAppUpdatesPorts feed, bool checkAutomatically = true, ITextMeasurer? measurer = null)
+    /// <summary>An app that has opened the fixture assembly, looking for a newer version through <paramref name="feed"/>,
+    /// as it starts only when <paramref name="checkAtStartup"/>.</summary>
+    private static AppDriver Opened(FakeAppUpdatesPorts feed, bool checkAtStartup = false, ITextMeasurer? measurer = null)
     {
-        var app = AppDriver.Opened(width: 1600f, measurer: measurer);
-        app.AppState.Updates = new AppUpdates(feed);
-        app.AppState.IsUpdateCheckAutomatic = checkAutomatically;
+        var app = new AppDriver(width: 1600f, settings: new AppSettings { CheckForUpdates = checkAtStartup }, measurer: measurer, updates: feed);
+        app.Driver.OpenFixtures();
         app.Run();
         return app;
     }
@@ -45,9 +46,8 @@ public sealed class UpdateTests : IDisposable
     public void A_copy_that_is_not_installed_looks_for_nothing()
     {
         var feed = new FakeAppUpdatesPorts("9.0.0") { IsInstalledCopy = false };
-        var app = Opened(feed);
+        var app = Opened(feed, checkAtStartup: true);
 
-        CheckForUpdatesOnStartup(app.AppState);
         OpenAbout(app);
         ClickCheckForUpdates(app);
         app.Run(2);
@@ -60,9 +60,8 @@ public sealed class UpdateTests : IDisposable
     public void A_newer_version_found_at_startup_is_downloaded_and_offered_in_the_status_bar()
     {
         var feed = new FakeAppUpdatesPorts("9.0.0");
-        var app = Opened(feed);
+        var app = Opened(feed, checkAtStartup: true);
 
-        CheckForUpdatesOnStartup(app.AppState);
         AwaitStatus<UpdateStatus.Ready>(app);
         app.Run(2);
 
@@ -74,9 +73,8 @@ public sealed class UpdateTests : IDisposable
     public void Turned_off_the_startup_check_looks_for_nothing()
     {
         var feed = new FakeAppUpdatesPorts("9.0.0");
-        var app = Opened(feed, checkAutomatically: false);
+        var app = Opened(feed, checkAtStartup: false);
 
-        CheckForUpdatesOnStartup(app.AppState);
         app.Run(2);
 
         Assert.Equal(0, feed.Finds);
@@ -85,14 +83,15 @@ public sealed class UpdateTests : IDisposable
     [Fact]
     public void A_startup_check_keeps_quiet_when_there_is_nothing_new_or_it_fails()
     {
-        var uneventful = Opened(new FakeAppUpdatesPorts(null));
-        var failing = Opened(new FakeAppUpdatesPorts("9.0.0") { FailsToFind = true });
+        var nothingNew = new FakeAppUpdatesPorts(null);
+        var offline = new FakeAppUpdatesPorts("9.0.0") { FailsToFind = true };
 
-        CheckForUpdatesOnStartup(uneventful.AppState);
-        CheckForUpdatesOnStartup(failing.AppState);
+        var uneventful = Opened(nothingNew, checkAtStartup: true);
+        var failing = Opened(offline, checkAtStartup: true);
         uneventful.Frames.WaitUntil(() => uneventful.AppState.Updates.Status is UpdateStatus.Idle, Patience);
         failing.Frames.WaitUntil(() => failing.AppState.Updates.Status is UpdateStatus.Idle, Patience);
 
+        Assert.Equal((1, 1), (nothingNew.Finds, offline.Finds));
         Assert.Empty(failing.AppState.Errors.Entries);
     }
 
