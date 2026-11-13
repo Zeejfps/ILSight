@@ -77,7 +77,7 @@ public sealed class BookmarkTests : IDisposable
         Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
         var bookmarks = d.AppState.Bookmarks;
         var panel = new BookmarksPanel();
-        ItemSelections.Select(panel.Selection, bookmarks.Items[0], bookmarks.Items);
+        panel.Selection.Select(bookmarks.Items[0], bookmarks.Items);
         d.TakeViewCommands();
 
         d.Start((a, ct) => BookmarksPanelView.StepAsync(panel, a, 1, ct));

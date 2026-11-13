@@ -185,7 +185,7 @@ public sealed class NuGetPickerTests : IDisposable
         var posted = PostedActions.OfThisTest();
         var picker = OpenPicker(posted);
 
-        ItemSelections.Clear(picker.Browser.Selection);
+        picker.Browser.Selection.Clear();
         picker.Browser.FollowSelection();
 
         Assert.Null(picker.Browser.Choice);

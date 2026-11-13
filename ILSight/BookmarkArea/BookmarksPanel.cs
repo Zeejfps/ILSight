@@ -37,7 +37,7 @@ public sealed class BookmarksPanel
     {
         toggle.Switch(
             unchanged: static _ => { },
-            added: added => ItemSelections.Select(Selection, added.Bookmark, bookmarks),
+            added: added => Selection.Select(added.Bookmark, bookmarks),
             removed: removed => TakeRemoved(removed.Bookmark, removed.Row, bookmarks));
     }
 
@@ -59,9 +59,9 @@ public sealed class BookmarksPanel
         var kept = Math.Min(row, bookmarks.Count - 1);
         if (kept < 0)
         {
-            ItemSelections.Clear(Selection);
+            Selection.Clear();
             return;
         }
-        ItemSelections.Select(Selection, bookmarks[kept], bookmarks, reveal: false);
+        Selection.Select(bookmarks[kept], bookmarks, reveal: false);
     }
 }

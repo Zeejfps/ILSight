@@ -109,7 +109,7 @@ public sealed class SearchResults
         _rows.Clear();
         _unsearched.Clear();
         _sorting.NoteRowsEmptied();
-        ItemSelections.Clear(Selection);
+        Selection.Clear();
         var listed = assemblies.Assemblies;
         _searchedAssemblies.Clear();
         _searchedAssemblies.UnionWith(listed);
@@ -140,7 +140,7 @@ public sealed class SearchResults
         _rows.RemoveAll(r => !_searchedAssemblies.Contains(r.Node.Assembly));
         _unsearched.RemoveAll(u => !_searchedAssemblies.Contains(u.Assembly));
         _sorting.NoteRowsChanged();
-        ItemSelections.DropIfGone(Selection, _rows);
+        Selection.DropIfGone(_rows);
     }
 
     private List<LoadedModule> MarkSearched(IReadOnlyList<LoadedModule> listed)
@@ -254,12 +254,12 @@ public sealed class SearchResults
 
     public void Select(SearchResult row)
     {
-        ItemSelections.Select(Selection, row, _rows);
+        Selection.Select(row, _rows);
     }
 
     public void Move(int by)
     {
-        ItemSelections.Move(Selection, by, _rows);
+        Selection.Move(by, _rows);
     }
 
     /// <summary>Asks for the results by <paramref name="sort"/>, ascending, then descending when they already are,
@@ -289,6 +289,6 @@ public sealed class SearchResults
 
         _rows.Clear();
         _rows.AddRange(sorted);
-        ItemSelections.Reveal(Selection, _rows);
+        Selection.Reveal(_rows);
     }
 }

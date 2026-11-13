@@ -733,7 +733,7 @@ public sealed class NuGetBrowser
     private void ClearShown()
     {
         _shown = null;
-        ItemSelections.Clear(Selection);
+        Selection.Clear();
     }
 
     private FeedSearch? FindLastSearched()
@@ -833,10 +833,10 @@ public sealed class NuGetBrowser
     private SearchRun.Found ShowFoundPage(FeedSearch searched, FeedPage page)
     {
         _shown = new ShownPage { Search = searched, Found = page };
-        ItemSelections.Clear(Selection);
+        Selection.Clear();
         if (page.Packages.Count > 0)
         {
-            ItemSelections.Select(Selection, page.Packages[0], page.Packages);
+            Selection.Select(page.Packages[0], page.Packages);
         }
 
         return new SearchRun.Found(searched);

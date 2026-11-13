@@ -38,7 +38,7 @@ public sealed class Omnibar
     {
         get
         {
-            var index = ItemSelections.FindIndexIn(Search.Results.Selection, Search.Results.Rows);
+            var index = Search.Results.Selection.FindIndexIn(Search.Results.Rows);
             if (index is null)
             {
                 return null;
@@ -113,7 +113,7 @@ public sealed class Omnibar
         }
 
         Search.Results.Move(by);
-        var index = ItemSelections.FindIndexIn(Search.Results.Selection, Search.Results.Rows);
+        var index = Search.Results.Selection.FindIndexIn(Search.Results.Rows);
         if (index is null)
         {
             return;

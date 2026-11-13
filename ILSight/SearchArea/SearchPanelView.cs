@@ -243,7 +243,7 @@ internal static class SearchPanelView
         var headers = Headers.GetValue(t, static t => [t.SearchColumnName, t.SearchColumnLocation, t.SearchColumnAssembly]);
         var asked = results.AskedOrder;
         var sort = new TableSort(ColumnOf(asked.Sort), SortIcon(ui.State.Icons, asked));
-        ItemSelections.ShowIn(results.Selection, results.Rows);
+        results.Selection.ShowIn(results.Rows);
         var table = ui.Table(ResultsId, ui.State.SearchColumns, results.Selection.Rows);
         var clicked = table.Header(headers, sort);
         if (clicked >= 0)
@@ -292,13 +292,13 @@ internal static class SearchPanelView
     {
         var results = ui.State.Search.Results;
         using var body = table.Body(results.Rows.Count);
-        ItemSelections.TakeFrom(results.Selection, results.Rows);
+        results.Selection.TakeFrom(results.Rows);
         for (var i = body.First; i < body.End; i++)
         {
             ResultRow(ui, navigation, setup, body, i);
         }
 
-        ItemSelections.TakeFrom(results.Selection, results.Rows);
+        results.Selection.TakeFrom(results.Rows);
         var selected = results.SelectedRow;
         if (body.Activated && selected != null)
         {

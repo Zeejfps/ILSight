@@ -74,7 +74,7 @@ public sealed class ComparisonPickerTests
     {
         var d = OpenThree();
         var picker = OpenPicker(d, OlderPath);
-        ItemSelections.Select(picker.Choice.Selection, picker.Choice.Filtered[1], picker.Choice.Filtered);
+        picker.Choice.Selection.Select(picker.Choice.Filtered[1], picker.Choice.Filtered);
 
         picker.Filter = "Tests";
         picker.Update(d.AppState.Assemblies);
@@ -88,7 +88,7 @@ public sealed class ComparisonPickerTests
         var d = OpenThree();
         var picker = OpenPicker(d, OlderPath);
         var rows = picker.Choice.Filtered.ToList();
-        ItemSelections.Select(picker.Choice.Selection, rows[1], rows);
+        picker.Choice.Selection.Select(rows[1], rows);
         var selected = picker.Choice.Selected;
 
         rows.Clear();

@@ -43,7 +43,7 @@ public sealed class ComparisonChoice
     public void Open(LoadedModule compared)
     {
         Dialog = new ComparisonDialog.Open(compared);
-        ItemSelections.Clear(Selection);
+        Selection.Clear();
         _focusFilter = true;
         _listedVersion = -1;
         _appliedFilter = null;
@@ -156,7 +156,7 @@ public sealed class ComparisonChoice
     {
         if (_filtered.Count == 0)
         {
-            ItemSelections.Clear(Selection);
+            Selection.Clear();
             return;
         }
         var index = 0;
@@ -165,6 +165,6 @@ public sealed class ComparisonChoice
             index = Math.Max(0, _filtered.IndexOf(selected));
         }
 
-        ItemSelections.Select(Selection, _filtered[index], _filtered);
+        Selection.Select(_filtered[index], _filtered);
     }
 }

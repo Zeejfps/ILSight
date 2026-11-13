@@ -102,7 +102,7 @@ internal static class ComparisonPickerView
             }
 
             choice.Selection.Rows.Select(index, count);
-            ItemSelections.TakeFrom(choice.Selection, choice.Filtered);
+            choice.Selection.TakeFrom(choice.Filtered);
         }
     }
 
@@ -121,7 +121,7 @@ internal static class ComparisonPickerView
     private static bool Rows(Ui<UiState> ui, ComparisonChoice choice, int listId)
     {
         bool activated;
-        ItemSelections.ShowIn(choice.Selection, choice.Filtered);
+        choice.Selection.ShowIn(choice.Filtered);
         using (var list = ui.SelectableList(listId, choice.Filtered.Count, choice.Selection.Rows))
         {
             for (var i = list.First; i < list.End; i++)
@@ -131,7 +131,7 @@ internal static class ComparisonPickerView
 
             activated = list.Activated;
         }
-        ItemSelections.TakeFrom(choice.Selection, choice.Filtered);
+        choice.Selection.TakeFrom(choice.Filtered);
         return activated;
     }
 

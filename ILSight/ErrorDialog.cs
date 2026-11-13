@@ -28,7 +28,7 @@ public sealed class ErrorDialog
             return;
         }
 
-        ItemSelections.Select(Selection, errors[^1], errors);
+        Selection.Select(errors[^1], errors);
         IsOpen = true;
     }
 

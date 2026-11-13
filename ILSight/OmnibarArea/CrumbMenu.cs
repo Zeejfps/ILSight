@@ -59,7 +59,7 @@ public sealed class CrumbMenu
     /// <summary>Selects the child <paramref name="by"/> rows on from the selected one, among those listed.</summary>
     public void MoveSelection(int by)
     {
-        ItemSelections.Move(Selection, by, Shown);
+        Selection.Move(by, Shown);
     }
 
     private void FilterChildren(IReadOnlyList<BrowseNode> children, BrowseTree tree)
@@ -67,7 +67,7 @@ public sealed class CrumbMenu
         var shown = children.Where(c => HoldsFilter(tree.GetRowLabel(c))).ToList();
         _listed = new Memo<(ByReference<IReadOnlyList<BrowseNode>>, string), IReadOnlyList<BrowseNode>>((new ByReference<IReadOnlyList<BrowseNode>>(children), Filter), shown);
         SelectWaitingChild();
-        ItemSelections.DropIfGone(Selection, Shown);
+        Selection.DropIfGone(Shown);
         SelectFirstMatch();
     }
 
@@ -89,7 +89,7 @@ public sealed class CrumbMenu
             return;
         }
 
-        ItemSelections.Select(Selection, toSelect, Shown);
+        Selection.Select(toSelect, Shown);
         _toSelect = null;
     }
 
@@ -111,6 +111,6 @@ public sealed class CrumbMenu
             return;
         }
 
-        ItemSelections.Select(Selection, Shown[0], Shown);
+        Selection.Select(Shown[0], Shown);
     }
 }

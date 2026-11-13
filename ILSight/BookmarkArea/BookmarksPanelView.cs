@@ -41,7 +41,7 @@ internal static class BookmarksPanelView
             return;
         }
 
-        ItemSelections.ShowIn(panel.Selection, bookmarks.Items);
+        panel.Selection.ShowIn(bookmarks.Items);
         var table = ui.Table(ListId, ui.State.BookmarkColumns, panel.Cells);
         table.Header(HeaderTexts.GetValue(t, static t => ListHeaders(t)));
         var removed = List(ui, bookmarks, assemblies, table);
@@ -65,7 +65,7 @@ internal static class BookmarksPanelView
         }
 
         using var body = table.Body(bookmarks.Items.Count, keys: !renaming);
-        ItemSelections.TakeFrom(panel.Selection, bookmarks.Items);
+        panel.Selection.TakeFrom(bookmarks.Items);
         if (body.Focused && !renaming)
         {
             removed = HandleKeys(ui, panel);
@@ -76,7 +76,7 @@ internal static class BookmarksPanelView
             Row(ui, assemblies, body, bookmarks.Items[i], i, palette);
         }
 
-        ItemSelections.TakeFrom(panel.Selection, bookmarks.Items);
+        panel.Selection.TakeFrom(bookmarks.Items);
         Answer(ui, body);
         return removed;
     }
@@ -456,7 +456,7 @@ internal static class BookmarksPanelView
             return Task.FromResult<DecompileTicket?>(null);
         }
 
-        ItemSelections.Select(panel.Selection, bookmark, appState.Bookmarks.Items);
+        panel.Selection.Select(bookmark, appState.Bookmarks.Items);
         return appState.GoToBookmarkHandler.HandleAsync(appState, bookmark, ct);
     }
 

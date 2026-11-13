@@ -388,7 +388,7 @@ internal static class OmnibarView
         var rowHeight = ui.Theme.RowHeight;
         var height = Math.Min(shown.Count, MenuRows) * rowHeight;
         var picked = new PickedChild { Node = null, InNewTab = false };
-        ItemSelections.ShowIn(menu.Selection, shown);
+        menu.Selection.ShowIn(shown);
         using (var list = ui.SelectableList(listId, shown.Count, menu.Selection.Rows, rowHeight, new Box { Width = Sizing.Grow(), Height = height },
                    keys: false, selectOnClick: true))
         {
@@ -401,7 +401,7 @@ internal static class OmnibarView
                 }
             }
         }
-        ItemSelections.TakeFrom(menu.Selection, shown);
+        menu.Selection.TakeFrom(shown);
         return picked;
     }
 

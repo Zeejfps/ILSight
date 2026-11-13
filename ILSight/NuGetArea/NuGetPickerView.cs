@@ -206,13 +206,13 @@ internal static class NuGetPickerView
     {
         var selection = picker.Browser.Selection;
         // ApplyListKey takes -1 for "nothing selected".
-        var index = ItemSelections.FindIndexIn(selection, results) ?? -1;
+        var index = selection.FindIndexIn(results) ?? -1;
         if (!UiWidgets.ApplyListKey(stroke, ref index, results.Count, page))
         {
             return;
         }
 
-        ItemSelections.Select(selection, results[index], results);
+        selection.Select(results[index], results);
     }
 
     private static float RowHeight(Ui<UiState> ui)
@@ -309,14 +309,14 @@ internal static class NuGetPickerView
         var results = picker.Browser.Results;
         var selection = picker.Browser.Selection;
         var listId = ui.GetId(ListId);
-        ItemSelections.ShowIn(selection, results);
+        selection.ShowIn(results);
         using var list = ui.SelectableList(listId, results.Count, selection.Rows, RowHeight(ui));
         for (var i = list.First; i < list.End; i++)
         {
             Row(ui, picker, list, results[i], i);
         }
 
-        ItemSelections.TakeFrom(selection, results);
+        selection.TakeFrom(results);
         return list.Activated;
     }
 
