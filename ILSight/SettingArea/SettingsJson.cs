@@ -16,7 +16,10 @@ namespace ILSight.SettingArea;
 
 /// <summary>Turns what the app keeps into the shapes in this folder, and back. A file is read one field at a time, so
 /// that a value which is not what its field holds leaves out that field alone, for its default to stand in,
-/// and is named in <see cref="SettingsReader.LeftOut"/>.</summary>
+/// and is named in <see cref="SettingsReader.LeftOut"/>; in a field holding entries (the lists, their assemblies,
+/// analyses, picks and tabs, the bookmarks), an entry that can't be read leaves out that entry alone, named by where it
+/// is (<c>AssemblyLists[0].Assemblies[1]</c>), the entries beside it kept. An entry that is null holds nothing, and is
+/// skipped unsaid.</summary>
 internal static class SettingsJson
 {
     /// <summary>What <paramref name="field"/> holds, or the default when the file lacks it, holds
@@ -64,6 +67,18 @@ internal static class SettingsJson
         {
             file.LeftOut.Add(field);
         }
+    }
+
+    /// <summary>Where entry <paramref name="index"/> of what is at <paramref name="location"/> is.</summary>
+    public static string At(string location, int index)
+    {
+        return $"{location}[{index}]";
+    }
+
+    /// <summary>Where the entry keyed <paramref name="key"/> of what is at <paramref name="location"/> is.</summary>
+    private static string At(string location, string key)
+    {
+        return $"{location}[\"{key}\"]";
     }
 
     public static SettingsFile Write(AppSettings settings)
@@ -138,23 +153,24 @@ internal static class SettingsJson
         };
     }
 
-    /// <summary>The list, without blank paths and picks or documents missing what they show; null
-    /// without a name. A document that is not one at all leaves out <paramref name="field"/>.</summary>
-    public static AssemblyListRecord? Parse(AssemblyListJson json, SettingsReader file, string field)
+    /// <summary>The list at <paramref name="location"/>, without the paths, analyses, picks and documents of it that
+    /// can't be read, each left out where it is; null, the list left out, without a name.</summary>
+    public static AssemblyListRecord? Parse(AssemblyListJson json, SettingsReader file, string location)
     {
         if (json.Name is null)
         {
+            LeaveOut(file, location);
             return null;
         }
 
         return new AssemblyListRecord
         {
             Name = json.Name,
-            Assemblies = ListPaths(json.Assemblies),
-            Analyzed = ListAnchors(json.Analyzed),
-            Pdbs = ParsePicks(json.Pdbs),
-            Frameworks = ParsePicks(json.Frameworks),
-            Documents = json.Documents is null ? null : Parse(json.Documents, file, field),
+            Assemblies = ListPaths(json.Assemblies, file, location + ".Assemblies"),
+            Analyzed = ListAnchors(json.Analyzed, file, location + ".Analyzed"),
+            Pdbs = ParsePicks(json.Pdbs, file, location + ".Pdbs"),
+            Frameworks = ParsePicks(json.Frameworks, file, location + ".Frameworks"),
+            Documents = json.Documents is null ? null : Parse(json.Documents, file, location + ".Documents"),
         };
     }
 
@@ -163,7 +179,9 @@ internal static class SettingsJson
         return picks?.ToDictionary(static p => p.Key.Text, static string? (p) => p.Value);
     }
 
-    private static Dictionary<AssemblyPath, string>? ParsePicks(Dictionary<string, string?>? picks)
+    /// <summary>The picks at <paramref name="location"/> that name a file and pick something, each other left out
+    /// where it is.</summary>
+    private static Dictionary<AssemblyPath, string>? ParsePicks(Dictionary<string, string?>? picks, SettingsReader file, string location)
     {
         if (picks is null)
         {
@@ -174,10 +192,13 @@ internal static class SettingsJson
         foreach (var (text, pick) in picks)
         {
             var path = AssemblyPath.Parse(text);
-            if (path != null && !string.IsNullOrWhiteSpace(pick))
+            if (path is null || string.IsNullOrWhiteSpace(pick))
             {
-                kept.TryAdd(path, pick);
+                LeaveOut(file, At(location, text));
+                continue;
             }
+
+            kept.TryAdd(path, pick);
         }
         return kept;
     }
@@ -196,19 +217,17 @@ internal static class SettingsJson
         };
     }
 
-    /// <summary>The documents, without tabs missing what they show, docked as a view, or docked as
-    /// a panel another tab was; null without tabs. A tab that is not one at all, or a layout missing
-    /// a part or giving two parts one id, leaves out <paramref name="field"/>.</summary>
-    private static DocumentsRecord? Parse(DocumentsJson json, SettingsReader file, string field)
+    /// <summary>The documents at <paramref name="location"/>, without tabs docked as a view, or docked as a panel
+    /// another tab was; null without tabs. A tab that is not one at all, or is missing what it shows, is left out where
+    /// it is (<c>Tabs[0]</c>), as is a layout missing a part or giving two parts one id (<c>Layout</c>).</summary>
+    private static DocumentsRecord? Parse(DocumentsJson json, SettingsReader file, string location)
     {
         if (json.Tabs is null)
         {
             return null;
         }
 
-        var tabs = json.Tabs
-            .Select(t => ParseTab(t, file, field))
-            .OfType<DocumentRecord>()
+        var tabs = ListTabs(json.Tabs, file, location + ".Tabs")
             .Where(static t => !DockPanels.IsView(t.Panel))
             .DistinctBy(static t => t.Panel)
             .ToList();
@@ -217,19 +236,42 @@ internal static class SettingsJson
             Tabs = tabs,
             Active = json.Active,
             Preview = json.Preview,
-            Layout = ParseLayout(json.Layout, file, field),
+            Layout = ParseLayout(json.Layout, file, location + ".Layout"),
         };
     }
 
-    private static DocumentRecord? ParseTab(JsonElement tab, SettingsReader file, string field)
+    /// <summary>The tabs at <paramref name="location"/> that can be read, each other left out where it is.</summary>
+    private static List<DocumentRecord> ListTabs(List<JsonElement> tabs, SettingsReader file, string location)
     {
-        var json = Parse(file, tab, AppSettingsJson.Default.DocumentJson, field);
+        var read = new List<DocumentRecord>();
+        for (var i = 0; i < tabs.Count; i++)
+        {
+            var tab = ParseTab(tabs[i], file, At(location, i));
+            if (tab is not null)
+            {
+                read.Add(tab);
+            }
+        }
+        return read;
+    }
+
+    /// <summary>The tab at <paramref name="location"/>; null, the tab left out, when it is not one or is missing what it
+    /// shows.</summary>
+    private static DocumentRecord? ParseTab(JsonElement tab, SettingsReader file, string location)
+    {
+        var json = Parse(file, tab, AppSettingsJson.Default.DocumentJson, location);
         if (json is null)
         {
             return null;
         }
 
-        return Parse(json, () => LeaveOut(file, field));
+        var read = Parse(json, () => LeaveOut(file, location));
+        if (read is null)
+        {
+            LeaveOut(file, location);
+        }
+
+        return read;
     }
 
     private static DockLayout? ParseLayout(DockLayoutJson? json, SettingsReader file, string field)
@@ -266,7 +308,7 @@ internal static class SettingsJson
         return json switch
         {
             NodeDocumentJson node => Parse(node, leaveOut),
-            DiagramDocumentJson diagram => Parse(diagram),
+            DiagramDocumentJson diagram => Parse(diagram, leaveOut),
             ComparisonDocumentJson comparison => Parse(comparison),
             _ => throw new UnreachableException(),
         };
@@ -345,15 +387,17 @@ internal static class SettingsJson
         };
     }
 
-    private static DocumentRecord? Parse(DiagramDocumentJson json)
+    /// <summary>The diagram tab; <paramref name="leaveOut"/> is told when a type or an assembly of its own can't be
+    /// read, which it is kept without.</summary>
+    private static DocumentRecord? Parse(DiagramDocumentJson json, Action leaveOut)
     {
         if (json.Panel is null || json.Types is null)
         {
             return null;
         }
 
-        var types = json.Types.OfType<TypeAnchorJson>().Select(static t => Parse(t)).OfType<TypeAnchor>().ToList();
-        var homes = json.HomeAssemblies is null ? null : ListPaths(json.HomeAssemblies);
+        var types = ListTypes(json.Types, leaveOut);
+        var homes = json.HomeAssemblies is null ? null : ListPaths(json.HomeAssemblies, _ => leaveOut());
         return new DiagramDocumentRecord
         {
             Panel = json.Panel,
@@ -407,30 +451,110 @@ internal static class SettingsJson
         return paths.ConvertAll(static string? (p) => p.Text);
     }
 
-    /// <summary>The absolute paths among <paramref name="paths"/>; none when there are none.</summary>
-    public static List<AssemblyPath> ListPaths(List<string?>? paths)
+    /// <summary>The absolute paths among <paramref name="paths"/>, at <paramref name="location"/>; none when there are
+    /// none. Each that is no absolute path is left out where it is.</summary>
+    public static List<AssemblyPath> ListPaths(List<string?>? paths, SettingsReader file, string location)
     {
-        if (paths is null)
-        {
-            return new List<AssemblyPath>();
-        }
-
-        return paths
-            .OfType<string>()
-            .Select(AssemblyPath.Parse)
-            .OfType<AssemblyPath>()
-            .ToList();
+        return ListPaths(paths, i => LeaveOut(file, At(location, i)));
     }
 
-    /// <summary>The symbols in <paramref name="anchors"/> that name a file; none when there are none.</summary>
-    public static List<CodeAnchor> ListAnchors(List<CodeAnchorJson?>? anchors)
+    /// <summary>The absolute paths among <paramref name="paths"/>; none when there are none. <paramref name="leaveOut"/>
+    /// is told the index of each that is no absolute path.</summary>
+    private static List<AssemblyPath> ListPaths(List<string?>? paths, Action<int> leaveOut)
     {
-        if (anchors is null)
+        var read = new List<AssemblyPath>();
+        if (paths is null)
         {
-            return new List<CodeAnchor>();
+            return read;
         }
 
-        return anchors.OfType<CodeAnchorJson>().Select(static a => Parse(a)).OfType<CodeAnchor>().ToList();
+        for (var i = 0; i < paths.Count; i++)
+        {
+            AddIfRead(read, paths[i], i, leaveOut);
+        }
+        return read;
+    }
+
+    /// <summary>Adds the path <paramref name="text"/> names to <paramref name="read"/>; nothing for none, and
+    /// <paramref name="leaveOut"/> is told <paramref name="index"/> for one that is no absolute path.</summary>
+    private static void AddIfRead(List<AssemblyPath> read, string? text, int index, Action<int> leaveOut)
+    {
+        if (text is null)
+        {
+            return;
+        }
+
+        var path = AssemblyPath.Parse(text);
+        if (path is null)
+        {
+            leaveOut(index);
+            return;
+        }
+
+        read.Add(path);
+    }
+
+    /// <summary>The symbols in <paramref name="anchors"/>, at <paramref name="location"/>, that name a file; none when
+    /// there are none. Each that names none is left out where it is.</summary>
+    public static List<CodeAnchor> ListAnchors(List<CodeAnchorJson?>? anchors, SettingsReader file, string location)
+    {
+        var read = new List<CodeAnchor>();
+        if (anchors is null)
+        {
+            return read;
+        }
+
+        for (var i = 0; i < anchors.Count; i++)
+        {
+            AddIfRead(read, anchors[i], file, At(location, i));
+        }
+        return read;
+    }
+
+    private static void AddIfRead(List<CodeAnchor> read, CodeAnchorJson? json, SettingsReader file, string location)
+    {
+        if (json is null)
+        {
+            return;
+        }
+
+        var anchor = Parse(json);
+        if (anchor is null)
+        {
+            LeaveOut(file, location);
+            return;
+        }
+
+        read.Add(anchor.Value);
+    }
+
+    /// <summary>The types among <paramref name="types"/> that name a file and a type; <paramref name="leaveOut"/> is
+    /// told when one doesn't.</summary>
+    private static List<TypeAnchor> ListTypes(List<TypeAnchorJson?> types, Action leaveOut)
+    {
+        var read = new List<TypeAnchor>();
+        foreach (var json in types)
+        {
+            AddIfRead(read, json, leaveOut);
+        }
+        return read;
+    }
+
+    private static void AddIfRead(List<TypeAnchor> read, TypeAnchorJson? json, Action leaveOut)
+    {
+        if (json is null)
+        {
+            return;
+        }
+
+        var type = Parse(json);
+        if (type is null)
+        {
+            leaveOut();
+            return;
+        }
+
+        read.Add(type.Value);
     }
 
     /// <summary>Where a tab or bookmark in the file at <paramref name="filePath"/> was, as
@@ -1059,8 +1183,8 @@ internal static class SettingsJson
         var json = AppSettingsJson.Default;
         var lists = ReadAssemblyLists(file);
         var active = SettingsJson.Read(file, nameof(SettingsFile.ActiveAssemblyList), json.String);
-        MoveUnnamedListIntoDefault(lists, SettingsJson.Read(file, SettingsFile.OldAssemblies, json.ListString));
-        MoveAnalysesIntoActiveList(lists, active, SettingsJson.Read(file, SettingsFile.OldAnalyzed, json.ListCodeAnchorJson));
+        MoveUnnamedListIntoDefault(lists, SettingsJson.Read(file, SettingsFile.OldAssemblies, json.ListString), file);
+        MoveAnalysesIntoActiveList(lists, active, SettingsJson.Read(file, SettingsFile.OldAnalyzed, json.ListCodeAnchorJson), file);
         return new AppSettings
         {
             AssemblyLists = lists,
@@ -1139,46 +1263,82 @@ internal static class SettingsJson
         return SettingsJson.Parse(saved);
     }
 
-    /// <summary>The lists the file holds, each read on its own, without nameless ones.</summary>
+    /// <summary>The lists the file holds, each read on its own; one that can't be read, or has no name, is left out
+    /// where it is (<c>AssemblyLists[1]</c>).</summary>
     private static List<AssemblyListRecord> ReadAssemblyLists(SettingsReader file)
     {
         const string field = nameof(SettingsFile.AssemblyLists);
-        return SettingsJson.ReadEach(file, field)
-            .Select(l => ParseAssemblyList(file, l, field))
-            .OfType<AssemblyListRecord>()
-            .ToList();
+        var saved = SettingsJson.ReadEach(file, field);
+        var lists = new List<AssemblyListRecord>();
+        for (var i = 0; i < saved.Count; i++)
+        {
+            var list = ParseAssemblyList(file, saved[i], SettingsJson.At(field, i));
+            if (list is not null)
+            {
+                lists.Add(list);
+            }
+        }
+        return lists;
     }
 
-    private static AssemblyListRecord? ParseAssemblyList(SettingsReader file, JsonElement list, string field)
+    /// <summary>The list at <paramref name="location"/>; null for a list that holds nothing (null), and for one left
+    /// out.</summary>
+    private static AssemblyListRecord? ParseAssemblyList(SettingsReader file, JsonElement list, string location)
     {
-        var saved = SettingsJson.Parse(file, list, AppSettingsJson.Default.AssemblyListJson, field);
+        if (list.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        var saved = SettingsJson.Parse(file, list, AppSettingsJson.Default.AssemblyListJson, location);
         if (saved is null)
         {
             return null;
         }
 
-        return SettingsJson.Parse(saved, file, field);
+        return SettingsJson.Parse(saved, file, location);
     }
 
-    /// <summary>The bookmarks the file holds, each read on its own, without ones naming no assembly file.</summary>
+    /// <summary>The bookmarks the file holds, each read on its own; one that can't be read, names no assembly file, or
+    /// whose place can't be read, is left out where it is (<c>Bookmarks[0]</c>).</summary>
     private static List<BookmarkRecord> ReadBookmarks(SettingsReader file)
     {
         const string field = nameof(SettingsFile.Bookmarks);
-        return SettingsJson.ReadEach(file, field)
-            .Select(b => ParseBookmark(file, b, field))
-            .OfType<BookmarkRecord>()
-            .ToList();
+        var saved = SettingsJson.ReadEach(file, field);
+        var bookmarks = new List<BookmarkRecord>();
+        for (var i = 0; i < saved.Count; i++)
+        {
+            var bookmark = ParseBookmark(file, saved[i], SettingsJson.At(field, i));
+            if (bookmark is not null)
+            {
+                bookmarks.Add(bookmark);
+            }
+        }
+        return bookmarks;
     }
 
-    private static BookmarkRecord? ParseBookmark(SettingsReader file, JsonElement bookmark, string field)
+    /// <summary>The bookmark at <paramref name="location"/>; null for one that holds nothing (null), and for one left
+    /// out.</summary>
+    private static BookmarkRecord? ParseBookmark(SettingsReader file, JsonElement bookmark, string location)
     {
-        var saved = SettingsJson.Parse(file, bookmark, AppSettingsJson.Default.BookmarkJson, field);
+        if (bookmark.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        var saved = SettingsJson.Parse(file, bookmark, AppSettingsJson.Default.BookmarkJson, location);
         if (saved is null)
         {
             return null;
         }
 
-        return SettingsJson.Parse(saved, () => SettingsJson.LeaveOut(file, field));
+        var read = SettingsJson.Parse(saved, () => SettingsJson.LeaveOut(file, location));
+        if (read is null)
+        {
+            SettingsJson.LeaveOut(file, location);
+        }
+
+        return read;
     }
 
     private static List<string>? ListSetNames(List<string?>? names)
@@ -1226,7 +1386,7 @@ internal static class SettingsJson
 
     /// <summary>Makes the one list of a file from before lists had names the default list, unless
     /// the file has named lists too.</summary>
-    private static void MoveUnnamedListIntoDefault(List<AssemblyListRecord> lists, List<string?>? unnamed)
+    private static void MoveUnnamedListIntoDefault(List<AssemblyListRecord> lists, List<string?>? unnamed, SettingsReader file)
     {
         if (unnamed is null)
         {
@@ -1241,12 +1401,12 @@ internal static class SettingsJson
         lists.Add(new AssemblyListRecord
         {
             Name = SavedAssemblyLists.DefaultName,
-            Assemblies = SettingsJson.ListPaths(unnamed),
+            Assemblies = SettingsJson.ListPaths(unnamed, file, SettingsFile.OldAssemblies),
         });
     }
 
     /// <summary>Gives the analyses saved before each list kept its own to the open list, unless it has some.</summary>
-    private static void MoveAnalysesIntoActiveList(List<AssemblyListRecord> lists, string? active, List<CodeAnchorJson?>? analyzed)
+    private static void MoveAnalysesIntoActiveList(List<AssemblyListRecord> lists, string? active, List<CodeAnchorJson?>? analyzed, SettingsReader file)
     {
         if (analyzed is null)
         {
@@ -1270,7 +1430,7 @@ internal static class SettingsJson
             return;
         }
 
-        lists[index] = list with { Analyzed = SettingsJson.ListAnchors(analyzed) };
+        lists[index] = list with { Analyzed = SettingsJson.ListAnchors(analyzed, file, SettingsFile.OldAnalyzed) };
     }
 
     /// <summary>Where the list <paramref name="active"/> names is, else the first.</summary>

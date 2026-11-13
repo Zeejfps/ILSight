@@ -170,16 +170,33 @@ public sealed class AppSettingsTests : IDisposable
     }
 
     [Fact]
-    public void Lists_missing_their_name_or_assemblies_load_without_them()
+    public void Lists_missing_their_name_or_assemblies_load_without_them_and_say_where_each_was()
     {
         var read = AppRoot.ReadSettingsFile(FullFilePath.Of(Written($$"""{ "AssemblyLists": [ null, { "Name": null }, { "Name": "Work", "Assemblies": null }, { "Name": "Play", "Assemblies": [ " ", "a.dll", "{{AInJson}}" ] } ] }""")));
         var loaded = read.Settings;
         var problem = read.Problem;
 
-        Assert.IsType<SettingsProblem.None>(problem);
+        Assert.Equal(["AssemblyLists[1]", "AssemblyLists[3].Assemblies[0]", "AssemblyLists[3].Assemblies[1]"],
+            Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
         Assert.Equal(["Work", "Play"], loaded.AssemblyLists.Select(static l => l.Name));
         Assert.Empty(loaded.AssemblyLists[0].Assemblies);
         Assert.Equal([A], loaded.AssemblyLists[1].Assemblies.Select(static p => p.Text));
+    }
+
+    [Fact]
+    public void A_pick_naming_no_file_or_picking_nothing_is_left_out_where_it_is_and_the_others_kept()
+    {
+        var read = AppRoot.ReadSettingsFile(FullFilePath.Of(Written($$"""
+            { "AssemblyLists": [ { "Name": "Work", "Assemblies": [ "{{AInJson}}" ],
+                "Pdbs": { "{{AInJson}}": "a.pdb", "a.dll": "b.pdb", "{{BInJson}}": " " } } ] }
+            """)));
+        var loaded = read.Settings;
+        var problem = read.Problem;
+
+        Assert.Equal(["AssemblyLists[0].Pdbs[\"a.dll\"]", $"AssemblyLists[0].Pdbs[\"{B}\"]"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
+        var pdbs = Assert.Single(loaded.AssemblyLists).Pdbs;
+        Assert.NotNull(pdbs);
+        Assert.Equal([A], pdbs.Keys.Select(static p => p.Text));
     }
 
     [Fact]
@@ -351,7 +368,7 @@ public sealed class AppSettingsTests : IDisposable
         var loaded = read.Settings;
         var problem = read.Problem;
 
-        Assert.Equal(["AssemblyLists"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
+        Assert.Equal(["AssemblyLists[0]", "AssemblyLists[1].Documents.Tabs[0]"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
         var list = Assert.Single(loaded.AssemblyLists);
         Assert.Equal("Work", list.Name);
         Assert.NotNull(list.Documents);
@@ -419,7 +436,7 @@ public sealed class AppSettingsTests : IDisposable
         var loaded = read.Settings;
         var problem = read.Problem;
 
-        Assert.Equal(["AssemblyLists"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
+        Assert.Equal(["AssemblyLists[0].Documents.Layout"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
         var documents = Assert.Single(loaded.AssemblyLists).Documents;
         Assert.NotNull(documents);
         Assert.Single(documents.Tabs);
@@ -449,7 +466,7 @@ public sealed class AppSettingsTests : IDisposable
     }
 
     [Fact]
-    public void Saved_values_missing_what_they_name_load_without_them()
+    public void Saved_values_missing_what_they_name_load_without_them_and_say_where_each_was()
     {
         var read = AppRoot.ReadSettingsFile(FullFilePath.Of(Written($$"""
             { "AssemblyLists": [ { "Name": "Work", "Assemblies": [ null, "{{AInJson}}" ],
@@ -465,7 +482,10 @@ public sealed class AppSettingsTests : IDisposable
         var loaded = read.Settings;
         var problem = read.Problem;
 
-        Assert.IsType<SettingsProblem.None>(problem);
+        Assert.Equal(
+            ["AssemblyLists[0].Analyzed[0]", "AssemblyLists[0].Documents.Tabs[0]", "AssemblyLists[0].Documents.Tabs[1]",
+                "AssemblyLists[0].Documents.Tabs[2]", "Bookmarks[1]"],
+            Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
         var list = Assert.Single(loaded.AssemblyLists);
         Assert.Equal([A], list.Assemblies.Select(static p => p.Text));
         Assert.NotNull(list.Analyzed);
@@ -683,7 +703,7 @@ public sealed class AppSettingsTests : IDisposable
         var loaded = read.Settings;
         var problem = read.Problem;
 
-        Assert.Equal(["AssemblyLists"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
+        Assert.Equal(["AssemblyLists[0].Documents.Tabs[0]"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
         var documents = Assert.Single(loaded.AssemblyLists).Documents;
         Assert.NotNull(documents);
         Assert.Equal("document-2", Assert.Single(documents.Tabs).Panel);

@@ -114,7 +114,7 @@ public sealed class SavedPlacesTests : IDisposable
     {
         var (d, problem) = RestoredWith(WithTab($"\"Path\": {path}"));
 
-        Assert.Equal(["AssemblyLists"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
+        Assert.Equal(["AssemblyLists[0].Documents.Tabs[0]"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
         Assert.Null(Assert.Single(d.AppState.Navigation.OpenTabs).Node);
     }
 
@@ -123,7 +123,7 @@ public sealed class SavedPlacesTests : IDisposable
     {
         var (d, problem) = RestoredWith(WithBookmark("\"Path\": { \"Version\": 2, \"Steps\": [] }"));
 
-        Assert.Equal(["Bookmarks"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
+        Assert.Equal(["Bookmarks[0]"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
         Assert.Empty(d.AppState.Bookmarks.Items);
     }
 
