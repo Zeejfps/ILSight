@@ -1,3 +1,4 @@
+using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.Core.Metadata;
 using ILSight.AssemblyArea;
@@ -38,7 +39,7 @@ public sealed class Navigation
 
     /// <summary>Where what the view is to do about a change (bring a tab to the front, reveal a node in the tree)
     /// is queued, for the screen to run before it draws next.</summary>
-    public required Queue<ViewCommand> ViewCommands { get; init; }
+    public required Queue<ViewCommand> ViewCommands { private get; init; }
 
     /// <summary>Whether what is picked and followed shows in the preview tab, else in the active tab; changed by
     /// <see cref="UsePreviewTabs"/>.</summary>
@@ -1163,6 +1164,13 @@ public sealed class Navigation
         }
 
         return _previewTabs;
+    }
+
+    /// <summary>Asks the view to show the tabs reopened from the saved documents, docked as <paramref name="layout"/>
+    /// placed them.</summary>
+    public void ShowReopened(IReadOnlyList<ReopenedTab> tabs, DockLayout? layout)
+    {
+        ViewCommands.Enqueue(new ViewCommand.ShowReopened { Tabs = tabs, Layout = layout });
     }
 
     /// <summary>The active tab while it shows nothing, brought to the front, else a new tab.</summary>

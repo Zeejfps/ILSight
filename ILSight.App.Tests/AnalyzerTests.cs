@@ -571,14 +571,15 @@ public sealed class AnalyzerTests
     public async Task An_analysis_row_lists_a_loading_row_and_asks_once_to_run()
     {
         var d = AppStateDriver.Opened();
-        var rows = NewRows();
+        var asked = new Queue<AppCommand>();
+        var rows = new AnalyzerRows { AppCommands = asked };
         var kind = await NewKindAsync(d);
 
         Assert.True(rows.HasChildren(kind));
         Assert.Same(rows.Loading, Assert.Single(rows.ListChildren(kind)));
         rows.ListChildren(kind);
 
-        Assert.Single(rows.AppCommands);
+        Assert.Single(asked);
     }
 
     [Fact]

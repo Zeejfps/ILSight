@@ -28,7 +28,7 @@ internal sealed class AnalyzerScope
 
     /// <summary>The modules of the scope the library could not read, noted as the scan reaches them, for the analysis
     /// to name beside what the others gave.</summary>
-    public required ConcurrentDictionary<LoadedModule, UnreadableModule> Unreadable { get; init; }
+    public required ConcurrentDictionary<LoadedModule, UnreadableModule> Unreadable { private get; init; }
 
     public required Accessibility EffectiveAccessibility { get; init; }
 
