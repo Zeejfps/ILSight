@@ -12,11 +12,16 @@ internal sealed record CodeMenuTarget
 
     public required int? Line { get; init; }
 
+    /// <summary>The type or member Analyze applies to here, as the key decides it at the caret; null where it isn't
+    /// offered.</summary>
+    public required CodeReference.Entity? Analyzable { get; init; }
+
     public static readonly CodeMenuTarget None = new CodeMenuTarget
     {
         Reference = null,
         OnDefinition = false,
         Line = null,
+        Analyzable = null,
     };
 
     /// <summary>The reference to go to from here; null on its definition.</summary>

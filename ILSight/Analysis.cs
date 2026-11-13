@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using ILSight.Core;
 using ILSight.Core.Analysis;
+using ILSight.CommandArea;
 
 namespace ILSight;
 
@@ -132,6 +133,19 @@ public static class Analysis
         return found
             .Select(static f => f.Match<AnalyzerNode>(static s => new AnalyzerSymbolNode { Symbol = s.Symbol }, static u => new AnalyzerMessageNode { Unreadable = u }))
             .ToList();
+    }
+
+    /// <summary>Whether analyzing <paramref name="symbol"/> in <paramref name="analyzer"/> runs, or is unavailable now
+    /// and why (<see cref="AnalyzerTree.FindRefusal"/>): the decision every input of Analyze on it reads.</summary>
+    public static CommandOffer<AnalysisSymbol> OfferAnalysis(AnalyzerTree analyzer, AnalysisSymbol symbol)
+    {
+        var refusal = analyzer.FindRefusal(symbol);
+        if (refusal is not null)
+        {
+            return new CommandOffer<AnalysisSymbol>.Unavailable { Why = refusal };
+        }
+
+        return new CommandOffer<AnalysisSymbol>.Runs { Target = symbol };
     }
 
     /// <summary>Adds a root to <paramref name="analyzer"/> that shows as loading while what

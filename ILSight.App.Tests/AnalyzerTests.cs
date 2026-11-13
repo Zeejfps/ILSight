@@ -164,6 +164,56 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
+    public async Task Ctrl_R_on_an_analyzer_root_does_what_its_menu_offers_there_nothing()
+    {
+        var app = AppDriver.Opened(height: 600f);
+        var d = app.Driver;
+        await ShowFirstCallerAsync(app);
+        var root = Assert.Single(d.AppState.Analyzer.Roots);
+        app.Frames.ClickOn(GetAnalyzerRow("First() : int")).Frame();
+        app.Ui.Analyzer.View.SetExpanded(root, false);
+        app.Run(1);
+
+        app.Frames.Key(Shortcuts.Analyze).Frame(2);
+        app.Frames.ClickOn(GetAnalyzerRow("First() : int"), PointerButton.Right).Frame();
+
+        Assert.False(app.Ui.Analyzer.View.IsExpanded(root));
+        Assert.Same(root, Assert.Single(d.AppState.Analyzer.Roots));
+        Assert.Empty(d.AppState.Errors.Entries);
+        Assert.True(app.Frames.Drew("Clear"));
+        Assert.False(app.Frames.Drew(app.Ui.Strings.TreeAnalyze));
+    }
+
+    [Fact]
+    public async Task Analyze_on_a_symbol_whose_assembly_cannot_be_listed_is_unavailable_saying_why_as_adding_it_refuses()
+    {
+        var d = AppStateDriver.Opened();
+        var analyzer = d.AppState.Analyzer;
+        var greeter = (await d.FixtureAsync("Greeter")).Analysis;
+        Assert.NotNull(greeter);
+        var unlisted = new AnalysisSymbol
+        {
+            Shape = greeter.Shape,
+            Accessibility = greeter.Accessibility,
+            Label = greeter.Label,
+            Location = greeter.Location,
+            Reference = null,
+            Kinds = greeter.Kinds,
+            Accessors = greeter.Accessors,
+            File = AssemblyPath.Of(Path.Combine(Path.GetTempPath(), "Elsewhere", "Unlisted.dll")),
+            Definition = null,
+        };
+
+        var offered = Analysis.OfferAnalysis(analyzer, greeter);
+        var unavailable = Analysis.OfferAnalysis(analyzer, unlisted);
+
+        Assert.Equal(greeter, Assert.IsType<CommandOffer<AnalysisSymbol>.Runs>(offered).Target);
+        var why = Assert.IsType<AppProblem.NotAnalyzable>(Assert.IsType<CommandOffer<AnalysisSymbol>.Unavailable>(unavailable).Why);
+        Assert.Equal(why, Assert.IsType<AnalyzerAdd.Refused>(analyzer.AddRoot(unlisted)).Problem);
+        Assert.Empty(analyzer.Roots);
+    }
+
+    [Fact]
     public async Task Analyzing_a_result_in_an_assembly_loaded_only_to_resolve_references_lists_it_as_following_it_does_and_analyzes_it_there()
     {
         var d = AppStateDriver.Opened();

@@ -53,6 +53,12 @@ public sealed class AnalyzerTree
     /// reference to list it by.</summary>
     public AnalyzerAdd AddRoot(AnalysisSymbol symbol)
     {
+        var refusal = FindRefusal(symbol);
+        if (refusal is not null)
+        {
+            return new AnalyzerAdd.Refused { Problem = refusal };
+        }
+
         if (!IsOnTheList(symbol))
         {
             return BeginListing(symbol);
@@ -70,16 +76,23 @@ public sealed class AnalyzerTree
         return new AnalyzerAdd.Analyzing { Root = root };
     }
 
-    /// <summary>A root waiting, shown as loading, while the file <paramref name="symbol"/> is in, which the list does
-    /// not hold, is found by its reference and listed; refused when it has none.</summary>
-    private AnalyzerAdd BeginListing(AnalysisSymbol symbol)
+    /// <summary>Why analyzing <paramref name="symbol"/> would be refused now: its file is neither on the list nor on its
+    /// way, and nothing names its definition to list it by; null when <see cref="AddRoot"/> would add it.</summary>
+    public AppProblem? FindRefusal(AnalysisSymbol symbol)
     {
-        var reference = symbol.Reference;
-        if (reference is null)
+        if (IsOnTheList(symbol) || symbol.Reference is not null)
         {
-            return new AnalyzerAdd.Refused { Problem = new AppProblem.NotAnalyzable { Symbol = symbol.Label } };
+            return null;
         }
 
+        return new AppProblem.NotAnalyzable { Symbol = symbol.Label };
+    }
+
+    /// <summary>A root waiting, shown as loading, while the file <paramref name="symbol"/> is in, which the list does
+    /// not hold, is found by its reference and listed (<see cref="FindRefusal"/> answered that it has one).</summary>
+    private AnalyzerAdd BeginListing(AnalysisSymbol symbol)
+    {
+        var reference = symbol.Reference ?? throw new InvalidOperationException($"{symbol.Label} is listed by its reference, which it has none of.");
         var pending = new PendingAnalysis.OfSymbol { Root = AddPending(savedAs: null), Reference = reference, Symbol = symbol };
         return new AnalyzerAdd.Listing { Pending = pending };
     }

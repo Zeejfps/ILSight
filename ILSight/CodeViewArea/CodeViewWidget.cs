@@ -482,6 +482,7 @@ public static class CodeViewWidget
                     Reference = hoverReference,
                     OnDefinition = onDefinition,
                     Line = menuLine,
+                    Analyzable = AnalyzableIn(hovered),
                 };
                 ui.OpenContextMenu("menu");
             }
@@ -1037,12 +1038,24 @@ public static class CodeViewWidget
                 continue;
             }
 
-            var span = spans[index.Value];
-            if (span.Kind != SpanKind.Plain && span.Reference is CodeReference.Entity entity)
+            var analyzable = AnalyzableIn(spans[index.Value]);
+            if (analyzable is not null)
             {
-                return entity;
+                return analyzable;
             }
         }
+        return null;
+    }
+
+    /// <summary>The type or member Analyze applies to on <paramref name="span"/>: one it names; null on punctuation
+    /// linked to a member, and on text naming nothing. The menu and the key both decide by it.</summary>
+    private static CodeReference.Entity? AnalyzableIn(DocumentSpan span)
+    {
+        if (span.Kind != SpanKind.Plain && span.Reference is CodeReference.Entity entity)
+        {
+            return entity;
+        }
+
         return null;
     }
 
@@ -1471,9 +1484,10 @@ public static class CodeViewWidget
                 ui.MenuSeparator();
             }
 
-            if (ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
+            var analyzable = target.Analyzable;
+            if (analyzable is not null && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
             {
-                picked = new CodeViewIntent.Analyze(entity);
+                picked = new CodeViewIntent.Analyze(analyzable);
             }
 
             if (ui.MenuItem(t.TreeShowInApiReference, id: "show-in-api-reference", icon: new UiIcon(ui.State.Icons.LinkApiReference)))

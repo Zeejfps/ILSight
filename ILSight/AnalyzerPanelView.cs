@@ -28,7 +28,7 @@ internal static class AnalyzerPanelView
             DocumentsView.Hint(ui, t.AnalyzerHint(Shortcuts.Analyze.Label));
             return;
         }
-        Tree(ui, navigation);
+        Tree(ui, navigation, analyzer);
         ContextMenu(ui, navigation, analyzer);
     }
 
@@ -63,7 +63,7 @@ internal static class AnalyzerPanelView
         }
     }
 
-    private static void Tree(Ui<UiState> ui, Navigation navigation)
+    private static void Tree(Ui<UiState> ui, Navigation navigation, AnalyzerTree analyzer)
     {
         var rows = ui.State.Analyzer;
         var box = new Box { Padding = new Spacing(0f, ui.Theme.GapTight) };
@@ -71,7 +71,7 @@ internal static class AnalyzerPanelView
         var treeId = ui.GetId(TreeId);
         if (ui.HasFocus(treeId))
         {
-            HandleKeys(ui, rows);
+            HandleKeys(ui, rows, analyzer);
         }
 
         if (result.Activated)
@@ -85,11 +85,11 @@ internal static class AnalyzerPanelView
         }
     }
 
-    private static void HandleKeys(Ui<UiState> ui, AnalyzerRows rows)
+    private static void HandleKeys(Ui<UiState> ui, AnalyzerRows rows, AnalyzerTree analyzer)
     {
         if (ui.IsPressed(Shortcuts.Analyze))
         {
-            AnalyzeSelected(ui.State, rows);
+            AnalyzeSelected(ui.State, OfferAnalysis(rows, analyzer));
         }
 
         if (ui.IsPressed(Shortcuts.Delete))
@@ -98,12 +98,26 @@ internal static class AnalyzerPanelView
         }
     }
 
-    private static void AnalyzeSelected(UiState screen, AnalyzerRows rows)
+    /// <summary>What Analyze applies to in the analyzer, its menu item and its key alike: a result selected, unless it is
+    /// a root, which is analyzed already (not offered); unavailable when its assembly can't be listed.</summary>
+    private static CommandOffer<AnalysisSymbol> OfferAnalysis(AnalyzerRows rows, AnalyzerTree analyzer)
     {
-        if (rows.View.Selected is AnalyzerSymbolNode picked)
+        if (rows.View.Selected is not AnalyzerSymbolNode picked || analyzer.HasRoot(picked))
         {
-            Commands.AnalyzeLater(screen, picked.Symbol);
+            return new CommandOffer<AnalysisSymbol>.NotOffered();
         }
+
+        return Analysis.OfferAnalysis(analyzer, picked.Symbol);
+    }
+
+    /// <summary>Analyzes what <paramref name="offer"/> applies to as the key asks, or reports why it is unavailable
+    /// where the user acted; nothing where it isn't offered.</summary>
+    private static void AnalyzeSelected(UiState screen, CommandOffer<AnalysisSymbol> offer)
+    {
+        offer.Switch(
+            runs => Commands.AnalyzeLater(screen, runs.Target),
+            unavailable => Commands.ReportLater(screen, unavailable.Why),
+            static _ => { });
     }
 
     private static void RemoveSelectedAnalysis(UiState screen, AnalyzerRows rows)
@@ -155,11 +169,7 @@ internal static class AnalyzerPanelView
             GoToItems(ui, navigation, target);
         }
 
-        if (!isRoot && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
-        {
-            Commands.AnalyzeLater(ui.State, node.Symbol);
-        }
-
+        AnalyzeItem(ui, OfferAnalysis(rows, analyzer));
         ui.MenuSeparator();
         if (isRoot && ui.MenuItem(t.AnalyzerRemove, id: "remove"))
         {
@@ -170,6 +180,24 @@ internal static class AnalyzerPanelView
         {
             Commands.Later(ui.State, static a => a.Analyzer.ClearRoots());
         }
+    }
+
+    /// <summary>The menu's Analyze, as <paramref name="offer"/> decides it: offered, it analyzes; unavailable, it shows
+    /// disabled, saying why; not offered, it isn't listed.</summary>
+    private static void AnalyzeItem(Ui<UiState> ui, CommandOffer<AnalysisSymbol> offer)
+    {
+        var t = ui.State.Strings;
+        offer.Switch(
+            runs =>
+            {
+                if (ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
+                {
+                    Commands.AnalyzeLater(ui.State, runs.Target);
+                }
+            },
+            unavailable => ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, enabled: false, id: "analyze",
+                detail: ProblemTexts.Describe(t, unavailable.Why).Details),
+            static _ => { });
     }
 
     private static void GoToItems(Ui<UiState> ui, Navigation navigation, CodeReference.Navigable target)

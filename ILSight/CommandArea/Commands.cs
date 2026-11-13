@@ -28,6 +28,13 @@ public static class Commands
         uiState.AppCommands.Enqueue(AppCommandFactory.Create(subject, run));
     }
 
+    /// <summary>Tells the user <paramref name="problem"/> once the frame is drawn, as a command they asked for that is
+    /// unavailable now says why where they acted (the status line and the error panel).</summary>
+    public static void ReportLater(UiState uiState, AppProblem problem)
+    {
+        Later(uiState, problem, static (a, p) => Errors.Report(a, p));
+    }
+
     /// <summary>Asks for what <paramref name="load"/> started loading in its tab, if anything, to be brought in once
     /// the frame is drawn (<see cref="StartDecompiling(AppState, DecompileTicket?)"/>): the draw points the tab in the
     /// frame of its input, and only the decompile, which takes longer than a frame, waits for the edge. Allocates
