@@ -51,7 +51,8 @@ there when this doesn't settle a case). Each decision is stated once. The last s
 
 Build: RL0101 (an effect outside adapters, the root, tests and edges), RL0103 (a static class of functions taking
 one port), RL0105 (infrastructure in a port signature); suggestions: RL0102 (a use case or adapter built outside the
-root), RL0104 (another use case reached around the port), RL0106 (an answer taken from an `[Edge]` type).
+root), RL0104 (another use case reached around the port), RL0106 (an answer taken from an `[Edge]` type), RL0107 (a wait cut
+short on a task whose result must be released).
 
 - **One port.** A class that makes decisions touches I/O, time, randomness, configuration, logging and shared mutable
   state only through a nested `public interface IPorts` it declares, its only constructor parameter: the codebase's
@@ -85,10 +86,15 @@ root), RL0104 (another use case reached around the port), RL0106 (an answer take
   the state, a store keyed beside it, or a port passed into the library's hook.
 - **Release waits for readers:** the close refuses new reads (`Closed`); each read holds a lease until it ends,
   however; closed and unleased, the owner disposes it once, on the thread its API requires. A cache
-  keeping another item's object leases it at each use, a refusal dropping the cache (never a count for its life). The
-  close completes at the request, or awaits the release where its contract needs the resource free (a CLI rewriting
-  the file next). Nothing a running read may reach is disposed, nor an object holding only memory. A closed item's
-  views, of every kind, ask for nothing more: what would read shows unavailable, saying why, never "loading".
+  keeping another item's object leases it at each use, a refusal dropping the cache (never a count for its life); or,
+  where open items keep showing a closed item's content and its close promises nothing, it is released by reachability
+  from what is open or reading (cycles included). The close completes at the request, or awaits the release where its
+  contract needs the resource free (a CLI rewriting the file next). Nothing a running read may reach is disposed, nor
+  an object holding only memory. A closed item's views, of every kind, ask for nothing more: what would read shows
+  unavailable, saying why, never "loading". **What a read made is its maker's until a receiver takes it:** no wait on
+  it is cut short (`WaitAsync(ct)`), and every way it ends without the hand-over (a failure, a cancellation seen
+  after it finished, a stale answer) releases it, there or by the receiver's ticket (handed on only where every
+  cancellation that should drop it also changes the ticket).
 - **The composition root** (`Program.cs`, DI registration, `AppRoot.Build`) is an edge; nothing else constructs a use
   case or an adapter. Per-document objects come from a factory the root builds (DI: scoped); a function taking the
   state only to reach a use case is the edge's call. **Configuration becomes initial values** (`required init`, no
@@ -201,10 +207,12 @@ methods, one type changing two or more members), RL0406 (a static class whose fu
   holder holds the part. A part still arriving has pending, completed and removed states, the change rechecked on
   arrival and when that state changes; the domain decides which states permit it (shipping needs a captured payment; a
   stock hold may proceed on a pending one).
-- **Static is for code no object owns:** a calculation or parse over values, I/O over values, an extension method on a
-  type you don't own, a kind's `static abstract` members, constants, `Main`. A function that changes an object's state
-  is its method (as an extension method it still reaches only public members: no fix), or the method of a part it
-  changes where the object holds many (the app's whole state).
+- **Static is for code no object owns:** pure functions and parses, I/O over values, extension methods (a type you
+  don't own, sequence operators), a kind's `static abstract` members, statics a framework or generator requires,
+  P/Invoke, constants, `Main`; and orchestration through objects' own public operations (a lone workflow, a draw, an
+  edge). A function that writes an object's members itself is its method (as an extension method it still reaches only
+  public members: no fix), or the method of a part it changes where the object holds many (the app's whole state); a
+  static class's own nested shape (a parser's cursor) is its own state.
 - **Framework-facing state** (fields bound by `ref`, properties a binder sets) is public, as the framework needs; an
   entity EF fills through private fields keeps its rules. A type is framework-facing data or
   owns rules, never both: the part with rules is a type the other holds (`picker.Choice`). Its methods may set its
@@ -240,8 +248,9 @@ Build: suggestion: RL0601 (`OfType<T>()` dropping a parse's failures).
 - Requests, commands, messages: all-or-nothing. An input whose parts stand alone (a settings file) or a format whose
   consumers skip damage: lenient, returning the value and every problem by location (`Lenient<T>`), dropping none; a
   missing optional part is its default.
-- **Configuration** is missing (the default), read (an emptied list stays empty) or unreadable (a failure, with why);
-  what an unreadable one means is product policy, chosen once where the root reads it, and said.
+- **Configuration** is missing, read (an emptied list stays empty) or unreadable (a failure, with why); what missing
+  (optional: the default; required, as a file the user named: a failure) and unreadable mean is product policy, chosen
+  once where the root reads it, and said.
 - Outbound: a response DTO per endpoint; never serialize entities. Not a boundary: your own EF database (entities
   mapped directly; a union through a row type) and calls between your classes. A database you don't own: row types,
   changed values copied onto the tracked row (never `db.Update(newRow)`).
@@ -289,24 +298,34 @@ adapter's sequence not its own iterator), RL0906 (an edge's loop with no catch p
   discarded. Infrastructure failures propagate.
 - **What the user asked for ends in something they see:** a refusal says why where they acted, or the action is
   offered as unavailable with why. An outcome the port's answer lacks (`Closed`) gets a case on that answer, never a
-  made-up exception. Every input of a command reads one decision, made without a wait (unavailable: says why where
-  pressed; not offered: its key does nothing); what only a lookup tells is the outcome. **A refusal is not a
-  failure:** one place whatever input asked, never where failures go (the error panel, the error log, a failure count,
-  a retry); with no place the user acted (input a second run handed over, a link, a scheduled job), the app's channel
-  for what it tells unasked. Which channel, and how long it stays, is the product's.
-- Restored state whose source can't be read now is kept as saved, failed in place, read again later; a reload keeps
-  what was derived from its sources as saved and derives it again.
+  made-up exception. Every input of a command reads one availability state, drawn without a wait (unavailable: says
+  why where pressed; not offered: its key does nothing), and the command checks again when it runs; offering one only
+  a lookup can judge, or showing it as checking, is the product's. **A refusal is not a failure:** one place whatever
+  input asked, never recorded as a failure (the error panel, an error-level log, a failure count, a retry); with no
+  place the user acted (input a second run handed over, a link, a scheduled job), the app's channel for what it tells
+  unasked. Which channel, how long it stays, a log below error, or one view listing refusals marked apart from
+  failures, is the product's.
+- Restored state whose source can't be read now is kept as saved, failed in place, read again later, unless removed
+  by the user or an explicit product policy; a reload keeps what was derived from its sources as saved and derives it
+  again. A failed read is read again only when a trigger the product chose asks (the user's Retry or reload, a change
+  to what it names, a bounded schedule), one reaching a source back unchanged; never the draw. Failing again the same
+  way isn't reported again.
 - **A hand-over whose acknowledgement can be lost** answers taken, not taken or unknown, never a `bool`; the receiver
   acknowledges what it took. What unknown means is the product's delivery contract, in one branch: at most once (said),
-  at least once (an id the receiver takes once), or a stated duplicate.
-- **Catch only at the edge**, around one unit of work (a loop around each item), logging once; no log-and-rethrow.
-  Decision code catches nothing; adapters catch only what they translate. The one exception to both: a read of the
-  user's data by a library listed in `rulelab.untrusted_libraries` (in an adapter, a conversion step, or where a
-  library object that is data is read) catches everything but cancellation asked for, into the failure case of the
-  unit the user asked for, with why, shown where its answer would be; only the read is inside.
+  a bounded retry (an id the receiver takes once; said if still unknown), at least once (kept durably and sent until
+  answered, across restarts, with that id), or a stated duplicate. An id deduplicates; only resending delivers.
+- **Catch only at the edge**, around one unit of work, logging once; no log-and-rethrow. A loop of independent units
+  (queued commands, messages) catches around each item; a loop of one unit's steps (migrations building on each other)
+  has one boundary and stops at the first failure. Decision code catches nothing; adapters catch only what they
+  translate. The one exception to both: a read of the user's data by a library listed in
+  `rulelab.untrusted_libraries` (in an adapter, a conversion step, or where a library object that is data is read)
+  catches everything but cancellation asked for, into the failure case of the unit the user asked for, with why, shown
+  where its answer would be; only the read is inside, in the project that calls the library (your own core: its
+  answer carries the failure case), never around another project's code. Your own code is never listed.
 - **Lazily-throwing libraries** are translated where read: each adapter member reads its answer inside its catch, and
-  no sequence is enumerated outside the adapter's code; to stream, the adapter is its own `IAsyncEnumerable<T>`
-  iterator (each item read in its catch, the source in `await using`), read in one loop with no other call to it.
+  no deferred library execution leaves it (a lazy sequence, a `Select` without `ToList` over its objects); consumers
+  enumerate values it read and its own stream freely. To stream, the adapter is its own `IAsyncEnumerable<T>` iterator
+  (each item read in its catch, the source in `await using`), read in one loop with no other call to it.
 - **A shared read whose outcome is a value** is awaited and matched by the unit that needs it before its sync read
   starts; never a sync wait that rethrows, nor a match at each sync caller.
 - **Cancellation someone asked for isn't a failure; a timeout is.** An adapter lets `OperationCanceledException`
@@ -419,7 +438,8 @@ Build: RL1401 (a doc comment on a private member or a member of a private type);
 (CS1591, CS1573 off), a doc comment naming what is renamed or gone (CS1734, CS1574, CS1572, CS0419, CS1570).
 
 - **Private members get no doc comment.** Restating goes; a contract the code could carry goes into it (a name, a
-  type, a result union); a reason it can't show is a `//` on the line it explains.
+  type, a result union); a reason it can't show is a `//` on the line it explains. An interface implementation or
+  override counts as the contract it exposes (a private nested type's `Dispose` handed out as `IDisposable`).
 - **Other members and types:** a doc comment only for what the name and signature can't say (a unit, a result's
   meaning, a precondition, a thread, lifetime or ordering rule, a side effect, the rule a type keeps, a reason), after
   the code says what it can; never the name restated or the body's steps.
