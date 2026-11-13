@@ -83,7 +83,7 @@ public sealed class BrowseNode
     /// <summary>The file name a resource the node stands for is saved under; null for a node of anything else.</summary>
     public required string? ResourceFileName { get; init; }
 
-    /// <summary>The name ILSpy's tree gives the node standing for this one (<see cref="ILSpyTree.NameOf"/>); null for a
+    /// <summary>The name ILSpy's tree gives the node standing for this one (<see cref="ILSpyTree.NameOf(NodeSubject)"/>); null for a
     /// node it has no named counterpart of. Read when the node was made.</summary>
     public required string? ILSpyName { get; init; }
 

@@ -307,7 +307,7 @@ public static class SavedDocuments
         return arrangement;
     }
 
-    /// <summary>Shows again what the tabs of <paramref name="tabs"/> reopened and still waiting
+    /// <summary>Shows again what the tabs of <paramref name="navigation"/> reopened and still waiting
     /// (<paramref name="reopenedTabs"/>) showed, now that the open list's assemblies, <paramref name="assemblies"/>, are
     /// listed: shows their diagrams and comparisons. Returns the loads that started in the tabs, for the edge that
     /// started this to start: the reading of the diagrams' cards, the comparisons' runs, and the lookup of the nodes the

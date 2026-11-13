@@ -5,7 +5,7 @@ namespace ILSight.Core;
 /// <summary>
 /// Where a <see cref="BrowseNode"/> sits: the listed file whose tree it is in, and the steps down from that
 /// tree's root, naming each node by what it is. Unlike the node, it stays meaningful after the assembly is
-/// closed or reloaded; <see cref="BrowseSessions.FindNode(BrowseSession, LoadedAssembly, NodePath)"/> finds the node it names again.
+/// closed or reloaded; <see cref="BrowseSessions.FindNodeAsync(BrowseSession, LoadedAssembly, NodePath, CancellationToken)"/> finds the node it names again.
 /// </summary>
 public sealed class NodePath : IEquatable<NodePath>
 {

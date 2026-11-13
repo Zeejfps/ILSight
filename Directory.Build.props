@@ -14,6 +14,10 @@
          style rules (R007), on the ILSight projects only; ZGF has its own conventions. Severities: .editorconfig. -->
     <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('ILSight'))">
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <!-- R014: doc comments are compiled, so a reference to something renamed or gone fails the build (CS1574,
+             CS1734, CS1572, CS0419). CS1591 and CS1573 would ask for comments that restate the code. -->
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
     </PropertyGroup>
 
     <ItemGroup Condition="$(MSBuildProjectName.StartsWith('ILSight'))">

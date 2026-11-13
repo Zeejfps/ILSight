@@ -1,6 +1,6 @@
 namespace ILSight;
 
-/// <summary>What closing a tab did (<see cref="Docking.CloseTab"/>): whether it was the active tab, which leaves
+/// <summary>What closing a tab did (<see cref="Navigation.CloseTab"/>): whether it was the active tab, which leaves
 /// none active until the view focuses another.</summary>
 public readonly record struct ClosedTab
 {

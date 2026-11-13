@@ -394,9 +394,7 @@ internal static class DisplayOptionsPanelView
     /// <summary>A dropdown as wide as the widest of <paramref name="labels"/> while the row has room, cut
     /// short with its label ellipsized when the row is narrow, showing the one at
     /// <paramref name="current"/>, or the first when it is none of them; returns the index picked on
-    /// this frame, or null. Its items are told apart by <paramref name="itemIds"/>
-    /// when labels can repeat, else by their labels; the open menu closes when <paramref name="revision"/>
-    /// changes, as when the items change under it.</summary>
+    /// this frame, or null.</summary>
     private static int? PickFrom(Ui<UiState> ui, string id, string[] labels, int? current)
     {
         return PickFrom<string>(ui, id, labels, current, null, 0);

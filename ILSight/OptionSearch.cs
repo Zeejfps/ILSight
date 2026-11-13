@@ -135,7 +135,7 @@ internal static class OptionSearch
     }
 
     /// <summary>The runs of <paramref name="text"/> with the hits of <paramref name="query"/> marked, as
-    /// <see cref="EnsureMarkedRuns"/> keeps them for the label that is <paramref name="part"/> of the element
+    /// <see cref="EnsureMarkedRuns(MarkedLabel, CultureInfo, string, string, TextStyle)"/> keeps them for the label that is <paramref name="part"/> of the element
     /// named <paramref name="text"/> in the scope it is drawn in.</summary>
     public static IReadOnlyList<RichTextRun>? EnsureMarkedRuns(Ui<UiState> ui, string query, string text, TextStyle style, int part = 0)
     {

@@ -97,7 +97,7 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
     }
 
     /// <summary>Opens the files among <paramref name="paths"/>, dropped on the window, as
-    /// <see cref="OpenAssembliesAsync"/> does; folders are left out, and a path that isn't a full one is refused, saying
+    /// <see cref="OpenAssembliesAsync(AppState, IEnumerable{AssemblyPath}, CancellationToken)"/> does; folders are left out, and a path that isn't a full one is refused, saying
     /// so.</summary>
     public Task<DecompileTicket?> OpenDroppedFilesAsync(AppState appState, IReadOnlyList<string> paths, CancellationToken ct)
     {

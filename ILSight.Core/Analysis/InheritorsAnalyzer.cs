@@ -3,7 +3,7 @@ using ICSharpCode.Decompiler.TypeSystem;
 namespace ILSight.Core.Analysis;
 
 /// <summary>Shows the members of kind <typeparamref name="T"/> that implement an interface member,
-/// or with <paramref name="overrides"/> those that override a class member.</summary>
+/// or with <c>overrides</c> those that override a class member.</summary>
 internal static class InheritorsAnalyzer<T> where T : class, IMember
 {
     public static AnalysisRun? Prepare(bool overrides, ISymbol? symbol)

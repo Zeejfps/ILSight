@@ -149,7 +149,7 @@ public static class Diagrams
     }
 
     /// <summary>Shows the diagram <paramref name="saved"/> kept in the tab <paramref name="reopened"/> waits in, one
-    /// of <paramref name="tabs"/> and of <paramref name="reopenedTabs"/>, the assemblies it names its own, and has the
+    /// of <paramref name="navigation"/>'s tabs and of <paramref name="reopenedTabs"/>, the assemblies it names its own, and has the
     /// tab wait on for the cards of its types still found. Returns the read of those cards it started, for the edge to
     /// start (<see cref="ReopenDiagramHandler"/>) on a token closing the diagram cancels; null when the tab waits no
     /// more, as when it was pointed elsewhere.</summary>

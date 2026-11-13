@@ -557,9 +557,6 @@ public static class Commands
         }
     }
 
-    /// <summary>Starts each of <paramref name="loads"/> now: each node decompiled as
-    /// <see cref="StartDecompiling(AppState, DecompileTicket?)"/> does, and the cards of each reopened diagram read
-    /// (<see cref="ReopenDiagramHandler"/>) on a token that closing the diagram cancels too.</summary>
     /// <summary>Takes <paramref name="items"/> off the open list (<see cref="OpenListSession.CloseAssemblies"/>) and has
     /// the modules taken off released, each once nothing reads it.</summary>
     public static void CloseAssemblies(AppState appState, IReadOnlyList<LoadedAssembly> items)

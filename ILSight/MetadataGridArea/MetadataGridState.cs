@@ -5,7 +5,7 @@ using ILSight.MetadataArea;
 
 namespace ILSight.MetadataGridArea;
 
-/// <summary>Everything a <see cref="MetadataGridWidget.MetadataGridView"/> keeps between frames of one
+/// <summary>Everything a <see cref="MetadataGridWidget.RenderMetadataGrid"/> keeps between frames of one
 /// grid: the columns' widths, the sort and text filters, the selected cell and the text selected in it,
 /// the scroll and the selected row's decoded details. Made for the grid a tab shows, and made anew when
 /// the tab shows another, so that a grid starts unsorted, unfiltered but for the flags filters kept for

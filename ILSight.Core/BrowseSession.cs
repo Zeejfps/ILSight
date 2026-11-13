@@ -28,7 +28,7 @@ public sealed class BrowseSession
     /// <summary>The root of the listed <paramref name="item"/>'s tree (a module not read out of a package, a package,
     /// a file that could not be read), made from the item's values the first time, then kept. Reads no file. A module
     /// read out of a package is no listed item: its root sits in its package's tree
-    /// (<see cref="BrowseSessions.EnsureRoot"/>).</summary>
+    /// (<see cref="BrowseSessions.EnsureRootAsync"/>).</summary>
     public BrowseNode EnsureRoot(LoadedAssembly item)
     {
         if (item is LoadedModule module)

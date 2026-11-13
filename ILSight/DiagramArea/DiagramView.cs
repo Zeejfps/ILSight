@@ -370,7 +370,7 @@ internal static class DiagramView
     }
 
     /// <summary>Begins opening the code <paramref name="row"/> stands for, when it stands for a type or member
-    /// (<see cref="BeginOpeningFromDiagram"/>), and asks for it to be looked up and shown.</summary>
+    /// (<see cref="Navigation.BeginResolvingFromDiagram"/>), and asks for it to be looked up and shown.</summary>
     private static void OpenCode(UiState screen, Navigation navigation, TypeDiagram diagram, CardRow? row, bool inNewTab)
     {
         if (row is null)

@@ -60,7 +60,7 @@ public static class BrowseNodes
         return text;
     }
 
-    /// <summary>Whether a node of <paramref name="subject"/> shows decompiled code (<see cref="NodeContentLoader.GetContentAsync"/>),
+    /// <summary>Whether a node of <paramref name="subject"/> shows decompiled code (<see cref="NodeContentLoader.ReadContentAsync(BrowseSession, BrowseNode, DecompilationLanguage, DecompilerOptions, int, CancellationToken)"/>),
     /// which changes with the language and options, rather than a grid, a picture or why the file failed to load,
     /// which do not. Told by what the subject is, reading nothing.</summary>
     private static bool IsCode(NodeSubject subject)

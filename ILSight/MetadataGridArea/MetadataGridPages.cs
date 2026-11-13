@@ -4,7 +4,7 @@ namespace ILSight.MetadataGridArea;
 
 /// <summary>The pages of paged grids that the views asked for while the screen drew, which the frame edge reads off
 /// the screen's thread (<see cref="ReadMetadataPageHandler"/>): each page once, however many frames show it loading
-/// meanwhile (<see cref="MetadataGrid.Paged.Ask"/>).</summary>
+/// meanwhile (<see cref="MetadataGrid.Paged.TryAsk"/>).</summary>
 public sealed class MetadataGridPages
 {
     private readonly List<MetadataGridPageAsk> _asked = [];

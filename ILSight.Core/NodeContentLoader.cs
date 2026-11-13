@@ -28,7 +28,7 @@ public static class NodeContentLoader
     /// <summary>Decompiles <paramref name="node"/> with <paramref name="options"/>, which only C# reads, once the read
     /// of its module's type system ended. Throws <see cref="OperationCanceledException"/> when cancelled; any other
     /// failure becomes a document describing it. A unit reading the node's module, as
-    /// <see cref="ReadContentAsync"/> is.</summary>
+    /// <see cref="ReadContentAsync(BrowseSession, BrowseNode, DecompilationLanguage, DecompilerOptions, int, CancellationToken)"/> is.</summary>
     public static async Task<ModuleRead<DecompiledDocument>> DecompileAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language,
         DecompilerOptions options, CancellationToken cancellationToken = default)
     {
@@ -439,7 +439,7 @@ public static class NodeContentLoader
         }).ToList());
     }
 
-    /// <summary>The children of <paramref name="node"/> that stand for a <typeparamref name="TSubject"/>.</summary>
+    /// <summary>The children of <paramref name="children"/> that stand for a <typeparamref name="TSubject"/>.</summary>
     private static IEnumerable<BrowseNode> ChildrenAbout<TSubject>(SummarizedChildren children) where TSubject : NodeSubject
     {
         return children.Children.Where(static c => c.Subject is TSubject);
@@ -491,7 +491,7 @@ public static class NodeContentLoader
         return entries;
     }
 
-    /// <summary>The types and members <paramref name="node"/> lists as used from a reference.</summary>
+    /// <summary>The types and members <paramref name="children"/> list as used from a reference.</summary>
     private static List<UsedEntry> ListUsed(SummarizedChildren children)
     {
         return children.Children

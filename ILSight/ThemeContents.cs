@@ -11,7 +11,7 @@ public sealed record ThemeContents
     /// <summary>The colors of <see cref="UiTheme"/>, by key.</summary>
     public required IReadOnlyDictionary<string, ThemeValue> Ui { get; init; }
 
-    /// <summary>The colors of <see cref="CodeView.CodeViewPalette"/>, by key.</summary>
+    /// <summary>The colors of <see cref="CodeViewArea.CodeViewPalette"/>, by key.</summary>
     public required IReadOnlyDictionary<string, ThemeValue> Code { get; init; }
 
     /// <summary>The colors of <see cref="NodeIconPalette"/>, by key.</summary>

@@ -464,7 +464,7 @@ public static class DocumentPanels
 
     /// <summary>Makes <paramref name="tab"/> <paramref name="navigation"/>'s active tab now, and asks for what it
     /// shows to be decompiled again, once the frame is drawn, when it was shown in another language than
-    /// <paramref name="language"/> or with other options than <paramref name="options"/>.</summary>
+    /// <paramref name="setup"/>'s or with other options.</summary>
     private static void FocusTab(UiState uiState, Navigation navigation, DecompilerSetup setup, DocumentTab tab)
     {
         Commands.DecompileLater(uiState, navigation.FocusTab(tab, setup));

@@ -26,8 +26,8 @@ internal static class OmnibarView
     private const float CrumbMinWidth = 24f;
 
     /// <summary>The bar over <paramref name="tab"/>. A crumb, child or match picked shows in
-    /// <paramref name="navigation"/>'s tabs in this frame, in <paramref name="language"/> with
-    /// <paramref name="options"/>, in the preview tab while <see cref="Navigation.PreviewTabs"/>; only its decompile is
+    /// <paramref name="navigation"/>'s tabs in this frame, in the language and with the options of
+    /// <paramref name="setup"/>, in the preview tab while <see cref="Navigation.PreviewTabs"/>; only its decompile is
     /// queued. A comparison's tools compare <paramref name="assemblies"/> as they are open.</summary>
     public static void Render(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DecompilerSetup setup,
         DocumentTab tab)

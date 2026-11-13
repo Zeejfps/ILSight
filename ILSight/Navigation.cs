@@ -18,7 +18,7 @@ namespace ILSight;
 /// the tab the screen opens for a panel of its own (<see cref="OpenEmptyTab"/>). Every change
 /// to the tabs, the history and the intent is one of its methods, and the views that show nodes take it and call them
 /// in the frame of their input. It reads the language and the decompiler options as values it is handed.
-/// What waits on a lookup is a handler of its own: <see cref="NavigateHandler"/>, <see cref="ShowInMetadataHandler"/>,
+/// What waits on a lookup is a handler of its own: <see cref="NavigateHandler"/>, <see cref="MetadataArea.ShowInMetadataHandler"/>,
 /// <see cref="ShowInApiReferenceHandler"/>, <see cref="OpenAndShowIdHandler"/> and
 /// <see cref="GoToHistoryEntryHandler"/>.</summary>
 public sealed class Navigation
@@ -154,8 +154,8 @@ public sealed class Navigation
     }
 
     /// <summary>Shows <paramref name="node"/> in the preview tab while <see cref="PreviewTabs"/>, or the active
-    /// tab while tabs do not preview, or else a new tab kept open, in <paramref name="language"/> with
-    /// <paramref name="options"/>; reveals it in the tree and records it in the history. Returns the load it started
+    /// tab while tabs do not preview, or else a new tab kept open, in the language and with the options of
+    /// <paramref name="setup"/>; reveals it in the tree and records it in the history. Returns the load it started
     /// in the tab, for <see cref="DecompileIntoTabHandler"/> to bring in; null when the tab shows the node
     /// already.</summary>
     public DecompileTicket? ShowNode(BrowseNode node, DecompilerSetup setup, bool inNewTab = false)
@@ -281,8 +281,8 @@ public sealed class Navigation
 
     /// <summary>Makes <paramref name="tab"/>, when it is open, the tab the user works in (clicked, docked, brought
     /// forward, or focused after the active one closed), its place recorded in the history as where the user is, and
-    /// points it again at what it shows when it was shown in another language than <paramref name="language"/> or with
-    /// other options than <paramref name="options"/>. Returns the load that started in the tab, for
+    /// points it again at what it shows when it was shown in another language or with
+    /// other options than <paramref name="setup"/>'s. Returns the load that started in the tab, for
     /// <see cref="DecompileIntoTabHandler"/> to bring in; null when none did.</summary>
     public DecompileTicket? FocusTab(DocumentTab tab, DecompilerSetup setup)
     {

@@ -57,8 +57,13 @@ dotnet_diagnostic.VSTHRD100.severity = error
 dotnet_diagnostic.VSTHRD103.severity = error
 dotnet_diagnostic.VSTHRD110.severity = error
 dotnet_diagnostic.VSTHRD001.severity = error
-# Documentation comments: a cref names one member (CS0419, an ambiguous overload).
+# R014: doc comments are compiled (Directory.Build.props); a reference names one member (CS0419, an ambiguous
+# overload) that exists (CS1574 a cref, CS1734 a paramref, CS1572 a param), in well-formed XML (CS1570).
 dotnet_diagnostic.CS0419.severity = error
+dotnet_diagnostic.CS1574.severity = error
+dotnet_diagnostic.CS1734.severity = error
+dotnet_diagnostic.CS1572.severity = error
+dotnet_diagnostic.CS1570.severity = error
 dotnet_diagnostic.VSTHRD200.severity = none
 dotnet_diagnostic.VSTHRD003.severity = none
 
@@ -151,3 +156,7 @@ dotnet_diagnostic.VSTHRD100.severity = none
 dotnet_diagnostic.VSTHRD103.severity = none
 dotnet_diagnostic.VSTHRD110.severity = none
 dotnet_diagnostic.CS0419.severity = none
+dotnet_diagnostic.CS1574.severity = none
+dotnet_diagnostic.CS1734.severity = none
+dotnet_diagnostic.CS1572.severity = none
+dotnet_diagnostic.CS1570.severity = none

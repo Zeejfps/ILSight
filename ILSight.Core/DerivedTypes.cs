@@ -16,7 +16,7 @@ internal static class DerivedTypes
         return !type.IsSealed && type.Kind is TypeKind.Class or TypeKind.Interface;
     }
 
-    /// <summary>The reads of the type systems of the modules the search for <paramref name="type"/>'s derived types,
+    /// <summary>The reads of the type systems of the modules the search for a type's derived types,
     /// in <paramref name="module"/>, can reach, each awaited (<see cref="AnalyzerScope.ReadReachableAsync"/>).</summary>
     public static Task<ModuleTypeSystems> ReadReachableAsync(ModuleReading reading, LoadedModule module, CancellationToken cancellationToken)
     {

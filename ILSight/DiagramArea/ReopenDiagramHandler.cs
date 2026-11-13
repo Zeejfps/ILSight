@@ -7,7 +7,7 @@ namespace ILSight.DiagramArea;
 /// (<see cref="Diagrams.ReopenDiagram"/>), or one going back to it made again once no tab showed it
 /// (<see cref="Navigation.GoToEntry"/>). Reads them through <see cref="IPorts"/> without holding up the screen, and
 /// reports a diagram whose cards could not be read, and names each module that could not be read a card is in. The
-/// diagram keeps the types whose cards couldn't be read (<see cref="TypeDiagram.Keep"/>), so that saving it again saves
+/// diagram keeps the types whose cards couldn't be read (<see cref="TypeDiagram.Keep(IReadOnlyList{TypeAnchor})"/>), so that saving it again saves
 /// them and its next reopening reads them again; it drops only those the open assemblies don't have.</summary>
 public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
 {

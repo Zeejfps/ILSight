@@ -14,7 +14,7 @@ public sealed record RunArguments
     /// the settings have open.</summary>
     public required string? AssemblyList { get; init; }
 
-    /// <summary>Whether to take every assembly off the list before opening <paramref name="Files"/>.</summary>
+    /// <summary>Whether to take every assembly off the list before opening <see cref="Files"/>.</summary>
     public required bool ClearList { get; init; }
 
     /// <summary>The files to open and what to show in them.</summary>

@@ -7,7 +7,7 @@ namespace ILSight.Core;
 /// An immutable pointer from code or the tree to an assembly, entity, local or label. References to
 /// the same target compare equal, so every occurrence of a symbol in a document can be matched.
 /// <see cref="Navigable"/> references can be resolved to a tree node with
-/// <see cref="NodeLookup.Find(AssemblyList, BrowseSession, CodeReference.Navigable)"/>.
+/// <see cref="NodeLookup.FindAsync(AssemblyList, BrowseSession, CodeReference.Navigable, CancellationToken)"/>.
 /// </summary>
 public abstract class CodeReference : IEquatable<CodeReference>
 {

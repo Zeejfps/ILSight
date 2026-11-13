@@ -2,7 +2,7 @@ using ILSight.Core;
 
 namespace ILSight;
 
-/// <summary>Finishes expanding an assembly and the namespaces in it (<see cref="Trees.ExpandNamespaces"/>): builds its
+/// <summary>Finishes expanding an assembly and the namespaces in it (<see cref="BrowseTree.ExpandNamespaces"/>): builds its
 /// children through <see cref="IPorts"/>, without holding up the screen, then expands the namespaces among them, unless
 /// the tree was collapsed or expanded again meanwhile. Children that could not be built are left as they are.</summary>
 public sealed class ExpandNamespacesHandler(ExpandNamespacesHandler.IPorts ports)

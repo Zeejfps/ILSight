@@ -2,7 +2,7 @@ using ILSight.Core;
 
 namespace ILSight.CodeViewArea;
 
-/// <summary>Everything a <see cref="CodeViewWidget.CodeView"/> keeps between frames: scroll,
+/// <summary>Everything a <see cref="CodeViewWidget.RenderCodeView"/> keeps between frames: scroll,
 /// selection, folds, find. One per open tab, owned by the app. The scroll and the find's query are fields its
 /// widgets take by <c>ref</c>; what keeps a rule is a part of its own.</summary>
 public sealed class CodeViewState

@@ -259,7 +259,7 @@ public static class NodeIcons
         return new UiIcon(icons.NodeError, palette.Error);
     }
 
-    /// <summary>Records <paramref name="kind"/>'s <see cref="Icon"/> as the tree shows it, in the screen's
+    /// <summary>Records <paramref name="kind"/>'s <see cref="Icon(NodeIcon, NodeAccessibility, NodeIconPalette, AppIcons)"/> as the tree shows it, in the screen's
     /// icons and icon colors.</summary>
     public static void Draw(Ui<UiState> ui, NodeIcon kind, NodeAccessibility accessibility = NodeAccessibility.None)
     {

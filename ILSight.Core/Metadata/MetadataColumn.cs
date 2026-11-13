@@ -6,7 +6,7 @@ public sealed record MetadataColumn
     /// <summary>ILSpy's header for it.</summary>
     public required string Name { get; init; }
 
-    /// <summary>Whether its cells are metadata tokens that <see cref="MetadataGrid.Link"/> can follow.</summary>
+    /// <summary>Whether its cells are metadata tokens that <see cref="MetadataGrids.FindLink"/> can follow.</summary>
     public required bool IsToken { get; init; }
 
     /// <summary>Whether it holds numbers, which read best aligned to the right.</summary>
