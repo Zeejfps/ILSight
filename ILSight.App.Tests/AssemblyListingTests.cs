@@ -647,8 +647,6 @@ public sealed class AssemblyListingTests
         Assert.Equal([SavedAssemblyLists.DefaultName, Other], app.AppState.Lists.Names);
     }
 
-    /// <summary>An app with the fixtures open in the Default list, beside an empty one, and the dialog
-    /// open on Default.</summary>
     private static AppDriver OpenedDialog()
     {
         var app = AppDriver.Opened();

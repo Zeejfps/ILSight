@@ -340,7 +340,6 @@ public sealed class SearchTests
         Assert.Equal("innamespace:\"\" ", SearchQueries.AddScope("", "innamespace", ""));
     }
 
-    /// <summary>The hits of <paramref name="search"/>, which searches every assembly it is given.</summary>
     private static async Task<List<SearchResult>> CollectAsync(IAsyncEnumerable<IReadOnlyList<SearchFind>> search)
     {
         var results = new List<SearchResult>();

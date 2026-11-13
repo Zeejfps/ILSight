@@ -181,8 +181,6 @@ public sealed class CloseAssembliesTests
 
     private static readonly string KeyboardFile = Path.GetFileName(KeyboardPath);
 
-    /// <summary>The app with the fixture and ZGF.KeyboardModule open, Greeter shown, then KeyboardKey in a tab of its
-    /// own, active.</summary>
     private static async Task<AppDriver> ShowingGreeterAndKeyboardKeyAsync()
     {
         var app = AppDriver.Opened();
@@ -209,7 +207,6 @@ public sealed class CloseAssembliesTests
         return app.AppState.Navigation.OpenTabs.Single(t => t.Title == title);
     }
 
-    /// <summary>Closes ZGF.KeyboardModule from the close dialog, as the user does.</summary>
     private static void CloseKeyboardFromTheDialog(AppDriver app)
     {
         app.Ui.Closer.Open(app.AppState.Assemblies, KeyboardOf(app));

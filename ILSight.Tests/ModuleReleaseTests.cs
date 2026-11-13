@@ -5,11 +5,9 @@ namespace ILSight.Tests;
 
 public sealed class ModuleReleaseTests
 {
-    /// <summary>How long a test waits for a release that should come; past it, the release never came.</summary>
+    // A release that should come comes well within this; past it, it never came.
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
 
-    /// <summary>A list of <c>Left.dll</c> and <c>Right.dll</c>, written in <paramref name="temp"/>, each deriving a class
-    /// from the other's, both opened.</summary>
     private static (AssemblyList List, LoadedModule Left, LoadedModule Right) OpenEachReferencingTheOther(TempDir temp)
     {
         var leftPath = WrittenAssemblies.WriteDerivingFrom(temp, "Left", "Right");
@@ -76,15 +74,12 @@ public sealed class ModuleReleaseTests
         Assert.False(isReleasedWhileRead);
     }
 
-    /// <summary>Whether <paramref name="read"/>, a module a type system references, is <paramref name="module"/>'s
-    /// file.</summary>
     private static bool IsReadFrom(LoadedModule module, IModule read)
     {
         var file = read.MetadataFile;
         return file is not null && LoadedAssemblies.IsReadFrom(module, file);
     }
 
-    /// <summary>The type system of <paramref name="module"/> a unit reads now.</summary>
     private static async Task<DecompilerTypeSystem> ReadTypeSystemAsync(LoadedModule module)
     {
         var read = await LoadedAssemblies.ReadTypeSystemAheadAsync(module, CancellationToken.None);

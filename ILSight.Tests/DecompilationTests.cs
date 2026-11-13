@@ -432,8 +432,6 @@ public sealed class DecompilationTests
         return node.Subject is NodeSubject.MemberDefinition or NodeSubject.BaseType or NodeSubject.DerivedType or NodeSubject.AssemblyReference;
     }
 
-    /// <summary>The nodes under <paramref name="roots"/> that show no type's or member's code, not
-    /// following members, base and derived types, or references into what they name.</summary>
     private static async Task<List<BrowseNode>> ListSummarizedAsync(IEnumerable<BrowseNode> roots)
     {
         var nodes = new List<BrowseNode>();
@@ -447,6 +445,7 @@ public sealed class DecompilationTests
                 nodes.Add(node);
             }
 
+            // Members, base and derived types and references lead into what they name.
             if (IsLeafToSummarize(node))
             {
                 continue;

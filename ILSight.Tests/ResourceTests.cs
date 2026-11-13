@@ -20,7 +20,7 @@ public sealed class ResourceTests
         return copy.ToArray();
     }
 
-    /// <summary>The pixels the fixture pictures hold, top-down: red, green / blue, half-transparent white.</summary>
+    // The pixels the fixture pictures hold, top-down: red, green / blue, half-transparent white.
     private static readonly byte[] Expected = [255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 128];
 
     [Theory]

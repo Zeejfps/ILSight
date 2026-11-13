@@ -280,8 +280,8 @@ public sealed class AutosaveTests : IDisposable
         Assert.Equal(saved, next.AppState.Analyzer.ListSavedAnalyses());
     }
 
-    /// <summary>Makes writing the settings fail on any platform: a folder stands where the save writes
-    /// its temporary file. Returns the folder, to delete when writes should work again.</summary>
+    // A folder standing where the save writes its temporary file makes the write fail on any platform; deleting it
+    // lets writes work again.
     private string BlockSettingsWrites()
     {
         var blocker = _temp.PathOf("settings.json.tmp");
@@ -395,7 +395,6 @@ public sealed class AutosaveTests : IDisposable
         Assert.Equal(root.Ratio, saved.Ratio, 3);
     }
 
-    /// <summary>Where the pointer turns into the splitter's resize cursor, near where the root split's ratio puts it.</summary>
     private static float GetDivider(AppDriver app, DockSplit root)
     {
         var guess = root.Ratio * app.Frames.Width;

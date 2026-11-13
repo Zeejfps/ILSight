@@ -416,9 +416,6 @@ public sealed class PackageTests
         return node.Assembly.Name == TestAssemblyName;
     }
 
-    /// <summary>A NuGet package of the test assembly, with its PDB, and the assembly it references,
-    /// without one, beside a native library and a text file.</summary>
-    /// <summary>The package <paramref name="assembly"/> was read out of; fails the test when it was read from no package.</summary>
     private static LoadedPackage ContainerOf(LoadedAssembly assembly)
     {
         return Assert.IsType<PackagePlace>(Assert.IsType<LoadedModule>(assembly).Place).Container;
@@ -441,7 +438,6 @@ public sealed class PackageTests
         return path;
     }
 
-    /// <summary>A zip holding nothing but a text file.</summary>
     private static string WriteTextPackage(TempDir temp, string name)
     {
         var path = temp.Write(name, []);

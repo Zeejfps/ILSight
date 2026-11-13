@@ -6,8 +6,8 @@ namespace ILSight.Tests;
 
 public sealed class SavedPathTests : IDisposable
 {
-    /// <summary>A name for each sort of node the tree has, but the row naming a module a search for derived types
-    /// could not read, which a list holding only the base's file doesn't reach (<see cref="BrowseTreeTests"/>).</summary>
+    // Every sort of node the tree has but the row naming a module a search for derived types could not read, which a
+    // list holding only the base's file doesn't reach (BrowseTreeTests).
     private static readonly string[] Kinds =
     [
         "Assembly", "ReferencesFolder", "AssemblyReference", "ResourcesFolder", "Resource", "Namespace", "Class", "Interface", "Struct",
@@ -25,7 +25,7 @@ public sealed class SavedPathTests : IDisposable
         _temp.Dispose();
     }
 
-    /// <summary>A record struct, which the fixtures have none of.</summary>
+    // The fixtures have no record struct.
     private readonly record struct Interval
     {
         public required int Start { get; init; }
@@ -61,7 +61,7 @@ public sealed class SavedPathTests : IDisposable
         Assert.Null(await new AssemblyList { Runtime = TestRuntime.Installed }.FindNodeAsync(failed.Path));
     }
 
-    /// <summary>A node of <paramref name="kind"/>, in a file left in place for another list to open.</summary>
+    // The file is left in place for another list to open.
     private async Task<BrowseNode> SampleAsync(string kind)
     {
         return kind switch
@@ -79,7 +79,6 @@ public sealed class SavedPathTests : IDisposable
         return new AssemblyList { Runtime = TestRuntime.Installed }.Open(path);
     }
 
-    /// <summary>The name of the kind of <paramref name="node"/>.</summary>
     private static string KindOf(BrowseNode node)
     {
         return node.Subject.Match(
@@ -125,9 +124,6 @@ public sealed class SavedPathTests : IDisposable
             packageFile: static file => file.Value.IsImage ? "ResourceImage" : "Resource");
     }
 
-    /// <summary>The first node of <paramref name="kind"/> breadth first from the root of
-    /// <paramref name="assembly"/>, not following a reference into the references of the assembly it
-    /// resolves to.</summary>
     private static async Task<BrowseNode> FirstOfAsync(LoadedAssembly assembly, string kind)
     {
         var queue = new Queue<BrowseNode>([await assembly.ReadRootAsync()]);

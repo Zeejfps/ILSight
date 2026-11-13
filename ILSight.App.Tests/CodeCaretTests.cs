@@ -8,8 +8,6 @@ namespace ILSight.App.Tests;
 
 public sealed class CodeCaretTests
 {
-    /// <summary>"void F()" and its body, "{" .. "}" over two indented lines, which fold under "void F()"; then
-    /// "int x;".</summary>
     private static DecompiledDocument Folded()
     {
         var builder = new DocumentBuilder { Language = DecompilationLanguage.CSharp };

@@ -7,8 +7,6 @@ public sealed class BookmarkImportingTests
 {
     private const string Path = "C:/bookmarks/exported.json";
 
-    /// <summary>Two bookmarks, as a file keeps them, of the fixture Outline's "return First();" and "foreach"
-    /// lines.</summary>
     private static async Task<List<Bookmark>> TwoBookmarksAsync()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
@@ -20,8 +18,7 @@ public sealed class BookmarkImportingTests
         return d.AppState.Bookmarks.Items.ToList();
     }
 
-    /// <summary><paramref name="bookmark"/> as <paramref name="list"/> makes it, to add to it: a list holds only
-    /// the bookmarks it made.</summary>
+    // A list holds only the bookmarks it made.
     private static Bookmark MadeBy(BookmarkList list, Bookmark bookmark)
     {
         return list.CreateFromRecord(Bookmarks.CreateRecord(bookmark), bookmark.Place);

@@ -24,10 +24,10 @@ internal sealed class TypeUseScan : ISignatureTypeProvider<ImmutableArray<TypeDe
     {
         var uses = UsesOf(Outermost(handle));
         var type = _metadata.GetTypeDefinition(handle);
-        Add(uses, Types(type.BaseType));
+        Add(uses, ListTypesNamedBy(type.BaseType));
         foreach (var implementation in type.GetInterfaceImplementations())
         {
-            Add(uses, Types(_metadata.GetInterfaceImplementation(implementation).Interface));
+            Add(uses, ListTypesNamedBy(_metadata.GetInterfaceImplementation(implementation).Interface));
         }
 
         foreach (var field in type.GetFields())
@@ -70,7 +70,7 @@ internal sealed class TypeUseScan : ISignatureTypeProvider<ImmutableArray<TypeDe
             var operandType = opCode.GetOperandType();
             if (operandType is OperandType.Field or OperandType.Method or OperandType.Tok or OperandType.Type)
             {
-                Add(uses, Types(MetadataTokenHelpers.EntityHandleOrNil(il.ReadInt32())));
+                Add(uses, ListTypesNamedBy(MetadataTokenHelpers.EntityHandleOrNil(il.ReadInt32())));
             }
             else
             {
@@ -98,9 +98,7 @@ internal sealed class TypeUseScan : ISignatureTypeProvider<ImmutableArray<TypeDe
         }
     }
 
-    /// <summary>The types of this assembly <paramref name="handle"/> names: a type, a member's type and
-    /// signature, or a generic instance's arguments.</summary>
-    private ImmutableArray<TypeDefinitionHandle> Types(EntityHandle handle)
+    private ImmutableArray<TypeDefinitionHandle> ListTypesNamedBy(EntityHandle handle)
     {
         if (handle.IsNil)
         {
@@ -125,10 +123,10 @@ internal sealed class TypeUseScan : ISignatureTypeProvider<ImmutableArray<TypeDe
                 var signature = memberKind == MemberReferenceKind.Field
                     ? member.DecodeFieldSignature(this, null)
                     : Flatten(member.DecodeMethodSignature(this, null));
-                return [.. Types(member.Parent), .. signature];
+                return [.. ListTypesNamedBy(member.Parent), .. signature];
             case HandleKind.MethodSpecification:
                 var specification = _metadata.GetMethodSpecification((MethodSpecificationHandle)handle);
-                return [.. Types(specification.Method), .. specification.DecodeSignature(this, null).SelectMany(static a => a)];
+                return [.. ListTypesNamedBy(specification.Method), .. specification.DecodeSignature(this, null).SelectMany(static a => a)];
             default:
                 return [];
         }
@@ -174,7 +172,7 @@ internal sealed class TypeUseScan : ISignatureTypeProvider<ImmutableArray<TypeDe
     public ImmutableArray<TypeDefinitionHandle> GetTypeFromSpecification(MetadataReader reader, object? context, TypeSpecificationHandle handle,
         byte rawTypeKind)
     {
-        return Types(handle);
+        return ListTypesNamedBy(handle);
     }
 
     public ImmutableArray<TypeDefinitionHandle> GetPrimitiveType(PrimitiveTypeCode typeCode)

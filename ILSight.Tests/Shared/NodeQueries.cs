@@ -29,14 +29,13 @@ internal static class NodeQueries
         return await node.GetChildAsync(path);
     }
 
-    /// <summary>The child labelled <paramref name="text"/>; the one the source declared when the
-    /// compiler made up another of the same label, as it does for an event's field.</summary>
     private static async Task<BrowseNode> GetChildNamedAsync(BrowseNode node, string text)
     {
         var children = await node.ListChildrenAsync();
         var named = children
             .Where(c => c.Text == text)
             .ToList();
+        // The compiler makes up another child of the same label, as it does for an event's field.
         if (named.Count > 1)
         {
             named = named.FindAll(IsSourceDeclared);

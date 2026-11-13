@@ -7,7 +7,6 @@ public sealed class ReferenceReferencesTests
     private const string Runtime = "System.Runtime";
     private const string CoreLib = "System.Private.CoreLib";
 
-    /// <summary>The test assembly's reference to System.Runtime.</summary>
     private static async Task<BrowseNode> RuntimeReferenceAsync(LoadedAssembly assembly)
     {
         return await assembly.ReadRootAsync().GetChildAsync("References", Runtime);

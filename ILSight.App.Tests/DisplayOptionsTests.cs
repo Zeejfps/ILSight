@@ -119,8 +119,6 @@ public sealed class DisplayOptionsTests
         Assert.Equal(view.TextLeft + 6 * CodeViewDriver.Cell, brackets.Max(b => b.X));
     }
 
-    /// <summary>"a = b + a;" over a line of nothing, a and b locals: the pointer rests on the second line so
-    /// it marks nothing itself.</summary>
     private static DecompiledDocument Locals()
     {
         var a = new CodeReference.Local { Name = "a", Key = 0, Scope = null };
@@ -133,6 +131,7 @@ public sealed class DisplayOptionsTests
         builder.Write("a", SpanKind.Local, a);
         builder.Write(";", SpanKind.Plain);
         builder.WriteLine();
+        // A line of nothing for the pointer to rest on, so it marks nothing itself.
         builder.Write("          ", SpanKind.Plain);
         return builder.BuildDocument("locals");
     }
@@ -515,10 +514,9 @@ public sealed class DisplayOptionsTests
         Assert.Contains(app.Frames.TextRects(), t => t.Text.StartsWith("A monospaced", StringComparison.Ordinal) && t.Text.EndsWith('…'));
     }
 
-    /// <summary>The display options of a window <paramref name="width"/> wide, with a user icon theme of
-    /// a long name, so both theme pickers are sized for more than the pane leaves them.</summary>
     private static AppDriver NarrowThemeRows(TempDir temp, float width)
     {
+        // An icon theme of a long name, so both theme pickers are sized for more than the pane leaves them.
         temp.Write("icon-themes/shapes.json", """{ "name": "Shapes with a long name" }""");
         var app = new AppDriver(width: width, settings: temp.Settings());
         ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
@@ -526,8 +524,6 @@ public sealed class DisplayOptionsTests
         return app;
     }
 
-    /// <summary>Asserts that every control of the interface card ends inside it and that its six icon
-    /// buttons keep their size.</summary>
     private static void AssertNothingOverflows(AppDriver app)
     {
         var theme = app.Theme;
@@ -544,9 +540,9 @@ public sealed class DisplayOptionsTests
         Assert.All(buttons, r => Assert.Equal(theme.IconButtonSize, r.Height, 0.5f));
     }
 
-    /// <summary>The raised card of the interface section, around the color theme's picker.</summary>
     private static UiRect InterfaceCard(AppDriver app)
     {
+        // The color theme's picker shows "Dark"; the interface section's raised card is the smallest around it.
         var picker = app.Frames.TextRect("Dark");
         return FilledWith(app, app.Theme.Surface)
             .Where(r => r.X <= picker.X && r.Y <= picker.Y && r.Bottom >= picker.Bottom)

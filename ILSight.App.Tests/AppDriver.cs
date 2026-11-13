@@ -152,7 +152,6 @@ internal sealed class AppDriver
         Frames.Settle(AppStateDriver.SettleSeconds);
     }
 
-    /// <summary>Runs frames without advancing time, each pumping the app state first, until none is asked for.</summary>
     private void RunFramesInPlace()
     {
         Frames.WaitUntil(static () => true, AppStateDriver.Patience);
@@ -232,8 +231,6 @@ internal sealed class AppDriver
         return rects[rects.Count - 1];
     }
 
-    /// <summary>The texts reading <paramref name="title"/> drawn highest, in the order drawn: tab titles,
-    /// over the omnibar and the tree that name the same node.</summary>
     private List<UiRect> ListTabTitleRects(string title)
     {
         var rects = Frames.TextRects()
@@ -245,6 +242,7 @@ internal sealed class AppDriver
             throw new InvalidOperationException($"'{title}' was not drawn.");
         }
 
+        // Tab titles are drawn highest, over the omnibar and the tree that name the same node.
         var top = rects.Min(r => r.Y);
         return rects
             .Where(r => r.Y < top + 0.5f)

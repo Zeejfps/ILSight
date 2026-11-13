@@ -13,13 +13,12 @@ public sealed class DecompileIntoTabHandlerTests
         Caret = default,
     });
 
-    /// <summary>Cancels <paramref name="shutdown"/> at once, as the workflow runner does as the app shuts down.</summary>
+    // The workflow runner cancels it at once as the app shuts down.
     private static void ShutDown(CancellationTokenSource shutdown)
     {
         shutdown.Cancel();
     }
 
-    /// <summary>The first tab of a navigation whose view commands go to <paramref name="viewCommands"/>.</summary>
     private static (Navigation Navigation, DocumentTab Tab) FirstTab(Queue<ViewCommand> viewCommands)
     {
         var navigation = new Navigation { ViewCommands = viewCommands, PreviewTabs = false };

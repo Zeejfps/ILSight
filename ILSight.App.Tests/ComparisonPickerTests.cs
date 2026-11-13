@@ -9,7 +9,6 @@ public sealed class ComparisonPickerTests
     private static readonly string OlderPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "ApiDiff", "Older", "ApiDiffSample.dll");
     private static readonly string NewerPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "ApiDiff", "Newer", "ApiDiffSample.dll");
 
-    /// <summary>A driver that opened the fixture assembly, then both versions of the sample library.</summary>
     private static AppStateDriver OpenThree()
     {
         var d = AppStateDriver.Opened();

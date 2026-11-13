@@ -449,20 +449,16 @@ public sealed class BookmarkTests : IDisposable
         Assert.Equal([1f, 1f, 4f, 1f], restored);
     }
 
-    /// <summary>Imports the bookmarks in the file at <paramref name="path"/> as the bookmarks panel asks for it.</summary>
     private static void ImportBookmarks(AppStateDriver d, string path)
     {
         d.Start((a, ct) => a.BookmarkImporting.ImportAsync(a.Bookmarks, a.Imports, path, ct));
     }
 
-    /// <summary>Takes the bookmarks <paramref name="import"/> waits with as <paramref name="mode"/> says, as the
-    /// import dialog asks for it.</summary>
     private static void FinishBookmarkImport(AppStateDriver d, PendingImport import, BookmarkImportMode? mode)
     {
         d.AppState.BookmarkImporting.FinishImport(d.AppState.Bookmarks, d.AppState.Imports, import, mode);
     }
 
-    /// <summary>Exports the bookmarks to the file at <paramref name="path"/> as the bookmarks panel asks for it.</summary>
     private static void ExportBookmarks(AppStateDriver d, string path)
     {
         d.AppState.ExportBookmarksHandler.Handle(d.AppState.Bookmarks, path);
@@ -632,8 +628,7 @@ public sealed class BookmarkTests : IDisposable
         return _temp.Write("ILSpy.Bookmarks.json", $$"""{ "Version": 1, "Bookmarks": [ {{records}} ] }""");
     }
 
-    /// <summary>A bookmark as ILSpy writes one in <c>Outline</c>, on the member <paramref name="token"/> names, which
-    /// ILSpy records the full name of, <c>Outline.Third</c> unless <paramref name="memberName"/> says otherwise.</summary>
+    // ILSpy records the full name of the member token names as well as the token.
     private static string Record(string name, string kind, int token, int ilOffset, int lineNumber, string treePath, string? file = null,
         string memberName = Fixtures + ".Outline.Third")
     {

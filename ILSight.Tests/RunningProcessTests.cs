@@ -261,13 +261,11 @@ public sealed class RunningProcessTests
         await Assert.ThrowsAsync<OperationCanceledException>(() => IsTakenForUnreachableAsync(new OperationCanceledException()));
     }
 
-    /// <summary>Whether asking a process that fails with <paramref name="failure"/> answers that it is unreachable.</summary>
     private static Task<bool> IsTakenForUnreachableAsync(Exception failure)
     {
         return RunningProcesses.AskUnlessUnreachableAsync(_ => Task.FromException<bool>(failure), static _ => true, CancellationToken.None);
     }
 
-    /// <summary>A nettrace stream holding a trace object and one block of <paramref name="block"/>'s type.</summary>
     private static byte[] WriteTrace(string block, byte[] content, int? claimedSize = null)
     {
         using var buffer = new MemoryStream();
@@ -330,13 +328,12 @@ public sealed class RunningProcessTests
         return RunningProcesses.FindEntryAssembly(CreateProcess(entryName: null, commandLine), [], exists ?? FilesAt())?.Text;
     }
 
-    /// <summary>An absolute path to <paramref name="name"/> in a folder that need not exist.</summary>
+    // The folder need not exist.
     private static string AppFile(string name)
     {
         return Path.GetFullPath(Path.Combine(Path.GetTempPath(), "ILSightApps", name));
     }
 
-    /// <summary>A file check that finds exactly <paramref name="paths"/>.</summary>
     private static Func<string, bool> FilesAt(params string[] paths)
     {
         var files = new HashSet<string>(paths, StringComparer.Ordinal);

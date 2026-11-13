@@ -24,16 +24,14 @@ public sealed class CodeViewTooltipTests
         return view;
     }
 
-    /// <summary>Runs the hover out: its delay, the lookup it starts in the background, and the delay before the
-    /// tooltip shows what the lookup found; then <paramref name="text"/> is drawn.</summary>
     private static void RunUntilDrawn(CodeViewDriver view, string text)
     {
         RunOut(view);
         Assert.True(view.Frames.Drew(text), $"'{text}' was not drawn");
     }
 
-    /// <summary>Runs the hover out: its delay, any lookup it starts in the background, and the delay before the
-    /// tooltip shows what the lookup found.</summary>
+    // A hover waits out a delay, may start a lookup in the background, then waits another delay before the tooltip
+    // shows what the lookup found.
     private static void RunOut(CodeViewDriver view)
     {
         view.Frames.Settle(AppStateDriver.SettleSeconds);
@@ -41,9 +39,9 @@ public sealed class CodeViewTooltipTests
         view.Frames.Settle(AppStateDriver.SettleSeconds);
     }
 
-    /// <summary>Whether a tooltip is drawn: text in the tooltip's text size, not the code's.</summary>
     private static bool IsTooltipDrawn(CodeViewDriver view)
     {
+        // Only the tooltip draws text in a size other than the code's.
         return view.Frames.Canvas.Texts.Any(static t => t.Inputs.Style.FontSize.Value != UiTheme.Dark.MonoFontSize);
     }
 
@@ -99,9 +97,9 @@ public sealed class CodeViewTooltipTests
         Assert.Equal(greeting.X, name.X);
     }
 
-    /// <summary>Where the tooltip drew <paramref name="text"/>: in the tooltip's text size, not the code's.</summary>
     private static UiRect TooltipText(CodeViewDriver view, string text)
     {
+        // Only the tooltip draws text in a size other than the code's.
         var drawn = view.Frames.Canvas.Texts
             .Where(t => t.Inputs.Text == text)
             .Single(t => t.Inputs.Style.FontSize.Value != UiTheme.Dark.MonoFontSize);

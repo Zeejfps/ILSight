@@ -14,11 +14,9 @@ public sealed class DiagramViewTests
     private const string VehicleDiagram = "Vehicle diagram";
     private const float Near = 0.5f;
 
-    /// <summary>How far in from the diagram's left its toolbar draws its first icon.</summary>
+    // How far in from the diagram's left its toolbar draws its first icon.
     private const float ToolbarInset = 20f;
 
-    /// <summary>An app that picked <paramref name="item"/> from the tree menu of the fixture
-    /// <paramref name="type"/>, with the diagram it shows laid out.</summary>
     private static async Task<AppDriver> PickFromTreeAsync(string type, string item)
     {
         var app = AppDriver.Opened();
@@ -29,7 +27,6 @@ public sealed class DiagramViewTests
         return app;
     }
 
-    /// <summary>Waits for the active tab's diagram to be laid out as it is now, and runs its cards' move out.</summary>
     private static void SettleDiagram(AppDriver app)
     {
         app.RunOut();
@@ -118,12 +115,11 @@ public sealed class DiagramViewTests
         return ListDiagramTabs(app).Single();
     }
 
-    /// <summary>The texts drawn below the diagram's toolbar and right of where it starts: the diagram's,
-    /// not the tree's.</summary>
     private static List<(string Text, UiRect Rect)> ListDiagramTexts(AppDriver app)
     {
         var zoomOut = app.TextRect(BuiltInGlyphs.Icons.ResourceZoomOut);
         var left = zoomOut.X - ToolbarInset;
+        // Texts below the diagram's toolbar and right of where it starts are the diagram's, not the tree's.
         return app.Frames.TextRects()
             .Where(t => t.Rect.X >= left)
             .Where(t => t.Rect.Y > zoomOut.Bottom)
@@ -135,7 +131,6 @@ public sealed class DiagramViewTests
         return ListDiagramTexts(app).Any(t => t.Text == text);
     }
 
-    /// <summary>Where <paramref name="text"/> was last drawn on the diagram.</summary>
     private static UiRect CardText(AppDriver app, string text)
     {
         return ListDiagramTexts(app).Last(t => t.Text == text).Rect;
@@ -158,7 +153,6 @@ public sealed class DiagramViewTests
         return new PointF(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
     }
 
-    /// <summary>Clicks a little in from the left of the text drawn in <paramref name="rect"/>.</summary>
     private static void ClickAt(AppDriver app, UiRect rect)
     {
         app.Frames.Click(rect.X + 4f, rect.Y + rect.Height / 2).Frame();
@@ -332,8 +326,6 @@ public sealed class DiagramViewTests
         Assert.NotEqual(MouseCursor.Hand, app.Frames.Cursor);
     }
 
-    /// <summary>Whether <paramref name="line"/> is a level rule starting at the left of the text drawn in
-    /// <paramref name="text"/>, within its row.</summary>
     private static bool IsUnderOf(AppDriver app, RecordedLine line, UiRect text)
     {
         var start = line.Inputs.Start;

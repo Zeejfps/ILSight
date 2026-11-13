@@ -10,7 +10,6 @@ public sealed class LoadOptionsTests
         return DecompilerToggles.SetToggle(DecompilerOptions.Default, toggle, false);
     }
 
-    /// <summary>A list that reads with <paramref name="options"/>, having opened the test assembly.</summary>
     private static (AssemblyList List, LoadedModule Assembly) OpenWith(DecompilerOptions options)
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };

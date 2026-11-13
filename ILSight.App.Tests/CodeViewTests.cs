@@ -11,7 +11,6 @@ public sealed class CodeViewTests
 {
     private const float ViewHeight = 300f - 2 * CodeViewDriver.Origin;
 
-    /// <summary>The built-in light theme, as the app finds it among the themes it lists.</summary>
     private static readonly AppTheme Light = Theming.CreateCatalog(BuiltInThemes.Files).GetTheme(Theming.LightId);
 
     private static async Task<(CodeViewDriver View, int Line, int Column)> GreeterAtAsync(string text)

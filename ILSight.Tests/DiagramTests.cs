@@ -17,7 +17,6 @@ public sealed class DiagramTests : IDisposable
         return ClassDiagrams.BuildModel(Trees.TestAssembly, main, null, CancellationToken.None);
     }
 
-    /// <summary>The main module of <paramref name="module"/>'s type system, as read.</summary>
     private static async Task<MetadataModule> MainOfAsync(LoadedModule module)
     {
         var read = await LoadedAssemblies.ReadTypeSystemAheadAsync(module, CancellationToken.None);

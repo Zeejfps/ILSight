@@ -16,7 +16,7 @@ public sealed class UnresolvedReferenceTests : IDisposable
         _temp.Dispose();
     }
 
-    /// <summary>A type whose base type ILSight.Core defines.</summary>
+    // Its base type is defined in ILSight.Core.
     private sealed class Detached : GridSchema;
 
     private (AssemblyList List, LoadedModule Assembly) OpenAlone()

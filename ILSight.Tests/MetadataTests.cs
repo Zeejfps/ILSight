@@ -559,8 +559,7 @@ public sealed class MetadataTests
         }));
     }
 
-    /// <summary>An assembly whose metadata logs two changes to its one type, as an edit and continue
-    /// delta does, and maps that type's row.</summary>
+    // An edit and continue delta logs the changes to a type and maps its row.
     private static string WriteEditAndContinueAssembly(TempDir temp)
     {
         var metadata = new MetadataBuilder();

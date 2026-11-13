@@ -6,8 +6,6 @@ namespace ILSight.App.Tests;
 /// asks with.</summary>
 public sealed class AppUpdatesTests
 {
-    /// <summary>Answers each port member with what the test set; keeps what was asked and the tokens it was asked
-    /// with.</summary>
     private sealed class FakePorts : AppUpdates.IPorts
     {
         public bool IsInstalledCopy { get; init; } = true;
@@ -64,7 +62,6 @@ public sealed class AppUpdatesTests
         return AnswerAsync(new Outcome<UpdateInfo?>.Ok(Update(version)));
     }
 
-    /// <summary>Starts a check as the about dialog does, then runs it as the edge does; nothing when none started.</summary>
     private static Task CheckAsync(AppUpdates updates, bool asked, CancellationToken ct)
     {
         var check = updates.StartCheck(asked);
@@ -76,7 +73,6 @@ public sealed class AppUpdatesTests
         return updates.CheckAsync(check, ct);
     }
 
-    /// <summary>Starts a restart as the about dialog does, then runs it as the edge does; nothing when none started.</summary>
     private static Task RestartAsync(AppUpdates updates, Queue<ViewCommand> viewCommands, CancellationToken ct)
     {
         var restart = updates.StartRestart();

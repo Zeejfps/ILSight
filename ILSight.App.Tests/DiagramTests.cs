@@ -30,8 +30,6 @@ public sealed class DiagramTests
         return diagram;
     }
 
-    /// <summary>Shows the fixture <paramref name="type"/> on the diagram last worked in, as the views ask for it, and
-    /// waits until its cards are in.</summary>
     private static async Task ShowInAsync(AppStateDriver d, string type)
     {
         DiagramView.ShowInDiagramLater(d.Ui, await TypeOfAsync(d, type), Names.Diagram(await TypeOfAsync(d, type)));

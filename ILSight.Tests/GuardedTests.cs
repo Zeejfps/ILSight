@@ -188,7 +188,6 @@ public sealed class GuardedTests
         Assert.Equal(threads * rounds, total.Value);
     }
 
-    /// <summary>Whether a thread other than this one gets in within a moment.</summary>
     private static bool IsFreeFromAnotherThread(Guarded<int> guarded)
     {
         var entered = new ManualResetEventSlim();

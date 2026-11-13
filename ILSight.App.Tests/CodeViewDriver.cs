@@ -59,8 +59,7 @@ internal sealed class CodeViewDriver
         StartAskedLookups();
     }
 
-    /// <summary>Starts looking up the tooltips the view asked for while it drew, as the app's frame edge does, over
-    /// the assemblies they are of.</summary>
+    // In the app, its frame edge starts the lookups the view asked for while it drew; this driver has no edge.
     private void StartAskedLookups()
     {
         var tooltips = Tooltips;

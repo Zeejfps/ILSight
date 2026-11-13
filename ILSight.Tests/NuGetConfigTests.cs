@@ -143,11 +143,9 @@ public sealed class NuGetConfigTests
         Assert.Equal(Path.GetFullPath(Path.Combine(Home, "restored")), config.GlobalPackagesFolder);
     }
 
-    /// <summary>A home folder that need not exist; nothing is read from it.</summary>
+    // Need not exist; nothing is read from it.
     private static string Home => Path.Combine(Path.GetTempPath(), "ilsight-home");
 
-    /// <summary>An environment with <see cref="Home"/> as the home folder, <paramref name="packagesFolder"/> as
-    /// <c>NUGET_PACKAGES</c>, and no variables to expand.</summary>
     private static NuGetEnvironment CreateEnvironment(string? packagesFolder)
     {
         return new NuGetEnvironment { HomeFolder = Home, PackagesFolderVariable = packagesFolder, ExpandVariables = static text => text };

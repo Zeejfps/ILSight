@@ -141,8 +141,6 @@ public sealed class PathIdentityTests : IDisposable
         Assert.Equal("lib", found[0]?.Parent?.Text);
     }
 
-    /// <summary>Asserts <paramref name="nodes"/> are two nodes of one label, named apart, and each found
-    /// again in another list that opens the file at <paramref name="path"/>.</summary>
     private static async Task AssertSameLabelAndEachFoundAgainAsync(string path, BrowseNode[] nodes)
     {
         Assert.Equal(2, nodes.Length);
@@ -162,8 +160,6 @@ public sealed class PathIdentityTests : IDisposable
         Assert.Equal(nodes.Select(static n => n.Path), found.OfType<BrowseNode>().Select(static f => f.Path));
     }
 
-    /// <summary>Gives the first entry of the debug directory of the file at <paramref name="path"/> of type
-    /// <paramref name="from"/> the type <paramref name="to"/>.</summary>
     private static void RetypeDebugEntry(string path, DebugDirectoryEntryType from, DebugDirectoryEntryType to)
     {
         const int entrySize = 28;
@@ -182,8 +178,7 @@ public sealed class PathIdentityTests : IDisposable
         File.WriteAllBytes(path, bytes);
     }
 
-    /// <summary>A package holding the fixture library under <c>lib/net10.0</c>, which is merged into one
-    /// folder unless <paramref name="withNotes"/> puts a file beside it in <c>lib</c>.</summary>
+    // lib/net10.0 is merged into one folder unless a file stands beside net10.0 in lib.
     private static void WritePackage(string path, bool withNotes)
     {
         File.Delete(path);

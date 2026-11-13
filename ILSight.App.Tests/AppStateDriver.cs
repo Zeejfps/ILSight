@@ -48,8 +48,6 @@ internal sealed class AppStateDriver
         WaitForTheStart();
     }
 
-    /// <summary>A driver over <paramref name="restored"/>, which starts the app as its window's startup does
-    /// (<see cref="AppStart.Start"/>), with no arguments waiting.</summary>
     private AppStateDriver(PostedActions posted, RestoredApp restored)
         : this(posted, restored.AppState, restored.Screen)
     {
@@ -64,8 +62,7 @@ internal sealed class AppStateDriver
         return new FakeAppUpdatesPorts(null) { IsInstalledCopy = false };
     }
 
-    /// <summary>A driver over <paramref name="appState"/> and <paramref name="ui"/>, the screen over it, if any, which
-    /// <paramref name="posted"/> took the test's posts for before the root built them.</summary>
+    // posted took the test's posts before the root built appState and ui.
     private AppStateDriver(PostedActions posted, AppState appState, UiState? ui)
     {
         _posted = posted;
@@ -87,7 +84,6 @@ internal sealed class AppStateDriver
         return loadResult;
     }
 
-    /// <summary>Has the settings in <paramref name="loadResult"/> speak English unless they name a locale.</summary>
     private static void SpeakEnglishUnlessNamed(SettingsLoadResult loadResult)
     {
         loadResult.Settings.Locale ??= Locale.En;
@@ -253,7 +249,6 @@ internal sealed class AppStateDriver
         await work;
     }
 
-    /// <summary>Runs what was posted, each run a turn, until <paramref name="work"/> has ended; nothing when it has.</summary>
     private void RunPostsUntil(Task work)
     {
         if (work.IsCompleted)
@@ -331,8 +326,6 @@ internal sealed class AppStateDriver
             && !IsSearching() && appState.Navigation.OpenTabs.All(IsShownWhole) && _posted.IsEmpty;
     }
 
-    /// <summary>Whether <paramref name="tab"/> shows nothing on its way, as it draws it: no code loading, no diagram
-    /// reading cards or laying them out, no comparison running.</summary>
     private static bool IsShownWhole(DocumentTab tab)
     {
         if (tab.Load.IsBusy)

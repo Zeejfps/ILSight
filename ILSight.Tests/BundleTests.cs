@@ -9,7 +9,7 @@ public sealed class BundleTests
     private const string BundleName = "App.exe";
     private const string TestAssemblyName = "ILSight.Tests";
 
-    /// <summary>The SHA-256 of ".net core bundle", which the host carries right after the offset of the manifest.</summary>
+    // The SHA-256 of ".net core bundle", which the host carries right after the offset of the manifest.
     private static readonly byte[] Signature =
     [
         0x8b, 0x12, 0x02, 0xb9, 0x6a, 0x61, 0x20, 0x38,
@@ -117,9 +117,8 @@ public sealed class BundleTests
             ("App.deps.json", Encoding.UTF8.GetBytes("{}"), false, 0));
     }
 
-    /// <summary>A bundle as the SDK lays one out: the host, which carries the manifest's offset and the
-    /// signature; each file, deflated when asked; then a version 6 manifest. A file's declared size is
-    /// its own unless <c>ClaimedSize</c> says otherwise.</summary>
+    // As the SDK lays a bundle out: the host, which carries the manifest's offset and the signature; each file; then
+    // a version 6 manifest.
     private static string WriteBundle(TempDir temp, params (string Path, byte[] Data, bool Compress, long ClaimedSize)[] files)
     {
         using var stream = new MemoryStream();

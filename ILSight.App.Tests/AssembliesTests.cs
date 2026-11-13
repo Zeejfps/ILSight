@@ -18,7 +18,6 @@ public sealed class AssembliesTests
         return Assert.IsType<AssemblyPath>(AssemblyPath.Parse(Path.Combine(Path.GetTempPath(), file)));
     }
 
-    /// <summary>The lookups of the nodes reopened tabs wait for among <paramref name="loads"/>.</summary>
     private static List<ReopenedNodesLookup> ListLookups(TabLoads loads)
     {
         var lookups = new List<ReopenedNodesLookup>();
@@ -26,7 +25,6 @@ public sealed class AssembliesTests
         return lookups;
     }
 
-    /// <summary>The decompiles among <paramref name="loads"/>.</summary>
     private static List<DecompileTicket> ListDecompiles(TabLoads loads)
     {
         var decompiles = new List<DecompileTicket>();

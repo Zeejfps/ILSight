@@ -16,7 +16,6 @@ public sealed class TypeLayoutTests
 
     private static readonly SharedRead<ZooTypes> s_zoo = new(ReadZooAsync);
 
-    /// <summary>The zoo's types the layouts arrange, and the links between them.</summary>
     private sealed class ZooTypes
     {
         public required CodeReference.Entity Animal { get; init; }

@@ -16,7 +16,6 @@ public sealed class ComparisonTests
     private static readonly string LeftPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "ApiDiff", "Older", "ApiDiffSample.dll");
     private static readonly string RightPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "ApiDiff", "Newer", "ApiDiffSample.dll");
 
-    /// <summary>A driver that opened both versions of the sample library, the left first.</summary>
     private static AppStateDriver OpenBoth()
     {
         var d = new AppStateDriver();
@@ -31,7 +30,6 @@ public sealed class ComparisonTests
         return d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == path);
     }
 
-    /// <summary>Compares <paramref name="assembly"/> with <paramref name="other"/> and waits for the comparison.</summary>
     private static AssemblyComparison Compare(AppStateDriver d, string assembly, string other)
     {
         d.StartComparing(Comparisons.CompareAssemblies(d.AppState.Navigation, d.AppState.Assemblies, Opened(d, assembly), Opened(d, other),
@@ -44,7 +42,6 @@ public sealed class ComparisonTests
         return comparison;
     }
 
-    /// <summary>What the newest comparison of <paramref name="comparison"/> found; fails the test when it found nothing.</summary>
     private static ApiDiff DiffOf(AssemblyComparison comparison)
     {
         return Assert.IsType<ComparisonResult.Compared>(comparison.Result).Diff;
@@ -93,7 +90,6 @@ public sealed class ComparisonTests
         Assert.False(navigation.IsResolving);
     }
 
-    /// <summary>A driver that opened the fixture assembly, then both versions of the sample library.</summary>
     private static AppStateDriver OpenWithFixtures()
     {
         var d = AppStateDriver.Opened();
@@ -393,7 +389,6 @@ public sealed class ComparisonTests
         Assert.True(app.Frames.Drew("Only differences"));
     }
 
-    /// <summary>An app that compared the two versions of the sample library, the older on the left.</summary>
     private static AppDriver ComparedOnScreen()
     {
         var app = OpenBothOnScreen();
@@ -413,7 +408,6 @@ public sealed class ComparisonTests
         return app;
     }
 
-    /// <summary>Right-clicks the left assembly's row and picks Compare with… from its menu.</summary>
     private static void PickCompareWith(AppDriver app)
     {
         app.Frames.ClickOn(Targets.GetTreeRow(LeftName), PointerButton.Right).Frame();

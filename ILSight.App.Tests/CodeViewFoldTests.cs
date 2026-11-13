@@ -28,10 +28,9 @@ public sealed class CodeViewFoldTests
             .Select(g => string.Concat(g.OrderBy(r => r.X).Select(r => r.Text))).ToList();
     }
 
-    /// <summary>Whether the view draws the fold starting at the row holding <paramref name="start"/> folded: that row
-    /// with the chip standing for what the fold hides.</summary>
     private static bool ShowsFolded(CodeViewDriver view, string start)
     {
+        // A folded row ends with the chip standing for what the fold hides.
         return Rows(view).Single(r => r.Contains(start)).Contains('…');
     }
 

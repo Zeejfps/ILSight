@@ -7,7 +7,6 @@ public sealed class ReferencedTypesTests
     private const string ListLabel = "List<>";
     private const string ListNamespace = "System.Collections.Generic";
 
-    /// <summary>The used type <c>List&lt;T&gt;</c> under the reference the test assembly takes it from.</summary>
     private static async Task<BrowseNode> UsedListAsync(LoadedAssembly assembly)
     {
         var used = new List<BrowseNode>();

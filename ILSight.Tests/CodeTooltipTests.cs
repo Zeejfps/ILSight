@@ -31,7 +31,6 @@ public sealed class CodeTooltipTests
         return Assert.IsType<DocBlock.Paragraph>(block).Runs.Single(r => r.Text == text);
     }
 
-    /// <summary>The signature's text from each parameter's start to the next one's, the last to the end.</summary>
     private static List<string> ParameterTexts(CodeSignature signature)
     {
         var text = signature.Line.Text;

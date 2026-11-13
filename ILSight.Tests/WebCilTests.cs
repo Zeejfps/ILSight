@@ -5,11 +5,10 @@ namespace ILSight.Tests;
 
 public sealed class WebCilTests
 {
-    /// <summary>The magic and version every WebAssembly module starts with, followed here by nothing.</summary>
+    // The magic and version every WebAssembly module starts with, followed here by nothing.
     private static readonly byte[] WebAssemblyHeader = [0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00];
 
-    /// <summary>A copy of the WebCIL fixture over 64 KB in <paramref name="folder"/>, for a test that closes it and
-    /// replaces its file.</summary>
+    // The fixture is over 64 KB; a copy, since the test closes it and replaces its file.
     private static string CopyLargeApp(TempDir folder)
     {
         return folder.Write("LargeApp.wasm", File.ReadAllBytes(Trees.WebCilLargePath));
@@ -64,7 +63,6 @@ public sealed class WebCilTests
         Assert.False(File.Exists(path));
     }
 
-    /// <summary>What a search of <paramref name="module"/> for <paramref name="query"/> finds, every batch.</summary>
     private static async Task<List<SearchFind>> SearchAsync(LoadedModule module, SearchQuery query)
     {
         var found = new List<SearchFind>();
@@ -116,7 +114,6 @@ public sealed class WebCilTests
         Assert.NotNull(MetadataGrids.FindDefinition(grid, counter));
     }
 
-    /// <summary>What <paramref name="node"/> shows, a grid made with one page read.</summary>
     private static Task<NodeContent> ReadFirstPageAsync(BrowseNode node)
     {
         return NodeContentLoader.ReadContentAsync(TestSession.Shared, node, DecompilationLanguage.CSharp, DecompilerOptions.Default,

@@ -80,8 +80,6 @@ public sealed class BrowseSessionTests : IDisposable
         AssertShowsTheSame(BrowseNodes.Create(null, new NodeSubject.FailedAssembly { Value = failed }), session.EnsureRoot(failed));
     }
 
-    /// <summary>A fresh session's metadata folder of the test assembly, its header grids and "Tables" node built, the
-    /// tables not yet.</summary>
     private static async Task<(BrowseNode Header, BrowseNode Tables)> MetadataHeaderAndTablesAsync(BrowseSession session)
     {
         var root = session.EnsureRoot(Trees.TestAssembly);

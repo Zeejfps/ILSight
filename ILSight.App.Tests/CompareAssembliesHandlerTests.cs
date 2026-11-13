@@ -7,8 +7,6 @@ namespace ILSight.App.Tests;
 
 public sealed class CompareAssembliesHandlerTests
 {
-    /// <summary>A comparison of the fixture assembly with itself, started among <paramref name="d"/>'s open
-    /// assemblies.</summary>
     private static ComparisonRun StartComparing(AppStateDriver d, AssemblyComparison comparison)
     {
         var run = Comparisons.ChangeComparedScope(d.AppState.Assemblies, comparison, ApiScope.PublicApi);

@@ -4,7 +4,6 @@ namespace ILSight.Tests;
 
 public sealed class ModuleReferenceTests
 {
-    /// <summary>The References folder of the runtime's assembly <paramref name="name"/>.</summary>
     private static async Task<BrowseNode> ReferencesOfAsync(string name)
     {
         var path = RuntimeAssemblies.Find(TestRuntime.Installed, name);
@@ -13,7 +12,7 @@ public sealed class ModuleReferenceTests
         return await assembly.ReadRootAsync().GetChildAsync("References");
     }
 
-    /// <summary>The References folder of System.Private.CoreLib, which calls into native modules.</summary>
+    // System.Private.CoreLib calls into native modules.
     private static async Task<BrowseNode> CoreLibReferencesAsync()
     {
         return await ReferencesOfAsync("System.Private.CoreLib");
