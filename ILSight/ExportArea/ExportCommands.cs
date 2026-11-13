@@ -4,7 +4,8 @@ namespace ILSight.ExportArea;
 
 /// <summary>The edge where the exports the screen asks for start, once the frame is drawn: each is queued and its
 /// writing started as a workflow (<see cref="ExportWriting"/>), which waits for its turn; a resource or a single file of
-/// a package is written straight away.</summary>
+/// a package starts writing at once, as a workflow of its own, counted in the app's background work until it
+/// ends.</summary>
 [Edge]
 public static class ExportCommands
 {
@@ -19,18 +20,20 @@ public static class ExportCommands
             static (a, code) => StartWriting(a, code.Work));
     }
 
-    /// <summary>Writes the bytes of the resource <paramref name="node"/> stands for to the file at
-    /// <paramref name="path"/> straight away (<see cref="SaveResourceHandler"/>).</summary>
+    /// <summary>Starts writing the bytes of the resource <paramref name="node"/> stands for to the file at
+    /// <paramref name="path"/> (<see cref="SaveResourceHandler"/>), off the frame thread, on a token the app's shutdown
+    /// cancels.</summary>
     public static void SaveResource(AppState appState, BrowseNode node, string path)
     {
-        appState.SaveResourceHandler.Handle(node, path);
+        appState.Workflows.Start(nameof(SaveResourceHandler), ct => appState.SaveResourceHandler.HandleAsync(node, path, ct));
     }
 
-    /// <summary>Writes the file of a package <paramref name="place"/> stands for, as the package holds it, to the file
-    /// at <paramref name="path"/> straight away (<see cref="ExtractPackageFileHandler"/>).</summary>
+    /// <summary>Starts writing the file of a package <paramref name="place"/> stands for, as the package holds it, to
+    /// the file at <paramref name="path"/> (<see cref="ExtractPackageFileHandler"/>), off the frame thread, on a token
+    /// the app's shutdown cancels.</summary>
     public static void ExtractPackageFile(AppState appState, PackagePlace place, string path)
     {
-        appState.ExtractPackageFileHandler.Handle(place, path);
+        appState.Workflows.Start(nameof(ExtractPackageFileHandler), ct => appState.ExtractPackageFileHandler.HandleAsync(place, path, ct));
     }
 
     /// <summary>Exports what <paramref name="request"/> asks for: one assembly as a project straight into the folder,

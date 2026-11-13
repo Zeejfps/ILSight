@@ -117,6 +117,7 @@ public sealed class PackageBrowsingTests
 
         app.Frames.FilePicker.Answer = path;
         app.PickFromTreeMenu(assembly.Name, "Extract file…");
+        app.Settle();
 
         Assert.Equal(Path.GetFileName(AppStateDriver.FixturePath), app.Frames.FilePicker.LastSave.FileName);
         Assert.Equal(await File.ReadAllBytesAsync(AppStateDriver.FixturePath), await File.ReadAllBytesAsync(path));

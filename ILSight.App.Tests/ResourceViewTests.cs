@@ -254,10 +254,30 @@ public sealed class ResourceViewTests
         Directory.CreateDirectory(temp.Path);
         var path = temp.PathOf("data.json");
 
-        SaveResource(app.AppState, node, path);
+        app.Driver.InTurn(() => SaveResource(app.AppState, node, path));
+        app.Settle();
 
         Assert.Equal(BrowseNodes.ReadResource(node), await File.ReadAllBytesAsync(path));
         Assert.Empty(app.AppState.Errors.Entries);
+    }
+
+    [Fact]
+    public async Task Saving_a_resource_waits_off_the_frame_counted_as_work_under_way_until_written()
+    {
+        var (app, _) = await ShowResourceAsync("data.json");
+        var node = await app.NodeAsync("Resources", "data.json");
+        using var temp = new TempDir();
+        Directory.CreateDirectory(temp.Path);
+        var path = temp.PathOf("data.json");
+
+        app.Driver.InTurn(() => SaveResource(app.AppState, node, path));
+        var underWay = app.AppState.Work.Outstanding.ToList();
+        var writtenInTheTurn = File.Exists(path);
+        app.Settle();
+
+        Assert.Contains(nameof(SaveResourceHandler), underWay);
+        Assert.False(writtenInTheTurn);
+        Assert.Equal(BrowseNodes.ReadResource(node), await File.ReadAllBytesAsync(path));
     }
 
     [Fact]
@@ -274,6 +294,7 @@ public sealed class ResourceViewTests
 
         app.Driver.InTurn(() => CommandArea.Commands.CloseAssemblies(app.AppState, [module]));
         app.Driver.InTurn(() => SaveResource(app.AppState, node, path));
+        app.Settle();
         app.Run(2);
 
         Assert.True(app.Frames.Drew(t.ErrorSaveResource("data.json")));

@@ -21,8 +21,8 @@ internal sealed class FakeSaveResourceHandlerPorts : SaveResourceHandler.IPorts
         Refused.Add(refusal);
     }
 
-    public ResourceSave SaveResource(BrowseNode node, string path)
+    public Task<ResourceSave> SaveResourceAsync(BrowseNode node, string path, CancellationToken ct)
     {
-        return Answer;
+        return Task.FromResult(Answer);
     }
 }

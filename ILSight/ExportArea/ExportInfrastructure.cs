@@ -146,9 +146,10 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
             static failed => new ExportOutcome<T>.Failed(failed.Error));
     }
 
-    /// <remarks>Reads the resource under a reading of its module; one closed before answers
-    /// <see cref="ResourceSave.Closed"/>.</remarks>
-    public ResourceSave SaveResource(BrowseNode node, string path)
+    /// <remarks>Reads the resource under a reading of its module, held until the file is written; one closed before
+    /// answers <see cref="ResourceSave.Closed"/>. The resource is read (decoded, decompressed) on the thread pool and
+    /// written asynchronously, so the frame thread waits on neither.</remarks>
+    public async Task<ResourceSave> SaveResourceAsync(BrowseNode node, string path, CancellationToken ct)
     {
         using var reading = LoadedAssemblies.BeginReading();
         if (node.Assembly is LoadedModule module && !LoadedAssemblies.TryRead(reading, module))
@@ -158,8 +159,8 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
 
         try
         {
-            var bytes = BrowseNodes.ReadResource(node);
-            File.WriteAllBytes(path, bytes);
+            var bytes = await Task.Run(() => BrowseNodes.ReadResource(node), ct);
+            await File.WriteAllBytesAsync(path, bytes, ct);
             return new ResourceSave.Saved();
         }
         catch (IOException e)
@@ -176,12 +177,14 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
         }
     }
 
-    public Outcome ExtractPackageFile(PackagePlace place, string path)
+    /// <remarks>The file is read out of the package (decompressed) on the thread pool and written asynchronously, so
+    /// the frame thread waits on neither.</remarks>
+    public async Task<Outcome> ExtractPackageFileAsync(PackagePlace place, string path, CancellationToken ct)
     {
         try
         {
-            var bytes = AssemblyPackages.ReadFile(place.Container.Package, place.File);
-            File.WriteAllBytes(path, bytes);
+            var bytes = await Task.Run(() => AssemblyPackages.ReadFile(place.Container.Package, place.File), ct);
+            await File.WriteAllBytesAsync(path, bytes, ct);
             return new Outcome.Done();
         }
         catch (IOException e)

@@ -79,7 +79,8 @@ public sealed class ExportTests : IDisposable
         var path = _temp.PathOf("data.json");
 
         Assert.True(CanSaveCode(node));
-        SaveCode(d.AppState, node, path);
+        d.InTurn(() => SaveCode(d.AppState, node, path));
+        d.Settle();
 
         Assert.Equal(BrowseNodes.ReadResource(node), await File.ReadAllBytesAsync(path));
     }
