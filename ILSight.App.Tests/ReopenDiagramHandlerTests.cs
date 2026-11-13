@@ -82,4 +82,50 @@ public sealed class ReopenDiagramHandlerTests
         Assert.Same(error, problem.Error);
         Assert.Empty(read.Diagram.Cards);
     }
+
+    [Fact]
+    public async Task HandleAsync_ReadFailed_KeepsTheSavedTypesToSaveAndReadAgain()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var read = await ReopenAsync(d);
+        var ports = new FakeReopenDiagramHandlerPorts();
+
+        var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None));
+        Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<TypeCard>>>.Failed(new IOException("In use by another process.")));
+        await d.EndAsync(reading);
+
+        Assert.Empty(read.Diagram.Cards);
+        Assert.Equal(read.Saved.Types, read.Diagram.ListAnchors());
+    }
+
+    [Fact]
+    public async Task HandleAsync_ModuleUnreadable_KeepsItsTypeToSaveAndReadAgain()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var read = await ReopenAsync(d);
+        var ports = new FakeReopenDiagramHandlerPorts();
+        var module = d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
+        var unreadable = new Lookup<TypeCard>.Unreadable { Module = new UnreadableModule { Module = module, Why = new BadImageFormatException("Torn.") } };
+
+        var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None));
+        Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<TypeCard>>>.Ok([unreadable]));
+        await d.EndAsync(reading);
+
+        Assert.Empty(read.Diagram.Cards);
+        Assert.Equal(read.Saved.Types, read.Diagram.ListAnchors());
+    }
+
+    [Fact]
+    public async Task HandleAsync_TypeNotFound_DropsIt()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var read = await ReopenAsync(d);
+        var ports = new FakeReopenDiagramHandlerPorts();
+
+        var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None));
+        Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<TypeCard>>>.Ok([new Lookup<TypeCard>.NotFound()]));
+        await d.EndAsync(reading);
+
+        Assert.Empty(read.Diagram.ListAnchors());
+    }
 }

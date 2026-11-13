@@ -6,7 +6,9 @@ namespace ILSight.DiagramArea;
 /// <summary>Brings in the cards of a diagram made again: one reopened from the open list's saved documents
 /// (<see cref="Diagrams.ReopenDiagram"/>), or one going back to it made again once no tab showed it
 /// (<see cref="Navigation.GoToEntry"/>). Reads them through <see cref="IPorts"/> without holding up the screen, and
-/// reports a diagram whose cards could not be read, and names each module that could not be read a card is in.</summary>
+/// reports a diagram whose cards could not be read, and names each module that could not be read a card is in. The
+/// diagram keeps the types whose cards couldn't be read (<see cref="TypeDiagram.Keep"/>), so that saving it again saves
+/// them and its next reopening reads them again; it drops only those the open assemblies don't have.</summary>
 public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
 {
     public interface IPorts
@@ -34,7 +36,7 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
             return;
         }
 
-        TakeCards(read.Diagram, read.Saved.Title ?? string.Empty, cards);
+        TakeCards(read.Diagram, read.Saved.Title ?? string.Empty, read.Saved.Types, cards);
     }
 
     /// <summary>Brings in the cards <paramref name="read"/> started reading and adds them to its diagram, unless the
@@ -44,12 +46,12 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
     {
         var cards = await ports.ReadCardsAsync(read.Types, ct);
         read.Diagram.FinishReading();
-        TakeCards(read.Diagram, read.Title, cards);
+        TakeCards(read.Diagram, read.Title, read.Types, cards);
     }
 
-    /// <summary>Adds the cards read to <paramref name="diagram"/>, titled <paramref name="title"/>, unless it was closed
-    /// meanwhile, or reports why they could not be read.</summary>
-    private void TakeCards(TypeDiagram diagram, string title, Outcome<List<Lookup<TypeCard>>> cards)
+    /// <summary>Adds the cards read of <paramref name="types"/> to <paramref name="diagram"/>, titled
+    /// <paramref name="title"/>, unless it was closed meanwhile, or reports why they could not be read.</summary>
+    private void TakeCards(TypeDiagram diagram, string title, IReadOnlyList<TypeAnchor> types, Outcome<List<Lookup<TypeCard>>> cards)
     {
         if (diagram.IsClosed)
         {
@@ -57,16 +59,32 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
         }
 
         cards.Switch(
-            ok => AddFound(diagram, ok.Value),
+            ok => AddFound(diagram, types, ok.Value),
             failed => ports.ReportError(new AppProblem.DiagramNotReopened { Diagram = title, Error = failed.Error }));
     }
 
-    private void AddFound(TypeDiagram diagram, List<Lookup<TypeCard>> cards)
+    private void AddFound(TypeDiagram diagram, IReadOnlyList<TypeAnchor> types, List<Lookup<TypeCard>> cards)
     {
         diagram.AddCards(Lookup.ListFound(cards));
+        diagram.Forget(ListNotFound(types, cards));
         foreach (var unreadable in Lookup.ListUnreadable(cards))
         {
             ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable));
         }
+    }
+
+    /// <summary>The types of <paramref name="types"/> whose lookups, <paramref name="cards"/> in the same order, found
+    /// nothing.</summary>
+    private static List<TypeAnchor> ListNotFound(IReadOnlyList<TypeAnchor> types, List<Lookup<TypeCard>> cards)
+    {
+        var notFound = new List<TypeAnchor>();
+        for (var i = 0; i < cards.Count; i++)
+        {
+            if (cards[i] is Lookup<TypeCard>.NotFound)
+            {
+                notFound.Add(types[i]);
+            }
+        }
+        return notFound;
     }
 }

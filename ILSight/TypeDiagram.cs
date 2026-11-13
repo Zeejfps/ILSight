@@ -7,13 +7,20 @@ namespace ILSight;
 /// assemblies of the types the user put on it, and where its newest layout put them. The layout it holds
 /// is the newest that finished, which may not place the cards added since. Once closed, what is in flight
 /// for it is cancelled and its results dropped. Its cards, their links and its version change together, only
-/// through its methods. Mutated on the UI thread only.</summary>
+/// through its methods. It keeps the types it shows apart from their cards: a type made again whose card couldn't be
+/// read (the read failed, or its module couldn't be read) stays one of its types, saved with the rest and read again
+/// when the diagram is next made again, rather than lost with the card that never came. Mutated on the UI thread
+/// only.</summary>
 public sealed class TypeDiagram
 {
     private readonly List<TypeCard> _cards = new();
     private readonly HashSet<CodeReference.Entity> _types = new();
     private readonly List<TypeLink> _links = new();
     private readonly HashSet<AssemblyPath> _homeAssemblies = new();
+
+    /// <summary>The types it shows, in the order added: those with a card, those still read, and those whose card
+    /// couldn't be read.</summary>
+    private readonly List<TypeAnchor> _kept = new();
 
     /// <summary>The diagram's work in the background: its layout, one started cancelling the one before, whose
     /// result is then dropped; closing it closes the diagram, cancelling the reading of cards too.</summary>
@@ -74,6 +81,37 @@ public sealed class TypeDiagram
         }
 
         _cards.Add(card);
+        Keep(card.Anchor);
+    }
+
+    /// <summary>Takes <paramref name="types"/>, in order, as types it shows before their cards are read, as when it is
+    /// made again from what was saved: each stays one of its types until it is taken off, or found not to exist.</summary>
+    public void Keep(IReadOnlyList<TypeAnchor> types)
+    {
+        foreach (var type in types)
+        {
+            Keep(type);
+        }
+    }
+
+    private void Keep(TypeAnchor type)
+    {
+        if (_kept.Contains(type))
+        {
+            return;
+        }
+
+        _kept.Add(type);
+    }
+
+    /// <summary>Drops <paramref name="types"/>, kept without a card, which the open assemblies were found not to
+    /// have.</summary>
+    public void Forget(IReadOnlyList<TypeAnchor> types)
+    {
+        foreach (var type in types)
+        {
+            _kept.Remove(type);
+        }
     }
 
     /// <summary>Takes the card of <paramref name="type"/> off the diagram.</summary>
@@ -82,6 +120,12 @@ public sealed class TypeDiagram
         if (!_types.Remove(type))
         {
             return;
+        }
+
+        var removed = _cards.Find(c => c.Type == type);
+        if (removed is not null)
+        {
+            _kept.Remove(removed.Anchor);
         }
 
         _cards.RemoveAll(c => c.Type == type);
@@ -142,12 +186,11 @@ public sealed class TypeDiagram
         return _homeAssemblies.Contains(assemblyPath);
     }
 
-    /// <summary>The types the diagram shows, as its cards are in the order added, which make it again.</summary>
+    /// <summary>The types the diagram shows, in the order added, which make it again: those with a card, and those
+    /// kept whose card is still read or couldn't be read.</summary>
     public List<TypeAnchor> ListAnchors()
     {
-        return _cards
-            .Select(static c => c.Anchor)
-            .ToList();
+        return _kept.ToList();
     }
 
     /// <summary>Counts a read of cards for the diagram as started, until <see cref="FinishReading"/>.</summary>

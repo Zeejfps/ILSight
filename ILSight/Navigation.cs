@@ -854,6 +854,7 @@ public sealed class Navigation
         _intent.Begin();
         var diagram = new TypeDiagram();
         diagram.TakeHomes(place.HomeAssemblies);
+        diagram.Keep(place.Types);
         var id = ++_documents;
         var tab = GetOrOpenEmptyTab();
         _tabs.GetDocument(tab).ShowDiagram(diagram, place.Title, id);

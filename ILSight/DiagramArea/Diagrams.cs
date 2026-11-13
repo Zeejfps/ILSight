@@ -210,6 +210,7 @@ public static class Diagrams
     {
         var diagram = new TypeDiagram();
         diagram.TakeHomes(saved.HomeAssemblies);
+        diagram.Keep(saved.Types);
         navigation.RestoreDiagram(tab, diagram, saved.Title ?? string.Empty);
         return diagram;
     }
