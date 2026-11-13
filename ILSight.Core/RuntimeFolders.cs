@@ -112,7 +112,16 @@ public static class RuntimeFolders
             return result.ToImmutable();
         }
 
-        var version = ParseVersion(Path.GetFileName(runtime));
+        result.AddRange(ListSameVersionSiblings(sharedDir, frameworkDir, ParseVersion(Path.GetFileName(runtime))));
+        return result.ToImmutable();
+    }
+
+    /// <summary>The shared frameworks in <paramref name="sharedDir"/> beside <paramref name="frameworkDir"/>, the running
+    /// one, by name, each with its directory of the running runtime's <paramref name="version"/>; those with none left
+    /// out.</summary>
+    private static List<(string Framework, string Path)> ListSameVersionSiblings(string sharedDir, string frameworkDir, Version? version)
+    {
+        var siblings = new List<(string, string)>();
         foreach (var sibling in Directory.EnumerateDirectories(sharedDir).Order(StringComparer.OrdinalIgnoreCase))
         {
             if (string.Equals(sibling, frameworkDir, StringComparison.OrdinalIgnoreCase))
@@ -120,16 +129,25 @@ public static class RuntimeFolders
                 continue;
             }
 
-            var best = Directory.EnumerateDirectories(sibling)
-                .Select(dir => (Dir: dir, Version: ParseVersion(Path.GetFileName(dir))))
-                .Where(d => d.Version is not null && version is not null && d.Version.Major == version.Major && d.Version.Minor == version.Minor)
-                .MaxBy(d => d.Version);
-            if (best.Dir is not null)
+            var best = FindSameVersionDirectory(sibling, version);
+            if (best is not null)
             {
-                result.Add((Path.GetFileName(sibling), best.Dir));
+                siblings.Add((Path.GetFileName(sibling), best));
             }
         }
-        return result.ToImmutable();
+        return siblings;
+    }
+
+    /// <summary>The newest directory of the shared framework at <paramref name="framework"/> whose version has the major
+    /// and minor of <paramref name="version"/>, the running runtime's; null when none has, or that version is
+    /// unknown.</summary>
+    private static string? FindSameVersionDirectory(string framework, Version? version)
+    {
+        return Directory.EnumerateDirectories(framework)
+            .Select(dir => (Dir: dir, Version: ParseVersion(Path.GetFileName(dir))))
+            .Where(d => d.Version is not null && version is not null && d.Version.Major == version.Major && d.Version.Minor == version.Minor)
+            .MaxBy(d => d.Version)
+            .Dir;
     }
 
     private static Version? ParseVersion(string name)

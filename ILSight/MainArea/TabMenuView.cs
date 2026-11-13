@@ -96,10 +96,16 @@ internal static class TabMenuView
             CloseTabsLeftOf(screen, tab);
         }
 
-        if (ui.MenuItem(t.TabCloseRight, enabled: index < group.Count - 1, id: "close-right"))
+        if (ui.MenuItem(t.TabCloseRight, enabled: HasTabsRightOf(group, index), id: "close-right"))
         {
             CloseTabsRightOf(screen, tab);
         }
+    }
+
+    /// <summary>Whether a tab of <paramref name="group"/> stands right of the one at <paramref name="index"/>.</summary>
+    private static bool HasTabsRightOf(List<DocumentTab> group, int index)
+    {
+        return index < group.Count - 1;
     }
 
     /// <summary>The item keeping the tab open, with a separator after it, while it is the preview tab.</summary>

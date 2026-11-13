@@ -6,6 +6,24 @@ namespace ILSight.CodeViewArea;
 
 internal static class CodeText
 {
+    /// <summary>How many columns the widest row of <paramref name="document"/> takes: a line, or a fold's first line with
+    /// its collapsed text after it.</summary>
+    public static int CalculateMaxColumns(DecompiledDocument document)
+    {
+        var max = 0;
+        foreach (var line in document.Lines)
+        {
+            max = Math.Max(max, line.Text.Length);
+        }
+
+        foreach (var fold in document.Folds)
+        {
+            max = Math.Max(max, document.Lines[fold.StartLine].Text.Length + 1 + fold.CollapsedText.Length);
+        }
+
+        return max;
+    }
+
     public static string Between(DecompiledDocument document, TextPosition start, TextPosition end)
     {
         var lines = document.Lines;

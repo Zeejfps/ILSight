@@ -30,6 +30,15 @@ internal static class ModuleNodes
             result.Add(BrowseNodes.Create(parent, new NodeSubject.Resources { Owner = module }));
         }
 
+        var byNamespace = ListTypesByNamespace(main);
+        var forwardedByNamespace = ForwardedTypes.ListByNamespace(file.Metadata);
+        result.AddRange(ListNamespaceNodes(parent, module, byNamespace, forwardedByNamespace));
+        return result.ToArray();
+    }
+
+    /// <summary>The top-level types of <paramref name="main"/> by their namespace, those missing left out.</summary>
+    private static Dictionary<string, List<ITypeDefinition>> ListTypesByNamespace(MetadataModule main)
+    {
         var byNamespace = new Dictionary<string, List<ITypeDefinition>>(StringComparer.Ordinal);
         foreach (var type in main.TopLevelTypeDefinitions)
         {
@@ -45,9 +54,16 @@ internal static class ModuleNodes
 
             types.Add(type);
         }
-        var forwardedByNamespace = ForwardedTypes.ListByNamespace(file.Metadata);
+        return byNamespace;
+    }
 
+    /// <summary>A node for every namespace a type is in, defined or forwarded, or a name nests in, sorted by name, each
+    /// knowing the one it nests in.</summary>
+    private static List<BrowseNode> ListNamespaceNodes(BrowseNode parent, LoadedModule module, Dictionary<string, List<ITypeDefinition>> byNamespace,
+        Dictionary<string, List<ForwardedType>> forwardedByNamespace)
+    {
         var namespaces = new Dictionary<string, BrowseNode>(StringComparer.Ordinal);
+        var nodes = new List<BrowseNode>();
         var names = byNamespace.Keys
             .Union(forwardedByNamespace.Keys)
             .SelectMany(NamespaceNames.AndEnclosing)
@@ -55,16 +71,22 @@ internal static class ModuleNodes
             .Order(NaturalStringComparer.Instance);
         foreach (var name in names)
         {
-            var types = byNamespace.GetValueOrDefault(name, []);
-            var forwarded = forwardedByNamespace.GetValueOrDefault(name, [])
-                .Select(f => NodeDefinitions.CreateForwardedType(module, f))
-                .ToList();
-            var info = NodeDefinitions.CreateNamespace(module, name, types, forwarded);
+            var info = CreateNamespace(module, name, byNamespace.GetValueOrDefault(name, []), forwardedByNamespace.GetValueOrDefault(name, []));
             var node = BrowseNodes.Create(parent, new NodeSubject.Namespace { Value = info }, FindEnclosing(namespaces, name));
             namespaces.Add(name, node);
-            result.Add(node);
+            nodes.Add(node);
         }
-        return result.ToArray();
+        return nodes;
+    }
+
+    /// <summary>The namespace <paramref name="name"/> of <paramref name="module"/>, with the types it defines and those it
+    /// forwards.</summary>
+    private static NamespaceInfo CreateNamespace(LoadedModule module, string name, List<ITypeDefinition> types, List<ForwardedType> forwarded)
+    {
+        var forwardedTypes = forwarded
+            .Select(f => NodeDefinitions.CreateForwardedType(module, f))
+            .ToList();
+        return NodeDefinitions.CreateNamespace(module, name, types, forwardedTypes);
     }
 
     /// <summary>The namespace <paramref name="name"/> extends by a segment, made already, as names

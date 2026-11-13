@@ -143,12 +143,19 @@ public static class NuGetConfigs
             return;
         }
 
-        if (sources.Any(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase)))
+        if (IsNameTaken(sources, name))
         {
             return;
         }
 
         sources.Add(source);
+    }
+
+    /// <summary>Whether a source in <paramref name="sources"/> is named <paramref name="name"/>, whatever its case, as
+    /// NuGet compares source names.</summary>
+    private static bool IsNameTaken(List<NuGetSource> sources, string name)
+    {
+        return sources.Any(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>The folder restores put packages in: the one the environment names, else the config's,

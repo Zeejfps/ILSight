@@ -17,6 +17,19 @@ public static class Locales
         (Locale.ZhHans, "简体中文"),
     ];
 
+    /// <summary>Where <paramref name="locale"/> is in <see cref="All"/>; null when it isn't there.</summary>
+    public static int? FindIndex(Locale locale)
+    {
+        for (var i = 0; i < All.Count; i++)
+        {
+            if (All[i].Locale == locale)
+            {
+                return i;
+            }
+        }
+        return null;
+    }
+
     /// <summary>The locale for <paramref name="culture"/>'s language, or English when there is none.</summary>
     public static Locale For(CultureInfo culture)
     {

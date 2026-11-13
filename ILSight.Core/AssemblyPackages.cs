@@ -94,6 +94,14 @@ public static class AssemblyPackages
         }
 
         var tree = CreateTree();
+        var byName = AddBundleFiles(tree, entries);
+        return CreatePackage(tree, path, isBundle: true, file => BundleContents.Read(path.Text, byName[file.FullName]));
+    }
+
+    /// <summary>Adds a file to <paramref name="tree"/> for each of a bundle's <paramref name="entries"/> that names one;
+    /// answers the entries by the name each file has inside, the first one kept where names repeat.</summary>
+    private static Dictionary<string, SingleFileBundle.Entry> AddBundleFiles(FileTree tree, IEnumerable<SingleFileBundle.Entry> entries)
+    {
         var byName = new Dictionary<string, SingleFileBundle.Entry>(StringComparer.Ordinal);
         foreach (var entry in entries)
         {
@@ -106,7 +114,7 @@ public static class AssemblyPackages
             AddFile(tree, fullName, entry.Size);
             byName.TryAdd(fullName, entry);
         }
-        return CreatePackage(tree, path, isBundle: true, file => BundleContents.Read(path.Text, byName[file.FullName]));
+        return byName;
     }
 
     private static bool IsFolderName(string name)

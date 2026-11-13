@@ -377,19 +377,10 @@ internal static class DisplayOptionsPanelView
 
     private static void LanguagePicker(Ui<UiState> ui, Locale chosen)
     {
-        var locales = Locales.All;
-        int? current = null;
-        for (var i = 0; i < locales.Count; i++)
-        {
-            if (locales[i].Locale == chosen)
-            {
-                current = i;
-            }
-        }
-        var picked = PickFrom(ui, "language", LocaleLabels, current);
+        var picked = PickFrom(ui, "language", LocaleLabels, Locales.FindIndex(chosen));
         if (picked is not null)
         {
-            Commands.Later(ui.State, locales[picked.Value].Locale, static (a, locale) => a.Locale = locale);
+            Commands.Later(ui.State, Locales.All[picked.Value].Locale, static (a, locale) => a.Locale = locale);
         }
     }
 

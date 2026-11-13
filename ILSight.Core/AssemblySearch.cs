@@ -266,66 +266,94 @@ public static class AssemblySearch
         private static async Task ScanLiteralsAsync(Search search, LoadedModule assembly, MetadataModule main, CancellationToken ct)
         {
             var file = LoadedAssemblies.GetFile(assembly);
-            var reader = file.Metadata;
             var literal = SearchLiteral.FromQuery(search.Query);
+            await ScanMethodBodiesAsync(search, assembly, main, file, literal, ct);
+            await ScanConstantsAsync(search, assembly, main, file.Metadata, literal, ct);
+        }
+
+        /// <summary>Adds the methods whose body uses <paramref name="literal"/>, or what they were generated for.</summary>
+        private static async Task ScanMethodBodiesAsync(Search search, LoadedModule assembly, MetadataModule main, MetadataFile file, SearchLiteral literal,
+            CancellationToken ct)
+        {
+            var reader = file.Metadata;
             foreach (var handle in reader.MethodDefinitions)
             {
                 search.CancellationToken.ThrowIfCancellationRequested();
-                var method = reader.GetMethodDefinition(handle);
-                if (!method.HasBody())
-            {
-                continue;
-            }
-
-                var namespaceName = ReadNamespace(reader, reader.GetTypeDefinition(method.GetDeclaringType()));
-                if (!IsInNamespace(search, namespaceName))
-            {
-                continue;
-            }
-
-            BlobReader body;
-                try
+                var body = FindSearchedBody(search, file, handle);
+                if (body is not null && HasMatchInBody(search, body.Value, reader, literal))
                 {
-                    body = file.GetMethodBody(method.RelativeVirtualAddress).GetILReader();
+                    await AddResultOrAncestorAsync(search, assembly, main, handle, ct);
                 }
-                catch (BadImageFormatException)
-                {
-                    continue;
-                }
-                if (HasMatchInBody(search, body, reader, literal))
-            {
-                await AddResultOrAncestorAsync(search, assembly, main, handle, ct);
             }
         }
+
+        /// <summary>The IL of the method <paramref name="handle"/> names, when it has a body, in a namespace the search
+        /// covers, that the library can read; null otherwise.</summary>
+        private static BlobReader? FindSearchedBody(Search search, MetadataFile file, MethodDefinitionHandle handle)
+        {
+            var reader = file.Metadata;
+            var method = reader.GetMethodDefinition(handle);
+            if (!method.HasBody())
+            {
+                return null;
+            }
+
+            var namespaceName = ReadNamespace(reader, reader.GetTypeDefinition(method.GetDeclaringType()));
+            if (!IsInNamespace(search, namespaceName))
+            {
+                return null;
+            }
+
+            try
+            {
+                return file.GetMethodBody(method.RelativeVirtualAddress).GetILReader();
+            }
+            catch (BadImageFormatException)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Adds the constants whose value is <paramref name="literal"/>.</summary>
+        private static async Task ScanConstantsAsync(Search search, LoadedModule assembly, MetadataModule main, MetadataReader reader, SearchLiteral literal,
+            CancellationToken ct)
+        {
             foreach (var handle in reader.FieldDefinitions)
             {
                 search.CancellationToken.ThrowIfCancellationRequested();
-                var field = reader.GetFieldDefinition(handle);
-                if ((field.Attributes & FieldAttributes.Literal) == 0)
+                var value = FindSearchedConstant(search, reader, handle);
+                if (IsConstantMatch(search, value, literal))
+                {
+                    await AddResultAsync(search, assembly, main, handle, ct);
+                }
+            }
+        }
+
+        /// <summary>The value of the constant <paramref name="handle"/> names, when it is one, in a namespace the search
+        /// covers; null otherwise, and for a constant whose value is null.</summary>
+        private static object? FindSearchedConstant(Search search, MetadataReader reader, FieldDefinitionHandle handle)
+        {
+            var field = reader.GetFieldDefinition(handle);
+            if ((field.Attributes & FieldAttributes.Literal) == 0)
             {
-                continue;
+                return null;
             }
 
             var constantHandle = field.GetDefaultValue();
-                if (constantHandle.IsNil)
+            if (constantHandle.IsNil)
             {
-                continue;
+                return null;
             }
 
-                var namespaceName = ReadNamespace(reader, reader.GetTypeDefinition(field.GetDeclaringType()));
-                if (!IsInNamespace(search, namespaceName))
+            var namespaceName = ReadNamespace(reader, reader.GetTypeDefinition(field.GetDeclaringType()));
+            if (!IsInNamespace(search, namespaceName))
             {
-                continue;
+                return null;
             }
 
             var constant = reader.GetConstant(constantHandle);
-                var blob = reader.GetBlobReader(constant.Value);
-                var value = blob.ReadConstant(constant.TypeCode);
-                if (IsConstantMatch(search, value, literal))
-            {
-                await AddResultAsync(search, assembly, main, handle, ct);
-            }
-        }
+            var blob = reader.GetBlobReader(constant.Value);
+            return blob.ReadConstant(constant.TypeCode);
         }
 
     private static bool IsConstantMatch(Search search, object? value, SearchLiteral literal)

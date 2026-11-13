@@ -397,7 +397,7 @@ internal static class NodeDecompiler
     private static void WriteHeader(LoadedModule assembly, DocumentBuilder output, IType type, ConversionFlags flags)
     {
         var attributes = RequireTypeSystem(output.TypeSystem).MainModule.GetAssemblyAttributes();
-        if (attributes.Any(static a => a.AttributeType.FullName == ReferenceAssemblyAttribute))
+        if (IsReferenceAssembly(attributes))
         {
             WriteComment(output, ReferenceAssemblyWarning);
         }
@@ -405,6 +405,12 @@ internal static class NodeDecompiler
         WriteComment(output, assembly.FullName);
         var ambience = new CSharpAmbience { ConversionFlags = ConversionFlags.ShowTypeParameterList | ConversionFlags.PlaceReturnTypeAfterParameterList | flags };
         WriteComment(output, type is ITypeDefinition definition ? ambience.ConvertSymbol(definition) : ambience.ConvertType(type));
+    }
+
+    /// <summary>Whether <paramref name="attributes"/>, an assembly's, mark it a reference assembly.</summary>
+    private static bool IsReferenceAssembly(IEnumerable<IAttribute> attributes)
+    {
+        return attributes.Any(static a => a.AttributeType.FullName == ReferenceAssemblyAttribute);
     }
 
     /// <summary>Decompiles <paramref name="member"/> as ILSpy shows it on its own: a constructor of a

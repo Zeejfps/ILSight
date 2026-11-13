@@ -181,7 +181,7 @@ public static class ResourceImages
             return Gif.Decode(span);
         }
 
-        if (span.Length >= 6 && span[0] == 0 && span[1] == 0 && span[2] is 1 or 2)
+        if (IsIcon(span))
         {
             return DecodeIcon(span);
         }
@@ -192,6 +192,13 @@ public static class ResourceImages
         }
 
         return null;
+    }
+
+    /// <summary>Whether <paramref name="span"/> starts as an icon or a cursor file does: a reserved zero, then type 1
+    /// (icon) or 2 (cursor), with the count after it.</summary>
+    private static bool IsIcon(ReadOnlySpan<byte> span)
+    {
+        return span.Length >= 6 && span[0] == 0 && span[1] == 0 && span[2] is 1 or 2;
     }
 
     private static ResourceImage DecodePng(byte[] data)

@@ -79,18 +79,7 @@ public static class CodeViewWidget
 
         state.Document = document;
         CodeFolding.Reset(state.Folds, document);
-        var max = 0;
-        foreach (var line in document.Lines)
-        {
-            max = Math.Max(max, line.Text.Length);
-        }
-
-        foreach (var fold in document.Folds)
-        {
-            max = Math.Max(max, document.Lines[fold.StartLine].Text.Length + 1 + fold.CollapsedText.Length);
-        }
-
-        state.MaxColumns = max;
+        state.MaxColumns = CodeText.CalculateMaxColumns(document);
         state.Selection.Select(default, default);
         state.Press = null;
         state.ScrollX = state.ScrollY = state.LaidOutScrollX = state.LaidOutScrollY = 0f;

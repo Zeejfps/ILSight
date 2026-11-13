@@ -86,7 +86,13 @@ public static class ApiEntries
         }
 
         var compared = new Compared { Entity = entity, Reference = reference };
-        var key = ApiKeys.Of(entity);
+        AddUnderFreeKey(entities, ApiKeys.Of(entity), compared);
+    }
+
+    /// <summary>Adds <paramref name="compared"/> under <paramref name="key"/>, or when that is taken under the first of
+    /// <c>key#2</c>, <c>key#3</c>, ... that isn't.</summary>
+    private static void AddUnderFreeKey(Dictionary<string, Compared> entities, string key, Compared compared)
+    {
         var candidate = key;
         var number = 2;
         while (!entities.TryAdd(candidate, compared))
