@@ -24,33 +24,33 @@ public static class CodeFiles
         var module = ModuleOf(export);
         if (module is null)
         {
-            return Save(export, null, language, options, path, cancellationToken);
+            return Save(reading, export, null, language, options, path, cancellationToken);
         }
 
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, module, cancellationToken);
         return read.Match(
-            r => Save(export, r.TypeSystem, language, options, path, cancellationToken),
-            u => SaveUnreadable(export, module, u, language, options, path, cancellationToken),
+            r => Save(reading, export, r.TypeSystem, language, options, path, cancellationToken),
+            u => SaveUnreadable(reading, export, module, u, language, options, path, cancellationToken),
             static c => new TypeSystemWork<string>.Closed { Module = c.Module });
     }
 
     /// <summary>The code of <paramref name="export"/>, whose module the library could not read: nothing, for code that
     /// reads it; else what it writes without the module's type system.</summary>
-    private static TypeSystemWork<string> SaveUnreadable(CodeExport export, LoadedModule module, TypeSystemRead.Unreadable unreadable,
+    private static TypeSystemWork<string> SaveUnreadable(ModuleReading reading, CodeExport export, LoadedModule module, TypeSystemRead.Unreadable unreadable,
         DecompilationLanguage language, DecompilerOptions options, string path, CancellationToken cancellationToken)
     {
         if (export is CodeExport.Document document && !NodeDecompiler.IsReadThroughTypeSystem(document.Request))
         {
-            return Save(export, null, language, options, path, cancellationToken);
+            return Save(reading, export, null, language, options, path, cancellationToken);
         }
 
         return new TypeSystemWork<string>.Unreadable { Module = new UnreadableModule { Module = module, Why = unreadable.Thrown.SourceException } };
     }
 
-    private static TypeSystemWork<string> Save(CodeExport export, DecompilerTypeSystem? typeSystem, DecompilationLanguage language, DecompilerOptions options,
+    private static TypeSystemWork<string> Save(ModuleReading reading, CodeExport export, DecompilerTypeSystem? typeSystem, DecompilationLanguage language, DecompilerOptions options,
         string path, CancellationToken cancellationToken)
     {
-        AtomicFile.Write(path, stream => NodeDecompiler.WriteCode(export, typeSystem, language, options, stream, cancellationToken));
+        AtomicFile.Write(path, stream => NodeDecompiler.WriteCode(reading, export, typeSystem, language, options, stream, cancellationToken));
         return new TypeSystemWork<string>.Done { Value = path };
     }
 

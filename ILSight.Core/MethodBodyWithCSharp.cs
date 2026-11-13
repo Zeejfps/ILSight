@@ -21,6 +21,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     private const string NoCSharp = "(no C# code)";
     private const string CommentPrefix = "// ";
 
+    private readonly ModuleReading _reading;
     private readonly LoadedModule _assembly;
     private readonly DecompilerTypeSystem _typeSystem;
     private readonly DecompilerSettings _settings;
@@ -30,11 +31,13 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     private string? _failure;
     private int _next;
 
+    /// <param name="reading">The reading of the unit writing.</param>
     /// <param name="typeSystem">The type system of <paramref name="assembly"/>, as the unit writing read it.</param>
-    public MethodBodyWithCSharp(ITextOutput output, LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerSettings settings,
-        CancellationToken cancellationToken)
+    public MethodBodyWithCSharp(ITextOutput output, ModuleReading reading, LoadedModule assembly, DecompilerTypeSystem typeSystem,
+        DecompilerSettings settings, CancellationToken cancellationToken)
         : base(output, cancellationToken)
     {
+        _reading = reading;
         _assembly = assembly;
         _typeSystem = typeSystem;
         _settings = settings;
@@ -75,7 +78,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     {
         try
         {
-            var decompiler = NodeDecompiler.CreateCSharpDecompiler(_assembly, _typeSystem, _settings, _cancellationToken);
+            var decompiler = NodeDecompiler.CreateCSharpDecompiler(_reading, _assembly, _typeSystem, _settings, _cancellationToken);
             var syntaxTree = decompiler.Decompile(handle);
             NodeDecompiler.WriteLocatedSyntaxTree(syntaxTree, builder, _settings);
             return decompiler.CreateSequencePoints(syntaxTree);

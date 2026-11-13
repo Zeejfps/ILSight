@@ -15,7 +15,7 @@ public sealed class ModuleReading : IDisposable
     {
     }
 
-    /// <summary>Adds <paramref name="library"/>'s module to what this reads, once; false when it was released.</summary>
+    /// <summary>Adds <paramref name="library"/>'s module to what this reads, once; false when it was closed before.</summary>
     internal bool TryAdd(ModuleLibrary library)
     {
         lock (_sync)

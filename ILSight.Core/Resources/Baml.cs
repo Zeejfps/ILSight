@@ -28,9 +28,11 @@ internal static class Baml
         return decompiler.Decompile(data);
     }
 
-    public static string DecompileToText(LoadedModule assembly, byte[] data, CancellationToken cancellationToken)
+    /// <summary>The BAML in <paramref name="data"/>, of <paramref name="assembly"/>, as XAML text, its types resolved in
+    /// the unit of <paramref name="reading"/>.</summary>
+    public static string DecompileToText(ModuleReading reading, LoadedModule assembly, byte[] data, CancellationToken cancellationToken)
     {
-        var typeSystem = new BamlDecompilerTypeSystem(LoadedAssemblies.GetFile(assembly), LoadedAssemblies.GetResolver(assembly));
+        var typeSystem = new BamlDecompilerTypeSystem(LoadedAssemblies.GetFile(assembly), LoadedAssemblies.CreateResolver(reading, assembly));
         using var stream = new MemoryStream(data);
         var result = Decompile(typeSystem, stream, cancellationToken);
         return result.Xaml.ToString();

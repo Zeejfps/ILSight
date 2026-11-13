@@ -26,12 +26,12 @@ public sealed class WebCilTests
         var whole = await File.ReadAllBytesAsync(path);
         var query = SearchQueries.ParseQuery("Describe");
 
-        // A unit under way on the module (a decompile), its reading begun before the close.
+        // Units under way on the module, their readings begun before the close: one the test ends, and a decompile.
         var underWay = LoadedAssemblies.TryBeginReading(module) ?? throw new InvalidOperationException("The fixture was released before it was closed.");
+        var decompiling = part.DecompileAsync(DecompilationLanguage.CSharp);
         LoadedAssemblies.Release(list.Close(module));
         var released = LoadedAssemblies.WaitForReleaseAsync(module, CancellationToken.None);
-        var decompiled = await part.DecompileAsync(DecompilationLanguage.CSharp);
-        var found = await SearchAsync(module, query);
+        var decompiled = await decompiling;
         var isReleasedWhileRead = released.IsCompleted;
         underWay.Dispose();
         await released;
@@ -40,7 +40,6 @@ public sealed class WebCilTests
         Assert.False(isReleasedWhileRead);
         Assert.Null(decompiled.Error);
         Assert.Contains("public int Add159(int left, int right)", Documents.GetText(decompiled));
-        Assert.NotEmpty(found);
         Assert.IsType<ModuleRead<NodeContent>.Closed>(await NodeContentLoader.ReadContentAsync(TestSession.Shared, part, DecompilationLanguage.CSharp,
             DecompilerOptions.Default, NodeQueries.FirstGridRows));
         Assert.Empty(await SearchAsync(module, query));

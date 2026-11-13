@@ -9,9 +9,11 @@ namespace ILSight.Core;
 /// <see cref="LoadedModule"/> made with them, and read only by the I/O side, each unit under a reading
 /// (<see cref="TryBeginReading"/>). It keeps the rule across the readings and the release: closed
 /// (<see cref="Close"/>), it is released once no reading is open, by the close or the last reading's end, whichever
-/// comes last, exactly once. Released, a WebCIL module's mapped file is disposed (any thread may unmap it) and the
-/// modules its resolver handed out are let go; a <see cref="PEFile"/>, read whole into memory, is never disposed: the
-/// collector frees it once nothing reaches it.</summary>
+/// comes last, exactly once. Closed, it begins no new reading: a unit that holds one goes on reading it. Its type
+/// systems keep the files of the modules its resolver handed out, which every unit using them reads under its own
+/// reading, taken as it comes to use them (<see cref="TypeSystemBuild{T}"/>). Released, a WebCIL module's mapped file is
+/// disposed (any thread may unmap it); a <see cref="PEFile"/>, read whole into memory, is never disposed: the collector
+/// frees it once nothing reaches it.</summary>
 internal sealed class ModuleLibrary
 {
     private readonly Lock _sync = new();
@@ -46,8 +48,8 @@ internal sealed class ModuleLibrary
     public Lazy<ReferenceUsage> ReferenceUsage { get; }
 
     /// <summary>The type systems of the settings that turn language features on or off that
-    /// <see cref="TypeSystem"/> models.</summary>
-    public ConcurrentDictionary<TypeSystemOptions, Lazy<DecompilerTypeSystem>> TypeSystems { get; } = new();
+    /// <see cref="TypeSystem"/> models, each with the modules its build was handed.</summary>
+    public ConcurrentDictionary<TypeSystemOptions, Lazy<TypeSystemBuild<DecompilerTypeSystem>>> TypeSystems { get; } = new();
 
     /// <summary>Completes once the library's objects are released.</summary>
     public Task Released => _released.Task;
@@ -64,14 +66,14 @@ internal sealed class ModuleLibrary
         }
     }
 
-    /// <summary>Begins a reading, which <see cref="EndReading"/> ends; false once the objects were released. A module
-    /// closed while a reading is open is still read: a unit reading it begins its nested readings, and the release
-    /// waits for the last of them.</summary>
+    /// <summary>Begins a reading, which <see cref="EndReading"/> ends; false once the module was closed. A unit that
+    /// began one before the close goes on reading under it, what it reads nested included, and the release waits for the
+    /// last of them.</summary>
     public bool TryBeginReading()
     {
         lock (_sync)
         {
-            if (_isReleased)
+            if (_isClosed)
             {
                 return false;
             }
@@ -128,7 +130,6 @@ internal sealed class ModuleLibrary
 
     private void Release()
     {
-        Resolver.Holds.EndAll();
         if (File is WebCilFile webCil)
         {
             webCil.Dispose();

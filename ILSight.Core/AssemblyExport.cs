@@ -36,7 +36,7 @@ public static class AssemblyExport
         FullFilePath projectPath, ProjectExtras extras, PartProgress? part, CancellationToken cancellationToken)
     {
         var (projectPart, pdbPart) = SplitForPdb(part, extras.Pdb);
-        var project = WriteProject(assembly, options, projectPath, extras.StrongNameKeyFile, projectPart, cancellationToken);
+        var project = WriteProject(reading, assembly, options, projectPath, extras.StrongNameKeyFile, projectPart, cancellationToken);
         if (!extras.Pdb)
         {
             return project;
@@ -60,12 +60,12 @@ public static class AssemblyExport
         return GetHalves(part);
     }
 
-    private static ExportedProject WriteProject(LoadedModule assembly, DecompilerOptions options, FullFilePath projectPath, string? strongNameKeyFile,
+    private static ExportedProject WriteProject(ModuleReading reading, LoadedModule assembly, DecompilerOptions options, FullFilePath projectPath, string? strongNameKeyFile,
         IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
     {
         var folder = projectPath.Folder;
         Directory.CreateDirectory(folder);
-        var decompiler = CreateProjectDecompiler(assembly, options, cancellationToken);
+        var decompiler = CreateProjectDecompiler(reading, assembly, options, cancellationToken);
         decompiler.ProgressIndicator = progress;
         decompiler.StrongNameKeyFile = strongNameKeyFile;
         using var projectFile = new StreamWriter(projectPath.Text);
@@ -76,11 +76,12 @@ public static class AssemblyExport
         return new ExportedProject { Assembly = assembly, ProjectPath = projectPath.Text, Errors = errors, Id = id };
     }
 
-    private static WholeProjectDecompiler CreateProjectDecompiler(LoadedModule assembly, DecompilerOptions options, CancellationToken cancellationToken)
+    private static WholeProjectDecompiler CreateProjectDecompiler(ModuleReading reading, LoadedModule assembly, DecompilerOptions options,
+        CancellationToken cancellationToken)
     {
         var settings = Settings.Create(options);
         var symbols = NodeDecompiler.DebugSymbolsFor(assembly, settings);
-        return new BamlProjectDecompiler(assembly, settings, symbols, cancellationToken);
+        return new BamlProjectDecompiler(assembly, LoadedAssemblies.CreateResolver(reading, assembly), settings, symbols, cancellationToken);
     }
 
     /// <summary><paramref name="project"/> with a portable PDB of its assembly written beside it, or
@@ -167,15 +168,15 @@ public static class AssemblyExport
     public static Task<TypeSystemWork<string>> GeneratePdbAsync(LoadedModule assembly, DecompilerOptions options, string path,
         IProgress<ExportProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        return LoadedAssemblies.WithTypeSystemAsync(assembly, typeSystem => GeneratePdb(assembly, typeSystem, options, path, embedSources: true,
+        return LoadedAssemblies.WithTypeSystemAsync(assembly, (reading, typeSystem) => GeneratePdb(reading, assembly, typeSystem, options, path, embedSources: true,
             Part(progress, assembly, 0, WholeExport), cancellationToken), cancellationToken);
     }
 
-    private static string GeneratePdb(LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerOptions options, string path, bool embedSources,
-        IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
+    private static string GeneratePdb(ModuleReading reading, LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerOptions options, string path,
+        bool embedSources, IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
     {
         var settings = Settings.Create(options);
-        var decompiler = NodeDecompiler.CreateCSharpDecompiler(assembly, typeSystem, settings, cancellationToken);
+        var decompiler = NodeDecompiler.CreateCSharpDecompiler(reading, assembly, typeSystem, settings, cancellationToken);
         var writer = new PortablePdbWriter { Progress = progress, EmbedSourceFiles = embedSources };
         AtomicFile.Write(path, stream => writer.WritePdb(PortableExecutableOf(assembly), decompiler, settings, stream));
         return path;
@@ -240,7 +241,7 @@ public static class AssemblyExport
 
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, cancellationToken);
         return read.Match(
-            r => TryGeneratePdb(assembly, r.TypeSystem, options, folder, embedSources, progress, cancellationToken),
+            r => TryGeneratePdb(reading, assembly, r.TypeSystem, options, folder, embedSources, progress, cancellationToken),
             u => new PdbFailure.NotWritten
             {
                 Assembly = assembly,
@@ -253,13 +254,13 @@ public static class AssemblyExport
             static c => throw new InvalidOperationException($"'{c.Module.FilePath}' was exported after its release: the export holds a reading of each assembly it exports."));
     }
 
-    private static PdbFailure? TryGeneratePdb(LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerOptions options, string folder,
-        bool embedSources, IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
+    private static PdbFailure? TryGeneratePdb(ModuleReading reading, LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerOptions options,
+        string folder, bool embedSources, IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
     {
         var path = Path.Combine(folder, assembly.PdbFileName);
         try
         {
-            GeneratePdb(assembly, typeSystem, options, path, embedSources, progress, cancellationToken);
+            GeneratePdb(reading, assembly, typeSystem, options, path, embedSources, progress, cancellationToken);
             return null;
         }
         catch (Exception e) when (e is not OperationCanceledException)

@@ -4,6 +4,7 @@ using ICSharpCode.BamlDecompiler;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp.ProjectDecompiler;
 using ICSharpCode.Decompiler.DebugInfo;
+using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 using ILSight.Core.Resources;
 
@@ -12,8 +13,8 @@ namespace ILSight.Core;
 /// <summary>Decompiles an assembly into a project as ILSpy does, writing its BAML back as XAML
 /// pages beside the code-behind, whose generated members stay out of the C# files.</summary>
 internal sealed class BamlProjectDecompiler(
-    LoadedModule assembly, DecompilerSettings settings, IDebugInfoProvider? symbols, CancellationToken cancellationToken)
-    : WholeProjectDecompiler(settings, LoadedAssemblies.GetResolver(assembly), null, null, symbols)
+    LoadedModule assembly, IAssemblyResolver resolver, DecompilerSettings settings, IDebugInfoProvider? symbols, CancellationToken cancellationToken)
+    : WholeProjectDecompiler(settings, resolver, null, null, symbols)
 {
     private const string PageItem = "Page";
     private const string ApplicationDefinitionItem = "ApplicationDefinition";
@@ -30,7 +31,7 @@ internal sealed class BamlProjectDecompiler(
 
     private ProjectItemInfo WriteXaml(string fileName, Stream baml)
     {
-        var typeSystem = new BamlDecompilerTypeSystem(LoadedAssemblies.GetFile(assembly), LoadedAssemblies.GetResolver(assembly));
+        var typeSystem = new BamlDecompilerTypeSystem(LoadedAssemblies.GetFile(assembly), AssemblyResolver);
         var result = Baml.Decompile(typeSystem, baml, cancellationToken);
         var codeBehind = FindCodeBehind(typeSystem, result);
         if (codeBehind is null)

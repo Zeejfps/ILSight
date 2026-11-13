@@ -4,9 +4,9 @@ using ICSharpCode.Decompiler.Metadata;
 
 namespace ILSight.Core;
 
-/// <summary>Finding what an assembly references: for the decompiler, which asks through its IAssemblyResolver,
-/// and for the list.</summary>
-public sealed class AssemblyResolver : IAssemblyResolver
+/// <summary>Finding what an assembly references: for the library, which asks within a unit through a
+/// <see cref="ReadingResolver"/>, and for the list.</summary>
+public sealed class AssemblyResolver
 {
     private static readonly string[] Extensions = [".dll", ".exe", ".winmd", ".wasm"];
 
@@ -19,10 +19,6 @@ public sealed class AssemblyResolver : IAssemblyResolver
 
     public required TargetFrameworkId? TargetFramework { get; init; }
     public required Lazy<UniversalAssemblyResolver> Fallback { get; init; }
-
-    /// <summary>The modules this resolver handed out to the library, held for as long as its module's library
-    /// lives.</summary>
-    internal ReferenceHolds Holds { get; } = new();
 
     /// <summary>The resolver of what the assembly at <paramref name="mainPath"/>, of <paramref name="list"/>, references.</summary>
     internal static AssemblyResolver Create(AssemblyList list, AssemblyPath mainPath, TargetFrameworkId? targetFramework, AssemblyPackage? package)
@@ -38,18 +34,9 @@ public sealed class AssemblyResolver : IAssemblyResolver
         };
     }
 
-    public MetadataFile? Resolve(IAssemblyReference reference)
-    {
-        var resolved = ResolveAssembly(reference);
-        return resolved is null ? null : LoadedAssemblies.HandOut(this, resolved);
-    }
-
-    public IDisposable? BeginSnapshot()
-    {
-        return null;
-    }
-
-    public MetadataFile? ResolveModule(MetadataFile mainModule, string moduleName)
+    /// <summary>The module <paramref name="moduleName"/> names, a file beside <paramref name="mainModule"/>'s, read;
+    /// null when there is none.</summary>
+    internal LoadedModule? FindModule(MetadataFile mainModule, string moduleName)
     {
         var directory = Path.GetDirectoryName(mainModule.FileName);
         if (directory is null)
@@ -68,18 +55,7 @@ public sealed class AssemblyResolver : IAssemblyResolver
             return null;
         }
 
-        var loaded = AssemblyListing.TryLoadAssembly(List, path);
-        return loaded is null ? null : LoadedAssemblies.HandOut(this, loaded);
-    }
-
-    public Task<MetadataFile?> ResolveAsync(IAssemblyReference reference)
-    {
-        return Task.FromResult(Resolve(reference));
-    }
-
-    public Task<MetadataFile?> ResolveModuleAsync(MetadataFile mainModule, string moduleName)
-    {
-        return Task.FromResult(ResolveModule(mainModule, moduleName));
+        return AssemblyListing.TryLoadAssembly(List, path);
     }
 
     /// <summary>The assembly <paramref name="reference"/> names: read from its file, when the list loads

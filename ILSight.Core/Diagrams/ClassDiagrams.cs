@@ -34,7 +34,7 @@ public static partial class ClassDiagrams
     public static Task<TypeSystemWork<string>> WriteAsync(LoadedModule assembly, string folder, IProgress<ExportProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        return LoadedAssemblies.WithTypeSystemAsync(assembly, typeSystem => Write(assembly, typeSystem.MainModule, folder, progress, cancellationToken),
+        return LoadedAssemblies.WithTypeSystemAsync(assembly, (_, typeSystem) => Write(assembly, typeSystem.MainModule, folder, progress, cancellationToken),
             cancellationToken);
     }
 

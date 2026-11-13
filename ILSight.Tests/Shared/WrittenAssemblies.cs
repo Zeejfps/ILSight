@@ -37,6 +37,20 @@ internal static class WrittenAssemblies
         return Save(temp, name, metadata);
     }
 
+    /// <summary>Writes <c>{name}.dll</c>, defining the class <c>Base</c>, deriving from <see cref="object"/>, and
+    /// <c>Derived</c>, deriving from the class <c>Base</c> of the assembly <paramref name="other"/>: two of them, each
+    /// naming the other, reference each other.</summary>
+    public static string WriteDerivingFrom(TempDir temp, string name, string other)
+    {
+        var metadata = Begin(name);
+        var objectType = metadata.AddTypeReference(ReferTo(metadata, Runtime), metadata.GetOrAddString("System"), metadata.GetOrAddString("Object"));
+        var reference = ReferTo(metadata, new AssemblyName(other) { Version = Version });
+        var otherBase = metadata.AddTypeReference(reference, metadata.GetOrAddString(other), metadata.GetOrAddString("Base"));
+        Define(metadata, name, "Base", objectType);
+        Define(metadata, name, "Derived", otherBase);
+        return Save(temp, name, metadata);
+    }
+
     private static MetadataBuilder Begin(string name)
     {
         var metadata = new MetadataBuilder();

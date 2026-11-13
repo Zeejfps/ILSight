@@ -84,8 +84,8 @@ public static class LoadedAssemblies
     }
 
     /// <summary>Begins a unit's reading of <paramref name="module"/>, which the unit disposes however it ends; null once
-    /// the module was released (closed, and every reading of it ended), which the unit answers as closed. While it is
-    /// open, the module isn't released, closed or not.</summary>
+    /// the module was closed, which the unit answers as closed. While it is open, the module isn't released, closed or
+    /// not.</summary>
     public static ModuleReading? TryBeginReading(LoadedModule module)
     {
         var reading = BeginReading();
@@ -99,7 +99,8 @@ public static class LoadedAssemblies
     }
 
     /// <summary>Adds <paramref name="module"/> to what <paramref name="reading"/> reads, so it isn't released before the
-    /// unit ends; false once it was released, which the unit answers as closed, or passes over.</summary>
+    /// unit ends; false once it was closed, unless the unit already reads it, which the unit answers as closed, or
+    /// passes over.</summary>
     public static bool TryRead(ModuleReading reading, LoadedModule module)
     {
         return reading.TryAdd(GetKept(module));
@@ -123,23 +124,11 @@ public static class LoadedAssemblies
         return GetKept(module).Released.WaitAsync(ct);
     }
 
-    /// <summary>The file of <paramref name="module"/>, which <paramref name="resolver"/> found for a reference, for the
-    /// library to read: held under a reading for as long as the resolving module's library lives (its type systems read
-    /// it on every later use); null when it was released.</summary>
-    internal static MetadataFile? HandOut(AssemblyResolver resolver, LoadedModule module)
+    /// <summary>The resolver of what <paramref name="module"/> references, for the library to ask within the unit of
+    /// <paramref name="reading"/>: what it hands out is added to that reading.</summary>
+    internal static IAssemblyResolver CreateResolver(ModuleReading reading, LoadedModule module)
     {
-        var library = GetKept(module);
-        if (ReferenceEquals(library.Resolver, resolver))
-        {
-            return library.File;
-        }
-
-        if (!resolver.Holds.TryHold(library))
-        {
-            return null;
-        }
-
-        return library.File;
+        return new ReadingResolver(GetLibrary(module), reading);
     }
 
     /// <summary>The library's file <paramref name="module"/> was read from.</summary>
@@ -155,7 +144,7 @@ public static class LoadedAssemblies
         return GetFile(module) as PEFile;
     }
 
-    /// <summary>The resolver of what <paramref name="module"/> references.</summary>
+    /// <summary>What finds what <paramref name="module"/> references, for the list.</summary>
     internal static AssemblyResolver GetResolver(LoadedModule module)
     {
         return GetLibrary(module).Resolver;
@@ -301,8 +290,9 @@ public static class LoadedAssemblies
     /// its first use, or that use), on the thread pool, and kept, so every asker takes the same outcome: the type system,
     /// or what the library threw on the module. A unit whose sync read needs it awaits this before that read starts,
     /// matches it once and hands its sync code the type system. Only <paramref name="ct"/> being cancelled before the
-    /// read began ends it early. The module is added to <paramref name="reading"/>, the unit's, first: one released before answers
-    /// <see cref="TypeSystemRead.Closed"/>, read nothing.</summary>
+    /// read began ends it early. The module is added to <paramref name="reading"/>, the unit's, first: one closed before
+    /// answers <see cref="TypeSystemRead.Closed"/>, read nothing. So is every module its type system was handed, the type
+    /// system read again without one closed since.</summary>
     public static async Task<TypeSystemRead> ReadTypeSystemAsync(ModuleReading reading, LoadedModule module, CancellationToken ct)
     {
         if (!TryRead(reading, module))
@@ -310,7 +300,7 @@ public static class LoadedAssemblies
             return new TypeSystemRead.Closed { Module = module };
         }
 
-        return await GetLibrary(module).TypeSystem.ReadAsync(ct);
+        return await GetLibrary(module).TypeSystem.ReadAsync(reading, ct);
     }
 
     /// <summary>Reads <paramref name="module"/>'s type system ahead of its first use (the frame edge's warm-up), as a
@@ -322,14 +312,15 @@ public static class LoadedAssemblies
     }
 
     /// <summary>Awaits the read of <paramref name="module"/>'s type system, then does <paramref name="work"/> with it on
-    /// the thread the read ends on, under a reading of its own; for a module the library could not read, says why and
-    /// does nothing; for one released before, says so and does nothing.</summary>
-    internal static async Task<TypeSystemWork<T>> WithTypeSystemAsync<T>(LoadedModule module, Func<DecompilerTypeSystem, T> work, CancellationToken ct)
+    /// the thread the read ends on, under a reading of its own, which it is handed; for a module the library could not
+    /// read, says why and does nothing; for one closed before, says so and does nothing.</summary>
+    internal static async Task<TypeSystemWork<T>> WithTypeSystemAsync<T>(LoadedModule module, Func<ModuleReading, DecompilerTypeSystem, T> work,
+        CancellationToken ct)
     {
         using var reading = BeginReading();
         var read = await ReadTypeSystemAsync(reading, module, ct);
         return read.Match<TypeSystemWork<T>>(
-            r => new TypeSystemWork<T>.Done { Value = work(r.TypeSystem) },
+            r => new TypeSystemWork<T>.Done { Value = work(reading, r.TypeSystem) },
             u => new TypeSystemWork<T>.Unreadable { Module = new UnreadableModule { Module = module, Why = u.Thrown.SourceException } },
             c => new TypeSystemWork<T>.Closed { Module = c.Module });
     }
@@ -367,8 +358,10 @@ public static class LoadedAssemblies
 
     /// <summary>The type system decompiling with <paramref name="settings"/> reads: <paramref name="typeSystem"/>, the
     /// assembly's own as read, unless they turn language features on or off that it models; then the one made for
-    /// them, made the first time on this thread, inside the caller's read.</summary>
-    internal static DecompilerTypeSystem ChooseTypeSystemFor(LoadedModule module, DecompilerTypeSystem typeSystem, DecompilerSettings settings)
+    /// them, made the first time on this thread, inside the caller's read. Every module it was handed is added to
+    /// <paramref name="reading"/>, the unit's: with one closed since, it is made again, resolving without it.</summary>
+    internal static DecompilerTypeSystem ChooseTypeSystemFor(ModuleReading reading, LoadedModule module, DecompilerTypeSystem typeSystem,
+        DecompilerSettings settings)
     {
         var options = DecompilerTypeSystem.GetOptions(settings);
         if (options == DefaultTypeSystemOptions)
@@ -377,7 +370,27 @@ public static class LoadedAssemblies
         }
 
         var library = GetLibrary(module);
-        return library.TypeSystems.GetOrAdd(options, static (o, l) => new Lazy<DecompilerTypeSystem>(() => new DecompilerTypeSystem(l.File, l.Resolver, o)), library).Value;
+        while (true)
+        {
+            var kept = library.TypeSystems.GetOrAdd(options, static (o, s) => new Lazy<TypeSystemBuild<DecompilerTypeSystem>>(() => BuildTypeSystem(s.library, s.reading, o)),
+                (library, reading));
+            var build = kept.Value;
+            if (build.TryReadHandedOut(reading))
+            {
+                return build.Built;
+            }
+
+            library.TypeSystems.TryRemove(KeyValuePair.Create(options, kept));
+        }
+    }
+
+    /// <summary>A type system of <paramref name="library"/>'s module with <paramref name="options"/>, what its resolver
+    /// hands out added to <paramref name="reading"/>, the unit's, and recorded.</summary>
+    private static TypeSystemBuild<DecompilerTypeSystem> BuildTypeSystem(ModuleLibrary library, ModuleReading reading, TypeSystemOptions options)
+    {
+        var resolver = new ReadingResolver(library, reading);
+        var typeSystem = new DecompilerTypeSystem(library.File, resolver, options);
+        return new TypeSystemBuild<DecompilerTypeSystem> { Built = typeSystem, HandedOut = resolver.ListHandedOut() };
     }
 
     /// <summary>What the assembly uses of the assemblies it references. Read the first time, then kept.</summary>

@@ -107,7 +107,15 @@ internal static class ResourceNodes
         return entry.Source.Match(entry,
             static (_, manifest) => ResourceNodes.Read(manifest.Resource),
             static (_, bytes) => bytes.Data,
-            static (info, baml) => Encoding.UTF8.GetBytes(Resources.Baml.DecompileToText(info.Module, baml.Data, CancellationToken.None)));
+            static (info, baml) => Encoding.UTF8.GetBytes(DecompileBaml(info.Module, baml.Data)));
+    }
+
+    /// <summary>The BAML in <paramref name="data"/> as XAML text: read in the unit reading the resource, which holds
+    /// <paramref name="module"/>; what its types resolve to is read under this conversion's own reading.</summary>
+    private static string DecompileBaml(LoadedModule module, byte[] data)
+    {
+        using var reading = LoadedAssemblies.BeginReading();
+        return Resources.Baml.DecompileToText(reading, module, data, CancellationToken.None);
     }
 
     internal static byte[] ReadData(ResourceContainerInfo container)
