@@ -21,7 +21,7 @@ internal static class AppFrames
     internal static void FollowRestoredAppState(UiState uiState, AppState appState)
     {
         uiState.Documents.SkipPanels(appState.Lists.ListDocumentPanels());
-        DocumentPanels.FollowActiveTab(uiState, appState.Navigation.ActiveTab);
+        uiState.TabFocus.Follow(appState.Navigation.ActiveTab);
         QueuedCommands.RunViewCommands(uiState, appState);
         DocumentPanels.ShowInRestoredDocuments(uiState, appState.Navigation);
     }
@@ -40,7 +40,7 @@ internal static class AppFrames
         Trees.SyncTrees(uiState, appState.Assemblies, appState.Analyzer, appState.ApiVisibility, appState.Reopens.Files);
         appState.Navigation.UsePreviewTabs(uiState.Display.PreviewTabs);
         DocumentPanels.FollowTabContent(uiState);
-        DocumentPanels.FollowActiveTab(uiState, appState.Navigation.ActiveTab);
+        uiState.TabFocus.Follow(appState.Navigation.ActiveTab);
         QueuedCommands.RunViewCommands(uiState, appState);
         DocumentPanels.SyncTabViews(uiState, appState.Navigation);
         ReviveClosedTabs(uiState, appState);

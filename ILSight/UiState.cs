@@ -55,11 +55,7 @@ public sealed class UiState : IUiState
     /// <summary>How each open tab is shown, and the panel it is docked as.</summary>
     public DocumentViews Documents { get; } = new();
 
-    /// <summary>The app state's active tab as the screen last followed it, which the views open beside.</summary>
-    public DocumentTab? ActiveTab;
-
-    /// <summary>When to try focusing another tab while none is active.</summary>
-    public TabFocusTry LastTabFocusTry = new TabFocusTry { LayoutChanges = -1, TabCount = -1 };
+    public TabFocus TabFocus { get; } = new();
 
     /// <summary>Whether to reset the layout, asked of the user.</summary>
     public Confirmation LayoutReset { get; } = new();

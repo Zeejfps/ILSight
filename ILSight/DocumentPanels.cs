@@ -469,12 +469,11 @@ public static class DocumentPanels
         }
 
         var attempt = new TabFocusTry { LayoutChanges = uiState.Layout.Changes, TabCount = navigation.OpenTabs.Count };
-        if (attempt == uiState.LastTabFocusTry)
+        if (!uiState.TabFocus.TryNewAttempt(attempt))
         {
             return;
         }
 
-        uiState.LastTabFocusTry = attempt;
         FocusNextTab(uiState, navigation, setup);
     }
 
@@ -511,7 +510,7 @@ public static class DocumentPanels
     public static void SyncActiveTab(UiState uiState, Navigation navigation, DecompilerSetup setup)
     {
         var active = navigation.ActiveTab;
-        FollowActiveTab(uiState, active);
+        uiState.TabFocus.Follow(active);
         var tab = uiState.Documents.FindTab(uiState.Layout.Focused);
         if (tab is null)
         {
@@ -526,17 +525,11 @@ public static class DocumentPanels
         FocusTab(uiState, navigation, setup, tab);
     }
 
-    /// <summary>Takes <paramref name="active"/>, the app state's active tab, as the tab the views open beside.</summary>
-    public static void FollowActiveTab(UiState uiState, DocumentTab? active)
-    {
-        uiState.ActiveTab = active;
-    }
-
     /// <summary>Brings the next tab of the active tab's group to the front, or the previous one, as
     /// <see cref="ActivateTab"/> does.</summary>
     public static void CycleTab(UiState uiState, Navigation navigation, DecompilerSetup setup, int by)
     {
-        var active = uiState.ActiveTab;
+        var active = uiState.TabFocus.Active;
         if (active is null)
         {
             return;
@@ -584,7 +577,7 @@ public static class DocumentPanels
 
     public static void CloseActiveTab(UiState uiState)
     {
-        var tab = uiState.ActiveTab;
+        var tab = uiState.TabFocus.Active;
         if (tab is null)
         {
             return;
@@ -689,7 +682,7 @@ public static class DocumentPanels
     /// <summary>The panel of the active tab, which the views dock beside, or null.</summary>
     internal static string? FindActivePanel(UiState uiState)
     {
-        return DocumentPanels.FindPanel(uiState.Documents, uiState.ActiveTab);
+        return DocumentPanels.FindPanel(uiState.Documents, uiState.TabFocus.Active);
     }
 
     /// <summary>Lets each view follow the grid or picture its tab shows.</summary>
