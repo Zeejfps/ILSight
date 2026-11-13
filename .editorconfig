@@ -110,9 +110,9 @@ dotnet_diagnostic.RL1308.severity = error
 dotnet_diagnostic.RL0106.severity = error
 dotnet_diagnostic.RL0404.severity = error
 dotnet_diagnostic.RL0405.severity = suggestion
-dotnet_diagnostic.RL0601.severity = suggestion
+dotnet_diagnostic.RL0601.severity = error
 dotnet_diagnostic.RL0905.severity = error
-dotnet_diagnostic.RL0906.severity = suggestion
+dotnet_diagnostic.RL0906.severity = error
 # Batch Y's pass (comments, static) raises these once it has cleared them.
 dotnet_diagnostic.RL0406.severity = suggestion
 dotnet_diagnostic.RL1309.severity = suggestion
