@@ -45,7 +45,7 @@ public static class CodeViewWidget
     {
         var top = GetTopAnchor(state);
         state.Folds.SetCollapsed(fold, collapsed);
-        KeepTop(state, top);
+        state.KeepTop(top);
     }
 
     /// <summary>Collapses or expands the innermost fold around <paramref name="line"/>.</summary>
@@ -68,31 +68,12 @@ public static class CodeViewWidget
         SetAll(state, false);
     }
 
-    /// <summary>Takes in <paramref name="document"/>, unless it is the one shown already.</summary>
-    internal static void ShowDocument(CodeViewState state, DecompiledDocument document)
-    {
-        if (ReferenceEquals(document, state.Layout.Document))
-        {
-            return;
-        }
-
-        state.Layout.Show(document);
-        state.Folds.Reset(document);
-        state.Selection.Select(default, default);
-        state.Pointer.Forget();
-        state.ScrollX = state.ScrollY = 0f;
-        state.Tooltip.Forget();
-        state.Reveal.ForgetStale();
-        state.Find.ClearMatch();
-        state.Keys.Forget();
-    }
-
     internal static void RevealFolds(CodeViewState state, int line)
     {
         var top = GetTopAnchor(state);
         if (state.Folds.TryReveal(line))
         {
-            KeepTop(state, top);
+            state.KeepTop(top);
         }
     }
 
@@ -100,7 +81,7 @@ public static class CodeViewWidget
     {
         var top = GetTopAnchor(state);
         state.Folds.SetAll(collapsed);
-        KeepTop(state, top);
+        state.KeepTop(top);
     }
 
     private static (int Line, float Within) GetTopAnchor(CodeViewState state)
@@ -113,14 +94,6 @@ public static class CodeViewWidget
 
         var row = CodeFolding.ClampRow(folds, GetRowAt(state.ScrollY, state.Layout.RowHeight));
         return (CodeFolding.GetLineAt(folds, row), state.ScrollY - GetRowTop(row, state.Layout.RowHeight));
-    }
-
-    private static void KeepTop(CodeViewState state, (int Line, float Within) top)
-    {
-        if (state.Layout.RowHeight > 0f)
-        {
-            state.ScrollY = GetRowTop(CodeFolding.GetRowOf(state.Folds, top.Line), state.Layout.RowHeight) + top.Within;
-        }
     }
 
     /// <summary>The row <paramref name="offset"/> below the top of the first falls on, each <paramref name="height"/>
@@ -181,7 +154,7 @@ public static class CodeViewWidget
         string? closedAssembly = null)
     {
         using var scope = ui.Id(id);
-        ShowDocument(state, document);
+        state.ShowDocument(document);
         var theme = ui.Theme;
         var palette = ui.State.CodeViewPalette;
         var shown = display ?? Plain;
@@ -558,7 +531,7 @@ public static class CodeViewWidget
             return null;
         }
 
-        return MatchingBrackets.Find(state, document, caret);
+        return state.FindBrackets(document, caret);
     }
 
     private readonly record struct HoveredSpan
@@ -730,7 +703,7 @@ public static class CodeViewWidget
         var pending = state.Reveal.Pending;
         if (pending is null)
         {
-            ScrollBy(state, rowHeight, viewport, deltaY);
+            state.ScrollBy(rowHeight, viewport, deltaY);
             return;
         }
 
@@ -745,32 +718,24 @@ public static class CodeViewWidget
         pending.Switch(
             reveal: reveal =>
             {
-                ScrollBy(state, rowHeight, content.Height, deltaY);
+                state.ScrollBy(rowHeight, content.Height, deltaY);
                 ScrollToRevealed(ui, state, document, rowHeight, content, reveal);
             },
             restore: restore =>
             {
                 ScrollToRestored(ui, state, document, rowHeight, content, restore);
-                ScrollBy(state, rowHeight, content.Height, deltaY);
+                state.ScrollBy(rowHeight, content.Height, deltaY);
             },
             showMatch: match =>
             {
-                ScrollBy(state, rowHeight, content.Height, deltaY);
+                state.ScrollBy(rowHeight, content.Height, deltaY);
                 ScrollToMatch(ui, state, rowHeight, advance, textLeft, content, match);
             },
             showCaret: _ =>
             {
-                ScrollBy(state, rowHeight, content.Height, deltaY);
+                state.ScrollBy(rowHeight, content.Height, deltaY);
                 ShowCaretOnceLaidOut(ui, state, document, rowHeight, advance, textLeft, content);
             });
-    }
-
-    private static void ScrollBy(CodeViewState state, float rowHeight, float viewport, float deltaY)
-    {
-        if (deltaY != 0f)
-        {
-            state.ScrollY = Math.Clamp(state.ScrollY + deltaY, 0f, MathF.Max(0f, state.Folds.RowCount * rowHeight - viewport));
-        }
     }
 
     private static void ScrollToRestored(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, float rowHeight, UiRect content,
@@ -854,41 +819,8 @@ public static class CodeViewWidget
             return;
         }
 
-        ShowCaret(state, document, rowHeight, advance, textLeft, content);
+        state.ScrollToCaret(document, rowHeight, advance, textLeft, content);
         state.Reveal.Arrive();
-    }
-
-    private static void ShowCaret(CodeViewState state, DecompiledDocument document, float rowHeight, float advance, float textLeft, UiRect content)
-    {
-        var folds = state.Folds;
-        var caret = state.Selection.Caret;
-        var row = CodeFolding.GetRowOf(folds, caret.Line);
-        var top = GetRowTop(row, rowHeight);
-        if (top < state.ScrollY)
-        {
-            state.ScrollY = top;
-        }
-        else if (top + rowHeight > state.ScrollY + content.Height)
-        {
-            state.ScrollY = MathF.Max(0f, top + rowHeight - content.Height);
-        }
-
-        var rowLine = CodeFolding.GetLineAt(folds, row);
-        if (rowLine != caret.Line)
-        {
-            return;
-        }
-
-        var visible = content.Width - textLeft - advance;
-        var x = Math.Min(caret.Column, document.Lines[caret.Line].Text.Length) * advance;
-        if (x < state.ScrollX)
-        {
-            state.ScrollX = MathF.Max(0f, x - 4f * advance);
-        }
-        else if (x > state.ScrollX + visible)
-        {
-            state.ScrollX = x - visible + 4f * advance;
-        }
     }
 
     private static CodeReference? FindReferenceAt(DecompiledDocument document, TextPosition at)

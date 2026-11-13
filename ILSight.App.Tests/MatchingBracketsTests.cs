@@ -7,7 +7,7 @@ public sealed class MatchingBracketsTests
 {
     private static BracketPair? Find(DecompiledDocument document, int line, int column)
     {
-        return MatchingBrackets.Find(new CodeViewState(), document, new TextPosition { Line = line, Column = column });
+        return new CodeViewState().FindBrackets(document, new TextPosition { Line = line, Column = column });
     }
 
     private static BracketPair Pair(int openLine, int openColumn, int closeLine, int closeColumn)

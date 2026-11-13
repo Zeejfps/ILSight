@@ -1,3 +1,4 @@
+using ZGF.Gui.Immediate;
 using ILSight.Core;
 
 namespace ILSight.CodeViewArea;
@@ -9,9 +10,9 @@ public sealed class CodeViewState
 {
     internal readonly CodeViewFrame Frame = new();
 
-    /// <summary>The bracket at the caret or just before it and the one matching it, by the document and the
-    /// caret they were looked up for; see <see cref="MatchingBrackets"/>.</summary>
-    internal Memo<(ByReference<DecompiledDocument>, TextPosition), BracketPair?> Brackets;
+    // The bracket at the caret or just before it and the one matching it, by the document and the caret they were
+    // looked up for, so they are looked up again only when either changes.
+    private Memo<(ByReference<DecompiledDocument>, TextPosition), BracketPair?> _brackets;
 
     internal float ScrollX;
     internal float ScrollY;
@@ -57,4 +58,84 @@ public sealed class CodeViewState
     }
 
     public bool HasSelection => Selection.HasSelection;
+
+    /// <summary>Takes in <paramref name="document"/>, unless it is the one shown already.</summary>
+    internal void ShowDocument(DecompiledDocument document)
+    {
+        if (ReferenceEquals(document, Layout.Document))
+        {
+            return;
+        }
+
+        Layout.Show(document);
+        Folds.Reset(document);
+        Selection.Select(default, default);
+        Pointer.Forget();
+        ScrollX = ScrollY = 0f;
+        Tooltip.Forget();
+        Reveal.ForgetStale();
+        Find.ClearMatch();
+        Keys.Forget();
+    }
+
+    internal void KeepTop((int Line, float Within) top)
+    {
+        if (Layout.RowHeight > 0f)
+        {
+            ScrollY = CodeViewWidget.GetRowTop(CodeFolding.GetRowOf(Folds, top.Line), Layout.RowHeight) + top.Within;
+        }
+    }
+
+    internal void ScrollBy(float rowHeight, float viewport, float deltaY)
+    {
+        if (deltaY != 0f)
+        {
+            ScrollY = Math.Clamp(ScrollY + deltaY, 0f, MathF.Max(0f, Folds.RowCount * rowHeight - viewport));
+        }
+    }
+
+    internal void ScrollToCaret(DecompiledDocument document, float rowHeight, float advance, float textLeft, UiRect content)
+    {
+        var folds = Folds;
+        var caret = Selection.Caret;
+        var row = CodeFolding.GetRowOf(folds, caret.Line);
+        var top = CodeViewWidget.GetRowTop(row, rowHeight);
+        if (top < ScrollY)
+        {
+            ScrollY = top;
+        }
+        else if (top + rowHeight > ScrollY + content.Height)
+        {
+            ScrollY = MathF.Max(0f, top + rowHeight - content.Height);
+        }
+
+        var rowLine = CodeFolding.GetLineAt(folds, row);
+        if (rowLine != caret.Line)
+        {
+            return;
+        }
+
+        var visible = content.Width - textLeft - advance;
+        var x = Math.Min(caret.Column, document.Lines[caret.Line].Text.Length) * advance;
+        if (x < ScrollX)
+        {
+            ScrollX = MathF.Max(0f, x - 4f * advance);
+        }
+        else if (x > ScrollX + visible)
+        {
+            ScrollX = x - visible + 4f * advance;
+        }
+    }
+
+    internal BracketPair? FindBrackets(DecompiledDocument document, TextPosition caret)
+    {
+        if (_brackets.TryGet((new ByReference<DecompiledDocument>(document), caret), out var brackets))
+        {
+            return brackets;
+        }
+
+        brackets = MatchingBrackets.Match(document, caret);
+        _brackets = new Memo<(ByReference<DecompiledDocument>, TextPosition), BracketPair?>((new ByReference<DecompiledDocument>(document), caret), brackets);
+        return brackets;
+    }
 }

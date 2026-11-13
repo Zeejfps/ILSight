@@ -2,28 +2,15 @@ using ILSight.Core;
 
 namespace ILSight.CodeViewArea;
 
-/// <summary>The bracket at a code view's caret, or just before it, and the one that matches it,
-/// looked up again only when the caret or the document changes. Brackets in strings and comments
-/// do not count, and the match is looked for only so many lines away.</summary>
+/// <summary>The bracket at a code view's caret, or just before it, and the one that matches it. Brackets in strings
+/// and comments do not count, and the match is looked for only so many lines away.</summary>
 public static class MatchingBrackets
 {
     private const string Opens = "([{";
     private const string Closes = ")]}";
     private const int MaxLinesScanned = 2000;
 
-    public static BracketPair? Find(CodeViewState state, DecompiledDocument document, TextPosition caret)
-    {
-        if (state.Brackets.TryGet((new ByReference<DecompiledDocument>(document), caret), out var brackets))
-        {
-            return brackets;
-        }
-
-        brackets = Match(document, caret);
-        state.Brackets = new Memo<(ByReference<DecompiledDocument>, TextPosition), BracketPair?>((new ByReference<DecompiledDocument>(document), caret), brackets);
-        return brackets;
-    }
-
-    private static BracketPair? Match(DecompiledDocument document, TextPosition caret)
+    internal static BracketPair? Match(DecompiledDocument document, TextPosition caret)
     {
         var after = MatchAt(document, caret);
         if (after is not null)
