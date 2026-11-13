@@ -260,22 +260,7 @@ internal sealed class AnalyzerScope
     {
         var self = DecompilerFacts.GetMetadataFile(typeScope);
         yield return self;
-        var provider = MetadataExtensions.MinimalAttributeTypeProvider;
-        var friends = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var handle in self.Metadata.CustomAttributes)
-        {
-            var attribute = self.Metadata.GetCustomAttribute(handle);
-            if (!IsInternalsVisibleTo(self.Metadata, attribute))
-            {
-                continue;
-            }
-
-            var value = attribute.DecodeValue(provider);
-            if (value.FixedArguments[0].Value is string name)
-            {
-                friends.Add(name.Split(',')[0]);
-            }
-        }
+        var friends = ListFriendNames(self.Metadata);
         if (friends.Count == 0)
         {
             yield break;
@@ -295,6 +280,27 @@ internal sealed class AnalyzerScope
                 yield return file;
             }
         }
+    }
+
+    private static HashSet<string> ListFriendNames(MetadataReader metadata)
+    {
+        var provider = MetadataExtensions.MinimalAttributeTypeProvider;
+        var friends = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var handle in metadata.CustomAttributes)
+        {
+            var attribute = metadata.GetCustomAttribute(handle);
+            if (!IsInternalsVisibleTo(metadata, attribute))
+            {
+                continue;
+            }
+
+            var value = attribute.DecodeValue(provider);
+            if (value.FixedArguments[0].Value is string name)
+            {
+                friends.Add(name.Split(',')[0]);
+            }
+        }
+        return friends;
     }
 
     private static bool IsInternalsVisibleTo(MetadataReader metadata, CustomAttribute attribute)
