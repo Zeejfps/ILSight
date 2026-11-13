@@ -108,7 +108,8 @@ public sealed class OpenListSession
 
     /// <summary>Has each open tab showing a node read from <paramref name="item"/>, an item of the list the user
     /// closed, or out of it, keep what it shows and read it no more (<see cref="TabLoad.ShowClosed"/>), as the rule
-    /// across the list and the tabs asks: a tab whose assembly is closed reads nothing. Every close covers it; two
+    /// across the list and the tabs asks: a tab whose assembly is closed reads nothing; so does each tab showing a
+    /// diagram or a comparison that reads it (<see cref="Navigation.ShowDocumentsClosed"/>). Every close covers it; two
     /// changes take an item off the list and are left out on purpose: reading the list again
     /// (<see cref="ClearAssemblies"/>, whose tabs wait to find their places in what it reads), and reading one item
     /// again (<see cref="TryReplaceAssembly"/>, whose tabs are found again in what replaced it).</summary>
@@ -130,6 +131,8 @@ public sealed class OpenListSession
 
             tab.Load.ShowClosed(name);
         }
+
+        Navigation.ShowDocumentsClosed(item.FilePath);
     }
 
     /// <summary>Lists <paramref name="fresh"/>, the listed <paramref name="item"/> read again, in its place, reading

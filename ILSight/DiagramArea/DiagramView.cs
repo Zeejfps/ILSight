@@ -62,7 +62,7 @@ internal static class DiagramView
         }
         DiagramFaces.MeasureIfChanged(ui, view, diagram);
         Canvas(ui, navigation, tooltips, view, diagram);
-        CardMenu(ui, navigation, view, diagram);
+        CardMenu(ui, navigation, view, diagram, tab.ClosedAssembly);
     }
 
     /// <summary>The tools in a bar of the tab's own, while the bar over documents, where they sit otherwise, is hidden.</summary>
@@ -795,7 +795,7 @@ internal static class DiagramView
             static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token);
     }
 
-    private static void CardMenu(Ui<UiState> ui, Navigation navigation, DiagramViewState view, TypeDiagram diagram)
+    private static void CardMenu(Ui<UiState> ui, Navigation navigation, DiagramViewState view, TypeDiagram diagram, string? closedAssembly)
     {
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
@@ -814,10 +814,11 @@ internal static class DiagramView
             return;
         }
 
-        CardMenuItems(ui, navigation, view, diagram, card);
+        CardMenuItems(ui, navigation, view, diagram, card, closedAssembly);
     }
 
-    private static void CardMenuItems(Ui<UiState> ui, Navigation navigation, DiagramViewState view, TypeDiagram diagram, TypeCard card)
+    private static void CardMenuItems(Ui<UiState> ui, Navigation navigation, DiagramViewState view, TypeDiagram diagram, TypeCard card,
+        string? closedAssembly)
     {
         var t = ui.State.Strings;
         if (ui.MenuItem(t.TreeOpen, id: "open"))
@@ -831,7 +832,7 @@ internal static class DiagramView
         }
 
         ui.MenuSeparator();
-        GrowItems(ui, diagram, card);
+        GrowItems(ui, diagram, card, DocumentsView.FindClosedText(ui, closedAssembly));
         ui.MenuSeparator();
         if (ui.MenuItem(t.DiagramRemove, id: "remove"))
         {
@@ -840,17 +841,20 @@ internal static class DiagramView
     }
 
     /// <summary>The items that add the types <paramref name="card"/> is related to, each offered when it has
-    /// such relations, and enabled while the diagram lacks some of them.</summary>
-    private static void GrowItems(Ui<UiState> ui, TypeDiagram diagram, TypeCard card)
+    /// such relations, and enabled while the diagram lacks some of them; all unavailable, saying <paramref name="why"/>,
+    /// once an assembly the diagram reads was closed.</summary>
+    private static void GrowItems(Ui<UiState> ui, TypeDiagram diagram, TypeCard card, string? why)
     {
         var t = ui.State.Strings;
-        if (HasLinks(card, IsBaseLink) && ui.MenuItem(t.DiagramAddBases, enabled: HasMissingBases(diagram, card), id: "add-bases"))
+        var open = why is null;
+        if (HasLinks(card, IsBaseLink) && ui.MenuItem(t.DiagramAddBases, enabled: open && HasMissingBases(diagram, card), id: "add-bases", detail: why))
         {
             Commands.Start(ui.State, nameof(DiagramGrowing.ExpandBasesAsync), (diagram, card), static (a, s, ct) => a.DiagramGrowing.ExpandBasesAsync(s.diagram, s.card, ct),
                 diagram.Token);
         }
 
-        if (HasLinks(card, IsInterfaceLink) && ui.MenuItem(t.DiagramAddInterfaces, enabled: HasMissingInterfaces(diagram, card), id: "add-interfaces"))
+        if (HasLinks(card, IsInterfaceLink)
+            && ui.MenuItem(t.DiagramAddInterfaces, enabled: open && HasMissingInterfaces(diagram, card), id: "add-interfaces", detail: why))
         {
             Commands.Start(ui.State, nameof(DiagramGrowing.ExpandInterfacesAsync), (diagram, card),
                 static (a, s, ct) => a.DiagramGrowing.ExpandInterfacesAsync(s.diagram, s.card, ct), diagram.Token);
@@ -859,14 +863,14 @@ internal static class DiagramView
         if (card.CanHaveDerived)
         {
             var derivedItem = DerivedItemOf(ui, card);
-            if (ui.MenuItem(derivedItem, id: "add-derived"))
+            if (ui.MenuItem(derivedItem, enabled: open, id: "add-derived", detail: why))
             {
                 Commands.Start(ui.State, nameof(DiagramGrowing.ExpandDerivedAsync), (diagram, card),
                     static (a, s, ct) => a.DiagramGrowing.ExpandDerivedAsync(s.diagram, s.card, ct), diagram.Token);
             }
         }
 
-        if (HasLinks(card, IsHeldLink) && ui.MenuItem(t.DiagramAddHeld, enabled: HasMissingHeld(diagram, card), id: "add-held"))
+        if (HasLinks(card, IsHeldLink) && ui.MenuItem(t.DiagramAddHeld, enabled: open && HasMissingHeld(diagram, card), id: "add-held", detail: why))
         {
             Commands.Start(ui.State, nameof(DiagramGrowing.ExpandHeldAsync), (diagram, card), static (a, s, ct) => a.DiagramGrowing.ExpandHeldAsync(s.diagram, s.card, ct),
                 diagram.Token);

@@ -115,7 +115,7 @@ public sealed class SavedComparisonTests : IDisposable
     }
 
     [Fact]
-    public void A_comparison_of_an_assembly_no_longer_open_comes_back_saying_so()
+    public void A_comparison_of_an_assembly_closed_before_the_app_closes_is_not_reopened()
     {
         var app = Compared();
         app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == RightPath)]));
@@ -123,9 +123,10 @@ public sealed class SavedComparisonTests : IDisposable
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 700, false)));
 
         var next = new AppDriver(settings: _temp.Settings());
-        next.Frames.WaitUntil(() => FindComparison(next)?.Result is ComparisonResult.Failed, Patience);
+        next.Frames.WaitUntil(() => next.AppState.Assemblies.Assemblies.Count == 1, Patience);
+        next.Settle(2);
 
-        var failed = Assert.IsType<ComparisonResult.Failed>(FindComparison(next)?.Result);
-        Assert.Equal(new ComparisonFailure.AssemblyClosed("ApiDiffSample.dll"), failed.Failure);
+        Assert.Null(FindComparison(next));
+        Assert.Null(_temp.Settings().AssemblyLists.Single().Documents);
     }
 }

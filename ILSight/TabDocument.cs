@@ -23,6 +23,9 @@ public sealed class TabDocument
 
     private TabLoad _load;
 
+    // The file of the assembly the user closed that the diagram or comparison shown reads; null while none is.
+    private AssemblyPath? _closedFile;
+
     /// <summary>What <see cref="Changes"/> had counted when the tab was last pointed somewhere, past what its load,
     /// diagram or comparison counts now.</summary>
     private int _pointedChanges;
@@ -45,6 +48,15 @@ public sealed class TabDocument
     /// comparison's own; null for a new tab or a report.</summary>
     public string? Title => _shown is null ? _load.Title : _title;
 
+    /// <summary>The file name of the closed assembly what the tab shows was read from: its node's
+    /// (<see cref="TabLoad.ShowClosed"/>), or one its diagram or comparison reads (<see cref="ShowClosed"/>); null
+    /// while none is closed.</summary>
+    public string? ClosedAssembly => _shown is null ? _load.ClosedAssembly : _closedFile?.FileName;
+
+    /// <summary>The file of the closed assembly <see cref="ClosedAssembly"/> names, for the tab to read again once
+    /// the list holds it again; null while none is closed.</summary>
+    public AssemblyPath? ClosedFile => _shown is null ? FindClosedNodeFile() : _closedFile;
+
     /// <summary>Changes whenever the tab is pointed somewhere, its load starts again, or it loses its node.</summary>
     public int Version => _pointedVersion + _load.Changes;
 
@@ -66,6 +78,52 @@ public sealed class TabDocument
         }
 
         return 0;
+    }
+
+    private AssemblyPath? FindClosedNodeFile()
+    {
+        if (_load.ClosedAssembly is null)
+        {
+            return null;
+        }
+
+        return _load.Location?.FilePath;
+    }
+
+    /// <summary>Keeps what the tab shows of a diagram or a comparison that reads <paramref name="file"/>, which the user
+    /// closed, and reads it no more: what was in flight for it is cancelled for good. A tab showing anything else, or
+    /// shown closed already, stays as it is (a node's load is closed through <see cref="TabLoad.ShowClosed"/>).</summary>
+    public void ShowClosed(AssemblyPath file)
+    {
+        if (_closedFile is not null)
+        {
+            return;
+        }
+
+        if (!ReadsDocumentOf(file))
+        {
+            return;
+        }
+
+        _closedFile = file;
+        _pointedChanges++;
+        _pointedVersion++;
+        Cancel();
+    }
+
+    private bool ReadsDocumentOf(AssemblyPath file)
+    {
+        if (_shown is TabContent.Diagram diagram)
+        {
+            return diagram.Types.HasTypesOf(file);
+        }
+
+        if (_shown is TabContent.Comparison comparison)
+        {
+            return comparison.Assemblies.HasSide(file);
+        }
+
+        return false;
     }
 
     /// <summary>Points the tab at <paramref name="node"/>, cancelling what was in flight, and shows it loading in
@@ -136,6 +194,7 @@ public sealed class TabDocument
         _pointedChanges = Changes + 1;
         _pointedVersion = Version + 1;
         Cancel();
+        _closedFile = null;
     }
 
     /// <summary>Cancels what is in flight for what the tab shows: its load, its diagram's reading and layout, or its

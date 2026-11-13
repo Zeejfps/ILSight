@@ -33,6 +33,13 @@ public sealed class DocumentTab
 
     public TabContent Content => _document.Content;
 
+    /// <summary>The file name of the closed assembly what the tab shows was read from, its node's or one its diagram or
+    /// comparison reads; null while none is closed. The tab keeps what it shows and reads it no more.</summary>
+    public string? ClosedAssembly => _document.ClosedAssembly;
+
+    /// <summary>The file of the closed assembly <see cref="ClosedAssembly"/> names; null while none is closed.</summary>
+    public AssemblyPath? ClosedFile => _document.ClosedFile;
+
     /// <summary>Where the tab points: the path of its node, or while the node is away the path it is
     /// found again by or no longer exists at; outlives reloads of the assembly.</summary>
     public NodePath? Location => Load.Location;

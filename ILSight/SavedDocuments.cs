@@ -166,7 +166,8 @@ public static class SavedDocuments
     }
 
     /// <summary>What the settings keep of <paramref name="tab"/>; null for one they leave out: one the screen docks
-    /// nowhere, and one whose assembly was closed (<see cref="TabLoad.ShowClosed"/>), gone after a restart.</summary>
+    /// nowhere, and one whose assembly was closed (<see cref="DocumentTab.ClosedAssembly"/>: a node's, a diagram's or a
+    /// comparison's), gone after a restart.</summary>
     private static SavedTab? SaveTab(OpenListSession session, ViewSettings view, DocumentTab tab)
     {
         var panel = FindTabPanel(view, tab);
@@ -176,7 +177,7 @@ public static class SavedDocuments
             return new SavedTab { Tab = tab, Record = KeepWaiting(waiting, panel) };
         }
 
-        if (tab.Load.ClosedAssembly is not null)
+        if (tab.ClosedAssembly is not null)
         {
             return null;
         }
@@ -325,8 +326,9 @@ public static class SavedDocuments
         return TabLoads.From([], diagramReads, ListLookups(nodes), comparisonRuns);
     }
 
-    /// <summary>Whether a tab whose assembly was closed (<see cref="TabLoad.ShowClosed"/>) shows a node of a file the
-    /// list holds again, read: opened, reloaded or restored, whichever way it came back. Allocates nothing.</summary>
+    /// <summary>Whether a tab whose assembly was closed (<see cref="DocumentTab.ClosedAssembly"/>: a node's, a diagram's
+    /// or a comparison's) was read from a file the list holds again, read: opened, reloaded or restored, whichever way it
+    /// came back. Allocates nothing.</summary>
     internal static bool HasClosedTabListedAgain(Navigation navigation, AssemblyList assemblies)
     {
         var tabs = navigation.OpenTabs;
@@ -343,22 +345,21 @@ public static class SavedDocuments
 
     private static bool IsListedAgain(DocumentTab tab, AssemblyList assemblies)
     {
-        if (tab.Load.ClosedAssembly is null)
-        {
-            return false;
-        }
-
-        var location = tab.Location;
-        return location is not null && assemblies.IsListed(location.FilePath);
+        var closed = tab.ClosedFile;
+        return closed is not null && assemblies.IsListed(closed);
     }
 
     /// <summary>Revives each tab whose assembly was closed and is on the list again (<see cref="HasClosedTabListedAgain"/>),
-    /// docked as <paramref name="documents"/> says: it waits for its node to be found again in what was read, as a tab
-    /// reopened from the saved documents does, back where its view stood, and so reads again, the bar saying its
-    /// assembly was closed gone. Returns the lookup of those nodes for the edge to start.</summary>
+    /// docked as <paramref name="documents"/> says: it waits for what it showed, as a tab reopened from the saved
+    /// documents does, and shows it again as one does once the assemblies are listed
+    /// (<see cref="ShowReopenedDocuments"/>): a node found again in what was read, back where its view stood, a diagram
+    /// whose cards are read again, a comparison run again, the bar saying its assembly was closed gone. Returns those
+    /// loads for the edge to start.</summary>
     internal static TabLoads ReviveClosedTabs(OpenListSession session, DocumentViews documents)
     {
         var nodes = new List<WaitingNode>();
+        var diagramReads = new List<SavedDiagramRead>();
+        var comparisonRuns = new List<ComparisonRun>();
         var tabs = session.Navigation.OpenTabs;
         for (var i = 0; i < tabs.Count; i++)
         {
@@ -371,35 +372,31 @@ public static class SavedDocuments
             var revived = Revive(session, documents, tab);
             if (revived is not null)
             {
-                nodes.Add(revived);
+                ShowReopened(session.Navigation, session.Reopened, session.Assemblies, revived, nodes, diagramReads, comparisonRuns);
             }
         }
 
-        return TabLoads.From([], [], ListLookups(nodes), []);
+        return TabLoads.From([], diagramReads, ListLookups(nodes), comparisonRuns);
     }
 
-    /// <summary>Has <paramref name="tab"/>, whose assembly was closed and is listed again, wait for its node; null while
-    /// the screen docks it nowhere yet.</summary>
-    private static WaitingNode? Revive(OpenListSession session, DocumentViews documents, DocumentTab tab)
+    /// <summary>Has <paramref name="tab"/>, whose assembly was closed and is listed again, wait for what it showed, kept
+    /// as the settings would keep it; null while the screen docks it nowhere yet.</summary>
+    private static ReopenedTab? Revive(OpenListSession session, DocumentViews documents, DocumentTab tab)
     {
-        var location = tab.Location;
-        var panel = DocumentPanels.FindPanel(documents, tab);
-        if (location is null || panel is null)
+        var panel = DocumentPanels.FindTabPanel(documents, tab);
+        if (panel is null)
         {
             return null;
         }
 
-        var record = new NodeDocumentRecord
+        var record = SaveShown(tab, panel);
+        if (record is null)
         {
-            Panel = panel,
-            Title = tab.Title,
-            Location = location,
-            Language = tab.Load.Language,
-            View = tab.Load.PositionToReopen,
-        };
-        session.Navigation.WaitForNode(tab, location, record.Title, record.Language);
-        var reopened = WaitFor(session.Reopened, tab, record);
-        return new WaitingNode { Reopened = reopened, Record = record, Place = location };
+            return null;
+        }
+
+        WaitForSaved(session.Navigation, tab, record);
+        return WaitFor(session.Reopened, tab, record);
     }
 
     /// <summary>The lookup of <paramref name="nodes"/>; none when no tab waits for a node.</summary>

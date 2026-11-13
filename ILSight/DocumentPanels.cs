@@ -91,6 +91,18 @@ public static class DocumentPanels
         }
     }
 
+    /// <summary>The panel <paramref name="tab"/> is docked as, and how its diagram or comparison is viewed, as the
+    /// settings keep it (<see cref="SavePanels"/>); null when it has no view.</summary>
+    public static TabPanel? FindTabPanel(DocumentViews documents, DocumentTab tab)
+    {
+        if (!documents.Views.TryGetValue(tab, out var view))
+        {
+            return null;
+        }
+
+        return new TabPanel { Tab = tab, Panel = view.Panel, View = SaveView(tab, view) };
+    }
+
     /// <summary>The panel each tab with a view is docked as, and how its diagram or comparison is viewed,
     /// for the settings to keep.</summary>
     public static List<TabPanel> SavePanels(DocumentViews documents)

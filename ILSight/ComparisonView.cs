@@ -56,13 +56,14 @@ internal static class ComparisonView
 
     /// <summary>The comparison's tools, for the bar over the document: collapsing and expanding the tree,
     /// swapping the assemblies' sides, and what it shows; a change compares <paramref name="assemblies"/> as they are
-    /// open again.</summary>
+    /// open again, and so is unavailable, saying why, once one of the two was closed.</summary>
     public static void Tools(Ui<UiState> ui, AssemblyList assemblies, DocumentTab tab, AssemblyComparison comparison)
     {
         var t = ui.State.Strings;
         var icons = ui.State.Icons;
         var rows = DocumentPanels.GetView(ui.State.Documents, tab).Comparison;
         var any = rows.Roots.Count > 0;
+        var why = DocumentsView.FindClosedText(ui, tab.ClosedAssembly);
         using (ui.Row(new Box { Gap = ui.Theme.Gap, AlignY = Align.Center }))
         {
             if (ui.IconButton("collapse", icons.AnalyzerCollapseAll, t.CodeCollapseAll, any))
@@ -76,14 +77,14 @@ internal static class ComparisonView
             }
 
             ui.Separator(ui.Theme.IconSize);
-            if (ui.IconButton("swap", icons.ComparisonSwap, t.ComparisonSwap))
+            if (ui.IconButton("swap", icons.ComparisonSwap, why ?? t.ComparisonSwap, enabled: why is null))
             {
                 Commands.CompareLater(ui.State, SwapComparedAssemblies(assemblies, comparison));
             }
 
             ui.Separator(ui.Theme.IconSize);
             OnlyDifferencesCheckbox(ui, rows);
-            HiddenMembersCheckbox(ui, assemblies, comparison);
+            HiddenMembersCheckbox(ui, assemblies, comparison, why is null);
         }
     }
 
@@ -96,10 +97,10 @@ internal static class ComparisonView
         }
     }
 
-    private static void HiddenMembersCheckbox(Ui<UiState> ui, AssemblyList assemblies, AssemblyComparison comparison)
+    private static void HiddenMembersCheckbox(Ui<UiState> ui, AssemblyList assemblies, AssemblyComparison comparison, bool enabled)
     {
         var all = comparison.Scope == ApiScope.AllDeclared;
-        if (ui.Checkbox(ui.State.Strings.ComparisonShowHiddenMembers, ref all, id: "show-hidden-members"))
+        if (ui.Checkbox(ui.State.Strings.ComparisonShowHiddenMembers, ref all, id: "show-hidden-members", enabled: enabled))
         {
             Commands.CompareLater(ui.State, ChangeComparedScope(assemblies, comparison, ScopeOf(all)));
         }

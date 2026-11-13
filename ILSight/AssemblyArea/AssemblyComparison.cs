@@ -39,6 +39,12 @@ public sealed class AssemblyComparison
     /// <summary>Counts up whenever the sides are swapped or the comparison takes in more or less; it never counts down.</summary>
     public int Version { get; private set; }
 
+    /// <summary>Whether <paramref name="file"/> is one of the two assemblies compared.</summary>
+    public bool HasSide(AssemblyPath file)
+    {
+        return LeftPath.Equals(file) || RightPath.Equals(file);
+    }
+
     /// <summary>Puts the right assembly on the left and the left one on the right.</summary>
     public void SwapSides()
     {

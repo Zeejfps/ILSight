@@ -516,6 +516,16 @@ public sealed class Navigation
         _tabs.GetDocument(tab).WaitForDocument(title);
     }
 
+    /// <summary>Has each open tab showing a diagram or a comparison that reads <paramref name="file"/>, an assembly the
+    /// user closed, keep what it shows and read it no more (<see cref="TabDocument.ShowClosed"/>).</summary>
+    public void ShowDocumentsClosed(AssemblyPath file)
+    {
+        foreach (var tab in _tabs.Open)
+        {
+            _tabs.GetDocument(tab).ShowClosed(file);
+        }
+    }
+
     /// <summary>Has <paramref name="tab"/>, reopened from the saved documents, wait, titled <paramref name="title"/>,
     /// for the assemblies the comparison it showed when they were saved compared to be listed: no place in the history
     /// and no new intent.</summary>

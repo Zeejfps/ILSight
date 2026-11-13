@@ -1,4 +1,5 @@
 using ILSight.Core;
+using ILSight.DiagramArea;
 using ZGF.KeyboardModule;
 using static ILSight.AssemblyArea.AssemblyClosing;
 using static ILSight.Preferences;
@@ -397,5 +398,99 @@ public sealed class CloseAssembliesTests
         Assert.Equal(["Greeter"], saved.Select(static t => t.Title));
         Assert.DoesNotContain(restarted.AppState.Navigation.OpenTabs, static t => t.Title == "KeyboardKey");
         Assert.Contains(restarted.AppState.Navigation.OpenTabs, static t => t.Title == "Greeter");
+    }
+
+    private static AppDriver OpenedWithKeyboard(TempDir temp)
+    {
+        var app = new AppDriver(settings: temp.Settings());
+        app.Driver.OpenFixtures();
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(KeyboardPath)], ct));
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 2, Patience);
+        app.Run(2);
+        return app;
+    }
+
+    private static List<string?> SavedTitles(TempDir temp)
+    {
+        return (temp.Settings().AssemblyLists.Single().Documents?.Tabs ?? []).Select(static t => t.Title).ToList();
+    }
+
+    private static void OpenKeyboardAgain(AppDriver app)
+    {
+        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(KeyboardPath)], ct));
+        app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 2, Patience);
+        app.Settle(4);
+    }
+
+    [Fact]
+    public async Task A_diagram_of_a_closed_assembly_says_so_is_left_out_of_the_saved_session_and_revives_when_it_is_opened_again()
+    {
+        using var temp = new TempDir();
+        var app = OpenedWithKeyboard(temp);
+        DiagramView.ShowInNewDiagramLater(app.Ui, (await KeyboardKeyOfAsync(app)).Definition, "Keys");
+        app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Diagram?.Cards.Count > 0, Patience);
+        app.Settle(2);
+        var tab = app.AppState.Navigation.ActiveTab;
+        Assert.NotNull(tab);
+        var before = tab.Diagram;
+        app.Driver.Pump();
+        var savedOpen = SavedTitles(temp);
+
+        CloseKeyboardFromTheDialog(app);
+        app.Driver.Pump();
+        var closed = tab.ClosedAssembly;
+        var shownClosed = tab.Diagram;
+        var drewBar = app.Frames.Drew($"{KeyboardFile} was closed.");
+        var savedClosed = SavedTitles(temp);
+        OpenKeyboardAgain(app);
+        app.Frames.WaitUntil(() => tab.Diagram != before && tab.Diagram?.Cards.Count > 0 && tab.Diagram?.IsBusy == false, Patience);
+        app.Run(2);
+
+        Assert.Contains("Keys", savedOpen);
+        Assert.Equal(KeyboardFile, closed);
+        Assert.Same(before, shownClosed);
+        Assert.True(drewBar);
+        Assert.DoesNotContain("Keys", savedClosed);
+        Assert.Null(tab.ClosedAssembly);
+        var revived = tab.Diagram;
+        Assert.NotNull(revived);
+        Assert.Contains(revived.Cards, static c => c.Name == "KeyboardKey");
+        Assert.False(app.Frames.Drew($"{KeyboardFile} was closed."));
+        Assert.Empty(app.AppState.Errors.Entries);
+    }
+
+    [Fact]
+    public void A_comparison_of_a_closed_assembly_says_so_is_left_out_of_the_saved_session_and_revives_when_it_is_opened_again()
+    {
+        using var temp = new TempDir();
+        var app = OpenedWithKeyboard(temp);
+        var fixture = Assert.IsType<LoadedModule>(app.AppState.Assemblies.Listed.Single(static a => a.FilePath.Text != KeyboardPath));
+        app.StartComparing(Comparisons.CompareAssemblies(app.AppState.Navigation, app.AppState.Assemblies, fixture, KeyboardOf(app), "Compared"));
+        app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Comparison?.Result is ComparisonResult.Compared, Patience);
+        app.Settle(2);
+        var tab = app.AppState.Navigation.ActiveTab;
+        Assert.NotNull(tab);
+        var before = tab.Comparison;
+        app.Driver.Pump();
+        var savedOpen = SavedTitles(temp);
+
+        CloseKeyboardFromTheDialog(app);
+        app.Driver.Pump();
+        var closed = tab.ClosedAssembly;
+        var shownClosed = tab.Comparison?.Result;
+        var drewBar = app.Frames.Drew($"{KeyboardFile} was closed.");
+        var savedClosed = SavedTitles(temp);
+        OpenKeyboardAgain(app);
+        app.Frames.WaitUntil(() => tab.Comparison?.Result is ComparisonResult.Compared && tab.Comparison != before, Patience);
+        app.Run(2);
+
+        Assert.Contains("Compared", savedOpen);
+        Assert.Equal(KeyboardFile, closed);
+        Assert.IsType<ComparisonResult.Compared>(shownClosed);
+        Assert.True(drewBar);
+        Assert.DoesNotContain("Compared", savedClosed);
+        Assert.Null(tab.ClosedAssembly);
+        Assert.False(app.Frames.Drew($"{KeyboardFile} was closed."));
+        Assert.Empty(app.AppState.Errors.Entries);
     }
 }

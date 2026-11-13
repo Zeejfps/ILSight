@@ -38,7 +38,7 @@ internal static class DocumentsView
         ui.State.Documents.TabAreaHeight = ui.TryGetRect(areaId, out var area) ? area.Height : ui.Height;
         using var content = ui.Column(areaId, new Box { Height = Sizing.Grow(), Gap = 0f });
         DocumentPanels.RecordShown(DocumentPanels.GetView(ui.State.Documents, tab), tab);
-        ClosedBanner(ui, tab.Load.ClosedAssembly);
+        ClosedBanner(ui, tab.ClosedAssembly);
         tab.Content.Switch((ui, navigation, session, assemblies, setup, bookmarks, tooltips, tab),
             empty: static (s, _) => Hint(s.ui, s.ui.State.Strings.DocumentsHint),
             loading: static (s, loading) => RenderLoading(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab, loading),
@@ -57,7 +57,7 @@ internal static class DocumentsView
     }
 
     /// <summary>The bar over a tab whose assembly was closed, saying so: the tab keeps what it showed and reads it no
-    /// more (<see cref="TabLoad.ShowClosed"/>). Nothing while <paramref name="assembly"/>, the closed file's name, is
+    /// more (<see cref="TabLoad.ShowClosed"/>, <see cref="TabDocument.ShowClosed"/>). Nothing while <paramref name="assembly"/>, the closed file's name, is
     /// null.</summary>
     private static void ClosedBanner(Ui<UiState> ui, string? assembly)
     {
@@ -73,6 +73,18 @@ internal static class DocumentsView
             ui.Text(text, color: theme.Warning);
         }
         ui.Separator();
+    }
+
+    /// <summary>That <paramref name="closedAssembly"/>, the assembly a tab's document was read from, was closed, as the
+    /// tab's bar says it, for what would read it to say why it is unavailable; null while it is open.</summary>
+    public static string? FindClosedText(Ui<UiState> ui, string? closedAssembly)
+    {
+        if (closedAssembly is null)
+        {
+            return null;
+        }
+
+        return ui.Memo("closed", (closedAssembly, t: ui.State.Strings), static a => a.t.DocumentClosed(a.closedAssembly));
     }
 
     /// <summary>The code view of <paramref name="tab"/>, whose node <paramref name="loading"/> is on its way, or a

@@ -51,6 +51,13 @@ public sealed class TypeDiagram
 
     public bool IsClosed => _work.IsClosed;
 
+    /// <summary>Whether the diagram reads <paramref name="file"/>: one of its own assemblies, or the assembly of one of
+    /// the types it shows.</summary>
+    public bool HasTypesOf(AssemblyPath file)
+    {
+        return _homeAssemblies.Contains(file) || _kept.Exists(t => t.AssemblyPath.Equals(file));
+    }
+
     public bool HasCard(CodeReference.Entity type)
     {
         return _types.Contains(type);
