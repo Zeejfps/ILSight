@@ -450,9 +450,9 @@ public sealed class AppStateTests
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference);
         var farewell = await d.FixtureAsync("Farewell");
 
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
         d.StartShowing(farewell);
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: true), ct));
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, reference, a.Navigation.BeginResolving(inNewTab: true), ct));
         ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup, d.AppState.Navigation.OpenTabs[0]);
         d.NextFrame();
         d.Settle();
@@ -473,7 +473,7 @@ public sealed class AppStateTests
         var (line, column) = document.GetPosition("Name;");
 
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference);
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
         d.Settle();
 
         var tab = Assert.Single(d.AppState.Navigation.OpenTabs);
@@ -524,7 +524,7 @@ public sealed class AppStateTests
         var document = active.Document;
         var (line, column) = document.GetPosition("Length");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference);
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: true), ct));
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, reference, a.Navigation.BeginResolving(inNewTab: true), ct));
         d.Settle();
         Assert.Equal(2, d.AppState.Assemblies.Assemblies.Count);
         search.Update(d.AppState.Assemblies, 2, true);

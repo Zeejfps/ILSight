@@ -131,7 +131,7 @@ public sealed class NestedNamespaceTests
         var farewell = await app.FixtureAsync("Farewell");
         app.Ui.Tree.CollapseAll();
 
-        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a, farewell.Definition, a.Navigation.BeginResolving(inNewTab: false), ct));
+        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, farewell.Definition, a.Navigation.BeginResolving(inNewTab: false), ct));
         app.Settle(1);
 
         Assert.Same(farewell, app.AppState.Navigation.ActiveTab?.Node);

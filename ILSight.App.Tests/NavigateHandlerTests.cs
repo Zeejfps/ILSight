@@ -15,7 +15,7 @@ public sealed class NavigateHandlerTests
         var resolvingWhileLooking = false;
         var lookup = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(farewell)), WhileLooking = () => resolvingWhileLooking = appState.IsResolving };
 
-        var load = await d.RunAsync(() => new NavigateHandler(lookup).HandleAsync(appState, reference, appState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        var load = await d.RunAsync(() => new NavigateHandler(lookup).HandleAsync(appState.Navigation, appState.Decompiler, reference, appState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
 
         Assert.Same(reference, Assert.Single(lookup.LookedUp));
         Assert.Same(farewell, appState.Navigation.ActiveTab?.Node);
@@ -39,8 +39,8 @@ public sealed class NavigateHandlerTests
         var missing = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)) };
         var failed = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(error) };
 
-        var missingLoad = await d.RunAsync(() => new NavigateHandler(missing).HandleAsync(d.AppState, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
-        var failedLoad = await d.RunAsync(() => new NavigateHandler(failed).HandleAsync(d.AppState, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        var missingLoad = await d.RunAsync(() => new NavigateHandler(missing).HandleAsync(d.AppState.Navigation, d.AppState.Decompiler, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        var failedLoad = await d.RunAsync(() => new NavigateHandler(failed).HandleAsync(d.AppState.Navigation, d.AppState.Decompiler, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
 
         var notThere = Assert.IsType<AppProblem.Unresolved>(Assert.Single(missing.Reported));
         Assert.Same(reference, notThere.Reference);
@@ -63,8 +63,8 @@ public sealed class NavigateHandlerTests
         var found = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(farewell)), WhileLooking = () => appState.Navigation.BeginRequest() };
         var missing = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)), WhileLooking = () => appState.Navigation.BeginRequest() };
 
-        var foundLoad = await d.RunAsync(() => new NavigateHandler(found).HandleAsync(appState, farewell.Definition, appState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
-        var missingLoad = await d.RunAsync(() => new NavigateHandler(missing).HandleAsync(appState, farewell.Definition, appState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        var foundLoad = await d.RunAsync(() => new NavigateHandler(found).HandleAsync(appState.Navigation, appState.Decompiler, farewell.Definition, appState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        var missingLoad = await d.RunAsync(() => new NavigateHandler(missing).HandleAsync(appState.Navigation, appState.Decompiler, farewell.Definition, appState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
 
         Assert.Same(shown, appState.Navigation.ActiveTab?.Node);
         Assert.Null(foundLoad);
@@ -83,7 +83,7 @@ public sealed class NavigateHandlerTests
         Assert.NotNull(shown);
         var reference = CodeReferences.CreateEntity(EntityKind.Type, "Greeter", AssemblyPath.Of(path), MetadataTokens.TypeDefinitionHandle(2));
 
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
         d.Settle();
 
         var reported = Assert.Single(d.AppState.Errors.Entries);
@@ -105,7 +105,7 @@ public sealed class NavigateHandlerTests
         var unreadable = new Lookup<BrowseNode>.Unreadable { Module = new UnreadableModule { Module = module, Why = why } };
         var lookup = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(unreadable) };
 
-        var load = await d.RunAsync(() => new NavigateHandler(lookup).HandleAsync(d.AppState, greeter.Definition, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        var load = await d.RunAsync(() => new NavigateHandler(lookup).HandleAsync(d.AppState.Navigation, d.AppState.Decompiler, greeter.Definition, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
 
         var problem = Assert.IsType<AppProblem.ModuleUnreadable>(Assert.Single(lookup.Reported));
         Assert.Equal(module.FilePath.FileName, problem.Module);

@@ -231,7 +231,7 @@ public sealed class AnalyzerTests
         var waiting = analyzer.Roots.ToList();
         d.Settle();
         var followed = AppStateDriver.Opened();
-        followed.Start((a, ct) => a.NavigateHandler.HandleAsync(a, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
+        followed.Start((a, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
         followed.Settle();
 
         Assert.Equal([AppStateDriver.FixturePath], listedBefore);

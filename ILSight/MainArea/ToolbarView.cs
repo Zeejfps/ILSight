@@ -18,7 +18,11 @@ internal static class ToolbarView
 
     private static readonly ConditionalWeakTable<Strings, Segment<DecompilationLanguage>[]> LanguageSegments = new();
 
-    public static void Render(Ui<UiState> ui, AppState appState)
+    /// <summary>The toolbar, over the parts its controls read and change: the saved lists and the open list's session
+    /// (the list picker, history), how the screen is laid out (switching lists keeps it), the exports finished (history
+    /// shows their reports again) and the decompiler's choice (the language, its version, the history's loads).</summary>
+    public static void Render(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view,
+        IReadOnlyList<ExportArea.ExportReport> finishedExports, DecompilerChoice decompiler)
     {
         var t = ui.State.Strings;
         var theme = ui.Theme;
@@ -33,7 +37,7 @@ internal static class ToolbarView
         {
             using (Group(ui))
             {
-                ListPicker(ui, appState);
+                ListPicker(ui, lists, session, view);
                 if (ui.IconButton("manage-lists", ui.State.Icons.ToolbarManageLists, t.ListsManage, variant: ButtonVariant.Neutral))
                 {
                     Commands.Later(ui.State, ui.State.ListsDialog, static (a, dialog) => AssemblyListsDialogView.Open(dialog, a));
@@ -45,7 +49,7 @@ internal static class ToolbarView
                 var openTip = ui.Memo("open-tip", t, static s => s.ToolbarOpen(Shortcuts.Open));
                 if (ui.IconButton("open", ui.State.Icons.ToolbarOpen, openTip, variant: ButtonVariant.Neutral))
                 {
-                    MainMenuView.OpenFile(ui, appState.Navigation);
+                    MainMenuView.OpenFile(ui, session.Navigation);
                 }
 
                 var searchTip = ui.Memo("search-tip", t, static s => s.SearchFieldTooltip(Shortcuts.Search));
@@ -57,38 +61,12 @@ internal static class ToolbarView
 
             using (Group(ui))
             {
-                using (var back = ui.SplitIconButton("back", ui.State.Icons.ToolbarBack,
-                           ui.Memo("back-tip", t, static s => s.ToolbarBack(Shortcuts.Back)), t.ToolbarBackHistory, appState.Navigation.CanGoBack, appState.Navigation.HistoryRevision))
-                {
-                    if (back.Clicked)
-                    {
-                        Commands.MoveLater(ui.State, appState.Navigation.GoBack(appState.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
-                    }
-
-                    if (back.IsOpen)
-                    {
-                        HistoryItems(ui, appState.Navigation, appState.Assemblies, appState.FinishedExports, appState.Decompiler.Setup, -1);
-                    }
-                }
-                using (var forward = ui.SplitIconButton("forward", ui.State.Icons.ToolbarForward,
-                           ui.Memo("forward-tip", t, static s => s.ToolbarForward(Shortcuts.Forward)), t.ToolbarForwardHistory, appState.Navigation.CanGoForward,
-                           appState.Navigation.HistoryRevision))
-                {
-                    if (forward.Clicked)
-                    {
-                        Commands.MoveLater(ui.State, appState.Navigation.GoForward(appState.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
-                    }
-
-                    if (forward.IsOpen)
-                    {
-                        HistoryItems(ui, appState.Navigation, appState.Assemblies, appState.FinishedExports, appState.Decompiler.Setup, 1);
-                    }
-                }
+                HistoryButtons(ui, session, finishedExports, decompiler.Setup);
             }
 
             using (Group(ui))
             {
-                var language = appState.Decompiler.Setup.Language;
+                var language = decompiler.Setup.Language;
                 var languages = Languages(t);
                 if (ui.SegmentedControl("language", ref language, languages))
                 {
@@ -97,7 +75,7 @@ internal static class ToolbarView
 
                 if (DecompilationLanguages.ShowsCSharp(language))
                 {
-                    LanguageVersion(ui, appState.Decompiler.Setup.Options);
+                    LanguageVersion(ui, decompiler.Setup.Options);
                     if (ui.IconButton("decompiler-options", ui.State.Icons.ToolbarDecompilerOptions, t.PanelDecompilerOptions, variant: ButtonVariant.Neutral))
                     {
                         OpenPanel(ui.State, DockView.DecompilerOptions);
@@ -116,12 +94,46 @@ internal static class ToolbarView
         }
     }
 
-    /// <summary>The open assembly list's name, opening a menu of every list to switch to, and of the
-    /// dialog that manages them. As wide as the longest name, within limits.</summary>
-    private static void ListPicker(Ui<UiState> ui, AppState appState)
+    /// <summary>Back and forward through <paramref name="session"/>'s history, each with a menu of the entries that
+    /// way; what they show again loads in <paramref name="setup"/>.</summary>
+    private static void HistoryButtons(Ui<UiState> ui, OpenListSession session, IReadOnlyList<ExportArea.ExportReport> finishedExports, DecompilerSetup setup)
     {
         var t = ui.State.Strings;
-        var lists = appState.Lists;
+        var navigation = session.Navigation;
+        using (var back = ui.SplitIconButton("back", ui.State.Icons.ToolbarBack,
+                   ui.Memo("back-tip", t, static s => s.ToolbarBack(Shortcuts.Back)), t.ToolbarBackHistory, navigation.CanGoBack, navigation.HistoryRevision))
+        {
+            if (back.Clicked)
+            {
+                Commands.MoveLater(ui.State, navigation.GoBack(session.Assemblies, finishedExports, setup));
+            }
+
+            if (back.IsOpen)
+            {
+                HistoryItems(ui, navigation, session.Assemblies, finishedExports, setup, -1);
+            }
+        }
+        using (var forward = ui.SplitIconButton("forward", ui.State.Icons.ToolbarForward,
+                   ui.Memo("forward-tip", t, static s => s.ToolbarForward(Shortcuts.Forward)), t.ToolbarForwardHistory, navigation.CanGoForward,
+                   navigation.HistoryRevision))
+        {
+            if (forward.Clicked)
+            {
+                Commands.MoveLater(ui.State, navigation.GoForward(session.Assemblies, finishedExports, setup));
+            }
+
+            if (forward.IsOpen)
+            {
+                HistoryItems(ui, navigation, session.Assemblies, finishedExports, setup, 1);
+            }
+        }
+    }
+
+    /// <summary>The open assembly list's name, opening a menu of every list to switch to, and of the
+    /// dialog that manages them. As wide as the longest name, within limits.</summary>
+    private static void ListPicker(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
+    {
+        var t = ui.State.Strings;
         var width = ListPickerWidth(ui, lists);
         using var menu = ui.SelectButton("list", lists.Active, width, t.ListsPick, revision: lists.Count);
         if (!menu.IsOpen)
@@ -132,7 +144,7 @@ internal static class ToolbarView
         var names = lists.Names;
         for (var i = 0; i < names.Count; i++)
         {
-            ListItem(ui, appState.Lists, appState.ListSession, appState.View, names[i]);
+            ListItem(ui, lists, session, view, names[i]);
         }
 
         ui.MenuSeparator();

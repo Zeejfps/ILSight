@@ -20,21 +20,24 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
 
     /// <summary>Resolves <paramref name="reference"/> in the background (it may load an assembly) for the request
     /// <paramref name="ticket"/> began (<see cref="Navigation.BeginResolving"/>, in the frame it was asked in), then
-    /// shows it in the tab the ticket leads to and records it in the history. Returns the load that started in the
-    /// tab, for the edge that started this to start under the tab's work; null when none started. Reports a reference
-    /// that leads nowhere; drops it when something else was asked for meanwhile.</summary>
-    public async Task<DecompileTicket?> HandleAsync(AppState appState, CodeReference.Navigable reference, ResolveTicket ticket, CancellationToken ct)
+    /// shows it in the tab the ticket leads to, in <paramref name="navigation"/>, decompiled as
+    /// <paramref name="decompiler"/> has it once found, and records it in the history. Returns the load that started in
+    /// the tab, for the edge that started this to start under the tab's work; null when none started. Reports a
+    /// reference that leads nowhere; drops it when something else was asked for meanwhile.</summary>
+    public async Task<DecompileTicket?> HandleAsync(Navigation navigation, DecompilerChoice decompiler, CodeReference.Navigable reference, ResolveTicket ticket,
+        CancellationToken ct)
     {
         var found = await ports.LookUpReferenceAsync(reference, ct);
-        return ShowResolved(appState, reference, appState.Navigation.EndResolving(ticket.Intent, found), ticket.Destination);
+        return ShowResolved(navigation, decompiler, reference, navigation.EndResolving(ticket.Intent, found), ticket.Destination);
     }
 
     /// <summary>Shows what <paramref name="resolved"/> found, or reports it unresolved. Returns the load it started
     /// in the tab; null when it started none.</summary>
-    private DecompileTicket? ShowResolved(AppState appState, CodeReference reference, Resolution<BrowseNode> resolved, TabDestination destination)
+    private DecompileTicket? ShowResolved(Navigation navigation, DecompilerChoice decompiler, CodeReference reference, Resolution<BrowseNode> resolved,
+        TabDestination destination)
     {
         return resolved.Match<DecompileTicket?>(
-            found => ShowFound(appState, found.Value, destination),
+            found => navigation.ShowFoundNode(destination, found.Value, decompiler.Setup),
             _ =>
             {
                 ReportUnresolved(reference, null);
@@ -51,11 +54,6 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
                 return null;
             },
             static _ => null);
-    }
-
-    private static DecompileTicket? ShowFound(AppState appState, BrowseNode found, TabDestination destination)
-    {
-        return appState.Navigation.ShowFoundNode(destination, found, appState.Decompiler.Setup);
     }
 
     private void ReportUnresolved(CodeReference reference, Exception? error)

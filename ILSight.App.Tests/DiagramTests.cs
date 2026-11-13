@@ -241,7 +241,7 @@ public sealed class DiagramTests
         Assert.NotNull(tab);
 
         var greeter = await TypeOfAsync(d, "Greeter");
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, greeter, a.Navigation.BeginResolving(inNewTab: false), ct));
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, greeter, a.Navigation.BeginResolving(inNewTab: false), ct));
         d.Settle();
 
         Assert.NotSame(tab, d.AppState.Navigation.ActiveTab);

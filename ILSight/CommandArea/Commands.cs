@@ -69,7 +69,7 @@ public static class Commands
             return;
         }
 
-        Start(uiState, nameof(NavigateHandler), (reference, lookup), static (a, s, ct) => a.NavigateHandler.HandleAsync(a, s.reference, s.lookup, ct));
+        Start(uiState, nameof(NavigateHandler), (reference, lookup), static (a, s, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, s.reference, s.lookup, ct));
     }
 
     /// <summary>As <see cref="FollowLater"/>, showing the metadata table row that defines what

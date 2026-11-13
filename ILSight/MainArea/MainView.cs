@@ -30,7 +30,7 @@ public static class MainView
         {
             MainMenuView.Render(ui, appState);
             ui.Separator();
-            ToolbarView.Render(ui, appState);
+            ToolbarView.Render(ui, appState.Lists, appState.ListSession, appState.View, appState.FinishedExports, appState.Decompiler);
             ui.Separator();
             Panels(ui, appState);
             ui.Separator();

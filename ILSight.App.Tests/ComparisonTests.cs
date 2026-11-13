@@ -135,7 +135,7 @@ public sealed class ComparisonTests
         d.Settle();
         var account = Entry(DiffOf(comparison), "ApiDiffSample", "Account");
         var sides = Assert.IsType<ApiSides.Both>(Assert.IsType<ApiEntry.Entity>(account).Sides);
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, sides.Right.Reference, a.Navigation.BeginResolving(inNewTab: false), ct));
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, sides.Right.Reference, a.Navigation.BeginResolving(inNewTab: false), ct));
         d.Settle();
 
         d.GoBack();
@@ -257,7 +257,7 @@ public sealed class ComparisonTests
         var account = Entry(DiffOf(comparison), "ApiDiffSample", "Account");
 
         var sides = Assert.IsType<ApiSides.Both>(Assert.IsType<ApiEntry.Entity>(account).Sides);
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a, sides.Right.Reference, a.Navigation.BeginResolving(inNewTab: false), ct));
+        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, sides.Right.Reference, a.Navigation.BeginResolving(inNewTab: false), ct));
         d.Settle();
 
         var shown = d.AppState.Navigation.ActiveTab;
