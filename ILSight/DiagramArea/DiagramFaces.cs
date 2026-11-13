@@ -49,8 +49,9 @@ internal static class DiagramFaces
     /// on a token a newer layout and closing the diagram cancel.</summary>
     internal static void LayOutLater(UiState uiState, TypeDiagram diagram, DiagramMeasures measures)
     {
-        Commands.StartLater(uiState, nameof(LayOutDiagramHandler), (diagram, measures), static (_, s) => s.diagram.StartLayout(),
-            static (a, s, layout, ct) => a.LayOutDiagramHandler.HandleAsync(s.diagram, layout, s.measures, ct), static layout => layout.Token);
+        Commands.StartSettlingLater(uiState, nameof(LayOutDiagramHandler), (diagram, measures), static (_, s) => s.diagram.StartLayout(),
+            static (a, s, layout, ct) => a.LayOutDiagramHandler.HandleAsync(s.diagram, layout, s.measures, ct), static layout => layout.Token,
+            static (s, layout, _) => s.diagram.TryFinishLayout(layout));
     }
 
     private static FaceKey KeyOf(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)

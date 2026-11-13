@@ -41,7 +41,7 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
     {
         var cards = await ports.ReadWithNeighboursAsync(read.Type, ct);
         var diagram = read.Diagram;
-        diagram.FinishReading();
+        diagram.FinishReading(read.Read);
         if (diagram.IsClosed)
         {
             return;
@@ -100,9 +100,9 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
             return;
         }
 
-        diagram.StartReading();
+        var reading = diagram.StartReading();
         var read = await ports.ReadCardsAsync(types, ct);
-        FinishAdding(diagram, card, read);
+        FinishAdding(diagram, reading, card, read);
     }
 
     /// <summary>Looks in the open assemblies for the types deriving from <paramref name="card"/>, or implementing it,
@@ -110,17 +110,17 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
     /// the search reached that could not be read.</summary>
     public async Task ExpandDerivedAsync(TypeDiagram diagram, TypeCard card, CancellationToken ct)
     {
-        diagram.StartReading();
+        var reading = diagram.StartReading();
         var read = await ports.ReadDerivedAsync(card.Type, ct);
-        FinishAdding(diagram, card, read);
+        FinishAdding(diagram, reading, card, read);
     }
 
     /// <summary>Adds the cards a search for the types deriving from <paramref name="card"/> found to
     /// <paramref name="diagram"/>, unless it was closed meanwhile, and names each module it reached that could not be
     /// read; reports a read that failed.</summary>
-    private void FinishAdding(TypeDiagram diagram, TypeCard card, Outcome<ScopeSearch<TypeCard>> read)
+    private void FinishAdding(TypeDiagram diagram, CardRead reading, TypeCard card, Outcome<ScopeSearch<TypeCard>> read)
     {
-        diagram.FinishReading();
+        diagram.FinishReading(reading);
         if (diagram.IsClosed)
         {
             return;
@@ -143,9 +143,9 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
     /// <summary>Adds the cards a read of the types <paramref name="card"/> links to found to
     /// <paramref name="diagram"/>, unless it was closed meanwhile, and names each module that could not be read one of
     /// those types is in; reports a read that failed.</summary>
-    private void FinishAdding(TypeDiagram diagram, TypeCard card, Outcome<List<Lookup<TypeCard>>> read)
+    private void FinishAdding(TypeDiagram diagram, CardRead reading, TypeCard card, Outcome<List<Lookup<TypeCard>>> read)
     {
-        diagram.FinishReading();
+        diagram.FinishReading(reading);
         if (diagram.IsClosed)
         {
             return;

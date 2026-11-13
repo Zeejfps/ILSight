@@ -872,8 +872,8 @@ public sealed class Navigation
         _tabs.Keep(tab);
         _tabs.MakeActive(tab);
         _history.ReplaceCurrent(place with { Id = id });
-        diagram.StartReading();
-        return new HistoryMove.ReadCards { Read = new DiagramPlaceRead { Diagram = diagram, Types = place.Types, Title = place.Title } };
+        var read = diagram.StartReading();
+        return new HistoryMove.ReadCards { Read = new DiagramPlaceRead { Diagram = diagram, Read = read, Types = place.Types, Title = place.Title } };
     }
 
     /// <summary>Brings the tab showing the comparison <paramref name="place"/> recorded to the front, else makes the

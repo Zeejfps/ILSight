@@ -117,7 +117,9 @@ public static class Commands
     /// (<see cref="AnalyzeReferenceHandler"/>) now, counted in the app's background work until it ends.</summary>
     public static void StartAnalyzing(AppState appState, PendingAnalysis pending)
     {
-        appState.Workflows.Start(nameof(AnalyzeReferenceHandler), ct => appState.AnalyzeReferenceHandler.HandleAsync(appState.Analyzer, appState.ViewCommands, pending, ct));
+        appState.Workflows.StartSettling(nameof(AnalyzeReferenceHandler),
+            ct => appState.AnalyzeReferenceHandler.HandleAsync(appState.Analyzer, appState.ViewCommands, pending, ct),
+            _ => appState.Analyzer.RemoveRoot(pending.Root));
     }
 
     /// <summary>Starts running the analysis <paramref name="run"/> is for (<see cref="RunAnalysisHandler"/>) now,
@@ -136,7 +138,8 @@ public static class Commands
     /// <summary>A method of its own, so that the calls that start nothing allocate no closure.</summary>
     private static void StartRunningAnalysis(AppState appState, AnalysisRun run)
     {
-        appState.Workflows.Start(nameof(RunAnalysisHandler), ct => appState.RunAnalysisHandler.HandleAsync(appState.Analyzer, run, ct), run.Work.Token);
+        appState.Workflows.StartSettling(nameof(RunAnalysisHandler), ct => appState.RunAnalysisHandler.HandleAsync(appState.Analyzer, run, ct),
+            error => Analysis.FinishRun(appState.Analyzer, run, error.Message), run.Work.Token);
     }
 
     /// <summary>Starts finding the symbols of the analyses <paramref name="restore"/> waits for
@@ -155,8 +158,9 @@ public static class Commands
     /// <summary>A method of its own, so that the calls that start nothing allocate no closure.</summary>
     private static void StartFindingAnalysesSymbols(AppState appState, AnalysesRestore restore)
     {
-        appState.Workflows.Start(nameof(RestoreAnalysesHandler),
-            ct => appState.RestoreAnalysesHandler.HandleAsync(appState.Analyzer, appState.Assemblies, appState.ViewCommands, restore, ct));
+        appState.Workflows.StartSettling(nameof(RestoreAnalysesHandler),
+            ct => appState.RestoreAnalysesHandler.HandleAsync(appState.Analyzer, appState.Assemblies, appState.ViewCommands, restore, ct),
+            error => Analysis.FailRoots(appState.Analyzer, restore.Roots, error.Message));
     }
 
     /// <summary>Asks for the namespaces of each assembly <paramref name="expansion"/> expanded in <paramref name="tree"/>
@@ -251,7 +255,8 @@ public static class Commands
     /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
     private static void StartSearchRun(AppState appState, SearchResults results, SearchRun run)
     {
-        appState.Workflows.Start(nameof(RunSearchHandler), ct => appState.RunSearchHandler.HandleAsync(results, run, ct), run.Work.Token);
+        appState.Workflows.StartSettling(nameof(RunSearchHandler), ct => appState.RunSearchHandler.HandleAsync(results, run, ct), _ => results.EndRun(run),
+            run.Work.Token);
     }
 
     /// <summary>Starts looking up the tooltips <paramref name="tooltips"/> asked for while the code drew
@@ -273,7 +278,8 @@ public static class Commands
     /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
     private static void StartLookingUp(WorkflowRunner workflows, LookUpTooltipHandler handler, CodeTooltips tooltips, TooltipLookup lookup)
     {
-        workflows.Start(nameof(LookUpTooltipHandler), ct => handler.HandleAsync(tooltips, lookup, ct));
+        workflows.StartSettling(nameof(LookUpTooltipHandler), ct => handler.HandleAsync(tooltips, lookup, ct),
+            _ => tooltips.Finish(lookup, new Lookup<CodeTooltip>.NotFound()));
     }
 
     /// <summary>Starts the sorts and filters the metadata grids asked for while the screen drew
@@ -295,7 +301,7 @@ public static class Commands
     /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
     private static void StartArranging(WorkflowRunner workflows, ArrangeMetadataGridHandler handler, MetadataGridViewAsk ask)
     {
-        workflows.Start(nameof(ArrangeMetadataGridHandler), ct => handler.HandleAsync(ask, ct));
+        workflows.StartSettling(nameof(ArrangeMetadataGridHandler), ct => handler.HandleAsync(ask, ct), error => ask.State.FailArranging(ask.Key, error));
     }
 
     /// <summary>Starts reading the pages of paged metadata grids the views asked for while the screen drew
@@ -317,7 +323,7 @@ public static class Commands
     /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
     private static void StartReadingPage(WorkflowRunner workflows, ReadMetadataPageHandler handler, MetadataGridPageAsk ask)
     {
-        workflows.Start(nameof(ReadMetadataPageHandler), ct => handler.HandleAsync(ask, ct));
+        workflows.StartSettling(nameof(ReadMetadataPageHandler), ct => handler.HandleAsync(ask, ct), error => ask.Grid.FailPage(ask.Page, error.Message));
     }
 
     /// <summary>Asks for the files of the request <paramref name="opening"/> began to be opened once the frame is drawn
@@ -416,7 +422,8 @@ public static class Commands
 
     private static void StartReadingPlace(AppState appState, DiagramPlaceRead read)
     {
-        appState.Workflows.Start(nameof(ReopenDiagramHandler), ct => appState.ReopenDiagramHandler.ShowPlaceAsync(read, ct), read.Diagram.Token);
+        appState.Workflows.StartSettling(nameof(ReopenDiagramHandler), ct => appState.ReopenDiagramHandler.ShowPlaceAsync(read, ct),
+            _ => read.Diagram.FinishReading(read.Read), read.Diagram.Token);
     }
 
     /// <summary>Asks for the comparison <paramref name="run"/> started, if any, to be run once the frame is drawn
@@ -445,7 +452,8 @@ public static class Commands
     /// cancel too.</summary>
     public static void StartComparing(AppState appState, ComparisonRun run)
     {
-        appState.Workflows.Start(nameof(CompareAssembliesHandler), ct => appState.CompareAssembliesHandler.HandleAsync(run, ct), run.Work.Token);
+        appState.Workflows.StartSettling(nameof(CompareAssembliesHandler), ct => appState.CompareAssembliesHandler.HandleAsync(run, ct),
+            _ => run.Comparison.FailWork(run.Work, run.Left.NameAndVersion, run.Right.NameAndVersion), run.Work.Token);
     }
 
     /// <summary>Asks for <paramref name="start"/> to be done to the app state and <paramref name="subject"/> once the
@@ -459,6 +467,40 @@ public static class Commands
         Func<AppState, T, TWork, CancellationToken, Task> run, Func<TWork, CancellationToken> cancelledOnPurposeBy) where TWork : class
     {
         uiState.AppCommands.Enqueue(CreateStartLater(name, subject, start, run, cancelledOnPurposeBy));
+    }
+
+    /// <summary>As <see cref="StartLater{T, TWork}"/>, for work whose start recorded a pending state: one that ends with an
+    /// unexpected exception, reported, has <paramref name="settle"/> settle that state with the work it was for
+    /// (<see cref="WorkflowRunner.StartSettling"/>).</summary>
+    public static void StartSettlingLater<T, TWork>(UiState uiState, string name, T subject, Func<AppState, T, TWork?> start,
+        Func<AppState, T, TWork, CancellationToken, Task> run, Func<TWork, CancellationToken> cancelledOnPurposeBy, Action<T, TWork, Exception> settle)
+        where TWork : class
+    {
+        uiState.AppCommands.Enqueue(CreateStartSettlingLater(name, subject, start, run, cancelledOnPurposeBy, settle));
+    }
+
+    private static AppCommand CreateStartSettlingLater<T, TWork>(string name, T subject, Func<AppState, T, TWork?> start,
+        Func<AppState, T, TWork, CancellationToken, Task> run, Func<TWork, CancellationToken> cancelledOnPurposeBy, Action<T, TWork, Exception> settle)
+        where TWork : class
+    {
+        return appState =>
+        {
+            var work = start(appState, subject);
+            if (work is null)
+            {
+                return;
+            }
+
+            StartSettlingWork(appState, name, subject, work, run, cancelledOnPurposeBy, settle);
+        };
+    }
+
+    // A method of its own, so that the calls that start nothing allocate no closure.
+    private static void StartSettlingWork<T, TWork>(AppState appState, string name, T subject, TWork work,
+        Func<AppState, T, TWork, CancellationToken, Task> run, Func<TWork, CancellationToken> cancelledOnPurposeBy, Action<T, TWork, Exception> settle)
+        where TWork : class
+    {
+        appState.Workflows.StartSettling(name, ct => run(appState, subject, work, ct), error => settle(subject, work, error), cancelledOnPurposeBy(work));
     }
 
     private static AppCommand CreateStartLater<T, TWork>(string name, T subject, Func<AppState, T, TWork?> start,
@@ -582,7 +624,14 @@ public static class Commands
 
     private static void StartReadingCards(AppState appState, SavedDiagramRead read)
     {
-        appState.Workflows.Start(nameof(ReopenDiagramHandler), ct => appState.ReopenDiagramHandler.HandleAsync(appState.Reopened, read, ct), read.Diagram.Token);
+        appState.Workflows.StartSettling(nameof(ReopenDiagramHandler), ct => appState.ReopenDiagramHandler.HandleAsync(appState.Reopened, read, ct),
+            _ => SettleCardsRead(appState.Reopened, read), read.Diagram.Token);
+    }
+
+    private static void SettleCardsRead(ReopenedTabs reopened, SavedDiagramRead read)
+    {
+        read.Diagram.FinishReading(read.Read);
+        SavedDocuments.TryFinishWaiting(reopened, read.Reopened);
     }
 
     /// <summary>Starts <paramref name="show"/> now, as <see cref="WorkflowRunner.Start"/> does, then the load it

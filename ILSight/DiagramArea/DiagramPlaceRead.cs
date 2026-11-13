@@ -10,6 +10,9 @@ public sealed class DiagramPlaceRead
 {
     public required TypeDiagram Diagram { get; init; }
 
+    /// <summary>The read <see cref="Diagram"/> counts as under way until it ends.</summary>
+    public required CardRead Read { get; init; }
+
     public required IReadOnlyList<TypeAnchor> Types { get; init; }
 
     public required string Title { get; init; }

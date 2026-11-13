@@ -723,16 +723,18 @@ internal static class DiagramView
     /// token closing the diagram cancels.</summary>
     internal static void ShowInDiagramLater(UiState uiState, CodeReference.Entity type, string newTitle)
     {
-        Commands.StartLater(uiState, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, newTitle), static (a, s) => ShowInDiagram(a, s.type, s.newTitle),
-            static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token);
+        Commands.StartSettlingLater(uiState, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, newTitle), static (a, s) => ShowInDiagram(a, s.type, s.newTitle),
+            static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token,
+            static (_, read, _) => read.Diagram.FinishReading(read.Read));
     }
 
     /// <summary>As <see cref="ShowInDiagramLater"/>, on a new diagram titled <paramref name="title"/>
     /// (<see cref="Diagrams.ShowInNewDiagram"/>).</summary>
     internal static void ShowInNewDiagramLater(UiState uiState, CodeReference.Entity type, string title)
     {
-        Commands.StartLater(uiState, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, title), static (a, s) => ShowInNewDiagram(a, s.type, s.title),
-            static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token);
+        Commands.StartSettlingLater(uiState, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, title), static (a, s) => ShowInNewDiagram(a, s.type, s.title),
+            static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token,
+            static (_, read, _) => read.Diagram.FinishReading(read.Read));
     }
 
     private static void CardMenu(Ui<UiState> ui, Navigation navigation, DiagramViewState view, TypeDiagram diagram, string? closedAssembly)

@@ -141,6 +141,15 @@ internal sealed class AppStateDriver
         return driver;
     }
 
+    /// <summary>As <see cref="Opened"/>, with the adapters the root builds made as <paramref name="hooks"/> says.</summary>
+    public static AppStateDriver OpenedWith(AdapterHooks hooks)
+    {
+        var driver = new AppStateDriver(PostedActions.OfThisTest(), AppRoot.RestoreApp(NoProblem(null), TestSession.Shared, updates: NoUpdates(), hooks: hooks));
+        driver.WaitForTheStart();
+        driver.OpenFixtures();
+        return driver;
+    }
+
     /// <summary>A driver with an app state and no screen, which shows that the features need none, started as an app
     /// with no window starts (<see cref="AppStart.Start"/>, with no arguments waiting), once the list it starts with is
     /// open (<see cref="WaitForTheStart"/>).</summary>

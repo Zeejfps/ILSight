@@ -78,13 +78,12 @@ internal static class AppRoot
     /// <param name="runtimeScan">Scans the runtime for the "open from framework" dialog; the installed runtime's when null.</param>
     /// <param name="processes">Lists the running processes for the "open from process" dialog; this machine's when null.</param>
     /// <param name="updates">Looks for a newer version of the app; the release feed's when null.</param>
-    /// <param name="reopening">Makes the port the reopening of a list lists its files through, from the real adapter;
-    /// the real adapter itself when null.</param>
+    /// <param name="hooks">What a test host makes of some of the adapters the root builds; the real ones when null.</param>
     internal static BuiltApp BuildApp(SettingsLoadResult loadResult, Channel<RunArguments> inbox, BrowseSession session,
         HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null,
-        AppUpdates.IPorts? updates = null, Func<OpenAssembliesAsReloadHandler.IPorts, OpenAssembliesAsReloadHandler.IPorts>? reopening = null)
+        AppUpdates.IPorts? updates = null, AdapterHooks? hooks = null)
     {
-        var restored = RestoreApp(loadResult, session, nuGetRequests, runtimeScan, processes, updates, reopening);
+        var restored = RestoreApp(loadResult, session, nuGetRequests, runtimeScan, processes, updates, hooks);
         var app = new ILSightApp(restored.AppState, restored.Screen, restored.Start, inbox);
         return new BuiltApp { Restored = restored, App = app };
     }
@@ -98,13 +97,12 @@ internal static class AppRoot
     /// <param name="runtimeScan">Scans the runtime for the "open from framework" dialog; the installed runtime's when null.</param>
     /// <param name="processes">Lists the running processes for the "open from process" dialog; this machine's when null.</param>
     /// <param name="updates">Looks for a newer version of the app; the release feed's when null.</param>
-    /// <param name="reopening">Makes the port the reopening of a list lists its files through, from the real adapter;
-    /// the real adapter itself when null.</param>
+    /// <param name="hooks">What a test host makes of some of the adapters the root builds; the real ones when null.</param>
     internal static RestoredApp RestoreApp(SettingsLoadResult loadResult, BrowseSession session,
         HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null,
-        AppUpdates.IPorts? updates = null, Func<OpenAssembliesAsReloadHandler.IPorts, OpenAssembliesAsReloadHandler.IPorts>? reopening = null)
+        AppUpdates.IPorts? updates = null, AdapterHooks? hooks = null)
     {
-        var appState = RestoreStartingState(loadResult, session, updates, reopening);
+        var appState = RestoreStartingState(loadResult, session, updates, hooks);
         var screen = CreateScreen(appState, nuGetRequests, runtimeScan, processes);
         var start = RecordStart(appState);
         return new RestoredApp { AppState = appState, Screen = screen, Start = start };
@@ -147,21 +145,21 @@ internal static class AppRoot
     /// <paramref name="session"/>, told of what was wrong with the settings. The screen is built over this; the run's
     /// arguments reach it once the app runs, through its inbox.</summary>
     internal static AppState RestoreStartingState(SettingsLoadResult loadResult, BrowseSession session, AppUpdates.IPorts? updates = null,
-        Func<OpenAssembliesAsReloadHandler.IPorts, OpenAssembliesAsReloadHandler.IPorts>? reopening = null)
+        AdapterHooks? hooks = null)
     {
-        var appState = RestoreAppState(loadResult.Settings, session, updates, reopening);
+        var appState = RestoreAppState(loadResult.Settings, session, updates, hooks);
         ReportProblem(appState, Settings.FindProblem(appState.SettingsPlace, loadResult.Problem));
         return appState;
     }
 
     /// <summary>The app state <paramref name="settings"/> describe over <paramref name="session"/>, with the tab
     /// it starts with active, what the settings keep restored into it, and the user's themes and icon themes read; it
-    /// looks for a newer version through <paramref name="updates"/>, the release feed when null, and lists a reopened
-    /// list's files through the port <paramref name="reopening"/> makes from the real adapter, that adapter when null.</summary>
+    /// looks for a newer version through <paramref name="updates"/>, the release feed when null, and makes of its adapters what
+    /// <paramref name="hooks"/> says, keeping the real ones when null.</summary>
     internal static AppState RestoreAppState(AppSettings settings, BrowseSession session, AppUpdates.IPorts? updates = null,
-        Func<OpenAssembliesAsReloadHandler.IPorts, OpenAssembliesAsReloadHandler.IPorts>? reopening = null)
+        AdapterHooks? hooks = null)
     {
-        var appState = CreateAppState(settings, session, updates ?? new AppUpdatesAdapter(), reopening);
+        var appState = CreateAppState(settings, session, updates ?? new AppUpdatesAdapter(), hooks);
         appState.Navigation.OpenFirstTab();
         ReportProblem(appState, Settings.Restore(appState, settings));
         appState.UserThemes.ReadThemes();
@@ -180,10 +178,20 @@ internal static class AppRoot
         Errors.Report(appState, problem);
     }
 
+    private static T MakePort<T>(T real, Func<T, T>? hook)
+    {
+        if (hook is null)
+        {
+            return real;
+        }
+
+        return hook(real);
+    }
+
     /// <summary>The app state <paramref name="settings"/> describe, with its use cases over the adapters they
     /// reach the world through, before anything is restored into it.</summary>
     private static AppState CreateAppState(AppSettings settings, BrowseSession session, AppUpdates.IPorts updates,
-        Func<OpenAssembliesAsReloadHandler.IPorts, OpenAssembliesAsReloadHandler.IPorts>? reopening)
+        AdapterHooks? hooks)
     {
         var runtimeDirectories = RuntimeFolders.FindDirectories();
         var runtime = new InstalledRuntime { Directories = runtimeDirectories, FilesByName = RuntimeFolders.IndexFiles(runtimeDirectories) };
@@ -229,23 +237,23 @@ internal static class AppRoot
             SettingsSaving = new SettingsSaving(new SettingsSavingAdapter(errors)),
             BuildChildrenHandler = new BuildChildrenHandler(tree),
             LookUpTooltipHandler = new LookUpTooltipHandler(new LookUpTooltipHandlerAdapter(assemblies)),
-            RunSearchHandler = new RunSearchHandler(new RunSearchHandlerAdapter(errors, session)),
+            RunSearchHandler = new RunSearchHandler(MakePort<RunSearchHandler.IPorts>(new RunSearchHandlerAdapter(errors, session), hooks?.Searching)),
             ExpandNamespacesHandler = new ExpandNamespacesHandler(tree),
             ExportWriting = new ExportWriting(exports),
             SaveResourceHandler = new SaveResourceHandler(exports),
             ExtractPackageFileHandler = new ExtractPackageFileHandler(exports),
             CheckExportFilesHandler = new CheckExportFilesHandler(exports),
-            DiagramGrowing = new DiagramGrowing(diagrams),
+            DiagramGrowing = new DiagramGrowing(MakePort<DiagramGrowing.IPorts>(diagrams, hooks?.Growing)),
             ReopenDiagramHandler = new ReopenDiagramHandler(diagrams),
             LayOutDiagramHandler = new LayOutDiagramHandler(diagrams),
-            CompareAssembliesHandler = new CompareAssembliesHandler(new CompareAssembliesHandlerAdapter(errors)),
+            CompareAssembliesHandler = new CompareAssembliesHandler(MakePort<CompareAssembliesHandler.IPorts>(new CompareAssembliesHandlerAdapter(errors), hooks?.Comparing)),
             RunAnalysisHandler = new RunAnalysisHandler(analysis),
             AnalyzeReferenceHandler = new AnalyzeReferenceHandler(navigation),
             RestoreAnalysesHandler = new RestoreAnalysesHandler(analysis),
             GoToHistoryEntryHandler = new GoToHistoryEntryHandler(navigation),
             AssemblyOpening = new AssemblyOpening(assemblyList),
             AssemblyReloading = new AssemblyReloading(assemblyList),
-            OpenAssembliesAsReloadHandler = new OpenAssembliesAsReloadHandler(reopening is null ? assemblyList : reopening(assemblyList)),
+            OpenAssembliesAsReloadHandler = new OpenAssembliesAsReloadHandler(MakePort<OpenAssembliesAsReloadHandler.IPorts>(assemblyList, hooks?.Reopening)),
             Session = session,
             SettingsPlace = settingsPlace,
             View = Settings.ReadViewSettings(settings),

@@ -14,7 +14,7 @@ internal sealed class ListingRecord
     /// <summary>The paths asked to be listed, so far.</summary>
     public IReadOnlyCollection<AssemblyPath> Asked => _asked;
 
-    /// <summary>The port the root hands the reopening: <paramref name="real"/>, the real adapter, noting what it is asked
+    /// <summary>The port the root hands the reopening (<see cref="AdapterHooks.Reopening"/>): <paramref name="real"/>, the real adapter, noting what it is asked
     /// to list first.</summary>
     public OpenAssembliesAsReloadHandler.IPorts Over(OpenAssembliesAsReloadHandler.IPorts real)
     {

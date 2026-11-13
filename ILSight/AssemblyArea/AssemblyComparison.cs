@@ -70,4 +70,16 @@ public sealed class AssemblyComparison
         Work.Cancel();
         Result = new ComparisonResult.Failed { Failure = failure };
     }
+
+    /// <summary>Ends <paramref name="work"/> as a comparison of <paramref name="left"/> and <paramref name="right"/> that
+    /// failed; nothing when newer work replaced it, or it ended already.</summary>
+    public void FailWork(WorkTicket work, string left, string right)
+    {
+        if (!Work.TryFinish(work))
+        {
+            return;
+        }
+
+        ShowFailure(new ComparisonFailure.Failed { Left = left, Right = right });
+    }
 }

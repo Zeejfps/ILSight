@@ -26,7 +26,7 @@ public sealed class TypeDiagram
     /// result is then dropped; closing it closes the diagram, cancelling the reading of cards too.</summary>
     private readonly LatestWork _work = new();
 
-    private int _reading;
+    private readonly HashSet<CardRead> _reads = new();
 
     /// <summary>The cards, in the order added.</summary>
     public IReadOnlyList<TypeCard> Cards => _cards;
@@ -44,7 +44,7 @@ public sealed class TypeDiagram
     public int Version { get; private set; }
 
     /// <summary>True while cards are read or laid out in the background.</summary>
-    public bool IsBusy => _reading > 0 || _work.IsRunning;
+    public bool IsBusy => _reads.Count > 0 || _work.IsRunning;
 
     /// <summary>Cancelled once the diagram is closed.</summary>
     public CancellationToken Token => _work.UntilClosed;
@@ -200,15 +200,19 @@ public sealed class TypeDiagram
         return _kept.ToList();
     }
 
-    /// <summary>Counts a read of cards for the diagram as started, until <see cref="FinishReading"/>.</summary>
-    public void StartReading()
+    /// <summary>Counts a read of cards for the diagram as started, until <see cref="FinishReading"/> is handed what this
+    /// returns.</summary>
+    public CardRead StartReading()
     {
-        _reading++;
+        var read = new CardRead();
+        _reads.Add(read);
+        return read;
     }
 
-    public void FinishReading()
+    /// <summary>Counts <paramref name="read"/> as ended; nothing when it already was.</summary>
+    public void FinishReading(CardRead read)
     {
-        _reading--;
+        _reads.Remove(read);
     }
 
     /// <summary>Starts laying out the diagram, cancelling the layout in flight, whose result is then dropped. Returns

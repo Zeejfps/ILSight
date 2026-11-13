@@ -30,7 +30,7 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
     public async Task HandleAsync(ReopenedTabs reopened, SavedDiagramRead read, CancellationToken ct)
     {
         var cards = await ports.ReadCardsAsync(read.Saved.Types, ct);
-        read.Diagram.FinishReading();
+        read.Diagram.FinishReading(read.Read);
         if (!SavedDocuments.TryFinishWaiting(reopened, read.Reopened))
         {
             return;
@@ -45,7 +45,7 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
     public async Task ShowPlaceAsync(DiagramPlaceRead read, CancellationToken ct)
     {
         var cards = await ports.ReadCardsAsync(read.Types, ct);
-        read.Diagram.FinishReading();
+        read.Diagram.FinishReading(read.Read);
         TakeCards(read.Diagram, read.Title, read.Types, cards);
     }
 

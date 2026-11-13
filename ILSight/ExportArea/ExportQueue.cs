@@ -53,6 +53,20 @@ public sealed class ExportQueue
         running.Cancel.Cancel();
     }
 
+    /// <summary>Lets go of the export <paramref name="run"/> whatever its state: ends its turn when it runs, so that the
+    /// next one starts, or takes it out of the queue while it waits; nothing once it ended.</summary>
+    public void Drop(ExportRun run)
+    {
+        var active = FindActive(run);
+        if (active is not null)
+        {
+            EndTurn(run);
+            return;
+        }
+
+        Withdraw(run);
+    }
+
     /// <summary>Takes the waiting export <paramref name="run"/> out of the queue.</summary>
     public void Withdraw(ExportRun run)
     {

@@ -204,6 +204,18 @@ public abstract class MetadataGrid
             _asked.Remove(page);
         }
 
+        /// <summary>Keeps the page at <paramref name="page"/> as failed with <paramref name="why"/>, each cell saying so,
+        /// unless it was read meanwhile.</summary>
+        public void FailPage(int page, string why)
+        {
+            if (_pages.ContainsKey(page))
+            {
+                return;
+            }
+
+            AddPage(page, MetadataGrids.FailedPage(this, page, why));
+        }
+
         internal override object? FindValue(int row, int column)
         {
             var page = _pages.GetValueOrDefault(PageOf(row));

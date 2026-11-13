@@ -98,7 +98,8 @@ internal static class AppFrames
     /// <summary>A method of its own, so that the frames that start nothing allocate no closure.</summary>
     private static void StartCheckingFiles(AppState appState, ExportFileChecks files, ExportFileCheck check)
     {
-        appState.Workflows.Start(nameof(CheckExportFilesHandler), ct => appState.CheckExportFilesHandler.HandleAsync(files, check, ct));
+        appState.Workflows.StartSettling(nameof(CheckExportFilesHandler), ct => appState.CheckExportFilesHandler.HandleAsync(files, check, ct),
+            error => files.Fail(check, error.Message));
     }
 
     /// <summary>Does what comes before the "open from NuGet" dialog draws: hands the package it downloaded over to
@@ -135,7 +136,8 @@ internal static class AppFrames
     private static void StartSearching(AppState appState, SearchNuGetFeedHandler searchFeed, NuGetBrowser browser, FeedSearch wanted)
     {
         var search = browser.StartSearch(wanted);
-        appState.Workflows.Start(nameof(SearchNuGetFeedHandler), ct => searchFeed.HandleAsync(browser, search, ct), search.Work.Token);
+        appState.Workflows.StartSettling(nameof(SearchNuGetFeedHandler), ct => searchFeed.HandleAsync(browser, search, ct),
+            error => browser.TryFinishSearch(search, new Outcome<FeedPage>.Failed(error)), search.Work.Token);
     }
 
     /// <summary>Starts a workflow of its own for each icon and each version's details the dialog asked for since

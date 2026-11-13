@@ -237,7 +237,7 @@ public sealed class RunArgumentsTests
         var arguments = CommandLines.Parse([$"--list={Other}", "--clear-list", CoreAssembly]).Arguments;
         var listing = new ListingRecord();
 
-        var started = new AppDriver(settings: DefaultAndOther(startedTemp), queuedArguments: arguments, reopening: listing.Over);
+        var started = new AppDriver(settings: DefaultAndOther(startedTemp), queuedArguments: arguments, hooks: new AdapterHooks { Reopening = listing.Over });
         Assert.DoesNotContain(PathOf(AppStateDriver.FixturePath), started.AppState.Assemblies.Arriving);
         Assert.False(started.AppState.IsReloading);
         started.Frames.WaitUntil(() => AreListed(started.AppState, arguments.Files.Paths), Patience);

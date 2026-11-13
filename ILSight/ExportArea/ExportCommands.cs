@@ -78,6 +78,8 @@ public static class ExportCommands
     private static void StartWriting(AppState appState, ExportWork work)
     {
         var ticket = Exports.Enter(appState.Export, appState.ViewCommands, work.Job);
-        appState.Workflows.Start(nameof(ExportWriting), ct => appState.ExportWriting.HandleAsync(appState.FinishedExports, appState.ViewCommands, work, ticket, ct));
+        appState.Workflows.StartSettling(nameof(ExportWriting),
+            ct => appState.ExportWriting.HandleAsync(appState.FinishedExports, appState.ViewCommands, work, ticket, ct),
+            _ => appState.Export.Drop(ticket.Run));
     }
 }

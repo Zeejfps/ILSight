@@ -12,5 +12,8 @@ public sealed class SavedDiagramRead
 
     public required TypeDiagram Diagram { get; init; }
 
+    /// <summary>The read <see cref="Diagram"/> counts as under way until it ends.</summary>
+    public required CardRead Read { get; init; }
+
     public required DiagramDocumentRecord Saved { get; init; }
 }

@@ -95,8 +95,8 @@ public static class Diagrams
     /// <paramref name="diagram"/>, which <paramref name="tab"/> shows, as started.</summary>
     private static NeighboursRead StartReadingWithNeighbours(DocumentTab tab, TypeDiagram diagram, CodeReference.Entity type)
     {
-        diagram.StartReading();
-        return new NeighboursRead { Tab = tab, Diagram = diagram, Type = type };
+        var read = diagram.StartReading();
+        return new NeighboursRead { Tab = tab, Diagram = diagram, Read = read, Type = type };
     }
 
     /// <summary>Whether <paramref name="card"/> derives from or extends a type <paramref name="diagram"/>
@@ -163,8 +163,8 @@ public static class Diagrams
         var tab = reopened.Tab;
         var diagram = ShowSavedDiagram(navigation, tab, saved);
         var waiting = SavedDocuments.WaitFor(reopenedTabs, tab, saved);
-        diagram.StartReading();
-        return new SavedDiagramRead { Reopened = waiting, Diagram = diagram, Saved = saved };
+        var read = diagram.StartReading();
+        return new SavedDiagramRead { Reopened = waiting, Diagram = diagram, Read = read, Saved = saved };
     }
 
     private static TypeDiagram ShowSavedDiagram(Navigation navigation, DocumentTab tab, DiagramDocumentRecord saved)

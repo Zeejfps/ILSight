@@ -19,10 +19,10 @@ internal sealed class AppDriver
     /// (<see cref="AppStateDriver.WaitForTheStart"/>): <paramref name="queuedArguments"/>, when given, wait in
     /// <paramref name="inbox"/> first, as the launcher puts a run's own arguments there. It looks for a newer version
     /// through <paramref name="updates"/>, else a copy that can't update itself (<see cref="AppStateDriver.NoUpdates"/>),
-    /// and a reopened list's files through the port <paramref name="reopening"/> makes from the real adapter, when given.</summary>
+    /// and makes of some of its adapters what <paramref name="hooks"/> says, when given.</summary>
     public AppDriver(float width = 1000f, float height = 700f, AppSettings? settings = null, RunArguments? queuedArguments = null, ITextMeasurer? measurer = null, Channel<RunArguments>? inbox = null,
         HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null,
-        AppUpdates.IPorts? updates = null, Func<OpenAssembliesAsReloadHandler.IPorts, OpenAssembliesAsReloadHandler.IPorts>? reopening = null)
+        AppUpdates.IPorts? updates = null, AdapterHooks? hooks = null)
     {
         var posted = PostedActions.OfThisTest();
         inbox ??= Channel.CreateUnbounded<RunArguments>();
@@ -32,7 +32,7 @@ internal sealed class AppDriver
         }
 
         var built = AppRoot.BuildApp(AppStateDriver.NoProblem(settings), inbox, TestSession.Shared, nuGetRequests, runtimeScan, processes,
-            updates ?? AppStateDriver.NoUpdates(), reopening);
+            updates ?? AppStateDriver.NoUpdates(), hooks);
         Driver = AppStateDriver.Over(posted, built.Restored);
         App = built.App;
         Frames = UiFrames.Running(App, measurer, width: width, height: height, background: AppState.Work);
