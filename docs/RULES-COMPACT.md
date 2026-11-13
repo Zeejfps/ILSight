@@ -88,7 +88,8 @@ port), RL0106 (ordinary code taking an answer from an `[Edge]` type).
   each read holds a lease until it ends, however it ends; once closed and unleased, the owner disposes it exactly once,
   on the thread its API requires. The close completes at the request, or awaits the release where its contract needs
   the resource free (a CLI rewriting the file next). Never dispose what a running read may reach (freed memory can end
-  the process, uncaught), nor an object holding only memory.
+  the process, uncaught), nor an object holding only memory. A view of a closed item asks for nothing more: what would
+  read shows unavailable, saying why, never "loading".
 - **The composition root** (`Program.cs`, DI registration, `AppRoot.Build`) is an edge; a test that builds the app
   builds it through it, with fakes. Ordinary code never constructs a use case or an adapter; per-document objects come
   from a factory the root builds (DI: scoped); a function taking the state only to reach a use case is the edge's call.
@@ -273,9 +274,9 @@ dropped `[MustUse]` value).
   Outside the union, never `switch` with `_`; inside (or in that extension), `Match` / `Switch` dispatch with a `_` arm
   that throws `UnreachableException` (RL0801 exempts both).
 - **A value the caller must act on** is a result union, or, when its loss leaves state stuck (a ticket for work only the
-  caller starts), a type marked `[MustUse]`. RL0807 is a suggestion: set `dotnet_diagnostic.RL0807.severity = error`
-  where a drop must fail the build. Several kinds of work handed back together are one `[MustUse]` value with a handler
-  per kind (a union's list, or a carrier's `Switch`), not lists read one by one or a tuple.
+  caller starts), a type marked `[MustUse]` (RL0807, raised to error where a drop must fail the build). Several kinds
+  of work handed back together are one `[MustUse]` value with a handler per kind (a union's list, or a carrier's
+  `Switch`), not lists read one by one or a tuple.
 - EF maps a row type, never the union: `row.ToOrder()`, `order.CopyTo(trackedRow)`.
 
 ## R009: Exceptions are for bugs; expected failures are results; catch only at the edge
@@ -287,8 +288,9 @@ result), RL0904 (an adapter's sequence that isn't its own iterator).
 - Throw only for bugs (bad argument, wrong state, impossible case, corrupt data), with a built-in type and a message
   saying what was expected (a custom type only if something catches it). Expected failures are returned (a union per
   operation, `Result<T>`, `Find*`, `Try*`; no library result types) and never discarded: a user's action the code
-  refuses says why where they acted, or is offered as unavailable with the reason, never nothing. Infrastructure
-  failures propagate.
+  refuses says why where they acted, or is offered as unavailable with the reason, never nothing; every input of a
+  command reads one decision (unavailable: says why where pressed; not offered: its key does nothing). Restored state
+  whose source can't be read now is kept as saved, failed in place, read again later. Infrastructure failures propagate.
 - **Catch only at the edge**, around one unit of work, logging once; no log-and-rethrow. Decision code catches
   nothing; adapters catch only the exception they translate. The one exception to both: a read of the user's data by a
   library listed in `rulelab.untrusted_libraries` (in an adapter, a conversion step, or where a library object that is
@@ -331,7 +333,9 @@ Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100
   nothing else to do (the entry thread a UI framework needs; the holder of a named `Mutex`) waits once, in an edge, for
   work run where no continuation needs the blocked thread (`Task.Run`, a task another thread completes; never work
   that posts back to it), VSTHRD002 suppressed with the reason. Not async `Main`; never release a thread-affine lock
-  after an `await`.
+  after an `await`. **A synchronization context is installed only around the turns that run its posts** (frames, a
+  test driver's pumps and the work it starts), never on a thread for good; a UI test awaits its reads, running frames
+  until one ends only where frames end it.
 - **Every async method takes `CancellationToken ct` last and passes it to every async call**, port members included.
   Exceptions: framework-facing signatures, test methods, and clean-up that must finish whatever stopped the work,
   which is `DisposeAsync` under `await using`, with no token.
@@ -426,7 +430,8 @@ it, where the loop starts commands the draw queued) or in those commands. A **ho
 - **A draw takes what its input changes**: the parts, or the type keeping a rule across them (R004), never the whole
   state below the root view, never a command queued for want of the parts.
 - **Work a draw finds it needs** (an icon, a page of a table whose reads reach a file: paged whatever its size, its
-  first window read with its content) is recorded as pending on its
+  first window read with its content, sized as the screen last laid it out or else the tallest it can be, with any
+  sample the first show measures) is recorded as pending on its
   owner, once per item; the frame edge starts it right after that draw or before the next (one workflow per batch the
   port takes, else per item).
 - **What a bound field must cause** (a close box writing `IsOpen` by `ref`) belongs to the rule's owner, told the
