@@ -27,6 +27,11 @@ internal ref struct MetadataGridFrame
     public required MetadataGridPages Pages { get; init; }
     public required Strings Strings { get; init; }
     public required int ListId { get; init; }
+
+    /// <summary>The file name of the closed assembly the grid's tab shows (<see cref="TabLoad.ShowClosed"/>); null while
+    /// it is open. A closed assembly's grid asks for nothing more: rows not read say it was closed, and a sort or filter,
+    /// a link and a definition, which would read it, are unavailable.</summary>
+    public string? ClosedAssembly { get; init; }
     public required int MenuId { get; init; }
     private bool _focused;
     private MetadataGridResult _result;
@@ -48,13 +53,13 @@ internal ref struct MetadataGridFrame
     {
         var columns = State.Columns ??= Measure();
         State.RowHeight = Ui.Theme.RowHeight;
-        MetadataGridWidget.UpdateView(State, Flags, Views);
+        MetadataGridWidget.UpdateView(State, Flags, Views, ClosedAssembly is not null);
 
         using var pane = Ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = Ui.Theme.PaneBackground });
         var table = Ui.Table(ListId, columns, State.Cell, State.Scroll);
         Header(table);
         FlagsFlyout();
-        MetadataGridWidget.UpdateView(State, Flags, Views);
+        MetadataGridWidget.UpdateView(State, Flags, Views, ClosedAssembly is not null);
 
         _focused = table.Focused;
         table.TakeKeys(State.View.Length);
@@ -87,6 +92,13 @@ internal ref struct MetadataGridFrame
         var theme = Ui.Theme;
         using (Ui.Row(new Box { Height = theme.RowHeight, Gap = theme.GapTight, AlignY = Align.Center, Padding = new Spacing(theme.ShellPaddingX, 0f, theme.ShellPaddingX, 0f) }))
         {
+            var closed = ClosedAssembly;
+            if (closed is not null)
+            {
+                Ui.Text(ClosedText(closed), color: theme.TextMuted, size: theme.FontSizeSmall);
+                return;
+            }
+
             if (failure is not null)
             {
                 Ui.Text(Strings.MetadataArrangeFailed(failure.Message), color: theme.TextMuted, size: theme.FontSizeSmall);
@@ -212,7 +224,7 @@ internal ref struct MetadataGridFrame
             {
                 MetadataGridWidget.SelectAllText(State);
             }
-            else if (Ui.IsPressedAt(Shortcuts.GoToToken, i))
+            else if (Ui.IsPressedAt(Shortcuts.GoToToken, i) && ClosedAssembly is null)
             {
                 var target = MetadataGrids.FindLink(Grid, State.Selected, State.CurrentColumn);
                 if (target is not null)
@@ -305,7 +317,7 @@ internal ref struct MetadataGridFrame
         using var cells = body.Row(index, row, height);
         if (!Grid.IsRowRead(row))
         {
-            LoadingRow(cells, row);
+            UnreadRow(cells, row);
             return;
         }
 
@@ -316,17 +328,32 @@ internal ref struct MetadataGridFrame
         }
     }
 
-    /// <summary>A row whose page of a paged grid is on its way: "Loading…" in its first cell, muted, as the tree shows
-    /// children on their way, and its page asked for, for the frame edge to read.</summary>
-    private void LoadingRow(TableRow cells, int row)
+    /// <summary>A row of a paged grid not read yet: while its assembly is open, on its way, "Loading…" in its first
+    /// cell, muted, as the tree shows children on their way, and its page asked for, for the frame edge to read; once it
+    /// was closed, "Closed", asking for nothing (the tab's bar says which assembly).</summary>
+    private void UnreadRow(TableRow cells, int row)
     {
-        MetadataGridWidget.AskForPage(Pages, Grid, row);
         var muted = Ui.Theme.TextMuted;
-        cells.TextCell(0, Strings.MetadataLoading, muted);
+        if (ClosedAssembly is not null)
+        {
+            cells.TextCell(0, Strings.MetadataClosed, muted);
+        }
+        else
+        {
+            MetadataGridWidget.AskForPage(Pages, Grid, row);
+            cells.TextCell(0, Strings.MetadataLoading, muted);
+        }
+
         for (var c = 1; c < Grid.Columns.Count; c++)
         {
             cells.TextCell(c, "", muted);
         }
+    }
+
+    /// <summary>That the grid's assembly, <paramref name="closed"/>, was closed, as the tab's bar says it.</summary>
+    private string ClosedText(string closed)
+    {
+        return Ui.Memo("closed", (closed, t: Strings), static a => a.t.DocumentClosed(a.closed));
     }
 
     private void ExpandOnPress(Interaction cell, int row, int column)
@@ -357,7 +384,7 @@ internal ref struct MetadataGridFrame
     /// <summary>Does what the user asked of the rows this frame: open, copy or show the menu.</summary>
     private void Answer(TableBody body)
     {
-        if (body.Activated)
+        if (body.Activated && ClosedAssembly is null)
         {
             OpenDefinition(State.Selected, body.InNewTab);
         }
@@ -389,7 +416,7 @@ internal ref struct MetadataGridFrame
         var theme = Ui.Theme;
         var column = Grid.Columns[c];
         var cellId = cells.CellAt(c).Id;
-        var target = column.IsToken ? MetadataGrids.FindLink(Grid, row, c) : null;
+        var target = column.IsToken && ClosedAssembly is null ? MetadataGrids.FindLink(Grid, row, c) : null;
         var expanded = MetadataGridWidget.IsOpenAt(State, row, c);
         uint? color = theme.Text;
         UiIcon? link = null;
@@ -487,6 +514,11 @@ internal ref struct MetadataGridFrame
         if (Ui.MenuItem(Strings.MetadataCopyRow, id: "copy-row"))
         {
             Ui.ClipboardText = MetadataGridWidget.GetRowText(State, row);
+        }
+
+        if (ClosedAssembly is not null)
+        {
+            return null;
         }
 
         var target = column >= 0 ? MetadataGrids.FindLink(Grid, row, column) : null;

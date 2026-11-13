@@ -16,7 +16,8 @@ public sealed class ReadMetadataPageHandler(ReadMetadataPageHandler.IPorts ports
     }
 
     /// <summary>Reads the page <paramref name="ask"/> asked for and adds it to its grid, each cell's failure in its
-    /// place when it could not be read; nothing new when the grid's module was closed before the read began.</summary>
+    /// place when it could not be read; nothing new when the grid's module was closed before the read began, whose tabs
+    /// were marked closed then, so the rows it was for say "Closed" (<see cref="MetadataGridFrame.ClosedAssembly"/>).</summary>
     public async Task HandleAsync(MetadataGridPageAsk ask, CancellationToken ct)
     {
         var read = await ports.ReadPageAsync(ask, ct);

@@ -81,6 +81,7 @@ internal static class OmnibarView
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
         view.Breadcrumb.Follow(tab.Node, ui.State.Tree);
         var crumbs = view.Breadcrumb.Crumbs;
+        var closed = tab.Load.ClosedAssembly;
         var menuOwner = 0;
         using (ui.PaneToolbar(new Box { Gap = 0f }))
         {
@@ -88,6 +89,12 @@ internal static class OmnibarView
             {
                 using (ui.Id(i))
                 {
+                    if (closed is not null)
+                    {
+                        ClosedCrumb(ui, crumbs[i], i, closed);
+                        continue;
+                    }
+
                     CrumbButton(ui, navigation, setup, crumbs[i], i);
                     var owner = ChildrenButton(ui, panel, crumbs, i);
                     if (owner != 0)
@@ -152,6 +159,28 @@ internal static class OmnibarView
         {
             Commands.DecompileLater(ui.State, navigation.ShowNode(node, setup, inNewTab: true));
         }
+    }
+
+    /// <summary>A crumb of a tab whose assembly was closed (<see cref="TabLoad.ShowClosed"/>), which would read it: shown
+    /// unavailable, muted, saying why when hovered, starting nothing when clicked; no arrow lists its children.</summary>
+    private static void ClosedCrumb(Ui<UiState> ui, Crumb crumb, int depth, string closed)
+    {
+        var theme = ui.Theme;
+        var i = ui.Interact("crumb");
+        RecordDepthPath(ui, i.Id, depth, "crumb");
+        using (ui.Row(i.Id, new Box
+        {
+            Width = Sizing.Shrink(CrumbMinWidth) with { Priority = depth },
+            Height = theme.IconButtonSize,
+            Padding = new Spacing(theme.GapTight, 0f),
+            Gap = theme.GapTight,
+            AlignY = Align.Center,
+        }))
+        {
+            NodeIcons.Draw(ui, crumb.Node);
+            ui.Text(crumb.Label, new Box { Width = Sizing.Shrink() }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
+        }
+        ui.Tooltip(i.Id, ui.Memo("closed-crumb", (closed, t: ui.State.Strings), static a => a.t.DocumentClosed(a.closed)));
     }
 
     /// <summary>Has tests find a crumb's <paramref name="name"/>d part by the crumb's depth, as <c>#1/crumb</c>, since

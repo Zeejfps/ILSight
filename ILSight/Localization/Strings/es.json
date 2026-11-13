@@ -347,6 +347,7 @@
   "code.tooltip_container": "en {kind} {name}",
   "code.tooltip_unreadable": "No se pudo leer {name} ({why})",
   "metadata.loading": "Cargando…",
+  "metadata.closed": "Cerrado",
   "metadata.copy_row": "Copiar fila",
   "metadata.go_to_token": "Ir al token",
   "metadata.sorting": "Ordenando…",

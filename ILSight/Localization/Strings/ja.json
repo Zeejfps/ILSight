@@ -347,6 +347,7 @@
   "code.tooltip_container": "{kind} {name} 内",
   "code.tooltip_unreadable": "{name} を読み込めませんでした ({why})",
   "metadata.loading": "読み込み中…",
+  "metadata.closed": "閉じられました",
   "metadata.copy_row": "行をコピー",
   "metadata.go_to_token": "トークンへ移動",
   "metadata.sorting": "並べ替え中…",

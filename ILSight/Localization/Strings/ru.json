@@ -347,6 +347,7 @@
   "code.tooltip_container": "в {kind} {name}",
   "code.tooltip_unreadable": "Не удалось прочитать {name} ({why})",
   "metadata.loading": "Загрузка…",
+  "metadata.closed": "Закрыто",
   "metadata.copy_row": "Копировать строку",
   "metadata.go_to_token": "Перейти к токену",
   "metadata.sorting": "Сортировка…",

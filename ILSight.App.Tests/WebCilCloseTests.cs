@@ -1,5 +1,7 @@
+using ZGF.Gui.Immediate;
 using ILSight.CommandArea;
 using ILSight.Core;
+using ILSight.Core.Metadata;
 using static ILSight.App.Tests.AppStateDriver;
 
 namespace ILSight.App.Tests;
@@ -63,6 +65,62 @@ public sealed class WebCilCloseTests
         Assert.Equal(DecompilationLanguage.CSharp, tab.Load.Language);
         Assert.Same(code, tab.Document);
         Assert.False(tab.Load.IsBusy);
+        Assert.Empty(app.AppState.Errors.Entries);
+    }
+
+    /// <summary>The crumb reading <paramref name="label"/> in the active document's bar, as the last frame drew it.</summary>
+    private static Selector Crumb(AppDriver app, string label)
+    {
+        var crumb = app.Frames.Snapshot().Nodes.Single(n => IsCrumb(n) && n.SelfAndDescendants().Any(c => c.Label == label));
+        Assert.NotNull(crumb.Path);
+        return new Selector.ByPath(crumb.Path);
+    }
+
+    private static bool IsCrumb(SemanticNode node)
+    {
+        var path = node.Path;
+        if (path is null)
+        {
+            return false;
+        }
+
+        return path.Segments[^1] is TestSegment.Named { Name: "crumb" };
+    }
+
+    [Fact]
+    public async Task A_closed_webcil_assemblys_grid_says_so_where_rows_were_not_read_and_asks_for_nothing_scrolled_or_clicked()
+    {
+        using var folder = new TempDir();
+        var path = folder.Write("LargeApp.wasm", await File.ReadAllBytesAsync(LargeAppPath));
+        var app = new AppDriver(height: 500f);
+        app.Driver.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(path)], ct));
+        app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 1);
+        app.Settle(1);
+        var module = app.AppState.Assemblies.Assemblies.Single();
+        var strings = await module.ReadRootAsync().GetChildAsync("Metadata", "String Heap (357)");
+        app.Show(strings, 2);
+        var tab = app.AppState.Navigation.ActiveTab ?? throw new InvalidOperationException("The string heap was shown in no tab.");
+        var grid = Assert.IsType<MetadataGrid.Paged>(tab.Grid);
+        var state = DocumentPanels.GetGridState(DocumentPanels.GetView(app.Ui.Documents, tab), grid);
+        var last = grid.RowCount - 1;
+        var closed = app.Ui.Strings.DocumentClosed("LargeApp.wasm");
+        Commands.CloseAssemblies(app.AppState, [module]);
+        app.Settle(2);
+
+        state.Scroll.Y = 100000f;
+        app.Run(2);
+        var scrolled = (Loading: app.Frames.Drew(app.Ui.Strings.MetadataLoading), Asked: app.Ui.MetadataGridPages.HasAsked, Read: grid.IsRowRead(last));
+        var rowsClosed = app.Frames.Drew(app.Ui.Strings.MetadataClosed);
+        app.Frames.ClickOn(Crumb(app, "Metadata")).Frame(2);
+        var clicked = (Node: tab.Node, Busy: tab.Load.IsBusy, Background: app.AppState.Work.Outstanding.Count);
+        app.Settle(2);
+
+        Assert.Equal((false, false, false), scrolled);
+        Assert.True(rowsClosed);
+        Assert.True(app.Frames.Drew(closed));
+        Assert.Equal((strings, false, 0), clicked);
+        Assert.Same(grid, tab.Grid);
+        Assert.Equal("LargeApp.wasm", tab.Load.ClosedAssembly);
         Assert.Empty(app.AppState.Errors.Entries);
     }
 }

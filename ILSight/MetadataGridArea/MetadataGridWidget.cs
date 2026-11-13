@@ -12,7 +12,8 @@ public static class MetadataGridWidget
     private const int FunnelSalt = 0x4D444746;
     private const int FilterTextSalt = 0x4D444754;
 
-    public static MetadataGridResult RenderMetadataGrid(Ui<UiState> ui, string id, MetadataGridState state, MetadataFilters flags)
+    public static MetadataGridResult RenderMetadataGrid(Ui<UiState> ui, string id, MetadataGridState state, MetadataFilters flags,
+        string? closedAssembly = null)
     {
         var listId = ui.GetId(id);
         var frame = new MetadataGridFrame
@@ -26,6 +27,7 @@ public static class MetadataGridWidget
             Strings = ui.State.Strings,
             ListId = listId,
             MenuId = HashCode.Combine(listId, MetadataGridFrame.MenuSalt),
+            ClosedAssembly = closedAssembly,
         };
         return frame.Render();
     }
@@ -116,8 +118,9 @@ public static class MetadataGridWidget
     /// <summary>Asks <paramref name="views"/> for the rows sorted and filtered again when a filter or the sort
     /// changed: a wait, which the frame edge starts off the screen's thread, the view showing the rows it has until
     /// they land (<see cref="ShowArranged"/>). The table's own rows, unsorted and unfiltered, read no cell, and show
-    /// at once.</summary>
-    internal static void UpdateView(MetadataGridState state, MetadataFilters flags, MetadataGridViews views)
+    /// at once. The grid of a closed assembly (<paramref name="isClosed"/>) asks for nothing: a sort or filter stays
+    /// unavailable, the view saying why.</summary>
+    internal static void UpdateView(MetadataGridState state, MetadataFilters flags, MetadataGridViews views, bool isClosed)
     {
         var key = ComputeViewKey(state, flags);
         if (key == state.ViewAskedKey)
@@ -131,6 +134,12 @@ public static class MetadataGridWidget
         {
             views.Forget(state);
             Show(state, key, null, Enumerable.Range(0, state.Grid.RowCount).ToArray());
+            return;
+        }
+
+        if (isClosed)
+        {
+            views.Forget(state);
             return;
         }
 

@@ -347,6 +347,7 @@
   "code.tooltip_container": "{kind} {name} 내",
   "code.tooltip_unreadable": "{name}을(를) 읽을 수 없습니다 ({why})",
   "metadata.loading": "로드 중…",
+  "metadata.closed": "닫힘",
   "metadata.copy_row": "행 복사",
   "metadata.go_to_token": "토큰으로 이동",
   "metadata.sorting": "정렬 중…",

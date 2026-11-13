@@ -356,6 +356,7 @@
   "code.tooltip_container": "in {kind} {name}",
   "code.tooltip_unreadable": "{name} couldn't be read ({why})",
   "metadata.loading": "Loading…",
+  "metadata.closed": "Closed",
   "metadata.copy_row": "Copy row",
   "metadata.go_to_token": "Go to token",
   "metadata.sorting": "Sorting…",

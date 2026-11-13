@@ -347,6 +347,7 @@
   "code.tooltip_container": "位于 {kind} {name}",
   "code.tooltip_unreadable": "无法读取 {name}（{why}）",
   "metadata.loading": "正在加载…",
+  "metadata.closed": "已关闭",
   "metadata.copy_row": "复制行",
   "metadata.go_to_token": "转到令牌",
   "metadata.sorting": "正在排序…",

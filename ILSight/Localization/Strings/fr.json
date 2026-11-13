@@ -347,6 +347,7 @@
   "code.tooltip_container": "dans {kind} {name}",
   "code.tooltip_unreadable": "Impossible de lire {name} ({why})",
   "metadata.loading": "Chargement…",
+  "metadata.closed": "Fermé",
   "metadata.copy_row": "Copier la ligne",
   "metadata.go_to_token": "Aller au jeton",
   "metadata.sorting": "Tri en cours…",

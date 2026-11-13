@@ -93,7 +93,8 @@ internal static class DocumentsView
         DocumentTab tab, MetadataGrid grid)
     {
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
-        var picked = MetadataGridWidget.RenderMetadataGrid(ui, "grid", DocumentPanels.GetGridState(view, grid), ui.State.MetadataFilters);
+        var picked = MetadataGridWidget.RenderMetadataGrid(ui, "grid", DocumentPanels.GetGridState(view, grid), ui.State.MetadataFilters,
+            tab.Load.ClosedAssembly);
         var node = tab.Node;
         if (picked.Target is not null && node is not null)
         {
