@@ -698,7 +698,7 @@ public sealed class Navigation
         }
 
         return entry.Match(
-            node => ShowEntry(node, assemblies, setup),
+            node => ShowNodeOrBeginLookUp(node, assemblies, setup),
             diagram => ShowDiagramPlace(diagram),
             comparison => ShowComparisonPlace(comparison, assemblies),
             report =>
@@ -797,9 +797,7 @@ public sealed class Navigation
         return index != _history.CurrentIndex;
     }
 
-    /// <summary>Shows the node <paramref name="entry"/> recorded when the tab it shows in still shows it, else begins
-    /// looking up the place it recorded. Returns the load or the lookup it started; null when neither did.</summary>
-    private HistoryMove? ShowEntry(HistoryEntry.Node entry, AssemblyList assemblies, DecompilerSetup setup)
+    private HistoryMove? ShowNodeOrBeginLookUp(HistoryEntry.Node entry, AssemblyList assemblies, DecompilerSetup setup)
     {
         var destination = ChooseDestination(inNewTab: false);
         var place = entry.Place;

@@ -28,9 +28,8 @@ public sealed class CodeTooltips
     public bool HasAsked => _asked.Count > 0;
 
     /// <summary>Whether the lookup of <paramref name="reference"/> is done, with what it found,
-    /// <paramref name="tooltip"/>: the tooltip, none, or the module it is in that could not be read. Asks for the
-    /// lookup the first time.</summary>
-    public bool TryGetTooltip(CodeReference.Entity reference, [NotNullWhen(true)] out Lookup<CodeTooltip>? tooltip)
+    /// <paramref name="tooltip"/>: the tooltip, none, or the module it is in that could not be read.</summary>
+    public bool TryGetOrAskTooltip(CodeReference.Entity reference, [NotNullWhen(true)] out Lookup<CodeTooltip>? tooltip)
     {
         ForgetIfStale();
         if (_found.TryGetValue(reference, out tooltip))
@@ -51,7 +50,7 @@ public sealed class CodeTooltips
     /// the first time.</summary>
     public Lookup<CodeTooltip>? FindShown(CodeReference.Entity reference)
     {
-        if (!TryGetTooltip(reference, out var tooltip))
+        if (!TryGetOrAskTooltip(reference, out var tooltip))
         {
             return null;
         }

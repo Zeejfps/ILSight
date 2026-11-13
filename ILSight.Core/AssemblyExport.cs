@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp.ProjectDecompiler;
@@ -109,8 +110,7 @@ public static class AssemblyExport
     {
         var assemblies = projects.Select(static p => p.Assembly).ToList();
         using var reading = LoadedAssemblies.BeginReading();
-        var closed = FindClosed(reading, assemblies);
-        if (closed is not null)
+        if (!TryReadAll(reading, assemblies, out var closed))
         {
             return new ModuleRead<List<ExportedProject>>.Closed { Module = closed };
         }
@@ -120,18 +120,19 @@ public static class AssemblyExport
         return new ModuleRead<List<ExportedProject>>.Read { Value = exported };
     }
 
-    /// <summary>Adds each of <paramref name="assemblies"/> to <paramref name="reading"/>; the first released (closed)
-    /// before, else null.</summary>
-    private static LoadedModule? FindClosed(ModuleReading reading, IReadOnlyList<LoadedModule> assemblies)
+    private static bool TryReadAll(ModuleReading reading, IReadOnlyList<LoadedModule> assemblies, [NotNullWhen(false)] out LoadedModule? closed)
     {
         foreach (var assembly in assemblies)
         {
             if (!LoadedAssemblies.TryRead(reading, assembly))
             {
-                return assembly;
+                closed = assembly;
+                return false;
             }
         }
-        return null;
+
+        closed = null;
+        return true;
     }
 
     private static async Task<List<ExportedProject>> ExportSolutionAsync(ModuleReading reading, IReadOnlyList<SolutionProject> projects,
@@ -200,8 +201,7 @@ public static class AssemblyExport
         string folder, IProgress<ExportProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         using var reading = LoadedAssemblies.BeginReading();
-        var closed = FindClosed(reading, assemblies);
-        if (closed is not null)
+        if (!TryReadAll(reading, assemblies, out var closed))
         {
             return new ModuleRead<List<PdbFailure>>.Closed { Module = closed };
         }

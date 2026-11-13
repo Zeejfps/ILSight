@@ -153,7 +153,7 @@ internal static class AssemblyListsDialogView
             ActiveMark(ui, active);
             if (dialog.Mode is ListsDialogMode.Renaming renaming && renaming.List == name)
             {
-                NameBox(ui, renaming, listId);
+                EditName(ui, renaming, listId);
             }
             else
             {
@@ -191,9 +191,7 @@ internal static class AssemblyListsDialogView
         ui.Text(name, new Box { Width = Sizing.Grow() }, color: color, overflow: TextOverflow.Ellipsis);
     }
 
-    /// <summary>The name being typed for the list being renamed, kept on Enter or once focus moves
-    /// elsewhere, dropped on Escape; the list takes the focus back unless it moved elsewhere.</summary>
-    private static void NameBox(Ui<UiState> ui, ListsDialogMode.Renaming renaming, int listId)
+    private static void EditName(Ui<UiState> ui, ListsDialogMode.Renaming renaming, int listId)
     {
         var begin = TryTakeFocus(renaming);
         var result = ui.InlineEdit(NameId, ref renaming.NewName, begin, Sizing.Grow());
@@ -203,7 +201,7 @@ internal static class AssemblyListsDialogView
         }
 
         var stillHere = ui.HasFocus(ui.GetId(NameId));
-        FinishNameBox(ui, result);
+        FinishEditingName(ui, result);
         if (stillHere || result == InlineEditResult.Cancelled)
         {
             ui.Focus(listId, takesText: false);
@@ -218,7 +216,7 @@ internal static class AssemblyListsDialogView
         return focus;
     }
 
-    private static void FinishNameBox(Ui<UiState> ui, InlineEditResult result)
+    private static void FinishEditingName(Ui<UiState> ui, InlineEditResult result)
     {
         if (result == InlineEditResult.Committed)
         {

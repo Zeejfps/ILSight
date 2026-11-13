@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using ICSharpCode.Decompiler.CSharp.ProjectDecompiler;
 using ICSharpCode.Decompiler.TypeSystem;
 using ILSight.Core.Metadata;
@@ -33,8 +34,7 @@ public static class NodeContentLoader
         DecompilerOptions options, CancellationToken cancellationToken = default)
     {
         using var reading = LoadedAssemblies.BeginReading();
-        var closed = FindClosed(reading, node);
-        if (closed is not null)
+        if (!TryReadModuleOf(reading, node, out var closed))
         {
             return new ModuleRead<DecompiledDocument>.Closed { Module = closed };
         }
@@ -42,29 +42,29 @@ public static class NodeContentLoader
         return new ModuleRead<DecompiledDocument>.Read { Value = await DecompileAsync(session, reading, node, language, options, cancellationToken) };
     }
 
-    /// <summary>Adds <paramref name="node"/>'s module to <paramref name="reading"/>; the module when it was released
-    /// (closed) before, else null, as for a node of no module (a package's).</summary>
-    private static LoadedModule? FindClosed(ModuleReading reading, BrowseNode node)
+    private static bool TryReadModuleOf(ModuleReading reading, BrowseNode node, [NotNullWhen(false)] out LoadedModule? closed)
     {
+        closed = null;
         if (node.Assembly is not LoadedModule module)
         {
-            return null;
+            // A package's node: no module of its own to read.
+            return true;
         }
 
         if (LoadedAssemblies.TryRead(reading, module))
         {
-            return null;
+            return true;
         }
 
-        return module;
+        closed = module;
+        return false;
     }
 
     private static async Task<ModuleRead<NodeContent>> ReadContentUnderReadingAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language,
         DecompilerOptions options, int firstGridRows, CancellationToken cancellationToken)
     {
         using var reading = LoadedAssemblies.BeginReading();
-        var closed = FindClosed(reading, node);
-        if (closed is not null)
+        if (!TryReadModuleOf(reading, node, out var closed))
         {
             return new ModuleRead<NodeContent>.Closed { Module = closed };
         }

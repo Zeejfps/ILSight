@@ -7,7 +7,7 @@ public sealed class LookUpTooltipHandlerTests
 {
     private static async Task<TooltipLookup> AskForGreeterAsync(AppStateDriver d, CodeTooltips tooltips)
     {
-        Assert.False(tooltips.TryGetTooltip((await d.FixtureAsync("Greeter")).Definition, out _));
+        Assert.False(tooltips.TryGetOrAskTooltip((await d.FixtureAsync("Greeter")).Definition, out _));
         return Assert.Single(tooltips.TakeAsked());
     }
 
@@ -23,7 +23,7 @@ public sealed class LookUpTooltipHandlerTests
 
         await d.RunAsync(() => new LookUpTooltipHandler(ports).HandleAsync(tooltips, lookup, CancellationToken.None));
 
-        Assert.True(tooltips.TryGetTooltip(lookup.Reference, out var kept));
+        Assert.True(tooltips.TryGetOrAskTooltip(lookup.Reference, out var kept));
         Assert.Same(tooltip, kept);
     }
 
@@ -38,7 +38,7 @@ public sealed class LookUpTooltipHandlerTests
 
         await d.RunAsync(() => new LookUpTooltipHandler(ports).HandleAsync(tooltips, lookup, CancellationToken.None));
 
-        Assert.True(tooltips.TryGetTooltip(lookup.Reference, out var kept));
+        Assert.True(tooltips.TryGetOrAskTooltip(lookup.Reference, out var kept));
         Assert.IsType<Lookup<CodeTooltip>.NotFound>(kept);
     }
 
@@ -66,7 +66,7 @@ public sealed class LookUpTooltipHandlerTests
         var tooltips = new CodeTooltips { Assemblies = assemblies, Version = assemblies.Version };
         var lookup = await AskForGreeterAsync(d, tooltips);
 
-        var found = tooltips.TryGetTooltip(lookup.Reference, out _);
+        var found = tooltips.TryGetOrAskTooltip(lookup.Reference, out _);
         var shown = tooltips.FindShown(lookup.Reference);
 
         Assert.False(found);
