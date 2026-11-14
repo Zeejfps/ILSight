@@ -201,7 +201,7 @@ internal static class AppRoot
         var decompileIntoTab = new DecompileIntoTabHandler(new DecompileIntoTabHandlerAdapter(errors, session));
         var navigation = new NavigationInfrastructure(errors, refusals, assemblies, session, opens);
         var assemblyList = new AssemblyListInfrastructure(errors, refusals, assemblies, session);
-        var diagrams = new DiagramInfrastructure(errors, assemblies);
+        var diagrams = new DiagramInfrastructure(errors, refusals, assemblies);
         var bookmarks = new BookmarkInfrastructure(errors, assemblies, session);
         var analysis = new AnalysisInfrastructure(errors, assemblies);
         var exports = new ExportInfrastructure(errors, refusals, session);

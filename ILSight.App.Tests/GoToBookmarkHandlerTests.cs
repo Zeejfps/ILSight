@@ -39,7 +39,7 @@ public sealed class GoToBookmarkHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PlaceGone_ReportsTheBookmarkGone()
+    public async Task HandleAsync_PlaceGone_SaysTheBookmarkGoneOnTheRefusalLine()
     {
         var (d, bookmark) = await BookmarkedAsync();
         var ports = new FakeGoToBookmarkHandlerPorts();
@@ -49,10 +49,10 @@ public sealed class GoToBookmarkHandlerTests
         var load = await d.EndAsync(going);
 
         Assert.Null(load);
-        var gone = Assert.IsType<AppProblem.BookmarkGone>(Assert.Single(ports.Reported));
+        var gone = Assert.IsType<Refusal.BookmarkGone>(Assert.Single(ports.Refused));
         Assert.Equal(bookmark.Name, gone.Bookmark);
         Assert.Equal(bookmark.Place, gone.Place);
-        Assert.Null(gone.Error);
+        Assert.Empty(ports.Reported);
     }
 
     [Fact]

@@ -67,14 +67,15 @@ public abstract record AppProblem
         public required Exception Error { get; init; }
     }
 
-    /// <summary>The place a bookmark marks was not found, or finding it failed with <see cref="Error"/>.</summary>
+    /// <summary>Finding the place a bookmark marks failed with <see cref="Error"/>; not finding it is a refusal
+    /// (<see cref="Refusal.BookmarkGone"/>).</summary>
     public sealed record BookmarkGone : AppProblem
     {
         public required string Bookmark { get; init; }
 
         public required NodePath Place { get; init; }
 
-        public required Exception? Error { get; init; }
+        public required Exception Error { get; init; }
     }
 
     /// <summary>What was asked for is in <see cref="Module"/>, a file whose type system the library could not read,
@@ -142,12 +143,13 @@ public abstract record AppProblem
         public required Exception Error { get; init; }
     }
 
-    /// <summary>The type <see cref="Type"/> was not found for a diagram, or reading it failed with <see cref="Error"/>.</summary>
+    /// <summary>Reading the type <see cref="Type"/> for a diagram failed with <see cref="Error"/>; not finding it is a
+    /// refusal (<see cref="Refusal.TypeNotDiagrammed"/>).</summary>
     public sealed record TypeNotDiagrammed : AppProblem
     {
         public required CodeReference.Entity Type { get; init; }
 
-        public required Exception? Error { get; init; }
+        public required Exception Error { get; init; }
     }
 
     public sealed record DiagramNotReopened : AppProblem

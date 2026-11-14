@@ -13,6 +13,8 @@ internal sealed class FakeDiagramGrowingPorts : DiagramGrowing.IPorts
 
     public List<AppProblem> Reported { get; } = [];
 
+    public List<Refusal> Refused { get; } = [];
+
     /// <summary>The modules a search for derived types reached that could not be read, answered beside the cards the
     /// test answers with; none unless the test adds them.</summary>
     public List<UnreadableModule> SearchedUnreadable { get; } = [];
@@ -20,6 +22,11 @@ internal sealed class FakeDiagramGrowingPorts : DiagramGrowing.IPorts
     public void ReportError(AppProblem problem)
     {
         Reported.Add(problem);
+    }
+
+    public void ShowRefusal(Refusal refusal)
+    {
+        Refused.Add(refusal);
     }
 
     public async Task<Outcome<TypeSystemWork<List<TypeCard>>>> ReadWithNeighboursAsync(CodeReference.Entity type, CancellationToken ct)

@@ -38,7 +38,7 @@ public static class ProblemTexts
             analysesNotRestored: p => (t.ErrorRestoreAnalyses, p.Error.ToString()),
             unresolved: p => (t.ErrorResolve(p.Reference.Name), p.Error.ToString()),
             historyPlaceGone: p => (t.ErrorGoBack(p.Place.Label), p.Error.ToString()),
-            bookmarkGone: p => (t.ErrorGoToBookmark(p.Bookmark), Failure(p.Error, t.ErrorNoLongerThere(p.Place))),
+            bookmarkGone: p => (t.ErrorGoToBookmark(p.Bookmark), p.Error.ToString()),
             moduleUnreadable: p => (t.ErrorModuleUnreadable(p.Module), p.Why.ToString()),
             bookmarksNotExported: p => (t.ErrorExportBookmarks, p.Reason),
             bookmarksNotImported: p => (t.ErrorImportBookmarks(p.File), p.Reason),
@@ -48,7 +48,7 @@ public static class ProblemTexts
             bookmarksLeftOut: p => (t.ErrorDuplicateBookmarks(p.Count), ""),
             comparisonFailed: p => (t.ErrorCompare(p.Left, p.Right), p.Error.ToString()),
             decompilationFailed: p => (t.ErrorDecompile(p.Node), p.Error.ToString()),
-            typeNotDiagrammed: p => (t.ErrorShowInDiagram(p.Type.Name), Failure(p.Error, t.ErrorNoDefinition(p.Type))),
+            typeNotDiagrammed: p => (t.ErrorShowInDiagram(p.Type.Name), p.Error.ToString()),
             diagramNotReopened: p => (t.ErrorShowInDiagram(p.Diagram), p.Error.ToString()),
             diagramNotLaidOut: p => (t.ErrorLayOutDiagram, p.Error.ToString()),
             resourceNotSaved: p => (t.ErrorSaveResource(p.Resource), p.Reason),
@@ -66,16 +66,6 @@ public static class ProblemTexts
             packageNotDownloaded: p => (t.ErrorDownloadPackage(p.Package), p.Error.ToString()),
             searchFailed: p => (t.ErrorSearch, p.Error.ToString()),
             unexpected: p => (t.ErrorUnexpected, p.Error.ToString()));
-    }
-
-    private static string Failure(Exception? error, string fallback)
-    {
-        if (error is null)
-        {
-            return fallback;
-        }
-
-        return error.ToString();
     }
 
     private static string DescribeEntryProblems(Strings t, IReadOnlyList<BookmarkEntryProblem> problems)

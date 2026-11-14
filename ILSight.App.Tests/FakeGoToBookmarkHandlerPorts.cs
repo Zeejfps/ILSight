@@ -13,9 +13,16 @@ internal sealed class FakeGoToBookmarkHandlerPorts : GoToBookmarkHandler.IPorts
 
     public List<AppProblem> Reported { get; } = [];
 
+    public List<Refusal> Refused { get; } = [];
+
     public void ReportError(AppProblem problem)
     {
         Reported.Add(problem);
+    }
+
+    public void ShowRefusal(Refusal refusal)
+    {
+        Refused.Add(refusal);
     }
 
     public Task<Outcome<Lookup<BrowseNode>>> LookUpPlaceAsync(NodePath place, CancellationToken ct)

@@ -81,6 +81,20 @@ public abstract record Refusal
         public required NodePath Place { get; init; }
     }
 
+    /// <summary>The place the bookmark <see cref="Bookmark"/> marks, <see cref="Place"/>, was not found.</summary>
+    public sealed record BookmarkGone : Refusal
+    {
+        public required string Bookmark { get; init; }
+
+        public required NodePath Place { get; init; }
+    }
+
+    /// <summary>A diagram was asked for <see cref="Type"/>, which is no type that can be read.</summary>
+    public sealed record TypeNotDiagrammed : Refusal
+    {
+        public required CodeReference.Entity Type { get; init; }
+    }
+
     /// <summary>What was refused and why, in <paramref name="t"/>'s language.</summary>
     public (string What, string Why) Words(Strings t)
     {
@@ -96,6 +110,8 @@ public abstract record Refusal
             NoApiReferencePage r => (t.ErrorNoApiReferencePage(r.Name), t.ErrorNoApiReferencePageDetails),
             Unresolved r => (t.ErrorResolve(r.Reference.Name), t.ErrorNoDefinition(r.Reference)),
             HistoryPlaceGone r => (t.ErrorGoBack(r.Place.Label), t.ErrorNoLongerThere(r.Place)),
+            BookmarkGone r => (t.ErrorGoToBookmark(r.Bookmark), t.ErrorNoLongerThere(r.Place)),
+            TypeNotDiagrammed r => (t.ErrorShowInDiagram(r.Type.Name), t.ErrorNoDefinition(r.Type)),
             _ => throw new UnreachableException($"Refusal.Words does not handle {GetType().Name}."),
         };
     }
