@@ -43,8 +43,6 @@ public sealed class UiState : IUiState
     /// stacked or in floating windows.</summary>
     public required MainLayout MainLayout { get; init; }
 
-    public DockLayout Layout => MainLayout.Dock;
-
     /// <summary>How each open tab is shown, and the panel it is docked as.</summary>
     public DocumentViews Documents { get; } = new();
 

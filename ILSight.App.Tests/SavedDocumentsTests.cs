@@ -87,7 +87,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
     private static void MoveRightOf(AppDriver app, DocumentTab tab, DocumentTab beside)
     {
-        var layout = app.Ui.Layout;
+        var layout = app.Ui.MainLayout.Dock;
         var group = layout.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, beside));
         Assert.NotNull(group);
         layout.Dock(DocumentPanels.GetPanel(app.Ui.Documents, tab), group, DockEdge.Right);
@@ -127,7 +127,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
     private static List<string> ListGroups(AppDriver app)
     {
-        return app.Ui.Layout.AllGroups()
+        return app.Ui.MainLayout.Dock.AllGroups()
             .Select(static g => $"{string.Join(",", g.Panels)} [{g.Active}]")
             .ToList();
     }
@@ -375,7 +375,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var gone = Assert.IsType<TabContent.Gone>(tab.Content);
         Assert.Equal("Missing", gone.Location.Label);
         Assert.Equal(MissingPanel, DocumentPanels.GetPanel(d.Ui.Documents, tab));
-        Assert.True(d.Ui.Layout.Contains(MissingPanel));
+        Assert.True(d.Ui.MainLayout.Dock.Contains(MissingPanel));
     }
 
     [Fact]
@@ -473,7 +473,7 @@ public sealed class SavedDocumentsTests : IDisposable
         d.AppState.Navigation.KeepTabOpen(greeter);
         var greeterPanel = DocumentPanels.GetPanel(d.Ui.Documents, greeter);
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
-        var layout = d.Ui.Layout;
+        var layout = d.Ui.MainLayout.Dock;
         var farewell = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(farewell);
         var greeterGroup = layout.GroupOf(greeterPanel);
@@ -572,7 +572,7 @@ public sealed class SavedDocumentsTests : IDisposable
         Assert.Null(Assert.Single(saved.AssemblyLists).Documents);
         var tab = Assert.Single(next.AppState.Navigation.OpenTabs);
         Assert.Null(tab.Location);
-        Assert.True(next.Ui.Layout.Contains(DocumentPanels.GetPanel(next.Ui.Documents, tab)));
+        Assert.True(next.Ui.MainLayout.Dock.Contains(DocumentPanels.GetPanel(next.Ui.Documents, tab)));
     }
 
     [Fact]

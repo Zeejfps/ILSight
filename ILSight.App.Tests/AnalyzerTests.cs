@@ -45,7 +45,7 @@ public sealed class AnalyzerTests
         var root = Assert.Single(d.AppState.Analyzer.Found());
         var usedBy = Expand(d, root, "Used By");
 
-        Assert.True(d.Ui.Layout.Contains(DockPanels.Analyzer));
+        Assert.True(d.Ui.MainLayout.Dock.Contains(DockPanels.Analyzer));
         Assert.StartsWith("First()", root.Symbol.Label);
         var caller = Assert.IsType<AnalyzerSymbolNode>(Assert.Single(usedBy.Found));
         Assert.StartsWith("Third()", caller.Symbol.Label);

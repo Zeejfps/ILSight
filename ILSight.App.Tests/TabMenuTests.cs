@@ -77,7 +77,7 @@ public sealed class TabMenuTests
         var (app, _) = await OpenTabsAsync();
         var tab = app.AppState.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        var group = app.Ui.Layout.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, tab));
+        var group = app.Ui.MainLayout.Dock.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, tab));
         Assert.NotNull(group);
         group.Panels.Add(DockPanels.Bookmarks);
         app.Run(2);
@@ -86,7 +86,7 @@ public sealed class TabMenuTests
         app.Settle(2);
 
         Assert.Empty(app.AppState.Navigation.OpenTabs);
-        Assert.Same(group, app.Ui.Layout.GroupOf(DockPanels.Bookmarks));
+        Assert.Same(group, app.Ui.MainLayout.Dock.GroupOf(DockPanels.Bookmarks));
     }
 
     [Fact]

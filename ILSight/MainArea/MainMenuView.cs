@@ -399,7 +399,7 @@ internal static class MainMenuView
     private static bool PanelItem(Ui<UiState> ui, string label, DockView view, Shortcut? shortcut = null)
     {
         var panel = DockPanels.NameOf(view);
-        var open = ui.State.Layout.Contains(panel);
+        var open = ui.State.MainLayout.Dock.Contains(panel);
         return ui.MenuItem(label, shortcut, check: open, id: panel, icon: DockPanels.Icon(ui.State.Appearance.Icons, view));
     }
 

@@ -150,14 +150,14 @@ internal static class QueuedCommands
     /// and makes it the active tab when asked to or when the layout focuses its panel.</summary>
     internal static void OpenTabIn(UiState uiState, AppState appState, string panel, bool focus)
     {
-        if (!uiState.Layout.Contains(panel))
+        if (!uiState.MainLayout.Dock.Contains(panel))
         {
             return;
         }
 
         var tab = appState.Navigation.OpenEmptyTab();
         uiState.Documents.AddView(tab, panel);
-        var becomesActive = focus || uiState.Layout.Focused == panel;
+        var becomesActive = focus || uiState.MainLayout.Dock.Focused == panel;
         if (becomesActive)
         {
             Commands.StartDecompiling(appState, appState.Navigation.FocusTab(tab, appState.Decompiler.Setup));

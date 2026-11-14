@@ -86,7 +86,7 @@ public sealed class AppTests
             .Select(t => t.Rect)
             .MaxBy(r => r.X);
         var assemblies = app.TextRect("Assemblies");
-        var layout = app.Ui.Layout;
+        var layout = app.Ui.MainLayout.Dock;
         var from = new PointF(tab.X + tab.Width / 2, tab.Y + tab.Height / 2);
         var aside = new PointF(from.X - 20f, from.Y + 20f);
         var onto = new PointF(assemblies.Right + 4f, assemblies.Y + assemblies.Height / 2);
@@ -656,7 +656,7 @@ public sealed class AppTests
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Scope search to this assembly")).Frame(2);
 
         Assert.Equal($"inassembly:{name} ", app.Ui.Search.Query);
-        Assert.True(app.Ui.Layout.Contains(DockPanels.Search));
+        Assert.True(app.Ui.MainLayout.Dock.Contains(DockPanels.Search));
     }
 
     [Fact]
@@ -695,7 +695,7 @@ public sealed class AppTests
         Assert.Equal(["Open assembly"], app.Frames.FilePicker.Titles);
 
         app.Frames.ClickOn(Selector.AtPath("search")).Frame(2);
-        Assert.True(app.Ui.Layout.Contains(DockPanels.Search));
+        Assert.True(app.Ui.MainLayout.Dock.Contains(DockPanels.Search));
         Assert.True(app.Frames.Drew("Search…"));
     }
 
@@ -707,13 +707,13 @@ public sealed class AppTests
         app.Run(2);
         var theme = app.Theme;
         var gear = app.TextRect(BuiltInGlyphs.Icons.ToolbarDisplayOptions);
-        Assert.False(app.Ui.Layout.Contains(DockPanels.DisplayOptions));
+        Assert.False(app.Ui.MainLayout.Dock.Contains(DockPanels.DisplayOptions));
 
         app.Frames.ClickOn(Selector.AtPath("display-options")).Frame(2);
 
         Assert.True(gear.Right >= 1600f - theme.ShellPaddingX - theme.IconButtonSize, $"the gear ends at {gear.Right}");
         Assert.True(gear.X > app.TextRect("IL").Right);
-        Assert.True(app.Ui.Layout.Contains(DockPanels.DisplayOptions));
+        Assert.True(app.Ui.MainLayout.Dock.Contains(DockPanels.DisplayOptions));
         Assert.True(app.Frames.Drew("Line numbers"));
     }
 
@@ -722,11 +722,11 @@ public sealed class AppTests
     {
         var app = AppDriver.Opened(width: 1600f);
         app.Run(2);
-        Assert.False(app.Ui.Layout.Contains(DockPanels.DisplayOptions));
+        Assert.False(app.Ui.MainLayout.Dock.Contains(DockPanels.DisplayOptions));
 
         app.Frames.Key(Shortcuts.Settings).Frame(2);
 
-        Assert.True(app.Ui.Layout.Contains(DockPanels.DisplayOptions));
+        Assert.True(app.Ui.MainLayout.Dock.Contains(DockPanels.DisplayOptions));
     }
 
     [Fact]
@@ -865,6 +865,6 @@ public sealed class AppTests
         app.Frames.Key(Shortcuts.Search).Frame(2);
 
         Assert.True(app.Ui.About.IsOpen);
-        Assert.False(app.Ui.Layout.Contains(DockPanels.Search));
+        Assert.False(app.Ui.MainLayout.Dock.Contains(DockPanels.Search));
     }
 }

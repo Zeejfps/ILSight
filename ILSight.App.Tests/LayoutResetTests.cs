@@ -17,6 +17,6 @@ public sealed class LayoutResetTests
         app.Frames.ClickOn(Selector.WithText("Cancel")).Frame(2);
 
         Assert.False(screen.LayoutReset.IsAsked);
-        Assert.True(screen.Layout.Contains(DockPanels.Bookmarks));
+        Assert.True(screen.MainLayout.Dock.Contains(DockPanels.Bookmarks));
     }
 }

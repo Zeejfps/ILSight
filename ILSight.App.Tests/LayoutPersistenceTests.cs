@@ -29,14 +29,14 @@ public sealed class LayoutPersistenceTests : IDisposable
         var d = AppStateDriver.Opened(_temp.Settings());
         var screen = d.Ui;
         ScreenLayout.OpenPanel(screen, DockView.Analyzer);
-        var analyzer = screen.Layout.GroupOf(DockPanels.Analyzer);
+        var analyzer = screen.MainLayout.Dock.GroupOf(DockPanels.Analyzer);
         Assert.NotNull(analyzer);
-        screen.Layout.Dock(DockPanels.Bookmarks, analyzer, DockEdge.Center);
+        screen.MainLayout.Dock.Dock(DockPanels.Bookmarks, analyzer, DockEdge.Center);
         d.NextFrame();
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         var next = new AppStateDriver(_temp.Settings());
-        var layout = next.Ui.Layout;
+        var layout = next.Ui.MainLayout.Dock;
         var active = next.AppState.Navigation.ActiveTab;
         Assert.NotNull(active);
         var documents = layout.GroupOf(DocumentPanels.GetPanel(next.Ui.Documents, active));
@@ -60,16 +60,16 @@ public sealed class LayoutPersistenceTests : IDisposable
         var screen = d.Ui;
         ScreenLayout.OpenSearch(screen);
         ScreenLayout.OpenPanel(screen, DockView.Analyzer);
-        var analyzer = screen.Layout.GroupOf(DockPanels.Analyzer);
+        var analyzer = screen.MainLayout.Dock.GroupOf(DockPanels.Analyzer);
         Assert.NotNull(analyzer);
-        screen.Layout.Dock(DockPanels.Search, analyzer, DockEdge.Center);
+        screen.MainLayout.Dock.Dock(DockPanels.Search, analyzer, DockEdge.Center);
         d.NextFrame();
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         var next = new AppStateDriver(_temp.Settings()).Ui;
 
-        Assert.True(next.Layout.Contains(DockPanels.Search));
-        Assert.Same(next.Layout.GroupOf(DockPanels.Analyzer), next.Layout.GroupOf(DockPanels.Search));
+        Assert.True(next.MainLayout.Dock.Contains(DockPanels.Search));
+        Assert.Same(next.MainLayout.Dock.GroupOf(DockPanels.Analyzer), next.MainLayout.Dock.GroupOf(DockPanels.Search));
     }
 
     [Fact]

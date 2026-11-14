@@ -381,7 +381,7 @@ public sealed class AutosaveTests : IDisposable
     {
         var app = new AppDriver(settings: _temp.Settings());
         app.Run(2);
-        var root = (DockSplit)app.Ui.Layout.Root;
+        var root = (DockSplit)app.Ui.MainLayout.Dock.Root;
         var before = root.Ratio;
         var divider = GetDivider(app, root);
 

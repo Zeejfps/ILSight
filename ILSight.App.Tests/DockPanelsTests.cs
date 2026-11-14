@@ -13,13 +13,13 @@ public sealed class DockPanelsTests
     {
         using var temp = new TempDir();
         var d = new AppStateDriver(temp.Settings());
-        var layout = d.Ui.Layout;
+        var layout = d.Ui.MainLayout.Dock;
         layout.Float(DockPanels.Assemblies, new UiRect(40f, 50f, 300f, 400f));
         d.NextFrame();
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         var next = new AppStateDriver(temp.Settings());
-        var restored = next.Ui.Layout;
+        var restored = next.Ui.MainLayout.Dock;
 
         Assert.Same(next.AppState.Navigation.ActiveTab, next.Ui.Documents.FindTab(Assert.Single(Assert.IsType<DockGroup>(restored.Root).Panels)));
         var window = Assert.Single(restored.Windows);
@@ -38,7 +38,7 @@ public sealed class DockPanelsTests
         var fresh = DockPanels.Restore(null);
 
         var panel = DocumentPanels.GetPanel(d.Ui.Documents, Assert.Single(d.AppState.Navigation.OpenTabs));
-        Assert.Equal([panel, DockPanels.Search, DockPanels.Bookmarks], Assert.IsType<DockGroup>(d.Ui.Layout.Root).Panels);
+        Assert.Equal([panel, DockPanels.Search, DockPanels.Bookmarks], Assert.IsType<DockGroup>(d.Ui.MainLayout.Dock.Root).Panels);
         Assert.NotEqual("document-7", panel);
         Assert.Equal([DockPanels.Assemblies], Assert.IsType<DockGroup>(fresh.Root).Panels);
     }
@@ -62,13 +62,13 @@ public sealed class DockPanelsTests
         ScreenLayout.OpenSearch(d.Ui);
         d.Ui.Search.Query = "Greeter";
 
-        var search = d.Ui.Layout.GroupOf(DockPanels.Search);
+        var search = d.Ui.MainLayout.Dock.GroupOf(DockPanels.Search);
         Assert.NotNull(search);
         var active = appState.Navigation.ActiveTab;
         Assert.NotNull(active);
-        Assert.NotSame(search, d.Ui.Layout.GroupOf(DocumentPanels.GetPanel(d.Ui.Documents, active)));
+        Assert.NotSame(search, d.Ui.MainLayout.Dock.GroupOf(DocumentPanels.GetPanel(d.Ui.Documents, active)));
 
-        d.Ui.Layout.Close(DockPanels.Search);
+        d.Ui.MainLayout.Dock.Close(DockPanels.Search);
 
         Assert.Equal("", d.Ui.Search.Query);
     }
@@ -114,6 +114,6 @@ public sealed class DockPanelsTests
         ScreenLayout.ScopeSearch(driver.Ui, await driver.NodeAsync(AppStateDriver.FixturesNamespace));
 
         Assert.Equal($"innamespace:{AppStateDriver.FixturesNamespace} inassembly:Old Greet ", driver.Ui.Search.Query);
-        Assert.True(driver.Ui.Layout.Contains(DockPanels.Search));
+        Assert.True(driver.Ui.MainLayout.Dock.Contains(DockPanels.Search));
     }
 }

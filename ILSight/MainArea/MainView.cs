@@ -65,7 +65,7 @@ public static class MainView
     {
         var t = ui.State.Appearance.Strings;
         UpdateSearches(ui, appState);
-        if (IsLayoutEmpty(ui.State))
+        if (IsLayoutEmpty(ui.State.MainLayout.Dock))
         {
             DocumentsView.Hint(ui, t.ViewEmptyHint);
             return;
@@ -83,7 +83,7 @@ public static class MainView
 
     private static void UpdateSearches(Ui<UiState> ui, AppState appState)
     {
-        var shown = ui.State.Layout.Contains(DockPanels.Search);
+        var shown = ui.State.MainLayout.Dock.Contains(DockPanels.Search);
         UpdateSearch(ui, ui.State.Search, appState.Assemblies, shown);
         UpdateSearch(ui, ui.State.Omnibar.Search, appState.Assemblies, ui.State.Omnibar.IsSearching);
     }
@@ -97,9 +97,9 @@ public static class MainView
         }
     }
 
-    private static bool IsLayoutEmpty(UiState screen)
+    private static bool IsLayoutEmpty(DockLayout layout)
     {
-        return !screen.Layout.HasPanels();
+        return !layout.HasPanels();
     }
 
     private static void DockSpace(Ui<UiState> ui, AppState appState)
@@ -107,7 +107,7 @@ public static class MainView
         var t = ui.State.Appearance.Strings;
         DockTabMenu? tabMenu;
         string? doubleClicked;
-        using (var dock = ui.DockSpace("dock", ui.State.Layout, (ui.State, appState, t), static (s, panel) => Tab(s.State, s.appState, s.t, panel),
+        using (var dock = ui.DockSpace("dock", ui.State.MainLayout.Dock, (ui.State, appState, t), static (s, panel) => Tab(s.State, s.appState, s.t, panel),
                    tabListTooltip: t.DockAllTabs))
         {
             while (dock.Next(out var panel))

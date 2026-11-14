@@ -89,7 +89,7 @@ public sealed class ScreenIsolationTests : IDisposable
 
     private static bool IsOfScreen(object value, UiState screen)
     {
-        if (ReferenceEquals(value, screen.Layout))
+        if (ReferenceEquals(value, screen.MainLayout.Dock))
         {
             return true;
         }

@@ -163,7 +163,7 @@ public sealed class AppStateTests
         var farewell = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(farewell);
         var farewellPanel = DocumentPanels.GetPanel(d.Ui.Documents, farewell);
-        var documents = d.Ui.Layout;
+        var documents = d.Ui.MainLayout.Dock;
         documents.Dock(farewellPanel, documents.Root, DockEdge.Right);
         DocumentPanels.ActivateTab(d.Ui, d.AppState.Navigation, d.AppState.Decompiler.Setup, greeter);
         d.NextFrame();
@@ -185,7 +185,7 @@ public sealed class AppStateTests
         var greeter = d.AppState.Navigation.ActiveTab;
         Assert.NotNull(greeter);
         var greeterPanel = DocumentPanels.GetPanel(d.Ui.Documents, greeter);
-        var documents = d.Ui.Layout;
+        var documents = d.Ui.MainLayout.Dock;
 
         var group = documents.GroupOf(greeterPanel);
         Assert.NotNull(group);
@@ -221,7 +221,7 @@ public sealed class AppStateTests
         Assert.Same(greeter, d.AppState.Navigation.ActiveTab);
         Assert.DoesNotContain(d.AppState.Navigation.OpenTabs, t => t.Node?.Text == "Farewell");
         var greeterPanel = DocumentPanels.GetPanel(d.Ui.Documents, greeter);
-        Assert.Equal([greeterPanel], d.Ui.Layout.GroupOf(greeterPanel)?.Panels);
+        Assert.Equal([greeterPanel], d.Ui.MainLayout.Dock.GroupOf(greeterPanel)?.Panels);
     }
 
     [Fact]

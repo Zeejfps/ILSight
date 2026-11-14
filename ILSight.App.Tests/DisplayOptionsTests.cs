@@ -264,7 +264,7 @@ public sealed class DisplayOptionsTests
         ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
 
-        Assert.Same(app.Ui.Layout.GroupOf(DockPanels.DecompilerOptions), app.Ui.Layout.GroupOf(DockPanels.DisplayOptions));
+        Assert.Same(app.Ui.MainLayout.Dock.GroupOf(DockPanels.DecompilerOptions), app.Ui.MainLayout.Dock.GroupOf(DockPanels.DisplayOptions));
         Assert.True(app.Frames.Drew("Line numbers"));
     }
 
