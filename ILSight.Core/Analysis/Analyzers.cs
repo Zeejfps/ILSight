@@ -144,10 +144,11 @@ public static class Analyzers
     // A saved token the module no longer has can surface as any of the three exceptions taken as not found.
     private static Outcome<AnalysisSymbol?> Find(MetadataModule main, CodeAnchor definition, CancellationToken ct)
     {
+        SymbolFacts? facts;
         try
         {
             var entity = main.ResolveEntity(MetadataTokens.EntityHandle(definition.Token));
-            return new Outcome<AnalysisSymbol?>.Ok(entity is not null ? Describe(entity) : null);
+            facts = entity is not null ? ReadFacts(entity) : null;
         }
         catch (ArgumentException)
         {
@@ -169,6 +170,8 @@ public static class Analyzers
         {
             return new Outcome<AnalysisSymbol?>.Failed(e);
         }
+
+        return new Outcome<AnalysisSymbol?>.Ok(facts is not null ? Compose(facts) : null);
     }
 
     private static IReadOnlyList<AnalysisKind> ListKinds(ISymbol symbol)
@@ -242,7 +245,8 @@ public static class Analyzers
         return read;
     }
 
-    // The analysis reads the library's symbols as it is enumerated, and describing each reads it again.
+    // The analysis reads the library's symbols as it is enumerated, and reading each one's facts reads it again; the
+    // description is composed from the facts outside the catch, so that a bug of the app's is not the library's.
     private static Outcome ReadEach(AnalysisRun run, AnalyzerContext context, Action<AnalysisSymbol> take, CancellationToken ct)
     {
         IEnumerator<ISymbol>? each = null;
@@ -250,7 +254,7 @@ public static class Analyzers
         {
             while (true)
             {
-                AnalysisSymbol? described;
+                SymbolFacts? facts;
                 try
                 {
                     each ??= run(context).GetEnumerator();
@@ -259,7 +263,7 @@ public static class Analyzers
                         return new Outcome.Done();
                     }
 
-                    described = Describe(each.Current);
+                    facts = ReadFacts(each.Current);
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
                 {
@@ -271,9 +275,9 @@ public static class Analyzers
                 }
 
                 ct.ThrowIfCancellationRequested();
-                if (described is not null)
+                if (facts is not null)
                 {
-                    take(described);
+                    take(Compose(facts));
                 }
             }
         }
@@ -301,41 +305,62 @@ public static class Analyzers
 
     private static AnalysisSymbol? Describe(ISymbol symbol)
     {
+        var facts = ReadFacts(symbol);
+        return facts is not null ? Compose(facts) : null;
+    }
+
+    // Every touch of the library's objects describing a symbol: its properties, the library's own formatter and the
+    // walk to its accessors.
+    private static SymbolFacts? ReadFacts(ISymbol symbol)
+    {
         switch (symbol)
         {
             case IEntity entity:
-                return DescribeEntity(entity);
+                return ReadEntityFacts(entity);
             case IModule module:
-                return Keep(DescribeModule(module), module);
+                return ReadModuleFacts(module);
             default:
                 return null;
         }
     }
 
-    private static AnalysisSymbol DescribeModule(IModule module)
+    private static SymbolFacts ReadModuleFacts(IModule module)
     {
         var file = module.MetadataFile is null ? null : AssemblyPath.Of(module.MetadataFile.FileName);
-        return new AnalysisSymbol
+        return new SymbolFacts
         {
-            Shape = new SymbolShape.Assembly(), Accessibility = NodeAccessibility.Public, Label = module.AssemblyName,
-            Location = module.MetadataFile?.FileName ?? "",
+            Symbol = module, Shape = new SymbolShape.Assembly(), Accessibility = NodeAccessibility.Public, Label = module.AssemblyName,
+            Container = module.MetadataFile?.FileName ?? "", AssemblyName = null,
             Reference = file is not null ? CodeReferences.CreateAssembly(module.AssemblyName, file) : null,
             Kinds = ListKinds(module), Accessors = [], File = file, Definition = null,
         };
     }
 
-    private static AnalysisSymbol DescribeEntity(IEntity entity)
+    private static SymbolFacts ReadEntityFacts(IEntity entity)
     {
         var file = entity.ParentModule?.MetadataFile;
         var path = file is null ? null : AssemblyPath.Of(file.FileName);
-        var described = new AnalysisSymbol
+        var outer = entity.DeclaringTypeDefinition;
+        return new SymbolFacts
         {
-            Shape = EntityText.SymbolShapeOf(entity), Accessibility = EntityText.Map(entity.Accessibility), Label = EntityText.Label(entity),
-            Location = Where(entity), Reference = CodeReferences.Find(entity), Kinds = ListKinds(entity),
-            Accessors = Members.Accessors(entity).Select(static m => DescribeEntity(m)).ToArray(),
+            Symbol = entity, Shape = EntityText.SymbolShapeOf(entity), Accessibility = EntityText.Map(entity.Accessibility), Label = EntityText.Label(entity),
+            Container = outer is not null ? EntityText.FullName(outer) : entity is ITypeDefinition type ? type.Namespace : "",
+            AssemblyName = entity.ParentModule?.AssemblyName, Reference = CodeReferences.Find(entity), Kinds = ListKinds(entity),
+            Accessors = Members.Accessors(entity).Select(static m => ReadEntityFacts(m)).ToArray(),
             File = path, Definition = DefinitionOf(entity, path),
         };
-        return Keep(described, entity);
+    }
+
+    // The app's part, on values the read took out: where the symbol is, as the analyzer shows it.
+    private static AnalysisSymbol Compose(SymbolFacts facts)
+    {
+        var described = new AnalysisSymbol
+        {
+            Shape = facts.Shape, Accessibility = facts.Accessibility, Label = facts.Label, Location = Where(facts.Container, facts.AssemblyName),
+            Reference = facts.Reference, Kinds = facts.Kinds, Accessors = facts.Accessors.Select(static a => Compose(a)).ToArray(),
+            File = facts.File, Definition = facts.Definition,
+        };
+        return Keep(described, facts.Symbol);
     }
 
     private static CodeAnchor? DefinitionOf(IEntity entity, AssemblyPath? path)
@@ -369,16 +394,30 @@ public static class Analyzers
         return kept;
     }
 
-    private static string Where(IEntity entity)
+    private static string Where(string container, string? assembly)
     {
-        var outer = entity.DeclaringTypeDefinition;
-        var container = outer is not null ? EntityText.FullName(outer) : entity is ITypeDefinition type ? type.Namespace : "";
-        var assembly = entity.ParentModule?.AssemblyName;
         if (assembly is null)
         {
             return container;
         }
 
         return container.Length == 0 ? assembly : $"{container} ({assembly})";
+    }
+
+    // What describing a symbol reads of it. The container is the full name of the type declaring it, else a type's
+    // namespace, else empty (a module's: its file); a module has no assembly name of its own here.
+    private sealed record SymbolFacts
+    {
+        public required ISymbol Symbol { get; init; }
+        public required SymbolShape Shape { get; init; }
+        public required NodeAccessibility Accessibility { get; init; }
+        public required string Label { get; init; }
+        public required string Container { get; init; }
+        public required string? AssemblyName { get; init; }
+        public required CodeReference.Navigable? Reference { get; init; }
+        public required IReadOnlyList<AnalysisKind> Kinds { get; init; }
+        public required IReadOnlyList<SymbolFacts> Accessors { get; init; }
+        public required AssemblyPath? File { get; init; }
+        public required CodeAnchor? Definition { get; init; }
     }
 }

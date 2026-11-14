@@ -243,10 +243,11 @@ public static class AssemblyListing
         CancellationToken ct)
     {
         using var reading = LoadedAssemblies.BeginReading();
+        Lookup<TooltipFacts> read;
         try
         {
             var resolved = await ResolveEntityAsync(list, reading, reference, ct);
-            return new Outcome<Lookup<CodeTooltip>>.Ok(resolved.Select(static r => Documentation.CreateTooltip(r.Entity, r.Assembly, r.TypeSystem)));
+            read = resolved.Select(static r => Documentation.ReadTooltip(r.Entity, r.Assembly, r.TypeSystem));
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -256,6 +257,9 @@ public static class AssemblyListing
         {
             return new Outcome<Lookup<CodeTooltip>>.Failed(e);
         }
+
+        // Made of what was read, outside the catch: a bug of the app's formatting is not the library's failure.
+        return new Outcome<Lookup<CodeTooltip>>.Ok(read.Select(Documentation.FormatTooltip));
     }
 
     /// <summary>

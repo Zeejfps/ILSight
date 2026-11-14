@@ -26,16 +26,67 @@ internal static class Documentation
     private static readonly CSharpAmbience TypeNames = new() { ConversionFlags = ConversionFlags.ShowTypeParameterList };
     private static readonly CSharpAmbience MemberNames = new() { ConversionFlags = ConversionFlags.ShowTypeParameterList | ConversionFlags.ShowDeclaringType };
 
-    public static IReadOnlyList<DocSection> Read(IEntity entity)
+    private static readonly string[] AttributesRead = ["name", "cref", "langword", "href", "type"];
+
+    // Every touch of the library's documentation objects: the file read, the elements walked (inheritdoc followed),
+    // each cref resolved and named by the library's own formatter. The sections are made of what it read, outside.
+    private static DocNode? ReadDocumentation(IEntity entity)
     {
         var root = Parse(Find(entity));
         if (root is null)
         {
-            return [];
+            return null;
         }
 
-        var documentation = new XmlDocumentationElement(root, entity, cref => FindCref(cref, entity));
-        return ReadSections(documentation);
+        return ReadNode(new XmlDocumentationElement(root, entity, cref => FindCref(cref, entity)));
+    }
+
+    private static DocNode ReadNode(XmlDocumentationElement element)
+    {
+        if (element.IsTextNode)
+        {
+            return new DocNode { Name = "", IsTextNode = true, TextContent = element.TextContent, Attributes = new Dictionary<string, string>(), Cref = null, Children = [] };
+        }
+
+        var attributes = new Dictionary<string, string>();
+        foreach (var name in AttributesRead)
+        {
+            var value = element.GetAttribute(name);
+            if (value is not null)
+            {
+                attributes[name] = value;
+            }
+        }
+
+        return new DocNode
+        {
+            Name = element.Name,
+            IsTextNode = false,
+            TextContent = element.TextContent,
+            Attributes = attributes,
+            Cref = attributes.ContainsKey("cref") ? ReadCref(element.ReferencedEntity) : null,
+            Children = element.Children.Select(ReadNode).ToList(),
+        };
+    }
+
+    private static DocCref ReadCref(IEntity? entity)
+    {
+        if (entity is null)
+        {
+            return new DocCref { Name = null, Reference = null };
+        }
+
+        return new DocCref { Name = ReadShortName(entity), Reference = CodeReferences.Find(entity) };
+    }
+
+    private static string ReadShortName(IEntity entity)
+    {
+        if (entity is ITypeDefinition type)
+        {
+            return TypeNames.ConvertSymbol(type);
+        }
+
+        return MemberNames.ConvertSymbol(entity);
     }
 
     private static string? Find(IEntity entity)
@@ -92,13 +143,13 @@ internal static class Documentation
         return IdStringProvider.FindEntity(cref, new SimpleTypeResolveContext(module));
     }
 
-    private static List<DocSection> ReadSections(XmlDocumentationElement documentation)
+    private static List<DocSection> MakeSections(DocNode documentation)
     {
         var sections = new List<DocSection>();
         var loose = new DocText();
         foreach (var child in documentation.Children)
         {
-            var section = ReadSection(child);
+            var section = MakeSection(child);
             if (section is not null)
             {
                 sections.Add(section);
@@ -122,7 +173,7 @@ internal static class Documentation
             .ToList();
     }
 
-    private static DocSectionKind? KindOf(XmlDocumentationElement element)
+    private static DocSectionKind? KindOf(DocNode element)
     {
         return element.Name switch
         {
@@ -138,7 +189,7 @@ internal static class Documentation
         };
     }
 
-    private static DocSection? ReadSection(XmlDocumentationElement element)
+    private static DocSection? MakeSection(DocNode element)
     {
         var kind = KindOf(element);
         if (kind is null)
@@ -163,9 +214,9 @@ internal static class Documentation
         };
     }
 
-    private static DocRun? NameOf(XmlDocumentationElement element)
+    private static DocRun? NameOf(DocNode element)
     {
-        var name = element.GetAttribute("name");
+        var name = element.FindAttribute("name");
         if (name is null)
         {
             return null;
@@ -174,15 +225,15 @@ internal static class Documentation
         return new DocRun { Text = name, Style = DocStyle.Code };
     }
 
-    private static DocRun? ExceptionLabel(XmlDocumentationElement element)
+    private static DocRun? ExceptionLabel(DocNode element)
     {
-        var cref = element.GetAttribute("cref");
+        var cref = element.FindAttribute("cref");
         if (cref is null)
         {
             return null;
         }
 
-        var name = ShortName(element.ReferencedEntity, cref);
+        var name = element.Cref?.Name ?? ShortNameOf(cref);
         return CrefRun(element, name);
     }
 
@@ -196,7 +247,7 @@ internal static class Documentation
         return section.Blocks.Count > 0 || section.Label is not null;
     }
 
-    private static void AddChildren(DocText text, XmlDocumentationElement element)
+    private static void AddChildren(DocText text, DocNode element)
     {
         foreach (var child in element.Children)
         {
@@ -204,7 +255,7 @@ internal static class Documentation
         }
     }
 
-    private static void AddInline(DocText text, XmlDocumentationElement element)
+    private static void AddInline(DocText text, DocNode element)
     {
         if (element.IsTextNode)
         {
@@ -248,9 +299,9 @@ internal static class Documentation
         }
     }
 
-    private static void AddSee(DocText text, XmlDocumentationElement element)
+    private static void AddSee(DocText text, DocNode element)
     {
-        var langword = element.GetAttribute("langword");
+        var langword = element.FindAttribute("langword");
         if (langword is not null)
         {
             Documentation.AddRun(text, langword, DocStyle.Code);
@@ -271,9 +322,9 @@ internal static class Documentation
         Documentation.AddRun(text, shown, DocStyle.Plain);
     }
 
-    private static string AttributeText(XmlDocumentationElement element, string name)
+    private static string AttributeText(DocNode element, string name)
     {
-        var value = element.GetAttribute(name);
+        var value = element.FindAttribute(name);
         if (value is null)
         {
             return "";
@@ -282,38 +333,21 @@ internal static class Documentation
         return value;
     }
 
-    private static DocRun? CrefRun(XmlDocumentationElement element, string shown)
+    private static DocRun? CrefRun(DocNode element, string shown)
     {
-        var cref = element.GetAttribute("cref");
+        var cref = element.FindAttribute("cref");
         if (cref is null)
         {
             return null;
         }
 
-        var entity = element.ReferencedEntity;
         var name = shown;
         if (name.Length == 0)
         {
-            name = ShortName(entity, cref);
+            name = element.Cref?.Name ?? ShortNameOf(cref);
         }
 
-        var reference = entity is not null ? CodeReferences.Find(entity) : null;
-        return new DocRun { Text = name, Style = DocStyle.Reference, Reference = reference };
-    }
-
-    private static string ShortName(IEntity? entity, string cref)
-    {
-        if (entity is ITypeDefinition type)
-        {
-            return TypeNames.ConvertSymbol(type);
-        }
-
-        if (entity is not null)
-        {
-            return MemberNames.ConvertSymbol(entity);
-        }
-
-        return ShortNameOf(cref);
+        return new DocRun { Text = name, Style = DocStyle.Reference, Reference = element.Cref?.Reference };
     }
 
     // An id string reads like M:System.String.Concat(System.String), shown as String.Concat.
@@ -354,7 +388,7 @@ internal static class Documentation
         return name.Substring(0, tick);
     }
 
-    private static void AddList(DocText text, XmlDocumentationElement list)
+    private static void AddList(DocText text, DocNode list)
     {
         DocListItem? header = null;
         var items = new List<DocListItem>();
@@ -362,19 +396,19 @@ internal static class Documentation
         {
             if (child.Name == "listheader")
             {
-                header = ReadListItem(child);
+                header = MakeListItem(child);
             }
             else if (child.Name == "item")
             {
-                items.Add(ReadListItem(child));
+                items.Add(MakeListItem(child));
             }
         }
         Documentation.AddList(text, new DocBlock.List { Kind = ListKindOf(list), Header = header, Items = items });
     }
 
-    private static DocListKind ListKindOf(XmlDocumentationElement list)
+    private static DocListKind ListKindOf(DocNode list)
     {
-        return list.GetAttribute("type") switch
+        return list.FindAttribute("type") switch
         {
             "number" => DocListKind.Number,
             "table" => DocListKind.Table,
@@ -382,7 +416,7 @@ internal static class Documentation
         };
     }
 
-    private static DocListItem ReadListItem(XmlDocumentationElement item)
+    private static DocListItem MakeListItem(DocNode item)
     {
         var term = new DocText();
         var description = new DocText();
@@ -409,12 +443,24 @@ internal static class Documentation
     }
 
     /// <summary>What hovering <paramref name="entity"/> of <paramref name="assembly"/>, whose type system is
-    /// <paramref name="typeSystem"/> as read, explains.</summary>
-    public static CodeTooltip CreateTooltip(IEntity entity, LoadedModule assembly, DecompilerTypeSystem typeSystem)
+    /// <paramref name="typeSystem"/> as read, explains, as read of the library: its declaration, written by the
+    /// library's formatter, what contains it, and its documentation's elements. Call it inside the catch around the
+    /// library; <see cref="FormatTooltip"/> makes the tooltip of it outside.</summary>
+    public static TooltipFacts ReadTooltip(IEntity entity, LoadedModule assembly, DecompilerTypeSystem typeSystem)
     {
-        var signature = WriteSignature(entity, assembly, typeSystem);
-        var sections = Read(entity);
-        return new CodeTooltip { Signature = signature, Container = FindContainer(entity), Sections = sections };
+        return new TooltipFacts
+        {
+            Signature = WriteSignature(entity, assembly, typeSystem),
+            Container = FindContainer(entity),
+            Documentation = ReadDocumentation(entity),
+        };
+    }
+
+    /// <summary>The tooltip <paramref name="read"/> shows: its documentation made into sections of styled runs.</summary>
+    public static CodeTooltip FormatTooltip(TooltipFacts read)
+    {
+        var sections = read.Documentation is null ? [] : MakeSections(read.Documentation);
+        return new CodeTooltip { Signature = read.Signature, Container = read.Container, Sections = sections };
     }
 
     private static CodeSignature WriteSignature(IEntity entity, LoadedModule assembly, DecompilerTypeSystem typeSystem)
