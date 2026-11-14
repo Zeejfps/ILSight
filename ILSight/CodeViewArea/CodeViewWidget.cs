@@ -109,6 +109,7 @@ public static class CodeViewWidget
         return row.Index * height;
     }
 
+    // How long the caret stays shown, then hidden.
     private static readonly TimeSpan CaretBlink = TimeSpan.FromSeconds(0.53);
 
     private static bool IsCaretShown(Ui<UiState> ui, CodeViewState state, bool focused)
@@ -120,11 +121,12 @@ public static class CodeViewWidget
 
         var now = TimeSpan.FromSeconds(ui.RealTime);
         state.Blink.Follow(state.Selection.Caret, now);
-        var blinkSeconds = CaretBlink.TotalSeconds;
-        var phaseSeconds = (now - state.Blink.From).TotalSeconds % (blinkSeconds * 2);
+        // How many times the caret has shown or hidden since it moved, and how far into the current one it is.
+        var blinks = (now - state.Blink.From) / CaretBlink;
+        var fraction = blinks % 1;
         // Nothing else may draw a frame when the caret next shows or hides.
-        ui.RequestUpdateIn(blinkSeconds - phaseSeconds % blinkSeconds);
-        return phaseSeconds < blinkSeconds;
+        ui.RequestUpdateIn((CaretBlink * (1 - fraction)).TotalSeconds);
+        return blinks % 2 < 1;
     }
 
     private static readonly DisplayOptions Plain = new DisplayOptions { HighlightMatchingBrackets = false };
