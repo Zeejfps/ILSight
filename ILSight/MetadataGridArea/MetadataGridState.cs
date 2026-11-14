@@ -66,7 +66,7 @@ public sealed class MetadataGridState
     internal readonly TableScroll Scroll = new();
     internal float RowHeight { get; private set; }
     internal PendingGridScroll? Pending { get; private set; }
-    internal int EditingColumn { get; private set; } = None;
+    internal int? EditingColumn { get; private set; }
     internal FlagsFlyout Flyout { get; } = new();
     internal readonly DetailTexts Details = new();
 
@@ -289,7 +289,7 @@ public sealed class MetadataGridState
 
     internal void StopEditingFilter()
     {
-        EditingColumn = None;
+        EditingColumn = null;
     }
 
     /// <summary>True once after <see cref="StartEditingFilter"/>: the filter's box should start editing.</summary>

@@ -99,14 +99,14 @@ public sealed class CloserRows
             return;
         }
 
-        var from = IndexOf(shown, anchor);
-        var to = IndexOf(shown, clicked);
-        if (from < 0 || to < 0)
+        var from = FindIndex(shown, anchor);
+        var to = FindIndex(shown, clicked);
+        if (from is null || to is null)
         {
             return;
         }
 
-        for (var i = Math.Min(from, to); i <= Math.Max(from, to); i++)
+        for (var i = Math.Min(from.Value, to.Value); i <= Math.Max(from.Value, to.Value); i++)
         {
             shown[i].Included = clicked.Included;
         }
@@ -140,7 +140,7 @@ public sealed class CloserRows
         return items;
     }
 
-    private static int IndexOf(IReadOnlyList<CloseChoice> shown, CloseChoice choice)
+    private static int? FindIndex(IReadOnlyList<CloseChoice> shown, CloseChoice choice)
     {
         for (var i = 0; i < shown.Count; i++)
         {
@@ -149,6 +149,6 @@ public sealed class CloserRows
                 return i;
             }
         }
-        return -1;
+        return null;
     }
 }

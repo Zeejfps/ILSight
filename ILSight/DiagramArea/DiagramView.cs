@@ -592,27 +592,27 @@ internal static class DiagramView
                 Face = face,
                 Place = place.Value,
                 IsSelected = isSelected,
-                HoveredRow = HoveredRowOf(face, hit),
+                HoveredRow = FindHoveredRow(face, hit),
             });
         }
     }
 
-    private static int HoveredRowOf(CardFace face, DiagramHit hit)
+    private static int? FindHoveredRow(CardFace face, DiagramHit hit)
     {
         if (hit is not DiagramHit.Row row)
         {
-            return -1;
+            return null;
         }
 
         if (row.Face != face)
         {
-            return -1;
+            return null;
         }
 
         // A stereotype row does nothing, so it shows no hover.
         if (row.Value.Content is CardRowContent.Stereotype)
         {
-            return -1;
+            return null;
         }
 
         return row.Index;

@@ -29,14 +29,19 @@ public static class MatchingBrackets
 
     private static BracketPair? MatchAt(DecompiledDocument document, TextPosition at)
     {
-        var bracket = BracketAt(document, at);
-        var open = Opens.IndexOf(bracket);
+        var bracket = FindBracketAt(document, at);
+        if (bracket is null)
+        {
+            return null;
+        }
+
+        var open = Opens.IndexOf(bracket.Value);
         if (open >= 0)
         {
             return MatchForward(document, at, Opens[open], Closes[open]);
         }
 
-        var close = Closes.IndexOf(bracket);
+        var close = Closes.IndexOf(bracket.Value);
         if (close >= 0)
         {
             return MatchBackward(document, at, Opens[close], Closes[close]);
@@ -45,23 +50,23 @@ public static class MatchingBrackets
         return null;
     }
 
-    private static char BracketAt(DecompiledDocument document, TextPosition at)
+    private static char? FindBracketAt(DecompiledDocument document, TextPosition at)
     {
         if (at.Line < 0 || at.Line >= document.Lines.Length)
         {
-            return '\0';
+            return null;
         }
 
         var line = document.Lines[at.Line];
         var span = CodeText.SpanAt(line.Spans, at.Column);
         if (span is null)
         {
-            return '\0';
+            return null;
         }
 
         if (!IsCode(line.Spans[span.Value]))
         {
-            return '\0';
+            return null;
         }
 
         return line.Text[at.Column];

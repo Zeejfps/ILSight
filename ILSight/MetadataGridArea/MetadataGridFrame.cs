@@ -176,15 +176,16 @@ internal ref struct MetadataGridFrame
 
     private void FlagsFlyout()
     {
-        if (State.Flyout.Column < 0)
+        var column = State.Flyout.Column;
+        if (column is null)
         {
             return;
         }
 
         var theme = Ui.Theme;
-        var filter = Flags.GetFilter(Grid, State.Flyout.Column);
+        var filter = Flags.GetFilter(Grid, column.Value);
         var width = FlagsFilterView.ContentWidth + theme.TooltipPaddingX * 2 + theme.ScrollBarHitWidth;
-        var funnelId = MetadataGridWidget.GetFunnelId(ListId, State.Flyout.Column);
+        var funnelId = MetadataGridWidget.GetFunnelId(ListId, column.Value);
         using var flyout = Ui.Flyout(HashCode.Combine(ListId, FlyoutSalt), ref State.Flyout.IsOpen, funnelId,
             new Box { Width = Sizing.Fit(FlyoutMinWidth, width), Gap = theme.Gap });
         if (!flyout.IsOpen)

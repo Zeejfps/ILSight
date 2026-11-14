@@ -458,12 +458,12 @@ internal sealed class DocumentBuilder : ITextOutput
             var ownLine = lines[start.Line].Text.AsSpan(0, Math.Min(start.Column, lines[start.Line].Text.Length)).IsWhiteSpace();
             if (opening != '{' && closes)
             {
-                openingLine = BodyAfterSignature(lines, start.Line, endLine);
+                openingLine = FindBodyAfterSignature(lines, start.Line, endLine);
             }
 
-            var brace = closes && openingLine >= 0;
-            var header = !brace ? start.Line
-                : openingLine > start.Line ? openingLine - 1
+            var brace = closes ? openingLine : null;
+            var header = brace is null ? start.Line
+                : brace.Value > start.Line ? brace.Value - 1
                 : ownLine && start.Line > 0 ? start.Line - 1
                 : start.Line;
             if (endLine <= header)
@@ -472,8 +472,8 @@ internal sealed class DocumentBuilder : ITextOutput
             }
 
             var text = HasOwnText(start, lines[header]) ? start.Text
-                : !brace ? "…"
-                : openingLine > header ? "{ … }"
+                : brace is null ? "…"
+                : brace > header ? "{ … }"
                 : "… " + lines[endLine].Text.Trim();
             regions.Add(new FoldRegion
             {
@@ -522,33 +522,34 @@ internal sealed class DocumentBuilder : ITextOutput
         return start.Text.Trim() != header.Text.Trim();
     }
 
-    private static int BodyAfterSignature(ImmutableArray<DocumentLine> lines, int start, int endLine)
+    private static int? FindBodyAfterSignature(ImmutableArray<DocumentLine> lines, int start, int endLine)
     {
         for (var line = start + 1; line < endLine && line <= start + MaxSignatureLines; line++)
         {
             var text = lines[line].Text.AsSpan().Trim();
             if (text.StartsWith("{"))
             {
-                return text.Length == 1 ? line : -1;
+                return text.Length == 1 ? line : null;
             }
         }
-        return -1;
+        return null;
     }
 
-    private static char FirstCharFrom(ImmutableArray<DocumentLine> lines, int line, int column, int lastLine, out int foundLine)
+    private static char FirstCharFrom(ImmutableArray<DocumentLine> lines, int line, int column, int lastLine, out int? foundLine)
     {
-        for (foundLine = line; foundLine <= lastLine; foundLine++, column = 0)
+        for (var at = line; at <= lastLine; at++, column = 0)
         {
-            var text = lines[foundLine].Text;
+            var text = lines[at].Text;
             for (var i = column; i < text.Length; i++)
             {
                 if (!char.IsWhiteSpace(text[i]))
                 {
+                    foundLine = at;
                     return text[i];
                 }
             }
         }
-        foundLine = -1;
+        foundLine = null;
         return ' ';
     }
 

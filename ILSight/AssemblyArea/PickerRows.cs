@@ -37,20 +37,20 @@ public sealed class PickerRows
             return;
         }
 
-        var from = IndexOf(shown, anchor);
-        var to = IndexOf(shown, clicked);
-        if (from < 0 || to < 0)
+        var from = FindIndex(shown, anchor);
+        var to = FindIndex(shown, clicked);
+        if (from is null || to is null)
         {
             return;
         }
 
-        for (var i = Math.Min(from, to); i <= Math.Max(from, to); i++)
+        for (var i = Math.Min(from.Value, to.Value); i <= Math.Max(from.Value, to.Value); i++)
         {
             shown[i].Included = clicked.Included;
         }
     }
 
-    private static int IndexOf(IReadOnlyList<ExportChoice> shown, ExportChoice choice)
+    private static int? FindIndex(IReadOnlyList<ExportChoice> shown, ExportChoice choice)
     {
         for (var i = 0; i < shown.Count; i++)
         {
@@ -59,6 +59,6 @@ public sealed class PickerRows
                 return i;
             }
         }
-        return -1;
+        return null;
     }
 }
