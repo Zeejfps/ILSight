@@ -1,5 +1,6 @@
 using System.Threading.Channels;
 using ZGF.Gui.Immediate;
+using ZGF.KeyboardModule;
 using ILSight.Core;
 using ILSight.CommandArea;
 using ILSight.AppSettingArea;
@@ -178,7 +179,7 @@ public sealed class RunArgumentsTests
         app.Frames.MovePointer(note.X + 2f, note.Y + note.Height / 2).Frame(90);
 
         Assert.True(indicator.X + indicator.Width <= 1000f, $"The error indicator ends at {indicator.X + indicator.Width}, past the window.");
-        var details = refused.Details(t);
+        var details = refused.ListItems();
         Assert.NotNull(details);
         Assert.All(ignored, argument => Assert.Contains(argument, details));
         // The tooltip wraps the whole list, the last argument ending its last line, above how to dismiss the note.
@@ -187,18 +188,60 @@ public sealed class RunArgumentsTests
     }
 
     [Fact]
-    public void The_ignored_arguments_line_shows_those_that_fit_whole_then_how_many_more()
+    public void The_ignored_arguments_line_says_every_argument_and_gives_way_by_its_drawn_width()
     {
         var t = Strings.For(Locale.En);
-        var few = new[] { "--a", "--b" };
         var many = Enumerable.Range(1, 40).Select(static i => $"--unknown-option-{i}").ToArray();
 
-        var fitted = Refusal.FitArguments(t, many);
+        var (_, why) = new Refusal.ArgumentsIgnored { Arguments = many }.Words(t);
 
-        Assert.Equal("--a --b", Refusal.FitArguments(t, few));
-        Assert.Equal("--unknown-option-1 --unknown-option-2 --unknown-option-3 --unknown-option-4 and 36 more", fitted);
-        Assert.True(fitted.Length - " and 36 more".Length <= 80);
-        Assert.Equal("and 1 more", Refusal.FitArguments(t, [new string('x', 81)]));
+        Assert.Equal(string.Join(" ", many), why);
+    }
+
+    [Fact]
+    public void The_ignored_arguments_note_takes_focus_and_opens_its_whole_list_on_Enter()
+    {
+        var ignored = Enumerable.Range(1, 40).Select(static i => $"--unknown-option-{i}").ToArray();
+        var app = Start(new AppSettings(), ignored);
+        var t = app.Ui.Appearance.Strings;
+        var refused = Assert.IsType<Refusal.ArgumentsIgnored>(app.AppState.Refusals.Shown);
+        var what = refused.Words(t).What;
+
+        var note = TabTo(app, what);
+        app.Frames.Key(KeyboardKey.Enter).Frame(2);
+
+        Assert.Equal(t.StatusRefusalDetails, note.Value);
+        Assert.True(app.Ui.RefusalDetails.IsOpen);
+        Assert.Same(refused, app.AppState.Refusals.Shown);
+        // Not hovered, so no tooltip: the details list the arguments one a line, from the first, and scroll to the last.
+        Assert.Equal(ignored[0], DrawnArguments(app, ignored)[0]);
+        var first = app.TextRect(ignored[0]);
+        app.Frames.MovePointer(first.X + 2f, first.Y + first.Height / 2).Wheel(-100).Frame(30);
+        Assert.Equal(ignored[^1], DrawnArguments(app, ignored)[^1]);
+        Assert.True(app.Ui.RefusalDetails.IsOpen);
+    }
+
+    private static List<string> DrawnArguments(AppDriver app, string[] ignored)
+    {
+        return app.Frames.TextRects().Select(static drawn => drawn.Text).Where(ignored.Contains).ToList();
+    }
+
+    // Presses Tab until the note whose label starts with what was refused has the focus, at most once per stop the
+    // window could have.
+    private static SemanticNode TabTo(AppDriver app, string what)
+    {
+        for (var tabs = 0; tabs < 200; tabs++)
+        {
+            var focused = app.Frames.Snapshot().Root.SelfAndDescendants().FirstOrDefault(static n => n.Has(SemanticStates.Focused));
+            if (focused is not null && focused.Role == SemanticRole.Button && focused.Label is not null && focused.Label.StartsWith(what, StringComparison.Ordinal))
+            {
+                return focused;
+            }
+
+            app.Frames.Key(KeyboardKey.Tab).Frame();
+        }
+
+        throw new InvalidOperationException("Tab never reached the refusal note.");
     }
 
     [Fact]

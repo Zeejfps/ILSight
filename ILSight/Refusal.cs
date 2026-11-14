@@ -9,10 +9,6 @@ namespace ILSight;
 /// handed over), is said there too.</summary>
 public abstract record Refusal
 {
-    // Decided by Claude (the owner may override): how many characters of ignored arguments the refusal line shows, so
-    // the rest of the status bar, the error indicator with it, keeps its place.
-    private const int ArgumentsWidth = 80;
-
     private Refusal()
     {
     }
@@ -131,44 +127,17 @@ public abstract record Refusal
         public required int Count { get; init; }
     }
 
-    /// <summary>All the refusal tells of, for the note's tooltip, where the line shows only part of it: every ignored
-    /// argument; null where the line shows it all.</summary>
-    public string? Details(Strings t)
+    /// <summary>The items of the list the refusal tells of, whole, for the note's details, where its line may show only
+    /// part of them in the room it is drawn in: every ignored argument, every bookmark an import lost; null where it
+    /// tells of no list.</summary>
+    public IReadOnlyList<string>? ListItems()
     {
-        if (this is ArgumentsIgnored ignored)
+        return this switch
         {
-            return string.Join(" ", ignored.Arguments);
-        }
-
-        return null;
-    }
-
-    /// <summary>The arguments that fit whole within <see cref="ArgumentsWidth"/> characters, then how many more there
-    /// are.</summary>
-    internal static string FitArguments(Strings t, IReadOnlyList<string> arguments)
-    {
-        var shown = 0;
-        var width = 0;
-        while (shown < arguments.Count)
-        {
-            var next = width + (shown == 0 ? 0 : 1) + arguments[shown].Length;
-            if (next > ArgumentsWidth)
-            {
-                break;
-            }
-
-            width = next;
-            shown++;
-        }
-
-        var fitted = string.Join(" ", arguments.Take(shown));
-        if (shown == arguments.Count)
-        {
-            return fitted;
-        }
-
-        var more = t.ErrorArgumentsIgnoredMore(arguments.Count - shown);
-        return shown == 0 ? more : $"{fitted} {more}";
+            ArgumentsIgnored r => r.Arguments,
+            ImportedBookmarksLost r => r.Lost,
+            _ => null,
+        };
     }
 
     /// <summary>What was refused and why, in <paramref name="t"/>'s language.</summary>
@@ -182,7 +151,7 @@ public abstract record Refusal
             AssemblyClosed r => (t.DocumentClosed(r.Assembly), ""),
             NotAnalyzable r => (t.ErrorAnalyzeSymbol(r.Symbol), t.ErrorNotOpenable),
             IdNotFound r => (t.ErrorNavigateTo(r.Id), ""),
-            ArgumentsIgnored r => (t.ErrorArgumentsIgnored(r.Arguments.Count), FitArguments(t, r.Arguments)),
+            ArgumentsIgnored r => (t.ErrorArgumentsIgnored(r.Arguments.Count), string.Join(" ", r.Arguments)),
             NoApiReferencePage r => (t.ErrorNoApiReferencePage(r.Name), t.ErrorNoApiReferencePageDetails),
             Unresolved r => (t.ErrorResolve(r.Reference.Name), t.ErrorNoDefinition(r.Reference)),
             HistoryPlaceGone r => (t.ErrorGoBack(r.Place.Label), t.ErrorNoLongerThere(r.Place)),

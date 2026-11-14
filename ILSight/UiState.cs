@@ -156,6 +156,9 @@ public sealed class UiState : IUiState
 
     public ErrorDialog ErrorDialog { get; } = new();
 
+    /// <summary>The refusal note's details, opened from the note.</summary>
+    public RefusalDetails RefusalDetails { get; } = new();
+
     /// <summary>What the assembly lists dialog shows, and whether it is open.</summary>
     public AssemblyListsDialog ListsDialog { get; } = new();
 

@@ -10,6 +10,8 @@ namespace ILSight.MainArea;
 /// right: a refused request and why, activity, errors, language and the assembly count.</summary>
 internal static class StatusBarView
 {
+    private const int RefusalDetailsSalt = 0x52454644;
+
     public static void Render(Ui<UiState> ui, AppState appState)
     {
         var t = ui.State.Appearance.Strings;
@@ -134,15 +136,25 @@ internal static class StatusBarView
     {
         var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
-        var i = ui.Clickable("refusal");
+        var opened = ui.State.RefusalDetails;
+        opened.CloseUnlessFor(refusal);
+        var items = refusal.ListItems();
+        // A Tab stop, so the note is reached as the line is, by the keyboard too: Enter (or Space) opens its whole list.
+        var i = ui.Pressable(ui.GetId("refusal"), enabled: true, out var activated, out var ring);
         if (i.Clicked)
         {
             Commands.Later(ui.State, static a => a.Refusals.Dismiss());
         }
 
+        if (activated && items is not null)
+        {
+            opened.Open(refusal);
+        }
+
         var what = ui.Memo("status-refused", (refusal, t), static a => a.refusal.Words(a.t).What);
         var why = ui.Memo("status-refused-why", (refusal, t), static a => a.refusal.Words(a.t).Why);
-        // The line shows what fits; all of it is in the note's tooltip, beside how to dismiss it.
+        // The line shows what fits in the room it is drawn in; all of it is in the note's details, opened from the
+        // keyboard, and in its tooltip for the pointer, beside how to dismiss it.
         var tooltip = ui.Memo("status-refused-details", (refusal, t), static a => DescribeRefusal(a.refusal, a.t));
         using (ui.Row(i.Id, new Box
         {
@@ -154,21 +166,51 @@ internal static class StatusBarView
             Background = i.Held ? theme.Pressed(theme.Surface) : i.Hovered ? theme.RowHover : 0u,
         }))
         {
+            if (ring)
+            {
+                ui.FocusRing(0f);
+            }
+
             ui.Text(what, color: theme.Warning, size: theme.FontSizeSmall);
             ui.Text(why, new Box { Width = Sizing.Shrink() }, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
         }
+        ui.Semantics(i.Id, SemanticRole.Button, $"{what} {why}", value: items is null ? null : t.StatusRefusalDetails);
         ui.Tooltip(i.Id, tooltip);
+        RefusalDetailsFlyout(ui, opened, i.Id, items);
+    }
+
+    // The list, an item a line, below the note (above it, the bar being at the window's foot); Escape or a press
+    // elsewhere closes it.
+    private static void RefusalDetailsFlyout(Ui<UiState> ui, RefusalDetails opened, int noteId, IReadOnlyList<string>? items)
+    {
+        if (items is null)
+        {
+            opened.IsOpen = false;
+            return;
+        }
+
+        var theme = ui.Theme;
+        using var flyout = ui.Flyout(HashCode.Combine(noteId, RefusalDetailsSalt), ref opened.IsOpen, noteId);
+        if (!flyout.IsOpen)
+        {
+            return;
+        }
+
+        foreach (var item in items)
+        {
+            ui.Text(item, color: theme.Text, size: theme.FontSizeSmall);
+        }
     }
 
     private static string DescribeRefusal(Refusal refusal, Strings t)
     {
-        var details = refusal.Details(t);
-        if (details is null)
+        var items = refusal.ListItems();
+        if (items is null)
         {
             return t.StatusDismissRefusal;
         }
 
-        return $"{details}\n{t.StatusDismissRefusal}";
+        return $"{refusal.Words(t).Why}\n{t.StatusDismissRefusal}";
     }
 
     private static void ErrorIndicator(Ui<UiState> ui, ErrorLog errors)
