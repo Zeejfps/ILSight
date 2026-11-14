@@ -362,7 +362,54 @@ public static class Commands
             return;
         }
 
-        Start(uiState, nameof(AssemblyOpening.OpenAssembliesAsync), opening, static (a, o, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, o, ct));
+        Later(uiState, opening, static (a, o) => StartOpening(a, o));
+    }
+
+    // A request the input began opening: when its workflow fails, the app no longer says it is opening its files.
+    private static void StartOpening(AppState appState, FileOpening opening)
+    {
+        StartShowingSettled(appState, nameof(AssemblyOpening.OpenAssembliesAsync), ct => appState.AssemblyOpening.OpenAssembliesAsync(appState, opening, ct),
+            _ => appState.Navigation.EndOpening(opening.Intent));
+    }
+
+    /// <summary>Asks for the files among <paramref name="dropped"/> to be opened once the frame is drawn
+    /// (<see cref="AssemblyOpening.OpenDroppedFilesAsync"/>), then the load of the last one shown; when its workflow
+    /// fails, the app no longer says it is opening them.</summary>
+    public static void OpenDroppedLater(UiState uiState, IReadOnlyList<string> dropped)
+    {
+        uiState.AppCommands.Enqueue(appState => StartShowingSettled(appState, nameof(AssemblyOpening.OpenDroppedFilesAsync),
+            ct => appState.AssemblyOpening.OpenDroppedFilesAsync(appState, dropped, ct), _ => appState.Navigation.FailOpening()));
+    }
+
+    /// <summary>Asks for every assembly of the open list to be reloaded once the frame is drawn
+    /// (<see cref="StartReloading"/>).</summary>
+    public static void ReloadLater(UiState uiState, List<NodePath> expanded)
+    {
+        Later(uiState, expanded, static (a, e) => StartReloading(a, e));
+    }
+
+    /// <summary>Starts reloading every assembly of the open list now (<see cref="AssemblyReloading.RefreshAssembliesAsync(SavedAssemblyLists, OpenListSession, Queue{ViewCommand}, DecompilerChoice, IReadOnlyList{NodePath}, ReloadTicket, CancellationToken)"/>),
+    /// then the loads it started; when its workflow fails, the reload ends and the tabs it left reloading say why
+    /// (<see cref="AssemblyReloading.FailReload"/>).</summary>
+    public static void StartReloading(AppState appState, IReadOnlyList<NodePath> expanded)
+    {
+        var session = appState.ListSession;
+        var ticket = session.Reload.Start();
+        appState.Workflows.StartSettling(nameof(AssemblyReloading.RefreshAssembliesAsync),
+            async ct => StartLoads(appState, await appState.AssemblyReloading.RefreshAssembliesAsync(appState.Lists, session, appState.ViewCommands,
+                appState.Decompiler, expanded, ticket, ct)),
+            error => StartLoads(appState, AssemblyReloading.FailReload(session, ticket, error)));
+    }
+
+    /// <summary>As <see cref="Start{T}(UiState, string, T, Func{AppState, T, CancellationToken, Task{List{DecompileTicket}}})"/>,
+    /// for a reopen of <paramref name="assembly"/>'s file: when its workflow fails, the file is no longer shown
+    /// reopening (<see cref="Reopens.Stop"/>).</summary>
+    public static void StartReopening<T>(UiState uiState, string name, LoadedModule assembly, T subject,
+        Func<AppState, T, CancellationToken, Task<List<DecompileTicket>>> show)
+    {
+        var path = assembly.ListedItem.FilePath;
+        uiState.AppCommands.Enqueue(appState => appState.Workflows.StartSettling(name,
+            async ct => StartDecompiling(appState, await show(appState, subject, ct)), _ => appState.Reopens.Stop(path)));
     }
 
     /// <summary>Asks for the assemblies of the list <paramref name="opening"/> began opening to be opened once the frame
@@ -407,7 +454,17 @@ public static class Commands
     {
         var session = appState.ListSession;
         var handler = appState.OpenAssembliesAsReloadHandler;
-        StartShowing(appState, nameof(OpenAssembliesAsReloadHandler), ct => handler.HandleAsync(session, reopening.Paths, reopening.Reload, ct));
+        StartOpeningAsReload(appState, nameof(OpenAssembliesAsReloadHandler), reopening, ct => handler.HandleAsync(session, reopening.Paths, reopening.Reload, ct));
+    }
+
+    /// <summary>Starts <paramref name="open"/>, the reopening of a list's assemblies as <paramref name="reopening"/>
+    /// began it, now, then the loads it started; when its workflow fails, the reopening ends as one that failed does
+    /// (<see cref="OpenAssembliesAsReloadHandler.FailOpeningAsReload"/>).</summary>
+    public static void StartOpeningAsReload(AppState appState, string name, ListReopening reopening, Func<CancellationToken, Task<TabLoads>> open)
+    {
+        var session = appState.ListSession;
+        appState.Workflows.StartSettling(name, async ct => StartLoads(appState, await open(ct)),
+            _ => StartLoads(appState, OpenAssembliesAsReloadHandler.FailOpeningAsReload(session, reopening.Reload)));
     }
 
     /// <summary>Asks for what going to a history entry left, <paramref name="move"/>, to be started once the frame is
@@ -653,6 +710,13 @@ public static class Commands
     {
         read.Diagram.FailReading(read.Read, error.Message);
         SavedDocuments.TryFinishWaiting(reopened, read.Reopened);
+    }
+
+    /// <summary>As <see cref="StartShowing(AppState, string, Func{CancellationToken, Task{DecompileTicket?}})"/>, with
+    /// <paramref name="settle"/> ending the pending state it began when its workflow fails, which the edge reports.</summary>
+    public static void StartShowingSettled(AppState appState, string name, Func<CancellationToken, Task<DecompileTicket?>> show, Action<Exception> settle)
+    {
+        appState.Workflows.StartSettling(name, async ct => StartDecompiling(appState, await show(ct)), settle);
     }
 
     /// <summary>Starts <paramref name="show"/> now, as <see cref="WorkflowRunner.Start"/> does, then the load it

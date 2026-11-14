@@ -175,7 +175,7 @@ internal static class TreePaneView
                 var label = inMenu ? t.TreeReloadAll : ui.Memo("reload-all-tip", t, static s => s.TreeReloadAllTip(Shortcuts.ReloadAll));
                 if (DrawTool(ui, inMenu, "reload-all", icons.AssembliesReloadAll, label, any, Shortcuts.ReloadAll))
                     {
-                        Commands.Start(ui.State, nameof(AssemblyReloading.RefreshAssembliesAsync), tree.ListExpandedPaths(), static (a, expanded, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, expanded, ct));
+                        Commands.ReloadLater(ui.State, tree.ListExpandedPaths());
                     }
 
                     return;
@@ -618,7 +618,8 @@ internal static class TreePaneView
         var detectedLabel = DetectedFrameworkLabel(t, assembly);
         if (ui.MenuRadioItem(detectedLabel, !assembly.IsTargetFrameworkPicked, id: "detected"))
         {
-            Commands.Start(ui.State, nameof(AssemblyReloading.SetTargetFrameworkAsync), assembly, static (a, m, ct) => a.AssemblyReloading.SetTargetFrameworkAsync(a.ListSession, a.Reopens, a.Decompiler, m, null, ct));
+            Commands.StartReopening(ui.State, nameof(AssemblyReloading.SetTargetFrameworkAsync), assembly, assembly,
+                static (a, m, ct) => a.AssemblyReloading.SetTargetFrameworkAsync(a.ListSession, a.Reopens, a.Decompiler, m, null, ct));
         }
 
         ui.MenuSeparator();
@@ -628,7 +629,8 @@ internal static class TreePaneView
             var framework = frameworks[i];
             if (ui.MenuRadioItem(framework.Moniker, IsPicked(assembly, framework), id: framework.Text))
             {
-                Commands.Start(ui.State, nameof(AssemblyReloading.SetTargetFrameworkAsync), (assembly, framework), static (a, s, ct) => a.AssemblyReloading.SetTargetFrameworkAsync(a.ListSession, a.Reopens, a.Decompiler, s.assembly, s.framework, ct));
+                Commands.StartReopening(ui.State, nameof(AssemblyReloading.SetTargetFrameworkAsync), assembly, (assembly, framework),
+                    static (a, s, ct) => a.AssemblyReloading.SetTargetFrameworkAsync(a.ListSession, a.Reopens, a.Decompiler, s.assembly, s.framework, ct));
             }
         }
     }
@@ -659,7 +661,8 @@ internal static class TreePaneView
         var screen = ui.State;
         FileFilter[] filters = [new FileFilter(t.FileFilterPdb, ["*.pdb"]), new FileFilter(t.FileFilterAll, ["*.*"])];
         var title = t.TreeSelectPdbTitle(assembly.Name);
-        ui.PickFile(title, FindFolderOf(assembly), filters, path => Commands.Start(screen, nameof(AssemblyReloading.UsePdbAsync), (assembly, path), static (a, s, ct) => a.AssemblyReloading.UsePdbAsync(a.ListSession, a.Reopens, a.Decompiler, s.assembly, s.path, ct)));
+        ui.PickFile(title, FindFolderOf(assembly), filters, path => Commands.StartReopening(screen, nameof(AssemblyReloading.UsePdbAsync), assembly, (assembly, path),
+            static (a, s, ct) => a.AssemblyReloading.UsePdbAsync(a.ListSession, a.Reopens, a.Decompiler, s.assembly, s.path, ct)));
     }
 
     private static string? FindFolderOf(LoadedModule assembly)

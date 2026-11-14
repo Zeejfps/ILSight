@@ -136,6 +136,13 @@ public sealed class Navigation
         return _intent.BeginOpening(paths);
     }
 
+    /// <summary>Ends the current request's opening when the workflow opening its files failed, as
+    /// <see cref="UserIntent.FailOpening"/> does.</summary>
+    public void FailOpening()
+    {
+        _intent.FailOpening();
+    }
+
     /// <summary>Takes what opening the files of <paramref name="ticket"/> came to, as
     /// <see cref="UserIntent.EndOpening"/> does.</summary>
     public void EndOpening(int ticket)

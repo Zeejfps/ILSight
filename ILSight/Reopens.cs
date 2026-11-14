@@ -22,6 +22,13 @@ public sealed class Reopens
         return _last;
     }
 
+    /// <summary>Ends the reopen of the file at <paramref name="path"/>, whatever its ticket, when the workflow reopening
+    /// it failed (the edge's settle, which reports why): the file is no longer shown reopening.</summary>
+    public void Stop(AssemblyPath path)
+    {
+        _current.Remove(path);
+    }
+
     /// <summary>Ends the reopen of the file at <paramref name="path"/> given <paramref name="ticket"/>.
     /// False when another reopen of it started since, and its result should be ignored.</summary>
     public bool TryFinish(AssemblyPath path, int ticket)

@@ -39,6 +39,19 @@ public sealed class OpenAssembliesAsReloadHandler(OpenAssembliesAsReloadHandler.
         return ports.OpenFilesAsync(paths, ticket.Token, ct);
     }
 
+    /// <summary>Ends the reopening <paramref name="ticket"/> was given for when its workflow failed (the edge's settle,
+    /// which reports why), unless another reload started since, as a reopening that failed ends. Returns the loads the
+    /// tabs reopened from the open list's saved documents started.</summary>
+    public static TabLoads FailOpeningAsReload(OpenListSession session, ReloadTicket ticket)
+    {
+        if (!session.TryFinishReopening(ticket))
+        {
+            return TabLoads.None;
+        }
+
+        return SavedDocuments.ShowReopenedDocuments(session.Navigation, session.Reopened, session.Assemblies);
+    }
+
     private TabLoads FinishOpeningAsReload(OpenListSession session, Outcome<LoadedAssembly?> outcome, ReloadTicket ticket)
     {
         if (!session.TryFinishReopening(ticket))

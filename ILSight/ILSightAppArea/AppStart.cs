@@ -36,7 +36,7 @@ public static class AppStart
     // None waits for another. A switch or a clear since stopped them: they read nothing then.
     private static void StartOpeningStartupList(AppState appState, ListStart start)
     {
-        Commands.StartShowing(appState, nameof(AppFrames.OpenStartupAssembliesAsync),
+        Commands.StartOpeningAsReload(appState, nameof(AppFrames.OpenStartupAssembliesAsync), start.Reopening,
             ct => AppFrames.OpenStartupAssembliesAsync(appState, start.Reopening, ct));
         Commands.StartRestoringAnalyses(appState, start.Analyses);
     }
@@ -82,7 +82,8 @@ public static class AppStart
         }
 
         var files = arguments.Files;
-        Commands.StartShowing(appState, nameof(RunArgumentsActions.OpenRequestedFilesAsync), ct => RunArgumentsActions.OpenRequestedFilesAsync(appState, files, ct));
+        Commands.StartShowingSettled(appState, nameof(RunArgumentsActions.OpenRequestedFilesAsync), ct => RunArgumentsActions.OpenRequestedFilesAsync(appState, files, ct),
+            _ => appState.Navigation.FailOpening());
     }
 
     private static void ReportIgnored(AppState appState, RunArguments arguments)

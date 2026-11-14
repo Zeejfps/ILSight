@@ -95,7 +95,7 @@ internal static class Shortcuts
         new Binding { Keys = Settings, Run = static (ui, _) => ScreenLayout.OpenPanel(ui.State, DockView.DisplayOptions), WhileTyping = true },
         new Binding { Keys = SaveCode, Run = static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, appState.Navigation, appState.Decompiler.Setup.Language) },
         new Binding { Keys = Export, Run = static (ui, appState) => ui.State.ExportSetup.Open(appState.Assemblies.Assemblies, Exports.FindActiveAssembly(appState.Navigation)) },
-        new Binding { Keys = ReloadAll, Run = static (ui, _) => Commands.Start(ui.State, nameof(AssemblyReloading.RefreshAssembliesAsync), ui.State.Tree.ListExpandedPaths(), static (a, expanded, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, expanded, ct)) },
+        new Binding { Keys = ReloadAll, Run = static (ui, _) => Commands.ReloadLater(ui.State, ui.State.Tree.ListExpandedPaths()) },
         new Binding { Keys = CloseTab, Run = static (ui, _) => DocumentPanels.CloseActiveTab(ui.State) },
         new Binding { Keys = NextTab, Run = static (ui, appState) => DocumentPanels.CycleTab(ui.State, appState.Navigation, appState.Decompiler.Setup, 1) },
         new Binding { Keys = PreviousTab, Run = static (ui, appState) => DocumentPanels.CycleTab(ui.State, appState.Navigation, appState.Decompiler.Setup, -1) },

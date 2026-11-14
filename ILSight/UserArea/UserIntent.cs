@@ -58,6 +58,18 @@ public sealed class UserIntent
         return new FileOpening { Paths = files, Intent = ticket };
     }
 
+    /// <summary>Ends the opening of the current request when the workflow opening its files failed (the edge's settle,
+    /// which reports why): the app no longer says it is opening; nothing when the current request is no opening.</summary>
+    public void FailOpening()
+    {
+        if (_opening != _current)
+        {
+            return;
+        }
+
+        _opening = null;
+    }
+
     /// <summary>Takes what opening the files of <paramref name="ticket"/> came to: the request is no longer opening,
     /// unless another one has begun since.</summary>
     public void EndOpening(int ticket)

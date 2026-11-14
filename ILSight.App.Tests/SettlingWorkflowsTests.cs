@@ -1,4 +1,6 @@
 using ILSight.Core;
+using ILSight.AssemblyArea;
+using ILSight.CommandArea;
 using ILSight.DiagramArea;
 using ILSight.ExportArea;
 
@@ -95,5 +97,72 @@ public sealed class SettlingWorkflowsTests
         Assert.False(diagram.IsBusy);
         Assert.Equal("broken", diagram.ReadFailure);
         Assert.Equal("broken", ReportedOnce(d.AppState).Error.Message);
+    }
+
+    [Fact]
+    public void An_opening_whose_workflow_fails_stops_opening_unless_a_newer_request_began()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var navigation = d.AppState.Navigation;
+        var path = AssemblyPath.Of(AppStateDriver.FixturePath);
+
+        var opening = navigation.BeginOpening([path]);
+        navigation.FailOpening();
+        var stopped = navigation.IsOpening;
+        var older = navigation.BeginOpening([path]);
+        navigation.BeginRequest();
+        navigation.FailOpening();
+
+        Assert.NotNull(opening);
+        Assert.NotNull(older);
+        Assert.False(stopped);
+        Assert.False(navigation.IsOpening);
+    }
+
+    [Fact]
+    public void A_reload_whose_workflow_fails_ends_and_its_tabs_say_why_keeping_their_place()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var session = d.AppState.ListSession;
+        var tab = d.AppState.Navigation.ActiveTab;
+        Assert.NotNull(tab);
+        var location = tab.Location;
+        Assert.NotNull(location);
+        var ticket = session.Reload.Start();
+        tab.Load.ShowReloading(location);
+
+        var loads = AssemblyReloading.FailReload(session, ticket, new InvalidOperationException("broken"));
+
+        Assert.False(session.Reload.IsRunning);
+        var failed = Assert.IsType<TabContent.Unreadable>(tab.Content);
+        Assert.Equal("broken", failed.Why);
+        Assert.Equal(location, failed.Location);
+        Commands.StartLoads(d.AppState, loads);
+    }
+
+    [Fact]
+    public void A_reopen_whose_workflow_fails_no_longer_shows_its_file_reopening()
+    {
+        var reopens = new Reopens();
+        var path = AssemblyPath.Of(AppStateDriver.FixturePath);
+        var ticket = reopens.Start(path);
+
+        reopens.Stop(path);
+
+        Assert.False(reopens.IsRunning);
+        Assert.False(reopens.TryFinish(path, ticket));
+    }
+
+    [Fact]
+    public void A_list_reopening_whose_workflow_fails_ends_as_one_that_failed()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var session = d.AppState.ListSession;
+        var reopening = session.BeginReopening(d.AppState.Lists);
+
+        var loads = OpenAssembliesAsReloadHandler.FailOpeningAsReload(session, reopening.Reload);
+
+        Assert.False(session.Reload.IsRunning);
+        Commands.StartLoads(d.AppState, loads);
     }
 }

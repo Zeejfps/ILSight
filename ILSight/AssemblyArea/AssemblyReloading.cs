@@ -206,12 +206,20 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     /// <paramref name="expanded"/>, the paths of the nodes it had expanded, and shows each tab's place again,
     /// decompiled from the fresh files, and what the tabs reopened from the open list's saved documents showed.
     /// Returns the loads that started in the tabs.</summary>
-    public async Task<TabLoads> RefreshAssembliesAsync(SavedAssemblyLists lists, OpenListSession session, Queue<ViewCommand> viewCommands,
+    public Task<TabLoads> RefreshAssembliesAsync(SavedAssemblyLists lists, OpenListSession session, Queue<ViewCommand> viewCommands,
         DecompilerChoice decompiler, IReadOnlyList<NodePath> expanded, CancellationToken ct)
+    {
+        return RefreshAssembliesAsync(lists, session, viewCommands, decompiler, expanded, session.Reload.Start(), ct);
+    }
+
+    /// <summary>As <see cref="RefreshAssembliesAsync(SavedAssemblyLists, OpenListSession, Queue{ViewCommand}, DecompilerChoice, IReadOnlyList{NodePath}, CancellationToken)"/>,
+    /// as the reload <paramref name="ticket"/> started (<see cref="Reload.Start"/>), which the edge that starts it
+    /// settles when it fails (<see cref="FailReload"/>).</summary>
+    public async Task<TabLoads> RefreshAssembliesAsync(SavedAssemblyLists lists, OpenListSession session, Queue<ViewCommand> viewCommands,
+        DecompilerChoice decompiler, IReadOnlyList<NodePath> expanded, ReloadTicket ticket, CancellationToken ct)
     {
         AssemblyLists.RememberOpenAssemblies(lists, session);
         var intent = session.Navigation.BeginRequest();
-        var ticket = session.Reload.Start();
 
         var paths = lists.ActivePaths.ToList();
         var tabs = ReleaseShownTabs(session.Navigation, session.Assemblies, decompiler.Setup.Language);
@@ -277,9 +285,36 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
 
     private TabLoads ShowNotReloaded(OpenListSession session, Exception error)
     {
-        var reopened = SavedDocuments.ShowReopenedDocuments(session.Navigation, session.Reopened, session.Assemblies);
+        var reopened = ShowReloadFailed(session, error);
         ports.ReportError(new AppProblem.AssembliesNotReloaded(error));
         return reopened;
+    }
+
+    /// <summary>Ends the reload <paramref name="ticket"/> was given for when its workflow failed with
+    /// <paramref name="error"/> (the edge's settle, which reports it), unless another reload started since: each tab
+    /// still reloading says its file couldn't be read, and why, keeping its place for the next reload. Returns the loads
+    /// the tabs reopened from the open list's saved documents started.</summary>
+    public static TabLoads FailReload(OpenListSession session, ReloadTicket ticket, Exception error)
+    {
+        if (!session.Reload.TryFinish(ticket))
+        {
+            return TabLoads.None;
+        }
+
+        return ShowReloadFailed(session, error);
+    }
+
+    private static TabLoads ShowReloadFailed(OpenListSession session, Exception error)
+    {
+        foreach (var tab in session.Navigation.OpenTabs)
+        {
+            if (tab.Content is TabContent.Reloading reloading)
+            {
+                tab.Load.ShowLookupFailed(reloading.Location, error);
+            }
+        }
+
+        return SavedDocuments.ShowReopenedDocuments(session.Navigation, session.Reopened, session.Assemblies);
     }
 
     private TabLoads ShowReloaded(OpenListSession session, Queue<ViewCommand> viewCommands, DecompilerSetup decompiler, ReloadedNodes reloaded, int intent,

@@ -171,7 +171,7 @@ internal static class AppFrames
     // start nothing allocate no closure.
     private static void StartRefreshing(AppState appState, List<NodePath> expanded)
     {
-        Commands.StartShowing(appState, nameof(AssemblyReloading.RefreshAssembliesAsync), ct => appState.AssemblyReloading.RefreshAssembliesAsync(appState.Lists, appState.ListSession, appState.ViewCommands, appState.Decompiler, expanded, ct));
+        Commands.StartReloading(appState, expanded);
     }
 
     private static void ShowNewErrors(UiState uiState, ErrorLog errors)
