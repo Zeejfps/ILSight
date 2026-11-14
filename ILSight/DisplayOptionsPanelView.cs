@@ -137,7 +137,7 @@ internal static class DisplayOptionsPanelView
         if (scale)
         {
             NextRow(ui, ref rows);
-            var changed = ui.State.Display.UiScale != DisplayOptions.Default.UiScale;
+            var changed = ui.State.Display.Options.UiScale != DisplayOptions.Default.UiScale;
             using (OptionRow(ui, t.DisplayOptionsUiScale, t.DisplayOptionsUiScaleDescription, changed))
             {
                 UiScalePicker(ui);
@@ -162,12 +162,12 @@ internal static class DisplayOptionsPanelView
     private static void SystemTitleBarRow(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
-        var display = ui.State.Display;
+        var display = ui.State.Display.Options;
         var system = display.SystemTitleBar;
         var changed = system != DisplayOptions.Default.SystemTitleBar;
         if (SwitchRow(ui, t.DisplayOptionsSystemTitleBar, ref system, "system-title-bar", changed))
         {
-            CodeDisplay.SetDisplayOptions(ui.State, display with { SystemTitleBar = system });
+            ui.State.Display.Set(display with { SystemTitleBar = system });
         }
     }
 
@@ -321,11 +321,11 @@ internal static class DisplayOptionsPanelView
     {
         var labels = UiScaleLabels.GetValue(ui.State.Strings, ListUiScaleLabels);
         var scales = DisplayOptions.UiScales;
-        var current = FindScaleIndex(scales, ui.State.Display.UiScale);
+        var current = FindScaleIndex(scales, ui.State.Display.Options.UiScale);
         var picked = PickFrom(ui, "ui-scale", labels, current);
         if (picked is not null)
         {
-            CodeDisplay.SetUiScale(ui.State, scales[picked.Value]);
+            ui.State.Display.SetUiScale(scales[picked.Value]);
         }
     }
 
@@ -413,7 +413,7 @@ internal static class DisplayOptionsPanelView
     private static bool CodeSection(Ui<UiState> ui, string[] words)
     {
         var t = ui.State.Strings;
-        var display = ui.State.Display;
+        var display = ui.State.Display.Options;
         var defaults = DisplayOptions.Default;
         var heading = t.DisplayOptionsCode;
         var hint = ui.Memo("zoom-hint", t, static s => s.DisplayOptionsZoomHint(Shortcuts.ZoomReset.Label));
@@ -459,7 +459,7 @@ internal static class DisplayOptionsPanelView
             var on = display.ShowLineNumbers;
             if (SwitchRow(ui, t.DisplayOptionsLineNumbers, ref on, "line-numbers", on != defaults.ShowLineNumbers))
             {
-                CodeDisplay.SetDisplayOptions(ui.State, display with { ShowLineNumbers = on });
+                ui.State.Display.Set(display with { ShowLineNumbers = on });
             }
         }
         if (currentLine)
@@ -468,7 +468,7 @@ internal static class DisplayOptionsPanelView
             var on = display.HighlightCurrentLine;
             if (SwitchRow(ui, t.DisplayOptionsCurrentLine, ref on, "current-line", on != defaults.HighlightCurrentLine))
             {
-                CodeDisplay.SetDisplayOptions(ui.State, display with { HighlightCurrentLine = on });
+                ui.State.Display.Set(display with { HighlightCurrentLine = on });
             }
         }
         if (brackets)
@@ -477,7 +477,7 @@ internal static class DisplayOptionsPanelView
             var on = display.HighlightMatchingBrackets;
             if (SwitchRow(ui, t.DisplayOptionsMatchingBrackets, ref on, "matching-brackets", on != defaults.HighlightMatchingBrackets))
             {
-                CodeDisplay.SetDisplayOptions(ui.State, display with { HighlightMatchingBrackets = on });
+                ui.State.Display.Set(display with { HighlightMatchingBrackets = on });
             }
         }
         if (usages)
@@ -486,7 +486,7 @@ internal static class DisplayOptionsPanelView
             var on = display.HighlightUsagesAtCaret;
             if (SwitchRow(ui, t.DisplayOptionsUsagesAtCaret, ref on, "usages-at-caret", on != defaults.HighlightUsagesAtCaret))
             {
-                CodeDisplay.SetDisplayOptions(ui.State, display with { HighlightUsagesAtCaret = on });
+                ui.State.Display.Set(display with { HighlightUsagesAtCaret = on });
             }
         }
         if (omnibar)
@@ -495,7 +495,7 @@ internal static class DisplayOptionsPanelView
             var on = display.ShowOmnibar;
             if (SwitchRow(ui, t.DisplayOptionsOmnibar, ref on, "omnibar", on != defaults.ShowOmnibar))
             {
-                CodeDisplay.SetDisplayOptions(ui.State, display with { ShowOmnibar = on });
+                ui.State.Display.Set(display with { ShowOmnibar = on });
             }
         }
         return true;
@@ -505,7 +505,7 @@ internal static class DisplayOptionsPanelView
     {
         var t = ui.State.Strings;
         var choices = ui.State.CodeFonts;
-        var chosen = ui.State.Display.Font;
+        var chosen = ui.State.Display.Options.Font;
         var shown = CodeDisplay.GetFontName(chosen);
         var width = ControlWidth(PickerMinWidth, MeasureFontPicker(ui, shown), FontPickerMaxWidth);
         using var menu = ui.SelectButton("code-font", shown, width);
@@ -519,7 +519,7 @@ internal static class DisplayOptionsPanelView
         {
             if (ui.MenuRadioItem(choices.Labels[i], choices.Labels[i] == shown))
             {
-                CodeDisplay.SetCodeFont(ui.State, fonts[i]);
+                ui.State.Display.SetCodeFont(fonts[i]);
             }
         }
         if (!choices.IsListed)
@@ -540,11 +540,11 @@ internal static class DisplayOptionsPanelView
     {
         var t = ui.State.Strings;
         var theme = ui.Theme;
-        var display = ui.State.Display;
+        var display = ui.State.Display.Options;
         var smaller = ui.Memo("smaller", t, static s => s.DisplayOptionsSmaller(Shortcuts.ZoomOut.Label));
         if (ui.IconButton("smaller", ui.State.Icons.OptionsFontSmaller, smaller, CodeDisplay.CanZoomOut(display, theme), ButtonVariant.Neutral))
         {
-            CodeDisplay.ZoomCode(ui.State, -1);
+            ui.State.Display.ZoomCode(ui.State.Theme, -1);
         }
 
         var size = CodeDisplay.GetFontSize(display, theme);
@@ -553,7 +553,7 @@ internal static class DisplayOptionsPanelView
         var larger = ui.Memo("larger", t, static s => s.DisplayOptionsLarger(Shortcuts.ZoomIn.Label));
         if (ui.IconButton("larger", ui.State.Icons.OptionsFontLarger, larger, CodeDisplay.CanZoomIn(display, theme), ButtonVariant.Neutral))
         {
-            CodeDisplay.ZoomCode(ui.State, 1);
+            ui.State.Display.ZoomCode(ui.State.Theme, 1);
         }
     }
 
@@ -561,7 +561,7 @@ internal static class DisplayOptionsPanelView
     private static void FontPreview(Ui<UiState> ui)
     {
         var theme = ui.Theme;
-        var size = CodeDisplay.GetFontSize(ui.State.Display, theme);
+        var size = CodeDisplay.GetFontSize(ui.State.Display.Options, theme);
         using var row = ui.Column(new Box
         {
             Width = Sizing.Grow(),
@@ -596,7 +596,7 @@ internal static class DisplayOptionsPanelView
     private static bool TreeSection(Ui<UiState> ui, string[] words)
     {
         var t = ui.State.Strings;
-        var display = ui.State.Display;
+        var display = ui.State.Display.Options;
         var defaults = DisplayOptions.Default;
         var heading = t.DisplayOptionsTree;
         var tokens = Shows(t, words, heading, t.DisplayOptionsTokens, t.DisplayOptionsTokensDescription);
@@ -625,7 +625,7 @@ internal static class DisplayOptionsPanelView
             var on = display.ShowEmptyMetadataTables;
             if (SwitchRow(ui, t.DisplayOptionsEmptyTables, ref on, "empty-tables", on != defaults.ShowEmptyMetadataTables))
             {
-                CodeDisplay.SetDisplayOptions(ui.State, display with { ShowEmptyMetadataTables = on });
+                ui.State.Display.Set(display with { ShowEmptyMetadataTables = on });
             }
         }
         if (nested)
@@ -634,7 +634,7 @@ internal static class DisplayOptionsPanelView
             var on = display.NestedNamespaces;
             if (SwitchRow(ui, t.DisplayOptionsNestedNamespaces, ref on, "nested-namespaces", on != defaults.NestedNamespaces))
             {
-                CodeDisplay.SetDisplayOptions(ui.State, display with { NestedNamespaces = on });
+                ui.State.Display.Set(display with { NestedNamespaces = on });
             }
         }
         if (previewTabs)
@@ -643,7 +643,7 @@ internal static class DisplayOptionsPanelView
             var on = display.PreviewTabs;
             if (SwitchRow(ui, t.DisplayOptionsPreviewTabs, ref on, "preview-tabs", on != defaults.PreviewTabs))
             {
-                CodeDisplay.SetDisplayOptions(ui.State, display with { PreviewTabs = on });
+                ui.State.Display.Set(display with { PreviewTabs = on });
             }
         }
         return true;
@@ -652,12 +652,12 @@ internal static class DisplayOptionsPanelView
     private static void TokenFormatPicker(Ui<UiState> ui)
     {
         var labels = TokenFormatLabels.GetValue(ui.State.Strings, ListTokenFormatLabels);
-        var index = Array.IndexOf(TokenFormats, ui.State.Display.TreeTokens);
+        var index = Array.IndexOf(TokenFormats, ui.State.Display.Options.TreeTokens);
         int? current = index >= 0 ? index : null;
         var picked = PickFrom(ui, "tokens", labels, current);
         if (picked is not null)
         {
-            CodeDisplay.SetTreeTokens(ui.State, TokenFormats[picked.Value]);
+            ui.State.Display.SetTreeTokens(TokenFormats[picked.Value]);
         }
     }
 
@@ -709,13 +709,13 @@ internal static class DisplayOptionsPanelView
     private static void ResetRow(Ui<UiState> ui)
     {
         var t = ui.State.Strings;
-        var changed = ui.State.Display != DisplayOptions.Default;
+        var changed = ui.State.Display.Options != DisplayOptions.Default;
         var icon = new UiIcon(ui.State.Icons.OptionsResetDisplay);
         using (ui.Row(new Box { Width = Sizing.Grow(), AlignX = Align.End }))
         {
             if (ui.Button(t.DisplayOptionsReset, enabled: changed, id: "reset", variant: ButtonVariant.Ghost, icon: icon))
             {
-                ui.State.DisplayReset.Ask();
+                ui.State.Display.Reset.Ask();
             }
         }
     }

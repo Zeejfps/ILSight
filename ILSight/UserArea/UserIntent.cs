@@ -6,11 +6,9 @@ namespace ILSight.UserArea;
 /// an older ticket is stale once the user asks for something else.</summary>
 public sealed class UserIntent
 {
-    private const int NoTicket = -1;
-
     private int _current;
-    private int _resolving = NoTicket;
-    private int _opening = NoTicket;
+    private int? _resolving;
+    private int? _opening;
 
     /// <summary>True while the current request is finding a place in the background.</summary>
     public bool IsResolving => _resolving == _current;
@@ -42,7 +40,7 @@ public sealed class UserIntent
 
     public void StopResolving()
     {
-        _resolving = NoTicket;
+        _resolving = null;
     }
 
     /// <summary>Begins a request to open <paramref name="paths"/>: what was still being looked up for an older request
@@ -69,7 +67,7 @@ public sealed class UserIntent
             return;
         }
 
-        _opening = NoTicket;
+        _opening = null;
     }
 
     /// <summary>Begins a request that finds a place in the background: it is resolving until

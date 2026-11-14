@@ -639,7 +639,6 @@ public sealed class AssemblyList
         return listed.Replace(failure, assembly);
     }
 
-    /// <summary>The failure listed for <paramref name="path"/>; null when none is.</summary>
     internal FailedAssembly? FindListedFailure(AssemblyPath path)
     {
         return FindFailure(Now.Listed, path);

@@ -173,8 +173,8 @@ internal sealed class AppStateDriver
     /// <summary>The screen over <see cref="AppState"/>; a driver made without one has none to give.</summary>
     public UiState Ui => _ui ?? throw new InvalidOperationException("This driver has no screen.");
 
-    /// <summary>The time the driver's autosave goes by, in seconds.</summary>
-    public double Now { get; set; }
+    /// <summary>The time the driver's autosave goes by.</summary>
+    public TimeSpan Now { get; set; }
 
     /// <summary>What the last <see cref="Pump"/>'s autosave came to. A frame asks to come back when a write waits or
     /// failed; the driver's time moves only when the test moves it, so the test reads it here.</summary>
@@ -307,7 +307,7 @@ internal sealed class AppStateDriver
     {
         if (_ui is not null)
         {
-            _ui.Display = _ui.Display with { PreviewTabs = false };
+            _ui.Display.Set(_ui.Display.Options with { PreviewTabs = false });
         }
 
         AppState.Navigation.UsePreviewTabs(false);

@@ -460,14 +460,15 @@ public sealed class AnalyzerTests
     public async Task Cancelling_a_symbol_cancels_the_analyses_listed_under_it()
     {
         var d = AppStateDriver.Opened();
-        var running = await RunningKindAsync(d);
-        var work = running.Work;
-        Assert.NotNull(work);
-        var symbol = new AnalyzerSymbolNode { Symbol = running.Subject, Children = [running] };
+        var analyzed = (await FirstAsync(d)).Analysis;
+        Assert.NotNull(analyzed);
+        var symbol = new AnalyzerSymbolNode { Symbol = analyzed };
+        var running = symbol.EnsureChildren().OfType<AnalyzerKindNode>().First();
+        var run = running.StartRun() ?? throw new InvalidOperationException("The analysis listed under the symbol did not start.");
 
         Analysis.CancelNode(symbol);
 
-        Assert.True(work.IsCancellationRequested);
+        Assert.True(run.Work.IsCancellationRequested);
         Assert.Null(running.Work);
     }
 
@@ -492,7 +493,7 @@ public sealed class AnalyzerTests
         var kind = run.Kind;
         Analysis.AddFound(d.AppState.Analyzer, run, [new AnalysisFind.Found { Symbol = kind.Subject }]);
         var found = Assert.IsType<AnalyzerSymbolNode>(Assert.Single(kind.Found));
-        var nested = Analysis.EnsureChildren(found).OfType<AnalyzerKindNode>().First();
+        var nested = found.EnsureChildren().OfType<AnalyzerKindNode>().First();
         var nestedRun = nested.StartRun() ?? throw new InvalidOperationException("The analysis under what was found did not start.");
 
         Analysis.CancelNode(kind);

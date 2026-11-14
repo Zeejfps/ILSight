@@ -13,7 +13,7 @@ namespace ILSight.NuGetArea;
 /// </summary>
 public sealed class NuGetBrowser
 {
-    private const double DebounceSeconds = 0.3;
+    private static readonly TimeSpan Debounce = TimeSpan.FromSeconds(0.3);
     private const string IconImagePrefix = "nuget-icon-";
 
     private readonly Dictionary<WebUrl, PackageIcon> _icons = [];
@@ -360,9 +360,9 @@ public sealed class NuGetBrowser
     /// <paramref name="now"/>, and returns the search they ask for, to start now: once the typed feed or query
     /// settled, or at once when another page is asked for or whether prereleases count changed; a new search
     /// starts on its first page. Null when nothing is to be searched yet, or what is asked is searched already;
-    /// while what was typed settles, <see cref="IsSettling"/> says so and <see cref="CalculateSecondsToSettle"/>
+    /// while what was typed settles, <see cref="IsSettling"/> says so and <see cref="CalculateTimeToSettle"/>
     /// how long it has left.</summary>
-    public FeedSearch? Update(string query, string feedUrl, bool includePrerelease, double now)
+    public FeedSearch? Update(string query, string feedUrl, bool includePrerelease, TimeSpan now)
     {
         _typedQuery.Note(query, now);
         _typedUrl.Note(feedUrl, now);
@@ -397,8 +397,8 @@ public sealed class NuGetBrowser
             return null;
         }
 
-        var remaining = CalculateSecondsToSettle(now);
-        if (remaining > 0 && IsOnlyTypingChanged(wanted))
+        var remaining = CalculateTimeToSettle(now);
+        if (remaining > TimeSpan.Zero && IsOnlyTypingChanged(wanted))
         {
             IsSettling = true;
             return null;
@@ -406,13 +406,13 @@ public sealed class NuGetBrowser
         return wanted;
     }
 
-    /// <summary>The seconds left at <paramref name="now"/> before both the query and the feed typed settled,
-    /// or 0 once they have.</summary>
-    public double CalculateSecondsToSettle(double now)
+    /// <summary>The time left at <paramref name="now"/> before both the query and the feed typed settled,
+    /// or zero once they have.</summary>
+    public TimeSpan CalculateTimeToSettle(TimeSpan now)
     {
-        var query = _typedQuery.CalculateSecondsToSettle(now, DebounceSeconds);
-        var feed = _typedUrl.CalculateSecondsToSettle(now, DebounceSeconds);
-        return Math.Max(query, feed);
+        var query = _typedQuery.CalculateTimeToSettle(now, Debounce);
+        var feed = _typedUrl.CalculateTimeToSettle(now, Debounce);
+        return query > feed ? query : feed;
     }
 
     /// <summary>Starts searching as <paramref name="wanted"/> asks, in place of the search running, which is

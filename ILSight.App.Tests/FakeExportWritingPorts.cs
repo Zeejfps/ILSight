@@ -15,9 +15,9 @@ internal sealed class FakeExportWritingPorts : ExportWriting.IPorts
 
     public List<ExportWork> Asked { get; } = [];
 
-    public long Now => 0;
+    public ClockReading Now => new ClockReading(0);
 
-    public TimeSpan MeasureSince(long start)
+    public TimeSpan MeasureSince(ClockReading start)
     {
         return TimeSpan.FromSeconds(2);
     }

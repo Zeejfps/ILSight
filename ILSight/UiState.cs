@@ -68,9 +68,6 @@ public sealed class UiState : IUiState
     /// <summary>The browse tree over the open assemblies, with the view's expansion and selection.</summary>
     public required BrowseTree Tree { get; init; }
 
-    /// <summary>The node the tree's context menu was opened on.</summary>
-    public BrowseNode? MenuTarget;
-
     /// <summary>The document whose tab's context menu was opened.</summary>
     public DocumentTab? TabMenuTarget;
 
@@ -132,11 +129,8 @@ public sealed class UiState : IUiState
     /// <summary>What the display options panel is searched for; empty shows every option.</summary>
     public string DisplayOptionsQuery = "";
 
-    /// <summary>How the documents draw code: its size and the aids drawn around it.</summary>
-    public required DisplayOptions Display;
-
-    /// <summary>Whether to put every display option back to its default, asked of the user.</summary>
-    public Confirmation DisplayReset { get; } = new();
+    /// <summary>How the documents draw code: its size and the aids drawn around it, and their reset asked of the user.</summary>
+    public required ScreenDisplay Display { get; init; }
 
     /// <summary>The fonts the display options offer to draw code in.</summary>
     public CodeFontChoices CodeFonts { get; } = new();

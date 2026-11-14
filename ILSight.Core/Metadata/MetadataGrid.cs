@@ -167,7 +167,6 @@ public abstract class MetadataGrid
         /// <summary>The mapped file, read on the I/O side alone.</summary>
         public required MetadataFile File { get; init; }
 
-        /// <summary>The page <paramref name="row"/> is on.</summary>
         public static int PageOf(int row)
         {
             return row / RowsPerPage;

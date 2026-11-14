@@ -23,8 +23,6 @@ public sealed class TabLoads
     /// <summary>No load started.</summary>
     public static TabLoads None { get; } = new TabLoads();
 
-    /// <summary>The loads <paramref name="decompiles"/>, <paramref name="diagramReads"/>, <paramref name="nodeLookups"/>
-    /// and <paramref name="comparisonRuns"/>.</summary>
     public static TabLoads From(IEnumerable<DecompileTicket> decompiles, IEnumerable<SavedDiagramRead> diagramReads,
         IEnumerable<ReopenedNodesLookup> nodeLookups, IEnumerable<ComparisonRun> comparisonRuns)
     {

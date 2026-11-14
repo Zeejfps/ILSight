@@ -22,7 +22,6 @@ internal static class NodeQueries
         return node;
     }
 
-    /// <summary><see cref="GetChildAsync(BrowseNode, string[])"/> of the node <paramref name="read"/> gives.</summary>
     public static async Task<BrowseNode> GetChildAsync(this Task<BrowseNode> read, params string[] path)
     {
         var node = await read;

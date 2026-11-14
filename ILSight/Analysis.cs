@@ -8,33 +8,6 @@ namespace ILSight;
 /// <summary>Analyzing types and members, and analyzing again what was analyzed in the last run.</summary>
 public static class Analysis
 {
-    /// <summary>The children of <paramref name="symbol"/>, listed the first time they are asked for.</summary>
-    public static List<AnalyzerNode> EnsureChildren(AnalyzerSymbolNode symbol)
-    {
-        if (symbol.Children is null)
-        {
-            symbol.Children = ListChildren(symbol);
-        }
-
-        return symbol.Children;
-    }
-
-    private static List<AnalyzerNode> ListChildren(AnalyzerSymbolNode symbol)
-    {
-        var children = new List<AnalyzerNode>();
-        foreach (var accessor in symbol.Symbol.Accessors)
-        {
-            children.Add(new AnalyzerSymbolNode { Symbol = accessor });
-        }
-
-        foreach (var kind in symbol.Symbol.Kinds)
-        {
-            children.Add(new AnalyzerKindNode { Subject = symbol.Symbol, Kind = kind });
-        }
-
-        return children;
-    }
-
     /// <summary>Cancels the analyses running under <paramref name="node"/>, leaving children never listed
     /// unlisted.</summary>
     internal static void CancelNode(AnalyzerNode node)

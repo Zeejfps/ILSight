@@ -21,8 +21,8 @@ public sealed class SettingsSavingTests
         var saving = new SettingsSaving(ports);
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
 
-        var first = saving.SaveIfChanged(d.AppState, 0);
-        var second = saving.SaveIfChanged(d.AppState, 0);
+        var first = saving.SaveIfChanged(d.AppState, TimeSpan.FromSeconds(0));
+        var second = saving.SaveIfChanged(d.AppState, TimeSpan.FromSeconds(0));
 
         Assert.IsType<Saving.Saved>(first);
         Assert.IsType<Saving.Unchanged>(second);
@@ -37,12 +37,12 @@ public sealed class SettingsSavingTests
         var saving = new SettingsSaving(ports);
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
 
-        var failed = saving.SaveIfChanged(d.AppState, 0);
-        var waiting = saving.SaveIfChanged(d.AppState, 1);
-        var failedAgain = saving.SaveIfChanged(d.AppState, SaveRetry.DelaySeconds);
+        var failed = saving.SaveIfChanged(d.AppState, TimeSpan.FromSeconds(0));
+        var waiting = saving.SaveIfChanged(d.AppState, TimeSpan.FromSeconds(1));
+        var failedAgain = saving.SaveIfChanged(d.AppState, SaveRetry.Delay);
 
-        Assert.Equal(SaveRetry.DelaySeconds, Assert.IsType<Saving.Failed>(failed).RetryIn);
-        Assert.Equal(SaveRetry.DelaySeconds - 1, Assert.IsType<Saving.Waiting>(waiting).RetryIn);
+        Assert.Equal(SaveRetry.Delay, Assert.IsType<Saving.Failed>(failed).RetryIn);
+        Assert.Equal(SaveRetry.Delay - TimeSpan.FromSeconds(1), Assert.IsType<Saving.Waiting>(waiting).RetryIn);
         Assert.IsType<Saving.Failed>(failedAgain);
         Assert.Equal(2, ports.Written.Count);
         Assert.Equal("Disk full.", Assert.IsType<AppProblem.SettingsNotSaved>(Assert.Single(ports.Reported)).Reason);

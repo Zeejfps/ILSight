@@ -14,11 +14,11 @@ namespace ILSight.ExportArea;
 public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, BrowseSession session)
     : ExportWriting.IPorts, SaveResourceHandler.IPorts, ExtractPackageFileHandler.IPorts, CheckExportFilesHandler.IPorts
 {
-    public long Now => Stopwatch.GetTimestamp();
+    public ClockReading Now => new ClockReading(Stopwatch.GetTimestamp());
 
-    public TimeSpan MeasureSince(long start)
+    public TimeSpan MeasureSince(ClockReading start)
     {
-        return Stopwatch.GetElapsedTime(start);
+        return Stopwatch.GetElapsedTime(start.Ticks);
     }
 
     public bool IsFolderThere(string folder)

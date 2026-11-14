@@ -32,7 +32,7 @@ internal sealed class CodeReveal
     }
 
     /// <summary>Takes what was asked as done, flashing <paramref name="line"/> from <paramref name="now"/>.</summary>
-    public void ArriveFlashing(int line, double now)
+    public void ArriveFlashing(int line, TimeSpan now)
     {
         Flash = new CodeFlash { Line = line, From = now };
         Pending = null;

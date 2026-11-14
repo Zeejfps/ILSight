@@ -10,7 +10,6 @@ namespace ILSight;
 /// that colors it.</summary>
 public static class NodeIcons
 {
-    /// <summary>The icon of a node of <paramref name="subject"/>.</summary>
     public static NodeIcon Of(NodeSubject subject)
     {
         return subject.Match(

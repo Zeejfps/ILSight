@@ -11,12 +11,11 @@ public sealed class ExportWriting(ExportWriting.IPorts ports)
     public interface IPorts
     {
         /// <summary>A reading of a clock that only goes forward, for <see cref="MeasureSince"/>.</summary>
-        long Now { get; }
+        ClockReading Now { get; }
 
         /// <summary>How long it has been since <paramref name="start"/>, a reading of <see cref="Now"/>.</summary>
-        TimeSpan MeasureSince(long start);
+        TimeSpan MeasureSince(ClockReading start);
 
-        /// <summary>Whether the folder at <paramref name="folder"/> is there.</summary>
         bool IsFolderThere(string folder);
 
         /// <summary>Writes the code <paramref name="work"/> asks for; answers the path written. Each of these writes
@@ -76,7 +75,7 @@ public sealed class ExportWriting(ExportWriting.IPorts ports)
     }
 
     private async Task<ExportReport> WriteAsync<T>(Func<CancellationToken, Task<ExportOutcome<T>>> write, ExportTurn.Started start, ExportTicket ticket,
-        string subject, long started, Func<ExportReport, T, ExportReport> complete, CancellationToken ct)
+        string subject, ClockReading started, Func<ExportReport, T, ExportReport> complete, CancellationToken ct)
     {
         var outcome = await write(ct);
         start.EndTurn();

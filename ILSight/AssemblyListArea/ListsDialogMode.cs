@@ -17,8 +17,16 @@ public abstract record ListsDialogMode
         /// <summary>A field, for the edit box to take by <c>ref</c>.</summary>
         public string NewName = List;
 
-        /// <summary>Whether the name box is still to take focus, with the whole name selected.</summary>
-        public bool IsFocusPending = true;
+        private bool _isFocusPending = true;
+
+        /// <summary>Whether the name box is to take focus, with the whole name selected: true the first
+        /// time it is asked only.</summary>
+        public bool TryTakeFocus()
+        {
+            var focus = _isFocusPending;
+            _isFocusPending = false;
+            return focus;
+        }
     }
 
     public sealed record ConfirmingDelete(string List) : ListsDialogMode;

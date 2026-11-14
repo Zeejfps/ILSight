@@ -35,7 +35,6 @@ public static class NodeDefinitions
         return KeepBase(info, type, definition);
     }
 
-    /// <summary><paramref name="type"/> as <paramref name="module"/> forwards it.</summary>
     internal static ForwardedTypeInfo CreateForwardedType(LoadedModule module, ForwardedType type)
     {
         return new ForwardedTypeInfo

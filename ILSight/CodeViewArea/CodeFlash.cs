@@ -5,5 +5,5 @@ internal readonly record struct CodeFlash
 {
     public required int Line { get; init; }
 
-    public required double From { get; init; }
+    public required TimeSpan From { get; init; }
 }

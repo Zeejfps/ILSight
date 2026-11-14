@@ -19,7 +19,7 @@ public static class Settings
         var leftOutBookmarks = appState.Bookmarks.Restore(settings.Bookmarks);
         appState.Analyzer.AddPending(appState.Lists.ActiveAnalyses);
         SavedDocuments.ReopenDocuments(appState.Lists, appState.ListSession);
-        appState.LastSaved = CaptureSavedSources(appState);
+        appState.LastSave.Restore(CaptureSavedSources(appState));
         if (leftOutBookmarks == 0)
         {
             return null;

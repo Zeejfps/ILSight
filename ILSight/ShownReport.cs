@@ -7,7 +7,20 @@ namespace ILSight;
 /// when the report or the language changes.</summary>
 public sealed class ShownReport
 {
-    /// <summary>The report written out, by the report and language. Reports are records, and two equal ones
-    /// are still written again.</summary>
-    public Memo<(ByReference<ExportReport>, ByReference<Strings>), DecompiledDocument> Written;
+    // By reference: reports are records, and two equal ones are still written again.
+    private Memo<(ByReference<ExportReport>, ByReference<Strings>), DecompiledDocument> _written;
+
+    /// <summary><paramref name="report"/> written out with <paramref name="t"/>.</summary>
+    public DecompiledDocument GetDocument(ExportReport report, Strings t)
+    {
+        var key = (new ByReference<ExportReport>(report), new ByReference<Strings>(t));
+        if (_written.TryGet(key, out var document))
+        {
+            return document;
+        }
+
+        document = ExportReportText.Write(t, [report]);
+        _written = new Memo<(ByReference<ExportReport>, ByReference<Strings>), DecompiledDocument>(key, document);
+        return document;
+    }
 }

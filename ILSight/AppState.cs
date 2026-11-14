@@ -23,7 +23,9 @@ namespace ILSight;
 /// resolving, searching) is awaited there through <see cref="Background"/>. A result is dropped when
 /// the user asked for something else in the meantime.
 /// </summary>
+#pragma warning disable RL0405 // the root of the app's state, whose parts many features change (R001 point 8): the check counts two writers once the settings' saves are a part of their own
 public sealed class AppState
+#pragma warning restore RL0405
 {
     /// <summary>Where the settings are written, and the user's themes are found.</summary>
     public required SettingsPlace SettingsPlace { get; init; }
@@ -61,11 +63,8 @@ public sealed class AppState
     public Reopens Reopens { get; } = new();
     public OpenRequests Opens => ListSession.Opens;
 
-    /// <summary>What the settings were saved from the last time, to save again only when it changed.</summary>
-    public SavedSources LastSaved { get; set; }
-
-    /// <summary>Whether writing the settings is failing, and when to try again.</summary>
-    public SaveRetry SaveRetry { get; set; } = new SaveRetry.Clear();
+    /// <summary>What the settings were saved from the last time, and whether writing them is failing.</summary>
+    public LastSave LastSave { get; } = new();
 
     /// <summary>Whether the window closes as the user asks it to, from what saving the settings then did.</summary>
     public WindowClosing Closing { get; } = new();
@@ -125,7 +124,6 @@ public sealed class AppState
     /// <summary>Finishes expanding an assembly and the namespaces in it.</summary>
     public required ExpandNamespacesHandler ExpandNamespacesHandler { get; init; }
 
-    /// <summary>Saves the settings.</summary>
     public required SettingsSaving SettingsSaving { get; init; }
 
     /// <summary>Writes an export the exports panel queued, once its turn comes.</summary>

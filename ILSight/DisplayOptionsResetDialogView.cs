@@ -10,7 +10,7 @@ internal static class DisplayOptionsResetDialogView
     {
         var t = ui.State.Strings;
         var screen = ui.State;
-        var open = screen.DisplayReset.IsAsked;
+        var open = screen.Display.Reset.IsAsked;
         using (var dialog = ui.Dialog("display-reset", t.DisplayOptionsReset, ref open, closeButton: false))
         {
             if (dialog.IsOpen)
@@ -20,19 +20,19 @@ internal static class DisplayOptionsResetDialogView
                 {
                     if (ui.Button(t.DisplayOptionsResetCancel, id: "display-reset-cancel", variant: ButtonVariant.Ghost))
                     {
-                        CodeDisplay.FinishDisplayOptionsReset(screen, false);
+                        screen.Display.FinishReset(false);
                     }
 
                     if (ui.Button(t.DisplayOptionsResetConfirm, id: "display-reset-confirm", variant: ButtonVariant.Primary))
                     {
-                        CodeDisplay.FinishDisplayOptionsReset(screen, true);
+                        screen.Display.FinishReset(true);
                     }
                 }
             }
         }
-        if (!open && screen.DisplayReset.IsAsked)
+        if (!open && screen.Display.Reset.IsAsked)
         {
-            CodeDisplay.FinishDisplayOptionsReset(screen, false);
+            screen.Display.FinishReset(false);
         }
     }
 }

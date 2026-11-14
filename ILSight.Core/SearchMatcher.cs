@@ -9,7 +9,6 @@ public abstract record SearchMatcher
     {
     }
 
-    /// <summary>Whether <paramref name="name"/> matches.</summary>
     public abstract bool IsMatch(string name);
 
     /// <summary>Every term must match; none at all finds nothing.</summary>

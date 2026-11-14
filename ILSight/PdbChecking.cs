@@ -22,7 +22,6 @@ public abstract record PdbChecking
         public required string Assembly { get; init; }
     }
 
-    /// <summary>The check failed.</summary>
     public sealed record Failed : PdbChecking
     {
         public required Exception Error { get; init; }

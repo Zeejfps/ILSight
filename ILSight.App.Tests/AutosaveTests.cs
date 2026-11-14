@@ -299,13 +299,13 @@ public sealed class AutosaveTests : IDisposable
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
 
         var failed = d.AppState.SettingsSaving.SaveIfChanged(d.AppState, d.Now);
-        var waiting = d.AppState.SettingsSaving.SaveIfChanged(d.AppState, d.Now + 0.5);
+        var waiting = d.AppState.SettingsSaving.SaveIfChanged(d.AppState, d.Now + TimeSpan.FromSeconds(0.5));
         Directory.Delete(blocker);
-        var saved = d.AppState.SettingsSaving.SaveIfChanged(d.AppState, d.Now + SaveRetry.DelaySeconds);
+        var saved = d.AppState.SettingsSaving.SaveIfChanged(d.AppState, d.Now + SaveRetry.Delay);
 
         Assert.IsType<Saving.Unchanged>(unchanged);
-        Assert.Equal(SaveRetry.DelaySeconds, Assert.IsType<Saving.Failed>(failed).RetryIn);
-        Assert.Equal(SaveRetry.DelaySeconds - 0.5, Assert.IsType<Saving.Waiting>(waiting).RetryIn);
+        Assert.Equal(SaveRetry.Delay, Assert.IsType<Saving.Failed>(failed).RetryIn);
+        Assert.Equal(SaveRetry.Delay - TimeSpan.FromSeconds(0.5), Assert.IsType<Saving.Waiting>(waiting).RetryIn);
         Assert.IsType<Saving.Saved>(saved);
     }
 
@@ -319,15 +319,15 @@ public sealed class AutosaveTests : IDisposable
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         d.Pump();
         var first = d.Autosaved;
-        d.Now += SaveRetry.DelaySeconds + 0.5;
+        d.Now += SaveRetry.Delay + TimeSpan.FromSeconds(0.5);
         d.Pump();
         var retried = d.Autosaved;
         Directory.Delete(blocker);
-        d.Now += 1;
+        d.Now += TimeSpan.FromSeconds(1);
         d.Pump();
         var waiting = d.Autosaved;
         var languageWhileWaiting = _temp.Settings().Language;
-        d.Now += SaveRetry.DelaySeconds;
+        d.Now += SaveRetry.Delay;
         d.Pump();
 
         Assert.IsType<Saving.Failed>(first);

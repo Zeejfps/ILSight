@@ -48,7 +48,7 @@ internal static class DiagramView
     {
         var view = DocumentPanels.GetView(ui.State.Documents, tab).Diagram;
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground });
-        if (!ui.State.Display.ShowOmnibar)
+        if (!ui.State.Display.Options.ShowOmnibar)
         {
             OwnToolbar(ui, tab);
         }
@@ -592,27 +592,27 @@ internal static class DiagramView
                 Face = face,
                 Place = place.Value,
                 IsSelected = isSelected,
-                HoveredRow = HoveredRowOf(face, hit),
+                HoveredRow = FindHoveredRow(face, hit),
             });
         }
     }
 
-    private static int HoveredRowOf(CardFace face, DiagramHit hit)
+    private static int? FindHoveredRow(CardFace face, DiagramHit hit)
     {
         if (hit is not DiagramHit.Row row)
         {
-            return -1;
+            return null;
         }
 
         if (row.Face != face)
         {
-            return -1;
+            return null;
         }
 
         // A stereotype row does nothing, so it shows no hover.
         if (row.Value.Content is CardRowContent.Stereotype)
         {
-            return -1;
+            return null;
         }
 
         return row.Index;

@@ -383,7 +383,7 @@ public sealed class ComparisonTests
         var summary = app.TextRect(Compared);
         Assert.True(bar.Y < summary.Y);
 
-        app.Ui.Display = app.Ui.Display with { ShowOmnibar = false };
+        app.Ui.Display.Set(app.Ui.Display.Options with { ShowOmnibar = false });
         app.Run(2);
 
         Assert.True(app.Frames.Drew("Only differences"));

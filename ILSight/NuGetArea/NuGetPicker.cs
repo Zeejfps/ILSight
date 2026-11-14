@@ -24,8 +24,7 @@ public sealed class NuGetPicker
     /// <summary>The feed read and searched, the packages found, and what was fetched of them.</summary>
     public required NuGetBrowser Browser { get; init; }
 
-    /// <summary>Whether <see cref="FeedUrl"/> is a URL a feed could be at.</summary>
-    public bool HasFeedUrl => NuGetSource.FromUrl(FeedUrl) is not null;
+    public bool IsFeedUrlValid => NuGetSource.FromUrl(FeedUrl) is not null;
 
     /// <summary>Searches the feed and counts prereleases as the settings kept them.</summary>
     public void RestoreSearch(SavedNuGetSearch? saved)
@@ -92,7 +91,7 @@ public sealed class NuGetPicker
 
     /// <summary>Takes in the query, the feed and whether prereleases count as they are at
     /// <paramref name="now"/>; returns the search to start now, or null. See <see cref="NuGetBrowser.Update"/>.</summary>
-    public FeedSearch? Update(double now)
+    public FeedSearch? Update(TimeSpan now)
     {
         return Browser.Update(Query, FeedUrl, IncludePrerelease, now);
     }

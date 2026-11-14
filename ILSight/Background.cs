@@ -10,7 +10,8 @@ public static class Background
         return new BackgroundWork<T>(Task.Run(work));
     }
 
-    /// <summary>Waits for <paramref name="task"/> as <see cref="BackgroundWork{T}"/> does.</summary>
+    /// <summary>Awaits <paramref name="task"/>, started elsewhere, on the UI thread: it continues on a later turn of
+    /// that thread even when the task is already done (<see cref="BackgroundWork{T}"/>).</summary>
     public static BackgroundWork<T> Wait<T>(Task<T> task)
     {
         return new BackgroundWork<T>(task);

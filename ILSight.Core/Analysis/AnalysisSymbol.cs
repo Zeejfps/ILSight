@@ -25,7 +25,8 @@ public sealed class AnalysisSymbol
     /// <summary>The accessors of a property or event, which are analyzed on their own; none for anything else.</summary>
     public required IReadOnlyList<AnalysisSymbol> Accessors { get; init; }
 
-    /// <summary>The file of the assembly it is in, or is; null when it is in none.</summary>
+    /// <summary>For an assembly, its own file; for anything else, the file of the assembly that declares it. Null
+    /// for a symbol no loaded assembly declares.</summary>
     public required AssemblyPath? File { get; init; }
 
     /// <summary>Its assembly file and metadata token, to find it again with

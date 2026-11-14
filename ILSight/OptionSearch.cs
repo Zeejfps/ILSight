@@ -92,7 +92,6 @@ internal static class OptionSearch
         return joined;
     }
 
-    /// <summary><paramref name="text"/> as runs in <paramref name="style"/>, those of <paramref name="hits"/> marked.</summary>
     public static List<RichTextRun> CreateMarkedRuns(string text, List<(int Start, int End)> hits, TextStyle style)
     {
         var runs = new List<RichTextRun>(hits.Count * 2 + 1);

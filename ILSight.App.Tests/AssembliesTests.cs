@@ -351,7 +351,7 @@ public sealed class AssembliesTests
 
         Assert.Empty(ListDecompiles(loads));
         Assert.False(appState.IsReloading);
-        Assert.NotEqual(SettingArea.Settings.CaptureSavedSources(appState), appState.LastSaved);
+        Assert.NotEqual(SettingArea.Settings.CaptureSavedSources(appState), appState.LastSave.Sources);
         Assert.IsType<Saving.Saved>(appState.SettingsSaving.SaveIfChanged(appState, d.Now));
     }
 
@@ -415,7 +415,7 @@ public sealed class AssembliesTests
 
         Assert.Empty(ListDecompiles(loads));
         Assert.False(appState.IsReloading);
-        Assert.NotEqual(SettingArea.Settings.CaptureSavedSources(appState), appState.LastSaved);
+        Assert.NotEqual(SettingArea.Settings.CaptureSavedSources(appState), appState.LastSave.Sources);
         Assert.IsType<Saving.Saved>(appState.SettingsSaving.SaveIfChanged(appState, d.Now));
     }
 

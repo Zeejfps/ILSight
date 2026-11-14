@@ -6,8 +6,8 @@ internal sealed class FlagsFlyout
 {
     public bool IsOpen;
 
-    /// <summary>The column the flyout was last opened for, or <see cref="MetadataGridState.None"/>.</summary>
-    public int Column { get; private set; } = MetadataGridState.None;
+    /// <summary>The column the flyout was last opened for, or null.</summary>
+    public int? Column { get; private set; }
 
     public bool IsOpenFor(int column)
     {

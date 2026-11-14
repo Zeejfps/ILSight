@@ -195,12 +195,12 @@ public sealed class DisplayOptionsTests
         var ui = Screens.Blank();
         var size = ui.Theme.MonoFontSize;
 
-        CodeDisplay.ZoomCode(ui, 2);
-        Assert.Equal(size + 2f, ui.Display.FontSize?.Points);
-        CodeDisplay.ZoomCode(ui, -100);
-        Assert.Equal(CodeFontSize.Min, ui.Display.FontSize?.Points);
-        CodeDisplay.ResetCodeZoom(ui);
-        Assert.Null(ui.Display.FontSize);
+        ui.Display.ZoomCode(ui.Theme, 2);
+        Assert.Equal(size + 2f, ui.Display.Options.FontSize?.Points);
+        ui.Display.ZoomCode(ui.Theme, -100);
+        Assert.Equal(CodeFontSize.Min, ui.Display.Options.FontSize?.Points);
+        ui.Display.ResetCodeZoom();
+        Assert.Null(ui.Display.Options.FontSize);
     }
 
     [Fact]
@@ -226,7 +226,7 @@ public sealed class DisplayOptionsTests
         app.Frames.ClickOn(Selector.WithText("100%")).Frame();
         app.Frames.ClickOn(Selector.WithText("125%")).Frame();
 
-        Assert.Equal(1.25f, app.Ui.Display.UiScale);
+        Assert.Equal(1.25f, app.Ui.Display.Options.UiScale);
         Assert.True(app.Frames.Drew("125%"));
         Assert.Equal(1.25f, app.Frames.Frame(ui => ui.Scale));
         Assert.True(IsBold(app, "UI scale"));
@@ -247,12 +247,12 @@ public sealed class DisplayOptionsTests
             TreeTokens = TokenFormat.Decimal,
         };
 
-        CodeDisplay.SetDisplayOptions(app.Ui, options);
+        app.Ui.Display.Set(options);
         app.Run();
         Assert.IsType<SettingsWriteResult.Written>(app.AppState.SettingsSaving.Save(app.AppState));
 
         var restored = new AppStateDriver(temp.Settings());
-        Assert.Equal(options, restored.Ui.Display);
+        Assert.Equal(options, restored.Ui.Display.Options);
     }
 
     [Fact]
@@ -286,17 +286,17 @@ public sealed class DisplayOptionsTests
             ShowLineNumbers = false,
             HighlightCurrentLine = true,
         };
-        Assert.Equal(changed, app.Ui.Display);
+        Assert.Equal(changed, app.Ui.Display.Options);
         Assert.True(IsBold(app, "Line numbers"));
         Assert.False(IsBold(app, "UI scale"));
 
         app.Frames.ClickOn(Selector.WithText("Reset to defaults")).Frame(2);
-        Assert.True(app.Ui.DisplayReset.IsAsked);
-        Assert.Equal(changed, app.Ui.Display);
+        Assert.True(app.Ui.Display.Reset.IsAsked);
+        Assert.Equal(changed, app.Ui.Display.Options);
         app.Frames.ClickOn(Selector.WithText("Reset")).Frame(2);
 
-        Assert.False(app.Ui.DisplayReset.IsAsked);
-        Assert.Equal(DisplayOptions.Default, app.Ui.Display);
+        Assert.False(app.Ui.Display.Reset.IsAsked);
+        Assert.Equal(DisplayOptions.Default, app.Ui.Display.Options);
     }
 
     [Fact]
@@ -310,7 +310,7 @@ public sealed class DisplayOptionsTests
         app.Frames.ClickOn(Selector.WithText("Hidden")).Frame();
         app.Frames.ClickOn(Selector.WithText("Hexadecimal")).Frame();
 
-        Assert.Equal(TokenFormat.Hex, app.Ui.Display.TreeTokens);
+        Assert.Equal(TokenFormat.Hex, app.Ui.Display.Options.TreeTokens);
         Assert.True(IsBold(app, "Metadata tokens"));
     }
 
@@ -326,7 +326,7 @@ public sealed class DisplayOptionsTests
 
         app.Frames.ClickOn(Selector.WithText("Show empty metadata tables")).Frame(2);
 
-        Assert.True(app.Ui.Display.ShowEmptyMetadataTables);
+        Assert.True(app.Ui.Display.Options.ShowEmptyMetadataTables);
         Assert.True(IsBold(app, "Show empty metadata tables"));
         Assert.Contains(empty, app.Ui.Tree.GetChildren(tables).Nodes);
     }
@@ -345,7 +345,7 @@ public sealed class DisplayOptionsTests
 
         app.Frames.ClickOn(Selector.WithText("Nested namespaces")).Frame(2);
 
-        Assert.True(app.Ui.Display.NestedNamespaces);
+        Assert.True(app.Ui.Display.Options.NestedNamespaces);
         Assert.True(IsBold(app, "Nested namespaces"));
         Assert.Contains(outermost, app.Ui.Tree.GetChildren(root).Nodes);
         Assert.DoesNotContain(fixtures, app.Ui.Tree.GetChildren(root).Nodes);
@@ -363,7 +363,7 @@ public sealed class DisplayOptionsTests
         app.Frames.ClickOn(Selector.WithText("Preview tabs")).Frame(2);
 
         Assert.NotNull(shown);
-        Assert.False(app.Ui.Display.PreviewTabs);
+        Assert.False(app.Ui.Display.Options.PreviewTabs);
         Assert.False(app.AppState.Navigation.PreviewTabs);
         Assert.Null(app.AppState.Navigation.PreviewTab);
         Assert.True(IsBold(app, "Preview tabs"));
@@ -499,7 +499,7 @@ public sealed class DisplayOptionsTests
         var file = temp.Write("long.ttf", EmbeddedAssets.LoadBytes(typeof(ILSightApp).Assembly, "JetBrainsMono-Regular.ttf"));
         var app = AppDriver.Opened(width: 3000f);
         ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
-        CodeDisplay.SetCodeFont(app.Ui, new CodeFont
+        app.Ui.Display.SetCodeFont(new CodeFont
         {
             Family = "A monospaced font with a name far too long to show whole",
             Path = file,
@@ -610,8 +610,8 @@ public sealed class DisplayOptionsTests
         app.Frames.ClickOn(Selector.WithText("Reset to defaults")).Frame(2);
         app.Frames.ClickOn(Selector.WithText("Cancel")).Frame(2);
 
-        Assert.False(app.Ui.DisplayReset.IsAsked);
-        Assert.False(app.Ui.Display.ShowLineNumbers);
+        Assert.False(app.Ui.Display.Reset.IsAsked);
+        Assert.False(app.Ui.Display.Options.ShowLineNumbers);
     }
 
     [Fact]
@@ -625,7 +625,7 @@ public sealed class DisplayOptionsTests
         Assert.True(IsBold(app, "Font size"));
         app.Frames.ClickOn(Selector.AtPath("dock/display-options/smaller")).Frame();
 
-        Assert.Null(app.Ui.Display.FontSize);
+        Assert.Null(app.Ui.Display.Options.FontSize);
         Assert.False(IsBold(app, "Font size"));
     }
 
@@ -642,7 +642,7 @@ public sealed class DisplayOptionsTests
         app.Frames.Click(code.Origin.X + 2f, app.Frames.Height - code.Origin.Y + 2f).Frame();
         app.Frames.Key(Shortcuts.ZoomIn).Frame();
 
-        Assert.Equal(size + 1f, app.Ui.Display.FontSize?.Points);
+        Assert.Equal(size + 1f, app.Ui.Display.Options.FontSize?.Points);
     }
 
     private static readonly byte[] FontBytes = [1, 2, 3, 4];
@@ -684,7 +684,7 @@ public sealed class DisplayOptionsTests
         app.Frames.ClickOn(Selector.WithText("JetBrains Mono")).Frame();
         app.Frames.ClickOn(Selector.WithText("Consolas")).Frame(2);
 
-        Assert.Equal(new CodeFont { Family = "Consolas", Path = path, FaceIndex = 0 }, app.Ui.Display.Font);
+        Assert.Equal(new CodeFont { Family = "Consolas", Path = path, FaceIndex = 0 }, app.Ui.Display.Options.Font);
         Assert.Equal(MonoFonts.Code, app.Frames.RegisteredFonts[^1].Family);
         Assert.Equal(FontBytes, app.Frames.RegisteredFonts[^1].Data);
         Assert.True(IsBold(app, "Font"));
@@ -692,7 +692,7 @@ public sealed class DisplayOptionsTests
         app.Frames.ClickOn(Selector.WithText("Consolas")).Frame();
         app.Frames.ClickOn(Selector.WithText("JetBrains Mono")).Frame(2);
 
-        Assert.Null(app.Ui.Display.Font);
+        Assert.Null(app.Ui.Display.Options.Font);
         Assert.NotEqual(FontBytes, app.Frames.RegisteredFonts[^1].Data);
     }
 
@@ -702,10 +702,10 @@ public sealed class DisplayOptionsTests
         using var temp = new TempDir();
         var app = AppDriver.Opened(width: 1600f);
 
-        CodeDisplay.SetCodeFont(app.Ui, new CodeFont { Family = "Gone Mono", Path = temp.PathOf("gone.ttf"), FaceIndex = 0 });
+        app.Ui.Display.SetCodeFont(new CodeFont { Family = "Gone Mono", Path = temp.PathOf("gone.ttf"), FaceIndex = 0 });
         app.Run(2);
 
-        Assert.Null(app.Ui.Display.Font);
+        Assert.Null(app.Ui.Display.Options.Font);
     }
 
     [Fact]

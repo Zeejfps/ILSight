@@ -17,7 +17,7 @@ public sealed class NestedNamespaceTests
 
     private static void Nest(AppDriver app, bool nest)
     {
-        CodeDisplay.SetDisplayOptions(app.Ui, app.Ui.Display with { NestedNamespaces = nest });
+        app.Ui.Display.Set(app.Ui.Display.Options with { NestedNamespaces = nest });
         app.Run();
     }
 

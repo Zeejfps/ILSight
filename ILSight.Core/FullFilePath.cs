@@ -13,7 +13,6 @@ public sealed record FullFilePath
     /// <summary>The path, made absolute.</summary>
     public string Text { get; }
 
-    /// <summary>The folder the file is in.</summary>
     public string Folder { get; }
 
     /// <summary>The path <paramref name="text"/> is, made absolute; or null when it is not fully qualified,

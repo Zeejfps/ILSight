@@ -17,7 +17,6 @@ public sealed class VersionChoice
         Picked = picked;
     }
 
-    /// <summary>The package the versions are of.</summary>
     public FeedPackage Package { get; }
 
     /// <summary>The version to open.</summary>

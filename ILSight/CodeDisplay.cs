@@ -3,8 +3,8 @@ using ZGF.Gui.Immediate;
 
 namespace ILSight;
 
-/// <summary>Changing how the app is drawn: the scale of the whole interface, and the font and size of
-/// code and the aids drawn around it. The settings keep it with the rest of the screen.</summary>
+/// <summary>What the display options work out: the code font of a system font, the size code is drawn at,
+/// a zoom and the offered interface scale nearest a scale. <see cref="ScreenDisplay"/> holds the options.</summary>
 public static class CodeDisplay
 {
     private const float FontSizeStep = 1f;
@@ -73,61 +73,6 @@ public static class CodeDisplay
     {
         return DisplayOptions.UiScales
             .MinBy(s => MathF.Abs(s - scale));
-    }
-
-    public static void SetDisplayOptions(UiState uiState, DisplayOptions options)
-    {
-        uiState.Display = options;
-    }
-
-    /// <summary>Draws code in <paramref name="font"/>, or in the bundled font when it is null.</summary>
-    public static void SetCodeFont(UiState uiState, CodeFont? font)
-    {
-        var chosen = uiState.Display with { Font = font };
-        SetDisplayOptions(uiState, chosen);
-    }
-
-    /// <summary>Writes each type's and member's metadata token in the tree as <paramref name="format"/> says.</summary>
-    public static void SetTreeTokens(UiState uiState, TokenFormat format)
-    {
-        var chosen = uiState.Display with { TreeTokens = format };
-        SetDisplayOptions(uiState, chosen);
-    }
-
-    /// <summary>Draws the whole interface at <paramref name="scale"/>, or the offered scale nearest it.</summary>
-    public static void SetUiScale(UiState uiState, float scale)
-    {
-        var scaled = SnapUiScale(uiState.Display, scale);
-        SetDisplayOptions(uiState, scaled);
-    }
-
-    /// <summary>Makes code <paramref name="steps"/> font sizes larger, or smaller when negative.</summary>
-    public static void ZoomCode(UiState uiState, int steps)
-    {
-        var zoomed = Zoom(uiState.Display, uiState.Theme, steps);
-        SetDisplayOptions(uiState, zoomed);
-    }
-
-    /// <summary>Draws code at the theme's size again.</summary>
-    public static void ResetCodeZoom(UiState uiState)
-    {
-        var reset = uiState.Display with { FontSize = null };
-        SetDisplayOptions(uiState, reset);
-    }
-
-    /// <summary>Stops asking, resetting the display options when <paramref name="confirmed"/>.</summary>
-    public static void FinishDisplayOptionsReset(UiState uiState, bool confirmed)
-    {
-        uiState.DisplayReset.Stop();
-        if (confirmed)
-        {
-            ResetDisplayOptions(uiState);
-        }
-    }
-
-    public static void ResetDisplayOptions(UiState uiState)
-    {
-        SetDisplayOptions(uiState, DisplayOptions.Default);
     }
 
     /// <summary>The name <paramref name="font"/> is offered by: the bundled font's when it is null.</summary>

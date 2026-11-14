@@ -242,7 +242,7 @@ internal static class SearchPanelView
         var results = ui.State.Search.Results;
         var headers = Headers.GetValue(t, static t => [t.SearchColumnName, t.SearchColumnLocation, t.SearchColumnAssembly]);
         var asked = results.AskedOrder;
-        var sort = new TableSort(ColumnOf(asked.Sort), SortIcon(ui.State.Icons, asked));
+        var sort = new TableSort(FindColumn(asked.Sort) ?? -1, SortIcon(ui.State.Icons, asked));
         results.Selection.ShowIn(results.Rows);
         var table = ui.Table(ResultsId, ui.State.SearchColumns, results.Selection.Rows);
         var clicked = table.Header(headers, sort);
@@ -256,13 +256,11 @@ internal static class SearchPanelView
         ResultRows(ui, navigation, setup, table);
     }
 
-    private const int NoColumn = -1;
-
-    private static int ColumnOf(SearchSort sort)
+    private static int? FindColumn(SearchSort sort)
     {
         return sort switch
         {
-            SearchSort.Relevance => NoColumn,
+            SearchSort.Relevance => null,
             SearchSort.Name => 0,
             SearchSort.Location => 1,
             SearchSort.Assembly => 2,
