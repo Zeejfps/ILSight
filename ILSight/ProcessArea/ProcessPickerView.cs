@@ -148,7 +148,7 @@ internal static class ProcessPickerView
     }
 
     // A share of the row whatever its rows hold, so that neither pane changes width as rows scroll into view.
-    private static Ui.Scope Pane(Ui<UiState> ui, float share)
+    private static Ui.Scope Pane(Ui ui, float share)
     {
         var theme = ui.Theme;
         // No gap: a table's header, the line under it and its rows meet.
@@ -158,7 +158,7 @@ internal static class ProcessPickerView
         });
     }
 
-    private static void MoveSelectionFromFilter(Ui<UiState> ui, ProcessBrowser browser, int listId)
+    private static void MoveSelectionFromFilter(Ui ui, ProcessBrowser browser, int listId)
     {
         var page = ui.MeasureListPage(listId, ui.Theme.RowHeight);
         foreach (var stroke in ui.Input.Keys)
@@ -176,7 +176,7 @@ internal static class ProcessPickerView
         }
     }
 
-    private static void Note(Ui<UiState> ui, string text)
+    private static void Note(Ui ui, string text)
     {
         var theme = ui.Theme;
         ui.Text(text, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) }, color: theme.TextMuted, wrap: true);
@@ -211,16 +211,16 @@ internal static class ProcessPickerView
             return NoteInstead(ui, ui.State.Appearance.Strings.ProcessPickerNone);
         }
 
-        return ProcessRows(ui, browser, listId);
+        return ProcessRows(ui, ui.State.Appearance, ui.State.ProcessColumns, browser, listId);
     }
 
-    private static bool ProcessRows(Ui<UiState> ui, ProcessBrowser browser, int listId)
+    private static bool ProcessRows(Ui ui, Appearance appearance, TableColumns processColumns, ProcessBrowser browser, int listId)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var headers = ProcessHeaders.GetValue(t, static t =>
             [t.ProcessPickerColumnName, t.ProcessPickerColumnId, t.ProcessPickerColumnEntry, t.ProcessPickerColumnRuntime]);
-        var table = ui.Table(listId, ui.State.ProcessColumns, browser.ProcessSelection);
+        var table = ui.Table(listId, processColumns, browser.ProcessSelection);
         table.Header(headers);
         using var body = table.Body(browser.Filtered.Count);
         for (var i = body.First; i < body.End; i++)
@@ -264,28 +264,28 @@ internal static class ProcessPickerView
         {
             using var row = rows.Row(i);
             modules[i].Switch((ui, row, theme, t),
-                static (drawn, onDisk) => DrawOnDisk(drawn.ui, drawn.row, drawn.theme, onDisk),
-                static (drawn, inMemory) => DrawInMemory(drawn.ui, drawn.row, drawn.theme, drawn.t, inMemory));
+                static (drawn, onDisk) => DrawOnDisk(drawn.ui, drawn.ui.State.Appearance, drawn.row, drawn.theme, onDisk),
+                static (drawn, inMemory) => DrawInMemory(drawn.ui, drawn.ui.State.Appearance, drawn.row, drawn.theme, drawn.t, inMemory));
         }
         return rows.Activated;
     }
 
-    private static void DrawOnDisk(Ui<UiState> ui, TableRow row, UiTheme theme, RunningModule.OnDisk onDisk)
+    private static void DrawOnDisk(Ui ui, Appearance appearance, TableRow row, UiTheme theme, RunningModule.OnDisk onDisk)
     {
         using (row.Cell(0))
         {
-            NodeIcons.Draw(ui, ui.State.Appearance, NodeIcon.Assembly);
+            NodeIcons.Draw(ui, appearance, NodeIcon.Assembly);
             ui.Text(onDisk.Name, new Box { Width = Sizing.Grow() }, color: row.Selected ? theme.SelectionText : theme.Text,
                 overflow: TextOverflow.Ellipsis);
         }
         row.TextCell(1, Path.GetDirectoryName(onDisk.Path.Text) ?? "", theme.TextMuted, overflow: TextOverflow.EllipsisMiddle);
     }
 
-    private static void DrawInMemory(Ui<UiState> ui, TableRow row, UiTheme theme, Strings t, RunningModule.InMemory inMemory)
+    private static void DrawInMemory(Ui ui, Appearance appearance, TableRow row, UiTheme theme, Strings t, RunningModule.InMemory inMemory)
     {
         using (row.Cell(0))
         {
-            NodeIcons.Draw(ui, ui.State.Appearance, NodeIcon.Assembly);
+            NodeIcons.Draw(ui, appearance, NodeIcon.Assembly);
             ui.Text(inMemory.Name, new Box { Width = Sizing.Grow() }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
         }
         row.TextCell(1, t.ProcessPickerInMemory, theme.TextMuted);

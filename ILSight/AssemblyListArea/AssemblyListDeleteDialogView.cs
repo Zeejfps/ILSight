@@ -11,11 +11,11 @@ internal static class AssemblyListDeleteDialogView
     /// <summary>The question over the lists dialog. Deleting the open list switches to the one taking its place in this
     /// frame, over <paramref name="session"/>, as <see cref="AssemblyLists.DeleteAssemblyList"/> does; only opening its
     /// files is queued.</summary>
-    public static void Render(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
+    public static void Render(Ui ui, Appearance appearance, AssemblyListsDialog listsDialog, IAppCommandWriter commands, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
-        var dialog = ui.State.ListsDialog;
+        var dialog = listsDialog;
         if (dialog.Mode is not ListsDialogMode.ConfirmingDelete deleting)
         {
             return;
@@ -42,7 +42,7 @@ internal static class AssemblyListDeleteDialogView
 
                     if (ui.Button(t.ListsDeleteConfirm, id: "delete-confirm", variant: ButtonVariant.Primary))
                     {
-                        Commands.OpenListLater(ui.State.AppCommands, Delete(dialog, lists, session, view, name));
+                        Commands.OpenListLater(commands, Delete(dialog, lists, session, view, name));
                         ui.RequestUpdate();
                     }
                 }

@@ -92,7 +92,7 @@ internal static class AppFrames
     internal static void FollowNuGetPicker(Ui<UiState> ui, AppState appState)
     {
         var picker = ui.State.NuGetPicker;
-        NuGetPickerView.OpenDownloaded(ui, appState.ListSession.Navigation, picker);
+        NuGetPickerView.OpenDownloaded(ui, ui.State.AppCommands, appState.ListSession.Navigation, picker);
         if (!picker.IsOpen)
         {
             return;

@@ -38,11 +38,11 @@ internal static class ExportsPanelView
         public required bool Narrow { get; init; }
     }
 
-    public static void Render(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished)
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, ExportsPanel exportsPanel, ExportQueue queue, List<ExportReport> finished)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
-        Toolbar(ui, queue, finished);
+        Toolbar(ui, appearance, commands, queue, finished);
         ui.Separator();
         if (IsEmpty(queue, finished))
         {
@@ -51,14 +51,14 @@ internal static class ExportsPanelView
         }
         var listId = ui.GetId(ListKey);
         var rows = new Rows { ListId = listId, MenuId = ui.GetId(MenuId), Narrow = IsNarrow(ui, listId) };
-        HandleKeys(ui, queue, finished, rows);
+        HandleKeys(ui, exportsPanel, commands, queue, finished, rows);
         using (ui.Scroll(rows.ListId, new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground }))
         {
-            Running(ui, queue, rows);
-            Waiting(ui, queue, rows);
-            Finished(ui, queue, finished, rows);
+            Running(ui, appearance, exportsPanel, commands, queue, rows);
+            Waiting(ui, appearance, exportsPanel, commands, queue, rows);
+            Finished(ui, appearance, exportsPanel, commands, queue, finished, rows);
         }
-        Menu(ui, queue, finished, rows);
+        Menu(ui, exportsPanel, appearance, commands, queue, finished, rows);
     }
 
     private static bool IsEmpty(ExportQueue export, List<ExportReport> finished)
@@ -72,7 +72,7 @@ internal static class ExportsPanelView
     }
 
     // Measured on the last frame: the list's width this frame is not known yet.
-    private static bool IsNarrow(Ui<UiState> ui, int listId)
+    private static bool IsNarrow(Ui ui, int listId)
     {
         if (!ui.TryGetRect(listId, out var rect))
         {
@@ -82,9 +82,9 @@ internal static class ExportsPanelView
         return rect.Width < NarrowWidth;
     }
 
-    private static void Toolbar(Ui<UiState> ui, ExportQueue export, List<ExportReport> finished)
+    private static void Toolbar(Ui ui, Appearance appearance, IAppCommandWriter commands, ExportQueue export, List<ExportReport> finished)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         using (ui.PaneToolbar(new Box { Padding = new Spacing(theme.PanelPadding, theme.ToolbarPaddingY) }))
         {
@@ -94,7 +94,7 @@ internal static class ExportsPanelView
             ui.Spacer();
             if (ui.Button(t.ExportsClearFinished, enabled: finished.Count > 0, id: "clear", variant: ButtonVariant.Ghost))
             {
-                Commands.Later(ui.State.AppCommands, static a => Exports.ClearFinishedExports(a));
+                Commands.Later(commands, static a => Exports.ClearFinishedExports(a));
             }
 
             ui.Tooltip(ui.GetId("clear"), t.ExportsClearFinishedTooltip);
@@ -122,7 +122,7 @@ internal static class ExportsPanelView
         return string.Join(" · ", parts);
     }
 
-    private static void HandleKeys(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished, Rows rows)
+    private static void HandleKeys(Ui ui, ExportsPanel exportsPanel, IAppCommandWriter commands, ExportQueue queue, List<ExportReport> finished, Rows rows)
     {
         if (!ui.HasFocus(rows.ListId))
         {
@@ -133,32 +133,32 @@ internal static class ExportsPanelView
         var keys = ui.Input.Keys;
         for (var i = 0; i < keys.Count; i++)
         {
-            HandleKey(ui, queue, finished, rows, runs, i);
+            HandleKey(ui, exportsPanel, commands, queue, finished, rows, runs, i);
         }
     }
 
-    private static void HandleKey(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished, Rows rows, List<ExportRun> runs, int index)
+    private static void HandleKey(Ui ui, ExportsPanel exportsPanel, IAppCommandWriter commands, ExportQueue queue, List<ExportReport> finished, Rows rows, List<ExportRun> runs, int index)
     {
         var stroke = ui.Input.Keys[index];
-        var selected = ui.State.ExportsPanel.Selected;
-        if (selected is not null && ActOnSelected(ui, queue, finished, rows, selected, stroke, index))
+        var selected = exportsPanel.Selected;
+        if (selected is not null && ActOnSelected(ui, exportsPanel, commands, queue, finished, rows, selected, stroke, index))
         {
             return;
         }
 
-        MoveSelection(ui, rows, runs, stroke);
+        MoveSelection(ui, exportsPanel, rows, runs, stroke);
     }
 
-    private static bool ActOnSelected(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished, Rows rows, ExportRun selected, KeyStroke stroke, int index)
+    private static bool ActOnSelected(Ui ui, ExportsPanel exportsPanel, IAppCommandWriter commands, ExportQueue queue, List<ExportReport> finished, Rows rows, ExportRun selected, KeyStroke stroke, int index)
     {
         if (stroke.Key == KeyboardKey.Menu || ui.IsPressedAt(Shortcuts.ContextMenu, index))
         {
-            OpenMenuOnSelection(ui, rows, selected);
+            OpenMenuOnSelection(ui, exportsPanel, rows, selected);
             return true;
         }
         if (stroke.Key == KeyboardKey.Enter)
         {
-            Commands.Later(ui.State.AppCommands, selected, static (a, run) => Exports.ActivateExport(a, run));
+            Commands.Later(commands, selected, static (a, run) => Exports.ActivateExport(a, run));
             return true;
         }
         if (ui.IsPressedAt(Shortcuts.Copy, index))
@@ -168,15 +168,15 @@ internal static class ExportsPanelView
         }
         if (stroke.Key == KeyboardKey.Delete)
         {
-            Commands.Later(ui.State.AppCommands, selected, static (a, run) => Exports.RemoveExport(a, run));
+            Commands.Later(commands, selected, static (a, run) => Exports.RemoveExport(a, run));
             return true;
         }
         return false;
     }
 
-    private static void MoveSelection(Ui<UiState> ui, Rows rows, List<ExportRun> runs, KeyStroke stroke)
+    private static void MoveSelection(Ui ui, ExportsPanel exportsPanel, Rows rows, List<ExportRun> runs, KeyStroke stroke)
     {
-        var selected = ui.State.ExportsPanel.Selected;
+        var selected = exportsPanel.Selected;
         var index = selected is null ? -1 : runs.IndexOf(selected);
         var before = index;
         UiWidgets.ApplyListKey(stroke, ref index, runs.Count, PageRows);
@@ -186,7 +186,7 @@ internal static class ExportsPanelView
         }
 
         var moved = runs[index];
-        ui.State.ExportsPanel.Select(moved);
+        exportsPanel.Select(moved);
         using (ui.Id(RowIdOf(moved)))
         {
             ui.ScrollIntoView(rows.ListId, ui.GetId("row"));
@@ -199,7 +199,7 @@ internal static class ExportsPanelView
         return HashCode.Combine(run.Number, RowSalt);
     }
 
-    private static void CopyFolder(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished, ExportRun run)
+    private static void CopyFolder(Ui ui, ExportQueue queue, List<ExportReport> finished, ExportRun run)
     {
         var folder = Exports.FindExportFolder(queue, finished, run);
         if (folder is null)
@@ -210,7 +210,7 @@ internal static class ExportsPanelView
         ui.ClipboardText = folder;
     }
 
-    private static void OpenMenuOnSelection(Ui<UiState> ui, Rows rows, ExportRun run)
+    private static void OpenMenuOnSelection(Ui ui, ExportsPanel exportsPanel, Rows rows, ExportRun run)
     {
         PointF? at = null;
         using (ui.Id(RowIdOf(run)))
@@ -221,40 +221,40 @@ internal static class ExportsPanelView
                 at = new PointF(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
             }
         }
-        OpenMenu(ui, rows, run, at);
+        OpenMenu(ui, exportsPanel, rows, run, at);
     }
 
-    private static void OpenMenu(Ui<UiState> ui, Rows rows, ExportRun run, PointF? at)
+    private static void OpenMenu(Ui ui, ExportsPanel exportsPanel, Rows rows, ExportRun run, PointF? at)
     {
-        ui.State.ExportsPanel.TargetMenu(run);
+        exportsPanel.TargetMenu(run);
         ui.OpenContextMenu(rows.MenuId, at);
     }
 
-    private static Interaction RowHit(Ui<UiState> ui, Rows rows, ExportRun run)
+    private static Interaction RowHit(Ui ui, ExportsPanel exportsPanel, IAppCommandWriter commands, Rows rows, ExportRun run)
     {
         var hit = ui.Interact(ui.GetId("row"));
         if (hit.Pressed)
         {
-            ui.State.ExportsPanel.Select(run);
+            exportsPanel.Select(run);
             ui.Focus(rows.ListId, takesText: false);
         }
         if (hit.DoubleClicked)
         {
-            Commands.Later(ui.State.AppCommands, run, static (a, r) => Exports.ActivateExport(a, r));
+            Commands.Later(commands, run, static (a, r) => Exports.ActivateExport(a, r));
         }
 
         if (hit.ClickedWith(PointerButton.Right))
         {
-            ui.State.ExportsPanel.Select(run);
-            OpenMenu(ui, rows, run, ui.Input.Pointer);
+            exportsPanel.Select(run);
+            OpenMenu(ui, exportsPanel, rows, run, ui.Input.Pointer);
         }
         return hit;
     }
 
-    private static uint RowBackground(Ui<UiState> ui, Rows rows, ExportRun run, Interaction hit)
+    private static uint RowBackground(Ui ui, ExportsPanel exportsPanel, Rows rows, ExportRun run, Interaction hit)
     {
         var theme = ui.Theme;
-        if (ui.State.ExportsPanel.Selected == run)
+        if (exportsPanel.Selected == run)
         {
             return ui.HasFocus(rows.ListId) ? theme.Selection : theme.SelectionInactive;
         }
@@ -267,7 +267,7 @@ internal static class ExportsPanelView
         return 0u;
     }
 
-    private static void Running(Ui<UiState> ui, ExportQueue export, Rows rows)
+    private static void Running(Ui ui, Appearance appearance, ExportsPanel exportsPanel, IAppCommandWriter commands, ExportQueue export, Rows rows)
     {
         var running = export.Running;
         if (running is null)
@@ -275,13 +275,13 @@ internal static class ExportsPanelView
             return;
         }
 
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var queued = running.Export;
         using (ui.Id(RowIdOf(queued.Run)))
         {
-            var hit = RowHit(ui, rows, queued.Run);
-            using (ui.Column(hit.Id, RowBox(theme, RowBackground(ui, rows, queued.Run, hit))))
+            var hit = RowHit(ui, exportsPanel, commands, rows, queued.Run);
+            using (ui.Column(hit.Id, RowBox(theme, RowBackground(ui, exportsPanel, rows, queued.Run, hit))))
             {
                 var at = running.Progress;
                 using (ui.Row(TopLine(theme)))
@@ -289,7 +289,7 @@ internal static class ExportsPanelView
                     ui.Spinner(theme.PaneBackground);
                     Name(ui, queued.Job.Name);
                     Percent(ui, at.Fraction);
-                    CancelAction(ui, rows, running.IsCancelling);
+                    CancelAction(ui, appearance, commands, rows, running.IsCancelling);
                 }
                 var preparing = at.Fraction is null;
                 var detail = ui.Memo("detail", (queued.Job.Kind, at.Name, at.Part, at.Parts, preparing, running.IsCancelling, t),
@@ -303,22 +303,22 @@ internal static class ExportsPanelView
         ui.Separator();
     }
 
-    private static void CancelAction(Ui<UiState> ui, Rows rows, bool cancelling)
+    private static void CancelAction(Ui ui, Appearance appearance, IAppCommandWriter commands, Rows rows, bool cancelling)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var enabled = !cancelling;
         if (rows.Narrow)
         {
-            if (ui.IconButton("cancel", ui.State.Appearance.Icons.ExportCancel, t.ExportsCancelTooltip, enabled))
+            if (ui.IconButton("cancel", appearance.Icons.ExportCancel, t.ExportsCancelTooltip, enabled))
             {
-                Commands.Later(ui.State.AppCommands, static a => a.Export.CancelRunning());
+                Commands.Later(commands, static a => a.Export.CancelRunning());
             }
 
             return;
         }
         if (ui.Button(t.ExportsCancel, enabled: enabled, id: "cancel", variant: ButtonVariant.Ghost))
         {
-            Commands.Later(ui.State.AppCommands, static a => a.Export.CancelRunning());
+            Commands.Later(commands, static a => a.Export.CancelRunning());
         }
 
         ui.Tooltip(ui.GetId("cancel"), t.ExportsCancelTooltip);
@@ -345,7 +345,7 @@ internal static class ExportsPanelView
         return kindText;
     }
 
-    private static void Percent(Ui<UiState> ui, float? fraction)
+    private static void Percent(Ui ui, float? fraction)
     {
         var theme = ui.Theme;
         var percent = ui.Memo("percent", fraction, static f => FormatPercent(f));
@@ -353,7 +353,7 @@ internal static class ExportsPanelView
         ui.Text(percent, new Box { Width = Sizing.Fixed(PercentWidth) }, color: theme.TextMuted, size: theme.FontSizeSmall, align: Align.End);
     }
 
-    private static void Bar(Ui<UiState> ui, float? fraction)
+    private static void Bar(Ui ui, float? fraction)
     {
         var theme = ui.Theme;
         using (ui.Row(new Box { Width = Sizing.Grow(), Padding = new Spacing(NameIndent(theme), theme.GapTight, 0f, 0f) }))
@@ -380,9 +380,9 @@ internal static class ExportsPanelView
         return $"{percent}%";
     }
 
-    private static void Waiting(Ui<UiState> ui, ExportQueue export, Rows rows)
+    private static void Waiting(Ui ui, Appearance appearance, ExportsPanel exportsPanel, IAppCommandWriter commands, ExportQueue export, Rows rows)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var count = export.WaitingCount;
         if (count > 1)
         {
@@ -393,7 +393,7 @@ internal static class ExportsPanelView
         ExportRun? withdrawn = null;
         foreach (var waiting in export.Waiting)
         {
-            if (WaitingRow(ui, rows, waiting, ahead))
+            if (WaitingRow(ui, appearance, exportsPanel, commands, rows, waiting, ahead))
             {
                 withdrawn = waiting.Run;
             }
@@ -403,25 +403,25 @@ internal static class ExportsPanelView
         // Taken out of the queue once it is no longer being walked.
         if (withdrawn is not null)
         {
-            Commands.Later(ui.State.AppCommands, withdrawn, static (a, run) => a.Export.Withdraw(run));
+            Commands.Later(commands, withdrawn, static (a, run) => a.Export.Withdraw(run));
         }
     }
 
-    private static bool WaitingRow(Ui<UiState> ui, Rows rows, QueuedExport waiting, int ahead)
+    private static bool WaitingRow(Ui ui, Appearance appearance, ExportsPanel exportsPanel, IAppCommandWriter commands, Rows rows, QueuedExport waiting, int ahead)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         bool withdrawn;
         using (ui.Id(RowIdOf(waiting.Run)))
         {
-            var hit = RowHit(ui, rows, waiting.Run);
-            using (ui.Column(hit.Id, RowBox(theme, RowBackground(ui, rows, waiting.Run, hit))))
+            var hit = RowHit(ui, exportsPanel, commands, rows, waiting.Run);
+            using (ui.Column(hit.Id, RowBox(theme, RowBackground(ui, exportsPanel, rows, waiting.Run, hit))))
             {
                 using (ui.Row(TopLine(theme)))
                 {
-                    Glyph(ui, ui.State.Appearance.Icons.ExportWaiting, theme.TextMuted);
+                    Glyph(ui, appearance.Icons.ExportWaiting, theme.TextMuted);
                     Name(ui, waiting.Job.Name);
-                    withdrawn = WithdrawAction(ui, rows);
+                    withdrawn = WithdrawAction(ui, appearance, rows);
                 }
                 var detail = ui.Memo("detail", (waiting.Job.Kind, ahead, t), static a => DescribeWaiting(a.t, a.Kind, a.ahead));
                 Detail(ui, detail);
@@ -433,12 +433,12 @@ internal static class ExportsPanelView
         return withdrawn;
     }
 
-    private static bool WithdrawAction(Ui<UiState> ui, Rows rows)
+    private static bool WithdrawAction(Ui ui, Appearance appearance, Rows rows)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         if (rows.Narrow)
         {
-            return ui.IconButton("withdraw", ui.State.Appearance.Icons.ExportWithdraw, t.ExportsWithdraw);
+            return ui.IconButton("withdraw", appearance.Icons.ExportWithdraw, t.ExportsWithdraw);
         }
 
         return ui.Button(t.ExportsWithdraw, id: "withdraw", variant: ButtonVariant.Ghost);
@@ -455,9 +455,9 @@ internal static class ExportsPanelView
         return $"{kindText} · {t.ExportsAhead(ahead)}";
     }
 
-    private static void Finished(Ui<UiState> ui, ExportQueue export, List<ExportReport> reports, Rows rows)
+    private static void Finished(Ui ui, Appearance appearance, ExportsPanel exportsPanel, IAppCommandWriter commands, ExportQueue export, List<ExportReport> reports, Rows rows)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         if (reports.Count == 0)
         {
             return;
@@ -471,14 +471,14 @@ internal static class ExportsPanelView
         ExportReport? removed = null;
         for (var i = reports.Count - 1; i >= 0; i--)
         {
-            if (FinishedRow(ui, rows, reports[i]))
+            if (FinishedRow(ui, appearance, exportsPanel, commands, rows, reports[i]))
             {
                 removed = reports[i];
             }
         }
         if (removed is not null)
         {
-            Commands.Later(ui.State.AppCommands, removed, static (a, report) => Exports.RemoveFinishedExport(a, report));
+            Commands.Later(commands, removed, static (a, report) => Exports.RemoveFinishedExport(a, report));
         }
     }
 
@@ -492,22 +492,22 @@ internal static class ExportsPanelView
         return export.WaitingCount > 0;
     }
 
-    private static bool FinishedRow(Ui<UiState> ui, Rows rows, ExportReport report)
+    private static bool FinishedRow(Ui ui, Appearance appearance, ExportsPanel exportsPanel, IAppCommandWriter commands, Rows rows, ExportReport report)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         bool removed;
         using (ui.Id(RowIdOf(report.Run)))
         {
-            var hit = RowHit(ui, rows, report.Run);
-            using (ui.Column(hit.Id, RowBox(theme, RowBackground(ui, rows, report.Run, hit))))
+            var hit = RowHit(ui, exportsPanel, commands, rows, report.Run);
+            using (ui.Column(hit.Id, RowBox(theme, RowBackground(ui, exportsPanel, rows, report.Run, hit))))
             {
                 using (ui.Row(TopLine(theme)))
                 {
-                    Glyph(ui, OutcomeIcon(ui.State.Appearance.Icons, report), OutcomeColor(theme, report));
+                    Glyph(ui, OutcomeIcon(appearance.Icons, report), OutcomeColor(theme, report));
                     Name(ui, report.Job.Name);
-                    FinishedActions(ui, rows, report);
-                    removed = ui.IconButton("remove", ui.State.Appearance.Icons.ExportRemove, t.ExportsRemove);
+                    FinishedActions(ui, appearance, commands, rows, report);
+                    removed = ui.IconButton("remove", appearance.Icons.ExportRemove, t.ExportsRemove);
                 }
                 var detail = ui.Memo("detail", (report, t), static a => DescribeFinished(a.t, a.report));
                 Detail(ui, detail, OutcomeTextColor(theme, report));
@@ -522,7 +522,7 @@ internal static class ExportsPanelView
 
     // Has tests find a finished export's row by its number, from 1 for the first export of the session, and its buttons
     // under it, as #1/open-folder, since every row has the same buttons.
-    private static void RecordFinishedPaths(Ui<UiState> ui, int rowId, ExportRun run)
+    private static void RecordFinishedPaths(Ui ui, int rowId, ExportRun run)
     {
         if (!ui.WantsSemantics)
         {
@@ -545,46 +545,46 @@ internal static class ExportsPanelView
         return $"{kindText} · {outcome}";
     }
 
-    private static void FinishedActions(Ui<UiState> ui, Rows rows, ExportReport report)
+    private static void FinishedActions(Ui ui, Appearance appearance, IAppCommandWriter commands, Rows rows, ExportReport report)
     {
         if (OpensFolderFirst(report))
         {
-            OpenFolderAction(ui, report, labelled: !rows.Narrow);
-            ShowReportAction(ui, report, labelled: false);
+            OpenFolderAction(ui, appearance, report, labelled: !rows.Narrow);
+            ShowReportAction(ui, appearance, commands, report, labelled: false);
             return;
         }
-        ShowReportAction(ui, report, labelled: !rows.Narrow);
+        ShowReportAction(ui, appearance, commands, report, labelled: !rows.Narrow);
         if (report.FolderExists)
         {
-            OpenFolderAction(ui, report, labelled: false);
+            OpenFolderAction(ui, appearance, report, labelled: false);
         }
     }
 
-    private static void OpenFolderAction(Ui<UiState> ui, ExportReport report, bool labelled)
+    private static void OpenFolderAction(Ui ui, Appearance appearance, ExportReport report, bool labelled)
     {
-        var t = ui.State.Appearance.Strings;
-        if (labelled && ui.Button(t.ExportOpenFolder, id: "open-folder", icon: new UiIcon(ui.State.Appearance.Icons.ExportOpenFolder)))
+        var t = appearance.Strings;
+        if (labelled && ui.Button(t.ExportOpenFolder, id: "open-folder", icon: new UiIcon(appearance.Icons.ExportOpenFolder)))
         {
             ui.OpenFolder(report.Job.Folder);
         }
 
-        if (!labelled && ui.IconButton("open-folder", ui.State.Appearance.Icons.ExportOpenFolder, t.ExportOpenFolder))
+        if (!labelled && ui.IconButton("open-folder", appearance.Icons.ExportOpenFolder, t.ExportOpenFolder))
         {
             ui.OpenFolder(report.Job.Folder);
         }
     }
 
-    private static void ShowReportAction(Ui<UiState> ui, ExportReport report, bool labelled)
+    private static void ShowReportAction(Ui ui, Appearance appearance, IAppCommandWriter commands, ExportReport report, bool labelled)
     {
-        var t = ui.State.Appearance.Strings;
-        if (labelled && ui.Button(t.ExportShowReport, id: "show-report", icon: new UiIcon(ui.State.Appearance.Icons.ExportShowReport)))
+        var t = appearance.Strings;
+        if (labelled && ui.Button(t.ExportShowReport, id: "show-report", icon: new UiIcon(appearance.Icons.ExportShowReport)))
         {
-            Commands.Later(ui.State.AppCommands, report, static (a, r) => a.ListSession.Navigation.ShowReport(r));
+            Commands.Later(commands, report, static (a, r) => a.ListSession.Navigation.ShowReport(r));
         }
 
-        if (!labelled && ui.IconButton("show-report", ui.State.Appearance.Icons.ExportShowReport, t.ExportShowReport))
+        if (!labelled && ui.IconButton("show-report", appearance.Icons.ExportShowReport, t.ExportShowReport))
         {
-            Commands.Later(ui.State.AppCommands, report, static (a, r) => a.ListSession.Navigation.ShowReport(r));
+            Commands.Later(commands, report, static (a, r) => a.ListSession.Navigation.ShowReport(r));
         }
     }
 
@@ -644,7 +644,7 @@ internal static class ExportsPanelView
         return clean;
     }
 
-    private static void Menu(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished, Rows rows)
+    private static void Menu(Ui ui, ExportsPanel exportsPanel, Appearance appearance, IAppCommandWriter commands, ExportQueue queue, List<ExportReport> finished, Rows rows)
     {
         using var menu = ui.ContextMenu(rows.MenuId);
         if (!menu.IsOpen)
@@ -652,7 +652,7 @@ internal static class ExportsPanelView
             return;
         }
 
-        var run = ui.State.ExportsPanel.MenuTarget;
+        var run = exportsPanel.MenuTarget;
         if (run is null)
         {
             return;
@@ -661,23 +661,23 @@ internal static class ExportsPanelView
         var report = Exports.FindFinishedExport(finished, run);
         if (report is not null)
         {
-            FinishedMenu(ui, report);
+            FinishedMenu(ui, appearance, commands, report);
         }
         else
         {
-            QueuedMenu(ui, queue, finished, run);
+            QueuedMenu(ui, appearance, commands, queue, finished, run);
         }
     }
 
-    private static void FinishedMenu(Ui<UiState> ui, ExportReport report)
+    private static void FinishedMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, ExportReport report)
     {
-        var t = ui.State.Appearance.Strings;
-        if (ui.MenuItem(t.ExportShowReport, Shortcuts.Enter, id: "show-report", icon: new UiIcon(ui.State.Appearance.Icons.ExportShowReport)))
+        var t = appearance.Strings;
+        if (ui.MenuItem(t.ExportShowReport, Shortcuts.Enter, id: "show-report", icon: new UiIcon(appearance.Icons.ExportShowReport)))
         {
-            Commands.Later(ui.State.AppCommands, report, static (a, r) => a.ListSession.Navigation.ShowReport(r));
+            Commands.Later(commands, report, static (a, r) => a.ListSession.Navigation.ShowReport(r));
         }
 
-        if (ui.MenuItem(t.ExportOpenFolder, enabled: report.FolderExists, id: "open-folder", icon: new UiIcon(ui.State.Appearance.Icons.ExportOpenFolder)))
+        if (ui.MenuItem(t.ExportOpenFolder, enabled: report.FolderExists, id: "open-folder", icon: new UiIcon(appearance.Icons.ExportOpenFolder)))
         {
             ui.OpenFolder(report.Job.Folder);
         }
@@ -690,13 +690,13 @@ internal static class ExportsPanelView
         ui.MenuSeparator();
         if (ui.MenuItem(t.ExportsRemove, Shortcuts.Delete, id: "remove"))
         {
-            Commands.Later(ui.State.AppCommands, report, static (a, r) => Exports.RemoveFinishedExport(a, r));
+            Commands.Later(commands, report, static (a, r) => Exports.RemoveFinishedExport(a, r));
         }
     }
 
-    private static void QueuedMenu(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished, ExportRun run)
+    private static void QueuedMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, ExportQueue queue, List<ExportReport> finished, ExportRun run)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var folder = Exports.FindExportFolder(queue, finished, run);
         if (folder is null)
         {
@@ -714,18 +714,18 @@ internal static class ExportsPanelView
         {
             if (ui.MenuItem(t.ExportsCancel, enabled: !running.IsCancelling, id: "cancel"))
             {
-                Commands.Later(ui.State.AppCommands, static a => a.Export.CancelRunning());
+                Commands.Later(commands, static a => a.Export.CancelRunning());
             }
 
             return;
         }
         if (ui.MenuItem(t.ExportsWithdraw, Shortcuts.Delete, id: "withdraw"))
         {
-            Commands.Later(ui.State.AppCommands, run, static (a, r) => a.Export.Withdraw(r));
+            Commands.Later(commands, run, static (a, r) => a.Export.Withdraw(r));
         }
     }
 
-    private static void Section(Ui<UiState> ui, int id, string text)
+    private static void Section(Ui ui, int id, string text)
     {
         var theme = ui.Theme;
         using (ui.Id(id))
@@ -737,26 +737,26 @@ internal static class ExportsPanelView
         ui.Separator();
     }
 
-    private static void Glyph(Ui<UiState> ui, IconGlyph glyph, uint color)
+    private static void Glyph(Ui ui, IconGlyph glyph, uint color)
     {
         var theme = ui.Theme;
         ui.Glyph(glyph, color, theme.IconSize, new Box { Width = Sizing.Fixed(theme.IconSize) });
     }
 
-    private static void Name(Ui<UiState> ui, string name)
+    private static void Name(Ui ui, string name)
     {
         var theme = ui.Theme;
         ui.Text(name, new Box { Width = Sizing.Grow() }, color: theme.Text, overflow: TextOverflow.Ellipsis);
     }
 
-    private static void Detail(Ui<UiState> ui, string text, uint? color = null)
+    private static void Detail(Ui ui, string text, uint? color = null)
     {
         var theme = ui.Theme;
         ui.Text(text, new Box { Width = Sizing.Grow(), Padding = Indent(theme) }, color: color ?? theme.TextMuted, size: theme.FontSizeSmall,
             overflow: TextOverflow.Ellipsis);
     }
 
-    private static void Folder(Ui<UiState> ui, string folder)
+    private static void Folder(Ui ui, string folder)
     {
         var theme = ui.Theme;
         // Cut in the middle so its last folder stays; the row's tooltip holds it whole.

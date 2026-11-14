@@ -26,13 +26,13 @@ internal static class BookmarksPanelView
 
     private static readonly ConditionalWeakTable<Strings, string[]> HeaderTexts = new();
 
-    public static void Render(Ui<UiState> ui, BookmarkList bookmarks, AssemblyList assemblies)
+    public static void Render(Ui ui, Appearance appearance, BookmarksPanel bookmarksPanel, IAppCommandWriter commands, TableColumns bookmarkColumns, BookmarkList bookmarks, AssemblyList assemblies)
     {
-        var t = ui.State.Appearance.Strings;
-        var panel = ui.State.BookmarksPanel;
+        var t = appearance.Strings;
+        var panel = bookmarksPanel;
         panel.Renaming.FollowList(bookmarks.Items);
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
-        Toolbar(ui, bookmarks);
+        Toolbar(ui, appearance, bookmarksPanel, commands, bookmarks);
         ui.Separator();
 
         if (bookmarks.Items.Count == 0)
@@ -42,20 +42,20 @@ internal static class BookmarksPanelView
         }
 
         panel.Selection.ShowIn(bookmarks.Items);
-        var table = ui.Table(ListId, ui.State.BookmarkColumns, panel.Cells);
+        var table = ui.Table(ListId, bookmarkColumns, panel.Cells);
         table.Header(HeaderTexts.GetValue(t, static t => ListHeaders(t)));
-        var removed = List(ui, bookmarks, assemblies, table);
-        Menu(ui);
+        var removed = List(ui, bookmarksPanel, appearance, commands, bookmarks, assemblies, table);
+        Menu(ui, appearance, bookmarksPanel, commands);
         if (removed is not null)
         {
-            Commands.Later(ui.State.AppCommands, (panel, removed), static (a, s) => Remove(s.panel, a.Bookmarks, s.removed));
+            Commands.Later(commands, (panel, removed), static (a, s) => Remove(s.panel, a.Bookmarks, s.removed));
         }
     }
 
-    private static Bookmark? List(Ui<UiState> ui, BookmarkList bookmarks, AssemblyList assemblies, TableFrame table)
+    private static Bookmark? List(Ui ui, BookmarksPanel bookmarksPanel, Appearance appearance, IAppCommandWriter commands, BookmarkList bookmarks, AssemblyList assemblies, TableFrame table)
     {
-        var panel = ui.State.BookmarksPanel;
-        var palette = ui.State.Appearance.CodeViewPalette;
+        var panel = bookmarksPanel;
+        var palette = appearance.CodeViewPalette;
         var renaming = panel.Renaming.Bookmark is not null;
         Bookmark? removed = null;
         var selected = panel.Selection.Item;
@@ -68,22 +68,22 @@ internal static class BookmarksPanelView
         panel.Selection.TakeFrom(bookmarks.Items);
         if (body.Focused && !renaming)
         {
-            removed = HandleKeys(ui, panel);
+            removed = HandleKeys(ui, commands, panel);
         }
 
         for (var i = body.First; i < body.End; i++)
         {
-            Row(ui, assemblies, body, bookmarks.Items[i], i, palette);
+            Row(ui, bookmarksPanel, appearance, commands, assemblies, body, bookmarks.Items[i], i, palette);
         }
 
         panel.Selection.TakeFrom(bookmarks.Items);
-        Answer(ui, body);
+        Answer(ui, bookmarksPanel, commands, body);
         return removed;
     }
 
-    private static void Answer(Ui<UiState> ui, TableBody body)
+    private static void Answer(Ui ui, BookmarksPanel bookmarksPanel, IAppCommandWriter commands, TableBody body)
     {
-        var panel = ui.State.BookmarksPanel;
+        var panel = bookmarksPanel;
         var selected = panel.Selection.Item;
         if (selected is null)
         {
@@ -92,7 +92,7 @@ internal static class BookmarksPanelView
 
         if (body.Activated && panel.Renaming.Bookmark is null)
         {
-            Commands.GoToBookmarkLater(ui.State.AppCommands, selected);
+            Commands.GoToBookmarkLater(commands, selected);
         }
 
         if (body.EditRequested && panel.Cells.Column == NameColumn)
@@ -124,54 +124,54 @@ internal static class BookmarksPanelView
     ];
     }
 
-    private static void Toolbar(Ui<UiState> ui, BookmarkList bookmarks)
+    private static void Toolbar(Ui ui, Appearance appearance, BookmarksPanel bookmarksPanel, IAppCommandWriter commands, BookmarkList bookmarks)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
-        var panel = ui.State.BookmarksPanel;
+        var panel = bookmarksPanel;
         var any = bookmarks.HasEnabled();
         var selected = panel.Selection.Item;
         using (ui.PaneToolbar())
         {
-            if (ui.IconButton("previous", ui.State.Appearance.Icons.BookmarksPrevious, t.BookmarksPrevious, any))
+            if (ui.IconButton("previous", appearance.Icons.BookmarksPrevious, t.BookmarksPrevious, any))
             {
-                Commands.Later(ui.State.AppCommands, panel, static (a, p) => Step(p, a, -1));
+                Commands.Later(commands, panel, static (a, p) => Step(p, a, -1));
             }
 
-            if (ui.IconButton("next", ui.State.Appearance.Icons.BookmarksNext, t.BookmarksNext, any))
+            if (ui.IconButton("next", appearance.Icons.BookmarksNext, t.BookmarksNext, any))
             {
-                Commands.Later(ui.State.AppCommands, panel, static (a, p) => Step(p, a, 1));
-            }
-
-            ui.Separator(theme.IconSize);
-            if (ui.IconButton("delete", ui.State.Appearance.Icons.BookmarksDelete, t.BookmarksDelete, selected is not null) && selected is not null)
-            {
-                Commands.Later(ui.State.AppCommands, (panel, selected), static (a, s) => Remove(s.panel, a.Bookmarks, s.selected));
+                Commands.Later(commands, panel, static (a, p) => Step(p, a, 1));
             }
 
             ui.Separator(theme.IconSize);
-            if (ui.IconButton("export", ui.State.Appearance.Icons.BookmarksExport, t.BookmarksExport, bookmarks.Items.Count > 0))
+            if (ui.IconButton("delete", appearance.Icons.BookmarksDelete, t.BookmarksDelete, selected is not null) && selected is not null)
             {
-                PickExportFile(ui);
+                Commands.Later(commands, (panel, selected), static (a, s) => Remove(s.panel, a.Bookmarks, s.selected));
             }
 
-            if (ui.IconButton("import", ui.State.Appearance.Icons.BookmarksImport, t.BookmarksImport))
+            ui.Separator(theme.IconSize);
+            if (ui.IconButton("export", appearance.Icons.BookmarksExport, t.BookmarksExport, bookmarks.Items.Count > 0))
             {
-                PickImportFile(ui);
+                PickExportFile(ui, appearance, commands);
+            }
+
+            if (ui.IconButton("import", appearance.Icons.BookmarksImport, t.BookmarksImport))
+            {
+                PickImportFile(ui, appearance, commands);
             }
         }
     }
 
-    private static void PickExportFile(Ui<UiState> ui)
+    private static void PickExportFile(Ui ui, Appearance appearance, IAppCommandWriter commands)
     {
-        var t = ui.State.Appearance.Strings;
-        ui.PickSaveFile(t.BookmarksExportTitle, null, SuggestedExportName, Filters(t), path => Commands.Later(ui.State.AppCommands, path, static (a, p) => a.ExportBookmarksHandler.Handle(a.Bookmarks, p)));
+        var t = appearance.Strings;
+        ui.PickSaveFile(t.BookmarksExportTitle, null, SuggestedExportName, Filters(t), path => Commands.Later(commands, path, static (a, p) => a.ExportBookmarksHandler.Handle(a.Bookmarks, p)));
     }
 
-    private static void PickImportFile(Ui<UiState> ui)
+    private static void PickImportFile(Ui ui, Appearance appearance, IAppCommandWriter commands)
     {
-        var t = ui.State.Appearance.Strings;
-        ui.PickFile(t.BookmarksImportTitle, null, Filters(t), path => Commands.Start(ui.State.AppCommands, nameof(BookmarkImporting.ImportAsync), path, static (a, p, ct) => a.BookmarkImporting.ImportAsync(a.Bookmarks, a.Imports, p, ct)));
+        var t = appearance.Strings;
+        ui.PickFile(t.BookmarksImportTitle, null, Filters(t), path => Commands.Start(commands, nameof(BookmarkImporting.ImportAsync), path, static (a, p, ct) => a.BookmarkImporting.ImportAsync(a.Bookmarks, a.Imports, p, ct)));
     }
 
     private static string Shown(Bookmark bookmark, int column)
@@ -185,24 +185,24 @@ internal static class BookmarksPanelView
         };
     }
 
-    private static void Row(Ui<UiState> ui, AssemblyList assemblies, TableBody body, Bookmark bookmark, int index, CodeViewPalette palette)
+    private static void Row(Ui ui, BookmarksPanel bookmarksPanel, Appearance appearance, IAppCommandWriter commands, AssemblyList assemblies, TableBody body, Bookmark bookmark, int index, CodeViewPalette palette)
     {
-        var panel = ui.State.BookmarksPanel;
+        var panel = bookmarksPanel;
         var listed = assemblies.IsListed(bookmark.Place.FilePath);
         var row = body.Row(index, RuntimeHelpers.GetHashCode(bookmark));
         int locationId;
         int moduleId;
         using (row)
         {
-            MarkCell(ui, row, bookmark, palette);
-            NameCell(ui, panel, row, bookmark, listed);
-            LocationCell(ui, row, bookmark, listed);
+            MarkCell(ui, appearance, commands, row, bookmark, palette);
+            NameCell(ui, commands, panel, row, bookmark, listed);
+            LocationCell(ui, appearance, commands, row, bookmark, listed);
             TextCell(ui, row, bookmark, listed, ModuleColumn);
             locationId = row.CellAt(LocationColumn).Id;
             moduleId = row.CellAt(ModuleColumn).Id;
         }
-        LocationTooltip(ui, locationId, bookmark, listed);
-        ModuleTooltip(ui, moduleId, bookmark, listed);
+        LocationTooltip(ui, appearance, locationId, bookmark, listed);
+        ModuleTooltip(ui, appearance, moduleId, bookmark, listed);
     }
 
     private static bool IsDimmed(Bookmark bookmark, bool listed)
@@ -210,9 +210,9 @@ internal static class BookmarksPanelView
         return !bookmark.Enabled || !listed;
     }
 
-    private static void MarkCell(Ui<UiState> ui, TableRow row, Bookmark bookmark, CodeViewPalette palette)
+    private static void MarkCell(Ui ui, Appearance appearance, IAppCommandWriter commands, TableRow row, Bookmark bookmark, CodeViewPalette palette)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var mark = row.CellAt(MarkColumn);
         if (mark.Hovered)
         {
@@ -221,19 +221,19 @@ internal static class BookmarksPanelView
 
         if (mark.Clicked)
         {
-            Commands.Later(ui.State.AppCommands, bookmark, static (a, b) => ToggleEnabled(a, b));
+            Commands.Later(commands, bookmark, static (a, b) => ToggleEnabled(a, b));
         }
 
         var color = bookmark.Enabled ? palette.Bookmark : palette.GutterText;
         using (row.Cell(MarkColumn))
         {
-            ui.Icon(new UiIcon(ui.State.Appearance.Icons.BookmarksMark, color));
+            ui.Icon(new UiIcon(appearance.Icons.BookmarksMark, color));
         }
 
         ui.Tooltip(mark.Id, bookmark.Enabled ? t.BookmarksDisable : t.BookmarksEnable);
     }
 
-    private static void NameCell(Ui<UiState> ui, BookmarksPanel panel, TableRow row, Bookmark bookmark, bool listed)
+    private static void NameCell(Ui ui, IAppCommandWriter commands, BookmarksPanel panel, TableRow row, Bookmark bookmark, bool listed)
     {
         if (panel.Renaming.Bookmark != bookmark)
         {
@@ -242,27 +242,27 @@ internal static class BookmarksPanelView
         }
         using (row.Cell(NameColumn))
         {
-            RenameField(ui, panel);
+            RenameField(ui, commands, panel);
         }
     }
 
-    private static void LocationCell(Ui<UiState> ui, TableRow row, Bookmark bookmark, bool listed)
+    private static void LocationCell(Ui ui, Appearance appearance, IAppCommandWriter commands, TableRow row, Bookmark bookmark, bool listed)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         uint? color = null;
         if (IsDimmed(bookmark, listed))
         {
             color = ui.Theme.TextMuted;
         }
 
-        var followed = row.TextCell(LocationColumn, bookmark.Location, color, link: new UiIcon(ui.State.Appearance.Icons.LinkBookmark), linkTooltip: t.BookmarksGoTo);
+        var followed = row.TextCell(LocationColumn, bookmark.Location, color, link: new UiIcon(appearance.Icons.LinkBookmark), linkTooltip: t.BookmarksGoTo);
         if (followed)
         {
-            Commands.GoToBookmarkLater(ui.State.AppCommands, bookmark);
+            Commands.GoToBookmarkLater(commands, bookmark);
         }
     }
 
-    private static void TextCell(Ui<UiState> ui, TableRow row, Bookmark bookmark, bool listed, int column)
+    private static void TextCell(Ui ui, TableRow row, Bookmark bookmark, bool listed, int column)
     {
         var theme = ui.Theme;
         var module = column == ModuleColumn;
@@ -276,9 +276,9 @@ internal static class BookmarksPanelView
         row.TextCell(column, Shown(bookmark, column), color, overflow: overflow);
     }
 
-    private static void LocationTooltip(Ui<UiState> ui, int cellId, Bookmark bookmark, bool listed)
+    private static void LocationTooltip(Ui ui, Appearance appearance, int cellId, Bookmark bookmark, bool listed)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         using var tooltip = ui.TooltipContent(cellId);
         if (!tooltip.IsOpen)
@@ -291,14 +291,14 @@ internal static class BookmarksPanelView
             ui.Text(bookmark.Place.ToString(), color: theme.Text, size: theme.FontSizeSmall, wrap: true);
             if (!listed)
             {
-                NotListedText(ui, bookmark);
+                NotListedText(ui, appearance, bookmark);
             }
 
             ui.Text(t.BookmarksGoToHint, color: theme.TextMuted, size: theme.FontSizeSmall, wrap: true);
         }
     }
 
-    private static void ModuleTooltip(Ui<UiState> ui, int cellId, Bookmark bookmark, bool listed)
+    private static void ModuleTooltip(Ui ui, Appearance appearance, int cellId, Bookmark bookmark, bool listed)
     {
         if (listed)
         {
@@ -311,17 +311,17 @@ internal static class BookmarksPanelView
             return;
         }
 
-        NotListedText(ui, bookmark);
+        NotListedText(ui, appearance, bookmark);
     }
 
-    private static void NotListedText(Ui<UiState> ui, Bookmark bookmark)
+    private static void NotListedText(Ui ui, Appearance appearance, Bookmark bookmark)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         ui.Text(t.BookmarksNotListed(bookmark.Module), color: theme.Text, size: theme.FontSizeSmall, wrap: true);
     }
 
-    private static void RenameField(Ui<UiState> ui, BookmarksPanel panel)
+    private static void RenameField(Ui ui, IAppCommandWriter commands, BookmarksPanel panel)
     {
         var begin = panel.Renaming.TryTakeFocus();
         var result = ui.InlineEdit("name", ref panel.RenameText, begin, Sizing.Grow());
@@ -333,7 +333,7 @@ internal static class BookmarksPanelView
         var stillHere = ui.HasFocus(ui.GetId("name"));
         if (result == InlineEditResult.Committed)
         {
-            CommitRename(ui.State.AppCommands, panel);
+            CommitRename(commands, panel);
         }
         else
         {
@@ -347,16 +347,16 @@ internal static class BookmarksPanelView
         }
     }
 
-    private static void Menu(Ui<UiState> ui)
+    private static void Menu(Ui ui, Appearance appearance, BookmarksPanel bookmarksPanel, IAppCommandWriter commands)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
         {
             return;
         }
 
-        var panel = ui.State.BookmarksPanel;
+        var panel = bookmarksPanel;
         var bookmark = panel.Selection.Item;
         if (bookmark is null)
         {
@@ -365,7 +365,7 @@ internal static class BookmarksPanelView
 
         if (ui.MenuItem(t.BookmarksGoTo, Shortcuts.Enter, id: "go-to"))
         {
-            Commands.GoToBookmarkLater(ui.State.AppCommands, bookmark);
+            Commands.GoToBookmarkLater(commands, bookmark);
         }
 
         if (ui.MenuItem(t.CodeCopy, Shortcuts.Copy, enabled: panel.Cells.HasCell, id: "copy"))
@@ -381,12 +381,12 @@ internal static class BookmarksPanelView
 
         if (ui.MenuItem(bookmark.Enabled ? t.BookmarksDisable : t.BookmarksEnable, Shortcuts.Space, id: "enable"))
         {
-            Commands.Later(ui.State.AppCommands, bookmark, static (a, b) => ToggleEnabled(a, b));
+            Commands.Later(commands, bookmark, static (a, b) => ToggleEnabled(a, b));
         }
 
         if (ui.MenuItem(t.BookmarksDelete, Shortcuts.Delete, id: "delete"))
         {
-            Commands.Later(ui.State.AppCommands, (panel, bookmark), static (a, s) => Remove(s.panel, a.Bookmarks, s.bookmark));
+            Commands.Later(commands, (panel, bookmark), static (a, s) => Remove(s.panel, a.Bookmarks, s.bookmark));
         }
     }
 
@@ -396,7 +396,7 @@ internal static class BookmarksPanelView
         return cells.Copied(shown, shown);
     }
 
-    private static Bookmark? HandleKeys(Ui<UiState> ui, BookmarksPanel panel)
+    private static Bookmark? HandleKeys(Ui ui, IAppCommandWriter commands, BookmarksPanel panel)
     {
         Bookmark? removed = null;
         foreach (var stroke in ui.Input.Keys)
@@ -415,7 +415,7 @@ internal static class BookmarksPanelView
             switch (stroke.Key)
             {
                 case KeyboardKey.Space:
-                    Commands.Later(ui.State.AppCommands, bookmark, static (a, b) => ToggleEnabled(a, b));
+                    Commands.Later(commands, bookmark, static (a, b) => ToggleEnabled(a, b));
                     break;
                 case KeyboardKey.Delete:
                     removed = bookmark;

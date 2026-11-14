@@ -16,10 +16,10 @@ internal static class ErrorDialogView
         errors.Entries.Add(new AppError { Problem = problem, Time = time });
     }
 
-    public static void Render(Ui<UiState> ui, ErrorLog errors)
+    public static void Render(Ui ui, Appearance appearance, ErrorDialog errorDialog, ScreenDisplay display, IAppCommandWriter commands, ErrorLog errors)
     {
-        var t = ui.State.Appearance.Strings;
-        var shown = ui.State.ErrorDialog;
+        var t = appearance.Strings;
+        var shown = errorDialog;
         if (!shown.IsOpen)
         {
             return;
@@ -40,7 +40,7 @@ internal static class ErrorDialogView
         shown.Selection.ShowIn(errors.Entries);
         if (errors.Entries.Count > 1)
         {
-            List(ui, errors, shown);
+            List(ui, appearance, errors, shown);
         }
 
         var selected = shown.Selection.Item;
@@ -48,14 +48,14 @@ internal static class ErrorDialogView
         {
             using (ui.Row(new Box { Gap = theme.GapTight, AlignY = Align.Center }))
             {
-                ui.Glyph(ui.State.Appearance.Icons.StatusError, theme.Danger, theme.IconSize);
+                ui.Glyph(appearance.Icons.StatusError, theme.Danger, theme.IconSize);
                 ui.Text(shown.Texts.GetText(selected, t).Title, new Box { Width = Sizing.Grow() }, bold: true, overflow: TextOverflow.Ellipsis);
             }
         }
 
         using (ui.Panel(new Box { Height = Sizing.Grow(), Padding = theme.BorderWidth, Background = theme.EditorBackground, Clip = true }))
         {
-            CodeViewWidget.RenderCodeView(ui, ui.State.Appearance, ui.State.Display, "error-text", GetSelectedDocument(shown, t), shown.View);
+            CodeViewWidget.RenderCodeView(ui, appearance, display, "error-text", GetSelectedDocument(shown, t), shown.View);
         }
 
         using (ui.Row(new Box { Gap = theme.GapTight }))
@@ -68,7 +68,7 @@ internal static class ErrorDialogView
             ui.Tooltip(ui.GetId("error-copy"), t.ErrorsCopyTooltip);
             if (ui.Button(t.ErrorsClear, id: "error-clear", variant: ButtonVariant.Ghost))
             {
-                Commands.Later(ui.State.AppCommands, shown, static (a, s) => ClearErrors(a.Errors, s));
+                Commands.Later(commands, shown, static (a, s) => ClearErrors(a.Errors, s));
             }
 
             ui.Spacer();
@@ -96,9 +96,9 @@ internal static class ErrorDialogView
         shown.IsOpen = false;
     }
 
-    private static void List(Ui<UiState> ui, ErrorLog errors, ErrorDialog shown)
+    private static void List(Ui ui, Appearance appearance, ErrorLog errors, ErrorDialog shown)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var entries = errors.Entries;
         using var list = ui.SelectableList(ui.GetId("error-list"), entries.Count, shown.Selection.Rows, box: new Box

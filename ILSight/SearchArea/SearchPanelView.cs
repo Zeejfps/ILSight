@@ -31,17 +31,17 @@ internal static class SearchPanelView
         using (ui.PaneToolbar(new Box { Gap = ui.Theme.Gap }))
         {
             KindsButton(ui);
-            Field(ui, navigation, setup);
-            ResultCount(ui, ui.State.Search.Results);
+            Field(ui, ui.State.Appearance, ui.State.Search, ui.State.AppCommands, navigation, setup);
+            ResultCount(ui, ui.State.Appearance, ui.State.Search.Results);
         }
         ui.Separator();
-        Unsearched(ui, ui.State.Search.Results);
-        Results(ui, navigation, setup);
+        Unsearched(ui, ui.State.Appearance, ui.State.Search.Results);
+        Results(ui, ui.State.Appearance, ui.State.Search, ui.State.SearchColumns, ui.State.AppCommands, navigation, setup);
     }
 
-    private static void Unsearched(Ui<UiState> ui, SearchResults results)
+    private static void Unsearched(Ui ui, Appearance appearance, SearchResults results)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         for (var i = 0; i < results.Unsearched.Count; i++)
         {
@@ -64,7 +64,7 @@ internal static class SearchPanelView
         using var menu = ui.SelectButton("search-kinds", summary, width, tooltip);
         if (menu.IsOpen)
         {
-            KindsMenu(ui);
+            KindsMenu(ui, ui.State.Search, ui.State.Appearance);
         }
     }
 
@@ -120,10 +120,9 @@ internal static class SearchPanelView
         return $"{t.SearchMode}:\n{string.Join("\n", labels)}";
     }
 
-    private static void KindsMenu(Ui<UiState> ui)
+    private static void KindsMenu(Ui ui, Search search, Appearance appearance)
     {
-        var search = ui.State.Search;
-        var kinds = PickKinds(ui, search.Kinds);
+        var kinds = PickKinds(ui, appearance, search.Kinds);
         if (kinds == search.Kinds)
         {
             return;
@@ -132,12 +131,12 @@ internal static class SearchPanelView
         search.LookFor(kinds);
     }
 
-    private static SearchKinds PickKinds(Ui<UiState> ui, SearchKinds kinds)
+    private static SearchKinds PickKinds(Ui ui, Appearance appearance, SearchKinds kinds)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var checkAll = kinds == SearchKinds.All;
-        var palette = ui.State.Appearance.NodeIconPalette;
-        var allIcon = new UiIcon(ui.State.Appearance.Icons.SearchAllKinds, ui.Theme.TextMuted);
+        var palette = appearance.NodeIconPalette;
+        var allIcon = new UiIcon(appearance.Icons.SearchAllKinds, ui.Theme.TextMuted);
         // The items keep the menu open, so several can be flipped in a row.
         if (ui.MenuItem(t.SearchModeAll, ref checkAll, keepOpen: true, icon: allIcon))
         {
@@ -148,7 +147,7 @@ internal static class SearchPanelView
         foreach (var kind in Kinds)
         {
             var on = SearchKindChoice.IsChecked(kinds, kind);
-            var icon = NodeIcons.Icon(KindNode(kind), NodeAccessibility.None, palette, ui.State.Appearance.Icons);
+            var icon = NodeIcons.Icon(KindNode(kind), NodeAccessibility.None, palette, appearance.Icons);
             var label = KindLabel(t, kind);
             if (ui.MenuItem(label, ref on, keepOpen: true, icon: icon))
             {
@@ -159,10 +158,9 @@ internal static class SearchPanelView
         return kinds;
     }
 
-    private static void Field(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup)
+    private static void Field(Ui ui, Appearance appearance, Search search, IAppCommandWriter commands, Navigation navigation, DecompilerSetup setup)
     {
-        var t = ui.State.Appearance.Strings;
-        var search = ui.State.Search;
+        var t = appearance.Strings;
         var fieldId = ui.GetId("search");
         if (search.TryTakeFocus())
         {
@@ -170,7 +168,7 @@ internal static class SearchPanelView
         }
 
         var width = Sizing.Grow(AppLayout.SearchMinWidth, AppLayout.SearchWidth);
-        var submitted = ui.TextField("search", ref search.Query, t.SearchField, width, ui.State.Appearance.Icons.SearchField, clearable: true);
+        var submitted = ui.TextField("search", ref search.Query, t.SearchField, width, appearance.Icons.SearchField, clearable: true);
         ui.Tooltip(fieldId, ui.Memo("search-syntax", t, static s => s.SearchSyntaxTooltip(Shortcuts.Search.Label)));
         if (!ui.HasFocus(fieldId))
         {
@@ -182,7 +180,7 @@ internal static class SearchPanelView
             var row = PickSelected(search.Results);
             if (row != null)
             {
-                Commands.DecompileLater(ui.State.AppCommands, navigation.ShowNode(row.Node, setup));
+                Commands.DecompileLater(commands, navigation.ShowNode(row.Node, setup));
             }
 
             return;
@@ -203,16 +201,16 @@ internal static class SearchPanelView
         return results.Selection.Item;
     }
 
-    private static void ResultCount(Ui<UiState> ui, SearchResults results)
+    private static void ResultCount(Ui ui, Appearance appearance, SearchResults results)
     {
         var invalidRegex = results.InvalidRegex;
         if (invalidRegex is not null)
         {
-            InvalidRegexNotice(ui, invalidRegex);
+            InvalidRegexNotice(ui, appearance, invalidRegex);
             return;
         }
 
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var failure = results.RunFailure;
         if (failure is not null)
@@ -226,11 +224,11 @@ internal static class SearchPanelView
         ui.Text(count, color: theme.TextMuted, size: theme.FontSizeSmall);
     }
 
-    private static void InvalidRegexNotice(Ui<UiState> ui, SearchMatcher.InvalidRegex invalidRegex)
+    private static void InvalidRegexNotice(Ui ui, Appearance appearance, SearchMatcher.InvalidRegex invalidRegex)
     {
         var theme = ui.Theme;
         var id = ui.GetId("search-invalid-regex");
-        ui.Text(ui.State.Appearance.Strings.SearchInvalidRegex, color: theme.Warning, size: theme.FontSizeSmall, id: id);
+        ui.Text(appearance.Strings.SearchInvalidRegex, color: theme.Warning, size: theme.FontSizeSmall, id: id);
         ui.Tooltip(id, invalidRegex.Message);
     }
 
@@ -244,24 +242,24 @@ internal static class SearchPanelView
         return t.SearchResults(count);
     }
 
-    private static void Results(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup)
+    private static void Results(Ui ui, Appearance appearance, Search search, TableColumns searchColumns, IAppCommandWriter commands, Navigation navigation, DecompilerSetup setup)
     {
-        var t = ui.State.Appearance.Strings;
-        var results = ui.State.Search.Results;
+        var t = appearance.Strings;
+        var results = search.Results;
         var headers = Headers.GetValue(t, static t => [t.SearchColumnName, t.SearchColumnLocation, t.SearchColumnAssembly]);
         var asked = results.AskedOrder;
-        var sort = new TableSort(FindColumn(asked.Sort) ?? -1, SortIcon(ui.State.Appearance.Icons, asked));
+        var sort = new TableSort(FindColumn(asked.Sort) ?? -1, SortIcon(appearance.Icons, asked));
         results.Selection.ShowIn(results.Rows);
-        var table = ui.Table(ResultsId, ui.State.SearchColumns, results.Selection.Rows);
+        var table = ui.Table(ResultsId, searchColumns, results.Selection.Rows);
         var clicked = table.Header(headers, sort);
         if (clicked >= 0)
         {
             var sorting = results.StartSort(SortOf(clicked));
-            Commands.StartSettling(ui.State.AppCommands, nameof(Searches.SortAsync), (results, sorting), static (_, s, ct) => Searches.SortAsync(s.results, s.sorting, ct),
+            Commands.StartSettling(commands, nameof(Searches.SortAsync), (results, sorting), static (_, s, ct) => Searches.SortAsync(s.results, s.sorting, ct),
                 static (_, s, _) => s.results.FailSort(s.sorting), sorting.Work.Token);
         }
 
-        ResultRows(ui, navigation, setup, table);
+        ResultRows(ui, search, commands, appearance, navigation, setup, table);
     }
 
     private static int? FindColumn(SearchSort sort)
@@ -293,54 +291,54 @@ internal static class SearchPanelView
         };
     }
 
-    private static void ResultRows(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup,
+    private static void ResultRows(Ui ui, Search search, IAppCommandWriter commands, Appearance appearance, Navigation navigation, DecompilerSetup setup,
         TableFrame table)
     {
-        var results = ui.State.Search.Results;
+        var results = search.Results;
         using var body = table.Body(results.Rows.Count);
         results.Selection.TakeFrom(results.Rows);
         for (var i = body.First; i < body.End; i++)
         {
-            ResultRow(ui, navigation, setup, body, i);
+            ResultRow(ui, search, commands, appearance, navigation, setup, body, i);
         }
 
         results.Selection.TakeFrom(results.Rows);
         var selected = results.Selection.Item;
         if (body.Activated && selected != null)
         {
-            Commands.DecompileLater(ui.State.AppCommands, navigation.ShowNode(selected.Node, setup, body.InNewTab));
+            Commands.DecompileLater(commands, navigation.ShowNode(selected.Node, setup, body.InNewTab));
         }
     }
 
-    private static void ResultRow(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup,
+    private static void ResultRow(Ui ui, Search search, IAppCommandWriter commands, Appearance appearance, Navigation navigation, DecompilerSetup setup,
         TableBody body, int index)
     {
         var theme = ui.Theme;
-        var result = ui.State.Search.Results.Rows[index];
+        var result = search.Results.Rows[index];
         var node = result.Node;
         var row = body.Row(index, RuntimeHelpers.GetHashCode(node));
         using (row)
         {
             if (row.Interaction.Clicked)
             {
-                Commands.DecompileLater(ui.State.AppCommands, navigation.ShowNode(node, setup));
+                Commands.DecompileLater(commands, navigation.ShowNode(node, setup));
             }
 
-            NameCell(ui, row, result);
+            NameCell(ui, appearance, row, result);
             row.TextCell(1, result.Location, theme.TextMuted, overflow: TextOverflow.EllipsisMiddle);
             row.TextCell(2, NodeText.AssemblyLabel(node.Assembly), theme.TextMuted);
         }
         ui.Tooltip(row.Id, NodeText.Tooltip(node));
     }
 
-    private static void NameCell(Ui<UiState> ui, TableRow row, SearchResult result)
+    private static void NameCell(Ui ui, Appearance appearance, TableRow row, SearchResult result)
     {
         var theme = ui.Theme;
         var node = result.Node;
         var color = row.Selected ? theme.SelectionText : theme.Text;
         using (row.Cell(0))
         {
-            NodeIcons.Draw(ui, ui.State.Appearance, node);
+            NodeIcons.Draw(ui, appearance, node);
             ui.Text(result.Text, new Box { Width = Sizing.Grow() }, color: color, overflow: TextOverflow.Ellipsis);
         }
     }

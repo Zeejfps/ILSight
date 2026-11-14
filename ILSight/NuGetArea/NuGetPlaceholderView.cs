@@ -9,9 +9,9 @@ namespace ILSight.NuGetArea;
 /// of them failed to load.</summary>
 internal static class NuGetPlaceholderView
 {
-    public static void Render(Ui<UiState> ui, NuGetPicker picker)
+    public static void Render(Ui ui, Appearance appearance, NuGetPicker picker)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         using (ui.Column(new Box { Width = Sizing.Grow(), Padding = new Spacing(theme.ShellPaddingX, theme.ShellPaddingX), Gap = theme.Gap }))
         {
@@ -33,14 +33,14 @@ internal static class NuGetPlaceholderView
             var error = picker.Browser.SearchError;
             if (error is not null)
             {
-                SearchFailed(ui, picker, error);
+                SearchFailed(ui, appearance, picker, error);
                 return;
             }
-            NothingFound(ui, picker);
+            NothingFound(ui, appearance, picker);
         }
     }
 
-    private static void Waiting(Ui<UiState> ui, string text)
+    private static void Waiting(Ui ui, string text)
     {
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.GapTight, AlignY = Align.Center }))
@@ -50,16 +50,16 @@ internal static class NuGetPlaceholderView
         }
     }
 
-    private static void Note(Ui<UiState> ui, string text)
+    private static void Note(Ui ui, string text)
     {
         ui.Text(text, color: ui.Theme.TextMuted, wrap: true);
     }
 
-    private static void SearchFailed(Ui<UiState> ui, NuGetPicker picker, string error)
+    private static void SearchFailed(Ui ui, Appearance appearance, NuGetPicker picker, string error)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
-        Warning(ui, t.NugetSearchFailed);
+        Warning(ui, appearance, t.NugetSearchFailed);
         ui.Text(error, color: theme.TextMuted, size: theme.FontSizeSmall, wrap: true);
         if (ui.Button(t.NugetRetry, id: "nuget-retry"))
         {
@@ -67,9 +67,9 @@ internal static class NuGetPlaceholderView
         }
     }
 
-    private static void NothingFound(Ui<UiState> ui, NuGetPicker picker)
+    private static void NothingFound(Ui ui, Appearance appearance, NuGetPicker picker)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var query = picker.Browser.ShownQuery;
         if (query.Length == 0)
         {
@@ -85,14 +85,14 @@ internal static class NuGetPlaceholderView
     }
 
     /// <summary>Over the packages shown: that the page asked for in their place failed, and a button that asks again.</summary>
-    public static void PageFailed(Ui<UiState> ui, NuGetPicker picker)
+    public static void PageFailed(Ui ui, Appearance appearance, NuGetPicker picker)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         using (ui.Row(new Box { Padding = new Spacing(theme.ShellPaddingX, theme.GapTight), Gap = theme.GapTight, AlignY = Align.Center }))
         {
             var text = ui.Memo("nuget-page-failed", (picker.Browser.RequestedPage, t), static a => a.t.NugetPageFailed(a.RequestedPage + 1));
-            Warning(ui, text);
+            Warning(ui, appearance, text);
             ui.Spacer();
             if (ui.Button(t.NugetRetry, id: "nuget-retry-page", variant: ButtonVariant.Ghost))
             {
@@ -101,12 +101,12 @@ internal static class NuGetPlaceholderView
         }
     }
 
-    internal static void Warning(Ui<UiState> ui, string text)
+    internal static void Warning(Ui ui, Appearance appearance, string text)
     {
         var theme = ui.Theme;
         using (ui.Row(new Box { Width = Sizing.Grow(), Gap = theme.GapTight, AlignY = Align.Center }))
         {
-            ui.Icon(new UiIcon(ui.State.Appearance.Icons.NugetWarning, theme.Warning));
+            ui.Icon(new UiIcon(appearance.Icons.NugetWarning, theme.Warning));
             ui.Text(text, color: theme.Text, wrap: true);
         }
     }

@@ -1,4 +1,5 @@
 using System.Globalization;
+using ILSight.DocumentViewArea;
 using System.Runtime.CompilerServices;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
@@ -38,9 +39,9 @@ internal static class OmnibarView
         }
 
         var panel = DocumentPanels.GetPanel(ui.State.Documents, tab);
-        if (ContinueSearch(ui, panel))
+        if (ContinueSearch(ui, ui.State.Omnibar, panel))
         {
-            SearchBar(ui, navigation, setup);
+            SearchBar(ui, ui.State.Appearance, ui.State.Omnibar, ui.State.AppCommands, navigation, setup);
         }
         else
         {
@@ -50,9 +51,8 @@ internal static class OmnibarView
         ui.Separator();
     }
 
-    private static bool ContinueSearch(Ui<UiState> ui, string panel)
+    private static bool ContinueSearch(Ui ui, Omnibar omnibar, string panel)
     {
-        var omnibar = ui.State.Omnibar;
         if (!omnibar.IsSearchingIn(panel))
         {
             return false;
@@ -89,40 +89,40 @@ internal static class OmnibarView
                 {
                     if (closed is not null)
                     {
-                        ClosedCrumb(ui, crumbs[i], i, closed);
+                        ClosedCrumb(ui, ui.State.Appearance, crumbs[i], i, closed);
                         continue;
                     }
 
-                    CrumbButton(ui, navigation, setup, crumbs[i], i);
-                    var owner = ChildrenButton(ui, panel, crumbs, i);
+                    CrumbButton(ui, ui.State.Appearance, ui.State.AppCommands, navigation, setup, crumbs[i], i);
+                    var owner = ChildrenButton(ui, ui.State.Tree, ui.State.Omnibar, ui.State.Appearance, panel, crumbs, i);
                     if (owner != 0)
                     {
                         menuOwner = owner;
                     }
                 }
             }
-            ContentTools(ui, assemblies, tab);
-            SearchArea(ui, panel);
+            ContentTools(ui, ui.State.Appearance, ui.State.Documents, ui.State.AppCommands, assemblies, tab);
+            SearchArea(ui, ui.State.Omnibar, panel);
             SearchButton(ui, panel);
         }
-        ChildrenMenu(ui, navigation, setup, panel, menuOwner);
+        ChildrenMenu(ui, ui.State.Omnibar, ui.State.Tree, ui.State.Appearance, ui.State.AppCommands, navigation, setup, panel, menuOwner);
     }
 
-    private static void ContentTools(Ui<UiState> ui, AssemblyList assemblies, DocumentTab tab)
+    private static void ContentTools(Ui ui, Appearance appearance, DocumentViews documents, IAppCommandWriter commands, AssemblyList assemblies, DocumentTab tab)
     {
         if (tab.Content is TabContent.Diagram)
         {
-            DiagramView.Tools(ui, ui.State.Appearance, ui.State.Documents, tab);
+            DiagramView.Tools(ui, appearance, documents, tab);
             return;
         }
 
         if (tab.Content is TabContent.Comparison comparison)
         {
-            ComparisonView.Tools(ui, ui.State.Appearance, ui.State.Documents, ui.State.AppCommands, assemblies, tab, comparison.Assemblies);
+            ComparisonView.Tools(ui, appearance, documents, commands, assemblies, tab, comparison.Assemblies);
         }
     }
 
-    private static void CrumbButton(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup,
+    private static void CrumbButton(Ui ui, Appearance appearance, IAppCommandWriter commands, Navigation navigation, DecompilerSetup setup,
         Crumb crumb, int depth)
     {
         var theme = ui.Theme;
@@ -142,23 +142,23 @@ internal static class OmnibarView
             Radius = theme.CornerRadius,
         }))
         {
-            NodeIcons.Draw(ui, ui.State.Appearance, node);
+            NodeIcons.Draw(ui, appearance, node);
             ui.Text(crumb.Label, new Box { Width = Sizing.Shrink() }, color: CrumbColor(theme, node), overflow: TextOverflow.Ellipsis);
         }
         ui.Tooltip(i.Id, NodeText.Tooltip(node));
         if (i.Clicked)
         {
-            Commands.DecompileLater(ui.State.AppCommands, PickNode(navigation, node, IsCommandHeld(ui), setup));
+            Commands.DecompileLater(commands, PickNode(navigation, node, IsCommandHeld(ui), setup));
         }
 
         if (i.ClickedWith(PointerButton.Middle))
         {
-            Commands.DecompileLater(ui.State.AppCommands, navigation.ShowNode(node, setup, inNewTab: true));
+            Commands.DecompileLater(commands, navigation.ShowNode(node, setup, inNewTab: true));
         }
     }
 
     // A crumb of a tab whose assembly was closed (TabLoad.ShowClosed) would read it, so it starts nothing when clicked.
-    private static void ClosedCrumb(Ui<UiState> ui, Crumb crumb, int depth, string closed)
+    private static void ClosedCrumb(Ui ui, Appearance appearance, Crumb crumb, int depth, string closed)
     {
         var theme = ui.Theme;
         var i = ui.Interact("crumb");
@@ -172,15 +172,15 @@ internal static class OmnibarView
             AlignY = Align.Center,
         }))
         {
-            NodeIcons.Draw(ui, ui.State.Appearance, crumb.Node);
+            NodeIcons.Draw(ui, appearance, crumb.Node);
             ui.Text(crumb.Label, new Box { Width = Sizing.Shrink() }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
         }
-        ui.Tooltip(i.Id, ui.Memo("closed-crumb", (closed, t: ui.State.Appearance.Strings), static a => a.t.DocumentClosed(a.closed)));
+        ui.Tooltip(i.Id, ui.Memo("closed-crumb", (closed, t: appearance.Strings), static a => a.t.DocumentClosed(a.closed)));
     }
 
     // By the crumb's depth, not its label: two crumbs can read the same, such as an assembly and its namespace of one
     // name.
-    private static void RecordDepthPath(Ui<UiState> ui, int id, int depth, string name)
+    private static void RecordDepthPath(Ui ui, int id, int depth, string name)
     {
         if (!ui.WantsSemantics)
         {
@@ -211,21 +211,20 @@ internal static class OmnibarView
         return navigation.PreviewNode(node, setup);
     }
 
-    private static bool IsCommandHeld(Ui<UiState> ui)
+    private static bool IsCommandHeld(Ui ui)
     {
         return (ui.Input.Modifiers & Shortcut.CommandModifier) != 0;
     }
 
-    private static int ChildrenButton(Ui<UiState> ui, string panel, IReadOnlyList<Crumb> crumbs, int index)
+    private static int ChildrenButton(Ui ui, BrowseTree tree, Omnibar omnibar, Appearance appearance, string panel, IReadOnlyList<Crumb> crumbs, int index)
     {
         var node = crumbs[index].Node;
-        if (!ui.State.Tree.HasChildren(node))
+        if (!tree.HasChildren(node))
         {
             return 0;
         }
 
         var theme = ui.Theme;
-        var omnibar = ui.State.Omnibar;
         var i = ui.Interact("children");
         RecordDepthPath(ui, i.Id, index, "children");
         if (i.Clicked)
@@ -246,7 +245,7 @@ internal static class OmnibarView
         }
         if (!open)
         {
-            ui.Tooltip(i.Id, ui.Memo("contents-tip", (crumbs[index].Label, ui.State.Appearance.Strings), static a => a.Strings.OmnibarContents(a.Label)));
+            ui.Tooltip(i.Id, ui.Memo("contents-tip", (crumbs[index].Label, appearance.Strings), static a => a.Strings.OmnibarContents(a.Label)));
         }
 
         if (!open)
@@ -262,7 +261,7 @@ internal static class OmnibarView
         return open ? UiGlyph.DisclosureOpen : UiGlyph.DisclosureClosed;
     }
 
-    private static void SearchArea(Ui<UiState> ui, string panel)
+    private static void SearchArea(Ui ui, Omnibar omnibar, string panel)
     {
         var i = ui.Interact("search-area");
         if (i.Hovered)
@@ -273,7 +272,7 @@ internal static class OmnibarView
         ui.Leaf(i.Id, new Box { Width = Sizing.Grow(), Height = Sizing.Grow() });
         if (i.Clicked)
         {
-            ui.State.Omnibar.StartSearch(panel);
+            omnibar.StartSearch(panel);
         }
     }
 
@@ -287,10 +286,9 @@ internal static class OmnibarView
         }
     }
 
-    private static void ChildrenMenu(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup,
+    private static void ChildrenMenu(Ui ui, Omnibar omnibar, BrowseTree tree, Appearance appearance, IAppCommandWriter commands, Navigation navigation, DecompilerSetup setup,
         string panel, int owner)
     {
-        var omnibar = ui.State.Omnibar;
         var menu = omnibar.Menu;
         if (menu is null)
         {
@@ -316,7 +314,7 @@ internal static class OmnibarView
             return;
         }
 
-        var children = ui.State.Tree.GetChildren(menu.Node);
+        var children = tree.GetChildren(menu.Node);
         var placeholderRow = children.PlaceholderRow;
         if (placeholderRow is not null)
         {
@@ -324,10 +322,10 @@ internal static class OmnibarView
             ui.Text(placeholder.Label, color: theme.TextMuted);
             return;
         }
-        var shown = menu.ListShown(children.Nodes, ui.State.Tree);
+        var shown = menu.ListShown(children.Nodes, tree);
         var listId = HashCode.Combine(owner, ListSalt);
-        var submitted = Filter(ui, menu, shown);
-        var picked = ChildRows(ui, menu, shown, listId);
+        var submitted = Filter(ui, appearance, menu, shown);
+        var picked = ChildRows(ui, tree, appearance, menu, shown, listId);
         if (submitted)
         {
             picked = new PickedChild { Node = menu.Selection.Item, InNewTab = IsCommandHeld(ui) };
@@ -340,10 +338,10 @@ internal static class OmnibarView
         }
 
         omnibar.CloseMenu();
-        Commands.DecompileLater(ui.State.AppCommands, PickNode(navigation, node, picked.InNewTab, setup));
+        Commands.DecompileLater(commands, PickNode(navigation, node, picked.InNewTab, setup));
     }
 
-    private static bool Filter(Ui<UiState> ui, CrumbMenu menu, IReadOnlyList<BrowseNode> shown)
+    private static bool Filter(Ui ui, Appearance appearance, CrumbMenu menu, IReadOnlyList<BrowseNode> shown)
     {
         var fieldId = ui.GetId(FilterFieldId);
         if (menu.TryTakeFocus())
@@ -351,7 +349,7 @@ internal static class OmnibarView
             ui.Focus(fieldId);
         }
 
-        var submitted = ui.TextField(FilterFieldId, ref menu.Filter, ui.State.Appearance.Strings.OmnibarFilter, Sizing.Grow(), clearable: true);
+        var submitted = ui.TextField(FilterFieldId, ref menu.Filter, appearance.Strings.OmnibarFilter, Sizing.Grow(), clearable: true);
         if (!ui.HasFocus(fieldId))
         {
             return false;
@@ -385,7 +383,7 @@ internal static class OmnibarView
         public required bool InNewTab { get; init; }
     }
 
-    private static PickedChild ChildRows(Ui<UiState> ui, CrumbMenu menu, IReadOnlyList<BrowseNode> shown, int listId)
+    private static PickedChild ChildRows(Ui ui, BrowseTree tree, Appearance appearance, CrumbMenu menu, IReadOnlyList<BrowseNode> shown, int listId)
     {
         var rowHeight = ui.Theme.RowHeight;
         var height = Math.Min(shown.Count, MenuRows) * rowHeight;
@@ -396,7 +394,7 @@ internal static class OmnibarView
         {
             for (var i = list.First; i < list.End; i++)
             {
-                var row = ChildRow(ui, list, shown[i], i);
+                var row = ChildRow(ui, tree, appearance, list, shown[i], i);
                 if (row.Node is not null)
                 {
                     picked = row;
@@ -407,14 +405,14 @@ internal static class OmnibarView
         return picked;
     }
 
-    private static PickedChild ChildRow(Ui<UiState> ui, ListScope list, BrowseNode child, int index)
+    private static PickedChild ChildRow(Ui ui, BrowseTree tree, Appearance appearance, ListScope list, BrowseNode child, int index)
     {
         var theme = ui.Theme;
         using var id = ui.Id(RuntimeHelpers.GetHashCode(child));
         using var row = list.Row(index, ui.GetId("child"), new Box { Gap = theme.GapTight });
         var color = row.Selected ? theme.SelectionText : CrumbColor(theme, child);
-        var label = ui.State.Tree.GetRowLabel(child);
-        NodeIcons.Draw(ui, ui.State.Appearance, child);
+        var label = tree.GetRowLabel(child);
+        NodeIcons.Draw(ui, appearance, child);
         ui.Text(label, new Box { Width = Sizing.Grow() }, color: color, overflow: TextOverflow.Ellipsis);
         RecordChildPath(ui, row.Interaction.Id, label);
         if (row.Interaction.Clicked)
@@ -430,7 +428,7 @@ internal static class OmnibarView
         return new PickedChild { Node = null, InNewTab = false };
     }
 
-    private static void RecordChildPath(Ui<UiState> ui, int id, string label)
+    private static void RecordChildPath(Ui ui, int id, string label)
     {
         if (!ui.WantsSemantics)
         {
@@ -440,19 +438,18 @@ internal static class OmnibarView
         ui.RecordTestPath(id, new TestPath([new TestSegment.Named("child"), new TestSegment.Keyed(label)]));
     }
 
-    private static void SearchBar(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup)
+    private static void SearchBar(Ui ui, Appearance appearance, Omnibar omnibar, IAppCommandWriter commands, Navigation navigation, DecompilerSetup setup)
     {
-        var t = ui.State.Appearance.Strings;
-        var omnibar = ui.State.Omnibar;
+        var t = appearance.Strings;
         var fieldId = ui.GetId(SearchFieldId);
         bool submitted;
         using (ui.PaneToolbar())
         {
-            submitted = ui.TextField(SearchFieldId, ref omnibar.Search.Query, t.OmnibarSearch, Sizing.Grow(), ui.State.Appearance.Icons.SearchField, clearable: true);
-            SyntaxTooltip(ui, omnibar, fieldId);
+            submitted = ui.TextField(SearchFieldId, ref omnibar.Search.Query, t.OmnibarSearch, Sizing.Grow(), appearance.Icons.SearchField, clearable: true);
+            SyntaxTooltip(ui, appearance, omnibar, fieldId);
         }
         WalkSuggestions(ui, omnibar, fieldId);
-        var clicked = Suggestions(ui, omnibar, fieldId);
+        var clicked = Suggestions(ui, appearance, omnibar, fieldId);
         if (submitted)
         {
             clicked = new PickedMatch { Match = omnibar.FindSuggestionToShow(), InNewTab = IsCommandHeld(ui) };
@@ -465,10 +462,10 @@ internal static class OmnibarView
         }
 
         omnibar.StopSearch();
-        Commands.DecompileLater(ui.State.AppCommands, navigation.ShowNode(match.Node, setup, clicked.InNewTab));
+        Commands.DecompileLater(commands, navigation.ShowNode(match.Node, setup, clicked.InNewTab));
     }
 
-    private static void SyntaxTooltip(Ui<UiState> ui, Omnibar omnibar, int fieldId)
+    private static void SyntaxTooltip(Ui ui, Appearance appearance, Omnibar omnibar, int fieldId)
     {
         // Only while the box is empty, so it never covers the suggestions.
         if (omnibar.Search.Query.Length > 0)
@@ -476,11 +473,11 @@ internal static class OmnibarView
             return;
         }
 
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         ui.Tooltip(fieldId, ui.Memo("omnibar-syntax", t, static s => s.SearchSyntaxTooltip(Shortcuts.OmnibarSearch)));
     }
 
-    private static void WalkSuggestions(Ui<UiState> ui, Omnibar omnibar, int fieldId)
+    private static void WalkSuggestions(Ui ui, Omnibar omnibar, int fieldId)
     {
         if (!ui.HasFocus(fieldId))
         {
@@ -513,7 +510,7 @@ internal static class OmnibarView
         public required bool InNewTab { get; init; }
     }
 
-    private static PickedMatch Suggestions(Ui<UiState> ui, Omnibar omnibar, int fieldId)
+    private static PickedMatch Suggestions(Ui ui, Appearance appearance, Omnibar omnibar, int fieldId)
     {
         var picked = new PickedMatch { Match = null, InNewTab = false };
         if (omnibar.Search.Query.Length == 0)
@@ -532,12 +529,12 @@ internal static class OmnibarView
         {
             if (!omnibar.HasSuggestions)
             {
-                SuggestionNote(ui, omnibar);
+                SuggestionNote(ui, appearance, omnibar);
                 return picked;
             }
             for (var i = 0; i < omnibar.SuggestionCount; i++)
             {
-                var row = SuggestionRow(ui, omnibar, omnibar.Search.Results.Rows[i], fieldId);
+                var row = SuggestionRow(ui, appearance, omnibar, omnibar.Search.Results.Rows[i], fieldId);
                 if (row.Match != null)
                 {
                     picked = row;
@@ -547,15 +544,15 @@ internal static class OmnibarView
         return picked;
     }
 
-    private static void SuggestionNote(Ui<UiState> ui, Omnibar omnibar)
+    private static void SuggestionNote(Ui ui, Appearance appearance, Omnibar omnibar)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var note = omnibar.IsStillSearching ? t.OmnibarSearching : t.OmnibarNoMatches;
         ui.Text(note, new Box { Height = theme.RowHeight, Padding = new Spacing(theme.ShellPaddingX, 0f), AlignY = Align.Center }, color: theme.TextMuted);
     }
 
-    private static PickedMatch SuggestionRow(Ui<UiState> ui, Omnibar omnibar, SearchResult match, int fieldId)
+    private static PickedMatch SuggestionRow(Ui ui, Appearance appearance, Omnibar omnibar, SearchResult match, int fieldId)
     {
         var theme = ui.Theme;
         var node = match.Node;
@@ -571,7 +568,7 @@ internal static class OmnibarView
         using (ui.Row(i.Id, SuggestionBox(theme, selected, i.Hovered)))
         {
             DescribeSuggestion(ui, i.Id, match.Text, selected);
-            NodeIcons.Draw(ui, ui.State.Appearance, node);
+            NodeIcons.Draw(ui, appearance, node);
             ui.Text(match.Text, new Box { Width = Sizing.Grow() with { Priority = 1 } }, color: nameColor, overflow: TextOverflow.Ellipsis);
             ui.Text(match.Location, new Box { Width = Sizing.Shrink() }, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.EllipsisMiddle);
         }
@@ -588,7 +585,7 @@ internal static class OmnibarView
         return new PickedMatch { Match = null, InNewTab = false };
     }
 
-    private static void DescribeSuggestion(Ui<UiState> ui, int id, string text, bool selected)
+    private static void DescribeSuggestion(Ui ui, int id, string text, bool selected)
     {
         if (!ui.WantsSemantics)
         {

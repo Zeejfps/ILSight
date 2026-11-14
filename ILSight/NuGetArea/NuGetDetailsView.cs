@@ -41,20 +41,20 @@ internal static class NuGetDetailsView
             var package = picker.Browser.Selection.Item;
             if (package == null)
             {
-                NoSelection(ui);
+                NoSelection(ui, ui.State.Appearance);
                 return;
             }
             Details(ui, picker, package);
         }
     }
 
-    private static void NoSelection(Ui<UiState> ui)
+    private static void NoSelection(Ui ui, Appearance appearance)
     {
         var theme = ui.Theme;
         var box = new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Padding = theme.ShellPaddingX, AlignX = Align.Center, AlignY = Align.Center };
         using (ui.Column(box))
         {
-            ui.Text(ui.State.Appearance.Strings.NugetNoSelection, color: theme.TextMuted, wrap: true, align: Align.Center);
+            ui.Text(appearance.Strings.NugetNoSelection, color: theme.TextMuted, wrap: true, align: Align.Center);
         }
     }
 
@@ -67,67 +67,67 @@ internal static class NuGetDetailsView
             var details = picker.Browser.Version != null ? picker.Browser.EnsureDetails(package, picker.Browser.Version) : null;
             using (ui.Column(new Box { Width = Sizing.Grow(), Padding = theme.ShellPaddingX, Gap = theme.Gap }))
             {
-                Header(ui, picker, package);
+                Header(ui, ui.State.Appearance, picker, package);
                 VersionRow(ui, picker, package, details);
             }
             ui.Leaf(new Box { Width = Sizing.Grow(), Height = theme.SeparatorWidth, Background = theme.Separator });
             using (ui.Scroll("nuget-details", new Box { Height = Sizing.Grow() }))
             {
-                Body(ui, picker, package, details);
+                Body(ui, ui.State.Appearance, picker, package, details);
             }
         }
     }
 
-    private static void Body(Ui<UiState> ui, NuGetPicker picker, FeedPackage package, VersionDetails? details)
+    private static void Body(Ui ui, Appearance appearance, NuGetPicker picker, FeedPackage package, VersionDetails? details)
     {
         var theme = ui.Theme;
         using (ui.Column(new Box { Width = Sizing.Grow(), Padding = theme.ShellPaddingX, Gap = theme.Gap }))
         {
-            Warnings(ui, details);
+            Warnings(ui, appearance, details);
             if (package.Description.Length > 0)
             {
                 ui.Text(package.Description, wrap: true);
             }
 
-            Facts(ui, picker, package, details);
-            Dependencies(ui, details);
+            Facts(ui, appearance, picker, package, details);
+            Dependencies(ui, appearance, details);
         }
     }
 
-    private static void Header(Ui<UiState> ui, NuGetPicker picker, FeedPackage package)
+    private static void Header(Ui ui, Appearance appearance, NuGetPicker picker, FeedPackage package)
     {
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
         {
-            NuGetPickerView.DrawIcon(ui, picker, package, IconSide);
+            NuGetPickerView.DrawIcon(ui, appearance, picker, package, IconSide);
             using (ui.Column(new Box { Width = Sizing.Grow(), Gap = 0f }))
             {
                 ui.Text(package.Id.Text, size: theme.FontSize * TitleScale, bold: true, wrap: true);
                 if (package.Authors.Length > 0)
                 {
-                    ui.Text(AuthorsText(ui, package), color: theme.TextMuted, wrap: true);
+                    ui.Text(AuthorsText(ui, appearance, package), color: theme.TextMuted, wrap: true);
                 }
 
                 if (package.Verified)
                 {
-                    Verified(ui);
+                    Verified(ui, appearance);
                 }
             }
         }
     }
 
-    private static string AuthorsText(Ui<UiState> ui, FeedPackage package)
+    private static string AuthorsText(Ui ui, Appearance appearance, FeedPackage package)
     {
-        return ui.Memo("authors", (package.Authors, ui.State.Appearance.Strings), static a => a.Strings.NugetAuthors(a.Authors));
+        return ui.Memo("authors", (package.Authors, appearance.Strings), static a => a.Strings.NugetAuthors(a.Authors));
     }
 
-    private static void Verified(Ui<UiState> ui)
+    private static void Verified(Ui ui, Appearance appearance)
     {
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.GapTight, AlignY = Align.Center }))
         {
-            ui.Icon(new UiIcon(ui.State.Appearance.Icons.NugetVerified, theme.AccentText));
-            ui.Text(ui.State.Appearance.Strings.NugetVerified, color: theme.AccentText, size: theme.FontSizeSmall);
+            ui.Icon(new UiIcon(appearance.Icons.NugetVerified, theme.AccentText));
+            ui.Text(appearance.Strings.NugetVerified, color: theme.AccentText, size: theme.FontSizeSmall);
         }
     }
 
@@ -141,16 +141,16 @@ internal static class NuGetDetailsView
             var choice = picker.Browser.Choice;
             if (choice is not null)
             {
-                VersionSelect(ui, picker, choice);
+                VersionSelect(ui, ui.State.Appearance, picker, choice);
             }
 
             DetailsStatus(ui, picker, package, details);
         }
     }
 
-    private static void VersionSelect(Ui<UiState> ui, NuGetPicker picker, VersionChoice choice)
+    private static void VersionSelect(Ui ui, Appearance appearance, NuGetPicker picker, VersionChoice choice)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var width = Math.Clamp(ui.SelectButtonWidth(choice.Texts), VersionMinWidth, VersionMaxWidth);
         var enabled = !picker.Browser.IsDownloading && picker.Browser.ShowsWhatWasAsked;
         var version = choice.Picked;
@@ -174,31 +174,31 @@ internal static class NuGetDetailsView
         }
 
         details.Switch((ui, picker, package),
-            loading: static (s, _) => LoadingStatus(s.ui),
+            loading: static (s, _) => LoadingStatus(s.ui, s.ui.State.Appearance),
             read: static (_, _) => { },
-            failed: static (s, _) => RetryStatus(s.ui, s.picker, s.package));
+            failed: static (s, _) => RetryStatus(s.ui, s.ui.State.Appearance, s.picker, s.package));
     }
 
-    private static void LoadingStatus(Ui<UiState> ui)
+    private static void LoadingStatus(Ui ui, Appearance appearance)
     {
         var theme = ui.Theme;
         ui.Spinner(theme.Surface);
-        ui.Text(ui.State.Appearance.Strings.NugetLoadingDetails, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
+        ui.Text(appearance.Strings.NugetLoadingDetails, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
     }
 
-    private static void RetryStatus(Ui<UiState> ui, NuGetPicker picker, FeedPackage package)
+    private static void RetryStatus(Ui ui, Appearance appearance, NuGetPicker picker, FeedPackage package)
     {
-        if (ui.Button(ui.State.Appearance.Strings.NugetRetry, id: "retry-details", variant: ButtonVariant.Ghost) && picker.Browser.Version != null)
+        if (ui.Button(appearance.Strings.NugetRetry, id: "retry-details", variant: ButtonVariant.Ghost) && picker.Browser.Version != null)
         {
             picker.Browser.RetryDetails(package, picker.Browser.Version);
         }
     }
 
-    private static void Warnings(Ui<UiState> ui, VersionDetails? details)
+    private static void Warnings(Ui ui, Appearance appearance, VersionDetails? details)
     {
         if (details is VersionDetails.Failed failed)
         {
-            DetailsFailed(ui, failed.Error);
+            DetailsFailed(ui, appearance, failed.Error);
             return;
         }
         var read = ReadOf(details);
@@ -209,27 +209,27 @@ internal static class NuGetDetailsView
 
         if (read.Deprecation != null)
         {
-            Deprecation(ui, read.Deprecation);
+            Deprecation(ui, appearance, read.Deprecation);
         }
 
         if (read.Vulnerabilities.Count > 0)
         {
-            NuGetPlaceholderView.Warning(ui, ui.State.Appearance.Strings.NugetVulnerable(read.Vulnerabilities.Count));
+            NuGetPlaceholderView.Warning(ui, appearance, appearance.Strings.NugetVulnerable(read.Vulnerabilities.Count));
         }
     }
 
-    private static void DetailsFailed(Ui<UiState> ui, string error)
+    private static void DetailsFailed(Ui ui, Appearance appearance, string error)
     {
         var theme = ui.Theme;
-        NuGetPlaceholderView.Warning(ui, ui.State.Appearance.Strings.NugetDetailsFailed);
+        NuGetPlaceholderView.Warning(ui, appearance, appearance.Strings.NugetDetailsFailed);
         ui.Text(error, color: theme.TextMuted, size: theme.FontSizeSmall, wrap: true);
     }
 
-    private static void Deprecation(Ui<UiState> ui, PackageDeprecation deprecation)
+    private static void Deprecation(Ui ui, Appearance appearance, PackageDeprecation deprecation)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
-        NuGetPlaceholderView.Warning(ui, t.NugetDeprecated);
+        NuGetPlaceholderView.Warning(ui, appearance, t.NugetDeprecated);
         if (deprecation.Message.Length > 0)
         {
             ui.Text(deprecation.Message, color: theme.TextMuted, size: theme.FontSizeSmall, wrap: true);
@@ -241,14 +241,14 @@ internal static class NuGetDetailsView
         }
     }
 
-    private static void Facts(Ui<UiState> ui, NuGetPicker picker, FeedPackage package, VersionDetails? details)
+    private static void Facts(Ui ui, Appearance appearance, NuGetPicker picker, FeedPackage package, VersionDetails? details)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         using (ui.Column(new Box { Width = Sizing.Grow(), Gap = ui.Theme.GapTight }))
         {
             if (package.TotalDownloads > 0)
             {
-                Fact(ui, t.NugetFactDownloads, DownloadsText(ui, package.TotalDownloads));
+                Fact(ui, t.NugetFactDownloads, DownloadsText(ui, appearance, package.TotalDownloads));
             }
 
             if (package.Owners.Length > 0)
@@ -256,7 +256,7 @@ internal static class NuGetDetailsView
                 Fact(ui, t.NugetFactOwners, package.Owners);
             }
 
-            CatalogFacts(ui, picker, package, details);
+            CatalogFacts(ui, appearance, picker, package, details);
             if (package.Tags.Count > 0)
             {
                 Fact(ui, t.NugetFactTags, TagsText(ui, package.Tags));
@@ -264,19 +264,19 @@ internal static class NuGetDetailsView
         }
     }
 
-    private static string DownloadsText(Ui<UiState> ui, long downloads)
+    private static string DownloadsText(Ui ui, Appearance appearance, long downloads)
     {
-        return ui.Memo("downloads", (downloads, ui.State.Appearance.Strings.Culture), static a => a.downloads.ToString("N0", a.Culture));
+        return ui.Memo("downloads", (downloads, appearance.Strings.Culture), static a => a.downloads.ToString("N0", a.Culture));
     }
 
-    private static string TagsText(Ui<UiState> ui, IReadOnlyList<string> tags)
+    private static string TagsText(Ui ui, IReadOnlyList<string> tags)
     {
         return ui.Memo("tags", tags, static list => string.Join(", ", list));
     }
 
-    private static void CatalogFacts(Ui<UiState> ui, NuGetPicker picker, FeedPackage package, VersionDetails? details)
+    private static void CatalogFacts(Ui ui, Appearance appearance, NuGetPicker picker, FeedPackage package, VersionDetails? details)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var read = ReadOf(details);
         if (read == null)
         {
@@ -292,25 +292,25 @@ internal static class NuGetDetailsView
         }
         if (read.Published is not null)
         {
-            Fact(ui, t.NugetFactPublished, PublishedText(ui, read.Published.Value));
+            Fact(ui, t.NugetFactPublished, PublishedText(ui, appearance, read.Published.Value));
         }
 
         LinkFact(ui, "license", t.NugetFactLicense, LicenseText(read), read.LicenseUrl);
         LinkFact(ui, "project", t.NugetFactProject, TextOf(read.ProjectUrl), read.ProjectUrl);
         if (read.PackageSize > 0)
         {
-            Fact(ui, t.NugetFactSize, SizeText(ui, read.PackageSize));
+            Fact(ui, t.NugetFactSize, SizeText(ui, appearance, read.PackageSize));
         }
     }
 
-    private static string PublishedText(Ui<UiState> ui, DateTimeOffset published)
+    private static string PublishedText(Ui ui, Appearance appearance, DateTimeOffset published)
     {
-        return ui.Memo("published", (published, ui.State.Appearance.Strings.Culture), static a => FormatDate(a.published, a.Culture));
+        return ui.Memo("published", (published, appearance.Strings.Culture), static a => FormatDate(a.published, a.Culture));
     }
 
-    private static string SizeText(Ui<UiState> ui, long bytes)
+    private static string SizeText(Ui ui, Appearance appearance, long bytes)
     {
-        return ui.Memo("size", (bytes, ui.State.Appearance.Strings.Culture), static a => FormatSize(a.bytes, a.Culture));
+        return ui.Memo("size", (bytes, appearance.Strings.Culture), static a => FormatSize(a.bytes, a.Culture));
     }
 
     private static PackageVersionDetails? ReadOf(VersionDetails? details)
@@ -354,7 +354,7 @@ internal static class NuGetDetailsView
         return url == null ? "" : url.Text;
     }
 
-    private static void Fact(Ui<UiState> ui, string label, string value)
+    private static void Fact(Ui ui, string label, string value)
     {
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Start }))
@@ -364,7 +364,7 @@ internal static class NuGetDetailsView
         }
     }
 
-    private static void LinkFact(Ui<UiState> ui, string id, string label, string text, WebUrl? url)
+    private static void LinkFact(Ui ui, string id, string label, string text, WebUrl? url)
     {
         if (text.Length == 0)
         {
@@ -379,7 +379,7 @@ internal static class NuGetDetailsView
         }
     }
 
-    private static void Link(Ui<UiState> ui, string id, string text, WebUrl? url)
+    private static void Link(Ui ui, string id, string text, WebUrl? url)
     {
         var theme = ui.Theme;
         if (url == null)
@@ -397,7 +397,7 @@ internal static class NuGetDetailsView
     }
 
     // Rich text asks for the same runs while a link's text, URL and style stay the same.
-    private static IReadOnlyList<RichTextRun> LinkRunsOf(Ui<UiState> ui, string id, string text, string url, TextStyle style)
+    private static IReadOnlyList<RichTextRun> LinkRunsOf(Ui ui, string id, string text, string url, TextStyle style)
     {
         var kept = ui.GetState<LinkRuns>(ui.GetId(id + "-runs"));
         if (kept.Runs.Count == 0 || kept.Text != text || kept.Url != url || kept.Style != style)
@@ -424,9 +424,9 @@ internal static class NuGetDetailsView
         kept.Runs = [new RichTextRun(text, style, Link: url)];
     }
 
-    private static void Dependencies(Ui<UiState> ui, VersionDetails? details)
+    private static void Dependencies(Ui ui, Appearance appearance, VersionDetails? details)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var read = ReadOf(details);
         if (read == null)
@@ -442,13 +442,13 @@ internal static class NuGetDetailsView
         }
         for (var i = 0; i < read.DependencyGroups.Count; i++)
         {
-            Group(ui, read.DependencyGroups[i], i);
+            Group(ui, appearance, read.DependencyGroups[i], i);
         }
     }
 
-    private static void Group(Ui<UiState> ui, DependencyGroup group, int index)
+    private static void Group(Ui ui, Appearance appearance, DependencyGroup group, int index)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var framework = group.TargetFramework.Length > 0 ? group.TargetFramework : t.NugetAnyFramework;
         using (ui.Id(index))
@@ -469,7 +469,7 @@ internal static class NuGetDetailsView
         }
     }
 
-    private static void Dependency(Ui<UiState> ui, PackageDependency dependency)
+    private static void Dependency(Ui ui, PackageDependency dependency)
     {
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.GapTight, AlignY = Align.Center, Padding = new Spacing(theme.Gap, 0f, 0f, 0f) }))

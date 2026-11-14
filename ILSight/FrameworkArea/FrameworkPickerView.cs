@@ -58,10 +58,10 @@ internal static class FrameworkPickerView
             using (ui.Panel(new Box { Height = Sizing.Grow(), Padding = theme.BorderWidth, Background = theme.Field, Clip = true }))
             {
                 open |= browser.Scan.Match((ui, browser, listId),
-                    notStarted: static (s, _) => NoteScanning(s.ui),
-                    scanning: static (s, _) => NoteScanning(s.ui),
-                    scanned: static (s, _) => Rows(s.ui, s.browser, s.listId),
-                    failed: static (s, failed) => NoteScanFailed(s.ui, failed.Error));
+                    notStarted: static (s, _) => NoteScanning(s.ui, s.ui.State.Appearance),
+                    scanning: static (s, _) => NoteScanning(s.ui, s.ui.State.Appearance),
+                    scanned: static (s, _) => Rows(s.ui, s.ui.State.Appearance, s.browser, s.listId),
+                    failed: static (s, failed) => NoteScanFailed(s.ui, s.ui.State.Appearance, failed.Error));
             }
 
             using (ui.Row(new Box { Gap = theme.GapTight }))
@@ -99,23 +99,23 @@ internal static class FrameworkPickerView
             .ToList();
     }
 
-    private static bool NoteScanning(Ui<UiState> ui)
+    private static bool NoteScanning(Ui ui, Appearance appearance)
     {
         var theme = ui.Theme;
-        ui.Text(ui.State.Appearance.Strings.PickerScanning, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) }, color: theme.TextMuted);
+        ui.Text(appearance.Strings.PickerScanning, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) }, color: theme.TextMuted);
         return false;
     }
 
-    private static bool NoteScanFailed(Ui<UiState> ui, string error)
+    private static bool NoteScanFailed(Ui ui, Appearance appearance, string error)
     {
         var theme = ui.Theme;
-        ui.Text(ui.State.Appearance.Strings.PickerScanFailed, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) },
+        ui.Text(appearance.Strings.PickerScanFailed, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) },
             color: theme.TextMuted, wrap: true);
         ui.Text(error, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) }, color: theme.TextMuted, wrap: true);
         return false;
     }
 
-    private static void MoveSelectionFromFilter(Ui<UiState> ui, FrameworkBrowser browser, int listId)
+    private static void MoveSelectionFromFilter(Ui ui, FrameworkBrowser browser, int listId)
     {
         var page = ui.MeasureListPage(listId, ui.Theme.RowHeight);
         foreach (var stroke in ui.Input.Keys)
@@ -128,7 +128,7 @@ internal static class FrameworkPickerView
         }
     }
 
-    private static bool Rows(Ui<UiState> ui, FrameworkBrowser browser, int listId)
+    private static bool Rows(Ui ui, Appearance appearance, FrameworkBrowser browser, int listId)
     {
         var theme = ui.Theme;
         using var list = ui.SelectableList(listId, browser.Filtered, browser.Selection);
@@ -139,7 +139,7 @@ internal static class FrameworkPickerView
             using (var row = list.Row(i, ui.GetId("row"), new Box { Gap = theme.GapTight }))
             {
                 var nameColor = row.Selected ? theme.SelectionText : theme.Text;
-                NodeIcons.Draw(ui, ui.State.Appearance, NodeIcon.Assembly);
+                NodeIcons.Draw(ui, appearance, NodeIcon.Assembly);
                 using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
                 {
                     ui.Text(assembly.Name, new Box { Width = Sizing.Grow() }, color: nameColor, overflow: TextOverflow.Ellipsis);

@@ -36,17 +36,17 @@ public static class MainView
             StatusBarView.Render(ui, appState);
         }
         FrameworkPickerView.Render(ui, appState.ListSession.Navigation, appState.ListSession.Assemblies);
-        ComparisonPickerView.Render(ui, appState.ListSession.Navigation, appState.ListSession.Assemblies);
+        ComparisonPickerView.Render(ui, ui.State.ComparisonPicker, ui.State.Appearance, ui.State.AppCommands, appState.ListSession.Navigation, appState.ListSession.Assemblies);
         NuGetPickerView.Render(ui);
         ProcessPickerView.Render(ui, appState.ListSession.Navigation);
         CloseAssembliesDialogView.Render(ui, appState.ListSession.Assemblies);
         AssemblyListsDialogView.Render(ui, appState.Lists, appState.ListSession, appState.KeptScreen.View);
-        AssemblyListDeleteDialogView.Render(ui, appState.Lists, appState.ListSession, appState.KeptScreen.View);
-        BookmarkImportDialogView.Render(ui, appState.Imports);
+        AssemblyListDeleteDialogView.Render(ui, ui.State.Appearance, ui.State.ListsDialog, ui.State.AppCommands, appState.Lists, appState.ListSession, appState.KeptScreen.View);
+        BookmarkImportDialogView.Render(ui, ui.State.Appearance, ui.State.AppCommands, appState.Imports);
         LayoutResetDialogView.Render(ui);
-        DisplayOptionsResetDialogView.Render(ui);
-        ExportDialogView.Render(ui, appState.Decompiler.Setup.Options);
-        ErrorDialogView.Render(ui, appState.Errors);
+        DisplayOptionsResetDialogView.Render(ui, ui.State.Appearance, ui.State.Display);
+        ExportDialogView.Render(ui, ui.State.ExportSetup, ui.State.Appearance, ui.State.ExportColumns, ui.State.AppCommands, appState.Decompiler.Setup.Options);
+        ErrorDialogView.Render(ui, ui.State.Appearance, ui.State.ErrorDialog, ui.State.Display, ui.State.AppCommands, appState.Errors);
         AboutDialogView.Render(ui, appState);
     }
 
@@ -162,7 +162,7 @@ public static class MainView
                 SearchPanelView.Render(ui, appState.ListSession.Navigation, appState.Decompiler.Setup);
                 break;
             case DockView.Bookmarks:
-                BookmarksPanelView.Render(ui, appState.Bookmarks, appState.ListSession.Assemblies);
+                BookmarksPanelView.Render(ui, ui.State.Appearance, ui.State.BookmarksPanel, ui.State.AppCommands, ui.State.BookmarkColumns, appState.Bookmarks, appState.ListSession.Assemblies);
                 break;
             case DockView.Analyzer:
                 AnalyzerPanelView.Render(ui, appState.ListSession.Navigation, appState.ListSession.Analyzer);
@@ -174,7 +174,7 @@ public static class MainView
                 DisplayOptionsPanelView.Render(ui, appState);
                 break;
             case DockView.Exports:
-                ExportsPanelView.Render(ui, appState.Export, appState.FinishedExports);
+                ExportsPanelView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.ExportsPanel, appState.Export, appState.FinishedExports);
                 break;
             default:
                 throw new UnreachableException();

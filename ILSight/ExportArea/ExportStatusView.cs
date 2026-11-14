@@ -27,7 +27,7 @@ internal static class ExportStatusView
     private static void Running(Ui<UiState> ui, RunningExport running, int waiting)
     {
         var t = ui.State.Appearance.Strings;
-        if (Glance(ui, running, waiting))
+        if (Glance(ui, ui.State.Appearance, running, waiting))
         {
             ScreenLayout.OpenPanel(ui.State, DockView.Exports);
         }
@@ -38,10 +38,10 @@ internal static class ExportStatusView
         }
     }
 
-    private static bool Glance(Ui<UiState> ui, RunningExport running, int waiting)
+    private static bool Glance(Ui ui, Appearance appearance, RunningExport running, int waiting)
     {
         var progress = running.Progress;
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var i = ui.Clickable("export-glance");
         using (ui.Row(i.Id, ButtonBox(theme, i)))
@@ -56,7 +56,7 @@ internal static class ExportStatusView
                 ui.ProgressBar(fraction.Value, Sizing.Fixed(BarWidth));
             }
 
-            Queued(ui, waiting);
+            Queued(ui, appearance, waiting);
         }
         ui.Tooltip(i.Id, t.StatusShowExports);
         return i.Clicked;
@@ -77,21 +77,21 @@ internal static class ExportStatusView
         return t.StatusExportingName(name);
     }
 
-    private static void Queued(Ui<UiState> ui, int waiting)
+    private static void Queued(Ui ui, Appearance appearance, int waiting)
     {
         if (waiting == 0)
         {
             return;
         }
 
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var text = ui.Memo("export-queued", (waiting, t), static a => a.t.StatusExportQueued(a.waiting));
         ui.Text(text, color: theme.TextMuted, size: theme.FontSizeSmall);
     }
 
     // Fits the status bar's height, which the theme's icon buttons are too tall for.
-    private static bool IconButton(Ui<UiState> ui, string id, IconGlyph glyph, string tooltip)
+    private static bool IconButton(Ui ui, string id, IconGlyph glyph, string tooltip)
     {
         var theme = ui.Theme;
         var i = ui.Clickable(id);

@@ -49,13 +49,13 @@ internal static class DisplayOptionsPanelView
             Gap = theme.GroupGap,
             Padding = theme.PanelPadding,
         });
-        ListInstalledFontsOnce(ui);
+        ListInstalledFontsOnce(ui, ui.State.CodeFonts);
         var shown = InterfaceSection(ui, appState, words);
         shown |= CodeSection(ui, words);
         shown |= TreeSection(ui, words);
         if (words.Length == 0)
         {
-            ResetRow(ui);
+            ResetRow(ui, ui.State.Appearance, ui.State.Display);
         }
         else if (!shown)
         {
@@ -73,7 +73,7 @@ internal static class DisplayOptionsPanelView
         return OptionSearch.IsMatch(t.Culture, words, title, description, heading);
     }
 
-    private static void NextRow(Ui<UiState> ui, ref int rows)
+    private static void NextRow(Ui ui, ref int rows)
     {
         if (rows > 0)
         {
@@ -83,20 +83,20 @@ internal static class DisplayOptionsPanelView
         rows++;
     }
 
-    private static void ListInstalledFontsOnce(Ui<UiState> ui)
+    private static void ListInstalledFontsOnce(Ui ui, CodeFontChoices codeFonts)
     {
-        if (!ui.State.CodeFonts.TryTakeListingRequest())
+        if (!codeFonts.TryTakeListingRequest())
         {
             return;
         }
 
-        ListInstalledFonts(ui);
+        ListInstalledFonts(ui, codeFonts);
     }
 
     // Its own method, so that the closure is made only the frame the listing is asked for.
-    private static void ListInstalledFonts(Ui<UiState> ui)
+    private static void ListInstalledFonts(Ui ui, CodeFontChoices codeFonts)
     {
-        ui.ListSystemFonts(families => ui.State.CodeFonts.KeepFonts(families));
+        ui.ListSystemFonts(families => codeFonts.KeepFonts(families));
     }
 
     // Only the scale and the title bar are options a reset puts back, so only their names turn bold.
@@ -181,7 +181,7 @@ internal static class DisplayOptionsPanelView
 
         CustomizeThemeButton(ui);
         OpenThemesFolderButton(ui);
-        ReloadThemesButton(ui);
+        ReloadThemesButton(ui, ui.State.Appearance, ui.State.AppCommands);
     }
 
     private static void PickTheme(Ui<UiState> ui, ThemeCatalog<ThemeFile, ThemeContents, AppTheme> themes, ThemeId<ThemeFile> chosen)
@@ -230,12 +230,12 @@ internal static class DisplayOptionsPanelView
         Commands.Later(ui.State.AppCommands, ui.State, static (a, screen) => OpenFolder(screen, a.UserThemes.PrepareFolder()));
     }
 
-    private static void ReloadThemesButton(Ui<UiState> ui)
+    private static void ReloadThemesButton(Ui ui, Appearance appearance, IAppCommandWriter commands)
     {
-        var t = ui.State.Appearance.Strings;
-        if (ui.IconButton("reload-themes", ui.State.Appearance.Icons.OptionsReloadThemes, t.DisplayOptionsReloadThemes, variant: ButtonVariant.Neutral))
+        var t = appearance.Strings;
+        if (ui.IconButton("reload-themes", appearance.Icons.OptionsReloadThemes, t.DisplayOptionsReloadThemes, variant: ButtonVariant.Neutral))
         {
-            Commands.Later(ui.State.AppCommands, static a => a.UserThemes.ReloadThemes());
+            Commands.Later(commands, static a => a.UserThemes.ReloadThemes());
         }
     }
 
@@ -250,7 +250,7 @@ internal static class DisplayOptionsPanelView
 
         CustomizeIconThemeButton(ui);
         OpenIconThemesFolderButton(ui);
-        ReloadIconThemesButton(ui);
+        ReloadIconThemesButton(ui, ui.State.Appearance, ui.State.AppCommands);
     }
 
     private static void PickIconTheme(Ui<UiState> ui, ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> themes, ThemeId<IconThemeFile> chosen)
@@ -307,12 +307,12 @@ internal static class DisplayOptionsPanelView
         }
     }
 
-    private static void ReloadIconThemesButton(Ui<UiState> ui)
+    private static void ReloadIconThemesButton(Ui ui, Appearance appearance, IAppCommandWriter commands)
     {
-        var t = ui.State.Appearance.Strings;
-        if (ui.IconButton("reload-icon-themes", ui.State.Appearance.Icons.OptionsReloadIconThemes, t.DisplayOptionsReloadIconThemes, variant: ButtonVariant.Neutral))
+        var t = appearance.Strings;
+        if (ui.IconButton("reload-icon-themes", appearance.Icons.OptionsReloadIconThemes, t.DisplayOptionsReloadIconThemes, variant: ButtonVariant.Neutral))
         {
-            Commands.Later(ui.State.AppCommands, static a => a.UserIconThemes.ReloadThemes());
+            Commands.Later(commands, static a => a.UserIconThemes.ReloadThemes());
         }
     }
 
@@ -436,7 +436,7 @@ internal static class DisplayOptionsPanelView
             NextRow(ui, ref rows);
             using (OptionRow(ui, t.DisplayOptionsFont, null, display.Font is not null))
             {
-                FontPicker(ui);
+                FontPicker(ui, ui.State.Appearance, ui.State.CodeFonts, ui.State.Display);
             }
         }
         if (fontSize)
@@ -444,12 +444,12 @@ internal static class DisplayOptionsPanelView
             NextRow(ui, ref rows);
             using (OptionRow(ui, t.DisplayOptionsFontSize, hint, display.FontSize is not null))
             {
-                FontSizeStepper(ui);
+                FontSizeStepper(ui, ui.State.Appearance, ui.State.Display);
             }
         }
         if (font || fontSize)
         {
-            FontPreview(ui);
+            FontPreview(ui, ui.State.Display, ui.State.Appearance);
         }
 
         if (lineNumbers)
@@ -500,13 +500,13 @@ internal static class DisplayOptionsPanelView
         return true;
     }
 
-    private static void FontPicker(Ui<UiState> ui)
+    private static void FontPicker(Ui ui, Appearance appearance, CodeFontChoices codeFonts, ScreenDisplay display)
     {
-        var t = ui.State.Appearance.Strings;
-        var choices = ui.State.CodeFonts;
-        var chosen = ui.State.Display.Options.Font;
+        var t = appearance.Strings;
+        var choices = codeFonts;
+        var chosen = display.Options.Font;
         var shown = CodeDisplay.GetFontName(chosen);
-        var width = ControlWidth(PickerMinWidth, MeasureFontPicker(ui, shown), FontPickerMaxWidth);
+        var width = ControlWidth(PickerMinWidth, MeasureFontPicker(ui, codeFonts, shown), FontPickerMaxWidth);
         using var menu = ui.SelectButton("code-font", shown, width);
         if (!menu.IsOpen)
         {
@@ -518,7 +518,7 @@ internal static class DisplayOptionsPanelView
         {
             if (ui.MenuRadioItem(choices.Labels[i], choices.Labels[i] == shown))
             {
-                ui.State.Display.SetCodeFont(fonts[i]);
+                display.SetCodeFont(fonts[i]);
             }
         }
         if (!choices.IsListed)
@@ -527,40 +527,40 @@ internal static class DisplayOptionsPanelView
         }
     }
 
-    private static float MeasureFontPicker(Ui<UiState> ui, string shown)
+    private static float MeasureFontPicker(Ui ui, CodeFontChoices codeFonts, string shown)
     {
-        var offered = ui.SelectButtonWidth(ui.State.CodeFonts.Labels);
+        var offered = ui.SelectButtonWidth(codeFonts.Labels);
         var chosen = ui.SelectButtonWidth([shown]);
         var widest = MathF.Max(offered, chosen);
         return MathF.Min(widest, FontPickerMaxWidth);
     }
 
-    private static void FontSizeStepper(Ui<UiState> ui)
+    private static void FontSizeStepper(Ui ui, Appearance appearance, ScreenDisplay screenDisplay)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
-        var display = ui.State.Display.Options;
+        var display = screenDisplay.Options;
         var smaller = ui.Memo("smaller", t, static s => s.DisplayOptionsSmaller(Shortcuts.ZoomOut.Label));
-        if (ui.IconButton("smaller", ui.State.Appearance.Icons.OptionsFontSmaller, smaller, CodeDisplay.CanZoomOut(display, theme), ButtonVariant.Neutral))
+        if (ui.IconButton("smaller", appearance.Icons.OptionsFontSmaller, smaller, CodeDisplay.CanZoomOut(display, theme), ButtonVariant.Neutral))
         {
-            ui.State.Display.ZoomCode(ui.State.Appearance.Theme, -1);
+            screenDisplay.ZoomCode(appearance.Theme, -1);
         }
 
         var size = CodeDisplay.GetFontSize(display, theme);
         var text = ui.Memo("size", size, static s => FormatFontSize(s));
         ui.Text(text, new Box { Width = Sizing.Fixed(MeasureFontSizeSlot(ui)) }, align: Align.Center);
         var larger = ui.Memo("larger", t, static s => s.DisplayOptionsLarger(Shortcuts.ZoomIn.Label));
-        if (ui.IconButton("larger", ui.State.Appearance.Icons.OptionsFontLarger, larger, CodeDisplay.CanZoomIn(display, theme), ButtonVariant.Neutral))
+        if (ui.IconButton("larger", appearance.Icons.OptionsFontLarger, larger, CodeDisplay.CanZoomIn(display, theme), ButtonVariant.Neutral))
         {
-            ui.State.Display.ZoomCode(ui.State.Appearance.Theme, 1);
+            screenDisplay.ZoomCode(appearance.Theme, 1);
         }
     }
 
     // Under the font size, so every change to the font or its size shows as it is made.
-    private static void FontPreview(Ui<UiState> ui)
+    private static void FontPreview(Ui ui, ScreenDisplay display, Appearance appearance)
     {
         var theme = ui.Theme;
-        var size = CodeDisplay.GetFontSize(ui.State.Display.Options, theme);
+        var size = CodeDisplay.GetFontSize(display.Options, theme);
         using var row = ui.Column(new Box
         {
             Width = Sizing.Grow(),
@@ -575,7 +575,7 @@ internal static class DisplayOptionsPanelView
             BorderWidth = theme.BorderWidth,
             Radius = theme.CornerRadius,
         });
-        var color = ui.State.Appearance.CodeViewPalette.Plain;
+        var color = appearance.CodeViewPalette.Plain;
         ui.Text(PreviewText, new Box { Width = Sizing.Grow() }, color: color, size: size, family: MonoFonts.Code, wrap: true);
     }
 
@@ -585,7 +585,7 @@ internal static class DisplayOptionsPanelView
     }
 
     // The largest size's width, so the buttons beside it stay put as the size changes.
-    private static float MeasureFontSizeSlot(Ui<UiState> ui)
+    private static float MeasureFontSizeSlot(Ui ui)
     {
         var widest = FormatFontSize(CodeFontSize.Max);
         var width = ui.MeasureText(widest);
@@ -705,16 +705,16 @@ internal static class DisplayOptionsPanelView
         return true;
     }
 
-    private static void ResetRow(Ui<UiState> ui)
+    private static void ResetRow(Ui ui, Appearance appearance, ScreenDisplay display)
     {
-        var t = ui.State.Appearance.Strings;
-        var changed = ui.State.Display.Options != DisplayOptions.Default;
-        var icon = new UiIcon(ui.State.Appearance.Icons.OptionsResetDisplay);
+        var t = appearance.Strings;
+        var changed = display.Options != DisplayOptions.Default;
+        var icon = new UiIcon(appearance.Icons.OptionsResetDisplay);
         using (ui.Row(new Box { Width = Sizing.Grow(), AlignX = Align.End }))
         {
             if (ui.Button(t.DisplayOptionsReset, enabled: changed, id: "reset", variant: ButtonVariant.Ghost, icon: icon))
             {
-                ui.State.Display.Reset.Ask();
+                display.Reset.Ask();
             }
         }
     }
@@ -724,7 +724,7 @@ internal static class DisplayOptionsPanelView
         return text.ToUpperInvariant();
     }
 
-    private static Ui.Scope Section(Ui<UiState> ui, string heading)
+    private static Ui.Scope Section(Ui ui, string heading)
     {
         var theme = ui.Theme;
         var section = ui.Column(new Box { Width = Sizing.Grow(), Gap = theme.GapTight });
@@ -732,7 +732,7 @@ internal static class DisplayOptionsPanelView
         return section;
     }
 
-    private static Ui.Scope Card(Ui<UiState> ui)
+    private static Ui.Scope Card(Ui ui)
     {
         var theme = ui.Theme;
         return ui.Column(new Box
@@ -780,17 +780,17 @@ internal static class DisplayOptionsPanelView
             }
             if (description is not null)
             {
-                Description(ui, description, query, mark);
+                Description(ui, ui.State.Appearance, description, query, mark);
             }
         }
         return row;
     }
 
-    private static void Description(Ui<UiState> ui, string description, string query, uint mark)
+    private static void Description(Ui ui, Appearance appearance, string description, string query, uint mark)
     {
         var theme = ui.Theme;
         var box = new Box { Width = Sizing.Percent(WholeWidth) };
-        var runs = OptionSearch.EnsureMarkedRuns(ui, ui.State.Appearance, query, description, ui.StyleText(theme.TextMuted, theme.FontSizeSmall), part: 1);
+        var runs = OptionSearch.EnsureMarkedRuns(ui, appearance, query, description, ui.StyleText(theme.TextMuted, theme.FontSizeSmall), part: 1);
         if (runs is not null)
         {
             ui.RichText(runs, box, markBackground: mark);
@@ -804,7 +804,7 @@ internal static class DisplayOptionsPanelView
     // The description wraps in the title's share and asks for no room of its own. When the row is short the control
     // gives up room first, and the title only after it, cut short down to its own width or TitleMinWidth, whichever is
     // less.
-    private static Sizing TitleWidth(Ui<UiState> ui, string title, bool bold)
+    private static Sizing TitleWidth(Ui ui, string title, bool bold)
     {
         var width = ui.MeasureText(title, bold: bold);
         return Sizing.Grow(MathF.Min(width, TitleMinWidth)) with { Priority = TitlePriority };

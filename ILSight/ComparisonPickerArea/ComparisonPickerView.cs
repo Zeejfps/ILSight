@@ -18,9 +18,9 @@ internal static class ComparisonPickerView
     /// <summary>The dialog picking what to compare an assembly with. Compare shows the comparison in
     /// <paramref name="navigation"/>'s tabs in this frame, of <paramref name="assemblies"/> as they are open now, and
     /// queues only the comparison's run.</summary>
-    public static void Render(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies)
+    public static void Render(Ui ui, ComparisonPicker comparisonPicker, Appearance appearance, IAppCommandWriter commands, Navigation navigation, AssemblyList assemblies)
     {
-        var picker = ui.State.ComparisonPicker;
+        var picker = comparisonPicker;
         var choice = picker.Choice;
         picker.Update(assemblies);
 
@@ -30,7 +30,7 @@ internal static class ComparisonPickerView
             return;
         }
 
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var compare = false;
         var close = false;
@@ -62,7 +62,7 @@ internal static class ComparisonPickerView
             compare |= ui.TextField(FilterId, ref picker.Filter, t.ComparePickerFilter, clearable: true);
             using (ui.Panel(new Box { Height = Sizing.Grow(), Padding = theme.BorderWidth, Background = theme.Field, Clip = true }))
             {
-                compare |= ListOrHint(ui, choice, listId);
+                compare |= ListOrHint(ui, appearance, choice, listId);
             }
 
             using (ui.Row(new Box { Gap = theme.GapTight }))
@@ -74,7 +74,7 @@ internal static class ComparisonPickerView
         }
         if (compare)
         {
-            close |= TryCompareWithSelected(ui.State.AppCommands, navigation, assemblies, choice, compared, t);
+            close |= TryCompareWithSelected(commands, navigation, assemblies, choice, compared, t);
         }
 
         if (close)
@@ -83,7 +83,7 @@ internal static class ComparisonPickerView
         }
     }
 
-    private static void MoveSelectionFromFilter(Ui<UiState> ui, ComparisonChoice choice, int listId)
+    private static void MoveSelectionFromFilter(Ui ui, ComparisonChoice choice, int listId)
     {
         var page = ui.MeasureListPage(listId, ui.Theme.RowHeight);
         var count = choice.Filtered.Count;
@@ -106,19 +106,19 @@ internal static class ComparisonPickerView
         }
     }
 
-    private static bool ListOrHint(Ui<UiState> ui, ComparisonChoice choice, int listId)
+    private static bool ListOrHint(Ui ui, Appearance appearance, ComparisonChoice choice, int listId)
     {
         if (choice.Filtered.Count > 0)
         {
-            return Rows(ui, choice, listId);
+            return Rows(ui, appearance, choice, listId);
         }
 
         var theme = ui.Theme;
-        ui.Text(ui.State.Appearance.Strings.ComparePickerNone, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) }, color: theme.TextMuted, wrap: true);
+        ui.Text(appearance.Strings.ComparePickerNone, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) }, color: theme.TextMuted, wrap: true);
         return false;
     }
 
-    private static bool Rows(Ui<UiState> ui, ComparisonChoice choice, int listId)
+    private static bool Rows(Ui ui, Appearance appearance, ComparisonChoice choice, int listId)
     {
         bool activated;
         choice.Selection.ShowIn(choice.Filtered);
@@ -126,7 +126,7 @@ internal static class ComparisonPickerView
         {
             for (var i = list.First; i < list.End; i++)
             {
-                Row(ui, list, i, choice.Filtered[i]);
+                Row(ui, appearance, list, i, choice.Filtered[i]);
             }
 
             activated = list.Activated;
@@ -135,14 +135,14 @@ internal static class ComparisonPickerView
         return activated;
     }
 
-    private static void Row(Ui<UiState> ui, ListScope list, int index, LoadedModule assembly)
+    private static void Row(Ui ui, Appearance appearance, ListScope list, int index, LoadedModule assembly)
     {
         var theme = ui.Theme;
         using (ui.Id(assembly.FilePath.Text))
         using (var row = list.Row(index, ui.GetId("row"), new Box { Gap = theme.GapTight, AlignY = Align.Center }))
         {
             var nameColor = row.Selected ? theme.SelectionText : theme.Text;
-            NodeIcons.Draw(ui, ui.State.Appearance, NodeIcon.Assembly);
+            NodeIcons.Draw(ui, appearance, NodeIcon.Assembly);
             ui.Text(assembly.NameAndVersion, color: nameColor);
             FrameworkText(ui, assembly);
             // Shortened in the middle so that its folder and name stay.
@@ -150,7 +150,7 @@ internal static class ComparisonPickerView
         }
     }
 
-    private static void FrameworkText(Ui<UiState> ui, LoadedModule assembly)
+    private static void FrameworkText(Ui ui, LoadedModule assembly)
     {
         var moniker = assembly.FrameworkMoniker;
         if (moniker is null)

@@ -6,10 +6,10 @@ namespace ILSight;
 /// <summary>Asks whether to put every display option back to its default before they are reset.</summary>
 internal static class DisplayOptionsResetDialogView
 {
-    public static void Render(Ui<UiState> ui)
+    public static void Render(Ui ui, Appearance appearance, ScreenDisplay screenDisplay)
     {
-        var t = ui.State.Appearance.Strings;
-        var open = ui.State.Display.Reset.IsAsked;
+        var t = appearance.Strings;
+        var open = screenDisplay.Reset.IsAsked;
         using (var dialog = ui.Dialog("display-reset", t.DisplayOptionsReset, ref open, closeButton: false))
         {
             if (dialog.IsOpen)
@@ -19,19 +19,19 @@ internal static class DisplayOptionsResetDialogView
                 {
                     if (ui.Button(t.DisplayOptionsResetCancel, id: "display-reset-cancel", variant: ButtonVariant.Ghost))
                     {
-                        ui.State.Display.FinishReset(false);
+                        screenDisplay.FinishReset(false);
                     }
 
                     if (ui.Button(t.DisplayOptionsResetConfirm, id: "display-reset-confirm", variant: ButtonVariant.Primary))
                     {
-                        ui.State.Display.FinishReset(true);
+                        screenDisplay.FinishReset(true);
                     }
                 }
             }
         }
-        if (!open && ui.State.Display.Reset.IsAsked)
+        if (!open && screenDisplay.Reset.IsAsked)
         {
-            ui.State.Display.FinishReset(false);
+            screenDisplay.FinishReset(false);
         }
     }
 }

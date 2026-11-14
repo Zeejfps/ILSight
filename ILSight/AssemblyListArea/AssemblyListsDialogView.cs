@@ -42,11 +42,11 @@ internal static class AssemblyListsDialogView
                 return;
             }
 
-            Toolbar(ui, lists);
+            Toolbar(ui, ui.State.Appearance, ui.State.ListsDialog, ui.State.AppCommands, lists);
             Rows(ui, lists, session, view);
-            RenameProblem(ui, lists);
-            ContextMenu(ui, lists, session, view);
-            Footer(ui);
+            RenameProblem(ui, ui.State.Appearance, ui.State.ListsDialog, lists);
+            ContextMenu(ui, ui.State.ListsDialog, ui.State.Appearance, ui.State.AppCommands, lists, session, view);
+            Footer(ui, ui.State.Appearance, ui.State.ListsDialog, ui.State.Presets, ui.State.AppCommands);
         }
         if (!open)
         {
@@ -54,32 +54,32 @@ internal static class AssemblyListsDialogView
         }
     }
 
-    private static void Toolbar(Ui<UiState> ui, SavedAssemblyLists lists)
+    private static void Toolbar(Ui ui, Appearance appearance, AssemblyListsDialog listsDialog, IAppCommandWriter commands, SavedAssemblyLists lists)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
-        var dialog = ui.State.ListsDialog;
+        var dialog = listsDialog;
         var picked = dialog.FindPickedList(lists);
         var any = picked is not null;
         using (ui.Row(new Box { Width = Sizing.Grow(), Gap = theme.GapTight, AlignY = Align.Center }))
         {
-            if (ui.Button(t.ListsNew, id: "new", icon: new UiIcon(ui.State.Appearance.Icons.ListsNew)))
+            if (ui.Button(t.ListsNew, id: "new", icon: new UiIcon(appearance.Icons.ListsNew)))
             {
-                Commands.Later(ui.State.AppCommands, (dialog, name: t.ListsNewName), static (a, s) => Create(s.dialog, a, s.name));
+                Commands.Later(commands, (dialog, name: t.ListsNewName), static (a, s) => Create(s.dialog, a, s.name));
             }
 
             ui.Spacer();
-            if (ui.IconButton("duplicate", ui.State.Appearance.Icons.ListsDuplicate, t.ListsDuplicate, any) && picked is not null)
+            if (ui.IconButton("duplicate", appearance.Icons.ListsDuplicate, t.ListsDuplicate, any) && picked is not null)
             {
-                Commands.Later(ui.State.AppCommands, (dialog, name: picked, copyName: t.ListsCopyName(picked)), static (a, s) => Duplicate(s.dialog, a, s.name, s.copyName));
+                Commands.Later(commands, (dialog, name: picked, copyName: t.ListsCopyName(picked)), static (a, s) => Duplicate(s.dialog, a, s.name, s.copyName));
             }
 
-            if (ui.IconButton("rename", ui.State.Appearance.Icons.ListsRename, t.ListsRename, any) && picked is not null)
+            if (ui.IconButton("rename", appearance.Icons.ListsRename, t.ListsRename, any) && picked is not null)
             {
                 dialog.StartRenaming(picked);
             }
 
-            if (ui.IconButton("delete", ui.State.Appearance.Icons.ListsDelete, t.ListsDelete, any) && picked is not null)
+            if (ui.IconButton("delete", appearance.Icons.ListsDelete, t.ListsDelete, any) && picked is not null)
             {
                 dialog.StartConfirmingDelete(picked);
             }
@@ -115,12 +115,12 @@ internal static class AssemblyListsDialogView
 
             if (list.Focused)
             {
-                HandleKeys(ui, lists);
+                HandleKeys(ui, ui.State.ListsDialog, lists);
             }
 
             if (list.Activated)
             {
-                ActOnRow(ui, lists, session, view, names[list.Index], doubleClicked);
+                ActOnRow(ui, ui.State.ListsDialog, ui.State.AppCommands, lists, session, view, names[list.Index], doubleClicked);
             }
 
             if (list.ContextMenuRequested)
@@ -144,7 +144,7 @@ internal static class AssemblyListsDialogView
         using (ui.Id(name))
         using (var row = list.Row(index, ui.GetId("row"), new Box { Gap = theme.Gap, AlignY = Align.Center }))
         {
-            ActiveMark(ui, active);
+            ActiveMark(ui, ui.State.Appearance, active);
             if (dialog.Mode is ListsDialogMode.Renaming renaming && renaming.List == name)
             {
                 EditName(ui, renaming, listId);
@@ -158,26 +158,26 @@ internal static class AssemblyListsDialogView
             ui.Text(t.ListsCount(count), color: theme.TextMuted, size: theme.FontSizeSmall);
             if (ui.Button(t.ListsActivate, enabled: !active, id: "activate", variant: ButtonVariant.Ghost))
             {
-                Switch(ui, lists, session, view, name);
+                Switch(ui, ui.State.AppCommands, lists, session, view, name);
             }
 
             return row.Interaction.DoubleClicked;
         }
     }
 
-    private static void ActiveMark(Ui<UiState> ui, bool active)
+    private static void ActiveMark(Ui ui, Appearance appearance, bool active)
     {
         var theme = ui.Theme;
         using (ui.Box(new Box { Width = theme.IconSize, Height = Sizing.Grow() }))
         {
             if (active)
             {
-                ui.Icon(new UiIcon(ui.State.Appearance.Icons.ListsActive, theme.Accent));
+                ui.Icon(new UiIcon(appearance.Icons.ListsActive, theme.Accent));
             }
         }
     }
 
-    private static void NameText(Ui<UiState> ui, string name, bool selected)
+    private static void NameText(Ui ui, string name, bool selected)
     {
         var theme = ui.Theme;
         var color = selected ? theme.SelectionText : theme.Text;
@@ -211,9 +211,9 @@ internal static class AssemblyListsDialogView
         ui.State.ListsDialog.StopAsking();
     }
 
-    private static void HandleKeys(Ui<UiState> ui, SavedAssemblyLists lists)
+    private static void HandleKeys(Ui ui, AssemblyListsDialog listsDialog, SavedAssemblyLists lists)
     {
-        var dialog = ui.State.ListsDialog;
+        var dialog = listsDialog;
         if (dialog.IsAsking)
         {
             return;
@@ -236,19 +236,19 @@ internal static class AssemblyListsDialogView
         }
     }
 
-    private static void ActOnRow(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name, bool doubleClicked)
+    private static void ActOnRow(Ui ui, AssemblyListsDialog listsDialog, IAppCommandWriter commands, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name, bool doubleClicked)
     {
         if (doubleClicked)
         {
-            ui.State.ListsDialog.StartRenaming(name);
+            listsDialog.StartRenaming(name);
             return;
         }
-        Switch(ui, lists, session, view, name);
+        Switch(ui, commands, lists, session, view, name);
     }
 
-    private static void Switch(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
+    private static void Switch(Ui ui, IAppCommandWriter commands, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
-        Commands.OpenListLater(ui.State.AppCommands, AssemblyLists.SwitchAssemblyList(lists, session, view, name));
+        Commands.OpenListLater(commands, AssemblyLists.SwitchAssemblyList(lists, session, view, name));
         // The rows drawn above show it as the active list only next frame.
         ui.RequestUpdate();
     }
@@ -264,11 +264,11 @@ internal static class AssemblyListsDialogView
         dialog.StopAsking();
     }
 
-    private static void RenameProblem(Ui<UiState> ui, SavedAssemblyLists lists)
+    private static void RenameProblem(Ui ui, Appearance appearance, AssemblyListsDialog listsDialog, SavedAssemblyLists lists)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
-        var dialog = ui.State.ListsDialog;
+        var dialog = listsDialog;
         if (dialog.Mode is not ListsDialogMode.Renaming renaming)
         {
             return;
@@ -293,7 +293,7 @@ internal static class AssemblyListsDialogView
         return t.ListsNameTaken;
     }
 
-    private static void ContextMenu(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
+    private static void ContextMenu(Ui ui, AssemblyListsDialog listsDialog, Appearance appearance, IAppCommandWriter commands, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
     {
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
@@ -301,23 +301,23 @@ internal static class AssemblyListsDialogView
             return;
         }
 
-        var picked = ui.State.ListsDialog.FindPickedList(lists);
+        var picked = listsDialog.FindPickedList(lists);
         if (picked is null)
         {
             return;
         }
 
-        MenuItems(ui, lists, session, view, picked);
+        MenuItems(ui, appearance, listsDialog, commands, lists, session, view, picked);
     }
 
-    private static void MenuItems(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string picked)
+    private static void MenuItems(Ui ui, Appearance appearance, AssemblyListsDialog listsDialog, IAppCommandWriter commands, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string picked)
     {
-        var t = ui.State.Appearance.Strings;
-        var dialog = ui.State.ListsDialog;
+        var t = appearance.Strings;
+        var dialog = listsDialog;
         var active = picked == lists.Active;
         if (ui.MenuItem(t.ListsActivate, enabled: !active, id: "activate"))
         {
-            Switch(ui, lists, session, view, picked);
+            Switch(ui, commands, lists, session, view, picked);
         }
 
         if (ui.MenuItem(t.ListsRename, Shortcuts.Rename, id: "rename"))
@@ -327,7 +327,7 @@ internal static class AssemblyListsDialogView
 
         if (ui.MenuItem(t.ListsDuplicate, id: "duplicate"))
         {
-            Commands.Later(ui.State.AppCommands, (dialog, name: picked, copyName: t.ListsCopyName(picked)), static (a, s) => Duplicate(s.dialog, a, s.name, s.copyName));
+            Commands.Later(commands, (dialog, name: picked, copyName: t.ListsCopyName(picked)), static (a, s) => Duplicate(s.dialog, a, s.name, s.copyName));
         }
 
         ui.MenuSeparator();
@@ -337,13 +337,13 @@ internal static class AssemblyListsDialogView
         }
     }
 
-    private static void Footer(Ui<UiState> ui)
+    private static void Footer(Ui ui, Appearance appearance, AssemblyListsDialog listsDialog, PresetScan presets, IAppCommandWriter commands)
     {
-        var t = ui.State.Appearance.Strings;
-        var dialog = ui.State.ListsDialog;
+        var t = appearance.Strings;
+        var dialog = listsDialog;
         using (ui.DialogActions())
         {
-            PresetMenu(ui);
+            PresetMenu(ui, appearance, presets, commands, listsDialog);
             ui.Spacer();
             if (ui.Button(t.ListsClose, id: "close"))
             {
@@ -352,16 +352,16 @@ internal static class AssemblyListsDialogView
         }
     }
 
-    private static void PresetMenu(Ui<UiState> ui)
+    private static void PresetMenu(Ui ui, Appearance appearance, PresetScan presetScan, IAppCommandWriter commands, AssemblyListsDialog listsDialog)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         using var menu = ui.SelectButton(PresetMenuId, t.ListsAddPreset);
         if (!menu.IsOpen)
         {
             return;
         }
 
-        var scan = ui.State.Presets;
+        var scan = presetScan;
         var presets = scan.Found;
         if (presets is null)
         {
@@ -382,7 +382,7 @@ internal static class AssemblyListsDialogView
             var count = t.ListsCount(preset.Paths.Count);
             if (ui.MenuItem(preset.Name, detail: count))
             {
-                Commands.Later(ui.State.AppCommands, (dialog: ui.State.ListsDialog, preset), static (a, s) => AddPreset(s.dialog, a, s.preset));
+                Commands.Later(commands, (dialog: listsDialog, preset), static (a, s) => AddPreset(s.dialog, a, s.preset));
             }
         }
     }

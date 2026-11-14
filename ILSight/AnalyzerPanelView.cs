@@ -18,7 +18,7 @@ internal static class AnalyzerPanelView
         var rows = ui.State.Analyzer;
         rows.SetStyle(ui.Theme, ui.State.Appearance.NodeIconPalette, ui.State.Appearance.Icons, t);
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
-        Toolbar(ui, analyzer, rows);
+        Toolbar(ui, ui.State.Appearance, ui.State.AppCommands, analyzer, rows);
         ui.Separator();
         if (rows.Roots.Count == 0)
         {
@@ -29,33 +29,33 @@ internal static class AnalyzerPanelView
         ContextMenu(ui, navigation, analyzer);
     }
 
-    private static void Toolbar(Ui<UiState> ui, AnalyzerTree analyzer, AnalyzerRows rows)
+    private static void Toolbar(Ui ui, Appearance appearance, IAppCommandWriter commands, AnalyzerTree analyzer, AnalyzerRows rows)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var any = analyzer.Roots.Count > 0;
         var root = rows.FindSelectedRoot();
         using (ui.PaneToolbar())
         {
-            if (ui.IconButton("collapse", ui.State.Appearance.Icons.AnalyzerCollapseAll, t.CodeCollapseAll, any))
+            if (ui.IconButton("collapse", appearance.Icons.AnalyzerCollapseAll, t.CodeCollapseAll, any))
             {
                 rows.CollapseAll();
             }
 
-            if (ui.IconButton("expand", ui.State.Appearance.Icons.AnalyzerExpandAll, t.CodeExpandAll, any))
+            if (ui.IconButton("expand", appearance.Icons.AnalyzerExpandAll, t.CodeExpandAll, any))
             {
                 rows.ExpandAll();
             }
 
             ui.Separator(theme.IconSize);
-            if (ui.IconButton("remove", ui.State.Appearance.Icons.AnalyzerRemove, t.AnalyzerRemoveAnalysis, root is not null) && root is not null)
+            if (ui.IconButton("remove", appearance.Icons.AnalyzerRemove, t.AnalyzerRemoveAnalysis, root is not null) && root is not null)
             {
-                Commands.Later(ui.State.AppCommands, root, static (a, r) => a.ListSession.Analyzer.RemoveRoot(r));
+                Commands.Later(commands, root, static (a, r) => a.ListSession.Analyzer.RemoveRoot(r));
             }
 
-            if (ui.IconButton("clear", ui.State.Appearance.Icons.AnalyzerRemoveAll, t.AnalyzerRemoveAll, any))
+            if (ui.IconButton("clear", appearance.Icons.AnalyzerRemoveAll, t.AnalyzerRemoveAll, any))
             {
-                Commands.Later(ui.State.AppCommands, static a => a.ListSession.Analyzer.ClearRoots());
+                Commands.Later(commands, static a => a.ListSession.Analyzer.ClearRoots());
             }
         }
     }
@@ -158,7 +158,7 @@ internal static class AnalyzerPanelView
         var target = node.Symbol.Reference;
         if (target != null)
         {
-            GoToItems(ui, navigation, target);
+            GoToItems(ui, ui.State.Appearance, ui.State.AppCommands, navigation, target);
         }
 
         AnalyzeItem(ui, OfferAnalysis(rows, analyzer));
@@ -190,17 +190,17 @@ internal static class AnalyzerPanelView
             static _ => { });
     }
 
-    private static void GoToItems(Ui<UiState> ui, Navigation navigation, CodeReference.Navigable target)
+    private static void GoToItems(Ui ui, Appearance appearance, IAppCommandWriter commands, Navigation navigation, CodeReference.Navigable target)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         if (ui.MenuItem(t.AnalyzerGoTo, Shortcuts.Enter, id: "go-to"))
         {
-            Commands.FollowLater(ui.State.AppCommands, target, navigation.BeginResolving(inNewTab: false));
+            Commands.FollowLater(commands, target, navigation.BeginResolving(inNewTab: false));
         }
 
         if (ui.MenuItem(t.CodeOpenInNewTab, id: "open-in-new-tab"))
         {
-            Commands.FollowLater(ui.State.AppCommands, target, navigation.BeginResolving(inNewTab: true));
+            Commands.FollowLater(commands, target, navigation.BeginResolving(inNewTab: true));
         }
     }
 

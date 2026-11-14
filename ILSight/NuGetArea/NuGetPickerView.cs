@@ -50,7 +50,7 @@ internal static class NuGetPickerView
 
     /// <summary>Begins a request in <paramref name="navigation"/> to open the package the dialog downloaded, asks for it to
     /// be opened once the frame is drawn, and closes the dialog; nothing until a download is in.</summary>
-    internal static void OpenDownloaded(Ui<UiState> ui, Navigation navigation, NuGetPicker picker)
+    internal static void OpenDownloaded(Ui ui, IAppCommandWriter commands, Navigation navigation, NuGetPicker picker)
     {
         var path = picker.Browser.TakeDownloaded();
         if (path is null)
@@ -61,14 +61,14 @@ internal static class NuGetPickerView
         var file = AssemblyPath.Parse(path);
         if (file is not null)
         {
-            Commands.OpenFilesLater(ui.State.AppCommands, navigation.BeginOpening([file]));
+            Commands.OpenFilesLater(commands, navigation.BeginOpening([file]));
         }
 
         picker.IsOpen = false;
     }
 
     // The frame edge starts fetching the icons and details shown for the first time (AppFrames.StartFetching).
-    private static void AskForFetchingFrame(Ui<UiState> ui, NuGetBrowser browser)
+    private static void AskForFetchingFrame(Ui ui, NuGetBrowser browser)
     {
         if (!browser.HasDownloadsToStart)
         {
@@ -78,7 +78,7 @@ internal static class NuGetPickerView
         ui.RequestUpdateIn(0);
     }
 
-    private static void FreeImages(Ui<UiState> ui, IReadOnlyList<string> images)
+    private static void FreeImages(Ui ui, IReadOnlyList<string> images)
     {
         // By index, as it runs every frame: a foreach over the list would allocate its enumerator.
         for (var i = 0; i < images.Count; i++)
@@ -98,37 +98,37 @@ internal static class NuGetPickerView
             return;
         }
 
-        TopRow(ui, picker);
+        TopRow(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.DownloadNuGetPackageHandler, picker);
         var open = false;
         using (ui.Row(new Box { Height = Sizing.Grow(), Gap = theme.Gap, AlignY = Align.Start }))
         {
-            open |= PackagesColumn(ui, picker);
+            open |= PackagesColumn(ui, ui.State.Appearance, picker);
             picker.Browser.FollowSelection();
             NuGetDetailsView.Render(ui, picker);
         }
-        open |= Footer(ui, picker);
+        open |= Footer(ui, ui.State.Appearance, picker);
         if (open)
         {
-            Download(ui, picker.Browser, picker.Browser.StartDownload());
+            Download(ui, ui.State.AppCommands, ui.State.DownloadNuGetPackageHandler, picker.Browser, picker.Browser.StartDownload());
         }
     }
 
     // Fetched once the frame is drawn; closing the dialog cancels it.
-    private static void Download(Ui<UiState> ui, NuGetBrowser browser, PackageDownloadTicket? download)
+    private static void Download(Ui ui, IAppCommandWriter commands, DownloadNuGetPackageHandler downloadNuGetPackageHandler, NuGetBrowser browser, PackageDownloadTicket? download)
     {
         if (download is null)
         {
             return;
         }
 
-        Commands.StartSettling(ui.State.AppCommands, nameof(DownloadNuGetPackageHandler), (Handler: ui.State.DownloadNuGetPackageHandler, Browser: browser, Download: download),
+        Commands.StartSettling(commands, nameof(DownloadNuGetPackageHandler), (Handler: downloadNuGetPackageHandler, Browser: browser, Download: download),
             static (_, d, ct) => d.Handler.HandleAsync(d.Browser, d.Download, ct), static (_, d, error) => d.Browser.FailDownload(d.Download, error),
             download.Work.Token);
     }
 
-    private static void TopRow(Ui<UiState> ui, NuGetPicker picker)
+    private static void TopRow(Ui ui, Appearance appearance, IAppCommandWriter commands, DownloadNuGetPackageHandler downloadNuGetPackageHandler, NuGetPicker picker)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.GapTight, AlignY = Align.Center }))
         {
@@ -144,9 +144,9 @@ internal static class NuGetPickerView
             }
 
             var queryWidth = Sizing.Grow();
-            if (ui.TextField(QueryId, ref picker.Query, t.NugetQuery, queryWidth, ui.State.Appearance.Icons.SearchField, clearable: true))
+            if (ui.TextField(QueryId, ref picker.Query, t.NugetQuery, queryWidth, appearance.Icons.SearchField, clearable: true))
             {
-                Submit(ui, picker);
+                Submit(ui, commands, downloadNuGetPackageHandler, picker);
             }
 
             ui.Checkbox(t.NugetPrerelease, ref picker.IncludePrerelease, id: "nuget-prerelease");
@@ -158,21 +158,21 @@ internal static class NuGetPickerView
                 picker.Browser.SearchNow();
             }
 
-            KnownFeeds(ui, picker);
+            KnownFeeds(ui, appearance, picker);
         }
     }
 
-    private static void Submit(Ui<UiState> ui, NuGetPicker picker)
+    private static void Submit(Ui ui, IAppCommandWriter commands, DownloadNuGetPackageHandler downloadNuGetPackageHandler, NuGetPicker picker)
     {
-        Download(ui, picker.Browser, picker.Browser.Submit());
+        Download(ui, commands, downloadNuGetPackageHandler, picker.Browser, picker.Browser.Submit());
         // The download or the search shows from this frame on.
         ui.RequestUpdateIn(0);
     }
 
-    private static void KnownFeeds(Ui<UiState> ui, NuGetPicker picker)
+    private static void KnownFeeds(Ui ui, Appearance appearance, NuGetPicker picker)
     {
         var sources = picker.Browser.Sources;
-        using var menu = ui.DropdownButton("nuget-sources", ui.State.Appearance.Strings.NugetKnownFeeds, enabled: sources.Count > 0, revision: sources.Count);
+        using var menu = ui.DropdownButton("nuget-sources", appearance.Strings.NugetKnownFeeds, enabled: sources.Count > 0, revision: sources.Count);
         if (!menu.IsOpen)
         {
             return;
@@ -189,7 +189,7 @@ internal static class NuGetPickerView
         }
     }
 
-    private static void MoveSelectionFromQuery(Ui<UiState> ui, NuGetPicker picker)
+    private static void MoveSelectionFromQuery(Ui ui, NuGetPicker picker)
     {
         var results = picker.Browser.Results;
         var page = ui.MeasureListPage(ui.GetId(ListId), RowHeight(ui));
@@ -216,7 +216,7 @@ internal static class NuGetPickerView
         selection.Select(results[index], results);
     }
 
-    private static float RowHeight(Ui<UiState> ui)
+    private static float RowHeight(Ui ui)
     {
         var theme = ui.Theme;
         var name = ui.LineHeight(theme.FontSize);
@@ -224,18 +224,18 @@ internal static class NuGetPickerView
         return name + description + theme.Gap * 2;
     }
 
-    private static bool PackagesColumn(Ui<UiState> ui, NuGetPicker picker)
+    private static bool PackagesColumn(Ui ui, Appearance appearance, NuGetPicker picker)
     {
         var theme = ui.Theme;
         using (ui.Column(new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Gap = theme.GapTight }))
         {
-            var activated = Packages(ui, picker);
-            Pager(ui, picker);
+            var activated = Packages(ui, appearance, picker);
+            Pager(ui, appearance, picker);
             return activated;
         }
     }
 
-    private static bool Packages(Ui<UiState> ui, NuGetPicker picker)
+    private static bool Packages(Ui ui, Appearance appearance, NuGetPicker picker)
     {
         var theme = ui.Theme;
         var frame = new Box
@@ -251,23 +251,23 @@ internal static class NuGetPickerView
         using (ui.Panel(frame))
         {
             LoadingStrip(ui, picker);
-            ConfigUnreadableNote(ui, picker.Browser.ConfigUnreadable);
+            ConfigUnreadableNote(ui, appearance, picker.Browser.ConfigUnreadable);
             if (picker.Browser.Results.Count == 0)
             {
-                NuGetPlaceholderView.Render(ui, picker);
+                NuGetPlaceholderView.Render(ui, appearance, picker);
                 return false;
             }
             if (picker.Browser.SearchError is not null)
             {
-                NuGetPlaceholderView.PageFailed(ui, picker);
+                NuGetPlaceholderView.PageFailed(ui, appearance, picker);
             }
 
-            LeftOutNote(ui, picker.Browser.LeftOut);
-            return Rows(ui, picker);
+            LeftOutNote(ui, appearance, picker.Browser.LeftOut);
+            return Rows(ui, appearance, picker);
         }
     }
 
-    private static void ConfigUnreadableNote(Ui<UiState> ui, string? why)
+    private static void ConfigUnreadableNote(Ui ui, Appearance appearance, string? why)
     {
         if (why is null)
         {
@@ -275,12 +275,12 @@ internal static class NuGetPickerView
         }
 
         var theme = ui.Theme;
-        var note = ui.Memo("nuget-config-unreadable", (why, t: ui.State.Appearance.Strings), static a => a.t.NugetConfigUnreadable(a.why));
+        var note = ui.Memo("nuget-config-unreadable", (why, t: appearance.Strings), static a => a.t.NugetConfigUnreadable(a.why));
         ui.Text(note, new Box { Width = Sizing.Grow(), Padding = new Spacing(theme.Gap, theme.GapTight) }, color: theme.Warning,
             size: theme.FontSizeSmall, wrap: true);
     }
 
-    private static void LeftOutNote(Ui<UiState> ui, IReadOnlyList<string> leftOut)
+    private static void LeftOutNote(Ui ui, Appearance appearance, IReadOnlyList<string> leftOut)
     {
         if (leftOut.Count == 0)
         {
@@ -288,12 +288,12 @@ internal static class NuGetPickerView
         }
 
         var theme = ui.Theme;
-        var note = ui.Memo("nuget-left-out", (leftOut, t: ui.State.Appearance.Strings), static a => a.t.NugetLeftOut(string.Join(", ", a.leftOut)));
+        var note = ui.Memo("nuget-left-out", (leftOut, t: appearance.Strings), static a => a.t.NugetLeftOut(string.Join(", ", a.leftOut)));
         ui.Text(note, new Box { Width = Sizing.Grow(), Padding = new Spacing(theme.Gap, theme.GapTight) }, color: theme.TextMuted,
             size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
     }
 
-    private static void LoadingStrip(Ui<UiState> ui, NuGetPicker picker)
+    private static void LoadingStrip(Ui ui, NuGetPicker picker)
     {
         var refreshing = picker.Browser.IsSearching && picker.Browser.Results.Count > 0;
         if (refreshing)
@@ -305,7 +305,7 @@ internal static class NuGetPickerView
         ui.Leaf(new Box { Width = Sizing.Grow(), Height = LoadingStripHeight });
     }
 
-    private static bool Rows(Ui<UiState> ui, NuGetPicker picker)
+    private static bool Rows(Ui ui, Appearance appearance, NuGetPicker picker)
     {
         var results = picker.Browser.Results;
         var selection = picker.Browser.Selection;
@@ -314,24 +314,24 @@ internal static class NuGetPickerView
         using var list = ui.SelectableList(listId, results.Count, selection.Rows, RowHeight(ui));
         for (var i = list.First; i < list.End; i++)
         {
-            Row(ui, picker, list, results[i], i);
+            Row(ui, appearance, picker, list, results[i], i);
         }
 
         selection.TakeFrom(results);
         return list.Activated;
     }
 
-    private static void Row(Ui<UiState> ui, NuGetPicker picker, ListScope list, FeedPackage package, int index)
+    private static void Row(Ui ui, Appearance appearance, NuGetPicker picker, ListScope list, FeedPackage package, int index)
     {
         var theme = ui.Theme;
         var box = new Box { Gap = theme.Gap, AlignY = Align.Start, Padding = new Spacing(theme.ShellPaddingX, theme.Gap) };
         using (ui.Id(package.Id.Text))
         using (var row = list.Row(index, ui.GetId("row"), box))
         {
-            DrawIcon(ui, picker, package, RowIconSide);
+            DrawIcon(ui, appearance, picker, package, RowIconSide);
             using (ui.Column(new Box { Width = Sizing.Grow(), Gap = 0f }))
             {
-                NameLine(ui, package, row.Selected);
+                NameLine(ui, appearance, package, row.Selected);
                 Description(ui, package, row.Selected);
             }
         }
@@ -339,12 +339,12 @@ internal static class NuGetPickerView
 
     /// <summary>The package's own icon once it is in, on a light tile when it is dark marks a dark
     /// theme would hide; else the stand-in every package shares.</summary>
-    internal static void DrawIcon(Ui<UiState> ui, NuGetPicker picker, FeedPackage package, float side)
+    internal static void DrawIcon(Ui ui, Appearance appearance, NuGetPicker picker, FeedPackage package, float side)
     {
         var icon = ShownIconOf(picker, package);
         if (icon is null)
         {
-            StandIn(ui, side);
+            StandIn(ui, appearance, side);
             return;
         }
         Upload(ui, icon);
@@ -374,7 +374,7 @@ internal static class NuGetPickerView
         return icon.Shown;
     }
 
-    private static bool NeedsBackdrop(Ui<UiState> ui, ShownIcon icon)
+    private static bool NeedsBackdrop(Ui ui, ShownIcon icon)
     {
         if (!ui.Theme.IsDark)
         {
@@ -384,7 +384,7 @@ internal static class NuGetPickerView
         return icon.IsDarkOnClear;
     }
 
-    private static void Upload(Ui<UiState> ui, ShownIcon icon)
+    private static void Upload(Ui ui, ShownIcon icon)
     {
         if (ui.HasImage(icon.ImageId))
         {
@@ -395,7 +395,7 @@ internal static class NuGetPickerView
         ui.SetImage(icon.ImageId, pixels.Width, pixels.Height, pixels.Rgba);
     }
 
-    private static void StandIn(Ui<UiState> ui, float side)
+    private static void StandIn(Ui ui, Appearance appearance, float side)
     {
         var theme = ui.Theme;
         var tile = new Box
@@ -409,11 +409,11 @@ internal static class NuGetPickerView
         };
         using (ui.Box(tile))
         {
-            ui.Icon(new UiIcon(ui.State.Appearance.Icons.NugetPackage, theme.TextMuted));
+            ui.Icon(new UiIcon(appearance.Icons.NugetPackage, theme.TextMuted));
         }
     }
 
-    private static void NameLine(Ui<UiState> ui, FeedPackage package, bool selected)
+    private static void NameLine(Ui ui, Appearance appearance, FeedPackage package, bool selected)
     {
         var theme = ui.Theme;
         var nameColor = selected ? theme.SelectionText : theme.Text;
@@ -422,15 +422,15 @@ internal static class NuGetPickerView
             ui.Text(package.Id.Text, color: nameColor, bold: true, overflow: TextOverflow.Ellipsis);
             if (package.Verified)
             {
-                ui.Icon(new UiIcon(ui.State.Appearance.Icons.NugetVerified, theme.AccentText));
+                ui.Icon(new UiIcon(appearance.Icons.NugetVerified, theme.AccentText));
             }
 
-            Authors(ui, package);
+            Authors(ui, appearance, package);
             ui.Text(package.Version.Text, color: theme.TextMuted, size: theme.FontSizeSmall);
         }
     }
 
-    private static void Authors(Ui<UiState> ui, FeedPackage package)
+    private static void Authors(Ui ui, Appearance appearance, FeedPackage package)
     {
         var theme = ui.Theme;
         var box = new Box { Width = Sizing.Grow() };
@@ -439,18 +439,18 @@ internal static class NuGetPickerView
             ui.Leaf(box);
             return;
         }
-        var authors = ui.Memo("authors", (package.Authors, ui.State.Appearance.Strings), static a => a.Strings.NugetAuthors(a.Authors));
+        var authors = ui.Memo("authors", (package.Authors, appearance.Strings), static a => a.Strings.NugetAuthors(a.Authors));
         ui.Text(authors, box, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
     }
 
-    private static void Description(Ui<UiState> ui, FeedPackage package, bool selected)
+    private static void Description(Ui ui, FeedPackage package, bool selected)
     {
         var theme = ui.Theme;
         var color = selected ? theme.SelectionText : theme.TextMuted;
         ui.Text(package.Description, color: color, size: theme.FontSizeSmall, wrap: true, maxLines: DescriptionLines);
     }
 
-    private static void Pager(Ui<UiState> ui, NuGetPicker picker)
+    private static void Pager(Ui ui, Appearance appearance, NuGetPicker picker)
     {
         var theme = ui.Theme;
         using (ui.Row(new Box { Height = theme.ControlHeight, Gap = theme.GapTight, AlignY = Align.Center }))
@@ -461,15 +461,15 @@ internal static class NuGetPickerView
                 return;
             }
 
-            Count(ui, picker);
-            PageButtons(ui, picker.Browser);
+            Count(ui, appearance, picker);
+            PageButtons(ui, appearance, picker.Browser);
         }
     }
 
-    private static void Count(Ui<UiState> ui, NuGetPicker picker)
+    private static void Count(Ui ui, Appearance appearance, NuGetPicker picker)
     {
         var theme = ui.Theme;
-        var args = (picker.Browser.TotalHits, picker.Browser.BrowsableHits, ui.State.Appearance.Strings);
+        var args = (picker.Browser.TotalHits, picker.Browser.BrowsableHits, appearance.Strings);
         var count = ui.Memo("nuget-count", args, static a => CountText(a.Strings, a.TotalHits, a.BrowsableHits));
         ui.Text(count, new Box { Width = Sizing.Grow() }, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
     }
@@ -485,11 +485,11 @@ internal static class NuGetPickerView
         return $"{count} · {t.NugetCapped(browsable)}";
     }
 
-    private static void PageButtons(Ui<UiState> ui, NuGetBrowser browser)
+    private static void PageButtons(Ui ui, Appearance appearance, NuGetBrowser browser)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
-        var icons = ui.State.Appearance.Icons;
+        var icons = appearance.Icons;
         var idle = !browser.IsSearching;
         if (ui.IconButton("nuget-previous", icons.NugetPreviousPage, t.NugetPreviousPage, browser.HasPreviousPage && idle, ButtonVariant.Neutral))
         {
@@ -498,7 +498,7 @@ internal static class NuGetPickerView
 
         var args = (browser.Page, browser.RequestedPage, browser.PageCount, browser.IsLoadingPage, t);
         var label = ui.Memo("nuget-page", args, static a => PageText(a.t, a.Page, a.RequestedPage, a.PageCount, a.IsLoadingPage));
-        ui.Text(label, new Box { Width = PageLabelWidth(ui, browser.PageCount) }, color: theme.TextMuted, size: theme.FontSizeSmall, align: Align.Center);
+        ui.Text(label, new Box { Width = PageLabelWidth(ui, appearance, browser.PageCount) }, color: theme.TextMuted, size: theme.FontSizeSmall, align: Align.Center);
         if (ui.IconButton("nuget-next", icons.NugetNextPage, t.NugetNextPage, browser.HasNextPage && idle, ButtonVariant.Neutral))
         {
             browser.ShowNextPage();
@@ -516,24 +516,24 @@ internal static class NuGetPickerView
     }
 
     // As wide as the widest label the pager shows, so the buttons beside it never move.
-    private static float PageLabelWidth(Ui<UiState> ui, int pageCount)
+    private static float PageLabelWidth(Ui ui, Appearance appearance, int pageCount)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var size = ui.Theme.FontSizeSmall;
         var shown = ui.Memo("nuget-page-widest", (pageCount, t), static a => a.t.NugetPage(a.pageCount, a.pageCount));
         var loading = ui.Memo("nuget-loading-widest", (pageCount, t), static a => a.t.NugetLoadingPage(a.pageCount));
         return MathF.Max(ui.MeasureText(shown, size), ui.MeasureText(loading, size));
     }
 
-    private static bool Footer(Ui<UiState> ui, NuGetPicker picker)
+    private static bool Footer(Ui ui, Appearance appearance, NuGetPicker picker)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.GapTight, AlignY = Align.Center }))
         {
             if (picker.Browser.IsDownloading)
             {
-                Downloading(ui, picker.Browser);
+                Downloading(ui, appearance, picker.Browser);
             }
 
             ui.Spacer();
@@ -546,10 +546,10 @@ internal static class NuGetPickerView
         }
     }
 
-    private static void Downloading(Ui<UiState> ui, NuGetBrowser browser)
+    private static void Downloading(Ui ui, Appearance appearance, NuGetBrowser browser)
     {
         var theme = ui.Theme;
-        var text = ui.Memo("nuget-downloading", (browser.DownloadingName, ui.State.Appearance.Strings), static a => a.Strings.NugetDownloading(a.DownloadingName));
+        var text = ui.Memo("nuget-downloading", (browser.DownloadingName, appearance.Strings), static a => a.Strings.NugetDownloading(a.DownloadingName));
         ui.Text(text, color: theme.AccentText, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
     }
 }
