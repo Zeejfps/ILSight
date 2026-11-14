@@ -105,6 +105,25 @@ internal static class BrokenAssemblies
         return temp.Write("UnreadableMethodName.dll", image);
     }
 
+    /// <summary>A copy of the assembly at <paramref name="path"/> whose first member reference has a signature that
+    /// points past its blob heap: the file opens and lists its references, and reading what kind of member that one
+    /// is throws.</summary>
+    public static string WriteUnreadableMemberReferenceSignature(TempDir temp, string path)
+    {
+        var image = File.ReadAllBytes(path);
+        using (var pe = new PEReader(new MemoryStream(image)))
+        {
+            var reader = pe.GetMetadataReader();
+            var rowSize = reader.GetTableRowSize(TableIndex.MemberRef);
+            var blobHeapSize = reader.GetHeapSize(HeapIndex.Blob);
+            var blobIndexSize = blobHeapSize < 0x10000 ? 2 : 4;
+            var offset = pe.PEHeaders.MetadataStartOffset + reader.GetTableMetadataOffset(TableIndex.MemberRef) + rowSize - blobIndexSize;
+            image.AsSpan(offset, blobIndexSize).Fill(0xFF);
+        }
+
+        return temp.Write("UnreadableMemberReference.dll", image);
+    }
+
     /// <summary>The method of the assembly at <paramref name="path"/> named <paramref name="name"/>, declared by the
     /// type named <paramref name="typeName"/>.</summary>
     public static MethodDefinitionHandle GetMethod(string path, string typeName, string name)

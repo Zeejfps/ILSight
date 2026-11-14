@@ -131,7 +131,7 @@ public sealed class WebCilTests
 
         var unread = (grid.IsRowRead(last), MetadataGrids.GetText(grid, last, value), MetadataGrids.FindTooltip(grid, last, value));
         var asked = (grid.TryAsk(last), grid.TryAsk(MetadataGrid.Paged.RowsPerPage));
-        grid.AddPage(MetadataGrid.Paged.PageOf(last), MetadataGrids.ReadPage(grid, MetadataGrid.Paged.PageOf(last)).GetValue());
+        grid.AddPage(MetadataGrid.Paged.PageOf(last), MetadataGrids.ReadPage(grid, MetadataGrid.Paged.PageOf(last)).GetValue().GetValue());
 
         Assert.True(grid.IsRowRead(MetadataGrid.Paged.RowsPerPage - 1));
         Assert.Equal((false, "", null), unread);

@@ -57,6 +57,26 @@ public sealed class MetadataTests
     }
 
     [Fact]
+    public void A_page_whose_row_the_library_cannot_read_is_the_pages_failure_saying_why()
+    {
+        using var temp = new TempDir();
+        var path = BrokenAssemblies.WriteUnreadableMemberReferenceSignature(temp, Trees.TestAssemblyPath);
+        var module = Assert.IsType<LoadedModule>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(path));
+        var file = LoadedAssemblies.GetFile(module);
+        var schema = MetadataTables.Create(TableIndex.MemberRef, file);
+        Assert.NotNull(schema);
+        var grid = new MetadataGrid.Paged
+        {
+            Title = "MemberRef", Module = module, File = file, Schema = schema, Rows = schema.ReadRows(), GridColumns = schema.Columns,
+            Columns = schema.Columns.Select(static c => c.Column).ToArray(),
+        };
+
+        var page = MetadataGrids.ReadPage(grid, 0);
+
+        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<ModuleRead<MetadataGridPage>>.Failed>(page).Error);
+    }
+
+    [Fact]
     public async Task An_assembly_lists_its_metadata_and_its_portable_pdb_first()
     {
         var assembly = Trees.TestAssembly;
