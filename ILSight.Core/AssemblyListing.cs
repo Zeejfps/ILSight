@@ -18,9 +18,11 @@ public static class AssemblyListing
     /// all the same, as a <see cref="FailedAssembly"/>, and the assembly takes its place
     /// once the file loads. Once <paramref name="cancellationToken"/> is cancelled
     /// the assembly is no longer listed, so cancelling before <see cref="AssemblyList.CloseAll"/> keeps the opens of
-    /// several files out of the list that follows.</summary>
-    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled,
-    /// or the list was cleared while the file was read.</exception>
+    /// several files out of the list that follows: every change that ends the list's <see cref="AssemblyList.Generation"/>
+    /// (a clear, new load options) cancels the opens in flight through their token first.</summary>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled.</exception>
+    /// <exception cref="InvalidOperationException">The generation ended while the file was read and
+    /// <paramref name="cancellationToken"/> was not cancelled: a change that forgot to end the opens it made stale.</exception>
     public static LoadedAssembly Open(AssemblyList list, AssemblyPath path, CancellationToken cancellationToken = default)
     {
         var generation = list.Generation;
@@ -35,7 +37,7 @@ public static class AssemblyListing
             cancellationToken.ThrowIfCancellationRequested();
             if (generation != list.Generation)
             {
-                throw new OperationCanceledException($"The list was cleared while '{path}' was opened.");
+                throw new InvalidOperationException($"The list's generation {generation} ended while '{path}' was opened, with its open not cancelled: a change that ends the generation cancels the opens in flight first.");
             }
         }
     }
@@ -55,17 +57,24 @@ public static class AssemblyListing
     /// <summary>Takes from <paramref name="options"/> the toggles that apply as assemblies are read: whether
     /// references load their assemblies, and whether Windows Runtime metadata is projected. Returns true
     /// when they changed, so that the open assemblies must be read again to follow them. A change ends the
-    /// <see cref="AssemblyList.Generation"/>, as a clear does, so that no assembly read with the options before is kept.</summary>
+    /// <see cref="AssemblyList.Generation"/>, as a clear does, so that no assembly read with the options before is kept. The caller cancels
+    /// the opens in flight first, when they change (<see cref="ChangesLoadOptions"/>).</summary>
     public static bool TryChangeLoadOptions(AssemblyList list, DecompilerOptions options)
     {
-        var loadsReferences = DecompilerToggles.IsOn(options, DecompilerToggle.AutoLoadAssemblyReferences);
-        var readerOptions = ChooseReaderOptions(options);
-        if (AssemblyList.IsSame(list.Now.ReadOptions, loadsReferences, readerOptions))
+        if (!ChangesLoadOptions(list, options))
         {
             return false;
         }
 
-        return list.TryChangeReadOptions(loadsReferences, readerOptions);
+        return list.TryChangeReadOptions(DecompilerToggles.IsOn(options, DecompilerToggle.AutoLoadAssemblyReferences), ChooseReaderOptions(options));
+    }
+
+    /// <summary>Whether taking <paramref name="options"/> would change the toggles that apply as assemblies are read, so
+    /// end the list's <see cref="AssemblyList.Generation"/>: asked first, to cancel the opens in flight.</summary>
+    public static bool ChangesLoadOptions(AssemblyList list, DecompilerOptions options)
+    {
+        var loadsReferences = DecompilerToggles.IsOn(options, DecompilerToggle.AutoLoadAssemblyReferences);
+        return !AssemblyList.IsSame(list.Now.ReadOptions, loadsReferences, ChooseReaderOptions(options));
     }
 
     private static MetadataReaderOptions ChooseReaderOptions(DecompilerOptions options)

@@ -310,9 +310,11 @@ public sealed class AssemblyList
         return loaded.ToImmutable();
     }
 
-    /// <summary>Closes every assembly, those read behind the scenes to resolve references included, and stops the
-    /// opens that started before: they no longer list what they read, and nothing is on its way any more. Returns the
-    /// modules it forgot, for the I/O side to release once nothing reads them.</summary>
+    /// <summary>Closes every assembly, those read behind the scenes to resolve references included, and ends the
+    /// <see cref="Generation"/>: the opens that started before no longer list what they read, and nothing is on its way
+    /// any more. The caller cancels those opens through their token first, so they end as asked (an open meeting the
+    /// generation ended with its token not cancelled is a bug, <see cref="AssemblyListing.Open"/>). Returns the modules it
+    /// forgot, for the I/O side to release once nothing reads them.</summary>
     internal RemovedModules CloseAll()
     {
         List<LoadedModule> removed;

@@ -46,7 +46,8 @@ public sealed class ClosableAssemblyList
         return List.StopArriving(paths);
     }
 
-    /// <summary>Takes every assembly off the list, as <see cref="AssemblyList.CloseAll"/> does. Returns the modules it
+    /// <summary>Takes every assembly off the list, as <see cref="AssemblyList.CloseAll"/> does, the opens under way cancelled
+    /// first by the caller. Returns the modules it
     /// took off, for the I/O side to release.</summary>
     public RemovedModules CloseAll()
     {

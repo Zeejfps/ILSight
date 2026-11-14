@@ -19,4 +19,34 @@ public sealed class LoadOptionTests
         Assert.NotSame(before, (await app.NodeAsync()).Assembly);
         Assert.All(await runtime.ListChildrenAsync(), c => Assert.Equal(NodeIcon.ReferencedTypes, c.Icon));
     }
+
+    [Fact]
+    public void Changing_a_load_option_cancels_the_opens_under_way_before_it_ends_the_lists_generation()
+    {
+        var app = AppDriver.Opened();
+        app.Settle(2);
+        var opens = app.AppState.ListSession.Opens.Token;
+        var generation = app.AppState.ListSession.Assemblies.Generation;
+        int? cancelledIn = null;
+        using var seen = opens.Register(() => cancelledIn = app.AppState.ListSession.Assemblies.Generation);
+
+        Preferences.SetDecompilerToggle(app.AppState, DecompilerToggle.AutoLoadAssemblyReferences, false);
+        app.Run(1);
+
+        Assert.Equal(generation, cancelledIn);
+        Assert.NotEqual(generation, app.AppState.ListSession.Assemblies.Generation);
+    }
+
+    [Fact]
+    public void A_load_option_set_as_it_was_cancels_nothing()
+    {
+        var app = AppDriver.Opened();
+        app.Settle(2);
+        var opens = app.AppState.ListSession.Opens.Token;
+
+        Preferences.SetDecompilerToggle(app.AppState, DecompilerToggle.AutoLoadAssemblyReferences, true);
+        app.Run(1);
+
+        Assert.False(opens.IsCancellationRequested);
+    }
 }

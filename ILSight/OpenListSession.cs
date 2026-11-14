@@ -159,6 +159,7 @@ public sealed class OpenListSession
         return removed;
     }
 
+    // Every caller cancels the opens under way first: the clear ends the list's generation, which they check.
     private RemovedModules TakeAllOff()
     {
         var removed = _assemblies.CloseAll();
