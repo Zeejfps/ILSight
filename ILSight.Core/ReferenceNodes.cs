@@ -55,13 +55,7 @@ internal static class ReferenceNodes
 
     private static LoadedModule? ResolveReferenced(AssemblyReferenceInfo reference)
     {
-        var resolved = LoadedAssemblies.GetResolver(reference.Module).ResolveAssembly(reference.Reference);
-        if (resolved is not LoadedModule referenced)
-        {
-            return null;
-        }
-
-        return referenced;
+        return LoadedAssemblies.GetResolver(reference.Module).ResolveAssembly(reference.Reference);
     }
 
     /// <summary>The types the module uses from <paramref name="reference"/>, sorted by namespace, then

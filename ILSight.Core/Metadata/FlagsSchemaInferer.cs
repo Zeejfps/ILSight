@@ -87,9 +87,9 @@ namespace ILSight.Core.Metadata
 				else
 				{
 					valueFields.Add((f.Name, v));
-					if (v == 0 && currentMask is uint mask && !zeroNames.ContainsKey(mask))
+					if (v == 0 && currentMask is not null && !zeroNames.ContainsKey(currentMask.Value))
                     {
-                        zeroNames[mask] = f.Name;
+                        zeroNames[currentMask.Value] = f.Name;
                     }
                     else if (v == 0)
                     {

@@ -317,8 +317,10 @@ internal static class OmnibarView
         }
 
         var children = ui.State.Tree.GetChildren(menu.Node);
-        if (children.PlaceholderRow is TreeRow placeholder)
+        var placeholderRow = children.PlaceholderRow;
+        if (placeholderRow is not null)
         {
+            var placeholder = placeholderRow.Value;
             ui.Text(placeholder.Label, color: theme.TextMuted);
             return;
         }

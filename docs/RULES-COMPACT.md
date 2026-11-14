@@ -1,7 +1,7 @@
 # C# coding rules (compact)
 
-The complete C# rules for agents, with the IDs of `RULES.md`, which supplies rationale and evidence. Only the final
-section is limited to frame-driven UIs.
+The complete C# rules for agents, with the IDs of `RULES.md` (rationale and evidence). Only the final section is
+limited to frame-driven UIs.
 
 ## Scope, edges, tests and the build
 
@@ -42,7 +42,8 @@ section is limited to frame-driven UIs.
   - **Assert only on what reached the test by an order it fixes:** app code it calls runs in the driver's turn (R010),
     so its callbacks (a `Progress<T>`) post there; a task it holds is awaited; work elsewhere by design (real I/O, a
     server) is awaited by its condition, bounded, never by a fixed count of frames or pumps or a delay; frames are
-    counted only for what the app promises in frames.
+    counted only for what the app promises in frames. A bound guards a hang (sized for a full run), never speed; work
+    started together is ordered by the test, or only what every order gives is asserted.
   - **Seams:** use cases through their public methods with a fake port; domain code directly; adapters and queries
     against a real or local database. Never private methods; no interface only to fake.
 - **Test input** (fixtures a test compiles and reads back) is data, exempt from every rule: its folder is marked
@@ -135,7 +136,7 @@ Build: RL0301 (`Async`), RL0302 (`Find*`), RL0303 (`Get*` returning `T?`), RL030
 | Name | Promise |
 |------|---------|
 | `Get*` | exists; throws with a message if not, never a sentinel (a collection: empty when none) |
-| `Find*` | may be missing: `T?`, or a result union with a not-found case (`Found` / `NotFound` / `Failed`) |
+| `Find*` | may be missing: `T?`, or a result union with a not-found case (`Found` / `NotFound` / `Failed`), itself or one level in (`Outcome<Lookup<T>>`) |
 | `Get*OrDefault` / `Try*` | a documented default / `bool` + `[NotNullWhen(true)] out T?` |
 | `Is*` `Has*` `Can*` `Should*`, a fact verb (`Contains`, `Exists`) | `bool`, no side effects (an async one may read, never write) |
 | `To*` / `As*` / `From*` | converts / views the same data / factory on the type it creates; never mutates |
@@ -163,8 +164,8 @@ Build: RL0301 (`Async`), RL0302 (`Find*`), RL0303 (`Get*` returning `T?`), RL030
 
 Build: RL0401 (vague names); suggestions: RL0403 (public state the type changes itself, not `ref`-bound), RL0404
 (public state only other types write, on a type with methods), RL0405 (the same with no methods, one writer changing
-two or more members), RL0406 (static functions writing one type's members: two, or one whose write keeps state),
-RL0407 (another type's lock taken, or an event handed out as a delegate).
+two or more members; a root, holding three or more parts, aside), RL0406 (static functions writing one type's
+members: two, or one whose write keeps state), RL0407 (another type's lock taken, or an event handed out as a delegate).
 
 | You have | Make |
 |----------|------|
@@ -218,7 +219,7 @@ RL0407 (another type's lock taken, or an event handed out as a delegate).
 - **State the framework requires public** (`ref` fields, bound properties) is data, separate from a held rule-owning
   type (`picker.Choice`); EF entities filled through private fields retain their rules. Convenience methods may set
   bound fields (they don't make it a rule owner), but required consequences belong to the rule owner, informed each
-  frame (`picker.Scan.CancelUnlessOpen(picker.IsOpen)`), because framework writes bypass those methods.
+  frame (`picker.Scan.CancelUnlessOpen(picker.IsOpen)`): framework writes bypass those methods.
 - **A framework's protocol** isn't your set order: expose exactly its members, the second taking what the first
   returns (`var shown = choice.ShowIn(rows); ... choice.TakeFrom(rows, shown);`), or reading it from the object both
   are handed when they run in different places.
@@ -284,6 +285,7 @@ the like skipped), RL0806 (a case added from outside); suggestion: RL0807 (a dro
   caller starts), a type marked `[MustUse]` (RL0807, raised to error where a drop must fail the build). Several kinds
   of work handed back together are one `[MustUse]` value with a handler per kind (a union's list, or a carrier's
   `Switch`), not lists read one by one or a tuple.
+- A case nothing produces goes with what stopped producing it, and comes back with what does.
 - EF maps a row type, never the union: `row.ToOrder()`, `order.CopyTo(trackedRow)`.
 
 ## R009: Exceptions are for bugs; expected failures are results; catch only at the edge
@@ -313,7 +315,8 @@ nullable exception).
   **A one-line place** says what, how many and why in budget, hiding nothing beside it, full details reachable (never a
   failure record); its format is the product's.
 - **Whatever fails stays where it was shown**, failed with why, until retried, dismissed or removed by product
-  policy; never dropped, left pending or shown empty (an unexpected one also reported once). Unreadable restored state
+  policy; never dropped, left pending or shown empty (an unexpected one also reported once). A batch answers per
+  item. "Not there" is asked of the source first; what the library then throws is a failure. Unreadable restored state
   is kept as saved; a reload keeps saved references and user intent the product promises, failed or not, resolving
   them again (content derived from sources alone follows its reload contract). A failed read is reread only on a
   trigger the product chose (Retry, reload, a change to what it names, a bounded schedule), one reaching a source back
@@ -332,19 +335,20 @@ nullable exception).
   or a library object that is data) is caught around the read only, all but requested cancellation, into the
   requested unit's failure case with why, shown where its answer would be, in the project calling it (your core's
   answer carries the case); never list your own code.
-- **Lazy library failures are translated inside each adapter member's read:** it returns values it read (freely
-  enumerable) or its own `IAsyncEnumerable<T>` iterator, never deferred library execution; the iterator catches each
-  item's read, owns its source (`await using`), and is consumed in one loop with no other call to it.
+- **Lazy library failures are translated inside each adapter member's read**, every touch of the library's objects
+  inside, formatting outside on values read out: it returns values it read (freely enumerable) or its own
+  `IAsyncEnumerable<T>` iterator, never deferred library execution; the iterator catches each item's read, owns its
+  source (`await using`), and is consumed in one loop with no other call to it.
 - **A shared read whose outcome is a value** is awaited and matched by the unit needing it before its sync read
   starts; never a sync wait that rethrows, nor a match at each sync caller.
 - **Requested cancellation isn't a failure; a timeout is.** An adapter lets `OperationCanceledException` through when
   its token was cancelled, catching `TaskCanceledException` only `when (!ct.IsCancellationRequested)` (a timeout). The
   edge links a workflow's token to what cancels it on purpose (shutdown, newer work, a closed dialog), ending quietly
-  only for those; an app-set deadline is a timeout (an adapter's `TimedOut` case, or the edge's report). A canceller
-  appearing partway (a state change returns a ticket newer work cancels) ends the workflow, which returns it
-  (`[MustUse]`) for the edge to start the I/O linked to it, no catch in the workflow; later steps needing the outcome
-  await a port member taking the ticket (`Stopped` if cancelled). **Newest wins by the current ticket:** the state
-  commits a result only while its ticket is current.
+  only for those (never a `Failed` holding a cancellation); an app-set deadline is a timeout (an adapter's `TimedOut`
+  case, or the edge's report). A canceller appearing partway (a state change returns a ticket newer work cancels) ends
+  the workflow, which returns it (`[MustUse]`) for the edge to start the I/O linked to it, no catch in the workflow;
+  later steps needing the outcome await a port member taking the ticket (`Stopped` if cancelled). **Newest wins by
+  the current ticket:** the state commits a result only while its ticket is current.
 - **An effect that can't be undone** (a charge) and what must follow are one transaction, or the work is recorded
   durably first and a worker does the effect under an idempotency key its provider honours, then the rest, replaying
   pending work after an interruption; never the request's token, `CancellationToken.None` or a grace period.
@@ -402,14 +406,15 @@ capturing lambda made on a hot path's paths that don't use it).
 
 ## R012: Conditions ask; they don't fetch. Null checks say null
 
-Build: RL1201 (a null check as a property pattern), RL1202 (a call not returning `bool` in a condition).
+Build: RL1201 (a null check as a property or type pattern), RL1202 (a call not returning `bool` in a condition).
 
 - A condition (`if`, `while`, `do`, `?:`) reads locals, fields and properties and calls only `bool` methods
   (`TryGetValue(..., out var v)`, `await IsTakenAsync(...)`). Any other call goes into a local first, one in a bool
   method's arguments included; calls inside a lambda in the condition are fine.
 - Null checks say `is null` / `is not null` (or `string.IsNullOrEmpty`), never `is { } x` or `is { Length: > 0 }` on a
   nullable; inside a pattern, `TrackingNumber: null or ""`, `CancelledAt: not null`. Type checks on a local stay
-  patterns. An `int?` checked `is not null` is read through `.Value`.
+  patterns. An `int?` checked `is null` is read through `.Value`, once, into a local; `row is int i` on an `int?` is a
+  null check.
 - Read-until-null loops read once at the top of each pass. Don't hoist a call above its guard
   (`cache.IsLoaded && cache.FindPrice(sku) ...`).
 
@@ -449,8 +454,8 @@ suggestions: RL1402 (a summary with no word beyond its declaration), RL1403 (a t
   the code says what it can; never the name restated or the body's steps. A restatement deleted leaves the contract it
   stood in for unsaid: say it, the name first.
 - **A unit and "none" in the type:** a duration is a `TimeSpan`, a moment a `DateTimeOffset` or the clock's type (a
-  framework's number converted where it comes in); a number a formula needs as it is names its unit (`deltaSeconds`);
-  none is `T?` or a union case, never a sentinel (R003).
+  framework's number converted where it comes in), a helper's too; a number a formula needs as it is names its unit
+  (`deltaSeconds`); a remainder of times is taken of their ratio; none is `T?` or a union case, never a sentinel.
 - **`//` says why, never what** (a what-comment marks a step to name: R011).
 
 ## Frame-driven UIs (only if your UI redraws from state every frame)
