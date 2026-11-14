@@ -52,7 +52,7 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
             },
             failed =>
             {
-                ports.ReportError(new AppProblem.Unresolved { Reference = reference, Error = failed.Error });
+                ports.ReportError(LookupFailures.OfReference(reference, failed.Error));
                 return null;
             },
             static _ => null);

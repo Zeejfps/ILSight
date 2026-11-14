@@ -88,7 +88,7 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
 
         if (outcome is Outcome<Lookup<BrowseNode>>.Failed failed)
         {
-            ports.ReportError(new AppProblem.PlaceLookupFailed { Place = waiting.Record.Location, Error = failed.Error });
+            ports.ReportError(LookupFailures.OfPlace(waiting.Record.Location, failed.Error));
         }
 
         var tab = waiting.Reopened.Tab;

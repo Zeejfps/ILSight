@@ -687,6 +687,8 @@
   "error.no_api_reference_page_details": "Seuls les espaces de noms ainsi que les types et membres visibles hors de leur assembly en ont une.",
   "error.go_back": "Impossible de revenir à {place}",
   "error.look_up_place": "Impossible de rechercher {place}",
+  "error.file_denied": "Impossible d’ouvrir {file} : l’accès a été refusé, ou un autre programme le verrouille. Rendez-le lisible, puis réessayez.",
+  "error.file_damaged": "{file} n’est pas un assembly ni un package .NET lisible. Remplacez le fichier, ou fermez-le.",
   "error.no_longer_there": "{place} n’existe plus.",
   "error.module_unreadable": "Impossible de lire {name}",
   "error.decompile": "Impossible de décompiler {name}",

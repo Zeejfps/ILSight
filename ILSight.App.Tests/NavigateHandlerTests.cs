@@ -72,6 +72,25 @@ public sealed class NavigateHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_LookupFoundAFileThatIsNoAssembly_ReportsItUnresolvedWithWhatTheUserCanDo()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var reference = (await d.FixtureAsync("Farewell")).Definition;
+        var file = AssemblyPath.Of(Path.Combine(Path.GetTempPath(), "Damaged", "Damaged.dll"));
+        var error = new AssemblyLoadException(file, $"'{file}' is not a .NET assembly.");
+        var failed = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(error) };
+
+        var load = await d.RunAsync(() => new NavigateHandler(failed).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, reference, d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+
+        Assert.Null(load);
+        var reported = Assert.IsType<AppProblem.UnresolvedFileDamaged>(Assert.Single(failed.Reported));
+        Assert.Equal(file, reported.File);
+        var text = ProblemTexts.Describe(Strings.En, reported);
+        Assert.Equal(Strings.En.ErrorResolve(reference.Name), text.Title);
+        Assert.StartsWith(Strings.En.ErrorFileDamaged("Damaged.dll"), text.Details);
+    }
+
+    [Fact]
     public async Task HandleAsync_SomethingElseAskedForMeanwhile_NeitherShowsNorReports()
     {
         var d = AppStateDriver.OpenedWithoutScreen();

@@ -687,6 +687,8 @@
   "error.no_api_reference_page_details": "ページがあるのは、名前空間と、アセンブリの外から参照できる型とメンバーだけです。",
   "error.go_back": "{place} に戻れません",
   "error.look_up_place": "{place} を検索できません",
+  "error.file_denied": "{file} を開けませんでした。アクセスが拒否されたか、別のプログラムがロックしています。読み取れるようにしてから、もう一度お試しください。",
+  "error.file_damaged": "{file} は読み取れる .NET アセンブリまたはパッケージではありません。ファイルを置き換えるか、閉じてください。",
   "error.no_longer_there": "{place} はもう存在しません。",
   "error.module_unreadable": "{name} を読み込めませんでした",
   "error.decompile": "{name} を逆コンパイルできません",

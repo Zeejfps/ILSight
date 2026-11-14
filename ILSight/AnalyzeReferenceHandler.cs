@@ -41,7 +41,7 @@ public sealed class AnalyzeReferenceHandler(AnalyzeReferenceHandler.IPorts ports
             failed =>
             {
                 analyzer.FailUnresolved(pending.Root, pending.Reference.Name, failed.Error.Message);
-                ports.ReportError(new AppProblem.Unresolved { Reference = pending.Reference, Error = failed.Error });
+                ports.ReportError(LookupFailures.OfReference(pending.Reference, failed.Error));
             });
     }
 

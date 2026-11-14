@@ -358,7 +358,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         var tab = reloading.Tab;
         if (outcome is Outcome<Lookup<BrowseNode>>.Failed failed)
         {
-            ports.ReportError(new AppProblem.PlaceLookupFailed { Place = reloading.Location, Error = failed.Error });
+            ports.ReportError(LookupFailures.OfPlace(reloading.Location, failed.Error));
             if (IsStillShowing(navigation, reloading))
             {
                 tab.Load.ShowLookupFailed(reloading.Location, failed.Error);

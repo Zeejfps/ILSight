@@ -36,7 +36,11 @@ public static class ProblemTexts
             analysisFailed: p => (t.ErrorAnalyze(p.Subject, AnalyzerText.Header(t, p.Kind)), p.Error.ToString()),
             analysesNotRestored: p => (t.ErrorRestoreAnalyses, p.Error.ToString()),
             unresolved: p => (t.ErrorResolve(p.Reference.Name), p.Error.ToString()),
+            unresolvedFileDenied: p => (t.ErrorResolve(p.Reference.Name), Advise(t.ErrorFileDenied(p.File.FileName), p.Error)),
+            unresolvedFileDamaged: p => (t.ErrorResolve(p.Reference.Name), Advise(t.ErrorFileDamaged(p.File.FileName), p.Error)),
             placeLookupFailed: p => (t.ErrorLookUpPlace(p.Place.Label), p.Error.ToString()),
+            placeLookupFileDenied: p => (t.ErrorLookUpPlace(p.Place.Label), Advise(t.ErrorFileDenied(p.File.FileName), p.Error)),
+            placeLookupFileDamaged: p => (t.ErrorLookUpPlace(p.Place.Label), Advise(t.ErrorFileDamaged(p.File.FileName), p.Error)),
             moduleUnreadable: p => (t.ErrorModuleUnreadable(p.Module), p.Why.ToString()),
             bookmarksNotExported: p => (t.ErrorExportBookmarks, p.Reason),
             bookmarksNotImported: p => (t.ErrorImportBookmarks(p.File), p.Reason),
@@ -61,6 +65,12 @@ public static class ProblemTexts
             nuGetSearchFailed: p => (t.ErrorSearchNuget(p.Feed), p.Error.ToString()),
             packageNotDownloaded: p => (t.ErrorDownloadPackage(p.Package), p.Error.ToString()),
             unexpected: p => (t.ErrorUnexpected, p.Error.ToString()));
+    }
+
+    // The cause and what the user can do about it first, then the error as it came.
+    private static string Advise(string advice, Exception error)
+    {
+        return advice + Environment.NewLine + Environment.NewLine + error;
     }
 
     private static string DescribeEntryProblems(Strings t, IReadOnlyList<BookmarkEntryProblem> problems)

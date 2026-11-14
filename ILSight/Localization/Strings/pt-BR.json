@@ -687,6 +687,8 @@
   "error.no_api_reference_page_details": "Só namespaces e os tipos e membros visíveis fora do seu assembly têm uma.",
   "error.go_back": "Não é possível voltar para {place}",
   "error.look_up_place": "Não é possível consultar {place}",
+  "error.file_denied": "Não foi possível abrir {file}: o acesso foi negado, ou outro programa o mantém bloqueado. Torne-o legível e tente novamente.",
+  "error.file_damaged": "{file} não é um assembly nem um pacote .NET que possa ser lido. Substitua o arquivo ou feche-o.",
   "error.no_longer_there": "{place} não existe mais.",
   "error.module_unreadable": "Não foi possível ler {name}",
   "error.decompile": "Não é possível descompilar {name}",

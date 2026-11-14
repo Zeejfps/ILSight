@@ -56,12 +56,56 @@ public abstract record AppProblem
         public required Exception Error { get; init; }
     }
 
+    /// <summary>Finding what <see cref="Reference"/> points at needed <see cref="File"/>, which is there but could not be
+    /// opened (access denied, or another program holds it): readable again, the lookup can be asked again.</summary>
+    public sealed record UnresolvedFileDenied : AppProblem
+    {
+        public required CodeReference Reference { get; init; }
+
+        public required AssemblyPath File { get; init; }
+
+        public required Exception Error { get; init; }
+    }
+
+    /// <summary>Finding what <see cref="Reference"/> points at needed <see cref="File"/>, which is there but is no .NET
+    /// assembly or package that can be read: asking again fails the same way until the file is replaced.</summary>
+    public sealed record UnresolvedFileDamaged : AppProblem
+    {
+        public required CodeReference Reference { get; init; }
+
+        public required AssemblyPath File { get; init; }
+
+        public required Exception Error { get; init; }
+    }
+
     /// <summary>Looking up the place <see cref="Place"/> failed with <see cref="Error"/>: one kind wherever the lookup was
     /// asked for, a history entry's, a bookmark's, a reopened or reloaded tab's. Not finding it is a refusal where the
     /// user asked (<see cref="Refusal.HistoryPlaceGone"/>, <see cref="Refusal.BookmarkGone"/>).</summary>
     public sealed record PlaceLookupFailed : AppProblem
     {
         public required NodePath Place { get; init; }
+
+        public required Exception Error { get; init; }
+    }
+
+    /// <summary>Looking up the place <see cref="Place"/> needed <see cref="File"/>, which is there but could not be opened
+    /// (access denied, or another program holds it): readable again, the place can be looked up again.</summary>
+    public sealed record PlaceLookupFileDenied : AppProblem
+    {
+        public required NodePath Place { get; init; }
+
+        public required AssemblyPath File { get; init; }
+
+        public required Exception Error { get; init; }
+    }
+
+    /// <summary>Looking up the place <see cref="Place"/> needed <see cref="File"/>, which is there but is no .NET assembly
+    /// or package that can be read: looking again fails the same way until the file is replaced.</summary>
+    public sealed record PlaceLookupFileDamaged : AppProblem
+    {
+        public required NodePath Place { get; init; }
+
+        public required AssemblyPath File { get; init; }
 
         public required Exception Error { get; init; }
     }
@@ -228,8 +272,10 @@ public abstract record AppProblem
         Func<AssemblyNotReloaded, TResult> assemblyNotReloaded,
         Func<AssembliesNotReloaded, TResult> assembliesNotReloaded,
         Func<AnalysisFailed, TResult> analysisFailed, Func<AnalysesNotRestored, TResult> analysesNotRestored,
-        Func<Unresolved, TResult> unresolved,
-        Func<PlaceLookupFailed, TResult> placeLookupFailed, Func<ModuleUnreadable, TResult> moduleUnreadable,
+        Func<Unresolved, TResult> unresolved, Func<UnresolvedFileDenied, TResult> unresolvedFileDenied,
+        Func<UnresolvedFileDamaged, TResult> unresolvedFileDamaged,
+        Func<PlaceLookupFailed, TResult> placeLookupFailed, Func<PlaceLookupFileDenied, TResult> placeLookupFileDenied,
+        Func<PlaceLookupFileDamaged, TResult> placeLookupFileDamaged, Func<ModuleUnreadable, TResult> moduleUnreadable,
         Func<BookmarksNotExported, TResult> bookmarksNotExported,
         Func<BookmarksNotImported, TResult> bookmarksNotImported,
         Func<ImportedBookmarksUnreadable, TResult> importedBookmarksUnreadable, Func<ImportedBookmarksNotPlaced, TResult> importedBookmarksNotPlaced,
@@ -253,7 +299,11 @@ public abstract record AppProblem
             AnalysisFailed c => analysisFailed(c),
             AnalysesNotRestored c => analysesNotRestored(c),
             Unresolved c => unresolved(c),
+            UnresolvedFileDenied c => unresolvedFileDenied(c),
+            UnresolvedFileDamaged c => unresolvedFileDamaged(c),
             PlaceLookupFailed c => placeLookupFailed(c),
+            PlaceLookupFileDenied c => placeLookupFileDenied(c),
+            PlaceLookupFileDamaged c => placeLookupFileDamaged(c),
             ModuleUnreadable c => moduleUnreadable(c),
             BookmarksNotExported c => bookmarksNotExported(c),
             BookmarksNotImported c => bookmarksNotImported(c),

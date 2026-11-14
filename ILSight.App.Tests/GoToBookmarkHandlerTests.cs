@@ -74,6 +74,38 @@ public sealed class GoToBookmarkHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_LookupCouldNotOpenAFileThatIsThere_ReportsTheLookupWithWhatTheUserCanDoForEachCause()
+    {
+        var (d, bookmark) = await BookmarkedAsync();
+        var file = AssemblyPath.Of(Path.Combine(Path.GetTempPath(), "Locked", "Locked.dll"));
+        var denied = new AssemblyLoadException(file, "Cannot open.", new UnauthorizedAccessException("Access denied."));
+        var damaged = new AssemblyLoadException(file, "Cannot open.", new BadImageFormatException("Bad image."));
+
+        var deniedReport = await ReportedAsync(d, bookmark, denied);
+        var damagedReport = await ReportedAsync(d, bookmark, damaged);
+
+        var deniedLookup = Assert.IsType<AppProblem.PlaceLookupFileDenied>(deniedReport);
+        Assert.Equal(file, deniedLookup.File);
+        var deniedText = ProblemTexts.Describe(Strings.En, deniedReport);
+        Assert.Equal(Strings.En.ErrorLookUpPlace(bookmark.Place.Label), deniedText.Title);
+        Assert.StartsWith(Strings.En.ErrorFileDenied("Locked.dll"), deniedText.Details);
+        var damagedLookup = Assert.IsType<AppProblem.PlaceLookupFileDamaged>(damagedReport);
+        Assert.Same(damaged, damagedLookup.Error);
+        var damagedText = ProblemTexts.Describe(Strings.En, damagedReport);
+        Assert.Equal(Strings.En.ErrorLookUpPlace(bookmark.Place.Label), damagedText.Title);
+        Assert.StartsWith(Strings.En.ErrorFileDamaged("Locked.dll"), damagedText.Details);
+    }
+
+    private static async Task<AppProblem> ReportedAsync(AppStateDriver d, Bookmark bookmark, Exception error)
+    {
+        var ports = new FakeGoToBookmarkHandlerPorts();
+        var going = d.BeginAsync(() => new GoToBookmarkHandler(ports).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Bookmarks, d.AppState.Decompiler, bookmark, d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        Assert.Single(ports.Answers).SetResult(new Outcome<Lookup<BrowseNode>>.Failed(error));
+        Assert.Null(await d.EndAsync(going));
+        return Assert.Single(ports.Reported);
+    }
+
+    [Fact]
     public async Task HandleAsync_SomethingElseAskedForMeanwhile_ShowsAndReportsNothing()
     {
         var (d, bookmark) = await BookmarkedAsync();

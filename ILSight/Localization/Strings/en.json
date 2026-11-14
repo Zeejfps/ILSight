@@ -702,6 +702,8 @@
   "error.no_api_reference_page_details": "Only namespaces and the types and members visible outside their assembly have one.",
   "error.go_back": "Cannot go back to {place}",
   "error.look_up_place": "Cannot look up {place}",
+  "error.file_denied": "{file} couldn't be opened: access to it was denied, or another program has it locked. Make it readable, then try again.",
+  "error.file_damaged": "{file} isn't a .NET assembly or package that can be read. Replace the file, or close it.",
   "error.no_longer_there": "{place} is no longer there.",
   "error.module_unreadable": "{name} couldn't be read",
   "error.decompile": "Cannot decompile {name}",

@@ -32,6 +32,6 @@ public sealed class ShowInApiReferenceHandler(ShowInApiReferenceHandler.IPorts p
                 found => viewCommands.Enqueue(new ViewCommand.OpenWebPage(found.Value)),
                 _ => ports.ShowRefusal(new Refusal.NoApiReferencePage { Name = reference.Name }),
                 unreadable => ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module))),
-            failed => ports.ReportError(new AppProblem.Unresolved { Reference = reference, Error = failed.Error }));
+            failed => ports.ReportError(LookupFailures.OfReference(reference, failed.Error)));
     }
 }
