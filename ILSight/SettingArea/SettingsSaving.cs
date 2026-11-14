@@ -33,12 +33,12 @@ public sealed class SettingsSaving(SettingsSaving.IPorts ports)
         }
 
         var sources = Settings.CaptureSavedSources(appState);
-        if (sources == appState.LastSaved)
+        if (sources == appState.LastSave.Sources)
         {
             return Unchanged;
         }
 
-        var wait = AdvanceRetry(appState, now);
+        var wait = appState.LastSave.AdvanceRetry(now);
         if (wait > 0)
         {
             return new Saving.Waiting(wait);
@@ -49,22 +49,8 @@ public sealed class SettingsSaving(SettingsSaving.IPorts ports)
             static (s, failed) => new Saving.Failed
             {
                 Reason = failed.Reason,
-                RetryIn = AdvanceRetry(s.appState, s.now),
+                RetryIn = s.appState.LastSave.AdvanceRetry(s.now),
             });
-    }
-
-    private static double AdvanceRetry(AppState appState, double now)
-    {
-        return appState.SaveRetry.Match<(AppState appState, double now), double>((appState, now),
-            static (_, _) => 0,
-            static (s, _) => StartWaiting(s.appState, s.now),
-            static (s, waiting) => Math.Max(0, SaveRetry.DelaySeconds - (s.now - waiting.Since)));
-    }
-
-    private static double StartWaiting(AppState appState, double now)
-    {
-        appState.SaveRetry = new SaveRetry.Waiting(now);
-        return SaveRetry.DelaySeconds;
     }
 
     /// <summary>Writes the settings, counting what they were copied from as saved only once the write
@@ -94,21 +80,13 @@ public sealed class SettingsSaving(SettingsSaving.IPorts ports)
     private void TakeWrite(AppState appState, SavedSources sources, SettingsWriteResult write)
     {
         write.Switch(
-            _ => TakeWritten(appState, sources),
+            _ => appState.LastSave.TakeWritten(sources),
             failed => ReportWriteFailure(appState, failed.Reason));
-    }
-
-    private static void TakeWritten(AppState appState, SavedSources sources)
-    {
-        appState.LastSaved = sources;
-        appState.SaveRetry = new SaveRetry.Clear();
     }
 
     private void ReportWriteFailure(AppState appState, string error)
     {
-        var wasFailing = appState.SaveRetry is not SaveRetry.Clear;
-        appState.SaveRetry = new SaveRetry.Failed();
-        if (wasFailing)
+        if (!appState.LastSave.TryStartFailing())
         {
             return;
         }
