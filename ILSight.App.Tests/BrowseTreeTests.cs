@@ -27,6 +27,27 @@ public sealed class BrowseTreeTests
     }
 
     [Fact]
+    public async Task Children_whose_build_workflow_fails_show_a_row_saying_why_not_loading_for_good()
+    {
+        var session = new BrowseSession();
+        var tree = new BrowseTree { Session = session };
+        var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync();
+        var neverBuilt = new TaskCompletionSource<ChildrenState>();
+        using (var held = session.EnsureChildrenSlot(root).Enter())
+        {
+            held.Value = new ChildrenState.Running(neverBuilt.Task);
+        }
+
+        var loading = tree.GetChildren(root).PlaceholderRow;
+        Commands.SettleFailedBuild(session, tree, root, new InvalidOperationException("broken"));
+
+        Assert.True(Assert.IsType<TreeRow>(loading).Spinning);
+        var failed = Assert.IsType<TreeRow>(tree.GetChildren(root).PlaceholderRow);
+        Assert.Equal("Error: broken", failed.Label);
+        Assert.False(failed.Spinning);
+    }
+
+    [Fact]
     public async Task Children_that_fail_to_build_show_a_row_saying_why()
     {
         using var temp = new TempDir();

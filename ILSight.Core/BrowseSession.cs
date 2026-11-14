@@ -229,6 +229,23 @@ public sealed class BrowseSession
         }
     }
 
+    /// <summary>Settles <paramref name="node"/>'s children as failed with <paramref name="error"/> when their build is
+    /// still counted as running, as it is when the workflow that built them failed (the edge's settle), so that the tree
+    /// shows why rather than loading for good; children built or failed meanwhile are left as they are.</summary>
+    public void FailChildren(BrowseNode node, Exception error)
+    {
+        if (!_children.TryGetValue(node, out var slot))
+        {
+            return;
+        }
+
+        using var held = slot.Enter();
+        if (held.Value is ChildrenState.Running)
+        {
+            held.Value = new ChildrenState.Failed(error);
+        }
+    }
+
     /// <summary>Where <paramref name="node"/>'s children stand now; never blocks or builds them.</summary>
     public ChildrenState PeekChildren(BrowseNode node)
     {

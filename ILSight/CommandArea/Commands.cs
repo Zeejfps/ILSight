@@ -187,7 +187,8 @@ public static class Commands
     {
         foreach (var root in expansion.Roots)
         {
-            appState.Workflows.Start(nameof(ExpandNamespacesHandler), ct => appState.ExpandNamespacesHandler.HandleAsync(tree, expansion, root, ct));
+            appState.Workflows.StartSettling(nameof(ExpandNamespacesHandler), ct => appState.ExpandNamespacesHandler.HandleAsync(tree, expansion, root, ct),
+                error => SettleFailedBuild(appState.Session, tree, root, error));
         }
     }
 
@@ -210,7 +211,16 @@ public static class Commands
     // A method of its own, so that the frames that start nothing allocate no closure.
     private static void StartBuildingChildren(AppState appState, BrowseTree tree, BrowseNode node)
     {
-        appState.Workflows.Start(nameof(BuildChildrenHandler), ct => appState.BuildChildrenHandler.HandleAsync(tree, node, ct));
+        appState.Workflows.StartSettling(nameof(BuildChildrenHandler), ct => appState.BuildChildrenHandler.HandleAsync(tree, node, ct),
+            error => SettleFailedBuild(appState.Session, tree, node, error));
+    }
+
+    // A build whose workflow failed shows one row saying why under its node, which a reload asks for again.
+    internal static void SettleFailedBuild(BrowseSession session, BrowseTree tree, BrowseNode node, Exception error)
+    {
+        session.FailChildren(node, error);
+        tree.Builds.Finish(node);
+        tree.View.Refresh();
     }
 
     /// <summary>Starts reading the type system of each module listed since the last frame, ahead of its first use,
