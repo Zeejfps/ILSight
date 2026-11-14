@@ -75,7 +75,9 @@ disposable result).
 - **Take the parts of the state you use.** Only edges and work on every part (saving the session: an edge's step) take
   the whole state; a use case that work must follow ends or hands it back. Narrow callees first; a caller converted
   first passes the state on, never through a port member. A value read as it stands after a wait is taken as its
-  owner (the type holding it current); one read as asked, at the start.
+  owner (the type holding it current); one read as asked, at the start. A part taken out of a whole is read there,
+  never through a forwarder on the whole (one stands only while its readers move); a member a framework requires of
+  the whole is implemented for it, explicitly.
 - **A library object that reads lazily is I/O by what its reads can reach as made:** decoding bytes already read,
   each read bounded, it is data, readable anywhere, a draw included (failures caught per unit, R009); reaching a file
   or the network, only adapters and their shared I/O code read it (list types whose every instance is I/O). Kept by
@@ -127,8 +129,8 @@ missing value can pass).
 ## R003: The name is the contract
 
 Build: RL0301 (`Async`), RL0302 (`Find*`), RL0303 (`Get*` returning `T?`), RL0304 (`Is*` not `bool`), RL0305
-(`Load*` / `Fetch*`); suggestions: RL0306 (a `bool` method named as an action), RL0307 (`Get*` returning -1 or a
-struct's `default`).
+(`Load*` / `Fetch*`); suggestions: RL0306 (a `bool` method named as an action), RL0307 (a method returning -1, a
+`char`'s `'\0'` or a struct's `default` for none).
 
 | Name | Promise |
 |------|---------|
@@ -161,8 +163,8 @@ struct's `default`).
 
 Build: RL0401 (vague names); suggestions: RL0403 (public state the type changes itself, not `ref`-bound), RL0404
 (public state only other types write, on a type with methods), RL0405 (the same with no methods, one writer changing
-two or more members), RL0406 (static functions writing one type's members), RL0407 (another type's lock taken, or an
-event handed out as a delegate).
+two or more members), RL0406 (static functions writing one type's members: two, or one whose write keeps state),
+RL0407 (another type's lock taken, or an event handed out as a delegate).
 
 | You have | Make |
 |----------|------|
@@ -210,12 +212,13 @@ event handed out as a delegate).
   don't own or over sequences, a kind's `static abstract` members, statics a framework or generator requires,
   P/Invoke, constants, `Main`) and for orchestration through objects' own public operations (a lone workflow, a draw,
   an edge). A function that writes an object's members itself is its method (an extension method reaches only public
-  members: no fix), or a method of the part it changes where the object holds many (the app's whole state); a static
-  class's own nested shape (a parser's cursor) is its own.
+  members: no fix), or a method of the part it changes where the object holds many (the app's whole state), a lone one
+  too where its write keeps state (a clamp, a memo, a flag taken once, two members); one only storing a value no rule
+  covers is no step. A static class's own nested shape (a parser's cursor) is its own.
 - **State the framework requires public** (`ref` fields, bound properties) is data, separate from a held rule-owning
   type (`picker.Choice`); EF entities filled through private fields retain their rules. Convenience methods may set
-  bound fields, but required consequences belong to the rule owner, informed each frame
-  (`picker.Scan.CancelUnlessOpen(picker.IsOpen)`), because framework writes bypass those methods.
+  bound fields (they don't make it a rule owner), but required consequences belong to the rule owner, informed each
+  frame (`picker.Scan.CancelUnlessOpen(picker.IsOpen)`), because framework writes bypass those methods.
 - **A framework's protocol** isn't your set order: expose exactly its members, the second taking what the first
   returns (`var shown = choice.ShowIn(rows); ... choice.TakeFrom(rows, shown);`), or reading it from the object both
   are handed when they run in different places.
@@ -435,14 +438,19 @@ Generated code doesn't count.
 ## R014: Comments say what the code can't
 
 Build: RL1401 (a doc comment on a private member or a member of a private type); with `GenerateDocumentationFile` on
-(CS1591, CS1573 off), a doc comment naming what is renamed or gone (CS1734, CS1574, CS1572, CS0419, CS1570).
+(CS1591, CS1573 off), a doc comment naming what is renamed or gone (CS1734, CS1574, CS1572, CS0419, CS1570);
+suggestions: RL1402 (a summary with no word beyond its declaration), RL1403 (a time as a number with no unit).
 
 - **Private members get no doc comment.** Restating goes; a contract the code could carry goes into it (a name, a
   type, a result union); a reason it can't show is a `//` on the line it explains. An interface implementation or
   override counts as the contract it exposes (a private nested type's `Dispose` handed out as `IDisposable`).
 - **Other members and types:** a doc comment only for what the name and signature can't say (a unit, a result's
   meaning, a precondition, a thread, lifetime or ordering rule, a side effect, the rule a type keeps, a reason), after
-  the code says what it can; never the name restated or the body's steps.
+  the code says what it can; never the name restated or the body's steps. A restatement deleted leaves the contract it
+  stood in for unsaid: say it, the name first.
+- **A unit and "none" in the type:** a duration is a `TimeSpan`, a moment a `DateTimeOffset` or the clock's type (a
+  framework's number converted where it comes in); a number a formula needs as it is names its unit (`deltaSeconds`);
+  none is `T?` or a union case, never a sentinel (R003).
 - **`//` says why, never what** (a what-comment marks a step to name: R011).
 
 ## Frame-driven UIs (only if your UI redraws from state every frame)
