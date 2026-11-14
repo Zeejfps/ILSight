@@ -22,18 +22,20 @@ public sealed class GoToBookmarkHandler(GoToBookmarkHandler.IPorts ports)
     /// is not open, and records it in the history; reports the bookmark gone when its place is. Returns the load that
     /// started in the tab, for the edge that started this to start under the tab's work; null when none started,
     /// as when something else was asked for meanwhile.</summary>
-    public async Task<DecompileTicket?> HandleAsync(AppState appState, Bookmark bookmark, CancellationToken ct)
+    public async Task<DecompileTicket?> HandleAsync(Navigation navigation, BookmarkList bookmarks, DecompilerChoice decompiler, Bookmark bookmark,
+        CancellationToken ct)
     {
-        var ticket = appState.Navigation.BeginResolving(inNewTab: false);
+        var ticket = navigation.BeginResolving(inNewTab: false);
         var found = await ports.LookUpPlaceAsync(bookmark.Place, ct);
-        var resolved = appState.Navigation.EndResolving(ticket.Intent, found);
-        return ShowBookmarkPlace(appState, bookmark, resolved, ticket.Destination);
+        var resolved = navigation.EndResolving(ticket.Intent, found);
+        return ShowBookmarkPlace(navigation, bookmarks, decompiler, bookmark, resolved, ticket.Destination);
     }
 
-    private DecompileTicket? ShowBookmarkPlace(AppState appState, Bookmark bookmark, Resolution<BrowseNode> resolved, TabDestination destination)
+    private DecompileTicket? ShowBookmarkPlace(Navigation navigation, BookmarkList bookmarks, DecompilerChoice decompiler, Bookmark bookmark,
+        Resolution<BrowseNode> resolved, TabDestination destination)
     {
         return resolved.Match<DecompileTicket?>(
-            found => ShowBookmarkedNode(appState, bookmark, found.Value, destination),
+            found => ShowBookmarkedNode(navigation, bookmarks, decompiler, bookmark, found.Value, destination),
             _ =>
             {
                 ReportBookmarkGone(bookmark, null);
@@ -52,10 +54,11 @@ public sealed class GoToBookmarkHandler(GoToBookmarkHandler.IPorts ports)
             static _ => null);
     }
 
-    private static DecompileTicket? ShowBookmarkedNode(AppState appState, Bookmark bookmark, BrowseNode node, TabDestination destination)
+    private static DecompileTicket? ShowBookmarkedNode(Navigation navigation, BookmarkList bookmarks, DecompilerChoice decompiler, Bookmark bookmark,
+        BrowseNode node, TabDestination destination)
     {
-        appState.Bookmarks.Resolve(bookmark, node);
-        return appState.Navigation.ShowFoundNode(destination, node, appState.Decompiler.Setup, bookmark);
+        bookmarks.Resolve(bookmark, node);
+        return navigation.ShowFoundNode(destination, node, decompiler.Setup, bookmark);
     }
 
     private void ReportBookmarkGone(Bookmark bookmark, Exception? error)

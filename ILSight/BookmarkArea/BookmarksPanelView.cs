@@ -92,7 +92,7 @@ internal static class BookmarksPanelView
 
         if (body.Activated && panel.Renaming.Bookmark is null)
         {
-            Commands.Start(ui.State, nameof(GoToBookmarkHandler), selected, static (a, b, ct) => a.GoToBookmarkHandler.HandleAsync(a, b, ct));
+            Commands.Start(ui.State, nameof(GoToBookmarkHandler), selected, static (a, b, ct) => a.GoToBookmarkHandler.HandleAsync(a.Navigation, a.Bookmarks, a.Decompiler, b, ct));
         }
 
         if (body.EditRequested && panel.Cells.Column == NameColumn)
@@ -260,7 +260,7 @@ internal static class BookmarksPanelView
         var followed = row.TextCell(LocationColumn, bookmark.Location, color, link: new UiIcon(ui.State.Icons.LinkBookmark), linkTooltip: t.BookmarksGoTo);
         if (followed)
         {
-            Commands.Start(ui.State, nameof(GoToBookmarkHandler), bookmark, static (a, b, ct) => a.GoToBookmarkHandler.HandleAsync(a, b, ct));
+            Commands.Start(ui.State, nameof(GoToBookmarkHandler), bookmark, static (a, b, ct) => a.GoToBookmarkHandler.HandleAsync(a.Navigation, a.Bookmarks, a.Decompiler, b, ct));
         }
     }
 
@@ -367,7 +367,7 @@ internal static class BookmarksPanelView
 
         if (ui.MenuItem(t.BookmarksGoTo, Shortcuts.Enter, id: "go-to"))
         {
-            Commands.Start(ui.State, nameof(GoToBookmarkHandler), bookmark, static (a, b, ct) => a.GoToBookmarkHandler.HandleAsync(a, b, ct));
+            Commands.Start(ui.State, nameof(GoToBookmarkHandler), bookmark, static (a, b, ct) => a.GoToBookmarkHandler.HandleAsync(a.Navigation, a.Bookmarks, a.Decompiler, b, ct));
         }
 
         if (ui.MenuItem(t.CodeCopy, Shortcuts.Copy, enabled: panel.Cells.HasCell, id: "copy"))
@@ -457,7 +457,7 @@ internal static class BookmarksPanelView
         }
 
         panel.Selection.Select(bookmark, appState.Bookmarks.Items);
-        return appState.GoToBookmarkHandler.HandleAsync(appState, bookmark, ct);
+        return appState.GoToBookmarkHandler.HandleAsync(appState.Navigation, appState.Bookmarks, appState.Decompiler, bookmark, ct);
     }
 
     private static void RenameInPlace(BookmarksPanel panel, Bookmark bookmark)

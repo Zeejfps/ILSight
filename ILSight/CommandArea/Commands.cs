@@ -76,7 +76,7 @@ public static class Commands
     /// <paramref name="reference"/> points at (<see cref="ShowInMetadataHandler"/>).</summary>
     public static void ShowInMetadataLater(UiState uiState, CodeReference.Navigable reference, ResolveTicket lookup)
     {
-        Start(uiState, nameof(ShowInMetadataHandler), (reference, lookup), static (a, s, ct) => a.ShowInMetadataHandler.HandleAsync(a, s.reference, s.lookup, ct));
+        Start(uiState, nameof(ShowInMetadataHandler), (reference, lookup), static (a, s, ct) => a.ShowInMetadataHandler.HandleAsync(a.Navigation, a.Decompiler, s.reference, s.lookup, ct));
     }
 
     /// <summary>Asks for what <paramref name="reference"/> points at to be analyzed once the frame is drawn: the analyzer
@@ -414,7 +414,7 @@ public static class Commands
     public static void StartMoving(AppState appState, HistoryMove move)
     {
         move.Switch(load => StartDecompiling(appState, load),
-            lookup => StartShowing(appState, nameof(GoToHistoryEntryHandler), ct => appState.GoToHistoryEntryHandler.HandleAsync(appState, lookup, ct)),
+            lookup => StartShowing(appState, nameof(GoToHistoryEntryHandler), ct => appState.GoToHistoryEntryHandler.HandleAsync(appState.Navigation, appState.Decompiler, lookup, ct)),
             read => StartReadingPlace(appState, read), run => StartComparing(appState, run));
     }
 
@@ -611,7 +611,7 @@ public static class Commands
 
     private static void StartFindingNodes(AppState appState, ReopenedNodesLookup lookup)
     {
-        StartShowing(appState, nameof(ShowReopenedNodesHandler), ct => appState.ShowReopenedNodesHandler.HandleAsync(appState, lookup, ct));
+        StartShowing(appState, nameof(ShowReopenedNodesHandler), ct => appState.ShowReopenedNodesHandler.HandleAsync(appState.Reopened, appState.Navigation, appState.Decompiler, appState.ViewCommands, lookup, ct));
     }
 
     private static void StartReadingCards(AppState appState, SavedDiagramRead read)

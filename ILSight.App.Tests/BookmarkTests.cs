@@ -137,7 +137,7 @@ public sealed class BookmarkTests : IDisposable
         app.Show(await app.FixtureAsync("Greeter"), 3);
 
         var bookmark = d.AppState.Bookmarks.Items[0];
-        d.Start((a, ct) => a.GoToBookmarkHandler.HandleAsync(a, bookmark, ct));
+        d.Start((a, ct) => a.GoToBookmarkHandler.HandleAsync(a.Navigation, a.Bookmarks, a.Decompiler, bookmark, ct));
         app.Settle(4);
 
         Assert.Equal("Outline", tab.Node?.Text);
@@ -305,7 +305,7 @@ public sealed class BookmarkTests : IDisposable
         app.Frames.MovePointer(location.X + 2f, location.Y + location.Height / 2).Frame(90);
         Assert.Contains(app.Frames.TextRects(), t => t.Text.StartsWith(bookmark.Module + " "));
 
-        d.Start((a, ct) => a.GoToBookmarkHandler.HandleAsync(a, bookmark, ct));
+        d.Start((a, ct) => a.GoToBookmarkHandler.HandleAsync(a.Navigation, a.Bookmarks, a.Decompiler, bookmark, ct));
         app.Settle(4);
 
         Assert.Equal([AppStateDriver.FixturePath], d.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));

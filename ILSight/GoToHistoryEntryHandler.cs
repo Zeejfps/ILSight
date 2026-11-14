@@ -28,17 +28,19 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
     /// the node found there at the place the view stood. Returns the load that started in the tab, for the edge that
     /// started this to start under the tab's work; null when none started. Reports the place gone; drops it when
     /// something else was asked for meanwhile.</summary>
-    public async Task<DecompileTicket?> HandleAsync(AppState appState, HistoryMove.LookUp lookup, CancellationToken ct)
+    public async Task<DecompileTicket?> HandleAsync(Navigation navigation, DecompilerChoice decompiler, HistoryMove.LookUp lookup, CancellationToken ct)
     {
         var found = await ports.LookUpListedPlaceAsync(lookup.Place, ct);
-        return ShowHistoryPlace(appState, lookup.Place, lookup.Position, appState.Navigation.EndResolving(lookup.Ticket.Intent, found), lookup.Ticket.Destination);
+        return ShowHistoryPlace(navigation, decompiler, lookup.Place, lookup.Position, navigation.EndResolving(lookup.Ticket.Intent, found),
+            lookup.Ticket.Destination);
     }
 
-    private DecompileTicket? ShowHistoryPlace(AppState appState, NodePath place, ViewPosition? position, Resolution<BrowseNode> resolved,
+    private DecompileTicket? ShowHistoryPlace(Navigation navigation, DecompilerChoice decompiler, NodePath place, ViewPosition? position,
+        Resolution<BrowseNode> resolved,
         TabDestination destination)
     {
         return resolved.Match<DecompileTicket?>(
-            found => appState.Navigation.ShowHistoryPlace(destination, found.Value, appState.Decompiler.Setup, position),
+            found => navigation.ShowHistoryPlace(destination, found.Value, decompiler.Setup, position),
             _ =>
             {
                 ports.ShowRefusal(new Refusal.HistoryPlaceGone { Place = place });

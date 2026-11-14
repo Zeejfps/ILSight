@@ -30,7 +30,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var greeter = await d.FixtureAsync("Greeter");
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
-        var showing = d.BeginAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None));
+        var showing = d.BeginAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState.Reopened, d.AppState.Navigation, d.AppState.Decompiler, d.AppState.ViewCommands, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None));
         Assert.IsType<TabContent.Reloading>(waiting.Reopened.Tab.Content);
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<BrowseNode>>>.Ok([new Lookup<BrowseNode>.Found { Value = greeter }]));
         var loads = await d.EndAsync(showing);
@@ -49,7 +49,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var waiting = await WaitForGreeterAsync(d);
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
-        var showing = d.BeginAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None));
+        var showing = d.BeginAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState.Reopened, d.AppState.Navigation, d.AppState.Decompiler, d.AppState.ViewCommands, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None));
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<BrowseNode>>>.Failed(new InvalidOperationException("Unreadable.")));
         var loads = await d.EndAsync(showing);
 
@@ -66,7 +66,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var unreadable = new UnreadableModule { Module = module, Why = new BadImageFormatException("Bad namespace.") };
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
-        var showing = d.BeginAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None));
+        var showing = d.BeginAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState.Reopened, d.AppState.Navigation, d.AppState.Decompiler, d.AppState.ViewCommands, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None));
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<BrowseNode>>>.Ok([new Lookup<BrowseNode>.Unreadable { Module = unreadable }]));
         var loads = await d.EndAsync(showing);
 
@@ -86,7 +86,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var waiting = await WaitForGreeterAsync(d);
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
-        var showing = d.BeginAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None));
+        var showing = d.BeginAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState.Reopened, d.AppState.Navigation, d.AppState.Decompiler, d.AppState.ViewCommands, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None));
         d.AppState.Navigation.RestoreDiagram(waiting.Reopened.Tab, new TypeDiagram(), "Other diagram");
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<BrowseNode>>>.Ok([new Lookup<BrowseNode>.Found { Value = await d.FixtureAsync("Greeter") }]));
         var loads = await d.EndAsync(showing);
@@ -101,7 +101,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
-        var loads = await d.RunAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState, new ReopenedNodesLookup { Nodes = [] }, CancellationToken.None));
+        var loads = await d.RunAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState.Reopened, d.AppState.Navigation, d.AppState.Decompiler, d.AppState.ViewCommands, new ReopenedNodesLookup { Nodes = [] }, CancellationToken.None));
 
         Assert.Empty(loads);
         Assert.Empty(ports.Asked);

@@ -11,7 +11,7 @@ public sealed class OpenAndShowIdHandlerTests
         var greeter = await d.FixtureAsync("Greeter");
         var opening = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(greeter)) };
 
-        var load = await d.RunAsync(() => new OpenAndShowIdHandler(opening).HandleAsync(d.AppState, [], "T:Greeter", CancellationToken.None));
+        var load = await d.RunAsync(() => new OpenAndShowIdHandler(opening).HandleAsync(d.AppState.Navigation, d.AppState.Decompiler, [], "T:Greeter", CancellationToken.None));
 
         Assert.Same(greeter, d.AppState.Navigation.ActiveTab?.Node);
         Assert.Same(greeter, load?.Node);
@@ -25,7 +25,7 @@ public sealed class OpenAndShowIdHandlerTests
         var bug = new InvalidOperationException("A bug in the core's own code on what it read.");
         var opening = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)), WhileOpening = () => throw bug };
 
-        var handling = d.BeginAsync(() => new OpenAndShowIdHandler(opening).HandleAsync(d.AppState, [], "T:Greeter", CancellationToken.None));
+        var handling = d.BeginAsync(() => new OpenAndShowIdHandler(opening).HandleAsync(d.AppState.Navigation, d.AppState.Decompiler, [], "T:Greeter", CancellationToken.None));
 
         Assert.Same(bug, await Assert.ThrowsAsync<InvalidOperationException>(async () => Assert.Null(await d.EndAsync(handling))));
         Assert.Empty(opening.Reported);
@@ -37,7 +37,7 @@ public sealed class OpenAndShowIdHandlerTests
         var d = AppStateDriver.WithoutScreen();
         var opening = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)) };
 
-        var load = await d.RunAsync(() => new OpenAndShowIdHandler(opening).HandleAsync(d.AppState, [], "T:Nowhere.Missing", CancellationToken.None));
+        var load = await d.RunAsync(() => new OpenAndShowIdHandler(opening).HandleAsync(d.AppState.Navigation, d.AppState.Decompiler, [], "T:Nowhere.Missing", CancellationToken.None));
 
         var refused = Assert.IsType<Refusal.IdNotFound>(Assert.Single(opening.Refused));
         Assert.Equal("T:Nowhere.Missing", refused.Id);
@@ -55,8 +55,8 @@ public sealed class OpenAndShowIdHandlerTests
         var found = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(await d.FixtureAsync("Greeter"))), WhileOpening = () => appState.Navigation.BeginRequest() };
         var missing = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)), WhileOpening = () => appState.Navigation.BeginRequest() };
 
-        var foundLoad = await d.RunAsync(() => new OpenAndShowIdHandler(found).HandleAsync(appState, [], "T:Greeter", CancellationToken.None));
-        var missingLoad = await d.RunAsync(() => new OpenAndShowIdHandler(missing).HandleAsync(appState, [], "T:Nowhere.Missing", CancellationToken.None));
+        var foundLoad = await d.RunAsync(() => new OpenAndShowIdHandler(found).HandleAsync(appState.Navigation, appState.Decompiler, [], "T:Greeter", CancellationToken.None));
+        var missingLoad = await d.RunAsync(() => new OpenAndShowIdHandler(missing).HandleAsync(appState.Navigation, appState.Decompiler, [], "T:Nowhere.Missing", CancellationToken.None));
 
         Assert.Same(shown, appState.Navigation.ActiveTab?.Node);
         Assert.Empty(found.Reported);
@@ -72,8 +72,8 @@ public sealed class OpenAndShowIdHandlerTests
         var failed = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(new IOException("unreadable")) };
         var cancelled = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(new OperationCanceledException()) };
 
-        var failedLoad = await d.RunAsync(() => new OpenAndShowIdHandler(failed).HandleAsync(d.AppState, [], "T:Greeter", CancellationToken.None));
-        var cancelledLoad = await d.RunAsync(() => new OpenAndShowIdHandler(cancelled).HandleAsync(d.AppState, [], "T:Greeter", CancellationToken.None));
+        var failedLoad = await d.RunAsync(() => new OpenAndShowIdHandler(failed).HandleAsync(d.AppState.Navigation, d.AppState.Decompiler, [], "T:Greeter", CancellationToken.None));
+        var cancelledLoad = await d.RunAsync(() => new OpenAndShowIdHandler(cancelled).HandleAsync(d.AppState.Navigation, d.AppState.Decompiler, [], "T:Greeter", CancellationToken.None));
 
         var reported = Assert.IsType<AppProblem.OpenFailed>(Assert.Single(failed.Reported));
         Assert.Equal("unreadable", reported.Error.Message);

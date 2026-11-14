@@ -29,17 +29,18 @@ public sealed class OpenAndShowIdHandler(OpenAndShowIdHandler.IPorts ports)
     /// from them, or in every open one when there are none. Returns the load that started in the tab, for the edge
     /// that started this to start under the tab's work; null when none started. Reports when none has it, unless
     /// something else was asked for meanwhile.</summary>
-    public async Task<DecompileTicket?> HandleAsync(AppState appState, IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct)
+    public async Task<DecompileTicket?> HandleAsync(Navigation navigation, DecompilerChoice decompiler, IReadOnlyList<AssemblyPath> paths,
+        string idString, CancellationToken ct)
     {
-        var ticket = appState.Navigation.BeginRequest();
+        var ticket = navigation.BeginRequest();
         var found = await ports.OpenAndFindIdAsync(paths, idString, ct);
-        return ShowFound(appState, idString, found, ticket);
+        return ShowFound(navigation, decompiler, idString, found, ticket);
     }
 
-    private DecompileTicket? ShowFound(AppState appState, string idString, Outcome<Lookup<BrowseNode>> found, int ticket)
+    private DecompileTicket? ShowFound(Navigation navigation, DecompilerChoice decompiler, string idString, Outcome<Lookup<BrowseNode>> found, int ticket)
     {
         return found.Match(
-            ok => ShowFoundNode(appState, idString, ok.Value, ticket),
+            ok => ShowFoundNode(navigation, decompiler, idString, ok.Value, ticket),
             failed =>
             {
                 ReportOpenFailure(failed.Error);
@@ -47,15 +48,15 @@ public sealed class OpenAndShowIdHandler(OpenAndShowIdHandler.IPorts ports)
             });
     }
 
-    private DecompileTicket? ShowFoundNode(AppState appState, string idString, Lookup<BrowseNode> lookup, int ticket)
+    private DecompileTicket? ShowFoundNode(Navigation navigation, DecompilerChoice decompiler, string idString, Lookup<BrowseNode> lookup, int ticket)
     {
-        if (appState.Navigation.IsStale(ticket))
+        if (navigation.IsStale(ticket))
         {
             return null;
         }
 
         return lookup.Match<DecompileTicket?>(
-            found => appState.Navigation.ShowNode(found.Value, appState.Decompiler.Setup),
+            found => navigation.ShowNode(found.Value, decompiler.Setup),
             _ =>
             {
                 ports.ShowRefusal(new Refusal.IdNotFound { Id = idString });

@@ -27,16 +27,18 @@ public sealed class ShowInMetadataHandler(ShowInMetadataHandler.IPorts ports)
     /// ticket leads to and records it in the history. Returns the load that started in the tab, for the edge that
     /// started this to start under the tab's work; null when none started. Reports a reference that leads nowhere;
     /// drops it when something else was asked for meanwhile.</summary>
-    public async Task<DecompileTicket?> HandleAsync(AppState appState, CodeReference.Navigable reference, ResolveTicket ticket, CancellationToken ct)
+    public async Task<DecompileTicket?> HandleAsync(Navigation navigation, DecompilerChoice decompiler, CodeReference.Navigable reference,
+        ResolveTicket ticket, CancellationToken ct)
     {
         var found = await ports.LookUpMetadataRowAsync(reference, ct);
-        return ShowResolvedRow(appState, reference, appState.Navigation.EndResolving(ticket.Intent, found), ticket.Destination);
+        return ShowResolvedRow(navigation, decompiler, reference, navigation.EndResolving(ticket.Intent, found), ticket.Destination);
     }
 
-    private DecompileTicket? ShowResolvedRow(AppState appState, CodeReference reference, Resolution<MetadataTarget> resolved, TabDestination destination)
+    private DecompileTicket? ShowResolvedRow(Navigation navigation, DecompilerChoice decompiler, CodeReference reference,
+        Resolution<MetadataTarget> resolved, TabDestination destination)
     {
         return resolved.Match<DecompileTicket?>(
-            found => appState.Navigation.ShowRowIn(destination, found.Value, appState.Decompiler.Setup),
+            found => navigation.ShowRowIn(destination, found.Value, decompiler.Setup),
             _ =>
             {
                 ports.ShowRefusal(new Refusal.Unresolved { Reference = reference });

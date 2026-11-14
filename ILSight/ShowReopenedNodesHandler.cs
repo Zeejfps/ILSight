@@ -21,7 +21,8 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
     /// when it was shown in the language the app shows now, or that it is gone; all of them gone when finding them
     /// failed. A tab pointed elsewhere or closed meanwhile is left alone. Returns the loads that started in the tabs,
     /// for the edge that started this to start under each tab's work.</summary>
-    public async Task<List<DecompileTicket>> HandleAsync(AppState appState, ReopenedNodesLookup lookup, CancellationToken ct)
+    public async Task<List<DecompileTicket>> HandleAsync(ReopenedTabs reopened, Navigation navigation, DecompilerChoice decompiler,
+        Queue<ViewCommand> viewCommands, ReopenedNodesLookup lookup, CancellationToken ct)
     {
         var nodes = lookup.Nodes;
         if (nodes.Count == 0)
@@ -34,16 +35,17 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
             .ToList();
         var found = await ports.LookUpListedPlacesAsync(places, ct);
         var shown = found.Match(static ok => ok.Value, _ => places.ConvertAll(static _ => (Lookup<BrowseNode>)new Lookup<BrowseNode>.NotFound()));
-        return ShowReopenedNodes(appState, nodes, shown);
+        return ShowReopenedNodes(reopened, navigation, decompiler, viewCommands, nodes, shown);
     }
 
     // shown holds what was found for each of nodes, in the same order.
-    private static List<DecompileTicket> ShowReopenedNodes(AppState appState, IReadOnlyList<WaitingNode> nodes, List<Lookup<BrowseNode>> shown)
+    private static List<DecompileTicket> ShowReopenedNodes(ReopenedTabs reopened, Navigation navigation, DecompilerChoice decompiler,
+        Queue<ViewCommand> viewCommands, IReadOnlyList<WaitingNode> nodes, List<Lookup<BrowseNode>> shown)
     {
         var loads = new List<DecompileTicket>();
         for (var i = 0; i < nodes.Count; i++)
         {
-            var load = ShowReopenedNode(appState, nodes[i], shown[i]);
+            var load = ShowReopenedNode(reopened, navigation, decompiler, viewCommands, nodes[i], shown[i]);
             if (load is not null)
             {
                 loads.Add(load);
@@ -53,21 +55,22 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
         return loads;
     }
 
-    private static DecompileTicket? ShowReopenedNode(AppState appState, WaitingNode waiting, Lookup<BrowseNode> lookup)
+    private static DecompileTicket? ShowReopenedNode(ReopenedTabs reopened, Navigation navigation, DecompilerChoice decompiler,
+        Queue<ViewCommand> viewCommands, WaitingNode waiting, Lookup<BrowseNode> lookup)
     {
-        if (!SavedDocuments.TryFinishWaiting(appState.Reopened, waiting.Reopened))
+        if (!SavedDocuments.TryFinishWaiting(reopened, waiting.Reopened))
         {
             return null;
         }
 
         var tab = waiting.Reopened.Tab;
-        if (!appState.Navigation.IsOpen(tab))
+        if (!navigation.IsOpen(tab))
         {
             return null;
         }
 
         return lookup.Match<DecompileTicket?>(
-            found => Restore(appState, waiting, tab, found.Value),
+            found => Restore(navigation, decompiler, viewCommands, waiting, tab, found.Value),
             _ =>
             {
                 tab.Load.ShowGone(waiting.Record.Location);
@@ -80,21 +83,22 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
             });
     }
 
-    private static DecompileTicket? Restore(AppState appState, WaitingNode waiting, DocumentTab tab, BrowseNode node)
+    private static DecompileTicket? Restore(Navigation navigation, DecompilerChoice decompiler, Queue<ViewCommand> viewCommands, WaitingNode waiting,
+        DocumentTab tab, BrowseNode node)
     {
-        var position = Navigation.KeepPosition(waiting.Record.View, waiting.Record.Language, appState.Decompiler.Setup.Language);
-        var load = appState.Navigation.Restore(tab, node, appState.Decompiler.Setup, position);
-        RevealIfActive(appState, tab, node);
+        var position = Navigation.KeepPosition(waiting.Record.View, waiting.Record.Language, decompiler.Setup.Language);
+        var load = navigation.Restore(tab, node, decompiler.Setup, position);
+        RevealIfActive(navigation, viewCommands, tab, node);
         return load;
     }
 
-    private static void RevealIfActive(AppState appState, DocumentTab tab, BrowseNode node)
+    private static void RevealIfActive(Navigation navigation, Queue<ViewCommand> viewCommands, DocumentTab tab, BrowseNode node)
     {
-        if (tab != appState.Navigation.ActiveTab)
+        if (tab != navigation.ActiveTab)
         {
             return;
         }
 
-        appState.ViewCommands.Enqueue(new ViewCommand.RevealNode(node));
+        viewCommands.Enqueue(new ViewCommand.RevealNode(node));
     }
 }
