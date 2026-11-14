@@ -4,32 +4,62 @@ namespace ILSight.Core.Diagrams;
 
 /// <summary>Types read as diagram cards from the type system, alone, with the types of their assembly
 /// they are related to, or as the types deriving from a type. Each read loads the assemblies it needs
-/// without listing them: call them off the UI thread.</summary>
+/// without listing them: call them off the UI thread. What the library throws as a read resolves the type or reads
+/// its cards is that read's <see cref="Outcome{T}.Failed"/>; the cancellation of the token it was given is let
+/// through.</summary>
 public static class TypeCards
 {
     /// <summary>The card of the type <paramref name="type"/> points at; not found when it points at no type,
     /// or that cannot be resolved; unreadable when the library could not read the type system of an assembly
     /// resolving it reads.</summary>
-    public static async Task<Lookup<TypeCard>> ReadAsync(AssemblyList list, CodeReference.Entity type, CancellationToken ct)
+    public static async Task<Outcome<Lookup<TypeCard>>> ReadAsync(AssemblyList list, CodeReference.Entity type, CancellationToken ct)
     {
         using var reading = LoadedAssemblies.BeginReading();
-        var definition = await AssemblyListing.FindTypeDefinitionAsync(list, reading, type, ct);
-        return ReadFound(definition);
+        Lookup<TypeCard> card;
+        try
+        {
+            var definition = await AssemblyListing.FindTypeDefinitionAsync(list, reading, type, ct);
+            card = ReadFound(definition);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<Lookup<TypeCard>>.Failed(e);
+        }
+
+        return new Outcome<Lookup<TypeCard>>.Ok(card);
     }
 
     /// <summary>The card of the type <paramref name="type"/> points at, then the cards of the types of its
     /// own assembly it is directly related to: those it derives from, implements or holds, and those
     /// deriving from it or implementing it. None when it points at no type; the module, with why, when the library
     /// could not read the type system of an assembly resolving it reads.</summary>
-    public static async Task<TypeSystemWork<List<TypeCard>>> ReadWithNeighboursAsync(AssemblyList list, CodeReference.Entity type,
+    public static async Task<Outcome<TypeSystemWork<List<TypeCard>>>> ReadWithNeighboursAsync(AssemblyList list, CodeReference.Entity type,
         CancellationToken cancellationToken)
     {
         using var reading = LoadedAssemblies.BeginReading();
-        var definition = await AssemblyListing.FindTypeDefinitionAsync(list, reading, type, cancellationToken);
-        return definition.Match<TypeSystemWork<List<TypeCard>>>(
-            found => new TypeSystemWork<List<TypeCard>>.Done { Value = ReadWithNeighbours(found.Value, cancellationToken) },
-            static _ => new TypeSystemWork<List<TypeCard>>.Done { Value = [] },
-            static unreadable => new TypeSystemWork<List<TypeCard>>.Unreadable { Module = unreadable.Module });
+        TypeSystemWork<List<TypeCard>> cards;
+        try
+        {
+            var definition = await AssemblyListing.FindTypeDefinitionAsync(list, reading, type, cancellationToken);
+            cards = definition.Match<TypeSystemWork<List<TypeCard>>>(
+                found => new TypeSystemWork<List<TypeCard>>.Done { Value = ReadWithNeighbours(found.Value, cancellationToken) },
+                static _ => new TypeSystemWork<List<TypeCard>>.Done { Value = [] },
+                static unreadable => new TypeSystemWork<List<TypeCard>>.Unreadable { Module = unreadable.Module });
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<TypeSystemWork<List<TypeCard>>>.Failed(e);
+        }
+
+        return new Outcome<TypeSystemWork<List<TypeCard>>>.Ok(cards);
     }
 
     private static List<TypeCard> ReadWithNeighbours(ITypeDefinition definition, CancellationToken cancellationToken)
@@ -55,11 +85,25 @@ public static class TypeCards
 
     /// <summary>The card of the type <paramref name="anchor"/> names; not found when its assembly cannot be
     /// read or no longer defines it; unreadable when the library could not read the assembly's type system.</summary>
-    public static async Task<Lookup<TypeCard>> ReadAsync(AssemblyList list, TypeAnchor anchor, CancellationToken ct)
+    public static async Task<Outcome<Lookup<TypeCard>>> ReadAsync(AssemblyList list, TypeAnchor anchor, CancellationToken ct)
     {
         using var reading = LoadedAssemblies.BeginReading();
-        var definition = await AssemblyListing.FindTypeDefinitionAsync(list, reading, anchor, ct);
-        return ReadFound(definition);
+        Lookup<TypeCard> card;
+        try
+        {
+            var definition = await AssemblyListing.FindTypeDefinitionAsync(list, reading, anchor, ct);
+            card = ReadFound(definition);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<Lookup<TypeCard>>.Failed(e);
+        }
+
+        return new Outcome<Lookup<TypeCard>>.Ok(card);
     }
 
     private static Lookup<TypeCard> ReadFound(Lookup<ITypeDefinition> definition)
@@ -75,28 +119,57 @@ public static class TypeCards
     /// the type systems the search can reach ended, beside each module the search reached that the library could not
     /// read; none when it points at no type; no cards and its module when the library could not read the type system
     /// of an assembly resolving it reads.</summary>
-    public static async Task<ScopeSearch<TypeCard>> ReadDerivedAsync(AssemblyList list, CodeReference.Entity type, CancellationToken cancellationToken)
+    public static async Task<Outcome<ScopeSearch<TypeCard>>> ReadDerivedAsync(AssemblyList list, CodeReference.Entity type,
+        CancellationToken cancellationToken)
     {
         using var reading = LoadedAssemblies.BeginReading();
-        var definition = await AssemblyListing.FindTypeDefinitionAsync(list, reading, type, cancellationToken);
+        Lookup<ITypeDefinition> definition;
+        try
+        {
+            definition = await AssemblyListing.FindTypeDefinitionAsync(list, reading, type, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<ScopeSearch<TypeCard>>.Failed(e);
+        }
+
         return await definition.Match(
             found => ReadDerivedAsync(list, reading, found.Value, cancellationToken),
-            static _ => Task.FromResult(new ScopeSearch<TypeCard> { Found = [], Unreadable = [] }),
-            static unreadable => Task.FromResult(new ScopeSearch<TypeCard> { Found = [], Unreadable = [unreadable.Module] }));
+            static _ => Task.FromResult<Outcome<ScopeSearch<TypeCard>>>(new Outcome<ScopeSearch<TypeCard>>.Ok(new ScopeSearch<TypeCard> { Found = [], Unreadable = [] })),
+            static unreadable => Task.FromResult<Outcome<ScopeSearch<TypeCard>>>(
+                new Outcome<ScopeSearch<TypeCard>>.Ok(new ScopeSearch<TypeCard> { Found = [], Unreadable = [unreadable.Module] })));
     }
 
-    private static async Task<ScopeSearch<TypeCard>> ReadDerivedAsync(AssemblyList list, ModuleReading reading, ITypeDefinition definition,
+    private static async Task<Outcome<ScopeSearch<TypeCard>>> ReadDerivedAsync(AssemblyList list, ModuleReading reading, ITypeDefinition definition,
         CancellationToken cancellationToken)
     {
         var module = AssemblyListing.GetLoadedFrom(list, DecompilerFacts.GetMetadataFile(definition));
         var reachable = await DerivedTypes.ReadReachableAsync(reading, module, cancellationToken);
-        var search = DerivedTypes.Search(list, reachable, definition, cancellationToken);
-        var cards = search.Found
-            .Where(IsShown)
-            .Select(Read)
-            .OfType<TypeCard>()
-            .ToList();
-        return new ScopeSearch<TypeCard> { Found = cards, Unreadable = search.Unreadable };
+        ScopeSearch<ITypeDefinition> search;
+        List<TypeCard> cards;
+        try
+        {
+            search = DerivedTypes.Search(list, reachable, definition, cancellationToken);
+            cards = search.Found
+                .Where(IsShown)
+                .Select(Read)
+                .OfType<TypeCard>()
+                .ToList();
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<ScopeSearch<TypeCard>>.Failed(e);
+        }
+
+        return new Outcome<ScopeSearch<TypeCard>>.Ok(new ScopeSearch<TypeCard> { Found = cards, Unreadable = search.Unreadable });
     }
 
     /// <summary>The card of <paramref name="type"/>; null when it has no metadata file or token to be

@@ -124,6 +124,23 @@ internal static class BrokenAssemblies
         return temp.Write("UnreadableMemberReference.dll", image);
     }
 
+    /// <summary>The type of the assembly at <paramref name="path"/> named <paramref name="name"/>.</summary>
+    public static TypeDefinitionHandle GetTypeHandle(string path, string name)
+    {
+        using var pe = new PEReader(File.OpenRead(path));
+        var reader = pe.GetMetadataReader();
+        foreach (var handle in reader.TypeDefinitions)
+        {
+            var isTheName = reader.StringComparer.Equals(reader.GetTypeDefinition(handle).Name, name);
+            if (isTheName)
+            {
+                return handle;
+            }
+        }
+
+        throw new InvalidOperationException($"'{path}' declares no type {name}.");
+    }
+
     /// <summary>The method of the assembly at <paramref name="path"/> named <paramref name="name"/>, declared by the
     /// type named <paramref name="typeName"/>.</summary>
     public static MethodDefinitionHandle GetMethod(string path, string typeName, string name)

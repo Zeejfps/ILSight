@@ -13,7 +13,7 @@ public sealed class DiagramGrowingTests
 
     private static async Task<TypeCard> CardOfAsync(AppStateDriver d, string type)
     {
-        var card = (await TypeCards.ReadAsync(d.AppState.Assemblies, await TypeOfAsync(d, type), CancellationToken.None)).FoundOrNull;
+        var card = (await TypeCards.ReadAsync(d.AppState.Assemblies, await TypeOfAsync(d, type), CancellationToken.None)).GetValue().FoundOrNull;
         Assert.NotNull(card);
         return card;
     }

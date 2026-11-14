@@ -223,7 +223,7 @@ public sealed class NavigationTests
         var row = (await NodeLookup.FindMetadataRowAsync(list, session, type, CancellationToken.None)).GetValue();
         var atPlace = (await NodeLookup.FindAsync(list, session, place, CancellationToken.None)).GetValue();
         var tooltip = (await AssemblyListing.DescribeReferenceAsync(list, type, CancellationToken.None)).GetValue();
-        var card = await TypeCards.ReadAsync(list, type, CancellationToken.None);
+        var card = (await TypeCards.ReadAsync(list, type, CancellationToken.None)).GetValue();
         var module = Assert.IsType<LoadedModule>(Assert.Single(list.Assemblies));
         var byId = (await NodeLookup.FindByIdAsync(session, "T:ILSight.Tests.Fixtures.Circle", [module], CancellationToken.None)).GetValue();
 

@@ -18,7 +18,7 @@ public sealed class TypeCardTests
 
     private static async Task<TypeCard> CardAsync(string type)
     {
-        var card = (await TypeCards.ReadAsync(List, await ZooAsync(type), CancellationToken.None)).FoundOrNull;
+        var card = (await TypeCards.ReadAsync(List, await ZooAsync(type), CancellationToken.None)).GetValue().FoundOrNull;
         Assert.NotNull(card);
         return card;
     }
@@ -126,7 +126,7 @@ public sealed class TypeCardTests
     [Fact]
     public async Task A_type_reads_with_the_types_of_its_assembly_it_is_related_to_either_way()
     {
-        var read = Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>(await TypeCards.ReadWithNeighboursAsync(List, await ZooAsync("Animal"), CancellationToken.None));
+        var read = Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>((await TypeCards.ReadWithNeighboursAsync(List, await ZooAsync("Animal"), CancellationToken.None)).GetValue());
         var cards = read.Value;
 
         Assert.Equal("Animal", cards[0].Name);
@@ -136,8 +136,8 @@ public sealed class TypeCardTests
     [Fact]
     public async Task The_types_deriving_from_a_class_or_implementing_an_interface_are_found_among_the_open_assemblies()
     {
-        var derived = await TypeCards.ReadDerivedAsync(List, await ZooAsync("Animal"), CancellationToken.None);
-        var implementing = await TypeCards.ReadDerivedAsync(List, await ZooAsync("IFeeds"), CancellationToken.None);
+        var derived = (await TypeCards.ReadDerivedAsync(List, await ZooAsync("Animal"), CancellationToken.None)).GetValue();
+        var implementing = (await TypeCards.ReadDerivedAsync(List, await ZooAsync("IFeeds"), CancellationToken.None)).GetValue();
 
         Assert.Equal(["Lion", "Parrot"], NamesOf(derived.Found).Order());
         Assert.Equal(["Lion"], NamesOf(implementing.Found));
@@ -154,7 +154,7 @@ public sealed class TypeCardTests
         list.OpenModule(WrittenAssemblies.WriteDeriving(temp, "Orders", "Shapes", "Shape", "Order"));
         var shape = (await shapes.ReadRootAsync().GetChildAsync("Shapes", "Shape")).Definition;
 
-        var derived = await TypeCards.ReadDerivedAsync(list, shape, CancellationToken.None);
+        var derived = (await TypeCards.ReadDerivedAsync(list, shape, CancellationToken.None)).GetValue();
 
         Assert.Equal(["Circle", "Order"], NamesOf(derived.Found));
         Assert.Equal("UnreadableTypes.dll", Assert.Single(derived.Unreadable).Module.FilePath.FileName);
@@ -176,7 +176,23 @@ public sealed class TypeCardTests
     {
         var name = (await s_opened.Value.Assembly.ReadRootAsync().GetChildAsync(ZooNamespace, "Animal", "Name : string")).Definition;
 
-        Assert.IsType<Lookup<TypeCard>.NotFound>(await TypeCards.ReadAsync(List, name, CancellationToken.None));
-        Assert.Empty(Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>(await TypeCards.ReadWithNeighboursAsync(List, name, CancellationToken.None)).Value);
+        Assert.IsType<Lookup<TypeCard>.NotFound>((await TypeCards.ReadAsync(List, name, CancellationToken.None)).GetValue());
+        Assert.Empty(Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>((await TypeCards.ReadWithNeighboursAsync(List, name, CancellationToken.None)).GetValue()).Value);
+    }
+
+    [Fact]
+    public async Task A_type_whose_member_the_library_cannot_read_is_its_cards_failure_saying_why()
+    {
+        using var temp = new TempDir();
+        var grow = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Circle", "Grow");
+        var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, grow));
+        var circle = CodeReferences.CreateEntity(EntityKind.Type, "Circle", path, BrokenAssemblies.GetTypeHandle(Trees.TestAssemblyPath, "Circle"));
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+
+        var card = await TypeCards.ReadAsync(list, circle, CancellationToken.None);
+        var neighbours = await TypeCards.ReadWithNeighboursAsync(list, circle, CancellationToken.None);
+
+        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<Lookup<TypeCard>>.Failed>(card).Error);
+        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<TypeSystemWork<List<TypeCard>>>.Failed>(neighbours).Error);
     }
 }

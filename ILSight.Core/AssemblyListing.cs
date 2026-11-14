@@ -249,7 +249,8 @@ public static class AssemblyListing
     /// <summary>The definition of the type <paramref name="reference"/> points at, loading the assembly
     /// that defines it without listing it; not found when it points at no type, or cannot be resolved; unreadable as
     /// <see cref="DescribeReferenceAsync"/> says; each module read is added to <paramref name="reading"/>, the unit's,
-    /// one released meanwhile passed over. Call it off the UI thread.</summary>
+    /// one released meanwhile passed over. What else the library throws resolving it goes on to the caller, whose read
+    /// catches it as its unit's failure. Call it off the UI thread.</summary>
     internal static async Task<Lookup<ITypeDefinition>> FindTypeDefinitionAsync(AssemblyList list, ModuleReading reading, CodeReference.Entity reference,
         CancellationToken ct)
     {
@@ -258,52 +259,31 @@ public static class AssemblyListing
             return new Lookup<ITypeDefinition>.NotFound();
         }
 
-        try
-        {
-            var resolved = await ResolveEntityAsync(list, reading, reference, ct);
-            return resolved.Match(
-                static found => Lookup.FromNullable(found.Value.Entity as ITypeDefinition),
-                static _ => new Lookup<ITypeDefinition>.NotFound(),
-                static unreadable => new Lookup<ITypeDefinition>.Unreadable { Module = unreadable.Module });
-        }
-        catch (BadImageFormatException)
-        {
-            return new Lookup<ITypeDefinition>.NotFound();
-        }
-        catch (IOException)
-        {
-            return new Lookup<ITypeDefinition>.NotFound();
-        }
+        var resolved = await ResolveEntityAsync(list, reading, reference, ct);
+        return resolved.Match(
+            static found => Lookup.FromNullable(found.Value.Entity as ITypeDefinition),
+            static _ => new Lookup<ITypeDefinition>.NotFound(),
+            static unreadable => new Lookup<ITypeDefinition>.Unreadable { Module = unreadable.Module });
     }
 
     /// <summary>The definition of the type <paramref name="anchor"/> names, loading the assembly that
     /// defines it without listing it; not found when its file cannot be read or no longer defines it; unreadable when
-    /// the library could not read its type system. Call it off the UI thread.</summary>
+    /// the library could not read its type system. What else the library throws reading it goes on to the caller, as
+    /// above. Call it off the UI thread.</summary>
     internal static async Task<Lookup<ITypeDefinition>> FindTypeDefinitionAsync(AssemblyList list, ModuleReading reading, TypeAnchor anchor,
         CancellationToken ct)
     {
-        try
+        var assembly = TryLoadAssembly(list, anchor.AssemblyPath);
+        if (assembly is null)
         {
-            var assembly = TryLoadAssembly(list, anchor.AssemblyPath);
-            if (assembly is null)
-            {
-                return new Lookup<ITypeDefinition>.NotFound();
-            }
+            return new Lookup<ITypeDefinition>.NotFound();
+        }
 
-            var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
-            return read.Match(
-                r => Lookup.FromNullable(r.TypeSystem.MainModule.GetTypeDefinition(new FullTypeName(anchor.FullName))),
-                u => Lookup.FromUnreadable<ITypeDefinition>(assembly, u),
-                static _ => new Lookup<ITypeDefinition>.NotFound());
-        }
-        catch (BadImageFormatException)
-        {
-            return new Lookup<ITypeDefinition>.NotFound();
-        }
-        catch (IOException)
-        {
-            return new Lookup<ITypeDefinition>.NotFound();
-        }
+        var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
+        return read.Match(
+            r => Lookup.FromNullable(r.TypeSystem.MainModule.GetTypeDefinition(new FullTypeName(anchor.FullName))),
+            u => Lookup.FromUnreadable<ITypeDefinition>(assembly, u),
+            static _ => new Lookup<ITypeDefinition>.NotFound());
     }
 
     private static async Task<Lookup<ResolvedEntity>> ResolveEntityAsync(AssemblyList list, ModuleReading reading, CodeReference.Entity entity,
