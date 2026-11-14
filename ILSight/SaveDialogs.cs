@@ -31,7 +31,7 @@ internal static class SaveDialogs
     /// <summary>Asks where to save the code of <paramref name="node"/> in <paramref name="language"/> as one file.</summary>
     public static void PickCodeFile(Ui<UiState> ui, DecompilationLanguage language, BrowseNode node)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var screen = ui.State;
         var fileName = node.SuggestCodeFileName(language);
         ui.PickSaveFile(t.ExportSaveCodeTitle, null, fileName, CodeFilters(t, language),
@@ -51,7 +51,7 @@ internal static class SaveDialogs
     /// <summary>Asks where to write the portable PDB of <paramref name="assembly"/>.</summary>
     public static void PickPdbFile(Ui<UiState> ui, LoadedModule assembly)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var screen = ui.State;
         FileFilter[] filters = [new FileFilter(t.FileFilterPdb, ["*.pdb"])];
         ui.PickSaveFile(t.ExportPdbTitle, null, assembly.PdbFileName, filters,
@@ -61,7 +61,7 @@ internal static class SaveDialogs
     /// <summary>Asks for the folder the class diagram of <paramref name="assembly"/> is written into.</summary>
     public static void PickDiagramFolder(Ui<UiState> ui, LoadedModule assembly)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var screen = ui.State;
         ui.PickFolder(t.ExportDiagramTitle, null, folder => Commands.Later(screen, (assembly, folder), static (a, s) => ExportCommands.CreateDiagram(a, s.assembly, s.folder)));
     }
@@ -69,7 +69,7 @@ internal static class SaveDialogs
     /// <summary>Asks for the folder the portable PDBs of every open assembly are written into.</summary>
     public static void PickPdbFolder(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var screen = ui.State;
         ui.PickFolder(t.ExportPdbsTitle, null, folder => Commands.Later(screen, folder, static (a, f) => ExportCommands.GeneratePdbs(a, f)));
     }
@@ -77,7 +77,7 @@ internal static class SaveDialogs
     /// <summary>Asks where to write the file of a package <paramref name="place"/> stands for.</summary>
     public static void PickPackageFile(Ui<UiState> ui, PackagePlace place)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var screen = ui.State;
         FileFilter[] filters = [new FileFilter(t.FileFilterAll, ["*.*"])];
         ui.PickSaveFile(t.ExportExtractFileTitle, null, place.File.Name, filters,
@@ -88,7 +88,7 @@ internal static class SaveDialogs
     /// shown as <paramref name="name"/>, are extracted into.</summary>
     public static void PickExtractFolder(Ui<UiState> ui, string name, PackageFolderPlace place)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var screen = ui.State;
         ui.PickFolder(t.ExportExtractFolderTitle, null,
             folder => Commands.Later(screen, (name, place, folder), static (a, s) => ExportCommands.ExtractPackageFolder(a, s.name, s.place, s.folder)));

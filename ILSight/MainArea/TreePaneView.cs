@@ -27,7 +27,7 @@ internal static class TreePaneView
     {
         var theme = ui.Theme;
         var tree = ui.State.Tree;
-        tree.SetStyle(theme, ui.State.NodeIconPalette, ui.State.Icons);
+        tree.SetStyle(theme, ui.State.Appearance.NodeIconPalette, ui.State.Appearance.Icons);
         tree.ShowTokens(ui.State.Display.Options.TreeTokens);
         tree.ShowEmptyTables(ui.State.Display.Options.ShowEmptyMetadataTables);
         tree.NestNamespaces(ui.State.Display.Options.NestedNamespaces);
@@ -63,7 +63,7 @@ internal static class TreePaneView
                 return;
             }
 
-            using var menu = ui.DropdownButton("more", ui.State.Strings.TreeMoreActions, glyph: ui.State.Icons.AssembliesMoreActions);
+            using var menu = ui.DropdownButton("more", ui.State.Appearance.Strings.TreeMoreActions, glyph: ui.State.Appearance.Icons.AssembliesMoreActions);
             if (!menu.IsOpen)
             {
                 return;
@@ -129,8 +129,8 @@ internal static class TreePaneView
 
     private static void Tool(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, int index, int shown, bool inMenu)
     {
-        var t = ui.State.Strings;
-        var icons = ui.State.Icons;
+        var t = ui.State.Appearance.Strings;
+        var icons = ui.State.Appearance.Icons;
         var tree = ui.State.Tree;
         var any = tree.Roots.Count > 0;
         switch (index)
@@ -280,7 +280,7 @@ internal static class TreePaneView
 
     private static void EmptyHint(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var text = ui.Memo("empty", t, static s => s.TreeEmpty(Shortcuts.Open));
         ui.Text(text, new Box { Width = Sizing.Grow(), Padding = new Spacing(theme.PanelPadding, theme.Gap) }, color: theme.TextMuted, wrap: true);
@@ -418,7 +418,7 @@ internal static class TreePaneView
     private static void NodeMenu(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DecompilerSetup setup,
         BrowseNode node)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var jump = node.Activation as Activation.Navigate;
         var openKey = jump != null ? null : Shortcuts.Enter;
         if (ui.MenuItem(t.TreeOpen, openKey, id: "open"))
@@ -459,13 +459,13 @@ internal static class TreePaneView
             DiagramItems(ui, type.Definition.Reference);
         }
 
-        if (node.HasResource && ui.MenuItem(t.ResourceExport, id: "export-resource", icon: new UiIcon(ui.State.Icons.ResourceExport)))
+        if (node.HasResource && ui.MenuItem(t.ResourceExport, id: "export-resource", icon: new UiIcon(ui.State.Appearance.Icons.ResourceExport)))
         {
             ResourceImageView.PickExport(ui, node);
         }
 
         ExtractItems(ui, node);
-        if (OffersSaveCode(node) && ui.MenuItem(t.FileSaveCode, Shortcuts.SaveCode, id: "save-code", icon: new UiIcon(ui.State.Icons.FileSaveCode)))
+        if (OffersSaveCode(node) && ui.MenuItem(t.FileSaveCode, Shortcuts.SaveCode, id: "save-code", icon: new UiIcon(ui.State.Appearance.Icons.FileSaveCode)))
         {
             SaveDialogs.PickCodeFile(ui, setup.Language, node);
         }
@@ -485,7 +485,7 @@ internal static class TreePaneView
             ScreenLayout.ScopeSearch(ui.State, node);
         }
 
-        if (IsListedRoot(node) && ui.MenuItem(t.TreeOpenContainingFolder, id: "open-containing-folder", icon: new UiIcon(ui.State.Icons.AssembliesOpenContainingFolder)))
+        if (IsListedRoot(node) && ui.MenuItem(t.TreeOpenContainingFolder, id: "open-containing-folder", icon: new UiIcon(ui.State.Appearance.Icons.AssembliesOpenContainingFolder)))
         {
             ui.RevealFile(node.Assembly.FilePath.Text);
         }
@@ -502,7 +502,7 @@ internal static class TreePaneView
 
     private static void DiagramItems(Ui<UiState> ui, CodeReference.Entity type)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         if (ui.MenuItem(t.TreeShowInDiagram, id: "show-in-diagram"))
         {
             DiagramView.ShowInDiagramLater(ui.State, type, t.DiagramTitle(type.Name));
@@ -516,14 +516,14 @@ internal static class TreePaneView
 
     private static void DocsItem(Ui<UiState> ui, BrowseNode node)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var page = MicrosoftDocs.FindPage(node);
         if (page is null)
         {
             return;
         }
 
-        if (ui.MenuItem(t.TreeShowInApiReference, id: "show-in-api-reference", icon: new UiIcon(ui.State.Icons.LinkApiReference)))
+        if (ui.MenuItem(t.TreeShowInApiReference, id: "show-in-api-reference", icon: new UiIcon(ui.State.Appearance.Icons.LinkApiReference)))
         {
             ui.OpenUrl(page);
         }
@@ -531,15 +531,15 @@ internal static class TreePaneView
 
     private static void ExtractItems(Ui<UiState> ui, BrowseNode node)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var file = PackedAssemblyOf(node);
-        if (file != null && ui.MenuItem(t.TreeExtractFile, id: "extract-file", icon: new UiIcon(ui.State.Icons.AssembliesExtract)))
+        if (file != null && ui.MenuItem(t.TreeExtractFile, id: "extract-file", icon: new UiIcon(ui.State.Appearance.Icons.AssembliesExtract)))
         {
             SaveDialogs.PickPackageFile(ui, file);
         }
 
         var folder = node.FolderInPackage;
-        if (folder != null && ui.MenuItem(t.TreeExtractAll, id: "extract-all", icon: new UiIcon(ui.State.Icons.AssembliesExtract)))
+        if (folder != null && ui.MenuItem(t.TreeExtractAll, id: "extract-all", icon: new UiIcon(ui.State.Appearance.Icons.AssembliesExtract)))
         {
             SaveDialogs.PickExtractFolder(ui, node.Text, folder);
         }
@@ -568,8 +568,8 @@ internal static class TreePaneView
 
     private static void AssemblyItems(Ui<UiState> ui, AssemblyList assemblies, LoadedModule assembly)
     {
-        var t = ui.State.Strings;
-        if (ui.MenuItem(t.FileExport, id: "export", icon: new UiIcon(ui.State.Icons.FileExportProject)))
+        var t = ui.State.Appearance.Strings;
+        if (ui.MenuItem(t.FileExport, id: "export", icon: new UiIcon(ui.State.Appearance.Icons.FileExportProject)))
         {
             ui.State.ExportSetup.Open(assemblies.Assemblies, assembly);
         }
@@ -594,8 +594,8 @@ internal static class TreePaneView
 
     private static void PdbItems(Ui<UiState> ui, LoadedModule assembly)
     {
-        var t = ui.State.Strings;
-        if (ui.MenuItem(t.TreeGeneratePdb, enabled: assembly.CanGeneratePdb, id: "generate-pdb", icon: new UiIcon(ui.State.Icons.FileGeneratePdb)))
+        var t = ui.State.Appearance.Strings;
+        if (ui.MenuItem(t.TreeGeneratePdb, enabled: assembly.CanGeneratePdb, id: "generate-pdb", icon: new UiIcon(ui.State.Appearance.Icons.FileGeneratePdb)))
         {
             SaveDialogs.PickPdbFile(ui, assembly);
         }
@@ -608,7 +608,7 @@ internal static class TreePaneView
 
     private static void TargetFrameworkMenu(Ui<UiState> ui, LoadedModule assembly)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         using var menu = ui.SubMenu(t.TreeTargetFramework, id: "target-framework");
         if (!menu.IsOpen)
         {
@@ -657,7 +657,7 @@ internal static class TreePaneView
 
     private static void PickPdbToRead(Ui<UiState> ui, LoadedModule assembly)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var screen = ui.State;
         FileFilter[] filters = [new FileFilter(t.FileFilterPdb, ["*.pdb"]), new FileFilter(t.FileFilterAll, ["*.*"])];
         var title = t.TreeSelectPdbTitle(assembly.Name);

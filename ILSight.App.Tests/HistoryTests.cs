@@ -79,7 +79,7 @@ public sealed class HistoryTests
 
         app.Frames.Key(Shortcuts.Back).Frame();
 
-        Assert.True(app.Frames.Drew(app.Ui.Strings.StatusResolving));
+        Assert.True(app.Frames.Drew(app.Ui.Appearance.Strings.StatusResolving));
         app.Settle(4);
         Assert.Equal("Outline", app.AppState.Navigation.ActiveTab?.Node?.Text);
     }

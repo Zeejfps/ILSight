@@ -180,7 +180,7 @@ public sealed class AnalyzerTests
         Assert.Same(root, Assert.Single(d.AppState.Analyzer.Roots));
         Assert.Empty(d.AppState.Errors.Entries);
         Assert.True(app.Frames.Drew("Clear"));
-        Assert.False(app.Frames.Drew(app.Ui.Strings.TreeAnalyze));
+        Assert.False(app.Frames.Drew(app.Ui.Appearance.Strings.TreeAnalyze));
     }
 
     [Fact]
@@ -261,7 +261,7 @@ public sealed class AnalyzerTests
         Assert.Empty(d.AppState.Errors.Entries);
         var refusal = d.AppState.Refusals.Shown;
         Assert.NotNull(refusal);
-        var (what, why) = refusal.Words(d.Ui.Strings);
+        var (what, why) = refusal.Words(d.Ui.Appearance.Strings);
         Assert.Equal("Cannot analyze Nowhere", what);
         Assert.Equal("Its assembly isn't open, and nothing names its definition to open it by.", why);
     }
@@ -404,7 +404,7 @@ public sealed class AnalyzerTests
         Assert.Empty(d.AppState.Errors.Entries);
         var refusal = d.AppState.Refusals.Shown;
         Assert.NotNull(refusal);
-        Assert.Equal("Cannot resolve First", refusal.Words(d.Ui.Strings).What);
+        Assert.Equal("Cannot resolve First", refusal.Words(d.Ui.Appearance.Strings).What);
     }
 
     [Fact]

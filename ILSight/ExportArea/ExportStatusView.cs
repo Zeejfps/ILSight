@@ -26,13 +26,13 @@ internal static class ExportStatusView
 
     private static void Running(Ui<UiState> ui, RunningExport running, int waiting)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         if (Glance(ui, running, waiting))
         {
             ScreenLayout.OpenPanel(ui.State, DockView.Exports);
         }
 
-        if (!running.IsCancelling && IconButton(ui, "cancel-export", ui.State.Icons.ExportCancel, t.StatusCancelExport))
+        if (!running.IsCancelling && IconButton(ui, "cancel-export", ui.State.Appearance.Icons.ExportCancel, t.StatusCancelExport))
         {
             Commands.Later(ui.State, static a => a.Export.CancelRunning());
         }
@@ -41,7 +41,7 @@ internal static class ExportStatusView
     private static bool Glance(Ui<UiState> ui, RunningExport running, int waiting)
     {
         var progress = running.Progress;
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var i = ui.Clickable("export-glance");
         using (ui.Row(i.Id, ButtonBox(theme, i)))
@@ -84,7 +84,7 @@ internal static class ExportStatusView
             return;
         }
 
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var text = ui.Memo("export-queued", (waiting, t), static a => a.t.StatusExportQueued(a.waiting));
         ui.Text(text, color: theme.TextMuted, size: theme.FontSizeSmall);

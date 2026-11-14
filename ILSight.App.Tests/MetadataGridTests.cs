@@ -183,7 +183,7 @@ public sealed class MetadataGridTests
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Greeter"), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Show in metadata"));
 
-        Assert.True(app.Frames.Drew(app.Ui.Strings.StatusResolving));
+        Assert.True(app.Frames.Drew(app.Ui.Appearance.Strings.StatusResolving));
         app.Settle(3);
         Assert.Same(await TableAsync(app, "TypeDef"), app.AppState.Navigation.ActiveTab?.Node);
     }
@@ -328,7 +328,7 @@ public sealed class MetadataGridTests
         var (app, tab, grid, row) = await ShowGreeterRowAsync();
         var greeter = TextBeside(app, MetadataGrids.GetText(grid, row, grid.Column("Name")), "Greeter");
         var fixtures = app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
-        var closed = app.Ui.Strings.DocumentClosed(fixtures.FilePath.FileName);
+        var closed = app.Ui.Appearance.Strings.DocumentClosed(fixtures.FilePath.FileName);
         using (app.Driver.Turn())
         {
             Commands.CloseAssemblies(app.AppState, [fixtures]);

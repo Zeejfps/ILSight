@@ -213,7 +213,7 @@ public sealed class DiagramViewTests
     {
         var app = await PickFromTreeAsync("Car", "Show in diagram");
         PickFromCardMenu(app, "Vehicle", "Add the types its properties hold");
-        var palette = app.Ui.NodeIconPalette;
+        var palette = app.Ui.Appearance.NodeIconPalette;
 
         var colors = app.Frames.Canvas.CubicBeziers
             .Select(static b => b.Inputs.Color)

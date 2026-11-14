@@ -156,7 +156,7 @@ internal ref struct MetadataGridFrame
 
     private void Header(TableFrame table)
     {
-        var icons = Ui.State.Icons;
+        var icons = Ui.State.Appearance.Icons;
         var sortGlyph = State.Descending ? icons.SortDescending : icons.SortAscending;
         var sort = new TableSort(State.SortColumn, new UiIcon(sortGlyph));
         var heading = new MetadataGridHeading { Grid = Grid, State = State, Flags = Flags, Strings = Strings, Icons = icons, ListId = ListId };
@@ -456,7 +456,7 @@ internal ref struct MetadataGridFrame
         if (target is not null)
         {
             color = null;
-            link = new UiIcon(Ui.State.Icons.LinkToken);
+            link = new UiIcon(Ui.State.Appearance.Icons.LinkToken);
         }
         float? size = null;
         string? family = null;

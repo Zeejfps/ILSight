@@ -11,7 +11,7 @@ internal static class NuGetPlaceholderView
 {
     public static void Render(Ui<UiState> ui, NuGetPicker picker)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         using (ui.Column(new Box { Width = Sizing.Grow(), Padding = new Spacing(theme.ShellPaddingX, theme.ShellPaddingX), Gap = theme.Gap }))
         {
@@ -57,7 +57,7 @@ internal static class NuGetPlaceholderView
 
     private static void SearchFailed(Ui<UiState> ui, NuGetPicker picker, string error)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         Warning(ui, t.NugetSearchFailed);
         ui.Text(error, color: theme.TextMuted, size: theme.FontSizeSmall, wrap: true);
@@ -69,7 +69,7 @@ internal static class NuGetPlaceholderView
 
     private static void NothingFound(Ui<UiState> ui, NuGetPicker picker)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var query = picker.Browser.ShownQuery;
         if (query.Length == 0)
         {
@@ -87,7 +87,7 @@ internal static class NuGetPlaceholderView
     /// <summary>Over the packages shown: that the page asked for in their place failed, and a button that asks again.</summary>
     public static void PageFailed(Ui<UiState> ui, NuGetPicker picker)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         using (ui.Row(new Box { Padding = new Spacing(theme.ShellPaddingX, theme.GapTight), Gap = theme.GapTight, AlignY = Align.Center }))
         {
@@ -106,7 +106,7 @@ internal static class NuGetPlaceholderView
         var theme = ui.Theme;
         using (ui.Row(new Box { Width = Sizing.Grow(), Gap = theme.GapTight, AlignY = Align.Center }))
         {
-            ui.Icon(new UiIcon(ui.State.Icons.NugetWarning, theme.Warning));
+            ui.Icon(new UiIcon(ui.State.Appearance.Icons.NugetWarning, theme.Warning));
             ui.Text(text, color: theme.Text, wrap: true);
         }
     }

@@ -227,7 +227,7 @@ internal static class AppFrames
             return;
         }
 
-        appState.FirstGridRows = MetadataGridFrame.CalculateFirstReadRows(area.Value, uiState.Theme.RowHeight);
+        appState.FirstGridRows = MetadataGridFrame.CalculateFirstReadRows(area.Value, uiState.Appearance.Theme.RowHeight);
     }
 
     private static void KeepTabPositions(UiState uiState, Navigation navigation)
@@ -335,17 +335,17 @@ internal static class AppFrames
     private static void FollowIconTheme(Ui<UiState> ui)
     {
         var before = ui.State.Shown.IconFonts;
-        if (!ui.State.Shown.TryTakeIcons(ui.State.Icons, ui.State.IconFonts))
+        if (!ui.State.Shown.TryTakeIcons(ui.State.Appearance.Icons, ui.State.Appearance.IconFonts))
         {
             return;
         }
 
-        foreach (var family in ShownChanges.ListDroppedFamilies(before, ui.State.IconFonts))
+        foreach (var family in ShownChanges.ListDroppedFamilies(before, ui.State.Appearance.IconFonts))
         {
             ui.UnregisterFont(family);
         }
 
-        foreach (var font in ui.State.IconFonts)
+        foreach (var font in ui.State.Appearance.IconFonts)
         {
             ui.RegisterFont(font);
         }

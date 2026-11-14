@@ -8,7 +8,7 @@ internal static class LayoutResetDialogView
 {
     public static void Render(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var screen = ui.State;
         var open = screen.LayoutReset.IsAsked;
         using (var dialog = ui.Dialog("layout-reset", t.ViewResetLayout, ref open, closeButton: false))

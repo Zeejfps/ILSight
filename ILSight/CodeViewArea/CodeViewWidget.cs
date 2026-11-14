@@ -160,7 +160,7 @@ public static class CodeViewWidget
         using var scope = ui.Id(id);
         state.ShowDocument(document);
         var theme = ui.Theme;
-        var palette = ui.State.CodeViewPalette;
+        var palette = ui.State.Appearance.CodeViewPalette;
         var shown = display ?? Plain;
         var fontSize = CodeDisplay.GetFontSize(shown, theme);
         var cell = ui.MeasureCell(fontSize, family: MonoFonts.Code);
@@ -668,7 +668,7 @@ public static class CodeViewWidget
         bool hoverNavigable)
     {
         var frame = state.Frame;
-        frame.Lay(document, state.Folds.Layout, palette, theme, cell, rowHeight, gutter, ui.State.Icons.CodeBookmark, active);
+        frame.Lay(document, state.Folds.Layout, palette, theme, cell, rowHeight, gutter, ui.State.Appearance.Icons.CodeBookmark, active);
         var underline = hoverNavigable && !state.Pointer.PressMoved ? hover.Span : null;
         frame.Mark(state.Selection.Start, state.Selection.End, highlight, underline, hover, bookmarks);
         var findActive = state.Find.IsOpen && state.Query.Length > 0;
@@ -1117,7 +1117,7 @@ public static class CodeViewWidget
 
     private static void FindBar(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, int focusId, int findId)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         using (ui.PaneToolbar())
         {
@@ -1153,19 +1153,19 @@ public static class CodeViewWidget
             ui.Text(label, new Box { Width = Sizing.Grow() }, color: count == 0 && state.Query.Length > 0 ? theme.Warning : theme.TextMuted,
                 size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
             var previousTip = ui.Memo("previous-tip", t, static s => s.FindPrevious("Shift+F3"));
-            if (ui.IconButton("previous", ui.State.Icons.CodeFindPrevious, previousTip, count > 0))
+            if (ui.IconButton("previous", ui.State.Appearance.Icons.CodeFindPrevious, previousTip, count > 0))
             {
                 Step(state, document, -1);
             }
 
             var nextTip = ui.Memo("next-tip", t, static s => s.FindNext("F3"));
-            if (ui.IconButton("next", ui.State.Icons.CodeFindNext, nextTip, count > 0))
+            if (ui.IconButton("next", ui.State.Appearance.Icons.CodeFindNext, nextTip, count > 0))
             {
                 Step(state, document, 1);
             }
 
             var closeTip = ui.Memo("close-tip", t, static s => s.FindClose("Esc"));
-            if (ui.IconButton("close", ui.State.Icons.CodeFindClose, closeTip))
+            if (ui.IconButton("close", ui.State.Appearance.Icons.CodeFindClose, closeTip))
             {
                 state.Find.Close();
                 ui.Focus(focusId, takesText: false);
@@ -1207,7 +1207,7 @@ public static class CodeViewWidget
             return null;
         }
 
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         CodeViewIntent? picked = null;
         if (ui.MenuItem(t.TreeShowInDiagram, enabled: why is null, id: "show-in-diagram", detail: why))
         {
@@ -1225,7 +1225,7 @@ public static class CodeViewWidget
     private static CodeViewIntent? ContextMenu(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, bool bookmarkable,
         string? closedAssembly)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         CodeViewIntent? picked = null;
         using var menu = ui.ContextMenu("menu");
         if (!menu.IsOpen)
@@ -1255,7 +1255,7 @@ public static class CodeViewWidget
         {
             ui.MenuSeparator();
             if (ui.MenuItem(t.CodeToggleBookmark, id: "toggle-bookmark",
-                    icon: new UiIcon(ui.State.Icons.CodeToggleBookmark, ui.State.CodeViewPalette.Bookmark)))
+                    icon: new UiIcon(ui.State.Appearance.Icons.CodeToggleBookmark, ui.State.Appearance.CodeViewPalette.Bookmark)))
             {
                 picked = new CodeViewIntent.ToggleBookmark(line.Value);
             }
@@ -1308,7 +1308,7 @@ public static class CodeViewWidget
                 picked = new CodeViewIntent.Analyze(analyzable);
             }
 
-            if (ui.MenuItem(t.TreeShowInApiReference, enabled: why is null, id: "show-in-api-reference", icon: new UiIcon(ui.State.Icons.LinkApiReference),
+            if (ui.MenuItem(t.TreeShowInApiReference, enabled: why is null, id: "show-in-api-reference", icon: new UiIcon(ui.State.Appearance.Icons.LinkApiReference),
                     detail: why))
             {
                 picked = new CodeViewIntent.ShowInApiReference(entity);
@@ -1339,7 +1339,7 @@ public static class CodeViewWidget
             return null;
         }
 
-        return ui.Memo("closed", (closedAssembly, t: ui.State.Strings), static a => a.t.DocumentClosed(a.closedAssembly));
+        return ui.Memo("closed", (closedAssembly, t: ui.State.Appearance.Strings), static a => a.t.DocumentClosed(a.closedAssembly));
     }
 
     private static void PaintRow(UiPainter p, (CodeViewFrame Frame, CodeRow Row) shown)

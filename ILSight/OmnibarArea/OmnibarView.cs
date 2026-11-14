@@ -175,7 +175,7 @@ internal static class OmnibarView
             NodeIcons.Draw(ui, crumb.Node);
             ui.Text(crumb.Label, new Box { Width = Sizing.Shrink() }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
         }
-        ui.Tooltip(i.Id, ui.Memo("closed-crumb", (closed, t: ui.State.Strings), static a => a.t.DocumentClosed(a.closed)));
+        ui.Tooltip(i.Id, ui.Memo("closed-crumb", (closed, t: ui.State.Appearance.Strings), static a => a.t.DocumentClosed(a.closed)));
     }
 
     // By the crumb's depth, not its label: two crumbs can read the same, such as an assembly and its namespace of one
@@ -246,7 +246,7 @@ internal static class OmnibarView
         }
         if (!open)
         {
-            ui.Tooltip(i.Id, ui.Memo("contents-tip", (crumbs[index].Label, ui.State.Strings), static a => a.Strings.OmnibarContents(a.Label)));
+            ui.Tooltip(i.Id, ui.Memo("contents-tip", (crumbs[index].Label, ui.State.Appearance.Strings), static a => a.Strings.OmnibarContents(a.Label)));
         }
 
         if (!open)
@@ -279,9 +279,9 @@ internal static class OmnibarView
 
     private static void SearchButton(Ui<UiState> ui, string panel)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var tooltip = ui.Memo("omnibar-search-tip", t, static s => s.SearchFieldTooltip(Shortcuts.OmnibarSearch));
-        if (ui.IconButton("search", ui.State.Icons.SearchField, tooltip))
+        if (ui.IconButton("search", ui.State.Appearance.Icons.SearchField, tooltip))
         {
             ui.State.Omnibar.StartSearch(panel);
         }
@@ -351,7 +351,7 @@ internal static class OmnibarView
             ui.Focus(fieldId);
         }
 
-        var submitted = ui.TextField(FilterFieldId, ref menu.Filter, ui.State.Strings.OmnibarFilter, Sizing.Grow(), clearable: true);
+        var submitted = ui.TextField(FilterFieldId, ref menu.Filter, ui.State.Appearance.Strings.OmnibarFilter, Sizing.Grow(), clearable: true);
         if (!ui.HasFocus(fieldId))
         {
             return false;
@@ -442,13 +442,13 @@ internal static class OmnibarView
 
     private static void SearchBar(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var omnibar = ui.State.Omnibar;
         var fieldId = ui.GetId(SearchFieldId);
         bool submitted;
         using (ui.PaneToolbar())
         {
-            submitted = ui.TextField(SearchFieldId, ref omnibar.Search.Query, t.OmnibarSearch, Sizing.Grow(), ui.State.Icons.SearchField, clearable: true);
+            submitted = ui.TextField(SearchFieldId, ref omnibar.Search.Query, t.OmnibarSearch, Sizing.Grow(), ui.State.Appearance.Icons.SearchField, clearable: true);
             SyntaxTooltip(ui, omnibar, fieldId);
         }
         WalkSuggestions(ui, omnibar, fieldId);
@@ -476,7 +476,7 @@ internal static class OmnibarView
             return;
         }
 
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         ui.Tooltip(fieldId, ui.Memo("omnibar-syntax", t, static s => s.SearchSyntaxTooltip(Shortcuts.OmnibarSearch)));
     }
 
@@ -549,7 +549,7 @@ internal static class OmnibarView
 
     private static void SuggestionNote(Ui<UiState> ui, Omnibar omnibar)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var note = omnibar.IsStillSearching ? t.OmnibarSearching : t.OmnibarNoMatches;
         ui.Text(note, new Box { Height = theme.RowHeight, Padding = new Spacing(theme.ShellPaddingX, 0f), AlignY = Align.Center }, color: theme.TextMuted);

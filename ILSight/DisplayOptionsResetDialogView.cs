@@ -8,7 +8,7 @@ internal static class DisplayOptionsResetDialogView
 {
     public static void Render(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var screen = ui.State;
         var open = screen.Display.Reset.IsAsked;
         using (var dialog = ui.Dialog("display-reset", t.DisplayOptionsReset, ref open, closeButton: false))

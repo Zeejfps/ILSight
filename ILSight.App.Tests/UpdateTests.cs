@@ -159,12 +159,12 @@ public sealed class UpdateTests : IDisposable
         app.Run(2);
         OpenAbout(app);
         app.Run(SettleFrames);
-        return app.TextRect(app.Ui.Strings.AboutClose).Y;
+        return app.TextRect(app.Ui.Appearance.Strings.AboutClose).Y;
     }
 
     private static void Ask<T>(AppDriver app) where T : UpdateStatus
     {
-        app.Frames.ClickOn(Selector.WithText(app.Ui.Strings.AboutCheckForUpdates)).Frame(2);
+        app.Frames.ClickOn(Selector.WithText(app.Ui.Appearance.Strings.AboutCheckForUpdates)).Frame(2);
         AwaitStatus<T>(app);
         app.Run(2);
     }

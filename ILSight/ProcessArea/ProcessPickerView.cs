@@ -49,7 +49,7 @@ internal static class ProcessPickerView
         var browser = picker.Browser;
         var open = false;
         var close = false;
-        using (var dialog = ui.WindowDialog("process-picker", ui.State.Strings.ProcessPickerTitle, ref picker.IsOpen,
+        using (var dialog = ui.WindowDialog("process-picker", ui.State.Appearance.Strings.ProcessPickerTitle, ref picker.IsOpen,
             AppLayout.ProcessDialogWidth, AppLayout.ProcessDialogHeight, ref picker.Window.Bounds,
             minWidth: AppLayout.ProcessDialogMinWidth, minHeight: AppLayout.ProcessDialogMinHeight))
         {
@@ -76,7 +76,7 @@ internal static class ProcessPickerView
 
     private static void Content(Ui<UiState> ui, ProcessPicker picker, ref bool open, ref bool close)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var browser = picker.Browser;
         var processListId = ui.GetId(ProcessListId);
@@ -185,10 +185,10 @@ internal static class ProcessPickerView
     private static bool Processes(Ui<UiState> ui, ProcessBrowser browser, int listId)
     {
         return browser.Scan.Match((ui, browser, listId),
-            notStarted: static (s, _) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerScanning),
-            scanning: static (s, _) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerScanning),
+            notStarted: static (s, _) => NoteInstead(s.ui, s.ui.State.Appearance.Strings.ProcessPickerScanning),
+            scanning: static (s, _) => NoteInstead(s.ui, s.ui.State.Appearance.Strings.ProcessPickerScanning),
             scanned: static (s, scanned) => ScannedProcesses(s.ui, s.browser, s.listId, scanned),
-            failed: static (s, failed) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerScanFailed, failed.Error));
+            failed: static (s, failed) => NoteInstead(s.ui, s.ui.State.Appearance.Strings.ProcessPickerScanFailed, failed.Error));
     }
 
     private static bool NoteInstead(Ui<UiState> ui, string text)
@@ -208,7 +208,7 @@ internal static class ProcessPickerView
     {
         if (scanned.Processes.Count == 0)
         {
-            return NoteInstead(ui, ui.State.Strings.ProcessPickerNone);
+            return NoteInstead(ui, ui.State.Appearance.Strings.ProcessPickerNone);
         }
 
         return ProcessRows(ui, browser, listId);
@@ -216,7 +216,7 @@ internal static class ProcessPickerView
 
     private static bool ProcessRows(Ui<UiState> ui, ProcessBrowser browser, int listId)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var headers = ProcessHeaders.GetValue(t, static t =>
             [t.ProcessPickerColumnName, t.ProcessPickerColumnId, t.ProcessPickerColumnEntry, t.ProcessPickerColumnRuntime]);
@@ -245,16 +245,16 @@ internal static class ProcessPickerView
     private static bool Modules(Ui<UiState> ui, ProcessBrowser browser)
     {
         return browser.Modules.Match((ui, browser),
-            none: static (s, _) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerPickProcess),
-            loading: static (s, _) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerLoading),
+            none: static (s, _) => NoteInstead(s.ui, s.ui.State.Appearance.Strings.ProcessPickerPickProcess),
+            loading: static (s, _) => NoteInstead(s.ui, s.ui.State.Appearance.Strings.ProcessPickerLoading),
             loaded: static (s, loaded) => ModuleRows(s.ui, s.browser, loaded.Modules),
-            unreachable: static (s, unreachable) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerUnreachable, unreachable.Detail),
-            unreadable: static (s, unreadable) => NoteInstead(s.ui, s.ui.State.Strings.ProcessPickerUnreadable, unreadable.Detail));
+            unreachable: static (s, unreachable) => NoteInstead(s.ui, s.ui.State.Appearance.Strings.ProcessPickerUnreachable, unreachable.Detail),
+            unreadable: static (s, unreadable) => NoteInstead(s.ui, s.ui.State.Appearance.Strings.ProcessPickerUnreadable, unreadable.Detail));
     }
 
     private static bool ModuleRows(Ui<UiState> ui, ProcessBrowser browser, IReadOnlyList<RunningModule> modules)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var headers = ModuleHeaders.GetValue(t, static t => [t.ProcessPickerColumnAssembly, t.ProcessPickerColumnFolder]);
         var table = ui.Table(ModuleListId, ui.State.ProcessModuleColumns, browser.ModuleSelection);

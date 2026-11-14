@@ -142,20 +142,20 @@ internal static class OptionSearch
         }
 
         var label = ui.GetState<MarkedLabel>(HashCode.Combine(ui.GetId(text), part, MarkSalt));
-        return EnsureMarkedRuns(label, ui.State.Strings.Culture, query, text, style);
+        return EnsureMarkedRuns(label, ui.State.Appearance.Strings.Culture, query, text, style);
     }
 
     /// <summary>The background a hit of the search is marked on: that of a find match in the code.</summary>
     public static uint GetMarkBackground(Ui<UiState> ui)
     {
-        return ui.State.CodeViewPalette.FindMatch;
+        return ui.State.Appearance.CodeViewPalette.FindMatch;
     }
 
     /// <summary>The search field, filling the row it is in. Escape empties it while it has focus, and so
     /// does the cross at its end while it holds text.</summary>
     public static void Field(Ui<UiState> ui, ref string query)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         if (query.Length > 0)
         {
             var fieldId = ui.GetId(FieldId);
@@ -165,13 +165,13 @@ internal static class OptionSearch
             }
         }
 
-        ui.TextField(FieldId, ref query, t.OptionsSearchPlaceholder, Sizing.Grow(), ui.State.Icons.OptionsSearch, clearable: true);
+        ui.TextField(FieldId, ref query, t.OptionsSearchPlaceholder, Sizing.Grow(), ui.State.Appearance.Icons.OptionsSearch, clearable: true);
     }
 
     /// <summary>Says that no option matches, with a button that empties the search.</summary>
     public static void NoMatch(Ui<UiState> ui, ref string query)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         using (ui.Column(new Box { Width = Sizing.Grow(), Gap = theme.Gap, Padding = theme.PanelPadding, AlignX = Align.Center }))
         {

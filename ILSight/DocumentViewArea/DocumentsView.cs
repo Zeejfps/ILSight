@@ -37,7 +37,7 @@ internal static class DocumentsView
         DocumentPanels.GetView(ui.State.Documents, tab).RecordShown(tab);
         ClosedBanner(ui, tab.ClosedAssembly);
         tab.Content.Switch((ui, navigation, session, assemblies, setup, bookmarks, tooltips, tab),
-            empty: static (s, _) => Hint(s.ui, s.ui.State.Strings.DocumentsHint),
+            empty: static (s, _) => Hint(s.ui, s.ui.State.Appearance.Strings.DocumentsHint),
             loading: static (s, loading) => RenderLoading(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab, loading),
             code: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
             table: static (s, table) => RenderGrid(s.ui, s.navigation, s.session, s.setup, s.tab, table.Grid),
@@ -61,7 +61,7 @@ internal static class DocumentsView
         }
 
         var theme = ui.Theme;
-        var text = ui.Memo("closed-banner", (assembly, t: ui.State.Strings), static a => a.t.DocumentClosed(a.assembly));
+        var text = ui.Memo("closed-banner", (assembly, t: ui.State.Appearance.Strings), static a => a.t.DocumentClosed(a.assembly));
         using (ui.Row(new Box { Padding = new Spacing(theme.Gap, theme.GapTight), Gap = theme.Gap, Background = theme.PaneBackground }))
         {
             ui.Text(text, color: theme.Warning);
@@ -78,7 +78,7 @@ internal static class DocumentsView
             return null;
         }
 
-        return ui.Memo("closed", (closedAssembly, t: ui.State.Strings), static a => a.t.DocumentClosed(a.closedAssembly));
+        return ui.Memo("closed", (closedAssembly, t: ui.State.Appearance.Strings), static a => a.t.DocumentClosed(a.closedAssembly));
     }
 
     private static void RenderLoading(Ui<UiState> ui, Navigation navigation, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab,
@@ -86,7 +86,7 @@ internal static class DocumentsView
     {
         if (!loading.Node.IsCode)
         {
-            Hint(ui, ui.State.Strings.MetadataLoading);
+            Hint(ui, ui.State.Appearance.Strings.MetadataLoading);
             return;
         }
 
@@ -118,7 +118,7 @@ internal static class DocumentsView
     {
         var lines = !tab.Load.IsBusy && tab.Node is not null && tab.Document.Error is null ? bookmarks.ListMarkedLines(tab.Document, tab.Node) : null;
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
-        var document = GetDocumentToShow(ui.State, view, tab);
+        var document = GetDocumentToShow(ui.State.Appearance.Strings, view, tab);
         var result = CodeViewWidget.RenderCodeView(ui, "code", document, view.Code, lines, tooltips: tooltips, display: ui.State.Display.Options,
             closedAssembly: tab.Load.ClosedAssembly);
         if (result.Intent is not null)
@@ -140,14 +140,14 @@ internal static class DocumentsView
 
         intent.Switch((ui, navigation, tab),
             navigate: static (s, navigate) => Commands.FollowLater(s.ui.State, navigate.Target, s.navigation.BeginResolving(navigate.InNewTab)),
-            toggleBookmark: static (s, toggle) => Commands.Later(s.ui.State, (screen: s.ui.State, s.tab, line: toggle.Line, t: s.ui.State.Strings),
+            toggleBookmark: static (s, toggle) => Commands.Later(s.ui.State, (screen: s.ui.State, s.tab, line: toggle.Line, t: s.ui.State.Appearance.Strings),
                 static (a, s) => ToggleLineBookmark(s.screen, a, s.tab, s.line, s.t)),
             analyze: static (s, analyze) => Commands.AnalyzeLater(s.ui.State, analyze.Entity),
             showInMetadata: static (s, metadata) => Commands.ShowInMetadataLater(s.ui.State, metadata.Target, s.navigation.BeginResolving(inNewTab: false)),
             showInApiReference: static (s, reference) => Commands.Start(s.ui.State, nameof(ShowInApiReferenceHandler), reference.Entity,
                 static (a, entity, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, entity, ct)),
-            showInDiagram: static (s, diagram) => DiagramView.ShowInDiagramLater(s.ui.State, diagram.Type, s.ui.State.Strings.DiagramTitle(diagram.Type.Name)),
-            showInNewDiagram: static (s, diagram) => DiagramView.ShowInNewDiagramLater(s.ui.State, diagram.Type, s.ui.State.Strings.DiagramTitle(diagram.Type.Name)));
+            showInDiagram: static (s, diagram) => DiagramView.ShowInDiagramLater(s.ui.State, diagram.Type, s.ui.State.Appearance.Strings.DiagramTitle(diagram.Type.Name)),
+            showInNewDiagram: static (s, diagram) => DiagramView.ShowInNewDiagramLater(s.ui.State, diagram.Type, s.ui.State.Appearance.Strings.DiagramTitle(diagram.Type.Name)));
     }
 
     private static void Zoom(UiState uiState, CodeZoom zoom)
@@ -155,10 +155,10 @@ internal static class DocumentsView
         switch (zoom)
         {
             case CodeZoom.In:
-                uiState.Display.ZoomCode(uiState.Theme, 1);
+                uiState.Display.ZoomCode(uiState.Appearance.Theme, 1);
                 break;
             case CodeZoom.Out:
-                uiState.Display.ZoomCode(uiState.Theme, -1);
+                uiState.Display.ZoomCode(uiState.Appearance.Theme, -1);
                 break;
             case CodeZoom.Reset:
                 uiState.Display.ResetCodeZoom();
@@ -166,12 +166,12 @@ internal static class DocumentsView
         }
     }
 
-    private static DecompiledDocument GetDocumentToShow(UiState screen, TabView view, DocumentTab tab)
+    private static DecompiledDocument GetDocumentToShow(Strings strings, TabView view, DocumentTab tab)
     {
         var content = tab.Content;
         if (content is TabContent.Report report)
         {
-            return view.Report.GetDocument(report.Export, screen.Strings);
+            return view.Report.GetDocument(report.Export, strings);
         }
 
         if (!IsNote(content))
@@ -179,7 +179,7 @@ internal static class DocumentsView
             return tab.Document;
         }
 
-        return view.Placeholder.GetDocument(content, screen.Strings);
+        return view.Placeholder.GetDocument(content, strings);
     }
 
     private static bool IsNote(TabContent content)
@@ -198,7 +198,7 @@ internal static class DocumentsView
     {
         var title = TitleOf(screen, tab);
         var tooltip = tab.Tooltip ?? title;
-        var icon = IconOf(screen, tab);
+        var icon = IconOf(screen.Appearance, tab);
         var font = TitleFontOf(navigation, tab);
         return new DockTab(title, Tooltip: tooltip, Current: tab == navigation.ActiveTab, Icon: icon, TitleFont: font);
     }
@@ -213,33 +213,33 @@ internal static class DocumentsView
         return TextFonts.Italic;
     }
 
-    private static UiIcon IconOf(UiState screen, DocumentTab tab)
+    private static UiIcon IconOf(Appearance appearance, DocumentTab tab)
     {
         if (tab.Diagram is not null)
         {
-            return new UiIcon(screen.Icons.TabDiagram);
+            return new UiIcon(appearance.Icons.TabDiagram);
         }
 
         var node = tab.Node;
         if (node is null)
         {
-            return new UiIcon(screen.Icons.TabPage);
+            return new UiIcon(appearance.Icons.TabPage);
         }
 
-        return NodeIcons.Icon(node, screen.NodeIconPalette, screen.Icons);
+        return NodeIcons.Icon(node, appearance.NodeIconPalette, appearance.Icons);
     }
 
     private static string TitleOf(UiState screen, DocumentTab tab)
     {
         if (tab.Content is TabContent.Report)
         {
-            return screen.Strings.ExportReportTitle;
+            return screen.Appearance.Strings.ExportReportTitle;
         }
 
         var node = tab.Node;
         if (node is null)
         {
-            return tab.Title ?? screen.Strings.DocumentNewTab;
+            return tab.Title ?? screen.Appearance.Strings.DocumentNewTab;
         }
 
         return screen.Tree.GetLabel(node);

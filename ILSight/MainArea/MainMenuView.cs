@@ -68,14 +68,14 @@ internal static class MainMenuView
 
     private static void WindowMenu(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         using var menu = ui.AppIconMenu(AppIconId);
         if (!menu.IsOpen)
         {
             return;
         }
 
-        var icons = ui.State.Icons;
+        var icons = ui.State.Appearance.Icons;
         var maximized = ui.WindowBounds.Maximized;
         if (ui.MenuItem(t.WindowRestore, enabled: maximized, id: "restore", icon: new UiIcon(icons.WindowRestore)))
         {
@@ -101,7 +101,7 @@ internal static class MainMenuView
 
     private static void RenderSystemMenuBar(Ui<UiState> ui, AppState appState)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         using (ui.MenuBar("menu"))
         {
             using (ui.Menu(AboutDialogView.AppName, id: "app"))
@@ -124,7 +124,7 @@ internal static class MainMenuView
 
     private static void AppMenu(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         if (ui.MenuItem(t.HelpAbout, id: "about"))
         {
             ui.State.About.Open();
@@ -152,7 +152,7 @@ internal static class MainMenuView
     // macOS ends this menu with the open windows.
     private static void SystemWindowMenu(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         ui.SystemMenuItem(t.WindowMinimize, AppMenuSystemAction.Minimize, Shortcuts.Minimize);
         ui.SystemMenuItem(t.WindowZoom, AppMenuSystemAction.Zoom);
         ui.MenuSeparator();
@@ -169,7 +169,7 @@ internal static class MainMenuView
 
     private static void Menus(Ui<UiState> ui, AppState appState)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         FileAndViewMenus(ui, appState);
         using (var help = ui.Menu(t.MenuHelp, id: "help"))
         {
@@ -182,7 +182,7 @@ internal static class MainMenuView
 
     private static void FileAndViewMenus(Ui<UiState> ui, AppState appState)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         using (var file = ui.Menu(t.MenuFile, id: "file"))
         {
             if (file.IsOpen)
@@ -203,7 +203,7 @@ internal static class MainMenuView
     /// answered, and only opening it is queued.</summary>
     public static void OpenFile(Ui<UiState> ui, Navigation navigation)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var screen = ui.State;
         FileFilter[] filters =
         [
@@ -226,8 +226,8 @@ internal static class MainMenuView
 
     private static void FileMenu(Ui<UiState> ui, AppState appState)
     {
-        var t = ui.State.Strings;
-        var icons = ui.State.Icons;
+        var t = ui.State.Appearance.Strings;
+        var icons = ui.State.Appearance.Icons;
         if (ui.MenuItem(t.FileOpen, Shortcuts.Open, id: "open", icon: new UiIcon(icons.FileOpen)))
         {
             OpenFile(ui, appState.Navigation);
@@ -254,20 +254,20 @@ internal static class MainMenuView
 
     private static void ExportItems(Ui<UiState> ui, AppState appState)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var canSave = Exports.CanSaveCode(appState.Navigation.ActiveTab?.Node);
-        if (ui.MenuItem(t.FileSaveCode, Shortcuts.SaveCode, enabled: canSave, id: "save-code", icon: new UiIcon(ui.State.Icons.FileSaveCode)))
+        if (ui.MenuItem(t.FileSaveCode, Shortcuts.SaveCode, enabled: canSave, id: "save-code", icon: new UiIcon(ui.State.Appearance.Icons.FileSaveCode)))
         {
             SaveDialogs.PickActiveCodeFile(ui, appState.Navigation, appState.Decompiler.Setup.Language);
         }
 
         var anyOpen = ui.State.Tree.Roots.Count > 0;
-        if (ui.MenuItem(t.FileExport, Shortcuts.Export, enabled: anyOpen, id: "export", icon: new UiIcon(ui.State.Icons.FileExportProject)))
+        if (ui.MenuItem(t.FileExport, Shortcuts.Export, enabled: anyOpen, id: "export", icon: new UiIcon(ui.State.Appearance.Icons.FileExportProject)))
         {
             ui.State.ExportSetup.Open(appState.Assemblies.Assemblies, Exports.FindActiveAssembly(appState.Navigation));
         }
 
-        if (ui.MenuItem(t.FileGeneratePdbs, enabled: anyOpen, id: "generate-pdbs", icon: new UiIcon(ui.State.Icons.FileGeneratePdb)))
+        if (ui.MenuItem(t.FileGeneratePdbs, enabled: anyOpen, id: "generate-pdbs", icon: new UiIcon(ui.State.Appearance.Icons.FileGeneratePdb)))
         {
             SaveDialogs.PickPdbFolder(ui);
         }
@@ -275,7 +275,7 @@ internal static class MainMenuView
 
     private static void ViewMenu(Ui<UiState> ui, AppState appState)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         if (ui.MenuItem(t.ViewBack, Shortcuts.Back, enabled: appState.Navigation.CanGoBack, id: "back"))
         {
             Commands.MoveLater(ui.State, appState.Navigation.GoBack(appState.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
@@ -309,7 +309,7 @@ internal static class MainMenuView
 
     private static void ThemeMenu(Ui<UiState> ui, ThemeCatalog<ThemeFile, ThemeContents, AppTheme> catalog, ThemeId<ThemeFile> current)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         using var themes = ui.SubMenu(t.ViewTheme, id: "theme");
         if (!themes.IsOpen)
         {
@@ -329,7 +329,7 @@ internal static class MainMenuView
 
     private static void ApiVisibilityMenu(Ui<UiState> ui, ApiVisibility current)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         using var shown = ui.SubMenu(t.ViewShownApi, id: "shown-api");
         if (!shown.IsOpen)
         {
@@ -352,7 +352,7 @@ internal static class MainMenuView
 
     private static void PanelsMenu(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var screen = ui.State;
         using var panels = ui.SubMenu(t.ViewPanels, id: "panels");
         if (!panels.IsOpen)
@@ -400,13 +400,13 @@ internal static class MainMenuView
     {
         var panel = DockPanels.NameOf(view);
         var open = ui.State.Layout.Contains(panel);
-        return ui.MenuItem(label, shortcut, check: open, id: panel, icon: DockPanels.Icon(ui.State.Icons, view));
+        return ui.MenuItem(label, shortcut, check: open, id: panel, icon: DockPanels.Icon(ui.State.Appearance.Icons, view));
     }
 
     private static void DecompilerMenu(Ui<UiState> ui, DecompilerChoice decompiler)
     {
         var current = decompiler.Setup.Language;
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         using var decompilers = ui.SubMenu(t.ViewDecompiler, id: "decompiler");
         if (!decompilers.IsOpen)
         {
@@ -427,7 +427,7 @@ internal static class MainMenuView
 
     private static void HelpMenu(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         if (ui.MenuItem(t.HelpAbout, id: "about"))
         {
             ui.State.About.Open();
@@ -436,7 +436,7 @@ internal static class MainMenuView
 
     private static void LanguageMenu(Ui<UiState> ui, Locale current)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         using var languages = ui.SubMenu(t.ViewLanguage, id: "language");
         if (!languages.IsOpen)
         {

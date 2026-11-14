@@ -69,7 +69,7 @@ internal static class TabMenuView
 
     private static void TabMenu(Ui<UiState> ui, Navigation navigation, DocumentTab tab)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var screen = ui.State;
         var group = DocumentPanels.ListTabsInGroup(screen, tab);
         var index = group.IndexOf(tab);
@@ -113,7 +113,7 @@ internal static class TabMenuView
             return;
         }
 
-        if (ui.MenuItem(ui.State.Strings.TabKeepOpen, id: "keep-open"))
+        if (ui.MenuItem(ui.State.Appearance.Strings.TabKeepOpen, id: "keep-open"))
         {
             Commands.Later(ui.State, tab, static (a, kept) => a.Navigation.KeepTabOpen(kept));
         }

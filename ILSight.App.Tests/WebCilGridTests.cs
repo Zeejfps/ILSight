@@ -34,7 +34,7 @@ public sealed class WebCilGridTests
     {
         var app = OpenWebCil();
         var typeDefs = await (await MetadataAsync(app, "Tables")).TableAsync("TypeDef");
-        var loading = app.Ui.Strings.MetadataLoading;
+        var loading = app.Ui.Appearance.Strings.MetadataLoading;
         // What each frame drew, read before the next one pumps the app state: whether the tab showed its grid then.
         var frames = new List<(bool Grid, bool Rows, bool Loading)>();
         var pump = app.Frames.BeforeFrame;
@@ -63,7 +63,7 @@ public sealed class WebCilGridTests
         Assert.NotNull(tab);
         var grid = Assert.IsType<MetadataGrid.Paged>(tab.Grid);
         var state = DocumentPanels.GetView(app.Ui.Documents, tab).GetGridState(grid);
-        var loading = app.Ui.Strings.MetadataLoading;
+        var loading = app.Ui.Appearance.Strings.MetadataLoading;
         var last = grid.RowCount - 1;
         var before = app.Frames.Drew(loading);
 
@@ -120,7 +120,7 @@ public sealed class WebCilGridTests
         var app = OpenWebCil(new AppDriver(height: 8000f), WebCilLargePath);
         app.Run(2);
         var methods = await (await MetadataAsync(app, "Tables")).TableAsync("MethodDef");
-        var loading = app.Ui.Strings.MetadataLoading;
+        var loading = app.Ui.Appearance.Strings.MetadataLoading;
         // What each frame drew, read before the next one pumps the app state: whether the tab showed its grid then.
         var frames = new List<(bool Grid, bool Loading)>();
         var pump = app.Frames.BeforeFrame;

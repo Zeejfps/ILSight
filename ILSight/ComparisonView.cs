@@ -23,7 +23,7 @@ internal static class ComparisonView
     public static void Render(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DocumentTab tab, AssemblyComparison comparison)
     {
         var rows = DocumentPanels.GetView(ui.State.Documents, tab).Comparison;
-        rows.SetStyle(ui.Theme, ui.State.NodeIconPalette, ui.State.Icons, ui.State.Strings);
+        rows.SetStyle(ui.Theme, ui.State.Appearance.NodeIconPalette, ui.State.Appearance.Icons, ui.State.Appearance.Strings);
         rows.FollowDiff(FindDiff(comparison));
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground });
         if (!ui.State.Display.Options.ShowOmnibar)
@@ -58,8 +58,8 @@ internal static class ComparisonView
     /// open again, and so is unavailable, saying why, once one of the two was closed.</summary>
     public static void Tools(Ui<UiState> ui, AssemblyList assemblies, DocumentTab tab, AssemblyComparison comparison)
     {
-        var t = ui.State.Strings;
-        var icons = ui.State.Icons;
+        var t = ui.State.Appearance.Strings;
+        var icons = ui.State.Appearance.Icons;
         var rows = DocumentPanels.GetView(ui.State.Documents, tab).Comparison;
         var any = rows.Roots.Count > 0;
         var why = DocumentsView.FindClosedText(ui, tab.ClosedAssembly);
@@ -90,7 +90,7 @@ internal static class ComparisonView
     private static void OnlyDifferencesCheckbox(Ui<UiState> ui, ComparisonRows rows)
     {
         var only = rows.OnlyDifferences;
-        if (ui.Checkbox(ui.State.Strings.ComparisonOnlyDifferences, ref only, id: "only-differences"))
+        if (ui.Checkbox(ui.State.Appearance.Strings.ComparisonOnlyDifferences, ref only, id: "only-differences"))
         {
             rows.ShowOnlyDifferences(only);
         }
@@ -99,7 +99,7 @@ internal static class ComparisonView
     private static void HiddenMembersCheckbox(Ui<UiState> ui, AssemblyList assemblies, AssemblyComparison comparison, bool enabled)
     {
         var all = comparison.Scope == ApiScope.AllDeclared;
-        if (ui.Checkbox(ui.State.Strings.ComparisonShowHiddenMembers, ref all, id: "show-hidden-members", enabled: enabled))
+        if (ui.Checkbox(ui.State.Appearance.Strings.ComparisonShowHiddenMembers, ref all, id: "show-hidden-members", enabled: enabled))
         {
             Commands.CompareLater(ui.State, Comparisons.ChangeComparedScope(assemblies, comparison, ScopeOf(all)));
         }
@@ -123,7 +123,7 @@ internal static class ComparisonView
             return;
         }
 
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         using (ui.Row(new Box { Padding = new Spacing(theme.Gap, theme.GapTight), Gap = theme.Gap }))
         {
@@ -142,9 +142,9 @@ internal static class ComparisonView
     private static string? FindHint(Ui<UiState> ui, AssemblyComparison comparison, ComparisonRows rows)
     {
         return comparison.Result.Match<(Ui<UiState> ui, ComparisonRows rows), string?>((ui, rows),
-            static (s, _) => s.ui.State.Strings.ComparisonComparing,
-            static (s, _) => FindNoDifferencesHint(s.ui.State.Strings, s.rows),
-            static (s, failed) => s.ui.Memo("comparison-failure", (failed.Failure, t: s.ui.State.Strings), static a => DescribeFailure(a.t, a.Failure)));
+            static (s, _) => s.ui.State.Appearance.Strings.ComparisonComparing,
+            static (s, _) => FindNoDifferencesHint(s.ui.State.Appearance.Strings, s.rows),
+            static (s, failed) => s.ui.Memo("comparison-failure", (failed.Failure, t: s.ui.State.Appearance.Strings), static a => DescribeFailure(a.t, a.Failure)));
     }
 
     private static ApiDiff? FindDiff(AssemblyComparison comparison)
@@ -228,7 +228,7 @@ internal static class ComparisonView
 
     private static void ContextMenu(Ui<UiState> ui, Navigation navigation, ComparisonRows rows)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
         {

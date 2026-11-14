@@ -30,7 +30,7 @@ internal static class ComparisonPickerView
             return;
         }
 
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var compare = false;
         var close = false;
@@ -114,7 +114,7 @@ internal static class ComparisonPickerView
         }
 
         var theme = ui.Theme;
-        ui.Text(ui.State.Strings.ComparePickerNone, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) }, color: theme.TextMuted, wrap: true);
+        ui.Text(ui.State.Appearance.Strings.ComparePickerNone, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) }, color: theme.TextMuted, wrap: true);
         return false;
     }
 

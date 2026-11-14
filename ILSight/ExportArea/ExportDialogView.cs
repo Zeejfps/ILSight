@@ -109,7 +109,7 @@ internal static class ExportDialogView
     {
         var setup = ui.State.ExportSetup;
         var choosing = setup.Assemblies.Page == ExportPage.Choose;
-        var title = PageTitle(ui.State.Strings, setup.Assemblies.Page);
+        var title = PageTitle(ui.State.Appearance.Strings, setup.Assemblies.Page);
         using (var dialog = ui.WindowDialog("export-setup", title, ref setup.IsOpen, WindowWidth, WindowHeight, ref setup.Window.Bounds,
             closeOnEscape: !choosing))
         {
@@ -179,7 +179,7 @@ internal static class ExportDialogView
 
     private static void Chosen(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var setup = ui.State.ExportSetup;
         var chosen = Exports.ListIncludedChoices(setup);
@@ -205,7 +205,7 @@ internal static class ExportDialogView
 
     private static void NoneChosen(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var box = new Box { Padding = new Spacing(theme.Gap, theme.GapTight) };
         ui.Text(t.ExportNoneChosen, box, color: theme.TextMuted);
@@ -213,7 +213,7 @@ internal static class ExportDialogView
 
     private static void ChosenTable(Ui<UiState> ui, List<ExportChoice> chosen)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var setup = ui.State.ExportSetup;
         var table = ui.Table("chosen", ui.State.ExportColumns, setup.RowSelection);
         table.Header([t.ExportAssemblyColumn, t.ExportVersionColumn, t.ExportProjectName]);
@@ -237,7 +237,7 @@ internal static class ExportDialogView
     private static void ChosenRow(Ui<UiState> ui, TableRows<ExportChoice> rows, int index, ExportSetup setup, List<ExportChoice> chosen,
         ExportChoice? clashing)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var choice = chosen[index];
         using var row = rows.Row(index);
         using (row.Cell(AssemblyColumn))
@@ -301,7 +301,7 @@ internal static class ExportDialogView
 
     private static void ClashNote(Ui<UiState> ui, ExportChoice choice)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var box = new Box { Padding = new Spacing(theme.FieldPaddingX + theme.BorderWidth, 0f, 0f, theme.GapTight) };
         ui.Text(t.ExportNameClash(choice.Name.Trim()), box, color: theme.Danger, size: theme.FontSizeSmall, wrap: true);
@@ -309,17 +309,17 @@ internal static class ExportDialogView
 
     private static void TableStrip(Ui<UiState> ui, ExportSetup setup)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.GapTight, Padding = new Spacing(theme.GapTight, theme.GapTight, theme.Gap, theme.GapTight) }))
         {
-            if (ui.IconButton("add", ui.State.Icons.ExportAdd, t.ExportAdd))
+            if (ui.IconButton("add", ui.State.Appearance.Icons.ExportAdd, t.ExportAdd))
             {
                 setup.ChooseAssemblies();
             }
 
             var anyPicked = setup.RowSelection.Count > 0;
-            if (ui.IconButton("remove-selected", ui.State.Icons.ExportRemovePicked, t.ExportRemoveSelected, enabled: anyPicked))
+            if (ui.IconButton("remove-selected", ui.State.Appearance.Icons.ExportRemovePicked, t.ExportRemoveSelected, enabled: anyPicked))
             {
                 Exports.RemoveSelectedRows(setup);
             }
@@ -331,13 +331,13 @@ internal static class ExportDialogView
 
     private static void SelectedCount(Ui<UiState> ui, ExportSetup setup)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         Caption(ui, t.ExportSelectedCount(setup.IncludedCount, setup.Assemblies.Choices.Count));
     }
 
     private static void Destination(Ui<UiState> ui, ExportSetup setup)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         using (Section(ui))
         {
@@ -367,7 +367,7 @@ internal static class ExportDialogView
             return;
         }
 
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var placeholder = ui.Memo("export-solution-default", setup.Folder, static f => Exports.GetDefaultSolutionName(f));
         Caption(ui, t.ExportSolution);
         ui.TextField("solution", ref setup.SolutionName, placeholder, width: Sizing.Grow());
@@ -376,7 +376,7 @@ internal static class ExportDialogView
     // Kept with the decompiler options, so they stay for the next export, but only shown here.
     private static void ProjectOptions(Ui<UiState> ui, DecompilerOptions options)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         using (Section(ui))
         {
             ui.Label(t.ExportOptionsProject, bold: true);
@@ -389,7 +389,7 @@ internal static class ExportDialogView
     // the note under the heading says before they are changed.
     private static void CodeOptions(Ui<UiState> ui, DecompilerOptions options)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         using (Section(ui))
         {
             ui.Label(t.ExportOptionsCode, bold: true);
@@ -402,7 +402,7 @@ internal static class ExportDialogView
 
     private static void Toggle(Ui<UiState> ui, DecompilerOptions options, string name)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var toggle = DecompilerToggles.FindToggle(name);
         if (toggle is null)
         {
@@ -419,7 +419,7 @@ internal static class ExportDialogView
 
     private static void BuildOutput(Ui<UiState> ui, ExportSetup setup)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         using (Section(ui))
         {
             ui.Label(t.ExportBuildOutput, bold: true);
@@ -431,19 +431,19 @@ internal static class ExportDialogView
     // Its own method, so that the closure is made only the frame Browse is pressed.
     private static void PickFolder(Ui<UiState> ui, ExportSetup setup)
     {
-        ui.PickFolder(ui.State.Strings.ExportChooseFolderTitle, setup.Folder, path => setup.Folder = path);
+        ui.PickFolder(ui.State.Appearance.Strings.ExportChooseFolderTitle, setup.Folder, path => setup.Folder = path);
     }
 
     // Its own method, so that the closure is made only the frame Browse is pressed.
     private static void PickKeyFile(Ui<UiState> ui, ExportSetup setup)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         ui.PickFile(t.ExportChooseKeyTitle, null, [new FileFilter(t.FileFilterSnk, ["*.snk"])], path => setup.StrongNameKeyFile = path);
     }
 
     private static void Signing(Ui<UiState> ui, ExportSetup setup)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         Caption(ui, t.ExportKeyFile);
         using (ui.Row(new Box { Gap = theme.GapTight }))
@@ -463,7 +463,7 @@ internal static class ExportDialogView
 
     private static void Pdbs(Ui<UiState> ui, ExportSetup setup)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         ui.Checkbox(t.ExportGeneratePdb, ref setup.GeneratePdb, id: "pdb", compact: true);
         if (!setup.GeneratePdb)
@@ -479,7 +479,7 @@ internal static class ExportDialogView
 
     private static void Footer(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var setup = ui.State.ExportSetup;
         ui.Separator();
@@ -560,17 +560,17 @@ internal static class ExportDialogView
 
     private static void FilterRow(Ui<UiState> ui, AssemblyPicker picker)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         using (ui.Row())
         {
-            ui.TextField("filter", ref picker.Filter, t.ExportFilter, Sizing.Grow(), ui.State.Icons.ExportFilter, clearable: true);
+            ui.TextField("filter", ref picker.Filter, t.ExportFilter, Sizing.Grow(), ui.State.Appearance.Icons.ExportFilter, clearable: true);
             ui.Checkbox(t.ExportSelectedOnly, ref picker.SelectedOnly, id: "selected-only");
         }
     }
 
     private static void SelectShownRow(Ui<UiState> ui, AssemblyPicker picker)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         // Padded to line up with the rows' boxes.
         using (ui.Row(new Box { Padding = new Spacing(theme.Gap + theme.BorderWidth, 0f, 0f, 0f) }))
@@ -606,7 +606,7 @@ internal static class ExportDialogView
 
     private static void NoMatch(Ui<UiState> ui, AssemblyPicker picker)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         using (ui.Column(new Box { Height = Sizing.Grow(), Gap = theme.Gap, AlignX = Align.Center, AlignY = Align.Center }))
         {
@@ -641,7 +641,7 @@ internal static class ExportDialogView
 
     private static void ChooseFooter(Ui<UiState> ui, ExportSetup setup)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         ui.Separator();
         using (ui.Row(new Box { Gap = theme.Gap }))

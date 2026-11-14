@@ -19,7 +19,7 @@ internal static class DecompilerOptionsPanelView
 
     public static void Render(Ui<UiState> ui, DecompilerOptions options)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var folded = ui.State.FoldedOptionGroups;
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
@@ -27,18 +27,18 @@ internal static class DecompilerOptionsPanelView
         {
             OptionSearch.Field(ui, ref ui.State.DecompilerOptionsQuery);
             var searching = ui.State.DecompilerOptionsQuery.Trim().Length > 0;
-            if (ui.IconButton("collapse", ui.State.Icons.OptionsCollapseAll, t.CodeCollapseAll, !searching && !AllFolded(folded)))
+            if (ui.IconButton("collapse", ui.State.Appearance.Icons.OptionsCollapseAll, t.CodeCollapseAll, !searching && !AllFolded(folded)))
             {
                 folded.Fold(Sections.Select(static s => s.Key));
             }
 
-            if (ui.IconButton("expand", ui.State.Icons.OptionsExpandAll, t.CodeExpandAll, !searching && folded.Count > 0))
+            if (ui.IconButton("expand", ui.State.Appearance.Icons.OptionsExpandAll, t.CodeExpandAll, !searching && folded.Count > 0))
             {
                 folded.UnfoldAll();
             }
 
             ui.Separator(theme.IconSize);
-            if (ui.IconButton("reset", ui.State.Icons.OptionsResetDecompiler, t.DecompilerOptionsReset, options.HasChanges))
+            if (ui.IconButton("reset", ui.State.Appearance.Icons.OptionsResetDecompiler, t.DecompilerOptionsReset, options.HasChanges))
             {
                 Commands.Later(ui.State, static a => Preferences.ResetDecompilerToggles(a));
             }
@@ -120,7 +120,7 @@ internal static class DecompilerOptionsPanelView
     private static bool Header(Ui<UiState> ui, FoldedGroups? folded, DecompilerOptionSection section, DecompilerOptions options, float rowHeight,
         string? tooNew)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var isFolded = IsFolded(folded, section);
         var allowed = IsAllowed(section, options);
@@ -135,7 +135,7 @@ internal static class DecompilerOptionsPanelView
             Background = item.Hovered ? theme.RowHover : 0u,
         }))
         {
-            var icons = ui.State.Icons;
+            var icons = ui.State.Appearance.Icons;
             var mark = isFolded ? icons.OptionsGroupFolded : icons.OptionsGroupUnfolded;
             ui.Icon(new UiIcon(mark, theme.TextMuted));
             var all = State(section, options);
@@ -236,7 +236,7 @@ internal static class DecompilerOptionsPanelView
 
     private static void Toggle(Ui<UiState> ui, DecompilerToggle toggle, DecompilerOptions options, float rowHeight)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         using (ui.Row(new Box
         {

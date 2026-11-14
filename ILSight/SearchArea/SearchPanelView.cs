@@ -41,7 +41,7 @@ internal static class SearchPanelView
 
     private static void Unsearched(Ui<UiState> ui, SearchResults results)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         for (var i = 0; i < results.Unsearched.Count; i++)
         {
@@ -56,7 +56,7 @@ internal static class SearchPanelView
 
     private static void KindsButton(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var kinds = ui.State.Search.Kinds;
         var summary = ui.Memo("search-kinds", (kinds, t), static a => Summary(a.t, a.kinds));
         var width = ui.SelectButtonWidth(Summaries.GetValue(t, ListAllSummaries));
@@ -134,10 +134,10 @@ internal static class SearchPanelView
 
     private static SearchKinds PickKinds(Ui<UiState> ui, SearchKinds kinds)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var checkAll = kinds == SearchKinds.All;
-        var palette = ui.State.NodeIconPalette;
-        var allIcon = new UiIcon(ui.State.Icons.SearchAllKinds, ui.Theme.TextMuted);
+        var palette = ui.State.Appearance.NodeIconPalette;
+        var allIcon = new UiIcon(ui.State.Appearance.Icons.SearchAllKinds, ui.Theme.TextMuted);
         // The items keep the menu open, so several can be flipped in a row.
         if (ui.MenuItem(t.SearchModeAll, ref checkAll, keepOpen: true, icon: allIcon))
         {
@@ -148,7 +148,7 @@ internal static class SearchPanelView
         foreach (var kind in Kinds)
         {
             var on = SearchKindChoice.IsChecked(kinds, kind);
-            var icon = NodeIcons.Icon(KindNode(kind), NodeAccessibility.None, palette, ui.State.Icons);
+            var icon = NodeIcons.Icon(KindNode(kind), NodeAccessibility.None, palette, ui.State.Appearance.Icons);
             var label = KindLabel(t, kind);
             if (ui.MenuItem(label, ref on, keepOpen: true, icon: icon))
             {
@@ -161,7 +161,7 @@ internal static class SearchPanelView
 
     private static void Field(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var search = ui.State.Search;
         var fieldId = ui.GetId("search");
         if (search.TryTakeFocus())
@@ -170,7 +170,7 @@ internal static class SearchPanelView
         }
 
         var width = Sizing.Grow(AppLayout.SearchMinWidth, AppLayout.SearchWidth);
-        var submitted = ui.TextField("search", ref search.Query, t.SearchField, width, ui.State.Icons.SearchField, clearable: true);
+        var submitted = ui.TextField("search", ref search.Query, t.SearchField, width, ui.State.Appearance.Icons.SearchField, clearable: true);
         ui.Tooltip(fieldId, ui.Memo("search-syntax", t, static s => s.SearchSyntaxTooltip(Shortcuts.Search.Label)));
         if (!ui.HasFocus(fieldId))
         {
@@ -212,7 +212,7 @@ internal static class SearchPanelView
             return;
         }
 
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var failure = results.RunFailure;
         if (failure is not null)
@@ -230,7 +230,7 @@ internal static class SearchPanelView
     {
         var theme = ui.Theme;
         var id = ui.GetId("search-invalid-regex");
-        ui.Text(ui.State.Strings.SearchInvalidRegex, color: theme.Warning, size: theme.FontSizeSmall, id: id);
+        ui.Text(ui.State.Appearance.Strings.SearchInvalidRegex, color: theme.Warning, size: theme.FontSizeSmall, id: id);
         ui.Tooltip(id, invalidRegex.Message);
     }
 
@@ -246,11 +246,11 @@ internal static class SearchPanelView
 
     private static void Results(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var results = ui.State.Search.Results;
         var headers = Headers.GetValue(t, static t => [t.SearchColumnName, t.SearchColumnLocation, t.SearchColumnAssembly]);
         var asked = results.AskedOrder;
-        var sort = new TableSort(FindColumn(asked.Sort) ?? -1, SortIcon(ui.State.Icons, asked));
+        var sort = new TableSort(FindColumn(asked.Sort) ?? -1, SortIcon(ui.State.Appearance.Icons, asked));
         results.Selection.ShowIn(results.Rows);
         var table = ui.Table(ResultsId, ui.State.SearchColumns, results.Selection.Rows);
         var clicked = table.Header(headers, sort);

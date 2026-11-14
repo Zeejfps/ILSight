@@ -14,9 +14,9 @@ internal static class AnalyzerPanelView
 
     public static void Render(Ui<UiState> ui, Navigation navigation, AnalyzerTree analyzer)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var rows = ui.State.Analyzer;
-        rows.SetStyle(ui.Theme, ui.State.NodeIconPalette, ui.State.Icons, t);
+        rows.SetStyle(ui.Theme, ui.State.Appearance.NodeIconPalette, ui.State.Appearance.Icons, t);
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         Toolbar(ui, analyzer, rows);
         ui.Separator();
@@ -31,29 +31,29 @@ internal static class AnalyzerPanelView
 
     private static void Toolbar(Ui<UiState> ui, AnalyzerTree analyzer, AnalyzerRows rows)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var any = analyzer.Roots.Count > 0;
         var root = rows.FindSelectedRoot();
         using (ui.PaneToolbar())
         {
-            if (ui.IconButton("collapse", ui.State.Icons.AnalyzerCollapseAll, t.CodeCollapseAll, any))
+            if (ui.IconButton("collapse", ui.State.Appearance.Icons.AnalyzerCollapseAll, t.CodeCollapseAll, any))
             {
                 rows.CollapseAll();
             }
 
-            if (ui.IconButton("expand", ui.State.Icons.AnalyzerExpandAll, t.CodeExpandAll, any))
+            if (ui.IconButton("expand", ui.State.Appearance.Icons.AnalyzerExpandAll, t.CodeExpandAll, any))
             {
                 rows.ExpandAll();
             }
 
             ui.Separator(theme.IconSize);
-            if (ui.IconButton("remove", ui.State.Icons.AnalyzerRemove, t.AnalyzerRemoveAnalysis, root is not null) && root is not null)
+            if (ui.IconButton("remove", ui.State.Appearance.Icons.AnalyzerRemove, t.AnalyzerRemoveAnalysis, root is not null) && root is not null)
             {
                 Commands.Later(ui.State, root, static (a, r) => a.Analyzer.RemoveRoot(r));
             }
 
-            if (ui.IconButton("clear", ui.State.Icons.AnalyzerRemoveAll, t.AnalyzerRemoveAll, any))
+            if (ui.IconButton("clear", ui.State.Appearance.Icons.AnalyzerRemoveAll, t.AnalyzerRemoveAll, any))
             {
                 Commands.Later(ui.State, static a => a.Analyzer.ClearRoots());
             }
@@ -141,7 +141,7 @@ internal static class AnalyzerPanelView
 
     private static void ContextMenu(Ui<UiState> ui, Navigation navigation, AnalyzerTree analyzer)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var rows = ui.State.Analyzer;
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
@@ -176,7 +176,7 @@ internal static class AnalyzerPanelView
 
     private static void AnalyzeItem(Ui<UiState> ui, CommandOffer<AnalysisSymbol> offer)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         offer.Switch(
             runs =>
             {
@@ -192,7 +192,7 @@ internal static class AnalyzerPanelView
 
     private static void GoToItems(Ui<UiState> ui, Navigation navigation, CodeReference.Navigable target)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         if (ui.MenuItem(t.AnalyzerGoTo, Shortcuts.Enter, id: "go-to"))
         {
             Commands.FollowLater(ui.State, target, navigation.BeginResolving(inNewTab: false));

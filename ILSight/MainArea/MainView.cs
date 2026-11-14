@@ -63,7 +63,7 @@ public static class MainView
 
     private static void Panels(Ui<UiState> ui, AppState appState)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         UpdateSearches(ui, appState);
         if (IsLayoutEmpty(ui.State))
         {
@@ -104,7 +104,7 @@ public static class MainView
 
     private static void DockSpace(Ui<UiState> ui, AppState appState)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         DockTabMenu? tabMenu;
         string? doubleClicked;
         using (var dock = ui.DockSpace("dock", ui.State.Layout, (ui.State, appState, t), static (s, panel) => Tab(s.State, s.appState, s.t, panel),
@@ -128,7 +128,7 @@ public static class MainView
         var view = DockPanels.ViewOf(panel);
         if (view is not null)
         {
-            return DockPanels.Tab(t, screen.Icons, view.Value);
+            return DockPanels.Tab(t, screen.Appearance.Icons, view.Value);
         }
 
         var tab = screen.Documents.FindTab(panel);

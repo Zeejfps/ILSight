@@ -100,14 +100,14 @@ public sealed class WebCilCloseTests
         var grid = Assert.IsType<MetadataGrid.Paged>(tab.Grid);
         var state = DocumentPanels.GetView(app.Ui.Documents, tab).GetGridState(grid);
         var last = grid.RowCount - 1;
-        var closed = app.Ui.Strings.DocumentClosed("LargeApp.wasm");
+        var closed = app.Ui.Appearance.Strings.DocumentClosed("LargeApp.wasm");
         app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [module]));
         app.Settle(2);
 
         state.Scroll.Y = 100000f;
         app.Run(2);
-        var scrolled = (Loading: app.Frames.Drew(app.Ui.Strings.MetadataLoading), Asked: app.Ui.MetadataGridPages.HasAsked, Read: grid.IsRowRead(last));
-        var rowsClosed = app.Frames.Drew(app.Ui.Strings.MetadataClosed);
+        var scrolled = (Loading: app.Frames.Drew(app.Ui.Appearance.Strings.MetadataLoading), Asked: app.Ui.MetadataGridPages.HasAsked, Read: grid.IsRowRead(last));
+        var rowsClosed = app.Frames.Drew(app.Ui.Appearance.Strings.MetadataClosed);
         app.Frames.ClickOn(Crumb(app, "Metadata")).Frame(2);
         var clicked = (Node: tab.Node, Busy: tab.Load.IsBusy, Background: app.AppState.Work.Outstanding.Count);
         app.Settle(2);

@@ -363,7 +363,7 @@ public sealed class CloseAssembliesTests
         Assert.Empty(app.AppState.Errors.Entries);
         for (var count = 0; count <= 6; count++)
         {
-            Assert.False(app.Frames.Drew(app.Ui.Strings.StatusErrors(count)));
+            Assert.False(app.Frames.Drew(app.Ui.Appearance.Strings.StatusErrors(count)));
         }
 
         Assert.Equal(new Refusal.AssemblyClosed { Assembly = KeyboardFile }, app.AppState.Refusals.Shown);
@@ -380,7 +380,7 @@ public sealed class CloseAssembliesTests
         PressAnalyzeSixTimes(app);
 
         Assert.Same(failure, Assert.Single(app.AppState.Errors.Entries).Problem);
-        Assert.True(app.Frames.Drew(app.Ui.Strings.StatusErrors(1)));
+        Assert.True(app.Frames.Drew(app.Ui.Appearance.Strings.StatusErrors(1)));
         Assert.Equal(new Refusal.AssemblyClosed { Assembly = KeyboardFile }, app.AppState.Refusals.Shown);
     }
 

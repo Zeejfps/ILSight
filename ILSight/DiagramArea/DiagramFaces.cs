@@ -64,7 +64,7 @@ internal static class DiagramFaces
             ShowsHiddenMembers = view.ShowsHiddenMembers,
             FontSize = theme.FontSize,
             FontFamily = theme.FontFamily,
-            Strings = ui.State.Strings,
+            Strings = ui.State.Appearance.Strings,
         };
     }
 
@@ -316,6 +316,6 @@ internal static class DiagramFaces
 
         public float IconSize => Ui.Theme.IconSize;
 
-        public Strings Strings => Ui.State.Strings;
+        public Strings Strings => Ui.State.Appearance.Strings;
     }
 }

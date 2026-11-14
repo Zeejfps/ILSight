@@ -26,7 +26,7 @@ internal static class FrameworkPickerView
 
     public static void Render(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var picker = ui.State.Picker;
         var browser = picker.Browser;
         picker.Update(assemblies);
@@ -102,14 +102,14 @@ internal static class FrameworkPickerView
     private static bool NoteScanning(Ui<UiState> ui)
     {
         var theme = ui.Theme;
-        ui.Text(ui.State.Strings.PickerScanning, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) }, color: theme.TextMuted);
+        ui.Text(ui.State.Appearance.Strings.PickerScanning, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) }, color: theme.TextMuted);
         return false;
     }
 
     private static bool NoteScanFailed(Ui<UiState> ui, string error)
     {
         var theme = ui.Theme;
-        ui.Text(ui.State.Strings.PickerScanFailed, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) },
+        ui.Text(ui.State.Appearance.Strings.PickerScanFailed, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) },
             color: theme.TextMuted, wrap: true);
         ui.Text(error, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) }, color: theme.TextMuted, wrap: true);
         return false;

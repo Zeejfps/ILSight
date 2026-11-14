@@ -40,7 +40,7 @@ internal static class ResourceImageView
 
     private static void Toolbar(Ui<UiState> ui, DocumentTab tab, PictureView picture, ResourceImage image, bool hasSource)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         using (ui.PaneToolbar(new Box { Gap = theme.Gap }))
         {
@@ -57,7 +57,7 @@ internal static class ResourceImageView
             }
 
             var node = tab.Node;
-            if (node is not null && node.HasResource && ui.Button(t.ResourceExport, id: "export", icon: new UiIcon(ui.State.Icons.ResourceExport)))
+            if (node is not null && node.HasResource && ui.Button(t.ResourceExport, id: "export", icon: new UiIcon(ui.State.Appearance.Icons.ResourceExport)))
             {
                 PickExport(ui, node);
             }
@@ -67,20 +67,20 @@ internal static class ResourceImageView
     private static void ZoomButtons(Ui<UiState> ui, PictureView picture)
     {
         var zoom = picture.Zoom;
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
-        if (ui.IconButton("zoom-out", ui.State.Icons.ResourceZoomOut, t.ResourceZoomOut, zoom.CanZoomOut))
+        if (ui.IconButton("zoom-out", ui.State.Appearance.Icons.ResourceZoomOut, t.ResourceZoomOut, zoom.CanZoomOut))
         {
             picture.ZoomOut();
         }
 
         ui.Text(t.ResourceZoomPercent(zoom.Percent), color: theme.TextMuted);
-        if (ui.IconButton("zoom-in", ui.State.Icons.ResourceZoomIn, t.ResourceZoomIn, zoom.CanZoomIn))
+        if (ui.IconButton("zoom-in", ui.State.Appearance.Icons.ResourceZoomIn, t.ResourceZoomIn, zoom.CanZoomIn))
         {
             picture.ZoomIn();
         }
 
-        if (ui.IconButton("zoom-reset", ui.State.Icons.ResourceZoomReset, t.ResourceZoomReset, !zoom.IsOwnSize))
+        if (ui.IconButton("zoom-reset", ui.State.Appearance.Icons.ResourceZoomReset, t.ResourceZoomReset, !zoom.IsOwnSize))
         {
             picture.ResetZoom();
         }
@@ -90,9 +90,9 @@ internal static class ResourceImageView
 
     private static void SourceButton(Ui<UiState> ui, PictureView picture)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var label = picture.ShowsSource ? t.ResourceShowPicture : t.ResourceShowSource;
-        var icons = ui.State.Icons;
+        var icons = ui.State.Appearance.Icons;
         var glyph = picture.ShowsSource ? icons.ResourceShowPicture : icons.ResourceShowSource;
         if (ui.Button(label, id: "source", icon: new UiIcon(glyph)))
         {
@@ -153,7 +153,7 @@ internal static class ResourceImageView
     /// <summary>Asks where to export the resource <paramref name="node"/> stands for, then writes it there.</summary>
     public static void PickExport(Ui<UiState> ui, BrowseNode node)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var fileName = node.ResourceFileName ?? throw new InvalidOperationException($"{node.Text} is no resource.");
         var screen = ui.State;
         ui.PickSaveFile(t.ResourceExportTitle, null, fileName, ExportFilters(t, fileName),

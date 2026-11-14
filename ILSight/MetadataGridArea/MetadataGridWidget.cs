@@ -24,7 +24,7 @@ public static class MetadataGridWidget
             Flags = flags,
             Views = ui.State.MetadataGridViews,
             Pages = ui.State.MetadataGridPages,
-            Strings = ui.State.Strings,
+            Strings = ui.State.Appearance.Strings,
             ListId = listId,
             MenuId = HashCode.Combine(listId, MetadataGridFrame.MenuSalt),
             ClosedAssembly = closedAssembly,

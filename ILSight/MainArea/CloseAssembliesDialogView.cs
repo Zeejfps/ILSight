@@ -22,7 +22,7 @@ internal static class CloseAssembliesDialogView
             closer.Rows.Update(assemblies);
         }
 
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var close = false;
         var cancel = false;
         using (var dialog = ui.WindowDialog("close-assemblies", t.CloseAssembliesTitle, ref closer.IsOpen,
@@ -56,7 +56,7 @@ internal static class CloseAssembliesDialogView
 
     private static void Content(Ui<UiState> ui, AssemblyCloser closer, ref bool close, ref bool cancel)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var shown = AssemblyClosing.ListShown(closer);
         using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
@@ -66,7 +66,7 @@ internal static class CloseAssembliesDialogView
                 ui.Focus(ui.GetId(FilterId));
             }
 
-            close |= ui.TextField(FilterId, ref closer.Filter, t.ExportFilter, Sizing.Grow(), ui.State.Icons.ExportFilter, clearable: true);
+            close |= ui.TextField(FilterId, ref closer.Filter, t.ExportFilter, Sizing.Grow(), ui.State.Appearance.Icons.ExportFilter, clearable: true);
             ui.Checkbox(t.ExportSelectedOnly, ref closer.SelectedOnly, id: "close-selected-only");
         }
         using (ui.Row(new Box { Padding = new Spacing(theme.Gap + theme.BorderWidth, 0f, 0f, 0f) }))
@@ -116,7 +116,7 @@ internal static class CloseAssembliesDialogView
 
     private static void NoMatch(Ui<UiState> ui, AssemblyCloser closer)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         using (ui.Column(new Box { Height = Sizing.Grow(), Gap = theme.Gap, AlignX = Align.Center, AlignY = Align.Center }))
         {

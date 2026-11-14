@@ -39,7 +39,7 @@ internal static class FlagsFilterView
 
     private static void Hint(Ui<UiState> ui, FilterState filter)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
         {
@@ -65,7 +65,7 @@ internal static class FlagsFilterView
 
     private static void MutexGroup(Ui<UiState> ui, FilterState filter, MutexGroup group, bool shift)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         using (ui.Id(group.Name))
         using (ui.Column(new Box { Gap = theme.GapTight }))
@@ -243,7 +243,7 @@ internal static class FlagsFilterView
 
     private static void MatchModeRow(Ui<UiState> ui, FilterState filter)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
         {
@@ -307,7 +307,7 @@ internal static class FlagsFilterView
     private static void PillGlyph(Ui<UiState> ui, TriState state)
     {
         var theme = ui.Theme;
-        var icons = ui.State.Icons;
+        var icons = ui.State.Appearance.Icons;
         var glyph = state == TriState.Required ? icons.MetadataFlagRequired : icons.MetadataFlagExcluded;
         ui.Glyph(glyph, theme.AccentText, theme.FontSizeSmall);
     }

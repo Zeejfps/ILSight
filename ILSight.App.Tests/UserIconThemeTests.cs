@@ -235,7 +235,7 @@ public sealed class UserIconThemeTests : IDisposable
         app.AppState.Workflows.CancelAll();
 
         Assert.Equal(LucideFont().Length + 1, app.Frames.RegisteredFonts.Last(f => f.Family == family).Data.Length);
-        Assert.Equal(family, app.Ui.Icons.NodeClass.Family);
+        Assert.Equal(family, app.Ui.Appearance.Icons.NodeClass.Family);
     }
 
     [Fact]
@@ -253,7 +253,7 @@ public sealed class UserIconThemeTests : IDisposable
         app.Run(2);
 
         Assert.Equal(["icon-font:" + Path.GetFullPath(font)], app.Frames.UnregisteredFonts);
-        Assert.Equal("lucide", app.Ui.Icons.NodeClass.Family);
+        Assert.Equal("lucide", app.Ui.Appearance.Icons.NodeClass.Family);
     }
 
     [Fact]
@@ -269,7 +269,7 @@ public sealed class UserIconThemeTests : IDisposable
         app.Frames.ClickOn(Selector.WithText("Shapes")).Frame(2);
 
         Assert.Equal("shapes", app.AppState.IconTheme.Text);
-        Assert.NotNull(app.Ui.Icons.NodeClass.Svg);
+        Assert.NotNull(app.Ui.Appearance.Icons.NodeClass.Svg);
         Assert.True(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.OptionsCustomizeIconTheme)));
     }
 

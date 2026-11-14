@@ -170,7 +170,7 @@ public sealed class RunArgumentsTests
         app.Settle(1);
         app.Ui.ErrorDialog.IsOpen = false;
         app.Settle(1);
-        var t = app.Ui.Strings;
+        var t = app.Ui.Appearance.Strings;
         var refused = Assert.IsType<Refusal.ArgumentsIgnored>(app.AppState.Refusals.Shown);
 
         var indicator = app.TextRect(t.StatusErrors(1));

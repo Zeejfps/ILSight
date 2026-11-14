@@ -193,11 +193,11 @@ public sealed class DisplayOptionsTests
     public void Zooming_steps_the_font_size_from_the_themes_and_resetting_returns_to_it()
     {
         var ui = Screens.Blank();
-        var size = ui.Theme.MonoFontSize;
+        var size = ui.Appearance.Theme.MonoFontSize;
 
-        ui.Display.ZoomCode(ui.Theme, 2);
+        ui.Display.ZoomCode(ui.Appearance.Theme, 2);
         Assert.Equal(size + 2f, ui.Display.Options.FontSize?.Points);
-        ui.Display.ZoomCode(ui.Theme, -100);
+        ui.Display.ZoomCode(ui.Appearance.Theme, -100);
         Assert.Equal(CodeFontSize.Min, ui.Display.Options.FontSize?.Points);
         ui.Display.ResetCodeZoom();
         Assert.Null(ui.Display.Options.FontSize);
@@ -274,7 +274,7 @@ public sealed class DisplayOptionsTests
         var app = AppDriver.Opened(width: 1600f, height: TallWindow);
         ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
-        var size = app.Ui.Theme.MonoFontSize;
+        var size = app.Ui.Appearance.Theme.MonoFontSize;
 
         app.Frames.ClickOn(Selector.AtPath("dock/display-options/larger")).Frame();
         app.Frames.ClickOn(Selector.WithText("Line numbers")).Frame();
@@ -636,7 +636,7 @@ public sealed class DisplayOptionsTests
         app.Show(await app.FixtureAsync("Greeter"));
         app.Settle();
         app.Run(3);
-        var size = app.Ui.Theme.MonoFontSize;
+        var size = app.Ui.Appearance.Theme.MonoFontSize;
 
         var code = app.Frames.Canvas.GlyphRuns.First(r => r.Text == "Greeter");
         app.Frames.Click(code.Origin.X + 2f, app.Frames.Height - code.Origin.Y + 2f).Frame();
@@ -717,7 +717,7 @@ public sealed class DisplayOptionsTests
 
         var preview = app.Frames.Canvas.Texts.First(t => t.Inputs.Text.StartsWith("The quick brown fox"));
         Assert.Equal(MonoFonts.Code, preview.Inputs.Style.FontFamily.Value);
-        Assert.Equal(app.Ui.Theme.MonoFontSize + 1f, preview.Inputs.Style.FontSize.Value);
+        Assert.Equal(app.Ui.Appearance.Theme.MonoFontSize + 1f, preview.Inputs.Style.FontSize.Value);
     }
 
     private static bool IsBold(AppDriver app, string text)

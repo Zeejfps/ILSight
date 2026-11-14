@@ -26,7 +26,7 @@ internal static class AssemblyListsDialogView
     /// (<see cref="AssemblyLists.SwitchAssemblyList"/>); only opening its files is queued.</summary>
     public static void Render(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var dialog = ui.State.ListsDialog;
         if (!dialog.IsOpen)
         {
@@ -56,30 +56,30 @@ internal static class AssemblyListsDialogView
 
     private static void Toolbar(Ui<UiState> ui, SavedAssemblyLists lists)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var dialog = ui.State.ListsDialog;
         var picked = dialog.FindPickedList(lists);
         var any = picked is not null;
         using (ui.Row(new Box { Width = Sizing.Grow(), Gap = theme.GapTight, AlignY = Align.Center }))
         {
-            if (ui.Button(t.ListsNew, id: "new", icon: new UiIcon(ui.State.Icons.ListsNew)))
+            if (ui.Button(t.ListsNew, id: "new", icon: new UiIcon(ui.State.Appearance.Icons.ListsNew)))
             {
                 Commands.Later(ui.State, (dialog, name: t.ListsNewName), static (a, s) => Create(s.dialog, a, s.name));
             }
 
             ui.Spacer();
-            if (ui.IconButton("duplicate", ui.State.Icons.ListsDuplicate, t.ListsDuplicate, any) && picked is not null)
+            if (ui.IconButton("duplicate", ui.State.Appearance.Icons.ListsDuplicate, t.ListsDuplicate, any) && picked is not null)
             {
                 Commands.Later(ui.State, (dialog, name: picked, copyName: t.ListsCopyName(picked)), static (a, s) => Duplicate(s.dialog, a, s.name, s.copyName));
             }
 
-            if (ui.IconButton("rename", ui.State.Icons.ListsRename, t.ListsRename, any) && picked is not null)
+            if (ui.IconButton("rename", ui.State.Appearance.Icons.ListsRename, t.ListsRename, any) && picked is not null)
             {
                 dialog.StartRenaming(picked);
             }
 
-            if (ui.IconButton("delete", ui.State.Icons.ListsDelete, t.ListsDelete, any) && picked is not null)
+            if (ui.IconButton("delete", ui.State.Appearance.Icons.ListsDelete, t.ListsDelete, any) && picked is not null)
             {
                 dialog.StartConfirmingDelete(picked);
             }
@@ -137,7 +137,7 @@ internal static class AssemblyListsDialogView
     private static bool Row(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, ListScope list, int listId, int index,
         string name)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var dialog = ui.State.ListsDialog;
         var active = name == lists.Active;
@@ -172,7 +172,7 @@ internal static class AssemblyListsDialogView
         {
             if (active)
             {
-                ui.Icon(new UiIcon(ui.State.Icons.ListsActive, theme.Accent));
+                ui.Icon(new UiIcon(ui.State.Appearance.Icons.ListsActive, theme.Accent));
             }
         }
     }
@@ -266,7 +266,7 @@ internal static class AssemblyListsDialogView
 
     private static void RenameProblem(Ui<UiState> ui, SavedAssemblyLists lists)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var dialog = ui.State.ListsDialog;
         if (dialog.Mode is not ListsDialogMode.Renaming renaming)
@@ -312,7 +312,7 @@ internal static class AssemblyListsDialogView
 
     private static void MenuItems(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string picked)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var dialog = ui.State.ListsDialog;
         var active = picked == lists.Active;
         if (ui.MenuItem(t.ListsActivate, enabled: !active, id: "activate"))
@@ -339,7 +339,7 @@ internal static class AssemblyListsDialogView
 
     private static void Footer(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var dialog = ui.State.ListsDialog;
         using (ui.DialogActions())
         {
@@ -354,7 +354,7 @@ internal static class AssemblyListsDialogView
 
     private static void PresetMenu(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         using var menu = ui.SelectButton(PresetMenuId, t.ListsAddPreset);
         if (!menu.IsOpen)
         {

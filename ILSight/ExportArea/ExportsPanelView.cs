@@ -40,7 +40,7 @@ internal static class ExportsPanelView
 
     public static void Render(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         Toolbar(ui, queue, finished);
         ui.Separator();
@@ -84,7 +84,7 @@ internal static class ExportsPanelView
 
     private static void Toolbar(Ui<UiState> ui, ExportQueue export, List<ExportReport> finished)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         using (ui.PaneToolbar(new Box { Padding = new Spacing(theme.PanelPadding, theme.ToolbarPaddingY) }))
         {
@@ -275,7 +275,7 @@ internal static class ExportsPanelView
             return;
         }
 
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var queued = running.Export;
         using (ui.Id(RowIdOf(queued.Run)))
@@ -305,11 +305,11 @@ internal static class ExportsPanelView
 
     private static void CancelAction(Ui<UiState> ui, Rows rows, bool cancelling)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var enabled = !cancelling;
         if (rows.Narrow)
         {
-            if (ui.IconButton("cancel", ui.State.Icons.ExportCancel, t.ExportsCancelTooltip, enabled))
+            if (ui.IconButton("cancel", ui.State.Appearance.Icons.ExportCancel, t.ExportsCancelTooltip, enabled))
             {
                 Commands.Later(ui.State, static a => a.Export.CancelRunning());
             }
@@ -382,7 +382,7 @@ internal static class ExportsPanelView
 
     private static void Waiting(Ui<UiState> ui, ExportQueue export, Rows rows)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var count = export.WaitingCount;
         if (count > 1)
         {
@@ -409,7 +409,7 @@ internal static class ExportsPanelView
 
     private static bool WaitingRow(Ui<UiState> ui, Rows rows, QueuedExport waiting, int ahead)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         bool withdrawn;
         using (ui.Id(RowIdOf(waiting.Run)))
@@ -419,7 +419,7 @@ internal static class ExportsPanelView
             {
                 using (ui.Row(TopLine(theme)))
                 {
-                    Glyph(ui, ui.State.Icons.ExportWaiting, theme.TextMuted);
+                    Glyph(ui, ui.State.Appearance.Icons.ExportWaiting, theme.TextMuted);
                     Name(ui, waiting.Job.Name);
                     withdrawn = WithdrawAction(ui, rows);
                 }
@@ -435,10 +435,10 @@ internal static class ExportsPanelView
 
     private static bool WithdrawAction(Ui<UiState> ui, Rows rows)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         if (rows.Narrow)
         {
-            return ui.IconButton("withdraw", ui.State.Icons.ExportWithdraw, t.ExportsWithdraw);
+            return ui.IconButton("withdraw", ui.State.Appearance.Icons.ExportWithdraw, t.ExportsWithdraw);
         }
 
         return ui.Button(t.ExportsWithdraw, id: "withdraw", variant: ButtonVariant.Ghost);
@@ -457,7 +457,7 @@ internal static class ExportsPanelView
 
     private static void Finished(Ui<UiState> ui, ExportQueue export, List<ExportReport> reports, Rows rows)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         if (reports.Count == 0)
         {
             return;
@@ -494,7 +494,7 @@ internal static class ExportsPanelView
 
     private static bool FinishedRow(Ui<UiState> ui, Rows rows, ExportReport report)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         bool removed;
         using (ui.Id(RowIdOf(report.Run)))
@@ -504,10 +504,10 @@ internal static class ExportsPanelView
             {
                 using (ui.Row(TopLine(theme)))
                 {
-                    Glyph(ui, OutcomeIcon(ui.State.Icons, report), OutcomeColor(theme, report));
+                    Glyph(ui, OutcomeIcon(ui.State.Appearance.Icons, report), OutcomeColor(theme, report));
                     Name(ui, report.Name);
                     FinishedActions(ui, rows, report);
-                    removed = ui.IconButton("remove", ui.State.Icons.ExportRemove, t.ExportsRemove);
+                    removed = ui.IconButton("remove", ui.State.Appearance.Icons.ExportRemove, t.ExportsRemove);
                 }
                 var detail = ui.Memo("detail", (report, t), static a => DescribeFinished(a.t, a.report));
                 Detail(ui, detail, OutcomeTextColor(theme, report));
@@ -562,13 +562,13 @@ internal static class ExportsPanelView
 
     private static void OpenFolderAction(Ui<UiState> ui, ExportReport report, bool labelled)
     {
-        var t = ui.State.Strings;
-        if (labelled && ui.Button(t.ExportOpenFolder, id: "open-folder", icon: new UiIcon(ui.State.Icons.ExportOpenFolder)))
+        var t = ui.State.Appearance.Strings;
+        if (labelled && ui.Button(t.ExportOpenFolder, id: "open-folder", icon: new UiIcon(ui.State.Appearance.Icons.ExportOpenFolder)))
         {
             ui.OpenFolder(report.Folder);
         }
 
-        if (!labelled && ui.IconButton("open-folder", ui.State.Icons.ExportOpenFolder, t.ExportOpenFolder))
+        if (!labelled && ui.IconButton("open-folder", ui.State.Appearance.Icons.ExportOpenFolder, t.ExportOpenFolder))
         {
             ui.OpenFolder(report.Folder);
         }
@@ -576,13 +576,13 @@ internal static class ExportsPanelView
 
     private static void ShowReportAction(Ui<UiState> ui, ExportReport report, bool labelled)
     {
-        var t = ui.State.Strings;
-        if (labelled && ui.Button(t.ExportShowReport, id: "show-report", icon: new UiIcon(ui.State.Icons.ExportShowReport)))
+        var t = ui.State.Appearance.Strings;
+        if (labelled && ui.Button(t.ExportShowReport, id: "show-report", icon: new UiIcon(ui.State.Appearance.Icons.ExportShowReport)))
         {
             Commands.Later(ui.State, report, static (a, r) => Exports.ShowExportReport(a, r));
         }
 
-        if (!labelled && ui.IconButton("show-report", ui.State.Icons.ExportShowReport, t.ExportShowReport))
+        if (!labelled && ui.IconButton("show-report", ui.State.Appearance.Icons.ExportShowReport, t.ExportShowReport))
         {
             Commands.Later(ui.State, report, static (a, r) => Exports.ShowExportReport(a, r));
         }
@@ -671,13 +671,13 @@ internal static class ExportsPanelView
 
     private static void FinishedMenu(Ui<UiState> ui, ExportReport report)
     {
-        var t = ui.State.Strings;
-        if (ui.MenuItem(t.ExportShowReport, Shortcuts.Enter, id: "show-report", icon: new UiIcon(ui.State.Icons.ExportShowReport)))
+        var t = ui.State.Appearance.Strings;
+        if (ui.MenuItem(t.ExportShowReport, Shortcuts.Enter, id: "show-report", icon: new UiIcon(ui.State.Appearance.Icons.ExportShowReport)))
         {
             Commands.Later(ui.State, report, static (a, r) => Exports.ShowExportReport(a, r));
         }
 
-        if (ui.MenuItem(t.ExportOpenFolder, enabled: report.FolderExists, id: "open-folder", icon: new UiIcon(ui.State.Icons.ExportOpenFolder)))
+        if (ui.MenuItem(t.ExportOpenFolder, enabled: report.FolderExists, id: "open-folder", icon: new UiIcon(ui.State.Appearance.Icons.ExportOpenFolder)))
         {
             ui.OpenFolder(report.Folder);
         }
@@ -696,7 +696,7 @@ internal static class ExportsPanelView
 
     private static void QueuedMenu(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished, ExportRun run)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var folder = Exports.FindExportFolder(queue, finished, run);
         if (folder is null)
         {

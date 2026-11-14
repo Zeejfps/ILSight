@@ -77,8 +77,8 @@ internal static class DiagramView
     /// <summary>The diagram's tools, for the bar over the document: zoom, fit and the member filter.</summary>
     public static void Tools(Ui<UiState> ui, DocumentTab tab)
     {
-        var t = ui.State.Strings;
-        var icons = ui.State.Icons;
+        var t = ui.State.Appearance.Strings;
+        var icons = ui.State.Appearance.Icons;
         var view = DocumentPanels.GetView(ui.State.Documents, tab).Diagram;
         var camera = view.Camera;
         var area = GetCanvasRect(ui);
@@ -108,7 +108,7 @@ internal static class DiagramView
     private static void ShowHiddenMembersCheckbox(Ui<UiState> ui, DiagramViewState view)
     {
         var shows = view.ShowsHiddenMembers;
-        if (ui.Checkbox(ui.State.Strings.DiagramShowHiddenMembers, ref shows, id: "show-hidden-members"))
+        if (ui.Checkbox(ui.State.Appearance.Strings.DiagramShowHiddenMembers, ref shows, id: "show-hidden-members"))
         {
             Diagrams.ShowHiddenMembers(view, shows);
         }
@@ -134,7 +134,7 @@ internal static class DiagramView
 
     private static void EmptyHint(Ui<UiState> ui, TypeDiagram diagram)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var failure = diagram.ReadFailure;
         if (failure is not null && !diagram.IsBusy)
         {
@@ -155,7 +155,7 @@ internal static class DiagramView
         }
 
         var theme = ui.Theme;
-        var text = ui.Memo("diagram-read-failed", (failure, t: ui.State.Strings), static a => a.t.DiagramReadFailed(a.failure));
+        var text = ui.Memo("diagram-read-failed", (failure, t: ui.State.Appearance.Strings), static a => a.t.DiagramReadFailed(a.failure));
         ui.Text(text, new Box { Width = Sizing.Grow(), Padding = new Spacing(theme.Gap, theme.GapTight) }, color: theme.Warning, size: theme.FontSizeSmall,
             wrap: true);
     }
@@ -535,7 +535,7 @@ internal static class DiagramView
     private static void FillFrame(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram, DiagramHit hit)
     {
         var frame = view.Frame;
-        frame.Lay(view.Camera.Corner, view.Camera.Zoom, ui.Theme, ui.State.NodeIconPalette, ui.State.Icons);
+        frame.Lay(view.Camera.Corner, view.Camera.Zoom, ui.Theme, ui.State.Appearance.NodeIconPalette, ui.State.Appearance.Icons);
         FillLinks(ui, view, diagram, frame);
         FillCards(view, diagram, hit, frame);
     }
@@ -764,7 +764,7 @@ internal static class DiagramView
     private static void CardMenuItems(Ui<UiState> ui, Navigation navigation, DiagramViewState view, TypeDiagram diagram, TypeCard card,
         string? closedAssembly)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         if (ui.MenuItem(t.TreeOpen, id: "open"))
         {
             Commands.FollowLater(ui.State, card.Type, navigation.BeginResolvingFromDiagram(diagram, inNewTab: false));
@@ -786,7 +786,7 @@ internal static class DiagramView
 
     private static void GrowItems(Ui<UiState> ui, TypeDiagram diagram, TypeCard card, string? why)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var open = why is null;
         if (HasLinks(card, Diagrams.IsBaseLink) && ui.MenuItem(t.DiagramAddBases, enabled: open && Diagrams.HasMissingBases(diagram, card), id: "add-bases", detail: why))
         {
@@ -823,7 +823,7 @@ internal static class DiagramView
 
     private static string DerivedItemOf(Ui<UiState> ui, TypeCard card)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         if (card.Stereotype == TypeStereotype.Interface)
         {
             return t.DiagramAddImplementations;

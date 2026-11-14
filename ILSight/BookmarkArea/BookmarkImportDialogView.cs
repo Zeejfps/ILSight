@@ -21,7 +21,7 @@ internal static class BookmarkImportDialogView
 
     private static void Ask(Ui<UiState> ui, PendingImport import)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var open = true;
         using (var dialog = ui.Dialog("bookmark-import", t.BookmarksImportTitle, ref open, closeButton: false))
         {

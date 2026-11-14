@@ -364,7 +364,7 @@ public sealed class ComparisonTests
         Assert.NotNull(tab);
         var comparison = tab.Comparison;
         Assert.NotNull(comparison);
-        Assert.True(app.TextRect(app.Ui.Icons.ComparisonSwap).Y < app.TextRect(Compared).Y);
+        Assert.True(app.TextRect(app.Ui.Appearance.Icons.ComparisonSwap).Y < app.TextRect(Compared).Y);
 
         app.Frames.ClickOn(Selector.AtPath("dock/document-2/swap")).Frame();
         app.Frames.WaitUntil(() => DiffOf(comparison).LeftName == RightName, AppStateDriver.Patience);

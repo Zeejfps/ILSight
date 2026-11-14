@@ -12,7 +12,7 @@ internal static class StatusBarView
 {
     public static void Render(Ui<UiState> ui, AppState appState)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var size = theme.FontSizeSmall;
         using (ui.Row(new Box
@@ -109,7 +109,7 @@ internal static class StatusBarView
 
     private static void RestartToUpdateButton(Ui<UiState> ui, AppUpdates updates)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var i = ui.Clickable("restart-to-update");
         if (i.Clicked)
@@ -132,7 +132,7 @@ internal static class StatusBarView
 
     private static void RefusalNote(Ui<UiState> ui, Refusal refusal)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var i = ui.Clickable("refusal");
         if (i.Clicked)
@@ -173,7 +173,7 @@ internal static class StatusBarView
 
     private static void ErrorIndicator(Ui<UiState> ui, ErrorLog errors)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var i = ui.Clickable("errors");
         if (i.Clicked)
@@ -191,7 +191,7 @@ internal static class StatusBarView
             Background = i.Held ? theme.Pressed(theme.DangerSurface) : i.Hovered ? theme.DangerSurface : 0u,
         }))
         {
-            ui.Glyph(ui.State.Icons.StatusError, theme.Danger, theme.IconSize);
+            ui.Glyph(ui.State.Appearance.Icons.StatusError, theme.Danger, theme.IconSize);
             ui.Text(ui.Memo("status-errors", (errors.Entries.Count, t), static a => a.t.StatusErrors(a.Count)), color: theme.Danger,
                 size: theme.FontSizeSmall);
         }

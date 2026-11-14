@@ -79,7 +79,7 @@ internal static class MetadataTooltipView
     private static void Flag(Ui<UiState> ui, MetadataFlag flag)
     {
         var theme = ui.Theme;
-        var icons = ui.State.Icons;
+        var icons = ui.State.Appearance.Icons;
         var box = flag.IsSet ? icons.MetadataFlagSet : icons.MetadataFlagUnset;
         var boxColor = flag.IsSet ? theme.AccentText : theme.TextMuted;
         var nameColor = flag.IsSet ? theme.Text : theme.TextMuted;

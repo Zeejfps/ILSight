@@ -31,17 +31,7 @@ public sealed class UiState : IUiState
 {
     public Appearance Appearance { get; } = new();
 
-    public UiTheme Theme => Appearance.Theme;
-
-    public CodeViewPalette CodeViewPalette => Appearance.CodeViewPalette;
-
-    public NodeIconPalette NodeIconPalette => Appearance.NodeIconPalette;
-
-    public AppIcons Icons => Appearance.Icons;
-
-    public IReadOnlyList<FontFace> IconFonts => Appearance.IconFonts;
-
-    public Strings Strings => Appearance.Strings;
+    UiTheme IUiState.Theme => Appearance.Theme;
 
     /// <summary>What the screen last showed: the icons, the decompilation, the list, the code font.</summary>
     internal ShownChanges Shown { get; } = new();

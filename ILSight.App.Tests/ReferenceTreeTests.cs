@@ -30,9 +30,9 @@ public sealed class ReferenceTreeTests
         app.Run(2);
 
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, baseType.Text), PointerButton.Right).Frame();
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, app.Ui.Strings.TreeGoToTarget));
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, app.Ui.Appearance.Strings.TreeGoToTarget));
 
-        Assert.True(app.Frames.Drew(app.Ui.Strings.StatusResolving));
+        Assert.True(app.Frames.Drew(app.Ui.Appearance.Strings.StatusResolving));
         app.Settle(3);
         Assert.False(app.AppState.IsResolving);
         var active = app.AppState.Navigation.ActiveTab;

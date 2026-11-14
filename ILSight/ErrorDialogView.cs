@@ -18,7 +18,7 @@ internal static class ErrorDialogView
 
     public static void Render(Ui<UiState> ui, ErrorLog errors)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var shown = ui.State.ErrorDialog;
         if (!shown.IsOpen)
         {
@@ -48,7 +48,7 @@ internal static class ErrorDialogView
         {
             using (ui.Row(new Box { Gap = theme.GapTight, AlignY = Align.Center }))
             {
-                ui.Glyph(ui.State.Icons.StatusError, theme.Danger, theme.IconSize);
+                ui.Glyph(ui.State.Appearance.Icons.StatusError, theme.Danger, theme.IconSize);
                 ui.Text(shown.Texts.GetText(selected, t).Title, new Box { Width = Sizing.Grow() }, bold: true, overflow: TextOverflow.Ellipsis);
             }
         }
@@ -98,7 +98,7 @@ internal static class ErrorDialogView
 
     private static void List(Ui<UiState> ui, ErrorLog errors, ErrorDialog shown)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var entries = errors.Entries;
         using var list = ui.SelectableList(ui.GetId("error-list"), entries.Count, shown.Selection.Rows, box: new Box

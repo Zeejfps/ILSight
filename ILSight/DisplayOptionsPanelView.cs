@@ -103,7 +103,7 @@ internal static class DisplayOptionsPanelView
     // Only the scale and the title bar are options a reset puts back, so only their names turn bold.
     private static bool InterfaceSection(Ui<UiState> ui, AppState appState, string[] words)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var heading = t.DisplayOptionsInterface;
         var theme = Shows(t, words, heading, t.DisplayOptionsTheme);
         var iconTheme = Shows(t, words, heading, t.DisplayOptionsIconTheme);
@@ -161,7 +161,7 @@ internal static class DisplayOptionsPanelView
 
     private static void SystemTitleBarRow(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var display = ui.State.Display.Options;
         var system = display.SystemTitleBar;
         var changed = system != DisplayOptions.Default.SystemTitleBar;
@@ -187,7 +187,7 @@ internal static class DisplayOptionsPanelView
 
     private static void PickTheme(Ui<UiState> ui, ThemeCatalog<ThemeFile, ThemeContents, AppTheme> themes, ThemeId<ThemeFile> chosen)
     {
-        var labels = themes.ListNames(ui.State.Strings.Culture);
+        var labels = themes.ListNames(ui.State.Appearance.Strings.Culture);
         var current = themes.FindThemeIndex(chosen);
         var picked = PickFrom(ui, "theme", labels, current, themes.Ids, themes.Revision);
         if (picked is not null)
@@ -198,8 +198,8 @@ internal static class DisplayOptionsPanelView
 
     private static void CustomizeThemeButton(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
-        if (!ui.IconButton("customize-theme", ui.State.Icons.OptionsCustomizeTheme, t.DisplayOptionsCustomizeTheme, variant: ButtonVariant.Neutral))
+        var t = ui.State.Appearance.Strings;
+        if (!ui.IconButton("customize-theme", ui.State.Appearance.Icons.OptionsCustomizeTheme, t.DisplayOptionsCustomizeTheme, variant: ButtonVariant.Neutral))
         {
             return;
         }
@@ -222,8 +222,8 @@ internal static class DisplayOptionsPanelView
 
     private static void OpenThemesFolderButton(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
-        if (!ui.IconButton("themes-folder", ui.State.Icons.OptionsOpenThemesFolder, t.DisplayOptionsOpenThemesFolder, variant: ButtonVariant.Neutral))
+        var t = ui.State.Appearance.Strings;
+        if (!ui.IconButton("themes-folder", ui.State.Appearance.Icons.OptionsOpenThemesFolder, t.DisplayOptionsOpenThemesFolder, variant: ButtonVariant.Neutral))
         {
             return;
         }
@@ -233,8 +233,8 @@ internal static class DisplayOptionsPanelView
 
     private static void ReloadThemesButton(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
-        if (ui.IconButton("reload-themes", ui.State.Icons.OptionsReloadThemes, t.DisplayOptionsReloadThemes, variant: ButtonVariant.Neutral))
+        var t = ui.State.Appearance.Strings;
+        if (ui.IconButton("reload-themes", ui.State.Appearance.Icons.OptionsReloadThemes, t.DisplayOptionsReloadThemes, variant: ButtonVariant.Neutral))
         {
             Commands.Later(ui.State, static a => a.UserThemes.ReloadThemes());
         }
@@ -256,7 +256,7 @@ internal static class DisplayOptionsPanelView
 
     private static void PickIconTheme(Ui<UiState> ui, ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> themes, ThemeId<IconThemeFile> chosen)
     {
-        var labels = themes.ListNames(ui.State.Strings.Culture);
+        var labels = themes.ListNames(ui.State.Appearance.Strings.Culture);
         var current = themes.FindThemeIndex(chosen);
         var picked = PickFrom(ui, "icon-theme", labels, current, themes.Ids, themes.Revision);
         if (picked is not null)
@@ -267,8 +267,8 @@ internal static class DisplayOptionsPanelView
 
     private static void CustomizeIconThemeButton(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
-        if (!ui.IconButton("customize-icon-theme", ui.State.Icons.OptionsCustomizeIconTheme, t.DisplayOptionsCustomizeIconTheme, variant: ButtonVariant.Neutral))
+        var t = ui.State.Appearance.Strings;
+        if (!ui.IconButton("customize-icon-theme", ui.State.Appearance.Icons.OptionsCustomizeIconTheme, t.DisplayOptionsCustomizeIconTheme, variant: ButtonVariant.Neutral))
         {
             return;
         }
@@ -291,8 +291,8 @@ internal static class DisplayOptionsPanelView
 
     private static void OpenIconThemesFolderButton(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
-        if (!ui.IconButton("icon-themes-folder", ui.State.Icons.OptionsOpenIconThemesFolder, t.DisplayOptionsOpenIconThemesFolder, variant: ButtonVariant.Neutral))
+        var t = ui.State.Appearance.Strings;
+        if (!ui.IconButton("icon-themes-folder", ui.State.Appearance.Icons.OptionsOpenIconThemesFolder, t.DisplayOptionsOpenIconThemesFolder, variant: ButtonVariant.Neutral))
         {
             return;
         }
@@ -310,8 +310,8 @@ internal static class DisplayOptionsPanelView
 
     private static void ReloadIconThemesButton(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
-        if (ui.IconButton("reload-icon-themes", ui.State.Icons.OptionsReloadIconThemes, t.DisplayOptionsReloadIconThemes, variant: ButtonVariant.Neutral))
+        var t = ui.State.Appearance.Strings;
+        if (ui.IconButton("reload-icon-themes", ui.State.Appearance.Icons.OptionsReloadIconThemes, t.DisplayOptionsReloadIconThemes, variant: ButtonVariant.Neutral))
         {
             Commands.Later(ui.State, static a => a.UserIconThemes.ReloadThemes());
         }
@@ -319,7 +319,7 @@ internal static class DisplayOptionsPanelView
 
     private static void UiScalePicker(Ui<UiState> ui)
     {
-        var labels = UiScaleLabels.GetValue(ui.State.Strings, ListUiScaleLabels);
+        var labels = UiScaleLabels.GetValue(ui.State.Appearance.Strings, ListUiScaleLabels);
         var scales = DisplayOptions.UiScales;
         var current = FindScaleIndex(scales, ui.State.Display.Options.UiScale);
         var picked = PickFrom(ui, "ui-scale", labels, current);
@@ -412,7 +412,7 @@ internal static class DisplayOptionsPanelView
 
     private static bool CodeSection(Ui<UiState> ui, string[] words)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var display = ui.State.Display.Options;
         var defaults = DisplayOptions.Default;
         var heading = t.DisplayOptionsCode;
@@ -503,7 +503,7 @@ internal static class DisplayOptionsPanelView
 
     private static void FontPicker(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var choices = ui.State.CodeFonts;
         var chosen = ui.State.Display.Options.Font;
         var shown = CodeDisplay.GetFontName(chosen);
@@ -538,22 +538,22 @@ internal static class DisplayOptionsPanelView
 
     private static void FontSizeStepper(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var display = ui.State.Display.Options;
         var smaller = ui.Memo("smaller", t, static s => s.DisplayOptionsSmaller(Shortcuts.ZoomOut.Label));
-        if (ui.IconButton("smaller", ui.State.Icons.OptionsFontSmaller, smaller, CodeDisplay.CanZoomOut(display, theme), ButtonVariant.Neutral))
+        if (ui.IconButton("smaller", ui.State.Appearance.Icons.OptionsFontSmaller, smaller, CodeDisplay.CanZoomOut(display, theme), ButtonVariant.Neutral))
         {
-            ui.State.Display.ZoomCode(ui.State.Theme, -1);
+            ui.State.Display.ZoomCode(ui.State.Appearance.Theme, -1);
         }
 
         var size = CodeDisplay.GetFontSize(display, theme);
         var text = ui.Memo("size", size, static s => FormatFontSize(s));
         ui.Text(text, new Box { Width = Sizing.Fixed(MeasureFontSizeSlot(ui)) }, align: Align.Center);
         var larger = ui.Memo("larger", t, static s => s.DisplayOptionsLarger(Shortcuts.ZoomIn.Label));
-        if (ui.IconButton("larger", ui.State.Icons.OptionsFontLarger, larger, CodeDisplay.CanZoomIn(display, theme), ButtonVariant.Neutral))
+        if (ui.IconButton("larger", ui.State.Appearance.Icons.OptionsFontLarger, larger, CodeDisplay.CanZoomIn(display, theme), ButtonVariant.Neutral))
         {
-            ui.State.Display.ZoomCode(ui.State.Theme, 1);
+            ui.State.Display.ZoomCode(ui.State.Appearance.Theme, 1);
         }
     }
 
@@ -576,7 +576,7 @@ internal static class DisplayOptionsPanelView
             BorderWidth = theme.BorderWidth,
             Radius = theme.CornerRadius,
         });
-        var color = ui.State.CodeViewPalette.Plain;
+        var color = ui.State.Appearance.CodeViewPalette.Plain;
         ui.Text(PreviewText, new Box { Width = Sizing.Grow() }, color: color, size: size, family: MonoFonts.Code, wrap: true);
     }
 
@@ -595,7 +595,7 @@ internal static class DisplayOptionsPanelView
 
     private static bool TreeSection(Ui<UiState> ui, string[] words)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var display = ui.State.Display.Options;
         var defaults = DisplayOptions.Default;
         var heading = t.DisplayOptionsTree;
@@ -651,7 +651,7 @@ internal static class DisplayOptionsPanelView
 
     private static void TokenFormatPicker(Ui<UiState> ui)
     {
-        var labels = TokenFormatLabels.GetValue(ui.State.Strings, ListTokenFormatLabels);
+        var labels = TokenFormatLabels.GetValue(ui.State.Appearance.Strings, ListTokenFormatLabels);
         var index = Array.IndexOf(TokenFormats, ui.State.Display.Options.TreeTokens);
         int? current = index >= 0 ? index : null;
         var picked = PickFrom(ui, "tokens", labels, current);
@@ -708,9 +708,9 @@ internal static class DisplayOptionsPanelView
 
     private static void ResetRow(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var changed = ui.State.Display.Options != DisplayOptions.Default;
-        var icon = new UiIcon(ui.State.Icons.OptionsResetDisplay);
+        var icon = new UiIcon(ui.State.Appearance.Icons.OptionsResetDisplay);
         using (ui.Row(new Box { Width = Sizing.Grow(), AlignX = Align.End }))
         {
             if (ui.Button(t.DisplayOptionsReset, enabled: changed, id: "reset", variant: ButtonVariant.Ghost, icon: icon))

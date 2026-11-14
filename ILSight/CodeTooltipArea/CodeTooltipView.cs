@@ -59,7 +59,7 @@ internal static class CodeTooltipView
     {
         using (ui.Column(new Box { Padding = new Spacing(PaddingX, SignaturePaddingY), Gap = 0f }))
         {
-            var text = ui.State.Strings.CodeTooltipUnreadable(unreadable.Module.FilePath.FileName, unreadable.Why.Message);
+            var text = ui.State.Appearance.Strings.CodeTooltipUnreadable(unreadable.Module.FilePath.FileName, unreadable.Why.Message);
             ui.Text(text, color: ui.Theme.Warning, wrap: true);
         }
         return default;
@@ -71,7 +71,7 @@ internal static class CodeTooltipView
     {
         using (ui.Column(new Box { Padding = new Spacing(PaddingX, SignaturePaddingY), Gap = 0f }))
         {
-            var text = ui.Memo("closed", (assembly, t: ui.State.Strings), static a => a.t.DocumentClosed(a.assembly));
+            var text = ui.Memo("closed", (assembly, t: ui.State.Appearance.Strings), static a => a.t.DocumentClosed(a.assembly));
             ui.Text(text, color: ui.Theme.Warning, wrap: true);
         }
     }
@@ -368,9 +368,9 @@ internal static class CodeTooltipView
 
     private static ShownTooltip ShownOf(Ui<UiState> ui, CodeTooltip tooltip)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var shown = ui.GetState<ShownTooltip>(ui.GetId("code-tooltip"));
-        var palette = ui.State.CodeViewPalette;
+        var palette = ui.State.Appearance.CodeViewPalette;
         if (IsBuiltFor(shown, tooltip, palette, ui.Theme, t))
         {
             return shown;

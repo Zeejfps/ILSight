@@ -54,7 +54,7 @@ internal static class NuGetDetailsView
         var box = new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Padding = theme.ShellPaddingX, AlignX = Align.Center, AlignY = Align.Center };
         using (ui.Column(box))
         {
-            ui.Text(ui.State.Strings.NugetNoSelection, color: theme.TextMuted, wrap: true, align: Align.Center);
+            ui.Text(ui.State.Appearance.Strings.NugetNoSelection, color: theme.TextMuted, wrap: true, align: Align.Center);
         }
     }
 
@@ -118,7 +118,7 @@ internal static class NuGetDetailsView
 
     private static string AuthorsText(Ui<UiState> ui, FeedPackage package)
     {
-        return ui.Memo("authors", (package.Authors, ui.State.Strings), static a => a.Strings.NugetAuthors(a.Authors));
+        return ui.Memo("authors", (package.Authors, ui.State.Appearance.Strings), static a => a.Strings.NugetAuthors(a.Authors));
     }
 
     private static void Verified(Ui<UiState> ui)
@@ -126,14 +126,14 @@ internal static class NuGetDetailsView
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.GapTight, AlignY = Align.Center }))
         {
-            ui.Icon(new UiIcon(ui.State.Icons.NugetVerified, theme.AccentText));
-            ui.Text(ui.State.Strings.NugetVerified, color: theme.AccentText, size: theme.FontSizeSmall);
+            ui.Icon(new UiIcon(ui.State.Appearance.Icons.NugetVerified, theme.AccentText));
+            ui.Text(ui.State.Appearance.Strings.NugetVerified, color: theme.AccentText, size: theme.FontSizeSmall);
         }
     }
 
     private static void VersionRow(Ui<UiState> ui, NuGetPicker picker, FeedPackage package, VersionDetails? details)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
         {
@@ -150,7 +150,7 @@ internal static class NuGetDetailsView
 
     private static void VersionSelect(Ui<UiState> ui, NuGetPicker picker, VersionChoice choice)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var width = Math.Clamp(ui.SelectButtonWidth(choice.Texts), VersionMinWidth, VersionMaxWidth);
         var enabled = !picker.Browser.IsDownloading && picker.Browser.ShowsWhatWasAsked;
         var version = choice.Picked;
@@ -183,12 +183,12 @@ internal static class NuGetDetailsView
     {
         var theme = ui.Theme;
         ui.Spinner(theme.Surface);
-        ui.Text(ui.State.Strings.NugetLoadingDetails, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
+        ui.Text(ui.State.Appearance.Strings.NugetLoadingDetails, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
     }
 
     private static void RetryStatus(Ui<UiState> ui, NuGetPicker picker, FeedPackage package)
     {
-        if (ui.Button(ui.State.Strings.NugetRetry, id: "retry-details", variant: ButtonVariant.Ghost) && picker.Browser.Version != null)
+        if (ui.Button(ui.State.Appearance.Strings.NugetRetry, id: "retry-details", variant: ButtonVariant.Ghost) && picker.Browser.Version != null)
         {
             picker.Browser.RetryDetails(package, picker.Browser.Version);
         }
@@ -214,20 +214,20 @@ internal static class NuGetDetailsView
 
         if (read.Vulnerabilities.Count > 0)
         {
-            NuGetPlaceholderView.Warning(ui, ui.State.Strings.NugetVulnerable(read.Vulnerabilities.Count));
+            NuGetPlaceholderView.Warning(ui, ui.State.Appearance.Strings.NugetVulnerable(read.Vulnerabilities.Count));
         }
     }
 
     private static void DetailsFailed(Ui<UiState> ui, string error)
     {
         var theme = ui.Theme;
-        NuGetPlaceholderView.Warning(ui, ui.State.Strings.NugetDetailsFailed);
+        NuGetPlaceholderView.Warning(ui, ui.State.Appearance.Strings.NugetDetailsFailed);
         ui.Text(error, color: theme.TextMuted, size: theme.FontSizeSmall, wrap: true);
     }
 
     private static void Deprecation(Ui<UiState> ui, PackageDeprecation deprecation)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         NuGetPlaceholderView.Warning(ui, t.NugetDeprecated);
         if (deprecation.Message.Length > 0)
@@ -243,7 +243,7 @@ internal static class NuGetDetailsView
 
     private static void Facts(Ui<UiState> ui, NuGetPicker picker, FeedPackage package, VersionDetails? details)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         using (ui.Column(new Box { Width = Sizing.Grow(), Gap = ui.Theme.GapTight }))
         {
             if (package.TotalDownloads > 0)
@@ -266,7 +266,7 @@ internal static class NuGetDetailsView
 
     private static string DownloadsText(Ui<UiState> ui, long downloads)
     {
-        return ui.Memo("downloads", (downloads, ui.State.Strings.Culture), static a => a.downloads.ToString("N0", a.Culture));
+        return ui.Memo("downloads", (downloads, ui.State.Appearance.Strings.Culture), static a => a.downloads.ToString("N0", a.Culture));
     }
 
     private static string TagsText(Ui<UiState> ui, IReadOnlyList<string> tags)
@@ -276,7 +276,7 @@ internal static class NuGetDetailsView
 
     private static void CatalogFacts(Ui<UiState> ui, NuGetPicker picker, FeedPackage package, VersionDetails? details)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var read = ReadOf(details);
         if (read == null)
         {
@@ -305,12 +305,12 @@ internal static class NuGetDetailsView
 
     private static string PublishedText(Ui<UiState> ui, DateTimeOffset published)
     {
-        return ui.Memo("published", (published, ui.State.Strings.Culture), static a => FormatDate(a.published, a.Culture));
+        return ui.Memo("published", (published, ui.State.Appearance.Strings.Culture), static a => FormatDate(a.published, a.Culture));
     }
 
     private static string SizeText(Ui<UiState> ui, long bytes)
     {
-        return ui.Memo("size", (bytes, ui.State.Strings.Culture), static a => FormatSize(a.bytes, a.Culture));
+        return ui.Memo("size", (bytes, ui.State.Appearance.Strings.Culture), static a => FormatSize(a.bytes, a.Culture));
     }
 
     private static PackageVersionDetails? ReadOf(VersionDetails? details)
@@ -426,7 +426,7 @@ internal static class NuGetDetailsView
 
     private static void Dependencies(Ui<UiState> ui, VersionDetails? details)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var read = ReadOf(details);
         if (read == null)
@@ -448,7 +448,7 @@ internal static class NuGetDetailsView
 
     private static void Group(Ui<UiState> ui, DependencyGroup group, int index)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var framework = group.TargetFramework.Length > 0 ? group.TargetFramework : t.NugetAnyFramework;
         using (ui.Id(index))

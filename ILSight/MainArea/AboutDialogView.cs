@@ -21,7 +21,7 @@ internal static class AboutDialogView
             return;
         }
 
-        var t = screen.Strings;
+        var t = screen.Appearance.Strings;
         var box = new Box { Width = Sizing.Grow(0f, AppLayout.AboutDialogWidth) };
         using var dialog = ui.Dialog("about", t.AboutTitle, ref screen.About.IsOpen, box);
         if (!dialog.IsOpen)
@@ -50,7 +50,7 @@ internal static class AboutDialogView
 
     private static void NameAndVersion(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var version = ui.Memo("about-version", t, static s => s.AboutVersion(AppVersions.App));
         using var lines = ui.Column(new Box { Width = Sizing.Grow(), Gap = theme.GapTight });
@@ -68,7 +68,7 @@ internal static class AboutDialogView
 
     private static void UpdateButton(Ui<UiState> ui, AppUpdates updates)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         if (updates.Status is UpdateStatus.Ready ready)
         {
             var label = ui.Memo("about-restart", (t, Version: AppUpdates.GetVersion(ready.Update)), static a => a.t.AboutRestartToUpdate(a.Version));
@@ -113,7 +113,7 @@ internal static class AboutDialogView
 
     private static string ButtonText(Ui<UiState> ui, UpdateStatus status)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         if (status is UpdateStatus.Checking)
         {
             return t.AboutCheckingForUpdates;
@@ -135,7 +135,7 @@ internal static class AboutDialogView
 
     private static void UpdateResult(Ui<UiState> ui, UpdateStatus status)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         if (status is UpdateStatus.UpToDate)
         {
             ui.Text(t.AboutUpToDate, color: ui.Theme.TextMuted, wrap: true);
@@ -153,7 +153,7 @@ internal static class AboutDialogView
 
     private static void CheckAutomatically(Ui<UiState> ui, bool isCheckAutomatic)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var check = isCheckAutomatic;
         if (ui.Checkbox(t.AboutCheckAutomatically, ref check, id: "about-check-automatically", compact: true))
         {
@@ -163,7 +163,7 @@ internal static class AboutDialogView
 
     private static void Versions(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var labelWidth = MeasureLabels(ui, t);
         using var rows = ui.Column(new Box { Width = Sizing.Grow(), Gap = ui.Theme.GapTight });
         VersionRow(ui, t.AboutDecompiler, AppVersions.Decompiler, labelWidth);
@@ -194,7 +194,7 @@ internal static class AboutDialogView
 
     private static void Actions(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         using (ui.DialogActions())
         {
             LicensesButton(ui);
@@ -208,14 +208,14 @@ internal static class AboutDialogView
 
     private static void LicensesButton(Ui<UiState> ui)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var licenses = ui.State.ShippedLicenses;
         if (licenses is null)
         {
             return;
         }
 
-        var icon = new UiIcon(ui.State.Icons.AboutOpenLicensesFolder);
+        var icon = new UiIcon(ui.State.Appearance.Icons.AboutOpenLicensesFolder);
         if (ui.Button(t.AboutLicenses, id: "about-licenses", variant: ButtonVariant.Neutral, icon: icon))
         {
             ui.OpenFolder(licenses);

@@ -107,7 +107,7 @@ public static class NodeIcons
     /// screen's icons and icon colors.</summary>
     public static void Draw(Ui<UiState> ui, BrowseNode node)
     {
-        ui.Icon(Icon(node, ui.State.NodeIconPalette, ui.State.Icons));
+        ui.Icon(Icon(node, ui.State.Appearance.NodeIconPalette, ui.State.Appearance.Icons));
     }
 
     /// <summary>What a node of <paramref name="kind"/> draws in <paramref name="icons"/>.</summary>
@@ -262,6 +262,6 @@ public static class NodeIcons
     /// icons and icon colors.</summary>
     public static void Draw(Ui<UiState> ui, NodeIcon kind, NodeAccessibility accessibility = NodeAccessibility.None)
     {
-        ui.Icon(Icon(kind, accessibility, ui.State.NodeIconPalette, ui.State.Icons));
+        ui.Icon(Icon(kind, accessibility, ui.State.Appearance.NodeIconPalette, ui.State.Appearance.Icons));
     }
 }

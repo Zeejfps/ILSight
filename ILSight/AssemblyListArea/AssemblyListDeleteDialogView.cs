@@ -13,7 +13,7 @@ internal static class AssemblyListDeleteDialogView
     /// files is queued.</summary>
     public static void Render(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
     {
-        var t = ui.State.Strings;
+        var t = ui.State.Appearance.Strings;
         var theme = ui.Theme;
         var dialog = ui.State.ListsDialog;
         if (dialog.Mode is not ListsDialogMode.ConfirmingDelete deleting)

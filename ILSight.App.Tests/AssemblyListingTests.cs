@@ -78,7 +78,7 @@ public sealed class AssemblyListingTests
         app.Frames.ClickOn(Selector.WithText(SavedAssemblyLists.DefaultName));
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, Other));
 
-        Assert.True(app.Frames.Drew(app.Ui.Strings.StatusReloading));
+        Assert.True(app.Frames.Drew(app.Ui.Appearance.Strings.StatusReloading));
         Assert.False(app.Frames.Drew(fixtures));
         app.Settle(2);
         Assert.Equal(Other, app.AppState.Lists.Active);
@@ -465,14 +465,14 @@ public sealed class AssemblyListingTests
         var other = typeof(AppState).Assembly.Location;
         var resolving = app.AppState.Navigation.BeginResolving(inNewTab: false);
         app.Run(2);
-        var saidResolving = app.Frames.Drew(app.Ui.Strings.StatusResolving);
+        var saidResolving = app.Frames.Drew(app.Ui.Appearance.Strings.StatusResolving);
 
         app.Frames.FilePicker.Answer = other;
         app.Frames.Key(Shortcuts.Open).Frame();
         app.Frames.Frame();
 
         Assert.True(saidResolving);
-        Assert.False(app.Frames.Drew(app.Ui.Strings.StatusResolving));
+        Assert.False(app.Frames.Drew(app.Ui.Appearance.Strings.StatusResolving));
         Assert.True(app.AppState.Navigation.IsStale(resolving.Intent));
         app.Frames.WaitUntil(() => app.AppState.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)), AppStateDriver.Patience);
     }
@@ -483,19 +483,19 @@ public sealed class AssemblyListingTests
         var app = AppDriver.Opened();
         var other = typeof(AppState).Assembly.Location;
         app.Run(2);
-        var saidOpeningBefore = app.Frames.Drew(app.Ui.Strings.StatusOpening);
+        var saidOpeningBefore = app.Frames.Drew(app.Ui.Appearance.Strings.StatusOpening);
 
         app.Frames.FilePicker.Answer = other;
         app.Frames.Key(Shortcuts.Open).Frame();
         app.Frames.Frame();
-        var saidOpening = app.Frames.Drew(app.Ui.Strings.StatusOpening);
+        var saidOpening = app.Frames.Drew(app.Ui.Appearance.Strings.StatusOpening);
         app.Frames.WaitUntil(() => app.AppState.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)), AppStateDriver.Patience);
         app.Settle(2);
 
         Assert.False(saidOpeningBefore);
         Assert.True(saidOpening);
         Assert.False(app.AppState.Navigation.IsOpening);
-        Assert.False(app.Frames.Drew(app.Ui.Strings.StatusOpening));
+        Assert.False(app.Frames.Drew(app.Ui.Appearance.Strings.StatusOpening));
     }
 
     [Fact]
@@ -575,14 +575,14 @@ public sealed class AssemblyListingTests
         // The menu asks for the presets in the frame it opens in, the click's, and the look starts only at the edge
         // after that draw: that frame, not a later one a quick look may already have answered, says so.
         app.Frames.ClickOn(Selector.WithText("Add preconfigured"));
-        var saidLookingFor = app.Frames.Drew(app.Ui.Strings.ListsLookingForPresets);
+        var saidLookingFor = app.Frames.Drew(app.Ui.Appearance.Strings.ListsLookingForPresets);
         var lookedForBeforeShown = app.Ui.Presets.Found is null;
         app.Frames.WaitUntil(() => app.Ui.Presets.Found is not null, AppStateDriver.Patience);
         app.Frames.Frame(2);
 
         Assert.True(saidLookingFor);
         Assert.True(lookedForBeforeShown);
-        Assert.False(app.Frames.Drew(app.Ui.Strings.ListsLookingForPresets));
+        Assert.False(app.Frames.Drew(app.Ui.Appearance.Strings.ListsLookingForPresets));
         Assert.True(app.Frames.Drew(AssemblyListPresets.FindInstalled()[0].Name));
     }
 
