@@ -16,8 +16,7 @@ internal static class CloseAssembliesDialogView
     public static void Render(Ui<UiState> ui, AssemblyList assemblies)
     {
         var closer = ui.State.Closer;
-        var wasOpen = closer.IsOpen;
-        if (wasOpen)
+        if (closer.IsOpen)
         {
             closer.Rows.Update(assemblies);
         }
@@ -44,12 +43,13 @@ internal static class CloseAssembliesDialogView
                 cancel = true;
             }
         }
-        // Escape or the close button only clear IsOpen.
-        var dismissed = wasOpen && !closer.IsOpen;
-        if (cancel || dismissed)
+        if (cancel)
         {
             closer.Close();
         }
+
+        // Escape and the close button only clear IsOpen: the rows are told it, however the dialog closed.
+        closer.Rows.ForgetUnlessOpen(closer.IsOpen);
 
         closer.Window.Settle(ui.Input.IsDown(PointerButton.Left));
     }

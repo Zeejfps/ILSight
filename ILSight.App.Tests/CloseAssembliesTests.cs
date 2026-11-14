@@ -181,6 +181,25 @@ public sealed class CloseAssembliesTests
         Assert.Equal(AppStateDriver.FixturePath, Assert.Single(app.AppState.ListSession.Assemblies.Listed).FilePath.Text);
     }
 
+    [Fact]
+    public void A_dialog_closed_by_its_close_box_holds_no_rows()
+    {
+        var app = AppDriver.Opened();
+        app.Open([AssemblyPath.Of(KeyboardPath)]);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, AppStateDriver.Patience);
+        app.Run(2);
+        var closer = app.Ui.Closer;
+        closer.Open(app.AppState.ListSession.Assemblies, KeyboardOf(app));
+        app.Run(2);
+        Assert.Equal(2, closer.Rows.Order.Count);
+
+        // As the window's close box does: the field cleared, no method called.
+        closer.IsOpen = false;
+        app.Run(1);
+
+        Assert.Empty(closer.Rows.Order);
+    }
+
     private static readonly string KeyboardFile = Path.GetFileName(KeyboardPath);
 
     private static async Task<AppDriver> ShowingGreeterAndKeyboardKeyAsync()

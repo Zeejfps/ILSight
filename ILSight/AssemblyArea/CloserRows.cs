@@ -41,8 +41,15 @@ public sealed class CloserRows
         }
     }
 
-    public void Clear()
+    /// <summary>Told each frame whether the dialog is open: once it is not, however it was closed (its close
+    /// button, Escape, closing the ticked ones), it holds no rows.</summary>
+    public void ForgetUnlessOpen(bool isOpen)
     {
+        if (isOpen)
+        {
+            return;
+        }
+
         _order.Clear();
         _anchor = null;
     }

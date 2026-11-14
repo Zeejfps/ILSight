@@ -27,10 +27,11 @@ public sealed class AssemblyCloser
         Rows.Start(assemblies, picked);
     }
 
+    /// <summary>Closes the dialog. Closing is only clearing <see cref="IsOpen"/>, as the window's close box does:
+    /// <see cref="Rows"/> forgets its rows once it is told so (<see cref="CloserRows.ForgetUnlessOpen"/>).</summary>
     public void Close()
     {
         IsOpen = false;
-        Rows.Clear();
     }
 
     /// <summary>Shows every item again.</summary>
