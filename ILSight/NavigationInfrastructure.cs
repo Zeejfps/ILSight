@@ -8,7 +8,7 @@ namespace ILSight;
 /// <summary>Reaches the app's error reports, its refusal line and the open assemblies off the UI thread, for the navigation
 /// handlers, <see cref="GoToBookmarkHandler"/>, <see cref="ShowReopenedNodesHandler"/> and
 /// <see cref="AnalyzeReferenceHandler"/>.</summary>
-public sealed class NavigationInfrastructure(ErrorLog errors, RefusalLine refusals, AssemblyList assemblies, BrowseSession session, OpenRequests opens)
+public sealed class NavigationInfrastructure(ErrorLog errors, RefusalLine refusals, AssemblyList assemblies, BrowseSession session)
     : NavigateHandler.IPorts, ShowInMetadataHandler.IPorts, ShowInApiReferenceHandler.IPorts, OpenAndShowIdHandler.IPorts,
         GoToHistoryEntryHandler.IPorts, GoToBookmarkHandler.IPorts, ShowReopenedNodesHandler.IPorts, AnalyzeReferenceHandler.IPorts
 {
@@ -100,36 +100,25 @@ public sealed class NavigationInfrastructure(ErrorLog errors, RefusalLine refusa
         return page;
     }
 
-    /// <summary>Opens and looks on the thread pool, the opening cancelled with the opens under way now, and comes
-    /// back on the UI thread: a lookup the library failed as <see cref="Outcome{T}.Failed"/>, as the core answers it,
-    /// and the opening cancelled by newer opens or a clear of the list as <see cref="Outcome{T}.Failed"/> with that
-    /// cancellation, which nobody asked of this request. The cancellation of <paramref name="ct"/> is let through.</summary>
+    /// <summary>Opens and looks on the thread pool, and comes back on the UI thread: a lookup the library failed as
+    /// <see cref="Outcome{T}.Failed"/>, as the core answers it. The cancellation of <paramref name="ct"/>, which the
+    /// edge links to newer opens and a clear of the list, is let through.</summary>
     public async Task<Outcome<Lookup<BrowseNode>>> OpenAndFindIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct)
     {
-        var opening = opens.Token;
-        Outcome<Lookup<BrowseNode>> found;
-        try
-        {
-            found = await Background.Wait(Task.Run(() => OpenAndLookUpIdAsync(paths, idString, opening), ct));
-        }
-        catch (OperationCanceledException e) when (!ct.IsCancellationRequested)
-        {
-            return new Outcome<Lookup<BrowseNode>>.Failed(e);
-        }
-
+        var found = await Background.Wait(Task.Run(() => OpenAndLookUpIdAsync(paths, idString, ct), ct));
         ct.ThrowIfCancellationRequested();
         return found;
     }
 
-    private async Task<Outcome<Lookup<BrowseNode>>> OpenAndLookUpIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken opening)
+    private async Task<Outcome<Lookup<BrowseNode>>> OpenAndLookUpIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct)
     {
         var opened = new List<LoadedAssembly>();
         foreach (var path in paths)
         {
-            opened.Add(AssemblyListing.Open(assemblies, path, opening));
+            opened.Add(AssemblyListing.Open(assemblies, path, ct));
         }
 
         var scope = Navigation.ListIdScope(assemblies, opened);
-        return await NodeLookup.FindByIdAsync(session, idString, scope, opening);
+        return await NodeLookup.FindByIdAsync(session, idString, scope, ct);
     }
 }

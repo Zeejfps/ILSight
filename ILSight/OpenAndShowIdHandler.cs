@@ -18,9 +18,10 @@ public sealed class OpenAndShowIdHandler(OpenAndShowIdHandler.IPorts ports)
 
         /// <summary>Opens the files at <paramref name="paths"/>, then finds the namespace, type or member
         /// <paramref name="idString"/> names among the assemblies read from them, or among every open one when there
-        /// are none; not found when none has it, unreadable when none read has it and one could not be read. Done
-        /// without holding up the screen, cancelled with the opens; files that
-        /// could not be opened come back as <see cref="Outcome{T}.Failed"/>.</summary>
+        /// are none; not found when none has it, unreadable when none read has it and one could not be read, and
+        /// what the library threw looking as <see cref="Outcome{T}.Failed"/>. Done without holding up the screen;
+        /// cancelled with the opens, whose canceller the edge links into <paramref name="ct"/>, that cancellation let
+        /// through.</summary>
         Task<Outcome<Lookup<BrowseNode>>> OpenAndFindIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct);
     }
 
@@ -43,7 +44,7 @@ public sealed class OpenAndShowIdHandler(OpenAndShowIdHandler.IPorts ports)
             ok => ShowFoundNode(navigation, decompiler, idString, ok.Value, ticket),
             failed =>
             {
-                ReportOpenFailure(failed.Error);
+                ports.ReportError(new AppProblem.OpenFailed(failed.Error));
                 return null;
             });
     }
@@ -67,16 +68,5 @@ public sealed class OpenAndShowIdHandler(OpenAndShowIdHandler.IPorts ports)
                 ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module));
                 return null;
             });
-    }
-
-    private void ReportOpenFailure(Exception error)
-    {
-        var problem = Assemblies.FindOpenProblem(error);
-        if (problem is null)
-        {
-            return;
-        }
-
-        ports.ReportError(problem);
     }
 }

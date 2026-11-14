@@ -18,7 +18,7 @@ public sealed class WebCilGridTests
 
     private static AppDriver OpenWebCil(AppDriver app, string path)
     {
-        app.Driver.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(path)], ct));
+        app.Driver.Open([AssemblyPath.Of(path)]);
         app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 1);
         app.Settle(1);
         return app;

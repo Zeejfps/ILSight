@@ -14,8 +14,8 @@ public sealed class CloseAssembliesTests
     private static AppStateDriver OpenedThree()
     {
         var d = AppStateDriver.Opened();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(KeyboardPath)], ct));
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(CorePath)], ct));
+        d.Open([AssemblyPath.Of(KeyboardPath)]);
+        d.Open([AssemblyPath.Of(CorePath)]);
         d.RunUntil(() => d.AppState.Assemblies.Listed.Count == 3);
         d.Settle();
         return d;
@@ -122,7 +122,7 @@ public sealed class CloseAssembliesTests
     public async Task Closing_an_analyzed_assembly_from_the_dialog_drops_its_analysis_and_keeps_the_others()
     {
         var app = AppDriver.Opened();
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(KeyboardPath)], ct));
+        app.Open([AssemblyPath.Of(KeyboardPath)]);
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 2, AppStateDriver.Patience);
         app.Run(2);
         var keyboard = Assert.IsType<LoadedModule>(app.AppState.Assemblies.Listed.Single(static a => a.FilePath.Text == KeyboardPath));
@@ -146,12 +146,12 @@ public sealed class CloseAssembliesTests
     public void A_list_changed_while_the_dialog_is_up_is_shown_with_the_ticks_kept()
     {
         var d = AppStateDriver.Opened();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(KeyboardPath)], ct));
+        d.Open([AssemblyPath.Of(KeyboardPath)]);
         d.RunUntil(() => d.AppState.Assemblies.Listed.Count == 2);
         var closer = d.Ui.Closer;
         closer.Open(d.AppState.Assemblies, Listed(d, KeyboardPath));
 
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(CorePath)], ct));
+        d.Open([AssemblyPath.Of(CorePath)]);
         d.RunUntil(() => d.AppState.Assemblies.Listed.Count == 3);
         closer.Rows.Update(d.AppState.Assemblies);
 
@@ -163,7 +163,7 @@ public sealed class CloseAssembliesTests
     public void The_trash_button_opens_the_dialog_and_its_close_button_closes_the_ticked_ones()
     {
         var app = AppDriver.Opened();
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(KeyboardPath)], ct));
+        app.Open([AssemblyPath.Of(KeyboardPath)]);
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 2, AppStateDriver.Patience);
         app.Run(2);
 
@@ -184,7 +184,7 @@ public sealed class CloseAssembliesTests
     private static async Task<AppDriver> ShowingGreeterAndKeyboardKeyAsync()
     {
         var app = AppDriver.Opened();
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(KeyboardPath)], ct));
+        app.Open([AssemblyPath.Of(KeyboardPath)]);
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 2, AppStateDriver.Patience);
         app.Run(2);
         app.Show(await app.FixtureAsync("Greeter"), 2);
@@ -314,7 +314,7 @@ public sealed class CloseAssembliesTests
         var closed = TabShowing(app, "KeyboardKey");
         var shown = closed.Content;
 
-        app.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, [], ct));
+        app.Reload([]);
         app.Settle(4);
 
         Assert.Same(shown, closed.Content);
@@ -406,7 +406,7 @@ public sealed class CloseAssembliesTests
         var before = closed.Node;
         Assert.Equal(KeyboardFile, closed.Load.ClosedAssembly);
 
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(KeyboardPath)], ct));
+        app.Open([AssemblyPath.Of(KeyboardPath)]);
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 2, AppStateDriver.Patience);
         app.Settle(4);
         app.Frames.ClickOn(Targets.GetTab("KeyboardKey")).Frame(2);
@@ -428,7 +428,7 @@ public sealed class CloseAssembliesTests
         using var temp = new TempDir();
         var app = new AppDriver(settings: temp.Settings());
         app.Driver.OpenFixtures();
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(KeyboardPath)], ct));
+        app.Open([AssemblyPath.Of(KeyboardPath)]);
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 2, AppStateDriver.Patience);
         app.Run(2);
         app.Show(await app.FixtureAsync("Greeter"), 2);
@@ -453,7 +453,7 @@ public sealed class CloseAssembliesTests
     {
         var app = new AppDriver(settings: temp.Settings());
         app.Driver.OpenFixtures();
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(KeyboardPath)], ct));
+        app.Open([AssemblyPath.Of(KeyboardPath)]);
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 2, AppStateDriver.Patience);
         app.Run(2);
         return app;
@@ -466,7 +466,7 @@ public sealed class CloseAssembliesTests
 
     private static void OpenKeyboardAgain(AppDriver app)
     {
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(KeyboardPath)], ct));
+        app.Open([AssemblyPath.Of(KeyboardPath)]);
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 2, AppStateDriver.Patience);
         app.Settle(4);
     }

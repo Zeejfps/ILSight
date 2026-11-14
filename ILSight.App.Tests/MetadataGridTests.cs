@@ -272,7 +272,7 @@ public sealed class MetadataGridTests
     {
         var app = AppDriver.Opened(width: 2400f);
         var path = typeof(object).Assembly.Location;
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [TestPaths.PathOf(path)], ct));
+        app.Open([TestPaths.PathOf(path)]);
         app.Driver.RunUntil(() => app.AppState.Assemblies.IsListed(TestPaths.PathOf(path)));
         app.Settle();
         var coreLib = app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == path);

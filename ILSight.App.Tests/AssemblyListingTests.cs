@@ -190,7 +190,7 @@ public sealed class AssemblyListingTests
         AssemblyLists.CreateAssemblyList(d.AppState, "New list");
         d.SwitchList("New list");
         d.Settle();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(other)], ct));
+        d.Open([AssemblyPath.Of(other)]);
         d.RunUntil(() => d.AppState.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)));
         d.SwitchList(SavedAssemblyLists.DefaultName);
         d.Settle();
@@ -205,7 +205,7 @@ public sealed class AssemblyListingTests
         var d = AppStateDriver.Opened();
         d.AppState.Lists.Add(Other);
 
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(typeof(AppState).Assembly.Location)], ct));
+        d.Open([AssemblyPath.Of(typeof(AppState).Assembly.Location)]);
         d.SwitchList(Other);
         d.Settle();
         d.Pump();
@@ -250,7 +250,7 @@ public sealed class AssemblyListingTests
         d.Settle();
 
         d.SwitchList(SavedAssemblyLists.DefaultName);
-        d.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, d.Ui.Tree.ListExpandedPaths(), ct));
+        d.Reload(d.Ui.Tree.ListExpandedPaths());
         d.Settle();
 
         Assert.Equal([AppStateDriver.FixturePath], d.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));

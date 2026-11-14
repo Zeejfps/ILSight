@@ -66,19 +66,20 @@ public sealed class OpenAndShowIdHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_OpeningFailed_ReportsItUnlessItWasCancelled()
+    public async Task HandleAsync_OpeningFailed_ReportsItACancellationNobodyAskedForToo()
     {
         var d = AppStateDriver.WithoutScreen();
         var failed = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(new IOException("unreadable")) };
-        var cancelled = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(new OperationCanceledException()) };
+        // The library's timeout: the request's own cancellation is let through, never answered as a failure.
+        var timedOut = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(new TaskCanceledException()) };
 
         var failedLoad = await d.RunAsync(() => new OpenAndShowIdHandler(failed).HandleAsync(d.AppState.Navigation, d.AppState.Decompiler, [], "T:Greeter", CancellationToken.None));
-        var cancelledLoad = await d.RunAsync(() => new OpenAndShowIdHandler(cancelled).HandleAsync(d.AppState.Navigation, d.AppState.Decompiler, [], "T:Greeter", CancellationToken.None));
+        var timedOutLoad = await d.RunAsync(() => new OpenAndShowIdHandler(timedOut).HandleAsync(d.AppState.Navigation, d.AppState.Decompiler, [], "T:Greeter", CancellationToken.None));
 
         var reported = Assert.IsType<AppProblem.OpenFailed>(Assert.Single(failed.Reported));
         Assert.Equal("unreadable", reported.Error.Message);
-        Assert.Empty(cancelled.Reported);
+        Assert.IsType<TaskCanceledException>(Assert.IsType<AppProblem.OpenFailed>(Assert.Single(timedOut.Reported)).Error);
         Assert.Null(failedLoad);
-        Assert.Null(cancelledLoad);
+        Assert.Null(timedOutLoad);
     }
 }

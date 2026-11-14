@@ -31,10 +31,11 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
 
         /// <summary>Lists the files at <paramref name="paths"/> in the open list, in order, those that fail to load
         /// as failed, then has the nodes at <paramref name="expanded"/> load their children and finds the nodes at
-        /// <paramref name="places"/>. Done without holding up the screen, and stopped once <paramref name="stop"/>
-        /// fires; what that threw comes back as <see cref="Outcome{T}.Failed"/>.</summary>
+        /// <paramref name="places"/>. Done without holding up the screen; a lookup the library failed as
+        /// <see cref="Outcome{T}.Failed"/>. Stopped once <paramref name="ct"/> fires (the edge links the reload's
+        /// canceller into it), its cancellation let through.</summary>
         Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded, IReadOnlyList<NodePath> places,
-            CancellationToken stop, CancellationToken ct);
+            CancellationToken ct);
 
         /// <summary>Releases the modules <paramref name="removed"/> took off the list, each once nothing reads it.</summary>
         void ReleaseModules(RemovedModules removed);
@@ -202,19 +203,12 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         return loads;
     }
 
-    /// <summary>Reloads every assembly of the open list from disk, then commands the view to expand the tree at
-    /// <paramref name="expanded"/>, the paths of the nodes it had expanded, and shows each tab's place again,
-    /// decompiled from the fresh files, and what the tabs reopened from the open list's saved documents showed.
-    /// Returns the loads that started in the tabs.</summary>
-    public Task<TabLoads> RefreshAssembliesAsync(SavedAssemblyLists lists, OpenListSession session, Queue<ViewCommand> viewCommands,
-        DecompilerChoice decompiler, IReadOnlyList<NodePath> expanded, CancellationToken ct)
-    {
-        return RefreshAssembliesAsync(lists, session, viewCommands, decompiler, expanded, session.Reload.Start(), ct);
-    }
-
-    /// <summary>As <see cref="RefreshAssembliesAsync(SavedAssemblyLists, OpenListSession, Queue{ViewCommand}, DecompilerChoice, IReadOnlyList{NodePath}, CancellationToken)"/>,
-    /// as the reload <paramref name="ticket"/> started (<see cref="Reload.Start"/>), which the edge that starts it
-    /// settles when it fails (<see cref="FailReload"/>).</summary>
+    /// <summary>Reloads every assembly of the open list from disk, as the reload <paramref name="ticket"/> started
+    /// (<see cref="Reload.Start"/>), then commands the view to expand the tree at <paramref name="expanded"/>, the
+    /// paths of the nodes it had expanded, and shows each tab's place again, decompiled from the fresh files, and what
+    /// the tabs reopened from the open list's saved documents showed. Returns the loads that started in the tabs. The
+    /// edge that starts it links the ticket's canceller (a newer reload, a clear of the list) into
+    /// <paramref name="ct"/>, and settles it when it fails (<see cref="FailReload"/>).</summary>
     public async Task<TabLoads> RefreshAssembliesAsync(SavedAssemblyLists lists, OpenListSession session, Queue<ViewCommand> viewCommands,
         DecompilerChoice decompiler, IReadOnlyList<NodePath> expanded, ReloadTicket ticket, CancellationToken ct)
     {
@@ -226,7 +220,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         var places = tabs.ConvertAll(t => t.Location);
         ports.ReleaseModules(session.ClearAssemblies());
 
-        var reloaded = await ports.ReopenFilesAsync(paths, expanded, places, ticket.Token, ct);
+        var reloaded = await ports.ReopenFilesAsync(paths, expanded, places, ct);
         return FinishReload(session, viewCommands, decompiler.Setup, reloaded, ticket, intent, tabs);
     }
 

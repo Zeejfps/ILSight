@@ -83,7 +83,7 @@ public static class AppStart
 
         var files = arguments.Files;
         Commands.StartShowingSettled(appState, nameof(RunArgumentsActions.OpenRequestedFilesAsync), ct => RunArgumentsActions.OpenRequestedFilesAsync(appState, files, ct),
-            _ => appState.Navigation.FailOpening());
+            _ => appState.Navigation.FailOpening(), appState.Opens.Token);
     }
 
     private static void ReportIgnored(AppState appState, RunArguments arguments)

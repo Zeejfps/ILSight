@@ -23,7 +23,7 @@ public sealed class SavedComparisonTests : IDisposable
     private AppDriver Compared()
     {
         var app = new AppDriver(settings: _temp.Settings());
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)], ct));
+        app.Open([TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)]);
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Count == 2, AppStateDriver.Patience);
         app.Settle(2);
         var assemblies = app.AppState.Assemblies.Assemblies;

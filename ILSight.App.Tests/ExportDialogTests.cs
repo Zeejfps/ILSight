@@ -30,7 +30,7 @@ public sealed class ExportDialogTests : IDisposable
     private static AppStateDriver OpenedTwo()
     {
         var d = AppStateDriver.Opened();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SecondPath)], ct));
+        d.Open([AssemblyPath.Of(SecondPath)]);
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 2);
         d.Settle();
         return d;
@@ -39,7 +39,7 @@ public sealed class ExportDialogTests : IDisposable
     private static AppStateDriver OpenedSample()
     {
         var d = new AppStateDriver();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SampleAppPath)], ct));
+        d.Open([AssemblyPath.Of(SampleAppPath)]);
         d.RunUntil(() => d.AppState.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)));
         d.Settle();
         return d;
@@ -247,7 +247,7 @@ public sealed class ExportDialogTests : IDisposable
     public void Several_ticked_assemblies_export_as_a_solution_with_a_folder_per_project()
     {
         var d = OpenedSample();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SecondPath)], ct));
+        d.Open([AssemblyPath.Of(SecondPath)]);
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 2);
         d.Settle();
         d.OpenExportSetup(null);
@@ -314,7 +314,7 @@ public sealed class ExportDialogTests : IDisposable
     private static AppStateDriver OpenedThree()
     {
         var d = OpenedTwo();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(typeof(FactAttribute).Assembly.Location)], ct));
+        d.Open([AssemblyPath.Of(typeof(FactAttribute).Assembly.Location)]);
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 3);
         d.Settle();
         return d;
@@ -402,7 +402,7 @@ public sealed class ExportDialogTests : IDisposable
     public void The_main_page_shows_only_the_ticked_assemblies()
     {
         var app = AppDriver.Opened(height: 1400f);
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SecondPath)], ct));
+        app.Open([AssemblyPath.Of(SecondPath)]);
         app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 2);
         var second = app.AppState.Assemblies.Assemblies[1];
         app.Run(2);
@@ -468,7 +468,7 @@ public sealed class ExportDialogTests : IDisposable
     private static AppDriver WithTwoIncluded()
     {
         var app = AppDriver.Opened(height: 1400f);
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SecondPath)], ct));
+        app.Open([AssemblyPath.Of(SecondPath)]);
         app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 2);
         app.OpenExportSetup(null);
         TickAll(app.Ui.ExportSetup, true);
@@ -524,7 +524,7 @@ public sealed class ExportDialogTests : IDisposable
     public void Ctrl_Shift_E_opens_the_dialog_and_Export_starts_it()
     {
         var app = new AppDriver();
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SampleAppPath)], ct));
+        app.Open([AssemblyPath.Of(SampleAppPath)]);
         app.Frames.WaitUntil(() => app.AppState.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)), AppStateDriver.Patience);
         app.Settle(2);
 
@@ -546,7 +546,7 @@ public sealed class ExportDialogTests : IDisposable
     public async Task Export_on_an_assembly_in_the_tree_opens_the_dialog_with_that_assembly_ticked()
     {
         var app = AppDriver.Opened();
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SecondPath)], ct));
+        app.Open([AssemblyPath.Of(SecondPath)]);
         app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 2);
         app.Settle(2);
         var second = app.AppState.Assemblies.Assemblies[1];

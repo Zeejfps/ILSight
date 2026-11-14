@@ -366,19 +366,28 @@ public static class Commands
     }
 
     // A request the input began opening: when its workflow fails, the app no longer says it is opening its files.
+    // Newer opens and a clear of the list cancel it.
     private static void StartOpening(AppState appState, FileOpening opening)
     {
         StartShowingSettled(appState, nameof(AssemblyOpening.OpenAssembliesAsync), ct => appState.AssemblyOpening.OpenAssembliesAsync(appState, opening, ct),
-            _ => appState.Navigation.EndOpening(opening.Intent));
+            _ => appState.Navigation.EndOpening(opening.Intent), appState.Opens.Token);
     }
 
     /// <summary>Asks for the files among <paramref name="dropped"/> to be opened once the frame is drawn
-    /// (<see cref="AssemblyOpening.OpenDroppedFilesAsync"/>), then the load of the last one shown; when its workflow
-    /// fails, the app no longer says it is opening them.</summary>
+    /// (<see cref="AssemblyOpening.OpenDroppedFilesAsync"/>), then the load of the last one shown, cancelled with the
+    /// opens under way; when its workflow fails, the app no longer says it is opening them.</summary>
     public static void OpenDroppedLater(UiState uiState, IReadOnlyList<string> dropped)
     {
         uiState.AppCommands.Enqueue(appState => StartShowingSettled(appState, nameof(AssemblyOpening.OpenDroppedFilesAsync),
-            ct => appState.AssemblyOpening.OpenDroppedFilesAsync(appState, dropped, ct), _ => appState.Navigation.FailOpening()));
+            ct => appState.AssemblyOpening.OpenDroppedFilesAsync(appState, dropped, ct), _ => appState.Navigation.FailOpening(), appState.Opens.Token));
+    }
+
+    /// <summary>Asks for the assemblies <paramref name="assembly"/> references to be opened once the frame is drawn
+    /// (<see cref="AssemblyOpening.OpenDependenciesAsync"/>), cancelled with the opens under way then.</summary>
+    public static void OpenDependenciesLater(UiState uiState, LoadedModule assembly)
+    {
+        StartLater(uiState, nameof(AssemblyOpening.OpenDependenciesAsync), assembly, static (a, _) => a.Opens,
+            static (a, m, _, ct) => a.AssemblyOpening.OpenDependenciesAsync(m, ct), static opens => opens.Token);
     }
 
     /// <summary>Asks for every assembly of the open list to be reloaded once the frame is drawn
@@ -389,8 +398,8 @@ public static class Commands
     }
 
     /// <summary>Starts reloading every assembly of the open list now (<see cref="AssemblyReloading.RefreshAssembliesAsync(SavedAssemblyLists, OpenListSession, Queue{ViewCommand}, DecompilerChoice, IReadOnlyList{NodePath}, ReloadTicket, CancellationToken)"/>),
-    /// then the loads it started; when its workflow fails, the reload ends and the tabs it left reloading say why
-    /// (<see cref="AssemblyReloading.FailReload"/>).</summary>
+    /// then the loads it started, cancelled by a newer reload or a clear of the list; when its workflow fails, the
+    /// reload ends and the tabs it left reloading say why (<see cref="AssemblyReloading.FailReload"/>).</summary>
     public static void StartReloading(AppState appState, IReadOnlyList<NodePath> expanded)
     {
         var session = appState.ListSession;
@@ -398,7 +407,7 @@ public static class Commands
         appState.Workflows.StartSettling(nameof(AssemblyReloading.RefreshAssembliesAsync),
             async ct => StartLoads(appState, await appState.AssemblyReloading.RefreshAssembliesAsync(appState.Lists, session, appState.ViewCommands,
                 appState.Decompiler, expanded, ticket, ct)),
-            error => StartLoads(appState, AssemblyReloading.FailReload(session, ticket, error)));
+            error => StartLoads(appState, AssemblyReloading.FailReload(session, ticket, error)), ticket.Token);
     }
 
     /// <summary>As <see cref="Start{T}(UiState, string, T, Func{AppState, T, CancellationToken, Task{List{DecompileTicket}}})"/>,
@@ -458,13 +467,13 @@ public static class Commands
     }
 
     /// <summary>Starts <paramref name="open"/>, the reopening of a list's assemblies as <paramref name="reopening"/>
-    /// began it, now, then the loads it started; when its workflow fails, the reopening ends as one that failed does
-    /// (<see cref="OpenAssembliesAsReloadHandler.FailOpeningAsReload"/>).</summary>
+    /// began it, now, then the loads it started, cancelled by a newer reload or a clear of the list; when its workflow
+    /// fails, the reopening ends as one that failed does (<see cref="OpenAssembliesAsReloadHandler.FailOpeningAsReload"/>).</summary>
     public static void StartOpeningAsReload(AppState appState, string name, ListReopening reopening, Func<CancellationToken, Task<TabLoads>> open)
     {
         var session = appState.ListSession;
         appState.Workflows.StartSettling(name, async ct => StartLoads(appState, await open(ct)),
-            _ => StartLoads(appState, OpenAssembliesAsReloadHandler.FailOpeningAsReload(session, reopening.Reload)));
+            _ => StartLoads(appState, OpenAssembliesAsReloadHandler.FailOpeningAsReload(session, reopening.Reload)), reopening.Reload.Token);
     }
 
     /// <summary>Asks for what going to a history entry left, <paramref name="move"/>, to be started once the frame is
@@ -715,9 +724,10 @@ public static class Commands
 
     /// <summary>As <see cref="StartShowing(AppState, string, Func{CancellationToken, Task{DecompileTicket?}})"/>, with
     /// <paramref name="settle"/> ending the pending state it began when its workflow fails, which the edge reports.</summary>
-    public static void StartShowingSettled(AppState appState, string name, Func<CancellationToken, Task<DecompileTicket?>> show, Action<Exception> settle)
+    public static void StartShowingSettled(AppState appState, string name, Func<CancellationToken, Task<DecompileTicket?>> show, Action<Exception> settle,
+        params ReadOnlySpan<CancellationToken> cancelledOnPurposeBy)
     {
-        appState.Workflows.StartSettling(name, async ct => StartDecompiling(appState, await show(ct)), settle);
+        appState.Workflows.StartSettling(name, async ct => StartDecompiling(appState, await show(ct)), settle, cancelledOnPurposeBy);
     }
 
     /// <summary>Starts <paramref name="show"/> now, as <see cref="WorkflowRunner.Start"/> does, then the load it

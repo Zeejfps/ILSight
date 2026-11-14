@@ -62,7 +62,7 @@ public sealed class SettlingWorkflowsTests
     {
         var ports = new FakeCompareAssembliesHandlerPorts();
         var d = AppStateDriver.OpenedWith(new AdapterHooks { Comparing = _ => ports });
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)], ct));
+        d.Open([TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)]);
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 3);
         d.Settle();
         var left = d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == LeftPath);

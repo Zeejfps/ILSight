@@ -26,7 +26,7 @@ public sealed class ExportTests : IDisposable
     private static AppStateDriver OpenedSample()
     {
         var d = new AppStateDriver();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SampleAppPath)], ct));
+        d.Open([AssemblyPath.Of(SampleAppPath)]);
         d.RunUntil(() => d.AppState.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)));
         d.Settle();
         return d;
@@ -133,7 +133,7 @@ public sealed class ExportTests : IDisposable
     public void The_tree_menu_creates_a_diagram_in_a_folder_named_after_the_assembly_and_opens_it()
     {
         var app = new AppDriver();
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SampleAppPath)], ct));
+        app.Open([AssemblyPath.Of(SampleAppPath)]);
         app.Frames.WaitUntil(() => app.AppState.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)), AppStateDriver.Patience);
         app.Settle(2);
         app.Frames.FilePicker.Answer = _temp.Path;
@@ -171,7 +171,7 @@ public sealed class ExportTests : IDisposable
     {
         var app = AppDriver.Opened();
         var sample = Path.Combine(AppContext.BaseDirectory, "Fixtures", "SampleApp", "SampleApp.dll");
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(sample)], ct));
+        app.Open([AssemblyPath.Of(sample)]);
         app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Any(a => a.FilePath.Text == sample));
         var assembly = app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == sample);
         var baml = await assembly.ReadRootAsync().GetChildAsync("Resources", "SampleApp.g.resources", "mainwindow.baml");

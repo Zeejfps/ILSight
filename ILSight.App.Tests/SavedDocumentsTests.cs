@@ -443,7 +443,7 @@ public sealed class SavedDocumentsTests : IDisposable
         d.AppState.Lists.Add(Other);
         d.SwitchList(Other);
         d.Settle();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(AppStateDriver.FixturePath)], ct));
+        d.Open([AssemblyPath.Of(AppStateDriver.FixturePath)]);
         d.RunUntil(() => d.AppState.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(AppStateDriver.FixturePath)));
         d.Settle();
         d.Show(await d.FixtureAsync("Farewell"));

@@ -249,7 +249,7 @@ public sealed class AutosaveTests : IDisposable
     {
         var copy = _temp.Write("Held.dll", await File.ReadAllBytesAsync(AppStateDriver.FixturePath));
         var first = new AppStateDriver(_temp.Settings());
-        first.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(copy)], ct));
+        first.Open([AssemblyPath.Of(copy)]);
         first.Settle();
         var held = first.AppState.Assemblies.Assemblies.Single();
         first.Analyze(await held.ReadRootAsync().GetChildAsync(AppStateDriver.FixturesNamespace, "Greeter"));
@@ -270,7 +270,7 @@ public sealed class AutosaveTests : IDisposable
 
         var savedWhileHeld = _temp.Settings().AssemblyLists.Single().Analyzed ?? [];
         var shown = next.Ui.Analyzer.KeyOf(failed);
-        next.Start((a, ct) => a.AssemblyReloading.RefreshAssembliesAsync(a.Lists, a.ListSession, a.ViewCommands, a.Decompiler, [], ct));
+        next.Reload([]);
         next.Settle();
 
         Assert.IsType<AnalyzerFailedNode>(failed);

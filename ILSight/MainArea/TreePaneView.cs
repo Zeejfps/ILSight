@@ -588,7 +588,7 @@ internal static class TreePaneView
         TargetFrameworkMenu(ui, assembly);
         if (ui.MenuItem(t.TreeLoadDependencies, id: "load-dependencies"))
         {
-            Commands.Start(ui.State, nameof(AssemblyOpening.OpenDependenciesAsync), assembly, static (a, m, ct) => a.AssemblyOpening.OpenDependenciesAsync(a.Opens, m, ct));
+            Commands.OpenDependenciesLater(ui.State, assembly);
         }
     }
 

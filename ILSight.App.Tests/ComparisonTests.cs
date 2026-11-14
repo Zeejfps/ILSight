@@ -19,7 +19,7 @@ public sealed class ComparisonTests
     private static AppStateDriver OpenBoth()
     {
         var d = new AppStateDriver();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)], ct));
+        d.Open([TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)]);
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 2);
         d.Settle();
         return d;
@@ -93,7 +93,7 @@ public sealed class ComparisonTests
     private static AppStateDriver OpenWithFixtures()
     {
         var d = AppStateDriver.Opened();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)], ct));
+        d.Open([TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)]);
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 3);
         d.Settle();
         return d;
@@ -402,7 +402,7 @@ public sealed class ComparisonTests
     private static AppDriver OpenBothOnScreen()
     {
         var app = new AppDriver(width: 1400f);
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)], ct));
+        app.Open([TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)]);
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Count == 2, AppStateDriver.Patience);
         app.Settle(2);
         return app;

@@ -22,7 +22,7 @@ public sealed class SearchPanelTests : IDisposable
     {
         var broken = _temp.Write("Broken.dll", WithUnreadableTypeName(File.ReadAllBytes(SampleAppPath)));
         var app = AppDriver.Opened();
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(broken), AssemblyPath.Of(KeyboardPath)], ct));
+        app.Open([AssemblyPath.Of(broken), AssemblyPath.Of(KeyboardPath)]);
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Count == 3, AppStateDriver.Patience);
         var (fixtures, middle, keyboard) = (app.AppState.Assemblies.Assemblies[0], app.AppState.Assemblies.Assemblies[1],
             app.AppState.Assemblies.Assemblies[2]);

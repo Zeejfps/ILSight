@@ -147,12 +147,13 @@ public sealed class OpenListSession
         return CloseAssemblies(failed);
     }
 
-    /// <summary>Takes every assembly off the list, and every analysis of them, as reading them all again does; a
-    /// restored analysis that failed, holding nothing of them, stays as saved, to be looked for again once they are read
-    /// (<see cref="Analysis.BeginRetrying"/>). Returns the modules taken off, for the edge to have the I/O side release
-    /// them.</summary>
+    /// <summary>Takes every assembly off the list, and every analysis of them, as reading them all again does, stopping
+    /// the opens under way (their files are not among those read again); a restored analysis that failed, holding
+    /// nothing of them, stays as saved, to be looked for again once they are read (<see cref="Analysis.BeginRetrying"/>).
+    /// Returns the modules taken off, for the edge to have the I/O side release them.</summary>
     public RemovedModules ClearAssemblies()
     {
+        Opens.Cancel();
         var removed = TakeAllOff();
         _analyzer.ClearAnalyses();
         return removed;

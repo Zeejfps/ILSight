@@ -4,7 +4,8 @@ using ILSight.AssemblyArea;
 namespace ILSight.App.Tests;
 
 /// <summary>Answers each port member of <see cref="AssemblyReloading"/> with what the test set, doing
-/// <see cref="WhileWorking"/> before it answers; keeps what was asked, the tokens it was asked with, and the problems
+/// <see cref="WhileWorking"/> before it answers, and letting through the cancellation of the token it was asked with,
+/// as the adapter does; keeps what was asked, the tokens it was asked with, and the problems
 /// reported and the refusals shown.</summary>
 internal sealed class FakeAssemblyReloadingPorts : AssemblyReloading.IPorts
 {
@@ -21,8 +22,6 @@ internal sealed class FakeAssemblyReloadingPorts : AssemblyReloading.IPorts
     public List<string> Asked { get; } = [];
 
     public List<IReadOnlyList<AssemblyPath>> OpenedPaths { get; } = [];
-
-    public List<CancellationToken> Stops { get; } = [];
 
     public List<CancellationToken> Tokens { get; } = [];
 
@@ -61,10 +60,9 @@ internal sealed class FakeAssemblyReloadingPorts : AssemblyReloading.IPorts
     }
 
     public Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded, IReadOnlyList<NodePath> places,
-        CancellationToken stop, CancellationToken ct)
+        CancellationToken ct)
     {
         OpenedPaths.Add(paths);
-        Stops.Add(stop);
         return AnswerAsync(nameof(ReopenFilesAsync), Reopen(places), ct);
     }
 
@@ -73,6 +71,7 @@ internal sealed class FakeAssemblyReloadingPorts : AssemblyReloading.IPorts
         Asked.Add(member);
         Tokens.Add(ct);
         WhileWorking();
+        ct.ThrowIfCancellationRequested();
         return Task.FromResult(answer);
     }
 }

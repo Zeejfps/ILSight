@@ -12,7 +12,7 @@ public sealed class ComparisonPickerTests
     private static AppStateDriver OpenThree()
     {
         var d = AppStateDriver.Opened();
-        d.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [TestPaths.PathOf(OlderPath), TestPaths.PathOf(NewerPath)], ct));
+        d.Open([TestPaths.PathOf(OlderPath), TestPaths.PathOf(NewerPath)]);
         d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 3);
         d.Settle();
         return d;

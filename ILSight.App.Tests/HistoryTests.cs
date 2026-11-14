@@ -266,7 +266,7 @@ public sealed class HistoryTests
 
     private static LoadedModule OpenApiDiffSample(AppDriver app)
     {
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [TestPaths.PathOf(ApiDiffSamplePath)], ct));
+        app.Open([TestPaths.PathOf(ApiDiffSamplePath)]);
         app.Driver.RunUntil(() => app.AppState.Assemblies.IsListed(TestPaths.PathOf(ApiDiffSamplePath)));
         app.Settle(4);
         return ApiDiffSampleOf(app);

@@ -17,7 +17,7 @@ public sealed class PackageBrowsingTests
         using var temp = new TempDir();
         var app = new AppDriver();
 
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(WritePackage(temp))], ct));
+        app.Open([AssemblyPath.Of(WritePackage(temp))]);
         app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, AppStateDriver.Patience);
         app.Settle(2);
 
@@ -145,7 +145,7 @@ public sealed class PackageBrowsingTests
     private static AppDriver OpenedPackage(TempDir temp)
     {
         var app = new AppDriver();
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(WritePackage(temp))], ct));
+        app.Open([AssemblyPath.Of(WritePackage(temp))]);
         app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, AppStateDriver.Patience);
         app.Settle(2);
         return app;

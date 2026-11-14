@@ -75,7 +75,7 @@ public sealed class BrowseTreeTests
         using var temp = new TempDir();
         var path = BrokenAssemblies.WriteUnreadableTypeSystem(temp, Path.Combine(AppContext.BaseDirectory, "Fixtures", "SampleApp", "SampleApp.dll"));
         var app = new AppDriver();
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(path), AssemblyPath.Of(AppStateDriver.FixturePath)], ct));
+        app.Open([AssemblyPath.Of(path), AssemblyPath.Of(AppStateDriver.FixturePath)]);
         app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Count == 2, AppStateDriver.Patience);
         app.Settle(2);
         var module = app.AppState.Assemblies.Assemblies[0];

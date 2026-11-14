@@ -68,7 +68,7 @@ public sealed class TargetFrameworkTests
     public async Task Picking_a_framework_reopens_only_that_assembly_with_the_tree_as_it_was_on_every_frame()
     {
         var app = AppDriver.Opened(width: 1600f);
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(SampleAppPath)], ct));
+        app.Open([AssemblyPath.Of(SampleAppPath)]);
         app.Frames.WaitUntil(() => app.AppState.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)), AppStateDriver.Patience);
         var fixtures = FixturesOf(app.AppState);
         var sample = SampleOf(app.AppState);
@@ -114,7 +114,7 @@ public sealed class TargetFrameworkTests
     {
         using var temp = new TempDir();
         var app = new AppDriver();
-        app.Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(WritePackage(temp))], ct));
+        app.Open([AssemblyPath.Of(WritePackage(temp))]);
         app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, AppStateDriver.Patience);
         app.Settle(2);
         var package = await app.AppState.Assemblies.Listed[0].ReadRootAsync();

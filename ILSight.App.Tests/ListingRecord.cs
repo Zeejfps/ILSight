@@ -23,19 +23,14 @@ internal sealed class ListingRecord
 
     private sealed class Recording(OpenAssembliesAsReloadHandler.IPorts real, ListingRecord record) : OpenAssembliesAsReloadHandler.IPorts
     {
-        public void ReportError(AppProblem problem)
-        {
-            real.ReportError(problem);
-        }
-
-        public Task<Outcome<LoadedAssembly?>> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
+        public Task<LoadedAssembly?> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken ct)
         {
             foreach (var path in paths)
             {
                 record._asked.Enqueue(path);
             }
 
-            return real.OpenFilesAsync(paths, stop, ct);
+            return real.OpenFilesAsync(paths, ct);
         }
     }
 }

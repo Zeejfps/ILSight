@@ -20,19 +20,20 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
 
         /// <summary>Lists the files at <paramref name="paths"/> in the open list, in order, those that fail to load
         /// as failed, and gives the root node of the last one listed, or null for none. Done without holding up the
-        /// screen, and
-        /// stopped between files once <paramref name="stop"/> fires; what that threw comes back as
-        /// <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<BrowseNode?>> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct);
+        /// screen, and stopped between files once <paramref name="ct"/> fires (the edge links the opens' canceller
+        /// into it), its cancellation let through.</summary>
+        Task<BrowseNode?> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken ct);
 
         /// <summary>Lists the assemblies <paramref name="assembly"/> references that can be found in the open list,
-        /// as <see cref="OpenFilesAsync"/> lists files.</summary>
-        Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, CancellationToken stop, CancellationToken ct);
+        /// as <see cref="OpenFilesAsync"/> lists files; a reference the library failed to read as
+        /// <see cref="Outcome{T}.Failed"/>.</summary>
+        Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, CancellationToken ct);
     }
 
     /// <summary>Opens the files, then shows the last one opened, unless something else was asked for
     /// meanwhile. Returns the load that started in the tab, for the edge that started this to start under the tab's
-    /// work; null when none started. Reports why opening failed, unless the opens were cancelled.</summary>
+    /// work; null when none started. The edge links the opens' canceller (<see cref="OpenRequests"/>) into
+    /// <paramref name="ct"/>.</summary>
     public Task<DecompileTicket?> OpenAssembliesAsync(AppState appState, IEnumerable<AssemblyPath> paths, CancellationToken ct)
     {
         var opening = appState.Navigation.BeginOpening(paths);
@@ -49,20 +50,9 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
     /// does.</summary>
     public async Task<DecompileTicket?> OpenAssembliesAsync(AppState appState, FileOpening opening, CancellationToken ct)
     {
-        var opened = await ports.OpenFilesAsync(opening.Paths, appState.Opens.Token, ct);
-        return ShowOpened(appState, opened, opening.Intent);
-    }
-
-    private DecompileTicket? ShowOpened(AppState appState, Outcome<BrowseNode?> outcome, int ticket)
-    {
-        appState.Navigation.EndOpening(ticket);
-        return outcome.Match(
-            ok => ShowLastOpened(appState, ok.Value, ticket),
-            failed =>
-            {
-                ReportOpenFailure(failed.Error);
-                return null;
-            });
+        var opened = await ports.OpenFilesAsync(opening.Paths, ct);
+        appState.Navigation.EndOpening(opening.Intent);
+        return ShowLastOpened(appState, opened, opening.Intent);
     }
 
     private static DecompileTicket? ShowLastOpened(AppState appState, BrowseNode? node, int ticket)
@@ -78,17 +68,6 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
         }
 
         return appState.Navigation.ShowNode(node, appState.Decompiler.Setup);
-    }
-
-    private void ReportOpenFailure(Exception error)
-    {
-        var problem = Assemblies.FindOpenProblem(error);
-        if (problem is null)
-        {
-            return;
-        }
-
-        ports.ReportError(problem);
     }
 
     /// <summary>Opens the files among <paramref name="paths"/>, dropped on the window, as
@@ -120,14 +99,14 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
         return OpenAssembliesAsync(appState, files, ct);
     }
 
-    /// <summary>Opens the assemblies <paramref name="assembly"/> references that can be found, cancelled with
-    /// <paramref name="opens"/> under way now. Reports why opening failed, unless they were cancelled.</summary>
-    public async Task OpenDependenciesAsync(OpenRequests opens, LoadedModule assembly, CancellationToken ct)
+    /// <summary>Opens the assemblies <paramref name="assembly"/> references that can be found, cancelled with the
+    /// opens under way, whose canceller the edge links into <paramref name="ct"/>. Reports why opening failed.</summary>
+    public async Task OpenDependenciesAsync(LoadedModule assembly, CancellationToken ct)
     {
-        var opened = await ports.OpenReferencesAsync(assembly, opens.Token, ct);
+        var opened = await ports.OpenReferencesAsync(assembly, ct);
         if (opened is Outcome<List<LoadedModule>>.Failed failed)
         {
-            ReportOpenFailure(failed.Error);
+            ports.ReportError(new AppProblem.OpenFailed(failed.Error));
         }
     }
 }

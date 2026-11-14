@@ -483,6 +483,25 @@ internal sealed class AppStateDriver
         Commands.StartShowing(appState, nameof(Start), ct => show(appState, ct));
     }
 
+    /// <summary>Starts opening <paramref name="paths"/> now (<see cref="AssemblyArea.AssemblyOpening.OpenAssembliesAsync(AppState, IEnumerable{AssemblyPath}, CancellationToken)"/>),
+    /// then the load of the last one shown, as the app's commands start it: cancelled with the opens under way, by
+    /// newer opens and a clear of the list, and no longer opening when its workflow fails.</summary>
+    public void Open(IReadOnlyList<AssemblyPath> paths)
+    {
+        using var turn = _posted.Install();
+        var appState = AppState;
+        Commands.StartShowingSettled(appState, nameof(Open), ct => appState.AssemblyOpening.OpenAssembliesAsync(appState, paths, ct),
+            _ => appState.Navigation.FailOpening(), appState.Opens.Token);
+    }
+
+    /// <summary>Starts reloading every assembly of the open list now, as the app's commands start it
+    /// (<see cref="Commands.StartReloading"/>), the nodes at <paramref name="expanded"/> to be shown expanded again.</summary>
+    public void Reload(IReadOnlyList<NodePath> expanded)
+    {
+        using var turn = _posted.Install();
+        Commands.StartReloading(AppState, expanded);
+    }
+
     /// <summary>Does <paramref name="change"/> to the app state now, as a command the views queue does once the frame
     /// is drawn, then starts the loads it returns, as the app's commands start them.</summary>
     public void Change(Func<AppState, TabLoads> change)

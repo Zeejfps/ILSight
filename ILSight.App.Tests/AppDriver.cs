@@ -141,6 +141,18 @@ internal sealed class AppDriver
         Driver.Start(show);
     }
 
+    /// <summary>Starts opening <paramref name="paths"/> now, as <see cref="AppStateDriver.Open"/> does.</summary>
+    public void Open(IReadOnlyList<AssemblyPath> paths)
+    {
+        Driver.Open(paths);
+    }
+
+    /// <summary>Starts reloading every assembly of the open list now, as <see cref="AppStateDriver.Reload"/> does.</summary>
+    public void Reload(IReadOnlyList<NodePath> expanded)
+    {
+        Driver.Reload(expanded);
+    }
+
 
     /// <summary>Waits until the UI is ready, with the background work done and a frame run after it, then runs
     /// <paramref name="frames"/> frames.</summary>

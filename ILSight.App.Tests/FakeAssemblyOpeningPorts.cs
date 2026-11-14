@@ -4,11 +4,11 @@ using ILSight.AssemblyArea;
 namespace ILSight.App.Tests;
 
 /// <summary>Answers each port member of <see cref="AssemblyOpening"/> with what the test set, doing
-/// <see cref="WhileWorking"/> before it answers; keeps what was asked, the tokens it was asked with, and the problems
-/// reported.</summary>
+/// <see cref="WhileWorking"/> before it answers, and letting through the cancellation of the token it was asked with,
+/// as the adapter does; keeps what was asked, the tokens it was asked with, and the problems reported.</summary>
 internal sealed class FakeAssemblyOpeningPorts : AssemblyOpening.IPorts
 {
-    public Outcome<BrowseNode?> Opened { get; init; } = new Outcome<BrowseNode?>.Ok(null);
+    public BrowseNode? Opened { get; init; }
 
     public Outcome<List<LoadedModule>> ReferencesOpened { get; init; } = new Outcome<List<LoadedModule>>.Ok([]);
 
@@ -19,8 +19,6 @@ internal sealed class FakeAssemblyOpeningPorts : AssemblyOpening.IPorts
     public List<string> Asked { get; } = [];
 
     public List<IReadOnlyList<AssemblyPath>> OpenedPaths { get; } = [];
-
-    public List<CancellationToken> Stops { get; } = [];
 
     public List<CancellationToken> Tokens { get; } = [];
 
@@ -43,16 +41,14 @@ internal sealed class FakeAssemblyOpeningPorts : AssemblyOpening.IPorts
         return Files.Contains(path);
     }
 
-    public Task<Outcome<BrowseNode?>> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
+    public Task<BrowseNode?> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken ct)
     {
         OpenedPaths.Add(paths);
-        Stops.Add(stop);
         return AnswerAsync(nameof(OpenFilesAsync), Opened, ct);
     }
 
-    public Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, CancellationToken stop, CancellationToken ct)
+    public Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, CancellationToken ct)
     {
-        Stops.Add(stop);
         return AnswerAsync(nameof(OpenReferencesAsync), ReferencesOpened, ct);
     }
 
@@ -61,6 +57,7 @@ internal sealed class FakeAssemblyOpeningPorts : AssemblyOpening.IPorts
         Asked.Add(member);
         Tokens.Add(ct);
         WhileWorking();
+        ct.ThrowIfCancellationRequested();
         return Task.FromResult(answer);
     }
 }
