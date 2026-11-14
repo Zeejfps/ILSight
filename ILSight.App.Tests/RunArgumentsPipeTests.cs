@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Pipes;
 using System.Threading.Channels;
 using ILSight.Core;
@@ -170,13 +171,29 @@ public sealed class RunArgumentsPipeTests
         var app = new AppDriver(inbox: receiver.Inbox);
         app.Run();
 
-        Assert.True(await RunPipes.TrySendAsync(address, Arguments("--navigateto=" + GreetId, AppStateDriver.FixturePath)));
-        app.Frames.WaitUntil(() => app.Frames.FrontRequested, AppStateDriver.Patience);
+        await HandOverAsync(address, Arguments("--navigateto=" + GreetId, AppStateDriver.FixturePath));
+        app.Frames.WaitUntil(() => app.WasFrontRequested, AppStateDriver.Patience);
         app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Method, AppStateDriver.Patience);
         app.Settle(1);
 
         Assert.Equal("Greet(int) : string", app.AppState.Navigation.ActiveTab?.Node?.Text);
         Assert.Equal([AppStateDriver.FixturePath], app.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
+    }
+
+    // Hands the arguments over until the window took them. Each side gives the other 5 s, on the thread pool, which a
+    // busy run may hold up past it; the window takes a request sent again once, so the test sends again, bounded only
+    // by the hang guard.
+    private static async Task HandOverAsync(RunArgumentsAddress address, RunArguments arguments)
+    {
+        var request = Guid.NewGuid();
+        var clock = Stopwatch.StartNew();
+        var answer = await RunPipes.SendAsync(address, arguments, request);
+        while (answer != HandOverAnswer.Taken && clock.Elapsed < AppStateDriver.Patience)
+        {
+            answer = await RunPipes.SendAsync(address, arguments, request);
+        }
+
+        Assert.Equal(HandOverAnswer.Taken, answer);
     }
 
     [Fact]

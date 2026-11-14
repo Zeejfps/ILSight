@@ -52,8 +52,16 @@ internal sealed class AppDriver
         Driver.Step = RunFramesInPlace;
     }
 
+    private bool _frontRequestedBefore;
+
+    /// <summary>Whether any frame drawn so far asked for the window to come to the front. The frames' own flag says it
+    /// for the last frame only, which a wait running frames until no more are asked for may have drawn past.</summary>
+    public bool WasFrontRequested => _frontRequestedBefore || Frames.FrontRequested;
+
     private void PumpAtFrameTime()
     {
+        // Still the last frame's, until this one draws.
+        _frontRequestedBefore |= Frames.FrontRequested;
         Driver.Now = TimeSpan.FromSeconds(Frames.RealTime);
         Driver.Pump();
     }
