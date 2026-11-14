@@ -7,11 +7,11 @@ public sealed class RunSearchHandlerTests
 {
     private static readonly AssemblyList NoAssemblies = new() { Runtime = TestRuntime.Installed };
 
-    private static SearchRun AskRun(SearchResults results, string query = "Greet", double typedAtSeconds = 0)
+    private static SearchRun AskRun(SearchResults results, string query = "Greet", TimeSpan typedAt = default)
     {
-        results.Update(query, SearchKinds.TypesAndMembers, NoAssemblies, TimeSpan.FromSeconds(typedAtSeconds), shown: true);
+        results.Update(query, SearchKinds.TypesAndMembers, NoAssemblies, typedAt, shown: true);
         // A second later, what was typed has settled.
-        results.Update(query, SearchKinds.TypesAndMembers, NoAssemblies, TimeSpan.FromSeconds(typedAtSeconds + 1), shown: true);
+        results.Update(query, SearchKinds.TypesAndMembers, NoAssemblies, typedAt + TimeSpan.FromSeconds(1), shown: true);
         return Assert.Single(results.TakeAskedRuns());
     }
 
@@ -47,7 +47,7 @@ public sealed class RunSearchHandlerTests
 
         results.FailRun(run, new InvalidDataException("unreadable"));
         var failed = (results.IsBusy, results.RunFailure);
-        var current = AskRun(results, "Hello", typedAtSeconds: 2);
+        var current = AskRun(results, "Hello", typedAt: TimeSpan.FromSeconds(2));
 
         Assert.Equal((false, "unreadable"), failed);
         Assert.Null(results.RunFailure);
@@ -59,7 +59,7 @@ public sealed class RunSearchHandlerTests
     {
         var results = new SearchResults();
         var replaced = AskRun(results);
-        var current = AskRun(results, "Hello", typedAtSeconds: 2);
+        var current = AskRun(results, "Hello", typedAt: TimeSpan.FromSeconds(2));
 
         results.FailRun(replaced, new InvalidDataException("unreadable"));
 

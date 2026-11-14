@@ -163,16 +163,16 @@ public sealed class NuGetBrowserTests
         return picker;
     }
 
-    private static FeedSearch AskSearch(NuGetPicker picker, double nowSeconds)
+    private static FeedSearch AskSearch(NuGetPicker picker, TimeSpan now)
     {
-        var search = picker.Update(TimeSpan.FromSeconds(nowSeconds));
+        var search = picker.Update(now);
         Assert.NotNull(search);
         return search;
     }
 
-    private static Task SearchAsync(FakePorts ports, NuGetPicker picker, double nowSeconds)
+    private static Task SearchAsync(FakePorts ports, NuGetPicker picker, TimeSpan now)
     {
-        var search = picker.Browser.StartSearch(AskSearch(picker, nowSeconds));
+        var search = picker.Browser.StartSearch(AskSearch(picker, now));
         // As the edge does, on the token of the work it was started as, which a newer search or closing the dialog
         // cancels.
         return new SearchNuGetFeedHandler(ports).HandleAsync(picker.Browser, search, search.Work.Token);
@@ -199,7 +199,7 @@ public sealed class NuGetBrowserTests
         var ports = new FakePorts();
         var picker = CreatePicker();
         using var shutdown = new CancellationTokenSource();
-        var search = AskSearch(picker, nowSeconds: 10);
+        var search = AskSearch(picker, now: TimeSpan.FromSeconds(10));
 
         await new SearchNuGetFeedHandler(ports).HandleAsync(picker.Browser, picker.Browser.StartSearch(search), shutdown.Token);
 
@@ -219,7 +219,7 @@ public sealed class NuGetBrowserTests
         var ports = new FakePorts { Search = _ => answer.Task };
         var picker = CreatePicker();
         using var shutdown = new CancellationTokenSource();
-        var searching = new SearchNuGetFeedHandler(ports).HandleAsync(picker.Browser, picker.Browser.StartSearch(AskSearch(picker, nowSeconds: 10)), shutdown.Token);
+        var searching = new SearchNuGetFeedHandler(ports).HandleAsync(picker.Browser, picker.Browser.StartSearch(AskSearch(picker, now: TimeSpan.FromSeconds(10))), shutdown.Token);
         var token = Assert.Single(ports.Tokens);
         var stoppedBefore = token.IsCancellationRequested;
 
@@ -240,7 +240,7 @@ public sealed class NuGetBrowserTests
         var ports = new FakePorts { Search = static _ => Task.FromResult<Outcome<FeedPage>>(new Outcome<FeedPage>.Failed(new IOException("The feed is down."))) };
         var picker = CreatePicker();
 
-        await SearchAsync(ports, picker, nowSeconds: 10);
+        await SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
 
         Assert.Equal("The feed is down.", picker.Browser.SearchError);
         Assert.Empty(picker.Browser.Results);
@@ -256,9 +256,9 @@ public sealed class NuGetBrowserTests
         var answers = new Queue<Task<Outcome<FeedPage>>>([older.Task, newer.Task]);
         var ports = new FakePorts { Search = _ => answers.Dequeue() };
         var picker = CreatePicker();
-        var olderSearch = SearchAsync(ports, picker, nowSeconds: 10);
+        var olderSearch = SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
         picker.IncludePrerelease = true;
-        var newerSearch = SearchAsync(ports, picker, nowSeconds: 10);
+        var newerSearch = SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
 
         newer.SetResult(new Outcome<FeedPage>.Ok(Page("Newer")));
         await newerSearch;
@@ -278,7 +278,7 @@ public sealed class NuGetBrowserTests
         var answer = new TaskCompletionSource<Outcome<FeedPage>>();
         var ports = new FakePorts { Search = _ => answer.Task };
         var picker = CreatePicker();
-        var searching = SearchAsync(ports, picker, nowSeconds: 10);
+        var searching = SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
 
         Close(picker);
         var token = Assert.Single(ports.Tokens);
@@ -296,7 +296,7 @@ public sealed class NuGetBrowserTests
     {
         var ports = new FakePorts();
         var picker = CreatePicker();
-        var searching = SearchAsync(ports, picker, nowSeconds: 10);
+        var searching = SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
 
         picker.Query = "fix";
         var whileTyping = picker.Update(TimeSpan.FromSeconds(20));
@@ -432,7 +432,7 @@ public sealed class NuGetBrowserTests
         };
         var ports = new FakePorts { Details = new Outcome<PackageVersionDetails>.Ok(read) };
         var picker = CreatePicker();
-        await SearchAsync(ports, picker, nowSeconds: 10);
+        await SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
         var package = Assert.Single(picker.Browser.Results);
 
         var loading = picker.Browser.EnsureDetails(package, Version("2.0.0"));
@@ -452,7 +452,7 @@ public sealed class NuGetBrowserTests
     {
         var ports = new FakePorts { Details = new Outcome<PackageVersionDetails>.Failed(new IOException("No catalog.")) };
         var picker = CreatePicker();
-        await SearchAsync(ports, picker, nowSeconds: 10);
+        await SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
         var package = Assert.Single(picker.Browser.Results);
 
         Assert.IsType<VersionDetails.Loading>(picker.Browser.EnsureDetails(package, Version("2.0.0")));
@@ -473,7 +473,7 @@ public sealed class NuGetBrowserTests
         var pixels = Pixels();
         var ports = new FakePorts { Search = static _ => AnswerPageAsync(Page("Fixtures", IconUrl)), Icon = new Outcome<ResourceImage>.Ok(pixels) };
         var picker = CreatePicker();
-        await SearchAsync(ports, picker, nowSeconds: 10);
+        await SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
 
         var icon = picker.Browser.EnsureIcon(Assert.Single(picker.Browser.Results));
         Assert.NotNull(icon);
@@ -492,7 +492,7 @@ public sealed class NuGetBrowserTests
     {
         var ports = new FakePorts { Search = static _ => AnswerPageAsync(Page("Fixtures", IconUrl)) };
         var picker = CreatePicker();
-        await SearchAsync(ports, picker, nowSeconds: 10);
+        await SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
         var icon = picker.Browser.EnsureIcon(Assert.Single(picker.Browser.Results));
         Assert.NotNull(icon);
 
@@ -522,7 +522,7 @@ public sealed class NuGetBrowserTests
                 : Task.FromException<Outcome<ResourceImage>>(new InvalidOperationException($"The icon at {url.Text} broke.")),
         };
         var picker = CreatePicker();
-        await SearchAsync(ports, picker, nowSeconds: 10);
+        await SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
         var icons = picker.Browser.Results
             .Select(picker.Browser.EnsureIcon)
             .ToList();
@@ -547,7 +547,7 @@ public sealed class NuGetBrowserTests
     {
         var ports = new FakePorts { Search = static _ => AnswerPageAsync(Page("Fixtures", IconUrl)) };
         var picker = CreatePicker();
-        await SearchAsync(ports, picker, nowSeconds: 10);
+        await SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
         picker.Browser.EnsureIcon(Assert.Single(picker.Browser.Results));
 
         var images = Close(picker);
@@ -562,7 +562,7 @@ public sealed class NuGetBrowserTests
     {
         var ports = new FakePorts { Search = static _ => AnswerPageAsync(Page("Fixtures", IconUrl)) };
         var picker = CreatePicker();
-        await SearchAsync(ports, picker, nowSeconds: 10);
+        await SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
         picker.Browser.EnsureIcon(Assert.Single(picker.Browser.Results));
         picker.Browser.StopUnlessOpen(true);
 
@@ -583,7 +583,7 @@ public sealed class NuGetBrowserTests
     {
         var ports = new FakePorts { Package = new Outcome<string>.Ok("fixtures.2.0.0.nupkg") };
         var picker = CreatePicker();
-        await SearchAsync(ports, picker, nowSeconds: 10);
+        await SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
         picker.Browser.FollowSelection();
         using var shutdown = new CancellationTokenSource();
 
@@ -602,7 +602,7 @@ public sealed class NuGetBrowserTests
     {
         var ports = new FakePorts { Package = new Outcome<string>.Ok("fixtures.2.0.0.nupkg") };
         var picker = CreatePicker();
-        await SearchAsync(ports, picker, nowSeconds: 10);
+        await SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
         picker.Browser.FollowSelection();
 
         var download = picker.Browser.Submit();
@@ -625,7 +625,7 @@ public sealed class NuGetBrowserTests
     {
         var ports = new FakePorts { Package = new Outcome<string>.Ok("fixtures.2.0.0.nupkg") };
         var picker = CreatePicker();
-        await SearchAsync(ports, picker, nowSeconds: 10);
+        await SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
         picker.Browser.FollowSelection();
 
         picker.Query = "fix";
