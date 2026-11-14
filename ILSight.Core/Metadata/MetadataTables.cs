@@ -33,15 +33,15 @@ internal static class MetadataTables
             return Enumerable.Range(1, m.GetTableRowCount(table));
         }
 
-        string? Hex(BlobHandle blob)
+        // A blob's bytes, which its tooltip shows in hex (GridSchemas.ExplainBytes); null for none.
+        object? ReadBytes(BlobHandle blob)
         {
             if (blob.IsNil)
             {
                 return null;
             }
 
-            var bytes = m.GetBlobContent(blob);
-            return bytes.ToHexString(bytes.Length);
+            return m.GetBlobContent(blob);
         }
 
         return table switch
@@ -256,7 +256,7 @@ internal static class MetadataTables
                 GridSchemas.AddOffset(columns, table);
                 GridSchemas.AddValue(columns, "Version", r => r.Version);
                 GridSchemas.AddValue(columns, "Flags", r => r.Flags, "X8");
-                GridSchemas.AddBlob(columns, "PublicKeyOrToken", r => r.PublicKeyOrToken, r => Hex(r.PublicKeyOrToken));
+                GridSchemas.AddBlob(columns, "PublicKeyOrToken", r => r.PublicKeyOrToken, r => ReadBytes(r.PublicKeyOrToken), GridSchemas.ExplainBytes);
                 GridSchemas.AddName(columns, r => r.Name);
                 GridSchemas.AddString(columns, "Culture", r => r.Culture);
             }),
@@ -266,7 +266,7 @@ internal static class MetadataTables
                 GridSchemas.AddOffset(columns, table);
                 GridSchemas.AddValue(columns, "Attributes", r => r.ContainsMetadata ? 1 : 0, "X8", r => r.ContainsMetadata ? "ContainsMetaData" : "ContainsNoMetaData");
                 GridSchemas.AddName(columns, r => r.Name);
-                GridSchemas.AddBlob(columns, "HashValue", r => r.HashValue, r => Hex(r.HashValue));
+                GridSchemas.AddBlob(columns, "HashValue", r => r.HashValue, r => ReadBytes(r.HashValue), GridSchemas.ExplainBytes);
             }),
 
             TableIndex.ExportedType => GridSchemas.AddColumns(Table(() => m.ExportedTypes.Select(m.GetExportedType)), columns =>
@@ -343,7 +343,7 @@ internal static class MetadataTables
 
             TableIndex.Document => GridSchemas.AddColumns(Table(() => m.Documents.Select(m.GetDocument)), columns =>
             {
-                GridSchemas.AddValue(columns, "Name", r => m.GetString(r.Name), tooltip: r => $"{MetadataTokens.GetHeapOffset(r.Name):X} \"{m.GetString(r.Name)}\"");
+                GridSchemas.AddValue(columns, "Name", r => m.GetString(r.Name), tooltip: r => (MetadataTokens.GetHeapOffset(r.Name), m.GetString(r.Name)), formatTooltip: GridSchemas.ExplainHeapString);
                 GridSchemas.AddGuid(columns, "HashAlgorithm", r => r.HashAlgorithm, r =>
                 {
                     if (r.HashAlgorithm.IsNil)
@@ -364,7 +364,7 @@ internal static class MetadataTables
 
                     return "Unknown [" + guid + "]";
                 });
-                GridSchemas.AddBlob(columns, "Hash", r => r.Hash, r => Hex(r.Hash));
+                GridSchemas.AddBlob(columns, "Hash", r => r.Hash, r => ReadBytes(r.Hash), GridSchemas.ExplainBytes);
                 GridSchemas.AddGuid(columns, "Language", r => r.Language, r =>
                 {
                     if (r.Language.IsNil)

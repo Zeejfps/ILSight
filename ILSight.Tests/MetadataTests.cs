@@ -77,6 +77,43 @@ public sealed class MetadataTests
     }
 
     [Fact]
+    public void A_cell_whose_tooltip_read_fails_says_why_in_its_place_and_the_page_reads()
+    {
+        var grid = MemberRefGridWithNameTooltip(static (_, _) => throw new BadImageFormatException("Cut short."), null);
+
+        var page = Assert.IsType<ModuleRead<MetadataGridPage>.Read>(MetadataGrids.ReadPage(grid, 0).GetValue()).Value;
+
+        var columns = grid.GridColumns.Count;
+        Assert.Equal("Cut short.", page.Tooltips[grid.Column("Name")]?.Text);
+        Assert.Equal("Cut short.", page.Tooltips[columns + grid.Column("Name")]?.Text);
+    }
+
+    [Fact]
+    public void A_tooltip_the_app_fails_to_make_of_what_was_read_is_the_apps_failure_not_an_unreadable_page()
+    {
+        var grid = MemberRefGridWithNameTooltip(static (_, _) => "read", static _ => throw new InvalidOperationException("The app's bug."));
+
+        var failure = Assert.Throws<InvalidOperationException>(() => MetadataGrids.ReadPage(grid, 0));
+
+        Assert.Equal("The app's bug.", failure.Message);
+    }
+
+    // The test assembly's MemberRef table, paged, its Name column's tooltip read and made as given.
+    private static MetadataGrid.Paged MemberRefGridWithNameTooltip(Func<object, int, object?> read, Func<object, MetadataTooltip?>? make)
+    {
+        var module = Assert.IsType<LoadedModule>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath));
+        var file = LoadedAssemblies.GetFile(module);
+        var schema = MetadataTables.Create(TableIndex.MemberRef, file);
+        Assert.NotNull(schema);
+        var columns = schema.Columns.Select(c => c.Column.Name == "Name" ? c with { Tooltip = read, FormatTooltip = make } : c).ToList();
+        return new MetadataGrid.Paged
+        {
+            Title = "MemberRef", Module = module, File = file, Schema = schema, Rows = schema.ReadRows(), GridColumns = columns,
+            Columns = columns.Select(static c => c.Column).ToArray(),
+        };
+    }
+
+    [Fact]
     public async Task An_assembly_lists_its_metadata_and_its_portable_pdb_first()
     {
         var assembly = Trees.TestAssembly;

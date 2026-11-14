@@ -37,25 +37,41 @@ internal static class EntityText
     /// <summary>What sort of type <paramref name="type"/> is.</summary>
     public static TypeShape ShapeOf(ITypeDefinition type)
     {
-        return type.Kind switch
+        return ShapeOf(type.Kind, type.IsRecord);
+    }
+
+    /// <summary>What sort of type one of <paramref name="kind"/> is, a record when <paramref name="isRecord"/>: from
+    /// what was read of it, the library's objects left behind.</summary>
+    public static TypeShape ShapeOf(TypeKind kind, bool isRecord)
+    {
+        return kind switch
         {
             TypeKind.Interface => TypeShape.Interface,
-            TypeKind.Struct => type.IsRecord ? TypeShape.RecordStruct : TypeShape.Struct,
+            TypeKind.Struct => isRecord ? TypeShape.RecordStruct : TypeShape.Struct,
             TypeKind.Enum => TypeShape.Enum,
             TypeKind.Delegate => TypeShape.Delegate,
-            _ => type.IsRecord ? TypeShape.Record : TypeShape.Class,
+            _ => isRecord ? TypeShape.Record : TypeShape.Class,
         };
     }
 
     /// <summary>What sort of member <paramref name="member"/> is.</summary>
     public static MemberShape ShapeOf(IMember member)
     {
-        return member switch
+        return ShapeOf(member.SymbolKind, member is IField { IsConst: true });
+    }
+
+    /// <summary>What sort of member one of <paramref name="kind"/> is, a constant when <paramref name="isConst"/>: from
+    /// what was read of it, the library's objects left behind.</summary>
+    public static MemberShape ShapeOf(SymbolKind kind, bool isConst)
+    {
+        return kind switch
         {
-            IField field => field.IsConst ? MemberShape.Constant : MemberShape.Field,
-            IProperty property => property.IsIndexer ? MemberShape.Indexer : MemberShape.Property,
-            IEvent => MemberShape.Event,
-            IMethod method => method.IsConstructor ? MemberShape.Constructor : method.IsOperator ? MemberShape.Operator : MemberShape.Method,
+            SymbolKind.Field => isConst ? MemberShape.Constant : MemberShape.Field,
+            SymbolKind.Property => MemberShape.Property,
+            SymbolKind.Indexer => MemberShape.Indexer,
+            SymbolKind.Event => MemberShape.Event,
+            SymbolKind.Constructor => MemberShape.Constructor,
+            SymbolKind.Operator => MemberShape.Operator,
             _ => MemberShape.Method,
         };
     }

@@ -37,10 +37,21 @@ namespace ILSight.Core.Metadata
 				GridSchemas.AddValue(columns, "Member", e => e.Member);
 				GridSchemas.AddValue(columns, "Offset", e => e.Offset);
 				GridSchemas.AddValue(columns, "Size", e => e.Size);
-				GridSchemas.AddValue(columns, "Value", e => e.Value, tooltip: e => e.Flags is null ? null : FilterStatePresenter.Explain(e.Flags, Convert.ToUInt32(e.Value)));
+				GridSchemas.AddValue(columns, "Value", e => e.Value, tooltip: static e => e.Flags is null ? null : e, formatTooltip: static e => ExplainFlags((Entry)e));
 				GridSchemas.AddValue(columns, "Meaning", e => e.Meaning);
 			});
 		}
+
+        // The entry was read with the header: the explanation of its flags is all its tooltip makes, after the read.
+        static MetadataTooltip? ExplainFlags(Entry entry)
+        {
+            if (entry.Flags is null)
+            {
+                return null;
+            }
+
+            return FilterStatePresenter.Explain(entry.Flags, Convert.ToUInt32(entry.Value));
+        }
 
 		static readonly FlagsSchema CharacteristicsBits = Bits(typeof(Characteristics), [
 			"Relocation info stripped from file",

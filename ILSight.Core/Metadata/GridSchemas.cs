@@ -1,5 +1,6 @@
 // Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
 
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
@@ -64,9 +65,9 @@ public static class GridSchemas
 
     /// <summary>A column of what <paramref name="get"/> reads, in <paramref name="format"/>.</summary>
     public static void AddValue<TRow, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T>(GridSchemaBuilder<TRow> schema, string name, Func<TRow, T> get, string? format = null,
-        Func<TRow, object?>? tooltip = null)
+        Func<TRow, object?>? tooltip = null, Func<object, MetadataTooltip?>? formatTooltip = null)
     {
-        AddColumn(schema, name, format, (r, _) => get(r), tooltip is null ? null : (r, _) => tooltip(r));
+        AddColumn(schema, name, format, (r, _) => get(r), tooltip is null ? null : (r, _) => tooltip(r), formatTooltip: formatTooltip);
     }
 
     /// <summary>Where each row of <paramref name="table"/>, which <paramref name="schema"/> lists, starts in the file.</summary>
@@ -83,7 +84,23 @@ public static class GridSchemas
     {
         var file = schema.File;
         AddValue(schema, name, r => file.Metadata.GetString(get(r)),
-            tooltip: r => $"{MetadataTokens.GetHeapOffset(get(r)):X} \"{file.Metadata.GetString(get(r))}\"");
+            tooltip: r => (MetadataTokens.GetHeapOffset(get(r)), file.Metadata.GetString(get(r))), formatTooltip: ExplainHeapString);
+    }
+
+    /// <summary>The tooltip of a heap string read as its offset in its heap and its text (an <c>(int, string)</c>): the
+    /// offset in hex, then the text in quotes.</summary>
+    public static MetadataTooltip ExplainHeapString(object read)
+    {
+        var (offset, text) = ((int, string))read;
+        return new MetadataTooltip { Text = $"{offset:X} \"{text}\"", Groups = [] };
+    }
+
+    /// <summary>The tooltip of a blob read as its bytes (an <see cref="ImmutableArray{T}"/> of bytes): the bytes in
+    /// hex.</summary>
+    public static MetadataTooltip ExplainBytes(object read)
+    {
+        var bytes = (ImmutableArray<byte>)read;
+        return new MetadataTooltip { Text = bytes.ToHexString(bytes.Length), Groups = [] };
     }
 
     /// <summary>The row's name: a <see cref="AddString"/> column the row is known by.</summary>
@@ -116,9 +133,10 @@ public static class GridSchemas
     }
 
     /// <summary>The offset of a blob in the #Blob heap.</summary>
-    public static void AddBlob<TRow>(GridSchemaBuilder<TRow> schema, string name, Func<TRow, BlobHandle> get, Func<TRow, object?>? tooltip = null)
+    public static void AddBlob<TRow>(GridSchemaBuilder<TRow> schema, string name, Func<TRow, BlobHandle> get, Func<TRow, object?>? tooltip = null,
+        Func<object, MetadataTooltip?>? formatTooltip = null)
     {
-        AddValue(schema, name, r => MetadataTokens.GetHeapOffset(get(r)), "X8", tooltip);
+        AddValue(schema, name, r => MetadataTokens.GetHeapOffset(get(r)), "X8", tooltip, formatTooltip);
     }
 
     /// <summary>The offset of a signature blob, explained by what <paramref name="decode"/> reads from the
@@ -170,7 +188,7 @@ public static class GridSchemas
     }
 
     private static void AddColumn<TRow, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T>(GridSchemaBuilder<TRow> schema, string name, string? format, Func<TRow, int, T> value,
-        Func<TRow, int, object?>? tooltip, bool isToken = false)
+        Func<TRow, int, object?>? tooltip, bool isToken = false, Func<object, MetadataTooltip?>? formatTooltip = null)
     {
         var type = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
         var numeric = type.IsEnum || Type.GetTypeCode(type) is >= TypeCode.SByte and <= TypeCode.Decimal;
@@ -187,6 +205,7 @@ public static class GridSchemas
             Format = format,
             Value = (r, rid) => value(GetRow<TRow>(r), rid),
             Tooltip = tooltip is null ? null : (r, rid) => tooltip(GetRow<TRow>(r), rid),
+            FormatTooltip = formatTooltip,
         });
     }
 

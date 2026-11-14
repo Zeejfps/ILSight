@@ -107,7 +107,7 @@ public abstract class MetadataGrid
                 return known;
             }
 
-            var result = MetadataGrids.ReadTooltip(this, row, column, MetadataGrids.ReadValue(this, row, column));
+            var result = MetadataGrids.FindTooltip(this, row, column, MetadataGrids.ReadValue(this, row, column));
             _tooltips[index] = result;
             return result;
         }

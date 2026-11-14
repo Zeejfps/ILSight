@@ -53,7 +53,7 @@ public static class MetadataGrids
         var pages = MetadataGrid.Paged.CountPages(Math.Min(firstRows, rows.Count));
         for (var page = 0; page < pages; page++)
         {
-            grid.AddPage(page, ReadPageUnderReading(grid, page));
+            grid.AddPage(page, MakePage(grid, ReadPageUnderReading(grid, page)));
         }
 
         return grid;
@@ -72,7 +72,7 @@ public static class MetadataGrids
             return new Outcome<ModuleRead<MetadataGridPage>>.Ok(new ModuleRead<MetadataGridPage>.Closed { Module = grid.Module });
         }
 
-        MetadataGridPage read;
+        ReadGridPage read;
         try
         {
             read = ReadPageUnderReading(grid, page);
@@ -82,16 +82,17 @@ public static class MetadataGrids
             return new Outcome<ModuleRead<MetadataGridPage>>.Failed(e);
         }
 
-        return new Outcome<ModuleRead<MetadataGridPage>>.Ok(new ModuleRead<MetadataGridPage>.Read { Value = read });
+        // The app's formatting of what was read, after the read's outermost catch: a bug of the app's is no unreadable page.
+        return new Outcome<ModuleRead<MetadataGridPage>>.Ok(new ModuleRead<MetadataGridPage>.Read { Value = MakePage(grid, read) });
     }
 
-    private static MetadataGridPage ReadPageUnderReading(MetadataGrid.Paged grid, int page)
+    private static ReadGridPage ReadPageUnderReading(MetadataGrid.Paged grid, int page)
     {
         var first = page * MetadataGrid.Paged.RowsPerPage;
         var rows = Math.Clamp(grid.RowCount - first, 0, MetadataGrid.Paged.RowsPerPage);
         var columns = grid.GridColumns.Count;
         var values = new object?[rows * columns];
-        var tooltips = new MetadataTooltip?[rows * columns];
+        var tooltips = new object?[rows * columns];
         var links = new MetadataAddress?[rows * columns];
         var details = new MetadataRowDetails?[rows];
         var definitions = new CodeReference.Navigable?[rows];
@@ -112,7 +113,19 @@ public static class MetadataGrids
             definitions[r] = ReadDefinition(grid, grid.File, row);
         }
 
-        return new MetadataGridPage { Values = values, Tooltips = tooltips, Links = links, Details = details, Definitions = definitions };
+        return new ReadGridPage { Values = values, Tooltips = tooltips, Links = links, Details = details, Definitions = definitions };
+    }
+
+    private static MetadataGridPage MakePage(MetadataGrid grid, ReadGridPage read)
+    {
+        var columns = grid.GridColumns.Count;
+        var tooltips = new MetadataTooltip?[read.Tooltips.Length];
+        for (var index = 0; index < tooltips.Length; index++)
+        {
+            tooltips[index] = MakeTooltip(grid, index % columns, read.Tooltips[index]);
+        }
+
+        return new MetadataGridPage { Values = read.Values, Tooltips = tooltips, Links = read.Links, Details = read.Details, Definitions = read.Definitions };
     }
 
     /// <summary>The page at <paramref name="page"/> of <paramref name="grid"/> when reading it failed with
@@ -317,35 +330,73 @@ public static class MetadataGrids
         return grid.FindTooltip(row, column);
     }
 
-    /// <summary>What hovering the cell whose value is <paramref name="value"/> explains, read through the grid's
-    /// file.</summary>
-    internal static MetadataTooltip? ReadTooltip(MetadataGrid grid, int row, int column, object? value)
+    /// <summary>What hovering the cell whose value is <paramref name="value"/> explains: read through the grid's file
+    /// (<see cref="ReadTooltip"/>), then made (<see cref="MakeTooltip"/>), with no catch of its own around both.</summary>
+    internal static MetadataTooltip? FindTooltip(MetadataGrid grid, int row, int column, object? value)
     {
-        if (value is MetadataCellFailure failed)
+        return MakeTooltip(grid, column, ReadTooltip(grid, row, column, value));
+    }
+
+    /// <summary>What the cell whose value is <paramref name="value"/> reads for its tooltip through the grid's file, its
+    /// facts, inside the cell's catch: the value's failure as it is; nothing more for a flags column, whose value is
+    /// its facts; else what the column's read half reads, or its failure, the cell's.</summary>
+    internal static object? ReadTooltip(MetadataGrid grid, int row, int column, object? value)
+    {
+        if (value is MetadataCellFailure)
+        {
+            return value;
+        }
+
+        var info = grid.GridColumns[column];
+        if (info.Column.Flags is not null)
+        {
+            return value;
+        }
+
+        if (info.Tooltip is null)
+        {
+            return null;
+        }
+
+#pragma warning disable RL0902 // The column's tooltip delegate reads ICSharpCode.Decompiler's metadata (a listed untrusted library): its failure is the cell's.
+        try
+        {
+            return info.Tooltip(grid.Rows[row], row + 1);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new MetadataCellFailure { Reason = e.Message };
+        }
+#pragma warning restore RL0902
+    }
+
+    // The app's rules over what the cell's tooltip read, after the read's outermost catch: a read that failed says why,
+    // a flags column explains its bits, a column's format half makes its facts into the tooltip, else the facts are it
+    // or its text.
+    private static MetadataTooltip? MakeTooltip(MetadataGrid grid, int column, object? read)
+    {
+        if (read is MetadataCellFailure failed)
         {
             return new MetadataTooltip { Text = failed.Reason, Groups = [] };
         }
 
         var info = grid.GridColumns[column];
-        if (info.Column.Flags is null && info.Tooltip is null)
+        if (info.Column.Flags is not null)
+        {
+            return ExplainFlags(info.Column.Flags, read);
+        }
+
+        if (read is null)
         {
             return null;
         }
 
-        object? given;
-#pragma warning disable RL0902 // The column's tooltip delegate reads ICSharpCode.Decompiler's metadata (a listed untrusted library): its failure is the cell's.
-        try
+        if (info.FormatTooltip is not null)
         {
-            given = info.Column.Flags is not null
-                ? ExplainFlags(info.Column.Flags, value)
-                : info.Tooltip?.Invoke(grid.Rows[row], row + 1);
+            return info.FormatTooltip(read);
         }
-        catch (Exception e) when (e is not OperationCanceledException)
-        {
-            return new MetadataTooltip { Text = e.Message, Groups = [] };
-        }
-#pragma warning restore RL0902
-        return given switch
+
+        return read switch
         {
             MetadataTooltip tooltip => tooltip,
             string text when !string.IsNullOrWhiteSpace(text) => new MetadataTooltip { Text = text, Groups = [] },
@@ -640,5 +691,19 @@ public static class MetadataGrids
     private sealed class MetadataCellFailure
     {
         public required string Reason { get; init; }
+    }
+
+    // A page as read, inside its catch: each cell's tooltip as its facts, which MakePage makes into tooltips after it.
+    private sealed record ReadGridPage
+    {
+        public required object?[] Values { get; init; }
+
+        public required object?[] Tooltips { get; init; }
+
+        public required MetadataAddress?[] Links { get; init; }
+
+        public required MetadataRowDetails?[] Details { get; init; }
+
+        public required CodeReference.Navigable?[] Definitions { get; init; }
     }
 }
