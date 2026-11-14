@@ -246,7 +246,7 @@ public sealed class DiagramTests
     }
 
     [Fact]
-    public async Task A_type_that_cannot_be_read_is_reported()
+    public async Task What_is_no_type_that_can_be_read_is_refused_on_the_refusal_line_not_reported()
     {
         var d = AppStateDriver.Opened();
         var member = (await d.FixtureAsync("Greeter").GetChildAsync("Twice() : int")).Definition;
@@ -254,7 +254,8 @@ public sealed class DiagramTests
         DiagramView.ShowInNewDiagramLater(d.Ui, member, Names.Diagram(member));
         d.Settle();
 
-        var error = Assert.Single(d.AppState.Errors.Entries);
-        Assert.Equal("Cannot show Twice in a diagram", error.Words().Title);
+        var refused = Assert.IsType<Refusal.TypeNotDiagrammed>(d.AppState.Refusals.Shown);
+        Assert.Equal("Cannot show Twice in a diagram", refused.Words(d.Ui.Strings).What);
+        Assert.Empty(d.AppState.Errors.Entries);
     }
 }

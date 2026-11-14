@@ -161,6 +161,47 @@ public sealed class RunArgumentsTests
     }
 
     [Fact]
+    public void Forty_ignored_arguments_leave_the_error_indicator_on_the_bar_and_every_argument_in_the_notes_details()
+    {
+        var ignored = Enumerable.Range(1, 40).Select(static i => $"--unknown-option-{i}").ToArray();
+        var app = Start(new AppSettings(), ignored);
+        app.Driver.InTurn(() => Errors.Report(app.AppState, new AppProblem.Unexpected(new InvalidOperationException("Broken."))));
+        // A new error opens the error panel, which holds the pointer while open: closed, as its close button does.
+        app.Settle(1);
+        app.Ui.ErrorDialog.IsOpen = false;
+        app.Settle(1);
+        var t = app.Ui.Strings;
+        var refused = Assert.IsType<Refusal.ArgumentsIgnored>(app.AppState.Refusals.Shown);
+
+        var indicator = app.TextRect(t.StatusErrors(1));
+        var note = app.TextRect(refused.Words(t).What);
+        app.Frames.MovePointer(note.X + 2f, note.Y + note.Height / 2).Frame(90);
+
+        Assert.True(indicator.X + indicator.Width <= 1000f, $"The error indicator ends at {indicator.X + indicator.Width}, past the window.");
+        var details = refused.Details(t);
+        Assert.NotNull(details);
+        Assert.All(ignored, argument => Assert.Contains(argument, details));
+        // The tooltip wraps the whole list, the last argument ending its last line, above how to dismiss the note.
+        Assert.Contains(app.Frames.TextRects(), static drawn => drawn.Text.EndsWith("--unknown-option-40", StringComparison.Ordinal));
+        Assert.True(app.Frames.Drew(t.StatusDismissRefusal));
+    }
+
+    [Fact]
+    public void The_ignored_arguments_line_shows_those_that_fit_whole_then_how_many_more()
+    {
+        var t = Strings.For(Locale.En);
+        var few = new[] { "--a", "--b" };
+        var many = Enumerable.Range(1, 40).Select(static i => $"--unknown-option-{i}").ToArray();
+
+        var fitted = Refusal.FitArguments(t, many);
+
+        Assert.Equal("--a --b", Refusal.FitArguments(t, few));
+        Assert.Equal("--unknown-option-1 --unknown-option-2 --unknown-option-3 --unknown-option-4 and 36 more", fitted);
+        Assert.True(fitted.Length - " and 36 more".Length <= 80);
+        Assert.Equal("and 1 more", Refusal.FitArguments(t, [new string('x', 81)]));
+    }
+
+    [Fact]
     public void Starting_with_arguments_the_app_understands_tells_of_nothing()
     {
         var d = Start(new AppSettings(), "--language=IL", "--gl", "--newinstance");
@@ -269,7 +310,7 @@ public sealed class RunArgumentsTests
         // The later run sends as soon as a receiver listens: its hand-over waits for the pipe the claim opens.
         var routing = Task.Run(() => AppRoot.RouteRunAsync(settingsPath, first, newInstance: false, CancellationToken.None));
         var isTaken = await RunPipes.TrySendAsync(RunArgumentsRouting.GetAddress(settingsPath), later);
-        using var receiver = await routing;
+        using var receiver = (await routing).Receiver;
         Assert.NotNull(receiver);
         var app = new AppDriver(settings: DefaultAndOther(temp), inbox: receiver.Inbox);
         app.Frames.WaitUntil(() => AreListed(app.AppState, later.Files.Paths), AppStateDriver.Patience);

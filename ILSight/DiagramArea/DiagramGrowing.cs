@@ -5,15 +5,19 @@ namespace ILSight.DiagramArea;
 
 /// <summary>Growing diagrams by the cards of types: a type shown with the types of its assembly it is directly related
 /// to, and the types a card links to. The cards are read through <see cref="IPorts"/>, without holding up the screen,
-/// and dropped when their diagram was closed meanwhile; a type that cannot be read is reported, and so is a module
-/// that could not be read a type is in, or that the search for a type's derived types reached.</summary>
+/// and dropped when their diagram was closed meanwhile; a type that is no type that can be read is said on the refusal
+/// line, a read that failed is reported, and so is a module that could not be read a type is in, or that the search
+/// for a type's derived types reached.</summary>
 public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
 {
     public interface IPorts
     {
-        /// <summary>Tells the user a type could not be shown on a diagram, or is in a module that could not be
+        /// <summary>Tells the user reading a type for a diagram failed, or that it is in a module that could not be
         /// read.</summary>
         void ReportError(AppProblem problem);
+
+        /// <summary>Says on the refusal line that what a diagram was asked for is no type that can be read.</summary>
+        void ShowRefusal(Refusal refusal);
 
         /// <summary>The card of <paramref name="type"/>, first, and those of the types of its assembly it is directly
         /// related to, read without holding up the screen; empty when it is no type that can be read; the module, with
@@ -65,7 +69,7 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
     {
         if (cards.Count == 0)
         {
-            ReportUnreadable(read.Type, null);
+            ports.ShowRefusal(new Refusal.TypeNotDiagrammed { Type = read.Type });
             return;
         }
 
@@ -163,7 +167,7 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
         }
     }
 
-    private void ReportUnreadable(CodeReference.Entity type, Exception? error)
+    private void ReportUnreadable(CodeReference.Entity type, Exception error)
     {
         ports.ReportError(new AppProblem.TypeNotDiagrammed { Type = type, Error = error });
     }

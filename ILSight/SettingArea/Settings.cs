@@ -13,7 +13,7 @@ public static class Settings
     /// lists, the bookmarks and analyses, and the open list's documents reopened; records what is saved as saved.
     /// Returns what to tell the user: how many of the bookmarks were left out because another marks the same line, or
     /// null when none was.</summary>
-    public static AppProblem? Restore(AppState appState, AppSettings settings)
+    public static Refusal? Restore(AppState appState, AppSettings settings)
     {
         appState.Lists.Restore(settings.AssemblyLists, settings.ActiveAssemblyList);
         var leftOutBookmarks = appState.Bookmarks.Restore(settings.Bookmarks);
@@ -25,7 +25,7 @@ public static class Settings
             return null;
         }
 
-        return new AppProblem.BookmarksLeftOut(leftOutBookmarks);
+        return new Refusal.BookmarksLeftOut { Count = leftOutBookmarks };
     }
 
     /// <summary>The folder <paramref name="name"/> beside <paramref name="settingsFile"/>; null while the

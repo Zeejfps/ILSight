@@ -14,7 +14,9 @@ public sealed class CloseAssembliesTests
     private static AppStateDriver OpenedThree()
     {
         var d = AppStateDriver.Opened();
+        // One open after the other, so the list's order is the order they were opened in, not which finished first.
         d.Open([AssemblyPath.Of(KeyboardPath)]);
+        d.RunUntil(() => d.AppState.Assemblies.Listed.Count == 2);
         d.Open([AssemblyPath.Of(CorePath)]);
         d.RunUntil(() => d.AppState.Assemblies.Listed.Count == 3);
         d.Settle();

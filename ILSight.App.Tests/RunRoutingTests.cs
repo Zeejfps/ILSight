@@ -2,6 +2,7 @@ using System.Threading.Channels;
 using ILSight.Core;
 using ILSight.CommandArea;
 using ILSight.ILSightAppArea;
+using ILSight.SettingArea;
 
 namespace ILSight.App.Tests;
 
@@ -10,6 +11,65 @@ public sealed class RunRoutingTests
     private static RunArguments Arguments(params string[] args)
     {
         return CommandLines.Parse(args).Arguments;
+    }
+
+    private static RunRoutingAdapter CreateAdapter(RunArgumentsAddress address, RunNotice notice, Locale locale = Locale.En)
+    {
+        return new RunRoutingAdapter(address, Channel.CreateUnbounded<RunArguments>(), () => Strings.For(locale), notice);
+    }
+
+    [Fact]
+    public void SayUnconfirmed_WithAConsole_WritesItInTheAppsLanguageToStandardError()
+    {
+        var error = new StringWriter();
+        var adapter = CreateAdapter(new RunArgumentsAddress("unused"), new RunNotice.OnConsole(error), Locale.De);
+
+        var arguments = Arguments("a.dll");
+
+        adapter.SayUnconfirmed(arguments);
+
+        var listed = string.Join(" ", CommandLines.ListArguments(arguments));
+        Assert.Equal(Strings.For(Locale.De).ErrorArgumentsUnconfirmed(listed) + Environment.NewLine, error.ToString());
+        Assert.Contains("Fenster", error.ToString());
+    }
+
+    [Fact]
+    public void SayUnconfirmed_WithNoConsole_ShowsItInTheAppsLanguageInADialog()
+    {
+        var shown = new List<(string Message, string Ok)>();
+        var adapter = CreateAdapter(new RunArgumentsAddress("unused"), new RunNotice.InDialog((message, ok) => shown.Add((message, ok))), Locale.Ru);
+
+        var arguments = Arguments("a.dll");
+
+        adapter.SayUnconfirmed(arguments);
+
+        var t = Strings.For(Locale.Ru);
+        var listed = string.Join(" ", CommandLines.ListArguments(arguments));
+        Assert.Equal([(t.ErrorArgumentsUnconfirmed(listed), t.ErrorArgumentsUnconfirmedOk)], shown);
+    }
+
+    [Fact]
+    public void An_unconfirmed_hand_over_ends_the_run_with_its_own_exit_status_and_every_other_route_with_success()
+    {
+        Assert.Equal(RunExitCodes.HandOverUnconfirmed, RunExitCodes.Of(RunRoute.Unconfirmed));
+        Assert.NotEqual(RunExitCodes.Success, RunExitCodes.HandOverUnconfirmed);
+        Assert.NotEqual(1, RunExitCodes.HandOverUnconfirmed);
+        Assert.All([RunRoute.Receives, RunRoute.HandedOver, RunRoute.StandsBy], static route => Assert.Equal(RunExitCodes.Success, RunExitCodes.Of(route)));
+    }
+
+    [Fact]
+    public void ReadRunStrings_TheLanguageTheSettingsChoose_OrTheSystemsWhenTheyCantBeRead()
+    {
+        using var temp = new TempDir();
+        var settingsPath = FullFilePath.Of(temp.PathOf("settings.json"));
+        var settings = temp.Settings();
+        settings.Locale = Locale.De;
+        Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
+        var unreadable = FullFilePath.Of(temp.PathOf("unreadable.json"));
+        File.WriteAllText(unreadable.Text, "not json");
+
+        Assert.Same(Strings.For(Locale.De), AppRoot.ReadRunStrings(settingsPath));
+        Assert.Same(Strings.For(Locales.For(System.Globalization.CultureInfo.CurrentUICulture)), AppRoot.ReadRunStrings(unreadable));
     }
 
     [Fact]
@@ -91,8 +151,8 @@ public sealed class RunRoutingTests
     {
         using var temp = new TempDir();
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
-        var first = new RunRoutingAdapter(address, Channel.CreateUnbounded<RunArguments>());
-        var later = new RunRoutingAdapter(address, Channel.CreateUnbounded<RunArguments>());
+        var first = CreateAdapter(address, new RunNotice.OnConsole(TextWriter.Null));
+        var later = CreateAdapter(address, new RunNotice.OnConsole(TextWriter.Null));
 
         var isFirstClaimed = await first.TryClaimAsync(CancellationToken.None);
         using var holder = first.Claimed;

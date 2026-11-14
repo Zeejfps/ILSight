@@ -54,9 +54,10 @@ public sealed class BookmarkImportingTests
         Assert.Equal([Path], ports.Read);
         Assert.Equal(["Bookmark 1"], bookmarks.Items.Select(static b => b.Name));
         Assert.Null(imports.Asking);
-        var lost = Assert.IsType<AppProblem.ImportedBookmarksLost>(Assert.Single(ports.Reported));
+        var lost = Assert.IsType<Refusal.ImportedBookmarksLost>(Assert.Single(ports.Refused));
         Assert.Equal("exported.json", lost.File);
         Assert.Single(lost.Lost);
+        Assert.Empty(ports.Reported);
     }
 
     [Fact]
@@ -97,11 +98,12 @@ public sealed class BookmarkImportingTests
 
         Assert.Equal(2, bookmarks.Items.Count);
         Assert.Null(imports.Asking);
-        Assert.Equal(1, Assert.IsType<AppProblem.BookmarksLeftOut>(Assert.Single(ports.Reported)).Count);
+        Assert.Equal(1, Assert.IsType<Refusal.BookmarksLeftOut>(Assert.Single(ports.Refused)).Count);
+        Assert.Empty(ports.Reported);
     }
 
     [Fact]
-    public async Task ImportAsync_NotBookmarksFile_ReportsItAndLooksUpNothing()
+    public async Task ImportAsync_NotBookmarksFile_RefusesItAndLooksUpNothing()
     {
         var ports = new FakeBookmarkImportingPorts { File = new BookmarksRead.NotBookmarksFile() };
         var bookmarks = new BookmarkList();
@@ -109,7 +111,8 @@ public sealed class BookmarkImportingTests
 
         await new BookmarkImporting(ports).ImportAsync(bookmarks, imports, Path, CancellationToken.None);
 
-        Assert.Equal(Path, Assert.IsType<AppProblem.NotBookmarksFile>(Assert.Single(ports.Reported)).Path);
+        Assert.Equal(Path, Assert.IsType<Refusal.NotBookmarksFile>(Assert.Single(ports.Refused)).Path);
+        Assert.Empty(ports.Reported);
         Assert.Empty(ports.Answers);
         Assert.Empty(bookmarks.Items);
     }

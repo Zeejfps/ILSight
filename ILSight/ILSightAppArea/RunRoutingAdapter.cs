@@ -8,8 +8,10 @@ namespace ILSight.ILSightAppArea;
 /// starts a receiver putting what later runs send in <paramref name="inbox"/>, which holds this run's own arguments
 /// already, and awaits its role thread's answer, holding the receiver it claimed (<see cref="Claimed"/>); the
 /// send hands the arguments over the pipe: a run that can't be reached in time, or refuses them, has not taken them; a
-/// hand-over that breaks or times out once they were sent is unknown. Decides nothing.</summary>
-public sealed class RunRoutingAdapter(RunArgumentsAddress address, Channel<RunArguments> inbox) : RunRouting.IPorts
+/// hand-over that breaks or times out once they were sent is unknown. An unconfirmed hand-over is said on
+/// <paramref name="notice"/>, in the language of <paramref name="strings"/>, read only then. Decides nothing.</summary>
+public sealed class RunRoutingAdapter(RunArgumentsAddress address, Channel<RunArguments> inbox, Func<Strings> strings, RunNotice notice)
+    : RunRouting.IPorts
 {
     /// <summary>The receiver <see cref="TryClaimAsync"/> claimed; null until it claimed one.</summary>
     public RunArgumentsReceiver? Claimed { get; private set; }
@@ -41,9 +43,8 @@ public sealed class RunRoutingAdapter(RunArgumentsAddress address, Channel<RunAr
 
     public void SayUnconfirmed(RunArguments arguments)
     {
-        // A run that opens no window has only its standard error to say this on.
-        Console.Error.WriteLine($"ILSight: the window already open never confirmed it took {string.Join(" ", CommandLines.ListArguments(arguments))}; "
-            + "no second window was opened.");
+        var t = strings();
+        notice.Say(t.ErrorArgumentsUnconfirmed(string.Join(" ", CommandLines.ListArguments(arguments))), t.ErrorArgumentsUnconfirmedOk);
     }
 
     private static async Task<bool> TryReachAsync(NamedPipeClientStream pipe, CancellationToken ct, CancellationToken timeout)

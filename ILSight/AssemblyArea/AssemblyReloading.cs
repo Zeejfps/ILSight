@@ -56,9 +56,20 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         }
 
         var check = checking.Match(static c => c.Check, static _ => PdbCheck.Unreadable, static _ => PdbCheck.Unreadable);
-        if (check != PdbCheck.Matches)
+        if (check == PdbCheck.Unreadable)
         {
             ports.ReportError(new AppProblem.PdbUnusable
+            {
+                PdbPath = pdbPath,
+                Assembly = assembly.Name,
+                Check = check,
+            });
+            return [];
+        }
+
+        if (check != PdbCheck.Matches)
+        {
+            ports.ShowRefusal(new Refusal.PdbUnusable
             {
                 PdbPath = pdbPath,
                 Assembly = assembly.Name,
@@ -396,8 +407,8 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
 
     private void ReleaseGoneTab(DocumentTab tab, NodePath location)
     {
+        // The tab says it is gone, where it was: no error of its own (BE2).
         tab.Load.ShowGone(location);
-        ports.ReportError(new AppProblem.GoneAfterReload(location));
     }
 
     private void ReleaseUnreadableTab(DocumentTab tab, NodePath location, UnreadableModule unreadable)

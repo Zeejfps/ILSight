@@ -93,9 +93,9 @@ public sealed class DiagramGrowingTests
         Assert.Single(ports.Requests).Answer.SetResult(new Outcome<List<TypeCard>>.Ok([]));
         await d.EndAsync(adding);
 
-        var problem = Assert.IsType<AppProblem.TypeNotDiagrammed>(Assert.Single(ports.Reported));
-        Assert.Equal(member, problem.Type);
-        Assert.Null(problem.Error);
+        var refused = Assert.IsType<Refusal.TypeNotDiagrammed>(Assert.Single(ports.Refused));
+        Assert.Equal(member, refused.Type);
+        Assert.Empty(ports.Reported);
         Assert.Empty(read.Diagram.Cards);
         Assert.Empty(viewCommands);
     }

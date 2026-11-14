@@ -28,7 +28,9 @@ internal static class StatusBarView
             ui.Text(ui.Memo("status-node", selected, static n => n is null ? "" : n.FullName), new Box { Width = Sizing.Grow() }, color: theme.TextMuted,
                 size: size, overflow: TextOverflow.Ellipsis);
 
-            using (ui.Row(new Box { Width = Sizing.Fit(), Height = Sizing.Grow(), Gap = theme.GapTight, AlignY = Align.Center }))
+            // Shrinkable, as the refusal note in it is: in a narrow window the note's why gives up room, so what follows
+            // it, the error indicator among them, stays on the bar.
+            using (ui.Row(new Box { Width = Sizing.Shrink(), Height = Sizing.Grow(), Gap = theme.GapTight, AlignY = Align.Center }))
             {
                 if (ExportStatusView.Render(ui, appState.Export))
                 {
@@ -140,9 +142,11 @@ internal static class StatusBarView
 
         var what = ui.Memo("status-refused", (refusal, t), static a => a.refusal.Words(a.t).What);
         var why = ui.Memo("status-refused-why", (refusal, t), static a => a.refusal.Words(a.t).Why);
+        // The line shows what fits; all of it is in the note's tooltip, beside how to dismiss it.
+        var tooltip = ui.Memo("status-refused-details", (refusal, t), static a => DescribeRefusal(a.refusal, a.t));
         using (ui.Row(i.Id, new Box
         {
-            Width = Sizing.Fit(),
+            Width = Sizing.Shrink(),
             Height = Sizing.Grow(),
             Gap = theme.GapTight,
             Padding = new Spacing(theme.GapTight, 0f),
@@ -151,9 +155,20 @@ internal static class StatusBarView
         }))
         {
             ui.Text(what, color: theme.Warning, size: theme.FontSizeSmall);
-            ui.Text(why, color: theme.TextMuted, size: theme.FontSizeSmall);
+            ui.Text(why, new Box { Width = Sizing.Shrink() }, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
         }
-        ui.Tooltip(i.Id, t.StatusDismissRefusal);
+        ui.Tooltip(i.Id, tooltip);
+    }
+
+    private static string DescribeRefusal(Refusal refusal, Strings t)
+    {
+        var details = refusal.Details(t);
+        if (details is null)
+        {
+            return t.StatusDismissRefusal;
+        }
+
+        return $"{details}\n{t.StatusDismissRefusal}";
     }
 
     private static void ErrorIndicator(Ui<UiState> ui, ErrorLog errors)

@@ -15,9 +15,16 @@ internal sealed class FakeBookmarkImportingPorts : BookmarkImporting.IPorts
 
     public List<AppProblem> Reported { get; } = [];
 
+    public List<Refusal> Refused { get; } = [];
+
     public void ReportError(AppProblem problem)
     {
         Reported.Add(problem);
+    }
+
+    public void ShowRefusal(Refusal refusal)
+    {
+        Refused.Add(refusal);
     }
 
     public BookmarksRead ReadBookmarks(string path)

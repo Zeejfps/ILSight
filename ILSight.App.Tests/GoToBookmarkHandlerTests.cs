@@ -24,7 +24,7 @@ public sealed class GoToBookmarkHandlerTests
         var ports = new FakeGoToBookmarkHandlerPorts();
         var history = d.AppState.Navigation.HistoryEntries.Count;
 
-        var going = d.BeginAsync(() => new GoToBookmarkHandler(ports).HandleAsync(d.AppState.Navigation, d.AppState.Bookmarks, d.AppState.Decompiler, bookmark, CancellationToken.None));
+        var going = d.BeginAsync(() => new GoToBookmarkHandler(ports).HandleAsync(d.AppState.Navigation, d.AppState.Bookmarks, d.AppState.Decompiler, bookmark, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
         Assert.True(d.AppState.IsResolving);
         Assert.Single(ports.Answers).SetResult(new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(outline)));
         var load = await d.EndAsync(going);
@@ -39,20 +39,20 @@ public sealed class GoToBookmarkHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_PlaceGone_ReportsTheBookmarkGone()
+    public async Task HandleAsync_PlaceGone_SaysTheBookmarkGoneOnTheRefusalLine()
     {
         var (d, bookmark) = await BookmarkedAsync();
         var ports = new FakeGoToBookmarkHandlerPorts();
 
-        var going = d.BeginAsync(() => new GoToBookmarkHandler(ports).HandleAsync(d.AppState.Navigation, d.AppState.Bookmarks, d.AppState.Decompiler, bookmark, CancellationToken.None));
+        var going = d.BeginAsync(() => new GoToBookmarkHandler(ports).HandleAsync(d.AppState.Navigation, d.AppState.Bookmarks, d.AppState.Decompiler, bookmark, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
         Assert.Single(ports.Answers).SetResult(new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)));
         var load = await d.EndAsync(going);
 
         Assert.Null(load);
-        var gone = Assert.IsType<AppProblem.BookmarkGone>(Assert.Single(ports.Reported));
+        var gone = Assert.IsType<Refusal.BookmarkGone>(Assert.Single(ports.Refused));
         Assert.Equal(bookmark.Name, gone.Bookmark);
         Assert.Equal(bookmark.Place, gone.Place);
-        Assert.Null(gone.Error);
+        Assert.Empty(ports.Reported);
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public sealed class GoToBookmarkHandlerTests
         var ports = new FakeGoToBookmarkHandlerPorts();
         var shown = d.AppState.Navigation.ActiveTab;
 
-        var going = d.BeginAsync(() => new GoToBookmarkHandler(ports).HandleAsync(d.AppState.Navigation, d.AppState.Bookmarks, d.AppState.Decompiler, bookmark, CancellationToken.None));
+        var going = d.BeginAsync(() => new GoToBookmarkHandler(ports).HandleAsync(d.AppState.Navigation, d.AppState.Bookmarks, d.AppState.Decompiler, bookmark, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
         d.AppState.Navigation.BeginRequest();
         Assert.Single(ports.Answers).SetResult(new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(await d.FixtureAsync("Outline"))));
         var load = await d.EndAsync(going);

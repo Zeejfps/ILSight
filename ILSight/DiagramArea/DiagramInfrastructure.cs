@@ -3,17 +3,22 @@ using ILSight.Core.Diagrams;
 
 namespace ILSight.DiagramArea;
 
-/// <summary>Reaches the app's error reports, and the open assemblies and the layout off the UI thread, for
+/// <summary>Reaches the app's error reports, its refusal line, and the open assemblies and the layout off the UI thread, for
 /// <see cref="DiagramGrowing"/>, <see cref="ReopenDiagramHandler"/> and <see cref="LayOutDiagramHandler"/>. Each read
 /// runs on the thread pool and comes back on the UI thread, a read the library failed as
 /// <see cref="Outcome{T}.Failed"/>, as the core answers it; a layout fails in no way it expects. The cancellation of
 /// the token the call was given, and anything else, are let through.</summary>
-public sealed class DiagramInfrastructure(ErrorLog errors, AssemblyList assemblies)
+public sealed class DiagramInfrastructure(ErrorLog errors, RefusalLine refusals, AssemblyList assemblies)
     : DiagramGrowing.IPorts, ReopenDiagramHandler.IPorts, LayOutDiagramHandler.IPorts
 {
     public void ReportError(AppProblem problem)
     {
         Errors.Report(errors, problem);
+    }
+
+    public void ShowRefusal(Refusal refusal)
+    {
+        refusals.Show(refusal);
     }
 
     public async Task<Outcome<TypeSystemWork<List<TypeCard>>>> ReadWithNeighboursAsync(CodeReference.Entity type, CancellationToken ct)
