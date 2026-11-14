@@ -107,9 +107,7 @@ public static class Analyzers
     /// without listing it, once the read of its type system ended; not found when the file or the entity is gone,
     /// unreadable when the library could not read the file; what else the library throws resolving or describing it,
     /// <see cref="Outcome{T}.Failed"/>.</summary>
-#pragma warning disable RL0302 // Absence is the Lookup's NotFound inside the Outcome, which the check doesn't look into.
     public static async Task<Outcome<Lookup<AnalysisSymbol>>> FindAsync(AssemblyList list, CodeAnchor definition, CancellationToken ct)
-#pragma warning restore RL0302
     {
         var assembly = TryLoad(list, definition);
         if (assembly is null)

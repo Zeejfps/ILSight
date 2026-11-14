@@ -33,9 +33,7 @@ public sealed class BookmarkInfrastructure(ErrorLog errors, AssemblyList assembl
         return found;
     }
 
-#pragma warning disable RL0302 // Absence is each place's Lookup NotFound inside the Outcome, which the check doesn't look into.
     private async Task<Outcome<List<Lookup<NodePath>>>> FindPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct)
-#pragma warning restore RL0302
     {
         var places = new List<Lookup<NodePath>>(records.Count);
         foreach (var record in records)

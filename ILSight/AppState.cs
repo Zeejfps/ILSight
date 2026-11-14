@@ -23,9 +23,7 @@ namespace ILSight;
 /// resolving, searching) is awaited there through <see cref="Background"/>. A result is dropped when
 /// the user asked for something else in the meantime.
 /// </summary>
-#pragma warning disable RL0405 // the root of the app's state, whose parts many features change (R001 point 8): the check counts two writers once the settings' saves are a part of their own
 public sealed class AppState
-#pragma warning restore RL0405
 {
     /// <summary>Where the settings are written, and the user's themes are found.</summary>
     public required SettingsPlace SettingsPlace { get; init; }

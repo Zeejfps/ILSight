@@ -9,7 +9,6 @@ namespace ILSight.Core;
 /// call it off the UI thread. Each answers unreadable for a module whose type system the library could not read where
 /// the lookup reads it, and what the library throws reading the modules as the lookup's
 /// <see cref="Outcome{T}.Failed"/>; the cancellation of the token it was given is let through.</summary>
-#pragma warning disable RL0302 // Each Find* answers Outcome<Lookup<T>>: absence is the Lookup's NotFound inside the Outcome, which the check doesn't look into.
 public static class NodeLookup
 {
     /// <summary>The node <paramref name="path"/> names, opening and listing its assembly if it is not
@@ -180,4 +179,3 @@ public static class NodeLookup
         return new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable(found));
     }
 }
-#pragma warning restore RL0302

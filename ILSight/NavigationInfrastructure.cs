@@ -68,9 +68,7 @@ public sealed class NavigationInfrastructure(ErrorLog errors, RefusalLine refusa
         return found;
     }
 
-#pragma warning disable RL0302 // Absence is each place's Lookup NotFound inside the Outcome, which the check doesn't look into.
     private async Task<Outcome<List<Lookup<BrowseNode>>>> FindListedPlacesAsync(IReadOnlyList<NodePath?> places, CancellationToken ct)
-#pragma warning restore RL0302
     {
         var found = new List<Lookup<BrowseNode>>(places.Count);
         foreach (var place in places)

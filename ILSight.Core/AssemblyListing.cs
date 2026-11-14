@@ -265,9 +265,7 @@ public static class AssemblyListing
     /// <see cref="DescribeReferenceAsync"/> says; what the library throws resolving it or naming its page,
     /// <see cref="Outcome{T}.Failed"/>. Loads the files it needs without listing them: call it off the UI thread.
     /// </summary>
-#pragma warning disable RL0302 // Absence is the Lookup's NotFound inside the Outcome, which the check doesn't look into.
     public static async Task<Outcome<Lookup<string>>> FindApiReferencePageAsync(AssemblyList list, CodeReference.Entity reference, CancellationToken ct)
-#pragma warning restore RL0302
     {
         using var reading = LoadedAssemblies.BeginReading();
         Lookup<string> page;

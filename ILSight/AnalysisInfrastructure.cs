@@ -55,9 +55,7 @@ public sealed class AnalysisInfrastructure(ErrorLog errors, AssemblyList assembl
         return found;
     }
 
-#pragma warning disable RL0302 // Absence is each anchor's Lookup NotFound inside the Outcome, which the check doesn't look into.
     private async Task<Outcome<List<Lookup<AnalysisSymbol>>>> FindAnalyzedAsync(IReadOnlyList<CodeAnchor> analyzed, CancellationToken ct)
-#pragma warning restore RL0302
     {
         var found = new List<Lookup<AnalysisSymbol>>(analyzed.Count);
         foreach (var anchor in analyzed)
