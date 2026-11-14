@@ -75,7 +75,7 @@ public sealed class RunArgumentsPipeTests
         var serving = TakeWithoutAnsweringAsync(server);
 
         var answer = await RunPipes.SendAsync(address, Arguments("a.dll"), Guid.NewGuid());
-        await serving;
+        await serving.WithinPatienceAsync();
 
         Assert.Equal(HandOverAnswer.Unknown, answer);
     }
@@ -138,7 +138,7 @@ public sealed class RunArgumentsPipeTests
         Assert.NotNull(receiver);
 
         var sends = Enumerable.Range(0, 16).Select(i => Task.Run(() => RunPipes.TrySendAsync(address, Arguments(i + ".dll")))).ToArray();
-        var sent = await Task.WhenAll(sends);
+        var sent = await Task.WhenAll(sends).WithinPatienceAsync();
 
         Assert.All(sent, Assert.True);
         Assert.Equal(16, (await TakeArrivedAsync(receiver.Inbox, 16)).Count);
@@ -172,8 +172,8 @@ public sealed class RunArgumentsPipeTests
         app.Run();
 
         await HandOverAsync(address, Arguments("--navigateto=" + GreetId, AppStateDriver.FixturePath));
-        app.Frames.WaitUntil(() => app.WasFrontRequested, AppStateDriver.Patience);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Method, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.WasFrontRequested, Waits.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Method, Waits.Patience);
         app.Settle(1);
 
         Assert.Equal("Greet(int) : string", app.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
@@ -188,7 +188,7 @@ public sealed class RunArgumentsPipeTests
         var request = Guid.NewGuid();
         var clock = Stopwatch.StartNew();
         var answer = await RunPipes.SendAsync(address, arguments, request);
-        while (answer != HandOverAnswer.Taken && clock.Elapsed < AppStateDriver.Patience)
+        while (answer != HandOverAnswer.Taken && clock.Elapsed < Waits.Patience)
         {
             answer = await RunPipes.SendAsync(address, arguments, request);
         }
@@ -201,7 +201,7 @@ public sealed class RunArgumentsPipeTests
     {
         var app = new AppDriver(queuedArguments: Arguments("--language=IL"));
 
-        app.Frames.WaitUntil(() => app.AppState.Decompiler.Setup.Language == DecompilationLanguage.IL, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.Decompiler.Setup.Language == DecompilationLanguage.IL, Waits.Patience);
 
         Assert.Equal(DecompilationLanguage.IL, app.AppState.Decompiler.Setup.Language);
     }

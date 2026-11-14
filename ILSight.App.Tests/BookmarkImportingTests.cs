@@ -49,7 +49,7 @@ public sealed class BookmarkImportingTests
 
         var importing = new BookmarkImporting(ports).ImportAsync(bookmarks, imports, Path, CancellationToken.None);
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<NodePath>>>.Ok([new Lookup<NodePath>.Found { Value = file[0].Place }, new Lookup<NodePath>.NotFound()]));
-        await importing;
+        await importing.WithinPatienceAsync();
 
         Assert.Equal([Path], ports.Read);
         Assert.Equal(["Bookmark 1"], bookmarks.Items.Select(static b => b.Name));
@@ -71,7 +71,7 @@ public sealed class BookmarkImportingTests
 
         var importing = new BookmarkImporting(ports).ImportAsync(bookmarks, imports, Path, CancellationToken.None);
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<NodePath>>>.Ok(PlacesOf(file)));
-        await importing;
+        await importing.WithinPatienceAsync();
 
         Assert.NotNull(imports.Asking);
         Assert.Equal(2, imports.Asking.Bookmarks.Count);
@@ -90,7 +90,7 @@ public sealed class BookmarkImportingTests
         var importing = new BookmarkImporting(ports);
         var reading = importing.ImportAsync(bookmarks, imports, Path, CancellationToken.None);
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<NodePath>>>.Ok(PlacesOf([file[0], file[0], file[1]])));
-        await reading;
+        await reading.WithinPatienceAsync();
         var asked = imports.Asking;
         Assert.NotNull(asked);
 
@@ -126,7 +126,7 @@ public sealed class BookmarkImportingTests
 
         var importing = new BookmarkImporting(ports).ImportAsync(bookmarks, imports, Path, CancellationToken.None);
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<NodePath>>>.Failed(new InvalidOperationException("Unreadable.")));
-        await importing;
+        await importing.WithinPatienceAsync();
 
         Assert.Equal("exported.json", Assert.IsType<AppProblem.BookmarksNotImported>(Assert.Single(ports.Reported)).File);
         Assert.Empty(bookmarks.Items);

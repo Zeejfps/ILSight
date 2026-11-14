@@ -525,7 +525,7 @@ public sealed class ExportDialogTests : IDisposable
     {
         var app = new AppDriver();
         app.Open([AssemblyPath.Of(SampleAppPath)]);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)), AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)), Waits.Patience);
         app.Settle(2);
 
         app.Frames.Key(Shortcuts.Export).Frame(2);
@@ -644,7 +644,7 @@ public sealed class ExportDialogTests : IDisposable
         app.Ui.ExportSetup.Folder = _temp.Path;
 
         // The folder is looked at off the UI thread: wait for the warning, not a count of frames.
-        app.Frames.WaitUntil(() => HoldsFilesWarningShown(app), AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => HoldsFilesWarningShown(app), Waits.Patience);
 
         Assert.True(HoldsFilesWarningShown(app));
     }

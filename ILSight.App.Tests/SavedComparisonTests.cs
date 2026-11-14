@@ -24,12 +24,12 @@ public sealed class SavedComparisonTests : IDisposable
     {
         var app = new AppDriver(settings: _temp.Settings());
         app.Open([TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)]);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Assemblies.Count == 2, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Assemblies.Count == 2, Waits.Patience);
         app.Settle(2);
         var assemblies = app.AppState.ListSession.Assemblies.Assemblies;
         app.StartComparing(Comparisons.CompareAssemblies(app.AppState.ListSession.Navigation, app.AppState.ListSession.Assemblies, assemblies[0], assemblies[1],
             Names.Comparison(assemblies[0])));
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Comparison?.Result is ComparisonResult.Compared, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Comparison?.Result is ComparisonResult.Compared, Waits.Patience);
         app.Settle(2);
         return app;
     }
@@ -38,7 +38,7 @@ public sealed class SavedComparisonTests : IDisposable
     {
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 700, false)));
         var next = new AppDriver(settings: _temp.Settings());
-        next.Frames.WaitUntil(() => FindComparison(next)?.Result is ComparisonResult.Compared, AppStateDriver.Patience);
+        next.Frames.WaitUntil(() => FindComparison(next)?.Result is ComparisonResult.Compared, Waits.Patience);
         next.Settle(2);
         return next;
     }
@@ -118,7 +118,7 @@ public sealed class SavedComparisonTests : IDisposable
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 700, false)));
 
         var next = new AppDriver(settings: _temp.Settings());
-        next.Frames.WaitUntil(() => next.AppState.ListSession.Assemblies.Assemblies.Count == 1, AppStateDriver.Patience);
+        next.Frames.WaitUntil(() => next.AppState.ListSession.Assemblies.Assemblies.Count == 1, Waits.Patience);
         next.Settle(2);
 
         Assert.Null(FindComparison(next));

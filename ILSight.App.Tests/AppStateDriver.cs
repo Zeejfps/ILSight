@@ -26,8 +26,6 @@ internal sealed class AppStateDriver
     /// search's debounce or a diagram's cards gliding into place.</summary>
     public const double SettleSeconds = 10;
 
-    /// <summary>The most real time a test waits for the UI to be ready or a condition to hold.</summary>
-    public static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
     public const string FixturesNamespace = "ILSight.App.Tests.Fixtures";
 
     private readonly PostedActions _posted;

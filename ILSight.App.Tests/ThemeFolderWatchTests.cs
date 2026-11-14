@@ -5,7 +5,6 @@ namespace ILSight.App.Tests;
 public sealed class ThemeFolderWatchTests : IDisposable
 {
     private static readonly TimeSpan Settled = TimeSpan.FromSeconds(1);
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
 
     private readonly TempDir _temp = new();
     private readonly ThemeFolderWatch _watch = new ThemeFolderWatch { Filters = ["*.json"], IncludesSubfolders = false };
@@ -24,13 +23,13 @@ public sealed class ThemeFolderWatchTests : IDisposable
         Assert.True(_watch.TryStart(Folder, out _));
         var first = _watch.NextChangeAsync(CancellationToken.None);
         _temp.Write("themes/a.json", "{}");
-        Assert.Equal(ThemeFolderEventKind.Changed, (await first.WaitAsync(Patience)).Kind);
+        Assert.Equal(ThemeFolderEventKind.Changed, (await first.WithinPatienceAsync()).Kind);
 
         _temp.Write("themes/b.json", "{}");
         await Task.Delay(Settled);
         var second = _watch.NextChangeAsync(CancellationToken.None);
 
-        Assert.Equal(ThemeFolderEventKind.Changed, (await second.WaitAsync(Patience)).Kind);
+        Assert.Equal(ThemeFolderEventKind.Changed, (await second.WithinPatienceAsync()).Kind);
     }
 
     [Fact]
@@ -39,7 +38,7 @@ public sealed class ThemeFolderWatchTests : IDisposable
         Assert.True(_watch.TryStart(Folder, out _));
         _temp.Write("themes/a.json", "{}");
         await Task.Delay(Settled);
-        Assert.Equal(ThemeFolderEventKind.Changed, (await _watch.NextChangeAsync(CancellationToken.None).WaitAsync(Patience)).Kind);
+        Assert.Equal(ThemeFolderEventKind.Changed, (await _watch.NextChangeAsync(CancellationToken.None).WithinPatienceAsync()).Kind);
 
         var next = _watch.NextChangeAsync(CancellationToken.None);
         var first = await Task.WhenAny(next, Task.Delay(Settled));
@@ -55,8 +54,8 @@ public sealed class ThemeFolderWatchTests : IDisposable
 
         _watch.Stop();
 
-        Assert.Equal(ThemeFolderEventKind.Stopped, (await waiting.WaitAsync(Patience)).Kind);
-        Assert.Equal(ThemeFolderEventKind.Stopped, (await _watch.NextChangeAsync(CancellationToken.None)).Kind);
+        Assert.Equal(ThemeFolderEventKind.Stopped, (await waiting.WithinPatienceAsync()).Kind);
+        Assert.Equal(ThemeFolderEventKind.Stopped, (await _watch.NextChangeAsync(CancellationToken.None).WithinPatienceAsync()).Kind);
     }
 
     [Fact]
@@ -79,7 +78,7 @@ public sealed class ThemeFolderWatchTests : IDisposable
         var waiting = _watch.NextChangeAsync(CancellationToken.None);
 
         Directory.Delete(folder, recursive: true);
-        var news = await waiting.WaitAsync(Patience);
+        var news = await waiting.WithinPatienceAsync();
 
         Assert.Equal(ThemeFolderEventKind.Lost, news.Kind);
         Assert.StartsWith(folder, news.Reason);

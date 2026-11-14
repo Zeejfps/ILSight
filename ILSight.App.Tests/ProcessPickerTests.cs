@@ -306,7 +306,7 @@ public sealed class ProcessPickerTests
             Modules = [WebDll],
             EntryAssembly = null,
         }));
-        await listingWeb;
+        await listingWeb.WithinPatienceAsync();
 
         Assert.True(ports.ListingTokens[0].IsCancellationRequested);
         Assert.False(ports.ListingTokens[1].IsCancellationRequested);
@@ -331,7 +331,7 @@ public sealed class ProcessPickerTests
             Modules = [WebDll],
             EntryAssembly = null,
         }));
-        await listing;
+        await listing.WithinPatienceAsync();
 
         Assert.True(Assert.Single(ports.ListingTokens).IsCancellationRequested);
         Assert.IsType<ModuleScan.None>(picker.Browser.Modules);
@@ -380,7 +380,7 @@ public sealed class ProcessPickerTests
         var refreshing = ScanAsync(picker.Browser, picker.Browser.StartScan());
         Assert.Equal([Web], Assert.IsType<ProcessScan.Scanned>(picker.Browser.Scan).Processes);
         refreshed.SetResult(new Outcome<IReadOnlyList<RunningProcess>>.Ok([Worker]));
-        await refreshing;
+        await refreshing.WithinPatienceAsync();
         picker.Browser.TakeFilter(picker.Filter);
 
         Assert.Equal([Worker], picker.Browser.Filtered);
@@ -399,7 +399,7 @@ public sealed class ProcessPickerTests
 
         await ScanAsync(picker.Browser, picker.Browser.StartScan());
         older.SetResult(new Outcome<IReadOnlyList<RunningProcess>>.Ok([Web]));
-        await olderScan;
+        await olderScan.WithinPatienceAsync();
         picker.Browser.TakeFilter(picker.Filter);
 
         Assert.True(olderTicket.Token.IsCancellationRequested);
@@ -417,7 +417,7 @@ public sealed class ProcessPickerTests
 
         Close(picker);
         answer.SetResult(new Outcome<IReadOnlyList<RunningProcess>>.Ok([Web]));
-        await scan;
+        await scan.WithinPatienceAsync();
 
         Assert.True(ticket.Token.IsCancellationRequested);
         Assert.IsType<ProcessScan.Scanning>(picker.Browser.Scan);
@@ -478,7 +478,7 @@ public sealed class ProcessPickerTests
         var shownAtOnce = picker.Browser.Scan;
         var asked = ScanAsync(picker.Browser, scan);
         again.SetResult(new Outcome<IReadOnlyList<RunningProcess>>.Ok([Web]));
-        await asked;
+        await asked.WithinPatienceAsync();
 
         Assert.IsType<ProcessScan.Failed>(failedBefore);
         Assert.IsType<ProcessScan.Scanning>(shownAtOnce);

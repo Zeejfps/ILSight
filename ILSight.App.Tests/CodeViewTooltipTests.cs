@@ -35,7 +35,7 @@ public sealed class CodeViewTooltipTests
     private static void RunOut(CodeViewDriver view)
     {
         view.Frames.Settle(AppStateDriver.SettleSeconds);
-        view.Frames.WaitUntilReady(AppStateDriver.Patience);
+        view.Frames.WaitUntilReady(Waits.Patience);
         view.Frames.Settle(AppStateDriver.SettleSeconds);
     }
 

@@ -96,7 +96,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
     private static void SettleDiagram(AppDriver app, DocumentTab tab)
     {
-        app.Frames.WaitUntil(() => IsLaidOut(app, tab), AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => IsLaidOut(app, tab), Waits.Patience);
         app.Run();
     }
 

@@ -127,14 +127,14 @@ public sealed class GuardedTests
             using var held = guarded.Enter();
             held.Snapshot = "second";
             entered.Set();
-            done.Wait();
+            _ = done.Wait(Waits.Patience);
         }) { IsBackground = true };
         thread.Start();
 
-        Assert.True(entered.Wait(TimeSpan.FromSeconds(10)));
+        Assert.True(entered.Wait(Waits.Patience));
         Assert.Equal("second", guarded.Snapshot);
         done.Set();
-        thread.Join();
+        Assert.True(thread.Join(Waits.Patience));
     }
 
     [Fact]
@@ -181,7 +181,7 @@ public sealed class GuardedTests
             }
         });
         await stop.CancelAsync();
-        await reader;
+        await reader.WithinPatienceAsync();
 
         Assert.Equal(threads * rounds, guarded.Snapshot.Item1);
         using var total = guarded.Enter();

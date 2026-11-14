@@ -33,7 +33,7 @@ public sealed class AppTests
         view.SetExpanded(await app.NodeAsync(), true);
         view.SetExpanded(await app.NodeAsync(AppStateDriver.FixturesNamespace), true);
         view.Refresh();
-        app.Frames.WaitUntil(() => app.Frames.Drew(until), AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.Frames.Drew(until), Waits.Patience);
         return app;
     }
 
@@ -563,7 +563,7 @@ public sealed class AppTests
         Assert.True(icon.Right <= events.X && events.X - icon.Right < 16f, $"the events icon ends at {icon.Right}, its label starts at {events.X}");
         Assert.True(MathF.Abs(icon.Y + icon.Height / 2 - (events.Y + events.Height / 2)) < 4f);
         app.Frames.Key(KeyboardKey.Escape).Frame(2);
-        app.Frames.WaitUntil(() => app.Ui.Search.Results is { IsBusy: false, Rows.Count: > 0 }, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.Ui.Search.Results is { IsBusy: false, Rows.Count: > 0 }, Waits.Patience);
 
         Assert.Equal(SearchKinds.Methods, app.Ui.Search.Kinds);
         Assert.All(app.Ui.Search.Results.Rows, r => Assert.Equal(NodeIcon.Method, r.Node.Icon));

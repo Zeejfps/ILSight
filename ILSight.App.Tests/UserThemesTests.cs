@@ -292,7 +292,7 @@ public sealed class UserThemesTests
 
         await shutdown.CancelAsync();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => watching);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => watching.WithinPatienceAsync());
         Assert.Empty(ports.Reported);
     }
 }

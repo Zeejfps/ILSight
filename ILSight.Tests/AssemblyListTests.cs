@@ -356,7 +356,7 @@ public sealed class AssemblyListTests
 
         await stop.CancelAsync();
 
-        await reader;
+        await reader.WithinPatienceAsync();
         Assert.Empty(list.Listed);
     }
 
@@ -372,7 +372,7 @@ public sealed class AssemblyListTests
             _ = list.Assemblies.Count;
             _ = (await assembly.ReadRootAsync().ListChildrenAsync()).Count;
             return assembly;
-        })));
+        }))).WithinPatienceAsync();
 
         Assert.Equal(3, list.Assemblies.Count);
         foreach (var group in opened.GroupBy(a => a.FilePath))
@@ -389,7 +389,7 @@ public sealed class AssemblyListTests
         var read = Enumerable.Range(0, 16).AsParallel().WithDegreeOfParallelism(8)
             .Select(_ => (TypeSystem: LoadedAssemblies.ReadTypeSystemAheadAsync(assembly, CancellationToken.None), Usage: LoadedAssemblies.EnsureReferenceUsage(assembly), Symbols: LoadedAssemblies.EnsureDebugSymbols(assembly)))
             .ToList();
-        var typeSystems = await Task.WhenAll(read.Select(static r => r.TypeSystem));
+        var typeSystems = await Task.WhenAll(read.Select(static r => r.TypeSystem)).WithinPatienceAsync();
 
         Assert.Single(typeSystems.Select(static t => Assert.IsType<TypeSystemRead.Read>(t).TypeSystem).Distinct());
         Assert.Single(read.Select(r => r.Usage).Distinct());

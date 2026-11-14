@@ -125,7 +125,7 @@ public sealed class CloseAssembliesTests
     {
         var app = AppDriver.Opened();
         app.Open([AssemblyPath.Of(KeyboardPath)]);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, Waits.Patience);
         app.Run(2);
         var keyboard = Assert.IsType<LoadedModule>(app.AppState.ListSession.Assemblies.Listed.Single(static a => a.FilePath.Text == KeyboardPath));
         app.Analyze(await app.FixtureAsync("Greeter"));
@@ -137,7 +137,7 @@ public sealed class CloseAssembliesTests
         app.Ui.Closer.Open(app.AppState.ListSession.Assemblies, fixtures);
         app.Run(2);
         app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 1, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 1, Waits.Patience);
         app.Run(2);
 
         var left = Assert.IsType<AnalyzerSymbolNode>(Assert.Single(app.AppState.ListSession.Analyzer.Roots));
@@ -166,7 +166,7 @@ public sealed class CloseAssembliesTests
     {
         var app = AppDriver.Opened();
         app.Open([AssemblyPath.Of(KeyboardPath)]);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, Waits.Patience);
         app.Run(2);
 
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly")).Frame(2);
@@ -175,7 +175,7 @@ public sealed class CloseAssembliesTests
         closer.Rows.Order[1].Included = true;
         app.Run(2);
         app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 1, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 1, Waits.Patience);
 
         Assert.False(closer.IsOpen);
         Assert.Equal(AppStateDriver.FixturePath, Assert.Single(app.AppState.ListSession.Assemblies.Listed).FilePath.Text);
@@ -186,7 +186,7 @@ public sealed class CloseAssembliesTests
     {
         var app = AppDriver.Opened();
         app.Open([AssemblyPath.Of(KeyboardPath)]);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, Waits.Patience);
         app.Run(2);
         var closer = app.Ui.Closer;
         closer.Open(app.AppState.ListSession.Assemblies, KeyboardOf(app));
@@ -206,7 +206,7 @@ public sealed class CloseAssembliesTests
     {
         var app = AppDriver.Opened();
         app.Open([AssemblyPath.Of(KeyboardPath)]);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, Waits.Patience);
         app.Run(2);
         app.Show(await app.FixtureAsync("Greeter"), 2);
         app.Show(await KeyboardKeyOfAsync(app), 2, inNewTab: true);
@@ -233,7 +233,7 @@ public sealed class CloseAssembliesTests
         app.Ui.Closer.Open(app.AppState.ListSession.Assemblies, KeyboardOf(app));
         app.Run(2);
         app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 1, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 1, Waits.Patience);
         app.Run(2);
     }
 
@@ -428,7 +428,7 @@ public sealed class CloseAssembliesTests
         Assert.Equal(KeyboardFile, closed.Load.ClosedAssembly);
 
         app.Open([AssemblyPath.Of(KeyboardPath)]);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, Waits.Patience);
         app.Settle(4);
         app.Frames.ClickOn(Targets.GetTab("KeyboardKey")).Frame(2);
         app.Settle(2);
@@ -450,7 +450,7 @@ public sealed class CloseAssembliesTests
         var app = new AppDriver(settings: temp.Settings());
         app.Driver.OpenFixtures();
         app.Open([AssemblyPath.Of(KeyboardPath)]);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, Waits.Patience);
         app.Run(2);
         app.Show(await app.FixtureAsync("Greeter"), 2);
         app.Show(await KeyboardKeyOfAsync(app), 2, inNewTab: true);
@@ -475,7 +475,7 @@ public sealed class CloseAssembliesTests
         var app = new AppDriver(settings: temp.Settings());
         app.Driver.OpenFixtures();
         app.Open([AssemblyPath.Of(KeyboardPath)]);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, Waits.Patience);
         app.Run(2);
         return app;
     }
@@ -488,7 +488,7 @@ public sealed class CloseAssembliesTests
     private static void OpenKeyboardAgain(AppDriver app)
     {
         app.Open([AssemblyPath.Of(KeyboardPath)]);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, Waits.Patience);
         app.Settle(4);
     }
 
@@ -498,7 +498,7 @@ public sealed class CloseAssembliesTests
         using var temp = new TempDir();
         var app = OpenedWithKeyboard(temp);
         DiagramView.ShowInNewDiagramLater(app.Ui, (await KeyboardKeyOfAsync(app)).Definition, "Keys");
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Diagram?.Cards.Count > 0, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Diagram?.Cards.Count > 0, Waits.Patience);
         app.Settle(2);
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -513,7 +513,7 @@ public sealed class CloseAssembliesTests
         var drewBar = app.Frames.Drew($"{KeyboardFile} was closed.");
         var savedClosed = SavedTitles(temp);
         OpenKeyboardAgain(app);
-        app.Frames.WaitUntil(() => tab.Diagram != before && tab.Diagram?.Cards.Count > 0 && tab.Diagram?.IsBusy == false, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => tab.Diagram != before && tab.Diagram?.Cards.Count > 0 && tab.Diagram?.IsBusy == false, Waits.Patience);
         app.Run(2);
 
         Assert.Contains("Keys", savedOpen);
@@ -536,7 +536,7 @@ public sealed class CloseAssembliesTests
         var app = OpenedWithKeyboard(temp);
         var fixture = Assert.IsType<LoadedModule>(app.AppState.ListSession.Assemblies.Listed.Single(static a => a.FilePath.Text != KeyboardPath));
         app.StartComparing(Comparisons.CompareAssemblies(app.AppState.ListSession.Navigation, app.AppState.ListSession.Assemblies, fixture, KeyboardOf(app), "Compared"));
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Comparison?.Result is ComparisonResult.Compared, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Comparison?.Result is ComparisonResult.Compared, Waits.Patience);
         app.Settle(2);
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -551,7 +551,7 @@ public sealed class CloseAssembliesTests
         var drewBar = app.Frames.Drew($"{KeyboardFile} was closed.");
         var savedClosed = SavedTitles(temp);
         OpenKeyboardAgain(app);
-        app.Frames.WaitUntil(() => tab.Comparison?.Result is ComparisonResult.Compared && tab.Comparison != before, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => tab.Comparison?.Result is ComparisonResult.Compared && tab.Comparison != before, Waits.Patience);
         app.Run(2);
 
         Assert.Contains("Compared", savedOpen);

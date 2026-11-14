@@ -37,7 +37,7 @@ public sealed class WebCilCloseTests
         app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [module]));
         app.Settle(2);
         var released = LoadedAssemblies.WaitForReleaseAsync(module, CancellationToken.None);
-        app.Frames.WaitUntil(() => released.IsCompleted, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => released.IsCompleted, Waits.Patience);
         await File.WriteAllBytesAsync(path, whole);
 
         Assert.Same(code, tab.Document);

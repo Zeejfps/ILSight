@@ -346,7 +346,7 @@ public sealed class ComparisonTests
         PickCompareWith(app);
 
         app.Frames.ClickOn(Selector.AtPath("compare-picker-compare")).Frame();
-        app.Frames.WaitUntil(() => HasCompared(app.AppState.ListSession.Navigation.ActiveTab?.Comparison), AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => HasCompared(app.AppState.ListSession.Navigation.ActiveTab?.Comparison), Waits.Patience);
         app.Settle(2);
 
         Assert.False(app.Ui.ComparisonPicker.Choice.IsOpen);
@@ -367,7 +367,7 @@ public sealed class ComparisonTests
         Assert.True(app.TextRect(app.Ui.Appearance.Icons.ComparisonSwap).Y < app.TextRect(Compared).Y);
 
         app.Frames.ClickOn(Selector.AtPath("dock/document-2/swap")).Frame();
-        app.Frames.WaitUntil(() => DiffOf(comparison).LeftName == RightName, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => DiffOf(comparison).LeftName == RightName, Waits.Patience);
         app.Settle(2);
 
         Assert.Equal(LeftPath, comparison.RightPath.Text);
@@ -394,7 +394,7 @@ public sealed class ComparisonTests
         var app = OpenBothOnScreen();
         app.StartComparing(Comparisons.CompareAssemblies(app.AppState.ListSession.Navigation, app.AppState.ListSession.Assemblies, Opened(app.Driver, LeftPath), Opened(app.Driver, RightPath),
             Names.Comparison(Opened(app.Driver, LeftPath))));
-        app.Frames.WaitUntil(() => HasCompared(app.AppState.ListSession.Navigation.ActiveTab?.Comparison), AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => HasCompared(app.AppState.ListSession.Navigation.ActiveTab?.Comparison), Waits.Patience);
         app.Settle(2);
         return app;
     }
@@ -403,7 +403,7 @@ public sealed class ComparisonTests
     {
         var app = new AppDriver(width: 1400f);
         app.Open([TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)]);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Assemblies.Count == 2, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Assemblies.Count == 2, Waits.Patience);
         app.Settle(2);
         return app;
     }

@@ -184,7 +184,7 @@ public sealed class BrowseTreeTests
     {
         var (_, assembly) = Trees.OpenTestAssembly();
 
-        var nodes = await Task.WhenAll(Enumerable.Range(0, 16).Select(_ => Task.Run(() => assembly.CalculatorAsync().GetChildAsync("Add(T) : void"))));
+        var nodes = await Task.WhenAll(Enumerable.Range(0, 16).Select(_ => Task.Run(() => assembly.CalculatorAsync().GetChildAsync("Add(T) : void")))).WithinPatienceAsync();
 
         Assert.All(nodes, n => Assert.Same(nodes[0], n));
         Assert.Same(await assembly.CalculatorAsync(), nodes[0].Parent);
@@ -198,7 +198,7 @@ public sealed class BrowseTreeTests
         var reference = (await Trees.TestAssembly.CalculatorAsync().GetChildAsync("Add(T) : void")).Definition;
 
         var nodes = await Task.WhenAll(Enumerable.Range(0, 16)
-            .Select(i => Task.Run(async () => i % 2 == 0 ? await list.FindNodeAsync(reference) : await assembly.CalculatorAsync().GetChildAsync("Add(T) : void"))));
+            .Select(i => Task.Run(async () => i % 2 == 0 ? await list.FindNodeAsync(reference) : await assembly.CalculatorAsync().GetChildAsync("Add(T) : void")))).WithinPatienceAsync();
 
         Assert.All(nodes, n => Assert.Same(nodes[0], n));
         Assert.Same(await assembly.CalculatorAsync(), Assert.IsAssignableFrom<BrowseNode>(nodes[0]).Parent);

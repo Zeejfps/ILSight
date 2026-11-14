@@ -172,7 +172,7 @@ public sealed class AppUpdatesTests
 
         await CheckAsync(updates, asked: true, CancellationToken.None);
         answer.SetResult(new Outcome<UpdateInfo?>.Ok(null));
-        await first;
+        await first.WithinPatienceAsync();
 
         Assert.Single(ports.Asked);
         Assert.IsType<UpdateStatus.Idle>(updates.Status);
@@ -260,7 +260,7 @@ public sealed class AppUpdatesTests
         Assert.NotNull(check);
         var checking = updates.CheckAsync(check, CancellationToken.None);
         answer.SetResult(new Outcome<UpdateInfo?>.Ok(null));
-        await checking;
+        await checking.WithinPatienceAsync();
 
         Assert.IsType<UpdateStatus.Checking>(shownAtOnce);
         Assert.Equal(0, askedBeforeTheEdgeRan);

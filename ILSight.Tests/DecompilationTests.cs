@@ -363,7 +363,7 @@ public sealed class DecompilationTests
             }
         }
 
-        var concurrent = (await Task.WhenAll(types.SelectMany(t => languages.Select(l => NodeContentLoader.ReadContentAsync(TestSession.Shared, t, l, DecompilerOptions.Default, NodeQueries.FirstGridRows).GetValueAsync()))))
+        var concurrent = (await Task.WhenAll(types.SelectMany(t => languages.Select(l => NodeContentLoader.ReadContentAsync(TestSession.Shared, t, l, DecompilerOptions.Default, NodeQueries.FirstGridRows).GetValueAsync()))).WithinPatienceAsync())
             .Select(c => Assert.IsType<NodeContent.Code>(c).Document).ToArray();
 
         Assert.Equal(sequential, concurrent.Select(d => Documents.GetText(d)));

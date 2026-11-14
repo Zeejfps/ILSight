@@ -28,7 +28,7 @@ public sealed class AsyncGuardedTests
         Assert.False(waiting.IsCompleted);
 
         held.Dispose();
-        using var next = await waiting;
+        using var next = await waiting.WithinPatienceAsync();
         Assert.Equal(0, next.Value);
     }
 
@@ -55,7 +55,7 @@ public sealed class AsyncGuardedTests
         var waiting = guarded.EnterAsync(cancellation.Token);
         await cancellation.CancelAsync();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiting);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiting.WithinPatienceAsync());
         Assert.False(guarded.EnterAsync(new CancellationToken(canceled: true)).IsCompletedSuccessfully);
         held.Dispose();
         using var next = await guarded.EnterAsync();
@@ -92,7 +92,7 @@ public sealed class AsyncGuardedTests
                 await Task.Yield();
                 held.Value = seen + 1;
             }
-        })));
+        }))).WithinPatienceAsync();
 
         using var total = await guarded.EnterAsync();
         Assert.Equal(callers * rounds, total.Value);

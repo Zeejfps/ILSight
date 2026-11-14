@@ -26,7 +26,7 @@ public sealed class UpdateTests : IDisposable
 
     private static void AwaitStatus<T>(AppDriver app) where T : UpdateStatus
     {
-        app.Frames.WaitUntil(() => app.AppState.Updates.Status is T, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.Updates.Status is T, Waits.Patience);
     }
 
     private static void OpenAbout(AppDriver app)
@@ -86,8 +86,8 @@ public sealed class UpdateTests : IDisposable
 
         var uneventful = Opened(nothingNew, checkAtStartup: true);
         var failing = Opened(offline, checkAtStartup: true);
-        uneventful.Frames.WaitUntil(() => uneventful.AppState.Updates.Status is UpdateStatus.Idle, AppStateDriver.Patience);
-        failing.Frames.WaitUntil(() => failing.AppState.Updates.Status is UpdateStatus.Idle, AppStateDriver.Patience);
+        uneventful.Frames.WaitUntil(() => uneventful.AppState.Updates.Status is UpdateStatus.Idle, Waits.Patience);
+        failing.Frames.WaitUntil(() => failing.AppState.Updates.Status is UpdateStatus.Idle, Waits.Patience);
 
         Assert.Equal((1, 1), (nothingNew.Finds, offline.Finds));
         Assert.Empty(failing.AppState.Errors.Entries);
@@ -180,7 +180,7 @@ public sealed class UpdateTests : IDisposable
         app.Run(2);
 
         app.Frames.ClickOn(Selector.WithText(Strings.En.AboutRestartToUpdate("9.0.0"))).Frame(2);
-        app.Frames.WaitUntil(() => app.Frames.QuitRequested, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.Frames.QuitRequested, Waits.Patience);
 
         Assert.Same(feed.Downloaded, feed.Applied);
     }

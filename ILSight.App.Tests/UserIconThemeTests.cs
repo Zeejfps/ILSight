@@ -231,7 +231,7 @@ public sealed class UserIconThemeTests : IDisposable
         var registered = app.Frames.RegisteredFonts.Count;
 
         File.WriteAllBytes(font, LucideFont().Append((byte)0).ToArray());
-        app.Frames.WaitUntil(() => app.Frames.RegisteredFonts.Count > registered, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.Frames.RegisteredFonts.Count > registered, Waits.Patience);
         app.AppState.Workflows.CancelAll();
 
         Assert.Equal(LucideFont().Length + 1, app.Frames.RegisteredFonts.Last(f => f.Family == family).Data.Length);

@@ -18,7 +18,7 @@ public sealed class PackageBrowsingTests
         var app = new AppDriver();
 
         app.Open([AssemblyPath.Of(WritePackage(temp))]);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, Waits.Patience);
         app.Settle(2);
 
         Assert.Equal(NodeIcon.Package, Assert.Single(app.Ui.Tree.Roots).Icon);
@@ -131,7 +131,7 @@ public sealed class PackageBrowsingTests
 
         app.Frames.FilePicker.Answer = folder;
         app.PickFromTreeMenu(PackageName, "Extract all files…");
-        app.Frames.WaitUntil(() => app.AppState.FinishedExports.Count == 1, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.FinishedExports.Count == 1, Waits.Patience);
 
         var report = app.AppState.FinishedExports[0];
         var dll = Path.Combine(folder, "lib", "net10.0", Path.GetFileName(AppStateDriver.FixturePath));
@@ -146,7 +146,7 @@ public sealed class PackageBrowsingTests
     {
         var app = new AppDriver();
         app.Open([AssemblyPath.Of(WritePackage(temp))]);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, Waits.Patience);
         app.Settle(2);
         return app;
     }

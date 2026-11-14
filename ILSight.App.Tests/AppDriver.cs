@@ -158,7 +158,7 @@ internal sealed class AppDriver
     /// <paramref name="frames"/> frames.</summary>
     public void Settle(int frames = 0)
     {
-        Frames.WaitUntilReady(AppStateDriver.Patience);
+        Frames.WaitUntilReady(Waits.Patience);
         Run(frames);
     }
 
@@ -174,7 +174,7 @@ internal sealed class AppDriver
 
     private void RunFramesInPlace()
     {
-        Frames.WaitUntil(static () => true, AppStateDriver.Patience);
+        Frames.WaitUntil(static () => true, Waits.Patience);
     }
 
 

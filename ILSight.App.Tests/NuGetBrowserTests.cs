@@ -226,7 +226,7 @@ public sealed class NuGetBrowserTests
         await shutdown.CancelAsync();
         answer.SetCanceled(token);
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => searching);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => searching.WithinPatienceAsync());
         Assert.False(stoppedBefore);
         Assert.True(token.IsCancellationRequested);
         Assert.Empty(picker.Browser.Results);
@@ -261,9 +261,9 @@ public sealed class NuGetBrowserTests
         var newerSearch = SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
 
         newer.SetResult(new Outcome<FeedPage>.Ok(Page("Newer")));
-        await newerSearch;
+        await newerSearch.WithinPatienceAsync();
         older.SetResult(new Outcome<FeedPage>.Ok(Page("Older")));
-        await olderSearch;
+        await olderSearch.WithinPatienceAsync();
 
         Assert.True(ports.Tokens[0].IsCancellationRequested);
         Assert.False(ports.Tokens[1].IsCancellationRequested);
@@ -283,7 +283,7 @@ public sealed class NuGetBrowserTests
         Close(picker);
         var token = Assert.Single(ports.Tokens);
         answer.SetCanceled(token);
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => searching);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => searching.WithinPatienceAsync());
 
         Assert.True(token.IsCancellationRequested);
         Assert.False(picker.Browser.IsSearching);

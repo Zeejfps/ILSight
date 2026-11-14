@@ -11,7 +11,7 @@ public sealed class BatchesTests
         var stream = Batches.StreamAsync<int>((emit, token) =>
         {
             emit(1);
-            token.WaitHandle.WaitOne();
+            token.WaitHandle.WaitOne(Waits.Patience);
             Thread.Sleep(TimeSpan.FromMilliseconds(100));
             stopped.Set();
             return Task.CompletedTask;

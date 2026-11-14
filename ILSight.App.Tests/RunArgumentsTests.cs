@@ -278,15 +278,15 @@ public sealed class RunArgumentsTests
         var started = new AppDriver(settings: DefaultAndOther(startedTemp), queuedArguments: arguments, hooks: new AdapterHooks { Reopening = listing.Over });
         Assert.DoesNotContain(TestPaths.PathOf(AppStateDriver.FixturePath), started.AppState.ListSession.Assemblies.Arriving);
         Assert.False(started.AppState.ListSession.Reload.IsRunning);
-        started.Frames.WaitUntil(() => AreListed(started.AppState.ListSession.Assemblies, arguments.Files.Paths), AppStateDriver.Patience);
+        started.Frames.WaitUntil(() => AreListed(started.AppState.ListSession.Assemblies, arguments.Files.Paths), Waits.Patience);
         started.Settle();
 
         var inbox = Channel.CreateUnbounded<RunArguments>();
         var handed = new AppDriver(settings: DefaultAndOther(openTemp), inbox: inbox);
-        handed.Frames.WaitUntil(() => handed.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(AppStateDriver.FixturePath)), AppStateDriver.Patience);
+        handed.Frames.WaitUntil(() => handed.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(AppStateDriver.FixturePath)), Waits.Patience);
         handed.Settle();
         Assert.True(inbox.Writer.TryWrite(arguments));
-        handed.Frames.WaitUntil(() => AreListed(handed.AppState.ListSession.Assemblies, arguments.Files.Paths), AppStateDriver.Patience);
+        handed.Frames.WaitUntil(() => AreListed(handed.AppState.ListSession.Assemblies, arguments.Files.Paths), Waits.Patience);
         handed.Settle();
 
         Assert.DoesNotContain(TestPaths.PathOf(AppStateDriver.FixturePath), listing.Asked);
@@ -313,7 +313,7 @@ public sealed class RunArgumentsTests
         using var receiver = (await routing).Receiver;
         Assert.NotNull(receiver);
         var app = new AppDriver(settings: DefaultAndOther(temp), inbox: receiver.Inbox);
-        app.Frames.WaitUntil(() => AreListed(app.AppState.ListSession.Assemblies, later.Files.Paths), AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => AreListed(app.AppState.ListSession.Assemblies, later.Files.Paths), Waits.Patience);
         app.Settle();
 
         Assert.True(isTaken);
@@ -342,7 +342,7 @@ public sealed class RunArgumentsTests
         // The way the launcher does: the arguments in the app's inbox before the app takes them, ahead of its first
         // frame.
         var app = new AppDriver(settings: settings, queuedArguments: arguments);
-        app.Frames.WaitUntil(() => AreListed(app.AppState.ListSession.Assemblies, arguments.Files.Paths), AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => AreListed(app.AppState.ListSession.Assemblies, arguments.Files.Paths), Waits.Patience);
         app.Settle();
         return app;
     }

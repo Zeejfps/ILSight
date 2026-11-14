@@ -30,10 +30,10 @@ public sealed class WebCilTests
         var decompiling = part.DecompileAsync(DecompilationLanguage.CSharp);
         LoadedAssemblies.Release(list.Close(module));
         var released = LoadedAssemblies.WaitForReleaseAsync(module, CancellationToken.None);
-        var decompiled = await decompiling;
+        var decompiled = await decompiling.WithinPatienceAsync();
         var isReleasedWhileRead = released.IsCompleted;
         underWay.Dispose();
-        await released;
+        await released.WithinPatienceAsync();
         await File.WriteAllBytesAsync(path, whole);
 
         Assert.False(isReleasedWhileRead);

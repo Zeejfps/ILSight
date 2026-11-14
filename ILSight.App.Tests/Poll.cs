@@ -4,8 +4,6 @@ namespace ILSight.App.Tests;
 
 internal static class Poll
 {
-    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
-
     /// <summary>Takes <paramref name="step"/> until <paramref name="done"/>, at least once.</summary>
     public static void Until(Func<bool> done, Action step)
     {
@@ -18,7 +16,7 @@ internal static class Poll
                 return;
             }
 
-            if (clock.Elapsed > Timeout)
+            if (clock.Elapsed > Waits.Patience)
             {
                 throw new TimeoutException("It did not get there in time.");
             }

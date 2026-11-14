@@ -5,9 +5,6 @@ namespace ILSight.Tests;
 
 public sealed class ModuleReleaseTests
 {
-    // A release that should come comes well within this; past it, it never came.
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
-
     private static (AssemblyList List, LoadedModule Left, LoadedModule Right) OpenEachReferencingTheOther(TempDir temp)
     {
         var leftPath = WrittenAssemblies.WriteDerivingFrom(temp, "Left", "Right");
@@ -26,8 +23,8 @@ public sealed class ModuleReleaseTests
 
         LoadedAssemblies.Release(list.Close(left));
         LoadedAssemblies.Release(list.Close(right));
-        await LoadedAssemblies.WaitForReleaseAsync(left, CancellationToken.None).WaitAsync(Patience);
-        await LoadedAssemblies.WaitForReleaseAsync(right, CancellationToken.None).WaitAsync(Patience);
+        await LoadedAssemblies.WaitForReleaseAsync(left, CancellationToken.None).WithinPatienceAsync();
+        await LoadedAssemblies.WaitForReleaseAsync(right, CancellationToken.None).WithinPatienceAsync();
 
         Assert.Null(leftCode.Error);
         Assert.Null(rightCode.Error);
@@ -44,7 +41,7 @@ public sealed class ModuleReleaseTests
         await right.ReadRootAsync().GetChildAsync("Right", "Derived").DecompileAsync(DecompilationLanguage.CSharp);
 
         LoadedAssemblies.Release(list.Close(right));
-        await LoadedAssemblies.WaitForReleaseAsync(right, CancellationToken.None).WaitAsync(Patience);
+        await LoadedAssemblies.WaitForReleaseAsync(right, CancellationToken.None).WithinPatienceAsync();
         var again = await derived.DecompileAsync(DecompilationLanguage.CSharp);
         var after = await ReadTypeSystemAsync(left);
 
@@ -67,7 +64,7 @@ public sealed class ModuleReleaseTests
         var decompiled = (await NodeContentLoader.DecompileAsync(TestSession.Shared, derived, DecompilationLanguage.CSharp, DecompilerOptions.Default)).GetValue();
         var isReleasedWhileRead = released.IsCompleted;
         underWay.Dispose();
-        await released.WaitAsync(Patience);
+        await released.WithinPatienceAsync();
 
         Assert.Null(newReader);
         Assert.IsType<ModuleRead<DecompiledDocument>.Closed>(decompiled);

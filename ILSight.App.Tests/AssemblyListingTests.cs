@@ -453,7 +453,7 @@ public sealed class AssemblyListingTests
         var folder = Path.GetDirectoryName(other) ?? throw new InvalidOperationException($"The app assembly's path names no folder: '{other}'.");
 
         app.Frames.DropFiles(folder, other).Frame();
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)), AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)), Waits.Patience);
 
         Assert.Equal([AppStateDriver.FixturePath, other], app.AppState.ListSession.Assemblies.ListFilePaths().Select(static p => p.Text));
     }
@@ -474,7 +474,7 @@ public sealed class AssemblyListingTests
         Assert.True(saidResolving);
         Assert.False(app.Frames.Drew(app.Ui.Appearance.Strings.StatusResolving));
         Assert.True(app.AppState.ListSession.Navigation.IsStale(resolving.Intent));
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)), AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)), Waits.Patience);
     }
 
     [Fact]
@@ -489,7 +489,7 @@ public sealed class AssemblyListingTests
         app.Frames.Key(Shortcuts.Open).Frame();
         app.Frames.Frame();
         var saidOpening = app.Frames.Drew(app.Ui.Appearance.Strings.StatusOpening);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)), AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)), Waits.Patience);
         app.Settle(2);
 
         Assert.False(saidOpeningBefore);
@@ -577,7 +577,7 @@ public sealed class AssemblyListingTests
         app.Frames.ClickOn(Selector.WithText("Add preconfigured"));
         var saidLookingFor = app.Frames.Drew(app.Ui.Appearance.Strings.ListsLookingForPresets);
         var lookedForBeforeShown = app.Ui.Presets.Found is null;
-        app.Frames.WaitUntil(() => app.Ui.Presets.Found is not null, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.Ui.Presets.Found is not null, Waits.Patience);
         app.Frames.Frame(2);
 
         Assert.True(saidLookingFor);
@@ -593,7 +593,7 @@ public sealed class AssemblyListingTests
         var preset = AssemblyListPresets.FindInstalled()[0];
 
         app.Frames.ClickOn(Selector.WithText("Add preconfigured"));
-        app.Frames.WaitUntil(() => app.Ui.Presets.Found is not null, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.Ui.Presets.Found is not null, Waits.Patience);
         app.Frames.Frame(2);
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, preset.Name)).Frame(2);
 

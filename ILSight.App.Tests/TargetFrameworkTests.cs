@@ -69,7 +69,7 @@ public sealed class TargetFrameworkTests
     {
         var app = AppDriver.Opened(width: 1600f);
         app.Open([AssemblyPath.Of(SampleAppPath)]);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)), AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)), Waits.Patience);
         var fixtures = FixturesOf(app.AppState.ListSession.Assemblies);
         var sample = SampleOf(app.AppState.ListSession.Assemblies);
         var tree = app.Ui.Tree;
@@ -115,7 +115,7 @@ public sealed class TargetFrameworkTests
         using var temp = new TempDir();
         var app = new AppDriver();
         app.Open([AssemblyPath.Of(WritePackage(temp))]);
-        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, Waits.Patience);
         app.Settle(2);
         var package = await app.AppState.ListSession.Assemblies.Listed[0].ReadRootAsync();
         var folder = await package.GetChildAsync("lib/net10.0");

@@ -20,7 +20,7 @@ public sealed class BrowseSessionTests : IDisposable
         var root = session.EnsureRoot(new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath));
 
         var waits = Enumerable.Range(0, 16).AsParallel().WithDegreeOfParallelism(8).Select(_ => BrowseSessions.GetChildrenAsync(session, root)).ToArray();
-        var waited = await Task.WhenAll(waits);
+        var waited = await Task.WhenAll(waits).WithinPatienceAsync();
 
         var children = Assert.IsType<ChildrenState.Ready>(session.PeekChildren(root)).Children;
         Assert.All(waited, s => Assert.Same(children, Assert.IsType<ChildrenState.Ready>(s).Children));

@@ -343,7 +343,7 @@ public sealed class NuGetFeedTests
         using var cancellation = new CancellationTokenSource();
         var cancelled = NuGetFeeds.SearchAsync(feed, "a", includePrerelease: false, cancellationToken: cancellation.Token);
         cancellation.CancelAfter(TimeSpan.FromMilliseconds(20));
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cancelled);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cancelled.WithinPatienceAsync());
 
         fake.Holds = false;
         await NuGetFeeds.SearchAsync(feed, "b", includePrerelease: false);

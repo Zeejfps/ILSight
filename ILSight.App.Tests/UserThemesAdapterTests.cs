@@ -25,8 +25,8 @@ public sealed class UserThemesAdapterTests : IDisposable
 
         await shutdown.CancelAsync();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiting.WaitAsync(AppStateDriver.Patience));
-        var after = await StartWithoutContextAsync(() => adapter.WaitForChangeAsync(CancellationToken.None)).WaitAsync(AppStateDriver.Patience);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiting.WithinPatienceAsync());
+        var after = await StartWithoutContextAsync(() => adapter.WaitForChangeAsync(CancellationToken.None)).WithinPatienceAsync();
         Assert.Equal(ThemeFolderEventKind.Stopped, Assert.IsType<Outcome<ThemeFolderEvent>.Ok>(after).Value.Kind);
     }
 
