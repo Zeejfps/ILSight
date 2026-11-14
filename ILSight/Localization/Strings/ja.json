@@ -714,6 +714,7 @@
   "error.pdb_unreadable": "読み取れる PDB ではありません。",
   "error.navigate_to": "開いたアセンブリに {id} という名前のものは見つかりませんでした",
   "error.arguments_ignored": {"other": "{count:N0} 個のコマンドライン引数を解釈できなかったため無視しました"},
+  "error.arguments_ignored_more": {"other": "ほか {count:N0} 個"},
   "error.arguments_unconfirmed": "既に開いている ILSight のウィンドウは {arguments} を受け取ったことを確認しませんでした。2 つ目のウィンドウは開いていません。",
   "error.arguments_unconfirmed_ok": "OK",
   "error.show_in_diagram": "{name} をクラス図に表示できません",

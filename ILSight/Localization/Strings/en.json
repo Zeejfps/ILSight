@@ -729,6 +729,7 @@
   "error.pdb_unreadable": "It is no PDB that can be read.",
   "error.navigate_to": "Nothing named {id} was found in the assemblies opened",
   "error.arguments_ignored": {"one": "{count:N0} command-line argument was not understood and was ignored", "other": "{count:N0} command-line arguments were not understood and were ignored"},
+  "error.arguments_ignored_more": {"one": "and {count:N0} more", "other": "and {count:N0} more"},
   "error.arguments_unconfirmed": "The ILSight window already open never confirmed it took {arguments}. No second window was opened.",
   "error.arguments_unconfirmed_ok": "OK",
   "error.show_in_diagram": "Cannot show {name} in a diagram",

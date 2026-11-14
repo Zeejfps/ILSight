@@ -714,6 +714,7 @@
   "error.pdb_unreadable": "Это не PDB, который можно прочитать.",
   "error.navigate_to": "В открытых сборках не найдено ничего с именем {id}",
   "error.arguments_ignored": {"one": "{count:N0} аргумент командной строки не распознан и пропущен", "few": "{count:N0} аргумента командной строки не распознаны и пропущены", "many": "{count:N0} аргументов командной строки не распознаны и пропущены", "other": "{count:N0} аргумента командной строки не распознаны и пропущены"},
+  "error.arguments_ignored_more": {"one": "и ещё {count:N0}", "few": "и ещё {count:N0}", "many": "и ещё {count:N0}", "other": "и ещё {count:N0}"},
   "error.arguments_unconfirmed": "Уже открытое окно ILSight так и не подтвердило, что получило {arguments}. Второе окно не открывалось.",
   "error.arguments_unconfirmed_ok": "ОК",
   "error.show_in_diagram": "Не удалось показать {name} на диаграмме",
