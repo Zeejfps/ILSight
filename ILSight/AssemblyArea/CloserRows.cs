@@ -99,14 +99,16 @@ public sealed class CloserRows
             return;
         }
 
-        var from = FindIndex(shown, anchor);
-        var to = FindIndex(shown, clicked);
-        if (from is null || to is null)
+        var anchorRow = FindIndex(shown, anchor);
+        var clickedRow = FindIndex(shown, clicked);
+        if (anchorRow is null || clickedRow is null)
         {
             return;
         }
 
-        for (var i = Math.Min(from.Value, to.Value); i <= Math.Max(from.Value, to.Value); i++)
+        var from = anchorRow.Value;
+        var to = clickedRow.Value;
+        for (var i = Math.Min(from, to); i <= Math.Max(from, to); i++)
         {
             shown[i].Included = clicked.Included;
         }

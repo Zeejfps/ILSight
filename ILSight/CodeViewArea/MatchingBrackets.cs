@@ -29,19 +29,20 @@ public static class MatchingBrackets
 
     private static BracketPair? MatchAt(DecompiledDocument document, TextPosition at)
     {
-        var bracket = FindBracketAt(document, at);
-        if (bracket is null)
+        var found = FindBracketAt(document, at);
+        if (found is null)
         {
             return null;
         }
 
-        var open = Opens.IndexOf(bracket.Value);
+        var bracket = found.Value;
+        var open = Opens.IndexOf(bracket);
         if (open >= 0)
         {
             return MatchForward(document, at, Opens[open], Closes[open]);
         }
 
-        var close = Closes.IndexOf(bracket.Value);
+        var close = Closes.IndexOf(bracket);
         if (close >= 0)
         {
             return MatchBackward(document, at, Opens[close], Closes[close]);
