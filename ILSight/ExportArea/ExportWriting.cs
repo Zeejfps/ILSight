@@ -16,7 +16,6 @@ public sealed class ExportWriting(ExportWriting.IPorts ports)
         /// <summary>How long it has been since <paramref name="start"/>, a reading of <see cref="Now"/>.</summary>
         TimeSpan MeasureSince(long start);
 
-        /// <summary>Whether the folder at <paramref name="folder"/> is there.</summary>
         bool IsFolderThere(string folder);
 
         /// <summary>Writes the code <paramref name="work"/> asks for; answers the path written. Each of these writes

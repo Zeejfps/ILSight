@@ -124,7 +124,6 @@ public sealed class AppState
     /// <summary>Finishes expanding an assembly and the namespaces in it.</summary>
     public required ExpandNamespacesHandler ExpandNamespacesHandler { get; init; }
 
-    /// <summary>Saves the settings.</summary>
     public required SettingsSaving SettingsSaving { get; init; }
 
     /// <summary>Writes an export the exports panel queued, once its turn comes.</summary>

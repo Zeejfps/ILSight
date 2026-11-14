@@ -35,7 +35,6 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
         /// writing them; false, with why in <paramref name="reason"/>, when it cannot.</summary>
         bool TryMakeFolder(string folder, [NotNullWhen(false)] out string? reason);
 
-        /// <summary>Whether there is a file at <paramref name="path"/>.</summary>
         bool IsFile(string path);
 
         /// <summary>Writes <paramref name="text"/> to a file at <paramref name="path"/>, which must not exist

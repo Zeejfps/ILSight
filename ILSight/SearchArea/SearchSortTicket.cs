@@ -12,7 +12,6 @@ public sealed class SearchSortTicket
 
     public required IReadOnlyList<SearchResult> Rows { get; init; }
 
-    /// <summary>The <see cref="SearchSorting.RowsVersion"/> <see cref="Rows"/> are of.</summary>
     public required int RowsVersion { get; init; }
 
     public required WorkTicket Work { get; init; }

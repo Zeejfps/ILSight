@@ -280,7 +280,7 @@ public sealed class NuGetPickerTests : IDisposable
         Update(picker, now: 20);
         Update(picker, now: 21);
 
-        Assert.False(picker.HasFeedUrl);
+        Assert.False(picker.IsFeedUrlValid);
         Assert.Empty(picker.Browser.Results);
         Assert.Null(picker.Browser.Selected);
         Assert.Equal(requests, _fake.Requested.Count);

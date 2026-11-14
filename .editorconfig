@@ -124,7 +124,7 @@ dotnet_diagnostic.RL0407.severity = suggestion
 dotnet_diagnostic.RL0907.severity = suggestion
 dotnet_diagnostic.RL1309.severity = error
 dotnet_diagnostic.RL1401.severity = error
-dotnet_diagnostic.RL1402.severity = suggestion
+dotnet_diagnostic.RL1402.severity = error
 dotnet_diagnostic.RL1403.severity = suggestion
 # R011's checks (RULES.md R011).
 dotnet_diagnostic.RL1101.severity = error

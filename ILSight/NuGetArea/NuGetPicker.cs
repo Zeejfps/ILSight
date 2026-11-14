@@ -24,8 +24,7 @@ public sealed class NuGetPicker
     /// <summary>The feed read and searched, the packages found, and what was fetched of them.</summary>
     public required NuGetBrowser Browser { get; init; }
 
-    /// <summary>Whether <see cref="FeedUrl"/> is a URL a feed could be at.</summary>
-    public bool HasFeedUrl => NuGetSource.FromUrl(FeedUrl) is not null;
+    public bool IsFeedUrlValid => NuGetSource.FromUrl(FeedUrl) is not null;
 
     /// <summary>Searches the feed and counts prereleases as the settings kept them.</summary>
     public void RestoreSearch(SavedNuGetSearch? saved)

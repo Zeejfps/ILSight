@@ -12,6 +12,5 @@ public sealed class ModuleReferenceInfo
 
     public required bool ContainsMetadata { get; init; }
 
-    /// <summary>The methods the module imports from it.</summary>
     public required IReadOnlyList<MethodDefinitionHandle> Imports { get; init; }
 }

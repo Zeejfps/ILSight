@@ -20,7 +20,7 @@ internal static class NuGetPlaceholderView
                 Waiting(ui, t.NugetReadingConfig);
                 return;
             }
-            if (!picker.HasFeedUrl)
+            if (!picker.IsFeedUrlValid)
             {
                 Note(ui, picker.Browser.HasNoSources ? t.NugetNoSources : t.NugetNoFeed);
                 return;

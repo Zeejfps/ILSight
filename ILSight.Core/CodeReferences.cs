@@ -62,7 +62,6 @@ internal static class CodeReferences
         return CreateAssembly(name, filePath, (AssemblyReferenceHandle?)null);
     }
 
-    /// <summary>A reference to the assembly the file at <paramref name="filePath"/> references by <paramref name="handle"/>.</summary>
     public static CodeReference.Assembly CreateAssembly(string name, AssemblyPath filePath, AssemblyReferenceHandle handle)
     {
         return CreateAssembly(name, filePath, (AssemblyReferenceHandle?)handle);
