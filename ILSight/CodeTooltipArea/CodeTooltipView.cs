@@ -47,19 +47,19 @@ internal static class CodeTooltipView
 
     /// <summary>Records what <paramref name="shown"/> shows: the tooltip, or that the module the type or member is in
     /// could not be read, and why; returns the link clicked in it this frame, if one was.</summary>
-    public static RichTextClick Render(Ui<UiState> ui, Lookup<CodeTooltip> shown)
+    public static RichTextClick Render(Ui ui, Appearance appearance, Lookup<CodeTooltip> shown)
     {
-        return shown.Match<Ui<UiState>, RichTextClick>(ui,
-            static (u, found) => Render(u, found.Value),
+        return shown.Match<(Ui Ui, Appearance Appearance), RichTextClick>((ui, appearance),
+            static (at, found) => Render(at.Ui, at.Appearance, found.Value),
             static (_, _) => default,
-            static (u, unreadable) => RenderUnreadable(u, unreadable.Module));
+            static (at, unreadable) => RenderUnreadable(at.Ui, at.Appearance, unreadable.Module));
     }
 
-    private static RichTextClick RenderUnreadable(Ui<UiState> ui, UnreadableModule unreadable)
+    private static RichTextClick RenderUnreadable(Ui ui, Appearance appearance, UnreadableModule unreadable)
     {
         using (ui.Column(new Box { Padding = new Spacing(PaddingX, SignaturePaddingY), Gap = 0f }))
         {
-            var text = ui.State.Appearance.Strings.CodeTooltipUnreadable(unreadable.Module.FilePath.FileName, unreadable.Why.Message);
+            var text = appearance.Strings.CodeTooltipUnreadable(unreadable.Module.FilePath.FileName, unreadable.Why.Message);
             ui.Text(text, color: ui.Theme.Warning, wrap: true);
         }
         return default;
@@ -67,19 +67,19 @@ internal static class CodeTooltipView
 
     /// <summary>Records that <paramref name="assembly"/>, the assembly the hovered type or member is in, was closed, where
     /// the tooltip's declaration would be: the code of a closed assembly looks nothing up.</summary>
-    public static void RenderClosed(Ui<UiState> ui, string assembly)
+    public static void RenderClosed(Ui ui, Appearance appearance, string assembly)
     {
         using (ui.Column(new Box { Padding = new Spacing(PaddingX, SignaturePaddingY), Gap = 0f }))
         {
-            var text = ui.Memo("closed", (assembly, t: ui.State.Appearance.Strings), static a => a.t.DocumentClosed(a.assembly));
+            var text = ui.Memo("closed", (assembly, t: appearance.Strings), static a => a.t.DocumentClosed(a.assembly));
             ui.Text(text, color: ui.Theme.Warning, wrap: true);
         }
     }
 
     /// <summary>Records the tooltip and returns the link clicked in it this frame, if one was.</summary>
-    public static RichTextClick Render(Ui<UiState> ui, CodeTooltip tooltip)
+    public static RichTextClick Render(Ui ui, Appearance appearance, CodeTooltip tooltip)
     {
-        var shown = ShownOf(ui, tooltip);
+        var shown = ShownOf(ui, appearance, tooltip);
         shown.Clicked = default;
         using (ui.Column(new Box { Gap = 0f }))
         {
@@ -95,7 +95,7 @@ internal static class CodeTooltipView
         return shown.Clicked;
     }
 
-    private static void Text(Ui<UiState> ui, ShownTooltip shown, IReadOnlyList<RichTextRun> runs)
+    private static void Text(Ui ui, ShownTooltip shown, IReadOnlyList<RichTextRun> runs)
     {
         var id = ui.GetId(RuntimeHelpers.GetHashCode(runs));
         var click = ui.RichText(runs, codeBackground: shown.CodeBackground, id: id);
@@ -105,7 +105,7 @@ internal static class CodeTooltipView
         }
     }
 
-    private static void RenderSignature(Ui<UiState> ui, ShownTooltip shown)
+    private static void RenderSignature(Ui ui, ShownTooltip shown)
     {
         using (ui.Column(new Box { Padding = new Spacing(PaddingX, SignaturePaddingY), Gap = ContextGap }))
         {
@@ -119,7 +119,7 @@ internal static class CodeTooltipView
         }
     }
 
-    private static void RenderConstraints(Ui<UiState> ui, ShownTooltip shown)
+    private static void RenderConstraints(Ui ui, ShownTooltip shown)
     {
         if (shown.Layout.Constraints.Count == 0)
         {
@@ -135,7 +135,7 @@ internal static class CodeTooltipView
         }
     }
 
-    private static void RenderDeclaration(Ui<UiState> ui, ShownTooltip shown)
+    private static void RenderDeclaration(Ui ui, ShownTooltip shown)
     {
         if (FitsOnOneLine(ui, shown))
         {
@@ -155,7 +155,7 @@ internal static class CodeTooltipView
         }
     }
 
-    private static bool FitsOnOneLine(Ui<UiState> ui, ShownTooltip shown)
+    private static bool FitsOnOneLine(Ui ui, ShownTooltip shown)
     {
         if (shown.Layout.Parameters.Count == 0)
         {
@@ -166,7 +166,7 @@ internal static class CodeTooltipView
         return ui.MeasureRuns(shown.Layout.Declaration) <= room;
     }
 
-    private static void RenderDocumentation(Ui<UiState> ui, ShownTooltip shown)
+    private static void RenderDocumentation(Ui ui, ShownTooltip shown)
     {
         using (ui.Column(new Box { Padding = new Spacing(PaddingX, DocumentationPaddingY), Gap = SectionGap }))
         {
@@ -177,7 +177,7 @@ internal static class CodeTooltipView
         }
     }
 
-    private static void RenderGroup(Ui<UiState> ui, ShownTooltip shown, TooltipGroup group)
+    private static void RenderGroup(Ui ui, ShownTooltip shown, TooltipGroup group)
     {
         using (ui.Column(new Box { Gap = HeadingGap }))
         {
@@ -197,7 +197,7 @@ internal static class CodeTooltipView
         }
     }
 
-    private static float LabelWidth(Ui<UiState> ui, List<TooltipEntry> entries)
+    private static float LabelWidth(Ui ui, List<TooltipEntry> entries)
     {
         var widest = 0f;
         foreach (var entry in entries)
@@ -210,7 +210,7 @@ internal static class CodeTooltipView
         return MathF.Min(widest, MaxLabelWidth) + ColumnGap;
     }
 
-    private static void RenderEntry(Ui<UiState> ui, ShownTooltip shown, EntryShape shape, TooltipEntry entry, float labelWidth)
+    private static void RenderEntry(Ui ui, ShownTooltip shown, EntryShape shape, TooltipEntry entry, float labelWidth)
     {
         switch (shape)
         {
@@ -226,7 +226,7 @@ internal static class CodeTooltipView
         }
     }
 
-    private static void RenderColumnEntry(Ui<UiState> ui, ShownTooltip shown, IReadOnlyList<RichTextRun> label, IReadOnlyList<TooltipBlock> blocks,
+    private static void RenderColumnEntry(Ui ui, ShownTooltip shown, IReadOnlyList<RichTextRun> label, IReadOnlyList<TooltipBlock> blocks,
         float labelWidth)
     {
         using (ui.Row(new Box { Gap = 0f }))
@@ -243,7 +243,7 @@ internal static class CodeTooltipView
         }
     }
 
-    private static void RenderStackedEntry(Ui<UiState> ui, ShownTooltip shown, IReadOnlyList<RichTextRun> label, IReadOnlyList<TooltipBlock> blocks)
+    private static void RenderStackedEntry(Ui ui, ShownTooltip shown, IReadOnlyList<RichTextRun> label, IReadOnlyList<TooltipBlock> blocks)
     {
         using (ui.Column(new Box { Gap = ExceptionGap }))
         {
@@ -255,7 +255,7 @@ internal static class CodeTooltipView
         }
     }
 
-    private static void RenderBlocks(Ui<UiState> ui, ShownTooltip shown, IReadOnlyList<TooltipBlock> blocks)
+    private static void RenderBlocks(Ui ui, ShownTooltip shown, IReadOnlyList<TooltipBlock> blocks)
     {
         using (ui.Column(new Box { Width = Sizing.Grow(), Gap = ParagraphGap }))
         {
@@ -267,7 +267,7 @@ internal static class CodeTooltipView
         }
     }
 
-    private static void RenderBlock(Ui<UiState> ui, ShownTooltip shown, TooltipBlock block)
+    private static void RenderBlock(Ui ui, ShownTooltip shown, TooltipBlock block)
     {
         switch (block)
         {
@@ -283,7 +283,7 @@ internal static class CodeTooltipView
         }
     }
 
-    private static void RenderCode(Ui<UiState> ui, ShownTooltip shown, CodeBlock code)
+    private static void RenderCode(Ui ui, ShownTooltip shown, CodeBlock code)
     {
         var box = new Box
         {
@@ -300,7 +300,7 @@ internal static class CodeTooltipView
 
     // Each row's lead (a marker, or a table's term) gets a column of its own so that wrapped lines hang under the text
     // rather than the lead.
-    private static void RenderList(Ui<UiState> ui, ShownTooltip shown, ListBlock list)
+    private static void RenderList(Ui ui, ShownTooltip shown, ListBlock list)
     {
         var leadWidth = LeadWidth(ui, list);
         using (ui.Column(new Box { Width = Sizing.Grow(), Gap = ItemGap }))
@@ -314,7 +314,7 @@ internal static class CodeTooltipView
         }
     }
 
-    private static float LeadWidth(Ui<UiState> ui, ListBlock list)
+    private static float LeadWidth(Ui ui, ListBlock list)
     {
         var widest = 0f;
         var rows = list.Rows;
@@ -332,7 +332,7 @@ internal static class CodeTooltipView
         return MathF.Max(MarkerWidth, widest + MarkerGap);
     }
 
-    private static void RenderListRow(Ui<UiState> ui, ShownTooltip shown, ListRow row, float leadWidth)
+    private static void RenderListRow(Ui ui, ShownTooltip shown, ListRow row, float leadWidth)
     {
         using (ui.Row(new Box { Gap = 0f }))
         {
@@ -366,11 +366,11 @@ internal static class CodeTooltipView
         return ReferenceEquals(shown.Tooltip, tooltip) && sameLook && ReferenceEquals(shown.Strings, strings);
     }
 
-    private static ShownTooltip ShownOf(Ui<UiState> ui, CodeTooltip tooltip)
+    private static ShownTooltip ShownOf(Ui ui, Appearance appearance, CodeTooltip tooltip)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var shown = ui.GetState<ShownTooltip>(ui.GetId("code-tooltip"));
-        var palette = ui.State.Appearance.CodeViewPalette;
+        var palette = appearance.CodeViewPalette;
         if (IsBuiltFor(shown, tooltip, palette, ui.Theme, t))
         {
             return shown;
@@ -386,7 +386,7 @@ internal static class CodeTooltipView
         return shown;
     }
 
-    private static TooltipStyles CreateStyles(Ui<UiState> ui, CodeViewPalette palette)
+    private static TooltipStyles CreateStyles(Ui ui, CodeViewPalette palette)
     {
         var theme = ui.Theme;
         var size = theme.FontSize;

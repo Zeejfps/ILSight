@@ -12,7 +12,7 @@ public static class MetadataGridWidget
     private const int FunnelSalt = 0x4D444746;
     private const int FilterTextSalt = 0x4D444754;
 
-    public static MetadataGridResult RenderMetadataGrid(Ui<UiState> ui, string id, MetadataGridState state, MetadataFilters flags,
+    public static MetadataGridResult RenderMetadataGrid(Ui ui, MetadataGridViews views, MetadataGridPages pages, Appearance appearance, ScreenDisplay display, IAppCommandWriter commands, string id, MetadataGridState state, MetadataFilters flags,
         string? closedAssembly = null)
     {
         var listId = ui.GetId(id);
@@ -22,9 +22,12 @@ public static class MetadataGridWidget
             Grid = state.Grid,
             State = state,
             Flags = flags,
-            Views = ui.State.MetadataGridViews,
-            Pages = ui.State.MetadataGridPages,
-            Strings = ui.State.Appearance.Strings,
+            Views = views,
+            Pages = pages,
+            Appearance = appearance,
+            Display = display,
+            Strings = appearance.Strings,
+            AppCommands = commands,
             ListId = listId,
             MenuId = HashCode.Combine(listId, MetadataGridFrame.MenuSalt),
             ClosedAssembly = closedAssembly,

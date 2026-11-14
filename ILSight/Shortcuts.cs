@@ -93,7 +93,7 @@ internal static class Shortcuts
         new Binding { Keys = Forward, Run = static (ui, appState) => GoForward(ui.State.AppCommands, appState), WhileTyping = true },
         new Binding { Keys = Open, Run = static (ui, appState) => MainMenuView.OpenFile(ui, appState.ListSession.Navigation) },
         new Binding { Keys = Settings, Run = static (ui, _) => ScreenLayout.OpenPanel(ui.State, DockView.DisplayOptions), WhileTyping = true },
-        new Binding { Keys = SaveCode, Run = static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, appState.ListSession.Navigation, appState.Decompiler.Setup.Language) },
+        new Binding { Keys = SaveCode, Run = static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, ui.State.Appearance, ui.State.AppCommands, appState.ListSession.Navigation, appState.Decompiler.Setup.Language) },
         new Binding { Keys = Export, Run = static (ui, appState) => ui.State.ExportSetup.Open(appState.ListSession.Assemblies.Assemblies, Exports.FindActiveAssembly(appState.ListSession.Navigation)) },
         new Binding { Keys = ReloadAll, Run = static (ui, _) => Commands.ReloadLater(ui.State.AppCommands, ui.State.Tree.ListExpandedPaths()) },
         new Binding { Keys = CloseTab, Run = static (ui, _) => DocumentPanels.CloseActiveTab(ui.State) },
@@ -152,7 +152,7 @@ internal static class Shortcuts
     }
 
     /// <summary>Whether any of <paramref name="shortcuts"/> was pressed this frame.</summary>
-    public static bool AnyPressed(Ui<UiState> ui, Shortcut[] shortcuts)
+    public static bool AnyPressed(Ui ui, Shortcut[] shortcuts)
     {
         foreach (var shortcut in shortcuts)
         {

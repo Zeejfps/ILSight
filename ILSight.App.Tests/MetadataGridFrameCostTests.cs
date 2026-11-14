@@ -77,7 +77,7 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
     private static void Render(Ui<UiState> ui, MetadataGrid grid, MetadataGridState state, MetadataFilters flags)
     {
         using var screen = ui.Screen();
-        MetadataGridWidget.RenderMetadataGrid(ui, "grid", state, flags);
+        MetadataGridWidget.RenderMetadataGrid(ui, ui.State.MetadataGridViews, ui.State.MetadataGridPages, ui.State.Appearance, ui.State.Display, ui.State.AppCommands, "grid", state, flags);
     }
 
     // Scrolls down and back up in sweeps, so the measured frames show rows the warm-up already showed once and their

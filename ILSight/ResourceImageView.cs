@@ -28,7 +28,7 @@ internal static class ResourceImageView
         var image = shown.Image;
         var hasSource = shown.Source is not null;
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = theme.PaneBackground });
-        Toolbar(ui, tab, view.Picture, image, hasSource);
+        Toolbar(ui, ui.State.Appearance, ui.State.AppCommands, tab, view.Picture, image, hasSource);
         ui.Separator();
         if (view.Picture.ShowsSource)
         {
@@ -38,9 +38,9 @@ internal static class ResourceImageView
         Picture(ui, view, image);
     }
 
-    private static void Toolbar(Ui<UiState> ui, DocumentTab tab, PictureView picture, ResourceImage image, bool hasSource)
+    private static void Toolbar(Ui ui, Appearance appearance, IAppCommandWriter commands, DocumentTab tab, PictureView picture, ResourceImage image, bool hasSource)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         using (ui.PaneToolbar(new Box { Gap = theme.Gap }))
         {
@@ -48,39 +48,39 @@ internal static class ResourceImageView
                 overflow: TextOverflow.Ellipsis);
             if (!picture.ShowsSource)
             {
-                ZoomButtons(ui, picture);
+                ZoomButtons(ui, appearance, picture);
             }
 
             if (hasSource)
             {
-                SourceButton(ui, picture);
+                SourceButton(ui, appearance, picture);
             }
 
             var node = tab.Node;
-            if (node is not null && node.HasResource && ui.Button(t.ResourceExport, id: "export", icon: new UiIcon(ui.State.Appearance.Icons.ResourceExport)))
+            if (node is not null && node.HasResource && ui.Button(t.ResourceExport, id: "export", icon: new UiIcon(appearance.Icons.ResourceExport)))
             {
-                PickExport(ui, node);
+                PickExport(ui, appearance, commands, node);
             }
         }
     }
 
-    private static void ZoomButtons(Ui<UiState> ui, PictureView picture)
+    private static void ZoomButtons(Ui ui, Appearance appearance, PictureView picture)
     {
         var zoom = picture.Zoom;
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
-        if (ui.IconButton("zoom-out", ui.State.Appearance.Icons.ResourceZoomOut, t.ResourceZoomOut, zoom.CanZoomOut))
+        if (ui.IconButton("zoom-out", appearance.Icons.ResourceZoomOut, t.ResourceZoomOut, zoom.CanZoomOut))
         {
             picture.ZoomOut();
         }
 
         ui.Text(t.ResourceZoomPercent(zoom.Percent), color: theme.TextMuted);
-        if (ui.IconButton("zoom-in", ui.State.Appearance.Icons.ResourceZoomIn, t.ResourceZoomIn, zoom.CanZoomIn))
+        if (ui.IconButton("zoom-in", appearance.Icons.ResourceZoomIn, t.ResourceZoomIn, zoom.CanZoomIn))
         {
             picture.ZoomIn();
         }
 
-        if (ui.IconButton("zoom-reset", ui.State.Appearance.Icons.ResourceZoomReset, t.ResourceZoomReset, !zoom.IsOwnSize))
+        if (ui.IconButton("zoom-reset", appearance.Icons.ResourceZoomReset, t.ResourceZoomReset, !zoom.IsOwnSize))
         {
             picture.ResetZoom();
         }
@@ -88,11 +88,11 @@ internal static class ResourceImageView
         ui.Separator(theme.IconSize);
     }
 
-    private static void SourceButton(Ui<UiState> ui, PictureView picture)
+    private static void SourceButton(Ui ui, Appearance appearance, PictureView picture)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var label = picture.ShowsSource ? t.ResourceShowPicture : t.ResourceShowSource;
-        var icons = ui.State.Appearance.Icons;
+        var icons = appearance.Icons;
         var glyph = picture.ShowsSource ? icons.ResourceShowPicture : icons.ResourceShowSource;
         if (ui.Button(label, id: "source", icon: new UiIcon(glyph)))
         {
@@ -100,7 +100,7 @@ internal static class ResourceImageView
         }
     }
 
-    private static void Picture(Ui<UiState> ui, TabView view, ResourceImage image)
+    private static void Picture(Ui ui, TabView view, ResourceImage image)
     {
         var theme = ui.Theme;
         var scale = view.Picture.Zoom.Scale;
@@ -121,7 +121,7 @@ internal static class ResourceImageView
     }
 
     // A vector picture is drawn again, sharp, when the zoom changed; a raster one is stretched instead.
-    private static void Upload(Ui<UiState> ui, string imageId, ResourceImage image, float scale)
+    private static void Upload(Ui ui, string imageId, ResourceImage image, float scale)
     {
         var uploaded = ui.GetState<Uploaded>(ui.GetId(imageId));
         if (!NeedsUpload(ui, imageId, uploaded, image, scale))
@@ -135,7 +135,7 @@ internal static class ResourceImageView
         uploaded.Scale = scale;
     }
 
-    private static bool NeedsUpload(Ui<UiState> ui, string imageId, Uploaded uploaded, ResourceImage image, float scale)
+    private static bool NeedsUpload(Ui ui, string imageId, Uploaded uploaded, ResourceImage image, float scale)
     {
         if (!ReferenceEquals(uploaded.Image, image))
         {
@@ -151,13 +151,12 @@ internal static class ResourceImageView
     }
 
     /// <summary>Asks where to export the resource <paramref name="node"/> stands for, then writes it there.</summary>
-    public static void PickExport(Ui<UiState> ui, BrowseNode node)
+    public static void PickExport(Ui ui, Appearance appearance, IAppCommandWriter commands, BrowseNode node)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var fileName = node.ResourceFileName ?? throw new InvalidOperationException($"{node.Text} is no resource.");
-        var screen = ui.State;
         ui.PickSaveFile(t.ResourceExportTitle, null, fileName, ExportFilters(t, fileName),
-            path => Commands.Later(screen.AppCommands, (node, path), static (a, s) => ExportArea.ExportCommands.SaveResource(a, s.node, s.path)));
+            path => Commands.Later(commands, (node, path), static (a, s) => ExportArea.ExportCommands.SaveResource(a, s.node, s.path)));
     }
 
     private const string XamlExtension = ".xaml";

@@ -44,42 +44,42 @@ internal static class DiagramView
 
     /// <summary>The diagram <paramref name="tab"/> shows. Opening a type's or a member's code from it begins following
     /// it in <paramref name="navigation"/> in this frame, queuing only its lookup.</summary>
-    public static void Render(Ui<UiState> ui, Navigation navigation, CodeTooltips tooltips, DocumentTab tab, TypeDiagram diagram)
+    public static void Render(Ui ui, DocumentViews documents, ScreenDisplay display, Appearance appearance, IAppCommandWriter commands, Navigation navigation, CodeTooltips tooltips, DocumentTab tab, TypeDiagram diagram)
     {
-        var view = DocumentPanels.GetView(ui.State.Documents, tab).Diagram;
+        var view = DocumentPanels.GetView(documents, tab).Diagram;
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground });
-        if (!ui.State.Display.Options.ShowOmnibar)
+        if (!display.Options.ShowOmnibar)
         {
-            OwnToolbar(ui, tab);
+            OwnToolbar(ui, appearance, documents, tab);
         }
 
         if (diagram.Cards.Count == 0)
         {
-            EmptyHint(ui, diagram);
+            EmptyHint(ui, appearance, diagram);
             return;
         }
-        ReadFailure(ui, diagram.ReadFailure);
-        DiagramFaces.MeasureIfChanged(ui, view, diagram);
-        Canvas(ui, navigation, tooltips, view, diagram);
-        CardMenu(ui, navigation, view, diagram, tab.ClosedAssembly);
+        ReadFailure(ui, appearance, diagram.ReadFailure);
+        DiagramFaces.MeasureIfChanged(ui, appearance, commands, view, diagram);
+        Canvas(ui, commands, appearance, navigation, tooltips, view, diagram);
+        CardMenu(ui, appearance, commands, navigation, view, diagram, tab.ClosedAssembly);
     }
 
-    private static void OwnToolbar(Ui<UiState> ui, DocumentTab tab)
+    private static void OwnToolbar(Ui ui, Appearance appearance, DocumentViews documents, DocumentTab tab)
     {
         using (ui.PaneToolbar())
         {
-            Tools(ui, tab);
+            Tools(ui, appearance, documents, tab);
         }
 
         ui.Separator();
     }
 
     /// <summary>The diagram's tools, for the bar over the document: zoom, fit and the member filter.</summary>
-    public static void Tools(Ui<UiState> ui, DocumentTab tab)
+    public static void Tools(Ui ui, Appearance appearance, DocumentViews documents, DocumentTab tab)
     {
-        var t = ui.State.Appearance.Strings;
-        var icons = ui.State.Appearance.Icons;
-        var view = DocumentPanels.GetView(ui.State.Documents, tab).Diagram;
+        var t = appearance.Strings;
+        var icons = appearance.Icons;
+        var view = DocumentPanels.GetView(documents, tab).Diagram;
         var camera = view.Camera;
         var area = GetCanvasRect(ui);
         using (ui.Row(new Box { Gap = ui.Theme.Gap, AlignY = Align.Center }))
@@ -101,21 +101,21 @@ internal static class DiagramView
             }
 
             ui.Separator(ui.Theme.IconSize);
-            ShowHiddenMembersCheckbox(ui, view);
+            ShowHiddenMembersCheckbox(ui, appearance, view);
         }
     }
 
-    private static void ShowHiddenMembersCheckbox(Ui<UiState> ui, DiagramViewState view)
+    private static void ShowHiddenMembersCheckbox(Ui ui, Appearance appearance, DiagramViewState view)
     {
         var shows = view.ShowsHiddenMembers;
-        if (ui.Checkbox(ui.State.Appearance.Strings.DiagramShowHiddenMembers, ref shows, id: "show-hidden-members"))
+        if (ui.Checkbox(appearance.Strings.DiagramShowHiddenMembers, ref shows, id: "show-hidden-members"))
         {
             Diagrams.ShowHiddenMembers(view, shows);
         }
     }
 
     // Where the cards were drawn on the last frame: this one hasn't laid them out yet.
-    private static UiRect GetCanvasRect(Ui<UiState> ui)
+    private static UiRect GetCanvasRect(Ui ui)
     {
         ui.TryGetRect(ui.GetId(CanvasId), out var rect);
         return rect;
@@ -132,9 +132,9 @@ internal static class DiagramView
         view.Camera.Fit(layout.Width, layout.Height, area);
     }
 
-    private static void EmptyHint(Ui<UiState> ui, TypeDiagram diagram)
+    private static void EmptyHint(Ui ui, Appearance appearance, TypeDiagram diagram)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var failure = diagram.ReadFailure;
         if (failure is not null && !diagram.IsBusy)
         {
@@ -147,7 +147,7 @@ internal static class DiagramView
     }
 
     // Above the cards it shows, the last read that failed, until a read is started again.
-    private static void ReadFailure(Ui<UiState> ui, string? failure)
+    private static void ReadFailure(Ui ui, Appearance appearance, string? failure)
     {
         if (failure is null)
         {
@@ -155,12 +155,12 @@ internal static class DiagramView
         }
 
         var theme = ui.Theme;
-        var text = ui.Memo("diagram-read-failed", (failure, t: ui.State.Appearance.Strings), static a => a.t.DiagramReadFailed(a.failure));
+        var text = ui.Memo("diagram-read-failed", (failure, t: appearance.Strings), static a => a.t.DiagramReadFailed(a.failure));
         ui.Text(text, new Box { Width = Sizing.Grow(), Padding = new Spacing(theme.Gap, theme.GapTight) }, color: theme.Warning, size: theme.FontSizeSmall,
             wrap: true);
     }
 
-    private static void Canvas(Ui<UiState> ui, Navigation navigation, CodeTooltips tooltips, DiagramViewState view, TypeDiagram diagram)
+    private static void Canvas(Ui ui, IAppCommandWriter commands, Appearance appearance, Navigation navigation, CodeTooltips tooltips, DiagramViewState view, TypeDiagram diagram)
     {
         var id = ui.GetId(CanvasId);
         var i = ui.Interact(id);
@@ -178,9 +178,9 @@ internal static class DiagramView
         Press(view, i, hit);
         Pan(ui, view, i);
         SettleCamera(view, i);
-        Click(ui, navigation, view, diagram, i, hit);
+        Click(ui, commands, navigation, view, diagram, i, hit);
         ShowHandOverClickable(ui, view, i, hit);
-        FillFrame(ui, view, diagram, hit);
+        FillFrame(ui, appearance, view, diagram, hit);
         using (ui.Box(id, new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Background = ui.Theme.EditorBackground, Clip = true }))
         {
             ui.Paint(view.Frame, Paint);
@@ -188,7 +188,7 @@ internal static class DiagramView
 
         if (hasRect)
         {
-            MemberTooltip(ui, navigation, tooltips, view, diagram, id, IsPanning(view, i), hit);
+            MemberTooltip(ui, appearance, commands, navigation, tooltips, view, diagram, id, IsPanning(view, i), hit);
         }
     }
 
@@ -203,7 +203,7 @@ internal static class DiagramView
         return view.Transition.FindCardPlace(selected);
     }
 
-    private static void FollowLayout(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)
+    private static void FollowLayout(Ui ui, DiagramViewState view, TypeDiagram diagram)
     {
         view.FollowLayout(diagram.Layout);
         view.Transition.Advance(ui.DeltaTime);
@@ -249,7 +249,7 @@ internal static class DiagramView
         view.FocusPendingCard(layout, rect);
     }
 
-    private static DiagramHit GetHit(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram, Interaction i, bool hasRect, UiRect rect)
+    private static DiagramHit GetHit(Ui ui, DiagramViewState view, TypeDiagram diagram, Interaction i, bool hasRect, UiRect rect)
     {
         if (!hasRect)
         {
@@ -332,7 +332,7 @@ internal static class DiagramView
         return across && down;
     }
 
-    private static void Scroll(Ui<UiState> ui, DiagramViewState view, UiRect rect, bool hovered)
+    private static void Scroll(Ui ui, DiagramViewState view, UiRect rect, bool hovered)
     {
         if (!hovered)
         {
@@ -395,7 +395,7 @@ internal static class DiagramView
         Commands.FollowLater(commands, target, navigation.BeginResolvingFromDiagram(diagram, inNewTab));
     }
 
-    private static void Pan(Ui<UiState> ui, DiagramViewState view, Interaction i)
+    private static void Pan(Ui ui, DiagramViewState view, Interaction i)
     {
         if (!ui.TryGetDragStart(i, view.Camera.Corner, out var start))
         {
@@ -440,7 +440,7 @@ internal static class DiagramView
         return view.PressMoved;
     }
 
-    private static void Click(Ui<UiState> ui, Navigation navigation, DiagramViewState view, TypeDiagram diagram, Interaction i, DiagramHit hit)
+    private static void Click(Ui ui, IAppCommandWriter commands, Navigation navigation, DiagramViewState view, TypeDiagram diagram, Interaction i, DiagramHit hit)
     {
         if (i.ClickedWith(PointerButton.Right))
         {
@@ -449,7 +449,7 @@ internal static class DiagramView
         }
         if (i.ClickedWith(PointerButton.Middle))
         {
-            OpenCode(ui.State.AppCommands, navigation, diagram, RowOf(hit), inNewTab: true);
+            OpenCode(commands, navigation, diagram, RowOf(hit), inNewTab: true);
             return;
         }
         if (!i.Clicked)
@@ -463,10 +463,10 @@ internal static class DiagramView
         }
 
         Pick(view, view.PressedOn);
-        OpenCode(ui.State.AppCommands, navigation, diagram, RowOf(view.PressedOn), IsCommandHeld(ui.Input.Modifiers));
+        OpenCode(commands, navigation, diagram, RowOf(view.PressedOn), IsCommandHeld(ui.Input.Modifiers));
     }
 
-    private static void OpenMenu(Ui<UiState> ui, DiagramViewState view, DiagramHit hit)
+    private static void OpenMenu(Ui ui, DiagramViewState view, DiagramHit hit)
     {
         var face = FaceOf(hit);
         if (face is null)
@@ -501,7 +501,7 @@ internal static class DiagramView
         Diagrams.ToggleFold(view, fold.Part);
     }
 
-    private static void ShowHandOverClickable(Ui<UiState> ui, DiagramViewState view, Interaction i, DiagramHit hit)
+    private static void ShowHandOverClickable(Ui ui, DiagramViewState view, Interaction i, DiagramHit hit)
     {
         if (IsPanning(view, i))
         {
@@ -532,15 +532,15 @@ internal static class DiagramView
         return row.Content is CardRowContent.Fold;
     }
 
-    private static void FillFrame(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram, DiagramHit hit)
+    private static void FillFrame(Ui ui, Appearance appearance, DiagramViewState view, TypeDiagram diagram, DiagramHit hit)
     {
         var frame = view.Frame;
-        frame.Lay(view.Camera.Corner, view.Camera.Zoom, ui.Theme, ui.State.Appearance.NodeIconPalette, ui.State.Appearance.Icons);
+        frame.Lay(view.Camera.Corner, view.Camera.Zoom, ui.Theme, appearance.NodeIconPalette, appearance.Icons);
         FillLinks(ui, view, diagram, frame);
         FillCards(view, diagram, hit, frame);
     }
 
-    private static void FillLinks(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram, DiagramFrame frame)
+    private static void FillLinks(Ui ui, DiagramViewState view, TypeDiagram diagram, DiagramFrame frame)
     {
         var layout = view.Transition.Layout;
         if (layout is null)
@@ -571,7 +571,7 @@ internal static class DiagramView
         return diagram.HasCard(link.To);
     }
 
-    private static DrawnLink DrawnLinkOf(Ui<UiState> ui, DiagramViewState view, LinkRoute route)
+    private static DrawnLink DrawnLinkOf(Ui ui, DiagramViewState view, LinkRoute route)
     {
         var shape = view.Transition.ShapeRoute(route);
         var label = DiagramFaces.LabelOf(route.Link);
@@ -640,7 +640,7 @@ internal static class DiagramView
         return row.Index;
     }
 
-    private static void MemberTooltip(Ui<UiState> ui, Navigation navigation, CodeTooltips tooltips, DiagramViewState view, TypeDiagram diagram, int canvasId,
+    private static void MemberTooltip(Ui ui, Appearance appearance, IAppCommandWriter commands, Navigation navigation, CodeTooltips tooltips, DiagramViewState view, TypeDiagram diagram, int canvasId,
         bool isPanning, DiagramHit hit)
     {
         var tooltip = FindTooltip(tooltips, isPanning, hit);
@@ -658,8 +658,8 @@ internal static class DiagramView
             return;
         }
 
-        var click = CodeTooltipView.Render(ui, shown);
-        FollowLink(ui, navigation, diagram, click);
+        var click = CodeTooltipView.Render(ui, appearance, shown);
+        FollowLink(ui, commands, navigation, diagram, click);
     }
 
     private static Lookup<CodeTooltip>? FindTooltip(CodeTooltips tooltips, bool isPanning, DiagramHit hit)
@@ -699,7 +699,7 @@ internal static class DiagramView
         return HashCode.Combine(row.Face.Card.Type, row.Index) | 1;
     }
 
-    private static void FollowLink(Ui<UiState> ui, Navigation navigation, TypeDiagram diagram, RichTextClick click)
+    private static void FollowLink(Ui ui, IAppCommandWriter commands, Navigation navigation, TypeDiagram diagram, RichTextClick click)
     {
         if (click.Link is not CodeReference.Entity reference)
         {
@@ -708,7 +708,7 @@ internal static class DiagramView
 
         ui.HideTooltip();
         var inNewTab = click.Button == PointerButton.Middle || IsCommandHeld(ui.Input.Modifiers);
-        Commands.FollowLater(ui.State.AppCommands, reference, navigation.BeginResolvingFromDiagram(diagram, inNewTab));
+        Commands.FollowLater(commands, reference, navigation.BeginResolvingFromDiagram(diagram, inNewTab));
     }
 
     /// <summary>Asks for the type <paramref name="type"/> points at to be shown on the diagram the user last worked
@@ -732,14 +732,14 @@ internal static class DiagramView
     }
 
     // A read the card's menu started: settled failed on the diagram when its workflow fails.
-    private static void StartExpanding(UiState uiState, string name, TypeDiagram diagram, TypeCard card,
+    private static void StartExpanding(IAppCommandWriter commands, string name, TypeDiagram diagram, TypeCard card,
         Func<AppState, (TypeDiagram Diagram, TypeCard Card), ExpansionRead, CancellationToken, Task> run)
     {
-        Commands.StartSettlingLater<(TypeDiagram Diagram, TypeCard Card), ExpansionRead>(uiState.AppCommands, name, (diagram, card), static (_, s) => ExpansionRead.Start(s.Diagram, s.Card), run,
+        Commands.StartSettlingLater<(TypeDiagram Diagram, TypeCard Card), ExpansionRead>(commands, name, (diagram, card), static (_, s) => ExpansionRead.Start(s.Diagram, s.Card), run,
             static read => read.Diagram.Token, static (_, read, error) => read.Diagram.FailReading(read.Read, error.Message));
     }
 
-    private static void CardMenu(Ui<UiState> ui, Navigation navigation, DiagramViewState view, TypeDiagram diagram, string? closedAssembly)
+    private static void CardMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, Navigation navigation, DiagramViewState view, TypeDiagram diagram, string? closedAssembly)
     {
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
@@ -758,61 +758,61 @@ internal static class DiagramView
             return;
         }
 
-        CardMenuItems(ui, navigation, view, diagram, card, closedAssembly);
+        CardMenuItems(ui, appearance, commands, navigation, view, diagram, card, closedAssembly);
     }
 
-    private static void CardMenuItems(Ui<UiState> ui, Navigation navigation, DiagramViewState view, TypeDiagram diagram, TypeCard card,
+    private static void CardMenuItems(Ui ui, Appearance appearance, IAppCommandWriter commands, Navigation navigation, DiagramViewState view, TypeDiagram diagram, TypeCard card,
         string? closedAssembly)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         if (ui.MenuItem(t.TreeOpen, id: "open"))
         {
-            Commands.FollowLater(ui.State.AppCommands, card.Type, navigation.BeginResolvingFromDiagram(diagram, inNewTab: false));
+            Commands.FollowLater(commands, card.Type, navigation.BeginResolvingFromDiagram(diagram, inNewTab: false));
         }
 
         if (ui.MenuItem(t.TreeOpenInNewTab, id: "open-in-new-tab"))
         {
-            Commands.FollowLater(ui.State.AppCommands, card.Type, navigation.BeginResolvingFromDiagram(diagram, inNewTab: true));
+            Commands.FollowLater(commands, card.Type, navigation.BeginResolvingFromDiagram(diagram, inNewTab: true));
         }
 
         ui.MenuSeparator();
-        GrowItems(ui, diagram, card, DocumentsView.FindClosedText(ui, closedAssembly));
+        GrowItems(ui, appearance, commands, diagram, card, DocumentsView.FindClosedText(ui, appearance, closedAssembly));
         ui.MenuSeparator();
         if (ui.MenuItem(t.DiagramRemove, id: "remove"))
         {
-            Commands.Later(ui.State.AppCommands, (view, diagram, card), static (_, s) => Remove(s.view, s.diagram, s.card));
+            Commands.Later(commands, (view, diagram, card), static (_, s) => Remove(s.view, s.diagram, s.card));
         }
     }
 
-    private static void GrowItems(Ui<UiState> ui, TypeDiagram diagram, TypeCard card, string? why)
+    private static void GrowItems(Ui ui, Appearance appearance, IAppCommandWriter commands, TypeDiagram diagram, TypeCard card, string? why)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var open = why is null;
         if (HasLinks(card, Diagrams.IsBaseLink) && ui.MenuItem(t.DiagramAddBases, enabled: open && Diagrams.HasMissingBases(diagram, card), id: "add-bases", detail: why))
         {
-            StartExpanding(ui.State, nameof(DiagramGrowing.ExpandBasesAsync), diagram, card, static (a, _, read, ct) => a.DiagramGrowing.ExpandBasesAsync(read, ct));
+            StartExpanding(commands, nameof(DiagramGrowing.ExpandBasesAsync), diagram, card, static (a, _, read, ct) => a.DiagramGrowing.ExpandBasesAsync(read, ct));
         }
 
         if (HasLinks(card, Diagrams.IsInterfaceLink)
             && ui.MenuItem(t.DiagramAddInterfaces, enabled: open && Diagrams.HasMissingInterfaces(diagram, card), id: "add-interfaces", detail: why))
         {
-            StartExpanding(ui.State, nameof(DiagramGrowing.ExpandInterfacesAsync), diagram, card,
+            StartExpanding(commands, nameof(DiagramGrowing.ExpandInterfacesAsync), diagram, card,
                 static (a, _, read, ct) => a.DiagramGrowing.ExpandInterfacesAsync(read, ct));
         }
 
         if (card.CanHaveDerived)
         {
-            var derivedItem = DerivedItemOf(ui, card);
+            var derivedItem = DerivedItemOf(ui, appearance, card);
             if (ui.MenuItem(derivedItem, enabled: open, id: "add-derived", detail: why))
             {
-                StartExpanding(ui.State, nameof(DiagramGrowing.ExpandDerivedAsync), diagram, card,
+                StartExpanding(commands, nameof(DiagramGrowing.ExpandDerivedAsync), diagram, card,
                     static (a, _, read, ct) => a.DiagramGrowing.ExpandDerivedAsync(read, ct));
             }
         }
 
         if (HasLinks(card, Diagrams.IsHeldLink) && ui.MenuItem(t.DiagramAddHeld, enabled: open && Diagrams.HasMissingHeld(diagram, card), id: "add-held", detail: why))
         {
-            StartExpanding(ui.State, nameof(DiagramGrowing.ExpandHeldAsync), diagram, card, static (a, _, read, ct) => a.DiagramGrowing.ExpandHeldAsync(read, ct));
+            StartExpanding(commands, nameof(DiagramGrowing.ExpandHeldAsync), diagram, card, static (a, _, read, ct) => a.DiagramGrowing.ExpandHeldAsync(read, ct));
         }
     }
 
@@ -821,9 +821,9 @@ internal static class DiagramView
         return card.Links.Any(isKind);
     }
 
-    private static string DerivedItemOf(Ui<UiState> ui, TypeCard card)
+    private static string DerivedItemOf(Ui ui, Appearance appearance, TypeCard card)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         if (card.Stereotype == TypeStereotype.Interface)
         {
             return t.DiagramAddImplementations;

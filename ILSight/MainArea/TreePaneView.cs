@@ -461,13 +461,13 @@ internal static class TreePaneView
 
         if (node.HasResource && ui.MenuItem(t.ResourceExport, id: "export-resource", icon: new UiIcon(ui.State.Appearance.Icons.ResourceExport)))
         {
-            ResourceImageView.PickExport(ui, node);
+            ResourceImageView.PickExport(ui, ui.State.Appearance, ui.State.AppCommands, node);
         }
 
         ExtractItems(ui, node);
         if (OffersSaveCode(node) && ui.MenuItem(t.FileSaveCode, Shortcuts.SaveCode, id: "save-code", icon: new UiIcon(ui.State.Appearance.Icons.FileSaveCode)))
         {
-            SaveDialogs.PickCodeFile(ui, setup.Language, node);
+            SaveDialogs.PickCodeFile(ui, ui.State.Appearance, ui.State.AppCommands, setup.Language, node);
         }
 
         if (node.Subject is NodeSubject.Module module)
@@ -535,13 +535,13 @@ internal static class TreePaneView
         var file = PackedAssemblyOf(node);
         if (file != null && ui.MenuItem(t.TreeExtractFile, id: "extract-file", icon: new UiIcon(ui.State.Appearance.Icons.AssembliesExtract)))
         {
-            SaveDialogs.PickPackageFile(ui, file);
+            SaveDialogs.PickPackageFile(ui, ui.State.Appearance, ui.State.AppCommands, file);
         }
 
         var folder = node.FolderInPackage;
         if (folder != null && ui.MenuItem(t.TreeExtractAll, id: "extract-all", icon: new UiIcon(ui.State.Appearance.Icons.AssembliesExtract)))
         {
-            SaveDialogs.PickExtractFolder(ui, node.Text, folder);
+            SaveDialogs.PickExtractFolder(ui, ui.State.Appearance, ui.State.AppCommands, node.Text, folder);
         }
     }
 
@@ -577,7 +577,7 @@ internal static class TreePaneView
         PdbItems(ui, assembly);
         if (ui.MenuItem(t.TreeCreateDiagram, id: "create-diagram"))
         {
-            SaveDialogs.PickDiagramFolder(ui, assembly);
+            SaveDialogs.PickDiagramFolder(ui, ui.State.Appearance, ui.State.AppCommands, assembly);
         }
 
         if (ui.MenuItem(t.TreeCompareWith, id: "compare-with"))
@@ -597,7 +597,7 @@ internal static class TreePaneView
         var t = ui.State.Appearance.Strings;
         if (ui.MenuItem(t.TreeGeneratePdb, enabled: assembly.CanGeneratePdb, id: "generate-pdb", icon: new UiIcon(ui.State.Appearance.Icons.FileGeneratePdb)))
         {
-            SaveDialogs.PickPdbFile(ui, assembly);
+            SaveDialogs.PickPdbFile(ui, ui.State.Appearance, ui.State.AppCommands, assembly);
         }
 
         if (assembly.CanPickPdb && ui.MenuItem(t.TreeSelectPdb, id: "select-pdb"))
@@ -658,10 +658,9 @@ internal static class TreePaneView
     private static void PickPdbToRead(Ui<UiState> ui, LoadedModule assembly)
     {
         var t = ui.State.Appearance.Strings;
-        var screen = ui.State;
         FileFilter[] filters = [new FileFilter(t.FileFilterPdb, ["*.pdb"]), new FileFilter(t.FileFilterAll, ["*.*"])];
         var title = t.TreeSelectPdbTitle(assembly.Name);
-        ui.PickFile(title, FindFolderOf(assembly), filters, path => Commands.StartReopening(screen.AppCommands, nameof(AssemblyReloading.UsePdbAsync), assembly, (assembly, path),
+        ui.PickFile(title, FindFolderOf(assembly), filters, path => Commands.StartReopening(ui.State.AppCommands, nameof(AssemblyReloading.UsePdbAsync), assembly, (assembly, path),
             static (a, s, ct) => a.AssemblyReloading.UsePdbAsync(a.ListSession, a.Reopens, a.Decompiler, s.assembly, s.path, ct)));
     }
 

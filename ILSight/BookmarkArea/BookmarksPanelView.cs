@@ -165,15 +165,13 @@ internal static class BookmarksPanelView
     private static void PickExportFile(Ui<UiState> ui)
     {
         var t = ui.State.Appearance.Strings;
-        var screen = ui.State;
-        ui.PickSaveFile(t.BookmarksExportTitle, null, SuggestedExportName, Filters(t), path => Commands.Later(screen.AppCommands, path, static (a, p) => a.ExportBookmarksHandler.Handle(a.Bookmarks, p)));
+        ui.PickSaveFile(t.BookmarksExportTitle, null, SuggestedExportName, Filters(t), path => Commands.Later(ui.State.AppCommands, path, static (a, p) => a.ExportBookmarksHandler.Handle(a.Bookmarks, p)));
     }
 
     private static void PickImportFile(Ui<UiState> ui)
     {
         var t = ui.State.Appearance.Strings;
-        var screen = ui.State;
-        ui.PickFile(t.BookmarksImportTitle, null, Filters(t), path => Commands.Start(screen.AppCommands, nameof(BookmarkImporting.ImportAsync), path, static (a, p, ct) => a.BookmarkImporting.ImportAsync(a.Bookmarks, a.Imports, p, ct)));
+        ui.PickFile(t.BookmarksImportTitle, null, Filters(t), path => Commands.Start(ui.State.AppCommands, nameof(BookmarkImporting.ImportAsync), path, static (a, p, ct) => a.BookmarkImporting.ImportAsync(a.Bookmarks, a.Imports, p, ct)));
     }
 
     private static string Shown(Bookmark bookmark, int column)

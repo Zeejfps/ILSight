@@ -7,7 +7,7 @@ namespace ILSight.MetadataArea;
 /// groups.</summary>
 internal static class MetadataTooltipView
 {
-    public static void Render(Ui<UiState> ui, MetadataTooltip content)
+    public static void Render(Ui ui, Appearance appearance, MetadataTooltip content)
     {
         var theme = ui.Theme;
         if (content.Text is not null)
@@ -21,12 +21,12 @@ internal static class MetadataTooltipView
             for (var groupIndex = 0; groupIndex < groups.Count; groupIndex++)
             {
                 var group = groups[groupIndex];
-                Group(ui, group);
+                Group(ui, appearance, group);
             }
         }
     }
 
-    private static void Group(Ui<UiState> ui, MetadataFlagGroup group)
+    private static void Group(Ui ui, Appearance appearance, MetadataFlagGroup group)
     {
         if (group.IsChoice)
         {
@@ -34,11 +34,11 @@ internal static class MetadataTooltipView
         }
         else
         {
-            Flags(ui, group);
+            Flags(ui, appearance, group);
         }
     }
 
-    private static void Choice(Ui<UiState> ui, MetadataFlagGroup group)
+    private static void Choice(Ui ui, MetadataFlagGroup group)
     {
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.GapTight }))
@@ -51,7 +51,7 @@ internal static class MetadataTooltipView
         }
     }
 
-    private static void Flags(Ui<UiState> ui, MetadataFlagGroup group)
+    private static void Flags(Ui ui, Appearance appearance, MetadataFlagGroup group)
     {
         using (ui.Column(new Box { Gap = 0f }))
         {
@@ -60,12 +60,12 @@ internal static class MetadataTooltipView
             for (var flagIndex = 0; flagIndex < flags.Count; flagIndex++)
             {
                 var flag = flags[flagIndex];
-                Flag(ui, flag);
+                Flag(ui, appearance, flag);
             }
         }
     }
 
-    private static void Header(Ui<UiState> ui, MetadataFlagGroup group)
+    private static void Header(Ui ui, MetadataFlagGroup group)
     {
         if (string.IsNullOrEmpty(group.Header))
         {
@@ -76,10 +76,10 @@ internal static class MetadataTooltipView
         ui.Text(group.Header, color: theme.Text, size: theme.FontSizeSmall, bold: true);
     }
 
-    private static void Flag(Ui<UiState> ui, MetadataFlag flag)
+    private static void Flag(Ui ui, Appearance appearance, MetadataFlag flag)
     {
         var theme = ui.Theme;
-        var icons = ui.State.Appearance.Icons;
+        var icons = appearance.Icons;
         var box = flag.IsSet ? icons.MetadataFlagSet : icons.MetadataFlagUnset;
         var boxColor = flag.IsSet ? theme.AccentText : theme.TextMuted;
         var nameColor = flag.IsSet ? theme.Text : theme.TextMuted;

@@ -19,27 +19,27 @@ internal static class FlagsFilterView
         public required uint? Value { get; init; }
     }
 
-    public static void Render(Ui<UiState> ui, FilterState filter)
+    public static void Render(Ui ui, Appearance appearance, FilterState filter)
     {
-        Hint(ui, filter);
+        Hint(ui, appearance, filter);
         Describe(ui, filter);
         var shift = IsShiftHeld(ui);
         var groups = filter.Schema.MutexGroups;
         for (var groupIndex = 0; groupIndex < groups.Count; groupIndex++)
         {
             var group = groups[groupIndex];
-            MutexGroup(ui, filter, group, shift);
+            MutexGroup(ui, appearance, filter, group, shift);
         }
 
         if (filter.Schema.IndependentFlags.Count > 0)
         {
-            IndependentFlags(ui, filter);
+            IndependentFlags(ui, appearance, filter);
         }
     }
 
-    private static void Hint(Ui<UiState> ui, FilterState filter)
+    private static void Hint(Ui ui, Appearance appearance, FilterState filter)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
         {
@@ -51,21 +51,21 @@ internal static class FlagsFilterView
         }
     }
 
-    private static void Describe(Ui<UiState> ui, FilterState filter)
+    private static void Describe(Ui ui, FilterState filter)
     {
         var theme = ui.Theme;
         var description = FilterStatePresenter.Describe(filter);
         ui.Text(description, color: theme.AccentText, size: theme.FontSizeSmall, wrap: true);
     }
 
-    private static bool IsShiftHeld(Ui<UiState> ui)
+    private static bool IsShiftHeld(Ui ui)
     {
         return (ui.Input.Modifiers & KeyModifiers.Shift) != 0;
     }
 
-    private static void MutexGroup(Ui<UiState> ui, FilterState filter, MutexGroup group, bool shift)
+    private static void MutexGroup(Ui ui, Appearance appearance, FilterState filter, MutexGroup group, bool shift)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         using (ui.Id(group.Name))
         using (ui.Column(new Box { Gap = theme.GapTight }))
@@ -97,7 +97,7 @@ internal static class FlagsFilterView
         return chips;
     }
 
-    private static int GetRowEnd(Ui<UiState> ui, List<FilterChip> chips, int first)
+    private static int GetRowEnd(Ui ui, List<FilterChip> chips, int first)
     {
         var gap = ui.Theme.GapTight;
         var end = first + 1;
@@ -116,12 +116,12 @@ internal static class FlagsFilterView
         return end;
     }
 
-    private static float ChipWidth(Ui<UiState> ui, string label)
+    private static float ChipWidth(Ui ui, string label)
     {
         return ui.MeasureText(label, ui.Theme.FontSizeSmall) + ui.Theme.Gap * 2 + ui.Theme.BorderWidth * 2;
     }
 
-    private static void ChipRow(Ui<UiState> ui, FilterState filter, MutexGroup group, ImmutableHashSet<uint>? selection, List<FilterChip> chips, int first,
+    private static void ChipRow(Ui ui, FilterState filter, MutexGroup group, ImmutableHashSet<uint>? selection, List<FilterChip> chips, int first,
         int end, bool shift)
     {
         using (ui.Row(new Box { Gap = ui.Theme.GapTight }))
@@ -153,7 +153,7 @@ internal static class FlagsFilterView
         return selection.Contains(chip.Value.Value);
     }
 
-    private static bool Chip(Ui<UiState> ui, string label, bool on, int index)
+    private static bool Chip(Ui ui, string label, bool on, int index)
     {
         var theme = ui.Theme;
         var chip = ui.Clickable($"chip-{index}");
@@ -222,10 +222,10 @@ internal static class FlagsFilterView
         return values.Add(value);
     }
 
-    private static void IndependentFlags(Ui<UiState> ui, FilterState filter)
+    private static void IndependentFlags(Ui ui, Appearance appearance, FilterState filter)
     {
         var theme = ui.Theme;
-        MatchModeRow(ui, filter);
+        MatchModeRow(ui, appearance, filter);
         using (ui.Column(new Box { Gap = 0f }))
         {
             var flags = filter.Schema.IndependentFlags;
@@ -235,15 +235,15 @@ internal static class FlagsFilterView
                 using (ui.Id(flag.Name))
                 using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center, Height = theme.RowHeight }))
                 {
-                    FlagRow(ui, filter, flag.Name);
+                    FlagRow(ui, appearance, filter, flag.Name);
                 }
             }
         }
     }
 
-    private static void MatchModeRow(Ui<UiState> ui, FilterState filter)
+    private static void MatchModeRow(Ui ui, Appearance appearance, FilterState filter)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
         {
@@ -257,11 +257,11 @@ internal static class FlagsFilterView
         }
     }
 
-    private static void FlagRow(Ui<UiState> ui, FilterState filter, string flag)
+    private static void FlagRow(Ui ui, Appearance appearance, FilterState filter, string flag)
     {
         var theme = ui.Theme;
         var current = filter.FlagStates.GetValueOrDefault(flag);
-        if (Pill(ui, current))
+        if (Pill(ui, appearance, current))
         {
             filter.SetFlagState(flag, Next(current));
         }
@@ -280,7 +280,7 @@ internal static class FlagsFilterView
         };
     }
 
-    private static bool Pill(Ui<UiState> ui, TriState state)
+    private static bool Pill(Ui ui, Appearance appearance, TriState state)
     {
         var theme = ui.Theme;
         var pill = ui.Clickable("pill");
@@ -298,16 +298,16 @@ internal static class FlagsFilterView
         {
             if (state != TriState.DontCare)
             {
-                PillGlyph(ui, state);
+                PillGlyph(ui, appearance, state);
             }
         }
         return pill.Clicked;
     }
 
-    private static void PillGlyph(Ui<UiState> ui, TriState state)
+    private static void PillGlyph(Ui ui, Appearance appearance, TriState state)
     {
         var theme = ui.Theme;
-        var icons = ui.State.Appearance.Icons;
+        var icons = appearance.Icons;
         var glyph = state == TriState.Required ? icons.MetadataFlagRequired : icons.MetadataFlagExcluded;
         ui.Glyph(glyph, theme.AccentText, theme.FontSizeSmall);
     }

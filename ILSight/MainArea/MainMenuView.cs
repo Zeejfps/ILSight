@@ -204,13 +204,12 @@ internal static class MainMenuView
     public static void OpenFile(Ui<UiState> ui, Navigation navigation)
     {
         var t = ui.State.Appearance.Strings;
-        var screen = ui.State;
         FileFilter[] filters =
         [
             new(t.FileFilterAssembliesAndPackages, ["*.dll", "*.exe", "*.winmd", "*.wasm", "*.nupkg", "*.zip"]),
             new(t.FileFilterAll, ["*.*"]),
         ];
-        ui.PickFile(t.FileOpenTitle, null, filters, path => OpenPicked(screen.AppCommands, navigation, path));
+        ui.PickFile(t.FileOpenTitle, null, filters, path => OpenPicked(ui.State.AppCommands, navigation, path));
     }
 
     private static void OpenPicked(IAppCommandWriter commands, Navigation navigation, string path)
@@ -258,7 +257,7 @@ internal static class MainMenuView
         var canSave = Exports.CanSaveCode(appState.ListSession.Navigation.ActiveTab?.Node);
         if (ui.MenuItem(t.FileSaveCode, Shortcuts.SaveCode, enabled: canSave, id: "save-code", icon: new UiIcon(ui.State.Appearance.Icons.FileSaveCode)))
         {
-            SaveDialogs.PickActiveCodeFile(ui, appState.ListSession.Navigation, appState.Decompiler.Setup.Language);
+            SaveDialogs.PickActiveCodeFile(ui, ui.State.Appearance, ui.State.AppCommands, appState.ListSession.Navigation, appState.Decompiler.Setup.Language);
         }
 
         var anyOpen = ui.State.Tree.Roots.Count > 0;
@@ -269,7 +268,7 @@ internal static class MainMenuView
 
         if (ui.MenuItem(t.FileGeneratePdbs, enabled: anyOpen, id: "generate-pdbs", icon: new UiIcon(ui.State.Appearance.Icons.FileGeneratePdb)))
         {
-            SaveDialogs.PickPdbFolder(ui);
+            SaveDialogs.PickPdbFolder(ui, ui.State.Appearance, ui.State.AppCommands);
         }
     }
 

@@ -112,13 +112,13 @@ internal static class OmnibarView
     {
         if (tab.Content is TabContent.Diagram)
         {
-            DiagramView.Tools(ui, tab);
+            DiagramView.Tools(ui, ui.State.Appearance, ui.State.Documents, tab);
             return;
         }
 
         if (tab.Content is TabContent.Comparison comparison)
         {
-            ComparisonView.Tools(ui, assemblies, tab, comparison.Assemblies);
+            ComparisonView.Tools(ui, ui.State.Appearance, ui.State.Documents, ui.State.AppCommands, assemblies, tab, comparison.Assemblies);
         }
     }
 
@@ -142,7 +142,7 @@ internal static class OmnibarView
             Radius = theme.CornerRadius,
         }))
         {
-            NodeIcons.Draw(ui, node);
+            NodeIcons.Draw(ui, ui.State.Appearance, node);
             ui.Text(crumb.Label, new Box { Width = Sizing.Shrink() }, color: CrumbColor(theme, node), overflow: TextOverflow.Ellipsis);
         }
         ui.Tooltip(i.Id, NodeText.Tooltip(node));
@@ -172,7 +172,7 @@ internal static class OmnibarView
             AlignY = Align.Center,
         }))
         {
-            NodeIcons.Draw(ui, crumb.Node);
+            NodeIcons.Draw(ui, ui.State.Appearance, crumb.Node);
             ui.Text(crumb.Label, new Box { Width = Sizing.Shrink() }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
         }
         ui.Tooltip(i.Id, ui.Memo("closed-crumb", (closed, t: ui.State.Appearance.Strings), static a => a.t.DocumentClosed(a.closed)));
@@ -414,7 +414,7 @@ internal static class OmnibarView
         using var row = list.Row(index, ui.GetId("child"), new Box { Gap = theme.GapTight });
         var color = row.Selected ? theme.SelectionText : CrumbColor(theme, child);
         var label = ui.State.Tree.GetRowLabel(child);
-        NodeIcons.Draw(ui, child);
+        NodeIcons.Draw(ui, ui.State.Appearance, child);
         ui.Text(label, new Box { Width = Sizing.Grow() }, color: color, overflow: TextOverflow.Ellipsis);
         RecordChildPath(ui, row.Interaction.Id, label);
         if (row.Interaction.Clicked)
@@ -571,7 +571,7 @@ internal static class OmnibarView
         using (ui.Row(i.Id, SuggestionBox(theme, selected, i.Hovered)))
         {
             DescribeSuggestion(ui, i.Id, match.Text, selected);
-            NodeIcons.Draw(ui, node);
+            NodeIcons.Draw(ui, ui.State.Appearance, node);
             ui.Text(match.Text, new Box { Width = Sizing.Grow() with { Priority = 1 } }, color: nameColor, overflow: TextOverflow.Ellipsis);
             ui.Text(match.Location, new Box { Width = Sizing.Shrink() }, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.EllipsisMiddle);
         }

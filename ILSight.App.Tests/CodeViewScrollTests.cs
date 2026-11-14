@@ -73,7 +73,7 @@ public sealed class CodeViewScrollTests
                 using var screen = ui.Screen();
                 using (ui.Id(tab))
                 {
-                    CodeViewWidget.RenderCodeView(ui, "code", document, state);
+                    CodeViewWidget.RenderCodeView(ui, ui.State.Appearance, ui.State.Display, "code", document, state);
                 }
             });
         }

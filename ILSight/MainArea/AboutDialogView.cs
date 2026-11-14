@@ -15,15 +15,14 @@ internal static class AboutDialogView
 
     public static void Render(Ui<UiState> ui, AppState appState)
     {
-        var screen = ui.State;
-        if (!screen.About.IsOpen)
+        if (!ui.State.About.IsOpen)
         {
             return;
         }
 
-        var t = screen.Appearance.Strings;
+        var t = ui.State.Appearance.Strings;
         var box = new Box { Width = Sizing.Grow(0f, AppLayout.AboutDialogWidth) };
-        using var dialog = ui.Dialog("about", t.AboutTitle, ref screen.About.IsOpen, box);
+        using var dialog = ui.Dialog("about", t.AboutTitle, ref ui.State.About.IsOpen, box);
         if (!dialog.IsOpen)
         {
             return;

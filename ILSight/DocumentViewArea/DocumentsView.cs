@@ -35,7 +35,7 @@ internal static class DocumentsView
         ui.State.Documents.RecordTabAreaHeight(ui.TryGetRect(areaId, out var area) ? area.Height : ui.Height);
         using var content = ui.Column(areaId, new Box { Height = Sizing.Grow(), Gap = 0f });
         DocumentPanels.GetView(ui.State.Documents, tab).RecordShown(tab);
-        ClosedBanner(ui, tab.ClosedAssembly);
+        ClosedBanner(ui, ui.State.Appearance, tab.ClosedAssembly);
         tab.Content.Switch((ui, navigation, session, assemblies, setup, bookmarks, tooltips, tab),
             empty: static (s, _) => Hint(s.ui, s.ui.State.Appearance.Strings.DocumentsHint),
             loading: static (s, loading) => RenderLoading(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab, loading),
@@ -43,8 +43,8 @@ internal static class DocumentsView
             table: static (s, table) => RenderGrid(s.ui, s.navigation, s.session, s.setup, s.tab, table.Grid),
             picture: static (s, picture) => ResourceImageView.Render(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab, picture),
             report: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
-            diagram: static (s, diagram) => DiagramView.Render(s.ui, s.navigation, s.tooltips, s.tab, diagram.Types),
-            comparison: static (s, comparison) => ComparisonView.Render(s.ui, s.navigation, s.assemblies, s.tab, comparison.Assemblies),
+            diagram: static (s, diagram) => DiagramView.Render(s.ui, s.ui.State.Documents, s.ui.State.Display, s.ui.State.Appearance, s.ui.State.AppCommands, s.navigation, s.tooltips, s.tab, diagram.Types),
+            comparison: static (s, comparison) => ComparisonView.Render(s.ui, s.ui.State.Documents, s.ui.State.Appearance, s.ui.State.Display, s.ui.State.AppCommands, s.navigation, s.assemblies, s.tab, comparison.Assemblies),
             failed: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
             stopped: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
             reloading: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
@@ -53,7 +53,7 @@ internal static class DocumentsView
             unreadable: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab));
     }
 
-    private static void ClosedBanner(Ui<UiState> ui, string? assembly)
+    private static void ClosedBanner(Ui ui, Appearance appearance, string? assembly)
     {
         if (assembly is null)
         {
@@ -61,7 +61,7 @@ internal static class DocumentsView
         }
 
         var theme = ui.Theme;
-        var text = ui.Memo("closed-banner", (assembly, t: ui.State.Appearance.Strings), static a => a.t.DocumentClosed(a.assembly));
+        var text = ui.Memo("closed-banner", (assembly, t: appearance.Strings), static a => a.t.DocumentClosed(a.assembly));
         using (ui.Row(new Box { Padding = new Spacing(theme.Gap, theme.GapTight), Gap = theme.Gap, Background = theme.PaneBackground }))
         {
             ui.Text(text, color: theme.Warning);
@@ -71,14 +71,14 @@ internal static class DocumentsView
 
     /// <summary>That <paramref name="closedAssembly"/>, the assembly a tab's document was read from, was closed, as the
     /// tab's bar says it, for what would read it to say why it is unavailable; null while it is open.</summary>
-    public static string? FindClosedText(Ui<UiState> ui, string? closedAssembly)
+    public static string? FindClosedText(Ui ui, Appearance appearance, string? closedAssembly)
     {
         if (closedAssembly is null)
         {
             return null;
         }
 
-        return ui.Memo("closed", (closedAssembly, t: ui.State.Appearance.Strings), static a => a.t.DocumentClosed(a.closedAssembly));
+        return ui.Memo("closed", (closedAssembly, t: appearance.Strings), static a => a.t.DocumentClosed(a.closedAssembly));
     }
 
     private static void RenderLoading(Ui<UiState> ui, Navigation navigation, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab,
@@ -97,7 +97,7 @@ internal static class DocumentsView
         DocumentTab tab, MetadataGrid grid)
     {
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
-        var picked = MetadataGridWidget.RenderMetadataGrid(ui, "grid", view.GetGridState(grid), ui.State.MetadataFilters,
+        var picked = MetadataGridWidget.RenderMetadataGrid(ui, ui.State.MetadataGridViews, ui.State.MetadataGridPages, ui.State.Appearance, ui.State.Display, ui.State.AppCommands, "grid", view.GetGridState(grid), ui.State.MetadataFilters,
             tab.Load.ClosedAssembly);
         var node = tab.Node;
         if (picked.Target is not null && node is not null)
@@ -119,7 +119,7 @@ internal static class DocumentsView
         var lines = !tab.Load.IsBusy && tab.Node is not null && tab.Document.Error is null ? bookmarks.ListMarkedLines(tab.Document, tab.Node) : null;
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
         var document = GetDocumentToShow(ui.State.Appearance.Strings, view, tab);
-        var result = CodeViewWidget.RenderCodeView(ui, "code", document, view.Code, lines, tooltips: tooltips, display: ui.State.Display.Options,
+        var result = CodeViewWidget.RenderCodeView(ui, ui.State.Appearance, ui.State.Display, "code", document, view.Code, lines, tooltips: tooltips, display: ui.State.Display.Options,
             closedAssembly: tab.Load.ClosedAssembly);
         if (result.Intent is not null)
         {
@@ -246,7 +246,7 @@ internal static class DocumentsView
     }
 
     /// <summary>Muted <paramref name="text"/> centered in a pane or area with nothing to show yet.</summary>
-    public static void Hint(Ui<UiState> ui, string text)
+    public static void Hint(Ui ui, string text)
     {
         var theme = ui.Theme;
         using (ui.Column(new Box { Height = Sizing.Grow(), Padding = theme.ShellPaddingX, AlignX = Align.Center, AlignY = Align.Center, Background = theme.PaneBackground }))

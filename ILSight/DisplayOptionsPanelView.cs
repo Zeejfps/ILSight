@@ -37,7 +37,7 @@ internal static class DisplayOptionsPanelView
         using var panel = ui.Column(new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Gap = 0f });
         using (ui.PaneToolbar())
         {
-            OptionSearch.Field(ui, ref ui.State.DisplayOptionsQuery);
+            OptionSearch.Field(ui, ui.State.Appearance, ref ui.State.DisplayOptionsQuery);
         }
 
         ui.Separator();
@@ -59,7 +59,7 @@ internal static class DisplayOptionsPanelView
         }
         else if (!shown)
         {
-            OptionSearch.NoMatch(ui, ref ui.State.DisplayOptionsQuery);
+            OptionSearch.NoMatch(ui, ui.State.Appearance, ref ui.State.DisplayOptionsQuery);
         }
     }
 
@@ -96,8 +96,7 @@ internal static class DisplayOptionsPanelView
     // Its own method, so that the closure is made only the frame the listing is asked for.
     private static void ListInstalledFonts(Ui<UiState> ui)
     {
-        var screen = ui.State;
-        ui.ListSystemFonts(families => screen.CodeFonts.KeepFonts(families));
+        ui.ListSystemFonts(families => ui.State.CodeFonts.KeepFonts(families));
     }
 
     // Only the scale and the title bar are options a reset puts back, so only their names turn bold.
@@ -766,8 +765,8 @@ internal static class DisplayOptionsPanelView
         using (ui.Column(new Box { Width = TitleWidth(ui, title, changed), Gap = theme.GapTight }))
         {
             var query = ui.State.DisplayOptionsQuery;
-            var mark = OptionSearch.GetMarkBackground(ui);
-            var titleRuns = OptionSearch.EnsureMarkedRuns(ui, query, title, ui.StyleText(bold: changed));
+            var mark = OptionSearch.GetMarkBackground(ui, ui.State.Appearance);
+            var titleRuns = OptionSearch.EnsureMarkedRuns(ui, ui.State.Appearance, query, title, ui.StyleText(bold: changed));
             if (titleRuns is not null)
             {
                 using (ui.Box(new Box { Width = Sizing.Grow(), Clip = true }))
@@ -791,7 +790,7 @@ internal static class DisplayOptionsPanelView
     {
         var theme = ui.Theme;
         var box = new Box { Width = Sizing.Percent(WholeWidth) };
-        var runs = OptionSearch.EnsureMarkedRuns(ui, query, description, ui.StyleText(theme.TextMuted, theme.FontSizeSmall), part: 1);
+        var runs = OptionSearch.EnsureMarkedRuns(ui, ui.State.Appearance, query, description, ui.StyleText(theme.TextMuted, theme.FontSizeSmall), part: 1);
         if (runs is not null)
         {
             ui.RichText(runs, box, markBackground: mark);

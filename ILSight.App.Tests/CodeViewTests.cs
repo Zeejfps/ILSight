@@ -48,7 +48,7 @@ public sealed class CodeViewTests
         view.Frames.Run(1f / 60f, ui =>
         {
             ui.State.Appearance.ApplyThemeAndLanguage(Light, Locale.En);
-            CodeViewWidget.RenderCodeView(ui, "code", view.Document, view.State);
+            CodeViewWidget.RenderCodeView(ui, ui.State.Appearance, ui.State.Display, "code", view.Document, view.State);
             ui.State.Appearance.ApplyThemeAndLanguage(BuiltInThemes.Dark, Locale.En);
         });
         var light = view.Frames.Canvas.GlyphRuns.First(r => r.Text == "public").Style.TextColor.Value;

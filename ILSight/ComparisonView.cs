@@ -20,34 +20,34 @@ internal static class ComparisonView
     /// <summary>The comparison <paramref name="tab"/> shows. Its tools change the comparison in this frame and compare
     /// <paramref name="assemblies"/> as they are open, queuing only the comparison's run; opening an entry's code
     /// begins following it in <paramref name="navigation"/> in this frame, queuing only its lookup.</summary>
-    public static void Render(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DocumentTab tab, AssemblyComparison comparison)
+    public static void Render(Ui ui, DocumentViews documents, Appearance appearance, ScreenDisplay display, IAppCommandWriter commands, Navigation navigation, AssemblyList assemblies, DocumentTab tab, AssemblyComparison comparison)
     {
-        var rows = DocumentPanels.GetView(ui.State.Documents, tab).Comparison;
-        rows.SetStyle(ui.Theme, ui.State.Appearance.NodeIconPalette, ui.State.Appearance.Icons, ui.State.Appearance.Strings);
+        var rows = DocumentPanels.GetView(documents, tab).Comparison;
+        rows.SetStyle(ui.Theme, appearance.NodeIconPalette, appearance.Icons, appearance.Strings);
         rows.FollowDiff(FindDiff(comparison));
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground });
-        if (!ui.State.Display.Options.ShowOmnibar)
+        if (!display.Options.ShowOmnibar)
         {
-            OwnToolbar(ui, assemblies, tab, comparison);
+            OwnToolbar(ui, appearance, documents, commands, assemblies, tab, comparison);
         }
 
-        Summary(ui, comparison);
-        var hint = FindHint(ui, comparison, rows);
+        Summary(ui, appearance, comparison);
+        var hint = FindHint(ui, appearance, comparison, rows);
         if (hint is not null)
         {
             DocumentsView.Hint(ui, hint);
             return;
         }
-        Tree(ui, navigation, rows);
-        ContextMenu(ui, navigation, rows);
+        Tree(ui, commands, navigation, rows);
+        ContextMenu(ui, appearance, commands, navigation, rows);
     }
 
     // For when the bar over documents, where the tools sit otherwise, is hidden.
-    private static void OwnToolbar(Ui<UiState> ui, AssemblyList assemblies, DocumentTab tab, AssemblyComparison comparison)
+    private static void OwnToolbar(Ui ui, Appearance appearance, DocumentViews documents, IAppCommandWriter commands, AssemblyList assemblies, DocumentTab tab, AssemblyComparison comparison)
     {
         using (ui.PaneToolbar())
         {
-            Tools(ui, assemblies, tab, comparison);
+            Tools(ui, appearance, documents, commands, assemblies, tab, comparison);
         }
 
         ui.Separator();
@@ -56,13 +56,13 @@ internal static class ComparisonView
     /// <summary>The comparison's tools, for the bar over the document: collapsing and expanding the tree,
     /// swapping the assemblies' sides, and what it shows; a change compares <paramref name="assemblies"/> as they are
     /// open again, and so is unavailable, saying why, once one of the two was closed.</summary>
-    public static void Tools(Ui<UiState> ui, AssemblyList assemblies, DocumentTab tab, AssemblyComparison comparison)
+    public static void Tools(Ui ui, Appearance appearance, DocumentViews documents, IAppCommandWriter commands, AssemblyList assemblies, DocumentTab tab, AssemblyComparison comparison)
     {
-        var t = ui.State.Appearance.Strings;
-        var icons = ui.State.Appearance.Icons;
-        var rows = DocumentPanels.GetView(ui.State.Documents, tab).Comparison;
+        var t = appearance.Strings;
+        var icons = appearance.Icons;
+        var rows = DocumentPanels.GetView(documents, tab).Comparison;
         var any = rows.Roots.Count > 0;
-        var why = DocumentsView.FindClosedText(ui, tab.ClosedAssembly);
+        var why = DocumentsView.FindClosedText(ui, appearance, tab.ClosedAssembly);
         using (ui.Row(new Box { Gap = ui.Theme.Gap, AlignY = Align.Center }))
         {
             if (ui.IconButton("collapse", icons.AnalyzerCollapseAll, t.CodeCollapseAll, any))
@@ -78,30 +78,30 @@ internal static class ComparisonView
             ui.Separator(ui.Theme.IconSize);
             if (ui.IconButton("swap", icons.ComparisonSwap, why ?? t.ComparisonSwap, enabled: why is null))
             {
-                Commands.CompareLater(ui.State.AppCommands, Comparisons.SwapComparedAssemblies(assemblies, comparison));
+                Commands.CompareLater(commands, Comparisons.SwapComparedAssemblies(assemblies, comparison));
             }
 
             ui.Separator(ui.Theme.IconSize);
-            OnlyDifferencesCheckbox(ui, rows);
-            HiddenMembersCheckbox(ui, assemblies, comparison, why is null);
+            OnlyDifferencesCheckbox(ui, appearance, rows);
+            HiddenMembersCheckbox(ui, appearance, commands, assemblies, comparison, why is null);
         }
     }
 
-    private static void OnlyDifferencesCheckbox(Ui<UiState> ui, ComparisonRows rows)
+    private static void OnlyDifferencesCheckbox(Ui ui, Appearance appearance, ComparisonRows rows)
     {
         var only = rows.OnlyDifferences;
-        if (ui.Checkbox(ui.State.Appearance.Strings.ComparisonOnlyDifferences, ref only, id: "only-differences"))
+        if (ui.Checkbox(appearance.Strings.ComparisonOnlyDifferences, ref only, id: "only-differences"))
         {
             rows.ShowOnlyDifferences(only);
         }
     }
 
-    private static void HiddenMembersCheckbox(Ui<UiState> ui, AssemblyList assemblies, AssemblyComparison comparison, bool enabled)
+    private static void HiddenMembersCheckbox(Ui ui, Appearance appearance, IAppCommandWriter commands, AssemblyList assemblies, AssemblyComparison comparison, bool enabled)
     {
         var all = comparison.Scope == ApiScope.AllDeclared;
-        if (ui.Checkbox(ui.State.Appearance.Strings.ComparisonShowHiddenMembers, ref all, id: "show-hidden-members", enabled: enabled))
+        if (ui.Checkbox(appearance.Strings.ComparisonShowHiddenMembers, ref all, id: "show-hidden-members", enabled: enabled))
         {
-            Commands.CompareLater(ui.State.AppCommands, Comparisons.ChangeComparedScope(assemblies, comparison, ScopeOf(all)));
+            Commands.CompareLater(commands, Comparisons.ChangeComparedScope(assemblies, comparison, ScopeOf(all)));
         }
     }
 
@@ -115,7 +115,7 @@ internal static class ComparisonView
         return ApiScope.PublicApi;
     }
 
-    private static void Summary(Ui<UiState> ui, AssemblyComparison comparison)
+    private static void Summary(Ui ui, Appearance appearance, AssemblyComparison comparison)
     {
         var diff = FindDiff(comparison);
         if (diff is null)
@@ -123,7 +123,7 @@ internal static class ComparisonView
             return;
         }
 
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         using (ui.Row(new Box { Padding = new Spacing(theme.Gap, theme.GapTight), Gap = theme.Gap }))
         {
@@ -139,12 +139,12 @@ internal static class ComparisonView
         ui.Separator();
     }
 
-    private static string? FindHint(Ui<UiState> ui, AssemblyComparison comparison, ComparisonRows rows)
+    private static string? FindHint(Ui ui, Appearance appearance, AssemblyComparison comparison, ComparisonRows rows)
     {
-        return comparison.Result.Match<(Ui<UiState> ui, ComparisonRows rows), string?>((ui, rows),
-            static (s, _) => s.ui.State.Appearance.Strings.ComparisonComparing,
-            static (s, _) => FindNoDifferencesHint(s.ui.State.Appearance.Strings, s.rows),
-            static (s, failed) => s.ui.Memo("comparison-failure", (failed.Failure, t: s.ui.State.Appearance.Strings), static a => DescribeFailure(a.t, a.Failure)));
+        return comparison.Result.Match<(Ui ui, Strings t, ComparisonRows rows), string?>((ui, appearance.Strings, rows),
+            static (s, _) => s.t.ComparisonComparing,
+            static (s, _) => FindNoDifferencesHint(s.t, s.rows),
+            static (s, failed) => s.ui.Memo("comparison-failure", (failed.Failure, s.t), static a => DescribeFailure(a.t, a.Failure)));
     }
 
     private static ApiDiff? FindDiff(AssemblyComparison comparison)
@@ -169,13 +169,13 @@ internal static class ComparisonView
             static (t, failed) => t.ErrorCompare(failed.Left, failed.Right));
     }
 
-    private static void Tree(Ui<UiState> ui, Navigation navigation, ComparisonRows rows)
+    private static void Tree(Ui ui, IAppCommandWriter commands, Navigation navigation, ComparisonRows rows)
     {
         var box = new Box { Padding = new Spacing(0f, ui.Theme.GapTight) };
         var result = ui.TreeView(TreeId, rows.Roots, rows, rows.View, box);
         if (result.Activated)
         {
-            Open(ui.State.AppCommands, navigation, result.Node, inNewTab: false);
+            Open(commands, navigation, result.Node, inNewTab: false);
         }
 
         if (result.ContextMenuRequested && result.Node is not null)
@@ -226,9 +226,9 @@ internal static class ComparisonView
             static sides => sides.Right);
     }
 
-    private static void ContextMenu(Ui<UiState> ui, Navigation navigation, ComparisonRows rows)
+    private static void ContextMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, Navigation navigation, ComparisonRows rows)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
         {
@@ -245,12 +245,12 @@ internal static class ComparisonView
         var right = RightOf(entry);
         if (ui.MenuItem(t.ComparisonOpenLeft, enabled: left != null, id: "open-left") && left != null)
         {
-            Commands.FollowLater(ui.State.AppCommands, left.Reference, navigation.BeginResolving(inNewTab: false));
+            Commands.FollowLater(commands, left.Reference, navigation.BeginResolving(inNewTab: false));
         }
 
         if (ui.MenuItem(t.ComparisonOpenRight, enabled: right != null, id: "open-right") && right != null)
         {
-            Commands.FollowLater(ui.State.AppCommands, right.Reference, navigation.BeginResolving(inNewTab: false));
+            Commands.FollowLater(commands, right.Reference, navigation.BeginResolving(inNewTab: false));
         }
     }
 }

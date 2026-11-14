@@ -9,8 +9,7 @@ internal static class DisplayOptionsResetDialogView
     public static void Render(Ui<UiState> ui)
     {
         var t = ui.State.Appearance.Strings;
-        var screen = ui.State;
-        var open = screen.Display.Reset.IsAsked;
+        var open = ui.State.Display.Reset.IsAsked;
         using (var dialog = ui.Dialog("display-reset", t.DisplayOptionsReset, ref open, closeButton: false))
         {
             if (dialog.IsOpen)
@@ -20,19 +19,19 @@ internal static class DisplayOptionsResetDialogView
                 {
                     if (ui.Button(t.DisplayOptionsResetCancel, id: "display-reset-cancel", variant: ButtonVariant.Ghost))
                     {
-                        screen.Display.FinishReset(false);
+                        ui.State.Display.FinishReset(false);
                     }
 
                     if (ui.Button(t.DisplayOptionsResetConfirm, id: "display-reset-confirm", variant: ButtonVariant.Primary))
                     {
-                        screen.Display.FinishReset(true);
+                        ui.State.Display.FinishReset(true);
                     }
                 }
             }
         }
-        if (!open && screen.Display.Reset.IsAsked)
+        if (!open && ui.State.Display.Reset.IsAsked)
         {
-            screen.Display.FinishReset(false);
+            ui.State.Display.FinishReset(false);
         }
     }
 }

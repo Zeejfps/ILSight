@@ -274,7 +274,7 @@ internal static class ProcessPickerView
     {
         using (row.Cell(0))
         {
-            NodeIcons.Draw(ui, NodeIcon.Assembly);
+            NodeIcons.Draw(ui, ui.State.Appearance, NodeIcon.Assembly);
             ui.Text(onDisk.Name, new Box { Width = Sizing.Grow() }, color: row.Selected ? theme.SelectionText : theme.Text,
                 overflow: TextOverflow.Ellipsis);
         }
@@ -285,7 +285,7 @@ internal static class ProcessPickerView
     {
         using (row.Cell(0))
         {
-            NodeIcons.Draw(ui, NodeIcon.Assembly);
+            NodeIcons.Draw(ui, ui.State.Appearance, NodeIcon.Assembly);
             ui.Text(inMemory.Name, new Box { Width = Sizing.Grow() }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
         }
         row.TextCell(1, t.ProcessPickerInMemory, theme.TextMuted);

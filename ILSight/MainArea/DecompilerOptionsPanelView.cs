@@ -25,7 +25,7 @@ internal static class DecompilerOptionsPanelView
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         using (ui.PaneToolbar())
         {
-            OptionSearch.Field(ui, ref ui.State.DecompilerOptionsQuery);
+            OptionSearch.Field(ui, ui.State.Appearance, ref ui.State.DecompilerOptionsQuery);
             var searching = ui.State.DecompilerOptionsQuery.Trim().Length > 0;
             if (ui.IconButton("collapse", ui.State.Appearance.Icons.OptionsCollapseAll, t.CodeCollapseAll, !searching && !AllFolded(folded)))
             {
@@ -59,7 +59,7 @@ internal static class DecompilerOptionsPanelView
         var sections = words.Length == 0 ? Sections : FindMatchingSections(t, words);
         if (sections.Length == 0)
         {
-            OptionSearch.NoMatch(ui, ref ui.State.DecompilerOptionsQuery);
+            OptionSearch.NoMatch(ui, ui.State.Appearance, ref ui.State.DecompilerOptionsQuery);
             return;
         }
         // A search shows every group open, and leaves the folds as they were for when it is cleared.
@@ -141,9 +141,9 @@ internal static class DecompilerOptionsPanelView
             var all = State(section, options);
             var title = Title(t, section);
             var bold = HasChangedToggle(section, options);
-            var runs = OptionSearch.EnsureMarkedRuns(ui, ui.State.DecompilerOptionsQuery, title, ui.StyleText(allowed ? null : theme.TextDisabled, bold: bold));
+            var runs = OptionSearch.EnsureMarkedRuns(ui, ui.State.Appearance, ui.State.DecompilerOptionsQuery, title, ui.StyleText(allowed ? null : theme.TextDisabled, bold: bold));
             var flipped = runs is not null
-                ? ui.Checkbox(runs, OptionSearch.GetMarkBackground(ui), ref all, "all", allowed, Sizing.Grow())
+                ? ui.Checkbox(runs, OptionSearch.GetMarkBackground(ui, ui.State.Appearance), ref all, "all", allowed, Sizing.Grow())
                 : ui.Checkbox(title, ref all, id: "all", enabled: allowed, width: Sizing.Grow(), bold: bold);
             if (flipped)
             {
@@ -251,9 +251,9 @@ internal static class DecompilerOptionsPanelView
             var enabled = DecompilerToggles.Allows(options, toggle);
             var bold = DecompilerToggles.IsChanged(options, toggle);
             var style = ui.StyleText(enabled ? null : theme.TextDisabled, bold: bold);
-            var runs = OptionSearch.EnsureMarkedRuns(ui, ui.State.DecompilerOptionsQuery, label, style);
+            var runs = OptionSearch.EnsureMarkedRuns(ui, ui.State.Appearance, ui.State.DecompilerOptionsQuery, label, style);
             var flipped = runs is not null
-                ? ui.Checkbox(runs, OptionSearch.GetMarkBackground(ui), ref on, toggle.Name, enabled, Sizing.Grow())
+                ? ui.Checkbox(runs, OptionSearch.GetMarkBackground(ui, ui.State.Appearance), ref on, toggle.Name, enabled, Sizing.Grow())
                 : ui.Checkbox(label, ref on, id: toggle.Name, enabled: enabled, width: Sizing.Grow(), bold: bold);
             if (flipped)
             {

@@ -142,7 +142,7 @@ internal static class ComparisonPickerView
         using (var row = list.Row(index, ui.GetId("row"), new Box { Gap = theme.GapTight, AlignY = Align.Center }))
         {
             var nameColor = row.Selected ? theme.SelectionText : theme.Text;
-            NodeIcons.Draw(ui, NodeIcon.Assembly);
+            NodeIcons.Draw(ui, ui.State.Appearance, NodeIcon.Assembly);
             ui.Text(assembly.NameAndVersion, color: nameColor);
             FrameworkText(ui, assembly);
             // Shortened in the middle so that its folder and name stay.

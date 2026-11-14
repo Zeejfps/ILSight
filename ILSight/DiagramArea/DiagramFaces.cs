@@ -31,17 +31,17 @@ internal static class DiagramFaces
 
     /// <summary>Measures the faces of <paramref name="diagram"/>'s cards when what they were measured for
     /// changed, and asks the app state to lay the diagram out at their new sizes.</summary>
-    public static void MeasureIfChanged(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)
+    public static void MeasureIfChanged(Ui ui, Appearance appearance, IAppCommandWriter commands, DiagramViewState view, TypeDiagram diagram)
     {
-        var key = KeyOf(ui, view, diagram);
+        var key = KeyOf(ui, appearance, view, diagram);
         if (view.MeasuredFor == key)
         {
             return;
         }
 
-        var faces = Measure(ui, view, diagram);
+        var faces = Measure(ui, appearance, view, diagram);
         view.KeepFaces(key, faces, diagram.Version);
-        LayOutLater(ui.State.AppCommands, diagram, MeasuresOf(ui, diagram, faces));
+        LayOutLater(commands, diagram, MeasuresOf(ui, diagram, faces));
     }
 
     /// <summary>Asks for <paramref name="diagram"/> to be laid out once the frame is drawn, its cards and labels as
@@ -54,7 +54,7 @@ internal static class DiagramFaces
             static (s, layout, _) => s.diagram.TryFinishLayout(layout));
     }
 
-    private static FaceKey KeyOf(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)
+    private static FaceKey KeyOf(Ui ui, Appearance appearance, DiagramViewState view, TypeDiagram diagram)
     {
         var theme = ui.Theme;
         return new FaceKey
@@ -64,20 +64,20 @@ internal static class DiagramFaces
             ShowsHiddenMembers = view.ShowsHiddenMembers,
             FontSize = theme.FontSize,
             FontFamily = theme.FontFamily,
-            Strings = ui.State.Appearance.Strings,
+            Strings = appearance.Strings,
         };
     }
 
-    private static List<CardFace> Measure(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram)
+    private static List<CardFace> Measure(Ui ui, Appearance appearance, DiagramViewState view, TypeDiagram diagram)
     {
         return diagram.Cards
-            .Select(c => MeasureCard(ui, view, diagram, c))
+            .Select(c => MeasureCard(ui, appearance, view, diagram, c))
             .ToList();
     }
 
-    private static CardFace MeasureCard(Ui<UiState> ui, DiagramViewState view, TypeDiagram diagram, TypeCard card)
+    private static CardFace MeasureCard(Ui ui, Appearance appearance, DiagramViewState view, TypeDiagram diagram, TypeCard card)
     {
-        var stack = new RowStack { Ui = ui, RowHeight = MathF.Ceiling(ui.LineHeight()) + RowPadding };
+        var stack = new RowStack { Ui = ui, Strings = appearance.Strings, RowHeight = MathF.Ceiling(ui.LineHeight()) + RowPadding };
         AddHeader(stack, card);
         var headerHeight = stack.Top;
         foreach (var section in card.Sections)
@@ -233,7 +233,7 @@ internal static class DiagramFaces
         };
     }
 
-    private static DiagramMeasures MeasuresOf(Ui<UiState> ui, TypeDiagram diagram, List<CardFace> faces)
+    private static DiagramMeasures MeasuresOf(Ui ui, TypeDiagram diagram, List<CardFace> faces)
     {
         var cards = faces
             .Select(static f => new MeasuredCard { Type = f.Card.Type, Width = f.Width, Height = f.Height })
@@ -244,7 +244,7 @@ internal static class DiagramFaces
         return new DiagramMeasures { Cards = cards, Links = links };
     }
 
-    private static MeasuredLink MeasureLink(Ui<UiState> ui, TypeLink link)
+    private static MeasuredLink MeasureLink(Ui ui, TypeLink link)
     {
         var label = LabelOf(link);
         if (label is null)
@@ -257,7 +257,7 @@ internal static class DiagramFaces
     }
 
     /// <summary>How large <paramref name="label"/> is drawn on a link, with room around it.</summary>
-    public static (float Width, float Height) MeasureLabel(Ui<UiState> ui, string label)
+    public static (float Width, float Height) MeasureLabel(Ui ui, string label)
     {
         var size = ui.Theme.FontSizeSmall;
         var width = ui.MeasureText(label, size) + LabelPadding * 2;
@@ -283,7 +283,7 @@ internal static class DiagramFaces
         stack.Width = MathF.Max(stack.Width, row.Indent + GetLead(stack, row) + textWidth);
     }
 
-    private static float MeasureRowText(Ui<UiState> ui, CardRow row)
+    private static float MeasureRowText(Ui ui, CardRow row)
     {
         return row.Content.Match((ui, text: row.Text),
             name: static (s, _) => s.ui.MeasureText(s.text, bold: true),
@@ -304,7 +304,7 @@ internal static class DiagramFaces
 
     private sealed class RowStack
     {
-        public required Ui<UiState> Ui { get; init; }
+        public required Ui Ui { get; init; }
 
         public List<CardRow> Rows { get; } = new();
 
@@ -316,6 +316,6 @@ internal static class DiagramFaces
 
         public float IconSize => Ui.Theme.IconSize;
 
-        public Strings Strings => Ui.State.Appearance.Strings;
+        public required Strings Strings { get; init; }
     }
 }

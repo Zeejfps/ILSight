@@ -52,7 +52,7 @@ internal sealed class CodeViewDriver
     {
         using (ui.Screen())
         {
-            Last = CodeViewWidget.RenderCodeView(ui, "code", Document, State, Bookmarks, tooltips: Tooltips, display: Display,
+            Last = CodeViewWidget.RenderCodeView(ui, ui.State.Appearance, ui.State.Display, "code", Document, State, Bookmarks, tooltips: Tooltips, display: Display,
                 closedAssembly: ClosedAssembly);
         }
 

@@ -112,7 +112,7 @@ public static class CodeViewWidget
     // How long the caret stays shown, then hidden.
     private static readonly TimeSpan CaretBlink = TimeSpan.FromSeconds(0.53);
 
-    private static bool IsCaretShown(Ui<UiState> ui, CodeViewState state, bool focused)
+    private static bool IsCaretShown(Ui ui, CodeViewState state, bool focused)
     {
         if (!focused)
         {
@@ -153,14 +153,14 @@ public static class CodeViewWidget
     /// of (<see cref="TabLoad.ShowClosed"/>), nothing that would read it is asked for: the menu shows following,
     /// analyzing and showing a reference disabled, and a hovered type or member's tooltip, each saying it was closed.
     /// </summary>
-    public static CodeViewResult RenderCodeView(Ui<UiState> ui, string id, DecompiledDocument document, CodeViewState state,
+    public static CodeViewResult RenderCodeView(Ui ui, Appearance appearance, ScreenDisplay screenDisplay, string id, DecompiledDocument document, CodeViewState state,
         IReadOnlyDictionary<int, bool>? bookmarks = null, bool gutter = true, CodeTooltips? tooltips = null, DisplayOptions? display = null,
         string? closedAssembly = null)
     {
         using var scope = ui.Id(id);
         state.ShowDocument(document);
         var theme = ui.Theme;
-        var palette = ui.State.Appearance.CodeViewPalette;
+        var palette = appearance.CodeViewPalette;
         var shown = display ?? Plain;
         var fontSize = CodeDisplay.GetFontSize(shown, theme);
         var cell = ui.MeasureCell(fontSize, family: MonoFonts.Code);
@@ -186,7 +186,7 @@ public static class CodeViewWidget
 
         if (focused || findFocused)
         {
-            HandleKeys(ui, state, document, focusId, focused, advance);
+            HandleKeys(ui, screenDisplay, state, document, focusId, focused, advance);
             if (focused && ui.IsPressed(Shortcuts.Analyze))
             {
                 var analyzed = AnalyzableAt(document, state.Selection.Caret);
@@ -201,7 +201,7 @@ public static class CodeViewWidget
         {
             if (state.Find.IsOpen)
             {
-                FindBar(ui, state, document, focusId, findId);
+                FindBar(ui, appearance, state, document, focusId, findId);
                 ui.Separator();
             }
             ui.TabStop(focusId);
@@ -385,7 +385,7 @@ public static class CodeViewWidget
                 Width = gutterWidth,
                 TextLeft = textLeft,
             };
-            FillFrame(ui, state, document, theme, palette, cell, rowHeight, codeGutter, focused || findFocused, bookmarks, hover, hoverReference ?? marked,
+            FillFrame(ui, appearance, state, document, theme, palette, cell, rowHeight, codeGutter, focused || findFocused, bookmarks, hover, hoverReference ?? marked,
                 hoverNavigable);
             state.Frame.ShowCaret(IsCaretShown(ui, state, focused) ? state.Selection.Caret : null);
             FillDisplayAids(state, document, shown, fontSize);
@@ -416,11 +416,11 @@ public static class CodeViewWidget
                 var under = new HoveredSpan { Span = hoverSpan, TextX = rect.X + textLeft, TextY = rect.Y };
                 if (closedAssembly is not null)
                 {
-                    ClosedTooltip(ui, state, document, codeId, under, advance, rowHeight, closedAssembly);
+                    ClosedTooltip(ui, appearance, state, document, codeId, under, advance, rowHeight, closedAssembly);
                 }
                 else
                 {
-                    var followed = ReferenceTooltip(ui, state, document, tooltips, codeId, under, advance, rowHeight);
+                    var followed = ReferenceTooltip(ui, appearance, state, document, tooltips, codeId, under, advance, rowHeight);
                     if (followed is not null)
                     {
                         intent = followed;
@@ -430,7 +430,7 @@ public static class CodeViewWidget
             state.Layout.KeepScroll(state.ScrollX, state.ScrollY);
         }
 
-        var picked = ContextMenu(ui, state, document, bookmarks is not null, closedAssembly);
+        var picked = ContextMenu(ui, appearance, screenDisplay, state, document, bookmarks is not null, closedAssembly);
         if (picked is not null)
         {
             intent = picked;
@@ -457,7 +457,7 @@ public static class CodeViewWidget
         return MathF.Max(scaled, fontHeight);
     }
 
-    private static CodeZoom ZoomAsked(Ui<UiState> ui, bool focused, bool hovered)
+    private static CodeZoom ZoomAsked(Ui ui, bool focused, bool hovered)
     {
         if (focused)
         {
@@ -475,7 +475,7 @@ public static class CodeViewWidget
         return ZoomScrolled(ui.Input);
     }
 
-    private static CodeZoom ZoomPressed(Ui<UiState> ui)
+    private static CodeZoom ZoomPressed(Ui ui)
     {
         if (Shortcuts.AnyPressed(ui, Shortcuts.ZoomInKeys))
         {
@@ -547,7 +547,7 @@ public static class CodeViewWidget
         public required float TextY { get; init; }
     }
 
-    private static CodeViewIntent? ReferenceTooltip(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, CodeTooltips tooltips,
+    private static CodeViewIntent? ReferenceTooltip(Ui ui, Appearance appearance, CodeViewState state, DecompiledDocument document, CodeTooltips tooltips,
         int codeId, HoveredSpan hovered, float advance, float rowHeight)
     {
         var tooltip = TooltipOf(state, document, tooltips, hovered);
@@ -572,11 +572,11 @@ public static class CodeViewWidget
             return null;
         }
 
-        var click = CodeTooltipView.Render(ui, shown);
+        var click = CodeTooltipView.Render(ui, appearance, shown);
         return FollowLink(ui, click);
     }
 
-    private static void ClosedTooltip(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, int codeId, HoveredSpan hovered,
+    private static void ClosedTooltip(Ui ui, Appearance appearance, CodeViewState state, DecompiledDocument document, int codeId, HoveredSpan hovered,
         float advance, float rowHeight, string closedAssembly)
     {
         var part = 0;
@@ -594,10 +594,10 @@ public static class CodeViewWidget
             return;
         }
 
-        CodeTooltipView.RenderClosed(ui, closedAssembly);
+        CodeTooltipView.RenderClosed(ui, appearance, closedAssembly);
     }
 
-    private static CodeViewIntent? FollowLink(Ui<UiState> ui, RichTextClick click)
+    private static CodeViewIntent? FollowLink(Ui ui, RichTextClick click)
     {
         if (click.Link is not CodeReference.Navigable reference)
         {
@@ -663,12 +663,12 @@ public static class CodeViewWidget
         return distance == 0f ? 0f : (distance * AutoScrollSpeed + MathF.Sign(distance) * unit * AutoScrollSpeed) * deltaSeconds;
     }
 
-    private static void FillFrame(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, UiTheme theme, CodeViewPalette palette, CellMetrics cell,
+    private static void FillFrame(Ui ui, Appearance appearance, CodeViewState state, DecompiledDocument document, UiTheme theme, CodeViewPalette palette, CellMetrics cell,
         float rowHeight, CodeGutter gutter, bool active, IReadOnlyDictionary<int, bool>? bookmarks, CodeHover hover, CodeReference? highlight,
         bool hoverNavigable)
     {
         var frame = state.Frame;
-        frame.Lay(document, state.Selection.Folds.Layout, palette, theme, cell, rowHeight, gutter, ui.State.Appearance.Icons.CodeBookmark, active);
+        frame.Lay(document, state.Selection.Folds.Layout, palette, theme, cell, rowHeight, gutter, appearance.Icons.CodeBookmark, active);
         var underline = hoverNavigable && !state.Pointer.PressMoved ? hover.Span : null;
         frame.Mark(state.Selection.Start, state.Selection.End, highlight, underline, hover, bookmarks);
         var findActive = state.Find.IsOpen && state.Query.Length > 0;
@@ -677,7 +677,7 @@ public static class CodeViewWidget
     }
 
     // The flash fades over Flash, and is let go once it has faded.
-    private static void ShowFlash(Ui<UiState> ui, CodeViewState state, UiTheme theme, CodeViewPalette palette)
+    private static void ShowFlash(Ui ui, CodeViewState state, UiTheme theme, CodeViewPalette palette)
     {
         var flash = state.Reveal.Flash;
         if (flash is null)
@@ -698,7 +698,7 @@ public static class CodeViewWidget
         ui.RequestAnimationFrame();
     }
 
-    private static void Scroll(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, float rowHeight, float advance, float textLeft,
+    private static void Scroll(Ui ui, CodeViewState state, DecompiledDocument document, float rowHeight, float advance, float textLeft,
         UiRect content, float deltaY)
     {
         var viewport = content.Height;
@@ -716,7 +716,7 @@ public static class CodeViewWidget
 
     // A position restored goes before the scroll, so the scroll moves on from it; the others go after it, so they win
     // over it.
-    private static void ScrollToPending(Ui<UiState> ui, CodeViewState state, PendingScroll pending, DecompiledDocument document, float rowHeight,
+    private static void ScrollToPending(Ui ui, CodeViewState state, PendingScroll pending, DecompiledDocument document, float rowHeight,
         float advance, float textLeft, UiRect content, float deltaY)
     {
         pending.Switch(
@@ -742,7 +742,7 @@ public static class CodeViewWidget
             });
     }
 
-    private static void ScrollToRestored(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, float rowHeight, UiRect content,
+    private static void ScrollToRestored(Ui ui, CodeViewState state, DecompiledDocument document, float rowHeight, UiRect content,
         PendingScroll.Restore restoring)
     {
         var restore = restoring.Position;
@@ -760,7 +760,7 @@ public static class CodeViewWidget
         state.Selection.Select(CodeText.Clamp(document, restore.Anchor), CodeText.Clamp(document, restore.Caret));
     }
 
-    private static void ScrollToRevealed(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, float rowHeight, UiRect content,
+    private static void ScrollToRevealed(Ui ui, CodeViewState state, DecompiledDocument document, float rowHeight, UiRect content,
         PendingScroll.Reveal reveal)
     {
         var viewport = content.Height;
@@ -782,7 +782,7 @@ public static class CodeViewWidget
         return top >= scrollY && top + rowHeight <= scrollY + viewport;
     }
 
-    private static void ScrollToMatch(Ui<UiState> ui, CodeViewState state, float rowHeight, float advance, float textLeft, UiRect content,
+    private static void ScrollToMatch(Ui ui, CodeViewState state, float rowHeight, float advance, float textLeft, UiRect content,
         PendingScroll.ShowMatch match)
     {
         var viewport = content.Height;
@@ -814,7 +814,7 @@ public static class CodeViewWidget
         state.Reveal.Arrive();
     }
 
-    private static void ShowCaretOnceLaidOut(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, float rowHeight, float advance,
+    private static void ShowCaretOnceLaidOut(Ui ui, CodeViewState state, DecompiledDocument document, float rowHeight, float advance,
         float textLeft, UiRect content)
     {
         if (content.Height <= 0f || content.Width <= 0f)
@@ -901,12 +901,12 @@ public static class CodeViewWidget
         return null;
     }
 
-    private static void HandleKeys(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, int focusId, bool focused, float advance)
+    private static void HandleKeys(Ui ui, ScreenDisplay display, CodeViewState state, DecompiledDocument document, int focusId, bool focused, float advance)
     {
         var keys = ui.Input.Keys;
         for (var k = 0; k < keys.Count; k++)
         {
-            if (RunShortcut(ui, state, document, focused, k))
+            if (RunShortcut(ui, display, state, document, focused, k))
             {
                 continue;
             }
@@ -1017,7 +1017,7 @@ public static class CodeViewWidget
         state.Reveal.AskUnlessAsked(new PendingScroll.ShowCaret());
     }
 
-    private static bool RunShortcut(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, bool focused, int index)
+    private static bool RunShortcut(Ui ui, ScreenDisplay display, CodeViewState state, DecompiledDocument document, bool focused, int index)
     {
         if (ui.IsPressedAt(Shortcuts.Find, index))
         {
@@ -1080,7 +1080,7 @@ public static class CodeViewWidget
         }
         if (state.Selection.HasSelection && ui.IsPressedAt(Shortcuts.Copy, index))
         {
-            CopySelection(ui, state);
+            CopySelection(ui, display, state);
             return true;
         }
         return false;
@@ -1095,15 +1095,15 @@ public static class CodeViewWidget
         }
     }
 
-    private static void CopySelection(Ui<UiState> ui, CodeViewState state)
+    private static void CopySelection(Ui ui, ScreenDisplay display, CodeViewState state)
     {
-        var style = CopyStyleOf(ui, state.Frame);
+        var style = CopyStyleOf(ui, display, state.Frame);
         ui.SetClipboardHtml(GetSelectedHtml(state, style), GetSelectedText(state));
     }
 
-    private static CodeHtmlStyle CopyStyleOf(Ui<UiState> ui, CodeViewFrame frame)
+    private static CodeHtmlStyle CopyStyleOf(Ui ui, ScreenDisplay display, CodeViewFrame frame)
     {
-        var family = CodeDisplay.GetFontName(ui.State.Display.Options.Font);
+        var family = CodeDisplay.GetFontName(display.Options.Font);
         return new CodeHtmlStyle
         {
             Palette = frame.Palette,
@@ -1115,9 +1115,9 @@ public static class CodeViewWidget
         };
     }
 
-    private static void FindBar(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, int focusId, int findId)
+    private static void FindBar(Ui ui, Appearance appearance, CodeViewState state, DecompiledDocument document, int focusId, int findId)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         using (ui.PaneToolbar())
         {
@@ -1153,19 +1153,19 @@ public static class CodeViewWidget
             ui.Text(label, new Box { Width = Sizing.Grow() }, color: count == 0 && state.Query.Length > 0 ? theme.Warning : theme.TextMuted,
                 size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
             var previousTip = ui.Memo("previous-tip", t, static s => s.FindPrevious("Shift+F3"));
-            if (ui.IconButton("previous", ui.State.Appearance.Icons.CodeFindPrevious, previousTip, count > 0))
+            if (ui.IconButton("previous", appearance.Icons.CodeFindPrevious, previousTip, count > 0))
             {
                 Step(state, document, -1);
             }
 
             var nextTip = ui.Memo("next-tip", t, static s => s.FindNext("F3"));
-            if (ui.IconButton("next", ui.State.Appearance.Icons.CodeFindNext, nextTip, count > 0))
+            if (ui.IconButton("next", appearance.Icons.CodeFindNext, nextTip, count > 0))
             {
                 Step(state, document, 1);
             }
 
             var closeTip = ui.Memo("close-tip", t, static s => s.FindClose("Esc"));
-            if (ui.IconButton("close", ui.State.Appearance.Icons.CodeFindClose, closeTip))
+            if (ui.IconButton("close", appearance.Icons.CodeFindClose, closeTip))
             {
                 state.Find.Close();
                 ui.Focus(focusId, takesText: false);
@@ -1200,14 +1200,14 @@ public static class CodeViewWidget
         });
     }
 
-    private static CodeViewIntent? DiagramItems(Ui<UiState> ui, CodeReference.Entity entity, string? why)
+    private static CodeViewIntent? DiagramItems(Ui ui, Appearance appearance, CodeReference.Entity entity, string? why)
     {
         if (entity.Kind != EntityKind.Type)
         {
             return null;
         }
 
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         CodeViewIntent? picked = null;
         if (ui.MenuItem(t.TreeShowInDiagram, enabled: why is null, id: "show-in-diagram", detail: why))
         {
@@ -1222,10 +1222,10 @@ public static class CodeViewWidget
         return picked;
     }
 
-    private static CodeViewIntent? ContextMenu(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, bool bookmarkable,
+    private static CodeViewIntent? ContextMenu(Ui ui, Appearance appearance, ScreenDisplay display, CodeViewState state, DecompiledDocument document, bool bookmarkable,
         string? closedAssembly)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         CodeViewIntent? picked = null;
         using var menu = ui.ContextMenu("menu");
         if (!menu.IsOpen)
@@ -1237,7 +1237,7 @@ public static class CodeViewWidget
 
         if (ui.MenuItem(t.CodeCopy, Shortcuts.Copy, enabled: state.Selection.HasSelection, id: "copy"))
         {
-            CopySelection(ui, state);
+            CopySelection(ui, display, state);
         }
 
         if (ui.MenuItem(t.CodeCopyPlainText, Shortcuts.CopyPlainText, enabled: state.Selection.HasSelection, id: "copy-plain-text"))
@@ -1255,7 +1255,7 @@ public static class CodeViewWidget
         {
             ui.MenuSeparator();
             if (ui.MenuItem(t.CodeToggleBookmark, id: "toggle-bookmark",
-                    icon: new UiIcon(ui.State.Appearance.Icons.CodeToggleBookmark, ui.State.Appearance.CodeViewPalette.Bookmark)))
+                    icon: new UiIcon(appearance.Icons.CodeToggleBookmark, appearance.CodeViewPalette.Bookmark)))
             {
                 picked = new CodeViewIntent.ToggleBookmark(line.Value);
             }
@@ -1279,7 +1279,7 @@ public static class CodeViewWidget
                 ExpandAll(state);
             }
         }
-        var why = ClosedText(ui, closedAssembly);
+        var why = ClosedText(ui, appearance, closedAssembly);
         var reference = target.Navigable;
         if (reference != null)
         {
@@ -1308,13 +1308,13 @@ public static class CodeViewWidget
                 picked = new CodeViewIntent.Analyze(analyzable);
             }
 
-            if (ui.MenuItem(t.TreeShowInApiReference, enabled: why is null, id: "show-in-api-reference", icon: new UiIcon(ui.State.Appearance.Icons.LinkApiReference),
+            if (ui.MenuItem(t.TreeShowInApiReference, enabled: why is null, id: "show-in-api-reference", icon: new UiIcon(appearance.Icons.LinkApiReference),
                     detail: why))
             {
                 picked = new CodeViewIntent.ShowInApiReference(entity);
             }
 
-            picked = DiagramItems(ui, entity, why) ?? picked;
+            picked = DiagramItems(ui, appearance, entity, why) ?? picked;
         }
         var shown = target.Metadata;
         if (shown != null)
@@ -1332,14 +1332,14 @@ public static class CodeViewWidget
         return picked;
     }
 
-    private static string? ClosedText(Ui<UiState> ui, string? closedAssembly)
+    private static string? ClosedText(Ui ui, Appearance appearance, string? closedAssembly)
     {
         if (closedAssembly is null)
         {
             return null;
         }
 
-        return ui.Memo("closed", (closedAssembly, t: ui.State.Appearance.Strings), static a => a.t.DocumentClosed(a.closedAssembly));
+        return ui.Memo("closed", (closedAssembly, t: appearance.Strings), static a => a.t.DocumentClosed(a.closedAssembly));
     }
 
     private static void PaintRow(UiPainter p, (CodeViewFrame Frame, CodeRow Row) shown)

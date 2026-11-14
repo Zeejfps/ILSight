@@ -340,7 +340,7 @@ internal static class SearchPanelView
         var color = row.Selected ? theme.SelectionText : theme.Text;
         using (row.Cell(0))
         {
-            NodeIcons.Draw(ui, node);
+            NodeIcons.Draw(ui, ui.State.Appearance, node);
             ui.Text(result.Text, new Box { Width = Sizing.Grow() }, color: color, overflow: TextOverflow.Ellipsis);
         }
     }

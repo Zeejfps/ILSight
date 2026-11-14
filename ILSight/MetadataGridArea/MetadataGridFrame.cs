@@ -20,13 +20,16 @@ internal ref struct MetadataGridFrame
     private const int FlyoutSalt = 0x4D44464C;
     public const int MenuSalt = 0x4D44474D;
 
-    public required Ui<UiState> Ui { get; init; }
+    public required Ui Ui { get; init; }
     public required MetadataGrid Grid { get; init; }
     public required MetadataGridState State { get; init; }
     public required MetadataFilters Flags { get; init; }
     public required MetadataGridViews Views { get; init; }
     public required MetadataGridPages Pages { get; init; }
+    public required Appearance Appearance { get; init; }
+    public required ScreenDisplay Display { get; init; }
     public required Strings Strings { get; init; }
+    public required IAppCommandWriter AppCommands { get; init; }
     public required int ListId { get; init; }
 
     /// <summary>The file name of the closed assembly the grid's tab shows (<see cref="TabLoad.ShowClosed"/>); null while
@@ -156,7 +159,7 @@ internal ref struct MetadataGridFrame
 
     private void Header(TableFrame table)
     {
-        var icons = Ui.State.Appearance.Icons;
+        var icons = Appearance.Icons;
         var sortGlyph = State.Descending ? icons.SortDescending : icons.SortAscending;
         var sort = new TableSort(State.SortColumn, new UiIcon(sortGlyph));
         var heading = new MetadataGridHeading { Grid = Grid, State = State, Flags = Flags, Strings = Strings, Icons = icons, ListId = ListId };
@@ -193,7 +196,7 @@ internal ref struct MetadataGridFrame
             return;
         }
 
-        FlagsFilterView.Render(Ui, filter);
+        FlagsFilterView.Render(Ui, Appearance, filter);
     }
 
     private MetadataGridResult Keys()
@@ -260,7 +263,7 @@ internal ref struct MetadataGridFrame
                 Row(body, index, row, height.Cells);
                 if (height.Details > 0f)
                 {
-                    MetadataDetailsView.Render(Ui, Grid, State.Details, row, height.Details);
+                    MetadataDetailsView.Render(Ui, Appearance, Display, Grid, State.Details, row, height.Details);
                 }
             }
         }
@@ -440,7 +443,7 @@ internal ref struct MetadataGridFrame
             return false;
         }
 
-        Commands.RefuseLater(Ui.State.AppCommands, new Refusal.AssemblyClosed { Assembly = closed });
+        Commands.RefuseLater(AppCommands, new Refusal.AssemblyClosed { Assembly = closed });
         return true;
     }
 
@@ -456,7 +459,7 @@ internal ref struct MetadataGridFrame
         if (target is not null)
         {
             color = null;
-            link = new UiIcon(Ui.State.Appearance.Icons.LinkToken);
+            link = new UiIcon(Appearance.Icons.LinkToken);
         }
         float? size = null;
         string? family = null;
@@ -514,7 +517,7 @@ internal ref struct MetadataGridFrame
             return;
         }
 
-        MetadataTooltipView.Render(Ui, content);
+        MetadataTooltipView.Render(Ui, Appearance, content);
     }
 
     private MetadataGridResult? Menu()

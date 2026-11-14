@@ -105,9 +105,9 @@ public static class NodeIcons
 
     /// <summary>Records <paramref name="node"/>'s <see cref="Icon(BrowseNode, NodeIconPalette, AppIcons)"/>, in the
     /// screen's icons and icon colors.</summary>
-    public static void Draw(Ui<UiState> ui, BrowseNode node)
+    public static void Draw(Ui ui, Appearance appearance, BrowseNode node)
     {
-        ui.Icon(Icon(node, ui.State.Appearance.NodeIconPalette, ui.State.Appearance.Icons));
+        ui.Icon(Icon(node, appearance.NodeIconPalette, appearance.Icons));
     }
 
     /// <summary>What a node of <paramref name="kind"/> draws in <paramref name="icons"/>.</summary>
@@ -260,8 +260,8 @@ public static class NodeIcons
 
     /// <summary>Records <paramref name="kind"/>'s <see cref="Icon(NodeIcon, NodeAccessibility, NodeIconPalette, AppIcons)"/> as the tree shows it, in the screen's
     /// icons and icon colors.</summary>
-    public static void Draw(Ui<UiState> ui, NodeIcon kind, NodeAccessibility accessibility = NodeAccessibility.None)
+    public static void Draw(Ui ui, Appearance appearance, NodeIcon kind, NodeAccessibility accessibility = NodeAccessibility.None)
     {
-        ui.Icon(Icon(kind, accessibility, ui.State.Appearance.NodeIconPalette, ui.State.Appearance.Icons));
+        ui.Icon(Icon(kind, accessibility, appearance.NodeIconPalette, appearance.Icons));
     }
 }

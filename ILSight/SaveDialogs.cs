@@ -12,7 +12,7 @@ internal static class SaveDialogs
 {
     /// <summary>Asks where to save the active tab's node, when it can be saved: a resource's bytes
     /// under its own name, else its code in the current language as one file.</summary>
-    public static void PickActiveCodeFile(Ui<UiState> ui, Navigation navigation, DecompilationLanguage language)
+    public static void PickActiveCodeFile(Ui ui, Appearance appearance, IAppCommandWriter commands, Navigation navigation, DecompilationLanguage language)
     {
         var node = navigation.ActiveTab?.Node;
         if (!Exports.CanSaveCode(node))
@@ -22,20 +22,19 @@ internal static class SaveDialogs
 
         if (node.HasResource)
         {
-            ResourceImageView.PickExport(ui, node);
+            ResourceImageView.PickExport(ui, appearance, commands, node);
             return;
         }
-        PickCodeFile(ui, language, node);
+        PickCodeFile(ui, appearance, commands, language, node);
     }
 
     /// <summary>Asks where to save the code of <paramref name="node"/> in <paramref name="language"/> as one file.</summary>
-    public static void PickCodeFile(Ui<UiState> ui, DecompilationLanguage language, BrowseNode node)
+    public static void PickCodeFile(Ui ui, Appearance appearance, IAppCommandWriter commands, DecompilationLanguage language, BrowseNode node)
     {
-        var t = ui.State.Appearance.Strings;
-        var screen = ui.State;
+        var t = appearance.Strings;
         var fileName = node.SuggestCodeFileName(language);
         ui.PickSaveFile(t.ExportSaveCodeTitle, null, fileName, CodeFilters(t, language),
-            path => Commands.Later(screen.AppCommands, (node, path), static (a, s) => ExportCommands.SaveCode(a, s.node, s.path)));
+            path => Commands.Later(commands, (node, path), static (a, s) => ExportCommands.SaveCode(a, s.node, s.path)));
     }
 
     private static FileFilter[] CodeFilters(Strings t, DecompilationLanguage language)
@@ -49,48 +48,43 @@ internal static class SaveDialogs
     }
 
     /// <summary>Asks where to write the portable PDB of <paramref name="assembly"/>.</summary>
-    public static void PickPdbFile(Ui<UiState> ui, LoadedModule assembly)
+    public static void PickPdbFile(Ui ui, Appearance appearance, IAppCommandWriter commands, LoadedModule assembly)
     {
-        var t = ui.State.Appearance.Strings;
-        var screen = ui.State;
+        var t = appearance.Strings;
         FileFilter[] filters = [new FileFilter(t.FileFilterPdb, ["*.pdb"])];
         ui.PickSaveFile(t.ExportPdbTitle, null, assembly.PdbFileName, filters,
-            path => Commands.Later(screen.AppCommands, (assembly, path), static (a, s) => ExportCommands.GeneratePdb(a, s.assembly, s.path)));
+            path => Commands.Later(commands, (assembly, path), static (a, s) => ExportCommands.GeneratePdb(a, s.assembly, s.path)));
     }
 
     /// <summary>Asks for the folder the class diagram of <paramref name="assembly"/> is written into.</summary>
-    public static void PickDiagramFolder(Ui<UiState> ui, LoadedModule assembly)
+    public static void PickDiagramFolder(Ui ui, Appearance appearance, IAppCommandWriter commands, LoadedModule assembly)
     {
-        var t = ui.State.Appearance.Strings;
-        var screen = ui.State;
-        ui.PickFolder(t.ExportDiagramTitle, null, folder => Commands.Later(screen.AppCommands, (assembly, folder), static (a, s) => ExportCommands.CreateDiagram(a, s.assembly, s.folder)));
+        var t = appearance.Strings;
+        ui.PickFolder(t.ExportDiagramTitle, null, folder => Commands.Later(commands, (assembly, folder), static (a, s) => ExportCommands.CreateDiagram(a, s.assembly, s.folder)));
     }
 
     /// <summary>Asks for the folder the portable PDBs of every open assembly are written into.</summary>
-    public static void PickPdbFolder(Ui<UiState> ui)
+    public static void PickPdbFolder(Ui ui, Appearance appearance, IAppCommandWriter commands)
     {
-        var t = ui.State.Appearance.Strings;
-        var screen = ui.State;
-        ui.PickFolder(t.ExportPdbsTitle, null, folder => Commands.Later(screen.AppCommands, folder, static (a, f) => ExportCommands.GeneratePdbs(a, f)));
+        var t = appearance.Strings;
+        ui.PickFolder(t.ExportPdbsTitle, null, folder => Commands.Later(commands, folder, static (a, f) => ExportCommands.GeneratePdbs(a, f)));
     }
 
     /// <summary>Asks where to write the file of a package <paramref name="place"/> stands for.</summary>
-    public static void PickPackageFile(Ui<UiState> ui, PackagePlace place)
+    public static void PickPackageFile(Ui ui, Appearance appearance, IAppCommandWriter commands, PackagePlace place)
     {
-        var t = ui.State.Appearance.Strings;
-        var screen = ui.State;
+        var t = appearance.Strings;
         FileFilter[] filters = [new FileFilter(t.FileFilterAll, ["*.*"])];
         ui.PickSaveFile(t.ExportExtractFileTitle, null, place.File.Name, filters,
-            path => Commands.Later(screen.AppCommands, (place, path), static (a, s) => ExportCommands.ExtractPackageFile(a, s.place, s.path)));
+            path => Commands.Later(commands, (place, path), static (a, s) => ExportCommands.ExtractPackageFile(a, s.place, s.path)));
     }
 
     /// <summary>Asks for the folder the files of the package folder <paramref name="place"/> stands for,
     /// shown as <paramref name="name"/>, are extracted into.</summary>
-    public static void PickExtractFolder(Ui<UiState> ui, string name, PackageFolderPlace place)
+    public static void PickExtractFolder(Ui ui, Appearance appearance, IAppCommandWriter commands, string name, PackageFolderPlace place)
     {
-        var t = ui.State.Appearance.Strings;
-        var screen = ui.State;
+        var t = appearance.Strings;
         ui.PickFolder(t.ExportExtractFolderTitle, null,
-            folder => Commands.Later(screen.AppCommands, (name, place, folder), static (a, s) => ExportCommands.ExtractPackageFolder(a, s.name, s.place, s.folder)));
+            folder => Commands.Later(commands, (name, place, folder), static (a, s) => ExportCommands.ExtractPackageFolder(a, s.name, s.place, s.folder)));
     }
 }

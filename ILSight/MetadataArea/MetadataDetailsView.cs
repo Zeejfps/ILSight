@@ -16,7 +16,7 @@ internal static class MetadataDetailsView
 
     /// <summary>How tall <paramref name="row"/>'s details are in a grid <paramref name="width"/> wide;
     /// 0 when it has none.</summary>
-    public static float Height(Ui<UiState> ui, MetadataGrid grid, DetailTexts texts, int row, float width)
+    public static float Height(Ui ui, MetadataGrid grid, DetailTexts texts, int row, float width)
     {
         if (row < 0)
         {
@@ -61,7 +61,7 @@ internal static class MetadataDetailsView
         return new TextSize { Lines = lines.Length, Longest = longest };
     }
 
-    private static float TextHeight(Ui<UiState> ui, TextSize size, float width)
+    private static float TextHeight(Ui ui, TextSize size, float width)
     {
         var theme = ui.Theme;
         var cell = ui.MeasureCell(theme.MonoFontSize, family: MonoFonts.Code);
@@ -76,7 +76,7 @@ internal static class MetadataDetailsView
         return theme.ShellPaddingX + theme.IconSize;
     }
 
-    public static void Render(Ui<UiState> ui, MetadataGrid grid, DetailTexts texts, int row, float height)
+    public static void Render(Ui ui, Appearance appearance, ScreenDisplay display, MetadataGrid grid, DetailTexts texts, int row, float height)
     {
         var theme = ui.Theme;
         using var box = ui.Column(new Box
@@ -90,8 +90,8 @@ internal static class MetadataDetailsView
         using var scope = ui.Id(row);
         var details = MetadataGrids.FindDetails(grid, row);
         details?.Switch(
-            (Ui: ui, Grid: grid, Texts: texts, Row: row),
-            static (at, text) => Text(at.Ui, at.Grid, at.Texts, at.Row, text),
+            (Ui: ui, Appearance: appearance, Display: display, Grid: grid, Texts: texts, Row: row),
+            static (at, text) => Text(at.Ui, at.Appearance, at.Display, at.Grid, at.Texts, at.Row, text),
             static (at, table) => Table(at.Ui, table),
             static (at, failed) => Failed(at.Ui, failed));
     }
@@ -109,19 +109,19 @@ internal static class MetadataDetailsView
         return shown;
     }
 
-    private static void Text(Ui<UiState> ui, MetadataGrid grid, DetailTexts texts, int row, MetadataRowDetails.Text text)
+    private static void Text(Ui ui, Appearance appearance, ScreenDisplay display, MetadataGrid grid, DetailTexts texts, int row, MetadataRowDetails.Text text)
     {
         var shown = GetText(texts, row, grid.Title, text.Content);
-        CodeViewWidget.RenderCodeView(ui, "details", shown.Document, shown.View, gutter: false);
+        CodeViewWidget.RenderCodeView(ui, appearance, display, "details", shown.Document, shown.View, gutter: false);
     }
 
-    private static void Failed(Ui<UiState> ui, MetadataRowDetails.Failed failed)
+    private static void Failed(Ui ui, MetadataRowDetails.Failed failed)
     {
         var theme = ui.Theme;
         ui.Text(failed.Reason, new Box { Height = theme.RowHeight }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
     }
 
-    private static void Table(Ui<UiState> ui, MetadataRowDetails.Table table)
+    private static void Table(Ui ui, MetadataRowDetails.Table table)
     {
         var theme = ui.Theme;
         var share = 1f / table.Headers.Count;
@@ -145,7 +145,7 @@ internal static class MetadataDetailsView
         }
     }
 
-    private static void TableRow(Ui<UiState> ui, IReadOnlyList<string> cells, float share)
+    private static void TableRow(Ui ui, IReadOnlyList<string> cells, float share)
     {
         var theme = ui.Theme;
         using (ui.Row(new Box { Height = theme.RowHeight, Gap = theme.GapTight, AlignY = Align.Center }))
