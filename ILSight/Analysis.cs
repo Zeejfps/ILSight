@@ -21,7 +21,7 @@ public static class Analysis
                 kind.CancelRun();
                 CancelAll(kind.Found);
                 break;
-            case AnalyzerMessageNode or AnalyzerPendingNode or AnalyzerFailedNode:
+            case AnalyzerMessageNode or AnalyzerPendingNode or AnalyzerFailedNode or AnalyzerUnresolvedNode:
                 break;
             default:
                 throw new UnreachableException();

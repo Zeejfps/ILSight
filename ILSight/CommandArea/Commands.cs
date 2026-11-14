@@ -134,7 +134,7 @@ public static class Commands
     {
         appState.Workflows.StartSettling(nameof(AnalyzeReferenceHandler),
             ct => appState.AnalyzeReferenceHandler.HandleAsync(appState.Analyzer, appState.ViewCommands, pending, ct),
-            _ => appState.Analyzer.RemoveRoot(pending.Root));
+            error => appState.Analyzer.FailUnresolved(pending.Root, pending.Reference.Name, error.Message));
     }
 
     /// <summary>Starts running the analysis <paramref name="run"/> is for (<see cref="RunAnalysisHandler"/>) now,

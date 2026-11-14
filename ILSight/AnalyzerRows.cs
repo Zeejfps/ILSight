@@ -145,7 +145,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         {
             AnalyzerSymbolNode symbol => symbol.EnsureChildren().Count > 0,
             AnalyzerKindNode kind => !kind.IsDone || kind.Found.Count > 0,
-            AnalyzerMessageNode or AnalyzerPendingNode or AnalyzerFailedNode => false,
+            AnalyzerMessageNode or AnalyzerPendingNode or AnalyzerFailedNode or AnalyzerUnresolvedNode => false,
             _ => throw new UnreachableException(),
         };
     }
@@ -166,7 +166,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
             case AnalyzerKindNode kind:
                 AskToRun(kind);
                 return ListResults(kind);
-            case AnalyzerMessageNode or AnalyzerPendingNode or AnalyzerFailedNode:
+            case AnalyzerMessageNode or AnalyzerPendingNode or AnalyzerFailedNode or AnalyzerUnresolvedNode:
                 return [];
             default:
                 throw new UnreachableException();
@@ -209,6 +209,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
             AnalyzerMessageNode message => CreateMessageRow(message),
             AnalyzerPendingNode => CreateLoadingRow(),
             AnalyzerFailedNode failed => CreateFailedRow(failed),
+            AnalyzerUnresolvedNode unresolved => CreateFailedRow(GetUnresolvedText(unresolved)),
             _ => throw new UnreachableException(),
         };
     }
@@ -224,6 +225,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
             AnalyzerMessageNode message => GetMessageText(message),
             AnalyzerPendingNode => _strings.AnalyzerLoading,
             AnalyzerFailedNode failed => GetFailedText(failed),
+            AnalyzerUnresolvedNode unresolved => GetUnresolvedText(unresolved),
             _ => throw new UnreachableException(),
         };
     }
@@ -282,8 +284,18 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
 
     private TreeRow CreateFailedRow(AnalyzerFailedNode failed)
     {
+        return CreateFailedRow(GetFailedText(failed));
+    }
+
+    private TreeRow CreateFailedRow(string text)
+    {
         var warning = new UiIcon(_icons.StatusError, _theme.Warning);
-        return new TreeRow(GetFailedText(failed), warning, _theme.Warning);
+        return new TreeRow(text, warning, _theme.Warning);
+    }
+
+    private string GetUnresolvedText(AnalyzerUnresolvedNode unresolved)
+    {
+        return _strings.AnalyzerUnreadable(unresolved.Name, unresolved.Why);
     }
 
     private string GetFailedText(AnalyzerFailedNode failed)

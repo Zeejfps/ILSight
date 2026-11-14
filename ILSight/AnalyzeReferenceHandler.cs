@@ -24,8 +24,9 @@ public sealed class AnalyzeReferenceHandler(AnalyzeReferenceHandler.IPorts ports
     }
     /// <summary>Finds what the reference of <paramref name="pending"/> points at, listing its assembly, and turns its
     /// root into the analysis it waits for (<see cref="PendingAnalysis.Analyze"/>), which
-    /// <paramref name="viewCommands"/> has the view show. The root goes when the reference does not resolve, or leads
-    /// into a module that could not be read, which is reported; once the root was removed from
+    /// <paramref name="viewCommands"/> has the view show. The root goes when the reference does not resolve (refused
+    /// where the user acted); it shows failed with why, in its place, when it leads into a module that could not be
+    /// read or looking for it failed, which is reported; once the root was removed from
     /// <paramref name="analyzer"/>, as clearing the list removes them all, what is found is dropped.</summary>
     public async Task HandleAsync(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, PendingAnalysis pending, CancellationToken ct)
     {
@@ -39,7 +40,7 @@ public sealed class AnalyzeReferenceHandler(AnalyzeReferenceHandler.IPorts ports
             ok => Analyze(analyzer, viewCommands, pending, ok.Value),
             failed =>
             {
-                analyzer.RemoveRoot(pending.Root);
+                analyzer.FailUnresolved(pending.Root, pending.Reference.Name, failed.Error.Message);
                 ports.ReportError(new AppProblem.Unresolved { Reference = pending.Reference, Error = failed.Error });
             });
     }
@@ -55,7 +56,7 @@ public sealed class AnalyzeReferenceHandler(AnalyzeReferenceHandler.IPorts ports
             },
             unreadable =>
             {
-                analyzer.RemoveRoot(pending.Root);
+                analyzer.FailUnresolved(pending.Root, unreadable.Module.Module.FilePath.FileName, unreadable.Module.Why.Message);
                 ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module));
             });
     }

@@ -182,6 +182,21 @@ public sealed class AnalyzerTree
         return root;
     }
 
+    /// <summary>Shows <paramref name="pending"/>, a root asked for from a code reference, failed in its place: looking
+    /// for its symbol failed reading <paramref name="name"/>, with <paramref name="why"/>; nothing once it was
+    /// removed.</summary>
+    public void FailUnresolved(AnalyzerPendingNode pending, string name, string why)
+    {
+        var index = _roots.IndexOf(pending);
+        if (index < 0)
+        {
+            return;
+        }
+
+        _roots[index] = new AnalyzerUnresolvedNode { Name = name, Why = why };
+        FollowSavedAnalyses();
+    }
+
     /// <summary>Keeps the waiting <paramref name="pending"/>, restored from the saved analyses, as saved, in its place,
     /// failed with <paramref name="failure"/>; nothing once it was removed, or when it wasn't restored.</summary>
     public void FailRoot(AnalyzerPendingNode pending, RestoreFailure failure)
@@ -337,7 +352,7 @@ public sealed class AnalyzerTree
             AnalyzerSymbolNode symbol => symbol.Symbol.Definition,
             AnalyzerPendingNode pending => pending.SavedAs,
             AnalyzerFailedNode failed => failed.SavedAs,
-            AnalyzerKindNode or AnalyzerMessageNode => null,
+            AnalyzerKindNode or AnalyzerMessageNode or AnalyzerUnresolvedNode => null,
             _ => throw new UnreachableException(),
         };
     }

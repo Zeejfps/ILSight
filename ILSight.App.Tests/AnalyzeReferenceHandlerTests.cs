@@ -24,7 +24,7 @@ public sealed class AnalyzeReferenceHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NotFoundOrFailed_RemovesTheRootAndReportsIt()
+    public async Task HandleAsync_NotFoundRemovesTheRootButFailedShowsItFailedInPlaceAndReportsIt()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var analyzer = d.AppState.Analyzer;
@@ -36,11 +36,28 @@ public sealed class AnalyzeReferenceHandlerTests
         await d.RunAsync(() => new AnalyzeReferenceHandler(missing).HandleAsync(analyzer, d.AppState.ViewCommands, Analysis.BeginAnalyzing(analyzer, reference), CancellationToken.None));
         await d.RunAsync(() => new AnalyzeReferenceHandler(failed).HandleAsync(analyzer, d.AppState.ViewCommands, Analysis.BeginAnalyzing(analyzer, reference), CancellationToken.None));
 
-        Assert.Empty(analyzer.Roots);
+        var unresolved = Assert.IsType<AnalyzerUnresolvedNode>(Assert.Single(analyzer.Roots));
+        Assert.Equal((reference.Name, "unreadable"), (unresolved.Name, unresolved.Why));
+        Assert.Empty(analyzer.ListSavedAnalyses());
         Assert.Equal([new Refusal.Unresolved { Reference = reference }], missing.Refused);
         Assert.Empty(missing.Reported);
         Assert.Same(error, Assert.IsType<AppProblem.Unresolved>(Assert.Single(failed.Reported)).Error);
         Assert.Empty(failed.Refused);
+    }
+
+    [Fact]
+    public async Task FailUnresolved_TheLookupsWorkflowFailed_ShowsTheRootFailedUntilRemoved()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var analyzer = d.AppState.Analyzer;
+        var pending = Analysis.BeginAnalyzing(analyzer, (await d.FixtureAsync("Greeter")).Definition);
+
+        analyzer.FailUnresolved(pending.Root, "Greeter", "broken");
+        var failed = Assert.IsType<AnalyzerUnresolvedNode>(Assert.Single(analyzer.Roots));
+        analyzer.RemoveRoot(failed);
+
+        Assert.Equal("broken", failed.Why);
+        Assert.Empty(analyzer.Roots);
     }
 
     [Fact]
