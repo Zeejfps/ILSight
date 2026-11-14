@@ -35,26 +35,34 @@ internal static class AppRoot
     private const string LicensesFolder = "licenses";
 
     /// <summary>Where this run's <paramref name="arguments"/> go (<see cref="RunRouting"/>), over the role and the
-    /// hand-over of the settings at <paramref name="settingsPath"/>: null when they were handed to the window already
-    /// open, or the hand-over stayed unconfirmed (said), the inbox dropped unread; else the receiver of later runs' arguments this run holds, the role claimed, or
-    /// standing by to take it, a <paramref name="newInstance"/> asked for never handing over. Its inbox holds this run's
-    /// arguments first, put there before the role is claimed, so a later run's, sent as soon as it is, come after
-    /// them.</summary>
-    internal static async Task<RunArgumentsReceiver?> RouteRunAsync(FullFilePath settingsPath, RunArguments arguments, bool newInstance,
-        CancellationToken ct)
+    /// hand-over of the settings at <paramref name="settingsPath"/>, with no receiver when they were handed to the window
+    /// already open, or the hand-over stayed unconfirmed (said on <paramref name="notice"/>, this run's channel when
+    /// null, in the language those settings choose), the inbox dropped unread; else the receiver of later runs'
+    /// arguments this run holds, the role claimed, or standing by to take it, a <paramref name="newInstance"/> asked for
+    /// never handing over. Its inbox holds this run's arguments first, put there before the role is claimed, so a later
+    /// run's, sent as soon as it is, come after them.</summary>
+    internal static async Task<RoutedRun> RouteRunAsync(FullFilePath settingsPath, RunArguments arguments, bool newInstance,
+        CancellationToken ct, RunNotice? notice = null)
     {
         var address = RunArgumentsRouting.GetAddress(settingsPath);
         var inbox = Channel.CreateUnbounded<RunArguments>();
         // Unbounded, and completed only by the app as its window closes: it takes them.
         inbox.Writer.TryWrite(arguments);
-        var routing = new RunRoutingAdapter(address, inbox);
+        var routing = new RunRoutingAdapter(address, inbox, () => ReadRunStrings(settingsPath), notice ?? RunNotice.ForThisRun());
         var route = await new RunRouting(routing).RouteAsync(arguments, newInstance, ct);
         if (route is RunRoute.HandedOver or RunRoute.Unconfirmed)
         {
-            return null;
+            return new RoutedRun { Route = route, Receiver = null };
         }
 
-        return routing.Claimed ?? RunArgumentsReceiver.StandBy(address, inbox);
+        return new RoutedRun { Route = route, Receiver = routing.Claimed ?? RunArgumentsReceiver.StandBy(address, inbox) };
+    }
+
+    /// <summary>The strings of the language the settings at <paramref name="settingsPath"/> choose; the system's when
+    /// they choose none or can't be read.</summary>
+    internal static Strings ReadRunStrings(FullFilePath settingsPath)
+    {
+        return Strings.For(ChooseLocale(ReadSettingsFile(settingsPath).Settings));
     }
 
     /// <summary>The whole app the launcher opens a window on: the settings at <paramref name="settingsPath"/> read, and

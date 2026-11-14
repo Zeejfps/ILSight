@@ -25,6 +25,6 @@ internal static class RunPipes
     /// as request <paramref name="requestId"/>.</summary>
     public static Task<HandOverAnswer> SendAsync(RunArgumentsAddress address, RunArguments arguments, Guid requestId)
     {
-        return new RunRoutingAdapter(address, Channel.CreateUnbounded<RunArguments>()).SendAsync(arguments, requestId, CancellationToken.None);
+        return new RunRoutingAdapter(address, Channel.CreateUnbounded<RunArguments>(), static () => Strings.For(Locale.En), new RunNotice.OnConsole(TextWriter.Null)).SendAsync(arguments, requestId, CancellationToken.None);
     }
 }

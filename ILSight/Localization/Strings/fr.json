@@ -714,6 +714,8 @@
   "error.pdb_unreadable": "Ce n'est pas un PDB lisible.",
   "error.navigate_to": "Rien nommé {id} n'a été trouvé dans les assemblys ouverts",
   "error.arguments_ignored": {"one": "{count:N0} argument de la ligne de commande n'a pas été compris et a été ignoré", "other": "{count:N0} arguments de la ligne de commande n'ont pas été compris et ont été ignorés"},
+  "error.arguments_unconfirmed": "La fenêtre ILSight déjà ouverte n'a jamais confirmé avoir reçu {arguments}. Aucune deuxième fenêtre n'a été ouverte.",
+  "error.arguments_unconfirmed_ok": "OK",
   "error.show_in_diagram": "Impossible d’afficher {name} dans un diagramme",
   "error.lay_out_diagram": "Impossible de disposer le diagramme",
   "error.compare": "Impossible de comparer {left} avec {right}",

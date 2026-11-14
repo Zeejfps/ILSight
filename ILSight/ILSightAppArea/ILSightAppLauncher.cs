@@ -9,15 +9,17 @@ public static class ILSightAppLauncher
     /// <summary>Hands <paramref name="arguments"/> to the window already open with the same settings
     /// and leaves, unless <paramref name="config"/> asks for a new window or none can take it; else
     /// opens the app, which takes them from its inbox as it takes those of the runs handed to it. What it routes and
-    /// opens, the root builds (<see cref="AppRoot.RouteRunAsync"/>, <see cref="AppRoot.BuildLaunchedApp"/>).</summary>
-    public static void LaunchApp(LaunchConfig config, RunArguments arguments)
+    /// opens, the root builds (<see cref="AppRoot.RouteRunAsync"/>, <see cref="AppRoot.BuildLaunchedApp"/>). Returns
+    /// the run's exit status (<see cref="RunExitCodes"/>).</summary>
+    public static int LaunchApp(LaunchConfig config, RunArguments arguments)
     {
 #pragma warning disable VSTHRD002 // The entry thread must stay its own for the window loop and has nothing to do until the run's route is known; the routing runs on the thread pool.
-        var receiving = Task.Run(() => AppRoot.RouteRunAsync(config.SettingsPath, arguments, config.NewInstance, CancellationToken.None)).GetAwaiter().GetResult();
+        var routed = Task.Run(() => AppRoot.RouteRunAsync(config.SettingsPath, arguments, config.NewInstance, CancellationToken.None)).GetAwaiter().GetResult();
 #pragma warning restore VSTHRD002
+        var receiving = routed.Receiver;
         if (receiving is null)
         {
-            return;
+            return RunExitCodes.Of(routed.Route);
         }
 
         // This run's arguments wait in the inbox first, put there before the role was claimed: they take the path a
@@ -25,6 +27,7 @@ public static class ILSightAppLauncher
         using var receiver = receiving;
         var launched = AppRoot.BuildLaunchedApp(config.SettingsPath, receiver.Inbox);
         OpenWindow(launched, config);
+        return RunExitCodes.Of(routed.Route);
     }
 
     private static void OpenWindow(LaunchedApp launched, LaunchConfig config)

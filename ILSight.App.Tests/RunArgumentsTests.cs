@@ -269,7 +269,7 @@ public sealed class RunArgumentsTests
         // The later run sends as soon as a receiver listens: its hand-over waits for the pipe the claim opens.
         var routing = Task.Run(() => AppRoot.RouteRunAsync(settingsPath, first, newInstance: false, CancellationToken.None));
         var isTaken = await RunPipes.TrySendAsync(RunArgumentsRouting.GetAddress(settingsPath), later);
-        using var receiver = await routing;
+        using var receiver = (await routing).Receiver;
         Assert.NotNull(receiver);
         var app = new AppDriver(settings: DefaultAndOther(temp), inbox: receiver.Inbox);
         app.Frames.WaitUntil(() => AreListed(app.AppState, later.Files.Paths), AppStateDriver.Patience);
