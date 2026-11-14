@@ -296,15 +296,28 @@ public sealed class NuGetBrowser
     }
 
     /// <summary>Takes the user's NuGet.Config as being read, unless it is read or being read already: true when
-    /// it was unread, for the caller to read it and hand over the setup (<see cref="UseSetup"/>).</summary>
+    /// it was unread, for the caller to read it and hand over the setup (<see cref="UseSetup"/>). A config that
+    /// couldn't be read is read again (the dialog opened again is the trigger that reaches a file fixed meanwhile), the
+    /// setup standing in for it kept meanwhile.</summary>
     public bool TryBeginReadingSetup()
     {
-        if (!IsSetupUnread)
+        if (IsSetupUnread)
+        {
+            _setup = new SetupState.Reading();
+            return true;
+        }
+
+        if (_setup is not SetupState.Ready ready || ready.IsBeingReadAgain)
         {
             return false;
         }
 
-        _setup = new SetupState.Reading();
+        if (ready.Setup.ConfigUnreadable is null)
+        {
+            return false;
+        }
+
+        _setup = ready with { IsBeingReadAgain = true };
         return true;
     }
 
@@ -870,7 +883,10 @@ public sealed class NuGetBrowser
 
         public sealed record Reading : SetupState;
 
-        public sealed record Ready(NuGetSetup Setup) : SetupState;
+        public sealed record Ready(NuGetSetup Setup) : SetupState
+        {
+            public bool IsBeingReadAgain { get; init; }
+        }
     }
 
     // Done holds the package file fetched until it is taken.

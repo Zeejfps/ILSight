@@ -350,6 +350,28 @@ public sealed class NuGetBrowserTests
     }
 
     [Fact]
+    public async Task ReadSetupAsync_ConfigUnreadable_IsReadAgainWhenTheDialogOpensAgain()
+    {
+        var ports = new FakePorts
+        {
+            ConfigRead = new Outcome<NuGetConfigRead>.Ok(new NuGetConfigRead.Unreadable { Why = "Data at the root level is invalid." }),
+            DefaultSetup = Setup(),
+        };
+        var picker = new NuGetPicker { Browser = new NuGetBrowser() };
+        picker.Open();
+        await new ReadNuGetSetupHandler(ports).HandleAsync(picker, CancellationToken.None);
+        var stillUnreadable = (picker.Browser.ConfigUnreadable, picker.Browser.TryBeginReadingSetup(), picker.Browser.TryBeginReadingSetup(),
+            picker.Browser.ConfigUnreadable);
+        picker.UseSetup(Setup());
+
+        var fixedMeanwhile = picker.Browser.TryBeginReadingSetup();
+
+        Assert.Equal(("Data at the root level is invalid.", true, false, "Data at the root level is invalid."), stillUnreadable);
+        Assert.False(fixedMeanwhile);
+        Assert.Null(picker.Browser.ConfigUnreadable);
+    }
+
+    [Fact]
     public async Task ReadSetupAsync_ConfigMissing_SearchesNugetOrgSayingNothing()
     {
         var ports = new FakePorts { ConfigRead = new Outcome<NuGetConfigRead>.Ok(new NuGetConfigRead.Missing()), DefaultSetup = Setup() };
