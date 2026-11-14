@@ -95,6 +95,38 @@ public abstract record Refusal
         public required CodeReference.Entity Type { get; init; }
     }
 
+    /// <summary>The PDB at <see cref="PdbPath"/>, picked for the assembly <see cref="Assembly"/>, was read and doesn't
+    /// match it (<see cref="Check"/>: another build's, or a Windows PDB), so it wasn't used.</summary>
+    public sealed record PdbUnusable : Refusal
+    {
+        public required string PdbPath { get; init; }
+
+        public required string Assembly { get; init; }
+
+        public required PdbCheck Check { get; init; }
+    }
+
+    /// <summary>The file at <see cref="Path"/>, given to import bookmarks from, holds no bookmarks list.</summary>
+    public sealed record NotBookmarksFile : Refusal
+    {
+        public required string Path { get; init; }
+    }
+
+    /// <summary>The places of the bookmarks <see cref="Lost"/> describes, read from <see cref="File"/>, were not found, so
+    /// the import left them out.</summary>
+    public sealed record ImportedBookmarksLost : Refusal
+    {
+        public required string File { get; init; }
+
+        public required IReadOnlyList<string> Lost { get; init; }
+    }
+
+    /// <summary><see cref="Count"/> bookmarks, imported or restored, were left out because others mark their lines.</summary>
+    public sealed record BookmarksLeftOut : Refusal
+    {
+        public required int Count { get; init; }
+    }
+
     /// <summary>What was refused and why, in <paramref name="t"/>'s language.</summary>
     public (string What, string Why) Words(Strings t)
     {
@@ -112,6 +144,10 @@ public abstract record Refusal
             HistoryPlaceGone r => (t.ErrorGoBack(r.Place.Label), t.ErrorNoLongerThere(r.Place)),
             BookmarkGone r => (t.ErrorGoToBookmark(r.Bookmark), t.ErrorNoLongerThere(r.Place)),
             TypeNotDiagrammed r => (t.ErrorShowInDiagram(r.Type.Name), t.ErrorNoDefinition(r.Type)),
+            PdbUnusable r => (t.ErrorSelectPdb(System.IO.Path.GetFileName(r.PdbPath), r.Assembly), ProblemTexts.DescribePdbCheck(t, r.Check, r.Assembly)),
+            NotBookmarksFile r => (t.ErrorImportBookmarks(System.IO.Path.GetFileName(r.Path)), t.ErrorNotBookmarksFile),
+            ImportedBookmarksLost r => (t.ErrorBookmarksNotFound(r.File), string.Join("; ", r.Lost)),
+            BookmarksLeftOut r => (t.ErrorDuplicateBookmarks(r.Count), ""),
             _ => throw new UnreachableException($"Refusal.Words does not handle {GetType().Name}."),
         };
     }

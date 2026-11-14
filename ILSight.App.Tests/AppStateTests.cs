@@ -702,7 +702,7 @@ public sealed class AppStateTests
     }
 
     [Fact]
-    public async Task A_tab_whose_place_is_gone_after_a_reload_says_so_and_reports_it()
+    public async Task A_tab_whose_place_is_gone_after_a_reload_says_so_in_the_tab()
     {
         var d = new AppStateDriver();
         using var temp = new TempDir();
@@ -726,6 +726,7 @@ public sealed class AppStateTests
         Assert.Equal(new TabContent.Gone { Location = tab.Location, Title = "Greeter" }, tab.Content);
         Assert.Contains("gone", TabPlaceholders.Write(d.Ui.Strings, tab.Content));
         Assert.IsType<FailedAssembly>(Assert.Single(d.AppState.Assemblies.Listed));
-        Assert.Contains(d.AppState.Errors.Entries, e => e.Words().Title.Contains("Greeter"));
+        // The tab says the place is gone, where it was; only the file that could not be read again is an error.
+        Assert.DoesNotContain(d.AppState.Errors.Entries, e => e.Words().Title.Contains("Greeter"));
     }
 }

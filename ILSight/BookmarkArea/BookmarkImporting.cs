@@ -5,14 +5,18 @@ namespace ILSight.BookmarkArea;
 /// <summary>Importing bookmarks from a file, this app's or the real ILSpy's: reads it and finds the place of each
 /// bookmark in the open assemblies through <see cref="IPorts"/>, then takes them at once when there are none yet, or
 /// waits for the user to say whether they replace or merge in beside those there are. Bookmarks whose place is not
-/// found are left out and reported, with each module that could not be read they are in named, and so are those
-/// marking a line another marks already, when replacing.</summary>
+/// found are left out and said on the refusal line, with each module that could not be read they are in reported, and so
+/// are those marking a line another marks already, when replacing.</summary>
 public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
 {
     public interface IPorts
     {
-        /// <summary>Tells the user what was wrong with a file or the bookmarks in it.</summary>
+        /// <summary>Tells the user reading a file or looking its bookmarks up failed, or what in it could not be read.</summary>
         void ReportError(AppProblem problem);
+
+        /// <summary>Says on the refusal line what the import answered: a file that holds no bookmarks, the bookmarks it
+        /// left out.</summary>
+        void ShowRefusal(Refusal refusal);
 
         /// <summary>The bookmarks in the file at <paramref name="path"/>, each read on its own, as
         /// <see cref="BookmarkFile.Read"/> reads them.</summary>
@@ -33,13 +37,19 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
     {
         var file = Path.GetFileName(path);
         var read = ports.ReadBookmarks(path);
+        if (read is BookmarksRead.NotBookmarksFile)
+        {
+            ports.ShowRefusal(new Refusal.NotBookmarksFile { Path = path });
+            return;
+        }
+
         var problem = read.Match<AppProblem?>(
             read: r => r.Problems.Count == 0 ? null : new AppProblem.ImportedBookmarksUnreadable
             {
                 File = file,
                 Problems = r.Problems,
             },
-            notBookmarksFile: _ => new AppProblem.NotBookmarksFile(path),
+            notBookmarksFile: static _ => null,
             failed: f => new AppProblem.BookmarksNotImported { File = file, Reason = f.Reason });
         if (problem is not null)
         {
@@ -102,7 +112,7 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
         }
 
         var lines = lost.ConvertAll(DescribeLostBookmark);
-        ports.ReportError(new AppProblem.ImportedBookmarksLost { File = file, Lost = lines });
+        ports.ShowRefusal(new Refusal.ImportedBookmarksLost { File = file, Lost = lines });
         foreach (var unreadable in Lookup.ListUnreadable(lost.Select(static f => f.Place)))
         {
             ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable));
@@ -162,7 +172,7 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
             return;
         }
 
-        ports.ReportError(new AppProblem.BookmarksLeftOut(leftOut));
+        ports.ShowRefusal(new Refusal.BookmarksLeftOut { Count = leftOut });
     }
 
     private sealed record FoundBookmark

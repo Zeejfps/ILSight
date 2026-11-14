@@ -191,7 +191,9 @@ public sealed class BookmarkTests : IDisposable
         var next = new AppStateDriver(settings);
 
         Assert.Single(next.AppState.Bookmarks.Items);
-        Assert.Equal("1 bookmark marked the same line as another and was left out", Assert.Single(next.AppState.Errors.Entries).Words().Title);
+        var leftOut = Assert.IsType<Refusal.BookmarksLeftOut>(next.AppState.Refusals.Shown);
+        Assert.Equal("1 bookmark marked the same line as another and was left out", leftOut.Words(Strings.For(Locale.En)).What);
+        Assert.Empty(next.AppState.Errors.Entries);
     }
 
     [Fact]
@@ -549,7 +551,7 @@ public sealed class BookmarkTests : IDisposable
     }
 
     [Fact]
-    public async Task A_file_that_is_not_a_bookmarks_file_is_reported_and_changes_nothing()
+    public async Task A_file_that_is_not_a_bookmarks_file_is_refused_and_changes_nothing()
     {
         var path = _temp.Write("other.json", "{ \"assemblies\": [] }");
         var (d, tab, line) = await OutlineAtAsync("return First();");
@@ -560,9 +562,9 @@ public sealed class BookmarkTests : IDisposable
 
         Assert.Single(d.AppState.Bookmarks.Items);
         Assert.Null(d.AppState.Imports.Asking);
-        var words = Assert.Single(d.AppState.Errors.Entries).Words();
-        Assert.Equal("Cannot import bookmarks from other.json", words.Title);
-        Assert.Equal($"{path}{Environment.NewLine}Not a bookmarks file.", words.Details);
+        var refused = Assert.IsType<Refusal.NotBookmarksFile>(d.AppState.Refusals.Shown);
+        Assert.Equal(("Cannot import bookmarks from other.json", "Not a bookmarks file."), refused.Words(Strings.For(Locale.En)));
+        Assert.Empty(d.AppState.Errors.Entries);
     }
 
     [Fact]
@@ -721,7 +723,9 @@ public sealed class BookmarkTests : IDisposable
         d.Settle();
 
         Assert.Equal("First", Assert.Single(d.AppState.Bookmarks.Items).Name);
-        Assert.Equal("2 bookmarks marked the same line as others and were left out", Assert.Single(d.AppState.Errors.Entries).Words().Title);
+        var leftOut = Assert.IsType<Refusal.BookmarksLeftOut>(d.AppState.Refusals.Shown);
+        Assert.Equal("2 bookmarks marked the same line as others and were left out", leftOut.Words(Strings.For(Locale.En)).What);
+        Assert.Empty(d.AppState.Errors.Entries);
     }
 
     [Fact]
@@ -786,7 +790,7 @@ public sealed class BookmarkTests : IDisposable
     }
 
     [Fact]
-    public void A_bookmark_whose_tree_path_is_stale_is_placed_by_its_token_and_one_with_no_file_is_reported()
+    public void A_bookmark_whose_tree_path_is_stale_is_placed_by_its_token_and_one_with_no_file_is_said_left_out()
     {
         var gone = Record("Gone", "Token", TokenOf("Third"), 0, 1, Fixtures + ".Outline", _temp.PathOf("gone.dll"));
         var path = ILSpyFile(Record("Moved", "Token", TokenOf("Third"), 0, 1, Fixtures + ".Renamed") + "," + gone);
@@ -798,11 +802,13 @@ public sealed class BookmarkTests : IDisposable
         var moved = Assert.Single(d.AppState.Bookmarks.Items);
         Assert.Equal("Moved", moved.Name);
         Assert.StartsWith("Third()", moved.Place.Label);
-        Assert.Equal("Some bookmarks from ILSpy.Bookmarks.json were not found and were left out", Assert.Single(d.AppState.Errors.Entries).Words().Title);
+        var lost = Assert.IsType<Refusal.ImportedBookmarksLost>(d.AppState.Refusals.Shown);
+        Assert.Equal("Some bookmarks from ILSpy.Bookmarks.json were not found and were left out", lost.Words(Strings.For(Locale.En)).What);
+        Assert.Empty(d.AppState.Errors.Entries);
     }
 
     [Fact]
-    public void A_bookmark_whose_token_now_names_another_member_is_reported_rather_than_placed_there()
+    public void A_bookmark_whose_token_now_names_another_member_is_said_left_out_rather_than_placed_there()
     {
         var path = ILSpyFile(Record("Rebuilt", "Token", TokenOf("Third"), 0, 1, Fixtures + ".Renamed", memberName: Fixtures + ".Outline.Removed"));
         var d = new AppStateDriver();
@@ -811,6 +817,8 @@ public sealed class BookmarkTests : IDisposable
         d.Settle();
 
         Assert.Empty(d.AppState.Bookmarks.Items);
-        Assert.Equal("Some bookmarks from ILSpy.Bookmarks.json were not found and were left out", Assert.Single(d.AppState.Errors.Entries).Words().Title);
+        var lost = Assert.IsType<Refusal.ImportedBookmarksLost>(d.AppState.Refusals.Shown);
+        Assert.Equal("Some bookmarks from ILSpy.Bookmarks.json were not found and were left out", lost.Words(Strings.For(Locale.En)).What);
+        Assert.Empty(d.AppState.Errors.Entries);
     }
 }

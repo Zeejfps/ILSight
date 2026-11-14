@@ -16,7 +16,8 @@ public abstract record AppProblem
 
     public sealed record OpenFailed(Exception Error) : AppProblem;
 
-    /// <summary>The PDB at <see cref="PdbPath"/> cannot be used for the assembly <see cref="Assembly"/>.</summary>
+    /// <summary>The PDB at <see cref="PdbPath"/> could not be read for the assembly <see cref="Assembly"/> (it is no PDB, or
+    /// reading it failed); one read that doesn't match the assembly is a refusal (<see cref="Refusal.PdbUnusable"/>).</summary>
     public sealed record PdbUnusable : AppProblem
     {
         public required string PdbPath { get; init; }
@@ -34,9 +35,6 @@ public abstract record AppProblem
     }
 
     public sealed record AssembliesNotReloaded(Exception Error) : AppProblem;
-
-    /// <summary>What a tab showed is gone from the assemblies read again.</summary>
-    public sealed record GoneAfterReload(NodePath Location) : AppProblem;
 
     public sealed record AnalysisFailed : AppProblem
     {
@@ -103,9 +101,6 @@ public abstract record AppProblem
         public required string Reason { get; init; }
     }
 
-    /// <summary>The file at <see cref="Path"/>, given to import bookmarks from, holds no bookmarks list.</summary>
-    public sealed record NotBookmarksFile(string Path) : AppProblem;
-
     /// <summary>The entries of <see cref="File"/> that <see cref="Problems"/> tells of are not bookmarks
     /// at all, so they were left out, or their place in this app's tree could not be read.</summary>
     public sealed record ImportedBookmarksUnreadable : AppProblem
@@ -114,17 +109,6 @@ public abstract record AppProblem
 
         public required IReadOnlyList<BookmarkEntryProblem> Problems { get; init; }
     }
-
-    /// <summary>The places of the bookmarks <see cref="Lost"/> describes, read from <see cref="File"/>, were not found.</summary>
-    public sealed record ImportedBookmarksLost : AppProblem
-    {
-        public required string File { get; init; }
-
-        public required IReadOnlyList<string> Lost { get; init; }
-    }
-
-    /// <summary><see cref="Count"/> imported bookmarks were left out because others mark their lines.</summary>
-    public sealed record BookmarksLeftOut(int Count) : AppProblem;
 
     public sealed record ComparisonFailed : AppProblem
     {
@@ -244,14 +228,13 @@ public abstract record AppProblem
     /// <summary>What the handler of whichever case this is makes of it.</summary>
     public TResult Match<TResult>(Func<OpenFailed, TResult> openFailed, Func<PdbUnusable, TResult> pdbUnusable,
         Func<AssemblyNotReloaded, TResult> assemblyNotReloaded,
-        Func<AssembliesNotReloaded, TResult> assembliesNotReloaded, Func<GoneAfterReload, TResult> goneAfterReload,
+        Func<AssembliesNotReloaded, TResult> assembliesNotReloaded,
         Func<AnalysisFailed, TResult> analysisFailed, Func<AnalysesNotRestored, TResult> analysesNotRestored,
         Func<Unresolved, TResult> unresolved,
         Func<HistoryPlaceGone, TResult> historyPlaceGone, Func<BookmarkGone, TResult> bookmarkGone, Func<ModuleUnreadable, TResult> moduleUnreadable,
         Func<BookmarksNotExported, TResult> bookmarksNotExported,
-        Func<BookmarksNotImported, TResult> bookmarksNotImported, Func<NotBookmarksFile, TResult> notBookmarksFile,
+        Func<BookmarksNotImported, TResult> bookmarksNotImported,
         Func<ImportedBookmarksUnreadable, TResult> importedBookmarksUnreadable,
-        Func<ImportedBookmarksLost, TResult> importedBookmarksLost, Func<BookmarksLeftOut, TResult> bookmarksLeftOut,
         Func<ComparisonFailed, TResult> comparisonFailed, Func<DecompilationFailed, TResult> decompilationFailed,
         Func<TypeNotDiagrammed, TResult> typeNotDiagrammed, Func<DiagramNotReopened, TResult> diagramNotReopened,
         Func<DiagramNotLaidOut, TResult> diagramNotLaidOut, Func<ResourceNotSaved, TResult> resourceNotSaved,
@@ -269,7 +252,6 @@ public abstract record AppProblem
             PdbUnusable c => pdbUnusable(c),
             AssemblyNotReloaded c => assemblyNotReloaded(c),
             AssembliesNotReloaded c => assembliesNotReloaded(c),
-            GoneAfterReload c => goneAfterReload(c),
             AnalysisFailed c => analysisFailed(c),
             AnalysesNotRestored c => analysesNotRestored(c),
             Unresolved c => unresolved(c),
@@ -278,10 +260,7 @@ public abstract record AppProblem
             ModuleUnreadable c => moduleUnreadable(c),
             BookmarksNotExported c => bookmarksNotExported(c),
             BookmarksNotImported c => bookmarksNotImported(c),
-            NotBookmarksFile c => notBookmarksFile(c),
             ImportedBookmarksUnreadable c => importedBookmarksUnreadable(c),
-            ImportedBookmarksLost c => importedBookmarksLost(c),
-            BookmarksLeftOut c => bookmarksLeftOut(c),
             ComparisonFailed c => comparisonFailed(c),
             DecompilationFailed c => decompilationFailed(c),
             TypeNotDiagrammed c => typeNotDiagrammed(c),

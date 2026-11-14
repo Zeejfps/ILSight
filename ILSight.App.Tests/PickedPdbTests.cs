@@ -47,16 +47,17 @@ public sealed class PickedPdbTests
     }
 
     [Fact]
-    public void A_pdb_of_another_build_is_reported_and_not_picked()
+    public void A_pdb_of_another_build_is_refused_and_not_picked()
     {
         var d = AppStateDriver.Opened();
 
         d.Start((a, ct) => a.AssemblyReloading.UsePdbAsync(a.ListSession, a.Reopens, a.Decompiler, OpenAssemblyOf(d), OtherBuildPdb, ct));
-        d.RunUntil(() => d.AppState.Errors.Entries.Count > 0);
+        d.Settle();
 
-        var error = Assert.Single(d.AppState.Errors.Entries);
+        var refused = Assert.IsType<Refusal.PdbUnusable>(d.AppState.Refusals.Shown);
         Assert.Empty(d.AppState.Assemblies.Pdbs.All);
-        Assert.Contains("another build", error.Words().Details);
+        Assert.Contains("another build", refused.Words(Strings.For(Locale.En)).Why);
+        Assert.Empty(d.AppState.Errors.Entries);
     }
 
     [Fact]

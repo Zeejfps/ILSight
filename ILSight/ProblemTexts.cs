@@ -33,7 +33,6 @@ public static class ProblemTexts
                 DescribePdbCheck(t, p.Check, p.Assembly) + Environment.NewLine + p.PdbPath),
             assemblyNotReloaded: p => (t.ErrorReloadAssembly(p.Assembly), p.Error.ToString()),
             assembliesNotReloaded: p => (t.ErrorReloadAssemblies, p.Error.ToString()),
-            goneAfterReload: p => (t.ErrorFindAfterReload(p.Location.Label), p.Location.ToString()),
             analysisFailed: p => (t.ErrorAnalyze(p.Subject, AnalyzerText.Header(t, p.Kind)), p.Error.ToString()),
             analysesNotRestored: p => (t.ErrorRestoreAnalyses, p.Error.ToString()),
             unresolved: p => (t.ErrorResolve(p.Reference.Name), p.Error.ToString()),
@@ -42,10 +41,7 @@ public static class ProblemTexts
             moduleUnreadable: p => (t.ErrorModuleUnreadable(p.Module), p.Why.ToString()),
             bookmarksNotExported: p => (t.ErrorExportBookmarks, p.Reason),
             bookmarksNotImported: p => (t.ErrorImportBookmarks(p.File), p.Reason),
-            notBookmarksFile: p => (t.ErrorImportBookmarks(Path.GetFileName(p.Path)), $"{p.Path}{Environment.NewLine}{t.ErrorNotBookmarksFile}"),
             importedBookmarksUnreadable: p => (t.ErrorBookmarksUnreadable(p.File), DescribeEntryProblems(t, p.Problems)),
-            importedBookmarksLost: p => (t.ErrorBookmarksNotFound(p.File), string.Join(Environment.NewLine, p.Lost)),
-            bookmarksLeftOut: p => (t.ErrorDuplicateBookmarks(p.Count), ""),
             comparisonFailed: p => (t.ErrorCompare(p.Left, p.Right), p.Error.ToString()),
             decompilationFailed: p => (t.ErrorDecompile(p.Node), p.Error.ToString()),
             typeNotDiagrammed: p => (t.ErrorShowInDiagram(p.Type.Name), p.Error.ToString()),
@@ -80,7 +76,7 @@ public static class ProblemTexts
             notABookmark: n => $"#{n.Entry}: {n.Detail}");
     }
 
-    private static string DescribePdbCheck(Strings t, PdbCheck check, string name)
+    internal static string DescribePdbCheck(Strings t, PdbCheck check, string name)
     {
         return check switch
         {

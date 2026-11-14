@@ -160,9 +160,10 @@ public sealed class AssembliesTests
         var otherBuildLoads = await d.RunAsync(() => new AssemblyReloading(otherBuild).UsePdbAsync(d.AppState.ListSession, d.AppState.Reopens, d.AppState.Decompiler, fixtures, "other.pdb", CancellationToken.None));
         var failedLoads = await d.RunAsync(() => new AssemblyReloading(failed).UsePdbAsync(d.AppState.ListSession, d.AppState.Reopens, d.AppState.Decompiler, fixtures, "broken.pdb", CancellationToken.None));
 
-        var unusable = Assert.IsType<AppProblem.PdbUnusable>(Assert.Single(otherBuild.Reported));
+        var unusable = Assert.IsType<Refusal.PdbUnusable>(Assert.Single(otherBuild.Refused));
         Assert.Equal(PdbCheck.OtherBuild, unusable.Check);
         Assert.Equal("other.pdb", unusable.PdbPath);
+        Assert.Empty(otherBuild.Reported);
         Assert.Equal(PdbCheck.Unreadable, Assert.IsType<AppProblem.PdbUnusable>(Assert.Single(failed.Reported)).Check);
         Assert.DoesNotContain(nameof(AssemblyReloading.IPorts.ReadAgainAsync), otherBuild.Asked);
         Assert.DoesNotContain(nameof(AssemblyReloading.IPorts.ReadAgainAsync), failed.Asked);
@@ -333,7 +334,8 @@ public sealed class AssembliesTests
 
         Assert.Equal(AppStateDriver.FixturePath, Assert.Single(Assert.Single(ports.OpenedPaths)).Text);
         Assert.Equal(shutdown.Token, Assert.Single(ports.Tokens));
-        Assert.Equal(location, Assert.IsType<AppProblem.GoneAfterReload>(Assert.Single(ports.Reported)).Location);
+        Assert.IsType<TabContent.Gone>(tab.Content);
+        Assert.Empty(ports.Reported);
         Assert.Null(tab.Node);
         Assert.False(appState.IsReloading);
         Assert.Empty(ListDecompiles(loads));

@@ -158,7 +158,7 @@ internal static class AppRoot
     {
         var appState = CreateAppState(settings, session, updates ?? new AppUpdatesAdapter(), hooks);
         appState.Navigation.OpenFirstTab();
-        ReportProblem(appState, Settings.Restore(appState, settings));
+        ShowRefusal(appState, Settings.Restore(appState, settings));
         appState.UserThemes.ReadThemes();
         appState.UserIconThemes.ReadThemes();
         return appState;
@@ -172,6 +172,16 @@ internal static class AppRoot
         }
 
         Errors.Report(appState, problem);
+    }
+
+    private static void ShowRefusal(AppState appState, Refusal? refusal)
+    {
+        if (refusal is null)
+        {
+            return;
+        }
+
+        appState.Refusals.Show(refusal);
     }
 
     private static T MakePort<T>(T real, Func<T, T>? hook)
@@ -202,7 +212,7 @@ internal static class AppRoot
         var navigation = new NavigationInfrastructure(errors, refusals, assemblies, session, opens);
         var assemblyList = new AssemblyListInfrastructure(errors, refusals, assemblies, session);
         var diagrams = new DiagramInfrastructure(errors, refusals, assemblies);
-        var bookmarks = new BookmarkInfrastructure(errors, assemblies, session);
+        var bookmarks = new BookmarkInfrastructure(errors, refusals, assemblies, session);
         var analysis = new AnalysisInfrastructure(errors, assemblies);
         var exports = new ExportInfrastructure(errors, refusals, session);
         var tree = new TreeInfrastructure(session);

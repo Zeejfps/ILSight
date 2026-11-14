@@ -2,14 +2,19 @@ using ILSight.Core;
 
 namespace ILSight.BookmarkArea;
 
-/// <summary>Reaches the app's error reports, the bookmarks files and the open assemblies off the UI thread, for
+/// <summary>Reaches the app's error reports, its refusal line, the bookmarks files and the open assemblies off the UI thread, for
 /// <see cref="BookmarkImporting"/> and <see cref="ExportBookmarksHandler"/>.</summary>
-public sealed class BookmarkInfrastructure(ErrorLog errors, AssemblyList assemblies, BrowseSession session)
+public sealed class BookmarkInfrastructure(ErrorLog errors, RefusalLine refusals, AssemblyList assemblies, BrowseSession session)
     : BookmarkImporting.IPorts, ExportBookmarksHandler.IPorts
 {
     public void ReportError(AppProblem problem)
     {
         Errors.Report(errors, problem);
+    }
+
+    public void ShowRefusal(Refusal refusal)
+    {
+        refusals.Show(refusal);
     }
 
     public BookmarksRead ReadBookmarks(string path)
