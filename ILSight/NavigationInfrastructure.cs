@@ -58,36 +58,30 @@ public sealed class NavigationInfrastructure(ErrorLog errors, RefusalLine refusa
         return found;
     }
 
-    /// <summary>Looks among the listed assemblies on the thread pool and comes back on the UI thread; the first lookup
-    /// the library failed is the answer's <see cref="Outcome{T}.Failed"/>, as the core answers it. The cancellation of
-    /// <paramref name="ct"/> is let through.</summary>
-    public async Task<Outcome<List<Lookup<BrowseNode>>>> LookUpListedPlacesAsync(IReadOnlyList<NodePath?> places, CancellationToken ct)
+    /// <summary>Looks among the listed assemblies on the thread pool and comes back on the UI thread, each place's
+    /// lookup its own outcome: one the library failed as <see cref="Outcome{T}.Failed"/>, as the core answers it. The
+    /// cancellation of <paramref name="ct"/> is let through.</summary>
+    public async Task<List<Outcome<Lookup<BrowseNode>>>> LookUpListedPlacesAsync(IReadOnlyList<NodePath?> places, CancellationToken ct)
     {
         var found = await Background.Wait(Task.Run(() => FindListedPlacesAsync(places, ct), ct));
         ct.ThrowIfCancellationRequested();
         return found;
     }
 
-    private async Task<Outcome<List<Lookup<BrowseNode>>>> FindListedPlacesAsync(IReadOnlyList<NodePath?> places, CancellationToken ct)
+    private async Task<List<Outcome<Lookup<BrowseNode>>>> FindListedPlacesAsync(IReadOnlyList<NodePath?> places, CancellationToken ct)
     {
-        var found = new List<Lookup<BrowseNode>>(places.Count);
+        var found = new List<Outcome<Lookup<BrowseNode>>>(places.Count);
         foreach (var place in places)
         {
             if (place is null)
             {
-                found.Add(new Lookup<BrowseNode>.NotFound());
+                found.Add(new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound()));
                 continue;
             }
 
-            var lookup = await NodeLookup.FindListedAsync(assemblies, session, place, ct);
-            if (lookup is Outcome<Lookup<BrowseNode>>.Failed failed)
-            {
-                return new Outcome<List<Lookup<BrowseNode>>>.Failed(failed.Error);
-            }
-
-            found.Add(((Outcome<Lookup<BrowseNode>>.Ok)lookup).Value);
+            found.Add(await NodeLookup.FindListedAsync(assemblies, session, place, ct));
         }
-        return new Outcome<List<Lookup<BrowseNode>>>.Ok(found);
+        return found;
     }
 
     /// <summary>Looks on the thread pool and comes back on the UI thread, a lookup the library failed as

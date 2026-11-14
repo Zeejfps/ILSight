@@ -320,7 +320,7 @@ public sealed class AssembliesTests
         Assert.NotNull(tab);
         var location = tab.Location;
         Assert.NotNull(location);
-        var ports = new FakeAssemblyReloadingPorts { Reopen = static places => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = [], Places = places.Select(static _ => (Lookup<BrowseNode>)new Lookup<BrowseNode>.NotFound()).ToArray() }) };
+        var ports = new FakeAssemblyReloadingPorts { Reopen = static places => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = [], Places = places.Select(static _ => (Outcome<Lookup<BrowseNode>>)new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound())).ToArray() }) };
         using var shutdown = new CancellationTokenSource();
 
         var loads = await d.RunAsync(() => new AssemblyReloading(ports).RefreshAssembliesAsync(appState.Lists, appState.ListSession, appState.ViewCommands, appState.Decompiler, [], appState.Reload.Start(), shutdown.Token));
@@ -334,12 +334,34 @@ public sealed class AssembliesTests
     }
 
     [Fact]
+    public async Task RefreshAssembliesAsync_ATabsLookupFailed_ShowsItFailedSayingWhyAndReportsItOnce()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var appState = d.AppState;
+        var tab = appState.Navigation.ActiveTab;
+        Assert.NotNull(tab);
+        var location = tab.Location;
+        Assert.NotNull(location);
+        var error = new InvalidOperationException("Unreadable.");
+        var ports = new FakeAssemblyReloadingPorts { Reopen = places => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = [], Places = places.Select(_ => (Outcome<Lookup<BrowseNode>>)new Outcome<Lookup<BrowseNode>>.Failed(error)).ToArray() }) };
+
+        var loads = await d.RunAsync(() => new AssemblyReloading(ports).RefreshAssembliesAsync(appState.Lists, appState.ListSession, appState.ViewCommands, appState.Decompiler, [], appState.Reload.Start(), CancellationToken.None));
+
+        Assert.Same(error, Assert.IsType<AppProblem.DecompilationFailed>(Assert.Single(ports.Reported)).Error);
+        var failed = Assert.IsType<TabContent.Unreadable>(tab.Content);
+        Assert.Equal("Unreadable.", failed.Why);
+        Assert.Equal(location, failed.Location);
+        Assert.False(appState.IsReloading);
+        Assert.Empty(ListDecompiles(loads));
+    }
+
+    [Fact]
     public async Task RefreshAssembliesAsync_Reloaded_LeavesSavingToTheAutosave()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var appState = d.AppState;
         Assert.IsType<SettingsWriteResult.Written>(appState.SettingsSaving.Save(appState));
-        var ports = new FakeAssemblyReloadingPorts { Reopen = static places => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = [], Places = places.Select(static _ => (Lookup<BrowseNode>)new Lookup<BrowseNode>.NotFound()).ToArray() }) };
+        var ports = new FakeAssemblyReloadingPorts { Reopen = static places => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = [], Places = places.Select(static _ => (Outcome<Lookup<BrowseNode>>)new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound())).ToArray() }) };
 
         var loads = await d.RunAsync(() => new AssemblyReloading(ports).RefreshAssembliesAsync(appState.Lists, appState.ListSession, appState.ViewCommands, appState.Decompiler, [], appState.Reload.Start(), CancellationToken.None));
 

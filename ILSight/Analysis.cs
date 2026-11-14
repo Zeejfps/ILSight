@@ -138,14 +138,17 @@ public static class Analysis
     }
 
     /// <summary>Turns each of <paramref name="restoring"/> into the analysis of the symbol found for it, in order; one
-    /// whose symbol was not found, or is in a module whose type system the library could not read, stays as saved,
-    /// failed with why (<see cref="AnalyzerTree.FailRoot"/>).</summary>
+    /// whose symbol was not found, is in a module whose type system the library could not read, or failed to be found,
+    /// stays as saved, failed with why (<see cref="AnalyzerTree.FailRoot"/>).</summary>
     public static void AnalyzeAgain(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, IReadOnlyList<AnalyzerPendingNode> restoring,
-        List<Lookup<AnalysisSymbol>> found)
+        List<Outcome<Lookup<AnalysisSymbol>>> found)
     {
         for (var i = 0; i < restoring.Count; i++)
         {
-            AnalyzeAgain(analyzer, viewCommands, restoring[i], found[i]);
+            var root = restoring[i];
+            found[i].Switch(
+                ok => AnalyzeAgain(analyzer, viewCommands, root, ok.Value),
+                failed => analyzer.FailRoot(root, new RestoreFailure.Failed { Why = failed.Error.Message }));
         }
     }
 

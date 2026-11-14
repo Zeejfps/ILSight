@@ -18,7 +18,7 @@ public sealed class AnalysisInfrastructureTests
         AssemblyListing.Open(assemblies, path);
         var analysis = new AnalysisInfrastructure(new ErrorLog(), assemblies);
         var anchor = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = path, Token = MetadataTokens.GetToken(greet) };
-        var found = Assert.Single(Assert.IsType<Outcome<List<Lookup<AnalysisSymbol>>>.Ok>(await analysis.LookUpAnalyzedAsync([anchor], CancellationToken.None)).Value);
+        var found = Assert.IsType<Outcome<Lookup<AnalysisSymbol>>.Ok>(Assert.Single(await analysis.LookUpAnalyzedAsync([anchor], CancellationToken.None))).Value;
         var symbol = Assert.IsType<Lookup<AnalysisSymbol>.Found>(found).Value;
         var usedBy = symbol.Kinds.Single(static k => Analyzers.GetHeader(k) == "Used By");
 

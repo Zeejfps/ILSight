@@ -198,7 +198,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
 
         for (var i = 0; i < tabs.Count; i++)
         {
-            TryShowAgain(navigation, decompiler, tabs[i], reopened.Places[i], loads, out _);
+            TryShowAgain(navigation, decompiler, tabs[i], new Outcome<Lookup<BrowseNode>>.Ok(reopened.Places[i]), loads, out _);
         }
         return loads;
     }
@@ -326,7 +326,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
     }
 
     private void ReshowTab(Navigation navigation, Queue<ViewCommand> viewCommands, DecompilerSetup decompiler, ReloadingTab reloading,
-        Lookup<BrowseNode> place, int intent, List<DecompileTicket> loads)
+        Outcome<Lookup<BrowseNode>> place, int intent, List<DecompileTicket> loads)
     {
         if (!TryShowAgain(navigation, decompiler, reloading, place, loads, out var node))
         {
@@ -339,21 +339,29 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         }
     }
 
-    private bool TryShowAgain(Navigation navigation, DecompilerSetup decompiler, ReloadingTab reloading, Lookup<BrowseNode> place,
+    // A place whose lookup failed is reported once, its tab saying so, and why, where it is shown.
+    private bool TryShowAgain(Navigation navigation, DecompilerSetup decompiler, ReloadingTab reloading, Outcome<Lookup<BrowseNode>> outcome,
         List<DecompileTicket> loads, [NotNullWhen(true)] out BrowseNode? node)
     {
         node = null;
         var tab = reloading.Tab;
-        if (!navigation.IsOpen(tab))
+        if (outcome is Outcome<Lookup<BrowseNode>>.Failed failed)
+        {
+            ports.ReportError(new AppProblem.DecompilationFailed { Node = reloading.Location.Label, Error = failed.Error });
+            if (IsStillShowing(navigation, reloading))
+            {
+                tab.Load.ShowLookupFailed(reloading.Location, failed.Error);
+            }
+
+            return false;
+        }
+
+        if (!IsStillShowing(navigation, reloading))
         {
             return false;
         }
 
-        if (tab.Version != reloading.Version)
-        {
-            return false;
-        }
-
+        var place = ((Outcome<Lookup<BrowseNode>>.Ok)outcome).Value;
         node = place.Match<BrowseNode?>(
             static found => found.Value,
             _ =>
@@ -378,6 +386,12 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         }
 
         return true;
+    }
+
+    // The tab is still open, showing what the reload left it showing.
+    private static bool IsStillShowing(Navigation navigation, ReloadingTab reloading)
+    {
+        return navigation.IsOpen(reloading.Tab) && reloading.Tab.Version == reloading.Version;
     }
 
     private void ReleaseGoneTab(DocumentTab tab, NodePath location)

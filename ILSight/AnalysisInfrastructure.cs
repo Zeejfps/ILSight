@@ -46,28 +46,22 @@ public sealed class AnalysisInfrastructure(ErrorLog errors, AssemblyList assembl
     }
 
     /// <summary>Finds them on the thread pool, each once the read of its assembly's type system ended, and comes back
-    /// on the UI thread; the first the library failed to find is the answer's <see cref="Outcome{T}.Failed"/>, as the
-    /// core answers it.</summary>
-    public async Task<Outcome<List<Lookup<AnalysisSymbol>>>> LookUpAnalyzedAsync(IReadOnlyList<CodeAnchor> analyzed, CancellationToken ct)
+    /// on the UI thread, each its own outcome: one the library failed to find as <see cref="Outcome{T}.Failed"/>, as
+    /// the core answers it.</summary>
+    public async Task<List<Outcome<Lookup<AnalysisSymbol>>>> LookUpAnalyzedAsync(IReadOnlyList<CodeAnchor> analyzed, CancellationToken ct)
     {
         var found = await Background.Wait(Task.Run(() => FindAnalyzedAsync(analyzed, ct), ct));
         ct.ThrowIfCancellationRequested();
         return found;
     }
 
-    private async Task<Outcome<List<Lookup<AnalysisSymbol>>>> FindAnalyzedAsync(IReadOnlyList<CodeAnchor> analyzed, CancellationToken ct)
+    private async Task<List<Outcome<Lookup<AnalysisSymbol>>>> FindAnalyzedAsync(IReadOnlyList<CodeAnchor> analyzed, CancellationToken ct)
     {
-        var found = new List<Lookup<AnalysisSymbol>>(analyzed.Count);
+        var found = new List<Outcome<Lookup<AnalysisSymbol>>>(analyzed.Count);
         foreach (var anchor in analyzed)
         {
-            var lookup = await Analyzers.FindAsync(assemblies, anchor, ct);
-            if (lookup is Outcome<Lookup<AnalysisSymbol>>.Failed failed)
-            {
-                return new Outcome<List<Lookup<AnalysisSymbol>>>.Failed(failed.Error);
-            }
-
-            found.Add(((Outcome<Lookup<AnalysisSymbol>>.Ok)lookup).Value);
+            found.Add(await Analyzers.FindAsync(assemblies, anchor, ct));
         }
-        return new Outcome<List<Lookup<AnalysisSymbol>>>.Ok(found);
+        return found;
     }
 }

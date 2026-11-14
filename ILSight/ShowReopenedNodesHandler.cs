@@ -4,23 +4,27 @@ namespace ILSight;
 
 /// <summary>Shows again the nodes the tabs reopened from the open list's saved documents wait for, once its
 /// assemblies are listed: finds them through <see cref="IPorts"/>, without holding up the screen, and points each tab
-/// still waiting at its node, or shows that it is gone. Returns the loads it started in the tabs for the edge to
-/// start.</summary>
+/// still waiting at its node, or shows that it is gone, or that finding it failed. Returns the loads it started in the
+/// tabs for the edge to start.</summary>
 public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts ports)
 {
     public interface IPorts
     {
-        /// <summary>The listed node at each of <paramref name="places"/>, in the same order: not found for one that is
-        /// gone or null itself, unreadable for one in a module whose type system the library could not read; looked
-        /// for without holding up the screen. A lookup that failed comes back as
-        /// <see cref="Outcome{T}.Failed"/>; the cancellation of <paramref name="ct"/> is let through.</summary>
-        Task<Outcome<List<Lookup<BrowseNode>>>> LookUpListedPlacesAsync(IReadOnlyList<NodePath?> places, CancellationToken ct);
+        /// <summary>Tells the user finding a tab's place failed.</summary>
+        void ReportError(AppProblem problem);
+
+        /// <summary>What looking for the listed node at each of <paramref name="places"/> came to, in the same order:
+        /// not found for one that is gone or null itself, unreadable for one in a module whose type system the library
+        /// could not read, <see cref="Outcome{T}.Failed"/> for one whose lookup failed; looked for without holding up the
+        /// screen. The cancellation of <paramref name="ct"/> is let through.</summary>
+        Task<List<Outcome<Lookup<BrowseNode>>>> LookUpListedPlacesAsync(IReadOnlyList<NodePath?> places, CancellationToken ct);
     }
 
-    /// <summary>Finds the nodes <paramref name="lookup"/>'s tabs wait for and shows each, back where its view stood
-    /// when it was shown in the language the app shows now, or that it is gone; when finding them failed, each saying
-    /// so, and why, where its document was. A tab pointed elsewhere or closed meanwhile is left alone. Returns the loads
-    /// that started in the tabs, for the edge that started this to start under each tab's work.</summary>
+    /// <summary>Finds the nodes <paramref name="lookup"/>'s tabs wait for and shows each as its own lookup came out:
+    /// back where its view stood when it was shown in the language the app shows now, or that it is gone, or, when
+    /// finding it failed, saying so, and why, where its document was, reported once. A tab pointed elsewhere or closed
+    /// meanwhile is left alone. Returns the loads that started in the tabs, for the edge that started this to start
+    /// under each tab's work.</summary>
     public async Task<List<DecompileTicket>> HandleAsync(ReopenedTabs reopened, Navigation navigation, DecompilerChoice decompiler,
         Queue<ViewCommand> viewCommands, ReopenedNodesLookup lookup, CancellationToken ct)
     {
@@ -34,13 +38,7 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
             .Select(static n => n.Place)
             .ToList();
         var found = await ports.LookUpListedPlacesAsync(places, ct);
-        if (found is Outcome<List<Lookup<BrowseNode>>>.Failed failed)
-        {
-            ShowLookupFailed(reopened, navigation, nodes, failed.Error);
-            return [];
-        }
-
-        return ShowReopenedNodes(reopened, navigation, decompiler, viewCommands, nodes, ((Outcome<List<Lookup<BrowseNode>>>.Ok)found).Value);
+        return ShowReopenedNodes(reopened, navigation, decompiler, viewCommands, nodes, found);
     }
 
     /// <summary>Has each of <paramref name="nodes"/> still waiting, in a tab still open, say that finding its place
@@ -63,9 +61,9 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
         }
     }
 
-    // shown holds what was found for each of nodes, in the same order.
-    private static List<DecompileTicket> ShowReopenedNodes(ReopenedTabs reopened, Navigation navigation, DecompilerChoice decompiler,
-        Queue<ViewCommand> viewCommands, IReadOnlyList<WaitingNode> nodes, List<Lookup<BrowseNode>> shown)
+    // shown holds what looking for each of nodes came to, in the same order.
+    private List<DecompileTicket> ShowReopenedNodes(ReopenedTabs reopened, Navigation navigation, DecompilerChoice decompiler,
+        Queue<ViewCommand> viewCommands, IReadOnlyList<WaitingNode> nodes, List<Outcome<Lookup<BrowseNode>>> shown)
     {
         var loads = new List<DecompileTicket>();
         for (var i = 0; i < nodes.Count; i++)
@@ -80,12 +78,17 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
         return loads;
     }
 
-    private static DecompileTicket? ShowReopenedNode(ReopenedTabs reopened, Navigation navigation, DecompilerChoice decompiler,
-        Queue<ViewCommand> viewCommands, WaitingNode waiting, Lookup<BrowseNode> lookup)
+    private DecompileTicket? ShowReopenedNode(ReopenedTabs reopened, Navigation navigation, DecompilerChoice decompiler,
+        Queue<ViewCommand> viewCommands, WaitingNode waiting, Outcome<Lookup<BrowseNode>> outcome)
     {
         if (!SavedDocuments.TryFinishWaiting(reopened, waiting.Reopened))
         {
             return null;
+        }
+
+        if (outcome is Outcome<Lookup<BrowseNode>>.Failed failed)
+        {
+            ports.ReportError(new AppProblem.DecompilationFailed { Node = waiting.Record.Location.Label, Error = failed.Error });
         }
 
         var tab = waiting.Reopened.Tab;
@@ -94,6 +97,18 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
             return null;
         }
 
+        return outcome.Match(
+            ok => ShowFound(navigation, decompiler, viewCommands, waiting, tab, ok.Value),
+            failed =>
+            {
+                tab.Load.ShowLookupFailed(waiting.Record.Location, failed.Error);
+                return null;
+            });
+    }
+
+    private static DecompileTicket? ShowFound(Navigation navigation, DecompilerChoice decompiler, Queue<ViewCommand> viewCommands, WaitingNode waiting,
+        DocumentTab tab, Lookup<BrowseNode> lookup)
+    {
         return lookup.Match<DecompileTicket?>(
             found => Restore(navigation, decompiler, viewCommands, waiting, tab, found.Value),
             _ =>

@@ -197,7 +197,7 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         }
     }
 
-    // A lookup the library failed fails the reopen, with why.
+    // A lookup of an expanded node the library failed fails the reopen, with why; each tab's place is its own.
     private async Task<Outcome<ReloadedNodes>> ReopenAndFindNodesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded,
         IReadOnlyList<NodePath> places, CancellationToken ct)
     {
@@ -209,9 +209,7 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         }
 
         var placeNodes = await FindNodesAsync(places, ct);
-        return placeNodes.Match<Outcome<ReloadedNodes>>(
-            ok => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = ((Outcome<List<BrowseNode>>.Ok)expandedNodes).Value, Places = ok.Value }),
-            static failed => new Outcome<ReloadedNodes>.Failed(failed.Error));
+        return new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = ((Outcome<List<BrowseNode>>.Ok)expandedNodes).Value, Places = placeNodes });
     }
 
     private async Task<Outcome<List<BrowseNode>>> GetExpandedNodesAsync(IReadOnlyList<NodePath> expanded, CancellationToken ct)
@@ -246,20 +244,15 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         return new Outcome<List<BrowseNode>>.Ok(nodes);
     }
 
-    private async Task<Outcome<Lookup<BrowseNode>[]>> FindNodesAsync(IReadOnlyList<NodePath> places, CancellationToken ct)
+    // Each place's lookup its own outcome.
+    private async Task<Outcome<Lookup<BrowseNode>>[]> FindNodesAsync(IReadOnlyList<NodePath> places, CancellationToken ct)
     {
-        var found = new Lookup<BrowseNode>[places.Count];
+        var found = new Outcome<Lookup<BrowseNode>>[places.Count];
         for (var i = 0; i < found.Length; i++)
         {
             ct.ThrowIfCancellationRequested();
-            var lookup = await NodeLookup.FindAsync(assemblies, session, places[i], ct);
-            if (lookup is Outcome<Lookup<BrowseNode>>.Failed failed)
-            {
-                return new Outcome<Lookup<BrowseNode>[]>.Failed(failed.Error);
-            }
-
-            found[i] = ((Outcome<Lookup<BrowseNode>>.Ok)lookup).Value;
+            found[i] = await NodeLookup.FindAsync(assemblies, session, places[i], ct);
         }
-        return new Outcome<Lookup<BrowseNode>[]>.Ok(found);
+        return found;
     }
 }
