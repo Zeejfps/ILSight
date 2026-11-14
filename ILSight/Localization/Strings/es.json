@@ -38,6 +38,7 @@
   "view.empty_hint": "Todo está cerrado. Abre los ensamblados desde el menú Ver.",
   "view.close_all_documents": "Cerrar todos los documentos",
   "view.reset_layout": "Restablecer diseño",
+  "view.errors": "Errores",
   "view.reset_layout_question": "¿Devolver cada panel a su posición inicial? Los documentos abiertos siguen abiertos.",
   "view.reset_layout_confirm": "Restablecer",
   "view.reset_layout_cancel": "Cancelar",

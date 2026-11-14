@@ -167,9 +167,6 @@ public sealed class RunArgumentsTests
         var ignored = Enumerable.Range(1, 40).Select(static i => $"--unknown-option-{i}").ToArray();
         var app = Start(new AppSettings(), ignored);
         app.Driver.InTurn(() => Errors.Report(app.AppState, new AppProblem.Unexpected(new InvalidOperationException("Broken."))));
-        // A new error opens the error panel, which holds the pointer while open: closed, as its close button does.
-        app.Settle(1);
-        app.Ui.ErrorDialog.IsOpen = false;
         app.Settle(1);
         var t = app.Ui.Appearance.Strings;
         var refused = Assert.IsType<Refusal.ArgumentsIgnored>(app.AppState.Refusals.Shown);

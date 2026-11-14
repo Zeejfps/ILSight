@@ -302,6 +302,12 @@ internal static class MainMenuView
             ui.State.LayoutReset.Ask();
         }
 
+        // The errors recorded open when asked, here or from the status bar's indicator, never by themselves.
+        if (ui.MenuItem(t.ViewErrors, enabled: appState.Errors.Entries.Count > 0, id: "errors"))
+        {
+            ui.State.ErrorDialog.Open(appState.Errors.Entries);
+        }
+
         ui.MenuSeparator();
         ThemeMenu(ui, appState.Themes, appState.ChosenThemes.Theme);
         LanguageMenu(ui, appState.Locale);

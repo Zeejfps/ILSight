@@ -148,14 +148,13 @@ public sealed class AppTests
         });
         app.Run(2);
 
-        app.Frames.ClickOn(Selector.AtPath("error-close")).Frame(2);
         app.Frames.MoveTo(Selector.WithText("1 error")).Frame().Wait(2).Frame(2);
 
         Assert.True(app.Frames.Drew("Cannot save broken.dll — first"));
     }
 
     [Fact]
-    public void Reported_errors_open_on_the_newest_to_copy_and_close()
+    public void Reported_errors_open_when_asked_on_the_newest_to_copy_and_close()
     {
         var app = new AppDriver();
         Errors.Report(app.AppState, new AppProblem.ResourceNotSaved { Resource = "first.dll", Reason = "details one" });
@@ -165,7 +164,9 @@ public sealed class AppTests
             Reason = "System.BadImageFormatException: bad\n   at Somewhere()",
         });
         app.Run(2);
+        Assert.False(app.Ui.ErrorDialog.IsOpen);
 
+        app.Frames.ClickOn(Selector.WithText("2 errors")).Frame();
         Assert.True(app.Ui.ErrorDialog.IsOpen);
         Assert.Equal("Cannot save broken.dll", app.Ui.ErrorDialog.SelectedError?.Words().Title);
 
@@ -213,7 +214,23 @@ public sealed class AppTests
 
         Assert.True(app.Frames.UpdateRequested);
         app.Run();
+        Assert.True(app.Frames.Drew("1 error"));
+        Assert.False(app.Ui.ErrorDialog.IsOpen);
+    }
+
+    [Fact]
+    public void The_view_menu_opens_the_errors_on_the_newest()
+    {
+        var app = new AppDriver();
+        Errors.Report(app.AppState, new AppProblem.ResourceNotSaved { Resource = "first.dll", Reason = "details one" });
+        Errors.Report(app.AppState, new AppProblem.ResourceNotSaved { Resource = "second.dll", Reason = "details two" });
+        app.Run(2);
+
+        app.Frames.ClickOn(Selector.WithText("View"));
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Errors")).Frame();
+
         Assert.True(app.Ui.ErrorDialog.IsOpen);
+        Assert.Equal("Cannot save second.dll", app.Ui.ErrorDialog.SelectedError?.Words().Title);
     }
 
     [Fact]
@@ -222,6 +239,7 @@ public sealed class AppTests
         var app = new AppDriver();
         Errors.Report(app.AppState, new AppProblem.ResourceNotSaved { Resource = "broken.dll", Reason = "details" });
         app.Run(2);
+        app.Frames.ClickOn(Selector.WithText("1 error")).Frame();
 
         app.AppState.Locale = Locale.De;
         app.Run(2);
@@ -231,13 +249,12 @@ public sealed class AppTests
     }
 
     [Fact]
-    public void The_error_indicator_opens_the_errors_again_and_a_new_error_opens_them_by_itself()
+    public void The_error_indicator_opens_the_errors_and_a_new_error_is_counted_on_it_not_opened()
     {
         var app = new AppDriver();
         Errors.Report(app.AppState, new AppProblem.ResourceNotSaved { Resource = "first.dll", Reason = "details one" });
         app.Run(2);
-        app.Frames.ClickOn(Selector.AtPath("error-close"));
-        app.Run(2);
+        Assert.False(app.Ui.ErrorDialog.IsOpen);
 
         app.Frames.ClickOn(Selector.WithText("1 error")).Frame();
         Assert.True(app.Ui.ErrorDialog.IsOpen);
@@ -251,6 +268,9 @@ public sealed class AppTests
         });
         app.Run(2);
 
+        Assert.False(app.Ui.ErrorDialog.IsOpen);
+        Assert.True(app.Frames.Drew("2 errors"));
+        app.Frames.ClickOn(Selector.WithText("2 errors")).Frame();
         Assert.True(app.Ui.ErrorDialog.IsOpen);
         Assert.Equal("Cannot save second.dll", app.Ui.ErrorDialog.SelectedError?.Words().Title);
     }

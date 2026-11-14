@@ -49,7 +49,6 @@ internal static class AppFrames
         FollowLoadOptions(uiState, appState);
         FollowDecompilation(uiState, appState);
         FollowExportSetup(uiState.ExportSetup, appState);
-        ShowNewErrors(uiState, appState.Errors);
     }
 
     private static void ReviveClosedTabs(UiState uiState, AppState appState)
@@ -174,11 +173,6 @@ internal static class AppFrames
     private static void StartRefreshing(AppState appState, List<NodePath> expanded)
     {
         Commands.StartReloading(appState, expanded);
-    }
-
-    private static void ShowNewErrors(UiState uiState, ErrorLog errors)
-    {
-        uiState.ErrorDialog.ShowNewErrors(errors.Revision, errors.Entries);
     }
 
     private static void FollowDecompilation(UiState uiState, AppState appState)

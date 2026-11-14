@@ -38,6 +38,7 @@
   "view.empty_hint": "Всё закрыто. Откройте сборки через меню «Вид».",
   "view.close_all_documents": "Закрыть все документы",
   "view.reset_layout": "Сбросить макет",
+  "view.errors": "Ошибки",
   "view.reset_layout_question": "Вернуть все панели на исходные места? Открытые документы останутся открытыми.",
   "view.reset_layout_confirm": "Сбросить",
   "view.reset_layout_cancel": "Отмена",

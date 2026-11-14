@@ -9,9 +9,6 @@ public sealed class ErrorDialog
 
     public ErrorTexts Texts { get; } = new();
 
-    /// <summary>The error log's revision when the dialog last saw it.</summary>
-    public SeenRevision Seen { get; } = new();
-
     /// <summary>The error the dialog shows.</summary>
     public ItemSelection<AppError> Selection { get; } = new();
 
@@ -30,17 +27,5 @@ public sealed class ErrorDialog
 
         Selection.Select(errors[^1], errors);
         IsOpen = true;
-    }
-
-    /// <summary>Opens the dialog on the newest of <paramref name="errors"/> when an error was added since
-    /// it last saw the log, at <paramref name="revision"/>.</summary>
-    public void ShowNewErrors(int revision, IReadOnlyList<AppError> errors)
-    {
-        if (!Seen.TryTake(revision))
-        {
-            return;
-        }
-
-        Open(errors);
     }
 }

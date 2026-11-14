@@ -123,6 +123,9 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
         var write = SaveOnExit(window);
         if (!_appState.Closing.TryClose(write))
         {
+            // What the user just asked for failed: said where they acted, the window they asked to close, by opening
+            // the errors on why. Errors nobody asked about are only counted on the status bar.
+            UiState.ErrorDialog.Open(_appState.Errors.Entries);
             return false;
         }
 
