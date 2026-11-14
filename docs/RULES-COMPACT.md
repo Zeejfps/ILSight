@@ -42,8 +42,9 @@ limited to frame-driven UIs.
   - **Assert only on what reached the test by an order it fixes:** app code it calls runs in the driver's turn (R010),
     so its callbacks (a `Progress<T>`) post there; a task it holds is awaited; work elsewhere by design (real I/O, a
     server) is awaited by its condition, bounded, never by a fixed count of frames or pumps or a delay; frames are
-    counted only for what the app promises in frames. A bound guards a hang (sized for a full run), never speed; work
-    started together is ordered by the test, or only what every order gives is asserted.
+    counted only for what the app promises in frames. A bound guards a hang (sized for a full run; never none), never
+    speed; work started together is ordered by the test, or only what every order gives is asserted. Wait for what
+    lasts (the effect at its port, a count), never a state held a frame or a turn.
   - **Seams:** use cases through their public methods with a fake port; domain code directly; adapters and queries
     against a real or local database. Never private methods; no interface only to fake.
 - **Test input** (fixtures a test compiles and reads back) is data, exempt from every rule: its folder is marked
@@ -312,11 +313,13 @@ nullable exception).
   from success; to what its supervisor reads (a job's result, a monitored log); a GUI run without a console, on a
   channel it shows itself or the running window. People read the app's language; exit codes and machine output keep the
   product's contract; an unread log tells no one. The channel (a dialog, in an interactive product) is the product's.
-  **A one-line place** says what, how many and why in budget, hiding nothing beside it, full details reachable (never a
-  failure record); its format is the product's.
+  **A one-line place** says what, how many and why in the space it's drawn in, giving way to what follows, full
+  details reachable every way the line is, not hover alone (never a failure record); its format is the product's.
 - **Whatever fails stays where it was shown**, failed with why, until retried, dismissed or removed by product
-  policy; never dropped, left pending or shown empty (an unexpected one also reported once). A batch answers per
-  item. "Not there" is asked of the source first; what the library then throws is a failure. Unreadable restored state
+  policy; never dropped, left pending or shown empty (an unexpected one also reported once, as the failed
+  operation's kind wherever asked; recorded failures open when asked, never over the user's work). A batch answers per
+  item. "Not there" is asked of the source first; what the library then throws is a failure (`FileNotFoundException`
+  for the file asked for excepted). Unreadable restored state
   is kept as saved; a reload keeps saved references and user intent the product promises, failed or not, resolving
   them again (content derived from sources alone follows its reload contract). A failed read is reread only on a
   trigger the product chose (Retry, reload, a change to what it names, a bounded schedule), one reaching a source back
@@ -336,7 +339,7 @@ nullable exception).
   requested unit's failure case with why, shown where its answer would be, in the project calling it (your core's
   answer carries the case); never list your own code.
 - **Lazy library failures are translated inside each adapter member's read**, every touch of the library's objects
-  inside, formatting outside on values read out: it returns values it read (freely enumerable) or its own
+  inside, the app's sorting and formatting after the outermost catch, on values read out: it returns values it read (freely enumerable) or its own
   `IAsyncEnumerable<T>` iterator, never deferred library execution; the iterator catches each item's read, owns its
   source (`await using`), and is consumed in one loop with no other call to it.
 - **A shared read whose outcome is a value** is awaited and matched by the unit needing it before its sync read
@@ -344,7 +347,8 @@ nullable exception).
 - **Requested cancellation isn't a failure; a timeout is.** An adapter lets `OperationCanceledException` through when
   its token was cancelled, catching `TaskCanceledException` only `when (!ct.IsCancellationRequested)` (a timeout). The
   edge links a workflow's token to what cancels it on purpose (shutdown, newer work, a closed dialog), ending quietly
-  only for those (never a `Failed` holding a cancellation); an app-set deadline is a timeout (an adapter's `TimedOut`
+  only for those (never a `Failed` holding a cancellation; a clear cancels work it makes stale before changing what
+  it checks); an app-set deadline is a timeout (an adapter's `TimedOut`
   case, or the edge's report). A canceller appearing partway (a state change returns a ticket newer work cancels) ends
   the workflow, which returns it (`[MustUse]`) for the edge to start the I/O linked to it, no catch in the workflow;
   later steps needing the outcome await a port member taking the ticket (`Stopped` if cancelled). **Newest wins by
