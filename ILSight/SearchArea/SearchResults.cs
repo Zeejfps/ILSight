@@ -42,6 +42,9 @@ public sealed class SearchResults
     /// <summary>Whether results may still arrive, or be sorted into the order asked for.</summary>
     public bool IsBusy => _runs.IsRunning || _sorting.IsSorting;
 
+    /// <summary>Why a run of the query searched failed, the rows it found before kept; null while none failed.</summary>
+    public string? RunFailure => _runs.Failure;
+
     /// <summary>The order asked for last, which the header shows.</summary>
     public SearchOrder AskedOrder => _sorting.Asked;
 
@@ -185,6 +188,13 @@ public sealed class SearchResults
     public void EndRun(SearchRun run)
     {
         _runs.End(run);
+    }
+
+    /// <summary>Ends <paramref name="run"/>, whose workflow failed with <paramref name="error"/>: the search shows it
+    /// failed, saying why, unless a new query replaced the run.</summary>
+    public void FailRun(SearchRun run, Exception error)
+    {
+        _runs.Fail(run, error.Message);
     }
 
     /// <summary>Merges the hits of <paramref name="batch"/> that are still wanted into the rows, in their order, and

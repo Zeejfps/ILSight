@@ -85,6 +85,7 @@
   "search.column_assembly": "Ensamblado",
   "search.invalid_regex": "Expresión regular no válida",
   "search.unsearched": "{name}: no se pudo buscar ({why})",
+  "search.failed": "La búsqueda falló ({why})",
 
   "omnibar.search": "Ir a un tipo o miembro…",
   "omnibar.contents": "Contenido de {name}",

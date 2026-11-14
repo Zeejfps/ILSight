@@ -5,9 +5,6 @@ namespace ILSight.App.Tests;
 
 public sealed class RunSearchHandlerTests
 {
-    private static readonly Outcome<IReadOnlyList<SearchFind>> Failure =
-        new Outcome<IReadOnlyList<SearchFind>>.Failed(new InvalidDataException("unreadable"));
-
     private static readonly AssemblyList NoAssemblies = new() { Runtime = TestRuntime.Installed };
 
     private static SearchRun AskRun(SearchResults results, string query = "Greet", double typedAtSeconds = 0)
@@ -23,39 +20,50 @@ public sealed class RunSearchHandlerTests
     {
         var results = new SearchResults();
         var run = AskRun(results);
-        var ports = new FakeRunSearchHandlerPorts { Found = [new Outcome<IReadOnlyList<SearchFind>>.Ok([])] };
+        var ports = new FakeRunSearchHandlerPorts { Found = [[]] };
 
         await new RunSearchHandler(ports).HandleAsync(results, run, CancellationToken.None);
 
         Assert.False(results.IsBusy);
-        Assert.Empty(ports.Reported);
+        Assert.Null(results.RunFailure);
     }
 
     [Fact]
-    public async Task HandleAsync_Failed_ReportsItAndEnds()
+    public async Task HandleAsync_SearchThrows_LetsItThroughToTheEdge()
     {
         var results = new SearchResults();
         var run = AskRun(results);
-        var ports = new FakeRunSearchHandlerPorts { Found = [Failure] };
+        var bug = new InvalidOperationException("A bug in the search.");
+        var ports = new FakeRunSearchHandlerPorts { Found = [], Throws = bug };
 
-        await new RunSearchHandler(ports).HandleAsync(results, run, CancellationToken.None);
-
-        Assert.IsType<AppProblem.SearchFailed>(Assert.Single(ports.Reported));
-        Assert.False(results.IsBusy);
+        Assert.Same(bug, await Assert.ThrowsAsync<InvalidOperationException>(() => new RunSearchHandler(ports).HandleAsync(results, run, CancellationToken.None)));
     }
 
     [Fact]
-    public async Task HandleAsync_FailedAfterANewQueryReplacedIt_ReportsNothing()
+    public void FailRun_ShowsTheSearchFailedSayingWhyUntilANewQueryReplacesIt()
+    {
+        var results = new SearchResults();
+        var run = AskRun(results);
+
+        results.FailRun(run, new InvalidDataException("unreadable"));
+        var failed = (results.IsBusy, results.RunFailure);
+        var current = AskRun(results, "Hello", typedAtSeconds: 2);
+
+        Assert.Equal((false, "unreadable"), failed);
+        Assert.Null(results.RunFailure);
+        Assert.True(results.IsCurrent(current));
+    }
+
+    [Fact]
+    public void FailRun_AfterANewQueryReplacedIt_ShowsNothing()
     {
         var results = new SearchResults();
         var replaced = AskRun(results);
         var current = AskRun(results, "Hello", typedAtSeconds: 2);
-        var ports = new FakeRunSearchHandlerPorts { Found = [Failure] };
 
-        await new RunSearchHandler(ports).HandleAsync(results, replaced, CancellationToken.None);
+        results.FailRun(replaced, new InvalidDataException("unreadable"));
 
-        Assert.Empty(ports.Reported);
-        Assert.True(replaced.Work.IsCancellationRequested);
+        Assert.Null(results.RunFailure);
         Assert.True(results.IsCurrent(current));
     }
 }

@@ -231,7 +231,7 @@ internal static class AppRoot
             SettingsSaving = new SettingsSaving(new SettingsSavingAdapter(errors)),
             BuildChildrenHandler = new BuildChildrenHandler(tree),
             LookUpTooltipHandler = new LookUpTooltipHandler(new LookUpTooltipHandlerAdapter(assemblies)),
-            RunSearchHandler = new RunSearchHandler(MakePort<RunSearchHandler.IPorts>(new RunSearchHandlerAdapter(errors, session), hooks?.Searching)),
+            RunSearchHandler = new RunSearchHandler(MakePort<RunSearchHandler.IPorts>(new RunSearchHandlerAdapter(session), hooks?.Searching)),
             ExpandNamespacesHandler = new ExpandNamespacesHandler(tree),
             ExportWriting = new ExportWriting(exports),
             SaveResourceHandler = new SaveResourceHandler(exports),

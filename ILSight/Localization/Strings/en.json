@@ -89,6 +89,7 @@
   "search.column_assembly": "Assembly",
   "search.invalid_regex": "Invalid regular expression",
   "search.unsearched": "{name}: couldn't be searched ({why})",
+  "search.failed": "Search failed ({why})",
 
   "omnibar.search": "Go to type or member…",
   "omnibar.contents": "Contents of {name}",

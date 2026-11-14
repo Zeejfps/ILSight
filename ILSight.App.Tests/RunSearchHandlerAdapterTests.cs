@@ -13,12 +13,12 @@ public sealed class RunSearchHandlerAdapterTests
         var greet = BrokenAssemblies.GetMethod(AppStateDriver.FixturePath, "Greeter", "Greet");
         var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodName(temp, AppStateDriver.FixturePath, greet));
         var module = Assert.IsType<LoadedModule>(AssemblyListing.Open(new AssemblyList { Runtime = TestRuntime.Installed }, path));
-        var adapter = new RunSearchHandlerAdapter(new ErrorLog(), new BrowseSession());
+        var adapter = new RunSearchHandlerAdapter(new BrowseSession());
 
         var found = new List<SearchFind>();
         await foreach (var batch in adapter.SearchAsync(SearchQueries.ParseQuery("Greet"), [module], CancellationToken.None))
         {
-            found.AddRange(Assert.IsType<Outcome<IReadOnlyList<SearchFind>>.Ok>(batch).Value);
+            found.AddRange(batch);
         }
 
         var unsearched = Assert.IsType<SearchFind.Unsearched>(Assert.Single(found, static f => f is SearchFind.Unsearched));

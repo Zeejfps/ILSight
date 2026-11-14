@@ -399,7 +399,9 @@ public sealed class MetadataGridTests
         var attributes = grid.Column("Attributes");
 
         app.Frames.Click(FunnelOf(app, "Attributes"));
-        app.Frames.ClickOn(Selector.WithText("Public (0001)")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Public (0001)")).Frame();
+        // The filtered rows are worked out off the UI thread: wait for that work, not a count of frames.
+        app.RunOut();
 
         var visibility = System.Reflection.TypeAttributes.VisibilityMask;
         Assert.NotEmpty(GridOf(app, tab).View);

@@ -214,6 +214,14 @@ internal static class SearchPanelView
 
         var t = ui.State.Strings;
         var theme = ui.Theme;
+        var failure = results.RunFailure;
+        if (failure is not null)
+        {
+            var failed = ui.Memo("search-failed", (failure, t), static a => a.t.SearchFailed(a.failure));
+            ui.Text(failed, color: theme.Warning, size: theme.FontSizeSmall);
+            return;
+        }
+
         var count = ui.Memo("search-count", (results.Rows.Count, results.IsBusy, t), static a => CountText(a.t, a.Count, a.IsBusy));
         ui.Text(count, color: theme.TextMuted, size: theme.FontSizeSmall);
     }

@@ -16,7 +16,7 @@ public sealed class SettlingWorkflowsTests
     }
 
     [Fact]
-    public void A_search_run_that_throws_is_reported_once_and_the_search_stops_searching()
+    public void A_search_run_that_throws_is_reported_once_and_the_search_shows_it_failed_saying_why()
     {
         var ports = new FakeRunSearchHandlerPorts { Found = [], Throws = new InvalidOperationException("broken") };
         var app = new AppDriver(hooks: new AdapterHooks { Searching = _ => ports });
@@ -28,6 +28,8 @@ public sealed class SettlingWorkflowsTests
         app.RunOut();
 
         Assert.False(app.Ui.Search.Results.IsBusy);
+        Assert.Equal("broken", app.Ui.Search.Results.RunFailure);
+        Assert.Contains(app.Frames.TextRects(), static t => t.Text == "Search failed (broken)");
         Assert.Equal("broken", ReportedOnce(app.AppState).Error.Message);
     }
 

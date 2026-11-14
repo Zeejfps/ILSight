@@ -255,7 +255,7 @@ public static class Commands
     // A method of its own, so that the frames that start nothing allocate no closure.
     private static void StartSearchRun(AppState appState, SearchResults results, SearchRun run)
     {
-        appState.Workflows.StartSettling(nameof(RunSearchHandler), ct => appState.RunSearchHandler.HandleAsync(results, run, ct), _ => results.EndRun(run),
+        appState.Workflows.StartSettling(nameof(RunSearchHandler), ct => appState.RunSearchHandler.HandleAsync(results, run, ct), error => results.FailRun(run, error),
             run.Work.Token);
     }
 
