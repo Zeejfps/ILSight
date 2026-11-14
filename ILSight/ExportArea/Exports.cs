@@ -174,12 +174,6 @@ public static class Exports
             static f => new ExportProblem.FileNotWritten { Path = f.File.FullName, Error = f.Error });
     }
 
-    /// <summary>Shows the report of <paramref name="report"/> in a new tab.</summary>
-    public static void ShowExportReport(AppState appState, ExportReport report)
-    {
-        appState.Navigation.ShowReport(report);
-    }
-
     /// <summary>The runs of every export in the order the exports panel lists them: the running one,
     /// the waiting ones next first, then the finished ones newest first.</summary>
     public static List<ExportRun> ListExports(ExportQueue queue, List<ExportReport> finished)
@@ -250,7 +244,7 @@ public static class Exports
             return;
         }
 
-        ShowExportReport(appState, finished);
+        appState.ListSession.Navigation.ShowReport(finished);
     }
 
     /// <summary>Takes the export <paramref name="run"/> off the panel: out of the queue when it waits,

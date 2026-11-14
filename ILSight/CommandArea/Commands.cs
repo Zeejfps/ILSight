@@ -71,7 +71,7 @@ public static class Commands
         }
 
         StartResolving(uiState, nameof(NavigateHandler), (reference, lookup), lookup,
-            static (a, s, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, s.reference, s.lookup, ct));
+            static (a, s, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, s.reference, s.lookup, ct));
     }
 
     // A lookup the user asked for, which the app says it is resolving until it ends: when its workflow fails, the edge
@@ -84,7 +84,7 @@ public static class Commands
 
     private static void StartShowingResolved(AppState appState, string name, ResolveTicket lookup, Func<CancellationToken, Task<DecompileTicket?>> show)
     {
-        appState.Workflows.StartSettling(name, async ct => StartDecompiling(appState, await show(ct)), _ => appState.Navigation.FailResolving(lookup));
+        appState.Workflows.StartSettling(name, async ct => StartDecompiling(appState, await show(ct)), _ => appState.ListSession.Navigation.FailResolving(lookup));
     }
 
     /// <summary>As <see cref="FollowLater"/>, showing the metadata table row that defines what
@@ -92,7 +92,7 @@ public static class Commands
     public static void ShowInMetadataLater(UiState uiState, CodeReference.Navigable reference, ResolveTicket lookup)
     {
         StartResolving(uiState, nameof(ShowInMetadataHandler), (reference, lookup), lookup,
-            static (a, s, ct) => a.ShowInMetadataHandler.HandleAsync(a.Navigation, a.Decompiler, s.reference, s.lookup, ct));
+            static (a, s, ct) => a.ShowInMetadataHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, s.reference, s.lookup, ct));
     }
 
     /// <summary>Asks for what <paramref name="reference"/> points at to be analyzed once the frame is drawn: the analyzer
@@ -107,7 +107,7 @@ public static class Commands
     {
         return appState =>
         {
-            StartAnalyzing(appState, AnalyzerPanelView.ShowAnalyzing(uiState, appState.Analyzer, reference));
+            StartAnalyzing(appState, AnalyzerPanelView.ShowAnalyzing(uiState, appState.ListSession.Analyzer, reference));
         };
     }
 
@@ -123,7 +123,7 @@ public static class Commands
     /// (<see cref="StartAnalyzing"/>); when nothing names its definition to list it by, the user is told why.</summary>
     public static void Analyze(AppState appState, UiState screen, AnalysisSymbol symbol)
     {
-        appState.Analyzer.AddRoot(symbol).Switch(
+        appState.ListSession.Analyzer.AddRoot(symbol).Switch(
             analyzing => AnalyzerPanelView.ShowAnalysis(screen, analyzing.Root),
             listing => StartAnalyzing(appState, AnalyzerPanelView.ShowListing(screen, listing.Pending)),
             refused => appState.Refusals.Show(refused.Why));
@@ -134,8 +134,8 @@ public static class Commands
     public static void StartAnalyzing(AppState appState, PendingAnalysis pending)
     {
         appState.Workflows.StartSettling(nameof(AnalyzeReferenceHandler),
-            ct => appState.AnalyzeReferenceHandler.HandleAsync(appState.Analyzer, appState.ViewCommands, pending, ct),
-            error => appState.Analyzer.FailUnresolved(pending.Root, pending.Reference.Name, error.Message));
+            ct => appState.AnalyzeReferenceHandler.HandleAsync(appState.ListSession.Analyzer, appState.ViewCommands, pending, ct),
+            error => appState.ListSession.Analyzer.FailUnresolved(pending.Root, pending.Reference.Name, error.Message));
     }
 
     /// <summary>Starts running the analysis <paramref name="run"/> is for (<see cref="RunAnalysisHandler"/>) now,
@@ -154,8 +154,8 @@ public static class Commands
     // A method of its own, so that the calls that start nothing allocate no closure.
     private static void StartRunningAnalysis(AppState appState, AnalysisRun run)
     {
-        appState.Workflows.StartSettling(nameof(RunAnalysisHandler), ct => appState.RunAnalysisHandler.HandleAsync(appState.Analyzer, run, ct),
-            error => Analysis.FinishRun(appState.Analyzer, run, error.Message), run.Work.Token);
+        appState.Workflows.StartSettling(nameof(RunAnalysisHandler), ct => appState.RunAnalysisHandler.HandleAsync(appState.ListSession.Analyzer, run, ct),
+            error => Analysis.FinishRun(appState.ListSession.Analyzer, run, error.Message), run.Work.Token);
     }
 
     /// <summary>Starts finding the symbols of the analyses <paramref name="restore"/> waits for
@@ -175,8 +175,8 @@ public static class Commands
     private static void StartFindingAnalysesSymbols(AppState appState, AnalysesRestore restore)
     {
         appState.Workflows.StartSettling(nameof(RestoreAnalysesHandler),
-            ct => appState.RestoreAnalysesHandler.HandleAsync(appState.Analyzer, appState.Assemblies, appState.ViewCommands, restore, ct),
-            error => Analysis.FailRoots(appState.Analyzer, restore.Roots, error.Message));
+            ct => appState.RestoreAnalysesHandler.HandleAsync(appState.ListSession.Analyzer, appState.ListSession.Assemblies, appState.ViewCommands, restore, ct),
+            error => Analysis.FailRoots(appState.ListSession.Analyzer, restore.Roots, error.Message));
     }
 
     /// <summary>Asks for the namespaces of each assembly <paramref name="expansion"/> expanded in <paramref name="tree"/>
@@ -371,7 +371,7 @@ public static class Commands
     private static void StartOpening(AppState appState, FileOpening opening)
     {
         StartShowingSettled(appState, nameof(AssemblyOpening.OpenAssembliesAsync), ct => appState.AssemblyOpening.OpenAssembliesAsync(appState, opening, ct),
-            _ => appState.Navigation.EndOpening(opening.Intent), appState.Opens.Token);
+            _ => appState.ListSession.Navigation.EndOpening(opening.Intent), appState.ListSession.Opens.Token);
     }
 
     /// <summary>Asks for the files among <paramref name="dropped"/> to be opened once the frame is drawn
@@ -380,14 +380,14 @@ public static class Commands
     public static void OpenDroppedLater(UiState uiState, IReadOnlyList<string> dropped)
     {
         uiState.AppCommands.Enqueue(appState => StartShowingSettled(appState, nameof(AssemblyOpening.OpenDroppedFilesAsync),
-            ct => appState.AssemblyOpening.OpenDroppedFilesAsync(appState, dropped, ct), _ => appState.Navigation.FailOpening(), appState.Opens.Token));
+            ct => appState.AssemblyOpening.OpenDroppedFilesAsync(appState, dropped, ct), _ => appState.ListSession.Navigation.FailOpening(), appState.ListSession.Opens.Token));
     }
 
     /// <summary>Asks for the assemblies <paramref name="assembly"/> references to be opened once the frame is drawn
     /// (<see cref="AssemblyOpening.OpenDependenciesAsync"/>), cancelled with the opens under way then.</summary>
     public static void OpenDependenciesLater(UiState uiState, LoadedModule assembly)
     {
-        StartLater(uiState, nameof(AssemblyOpening.OpenDependenciesAsync), assembly, static (a, _) => a.Opens,
+        StartLater(uiState, nameof(AssemblyOpening.OpenDependenciesAsync), assembly, static (a, _) => a.ListSession.Opens,
             static (a, m, _, ct) => a.AssemblyOpening.OpenDependenciesAsync(m, ct), static opens => opens.Token);
     }
 
@@ -507,7 +507,7 @@ public static class Commands
     {
         move.Switch(load => StartDecompiling(appState, load),
             lookup => StartShowingResolved(appState, nameof(GoToHistoryEntryHandler), lookup.Ticket,
-                ct => appState.GoToHistoryEntryHandler.HandleAsync(appState.Navigation, appState.Decompiler, lookup, ct)),
+                ct => appState.GoToHistoryEntryHandler.HandleAsync(appState.ListSession.Navigation, appState.Decompiler, lookup, ct)),
             read => StartReadingPlace(appState, read), run => StartComparing(appState, run));
     }
 
@@ -628,9 +628,9 @@ public static class Commands
     /// (<see cref="Navigation.FailResolving"/>), unless a newer one began.</summary>
     public static void StartGoingToBookmark(AppState appState, Bookmark bookmark)
     {
-        var lookup = appState.Navigation.BeginResolving(inNewTab: false);
+        var lookup = appState.ListSession.Navigation.BeginResolving(inNewTab: false);
         StartShowingResolved(appState, nameof(GoToBookmarkHandler), lookup,
-            ct => appState.GoToBookmarkHandler.HandleAsync(appState.Navigation, appState.Bookmarks, appState.Decompiler, bookmark, lookup, ct));
+            ct => appState.GoToBookmarkHandler.HandleAsync(appState.ListSession.Navigation, appState.Bookmarks, appState.Decompiler, bookmark, lookup, ct));
     }
 
     /// <summary>Starts bringing in what <paramref name="load"/> started loading in its tab
@@ -723,15 +723,15 @@ public static class Commands
     private static void StartFindingNodes(AppState appState, ReopenedNodesLookup lookup)
     {
         appState.Workflows.StartSettling(nameof(ShowReopenedNodesHandler),
-            async ct => StartDecompiling(appState, await appState.ShowReopenedNodesHandler.HandleAsync(appState.Reopened, appState.Navigation,
+            async ct => StartDecompiling(appState, await appState.ShowReopenedNodesHandler.HandleAsync(appState.ListSession.Reopened, appState.ListSession.Navigation,
                 appState.Decompiler, appState.ViewCommands, lookup, ct)),
-            error => ShowReopenedNodesHandler.ShowLookupFailed(appState.Reopened, appState.Navigation, lookup.Nodes, error));
+            error => ShowReopenedNodesHandler.ShowLookupFailed(appState.ListSession.Reopened, appState.ListSession.Navigation, lookup.Nodes, error));
     }
 
     private static void StartReadingCards(AppState appState, SavedDiagramRead read)
     {
-        appState.Workflows.StartSettling(nameof(ReopenDiagramHandler), ct => appState.ReopenDiagramHandler.HandleAsync(appState.Reopened, read, ct),
-            error => SettleCardsRead(appState.Reopened, read, error), read.Diagram.Token);
+        appState.Workflows.StartSettling(nameof(ReopenDiagramHandler), ct => appState.ReopenDiagramHandler.HandleAsync(appState.ListSession.Reopened, read, ct),
+            error => SettleCardsRead(appState.ListSession.Reopened, read, error), read.Diagram.Token);
     }
 
     private static void SettleCardsRead(ReopenedTabs reopened, SavedDiagramRead read, Exception error)

@@ -14,19 +14,19 @@ public sealed class AssemblyMenuTests
         var missing = temp.PathOf("Missing.dll");
         var app = AppDriver.Opened();
         app.Open([TestPaths.PathOf(missing), TestPaths.PathOf(CoreLibPath)]);
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count == 3, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 3, AppStateDriver.Patience);
         app.Settle(2);
 
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/sort-list")).Frame(2);
 
-        var sorted = app.AppState.Assemblies.ListFilePaths();
+        var sorted = app.AppState.ListSession.Assemblies.ListFilePaths();
         Assert.Equal([AppStateDriver.FixturePath, missing, CoreLibPath], sorted.Select(static p => p.Text));
 
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-failed")).Frame(2);
 
         var roots = app.Ui.Tree.Roots;
         Assert.Equal([AppStateDriver.FixturePath, CoreLibPath], roots.Select(r => r.Assembly.FilePath.Text));
-        Assert.False(app.AppState.Assemblies.HasFailedAssemblies);
+        Assert.False(app.AppState.ListSession.Assemblies.HasFailedAssemblies);
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public sealed class AssemblyMenuTests
     {
         var app = AppDriver.Opened();
         app.Run(2);
-        var assembly = app.AppState.Assemblies.Assemblies[0];
+        var assembly = app.AppState.ListSession.Assemblies.Assemblies[0];
 
         app.PickFromTreeMenu(assembly.Name, "Open containing folder");
 
@@ -68,7 +68,7 @@ public sealed class AssemblyMenuTests
         var app = AppDriver.Opened();
         app.Show(await app.FixtureAsync("Greeter"), 2);
         app.Settle(2);
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var document = tab.Document;
         var references = document.SpansOf()
@@ -96,11 +96,11 @@ public sealed class AssemblyMenuTests
     {
         var app = AppDriver.Opened();
         app.Run(2);
-        var name = app.AppState.Assemblies.Assemblies[0].Name;
+        var name = app.AppState.ListSession.Assemblies.Assemblies[0].Name;
 
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, name), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Load dependencies")).Frame();
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Any(a => a.Name == "System.Runtime"), AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Assemblies.Any(a => a.Name == "System.Runtime"), AppStateDriver.Patience);
         app.Settle(2);
 
         var names = app.Ui.Tree.Roots.Select(r => r.Assembly.Name).ToList();

@@ -21,7 +21,7 @@ public sealed class DockPanelsTests
         var next = new AppStateDriver(temp.Settings());
         var restored = next.Ui.MainLayout.Dock;
 
-        Assert.Same(next.AppState.Navigation.ActiveTab, next.Ui.Documents.FindTab(Assert.Single(Assert.IsType<DockGroup>(restored.Root).Panels)));
+        Assert.Same(next.AppState.ListSession.Navigation.ActiveTab, next.Ui.Documents.FindTab(Assert.Single(Assert.IsType<DockGroup>(restored.Root).Panels)));
         var window = Assert.Single(restored.Windows);
         Assert.Equal(new UiRect(40f, 50f, 300f, 400f), window.Rect);
         var group = restored.GroupOf(DockPanels.Assemblies);
@@ -37,7 +37,7 @@ public sealed class DockPanelsTests
         var d = new AppStateDriver(new AppSettings { Layout = saved });
         var fresh = DockPanels.Restore(null);
 
-        var panel = DocumentPanels.GetPanel(d.Ui.Documents, Assert.Single(d.AppState.Navigation.OpenTabs));
+        var panel = DocumentPanels.GetPanel(d.Ui.Documents, Assert.Single(d.AppState.ListSession.Navigation.OpenTabs));
         Assert.Equal([panel, DockPanels.Search, DockPanels.Bookmarks], Assert.IsType<DockGroup>(d.Ui.MainLayout.Dock.Root).Panels);
         Assert.NotEqual("document-7", panel);
         Assert.Equal([DockPanels.Assemblies], Assert.IsType<DockGroup>(fresh.Root).Panels);
@@ -64,7 +64,7 @@ public sealed class DockPanelsTests
 
         var search = d.Ui.MainLayout.Dock.GroupOf(DockPanels.Search);
         Assert.NotNull(search);
-        var active = appState.Navigation.ActiveTab;
+        var active = appState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
         Assert.NotSame(search, d.Ui.MainLayout.Dock.GroupOf(DocumentPanels.GetPanel(d.Ui.Documents, active)));
 

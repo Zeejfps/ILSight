@@ -115,7 +115,7 @@ internal sealed class AppStateDriver
     /// pool's pace.</summary>
     public void WaitForTheStart()
     {
-        Poll.Until(() => !AppState.IsReloading, _posted.Run);
+        Poll.Until(() => !AppState.ListSession.Reload.IsRunning, _posted.Run);
     }
 
     /// <summary>A driver over <paramref name="restored"/>, the app state and screen an <see cref="AppDriver"/> had the
@@ -310,7 +310,7 @@ internal sealed class AppStateDriver
             _ui.Display.Set(_ui.Display.Options with { PreviewTabs = false });
         }
 
-        AppState.Navigation.UsePreviewTabs(false);
+        AppState.ListSession.Navigation.UsePreviewTabs(false);
     }
 
     /// <summary>Pumps until no background work the app state knows of is left.</summary>
@@ -322,8 +322,8 @@ internal sealed class AppStateDriver
     private bool IsSettled()
     {
         var appState = AppState;
-        return appState.Work.Outstanding.Count == 0 && !appState.IsReloading && !appState.IsReopening && !appState.IsResolving && !appState.Export.IsRunning
-            && !IsSearching() && appState.Navigation.OpenTabs.All(IsShownWhole) && _posted.IsEmpty;
+        return appState.Work.Outstanding.Count == 0 && !appState.ListSession.Reload.IsRunning && !appState.Reopens.IsRunning && !appState.ListSession.Navigation.IsResolving && !appState.Export.IsRunning
+            && !IsSearching() && appState.ListSession.Navigation.OpenTabs.All(IsShownWhole) && _posted.IsEmpty;
     }
 
     private static bool IsShownWhole(DocumentTab tab)
@@ -366,15 +366,15 @@ internal sealed class AppStateDriver
     public LoadedModule OpenFixtures()
     {
         Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(FixturePath)], ct));
-        RunUntil(() => AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Assembly);
+        RunUntil(() => AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Assembly);
         Settle();
-        return Assert.IsType<LoadedModule>(AppState.Navigation.ActiveTab?.Node?.Assembly);
+        return Assert.IsType<LoadedModule>(AppState.ListSession.Navigation.ActiveTab?.Node?.Assembly);
     }
 
     /// <summary>The listed node at the labels under the fixture assembly's root.</summary>
     public async Task<BrowseNode> NodeAsync(params string[] labels)
     {
-        var fixtures = AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == FixturePath);
+        var fixtures = AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.Text == FixturePath);
         return await fixtures.ReadRootAsync().GetChildAsync(labels);
     }
 
@@ -394,7 +394,7 @@ internal sealed class AppStateDriver
     public void StartShowing(BrowseNode node, bool inNewTab = false)
     {
         using var turn = _posted.Install();
-        Commands.StartDecompiling(AppState, AppState.Navigation.ShowNode(node, AppState.Decompiler.Setup, inNewTab));
+        Commands.StartDecompiling(AppState, AppState.ListSession.Navigation.ShowNode(node, AppState.Decompiler.Setup, inNewTab));
     }
 
     /// <summary>Switches to the list named <paramref name="name"/> as the lists dialog and the toolbar's list menu do: in
@@ -419,20 +419,20 @@ internal sealed class AppStateDriver
     /// load or the lookup it left, as the app's commands start them, without waiting for them.</summary>
     public void GoToEntry(int index)
     {
-        StartMoving(AppState.Navigation.GoToEntry(index, AppState.Assemblies, AppState.FinishedExports, AppState.Decompiler.Setup));
+        StartMoving(AppState.ListSession.Navigation.GoToEntry(index, AppState.ListSession.Assemblies, AppState.FinishedExports, AppState.Decompiler.Setup));
     }
 
     /// <summary>Goes back as the toolbar's Back does, passing over the entries that can't be shown, then starts what
     /// it left as <see cref="GoToEntry"/> does.</summary>
     public void GoBack()
     {
-        StartMoving(AppState.Navigation.GoBack(AppState.Assemblies, AppState.FinishedExports, AppState.Decompiler.Setup));
+        StartMoving(AppState.ListSession.Navigation.GoBack(AppState.ListSession.Assemblies, AppState.FinishedExports, AppState.Decompiler.Setup));
     }
 
     /// <summary>Goes forward as <see cref="GoBack"/> goes back.</summary>
     public void GoForward()
     {
-        StartMoving(AppState.Navigation.GoForward(AppState.Assemblies, AppState.FinishedExports, AppState.Decompiler.Setup));
+        StartMoving(AppState.ListSession.Navigation.GoForward(AppState.ListSession.Assemblies, AppState.FinishedExports, AppState.Decompiler.Setup));
     }
 
     private void StartMoving(HistoryMove? move)
@@ -491,7 +491,7 @@ internal sealed class AppStateDriver
         using var turn = _posted.Install();
         var appState = AppState;
         Commands.StartShowingSettled(appState, nameof(Open), ct => appState.AssemblyOpening.OpenAssembliesAsync(appState, paths, ct),
-            _ => appState.Navigation.FailOpening(), appState.Opens.Token);
+            _ => appState.ListSession.Navigation.FailOpening(), appState.ListSession.Opens.Token);
     }
 
     /// <summary>Starts reloading every assembly of the open list now, as the app's commands start it
@@ -534,7 +534,7 @@ internal sealed class AppStateDriver
     public void Analyze(CodeReference.Navigable reference)
     {
         using var turn = _posted.Install();
-        Commands.StartAnalyzing(AppState, AnalyzerPanelView.ShowAnalyzing(Ui, AppState.Analyzer, reference));
+        Commands.StartAnalyzing(AppState, AnalyzerPanelView.ShowAnalyzing(Ui, AppState.ListSession.Analyzer, reference));
     }
 
     /// <summary>What the disk says about the folder and key file the export dialog names, once the frame edge has
@@ -571,6 +571,6 @@ internal sealed class AppStateDriver
     public void OpenExportSetup(LoadedModule? picked)
     {
         using var turn = _posted.Install();
-        Ui.ExportSetup.Open(AppState.Assemblies.Assemblies, picked);
+        Ui.ExportSetup.Open(AppState.ListSession.Assemblies.Assemblies, picked);
     }
 }

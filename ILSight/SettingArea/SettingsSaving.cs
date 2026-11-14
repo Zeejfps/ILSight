@@ -27,7 +27,7 @@ public sealed class SettingsSaving(SettingsSaving.IPorts ports)
     /// <paramref name="now"/>.</summary>
     public Saving SaveIfChanged(AppState appState, TimeSpan now)
     {
-        if (appState.IsReloading)
+        if (appState.ListSession.Reload.IsRunning)
         {
             return Unchanged;
         }

@@ -48,7 +48,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
     private static DocumentTab GridTab(AppDriver app)
     {
-        return app.AppState.Navigation.OpenTabs.Single(t => t.Grid is not null);
+        return app.AppState.ListSession.Navigation.OpenTabs.Single(t => t.Grid is not null);
     }
 
     private async Task<int> SaveGridOnGreeterAsync()
@@ -69,7 +69,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
     private static DocumentTab TabTitled(AppDriver app, string title)
     {
-        return app.AppState.Navigation.OpenTabs.Single(t => t.Title == title);
+        return app.AppState.ListSession.Navigation.OpenTabs.Single(t => t.Title == title);
     }
 
     private static CodeViewPosition ScrollTo(AppDriver app, DocumentTab tab, int topLine, TextPosition anchor, TextPosition caret)
@@ -120,7 +120,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
     private static List<(string? Title, string Panel)> ListTabPanels(AppDriver app)
     {
-        return app.AppState.Navigation
+        return app.AppState.ListSession.Navigation
             .OpenTabs.Select(t => (t.Title, DocumentPanels.GetPanel(app.Ui.Documents, t)))
             .ToList();
     }
@@ -185,7 +185,7 @@ public sealed class SavedDocumentsTests : IDisposable
         app.Driver.OpenFixtures();
         app.Run(3);
         app.Show(await app.FixtureAsync("Outline"), 4);
-        var outline = app.AppState.Navigation.ActiveTab;
+        var outline = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(outline);
         app.Run(3);
         var file = _temp.PathOf("settings.json");
@@ -208,9 +208,9 @@ public sealed class SavedDocumentsTests : IDisposable
         app.Driver.OpenFixtures();
         app.Run(3);
         app.Show(await app.FixtureAsync("Outline"), 4);
-        var outline = app.AppState.Navigation.ActiveTab;
+        var outline = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(outline);
-        app.AppState.Navigation.KeepTabOpen(outline);
+        app.AppState.ListSession.Navigation.KeepTabOpen(outline);
         var outlinePosition = ScrollTo(app, outline, 20,
             new TextPosition { Line = 21, Column = 4 }, new TextPosition { Line = 22, Column = 8 });
         app.Show(await app.FixtureAsync("Greeter"), 4, inNewTab: true);
@@ -223,7 +223,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
         next.Settle(4);
-        DocumentPanels.ActivateTab(next.Ui, next.AppState.Navigation, next.AppState.Decompiler.Setup, TabTitled(next, "Outline"));
+        DocumentPanels.ActivateTab(next.Ui, next.AppState.ListSession.Navigation, next.AppState.Decompiler.Setup, TabTitled(next, "Outline"));
         next.Run(4);
 
         Assert.Equal(outlinePosition, CodeOf(next, TabTitled(next, "Outline")).Position);
@@ -236,19 +236,19 @@ public sealed class SavedDocumentsTests : IDisposable
         app.Driver.OpenFixtures();
         app.Run(3);
         app.Show(await app.FixtureAsync("Outline"), 4);
-        var outline = app.AppState.Navigation.ActiveTab;
+        var outline = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(outline);
-        app.AppState.Navigation.KeepTabOpen(outline);
+        app.AppState.ListSession.Navigation.KeepTabOpen(outline);
         var outlinePosition = ScrollTo(app, outline, 20,
             new TextPosition { Line = 21, Column = 4 }, new TextPosition { Line = 22, Column = 8 });
         app.Show(await app.FixtureAsync("Greeter"), 4, inNewTab: true);
-        var greeter = app.AppState.Navigation.ActiveTab;
+        var greeter = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(greeter);
         MoveRightOf(app, greeter, outline);
         app.Show(await app.FixtureAsync("Farewell"), 4);
         DiagramView.ShowInNewDiagramLater(app.Ui, (await app.FixtureAsync("Vehicle")).Definition, Names.Diagram((await app.FixtureAsync("Vehicle")).Definition));
         app.Settle(2);
-        var diagram = app.AppState.Navigation.ActiveTab;
+        var diagram = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(diagram);
         SettleDiagram(app, diagram);
         var view = DiagramOf(app, diagram);
@@ -257,7 +257,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var fields = new CardFold.Own { Card = diagram.Diagram.Cards[0].Anchor, Section = MemberSection.Fields };
         Diagrams.ToggleFold(view, fields);
         Diagrams.ShowHiddenMembers(view, true);
-        DocumentPanels.ActivateTab(app.Ui, app.AppState.Navigation, app.AppState.Decompiler.Setup, greeter);
+        DocumentPanels.ActivateTab(app.Ui, app.AppState.ListSession.Navigation, app.AppState.Decompiler.Setup, greeter);
         app.Run(3);
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
 
@@ -266,8 +266,8 @@ public sealed class SavedDocumentsTests : IDisposable
 
         Assert.Equal(ListTabPanels(app), ListTabPanels(next));
         Assert.Equal(ListGroups(app), ListGroups(next));
-        Assert.Equal("Greeter", next.AppState.Navigation.ActiveTab?.Title);
-        Assert.Equal("Farewell", next.AppState.Navigation.PreviewTab?.Title);
+        Assert.Equal("Greeter", next.AppState.ListSession.Navigation.ActiveTab?.Title);
+        Assert.Equal("Farewell", next.AppState.ListSession.Navigation.PreviewTab?.Title);
         Assert.Equal("Farewell", TabTitled(next, "Farewell").Node?.Text);
         Assert.Equal(outlinePosition, CodeOf(next, TabTitled(next, "Outline")).Position);
         var diagramTitle = diagram.Title;
@@ -289,7 +289,7 @@ public sealed class SavedDocumentsTests : IDisposable
         app.Run(3);
         app.Show(await (await app.NodeAsync("Metadata", "Tables")).TableAsync("TypeDef"), 4);
         var tab = GridTab(app);
-        app.AppState.Navigation.KeepTabOpen(tab);
+        app.AppState.ListSession.Navigation.KeepTabOpen(tab);
         var grid = tab.Grid;
         Assert.NotNull(grid);
         var row = grid.RowNamed("Greeter");
@@ -305,7 +305,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
         next.Settle(4);
-        DocumentPanels.ActivateTab(next.Ui, next.AppState.Navigation, next.AppState.Decompiler.Setup, GridTab(next));
+        DocumentPanels.ActivateTab(next.Ui, next.AppState.ListSession.Navigation, next.AppState.Decompiler.Setup, GridTab(next));
         next.Run(4);
 
         Assert.Equal(row, GridOf(next, GridTab(next)).Selected);
@@ -371,7 +371,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
         d.Settle();
 
-        var tab = Assert.Single(d.AppState.Navigation.OpenTabs);
+        var tab = Assert.Single(d.AppState.ListSession.Navigation.OpenTabs);
         var gone = Assert.IsType<TabContent.Gone>(tab.Content);
         Assert.Equal("Missing", gone.Location.Label);
         Assert.Equal(MissingPanel, DocumentPanels.GetPanel(d.Ui.Documents, tab));
@@ -400,7 +400,7 @@ public sealed class SavedDocumentsTests : IDisposable
         d.InTurn(() => Commands.CloseAllAssemblies(d.AppState));
         d.Settle();
 
-        var tab = Assert.Single(d.AppState.Navigation.OpenTabs);
+        var tab = Assert.Single(d.AppState.ListSession.Navigation.OpenTabs);
         Assert.IsType<TabContent.Gone>(tab.Content);
     }
 
@@ -426,13 +426,13 @@ public sealed class SavedDocumentsTests : IDisposable
 
         d.Settle();
 
-        var tab = Assert.Single(d.AppState.Navigation.OpenTabs);
+        var tab = Assert.Single(d.AppState.ListSession.Navigation.OpenTabs);
         Assert.Equal("Vehicle diagram", tab.Title);
         Assert.Equal([vehicle], ListTypes(tab));
         var diagram = tab.Diagram;
         Assert.NotNull(diagram);
         Assert.True(diagram.IsHome(TestPaths.PathOf(AppStateDriver.FixturePath)));
-        Assert.Same(tab, d.AppState.Navigation.DiagramTab);
+        Assert.Same(tab, d.AppState.ListSession.Navigation.DiagramTab);
     }
 
     [Fact]
@@ -444,18 +444,18 @@ public sealed class SavedDocumentsTests : IDisposable
         d.SwitchList(Other);
         d.Settle();
         d.Open([AssemblyPath.Of(AppStateDriver.FixturePath)]);
-        d.RunUntil(() => d.AppState.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(AppStateDriver.FixturePath)));
+        d.RunUntil(() => d.AppState.ListSession.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(AppStateDriver.FixturePath)));
         d.Settle();
         d.Show(await d.FixtureAsync("Farewell"));
 
         d.SwitchList(SavedAssemblyLists.DefaultName);
         d.Settle();
-        var first = Assert.Single(d.AppState.Navigation.OpenTabs);
+        var first = Assert.Single(d.AppState.ListSession.Navigation.OpenTabs);
         var firstPanel = DocumentPanels.GetPanel(d.Ui.Documents, first);
         var firstDocuments = Docking.ListDocumentPanels(d.Ui.MainLayout);
         d.SwitchList(Other);
         d.Settle();
-        var other = Assert.Single(d.AppState.Navigation.OpenTabs);
+        var other = Assert.Single(d.AppState.ListSession.Navigation.OpenTabs);
 
         Assert.Equal("Greeter", first.Node?.Text);
         Assert.Equal([firstPanel], firstDocuments);
@@ -468,13 +468,13 @@ public sealed class SavedDocumentsTests : IDisposable
     {
         var d = AppStateDriver.Opened();
         d.Show(await d.FixtureAsync("Greeter"));
-        var greeter = d.AppState.Navigation.ActiveTab;
+        var greeter = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(greeter);
-        d.AppState.Navigation.KeepTabOpen(greeter);
+        d.AppState.ListSession.Navigation.KeepTabOpen(greeter);
         var greeterPanel = DocumentPanels.GetPanel(d.Ui.Documents, greeter);
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
         var layout = d.Ui.MainLayout.Dock;
-        var farewell = d.AppState.Navigation.ActiveTab;
+        var farewell = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(farewell);
         var greeterGroup = layout.GroupOf(greeterPanel);
         Assert.NotNull(greeterGroup);
@@ -487,7 +487,7 @@ public sealed class SavedDocumentsTests : IDisposable
         d.SwitchList(SavedAssemblyLists.DefaultName);
         d.Settle();
 
-        var tabs = d.AppState.Navigation.OpenTabs.ToList();
+        var tabs = d.AppState.ListSession.Navigation.OpenTabs.ToList();
         Assert.Equal(["Greeter", "Farewell"], tabs.Select(static t => t.Title));
         var left = layout.GroupOf(DocumentPanels.GetPanel(d.Ui.Documents, tabs[0]));
         Assert.NotNull(left);
@@ -498,7 +498,7 @@ public sealed class SavedDocumentsTests : IDisposable
         Assert.Equal(Direction.Horizontal, split.Direction);
         Assert.Same(left, split.First);
         Assert.Same(right, split.Second);
-        Assert.Equal("Farewell", d.AppState.Navigation.ActiveTab?.Title);
+        Assert.Equal("Farewell", d.AppState.ListSession.Navigation.ActiveTab?.Title);
     }
 
     private static DockSplit? ParentOf(DockNode node, DockNode target)
@@ -570,7 +570,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var next = new AppStateDriver(saved);
 
         Assert.Null(Assert.Single(saved.AssemblyLists).Documents);
-        var tab = Assert.Single(next.AppState.Navigation.OpenTabs);
+        var tab = Assert.Single(next.AppState.ListSession.Navigation.OpenTabs);
         Assert.Null(tab.Location);
         Assert.True(next.Ui.MainLayout.Dock.Contains(DocumentPanels.GetPanel(next.Ui.Documents, tab)));
     }

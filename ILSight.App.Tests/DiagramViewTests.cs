@@ -36,7 +36,7 @@ public sealed class DiagramViewTests
 
     private static bool IsLaidOut(AppDriver app)
     {
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         if (tab is null)
         {
             return false;
@@ -105,7 +105,7 @@ public sealed class DiagramViewTests
 
     private static List<DocumentTab> ListDiagramTabs(AppDriver app)
     {
-        return app.AppState.Navigation
+        return app.AppState.ListSession.Navigation
             .OpenTabs.Where(static t => t.Diagram is not null)
             .ToList();
     }
@@ -199,12 +199,12 @@ public sealed class DiagramViewTests
 
         ClickAt(app, CardText(app, "Bike"));
         app.Settle(2);
-        Assert.Equal("Bike", app.AppState.Navigation.ActiveTab?.Node?.Text);
+        Assert.Equal("Bike", app.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
 
         app.Frames.ClickOn(Selector.WithText(VehicleDiagram)).Frame();
         ClickAt(app, CardText(app, "Mileage() : int"));
         app.Settle(2);
-        Assert.Equal("Mileage() : int", app.AppState.Navigation.ActiveTab?.Node?.Text);
+        Assert.Equal("Mileage() : int", app.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
         Assert.NotNull(DiagramTab(app).Diagram);
     }
 
@@ -230,17 +230,17 @@ public sealed class DiagramViewTests
         var diagram = DiagramTab(app);
         ClickAt(app, CardText(app, "Mileage() : int"));
         app.Settle(2);
-        var code = app.AppState.Navigation.ActiveTab;
+        var code = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(code);
         Assert.NotEqual(diagram, code);
 
         app.GoBack();
         app.Settle(2);
-        Assert.Equal(diagram, app.AppState.Navigation.ActiveTab);
+        Assert.Equal(diagram, app.AppState.ListSession.Navigation.ActiveTab);
 
         app.GoForward();
         app.Settle(2);
-        Assert.Equal("Mileage() : int", app.AppState.Navigation.ActiveTab?.Node?.Text);
+        Assert.Equal("Mileage() : int", app.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
     }
 
     [Fact]
@@ -252,7 +252,7 @@ public sealed class DiagramViewTests
         Assert.NotEmpty(cards);
         app.Show(await app.FixtureAsync("Greeter"), inNewTab: true);
         app.Settle(2);
-        app.AppState.Navigation.CloseTab(tab);
+        app.AppState.ListSession.Navigation.CloseTab(tab);
         app.Run(2);
 
         app.GoBack();
@@ -260,7 +260,7 @@ public sealed class DiagramViewTests
 
         var again = DiagramTab(app);
         Assert.NotSame(tab, again);
-        Assert.Same(again, app.AppState.Navigation.ActiveTab);
+        Assert.Same(again, app.AppState.ListSession.Navigation.ActiveTab);
         Assert.Equal(cards, ListCardTypes(again));
     }
 
@@ -271,9 +271,9 @@ public sealed class DiagramViewTests
         var tab = DiagramTab(app);
         app.Show(await app.FixtureAsync("Greeter"), inNewTab: true);
         app.Settle(2);
-        app.AppState.Navigation.CloseTab(tab);
-        var diagramAt = app.AppState.Navigation.HistoryIndex - 1;
-        Assert.IsType<HistoryEntry.Diagram>(app.AppState.Navigation.HistoryEntries[diagramAt]);
+        app.AppState.ListSession.Navigation.CloseTab(tab);
+        var diagramAt = app.AppState.ListSession.Navigation.HistoryIndex - 1;
+        Assert.IsType<HistoryEntry.Diagram>(app.AppState.ListSession.Navigation.HistoryEntries[diagramAt]);
         var fixtures = (await app.FixtureAsync("Greeter")).Root.Assembly;
         app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [fixtures]));
         app.Run(2);
@@ -282,7 +282,7 @@ public sealed class DiagramViewTests
         app.Settle(2);
 
         Assert.Empty(ListDiagramTabs(app));
-        Assert.Equal(diagramAt - 1, app.AppState.Navigation.HistoryIndex);
+        Assert.Equal(diagramAt - 1, app.AppState.ListSession.Navigation.HistoryIndex);
     }
 
     private static List<string> ListCardTypes(DocumentTab tab)

@@ -173,11 +173,11 @@ public sealed class RunArgumentsPipeTests
 
         await HandOverAsync(address, Arguments("--navigateto=" + GreetId, AppStateDriver.FixturePath));
         app.Frames.WaitUntil(() => app.WasFrontRequested, AppStateDriver.Patience);
-        app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Method, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Method, AppStateDriver.Patience);
         app.Settle(1);
 
-        Assert.Equal("Greet(int) : string", app.AppState.Navigation.ActiveTab?.Node?.Text);
-        Assert.Equal([AppStateDriver.FixturePath], app.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
+        Assert.Equal("Greet(int) : string", app.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
+        Assert.Equal([AppStateDriver.FixturePath], app.AppState.ListSession.Assemblies.ListFilePaths().Select(static p => p.Text));
     }
 
     // Hands the arguments over until the window took them. Each side gives the other 5 s, on the thread pool, which a

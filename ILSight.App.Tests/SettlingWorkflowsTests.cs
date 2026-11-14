@@ -64,13 +64,13 @@ public sealed class SettlingWorkflowsTests
         var ports = new FakeCompareAssembliesHandlerPorts();
         var d = AppStateDriver.OpenedWith(new AdapterHooks { Comparing = _ => ports });
         d.Open([TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)]);
-        d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 3);
+        d.RunUntil(() => d.AppState.ListSession.Assemblies.Assemblies.Count == 3);
         d.Settle();
-        var left = d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == LeftPath);
-        var right = d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == RightPath);
-        d.StartComparing(Comparisons.CompareAssemblies(d.AppState.Navigation, d.AppState.Assemblies, left, right, Names.Comparison(left)));
+        var left = d.AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.Text == LeftPath);
+        var right = d.AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.Text == RightPath);
+        d.StartComparing(Comparisons.CompareAssemblies(d.AppState.ListSession.Navigation, d.AppState.ListSession.Assemblies, left, right, Names.Comparison(left)));
         d.RunUntil(() => ports.Answers.Count == 1);
-        var comparison = d.AppState.Navigation.ActiveTab?.Comparison;
+        var comparison = d.AppState.ListSession.Navigation.ActiveTab?.Comparison;
         Assert.NotNull(comparison);
         Assert.True(comparison.IsComparing);
 
@@ -91,7 +91,7 @@ public sealed class SettlingWorkflowsTests
         Assert.NotNull(greeter);
         d.InTurn(() => DiagramView.ShowInNewDiagramLater(d.Ui, greeter, "Greeter"));
         d.RunUntil(() => ports.Requests.Count == 1);
-        var diagram = d.AppState.Navigation.ActiveTab?.Diagram;
+        var diagram = d.AppState.ListSession.Navigation.ActiveTab?.Diagram;
         Assert.NotNull(diagram);
         Assert.True(diagram.IsBusy);
 
@@ -107,7 +107,7 @@ public sealed class SettlingWorkflowsTests
     public void An_opening_whose_workflow_fails_stops_opening_unless_a_newer_request_began()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var navigation = d.AppState.Navigation;
+        var navigation = d.AppState.ListSession.Navigation;
         var path = AssemblyPath.Of(AppStateDriver.FixturePath);
 
         var opening = navigation.BeginOpening([path]);
@@ -128,7 +128,7 @@ public sealed class SettlingWorkflowsTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var session = d.AppState.ListSession;
-        var tab = d.AppState.Navigation.ActiveTab;
+        var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var location = tab.Location;
         Assert.NotNull(location);
@@ -220,19 +220,19 @@ public sealed class SettlingWorkflowsTests
         var ports = new FakeGoToBookmarkHandlerPorts();
         var d = AppStateDriver.OpenedWith(new AdapterHooks { GoingToBookmarks = _ => ports });
         d.Show(await d.FixtureAsync("Outline"));
-        var tab = d.AppState.Navigation.ActiveTab;
+        var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark));
         var bookmark = Assert.Single(d.AppState.Bookmarks.Items);
 
         d.InTurn(() => Commands.StartGoingToBookmark(d.AppState, bookmark));
         d.RunUntil(() => ports.Answers.Count == 1);
-        var resolving = d.AppState.IsResolving;
+        var resolving = d.AppState.ListSession.Navigation.IsResolving;
         ports.Answers[0].SetException(new InvalidOperationException("broken"));
         d.Settle();
 
         Assert.True(resolving);
-        Assert.False(d.AppState.IsResolving);
+        Assert.False(d.AppState.ListSession.Navigation.IsResolving);
         Assert.Equal("broken", ReportedOnce(d.AppState).Error.Message);
     }
 }

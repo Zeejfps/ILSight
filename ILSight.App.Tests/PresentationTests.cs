@@ -203,7 +203,7 @@ public sealed class PresentationTests
         var d = new AppStateDriver();
         var assembly = d.OpenFixtures();
 
-        var tab = d.AppState.Navigation.ActiveTab;
+        var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
         Assert.Equal(assembly.Name, tab.Title);

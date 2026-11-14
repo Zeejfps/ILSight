@@ -17,7 +17,7 @@ public static class Settings
     {
         appState.Lists.Restore(settings.AssemblyLists, settings.ActiveAssemblyList);
         var leftOutBookmarks = appState.Bookmarks.Restore(settings.Bookmarks);
-        appState.Analyzer.AddPending(appState.Lists.ActiveAnalyses);
+        appState.ListSession.Analyzer.AddPending(appState.Lists.ActiveAnalyses);
         SavedDocuments.ReopenDocuments(appState.Lists, appState.ListSession);
         appState.LastSave.Restore(CaptureSavedSources(appState));
         if (leftOutBookmarks == 0)
@@ -56,11 +56,11 @@ public static class Settings
     {
         return new SavedSources
         {
-            Assemblies = appState.Assemblies.Version,
+            Assemblies = appState.ListSession.Assemblies.Version,
             Lists = appState.Lists.Revision,
             Bookmarks = appState.Bookmarks.Revision,
-            Analyzer = appState.Analyzer.Revision,
-            Documents = appState.Navigation.TabChanges,
+            Analyzer = appState.ListSession.Analyzer.Revision,
+            Documents = appState.ListSession.Navigation.TabChanges,
             View = appState.KeptScreen.ViewChanges,
             Theme = appState.ChosenThemes.Theme,
             IconTheme = appState.ChosenThemes.IconTheme,

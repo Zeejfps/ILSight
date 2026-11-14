@@ -74,11 +74,11 @@ public sealed class ExportsPanelTests : IDisposable
 
         app.Frames.ClickOn(Selector.AtPath("dock/exports/#1/show-report")).Frame(2);
 
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var shown = Assert.IsType<TabContent.Report>(tab.Content);
         Assert.Equal(path, Assert.Single(Assert.IsType<ExportEnd.Finished>(shown.Export.End).Written));
-        Assert.Equal("Export report", DocumentsView.Tab(app.Ui, app.AppState.Navigation, tab).Title);
+        Assert.Equal("Export report", DocumentsView.Tab(app.Ui, app.AppState.ListSession.Navigation, tab).Title);
         var text = Documents.GetText(ExportReportText.Write(Strings.En, [shown.Export]));
         Assert.Contains("    " + path, text);
         Assert.DoesNotContain("Farewell", text);
@@ -300,16 +300,16 @@ public sealed class ExportsPanelTests : IDisposable
         var greeterNode = await app.FixtureAsync("Greeter");
         app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter.cs")));
         app.Settle(2);
-        Exports.ShowExportReport(app.AppState, app.AppState.FinishedExports[0]);
+        app.AppState.ListSession.Navigation.ShowReport(app.AppState.FinishedExports[0]);
         app.Run(2);
 
         app.AppState.Locale = Locale.De;
         app.Run(2);
 
         var german = Strings.For(Locale.De);
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        Assert.Equal(german.ExportReportTitle, DocumentsView.Tab(app.Ui, app.AppState.Navigation, tab).Title);
+        Assert.Equal(german.ExportReportTitle, DocumentsView.Tab(app.Ui, app.AppState.ListSession.Navigation, tab).Title);
         var document = DocumentPanels.GetView(app.Ui.Documents, tab).Code.Layout.Document;
         Assert.NotNull(document);
         Assert.Contains(german.ExportWritten, Documents.GetText(document));
@@ -322,12 +322,12 @@ public sealed class ExportsPanelTests : IDisposable
         var saved = await d.FixtureAsync("Greeter");
         d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
         d.Settle();
-        var lookup = d.AppState.Navigation.BeginResolving(inNewTab: false);
+        var lookup = d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false);
 
-        Exports.ShowExportReport(d.AppState, d.AppState.FinishedExports[0]);
+        d.AppState.ListSession.Navigation.ShowReport(d.AppState.FinishedExports[0]);
 
-        Assert.True(d.AppState.Navigation.IsStale(lookup.Intent));
-        Assert.False(d.AppState.Navigation.IsResolving);
+        Assert.True(d.AppState.ListSession.Navigation.IsStale(lookup.Intent));
+        Assert.False(d.AppState.ListSession.Navigation.IsResolving);
     }
 
     [Fact]
@@ -337,15 +337,15 @@ public sealed class ExportsPanelTests : IDisposable
         var saved = await d.FixtureAsync("Greeter");
         d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
         d.Settle();
-        Exports.ShowExportReport(d.AppState, d.AppState.FinishedExports[0]);
-        var report = d.AppState.Navigation.ActiveTab;
+        d.AppState.ListSession.Navigation.ShowReport(d.AppState.FinishedExports[0]);
+        var report = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(report);
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
 
         d.GoBack();
         d.Settle();
 
-        Assert.Same(report, d.AppState.Navigation.ActiveTab);
+        Assert.Same(report, d.AppState.ListSession.Navigation.ActiveTab);
     }
 
     [Fact]
@@ -356,16 +356,16 @@ public sealed class ExportsPanelTests : IDisposable
         d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
         d.Settle();
         var finished = d.AppState.FinishedExports[0];
-        Exports.ShowExportReport(d.AppState, finished);
-        var report = d.AppState.Navigation.ActiveTab;
+        d.AppState.ListSession.Navigation.ShowReport(finished);
+        var report = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(report);
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
-        d.AppState.Navigation.CloseTab(report);
+        d.AppState.ListSession.Navigation.CloseTab(report);
 
         d.GoBack();
         d.Settle();
 
-        var back = d.AppState.Navigation.ActiveTab;
+        var back = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(back);
         Assert.NotSame(report, back);
         Assert.Equal(finished, back.Report);
@@ -379,19 +379,19 @@ public sealed class ExportsPanelTests : IDisposable
         d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
         d.Settle();
         var finished = d.AppState.FinishedExports[0];
-        Exports.ShowExportReport(d.AppState, finished);
-        var report = d.AppState.Navigation.ActiveTab;
+        d.AppState.ListSession.Navigation.ShowReport(finished);
+        var report = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(report);
-        var reportAt = d.AppState.Navigation.HistoryIndex;
+        var reportAt = d.AppState.ListSession.Navigation.HistoryIndex;
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
-        d.AppState.Navigation.CloseTab(report);
+        d.AppState.ListSession.Navigation.CloseTab(report);
         Exports.RemoveFinishedExport(d.AppState, finished);
 
         d.GoBack();
         d.Settle();
 
-        Assert.DoesNotContain(d.AppState.Navigation.OpenTabs, static t => t.Report is not null);
-        Assert.Equal(reportAt - 1, d.AppState.Navigation.HistoryIndex);
+        Assert.DoesNotContain(d.AppState.ListSession.Navigation.OpenTabs, static t => t.Report is not null);
+        Assert.Equal(reportAt - 1, d.AppState.ListSession.Navigation.HistoryIndex);
     }
 
     [Fact]
@@ -401,14 +401,14 @@ public sealed class ExportsPanelTests : IDisposable
         var saved = await d.FixtureAsync("Greeter");
         d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
         d.Settle();
-        Exports.ShowExportReport(d.AppState, d.AppState.FinishedExports[0]);
-        var active = d.AppState.Navigation.ActiveTab;
+        d.AppState.ListSession.Navigation.ShowReport(d.AppState.FinishedExports[0]);
+        var active = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
         var report = active.Content;
 
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         d.Settle();
 
-        Assert.Same(report, d.AppState.Navigation.ActiveTab?.Content);
+        Assert.Same(report, d.AppState.ListSession.Navigation.ActiveTab?.Content);
     }
 }

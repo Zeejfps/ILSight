@@ -9,7 +9,7 @@ public sealed class AnalyzeReferenceHandlerTests
     public async Task HandleAsync_ReferenceFound_TurnsTheRootIntoItsAnalysisAndShowsIt()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var analyzer = d.AppState.Analyzer;
+        var analyzer = d.AppState.ListSession.Analyzer;
         var greeter = await d.FixtureAsync("Greeter");
         var pending = Analysis.BeginAnalyzing(analyzer, greeter.Definition);
         var ports = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(greeter)) };
@@ -27,7 +27,7 @@ public sealed class AnalyzeReferenceHandlerTests
     public async Task HandleAsync_NotFoundRemovesTheRootButFailedShowsItFailedInPlaceAndReportsIt()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var analyzer = d.AppState.Analyzer;
+        var analyzer = d.AppState.ListSession.Analyzer;
         var reference = (await d.FixtureAsync("Greeter")).Definition;
         var error = new IOException("unreadable");
         var missing = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)) };
@@ -49,7 +49,7 @@ public sealed class AnalyzeReferenceHandlerTests
     public async Task FailUnresolved_TheLookupsWorkflowFailed_ShowsTheRootFailedUntilRemoved()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var analyzer = d.AppState.Analyzer;
+        var analyzer = d.AppState.ListSession.Analyzer;
         var pending = Analysis.BeginAnalyzing(analyzer, (await d.FixtureAsync("Greeter")).Definition);
 
         analyzer.FailUnresolved(pending.Root, "Greeter", "broken");
@@ -64,7 +64,7 @@ public sealed class AnalyzeReferenceHandlerTests
     public async Task HandleAsync_RootRemovedMeanwhile_NeitherAnalyzesNorReports()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var analyzer = d.AppState.Analyzer;
+        var analyzer = d.AppState.ListSession.Analyzer;
         var greeter = await d.FixtureAsync("Greeter");
         var pending = Analysis.BeginAnalyzing(analyzer, greeter.Definition);
         var ports = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(new IOException("unreadable")), WhileLooking = () => analyzer.RemoveRoot(pending.Root) };
@@ -79,9 +79,9 @@ public sealed class AnalyzeReferenceHandlerTests
     public async Task HandleAsync_AssemblyClosedWhileLooking_LeavesNoAnalysisAndSavesNothing()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var analyzer = d.AppState.Analyzer;
+        var analyzer = d.AppState.ListSession.Analyzer;
         var greeter = await d.FixtureAsync("Greeter");
-        var assembly = d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
+        var assembly = d.AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
         var pending = Analysis.BeginAnalyzing(analyzer, greeter.Definition);
         var ports = new FakeAnalyzeReferenceHandlerPorts
         {

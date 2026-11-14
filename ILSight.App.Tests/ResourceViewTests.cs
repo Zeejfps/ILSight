@@ -12,7 +12,7 @@ public sealed class ResourceViewTests
     {
         var app = AppDriver.Opened(width: 1400f);
         app.Show(await app.NodeAsync(["Resources", .. path]), 3);
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         return (app, tab);
     }
@@ -132,7 +132,7 @@ public sealed class ResourceViewTests
         var image = ImageOf(app, tab);
         Assert.True(app.Frames.Canvas.HasImage(image));
 
-        app.AppState.Navigation.CloseTab(tab);
+        app.AppState.ListSession.Navigation.CloseTab(tab);
         app.Run(2);
 
         Assert.False(app.Frames.Canvas.HasImage(image));

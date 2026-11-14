@@ -717,7 +717,7 @@ internal static class DiagramView
     /// token closing the diagram cancels.</summary>
     internal static void ShowInDiagramLater(UiState uiState, CodeReference.Entity type, string newTitle)
     {
-        Commands.StartSettlingLater(uiState, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, newTitle), static (a, s) => Diagrams.ShowInDiagram(a, s.type, s.newTitle),
+        Commands.StartSettlingLater(uiState, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, newTitle), static (a, s) => Diagrams.ShowInDiagram(a.ListSession.Navigation, s.type, s.newTitle),
             static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token,
             static (_, read, error) => read.Diagram.FailReading(read.Read, error.Message));
     }
@@ -726,7 +726,7 @@ internal static class DiagramView
     /// (<see cref="Diagrams.ShowInNewDiagram"/>).</summary>
     internal static void ShowInNewDiagramLater(UiState uiState, CodeReference.Entity type, string title)
     {
-        Commands.StartSettlingLater(uiState, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, title), static (a, s) => Diagrams.ShowInNewDiagram(a, s.type, s.title),
+        Commands.StartSettlingLater(uiState, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, title), static (a, s) => Diagrams.ShowInNewDiagram(a.ListSession.Navigation, s.type, s.title),
             static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token,
             static (_, read, error) => read.Diagram.FailReading(read.Read, error.Message));
     }

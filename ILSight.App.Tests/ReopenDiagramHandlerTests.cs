@@ -8,7 +8,7 @@ public sealed class ReopenDiagramHandlerTests
 {
     private static async Task<SavedDiagramRead> ReopenAsync(AppStateDriver d)
     {
-        var vehicle = (await TypeCards.ReadAsync(d.AppState.Assemblies, (await d.FixtureAsync("Vehicle")).Definition, CancellationToken.None)).GetValue().FoundOrNull;
+        var vehicle = (await TypeCards.ReadAsync(d.AppState.ListSession.Assemblies, (await d.FixtureAsync("Vehicle")).Definition, CancellationToken.None)).GetValue().FoundOrNull;
         Assert.NotNull(vehicle);
         var saved = new DiagramDocumentRecord
         {
@@ -18,10 +18,10 @@ public sealed class ReopenDiagramHandlerTests
             HomeAssemblies = null,
             View = null,
         };
-        var tab = d.AppState.Navigation.OpenReopenedTab();
-        d.AppState.Navigation.WaitForDiagram(tab, saved.Title);
-        var reopened = SavedDocuments.WaitFor(d.AppState.Reopened, tab, saved);
-        var read = Diagrams.ReopenDiagram(d.AppState.Navigation, d.AppState.Reopened, reopened, saved);
+        var tab = d.AppState.ListSession.Navigation.OpenReopenedTab();
+        d.AppState.ListSession.Navigation.WaitForDiagram(tab, saved.Title);
+        var reopened = SavedDocuments.WaitFor(d.AppState.ListSession.Reopened, tab, saved);
+        var read = Diagrams.ReopenDiagram(d.AppState.ListSession.Navigation, d.AppState.ListSession.Reopened, reopened, saved);
         Assert.NotNull(read);
         return read;
     }
@@ -32,18 +32,18 @@ public sealed class ReopenDiagramHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var read = await ReopenAsync(d);
         var ports = new FakeReopenDiagramHandlerPorts();
-        var vehicle = (await TypeCards.ReadAsync(d.AppState.Assemblies, (await d.FixtureAsync("Vehicle")).Definition, CancellationToken.None)).GetValue().FoundOrNull;
+        var vehicle = (await TypeCards.ReadAsync(d.AppState.ListSession.Assemblies, (await d.FixtureAsync("Vehicle")).Definition, CancellationToken.None)).GetValue().FoundOrNull;
         Assert.NotNull(vehicle);
         Assert.True(read.Diagram.IsBusy);
 
-        var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None));
+        var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.ListSession.Reopened, read, CancellationToken.None));
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<TypeCard>>>.Ok([new Lookup<TypeCard>.Found { Value = vehicle }]));
         await d.EndAsync(reading);
 
         Assert.Equal([vehicle.Anchor], Assert.Single(ports.Asked));
         Assert.Equal(["Vehicle"], read.Diagram.Cards.Select(static c => c.Name));
         Assert.False(read.Diagram.IsBusy);
-        Assert.Empty(d.AppState.Reopened.Tabs);
+        Assert.Empty(d.AppState.ListSession.Reopened.Tabs);
         Assert.Empty(ports.Reported);
     }
 
@@ -54,8 +54,8 @@ public sealed class ReopenDiagramHandlerTests
         var read = await ReopenAsync(d);
         var ports = new FakeReopenDiagramHandlerPorts();
 
-        var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None));
-        d.AppState.Navigation.RestoreDiagram(read.Reopened.Tab, new TypeDiagram(), "Other diagram");
+        var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.ListSession.Reopened, read, CancellationToken.None));
+        d.AppState.ListSession.Navigation.RestoreDiagram(read.Reopened.Tab, new TypeDiagram(), "Other diagram");
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<TypeCard>>>.Failed(new InvalidOperationException("Gone.")));
         await d.EndAsync(reading);
 
@@ -71,7 +71,7 @@ public sealed class ReopenDiagramHandlerTests
         var ports = new FakeReopenDiagramHandlerPorts();
         var error = new InvalidOperationException("Unreadable.");
 
-        var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None));
+        var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.ListSession.Reopened, read, CancellationToken.None));
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<TypeCard>>>.Failed(error));
         await d.EndAsync(reading);
 
@@ -88,7 +88,7 @@ public sealed class ReopenDiagramHandlerTests
         var read = await ReopenAsync(d);
         var ports = new FakeReopenDiagramHandlerPorts();
 
-        var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None));
+        var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.ListSession.Reopened, read, CancellationToken.None));
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<TypeCard>>>.Failed(new IOException("In use by another process.")));
         await d.EndAsync(reading);
 
@@ -102,10 +102,10 @@ public sealed class ReopenDiagramHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var read = await ReopenAsync(d);
         var ports = new FakeReopenDiagramHandlerPorts();
-        var module = d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
+        var module = d.AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
         var unreadable = new Lookup<TypeCard>.Unreadable { Module = new UnreadableModule { Module = module, Why = new BadImageFormatException("Torn.") } };
 
-        var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None));
+        var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.ListSession.Reopened, read, CancellationToken.None));
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<TypeCard>>>.Ok([unreadable]));
         await d.EndAsync(reading);
 
@@ -120,7 +120,7 @@ public sealed class ReopenDiagramHandlerTests
         var read = await ReopenAsync(d);
         var ports = new FakeReopenDiagramHandlerPorts();
 
-        var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.Reopened, read, CancellationToken.None));
+        var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.ListSession.Reopened, read, CancellationToken.None));
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<TypeCard>>>.Ok([new Lookup<TypeCard>.NotFound()]));
         await d.EndAsync(reading);
 

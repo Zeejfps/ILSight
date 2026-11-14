@@ -18,12 +18,12 @@ public sealed class PackageBrowsingTests
         var app = new AppDriver();
 
         app.Open([AssemblyPath.Of(WritePackage(temp))]);
-        app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, AppStateDriver.Patience);
         app.Settle(2);
 
         Assert.Equal(NodeIcon.Package, Assert.Single(app.Ui.Tree.Roots).Icon);
         Assert.True(app.Frames.Drew(PackageName));
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         Assert.Contains($"{LibFolder}/", Documents.GetText(tab.Document));
     }
@@ -35,10 +35,10 @@ public sealed class PackageBrowsingTests
         var app = OpenedPackage(temp);
         var greeter = await GreeterAsync(app);
 
-        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, greeter.Definition, a.Navigation.BeginResolving(inNewTab: false), ct));
+        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, greeter.Definition, a.ListSession.Navigation.BeginResolving(inNewTab: false), ct));
         app.Settle(2);
 
-        Assert.Same(greeter, app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(greeter, app.AppState.ListSession.Navigation.ActiveTab?.Node);
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
     }
 
@@ -52,7 +52,7 @@ public sealed class PackageBrowsingTests
         app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [assembly]));
         app.Run(2);
 
-        Assert.Empty(app.AppState.Assemblies.Listed);
+        Assert.Empty(app.AppState.ListSession.Assemblies.Listed);
         Assert.Empty(app.Ui.Tree.Roots);
     }
 
@@ -61,7 +61,7 @@ public sealed class PackageBrowsingTests
     {
         using var temp = new TempDir();
         var app = OpenedPackage(temp);
-        var package = app.AppState.Assemblies.Listed[0];
+        var package = app.AppState.ListSession.Assemblies.Listed[0];
 
         app.Ui.Tree.View.Select(await (await GreeterAsync(app)).Assembly.ReadRootAsync());
         app.Run(2);
@@ -75,7 +75,7 @@ public sealed class PackageBrowsingTests
         Assert.True(Assert.Single(app.Ui.Closer.Rows.Order).Included);
         app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);
 
-        Assert.Empty(app.AppState.Assemblies.Listed);
+        Assert.Empty(app.AppState.ListSession.Assemblies.Listed);
     }
 
     [Fact]
@@ -146,14 +146,14 @@ public sealed class PackageBrowsingTests
     {
         var app = new AppDriver();
         app.Open([AssemblyPath.Of(WritePackage(temp))]);
-        app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, AppStateDriver.Patience);
         app.Settle(2);
         return app;
     }
 
     private static async Task<BrowseNode> GreeterAsync(AppDriver app)
     {
-        var package = app.AppState.Assemblies.Listed[0];
+        var package = app.AppState.ListSession.Assemblies.Listed[0];
         var fixtures = (await package.ReadRootAsync().GetChildAsync(LibFolder).ListChildrenAsync()).Single(IsAssembly);
         return await fixtures.GetChildAsync(AppStateDriver.FixturesNamespace, "Greeter");
     }

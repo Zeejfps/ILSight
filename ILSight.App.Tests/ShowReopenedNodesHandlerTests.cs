@@ -16,9 +16,9 @@ public sealed class ShowReopenedNodesHandlerTests
             Language = DecompilationLanguage.CSharp,
             View = null,
         };
-        var tab = d.AppState.Navigation.OpenReopenedTab();
-        d.AppState.Navigation.WaitForNode(tab, place, record.Title, record.Language);
-        var reopened = SavedDocuments.WaitFor(d.AppState.Reopened, tab, record);
+        var tab = d.AppState.ListSession.Navigation.OpenReopenedTab();
+        d.AppState.ListSession.Navigation.WaitForNode(tab, place, record.Title, record.Language);
+        var reopened = SavedDocuments.WaitFor(d.AppState.ListSession.Reopened, tab, record);
         return new WaitingNode { Reopened = reopened, Record = record, Place = place };
     }
 
@@ -30,7 +30,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var greeter = await d.FixtureAsync("Greeter");
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
-        var showing = d.BeginAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState.Reopened, d.AppState.Navigation, d.AppState.Decompiler, d.AppState.ViewCommands, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None));
+        var showing = d.BeginAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState.ListSession.Reopened, d.AppState.ListSession.Navigation, d.AppState.Decompiler, d.AppState.ViewCommands, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None));
         Assert.IsType<TabContent.Reloading>(waiting.Reopened.Tab.Content);
         Assert.Single(ports.Answers).SetResult([new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Found { Value = greeter })]);
         var loads = await d.EndAsync(showing);
@@ -39,7 +39,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var load = Assert.Single(loads);
         Assert.Same(waiting.Reopened.Tab, load.Tab);
         Assert.Same(greeter, load.Node);
-        Assert.Empty(d.AppState.Reopened.Tabs);
+        Assert.Empty(d.AppState.ListSession.Reopened.Tabs);
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var ports = new FakeShowReopenedNodesHandlerPorts();
         var error = new InvalidOperationException("Unreadable.");
 
-        var showing = d.BeginAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState.Reopened, d.AppState.Navigation, d.AppState.Decompiler, d.AppState.ViewCommands, new ReopenedNodesLookup { Nodes = [waiting, other] }, CancellationToken.None));
+        var showing = d.BeginAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState.ListSession.Reopened, d.AppState.ListSession.Navigation, d.AppState.Decompiler, d.AppState.ViewCommands, new ReopenedNodesLookup { Nodes = [waiting, other] }, CancellationToken.None));
         Assert.Single(ports.Answers).SetResult([new Outcome<Lookup<BrowseNode>>.Failed(error), new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Found { Value = greeter })]);
         var loads = await d.EndAsync(showing);
 
@@ -61,7 +61,7 @@ public sealed class ShowReopenedNodesHandlerTests
         Assert.Equal(waiting.Record.Location, failed.Location);
         Assert.Same(error, Assert.IsType<AppProblem.DecompilationFailed>(Assert.Single(ports.Reported)).Error);
         Assert.Same(other.Reopened.Tab, Assert.Single(loads).Tab);
-        Assert.Empty(d.AppState.Reopened.Tabs);
+        Assert.Empty(d.AppState.ListSession.Reopened.Tabs);
     }
 
     [Fact]
@@ -69,11 +69,11 @@ public sealed class ShowReopenedNodesHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var waiting = await WaitForGreeterAsync(d);
-        var module = d.AppState.Assemblies.Assemblies.OfType<LoadedModule>().Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
+        var module = d.AppState.ListSession.Assemblies.Assemblies.OfType<LoadedModule>().Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
         var unreadable = new UnreadableModule { Module = module, Why = new BadImageFormatException("Bad namespace.") };
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
-        var showing = d.BeginAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState.Reopened, d.AppState.Navigation, d.AppState.Decompiler, d.AppState.ViewCommands, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None));
+        var showing = d.BeginAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState.ListSession.Reopened, d.AppState.ListSession.Navigation, d.AppState.Decompiler, d.AppState.ViewCommands, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None));
         Assert.Single(ports.Answers).SetResult([new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Unreadable { Module = unreadable })]);
         var loads = await d.EndAsync(showing);
 
@@ -93,8 +93,8 @@ public sealed class ShowReopenedNodesHandlerTests
         var waiting = await WaitForGreeterAsync(d);
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
-        var showing = d.BeginAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState.Reopened, d.AppState.Navigation, d.AppState.Decompiler, d.AppState.ViewCommands, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None));
-        d.AppState.Navigation.RestoreDiagram(waiting.Reopened.Tab, new TypeDiagram(), "Other diagram");
+        var showing = d.BeginAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState.ListSession.Reopened, d.AppState.ListSession.Navigation, d.AppState.Decompiler, d.AppState.ViewCommands, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None));
+        d.AppState.ListSession.Navigation.RestoreDiagram(waiting.Reopened.Tab, new TypeDiagram(), "Other diagram");
         Assert.Single(ports.Answers).SetResult([new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Found { Value = await d.FixtureAsync("Greeter") })]);
         var loads = await d.EndAsync(showing);
 
@@ -108,7 +108,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
-        var loads = await d.RunAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState.Reopened, d.AppState.Navigation, d.AppState.Decompiler, d.AppState.ViewCommands, new ReopenedNodesLookup { Nodes = [] }, CancellationToken.None));
+        var loads = await d.RunAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState.ListSession.Reopened, d.AppState.ListSession.Navigation, d.AppState.Decompiler, d.AppState.ViewCommands, new ReopenedNodesLookup { Nodes = [] }, CancellationToken.None));
 
         Assert.Empty(loads);
         Assert.Empty(ports.Asked);

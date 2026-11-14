@@ -24,7 +24,7 @@ internal static class StatusBarView
             Background = theme.Surface,
         }))
         {
-            var selected = appState.Navigation.ActiveTab?.Node;
+            var selected = appState.ListSession.Navigation.ActiveTab?.Node;
             ui.Text(ui.Memo("status-node", selected, static n => n is null ? "" : n.FullName), new Box { Width = Sizing.Grow() }, color: theme.TextMuted,
                 size: size, overflow: TextOverflow.Ellipsis);
 
@@ -69,27 +69,27 @@ internal static class StatusBarView
 
     private static string? DescribeActivity(AppState appState, Strings t)
     {
-        if (appState.IsReloading)
+        if (appState.ListSession.Reload.IsRunning)
         {
             return t.StatusReloading;
         }
 
-        if (appState.IsReopening)
+        if (appState.Reopens.IsRunning)
         {
             return t.StatusReloading;
         }
 
-        if (appState.Navigation.IsOpening)
+        if (appState.ListSession.Navigation.IsOpening)
         {
             return t.StatusOpening;
         }
 
-        if (IsDecompiling(appState.Navigation.ActiveTab))
+        if (IsDecompiling(appState.ListSession.Navigation.ActiveTab))
         {
             return t.StatusDecompiling;
         }
 
-        if (appState.IsResolving)
+        if (appState.ListSession.Navigation.IsResolving)
         {
             return t.StatusResolving;
         }

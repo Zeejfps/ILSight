@@ -74,7 +74,7 @@ public sealed class SplitDocumentTests
 
         var d = new AppStateDriver(new AppSettings { Layout = saved });
 
-        var panel = DocumentPanels.GetPanel(d.Ui.Documents, Assert.Single(d.AppState.Navigation.OpenTabs));
+        var panel = DocumentPanels.GetPanel(d.Ui.Documents, Assert.Single(d.AppState.ListSession.Navigation.OpenTabs));
         var panels = d.Ui.MainLayout.Dock.AllGroups().SelectMany(g => g.Panels).ToList();
         Assert.Equal([DockPanels.Assemblies, panel], panels);
         Assert.NotEqual("document-7", panel);
@@ -92,13 +92,13 @@ public sealed class SplitDocumentTests
         Assert.Equal(0f, DocumentPanels.GetView(app.Ui.Documents, right).Code.ScrollY);
 
         app.Frames.Click(750f, 400f).Frame();
-        Assert.Same(right, d.AppState.Navigation.ActiveTab);
+        Assert.Same(right, d.AppState.ListSession.Navigation.ActiveTab);
         app.Show(await app.FixtureAsync("Greeter"), 2);
         Assert.Equal("Outline", left.Node?.Text);
         Assert.Equal("Greeter", right.Node?.Text);
 
         app.Frames.Click(250f, 400f).Frame();
-        Assert.Same(left, d.AppState.Navigation.ActiveTab);
+        Assert.Same(left, d.AppState.ListSession.Navigation.ActiveTab);
         Assert.Same(right.Node, d.Ui.Tree.View.Selected);
     }
 
@@ -113,7 +113,7 @@ public sealed class SplitDocumentTests
 
         app.Frames.Click(250f, 400f).Frame();
 
-        Assert.Same(left, app.AppState.Navigation.ActiveTab);
+        Assert.Same(left, app.AppState.ListSession.Navigation.ActiveTab);
         Assert.Equal(theme.Accent, Indicator(app, app.TabTitleRect("Outline")));
         Assert.Equal(theme.BorderStrong, Indicator(app, app.LastTabTitleRect("Outline")));
     }
@@ -128,7 +128,7 @@ public sealed class SplitDocumentTests
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Close all documents")).Frame(2);
         app.Settle(2);
 
-        Assert.Empty(app.AppState.Navigation.OpenTabs);
+        Assert.Empty(app.AppState.ListSession.Navigation.OpenTabs);
     }
 
     private static async Task<(AppDriver App, DocumentTab Left, DocumentTab Right)> SideBySideAsync()
@@ -139,10 +139,10 @@ public sealed class SplitDocumentTests
         layout.Close(DockPanels.Assemblies);
         d.TurnOffPreviewTabs();
         d.Show(await d.FixtureAsync("Outline"));
-        var left = d.AppState.Navigation.ActiveTab;
+        var left = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(left);
         d.Show(await d.FixtureAsync("Outline"), inNewTab: true);
-        var right = d.AppState.Navigation.ActiveTab;
+        var right = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(right);
         var leftGroup = layout.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, left));
         Assert.NotNull(leftGroup);

@@ -22,7 +22,7 @@ public sealed class MetadataGridTests
     {
         var app = AppDriver.Opened(width: 2400f);
         app.Show(await TableAsync(app, name), frames);
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = tab.Grid;
         Assert.NotNull(grid);
@@ -76,7 +76,7 @@ public sealed class MetadataGridTests
     {
         var app = AppDriver.Opened(width: 700f);
         app.Show(await TableAsync(app, "TypeDef"), 2);
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = tab.Grid;
         Assert.NotNull(grid);
@@ -98,7 +98,7 @@ public sealed class MetadataGridTests
 
         d.Show(await d.NodeAsync("Metadata", "Tables"));
 
-        var tab = d.AppState.Navigation.ActiveTab;
+        var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         Assert.Null(tab.Grid);
         Assert.StartsWith("// Tables", Documents.GetText(tab.Document));
@@ -153,7 +153,7 @@ public sealed class MetadataGridTests
         app.Show(greeter, 3);
         app.Ui.Tree.RevealNode(greeter);
         app.Run(2);
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Greeter"), PointerButton.Right).Frame();
@@ -185,7 +185,7 @@ public sealed class MetadataGridTests
 
         Assert.True(app.Frames.Drew(app.Ui.Appearance.Strings.StatusResolving));
         app.Settle(3);
-        Assert.Same(await TableAsync(app, "TypeDef"), app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(await TableAsync(app, "TypeDef"), app.AppState.ListSession.Navigation.ActiveTab?.Node);
     }
 
     [Fact]
@@ -273,11 +273,11 @@ public sealed class MetadataGridTests
         var app = AppDriver.Opened(width: 2400f);
         var path = typeof(object).Assembly.Location;
         app.Open([TestPaths.PathOf(path)]);
-        app.Driver.RunUntil(() => app.AppState.Assemblies.IsListed(TestPaths.PathOf(path)));
+        app.Driver.RunUntil(() => app.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(path)));
         app.Settle();
-        var coreLib = app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == path);
+        var coreLib = app.AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.Text == path);
         app.Show(await (await coreLib.ReadRootAsync().GetChildAsync("Metadata", "Tables")).TableAsync("Param"), 3);
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = tab.Grid;
         Assert.NotNull(grid);
@@ -327,7 +327,7 @@ public sealed class MetadataGridTests
     {
         var (app, tab, grid, row) = await ShowGreeterRowAsync();
         var greeter = TextBeside(app, MetadataGrids.GetText(grid, row, grid.Column("Name")), "Greeter");
-        var fixtures = app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
+        var fixtures = app.AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
         var closed = app.Ui.Appearance.Strings.DocumentClosed(fixtures.FilePath.FileName);
         using (app.Driver.Turn())
         {
@@ -346,7 +346,7 @@ public sealed class MetadataGridTests
 
         Assert.Equal([true, true], disabled);
         Assert.True(why);
-        Assert.Same(tab, app.AppState.Navigation.ActiveTab);
+        Assert.Same(tab, app.AppState.ListSession.Navigation.ActiveTab);
         Assert.Same(grid, tab.Grid);
         Assert.Empty(app.AppState.Errors.Entries);
     }
@@ -423,7 +423,7 @@ public sealed class MetadataGridTests
     {
         var app = AppDriver.Opened(width: 1800f, height: 1200f);
         app.Show(await app.NodeAsync("Metadata", "COFF Header"), 3);
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = tab.Grid;
         Assert.NotNull(grid);
@@ -499,7 +499,7 @@ public sealed class MetadataGridTests
         var app = AppDriver.Opened(width: 1800f, height: 900f);
         var table = await (await app.NodeAsync("Debug Metadata (From portable PDB)", "Tables")).TableAsync("CustomDebugInformation");
         app.Show(table);
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = tab.Grid;
         Assert.NotNull(grid);
@@ -592,7 +592,7 @@ public sealed class MetadataGridTests
     {
         var app = AppDriver.Opened(width: 1800f, height: 900f);
         app.Show(await (await app.NodeAsync("Debug Metadata (From portable PDB)", "Tables")).TableAsync("CustomDebugInformation"));
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = tab.Grid;
         Assert.NotNull(grid);

@@ -19,14 +19,14 @@ public sealed class WebCilGridTests
     private static AppDriver OpenWebCil(AppDriver app, string path)
     {
         app.Driver.Open([AssemblyPath.Of(path)]);
-        app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 1);
+        app.Driver.RunUntil(() => app.AppState.ListSession.Assemblies.Assemblies.Count == 1);
         app.Settle(1);
         return app;
     }
 
     private static async Task<BrowseNode> MetadataAsync(AppDriver app, params string[] labels)
     {
-        return await app.AppState.Assemblies.Assemblies.Single().ReadRootAsync().GetChildAsync("Metadata").GetChildAsync(labels);
+        return await app.AppState.ListSession.Assemblies.Assemblies.Single().ReadRootAsync().GetChildAsync("Metadata").GetChildAsync(labels);
     }
 
     [Fact]
@@ -40,16 +40,16 @@ public sealed class WebCilGridTests
         var pump = app.Frames.BeforeFrame;
         app.Frames.BeforeFrame = () =>
         {
-            frames.Add((app.AppState.Navigation.ActiveTab?.Grid is not null, app.Frames.Drew("Counter"), app.Frames.Drew(loading)));
+            frames.Add((app.AppState.ListSession.Navigation.ActiveTab?.Grid is not null, app.Frames.Drew("Counter"), app.Frames.Drew(loading)));
             pump?.Invoke();
         };
 
         app.Driver.StartShowing(typeDefs);
         app.Settle(2);
-        frames.Add((app.AppState.Navigation.ActiveTab?.Grid is not null, app.Frames.Drew("Counter"), app.Frames.Drew(loading)));
+        frames.Add((app.AppState.ListSession.Navigation.ActiveTab?.Grid is not null, app.Frames.Drew("Counter"), app.Frames.Drew(loading)));
 
         var shown = frames.Where(static f => f.Grid).ToList();
-        Assert.IsType<MetadataGrid.Paged>(app.AppState.Navigation.ActiveTab?.Grid);
+        Assert.IsType<MetadataGrid.Paged>(app.AppState.ListSession.Navigation.ActiveTab?.Grid);
         Assert.NotEmpty(shown);
         Assert.All(shown, static f => Assert.Equal((true, false), (f.Rows, f.Loading)));
     }
@@ -59,7 +59,7 @@ public sealed class WebCilGridTests
     {
         var app = OpenWebCil(new AppDriver(height: 500f), WebCilLargePath);
         app.Show(await MetadataAsync(app, "String Heap (357)"), 2);
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = Assert.IsType<MetadataGrid.Paged>(tab.Grid);
         var state = DocumentPanels.GetView(app.Ui.Documents, tab).GetGridState(grid);
@@ -84,7 +84,7 @@ public sealed class WebCilGridTests
     {
         var app = OpenWebCil(new AppDriver(height: 500f), WebCilLargePath);
         app.Show(await MetadataAsync(app, "String Heap (357)"), 1);
-        var grid = Assert.IsType<MetadataGrid.Paged>(app.AppState.Navigation.ActiveTab?.Grid);
+        var grid = Assert.IsType<MetadataGrid.Paged>(app.AppState.ListSession.Navigation.ActiveTab?.Grid);
         var row = MetadataGrid.Paged.RowsPerPage * MetadataGrid.Paged.CountPages(MetadataGridFrame.SampleRows);
         Assert.False(grid.IsRowRead(row));
         var handler = new ReadMetadataPageHandler(new FailingReadMetadataPageHandlerPorts());
@@ -103,7 +103,7 @@ public sealed class WebCilGridTests
 
         app.Show(await (await MetadataAsync(app, "Tables")).TableAsync("MethodDef"), 2);
 
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = Assert.IsType<MetadataGrid.Paged>(tab.Grid);
         var columns = DocumentPanels.GetView(app.Ui.Documents, tab).GetGridState(grid).Columns;
@@ -126,15 +126,15 @@ public sealed class WebCilGridTests
         var pump = app.Frames.BeforeFrame;
         app.Frames.BeforeFrame = () =>
         {
-            frames.Add((app.AppState.Navigation.ActiveTab?.Grid is not null, app.Frames.Drew(loading)));
+            frames.Add((app.AppState.ListSession.Navigation.ActiveTab?.Grid is not null, app.Frames.Drew(loading)));
             pump?.Invoke();
         };
 
         app.Driver.StartShowing(methods);
         app.Settle(2);
-        frames.Add((app.AppState.Navigation.ActiveTab?.Grid is not null, app.Frames.Drew(loading)));
+        frames.Add((app.AppState.ListSession.Navigation.ActiveTab?.Grid is not null, app.Frames.Drew(loading)));
 
-        var grid = Assert.IsType<MetadataGrid.Paged>(app.AppState.Navigation.ActiveTab?.Grid);
+        var grid = Assert.IsType<MetadataGrid.Paged>(app.AppState.ListSession.Navigation.ActiveTab?.Grid);
         var shown = frames.Where(static f => f.Grid).ToList();
         Assert.True(app.AppState.FirstGridRows > MetadataGridFrame.SampleRows, $"The tab area shows {app.AppState.FirstGridRows} rows.");
         Assert.True(grid.IsRowRead(app.AppState.FirstGridRows - 1));

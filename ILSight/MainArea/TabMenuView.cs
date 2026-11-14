@@ -42,7 +42,7 @@ internal static class TabMenuView
             return;
         }
 
-        Commands.Later(ui.State, tab, static (a, kept) => a.Navigation.KeepTabOpen(kept));
+        Commands.Later(ui.State, tab, static (a, kept) => a.ListSession.Navigation.KeepTabOpen(kept));
     }
 
     public static void Render(Ui<UiState> ui, Navigation navigation)
@@ -115,7 +115,7 @@ internal static class TabMenuView
 
         if (ui.MenuItem(ui.State.Appearance.Strings.TabKeepOpen, id: "keep-open"))
         {
-            Commands.Later(ui.State, tab, static (a, kept) => a.Navigation.KeepTabOpen(kept));
+            Commands.Later(ui.State, tab, static (a, kept) => a.ListSession.Navigation.KeepTabOpen(kept));
         }
 
         ui.MenuSeparator();

@@ -50,7 +50,7 @@ public sealed class TabLoadsTests
     public void A_reopened_comparison_shows_in_its_tab_and_hands_back_its_run_as_a_kind_of_its_own()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var path = d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath).FilePath;
+        var path = d.AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath).FilePath;
         var record = new ComparisonDocumentRecord
         {
             Panel = "document-9",
@@ -60,13 +60,13 @@ public sealed class TabLoadsTests
             Scope = ApiScope.AllDeclared,
             View = null,
         };
-        var tab = d.AppState.Navigation.OpenReopenedTab();
-        d.AppState.Navigation.WaitForComparison(tab, record.Title);
-        SavedDocuments.WaitFor(d.AppState.Reopened, tab, record);
+        var tab = d.AppState.ListSession.Navigation.OpenReopenedTab();
+        d.AppState.ListSession.Navigation.WaitForComparison(tab, record.Title);
+        SavedDocuments.WaitFor(d.AppState.ListSession.Reopened, tab, record);
         var runs = new List<ComparisonRun>();
         var other = 0;
 
-        var loads = SavedDocuments.ShowReopenedDocuments(d.AppState.Navigation, d.AppState.Reopened, d.AppState.Assemblies);
+        var loads = SavedDocuments.ShowReopenedDocuments(d.AppState.ListSession.Navigation, d.AppState.ListSession.Reopened, d.AppState.ListSession.Assemblies);
         loads.Switch(_ => other++, _ => other++, _ => other++, runs.Add, _ => other++);
 
         var run = Assert.Single(runs);
@@ -74,6 +74,6 @@ public sealed class TabLoadsTests
         Assert.Equal(ApiScope.AllDeclared, run.Scope);
         Assert.True(run.Comparison.IsComparing);
         Assert.Equal(0, other);
-        Assert.Empty(d.AppState.Reopened.Tabs);
+        Assert.Empty(d.AppState.ListSession.Reopened.Tabs);
     }
 }

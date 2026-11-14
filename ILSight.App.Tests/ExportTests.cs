@@ -27,14 +27,14 @@ public sealed class ExportTests : IDisposable
     {
         var d = new AppStateDriver();
         d.Open([AssemblyPath.Of(SampleAppPath)]);
-        d.RunUntil(() => d.AppState.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)));
+        d.RunUntil(() => d.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)));
         d.Settle();
         return d;
     }
 
     private static LoadedModule SampleOf(AppStateDriver d)
     {
-        return Assert.Single(d.AppState.Assemblies.Assemblies);
+        return Assert.Single(d.AppState.ListSession.Assemblies.Assemblies);
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public sealed class ExportTests : IDisposable
     {
         var app = new AppDriver();
         app.Open([AssemblyPath.Of(SampleAppPath)]);
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)), AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)), AppStateDriver.Patience);
         app.Settle(2);
         app.Frames.FilePicker.Answer = _temp.Path;
 
@@ -172,8 +172,8 @@ public sealed class ExportTests : IDisposable
         var app = AppDriver.Opened();
         var sample = Path.Combine(AppContext.BaseDirectory, "Fixtures", "SampleApp", "SampleApp.dll");
         app.Open([AssemblyPath.Of(sample)]);
-        app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Any(a => a.FilePath.Text == sample));
-        var assembly = app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == sample);
+        app.Driver.RunUntil(() => app.AppState.ListSession.Assemblies.Assemblies.Any(a => a.FilePath.Text == sample));
+        var assembly = app.AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.Text == sample);
         var baml = await assembly.ReadRootAsync().GetChildAsync("Resources", "SampleApp.g.resources", "mainwindow.baml");
         app.Show(baml, frames: 2);
         var path = _temp.PathOf("mainwindow.xaml");

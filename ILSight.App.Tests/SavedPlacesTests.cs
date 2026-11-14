@@ -84,7 +84,7 @@ public sealed class SavedPlacesTests : IDisposable
     {
         var d = Restored(WithTab($"\"Path\": {GreeterPath}"));
 
-        Assert.Same(await d.FixtureAsync("Greeter"), Assert.Single(d.AppState.Navigation.OpenTabs).Node);
+        Assert.Same(await d.FixtureAsync("Greeter"), Assert.Single(d.AppState.ListSession.Navigation.OpenTabs).Node);
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public sealed class SavedPlacesTests : IDisposable
         d.InTurn(() => Commands.StartGoingToBookmark(d.AppState, bookmark));
         d.Settle();
 
-        Assert.Same(await d.FixtureAsync("Greeter"), d.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(await d.FixtureAsync("Greeter"), d.AppState.ListSession.Navigation.ActiveTab?.Node);
     }
 
     [Theory]
@@ -111,7 +111,7 @@ public sealed class SavedPlacesTests : IDisposable
         var (d, problem) = RestoredWith(WithTab($"\"Path\": {path}"));
 
         Assert.Equal(["AssemblyLists[0].Documents.Tabs[0]"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
-        Assert.Null(Assert.Single(d.AppState.Navigation.OpenTabs).Node);
+        Assert.Null(Assert.Single(d.AppState.ListSession.Navigation.OpenTabs).Node);
     }
 
     [Fact]

@@ -166,7 +166,7 @@ internal static class TreePaneView
             case 4:
                 if (DrawTool(ui, inMenu, "sort-list", icons.AssembliesSortList, t.TreeSortList, any))
                 {
-                    Commands.Later(ui.State, static a => a.Assemblies.SortListed());
+                    Commands.Later(ui.State, static a => a.ListSession.Assemblies.SortListed());
                 }
 
                 return;

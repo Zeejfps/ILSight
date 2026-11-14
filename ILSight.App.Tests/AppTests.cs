@@ -66,7 +66,7 @@ public sealed class AppTests
         app.DoubleClickOn(Selector.WithText("Greeter"));
         app.Settle();
 
-        var tab = Assert.Single(app.AppState.Navigation.OpenTabs);
+        var tab = Assert.Single(app.AppState.ListSession.Navigation.OpenTabs);
         Assert.NotNull(tab.Node);
         Assert.Equal("Greeter", tab.Node.Text);
         Assert.True(app.Ui.Tree.View.IsExpanded(tab.Node));
@@ -77,7 +77,7 @@ public sealed class AppTests
     {
         var app = AppDriver.Opened();
         app.Run(2);
-        var shown = app.AppState.Navigation.ActiveTab;
+        var shown = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(shown);
         Assert.NotNull(shown.Node);
         var label = app.Ui.Tree.GetLabel(shown.Node);
@@ -97,7 +97,7 @@ public sealed class AppTests
         Assert.Same(layout.GroupOf(DockPanels.Assemblies), layout.GroupOf(shownPanel));
         Assert.Equal(shownPanel, layout.GroupOf(shownPanel)?.Active);
         Assert.IsType<DockGroup>(layout.Root);
-        Assert.Same(shown, app.AppState.Navigation.ActiveTab);
+        Assert.Same(shown, app.AppState.ListSession.Navigation.ActiveTab);
     }
 
     [Fact]
@@ -265,7 +265,7 @@ public sealed class AppTests
         app.Settle();
 
         Assert.Equal(DecompilationLanguage.IL, app.AppState.Decompiler.Setup.Language);
-        Assert.Equal(DecompilationLanguage.IL, app.AppState.Navigation.ActiveTab?.Load.Language);
+        Assert.Equal(DecompilationLanguage.IL, app.AppState.ListSession.Navigation.ActiveTab?.Load.Language);
     }
 
     [Fact]
@@ -273,7 +273,7 @@ public sealed class AppTests
     {
         var app = AppDriver.Opened();
         app.Run();
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
         app.Frames.ClickOn(Selector.WithText("IL"));
@@ -292,10 +292,10 @@ public sealed class AppTests
         app.Settle(1);
 
         Assert.Equal(DecompilationLanguage.ILWithCSharp, app.AppState.Decompiler.Setup.Language);
-        Assert.Equal(DecompilationLanguage.ILWithCSharp, app.AppState.Navigation.ActiveTab?.Load.Language);
+        Assert.Equal(DecompilationLanguage.ILWithCSharp, app.AppState.ListSession.Navigation.ActiveTab?.Load.Language);
         Assert.True(app.Frames.Drew("IL with C#"));
         Assert.True(app.Frames.Drew("C# 14.0 / VS 2026"));
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         Assert.Contains(tab.Document.Lines, l => l.Text.TrimStart().StartsWith("// return ", StringComparison.Ordinal));
     }
@@ -311,7 +311,7 @@ public sealed class AppTests
         app.Settle(1);
 
         Assert.Equal(CSharpVersion.CSharp5, app.AppState.Decompiler.Setup.Options.LanguageVersion);
-        Assert.Equal(CSharpVersion.CSharp5, app.AppState.Navigation.ActiveTab?.Load.Options.LanguageVersion);
+        Assert.Equal(CSharpVersion.CSharp5, app.AppState.ListSession.Navigation.ActiveTab?.Load.Options.LanguageVersion);
         Assert.Contains(app.Frames.Canvas.Texts, t => t.Inputs.Text == "C# 5.0 / VS 2012");
 
         app.Frames.ClickOn(Selector.WithText("IL"));
@@ -336,7 +336,7 @@ public sealed class AppTests
         var app = AppDriver.Opened(width: 1600f);
         app.Show(await app.FixtureAsync("Greeter"), 1);
         FoldOptionGroupsBut(app, nameof(CSharpVersion.CSharp1));
-        var shown = app.AppState.Navigation.ActiveTab;
+        var shown = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(shown);
         Assert.DoesNotContain("string.Concat", Documents.GetText(shown.Document));
 
@@ -349,7 +349,7 @@ public sealed class AppTests
         var stringConcat = DecompilerToggles.FindToggle("StringConcat");
         Assert.NotNull(stringConcat);
         Assert.False(DecompilerToggles.IsOn(app.AppState.Decompiler.Setup.Options, stringConcat));
-        var ticked = app.AppState.Navigation.ActiveTab;
+        var ticked = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(ticked);
         Assert.Contains("string.Concat", Documents.GetText(ticked.Document));
 
@@ -357,7 +357,7 @@ public sealed class AppTests
         app.Settle(1);
 
         Assert.Equal(DecompilerOptions.Default, app.AppState.Decompiler.Setup.Options);
-        var reset = app.AppState.Navigation.ActiveTab;
+        var reset = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(reset);
         Assert.DoesNotContain("string.Concat", Documents.GetText(reset.Document));
     }
@@ -368,7 +368,7 @@ public sealed class AppTests
         var app = AppDriver.Opened();
         app.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         app.Show(await app.FixtureAsync("Outline"), 1);
-        var outline = app.AppState.Navigation.ActiveTab;
+        var outline = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(outline);
         var named = Documents.GetText(outline.Document);
 
@@ -376,7 +376,7 @@ public sealed class AppTests
         app.Settle(1);
 
         Assert.Contains("int32 total", named);
-        var disassembled = app.AppState.Navigation.ActiveTab;
+        var disassembled = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(disassembled);
         Assert.DoesNotContain("int32 total", Documents.GetText(disassembled.Document));
     }
@@ -481,7 +481,7 @@ public sealed class AppTests
         app.Frames.Key(KeyboardKey.Enter).Frame();
         app.Settle();
 
-        Assert.Same(app.Ui.Search.Results.Rows[1].Node, app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(app.Ui.Search.Results.Rows[1].Node, app.AppState.ListSession.Navigation.ActiveTab?.Node);
     }
 
     [Fact]
@@ -598,7 +598,7 @@ public sealed class AppTests
     {
         var app = AppDriver.Opened();
         app.Run(2);
-        var shown = app.AppState.Navigation.ActiveTab;
+        var shown = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(shown);
         Assert.NotNull(shown.Node);
         var label = app.Ui.Tree.GetLabel(shown.Node);
@@ -650,7 +650,7 @@ public sealed class AppTests
     {
         var app = AppDriver.Opened();
         app.Run(2);
-        var name = app.AppState.Assemblies.Assemblies[0].Name;
+        var name = app.AppState.ListSession.Assemblies.Assemblies[0].Name;
 
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, name), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Scope search to this assembly")).Frame(2);
@@ -750,7 +750,7 @@ public sealed class AppTests
 
         var secondary = NodeText.Secondary(await app.NodeAsync());
         Assert.NotNull(secondary);
-        Assert.True(app.TextRect(secondary).X > app.TextRect(app.AppState.Assemblies.Assemblies[0].Name).Right);
+        Assert.True(app.TextRect(secondary).X > app.TextRect(app.AppState.ListSession.Assemblies.Assemblies[0].Name).Right);
         Assert.True(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.OverlayInternal)));
     }
 

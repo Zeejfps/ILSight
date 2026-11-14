@@ -60,7 +60,7 @@ public static class ExportCommands
     /// Assemblies that cannot have one, or fail, are the report's problems.</summary>
     public static void GeneratePdbs(AppState appState, string folder)
     {
-        var work = new ExportWork.Pdbs { Assemblies = appState.Assemblies.Assemblies, Options = appState.Decompiler.Setup.Options, Folder = folder };
+        var work = new ExportWork.Pdbs { Assemblies = appState.ListSession.Assemblies.Assemblies, Options = appState.Decompiler.Setup.Options, Folder = folder };
         StartWriting(appState, work);
     }
 

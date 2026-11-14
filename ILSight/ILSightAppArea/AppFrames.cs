@@ -22,9 +22,9 @@ internal static class AppFrames
     internal static void FollowRestoredAppState(UiState uiState, AppState appState)
     {
         uiState.Documents.SkipPanels(appState.Lists.ListDocumentPanels());
-        uiState.TabFocus.Follow(appState.Navigation.ActiveTab);
+        uiState.TabFocus.Follow(appState.ListSession.Navigation.ActiveTab);
         QueuedCommands.RunViewCommands(uiState, appState);
-        DocumentPanels.ShowInRestoredDocuments(uiState, appState.Navigation);
+        DocumentPanels.ShowInRestoredDocuments(uiState, appState.ListSession.Navigation);
     }
 
     /// <summary>Does what comes before drawing a frame: the screen takes the theme, icons and strings the
@@ -38,14 +38,14 @@ internal static class AppFrames
     {
         uiState.Appearance.ApplyThemeAndLanguage(Theming.ResolveTheme(appState), appState.Locale);
         uiState.Appearance.ApplyIconTheme(IconTheming.ResolveIconTheme(appState));
-        Trees.SyncTrees(uiState, appState.Assemblies, appState.Analyzer, appState.ApiVisibility, appState.Reopens.Files);
-        appState.Navigation.UsePreviewTabs(uiState.Display.Options.PreviewTabs);
+        Trees.SyncTrees(uiState, appState.ListSession.Assemblies, appState.ListSession.Analyzer, appState.ApiVisibility, appState.Reopens.Files);
+        appState.ListSession.Navigation.UsePreviewTabs(uiState.Display.Options.PreviewTabs);
         DocumentPanels.FollowTabContent(uiState);
-        uiState.TabFocus.Follow(appState.Navigation.ActiveTab);
+        uiState.TabFocus.Follow(appState.ListSession.Navigation.ActiveTab);
         QueuedCommands.RunViewCommands(uiState, appState);
-        DocumentPanels.SyncTabViews(uiState, appState.Navigation);
+        DocumentPanels.SyncTabViews(uiState, appState.ListSession.Navigation);
         ReviveClosedTabs(uiState, appState);
-        DocumentPanels.FocusNextTabIfNone(uiState, appState.Navigation, appState.Decompiler.Setup);
+        DocumentPanels.FocusNextTabIfNone(uiState, appState.ListSession.Navigation, appState.Decompiler.Setup);
         FollowLoadOptions(uiState, appState);
         FollowDecompilation(uiState, appState);
         FollowExportSetup(uiState.ExportSetup, appState);
@@ -55,7 +55,7 @@ internal static class AppFrames
     private static void ReviveClosedTabs(UiState uiState, AppState appState)
     {
         // Asked first, so the frames with no closed tab listed again allocate nothing.
-        if (!SavedDocuments.HasClosedTabListedAgain(appState.Navigation, appState.Assemblies))
+        if (!SavedDocuments.HasClosedTabListedAgain(appState.ListSession.Navigation, appState.ListSession.Assemblies))
         {
             return;
         }
@@ -93,7 +93,7 @@ internal static class AppFrames
     internal static void FollowNuGetPicker(Ui<UiState> ui, AppState appState)
     {
         var picker = ui.State.NuGetPicker;
-        NuGetPickerView.OpenDownloaded(ui, appState.Navigation, picker);
+        NuGetPickerView.OpenDownloaded(ui, appState.ListSession.Navigation, picker);
         if (!picker.IsOpen)
         {
             return;
@@ -161,7 +161,7 @@ internal static class AppFrames
 
     private static void FollowLoadOptions(UiState uiState, AppState appState)
     {
-        if (!AssemblyListing.TryChangeLoadOptions(appState.Assemblies, appState.Decompiler.Setup.Options))
+        if (!AssemblyListing.TryChangeLoadOptions(appState.ListSession.Assemblies, appState.Decompiler.Setup.Options))
         {
             return;
         }
@@ -201,7 +201,7 @@ internal static class AppFrames
     /// pages of their rows they showed loading, and the presets the lists dialog's menu opened to.</summary>
     internal static void StartAskedWork(UiState uiState, AppState appState)
     {
-        Commands.StartReadingTypeSystems(appState.Workflows, appState.Assemblies);
+        Commands.StartReadingTypeSystems(appState.Workflows, appState.ListSession.Assemblies);
         Commands.StartBuildingChildren(appState, uiState.Tree);
         Commands.StartSearching(appState, uiState.Search.Results);
         Commands.StartSearching(appState, uiState.Omnibar.Search.Results);
@@ -215,7 +215,7 @@ internal static class AppFrames
     /// settings keep what changed of the screen.</summary>
     internal static void KeepScreenChanges(UiState uiState, AppState appState)
     {
-        KeepTabPositions(uiState, appState.Navigation);
+        KeepTabPositions(uiState, appState.ListSession.Navigation);
         KeepChangedViewSettings(uiState, appState.KeptScreen);
         KeepFirstGridRows(uiState, appState);
     }

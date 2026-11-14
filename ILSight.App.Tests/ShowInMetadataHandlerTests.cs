@@ -11,14 +11,14 @@ public sealed class ShowInMetadataHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var reference = (await d.FixtureAsync("Greeter")).Definition;
-        var row = Assert.IsType<Lookup<MetadataTarget>.Found>((await NodeLookup.FindMetadataRowAsync(d.AppState.Assemblies, d.AppState.Session, reference, CancellationToken.None)).GetValue()).Value;
+        var row = Assert.IsType<Lookup<MetadataTarget>.Found>((await NodeLookup.FindMetadataRowAsync(d.AppState.ListSession.Assemblies, d.AppState.Session, reference, CancellationToken.None)).GetValue()).Value;
         var lookup = new FakeShowInMetadataHandlerPorts { Found = new Outcome<Lookup<MetadataTarget>>.Ok(Lookup.FromNullable<MetadataTarget>(row)) };
 
-        var load = await d.RunAsync(() => new ShowInMetadataHandler(lookup).HandleAsync(d.AppState.Navigation, d.AppState.Decompiler, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        var load = await d.RunAsync(() => new ShowInMetadataHandler(lookup).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, reference, d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
 
-        Assert.Same(row.Node, d.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(row.Node, d.AppState.ListSession.Navigation.ActiveTab?.Node);
         Assert.Same(row.Node, load?.Node);
-        Assert.False(d.AppState.IsResolving);
+        Assert.False(d.AppState.ListSession.Navigation.IsResolving);
         Assert.Empty(lookup.Reported);
     }
 
@@ -26,22 +26,22 @@ public sealed class ShowInMetadataHandlerTests
     public async Task HandleAsync_NoRowOrLookupFailed_ReportsItUnresolved()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var shown = d.AppState.Navigation.ActiveTab?.Node;
+        var shown = d.AppState.ListSession.Navigation.ActiveTab?.Node;
         Assert.NotNull(shown);
         var reference = (await d.FixtureAsync("Greeter")).Definition;
         var error = new IOException("unreadable");
         var missing = new FakeShowInMetadataHandlerPorts { Found = new Outcome<Lookup<MetadataTarget>>.Ok(Lookup.FromNullable<MetadataTarget>(null)) };
         var failed = new FakeShowInMetadataHandlerPorts { Found = new Outcome<Lookup<MetadataTarget>>.Failed(error) };
 
-        var missingLoad = await d.RunAsync(() => new ShowInMetadataHandler(missing).HandleAsync(d.AppState.Navigation, d.AppState.Decompiler, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
-        var failedLoad = await d.RunAsync(() => new ShowInMetadataHandler(failed).HandleAsync(d.AppState.Navigation, d.AppState.Decompiler, reference, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        var missingLoad = await d.RunAsync(() => new ShowInMetadataHandler(missing).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, reference, d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        var failedLoad = await d.RunAsync(() => new ShowInMetadataHandler(failed).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, reference, d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
 
         Assert.Equal([new Refusal.Unresolved { Reference = reference }], missing.Refused);
         Assert.Empty(missing.Reported);
         Assert.Same(error, Assert.IsType<AppProblem.Unresolved>(Assert.Single(failed.Reported)).Error);
         Assert.Empty(failed.Refused);
-        Assert.Same(shown, d.AppState.Navigation.ActiveTab?.Node);
-        Assert.False(d.AppState.IsResolving);
+        Assert.Same(shown, d.AppState.ListSession.Navigation.ActiveTab?.Node);
+        Assert.False(d.AppState.ListSession.Navigation.IsResolving);
         Assert.Null(missingLoad);
         Assert.Null(failedLoad);
     }
@@ -51,17 +51,17 @@ public sealed class ShowInMetadataHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var appState = d.AppState;
-        var shown = appState.Navigation.ActiveTab?.Node;
+        var shown = appState.ListSession.Navigation.ActiveTab?.Node;
         Assert.NotNull(shown);
         var reference = (await d.FixtureAsync("Greeter")).Definition;
-        var row = (await NodeLookup.FindMetadataRowAsync(appState.Assemblies, appState.Session, reference, CancellationToken.None)).GetValue().FoundValueOrNull;
-        var found = new FakeShowInMetadataHandlerPorts { Found = new Outcome<Lookup<MetadataTarget>>.Ok(Lookup.FromNullable<MetadataTarget>(row)), WhileLooking = () => appState.Navigation.BeginRequest() };
-        var missing = new FakeShowInMetadataHandlerPorts { Found = new Outcome<Lookup<MetadataTarget>>.Ok(Lookup.FromNullable<MetadataTarget>(null)), WhileLooking = () => appState.Navigation.BeginRequest() };
+        var row = (await NodeLookup.FindMetadataRowAsync(appState.ListSession.Assemblies, appState.Session, reference, CancellationToken.None)).GetValue().FoundValueOrNull;
+        var found = new FakeShowInMetadataHandlerPorts { Found = new Outcome<Lookup<MetadataTarget>>.Ok(Lookup.FromNullable<MetadataTarget>(row)), WhileLooking = () => appState.ListSession.Navigation.BeginRequest() };
+        var missing = new FakeShowInMetadataHandlerPorts { Found = new Outcome<Lookup<MetadataTarget>>.Ok(Lookup.FromNullable<MetadataTarget>(null)), WhileLooking = () => appState.ListSession.Navigation.BeginRequest() };
 
-        var foundLoad = await d.RunAsync(() => new ShowInMetadataHandler(found).HandleAsync(appState.Navigation, appState.Decompiler, reference, appState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
-        var missingLoad = await d.RunAsync(() => new ShowInMetadataHandler(missing).HandleAsync(appState.Navigation, appState.Decompiler, reference, appState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        var foundLoad = await d.RunAsync(() => new ShowInMetadataHandler(found).HandleAsync(appState.ListSession.Navigation, appState.Decompiler, reference, appState.ListSession.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        var missingLoad = await d.RunAsync(() => new ShowInMetadataHandler(missing).HandleAsync(appState.ListSession.Navigation, appState.Decompiler, reference, appState.ListSession.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
 
-        Assert.Same(shown, appState.Navigation.ActiveTab?.Node);
+        Assert.Same(shown, appState.ListSession.Navigation.ActiveTab?.Node);
         Assert.Empty(found.Reported);
         Assert.Empty(missing.Reported);
         Assert.Null(foundLoad);

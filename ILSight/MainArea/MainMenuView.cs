@@ -230,7 +230,7 @@ internal static class MainMenuView
         var icons = ui.State.Appearance.Icons;
         if (ui.MenuItem(t.FileOpen, Shortcuts.Open, id: "open", icon: new UiIcon(icons.FileOpen)))
         {
-            OpenFile(ui, appState.Navigation);
+            OpenFile(ui, appState.ListSession.Navigation);
         }
 
         if (ui.MenuItem(t.FileOpenFromFramework, id: "open-from-framework", icon: new UiIcon(icons.FileOpenFromFramework)))
@@ -255,16 +255,16 @@ internal static class MainMenuView
     private static void ExportItems(Ui<UiState> ui, AppState appState)
     {
         var t = ui.State.Appearance.Strings;
-        var canSave = Exports.CanSaveCode(appState.Navigation.ActiveTab?.Node);
+        var canSave = Exports.CanSaveCode(appState.ListSession.Navigation.ActiveTab?.Node);
         if (ui.MenuItem(t.FileSaveCode, Shortcuts.SaveCode, enabled: canSave, id: "save-code", icon: new UiIcon(ui.State.Appearance.Icons.FileSaveCode)))
         {
-            SaveDialogs.PickActiveCodeFile(ui, appState.Navigation, appState.Decompiler.Setup.Language);
+            SaveDialogs.PickActiveCodeFile(ui, appState.ListSession.Navigation, appState.Decompiler.Setup.Language);
         }
 
         var anyOpen = ui.State.Tree.Roots.Count > 0;
         if (ui.MenuItem(t.FileExport, Shortcuts.Export, enabled: anyOpen, id: "export", icon: new UiIcon(ui.State.Appearance.Icons.FileExportProject)))
         {
-            ui.State.ExportSetup.Open(appState.Assemblies.Assemblies, Exports.FindActiveAssembly(appState.Navigation));
+            ui.State.ExportSetup.Open(appState.ListSession.Assemblies.Assemblies, Exports.FindActiveAssembly(appState.ListSession.Navigation));
         }
 
         if (ui.MenuItem(t.FileGeneratePdbs, enabled: anyOpen, id: "generate-pdbs", icon: new UiIcon(ui.State.Appearance.Icons.FileGeneratePdb)))
@@ -276,14 +276,14 @@ internal static class MainMenuView
     private static void ViewMenu(Ui<UiState> ui, AppState appState)
     {
         var t = ui.State.Appearance.Strings;
-        if (ui.MenuItem(t.ViewBack, Shortcuts.Back, enabled: appState.Navigation.CanGoBack, id: "back"))
+        if (ui.MenuItem(t.ViewBack, Shortcuts.Back, enabled: appState.ListSession.Navigation.CanGoBack, id: "back"))
         {
-            Commands.MoveLater(ui.State, appState.Navigation.GoBack(appState.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
+            Commands.MoveLater(ui.State, appState.ListSession.Navigation.GoBack(appState.ListSession.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
         }
 
-        if (ui.MenuItem(t.ViewForward, Shortcuts.Forward, enabled: appState.Navigation.CanGoForward, id: "forward"))
+        if (ui.MenuItem(t.ViewForward, Shortcuts.Forward, enabled: appState.ListSession.Navigation.CanGoForward, id: "forward"))
         {
-            Commands.MoveLater(ui.State, appState.Navigation.GoForward(appState.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
+            Commands.MoveLater(ui.State, appState.ListSession.Navigation.GoForward(appState.ListSession.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
         }
 
         ui.MenuSeparator();
@@ -292,7 +292,7 @@ internal static class MainMenuView
         ApiVisibilityMenu(ui, appState.ApiVisibility);
         ui.MenuSeparator();
         PanelsMenu(ui);
-        if (ui.MenuItem(t.ViewCloseAllDocuments, enabled: appState.Navigation.OpenTabs.Count > 0, id: "close-all-documents"))
+        if (ui.MenuItem(t.ViewCloseAllDocuments, enabled: appState.ListSession.Navigation.OpenTabs.Count > 0, id: "close-all-documents"))
         {
             DocumentPanels.CloseAllTabs(ui.State);
         }

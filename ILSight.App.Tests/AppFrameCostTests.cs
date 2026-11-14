@@ -36,7 +36,7 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
         var app = AppDriver.Opened();
         ScreenLayout.OpenPanel(app.Ui, DockView.Bookmarks);
         app.Settle(2);
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         app.Ui.MainLayout.Dock.Close(DocumentPanels.GetPanel(app.Ui.Documents, tab));
         app.Settle(5);
@@ -46,7 +46,7 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
         var allocated = SteadyAllocations.PerFrame(MeasuredFrames, _ => app.Run());
 
         output.WriteLine($"tool panels only: {allocated:N0} B/frame allocated");
-        Assert.Empty(app.AppState.Navigation.OpenTabs);
+        Assert.Empty(app.AppState.ListSession.Navigation.OpenTabs);
         Assert.True(app.Ui.MainLayout.Dock.Contains(DockPanels.Bookmarks));
         Assert.Equal(0, allocated);
     }
@@ -58,7 +58,7 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
         app.Settle(2);
         app.Show(await app.FixtureAsync("Greeter"), 2);
         app.Settle(5);
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var panel = DocumentPanels.GetPanel(app.Ui.Documents, tab);
         app.Ui.Omnibar.OpenMenu(panel, await app.NodeAsync(AppStateDriver.FixturesNamespace), await app.FixtureAsync("Greeter"));

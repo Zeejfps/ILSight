@@ -36,7 +36,7 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
     /// <paramref name="ct"/>.</summary>
     public Task<DecompileTicket?> OpenAssembliesAsync(AppState appState, IEnumerable<AssemblyPath> paths, CancellationToken ct)
     {
-        var opening = appState.Navigation.BeginOpening(paths);
+        var opening = appState.ListSession.Navigation.BeginOpening(paths);
         if (opening is null)
         {
             return Task.FromResult<DecompileTicket?>(null);
@@ -51,7 +51,7 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
     public async Task<DecompileTicket?> OpenAssembliesAsync(AppState appState, FileOpening opening, CancellationToken ct)
     {
         var opened = await ports.OpenFilesAsync(opening.Paths, ct);
-        appState.Navigation.EndOpening(opening.Intent);
+        appState.ListSession.Navigation.EndOpening(opening.Intent);
         return ShowLastOpened(appState, opened, opening.Intent);
     }
 
@@ -62,12 +62,12 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
             return null;
         }
 
-        if (appState.Navigation.IsStale(ticket))
+        if (appState.ListSession.Navigation.IsStale(ticket))
         {
             return null;
         }
 
-        return appState.Navigation.ShowNode(node, appState.Decompiler.Setup);
+        return appState.ListSession.Navigation.ShowNode(node, appState.Decompiler.Setup);
     }
 
     /// <summary>Opens the files among <paramref name="paths"/>, dropped on the window, as

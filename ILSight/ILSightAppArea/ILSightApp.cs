@@ -174,7 +174,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
 
     private void StopRedrawingOnAssemblyChanges(ImmediateGuiAppHost<UiState> host)
     {
-        _appState.Assemblies.Changed -= host.Invalidate;
+        _appState.ListSession.Assemblies.Changed -= host.Invalidate;
     }
 
     private static FontFace ReadFont(string family, string file)
@@ -185,7 +185,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
 
     private void StartRedrawingOnAssemblyChanges(ImmediateGuiAppHost<UiState> host)
     {
-        _appState.Assemblies.Changed += host.Invalidate;
+        _appState.ListSession.Assemblies.Changed += host.Invalidate;
     }
 
     private SettingsWriteResult SaveOnExit(WindowBounds window)

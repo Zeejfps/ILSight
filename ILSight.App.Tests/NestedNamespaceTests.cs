@@ -126,10 +126,10 @@ public sealed class NestedNamespaceTests
         var farewell = await app.FixtureAsync("Farewell");
         app.Ui.Tree.CollapseAll();
 
-        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, farewell.Definition, a.Navigation.BeginResolving(inNewTab: false), ct));
+        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, farewell.Definition, a.ListSession.Navigation.BeginResolving(inNewTab: false), ct));
         app.Settle(1);
 
-        Assert.Same(farewell, app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(farewell, app.AppState.ListSession.Navigation.ActiveTab?.Node);
         Assert.Same(farewell, app.Ui.Tree.View.Selected);
         Assert.True(await IsShownNestedAsync(app, farewell));
     }
@@ -147,7 +147,7 @@ public sealed class NestedNamespaceTests
         app.GoBack();
         app.Settle(1);
 
-        Assert.Same(greeter, app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(greeter, app.AppState.ListSession.Navigation.ActiveTab?.Node);
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
         Assert.True(await IsShownNestedAsync(app, greeter));
     }
@@ -158,7 +158,7 @@ public sealed class NestedNamespaceTests
         var app = OpenedNested();
         var outline = await app.FixtureAsync("Outline");
         app.Show(outline, 2);
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(app.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark));
         var bookmark = Assert.Single(app.AppState.Bookmarks.Items);
@@ -172,7 +172,7 @@ public sealed class NestedNamespaceTests
         var fixtures = await app.NodeAsync(AppStateDriver.FixturesNamespace);
         Assert.Equal([new NodePathSegment.Namespace(AppStateDriver.FixturesNamespace), new NodePathSegment.Definition($"T:{AppStateDriver.FixturesNamespace}.Outline")],
             bookmark.Place.Steps.Select(static s => s.Segment));
-        Assert.Same(outline, app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(outline, app.AppState.ListSession.Navigation.ActiveTab?.Node);
         Assert.Same(outline, app.Ui.Tree.View.Selected);
         Assert.True(app.Ui.Tree.View.IsExpanded(fixtures));
         Assert.Contains(fixtures, await ShownChildrenAsync(app, await app.NodeAsync()));
@@ -190,7 +190,7 @@ public sealed class NestedNamespaceTests
 
         var greeter = await app.FixtureAsync("Greeter");
         Assert.NotSame(before, await app.NodeAsync("ILSight.App"));
-        Assert.Same(greeter, app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(greeter, app.AppState.ListSession.Navigation.ActiveTab?.Node);
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
         Assert.True(await IsShownNestedAsync(app, greeter));
     }
@@ -207,6 +207,6 @@ public sealed class NestedNamespaceTests
 
         Assert.Same(await app.NodeAsync(), app.Ui.Tree.View.Selected);
         Assert.DoesNotContain(enclosing, await ShownChildrenAsync(app, await app.NodeAsync()));
-        Assert.Same(enclosing, app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(enclosing, app.AppState.ListSession.Navigation.ActiveTab?.Node);
     }
 }

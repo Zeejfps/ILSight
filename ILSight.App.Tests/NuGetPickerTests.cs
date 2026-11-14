@@ -514,7 +514,7 @@ public sealed class NuGetPickerTests : IDisposable
         picker.Open();
         app.Frames.WaitUntil(() => picker.Browser.Results.Count > 0, AppStateDriver.Patience);
         app.Frames.Key(KeyboardKey.Enter);
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count > 0, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count > 0, AppStateDriver.Patience);
         app.Settle(2);
 
         Assert.False(picker.IsOpen);
@@ -580,7 +580,7 @@ public sealed class NuGetPickerTests : IDisposable
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "1.0.0")).Frame();
         var picked = picker.Browser.Version;
         app.Frames.ClickOn(Selector.AtPath("nuget-open")).Frame();
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.Listed.Count > 0, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count > 0, AppStateDriver.Patience);
         app.Settle(2);
 
         Assert.Equal("1.0.0", picked?.Text);

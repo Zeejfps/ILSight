@@ -31,7 +31,7 @@ public sealed class ExportDialogTests : IDisposable
     {
         var d = AppStateDriver.Opened();
         d.Open([AssemblyPath.Of(SecondPath)]);
-        d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 2);
+        d.RunUntil(() => d.AppState.ListSession.Assemblies.Assemblies.Count == 2);
         d.Settle();
         return d;
     }
@@ -40,7 +40,7 @@ public sealed class ExportDialogTests : IDisposable
     {
         var d = new AppStateDriver();
         d.Open([AssemblyPath.Of(SampleAppPath)]);
-        d.RunUntil(() => d.AppState.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)));
+        d.RunUntil(() => d.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)));
         d.Settle();
         return d;
     }
@@ -248,7 +248,7 @@ public sealed class ExportDialogTests : IDisposable
     {
         var d = OpenedSample();
         d.Open([AssemblyPath.Of(SecondPath)]);
-        d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 2);
+        d.RunUntil(() => d.AppState.ListSession.Assemblies.Assemblies.Count == 2);
         d.Settle();
         d.OpenExportSetup(null);
         var setup = d.Ui.ExportSetup;
@@ -282,7 +282,7 @@ public sealed class ExportDialogTests : IDisposable
     public void The_Choose_page_lists_ticked_assemblies_first_and_keeps_its_order_while_ticking()
     {
         var d = OpenedTwo();
-        var second = d.AppState.Assemblies.Assemblies[1];
+        var second = d.AppState.ListSession.Assemblies.Assemblies[1];
         d.OpenExportSetup(second);
         var setup = d.Ui.ExportSetup;
 
@@ -300,7 +300,7 @@ public sealed class ExportDialogTests : IDisposable
         var d = OpenedTwo();
         d.OpenExportSetup(null);
         var picker = d.Ui.ExportSetup.Picker;
-        var second = d.AppState.Assemblies.Assemblies[1];
+        var second = d.AppState.ListSession.Assemblies.Assemblies[1];
 
         picker.Filter = second.Name.ToUpperInvariant();
         var shown = Assert.Single(ExportDialogView.ListShown(picker));
@@ -315,7 +315,7 @@ public sealed class ExportDialogTests : IDisposable
     {
         var d = OpenedTwo();
         d.Open([AssemblyPath.Of(typeof(FactAttribute).Assembly.Location)]);
-        d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 3);
+        d.RunUntil(() => d.AppState.ListSession.Assemblies.Assemblies.Count == 3);
         d.Settle();
         return d;
     }
@@ -403,12 +403,12 @@ public sealed class ExportDialogTests : IDisposable
     {
         var app = AppDriver.Opened(height: 1400f);
         app.Open([AssemblyPath.Of(SecondPath)]);
-        app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 2);
-        var second = app.AppState.Assemblies.Assemblies[1];
+        app.Driver.RunUntil(() => app.AppState.ListSession.Assemblies.Assemblies.Count == 2);
+        var second = app.AppState.ListSession.Assemblies.Assemblies[1];
         app.Run(2);
         var drawnByTheTree = app.Frames.Canvas.Texts.Count(t => t.Inputs.Text == second.Name);
 
-        app.OpenExportSetup(app.AppState.Assemblies.Assemblies[0]);
+        app.OpenExportSetup(app.AppState.ListSession.Assemblies.Assemblies[0]);
         app.Run(2);
 
         Assert.Equal(drawnByTheTree, app.Frames.Canvas.Texts.Count(t => t.Inputs.Text == second.Name));
@@ -469,7 +469,7 @@ public sealed class ExportDialogTests : IDisposable
     {
         var app = AppDriver.Opened(height: 1400f);
         app.Open([AssemblyPath.Of(SecondPath)]);
-        app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 2);
+        app.Driver.RunUntil(() => app.AppState.ListSession.Assemblies.Assemblies.Count == 2);
         app.OpenExportSetup(null);
         TickAll(app.Ui.ExportSetup, true);
         app.Ui.ExportSetup.Assemblies.FinishChoosing();
@@ -493,8 +493,8 @@ public sealed class ExportDialogTests : IDisposable
     {
         var app = WithTwoIncluded();
         var setup = app.Ui.ExportSetup;
-        var first = app.AppState.Assemblies.Assemblies[0];
-        var second = app.AppState.Assemblies.Assemblies[1];
+        var first = app.AppState.ListSession.Assemblies.Assemblies[0];
+        var second = app.AppState.ListSession.Assemblies.Assemblies[1];
         Assert.False(setup.RowSelection.Count > 0);
 
         ClickRowOf(app, first);
@@ -511,8 +511,8 @@ public sealed class ExportDialogTests : IDisposable
         var app = WithTwoIncluded();
         var setup = app.Ui.ExportSetup;
 
-        ClickRowOf(app, app.AppState.Assemblies.Assemblies[0]);
-        ClickRowOf(app, app.AppState.Assemblies.Assemblies[1], KeyModifiers.Control);
+        ClickRowOf(app, app.AppState.ListSession.Assemblies.Assemblies[0]);
+        ClickRowOf(app, app.AppState.ListSession.Assemblies.Assemblies[1], KeyModifiers.Control);
         Assert.Equal(2, setup.RowSelection.Count);
         app.Frames.Key(KeyboardKey.Delete).Frame(2);
 
@@ -525,7 +525,7 @@ public sealed class ExportDialogTests : IDisposable
     {
         var app = new AppDriver();
         app.Open([AssemblyPath.Of(SampleAppPath)]);
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)), AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)), AppStateDriver.Patience);
         app.Settle(2);
 
         app.Frames.Key(Shortcuts.Export).Frame(2);
@@ -547,9 +547,9 @@ public sealed class ExportDialogTests : IDisposable
     {
         var app = AppDriver.Opened();
         app.Open([AssemblyPath.Of(SecondPath)]);
-        app.Driver.RunUntil(() => app.AppState.Assemblies.Assemblies.Count == 2);
+        app.Driver.RunUntil(() => app.AppState.ListSession.Assemblies.Assemblies.Count == 2);
         app.Settle(2);
-        var second = app.AppState.Assemblies.Assemblies[1];
+        var second = app.AppState.ListSession.Assemblies.Assemblies[1];
 
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, app.Ui.Tree.GetLabel(await second.ReadRootAsync())), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Export…")).Frame(2);
@@ -617,7 +617,7 @@ public sealed class ExportDialogTests : IDisposable
         d.StartExport();
         d.Settle();
 
-        var pdb = _temp.PathOf(Assert.Single(d.AppState.Assemblies.Assemblies).PdbFileName);
+        var pdb = _temp.PathOf(Assert.Single(d.AppState.ListSession.Assemblies.Assemblies).PdbFileName);
         Assert.True(File.Exists(pdb));
         Assert.Contains(pdb, Assert.IsType<ExportEnd.Finished>(Assert.Single(d.AppState.FinishedExports).End).Written);
     }

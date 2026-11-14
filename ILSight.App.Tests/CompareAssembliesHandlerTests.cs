@@ -9,14 +9,14 @@ public sealed class CompareAssembliesHandlerTests
 {
     private static ComparisonRun StartComparing(AppStateDriver d, AssemblyComparison comparison)
     {
-        var run = Comparisons.ChangeComparedScope(d.AppState.Assemblies, comparison, ApiScope.PublicApi);
+        var run = Comparisons.ChangeComparedScope(d.AppState.ListSession.Assemblies, comparison, ApiScope.PublicApi);
         Assert.NotNull(run);
         return run;
     }
 
     private static AssemblyComparison NewComparison(AppStateDriver d)
     {
-        var path = d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath).FilePath;
+        var path = d.AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath).FilePath;
         return new AssemblyComparison { LeftPath = path, RightPath = path };
     }
 
@@ -92,9 +92,9 @@ public sealed class CompareAssembliesHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var comparison = NewComparison(d);
-        d.InTurn(() => Commands.CloseAssemblies(d.AppState, [d.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath)]));
+        d.InTurn(() => Commands.CloseAssemblies(d.AppState, [d.AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath)]));
 
-        var run = Comparisons.SwapComparedAssemblies(d.AppState.Assemblies, comparison);
+        var run = Comparisons.SwapComparedAssemblies(d.AppState.ListSession.Assemblies, comparison);
 
         Assert.Null(run);
         Assert.IsType<ComparisonFailure.AssemblyClosed>(Assert.IsType<ComparisonResult.Failed>(comparison.Result).Failure);

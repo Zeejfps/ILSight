@@ -14,9 +14,9 @@ public sealed class ReferenceTreeTests
         app.Show(coreLib, 2);
         app.Settle(2);
 
-        Assert.DoesNotContain(coreLib.Assembly, app.AppState.Assemblies.Listed);
+        Assert.DoesNotContain(coreLib.Assembly, app.AppState.ListSession.Assemblies.Listed);
         Assert.Same(coreLib, app.Ui.Tree.View.Selected);
-        Assert.Same(coreLib, app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(coreLib, app.AppState.ListSession.Navigation.ActiveTab?.Node);
     }
 
     [Fact]
@@ -34,8 +34,8 @@ public sealed class ReferenceTreeTests
 
         Assert.True(app.Frames.Drew(app.Ui.Appearance.Strings.StatusResolving));
         app.Settle(3);
-        Assert.False(app.AppState.IsResolving);
-        var active = app.AppState.Navigation.ActiveTab;
+        Assert.False(app.AppState.ListSession.Navigation.IsResolving);
+        var active = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
         Assert.NotNull(active.Node);
         Assert.NotSame(greeter, active.Node);

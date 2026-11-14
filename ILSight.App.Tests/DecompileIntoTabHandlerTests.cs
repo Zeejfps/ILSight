@@ -210,13 +210,13 @@ public sealed class DecompileIntoTabHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var greeter = await d.FixtureAsync("Greeter");
         d.Show(greeter);
-        var tab = d.AppState.Navigation.ActiveTab;
+        var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var changes = tab.Changes;
 
         d.TakeViewCommands();
 
-        var load = d.AppState.Navigation.Restore(tab, greeter, d.AppState.Decompiler.Setup, AtLineTen);
+        var load = d.AppState.ListSession.Navigation.Restore(tab, greeter, d.AppState.Decompiler.Setup, AtLineTen);
 
         Assert.Null(load);
         Assert.False(tab.Load.IsBusy);

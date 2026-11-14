@@ -33,7 +33,7 @@ public sealed class AnalyzerTests
 
     private static List<string> ListedPaths(AppStateDriver d)
     {
-        return d.AppState.Assemblies.Listed.Select(static a => a.FilePath.Text).ToList();
+        return d.AppState.ListSession.Assemblies.Listed.Select(static a => a.FilePath.Text).ToList();
     }
 
     [Fact]
@@ -42,7 +42,7 @@ public sealed class AnalyzerTests
         var d = AppStateDriver.Opened();
 
         d.Analyze(await FirstAsync(d));
-        var root = Assert.Single(d.AppState.Analyzer.Found());
+        var root = Assert.Single(d.AppState.ListSession.Analyzer.Found());
         var usedBy = Expand(d, root, "Used By");
 
         Assert.True(d.Ui.MainLayout.Dock.Contains(DockPanels.Analyzer));
@@ -83,7 +83,7 @@ public sealed class AnalyzerTests
             .Single(c => c.Text.StartsWith(member + " "));
 
         d.Analyze(node);
-        var usedBy = Expand(d, Assert.Single(d.AppState.Analyzer.Found()), "Used By");
+        var usedBy = Expand(d, Assert.Single(d.AppState.ListSession.Analyzer.Found()), "Used By");
 
         var found = Assert.IsType<AnalyzerSymbolNode>(Assert.Single(usedBy.Found));
         Assert.StartsWith(user, found.Symbol.Label);
@@ -95,7 +95,7 @@ public sealed class AnalyzerTests
         var d = AppStateDriver.Opened();
 
         d.Analyze(await d.FixtureAsync("GuardAttribute"));
-        var appliedTo = Expand(d, Assert.Single(d.AppState.Analyzer.Found()), "Applied To");
+        var appliedTo = Expand(d, Assert.Single(d.AppState.ListSession.Analyzer.Found()), "Applied To");
 
         var member = Assert.IsType<AnalyzerSymbolNode>(Assert.Single(appliedTo.Found));
         Assert.StartsWith("Enter()", member.Symbol.Label);
@@ -107,7 +107,7 @@ public sealed class AnalyzerTests
         var app = AppDriver.Opened(height: 600f);
         var d = app.Driver;
         d.Analyze(await FirstAsync(d));
-        var analyzer = d.AppState.Analyzer;
+        var analyzer = d.AppState.ListSession.Analyzer;
         var caller = (AnalyzerSymbolNode)Expand(d, analyzer.Found()[0], "Used By").Found[0];
         app.Ui.Analyzer.View.Select(caller);
         app.Run(3);
@@ -116,7 +116,7 @@ public sealed class AnalyzerTests
         d.Settle();
         d.InTurn(() => Commands.Analyze(app.AppState, app.Ui, caller.Symbol));
 
-        Assert.StartsWith("Third()", d.AppState.Navigation.ActiveTab?.Node?.Text);
+        Assert.StartsWith("Third()", d.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
         Assert.Equal(2, analyzer.Roots.Count);
         Assert.Same(analyzer.Roots[1], app.Ui.Analyzer.View.Selected);
     }
@@ -133,7 +133,7 @@ public sealed class AnalyzerTests
 
         app.Frames.Key(Shortcuts.Analyze).Frame(2);
 
-        Assert.StartsWith("First()", Assert.Single(d.AppState.Analyzer.Found()).Symbol.Label);
+        Assert.StartsWith("First()", Assert.Single(d.AppState.ListSession.Analyzer.Found()).Symbol.Label);
     }
 
     [Fact]
@@ -158,8 +158,8 @@ public sealed class AnalyzerTests
 
         app.Frames.Key(Shortcuts.Analyze).Frame(2);
 
-        Assert.Equal(2, d.AppState.Analyzer.Roots.Count);
-        Assert.StartsWith("Third()", d.AppState.Analyzer.Found()[1].Symbol.Label);
+        Assert.Equal(2, d.AppState.ListSession.Analyzer.Roots.Count);
+        Assert.StartsWith("Third()", d.AppState.ListSession.Analyzer.Found()[1].Symbol.Label);
     }
 
     [Fact]
@@ -168,7 +168,7 @@ public sealed class AnalyzerTests
         var app = AppDriver.Opened(height: 600f);
         var d = app.Driver;
         await ShowFirstCallerAsync(app);
-        var root = Assert.Single(d.AppState.Analyzer.Roots);
+        var root = Assert.Single(d.AppState.ListSession.Analyzer.Roots);
         app.Frames.ClickOn(Targets.GetAnalyzerRow("First() : int")).Frame();
         app.Ui.Analyzer.View.SetExpanded(root, false);
         app.Run(1);
@@ -177,7 +177,7 @@ public sealed class AnalyzerTests
         app.Frames.ClickOn(Targets.GetAnalyzerRow("First() : int"), PointerButton.Right).Frame();
 
         Assert.False(app.Ui.Analyzer.View.IsExpanded(root));
-        Assert.Same(root, Assert.Single(d.AppState.Analyzer.Roots));
+        Assert.Same(root, Assert.Single(d.AppState.ListSession.Analyzer.Roots));
         Assert.Empty(d.AppState.Errors.Entries);
         Assert.True(app.Frames.Drew("Clear"));
         Assert.False(app.Frames.Drew(app.Ui.Appearance.Strings.TreeAnalyze));
@@ -187,7 +187,7 @@ public sealed class AnalyzerTests
     public async Task Analyze_on_a_symbol_whose_assembly_cannot_be_listed_is_unavailable_saying_why_as_adding_it_refuses()
     {
         var d = AppStateDriver.Opened();
-        var analyzer = d.AppState.Analyzer;
+        var analyzer = d.AppState.ListSession.Analyzer;
         var greeter = (await d.FixtureAsync("Greeter")).Analysis;
         Assert.NotNull(greeter);
         var unlisted = new AnalysisSymbol
@@ -216,7 +216,7 @@ public sealed class AnalyzerTests
     public async Task Analyzing_a_result_in_an_assembly_loaded_only_to_resolve_references_lists_it_as_following_it_does_and_analyzes_it_there()
     {
         var d = AppStateDriver.Opened();
-        var analyzer = d.AppState.Analyzer;
+        var analyzer = d.AppState.ListSession.Analyzer;
         d.Analyze((await d.FixtureAsync("Outline").ListChildrenAsync()).Single(c => c.Text.StartsWith("Second()")));
         var uses = Expand(d, analyzer.Found()[0], "Uses");
         var append = uses.Found.OfType<AnalyzerSymbolNode>().First(n => n.Symbol.Label.StartsWith("Append("));
@@ -230,7 +230,7 @@ public sealed class AnalyzerTests
         var waiting = analyzer.Roots.ToList();
         d.Settle();
         var followed = AppStateDriver.Opened();
-        followed.Start((a, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
+        followed.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, reference, a.ListSession.Navigation.BeginResolving(inNewTab: false), ct));
         followed.Settle();
 
         Assert.Equal([AppStateDriver.FixturePath], listedBefore);
@@ -239,7 +239,7 @@ public sealed class AnalyzerTests
         Assert.Equal(ListedPaths(followed), ListedPaths(d));
         var root = analyzer.Found()[1];
         Assert.Same(append.Symbol, root.Symbol);
-        Assert.True(root.Symbol.IsIn(d.AppState.Assemblies.Listed[1]));
+        Assert.True(root.Symbol.IsIn(d.AppState.ListSession.Assemblies.Listed[1]));
         Assert.Same(root, d.Ui.Analyzer.View.Selected);
         Assert.Empty(d.AppState.Errors.Entries);
     }
@@ -257,7 +257,7 @@ public sealed class AnalyzerTests
         d.InTurn(() => Commands.Analyze(d.AppState, d.Ui, nowhere));
         d.Settle();
 
-        Assert.Empty(d.AppState.Analyzer.Roots);
+        Assert.Empty(d.AppState.ListSession.Analyzer.Roots);
         Assert.Empty(d.AppState.Errors.Entries);
         var refusal = d.AppState.Refusals.Shown;
         Assert.NotNull(refusal);
@@ -269,7 +269,7 @@ public sealed class AnalyzerTests
     private static async Task ShowFirstCallerAsync(AppDriver app)
     {
         var d = app.Driver;
-        var analyzer = d.AppState.Analyzer;
+        var analyzer = d.AppState.ListSession.Analyzer;
         d.Analyze(await FirstAsync(d));
         var caller = Expand(d, analyzer.Found()[0], "Used By").Found[0];
         d.Ui.Analyzer.View.ScrollIntoView(caller);
@@ -282,17 +282,17 @@ public sealed class AnalyzerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         d.Show(await d.FixtureAsync("Outline"));
-        var tab = d.AppState.Navigation.ActiveTab;
+        var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var document = tab.Document;
         var (line, column) = document.GetPosition("return First();");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
         d.TakeViewCommands();
 
-        d.InTurn(() => Commands.StartAnalyzing(d.AppState, Analysis.BeginAnalyzing(d.AppState.Analyzer, reference)));
+        d.InTurn(() => Commands.StartAnalyzing(d.AppState, Analysis.BeginAnalyzing(d.AppState.ListSession.Analyzer, reference)));
         d.Settle();
 
-        var root = Assert.Single(d.AppState.Analyzer.Found());
+        var root = Assert.Single(d.AppState.ListSession.Analyzer.Found());
         Assert.StartsWith("First()", root.Symbol.Label);
         Assert.Equal([new ViewCommand.ShowAnalysis(root)], d.TakeViewCommands());
     }
@@ -300,7 +300,7 @@ public sealed class AnalyzerTests
     private static async Task<CodeReference.Entity> ReferenceToAsync(AppStateDriver d, string type, string text, int offset = 0)
     {
         d.Show(await d.FixtureAsync(type));
-        var tab = d.AppState.Navigation.ActiveTab;
+        var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var document = tab.Document;
         var (line, column) = document.GetPosition(text);
@@ -317,7 +317,7 @@ public sealed class AnalyzerTests
     {
         var d = AppStateDriver.Opened();
         var reference = await ReferenceToFirstAsync(d);
-        var analyzer = d.AppState.Analyzer;
+        var analyzer = d.AppState.ListSession.Analyzer;
 
         d.Analyze(reference);
         var waiting = analyzer.Roots.ToList();
@@ -343,7 +343,7 @@ public sealed class AnalyzerTests
         d.Analyze(greet);
         d.Settle();
 
-        var labels = d.AppState.Analyzer.Found().Select(r => r.Symbol.Label).ToList();
+        var labels = d.AppState.ListSession.Analyzer.Found().Select(r => r.Symbol.Label).ToList();
         Assert.Equal(2, labels.Count);
         Assert.StartsWith("Length", labels[0]);
         Assert.StartsWith("Greet(", labels[1]);
@@ -354,7 +354,7 @@ public sealed class AnalyzerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var reference = await ReferenceToFirstAsync(d);
-        var analyzer = d.AppState.Analyzer;
+        var analyzer = d.AppState.ListSession.Analyzer;
         var first = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(SymbolOf(await FirstAsync(d)))).Root;
         var greeter = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(SymbolOf(await d.FixtureAsync("Greeter")))).Root;
         d.TakeViewCommands();
@@ -371,7 +371,7 @@ public sealed class AnalyzerTests
     {
         var d = AppStateDriver.Opened();
         var reference = await ReferenceToFirstAsync(d);
-        var analyzer = d.AppState.Analyzer;
+        var analyzer = d.AppState.ListSession.Analyzer;
 
         d.Analyze(reference);
         analyzer.RemoveRoot(analyzer.Roots[0]);
@@ -387,9 +387,9 @@ public sealed class AnalyzerTests
         var copy = temp.Write("Copy.dll", await File.ReadAllBytesAsync(AppStateDriver.FixturePath));
         var d = new AppStateDriver();
         d.Open([AssemblyPath.Of(copy)]);
-        d.RunUntil(() => d.AppState.Assemblies.Assemblies.Count == 1);
+        d.RunUntil(() => d.AppState.ListSession.Assemblies.Assemblies.Count == 1);
         d.Settle();
-        var assembly = d.AppState.Assemblies.Assemblies.Single();
+        var assembly = d.AppState.ListSession.Assemblies.Assemblies.Single();
         var outline = await assembly.ReadRootAsync().GetChildAsync(AppStateDriver.FixturesNamespace, "Outline");
         var document = await outline.DecompileAsync(DecompilationLanguage.CSharp);
         var (line, column) = document.GetPosition("return First();");
@@ -400,7 +400,7 @@ public sealed class AnalyzerTests
         d.Analyze(reference);
         d.Settle();
 
-        Assert.Empty(d.AppState.Analyzer.Roots);
+        Assert.Empty(d.AppState.ListSession.Analyzer.Roots);
         Assert.Empty(d.AppState.Errors.Entries);
         var refusal = d.AppState.Refusals.Shown;
         Assert.NotNull(refusal);
@@ -411,7 +411,7 @@ public sealed class AnalyzerTests
     public async Task Removing_a_root_or_clearing_the_assembly_list_empties_the_analyzer()
     {
         var d = AppStateDriver.Opened();
-        var analyzer = d.AppState.Analyzer;
+        var analyzer = d.AppState.ListSession.Analyzer;
         d.Analyze(await FirstAsync(d));
         d.Analyze(await d.FixtureAsync("Greeter"));
 
@@ -427,7 +427,7 @@ public sealed class AnalyzerTests
     public async Task Removing_a_root_leaves_the_analyses_of_results_never_expanded_unlisted()
     {
         var d = AppStateDriver.Opened();
-        var analyzer = d.AppState.Analyzer;
+        var analyzer = d.AppState.ListSession.Analyzer;
         d.Analyze(await FirstAsync(d));
         var root = analyzer.Found()[0];
         var caller = (AnalyzerSymbolNode)Expand(d, root, "Used By").Found[0];
@@ -491,7 +491,7 @@ public sealed class AnalyzerTests
         var d = AppStateDriver.Opened();
         var run = await StartedRunAsync(d);
         var kind = run.Kind;
-        Analysis.AddFound(d.AppState.Analyzer, run, [new AnalysisFind.Found { Symbol = kind.Subject }]);
+        Analysis.AddFound(d.AppState.ListSession.Analyzer, run, [new AnalysisFind.Found { Symbol = kind.Subject }]);
         var found = Assert.IsType<AnalyzerSymbolNode>(Assert.Single(kind.Found));
         var nested = found.EnsureChildren().OfType<AnalyzerKindNode>().First();
         var nestedRun = nested.StartRun() ?? throw new InvalidOperationException("The analysis under what was found did not start.");
@@ -553,7 +553,7 @@ public sealed class AnalyzerTests
         var d = AppStateDriver.Opened();
         var run = await StartedRunAsync(d);
         var kind = run.Kind;
-        Analysis.FinishRun(d.AppState.Analyzer, run, error: null);
+        Analysis.FinishRun(d.AppState.ListSession.Analyzer, run, error: null);
 
         Assert.True(kind.HasStarted);
         Assert.True(kind.IsDone);
@@ -638,7 +638,7 @@ public sealed class AnalyzerTests
         app.Frames.ClickOn(Targets.GetAnalyzerRow("First() : int"), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Clear")).Frame(2);
 
-        Assert.Empty(d.AppState.Analyzer.Roots);
+        Assert.Empty(d.AppState.ListSession.Analyzer.Roots);
     }
 
     [Fact]
@@ -646,7 +646,7 @@ public sealed class AnalyzerTests
     {
         var app = AppDriver.Opened(height: 600f);
         var d = app.Driver;
-        var analyzer = d.AppState.Analyzer;
+        var analyzer = d.AppState.ListSession.Analyzer;
         d.Analyze(await FirstAsync(d));
         app.Run(3);
         var root = analyzer.Roots[0];
@@ -668,7 +668,7 @@ public sealed class AnalyzerTests
     {
         var app = AppDriver.Opened(height: 600f);
         var d = app.Driver;
-        var analyzer = d.AppState.Analyzer;
+        var analyzer = d.AppState.ListSession.Analyzer;
         d.Analyze(await FirstAsync(d));
         var caller = (AnalyzerSymbolNode)Expand(d, analyzer.Found()[0], "Used By").Found[0];
         d.Analyze(await d.FixtureAsync("Greeter"));
@@ -693,6 +693,6 @@ public sealed class AnalyzerTests
 
         app.Frames.Key(KeyboardKey.Delete).Frame(2);
 
-        Assert.Empty(d.AppState.Analyzer.Roots);
+        Assert.Empty(d.AppState.ListSession.Analyzer.Roots);
     }
 }

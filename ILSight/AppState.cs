@@ -38,25 +38,16 @@ public sealed class AppState
     /// <summary>What the open list holds while it is open, which switching lists changes together.</summary>
     public required OpenListSession ListSession { get; init; }
 
-    public AssemblyList Assemblies => ListSession.Assemblies;
-
     /// <summary>The browse tree of the assemblies: their roots, the children built so far and the
     /// nodes of their types and members.</summary>
     public required BrowseSession Session { get; init; }
 
-    /// <summary>The named assembly lists, one of which <see cref="Assemblies"/> holds open.</summary>
+    /// <summary>The named assembly lists, one of which <see cref="OpenListSession.Assemblies"/> holds open.</summary>
     public SavedAssemblyLists Lists { get; } = new();
-
-    /// <summary>The open tabs, the history of what they showed and the newest thing asked for, which change
-    /// together: showing a node is one of its methods.</summary>
-    public Navigation Navigation => ListSession.Navigation;
-
-    public Reload Reload => ListSession.Reload;
 
     /// <summary>The files of the list being read again one at a time, as when another framework or
     /// PDB is picked for an assembly.</summary>
     public Reopens Reopens { get; } = new();
-    public OpenRequests Opens => ListSession.Opens;
 
     /// <summary>What the settings were saved from the last time, and whether writing them is failing.</summary>
     public LastSave LastSave { get; } = new();
@@ -65,9 +56,6 @@ public sealed class AppState
     public WindowClosing Closing { get; } = new();
 
     public BookmarkList Bookmarks { get; } = new();
-
-    /// <summary>The symbols being analyzed and what the analyses found.</summary>
-    public AnalyzerTree Analyzer => ListSession.Analyzer;
 
     public required ErrorLog Errors { get; init; }
 
@@ -160,7 +148,7 @@ public sealed class AppState
     /// <summary>Opens files and shows what an id names among them, as a command line asks.</summary>
     public required OpenAndShowIdHandler OpenAndShowIdHandler { get; init; }
 
-    /// <summary>Goes back and forward through <see cref="Navigation"/>'s history.</summary>
+    /// <summary>Goes back and forward through <see cref="OpenListSession.Navigation"/>'s history.</summary>
     public required GoToHistoryEntryHandler GoToHistoryEntryHandler { get; init; }
 
     /// <summary>Opens assemblies into the list: files picked or dropped, and the assemblies one references.</summary>
@@ -177,8 +165,6 @@ public sealed class AppState
 
     /// <summary>Whether the app looks for a newer version when it starts.</summary>
     public required bool IsUpdateCheckAutomatic { get; set; }
-    /// <summary>The tabs reopened from the open list's saved documents that wait for what they showed.</summary>
-    public ReopenedTabs Reopened => ListSession.Reopened;
 
     /// <summary>The declarations and documentation shown when hovering types and members in code.</summary>
     public required CodeTooltips Tooltips { get; init; }
@@ -210,16 +196,6 @@ public sealed class AppState
     /// <summary>The commands the features queue for the view when none is on the stack, for the screen to run
     /// in order before it draws next.</summary>
     public required Queue<ViewCommand> ViewCommands { get; init; }
-
-
-    /// <summary>True while a reference or a history entry is being found in the background.</summary>
-    public bool IsResolving => Navigation.IsResolving;
-
-    /// <summary>True while <see cref="CommandArea.Commands.StartReloading"/> reopens the assemblies.</summary>
-    public bool IsReloading => Reload.IsRunning;
-
-    /// <summary>True while a file of the list is read again, the list still holding it as it was.</summary>
-    public bool IsReopening => Reopens.IsRunning;
 
     /// <summary>The bookmark imports waiting for the user to say how to take them.</summary>
     public BookmarkImports Imports { get; } = new();

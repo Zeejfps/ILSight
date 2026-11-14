@@ -134,7 +134,7 @@ internal static class AppRoot
     private static ListStart RecordStart(AppState appState)
     {
         var reopening = appState.ListSession.BeginReopening(appState.Lists);
-        var analyses = Analysis.BeginRestoring(appState.Analyzer, appState.Assemblies);
+        var analyses = Analysis.BeginRestoring(appState.ListSession.Analyzer, appState.ListSession.Assemblies);
         return new ListStart { Reopening = reopening, Analyses = analyses };
     }
 
@@ -165,7 +165,7 @@ internal static class AppRoot
         AdapterHooks? hooks = null)
     {
         var appState = CreateAppState(settings, session, updates ?? new AppUpdatesAdapter(), hooks);
-        appState.Navigation.OpenFirstTab();
+        appState.ListSession.Navigation.OpenFirstTab();
         ShowRefusal(appState, Settings.Restore(appState, settings));
         appState.UserThemes.ReadThemes();
         appState.UserIconThemes.ReadThemes();
@@ -310,7 +310,7 @@ internal static class AppRoot
     {
         var reportError = (AppProblem problem) => Errors.Report(appState, problem);
         var uiState = CreateUiState(appState.KeptScreen.View, appState.Work, reportError, appState.Session, nuGetRequests,
-            runtimeScan ?? new FrameworkPickerAdapter(reportError, appState.Assemblies.Runtime), processes ?? new ProcessBrowserAdapter(reportError));
+            runtimeScan ?? new FrameworkPickerAdapter(reportError, appState.ListSession.Assemblies.Runtime), processes ?? new ProcessBrowserAdapter(reportError));
         ScreenSettings.RestoreScreen(uiState, appState.KeptScreen.View);
         AppFrames.FollowRestoredAppState(uiState, appState);
         return uiState;

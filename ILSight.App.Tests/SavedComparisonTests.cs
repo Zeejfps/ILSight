@@ -24,12 +24,12 @@ public sealed class SavedComparisonTests : IDisposable
     {
         var app = new AppDriver(settings: _temp.Settings());
         app.Open([TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)]);
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Count == 2, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Assemblies.Count == 2, AppStateDriver.Patience);
         app.Settle(2);
-        var assemblies = app.AppState.Assemblies.Assemblies;
-        app.StartComparing(Comparisons.CompareAssemblies(app.AppState.Navigation, app.AppState.Assemblies, assemblies[0], assemblies[1],
+        var assemblies = app.AppState.ListSession.Assemblies.Assemblies;
+        app.StartComparing(Comparisons.CompareAssemblies(app.AppState.ListSession.Navigation, app.AppState.ListSession.Assemblies, assemblies[0], assemblies[1],
             Names.Comparison(assemblies[0])));
-        app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Comparison?.Result is ComparisonResult.Compared, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Comparison?.Result is ComparisonResult.Compared, AppStateDriver.Patience);
         app.Settle(2);
         return app;
     }
@@ -45,7 +45,7 @@ public sealed class SavedComparisonTests : IDisposable
 
     private static AssemblyComparison? FindComparison(AppDriver app)
     {
-        return app.AppState.Navigation
+        return app.AppState.ListSession.Navigation
             .OpenTabs.Select(static t => t.Comparison)
             .FirstOrDefault(static c => c is not null);
     }
@@ -63,19 +63,19 @@ public sealed class SavedComparisonTests : IDisposable
     public void After_a_restart_a_comparison_comes_back_in_its_panel_with_its_sides_and_filters_and_compares_again()
     {
         var app = Compared();
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var comparison = tab.Comparison;
         Assert.NotNull(comparison);
-        app.StartComparing(Comparisons.SwapComparedAssemblies(app.AppState.Assemblies, comparison));
-        app.StartComparing(Comparisons.ChangeComparedScope(app.AppState.Assemblies, comparison, ApiScope.AllDeclared));
+        app.StartComparing(Comparisons.SwapComparedAssemblies(app.AppState.ListSession.Assemblies, comparison));
+        app.StartComparing(Comparisons.ChangeComparedScope(app.AppState.ListSession.Assemblies, comparison, ApiScope.AllDeclared));
         DocumentPanels.GetView(app.Ui.Documents, tab).Comparison.ShowOnlyDifferences(false);
         app.Settle(2);
         var panel = DocumentPanels.GetPanel(app.Ui.Documents, tab);
 
         var next = Restart(app);
 
-        var restored = next.AppState.Navigation.OpenTabs.Single(t => t.Comparison is not null);
+        var restored = next.AppState.ListSession.Navigation.OpenTabs.Single(t => t.Comparison is not null);
         var reopened = restored.Comparison;
         Assert.NotNull(reopened);
         Assert.Equal("ApiDiffSample API diff", restored.Title);
@@ -92,13 +92,13 @@ public sealed class SavedComparisonTests : IDisposable
     public void Swapping_the_sides_or_showing_every_entry_is_saved_without_anything_else_changing()
     {
         var app = Compared();
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         Assert.Equal(LeftPath, ReadSavedComparison().LeftPath.Text);
 
         var comparison = tab.Comparison;
         Assert.NotNull(comparison);
-        app.StartComparing(Comparisons.SwapComparedAssemblies(app.AppState.Assemblies, comparison));
+        app.StartComparing(Comparisons.SwapComparedAssemblies(app.AppState.ListSession.Assemblies, comparison));
         app.Settle(2);
         Assert.Equal(RightPath, ReadSavedComparison().LeftPath.Text);
 
@@ -113,12 +113,12 @@ public sealed class SavedComparisonTests : IDisposable
     public void A_comparison_of_an_assembly_closed_before_the_app_closes_is_not_reopened()
     {
         var app = Compared();
-        app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == RightPath)]));
+        app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [app.AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.Text == RightPath)]));
         app.Settle(2);
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 700, false)));
 
         var next = new AppDriver(settings: _temp.Settings());
-        next.Frames.WaitUntil(() => next.AppState.Assemblies.Assemblies.Count == 1, AppStateDriver.Patience);
+        next.Frames.WaitUntil(() => next.AppState.ListSession.Assemblies.Assemblies.Count == 1, AppStateDriver.Patience);
         next.Settle(2);
 
         Assert.Null(FindComparison(next));

@@ -35,11 +35,11 @@ public static class MainView
             ui.Separator();
             StatusBarView.Render(ui, appState);
         }
-        FrameworkPickerView.Render(ui, appState.Navigation, appState.Assemblies);
-        ComparisonPickerView.Render(ui, appState.Navigation, appState.Assemblies);
+        FrameworkPickerView.Render(ui, appState.ListSession.Navigation, appState.ListSession.Assemblies);
+        ComparisonPickerView.Render(ui, appState.ListSession.Navigation, appState.ListSession.Assemblies);
         NuGetPickerView.Render(ui);
-        ProcessPickerView.Render(ui, appState.Navigation);
-        CloseAssembliesDialogView.Render(ui, appState.Assemblies);
+        ProcessPickerView.Render(ui, appState.ListSession.Navigation);
+        CloseAssembliesDialogView.Render(ui, appState.ListSession.Assemblies);
         AssemblyListsDialogView.Render(ui, appState.Lists, appState.ListSession, appState.KeptScreen.View);
         AssemblyListDeleteDialogView.Render(ui, appState.Lists, appState.ListSession, appState.KeptScreen.View);
         BookmarkImportDialogView.Render(ui, appState.Imports);
@@ -64,7 +64,7 @@ public static class MainView
     private static void Panels(Ui<UiState> ui, AppState appState)
     {
         var t = ui.State.Appearance.Strings;
-        UpdateSearches(ui, appState);
+        UpdateSearches(ui, appState.ListSession.Assemblies);
         if (IsLayoutEmpty(ui.State.MainLayout.Dock))
         {
             DocumentsView.Hint(ui, t.ViewEmptyHint);
@@ -78,14 +78,14 @@ public static class MainView
     private static void SyncAfterDocuments(Ui<UiState> ui, AppState appState)
     {
         QueuedCommands.RunViewCommands(ui.State, appState);
-        DocumentPanels.SyncActiveTab(ui.State, appState.Navigation, appState.Decompiler.Setup);
+        DocumentPanels.SyncActiveTab(ui.State, appState.ListSession.Navigation, appState.Decompiler.Setup);
     }
 
-    private static void UpdateSearches(Ui<UiState> ui, AppState appState)
+    private static void UpdateSearches(Ui<UiState> ui, AssemblyList assemblies)
     {
         var shown = ui.State.MainLayout.Dock.Contains(DockPanels.Search);
-        UpdateSearch(ui, ui.State.Search, appState.Assemblies, shown);
-        UpdateSearch(ui, ui.State.Omnibar.Search, appState.Assemblies, ui.State.Omnibar.IsSearching);
+        UpdateSearch(ui, ui.State.Search, assemblies, shown);
+        UpdateSearch(ui, ui.State.Omnibar.Search, assemblies, ui.State.Omnibar.IsSearching);
     }
 
     private static void UpdateSearch(Ui<UiState> ui, Search search, AssemblyList assemblies, bool shown)
@@ -107,7 +107,7 @@ public static class MainView
         var t = ui.State.Appearance.Strings;
         DockTabMenu? tabMenu;
         string? doubleClicked;
-        using (var dock = ui.DockSpace("dock", ui.State.MainLayout.Dock, (ui.State, appState, t), static (s, panel) => Tab(s.State, s.appState, s.t, panel),
+        using (var dock = ui.DockSpace("dock", ui.State.MainLayout.Dock, (ui.State, appState.ListSession.Navigation, t), static (s, panel) => Tab(s.State, s.Navigation, s.t, panel),
                    tabListTooltip: t.DockAllTabs))
         {
             while (dock.Next(out var panel))
@@ -119,11 +119,11 @@ public static class MainView
             doubleClicked = dock.TabDoubleClicked;
         }
         TabMenuView.OpenOnRightClick(ui, tabMenu);
-        TabMenuView.Render(ui, appState.Navigation);
+        TabMenuView.Render(ui, appState.ListSession.Navigation);
         TabMenuView.KeepOpenOnDoubleClick(ui, doubleClicked);
     }
 
-    private static DockTab Tab(UiState screen, AppState appState, Strings t, string panel)
+    private static DockTab Tab(UiState screen, Navigation navigation, Strings t, string panel)
     {
         var view = DockPanels.ViewOf(panel);
         if (view is not null)
@@ -134,7 +134,7 @@ public static class MainView
         var tab = screen.Documents.FindTab(panel);
         if (tab is not null)
         {
-            return DocumentsView.Tab(screen, appState.Navigation, tab);
+            return DocumentsView.Tab(screen, navigation, tab);
         }
 
         return new DockTab(t.DocumentNewTab);
@@ -156,16 +156,16 @@ public static class MainView
         switch (view)
         {
             case DockView.Assemblies:
-                TreePaneView.Render(ui, appState.Navigation, appState.Assemblies, appState.Decompiler.Setup);
+                TreePaneView.Render(ui, appState.ListSession.Navigation, appState.ListSession.Assemblies, appState.Decompiler.Setup);
                 break;
             case DockView.Search:
-                SearchPanelView.Render(ui, appState.Navigation, appState.Decompiler.Setup);
+                SearchPanelView.Render(ui, appState.ListSession.Navigation, appState.Decompiler.Setup);
                 break;
             case DockView.Bookmarks:
-                BookmarksPanelView.Render(ui, appState.Bookmarks, appState.Assemblies);
+                BookmarksPanelView.Render(ui, appState.Bookmarks, appState.ListSession.Assemblies);
                 break;
             case DockView.Analyzer:
-                AnalyzerPanelView.Render(ui, appState.Navigation, appState.Analyzer);
+                AnalyzerPanelView.Render(ui, appState.ListSession.Navigation, appState.ListSession.Analyzer);
                 break;
             case DockView.DecompilerOptions:
                 DecompilerOptionsPanelView.Render(ui, appState.Decompiler.Setup.Options);
@@ -189,7 +189,7 @@ public static class MainView
             return;
         }
 
-        DocumentsView.Render(ui, appState.Navigation, appState.Session, appState.Assemblies, appState.Decompiler.Setup,
+        DocumentsView.Render(ui, appState.ListSession.Navigation, appState.Session, appState.ListSession.Assemblies, appState.Decompiler.Setup,
             appState.Bookmarks, appState.Tooltips, tab);
     }
 

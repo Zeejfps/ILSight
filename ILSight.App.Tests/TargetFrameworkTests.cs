@@ -12,14 +12,14 @@ public sealed class TargetFrameworkTests
     private static readonly TargetFrameworkId Net48 = Frameworks.Net48;
     private static readonly string SampleAppPath = Path.Combine(AppContext.BaseDirectory, "Fixtures", "SampleApp", "SampleApp.dll");
 
-    private static LoadedModule FixturesOf(AppState appState)
+    private static LoadedModule FixturesOf(AssemblyList assemblies)
     {
-        return appState.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
+        return assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
     }
 
     private static void PickFramework(AppDriver app, string item)
     {
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, FixturesOf(app.AppState).Name), PointerButton.Right).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, FixturesOf(app.AppState.ListSession.Assemblies).Name), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Target framework")).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, item)).Frame();
         app.Settle(2);
@@ -36,7 +36,7 @@ public sealed class TargetFrameworkTests
         PickFramework(app, "net48");
         Assert.IsType<SettingsWriteResult.Written>(app.AppState.SettingsSaving.Save(app.AppState));
 
-        var assembly = FixturesOf(app.AppState);
+        var assembly = FixturesOf(app.AppState.ListSession.Assemblies);
         Assert.True(assembly.IsTargetFrameworkPicked);
         Assert.Equal(Net48, assembly.TargetFramework);
         Assert.Equal("net48", NodeText.PickedFramework(await assembly.ReadRootAsync()));
@@ -50,18 +50,18 @@ public sealed class TargetFrameworkTests
     {
         var app = AppDriver.Opened(width: 1600f);
         app.Settle(2);
-        var detected = FixturesOf(app.AppState).DetectedTargetFramework?.Moniker;
+        var detected = FixturesOf(app.AppState.ListSession.Assemblies).DetectedTargetFramework?.Moniker;
         Assert.NotNull(detected);
         PickFramework(app, "net48");
 
         PickFramework(app, $"Detected ({detected})");
 
-        var assembly = FixturesOf(app.AppState);
+        var assembly = FixturesOf(app.AppState.ListSession.Assemblies);
         Assert.False(assembly.IsTargetFrameworkPicked);
         Assert.Equal(assembly.DetectedTargetFramework, assembly.TargetFramework);
         Assert.Null(NodeText.PickedFramework(await assembly.ReadRootAsync()));
         Assert.Contains(detected, NodeText.Secondary(await assembly.ReadRootAsync()));
-        Assert.Empty(app.AppState.Assemblies.TargetFrameworks.All);
+        Assert.Empty(app.AppState.ListSession.Assemblies.TargetFrameworks.All);
     }
 
     [Fact]
@@ -69,9 +69,9 @@ public sealed class TargetFrameworkTests
     {
         var app = AppDriver.Opened(width: 1600f);
         app.Open([AssemblyPath.Of(SampleAppPath)]);
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)), AppStateDriver.Patience);
-        var fixtures = FixturesOf(app.AppState);
-        var sample = SampleOf(app.AppState);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)), AppStateDriver.Patience);
+        var fixtures = FixturesOf(app.AppState.ListSession.Assemblies);
+        var sample = SampleOf(app.AppState.ListSession.Assemblies);
         var tree = app.Ui.Tree;
         foreach (var node in new[] { await fixtures.ReadRootAsync(), await fixtures.ReadRootAsync().GetChildAsync(AppStateDriver.FixturesNamespace), await sample.ReadRootAsync() })
         {
@@ -85,16 +85,16 @@ public sealed class TargetFrameworkTests
         var shapes = new List<List<NodePath>>();
 
         app.Start((a, ct) => a.AssemblyReloading.SetTargetFrameworkAsync(a.ListSession, a.Reopens, a.Decompiler, fixtures, Net48, ct));
-        Poll.Until(() => FixturesOf(app.AppState) != fixtures, RunFrame);
+        Poll.Until(() => FixturesOf(app.AppState.ListSession.Assemblies) != fixtures, RunFrame);
         RunFrame();
 
         Assert.All(shapes, shape => Assert.Equal(before, shape));
-        Assert.Same(sample, SampleOf(app.AppState));
+        Assert.Same(sample, SampleOf(app.AppState.ListSession.Assemblies));
         var selected = tree.View.Selected;
         Assert.NotNull(selected);
         Assert.Equal(greeter.Path, selected.Path);
         Assert.NotSame(greeter, tree.View.Selected);
-        Assert.Same(FixturesOf(app.AppState), app.AppState.Navigation.ActiveTab?.Node?.Assembly);
+        Assert.Same(FixturesOf(app.AppState.ListSession.Assemblies), app.AppState.ListSession.Navigation.ActiveTab?.Node?.Assembly);
         Assert.Empty(app.AppState.Errors.Entries);
 
         void RunFrame()
@@ -104,9 +104,9 @@ public sealed class TargetFrameworkTests
         }
     }
 
-    private static LoadedModule SampleOf(AppState appState)
+    private static LoadedModule SampleOf(AssemblyList assemblies)
     {
-        return appState.Assemblies.Assemblies.Single(a => a.FilePath.Text == SampleAppPath);
+        return assemblies.Assemblies.Single(a => a.FilePath.Text == SampleAppPath);
     }
 
     [Fact]
@@ -115,9 +115,9 @@ public sealed class TargetFrameworkTests
         using var temp = new TempDir();
         var app = new AppDriver();
         app.Open([AssemblyPath.Of(WritePackage(temp))]);
-        app.Frames.WaitUntil(() => app.AppState.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, AppStateDriver.Patience);
         app.Settle(2);
-        var package = await app.AppState.Assemblies.Listed[0].ReadRootAsync();
+        var package = await app.AppState.ListSession.Assemblies.Listed[0].ReadRootAsync();
         var folder = await package.GetChildAsync("lib/net10.0");
         var assembly = (await folder.ListChildrenAsync()).Single(c => c.Icon == NodeIcon.Assembly);
         var tree = app.Ui.Tree;
@@ -134,7 +134,7 @@ public sealed class TargetFrameworkTests
         app.Settle(3);
 
         Assert.Equal(before, tree.ListExpandedPaths());
-        Assert.Equal("Greeter", app.AppState.Navigation.ActiveTab?.Node?.Text);
+        Assert.Equal("Greeter", app.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
         Assert.Empty(app.AppState.Errors.Entries);
     }
 
@@ -164,7 +164,7 @@ public sealed class TargetFrameworkTests
 
         d.Settle();
 
-        Assert.Equal(Net48, FixturesOf(d.AppState).TargetFramework);
+        Assert.Equal(Net48, FixturesOf(d.AppState.ListSession.Assemblies).TargetFramework);
     }
 
     [Fact]
@@ -185,9 +185,9 @@ public sealed class TargetFrameworkTests
 
         d.Settle();
 
-        var assembly = FixturesOf(d.AppState);
+        var assembly = FixturesOf(d.AppState.ListSession.Assemblies);
         Assert.False(assembly.IsTargetFrameworkPicked);
         Assert.Equal(assembly.DetectedTargetFramework, assembly.TargetFramework);
-        Assert.Empty(d.AppState.Assemblies.TargetFrameworks.All);
+        Assert.Empty(d.AppState.ListSession.Assemblies.TargetFrameworks.All);
     }
 }

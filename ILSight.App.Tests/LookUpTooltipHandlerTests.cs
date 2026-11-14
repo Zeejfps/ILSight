@@ -15,7 +15,7 @@ public sealed class LookUpTooltipHandlerTests
     public async Task HandleAsync_Described_KeepsTheTooltip()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var assemblies = d.AppState.Assemblies;
+        var assemblies = d.AppState.ListSession.Assemblies;
         var tooltips = new CodeTooltips { Assemblies = assemblies, Version = assemblies.Version };
         var lookup = await AskForGreeterAsync(d, tooltips);
         var tooltip = (await AssemblyListing.DescribeReferenceAsync(assemblies, lookup.Reference, CancellationToken.None)).GetValue();
@@ -31,7 +31,7 @@ public sealed class LookUpTooltipHandlerTests
     public async Task HandleAsync_Failed_KeepsNoTooltip()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var assemblies = d.AppState.Assemblies;
+        var assemblies = d.AppState.ListSession.Assemblies;
         var tooltips = new CodeTooltips { Assemblies = assemblies, Version = assemblies.Version };
         var lookup = await AskForGreeterAsync(d, tooltips);
         var ports = new FakeLookUpTooltipHandlerPorts { Answer = new Outcome<Lookup<CodeTooltip>>.Failed(new InvalidDataException("unreadable")) };
@@ -46,7 +46,7 @@ public sealed class LookUpTooltipHandlerTests
     public async Task HandleAsync_InAModuleThatCouldNotBeRead_KeepsThatToShowInPlace()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var assemblies = d.AppState.Assemblies;
+        var assemblies = d.AppState.ListSession.Assemblies;
         var tooltips = new CodeTooltips { Assemblies = assemblies, Version = assemblies.Version };
         var lookup = await AskForGreeterAsync(d, tooltips);
         var module = assemblies.Assemblies.OfType<LoadedModule>().Single(a => a.FilePath.Text == AppStateDriver.FixturePath);
@@ -62,7 +62,7 @@ public sealed class LookUpTooltipHandlerTests
     public async Task TryGetTooltip_AskedAgainBeforeItsLookupEnds_AsksOnce()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var assemblies = d.AppState.Assemblies;
+        var assemblies = d.AppState.ListSession.Assemblies;
         var tooltips = new CodeTooltips { Assemblies = assemblies, Version = assemblies.Version };
         var lookup = await AskForGreeterAsync(d, tooltips);
 

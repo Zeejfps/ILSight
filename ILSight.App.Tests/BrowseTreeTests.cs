@@ -76,9 +76,9 @@ public sealed class BrowseTreeTests
         var path = BrokenAssemblies.WriteUnreadableTypeSystem(temp, Path.Combine(AppContext.BaseDirectory, "Fixtures", "SampleApp", "SampleApp.dll"));
         var app = new AppDriver();
         app.Open([AssemblyPath.Of(path), AssemblyPath.Of(AppStateDriver.FixturePath)]);
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.Assemblies.Count == 2, AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Assemblies.Count == 2, AppStateDriver.Patience);
         app.Settle(2);
-        var module = app.AppState.Assemblies.Assemblies[0];
+        var module = app.AppState.ListSession.Assemblies.Assemblies[0];
 
         var root = await module.ReadRootAsync();
         app.Ui.Tree.View.SetExpanded(root, true);

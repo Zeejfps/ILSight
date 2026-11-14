@@ -203,7 +203,7 @@ public sealed class AutosaveTests : IDisposable
     {
         var d = AppStateDriver.Opened(_temp.Settings());
         d.Show(await d.FixtureAsync("Outline"));
-        var tab = d.AppState.Navigation.ActiveTab;
+        var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var document = tab.Document;
         var (line, column) = document.GetPosition("return First();");
@@ -238,7 +238,7 @@ public sealed class AutosaveTests : IDisposable
         next.Settle();
         next.Pump();
 
-        var root = Assert.IsType<AnalyzerFailedNode>(Assert.Single(next.AppState.Analyzer.Roots));
+        var root = Assert.IsType<AnalyzerFailedNode>(Assert.Single(next.AppState.ListSession.Analyzer.Roots));
         Assert.IsType<RestoreFailure.NotFound>(root.Failure);
         Assert.EndsWith("is no longer there.", next.Ui.Analyzer.KeyOf(root));
         Assert.Equal([anchor with { Token = anchor.Token + 0xFFFF }], _temp.Settings().AssemblyLists.Single().Analyzed ?? []);
@@ -251,7 +251,7 @@ public sealed class AutosaveTests : IDisposable
         var first = new AppStateDriver(_temp.Settings());
         first.Open([AssemblyPath.Of(copy)]);
         first.Settle();
-        var held = first.AppState.Assemblies.Assemblies.Single();
+        var held = first.AppState.ListSession.Assemblies.Assemblies.Single();
         first.Analyze(await held.ReadRootAsync().GetChildAsync(AppStateDriver.FixturesNamespace, "Greeter"));
         first.Settle();
         first.Pump();
@@ -265,7 +265,7 @@ public sealed class AutosaveTests : IDisposable
             next = new AppStateDriver(_temp.Settings());
             next.Settle();
             next.Pump();
-            failed = Assert.Single(next.AppState.Analyzer.Roots);
+            failed = Assert.Single(next.AppState.ListSession.Analyzer.Roots);
         }
 
         var savedWhileHeld = _temp.Settings().AssemblyLists.Single().Analyzed ?? [];
@@ -276,8 +276,8 @@ public sealed class AutosaveTests : IDisposable
         Assert.IsType<AnalyzerFailedNode>(failed);
         Assert.Contains("Held.dll", shown);
         Assert.Equal(saved, savedWhileHeld);
-        Assert.StartsWith("Greeter", Assert.Single(next.AppState.Analyzer.Found()).Symbol.Label);
-        Assert.Equal(saved, next.AppState.Analyzer.ListSavedAnalyses());
+        Assert.StartsWith("Greeter", Assert.Single(next.AppState.ListSession.Analyzer.Found()).Symbol.Label);
+        Assert.Equal(saved, next.AppState.ListSession.Analyzer.ListSavedAnalyses());
     }
 
     // A folder standing where the save writes its temporary file makes the write fail on any platform; deleting it

@@ -1,6 +1,7 @@
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.CommandArea;
+using ILSight.DocumentViewArea;
 
 namespace ILSight;
 
@@ -21,24 +22,24 @@ internal static class QueuedCommands
     private static void Run(ViewCommand command, UiState uiState, AppState appState)
     {
         command.Switch((uiState, appState),
-            showTab: static (s, show) => ShowTabIfOpen(s.uiState, s.appState, show.Tab, show.Beside),
-            showReopened: static (s, show) => ShowReopenedIfOpen(s.uiState, s.appState, show.Tabs, show.Layout),
+            showTab: static (s, show) => ShowTabIfOpen(s.uiState, s.appState.ListSession.Navigation, show.Tab, show.Beside),
+            showReopened: static (s, show) => ShowReopenedIfOpen(s.uiState, s.appState.ListSession.Navigation, show.Tabs, show.Layout),
             openPanel: static (s, open) => ScreenLayout.OpenPanel(s.uiState, open.View),
-            restoreView: static (s, restore) => RestoreView(s.uiState, s.appState, restore.Tab, restore.Position),
-            revealLine: static (s, reveal) => RevealLine(s.uiState, s.appState, reveal.Tab, reveal.Line),
-            revealRow: static (s, reveal) => RevealRow(s.uiState, s.appState, reveal.Tab, reveal.Row),
-            revealNode: static (s, reveal) => RevealIfListed(s.uiState, s.appState, reveal.Node),
-            expandNodes: static (s, expand) => ExpandListed(s.uiState, s.appState, expand.Nodes),
-            focusCard: static (s, focus) => FocusCard(s.uiState, s.appState, focus.Tab, focus.Type),
-            showAnalysis: static (s, show) => ShowAnalysis(s.uiState, s.appState, show.Root),
+            restoreView: static (s, restore) => RestoreView(s.uiState.Documents, s.appState.ListSession.Navigation, restore.Tab, restore.Position),
+            revealLine: static (s, reveal) => RevealLine(s.uiState.Documents, s.appState.ListSession.Navigation, reveal.Tab, reveal.Line),
+            revealRow: static (s, reveal) => RevealRow(s.uiState.Documents, s.appState.ListSession.Navigation, reveal.Tab, reveal.Row),
+            revealNode: static (s, reveal) => RevealIfListed(s.uiState.Tree, s.appState.ListSession.Assemblies, reveal.Node),
+            expandNodes: static (s, expand) => ExpandListed(s.uiState.Tree, s.appState.ListSession.Assemblies, expand.Nodes),
+            focusCard: static (s, focus) => FocusCard(s.uiState.Documents, s.appState.ListSession.Navigation, focus.Tab, focus.Type),
+            showAnalysis: static (s, show) => ShowAnalysis(s.uiState.Analyzer, s.appState.ListSession.Analyzer, show.Root),
             openWebPage: static (s, open) => s.uiState.WebPagesToOpen.Enqueue(open.Url),
             quit: static (s, _) => s.uiState.QuitAsked = true,
             openFile: static (s, open) => s.uiState.FilesToOpen.Enqueue(open.Path));
     }
 
-    private static void ShowTabIfOpen(UiState uiState, AppState appState, DocumentTab tab, DocumentTab? beside)
+    private static void ShowTabIfOpen(UiState uiState, Navigation navigation, DocumentTab tab, DocumentTab? beside)
     {
-        if (!appState.Navigation.IsOpen(tab))
+        if (!navigation.IsOpen(tab))
         {
             return;
         }
@@ -46,80 +47,80 @@ internal static class QueuedCommands
         DocumentPanels.ShowTab(uiState, tab, beside);
     }
 
-    private static void ShowReopenedIfOpen(UiState uiState, AppState appState, IReadOnlyList<ReopenedTab> tabs, DockLayout? layout)
+    private static void ShowReopenedIfOpen(UiState uiState, Navigation navigation, IReadOnlyList<ReopenedTab> tabs, DockLayout? layout)
     {
         var open = tabs
-            .Where(r => appState.Navigation.IsOpen(r.Tab))
+            .Where(r => navigation.IsOpen(r.Tab))
             .ToList();
         DocumentPanels.ShowReopenedTabs(uiState, open, layout);
     }
 
-    private static void RevealIfListed(UiState uiState, AppState appState, BrowseNode node)
+    private static void RevealIfListed(BrowseTree tree, AssemblyList assemblies, BrowseNode node)
     {
-        if (!appState.Assemblies.IsListed(node.Root.Assembly))
+        if (!assemblies.IsListed(node.Root.Assembly))
         {
             return;
         }
 
-        uiState.Tree.RevealNode(node);
+        tree.RevealNode(node);
     }
 
-    private static void ExpandListed(UiState uiState, AppState appState, IReadOnlyList<BrowseNode> nodes)
+    private static void ExpandListed(BrowseTree tree, AssemblyList assemblies, IReadOnlyList<BrowseNode> nodes)
     {
         var listed = nodes
-            .Where(n => appState.Assemblies.IsListed(n.Root.Assembly))
+            .Where(n => assemblies.IsListed(n.Root.Assembly))
             .ToList();
-        uiState.Tree.ExpandNodes(listed);
+        tree.ExpandNodes(listed);
     }
 
-    private static void ShowAnalysis(UiState uiState, AppState appState, AnalyzerSymbolNode root)
+    private static void ShowAnalysis(AnalyzerRows rows, AnalyzerTree analyzer, AnalyzerSymbolNode root)
     {
-        if (!appState.Analyzer.HasRoot(root))
+        if (!analyzer.HasRoot(root))
         {
             return;
         }
 
-        uiState.Analyzer.ShowRoot(root);
+        rows.ShowRoot(root);
     }
 
-    private static void RestoreView(UiState uiState, AppState appState, DocumentTab tab, ViewPosition position)
+    private static void RestoreView(DocumentViews documents, Navigation navigation, DocumentTab tab, ViewPosition position)
     {
-        if (!appState.Navigation.IsOpen(tab))
+        if (!navigation.IsOpen(tab))
         {
             return;
         }
 
-        DocumentPanels.RestoreView(uiState.Documents, tab, position);
+        DocumentPanels.RestoreView(documents, tab, position);
     }
 
-    private static void RevealLine(UiState uiState, AppState appState, DocumentTab tab, int line)
+    private static void RevealLine(DocumentViews documents, Navigation navigation, DocumentTab tab, int line)
     {
-        if (!appState.Navigation.IsOpen(tab))
+        if (!navigation.IsOpen(tab))
         {
             return;
         }
 
-        DocumentPanels.RevealLine(uiState.Documents, tab, line);
+        DocumentPanels.RevealLine(documents, tab, line);
     }
 
-    private static void RevealRow(UiState uiState, AppState appState, DocumentTab tab, int row)
+    private static void RevealRow(DocumentViews documents, Navigation navigation, DocumentTab tab, int row)
     {
-        if (!appState.Navigation.IsOpen(tab))
+        if (!navigation.IsOpen(tab))
         {
             return;
         }
 
-        DocumentPanels.RevealRow(uiState.Documents, tab, row);
+        DocumentPanels.RevealRow(documents, tab, row);
     }
 
-    private static void FocusCard(UiState uiState, AppState appState, DocumentTab tab, CodeReference.Entity type)
+    private static void FocusCard(DocumentViews documents, Navigation navigation, DocumentTab tab, CodeReference.Entity type)
     {
-        if (!appState.Navigation.IsOpen(tab))
+        if (!navigation.IsOpen(tab))
         {
             return;
         }
 
-        DocumentPanels.FocusCard(uiState.Documents, tab, type);
+        DocumentPanels.FocusCard(documents, tab, type);
     }
 
     /// <summary>Runs the commands <paramref name="uiState"/> queued for the app state, in the order queued, each a unit
@@ -155,23 +156,23 @@ internal static class QueuedCommands
             return;
         }
 
-        var tab = appState.Navigation.OpenEmptyTab();
+        var tab = appState.ListSession.Navigation.OpenEmptyTab();
         uiState.Documents.AddView(tab, panel);
         var becomesActive = focus || uiState.MainLayout.Dock.Focused == panel;
         if (becomesActive)
         {
-            Commands.StartDecompiling(appState, appState.Navigation.FocusTab(tab, appState.Decompiler.Setup));
+            Commands.StartDecompiling(appState, appState.ListSession.Navigation.FocusTab(tab, appState.Decompiler.Setup));
         }
     }
 
     internal static void CloseTabAndFocusNext(UiState uiState, AppState appState, DocumentTab tab)
     {
-        var closed = appState.Navigation.CloseTab(tab);
+        var closed = appState.ListSession.Navigation.CloseTab(tab);
         if (!closed.WasActive)
         {
             return;
         }
 
-        DocumentPanels.FocusNextTab(uiState, appState.Navigation, appState.Decompiler.Setup);
+        DocumentPanels.FocusNextTab(uiState, appState.ListSession.Navigation, appState.Decompiler.Setup);
     }
 }

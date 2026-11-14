@@ -23,7 +23,7 @@ public sealed class HistoryTests
 
     private static CodeViewPosition ScrollTo(AppDriver app, int topLine, TextPosition anchor, TextPosition caret)
     {
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         CodeViewWidget.RestorePosition(CodeOf(app, tab), new CodeViewPosition
         {
@@ -33,7 +33,7 @@ public sealed class HistoryTests
             Caret = caret,
         });
         app.Run(4);
-        var scrolled = app.AppState.Navigation.ActiveTab;
+        var scrolled = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(scrolled);
         return CodeOf(app, scrolled).Position;
     }
@@ -54,13 +54,13 @@ public sealed class HistoryTests
 
         app.GoBack();
         app.Settle(4);
-        var backTab = app.AppState.Navigation.ActiveTab;
+        var backTab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(backTab);
         var back = backTab.Node?.Text;
         var backPosition = CodeOf(app, backTab).Position;
         app.GoForward();
         app.Settle(4);
-        var forward = app.AppState.Navigation.ActiveTab;
+        var forward = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(forward);
 
         Assert.Equal(20, outline.TopLine);
@@ -81,7 +81,7 @@ public sealed class HistoryTests
 
         Assert.True(app.Frames.Drew(app.Ui.Appearance.Strings.StatusResolving));
         app.Settle(4);
-        Assert.Equal("Outline", app.AppState.Navigation.ActiveTab?.Node?.Text);
+        Assert.Equal("Outline", app.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
     }
 
     [Fact]
@@ -89,14 +89,14 @@ public sealed class HistoryTests
     {
         var app = Opened();
         await ShowAsync(app, "Outline");
-        var outline = app.AppState.Navigation.ActiveTab;
+        var outline = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(outline);
         app.Show(await app.FixtureAsync("Greeter"), 4, inNewTab: true);
 
         app.Frames.Key(Shortcuts.Back).Frame();
 
         Assert.True(app.Frames.Drew((await app.FixtureAsync("Outline")).FullName));
-        Assert.Same(outline, app.AppState.Navigation.ActiveTab);
+        Assert.Same(outline, app.AppState.ListSession.Navigation.ActiveTab);
     }
 
     [Fact]
@@ -104,14 +104,14 @@ public sealed class HistoryTests
     {
         var app = Opened();
         await ShowAsync(app, "Outline");
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var (line, column) = tab.Document.GetPosition("return First();");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(tab.Document.SpanAt(line, column + "return ".Length).Reference);
         var before = ScrollTo(app, 25,
             new TextPosition { Line = line, Column = column }, new TextPosition { Line = line, Column = column + 6 });
 
-        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, reference, a.Navigation.BeginResolving(inNewTab: false), ct));
+        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, reference, a.ListSession.Navigation.BeginResolving(inNewTab: false), ct));
         app.Settle(4);
         Assert.NotNull(tab.Node);
         var followed = tab.Node.Text;
@@ -129,7 +129,7 @@ public sealed class HistoryTests
         var app = Opened();
         await ShowAsync(app, "Outline");
         ScrollTo(app, 20, new TextPosition { Line = 21, Column = 4 }, new TextPosition { Line = 22, Column = 8 });
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var (line, column) = tab.Document.GetPosition("return First();");
         var scrolled = new CodeViewPosition
@@ -171,7 +171,7 @@ public sealed class HistoryTests
         app.Settle(4);
         app.GoBack();
         app.Settle(4);
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
         Assert.Equal("Outline", tab.Node?.Text);
@@ -184,7 +184,7 @@ public sealed class HistoryTests
     public async Task Going_to_an_entry_jumps_over_the_ones_between_and_keeps_them_all()
     {
         var app = Opened();
-        var navigation = app.AppState.Navigation;
+        var navigation = app.AppState.ListSession.Navigation;
         await ShowAsync(app, "Outline");
         var first = navigation.HistoryIndex;
         await ShowAsync(app, "Greeter");
@@ -193,7 +193,7 @@ public sealed class HistoryTests
 
         app.GoToEntry(first);
         app.Settle(4);
-        var back = app.AppState.Navigation.ActiveTab?.Node?.Text;
+        var back = app.AppState.ListSession.Navigation.ActiveTab?.Node?.Text;
 
         Assert.Equal("Outline", back);
         Assert.Equal(first, navigation.HistoryIndex);
@@ -206,7 +206,7 @@ public sealed class HistoryTests
     {
         var app = Opened();
         await ShowAsync(app, "Outline");
-        var first = app.AppState.Navigation.HistoryIndex;
+        var first = app.AppState.ListSession.Navigation.HistoryIndex;
         await ShowAsync(app, "Greeter");
         await ShowAsync(app, "Outline");
 
@@ -217,8 +217,8 @@ public sealed class HistoryTests
         app.Settle(4);
 
         Assert.True(greeter.Top > outline.Top);
-        Assert.Equal("Outline", app.AppState.Navigation.ActiveTab?.Node?.Text);
-        Assert.Equal(first, app.AppState.Navigation.HistoryIndex);
+        Assert.Equal("Outline", app.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
+        Assert.Equal(first, app.AppState.ListSession.Navigation.HistoryIndex);
     }
 
     [Fact]
@@ -234,7 +234,7 @@ public sealed class HistoryTests
         app.Settle(4);
 
         Assert.DoesNotContain(app.Frames.Canvas.Texts, t => t.Inputs.Position.Top == row.Top && t.Inputs.Position.Left == row.Left);
-        Assert.Equal("Outline", app.AppState.Navigation.ActiveTab?.Node?.Text);
+        Assert.Equal("Outline", app.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
     }
 
     [Fact]
@@ -267,14 +267,14 @@ public sealed class HistoryTests
     private static LoadedModule OpenApiDiffSample(AppDriver app)
     {
         app.Open([TestPaths.PathOf(ApiDiffSamplePath)]);
-        app.Driver.RunUntil(() => app.AppState.Assemblies.IsListed(TestPaths.PathOf(ApiDiffSamplePath)));
+        app.Driver.RunUntil(() => app.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(ApiDiffSamplePath)));
         app.Settle(4);
         return ApiDiffSampleOf(app);
     }
 
     private static LoadedModule ApiDiffSampleOf(AppDriver app)
     {
-        return app.AppState.Assemblies.Assemblies.Single(a => a.FilePath.Text == ApiDiffSamplePath);
+        return app.AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.Text == ApiDiffSamplePath);
     }
 
     [Fact]
@@ -285,15 +285,15 @@ public sealed class HistoryTests
         app.GoBack();
         app.Settle(4);
 
-        Assert.Equal("Greeter", app.AppState.Navigation.ActiveTab?.Node?.Text);
-        Assert.False(app.AppState.Assemblies.IsListed(TestPaths.PathOf(ApiDiffSamplePath)));
+        Assert.Equal("Greeter", app.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
+        Assert.False(app.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(ApiDiffSamplePath)));
     }
 
     [Fact]
     public async Task The_back_dropdown_marks_a_place_whose_assembly_was_closed_and_offers_it_no_click()
     {
         var app = await ShowAccountThenCloseItsAssemblyAsync();
-        var current = app.AppState.Navigation.HistoryIndex;
+        var current = app.AppState.ListSession.Navigation.HistoryIndex;
 
         ClickBackDropdown(app);
         var account = app.Frames.Find(Selector.OfRole(SemanticRole.MenuItem, "Account (ApiDiffSample closed)"));
@@ -301,9 +301,9 @@ public sealed class HistoryTests
         app.Settle(4);
 
         Assert.True(account.Has(ZGF.Gui.Immediate.SemanticStates.Disabled));
-        Assert.Equal("Farewell", app.AppState.Navigation.ActiveTab?.Node?.Text);
-        Assert.Equal(current, app.AppState.Navigation.HistoryIndex);
-        Assert.False(app.AppState.Assemblies.IsListed(TestPaths.PathOf(ApiDiffSamplePath)));
+        Assert.Equal("Farewell", app.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
+        Assert.Equal(current, app.AppState.ListSession.Navigation.HistoryIndex);
+        Assert.False(app.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(ApiDiffSamplePath)));
     }
 
     [Fact]
@@ -314,25 +314,25 @@ public sealed class HistoryTests
         OpenApiDiffSample(app);
         app.GoBack();
         app.Settle(4);
-        var fromOpened = app.AppState.Navigation.ActiveTab?.Node?.Text;
+        var fromOpened = app.AppState.ListSession.Navigation.ActiveTab?.Node?.Text;
         app.GoBack();
         app.Settle(4);
 
         Assert.Equal("Farewell", fromOpened);
-        Assert.Equal("Account", app.AppState.Navigation.ActiveTab?.Node?.Text);
+        Assert.Equal("Account", app.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
     }
 
     [Fact]
     public async Task Picking_an_entry_from_the_dropdown_goes_to_that_entry_only()
     {
         var app = await ShowAccountThenCloseItsAssemblyAsync();
-        var account = app.AppState.Navigation.HistoryIndex - 1;
+        var account = app.AppState.ListSession.Navigation.HistoryIndex - 1;
 
         app.GoToEntry(account);
         app.Settle(4);
 
-        Assert.Equal("Farewell", app.AppState.Navigation.ActiveTab?.Node?.Text);
-        Assert.Equal(account + 1, app.AppState.Navigation.HistoryIndex);
+        Assert.Equal("Farewell", app.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
+        Assert.Equal(account + 1, app.AppState.ListSession.Navigation.HistoryIndex);
     }
 
     private static void ClickBackDropdown(AppDriver app)

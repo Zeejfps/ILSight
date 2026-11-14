@@ -9,7 +9,7 @@ public sealed class GoToBookmarkHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         d.Show(await d.FixtureAsync("Outline"));
-        var tab = d.AppState.Navigation.ActiveTab;
+        var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark));
         d.Show(await d.FixtureAsync("Greeter"));
@@ -22,19 +22,19 @@ public sealed class GoToBookmarkHandlerTests
         var (d, bookmark) = await BookmarkedAsync();
         var outline = await d.FixtureAsync("Outline");
         var ports = new FakeGoToBookmarkHandlerPorts();
-        var history = d.AppState.Navigation.HistoryEntries.Count;
+        var history = d.AppState.ListSession.Navigation.HistoryEntries.Count;
 
-        var going = d.BeginAsync(() => new GoToBookmarkHandler(ports).HandleAsync(d.AppState.Navigation, d.AppState.Bookmarks, d.AppState.Decompiler, bookmark, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
-        Assert.True(d.AppState.IsResolving);
+        var going = d.BeginAsync(() => new GoToBookmarkHandler(ports).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Bookmarks, d.AppState.Decompiler, bookmark, d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        Assert.True(d.AppState.ListSession.Navigation.IsResolving);
         Assert.Single(ports.Answers).SetResult(new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(outline)));
         var load = await d.EndAsync(going);
 
         Assert.Equal([bookmark.Place], ports.Asked);
         Assert.NotNull(load);
         Assert.Same(outline, load.Node);
-        Assert.Same(d.AppState.Navigation.ActiveTab, load.Tab);
-        Assert.False(d.AppState.IsResolving);
-        Assert.Equal(history + 1, d.AppState.Navigation.HistoryEntries.Count);
+        Assert.Same(d.AppState.ListSession.Navigation.ActiveTab, load.Tab);
+        Assert.False(d.AppState.ListSession.Navigation.IsResolving);
+        Assert.Equal(history + 1, d.AppState.ListSession.Navigation.HistoryEntries.Count);
         Assert.Empty(ports.Reported);
     }
 
@@ -44,7 +44,7 @@ public sealed class GoToBookmarkHandlerTests
         var (d, bookmark) = await BookmarkedAsync();
         var ports = new FakeGoToBookmarkHandlerPorts();
 
-        var going = d.BeginAsync(() => new GoToBookmarkHandler(ports).HandleAsync(d.AppState.Navigation, d.AppState.Bookmarks, d.AppState.Decompiler, bookmark, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        var going = d.BeginAsync(() => new GoToBookmarkHandler(ports).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Bookmarks, d.AppState.Decompiler, bookmark, d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
         Assert.Single(ports.Answers).SetResult(new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)));
         var load = await d.EndAsync(going);
 
@@ -60,15 +60,15 @@ public sealed class GoToBookmarkHandlerTests
     {
         var (d, bookmark) = await BookmarkedAsync();
         var ports = new FakeGoToBookmarkHandlerPorts();
-        var shown = d.AppState.Navigation.ActiveTab;
+        var shown = d.AppState.ListSession.Navigation.ActiveTab;
 
-        var going = d.BeginAsync(() => new GoToBookmarkHandler(ports).HandleAsync(d.AppState.Navigation, d.AppState.Bookmarks, d.AppState.Decompiler, bookmark, d.AppState.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
-        d.AppState.Navigation.BeginRequest();
+        var going = d.BeginAsync(() => new GoToBookmarkHandler(ports).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Bookmarks, d.AppState.Decompiler, bookmark, d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        d.AppState.ListSession.Navigation.BeginRequest();
         Assert.Single(ports.Answers).SetResult(new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(await d.FixtureAsync("Outline"))));
         var load = await d.EndAsync(going);
 
         Assert.Null(load);
-        Assert.Same(shown, d.AppState.Navigation.ActiveTab);
+        Assert.Same(shown, d.AppState.ListSession.Navigation.ActiveTab);
         Assert.Empty(ports.Reported);
     }
 }

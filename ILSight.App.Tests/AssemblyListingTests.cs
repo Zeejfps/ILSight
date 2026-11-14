@@ -42,7 +42,7 @@ public sealed class AssemblyListingTests
 
         Assert.Equal([AppStateDriver.FixturePath, other], Assert.Single(temp.Settings().AssemblyLists).Assemblies.Select(static p => p.Text));
         d.Settle();
-        Assert.Equal([AppStateDriver.FixturePath, other], d.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
+        Assert.Equal([AppStateDriver.FixturePath, other], d.AppState.ListSession.Assemblies.ListFilePaths().Select(static p => p.Text));
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public sealed class AssemblyListingTests
         Assert.False(app.Frames.Drew(fixtures));
         app.Settle(2);
         Assert.Equal(Other, app.AppState.Lists.Active);
-        Assert.Empty(app.AppState.Assemblies.Listed);
+        Assert.Empty(app.AppState.ListSession.Assemblies.Listed);
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public sealed class AssemblyListingTests
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         var lists = temp.Settings().AssemblyLists;
-        Assert.Empty(d.AppState.Analyzer.Roots);
+        Assert.Empty(d.AppState.ListSession.Analyzer.Roots);
         var firstAnalyzed = lists[0].Analyzed;
         Assert.NotNull(firstAnalyzed);
         Assert.Single(firstAnalyzed);
@@ -118,12 +118,12 @@ public sealed class AssemblyListingTests
 
         d.SwitchList(Other);
         d.Settle();
-        var inOther = d.AppState.Analyzer.Roots.Count;
+        var inOther = d.AppState.ListSession.Analyzer.Roots.Count;
         d.SwitchList(SavedAssemblyLists.DefaultName);
         d.Settle();
 
         Assert.Equal(0, inOther);
-        Assert.Contains("Greeter", Assert.Single(d.AppState.Analyzer.Found()).Symbol.Label);
+        Assert.Contains("Greeter", Assert.Single(d.AppState.ListSession.Analyzer.Found()).Symbol.Label);
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public sealed class AssemblyListingTests
 
         Assert.NotEqual(SavedAssemblyLists.DefaultName, copy);
         Assert.Equal(copy, d.AppState.Lists.Active);
-        Assert.Contains("Greeter", Assert.Single(d.AppState.Analyzer.Found()).Symbol.Label);
+        Assert.Contains("Greeter", Assert.Single(d.AppState.ListSession.Analyzer.Found()).Symbol.Label);
     }
 
     [Fact]
@@ -152,14 +152,14 @@ public sealed class AssemblyListingTests
         d.SwitchList(Other);
         d.Settle();
 
-        Assert.Empty(d.AppState.Assemblies.Assemblies);
-        Assert.Null(Assert.Single(d.AppState.Navigation.OpenTabs).Location);
-        Assert.Empty(d.AppState.Navigation.HistoryEntries);
+        Assert.Empty(d.AppState.ListSession.Assemblies.Assemblies);
+        Assert.Null(Assert.Single(d.AppState.ListSession.Navigation.OpenTabs).Location);
+        Assert.Empty(d.AppState.ListSession.Navigation.HistoryEntries);
 
         d.SwitchList(SavedAssemblyLists.DefaultName);
         d.Settle();
 
-        Assert.Equal([AppStateDriver.FixturePath], d.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
+        Assert.Equal([AppStateDriver.FixturePath], d.AppState.ListSession.Assemblies.ListFilePaths().Select(static p => p.Text));
     }
 
     [Fact]
@@ -167,16 +167,16 @@ public sealed class AssemblyListingTests
     {
         var d = AppStateDriver.Opened();
         d.AppState.Lists.Add(Other);
-        foreach (var tab in d.AppState.Navigation.OpenTabs.ToList())
+        foreach (var tab in d.AppState.ListSession.Navigation.OpenTabs.ToList())
         {
-            d.AppState.Navigation.CloseTab(tab);
+            d.AppState.ListSession.Navigation.CloseTab(tab);
         }
 
         d.SwitchList(Other);
         d.Settle();
 
-        var empty = Assert.Single(d.AppState.Navigation.OpenTabs);
-        Assert.Same(empty, d.AppState.Navigation.ActiveTab);
+        var empty = Assert.Single(d.AppState.ListSession.Navigation.OpenTabs);
+        Assert.Same(empty, d.AppState.ListSession.Navigation.ActiveTab);
         Assert.True(d.Ui.MainLayout.Dock.Contains(DocumentPanels.GetPanel(d.Ui.Documents, empty)));
         Assert.Null(empty.Location);
     }
@@ -191,11 +191,11 @@ public sealed class AssemblyListingTests
         d.SwitchList("New list");
         d.Settle();
         d.Open([AssemblyPath.Of(other)]);
-        d.RunUntil(() => d.AppState.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)));
+        d.RunUntil(() => d.AppState.ListSession.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)));
         d.SwitchList(SavedAssemblyLists.DefaultName);
         d.Settle();
 
-        Assert.Equal([AppStateDriver.FixturePath], d.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
+        Assert.Equal([AppStateDriver.FixturePath], d.AppState.ListSession.Assemblies.ListFilePaths().Select(static p => p.Text));
         Assert.Equal([other], d.AppState.Lists.GetPaths("New list").Select(static p => p.Text));
     }
 
@@ -210,7 +210,7 @@ public sealed class AssemblyListingTests
         d.Settle();
         d.Pump();
 
-        Assert.Empty(d.AppState.Assemblies.Assemblies);
+        Assert.Empty(d.AppState.ListSession.Assemblies.Assemblies);
         Assert.Empty(d.AppState.Errors.Entries);
     }
 
@@ -219,12 +219,12 @@ public sealed class AssemblyListingTests
     {
         var d = AppStateDriver.Opened();
         d.AppState.Lists.Add(Other);
-        var opening = d.AppState.Opens.Token;
+        var opening = d.AppState.ListSession.Opens.Token;
 
         d.SwitchList(Other);
 
         Assert.True(opening.IsCancellationRequested);
-        Assert.False(d.AppState.Opens.Token.IsCancellationRequested);
+        Assert.False(d.AppState.ListSession.Opens.Token.IsCancellationRequested);
     }
 
     [Fact]
@@ -238,7 +238,7 @@ public sealed class AssemblyListingTests
         d.Settle();
 
         Assert.Equal(SavedAssemblyLists.DefaultName, d.AppState.Lists.Active);
-        Assert.Equal([AppStateDriver.FixturePath], d.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
+        Assert.Equal([AppStateDriver.FixturePath], d.AppState.ListSession.Assemblies.ListFilePaths().Select(static p => p.Text));
     }
 
     [Fact]
@@ -253,7 +253,7 @@ public sealed class AssemblyListingTests
         d.Reload(d.Ui.Tree.ListExpandedPaths());
         d.Settle();
 
-        Assert.Equal([AppStateDriver.FixturePath], d.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
+        Assert.Equal([AppStateDriver.FixturePath], d.AppState.ListSession.Assemblies.ListFilePaths().Select(static p => p.Text));
     }
 
     [Fact]
@@ -282,7 +282,7 @@ public sealed class AssemblyListingTests
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/collapse")).Frame(2);
 
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
-        Assert.Same(greeter, app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(greeter, app.AppState.ListSession.Navigation.ActiveTab?.Node);
     }
 
     [Fact]
@@ -292,7 +292,7 @@ public sealed class AssemblyListingTests
         var greeter = await app.FixtureAsync("Greeter");
         var farewell = await app.FixtureAsync("Farewell");
         app.Show(greeter, 2);
-        var first = app.AppState.Navigation.ActiveTab;
+        var first = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(first);
 
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Farewell"), PointerButton.Right).Frame();
@@ -302,7 +302,7 @@ public sealed class AssemblyListingTests
 
         Assert.Same(greeter, shownAfterRightClick);
         Assert.Same(greeter, first.Node);
-        Assert.Same(farewell, app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(farewell, app.AppState.ListSession.Navigation.ActiveTab?.Node);
     }
 
     [Fact]
@@ -313,7 +313,7 @@ public sealed class AssemblyListingTests
         var greeter = await app.FixtureAsync("Greeter");
         var farewell = await app.FixtureAsync("Farewell");
         app.Show(greeter, 2);
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
         app.Frames.ClickOn(Selector.WithText("Farewell")).Frame(2);
@@ -324,7 +324,7 @@ public sealed class AssemblyListingTests
 
         Assert.Same(greeter, shownAfterClick);
         Assert.Same(farewell, selectedAfterClick);
-        Assert.Same(tab, app.AppState.Navigation.ActiveTab);
+        Assert.Same(tab, app.AppState.ListSession.Navigation.ActiveTab);
         Assert.Same(farewell, tab.Node);
     }
 
@@ -334,14 +334,14 @@ public sealed class AssemblyListingTests
         var app = AppDriver.Opened();
         var farewell = await app.FixtureAsync("Farewell");
         app.Show(await app.FixtureAsync("Greeter"), 2);
-        var tab = app.AppState.Navigation.ActiveTab;
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Farewell"), PointerButton.Right).Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Open")).Frame(2);
         app.Settle(2);
 
-        Assert.Same(tab, app.AppState.Navigation.ActiveTab);
+        Assert.Same(tab, app.AppState.ListSession.Navigation.ActiveTab);
         Assert.Same(farewell, tab.Node);
     }
 
@@ -352,14 +352,14 @@ public sealed class AssemblyListingTests
         var greeter = await app.FixtureAsync("Greeter");
         var farewell = await app.FixtureAsync("Farewell");
         app.Show(greeter, 2);
-        var first = app.AppState.Navigation.ActiveTab;
+        var first = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(first);
         app.Show(farewell, 2, inNewTab: true);
 
-        DocumentPanels.ActivateTab(app.Ui, app.AppState.Navigation, app.AppState.Decompiler.Setup, first);
+        DocumentPanels.ActivateTab(app.Ui, app.AppState.ListSession.Navigation, app.AppState.Decompiler.Setup, first);
         app.Run(2);
 
-        Assert.Same(first, app.AppState.Navigation.ActiveTab);
+        Assert.Same(first, app.AppState.ListSession.Navigation.ActiveTab);
         Assert.Same(farewell, app.Ui.Tree.View.Selected);
     }
 
@@ -377,7 +377,7 @@ public sealed class AssemblyListingTests
 
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
         Assert.True(app.Ui.Tree.View.IsExpanded(await app.NodeAsync(AppStateDriver.FixturesNamespace)));
-        Assert.Same(greeter, app.AppState.Navigation.ActiveTab?.Node);
+        Assert.Same(greeter, app.AppState.ListSession.Navigation.ActiveTab?.Node);
     }
 
     [Fact]
@@ -390,11 +390,11 @@ public sealed class AssemblyListingTests
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly")).Frame(2);
         Assert.True(app.Ui.Closer.IsOpen);
         Assert.True(Assert.Single(app.Ui.Closer.Rows.Order).Included);
-        Assert.Single(app.AppState.Assemblies.Assemblies);
+        Assert.Single(app.AppState.ListSession.Assemblies.Assemblies);
 
         app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);
 
-        Assert.Empty(app.AppState.Assemblies.Assemblies);
+        Assert.Empty(app.AppState.ListSession.Assemblies.Assemblies);
     }
 
     [Fact]
@@ -405,7 +405,7 @@ public sealed class AssemblyListingTests
 
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/clear-list")).Frame(2);
 
-        Assert.Empty(app.AppState.Assemblies.Assemblies);
+        Assert.Empty(app.AppState.ListSession.Assemblies.Assemblies);
     }
 
     [Fact]
@@ -430,7 +430,7 @@ public sealed class AssemblyListingTests
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/more")).Frame(2);
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Clear list")).Frame(2);
 
-        Assert.Empty(app.AppState.Assemblies.Assemblies);
+        Assert.Empty(app.AppState.ListSession.Assemblies.Assemblies);
     }
 
     [Fact]
@@ -441,7 +441,7 @@ public sealed class AssemblyListingTests
 
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-failed")).Frame(2);
 
-        Assert.Single(app.AppState.Assemblies.Assemblies);
+        Assert.Single(app.AppState.ListSession.Assemblies.Assemblies);
     }
 
     [Fact]
@@ -453,9 +453,9 @@ public sealed class AssemblyListingTests
         var folder = Path.GetDirectoryName(other) ?? throw new InvalidOperationException($"The app assembly's path names no folder: '{other}'.");
 
         app.Frames.DropFiles(folder, other).Frame();
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)), AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)), AppStateDriver.Patience);
 
-        Assert.Equal([AppStateDriver.FixturePath, other], app.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
+        Assert.Equal([AppStateDriver.FixturePath, other], app.AppState.ListSession.Assemblies.ListFilePaths().Select(static p => p.Text));
     }
 
     [Fact]
@@ -463,7 +463,7 @@ public sealed class AssemblyListingTests
     {
         var app = AppDriver.Opened();
         var other = typeof(AppState).Assembly.Location;
-        var resolving = app.AppState.Navigation.BeginResolving(inNewTab: false);
+        var resolving = app.AppState.ListSession.Navigation.BeginResolving(inNewTab: false);
         app.Run(2);
         var saidResolving = app.Frames.Drew(app.Ui.Appearance.Strings.StatusResolving);
 
@@ -473,8 +473,8 @@ public sealed class AssemblyListingTests
 
         Assert.True(saidResolving);
         Assert.False(app.Frames.Drew(app.Ui.Appearance.Strings.StatusResolving));
-        Assert.True(app.AppState.Navigation.IsStale(resolving.Intent));
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)), AppStateDriver.Patience);
+        Assert.True(app.AppState.ListSession.Navigation.IsStale(resolving.Intent));
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)), AppStateDriver.Patience);
     }
 
     [Fact]
@@ -489,12 +489,12 @@ public sealed class AssemblyListingTests
         app.Frames.Key(Shortcuts.Open).Frame();
         app.Frames.Frame();
         var saidOpening = app.Frames.Drew(app.Ui.Appearance.Strings.StatusOpening);
-        app.Frames.WaitUntil(() => app.AppState.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)), AppStateDriver.Patience);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(other)), AppStateDriver.Patience);
         app.Settle(2);
 
         Assert.False(saidOpeningBefore);
         Assert.True(saidOpening);
-        Assert.False(app.AppState.Navigation.IsOpening);
+        Assert.False(app.AppState.ListSession.Navigation.IsOpening);
         Assert.False(app.Frames.Drew(app.Ui.Appearance.Strings.StatusOpening));
     }
 
@@ -509,7 +509,7 @@ public sealed class AssemblyListingTests
         app.Frames.DropFiles(typeof(AppState).Assembly.Location).Frame();
         app.Settle(2);
 
-        Assert.Equal([AppStateDriver.FixturePath], app.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
+        Assert.Equal([AppStateDriver.FixturePath], app.AppState.ListSession.Assemblies.ListFilePaths().Select(static p => p.Text));
     }
 
     [Fact]
@@ -550,7 +550,7 @@ public sealed class AssemblyListingTests
 
         Assert.Equal(Other, app.AppState.Lists.Active);
         Assert.True(app.Ui.ListsDialog.IsOpen);
-        Assert.Empty(app.AppState.Assemblies.Assemblies);
+        Assert.Empty(app.AppState.ListSession.Assemblies.Assemblies);
     }
 
     [Fact]

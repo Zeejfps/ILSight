@@ -579,12 +579,12 @@ internal static class ExportsPanelView
         var t = ui.State.Appearance.Strings;
         if (labelled && ui.Button(t.ExportShowReport, id: "show-report", icon: new UiIcon(ui.State.Appearance.Icons.ExportShowReport)))
         {
-            Commands.Later(ui.State, report, static (a, r) => Exports.ShowExportReport(a, r));
+            Commands.Later(ui.State, report, static (a, r) => a.ListSession.Navigation.ShowReport(r));
         }
 
         if (!labelled && ui.IconButton("show-report", ui.State.Appearance.Icons.ExportShowReport, t.ExportShowReport))
         {
-            Commands.Later(ui.State, report, static (a, r) => Exports.ShowExportReport(a, r));
+            Commands.Later(ui.State, report, static (a, r) => a.ListSession.Navigation.ShowReport(r));
         }
     }
 
@@ -674,7 +674,7 @@ internal static class ExportsPanelView
         var t = ui.State.Appearance.Strings;
         if (ui.MenuItem(t.ExportShowReport, Shortcuts.Enter, id: "show-report", icon: new UiIcon(ui.State.Appearance.Icons.ExportShowReport)))
         {
-            Commands.Later(ui.State, report, static (a, r) => Exports.ShowExportReport(a, r));
+            Commands.Later(ui.State, report, static (a, r) => a.ListSession.Navigation.ShowReport(r));
         }
 
         if (ui.MenuItem(t.ExportOpenFolder, enabled: report.FolderExists, id: "open-folder", icon: new UiIcon(ui.State.Appearance.Icons.ExportOpenFolder)))

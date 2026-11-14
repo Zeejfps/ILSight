@@ -22,7 +22,7 @@ public sealed class BookmarkTests : IDisposable
         var d = driver ?? new AppStateDriver();
         d.OpenFixtures();
         d.Show(await d.FixtureAsync("Outline"));
-        var tab = d.AppState.Navigation.ActiveTab;
+        var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         return (d, tab, tab.Document.GetPosition(text).Line);
     }
@@ -143,7 +143,7 @@ public sealed class BookmarkTests : IDisposable
 
         Assert.Equal("Outline", tab.Node?.Text);
         Assert.Equal(line, DocumentPanels.GetView(app.Ui.Documents, tab).Code.Reveal.Flash?.Line);
-        Assert.Equal("Outline", Assert.IsType<HistoryEntry.Node>(d.AppState.Navigation.HistoryEntries[d.AppState.Navigation.HistoryIndex]).Place.Label);
+        Assert.Equal("Outline", Assert.IsType<HistoryEntry.Node>(d.AppState.ListSession.Navigation.HistoryEntries[d.AppState.ListSession.Navigation.HistoryIndex]).Place.Label);
     }
 
     [Fact]
@@ -311,8 +311,8 @@ public sealed class BookmarkTests : IDisposable
         d.InTurn(() => Commands.StartGoingToBookmark(d.AppState, bookmark));
         app.Settle(4);
 
-        Assert.Equal([AppStateDriver.FixturePath], d.AppState.Assemblies.ListFilePaths().Select(static p => p.Text));
-        Assert.Equal("Outline", d.AppState.Navigation.ActiveTab?.Node?.Text);
+        Assert.Equal([AppStateDriver.FixturePath], d.AppState.ListSession.Assemblies.ListFilePaths().Select(static p => p.Text));
+        Assert.Equal("Outline", d.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
     }
 
     [Fact]

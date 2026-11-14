@@ -25,6 +25,6 @@ public static class RunArgumentsActions
         {
             return appState.AssemblyOpening.OpenAssembliesAsync(appState, files.Paths, ct);
         }
-        return appState.OpenAndShowIdHandler.HandleAsync(appState.Navigation, appState.Decompiler, files.Paths, files.NavigateTo, ct);
+        return appState.OpenAndShowIdHandler.HandleAsync(appState.ListSession.Navigation, appState.Decompiler, files.Paths, files.NavigateTo, ct);
     }
 }

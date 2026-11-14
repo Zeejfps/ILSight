@@ -30,7 +30,7 @@ public sealed class RunAnalysisHandlerTests
     public async Task HandleAsync_BatchesFound_AddsEachAndEndsDone()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var analyzer = d.AppState.Analyzer;
+        var analyzer = d.AppState.ListSession.Analyzer;
         var run = await StartGreeterAnalysisAsync(d);
         var farewell = await SymbolOfAsync(d, "Farewell");
         var outline = await SymbolOfAsync(d, "Outline");
@@ -57,7 +57,7 @@ public sealed class RunAnalysisHandlerTests
             Found = [Batch(await SymbolOfAsync(d, "Farewell")), new Outcome<IReadOnlyList<AnalysisFind>>.Failed(error)],
         };
 
-        await d.RunAsync(() => new RunAnalysisHandler(ports).HandleAsync(d.AppState.Analyzer, run, CancellationToken.None));
+        await d.RunAsync(() => new RunAnalysisHandler(ports).HandleAsync(d.AppState.ListSession.Analyzer, run, CancellationToken.None));
 
         Assert.IsType<AnalyzerSymbolNode>(run.Kind.Found[0]);
         Assert.Equal("unreadable", Assert.IsType<AnalyzerMessageNode>(run.Kind.Found[1]).Error);
@@ -73,7 +73,7 @@ public sealed class RunAnalysisHandlerTests
         var bug = new InvalidOperationException("A bug in the core's own code on what it read.");
         var ports = new FakeRunAnalysisHandlerPorts { Found = [Batch(await SymbolOfAsync(d, "Farewell"))], Throws = bug };
 
-        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() => d.RunAsync(() => new RunAnalysisHandler(ports).HandleAsync(d.AppState.Analyzer, run, CancellationToken.None)));
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() => d.RunAsync(() => new RunAnalysisHandler(ports).HandleAsync(d.AppState.ListSession.Analyzer, run, CancellationToken.None)));
 
         Assert.Same(bug, thrown);
         Assert.Empty(ports.Reported);
@@ -87,7 +87,7 @@ public sealed class RunAnalysisHandlerTests
         var ports = new FakeRunAnalysisHandlerPorts { Found = [Batch(await SymbolOfAsync(d, "Farewell"))] };
         Analysis.CancelNode(run.Kind);
 
-        await d.RunAsync(() => new RunAnalysisHandler(ports).HandleAsync(d.AppState.Analyzer, run, CancellationToken.None));
+        await d.RunAsync(() => new RunAnalysisHandler(ports).HandleAsync(d.AppState.ListSession.Analyzer, run, CancellationToken.None));
 
         Assert.Empty(run.Kind.Found);
         Assert.IsType<AnalyzerRun.Stopped>(run.Kind.Run);
