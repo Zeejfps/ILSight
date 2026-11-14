@@ -38,6 +38,23 @@ internal sealed class DocumentBuilder : ITextOutput
     /// <summary>The type system of <see cref="Assembly"/>, as the unit writing awaited its read before it began; null
     /// when there is none to read with, or the library could not read it.</summary>
     public DecompilerTypeSystem? TypeSystem { get; internal init; }
+
+    /// <summary>The references of <see cref="Assembly"/> whose file could not be read, which the code was written reading
+    /// by name only; the document carries them.</summary>
+    public IReadOnlyList<UnreadReference> UnreadReferences { get; private set; } = [];
+
+    /// <summary>Says, as comments, that each of <paramref name="unread"/> was read by name only, and why, and keeps them
+    /// for the document.</summary>
+    public void WriteUnreadReferences(IReadOnlyList<UnreadReference> unread)
+    {
+        UnreadReferences = unread;
+        foreach (var reference in unread)
+        {
+            var why = reference.Error.InnerException?.Message ?? reference.Error.Message;
+            Write($"// Warning: the reference {reference.Name} was read by name only: {reference.Error.FilePath} could not be read. {why}", SpanKind.Comment);
+            WriteLine();
+        }
+    }
     private int _lineFirstSpan;
     private int _indentLevel;
     private bool _lineStarted;
@@ -124,7 +141,7 @@ internal sealed class DocumentBuilder : ITextOutput
         var built = lines.MoveToImmutable();
         var statements = ListStatements();
         return new DecompiledDocument { Title = title, Language = Language, Error = error, Lines = built, Definitions = _definitions, Statements = statements,
-            EntityNames = NameAnchoredEntities(statements), Folds = ListFoldRegions(built) };
+            EntityNames = NameAnchoredEntities(statements), Folds = ListFoldRegions(built), UnreadReferences = UnreadReferences };
     }
 
     private Dictionary<(AssemblyPath FilePath, int Token), string> NameAnchoredEntities(Dictionary<int, CodeAnchor> statements)

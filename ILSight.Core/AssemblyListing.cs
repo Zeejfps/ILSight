@@ -634,17 +634,18 @@ public static class AssemblyListing
 
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, owner, ct);
         return read.Match(
-            r => ResolveDefinition(list, r.TypeSystem.MainModule, handle, generation),
+            r => ResolveDefinition(list, owner, r.TypeSystem.MainModule, handle, generation),
             u => Lookup.FromUnreadable<(LoadedModule Assembly, EntityHandle Handle)>(owner, u),
             static _ => new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound());
     }
 
-    private static Lookup<(LoadedModule Assembly, EntityHandle Handle)> ResolveDefinition(AssemblyList list, MetadataModule main, EntityHandle handle,
-        int generation)
+    private static Lookup<(LoadedModule Assembly, EntityHandle Handle)> ResolveDefinition(AssemblyList list, LoadedModule owner, MetadataModule main,
+        EntityHandle handle, int generation)
     {
         var definition = Definitions.Resolve(main, handle);
         if (definition is null)
         {
+            ThrowIfInUnreadReference(owner, main.MetadataFile.Metadata, handle);
             return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound();
         }
 
@@ -655,6 +656,54 @@ public static class AssemblyListing
         }
 
         return Found(assembly, definition.MetadataToken);
+    }
+
+    private const string OwnModule = "";
+
+    // A definition not found may be in a reference the type system read by name only, its file there but unreadable:
+    // the lookup needs that file, so it fails with why rather than saying not there. A handle whose reference can't be
+    // named (a member of a constructed type) fails with the first of them when any was unread.
+    private static void ThrowIfInUnreadReference(LoadedModule owner, MetadataReader metadata, EntityHandle handle)
+    {
+        var unread = LoadedAssemblies.ListUnreadReferences(owner);
+        if (unread.Count == 0)
+        {
+            return;
+        }
+
+        var scope = FindReferenceName(metadata, handle);
+        var needed = scope is null ? unread[0] : unread.FirstOrDefault(u => string.Equals(u.Name, scope, StringComparison.OrdinalIgnoreCase));
+        if (needed is null)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException($"The definition is in {needed.Name}, whose file {needed.Error.FilePath} could not be read.", needed.Error);
+    }
+
+    // The assembly or module a reference handle points into, by the name the module references it by: OwnModule for the
+    // module itself, null when the handle names none directly.
+    private static string? FindReferenceName(MetadataReader metadata, EntityHandle handle)
+    {
+        switch (handle.Kind)
+        {
+            case HandleKind.TypeReference:
+                var scope = metadata.GetTypeReference((TypeReferenceHandle)handle).ResolutionScope;
+                return scope.Kind switch
+                {
+                    HandleKind.AssemblyReference => metadata.GetString(metadata.GetAssemblyReference((AssemblyReferenceHandle)scope).Name),
+                    HandleKind.ModuleReference => metadata.GetString(metadata.GetModuleReference((ModuleReferenceHandle)scope).Name),
+                    HandleKind.TypeReference => FindReferenceName(metadata, (EntityHandle)scope),
+                    _ => OwnModule,
+                };
+            case HandleKind.MemberReference:
+                var parent = metadata.GetMemberReference((MemberReferenceHandle)handle).Parent;
+                return parent.Kind == HandleKind.TypeReference ? FindReferenceName(metadata, parent) : null;
+            case HandleKind.MethodSpecification:
+                return FindReferenceName(metadata, metadata.GetMethodSpecification((MethodSpecificationHandle)handle).Method);
+            default:
+                return null;
+        }
     }
 
     private static LoadedAssembly Read(AssemblyList list, AssemblyPath path, int generation)

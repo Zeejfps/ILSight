@@ -34,6 +34,10 @@ public sealed class DecompiledDocument
     /// <summary>What decompiling failed with, which the lines describe; null when it did not fail.</summary>
     public required Exception? Error { get; init; }
 
+    /// <summary>The references of the module whose file was found but could not be read, which the code says it read by
+    /// name only; empty for most.</summary>
+    public IReadOnlyList<UnreadReference> UnreadReferences { get; init; } = [];
+
     public required ImmutableArray<DocumentLine> Lines { get; init; }
 
     /// <summary>The foldable regions, ordered by <see cref="FoldRegion.StartLine"/>, each starting on

@@ -693,6 +693,8 @@
   "error.step_reload_tab": "アセンブリの再読み込み後にタブを再表示する際に要求されました。",
   "error.file_denied": "{file} を開けませんでした。アクセスが拒否されたか、別のプログラムがロックしています。読み取れるようにしてから、もう一度お試しください。",
   "error.file_damaged": "{file} は読み取れる .NET アセンブリまたはパッケージではありません。ファイルを置き換えるか、閉じてください。",
+  "error.read_reference": "{assembly} が参照する {name} を読み取れません",
+  "error.read_reference_degraded": "{assembly} のコードは {name} を名前だけで読み取って表示しています。ファイルを読み取れるようになったら {assembly} を再読み込みしてください。",
   "error.no_longer_there": "{place} はもう存在しません。",
   "error.module_unreadable": "{name} を読み込めませんでした",
   "error.decompile": "{name} を逆コンパイルできません",

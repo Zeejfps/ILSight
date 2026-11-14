@@ -119,6 +119,22 @@ public abstract record AppProblem
         public required Exception Error { get; init; }
     }
 
+    /// <summary>Decompiling <see cref="Unread"/>'s module found a file for that reference which is there but could not be
+    /// opened (access denied, or another program holds it): the module's code reads the reference by name only until
+    /// the module is read again with the file readable. Reported once, by the first tab that showed such code.</summary>
+    public sealed record ReferenceFileDenied : AppProblem
+    {
+        public required UnreadReference Unread { get; init; }
+    }
+
+    /// <summary>Decompiling <see cref="Unread"/>'s module found a file for that reference which is there but is no .NET
+    /// assembly that can be read: the module's code reads the reference by name only until the file is replaced and
+    /// the module read again. Reported once, as above.</summary>
+    public sealed record ReferenceFileDamaged : AppProblem
+    {
+        public required UnreadReference Unread { get; init; }
+    }
+
     /// <summary>What was asked for is in <see cref="Module"/>, a file whose type system the library could not read,
     /// with <see cref="Why"/>, so it was not looked for.</summary>
     public sealed record ModuleUnreadable : AppProblem
@@ -284,7 +300,8 @@ public abstract record AppProblem
         Func<Unresolved, TResult> unresolved, Func<UnresolvedFileDenied, TResult> unresolvedFileDenied,
         Func<UnresolvedFileDamaged, TResult> unresolvedFileDamaged,
         Func<PlaceLookupFailed, TResult> placeLookupFailed, Func<PlaceLookupFileDenied, TResult> placeLookupFileDenied,
-        Func<PlaceLookupFileDamaged, TResult> placeLookupFileDamaged, Func<ModuleUnreadable, TResult> moduleUnreadable,
+        Func<PlaceLookupFileDamaged, TResult> placeLookupFileDamaged, Func<ReferenceFileDenied, TResult> referenceFileDenied,
+        Func<ReferenceFileDamaged, TResult> referenceFileDamaged, Func<ModuleUnreadable, TResult> moduleUnreadable,
         Func<BookmarksNotExported, TResult> bookmarksNotExported,
         Func<BookmarksNotImported, TResult> bookmarksNotImported,
         Func<ImportedBookmarksUnreadable, TResult> importedBookmarksUnreadable, Func<ImportedBookmarksNotPlaced, TResult> importedBookmarksNotPlaced,
@@ -313,6 +330,8 @@ public abstract record AppProblem
             PlaceLookupFailed c => placeLookupFailed(c),
             PlaceLookupFileDenied c => placeLookupFileDenied(c),
             PlaceLookupFileDamaged c => placeLookupFileDamaged(c),
+            ReferenceFileDenied c => referenceFileDenied(c),
+            ReferenceFileDamaged c => referenceFileDamaged(c),
             ModuleUnreadable c => moduleUnreadable(c),
             BookmarksNotExported c => bookmarksNotExported(c),
             BookmarksNotImported c => bookmarksNotImported(c),

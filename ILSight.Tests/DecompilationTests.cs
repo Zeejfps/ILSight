@@ -389,6 +389,42 @@ public sealed class DecompilationTests
     }
 
     [Fact]
+    public async Task A_reference_whose_file_is_there_but_unreadable_is_read_by_name_only_said_once_and_fails_a_lookup_that_needs_it()
+    {
+        using var temp = new TempDir();
+        var sample = temp.Copy(Trees.PathsBeforePath, "PathsSample.dll");
+        temp.Write("PathsLibrary.dll", "no assembly");
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var overloads = await list.Open(sample).ReadRootAsync().GetChildAsync("PathsSample", "Overloads");
+
+        var document = await overloads.DecompileAsync(DecompilationLanguage.CSharp);
+        var again = await overloads.DecompileAsync(DecompilationLanguage.IL);
+
+        Assert.Null(document.Error);
+        Assert.StartsWith("// Warning: the reference PathsLibrary was read by name only", document.Lines[0].Text);
+        Assert.Contains("PathsLibrary.dll could not be read", document.Lines[0].Text);
+        Assert.Contains("Take(", Documents.GetText(document));
+        var unread = Assert.Single(document.UnreadReferences);
+        Assert.Equal("PathsLibrary", unread.Name);
+        Assert.IsType<BadImageFormatException>(unread.Error.InnerException);
+        Assert.Same(unread, Assert.Single(again.UnreadReferences));
+        Assert.True(unread.TryTakeReport());
+        Assert.False(unread.TryTakeReport());
+
+        var widget = new CodeReference.Entity { Name = "Widget", Kind = EntityKind.Type, FilePath = AssemblyPath.Of(sample), Target = GetTypeReference(sample, "Widget") };
+        var described = await AssemblyListing.DescribeReferenceAsync(list, widget, CancellationToken.None);
+        var failed = Assert.IsType<Outcome<Lookup<CodeTooltip>>.Failed>(described);
+        Assert.Same(unread.Error, failed.Error.InnerException);
+    }
+
+    private static EntityHandle GetTypeReference(string path, string name)
+    {
+        using var pe = new PEReader(File.OpenRead(path));
+        var metadata = pe.GetMetadataReader();
+        return metadata.TypeReferences.First(h => metadata.GetString(metadata.GetTypeReference(h).Name) == name);
+    }
+
+    [Fact]
     public async Task Every_node_without_code_is_summarized_in_both_languages()
     {
         using var temp = new TempDir();

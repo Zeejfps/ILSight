@@ -43,6 +43,10 @@ public static class ProblemTexts
                 AfterStep(t, p.Step, Advise(t.ErrorFileDenied(p.File.FileName), p.Error))),
             placeLookupFileDamaged: p => (t.ErrorLookUpPlace(p.Place.Label),
                 AfterStep(t, p.Step, Advise(t.ErrorFileDamaged(p.File.FileName), p.Error))),
+            referenceFileDenied: p => (t.ErrorReadReference(p.Unread.Name, p.Unread.Module),
+                Degraded(t, p.Unread, t.ErrorFileDenied(p.Unread.Error.FilePath.FileName))),
+            referenceFileDamaged: p => (t.ErrorReadReference(p.Unread.Name, p.Unread.Module),
+                Degraded(t, p.Unread, t.ErrorFileDamaged(p.Unread.Error.FilePath.FileName))),
             moduleUnreadable: p => (t.ErrorModuleUnreadable(p.Module), p.Why.ToString()),
             bookmarksNotExported: p => (t.ErrorExportBookmarks, p.Reason),
             bookmarksNotImported: p => (t.ErrorImportBookmarks(p.File), p.Reason),
@@ -78,6 +82,12 @@ public static class ProblemTexts
             reopeningTabs: _ => t.ErrorStepReopenTabs,
             reloadingTab: _ => t.ErrorStepReloadTab);
         return asked + Environment.NewLine + Environment.NewLine + details;
+    }
+
+    // What the code shows without the reference and how to read it again, the cause's advice, then the error as it came.
+    private static string Degraded(Strings t, UnreadReference unread, string advice)
+    {
+        return t.ErrorReadReferenceDegraded(unread.Name, unread.Module) + Environment.NewLine + Environment.NewLine + Advise(advice, unread.Error);
     }
 
     // The cause and what the user can do about it first, then the error as it came.

@@ -693,6 +693,8 @@
   "error.step_reload_tab": "Demandé en réaffichant un onglet après le rechargement de son assembly.",
   "error.file_denied": "Impossible d’ouvrir {file} : l’accès a été refusé, ou un autre programme le verrouille. Rendez-le lisible, puis réessayez.",
   "error.file_damaged": "{file} n’est pas un assembly ni un package .NET lisible. Remplacez le fichier, ou fermez-le.",
+  "error.read_reference": "Impossible de lire {name}, référencé par {assembly}",
+  "error.read_reference_degraded": "Le code de {assembly} est affiché en lisant {name} par son seul nom. Rechargez {assembly} une fois le fichier lisible.",
   "error.no_longer_there": "{place} n’existe plus.",
   "error.module_unreadable": "Impossible de lire {name}",
   "error.decompile": "Impossible de décompiler {name}",

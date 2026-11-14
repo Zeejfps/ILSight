@@ -5,7 +5,8 @@ namespace ILSight.Core;
 /// <summary>A module's resolver as the library asks it within one unit: the module a reference names is handed out only
 /// once it is added to the unit's reading, so it isn't released while the unit reads it; one closed is handed out as
 /// not found. A type system's build also records what it was handed (<see cref="TypeSystemBuild{T}"/>), as values: it
-/// holds nothing past the unit.</summary>
+/// holds nothing past the unit. A reference whose file is there but can't be read is read by name only, the failure
+/// noted on the module (<see cref="ModuleLibrary.NoteUnreadReference"/>).</summary>
 internal sealed class ReadingResolver : IAssemblyResolver
 {
     private readonly ModuleLibrary _resolving;
@@ -29,12 +30,41 @@ internal sealed class ReadingResolver : IAssemblyResolver
 
     public MetadataFile? Resolve(IAssemblyReference reference)
     {
-        return HandOut(_resolving.Resolver.ResolveAssembly(reference));
+        LoadedModule? found;
+        try
+        {
+            found = _resolving.Resolver.ResolveAssembly(reference);
+        }
+        catch (AssemblyLoadException e)
+        {
+            return ReadByNameOnly(reference.Name, e);
+        }
+
+        return HandOut(found);
     }
 
     public MetadataFile? ResolveModule(MetadataFile mainModule, string moduleName)
     {
-        return HandOut(_resolving.Resolver.FindModule(mainModule, moduleName));
+        LoadedModule? found;
+        try
+        {
+            found = _resolving.Resolver.FindModule(mainModule, moduleName);
+        }
+        catch (AssemblyLoadException e)
+        {
+            return ReadByNameOnly(moduleName, e);
+        }
+
+        return HandOut(found);
+    }
+
+    // A file found for the reference that can't be read degrades the type system rather than failing it: the reference
+    // is read by name only, as one not found, and the failure is noted as the reference's, for the code to say and the
+    // user to be told once. A lookup whose answer is in that file fails with it (AssemblyListing).
+    private MetadataFile? ReadByNameOnly(string name, AssemblyLoadException error)
+    {
+        _resolving.NoteUnreadReference(name, error);
+        return null;
     }
 
     public IDisposable? BeginSnapshot()

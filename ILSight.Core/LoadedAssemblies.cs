@@ -129,6 +129,13 @@ public static class LoadedAssemblies
         return new ReadingResolver(GetLibrary(module), reading);
     }
 
+    /// <summary>The references of <paramref name="module"/> whose file was found but could not be read, which its type
+    /// systems read by name only.</summary>
+    internal static IReadOnlyList<UnreadReference> ListUnreadReferences(LoadedModule module)
+    {
+        return GetLibrary(module).ListUnreadReferences();
+    }
+
     /// <summary>The library's file <paramref name="module"/> was read from.</summary>
     internal static MetadataFile GetFile(LoadedModule module)
     {

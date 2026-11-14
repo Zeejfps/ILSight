@@ -22,7 +22,8 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
     }
 
     /// <summary>Brings in what <paramref name="ticket"/> started loading in its tab and shows it there, or that it
-    /// failed, which is reported unless the node's file failed to load, which the tab tells already; then commands
+    /// failed, which is reported unless the node's file failed to load, which the tab tells already, and each reference
+    /// its code read by name only because its file could not be read, the first time any tab shows it; then commands
     /// the view, through <paramref name="viewCommands"/>, to stand where the load was to arrive, or on the node's
     /// definition when it failed. Drops it when newer work started on the tab, or the tab closed, meanwhile. When the
     /// node's module was closed before the decompile began, the tab keeps what it shows and says its assembly was
@@ -40,6 +41,7 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
             return;
         }
 
+        ReportUnreadReferences(load.Document);
         var tab = ticket.Tab;
         var arrival = load.TakeArrival();
         var failure = FindFailure(load, loaded);
@@ -79,6 +81,18 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
         return loaded.Match<Exception?>(
             _ => load.Document.Error,
             failed => failed.Error);
+    }
+
+    // A reference the code read by name only, its file there but unreadable, is reported once, by the first tab to show it.
+    private void ReportUnreadReferences(DecompiledDocument document)
+    {
+        foreach (var unread in document.UnreadReferences)
+        {
+            if (unread.TryTakeReport())
+            {
+                ports.ReportError(LookupFailures.OfUnreadReference(unread));
+            }
+        }
     }
 
     private void ReportFailure(BrowseNode node, Exception error)

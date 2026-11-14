@@ -42,6 +42,18 @@ public static class LookupFailures
         return new AppProblem.UnresolvedFileDamaged { Reference = reference, File = unopened.FilePath, Error = error };
     }
 
+    /// <summary>The file found for <paramref name="unread"/>, a reference a decompiled module's code read by name only,
+    /// could not be read.</summary>
+    public static AppProblem OfUnreadReference(UnreadReference unread)
+    {
+        if (IsDenied(unread.Error))
+        {
+            return new AppProblem.ReferenceFileDenied { Unread = unread };
+        }
+
+        return new AppProblem.ReferenceFileDamaged { Unread = unread };
+    }
+
     // The file the lookup could not open, wherever in the chain of causes the loader said so.
     private static AssemblyLoadException? FindUnopenedFile(Exception error)
     {

@@ -18,6 +18,8 @@ internal sealed class ModuleLibrary
 {
     private readonly Lock _sync = new();
 
+    private readonly List<UnreadReference> _unreadReferences = [];
+
     private readonly TaskCompletionSource _released = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private int _readings;
@@ -50,6 +52,31 @@ internal sealed class ModuleLibrary
     /// <summary>The type systems of the settings that turn language features on or off that
     /// <see cref="TypeSystem"/> models, each with the modules its build was handed.</summary>
     public ConcurrentDictionary<TypeSystemOptions, Lazy<TypeSystemBuild<DecompilerTypeSystem>>> TypeSystems { get; } = new();
+
+    /// <summary>The references whose file was found but could not be read, each once by its name, in the order met: the
+    /// type systems read them by name only (<see cref="ReadingResolver"/>).</summary>
+    public IReadOnlyList<UnreadReference> ListUnreadReferences()
+    {
+        lock (_unreadReferences)
+        {
+            return [.. _unreadReferences];
+        }
+    }
+
+    /// <summary>Notes that the file found for the reference <paramref name="name"/> could not be read, with
+    /// <paramref name="error"/>; a reference noted already keeps its first failure.</summary>
+    public void NoteUnreadReference(string name, AssemblyLoadException error)
+    {
+        lock (_unreadReferences)
+        {
+            if (_unreadReferences.Exists(u => string.Equals(u.Name, name, StringComparison.OrdinalIgnoreCase)))
+            {
+                return;
+            }
+
+            _unreadReferences.Add(new UnreadReference { Name = name, Module = Path.GetFileName(File.FileName), Error = error });
+        }
+    }
 
     /// <summary>Completes once the library's objects are released.</summary>
     public Task Released => _released.Task;

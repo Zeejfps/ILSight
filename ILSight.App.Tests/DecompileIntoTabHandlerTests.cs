@@ -37,6 +37,48 @@ public sealed class DecompileIntoTabHandlerTests
         return new NodeContent.Code(Documents.CreateFromText(title, "// " + title));
     }
 
+    private static NodeContent.Code CodeReading(string title, UnreadReference unread)
+    {
+        var text = Documents.CreateFromText(title, "// " + title);
+        return new NodeContent.Code(new DecompiledDocument
+        {
+            Title = text.Title, Language = text.Language, Error = null, Lines = text.Lines, Definitions = text.Definitions, Statements = text.Statements,
+            EntityNames = text.EntityNames, Folds = text.Folds, UnreadReferences = [unread],
+        });
+    }
+
+    [Fact]
+    public async Task HandleAsync_CodeReadAReferenceByNameOnlyAsItsFileCouldNotBeOpened_ShowsItAndReportsTheReferenceOnceWithWhatToDo()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var greeter = await d.FixtureAsync("Greeter");
+        var viewCommands = new Queue<ViewCommand>();
+        var (navigation, tab) = FirstTab(viewCommands);
+        var ports = new FakeDecompileIntoTabHandlerPorts();
+        var file = AssemblyPath.Of(Path.Combine(Path.GetTempPath(), "Locked", "Locked.dll"));
+        var unread = new UnreadReference
+        {
+            Name = "Locked", Module = "Greeter.dll", Error = new AssemblyLoadException(file, "Cannot open.", new IOException("In use.")),
+        };
+
+        foreach (var language in new[] { DecompilationLanguage.IL, DecompilationLanguage.CSharp })
+        {
+            var load = navigation.Restore(tab, greeter, In(language), AtLineTen);
+            Assert.NotNull(load);
+            var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None));
+            ports.Requests[^1].Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Read { Value = CodeReading("Greeter", unread) }));
+            await d.EndAsync(handling);
+            Assert.IsType<TabContent.Code>(tab.Content);
+        }
+
+        var reported = Assert.IsType<AppProblem.ReferenceFileDenied>(Assert.Single(ports.Reported));
+        Assert.Same(unread, reported.Unread);
+        var text = ProblemTexts.Describe(Strings.En, reported);
+        Assert.Equal(Strings.En.ErrorReadReference("Locked", "Greeter.dll"), text.Title);
+        Assert.StartsWith(Strings.En.ErrorReadReferenceDegraded("Locked", "Greeter.dll"), text.Details);
+        Assert.Contains(Strings.En.ErrorFileDenied("Locked.dll"), text.Details);
+    }
+
     [Fact]
     public async Task HandleAsync_ModuleClosedBeforeTheDecompileBegan_StopsTheLoadAndSaysTheAssemblyWasClosed()
     {

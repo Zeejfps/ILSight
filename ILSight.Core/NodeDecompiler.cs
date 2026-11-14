@@ -79,6 +79,8 @@ internal static class NodeDecompiler
             WriteComment(builder, note);
         }
 
+        WriteUnreadReferences(builder, request, typeSystem);
+
         var settings = Settings.Create(options);
         var thrown = TryWrite(reading, request, builder, language, settings, cancellationToken);
         if (thrown is not null)
@@ -118,6 +120,7 @@ internal static class NodeDecompiler
         }
 
         var builder = new DocumentBuilder { Language = language, Assembly = ModuleOf(request), TypeSystem = typeSystem };
+        WriteUnreadReferences(builder, request, typeSystem);
         Write(reading, request, builder, language, Settings.Create(options), cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         return builder.BuildDocument(request.Title);
@@ -156,6 +159,18 @@ internal static class NodeDecompiler
         }
 
         return builder.BuildFailure(failure.Title, error);
+    }
+
+    // Code read through a type system that read a reference by name only, its file there but unreadable, says so first.
+    private static void WriteUnreadReferences(DocumentBuilder builder, DocumentRequest request, DecompilerTypeSystem? typeSystem)
+    {
+        var module = builder.Assembly;
+        if (module is null || typeSystem is null || !IsReadThroughTypeSystem(request))
+        {
+            return;
+        }
+
+        builder.WriteUnreadReferences(LoadedAssemblies.ListUnreadReferences(module));
     }
 
     /// <summary>The module the document of <paramref name="request"/> is read from; null for a package's.</summary>
