@@ -51,4 +51,23 @@ internal static class Batches
             await ending.ConfigureAwait(false);
         }
     }
+
+    /// <summary>As <see cref="StreamAsync{T}"/>, for <paramref name="produce"/> that answers how its read ended: what it
+    /// emitted comes in batches, and a read that failed ends the stream with <see cref="Outcome{T}.Failed"/> after
+    /// them. What <paramref name="produce"/> throws still ends the stream with it.</summary>
+    public static async IAsyncEnumerable<Outcome<IReadOnlyList<T>>> StreamOutcomesAsync<T>(Func<Action<T>, CancellationToken, Task<Outcome>> produce,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        Outcome ended = new Outcome.Done();
+        var batches = StreamAsync<T>(async (emit, token) => ended = await produce(emit, token), cancellationToken);
+        await foreach (var batch in batches.ConfigureAwait(false))
+        {
+            yield return new Outcome<IReadOnlyList<T>>.Ok(batch);
+        }
+
+        if (ended is Outcome.Failed failed)
+        {
+            yield return new Outcome<IReadOnlyList<T>>.Failed(failed.Error);
+        }
+    }
 }

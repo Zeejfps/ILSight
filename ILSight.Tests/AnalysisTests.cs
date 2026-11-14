@@ -1,5 +1,6 @@
 using ICSharpCode.Decompiler.TypeSystem;
 using System.Collections.Concurrent;
+using System.Reflection.Metadata.Ecma335;
 using ILSight.Core;
 using ILSight.Core.Analysis;
 
@@ -18,7 +19,7 @@ public sealed class AnalysisTests
         var symbol = node.Analysis;
         Assert.NotNull(symbol);
         return Analyzers.RunAsync(list, symbol, symbol.Kinds.Single(k => Analyzers.GetHeader(k) == header))
-            .ToBlockingEnumerable().SelectMany(static b => b).Select(static f => Assert.IsType<AnalysisFind.Found>(f).Symbol).ToList();
+            .ToBlockingEnumerable().SelectMany(static b => b.GetValue()).Select(static f => Assert.IsType<AnalysisFind.Found>(f).Symbol).ToList();
     }
 
     [Fact]
@@ -31,6 +32,28 @@ public sealed class AnalysisTests
         var kinds = symbol.Kinds.Select(Analyzers.GetHeader);
 
         Assert.Equal(["Uses", "Used By", "Implements"], kinds);
+    }
+
+    [Fact]
+    public async Task An_analysis_reaching_a_member_the_library_cannot_read_ends_failed_saying_why()
+    {
+        using var temp = new TempDir();
+        var add = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Calculator`1", "Add");
+        var plus = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Calculator`1", "op_Addition");
+        var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, plus));
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        list.OpenModule(path.Text);
+        var anchor = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = path, Token = MetadataTokens.GetToken(add) };
+        var symbol = Assert.IsType<Lookup<AnalysisSymbol>.Found>((await Analyzers.FindAsync(list, anchor, CancellationToken.None)).GetValue()).Value;
+        var usedBy = symbol.Kinds.Single(static k => Analyzers.GetHeader(k) == "Used By");
+
+        var batches = new List<Outcome<IReadOnlyList<AnalysisFind>>>();
+        await foreach (var batch in Analyzers.RunAsync(list, symbol, usedBy, CancellationToken.None))
+        {
+            batches.Add(batch);
+        }
+
+        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<IReadOnlyList<AnalysisFind>>.Failed>(batches[^1]).Error);
     }
 
     [Fact]
@@ -93,7 +116,7 @@ public sealed class AnalysisTests
         var found = new List<AnalysisFind>();
         await foreach (var batch in Analyzers.RunAsync(list, symbol, usedBy, CancellationToken.None))
         {
-            found.AddRange(batch);
+            found.AddRange(batch.GetValue());
         }
 
         Assert.Contains(found, static f => f is AnalysisFind.Found);

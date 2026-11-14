@@ -52,8 +52,9 @@ public sealed class AnalyzerTests
     }
 
     [Fact]
-    public async Task A_failed_analysis_tells_why_in_its_row_and_reports_the_whole_error()
+    public async Task A_bug_in_the_analysis_code_tells_why_in_its_row_and_reaches_the_edge_reported_as_unexpected()
     {
+        // A symbol another list described: the core's own code fails on it, not the library's read.
         var d = AppStateDriver.Opened();
         var elsewhere = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync().GetChildAsync(AppStateDriver.FixturesNamespace, "Outline");
         var symbol = elsewhere.Analysis;
@@ -66,7 +67,7 @@ public sealed class AnalyzerTests
         var message = Assert.IsType<AnalyzerMessageNode>(Assert.Single(kind.Found));
         Assert.NotNull(message.Error);
         var error = Assert.Single(d.AppState.Errors.Entries);
-        Assert.Equal($"Cannot analyze {symbol.Label} (Used By)", error.Words().Title);
+        Assert.IsType<AppProblem.Unexpected>(error.Problem);
         Assert.Contains(nameof(InvalidOperationException), error.Words().Details);
         Assert.Contains(" at ", error.Words().Details);
     }

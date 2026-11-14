@@ -9,6 +9,10 @@ internal sealed class FakeRunAnalysisHandlerPorts : RunAnalysisHandler.IPorts
 {
     public required IReadOnlyList<Outcome<IReadOnlyList<AnalysisFind>>> Found { get; init; }
 
+    /// <summary>What the analysis throws after what it found, as a bug none of its answers covers; none when
+    /// null.</summary>
+    public Exception? Throws { get; init; }
+
     public List<AppProblem> Reported { get; } = [];
 
     public void ReportError(AppProblem problem)
@@ -22,6 +26,12 @@ internal sealed class FakeRunAnalysisHandlerPorts : RunAnalysisHandler.IPorts
         {
             await Task.CompletedTask;
             yield return found;
+        }
+
+        var throws = Throws;
+        if (throws is not null)
+        {
+            throw throws;
         }
     }
 }

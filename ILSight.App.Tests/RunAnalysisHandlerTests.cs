@@ -66,6 +66,20 @@ public sealed class RunAnalysisHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_AnalysisThrows_LetsItThroughToTheEdge()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var run = await StartGreeterAnalysisAsync(d);
+        var bug = new InvalidOperationException("A bug in the core's own code on what it read.");
+        var ports = new FakeRunAnalysisHandlerPorts { Found = [Batch(await SymbolOfAsync(d, "Farewell"))], Throws = bug };
+
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() => d.RunAsync(() => new RunAnalysisHandler(ports).HandleAsync(d.AppState.Analyzer, run, CancellationToken.None)));
+
+        Assert.Same(bug, thrown);
+        Assert.Empty(ports.Reported);
+    }
+
+    [Fact]
     public async Task HandleAsync_AnalysisCancelledMeanwhile_AddsNothing()
     {
         var d = AppStateDriver.OpenedWithoutScreen();

@@ -236,7 +236,7 @@ public sealed class PackageTests
 
         var callers = Analyzers.RunAsync(list, symbol, usedBy)
             .ToBlockingEnumerable()
-            .SelectMany(static b => b)
+            .SelectMany(static b => b.GetValue())
             .Select(static f => Assert.IsType<AnalysisFind.Found>(f).Symbol)
             .ToList();
 

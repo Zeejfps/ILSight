@@ -105,21 +105,26 @@ public static class Analyzers
 
     /// <summary>The type or member <paramref name="definition"/> names, loading its assembly's file
     /// without listing it, once the read of its type system ended; not found when the file or the entity is gone,
-    /// unreadable when the library could not read the file.</summary>
-    public static async Task<Lookup<AnalysisSymbol>> FindAsync(AssemblyList list, CodeAnchor definition, CancellationToken ct)
+    /// unreadable when the library could not read the file; what else the library throws resolving or describing it,
+    /// <see cref="Outcome{T}.Failed"/>.</summary>
+#pragma warning disable RL0302 // Absence is the Lookup's NotFound inside the Outcome, which the check doesn't look into.
+    public static async Task<Outcome<Lookup<AnalysisSymbol>>> FindAsync(AssemblyList list, CodeAnchor definition, CancellationToken ct)
+#pragma warning restore RL0302
     {
         var assembly = TryLoad(list, definition);
         if (assembly is null)
         {
-            return new Lookup<AnalysisSymbol>.NotFound();
+            return new Outcome<Lookup<AnalysisSymbol>>.Ok(new Lookup<AnalysisSymbol>.NotFound());
         }
 
         using var reading = LoadedAssemblies.BeginReading();
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
         return read.Match(
-            r => Lookup.FromNullable(Find(r.TypeSystem.MainModule, definition)),
-            u => Lookup.FromUnreadable<AnalysisSymbol>(assembly, u),
-            static _ => new Lookup<AnalysisSymbol>.NotFound());
+            r => Find(r.TypeSystem.MainModule, definition, ct).Match<Outcome<Lookup<AnalysisSymbol>>>(
+                static ok => new Outcome<Lookup<AnalysisSymbol>>.Ok(Lookup.FromNullable(ok.Value)),
+                static failed => new Outcome<Lookup<AnalysisSymbol>>.Failed(failed.Error)),
+            u => new Outcome<Lookup<AnalysisSymbol>>.Ok(Lookup.FromUnreadable<AnalysisSymbol>(assembly, u)),
+            static _ => new Outcome<Lookup<AnalysisSymbol>>.Ok(new Lookup<AnalysisSymbol>.NotFound()));
     }
 
     private static LoadedModule? TryLoad(AssemblyList list, CodeAnchor definition)
@@ -138,24 +143,33 @@ public static class Analyzers
         }
     }
 
-    private static AnalysisSymbol? Find(MetadataModule main, CodeAnchor definition)
+    // A saved token the module no longer has can surface as any of the three exceptions taken as not found.
+    private static Outcome<AnalysisSymbol?> Find(MetadataModule main, CodeAnchor definition, CancellationToken ct)
     {
         try
         {
             var entity = main.ResolveEntity(MetadataTokens.EntityHandle(definition.Token));
-            return entity is not null ? Describe(entity) : null;
+            return new Outcome<AnalysisSymbol?>.Ok(entity is not null ? Describe(entity) : null);
         }
         catch (ArgumentException)
         {
-            return null;
+            return new Outcome<AnalysisSymbol?>.Ok(null);
         }
         catch (BadImageFormatException)
         {
-            return null;
+            return new Outcome<AnalysisSymbol?>.Ok(null);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
         }
         catch (InvalidOperationException)
         {
-            return null;
+            return new Outcome<AnalysisSymbol?>.Ok(null);
+        }
+        catch (Exception e)
+        {
+            return new Outcome<AnalysisSymbol?>.Failed(e);
         }
     }
 
@@ -168,18 +182,20 @@ public static class Analyzers
     /// the thread pool, once the reads of the type systems of the modules it can reach ended, yielding results in
     /// batches as they are found, and after them each module it reached that the library could not read. Results come
     /// sorted when the analysis asks for it, after all are found. A unit reading the symbol's module and those it
-    /// scans: a module released (closed) before is passed over, the symbol's own finding nothing.</summary>
-    public static IAsyncEnumerable<IReadOnlyList<AnalysisFind>> RunAsync(AssemblyList list, AnalysisSymbol symbol, AnalysisKind kind,
+    /// scans: a module released (closed) before is passed over, the symbol's own finding nothing. What the library
+    /// throws as the analysis reads ends the stream with <see cref="Outcome{T}.Failed"/>, after what was found before
+    /// it; the cancellation of <paramref name="cancellationToken"/> is let through.</summary>
+    public static IAsyncEnumerable<Outcome<IReadOnlyList<AnalysisFind>>> RunAsync(AssemblyList list, AnalysisSymbol symbol, AnalysisKind kind,
         CancellationToken cancellationToken = default)
     {
-        return Batches.StreamAsync<AnalysisFind>(async (emit, token) =>
+        return Batches.StreamOutcomesAsync<AnalysisFind>(async (emit, token) =>
         {
             var entity = GetSymbol(symbol);
             var own = OwnModuleOf(list, entity);
             using var reading = LoadedAssemblies.BeginReading();
             if (!LoadedAssemblies.TryRead(reading, own))
             {
-                return;
+                return new Outcome.Done();
             }
 
             var run = kind.Prepare(entity);
@@ -190,23 +206,83 @@ public static class Analyzers
 
             var reads = await AnalyzerScope.ReadReachableAsync(reading, list, own, token);
             var context = new AnalyzerContext { AssemblyList = list, TypeSystems = reads, CancellationToken = token };
-            var found = run(context).Select(Describe).OfType<AnalysisSymbol>();
-            if (kind.SortsResults)
+            var found = EmitFound(run, context, kind.SortsResults, emit, token);
+            if (found is Outcome.Failed)
             {
-                found = found.OrderBy(static s => s.Label, StringComparer.OrdinalIgnoreCase);
-            }
-
-            foreach (var result in found)
-            {
-                token.ThrowIfCancellationRequested();
-                emit(new AnalysisFind.Found { Symbol = result });
+                return found;
             }
 
             foreach (var unreadable in context.Unreadable.Values.OrderBy(static u => u.Module.FilePath.FileName, StringComparer.OrdinalIgnoreCase))
             {
                 emit(new AnalysisFind.Unreadable { Name = unreadable.Module.FilePath.FileName, Why = unreadable.Why.Message });
             }
+
+            return new Outcome.Done();
         }, cancellationToken);
+    }
+
+    private static Outcome EmitFound(AnalysisRun run, AnalyzerContext context, bool sorts, Action<AnalysisFind> emit, CancellationToken ct)
+    {
+        if (!sorts)
+        {
+            return ReadEach(run, context, s => emit(new AnalysisFind.Found { Symbol = s }), ct);
+        }
+
+        var all = new List<AnalysisSymbol>();
+        var read = ReadEach(run, context, all.Add, ct);
+        if (read is Outcome.Failed)
+        {
+            return read;
+        }
+
+        foreach (var result in all.OrderBy(static s => s.Label, StringComparer.OrdinalIgnoreCase))
+        {
+            ct.ThrowIfCancellationRequested();
+            emit(new AnalysisFind.Found { Symbol = result });
+        }
+
+        return read;
+    }
+
+    // The analysis reads the library's symbols as it is enumerated, and describing each reads it again.
+    private static Outcome ReadEach(AnalysisRun run, AnalyzerContext context, Action<AnalysisSymbol> take, CancellationToken ct)
+    {
+        IEnumerator<ISymbol>? each = null;
+        try
+        {
+            while (true)
+            {
+                AnalysisSymbol? described;
+                try
+                {
+                    each ??= run(context).GetEnumerator();
+                    if (!each.MoveNext())
+                    {
+                        return new Outcome.Done();
+                    }
+
+                    described = Describe(each.Current);
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception e)
+                {
+                    return new Outcome.Failed(e);
+                }
+
+                ct.ThrowIfCancellationRequested();
+                if (described is not null)
+                {
+                    take(described);
+                }
+            }
+        }
+        finally
+        {
+            each?.Dispose();
+        }
     }
 
     private static LoadedModule OwnModuleOf(AssemblyList list, ISymbol symbol)
