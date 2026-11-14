@@ -572,12 +572,15 @@ public sealed class AssemblyListingTests
     {
         var app = OpenedDialog();
 
+        // The menu asks for the presets in the frame it opens in, the click's, and the look starts only at the edge
+        // after that draw: that frame, not a later one a quick look may already have answered, says so.
         app.Frames.ClickOn(Selector.WithText("Add preconfigured"));
-        app.Frames.WaitUntil(() => app.Frames.Drew(app.Ui.Strings.ListsLookingForPresets), AppStateDriver.Patience);
+        var saidLookingFor = app.Frames.Drew(app.Ui.Strings.ListsLookingForPresets);
         var lookedForBeforeShown = app.Ui.Presets.Found is null;
         app.Frames.WaitUntil(() => app.Ui.Presets.Found is not null, AppStateDriver.Patience);
         app.Frames.Frame(2);
 
+        Assert.True(saidLookingFor);
         Assert.True(lookedForBeforeShown);
         Assert.False(app.Frames.Drew(app.Ui.Strings.ListsLookingForPresets));
         Assert.True(app.Frames.Drew(AssemblyListPresets.FindInstalled()[0].Name));

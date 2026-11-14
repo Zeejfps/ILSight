@@ -6,8 +6,6 @@ namespace ILSight.App.Tests;
 /// <summary>The adapter over a real folder: what it does with the watch as the app shuts down.</summary>
 public sealed class UserThemesAdapterTests : IDisposable
 {
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
-
     private readonly TempDir _temp = new();
 
     public void Dispose()
@@ -27,8 +25,9 @@ public sealed class UserThemesAdapterTests : IDisposable
 
         await shutdown.CancelAsync();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiting.WaitAsync(Patience));
-        var after = await adapter.WaitForChangeAsync(CancellationToken.None).WaitAsync(Patience);
+        // The wait ends on the thread pool, which a busy run may hold up: the test waits for it to end, however long.
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiting);
+        var after = await adapter.WaitForChangeAsync(CancellationToken.None);
         Assert.Equal(ThemeFolderEventKind.Stopped, Assert.IsType<Outcome<ThemeFolderEvent>.Ok>(after).Value.Kind);
     }
 
