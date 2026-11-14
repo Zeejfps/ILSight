@@ -375,12 +375,12 @@ public sealed class DisplayOptionsTests
         var app = AppDriver.Opened(width: 1600f);
         ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
         app.Run();
-        Assert.Equal("dark", app.AppState.Theme.Text);
+        Assert.Equal("dark", app.AppState.ChosenThemes.Theme.Text);
 
         app.Frames.ClickOn(Selector.WithText("Dark")).Frame();
         app.Frames.ClickOn(Selector.WithText("Dracula")).Frame();
 
-        Assert.Equal("dracula", app.AppState.Theme.Text);
+        Assert.Equal("dracula", app.AppState.ChosenThemes.Theme.Text);
         Assert.Equal(app.AppState.Themes.GetTheme(ThemeId<ThemeFile>.Of("dracula")).Ui.Background, app.Frames.WindowBackground);
     }
 
@@ -396,7 +396,7 @@ public sealed class DisplayOptionsTests
         app.Frames.ClickOn(Selector.WithText("Dark")).Frame();
         app.Frames.ClickOn(Selector.WithText("Midnight")).Frame();
 
-        Assert.Equal("midnight", app.AppState.Theme.Text);
+        Assert.Equal("midnight", app.AppState.ChosenThemes.Theme.Text);
         Assert.Equal(0xFF000010u, app.Frames.WindowBackground);
     }
 
@@ -412,11 +412,11 @@ public sealed class DisplayOptionsTests
 
         app.Frames.ClickOn(Selector.WithText("Dark")).Frame();
         app.Frames.Click(TwinRects(app)[1]).Frame();
-        Assert.Equal("twin-b", app.AppState.Theme.Text);
+        Assert.Equal("twin-b", app.AppState.ChosenThemes.Theme.Text);
 
         app.Frames.ClickOn(Selector.WithText("Twin")).Frame();
         app.Frames.Click(TwinRects(app)[1]).Frame();
-        Assert.Equal("twin-a", app.AppState.Theme.Text);
+        Assert.Equal("twin-a", app.AppState.ChosenThemes.Theme.Text);
         Assert.Equal(0xFF00000Au, app.Frames.WindowBackground);
     }
 
@@ -445,7 +445,7 @@ public sealed class DisplayOptionsTests
 
         app.Frames.ClickOn(Selector.AtPath("dock/display-options/customize-theme")).Frame();
 
-        Assert.Equal("dark-custom", app.AppState.Theme.Text);
+        Assert.Equal("dark-custom", app.AppState.ChosenThemes.Theme.Text);
         Assert.Equal([temp.PathOf(Path.Combine("themes", "dark-custom.json"))], app.Frames.OpenedFiles);
     }
 

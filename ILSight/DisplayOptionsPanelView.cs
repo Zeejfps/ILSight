@@ -123,7 +123,7 @@ internal static class DisplayOptionsPanelView
             NextRow(ui, ref rows);
             using (OptionRow(ui, t.DisplayOptionsTheme, null, false))
             {
-                ThemePicker(ui, appState.Themes, appState.Theme, appState.SettingsPlace);
+                ThemePicker(ui, appState.Themes, appState.ChosenThemes.Theme, appState.SettingsPlace);
             }
         }
         if (iconTheme)
@@ -131,7 +131,7 @@ internal static class DisplayOptionsPanelView
             NextRow(ui, ref rows);
             using (OptionRow(ui, t.DisplayOptionsIconTheme, null, false))
             {
-                IconThemePicker(ui, appState.IconThemes, appState.IconTheme, appState.SettingsPlace);
+                IconThemePicker(ui, appState.IconThemes, appState.ChosenThemes.IconTheme, appState.SettingsPlace);
             }
         }
         if (scale)
@@ -210,7 +210,7 @@ internal static class DisplayOptionsPanelView
     private static void CustomizeTheme(UiState screen, AppState appState, Strings t)
     {
         var themes = appState.Themes;
-        var custom = appState.UserThemes.CreateCustomTheme(appState.Theme, parent => t.ThemeCustomName(themes.GetThemeName(parent, t.Culture)));
+        var custom = appState.UserThemes.CreateCustomTheme(appState.ChosenThemes.Theme, parent => t.ThemeCustomName(themes.GetThemeName(parent, t.Culture)));
         if (custom is null)
         {
             return;
@@ -279,7 +279,7 @@ internal static class DisplayOptionsPanelView
     private static void CustomizeIconTheme(UiState screen, AppState appState, Strings t)
     {
         var themes = appState.IconThemes;
-        var custom = appState.UserIconThemes.CreateCustomTheme(appState.IconTheme, parent => t.ThemeCustomName(themes.GetThemeName(parent, t.Culture)));
+        var custom = appState.UserIconThemes.CreateCustomTheme(appState.ChosenThemes.IconTheme, parent => t.ThemeCustomName(themes.GetThemeName(parent, t.Culture)));
         if (custom is null)
         {
             return;

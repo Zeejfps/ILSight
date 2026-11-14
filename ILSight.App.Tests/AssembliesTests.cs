@@ -492,7 +492,7 @@ public sealed class AssembliesTests
         var reopening = appState.ListSession.BeginReopening(appState.Lists);
         appState.Lists.Add("Other", [PathTo("Other.dll")]);
 
-        var opening = AssemblyLists.SwitchAssemblyList(appState.Lists, appState.ListSession, appState.View, "Other");
+        var opening = AssemblyLists.SwitchAssemblyList(appState.Lists, appState.ListSession, appState.KeptScreen.View, "Other");
 
         Assert.NotNull(opening);
         Assert.False(appState.ListSession.TryFinishReopening(reopening.Reload));

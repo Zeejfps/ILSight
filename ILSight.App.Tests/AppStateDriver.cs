@@ -402,7 +402,7 @@ internal sealed class AppStateDriver
     public void SwitchList(string name)
     {
         using var turn = _posted.Install();
-        Commands.OpenListLater(Ui, AssemblyLists.SwitchAssemblyList(AppState.Lists, AppState.ListSession, AppState.View, name));
+        Commands.OpenListLater(Ui, AssemblyLists.SwitchAssemblyList(AppState.Lists, AppState.ListSession, AppState.KeptScreen.View, name));
         NextFrame();
     }
 
@@ -411,7 +411,7 @@ internal sealed class AppStateDriver
     public void DeleteList(string name)
     {
         using var turn = _posted.Install();
-        Commands.OpenListLater(Ui, AssemblyLists.DeleteAssemblyList(AppState.Lists, AppState.ListSession, AppState.View, name));
+        Commands.OpenListLater(Ui, AssemblyLists.DeleteAssemblyList(AppState.Lists, AppState.ListSession, AppState.KeptScreen.View, name));
         NextFrame();
     }
 

@@ -309,9 +309,9 @@ internal static class AppRoot
         ProcessBrowser.IPorts? processes = null)
     {
         var reportError = (AppProblem problem) => Errors.Report(appState, problem);
-        var uiState = CreateUiState(appState.View, appState.Work, reportError, appState.Session, nuGetRequests,
+        var uiState = CreateUiState(appState.KeptScreen.View, appState.Work, reportError, appState.Session, nuGetRequests,
             runtimeScan ?? new FrameworkPickerAdapter(reportError, appState.Assemblies.Runtime), processes ?? new ProcessBrowserAdapter(reportError));
-        ScreenSettings.RestoreScreen(uiState, appState.View);
+        ScreenSettings.RestoreScreen(uiState, appState.KeptScreen.View);
         AppFrames.FollowRestoredAppState(uiState, appState);
         return uiState;
     }

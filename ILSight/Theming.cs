@@ -48,7 +48,7 @@ public static class Theming
     /// the chosen one's file is missing. The choice is kept, so the theme comes back with its file.</summary>
     public static AppTheme ResolveTheme(AppState appState)
     {
-        return appState.Themes.GetTheme(appState.Theme);
+        return appState.Themes.GetTheme(appState.ChosenThemes.Theme);
     }
 
     /// <summary>The catalog of <paramref name="builtIns"/>, the built-in themes in the order a menu lists them, which

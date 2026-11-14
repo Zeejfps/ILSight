@@ -303,7 +303,7 @@ internal static class MainMenuView
         }
 
         ui.MenuSeparator();
-        ThemeMenu(ui, appState.Themes, appState.Theme);
+        ThemeMenu(ui, appState.Themes, appState.ChosenThemes.Theme);
         LanguageMenu(ui, appState.Locale);
     }
 

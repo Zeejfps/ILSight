@@ -88,7 +88,7 @@ public static class AssemblyLists
     /// numbered when that is taken, leaving the open one open, and returns the name the copy got.</summary>
     public static string DuplicateAssemblyList(AppState appState, string source, string name)
     {
-        RememberActiveAssemblyList(appState.Lists, appState.ListSession, appState.View);
+        RememberActiveAssemblyList(appState.Lists, appState.ListSession, appState.KeptScreen.View);
         return appState.Lists.Duplicate(source, name);
     }
 

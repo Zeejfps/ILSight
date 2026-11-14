@@ -62,8 +62,8 @@ public static class Settings
             Analyzer = appState.Analyzer.Revision,
             Documents = appState.Navigation.TabChanges,
             View = appState.KeptScreen.ViewChanges,
-            Theme = appState.Theme,
-            IconTheme = appState.IconTheme,
+            Theme = appState.ChosenThemes.Theme,
+            IconTheme = appState.ChosenThemes.IconTheme,
             Language = appState.Decompiler.Setup.Language,
             DecompilerOptions = appState.Decompiler.Setup.Options,
             ApiVisibility = appState.ApiVisibility,
@@ -76,15 +76,15 @@ public static class Settings
     /// where they were read from.</summary>
     internal static AppSettings CreateSettings(AppState appState)
     {
-        var view = appState.View;
+        var view = appState.KeptScreen.View;
         return new AppSettings
         {
             FilePath = appState.SettingsPlace.FilePath,
             CanSaveOverFile = appState.SettingsPlace.CanSaveOverFile,
             AssemblyLists = appState.Lists.ToRecords(),
             ActiveAssemblyList = appState.Lists.Active,
-            Theme = appState.Theme,
-            IconTheme = appState.IconTheme,
+            Theme = appState.ChosenThemes.Theme,
+            IconTheme = appState.ChosenThemes.IconTheme,
             Language = appState.Decompiler.Setup.Language,
             Decompiler = appState.Decompiler.Setup.Options,
             ApiVisibility = appState.ApiVisibility,

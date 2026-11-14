@@ -38,7 +38,7 @@ public sealed class UserThemeTests : IDisposable
     private static string? CreateCustomTheme(AppState appState)
     {
         var themes = appState.Themes;
-        var custom = appState.UserThemes.CreateCustomTheme(appState.Theme, parent => Strings.En.ThemeCustomName(themes.GetThemeName(parent, Strings.En.Culture)));
+        var custom = appState.UserThemes.CreateCustomTheme(appState.ChosenThemes.Theme, parent => Strings.En.ThemeCustomName(themes.GetThemeName(parent, Strings.En.Culture)));
         if (custom is null)
         {
             return null;
@@ -150,7 +150,7 @@ public sealed class UserThemeTests : IDisposable
         Assert.NotNull(path);
         var text = File.ReadAllText(path);
         Assert.Equal(_temp.PathOf(Path.Combine("themes", "dracula-custom.json")), path);
-        Assert.Equal("dracula-custom", appState.Theme.Text);
+        Assert.Equal("dracula-custom", appState.ChosenThemes.Theme.Text);
         Assert.Empty(appState.Errors.Entries);
         Assert.Equal("Dracula (custom)", appState.Themes.GetThemeName(Id("dracula-custom"), CultureInfo.GetCultureInfo("en")));
         Assert.Equal(dracula.Ui, Theming.ResolveTheme(appState).Ui);
@@ -212,7 +212,7 @@ public sealed class UserThemeTests : IDisposable
         var path = CreateCustomTheme(appState);
 
         Assert.Equal("dark-custom-3.json", Path.GetFileName(path));
-        Assert.Equal("dark-custom-3", appState.Theme.Text);
+        Assert.Equal("dark-custom-3", appState.ChosenThemes.Theme.Text);
     }
 
     [Fact]
@@ -239,7 +239,7 @@ public sealed class UserThemeTests : IDisposable
         var path = CreateCustomTheme(appState);
 
         Assert.Null(path);
-        Assert.Equal("dark", appState.Theme.Text);
+        Assert.Equal("dark", appState.ChosenThemes.Theme.Text);
         Assert.Equal("Cannot write the custom theme", Assert.Single(appState.Errors.Entries).Words().Title);
     }
 
@@ -249,7 +249,7 @@ public sealed class UserThemeTests : IDisposable
         var appState = AppRoot.RestoreAppState(new AppSettings { Locale = Locale.En }, TestSession.Shared);
 
         Assert.Null(CreateCustomTheme(appState));
-        Assert.Equal("dark", appState.Theme.Text);
+        Assert.Equal("dark", appState.ChosenThemes.Theme.Text);
     }
 
     [Fact]
@@ -292,6 +292,6 @@ public sealed class UserThemeTests : IDisposable
         d.RunUntil(() => Theming.ResolveTheme(d.AppState).Ui.Accent == 0xFFFF00FF);
         d.AppState.Workflows.CancelAll();
 
-        Assert.Equal("live", d.AppState.Theme.Text);
+        Assert.Equal("live", d.AppState.ChosenThemes.Theme.Text);
     }
 }

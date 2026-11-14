@@ -87,7 +87,7 @@ public static class IconTheming
     /// the chosen one's file is missing. The choice is kept, so the icon theme comes back with its file.</summary>
     public static IconTheme ResolveIconTheme(AppState appState)
     {
-        return appState.IconThemes.GetTheme(appState.IconTheme);
+        return appState.IconThemes.GetTheme(appState.ChosenThemes.IconTheme);
     }
 
     private const string FontsKey = "fonts";

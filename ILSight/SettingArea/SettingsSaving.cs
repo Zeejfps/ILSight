@@ -57,7 +57,7 @@ public sealed class SettingsSaving(SettingsSaving.IPorts ports)
     /// succeeds. A failed write is reported, unless writes were failing already.</summary>
     public SettingsWriteResult Save(AppState appState)
     {
-        AssemblyLists.RememberActiveAssemblyList(appState.Lists, appState.ListSession, appState.View);
+        AssemblyLists.RememberActiveAssemblyList(appState.Lists, appState.ListSession, appState.KeptScreen.View);
         var sources = Settings.CaptureSavedSources(appState);
         var write = WriteSettings(Settings.CreateSettings(appState));
         TakeWrite(appState, sources, write);

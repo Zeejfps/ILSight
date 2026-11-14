@@ -39,7 +39,7 @@ public sealed class UserIconThemeTests : IDisposable
     private static string? CreateCustomIconTheme(AppState appState)
     {
         var themes = appState.IconThemes;
-        var custom = appState.UserIconThemes.CreateCustomTheme(appState.IconTheme, parent => Strings.En.ThemeCustomName(themes.GetThemeName(parent, Strings.En.Culture)));
+        var custom = appState.UserIconThemes.CreateCustomTheme(appState.ChosenThemes.IconTheme, parent => Strings.En.ThemeCustomName(themes.GetThemeName(parent, Strings.En.Culture)));
         if (custom is null)
         {
             return null;
@@ -58,7 +58,7 @@ public sealed class UserIconThemeTests : IDisposable
     public void The_icon_theme_is_lucide_by_default_and_a_chosen_one_is_saved()
     {
         var appState = AppRoot.RestoreAppState(Settings(), TestSession.Shared);
-        Assert.Equal("lucide", appState.IconTheme.Text);
+        Assert.Equal("lucide", appState.ChosenThemes.IconTheme.Text);
         Assert.Equal(BuiltInIconThemes.Reference.Icons.NodeClass, IconTheming.ResolveIconTheme(appState).Icons.NodeClass);
 
         appState.ChosenThemes.ChooseIconTheme(Id("mine"));
@@ -142,7 +142,7 @@ public sealed class UserIconThemeTests : IDisposable
         Assert.NotNull(path);
         var text = File.ReadAllText(path);
         Assert.Equal(_temp.PathOf(Path.Combine("icon-themes", "lucide-custom.json")), path);
-        Assert.Equal("lucide-custom", appState.IconTheme.Text);
+        Assert.Equal("lucide-custom", appState.ChosenThemes.IconTheme.Text);
         Assert.Empty(appState.Errors.Entries);
         Assert.Equal("Lucide (custom)", appState.IconThemes.GetThemeName(Id("lucide-custom"), CultureInfo.GetCultureInfo("en")));
         Assert.Equal(BuiltInIconThemes.Reference.Icons.ToolbarBack, IconTheming.ResolveIconTheme(appState).Icons.ToolbarBack);
@@ -194,7 +194,7 @@ public sealed class UserIconThemeTests : IDisposable
 
         Assert.Null(CreateCustomIconTheme(appState));
         Assert.Null(appState.UserIconThemes.PrepareFolder());
-        Assert.Equal("lucide", appState.IconTheme.Text);
+        Assert.Equal("lucide", appState.ChosenThemes.IconTheme.Text);
     }
 
     [Fact]
@@ -268,7 +268,7 @@ public sealed class UserIconThemeTests : IDisposable
         app.Frames.ClickOn(Selector.AtPath("dock/display-options/icon-theme")).Frame();
         app.Frames.ClickOn(Selector.WithText("Shapes")).Frame(2);
 
-        Assert.Equal("shapes", app.AppState.IconTheme.Text);
+        Assert.Equal("shapes", app.AppState.ChosenThemes.IconTheme.Text);
         Assert.NotNull(app.Ui.Appearance.Icons.NodeClass.Svg);
         Assert.True(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.OptionsCustomizeIconTheme)));
     }
@@ -282,7 +282,7 @@ public sealed class UserIconThemeTests : IDisposable
 
         app.Frames.ClickOn(Selector.AtPath("dock/display-options/customize-icon-theme")).Frame();
 
-        Assert.Equal("lucide-custom", app.AppState.IconTheme.Text);
+        Assert.Equal("lucide-custom", app.AppState.ChosenThemes.IconTheme.Text);
         Assert.Equal([_temp.PathOf(Path.Combine("icon-themes", "lucide-custom.json"))], app.Frames.OpenedFiles);
     }
 

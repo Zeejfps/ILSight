@@ -73,7 +73,7 @@ public static class AppStart
 
         if (arguments.AssemblyList is not null)
         {
-            Commands.StartOpeningList(appState, AssemblyLists.SwitchToListNamed(appState.Lists, appState.ListSession, appState.View, arguments.AssemblyList));
+            Commands.StartOpeningList(appState, AssemblyLists.SwitchToListNamed(appState.Lists, appState.ListSession, appState.KeptScreen.View, arguments.AssemblyList));
         }
 
         if (arguments.ClearList)

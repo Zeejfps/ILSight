@@ -30,9 +30,6 @@ public sealed class AppState
 
     public required KeptScreen KeptScreen { get; init; }
 
-    /// <summary>What the settings keep of the screen (<see cref="KeptScreen"/>).</summary>
-    public ViewSettings View => KeptScreen.View;
-
     /// <summary>How many rows a grid made for a tab reads with its content: what its first show needs, the rows it
     /// measures its columns over or the window it opens to, the larger (<see cref="MetadataGridArea.MetadataGridFrame.CalculateFirstReadRows"/>),
     /// as the frame edge last worked it out from the screen's layout; from the window the settings kept until then.</summary>
@@ -202,9 +199,6 @@ public sealed class AppState
 
     public required ChosenThemes ChosenThemes { get; init; }
 
-    public ThemeId<ThemeFile> Theme => ChosenThemes.Theme;
-
-    public ThemeId<IconThemeFile> IconTheme => ChosenThemes.IconTheme;
     public ApiVisibility ApiVisibility;
 
     /// <summary>The interface language.</summary>

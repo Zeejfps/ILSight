@@ -7,6 +7,7 @@ using ILSight.ProcessArea;
 using ILSight.NuGetArea;
 using ILSight.AssemblyArea;
 using ILSight.MetadataGridArea;
+using ILSight.SettingArea;
 
 namespace ILSight.ILSightAppArea;
 
@@ -215,7 +216,7 @@ internal static class AppFrames
     internal static void KeepScreenChanges(UiState uiState, AppState appState)
     {
         KeepTabPositions(uiState, appState.Navigation);
-        KeepChangedViewSettings(uiState, appState);
+        KeepChangedViewSettings(uiState, appState.KeptScreen);
         KeepFirstGridRows(uiState, appState);
     }
 
@@ -263,7 +264,7 @@ internal static class AppFrames
         navigation.KeepPositionLeft(shown, view.GetShownPosition());
     }
 
-    private static void KeepChangedViewSettings(UiState uiState, AppState appState)
+    private static void KeepChangedViewSettings(UiState uiState, KeptScreen kept)
     {
         var view = ScreenSettings.TakeChangedViewSettings(uiState);
         if (view is null)
@@ -271,7 +272,7 @@ internal static class AppFrames
             return;
         }
 
-        appState.KeptScreen.KeepView(view);
+        kept.KeepView(view);
     }
 
     /// <summary>Does what comes after drawing a frame: keeps what the screen changed, runs what it asked of

@@ -29,7 +29,7 @@ public static class MainView
         {
             MainMenuView.Render(ui, appState);
             ui.Separator();
-            ToolbarView.Render(ui, appState.Lists, appState.ListSession, appState.View, appState.FinishedExports, appState.Decompiler);
+            ToolbarView.Render(ui, appState.Lists, appState.ListSession, appState.KeptScreen.View, appState.FinishedExports, appState.Decompiler);
             ui.Separator();
             Panels(ui, appState);
             ui.Separator();
@@ -40,8 +40,8 @@ public static class MainView
         NuGetPickerView.Render(ui);
         ProcessPickerView.Render(ui, appState.Navigation);
         CloseAssembliesDialogView.Render(ui, appState.Assemblies);
-        AssemblyListsDialogView.Render(ui, appState.Lists, appState.ListSession, appState.View);
-        AssemblyListDeleteDialogView.Render(ui, appState.Lists, appState.ListSession, appState.View);
+        AssemblyListsDialogView.Render(ui, appState.Lists, appState.ListSession, appState.KeptScreen.View);
+        AssemblyListDeleteDialogView.Render(ui, appState.Lists, appState.ListSession, appState.KeptScreen.View);
         BookmarkImportDialogView.Render(ui, appState.Imports);
         LayoutResetDialogView.Render(ui);
         DisplayOptionsResetDialogView.Render(ui);
