@@ -219,13 +219,13 @@ public sealed class NavigationTests
         var (_, healthy) = Trees.OpenTestAssembly();
         var place = new NodePath { FilePath = path, Steps = (await healthy.FixturesAsync()).Path.Steps };
 
-        var node = await NodeLookup.FindAsync(list, session, type, CancellationToken.None);
-        var row = await NodeLookup.FindMetadataRowAsync(list, session, type, CancellationToken.None);
-        var atPlace = await NodeLookup.FindAsync(list, session, place, CancellationToken.None);
+        var node = (await NodeLookup.FindAsync(list, session, type, CancellationToken.None)).GetValue();
+        var row = (await NodeLookup.FindMetadataRowAsync(list, session, type, CancellationToken.None)).GetValue();
+        var atPlace = (await NodeLookup.FindAsync(list, session, place, CancellationToken.None)).GetValue();
         var tooltip = (await AssemblyListing.DescribeReferenceAsync(list, type, CancellationToken.None)).GetValue();
         var card = await TypeCards.ReadAsync(list, type, CancellationToken.None);
         var module = Assert.IsType<LoadedModule>(Assert.Single(list.Assemblies));
-        var byId = await NodeLookup.FindByIdAsync(session, "T:ILSight.Tests.Fixtures.Circle", [module], CancellationToken.None);
+        var byId = (await NodeLookup.FindByIdAsync(session, "T:ILSight.Tests.Fixtures.Circle", [module], CancellationToken.None)).GetValue();
 
         Assert.Equal("UnreadableTypes.dll", Assert.IsType<Lookup<BrowseNode>.Unreadable>(node).Module.Module.FilePath.FileName);
         Assert.NotEmpty(Assert.IsType<Lookup<BrowseNode>.Unreadable>(node).Module.Why.Message);
@@ -234,5 +234,20 @@ public sealed class NavigationTests
         Assert.Same(module, Assert.IsType<Lookup<CodeTooltip>.Unreadable>(tooltip).Module.Module);
         Assert.Same(module, Assert.IsType<Lookup<TypeCard>.Unreadable>(card).Module.Module);
         Assert.Same(module, Assert.IsType<Lookup<BrowseNode>.Unreadable>(byId).Module.Module);
+    }
+
+    [Fact]
+    public async Task A_documentation_id_among_members_the_library_cannot_read_is_the_lookups_failure_saying_why()
+    {
+        using var temp = new TempDir();
+        var grow = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Circle", "Grow");
+        var path = BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, grow);
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var module = Assert.IsType<LoadedModule>(AssemblyListing.Open(list, AssemblyPath.Of(path)));
+
+        var byId = await NodeLookup.FindByIdAsync(TestSession.Shared, "M:ILSight.Tests.Fixtures.Circle.Grow(System.Double,System.Int32)", [module],
+            CancellationToken.None);
+
+        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(byId).Error);
     }
 }

@@ -22,76 +22,108 @@ public sealed class NavigationInfrastructure(ErrorLog errors, RefusalLine refusa
         refusals.Show(refusal);
     }
 
-    /// <summary>Looks in the open assemblies on the thread pool and comes back on the UI thread, with whatever the
-    /// lookup threw as <see cref="Outcome{T}.Failed"/>.</summary>
-    public Task<Outcome<Lookup<BrowseNode>>> LookUpReferenceAsync(CodeReference.Navigable reference, CancellationToken ct)
+    /// <summary>Looks in the open assemblies on the thread pool and comes back on the UI thread, a lookup the library
+    /// failed as <see cref="Outcome{T}.Failed"/>, as the core answers it; the cancellation of <paramref name="ct"/> is
+    /// let through.</summary>
+    public async Task<Outcome<Lookup<BrowseNode>>> LookUpReferenceAsync(CodeReference.Navigable reference, CancellationToken ct)
     {
-        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => NodeLookup.FindAsync(assemblies, session, reference, ct), ct)), ct);
+        var found = await Background.Wait(Task.Run(() => NodeLookup.FindAsync(assemblies, session, reference, ct), ct));
+        ct.ThrowIfCancellationRequested();
+        return found;
     }
 
     /// <inheritdoc cref="LookUpReferenceAsync"/>
-    public Task<Outcome<Lookup<MetadataTarget>>> LookUpMetadataRowAsync(CodeReference.Navigable reference, CancellationToken ct)
+    public async Task<Outcome<Lookup<MetadataTarget>>> LookUpMetadataRowAsync(CodeReference.Navigable reference, CancellationToken ct)
     {
-        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => NodeLookup.FindMetadataRowAsync(assemblies, session, reference, ct), ct)), ct);
+        var found = await Background.Wait(Task.Run(() => NodeLookup.FindMetadataRowAsync(assemblies, session, reference, ct), ct));
+        ct.ThrowIfCancellationRequested();
+        return found;
     }
 
     /// <inheritdoc cref="LookUpReferenceAsync"/>
-    public Task<Outcome<Lookup<BrowseNode>>> LookUpPlaceAsync(NodePath place, CancellationToken ct)
+    public async Task<Outcome<Lookup<BrowseNode>>> LookUpPlaceAsync(NodePath place, CancellationToken ct)
     {
-        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => NodeLookup.FindAsync(assemblies, session, place, ct), ct)), ct);
+        var found = await Background.Wait(Task.Run(() => NodeLookup.FindAsync(assemblies, session, place, ct), ct));
+        ct.ThrowIfCancellationRequested();
+        return found;
     }
 
     /// <summary>Looks among the listed assemblies on the thread pool, opening nothing, and comes back on the UI thread,
-    /// with what the read failed with (<see cref="UntrustedReads"/>) as <see cref="Outcome{T}.Failed"/>.</summary>
-    public Task<Outcome<Lookup<BrowseNode>>> LookUpListedPlaceAsync(NodePath place, CancellationToken ct)
+    /// a lookup the library failed as <see cref="Outcome{T}.Failed"/>, as the core answers it; the cancellation of
+    /// <paramref name="ct"/> is let through.</summary>
+    public async Task<Outcome<Lookup<BrowseNode>>> LookUpListedPlaceAsync(NodePath place, CancellationToken ct)
     {
-        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => NodeLookup.FindListedAsync(assemblies, session, place, ct), ct)), ct);
+        var found = await Background.Wait(Task.Run(() => NodeLookup.FindListedAsync(assemblies, session, place, ct), ct));
+        ct.ThrowIfCancellationRequested();
+        return found;
     }
 
-    /// <summary>Looks among the listed assemblies on the thread pool and comes back on the UI thread, with whatever
-    /// the lookup threw as <see cref="Outcome{T}.Failed"/>, except the cancellation of <paramref name="ct"/>, which it
-    /// lets through.</summary>
-    public Task<Outcome<List<Lookup<BrowseNode>>>> LookUpListedPlacesAsync(IReadOnlyList<NodePath?> places, CancellationToken ct)
+    /// <summary>Looks among the listed assemblies on the thread pool and comes back on the UI thread; the first lookup
+    /// the library failed is the answer's <see cref="Outcome{T}.Failed"/>, as the core answers it. The cancellation of
+    /// <paramref name="ct"/> is let through.</summary>
+    public async Task<Outcome<List<Lookup<BrowseNode>>>> LookUpListedPlacesAsync(IReadOnlyList<NodePath?> places, CancellationToken ct)
     {
-        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => FindListedPlacesAsync(places, ct), ct)), ct);
+        var found = await Background.Wait(Task.Run(() => FindListedPlacesAsync(places, ct), ct));
+        ct.ThrowIfCancellationRequested();
+        return found;
     }
 
-    private async Task<List<Lookup<BrowseNode>>> FindListedPlacesAsync(IReadOnlyList<NodePath?> places, CancellationToken ct)
+#pragma warning disable RL0302 // Absence is each place's Lookup NotFound inside the Outcome, which the check doesn't look into.
+    private async Task<Outcome<List<Lookup<BrowseNode>>>> FindListedPlacesAsync(IReadOnlyList<NodePath?> places, CancellationToken ct)
+#pragma warning restore RL0302
     {
         var found = new List<Lookup<BrowseNode>>(places.Count);
         foreach (var place in places)
         {
-            found.Add(await FindListedPlaceAsync(place, ct));
+            if (place is null)
+            {
+                found.Add(new Lookup<BrowseNode>.NotFound());
+                continue;
+            }
+
+            var lookup = await NodeLookup.FindListedAsync(assemblies, session, place, ct);
+            if (lookup is Outcome<Lookup<BrowseNode>>.Failed failed)
+            {
+                return new Outcome<List<Lookup<BrowseNode>>>.Failed(failed.Error);
+            }
+
+            found.Add(((Outcome<Lookup<BrowseNode>>.Ok)lookup).Value);
         }
-        return found;
+        return new Outcome<List<Lookup<BrowseNode>>>.Ok(found);
     }
 
-    private async Task<Lookup<BrowseNode>> FindListedPlaceAsync(NodePath? place, CancellationToken ct)
+    /// <summary>Looks on the thread pool and comes back on the UI thread, a lookup the library failed as
+    /// <see cref="Outcome{T}.Failed"/>, as the core answers it; the cancellation of <paramref name="ct"/> is let
+    /// through.</summary>
+    public async Task<Outcome<Lookup<string>>> LookUpApiReferencePageAsync(CodeReference.Entity reference, CancellationToken ct)
     {
-        if (place is null)
-        {
-            return new Lookup<BrowseNode>.NotFound();
-        }
-
-        return await NodeLookup.FindListedAsync(assemblies, session, place, ct);
-    }
-
-    /// <summary>Looks on the thread pool and comes back on the UI thread, with what the read failed with (<see cref="UntrustedReads"/>) as
-    /// <see cref="Outcome{T}.Failed"/>.</summary>
-    public Task<Outcome<Lookup<string>>> LookUpApiReferencePageAsync(CodeReference.Entity reference, CancellationToken ct)
-    {
-        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => AssemblyListing.FindApiReferencePageAsync(assemblies, reference, ct), ct)), ct);
+        var page = await Background.Wait(Task.Run(() => AssemblyListing.FindApiReferencePageAsync(assemblies, reference, ct), ct));
+        ct.ThrowIfCancellationRequested();
+        return page;
     }
 
     /// <summary>Opens and looks on the thread pool, the opening cancelled with the opens under way now, and comes
-    /// back on the UI thread, with what the read failed with (<see cref="UntrustedReads"/>) as <see cref="Outcome{T}.Failed"/>.</summary>
-    public Task<Outcome<Lookup<BrowseNode>>> OpenAndFindIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct)
+    /// back on the UI thread: a lookup the library failed as <see cref="Outcome{T}.Failed"/>, as the core answers it,
+    /// and the opening cancelled by newer opens as <see cref="Outcome{T}.Failed"/> with that cancellation, which nobody
+    /// asked of this request. The cancellation of <paramref name="ct"/> is let through.</summary>
+    public async Task<Outcome<Lookup<BrowseNode>>> OpenAndFindIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct)
     {
         var opening = opens.Token;
-        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => OpenAndLookUpIdAsync(paths, idString, opening), ct)), ct);
+        Outcome<Lookup<BrowseNode>> found;
+        try
+        {
+            found = await Background.Wait(Task.Run(() => OpenAndLookUpIdAsync(paths, idString, opening), ct));
+        }
+        catch (OperationCanceledException e) when (opening.IsCancellationRequested && !ct.IsCancellationRequested)
+        {
+            return new Outcome<Lookup<BrowseNode>>.Failed(e);
+        }
+
+        ct.ThrowIfCancellationRequested();
+        return found;
     }
 
-    private async Task<Lookup<BrowseNode>> OpenAndLookUpIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken opening)
+    private async Task<Outcome<Lookup<BrowseNode>>> OpenAndLookUpIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken opening)
     {
         var opened = new List<LoadedAssembly>();
         foreach (var path in paths)

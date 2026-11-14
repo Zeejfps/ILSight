@@ -128,31 +128,31 @@ internal static class SessionQueries
         public async Task<BrowseNode?> FindNodeAsync(NodePath path)
         {
             var found = await NodeLookup.FindAsync(list, TestSession.Shared, path, CancellationToken.None);
-            return found.FoundOrNull;
+            return found.GetValue().FoundOrNull;
         }
 
         public async Task<BrowseNode?> FindNodeAsync(CodeReference.Navigable reference)
         {
             var found = await NodeLookup.FindAsync(list, TestSession.Shared, reference, CancellationToken.None);
-            return found.FoundOrNull;
+            return found.GetValue().FoundOrNull;
         }
 
         public async Task<BrowseNode?> FindListedNodeAsync(NodePath path)
         {
             var found = await NodeLookup.FindListedAsync(list, TestSession.Shared, path, CancellationToken.None);
-            return found.FoundOrNull;
+            return found.GetValue().FoundOrNull;
         }
 
         public async Task<BrowseNode?> FindNodeByIdAsync(string idString, IEnumerable<LoadedModule> assemblies)
         {
             var found = await NodeLookup.FindByIdAsync(TestSession.Shared, idString, assemblies, CancellationToken.None);
-            return found.FoundOrNull;
+            return found.GetValue().FoundOrNull;
         }
 
         public async Task<MetadataTarget?> FindMetadataRowAsync(CodeReference.Navigable reference)
         {
             var found = await NodeLookup.FindMetadataRowAsync(list, TestSession.Shared, reference, CancellationToken.None);
-            return found.FoundValueOrNull;
+            return found.GetValue().FoundValueOrNull;
         }
 
         public IAsyncEnumerable<IReadOnlyList<SearchFind>> SearchAsync(SearchQuery query, CancellationToken cancellationToken = default)

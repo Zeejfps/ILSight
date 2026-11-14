@@ -217,28 +217,33 @@ public static class AssemblyListing
     /// The page of the .NET API reference about the type or member <paramref name="reference"/>
     /// points at, as <see cref="MicrosoftDocs.FindPage(BrowseNode)"/> names it. Not found for what is not
     /// visible outside its assembly, or when it cannot be resolved; unreadable as
-    /// <see cref="DescribeReferenceAsync"/> says. Loads the files it needs without listing them: call it off the UI
-    /// thread.
+    /// <see cref="DescribeReferenceAsync"/> says; what the library throws resolving it or naming its page,
+    /// <see cref="Outcome{T}.Failed"/>. Loads the files it needs without listing them: call it off the UI thread.
     /// </summary>
-    public static async Task<Lookup<string>> FindApiReferencePageAsync(AssemblyList list, CodeReference.Entity reference, CancellationToken ct)
+#pragma warning disable RL0302 // Absence is the Lookup's NotFound inside the Outcome, which the check doesn't look into.
+    public static async Task<Outcome<Lookup<string>>> FindApiReferencePageAsync(AssemblyList list, CodeReference.Entity reference, CancellationToken ct)
+#pragma warning restore RL0302
     {
+        using var reading = LoadedAssemblies.BeginReading();
+        Lookup<string> page;
         try
         {
-            using var reading = LoadedAssemblies.BeginReading();
             var resolved = await ResolveEntityAsync(list, reading, reference, ct);
-            return resolved.Match(
+            page = resolved.Match(
                 static found => Lookup.FromNullable(MicrosoftDocs.FindPage(found.Value.Entity)),
                 static _ => new Lookup<string>.NotFound(),
                 static unreadable => new Lookup<string>.Unreadable { Module = unreadable.Module });
         }
-        catch (BadImageFormatException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            return new Lookup<string>.NotFound();
+            throw;
         }
-        catch (IOException)
+        catch (Exception e)
         {
-            return new Lookup<string>.NotFound();
+            return new Outcome<Lookup<string>>.Failed(e);
         }
+
+        return new Outcome<Lookup<string>>.Ok(page);
     }
 
     /// <summary>The definition of the type <paramref name="reference"/> points at, loading the assembly

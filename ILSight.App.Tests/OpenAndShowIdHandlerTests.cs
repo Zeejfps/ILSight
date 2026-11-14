@@ -19,6 +19,19 @@ public sealed class OpenAndShowIdHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_LookupThrows_LetsItThroughToTheEdge()
+    {
+        var d = AppStateDriver.WithoutScreen();
+        var bug = new InvalidOperationException("A bug in the core's own code on what it read.");
+        var opening = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)), WhileOpening = () => throw bug };
+
+        var handling = d.BeginAsync(() => new OpenAndShowIdHandler(opening).HandleAsync(d.AppState, [], "T:Greeter", CancellationToken.None));
+
+        Assert.Same(bug, await Assert.ThrowsAsync<InvalidOperationException>(async () => Assert.Null(await d.EndAsync(handling))));
+        Assert.Empty(opening.Reported);
+    }
+
+    [Fact]
     public async Task HandleAsync_IdNotFound_ReportsTheId()
     {
         var d = AppStateDriver.WithoutScreen();

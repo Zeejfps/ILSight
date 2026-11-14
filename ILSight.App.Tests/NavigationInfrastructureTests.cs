@@ -28,6 +28,18 @@ public sealed class NavigationInfrastructureTests
     }
 
     [Fact]
+    public async Task OpenAndFindIdAsync_MemberTheLibraryCannotRead_AnswersItsFailureWithWhy()
+    {
+        using var temp = new TempDir();
+        var greet = BrokenAssemblies.GetMethod(AppStateDriver.FixturePath, "Greeter", "Greet");
+        var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodName(temp, AppStateDriver.FixturePath, greet));
+
+        var found = await Create().OpenAndFindIdAsync([path], "M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)", CancellationToken.None);
+
+        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(found).Error);
+    }
+
+    [Fact]
     public async Task LookUpListedPlacesAsync_TokenCancelled_ThrowsThatCancellation()
     {
         using var navigationClosed = new CancellationTokenSource();

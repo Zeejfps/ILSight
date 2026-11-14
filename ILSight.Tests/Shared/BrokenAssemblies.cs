@@ -83,4 +83,46 @@ internal static class BrokenAssemblies
 
         return temp.Write("UnreadableTypes.dll", image);
     }
+
+    /// <summary>A copy of the assembly at <paramref name="path"/> whose method <paramref name="method"/> has a name
+    /// that points past its string heap: the file opens and its type system reads, and reading that method's name
+    /// throws.</summary>
+    public static string WriteUnreadableMethodName(TempDir temp, string path, MethodDefinitionHandle method)
+    {
+        var image = File.ReadAllBytes(path);
+        using (var pe = new PEReader(new MemoryStream(image)))
+        {
+            var reader = pe.GetMetadataReader();
+            var rowSize = reader.GetTableRowSize(TableIndex.MethodDef);
+            var stringHeapSize = reader.GetHeapSize(HeapIndex.String);
+            var stringIndexSize = stringHeapSize < 0x10000 ? 2 : 4;
+            const int rvaAndFlagsSize = 8;
+            var rowsBefore = MetadataTokens.GetRowNumber(method) - 1;
+            var offset = pe.PEHeaders.MetadataStartOffset + reader.GetTableMetadataOffset(TableIndex.MethodDef) + rowSize * rowsBefore + rvaAndFlagsSize;
+            image.AsSpan(offset, stringIndexSize).Fill(0xFF);
+        }
+
+        return temp.Write("UnreadableMethodName.dll", image);
+    }
+
+    /// <summary>The method of the assembly at <paramref name="path"/> named <paramref name="name"/>, declared by the
+    /// type named <paramref name="typeName"/>.</summary>
+    public static MethodDefinitionHandle GetMethod(string path, string typeName, string name)
+    {
+        using var pe = new PEReader(File.OpenRead(path));
+        var reader = pe.GetMetadataReader();
+        foreach (var handle in reader.MethodDefinitions)
+        {
+            var definition = reader.GetMethodDefinition(handle);
+            var declaring = reader.GetTypeDefinition(definition.GetDeclaringType());
+            var isTheType = reader.StringComparer.Equals(declaring.Name, typeName);
+            var isTheName = reader.StringComparer.Equals(definition.Name, name);
+            if (isTheType && isTheName)
+            {
+                return handle;
+            }
+        }
+
+        throw new InvalidOperationException($"'{path}' declares no method {typeName}.{name}.");
+    }
 }

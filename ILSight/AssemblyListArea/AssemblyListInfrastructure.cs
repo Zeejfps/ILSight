@@ -101,10 +101,11 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
     }
 
     /// <inheritdoc cref="OpenFilesAsync"/>
-    public Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded,
+    public async Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded,
         IReadOnlyList<NodePath> places, CancellationToken stop, CancellationToken ct)
     {
-        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => ReopenFilesAsync(paths, expanded, places, stop), ct)), ct);
+        var reopened = await UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => ReopenFilesAsync(paths, expanded, places, stop), ct)), ct);
+        return reopened.Match(static ok => ok.Value, static failed => new Outcome<ReloadedNodes>.Failed(failed.Error));
     }
 
     private LoadedAssembly? OpenFiles(IEnumerable<AssemblyPath> paths, CancellationToken stop)
@@ -177,23 +178,36 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         }
     }
 
-    private async Task<ReloadedNodes> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded, IReadOnlyList<NodePath> places,
-        CancellationToken stop)
+    // A lookup the library failed fails the reopen, with why.
+    private async Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded,
+        IReadOnlyList<NodePath> places, CancellationToken stop)
     {
         OpenFiles(paths, stop);
         var expandedNodes = await GetExpandedNodesAsync(expanded, stop);
+        if (expandedNodes is Outcome<List<BrowseNode>>.Failed expandedFailed)
+        {
+            return new Outcome<ReloadedNodes>.Failed(expandedFailed.Error);
+        }
+
         var placeNodes = await FindNodesAsync(places, stop);
-        return new ReloadedNodes { Expanded = expandedNodes, Places = placeNodes };
+        return placeNodes.Match<Outcome<ReloadedNodes>>(
+            ok => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = ((Outcome<List<BrowseNode>>.Ok)expandedNodes).Value, Places = ok.Value }),
+            static failed => new Outcome<ReloadedNodes>.Failed(failed.Error));
     }
 
-    private async Task<List<BrowseNode>> GetExpandedNodesAsync(IReadOnlyList<NodePath> expanded, CancellationToken stop)
+    private async Task<Outcome<List<BrowseNode>>> GetExpandedNodesAsync(IReadOnlyList<NodePath> expanded, CancellationToken stop)
     {
         var nodes = new List<BrowseNode>();
         foreach (var path in expanded)
         {
             stop.ThrowIfCancellationRequested();
-            var found = await NodeLookup.FindAsync(assemblies, session, path, stop);
-            if (found is not Lookup<BrowseNode>.Found listed)
+            var lookup = await NodeLookup.FindAsync(assemblies, session, path, stop);
+            if (lookup is Outcome<Lookup<BrowseNode>>.Failed failed)
+            {
+                return new Outcome<List<BrowseNode>>.Failed(failed.Error);
+            }
+
+            if (lookup is not Outcome<Lookup<BrowseNode>>.Ok { Value: Lookup<BrowseNode>.Found listed })
             {
                 // A node that is gone, or in a module that could not be read, which shows that where the tree lists
                 // it, is not shown expanded.
@@ -210,17 +224,25 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
 
             nodes.Add(node);
         }
-        return nodes;
+        return new Outcome<List<BrowseNode>>.Ok(nodes);
     }
 
-    private async Task<Lookup<BrowseNode>[]> FindNodesAsync(IReadOnlyList<NodePath> places, CancellationToken stop)
+#pragma warning disable RL0302 // Absence is each place's Lookup NotFound inside the Outcome, which the check doesn't look into.
+    private async Task<Outcome<Lookup<BrowseNode>[]>> FindNodesAsync(IReadOnlyList<NodePath> places, CancellationToken stop)
+#pragma warning restore RL0302
     {
         var found = new Lookup<BrowseNode>[places.Count];
         for (var i = 0; i < found.Length; i++)
         {
             stop.ThrowIfCancellationRequested();
-            found[i] = await NodeLookup.FindAsync(assemblies, session, places[i], stop);
+            var lookup = await NodeLookup.FindAsync(assemblies, session, places[i], stop);
+            if (lookup is Outcome<Lookup<BrowseNode>>.Failed failed)
+            {
+                return new Outcome<Lookup<BrowseNode>[]>.Failed(failed.Error);
+            }
+
+            found[i] = ((Outcome<Lookup<BrowseNode>>.Ok)lookup).Value;
         }
-        return found;
+        return new Outcome<Lookup<BrowseNode>[]>.Ok(found);
     }
 }
