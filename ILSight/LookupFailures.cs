@@ -8,21 +8,21 @@ namespace ILSight;
 /// it is replaced; any other failure is the app's, told as it came.</summary>
 public static class LookupFailures
 {
-    /// <summary>Looking up <paramref name="place"/> failed with <paramref name="error"/>.</summary>
-    public static AppProblem OfPlace(NodePath place, Exception error)
+    /// <summary>Looking up <paramref name="place"/>, asked by <paramref name="step"/>, failed with <paramref name="error"/>.</summary>
+    public static AppProblem OfPlace(NodePath place, PlaceLookupStep step, Exception error)
     {
         var unopened = FindUnopenedFile(error);
         if (unopened is null)
         {
-            return new AppProblem.PlaceLookupFailed { Place = place, Error = error };
+            return new AppProblem.PlaceLookupFailed { Place = place, Step = step, Error = error };
         }
 
         if (IsDenied(unopened))
         {
-            return new AppProblem.PlaceLookupFileDenied { Place = place, File = unopened.FilePath, Error = error };
+            return new AppProblem.PlaceLookupFileDenied { Place = place, Step = step, File = unopened.FilePath, Error = error };
         }
 
-        return new AppProblem.PlaceLookupFileDamaged { Place = place, File = unopened.FilePath, Error = error };
+        return new AppProblem.PlaceLookupFileDamaged { Place = place, Step = step, File = unopened.FilePath, Error = error };
     }
 
     /// <summary>Finding what <paramref name="reference"/> points at failed with <paramref name="error"/>.</summary>

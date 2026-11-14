@@ -85,6 +85,9 @@ public abstract record AppProblem
     {
         public required NodePath Place { get; init; }
 
+        /// <summary>The step that asked, said beside the failure; not part of its kind.</summary>
+        public required PlaceLookupStep Step { get; init; }
+
         public required Exception Error { get; init; }
     }
 
@@ -93,6 +96,9 @@ public abstract record AppProblem
     public sealed record PlaceLookupFileDenied : AppProblem
     {
         public required NodePath Place { get; init; }
+
+        /// <summary>The step that asked, said beside the failure; not part of its kind.</summary>
+        public required PlaceLookupStep Step { get; init; }
 
         public required AssemblyPath File { get; init; }
 
@@ -104,6 +110,9 @@ public abstract record AppProblem
     public sealed record PlaceLookupFileDamaged : AppProblem
     {
         public required NodePath Place { get; init; }
+
+        /// <summary>The step that asked, said beside the failure; not part of its kind.</summary>
+        public required PlaceLookupStep Step { get; init; }
 
         public required AssemblyPath File { get; init; }
 

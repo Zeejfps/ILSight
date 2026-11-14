@@ -352,6 +352,7 @@ public sealed class AssembliesTests
         var reported = Assert.IsType<AppProblem.PlaceLookupFailed>(Assert.Single(ports.Reported));
         Assert.Same(error, reported.Error);
         Assert.Equal(location, reported.Place);
+        Assert.IsType<PlaceLookupStep.ReloadingTab>(reported.Step);
         var failed = Assert.IsType<TabContent.Unreadable>(tab.Content);
         Assert.Equal("Unreadable.", failed.Why);
         Assert.Equal(location, failed.Location);

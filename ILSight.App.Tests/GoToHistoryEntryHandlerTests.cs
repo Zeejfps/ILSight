@@ -71,7 +71,10 @@ public sealed class GoToHistoryEntryHandlerTests
 
         var load = await d.RunAsync(() => new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, GoTo(d.AppState, back), CancellationToken.None));
 
-        Assert.Same(error, Assert.IsType<AppProblem.PlaceLookupFailed>(Assert.Single(lookup.Reported)).Error);
+        var reported = Assert.IsType<AppProblem.PlaceLookupFailed>(Assert.Single(lookup.Reported));
+        Assert.Same(error, reported.Error);
+        Assert.IsType<PlaceLookupStep.GoingThroughHistory>(reported.Step);
+        Assert.StartsWith(Strings.En.ErrorStepHistory, ProblemTexts.Describe(Strings.En, reported).Details);
         Assert.False(d.AppState.ListSession.Navigation.IsResolving);
         Assert.Null(load);
     }

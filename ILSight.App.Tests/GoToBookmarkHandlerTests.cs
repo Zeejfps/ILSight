@@ -56,7 +56,7 @@ public sealed class GoToBookmarkHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_LookupFailed_ReportsTheLookupsFailureAsEveryPlaceLookupDoes()
+    public async Task HandleAsync_LookupFailed_ReportsTheLookupsFailureAsEveryPlaceLookupDoesNamingTheBookmarkBesideIt()
     {
         var (d, bookmark) = await BookmarkedAsync();
         var ports = new FakeGoToBookmarkHandlerPorts();
@@ -70,7 +70,10 @@ public sealed class GoToBookmarkHandlerTests
         var reported = Assert.IsType<AppProblem.PlaceLookupFailed>(Assert.Single(ports.Reported));
         Assert.Same(error, reported.Error);
         Assert.Equal(bookmark.Place, reported.Place);
-        Assert.Equal(Strings.En.ErrorLookUpPlace(bookmark.Place.Label), ProblemTexts.Describe(Strings.En, reported).Title);
+        Assert.Equal(new PlaceLookupStep.GoingToBookmark(bookmark.Name), reported.Step);
+        var text = ProblemTexts.Describe(Strings.En, reported);
+        Assert.Equal(Strings.En.ErrorLookUpPlace(bookmark.Place.Label), text.Title);
+        Assert.StartsWith(Strings.En.ErrorStepBookmark(bookmark.Name), text.Details);
     }
 
     [Fact]
@@ -88,12 +91,14 @@ public sealed class GoToBookmarkHandlerTests
         Assert.Equal(file, deniedLookup.File);
         var deniedText = ProblemTexts.Describe(Strings.En, deniedReport);
         Assert.Equal(Strings.En.ErrorLookUpPlace(bookmark.Place.Label), deniedText.Title);
-        Assert.StartsWith(Strings.En.ErrorFileDenied("Locked.dll"), deniedText.Details);
+        Assert.StartsWith(Strings.En.ErrorStepBookmark(bookmark.Name) + Environment.NewLine + Environment.NewLine + Strings.En.ErrorFileDenied("Locked.dll"),
+            deniedText.Details);
         var damagedLookup = Assert.IsType<AppProblem.PlaceLookupFileDamaged>(damagedReport);
         Assert.Same(damaged, damagedLookup.Error);
         var damagedText = ProblemTexts.Describe(Strings.En, damagedReport);
         Assert.Equal(Strings.En.ErrorLookUpPlace(bookmark.Place.Label), damagedText.Title);
-        Assert.StartsWith(Strings.En.ErrorFileDamaged("Locked.dll"), damagedText.Details);
+        Assert.StartsWith(Strings.En.ErrorStepBookmark(bookmark.Name) + Environment.NewLine + Environment.NewLine + Strings.En.ErrorFileDamaged("Locked.dll"),
+            damagedText.Details);
     }
 
     private static async Task<AppProblem> ReportedAsync(AppStateDriver d, Bookmark bookmark, Exception error)

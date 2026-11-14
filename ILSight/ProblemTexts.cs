@@ -38,9 +38,11 @@ public static class ProblemTexts
             unresolved: p => (t.ErrorResolve(p.Reference.Name), p.Error.ToString()),
             unresolvedFileDenied: p => (t.ErrorResolve(p.Reference.Name), Advise(t.ErrorFileDenied(p.File.FileName), p.Error)),
             unresolvedFileDamaged: p => (t.ErrorResolve(p.Reference.Name), Advise(t.ErrorFileDamaged(p.File.FileName), p.Error)),
-            placeLookupFailed: p => (t.ErrorLookUpPlace(p.Place.Label), p.Error.ToString()),
-            placeLookupFileDenied: p => (t.ErrorLookUpPlace(p.Place.Label), Advise(t.ErrorFileDenied(p.File.FileName), p.Error)),
-            placeLookupFileDamaged: p => (t.ErrorLookUpPlace(p.Place.Label), Advise(t.ErrorFileDamaged(p.File.FileName), p.Error)),
+            placeLookupFailed: p => (t.ErrorLookUpPlace(p.Place.Label), AfterStep(t, p.Step, p.Error.ToString())),
+            placeLookupFileDenied: p => (t.ErrorLookUpPlace(p.Place.Label),
+                AfterStep(t, p.Step, Advise(t.ErrorFileDenied(p.File.FileName), p.Error))),
+            placeLookupFileDamaged: p => (t.ErrorLookUpPlace(p.Place.Label),
+                AfterStep(t, p.Step, Advise(t.ErrorFileDamaged(p.File.FileName), p.Error))),
             moduleUnreadable: p => (t.ErrorModuleUnreadable(p.Module), p.Why.ToString()),
             bookmarksNotExported: p => (t.ErrorExportBookmarks, p.Reason),
             bookmarksNotImported: p => (t.ErrorImportBookmarks(p.File), p.Reason),
@@ -65,6 +67,17 @@ public static class ProblemTexts
             nuGetSearchFailed: p => (t.ErrorSearchNuget(p.Feed), p.Error.ToString()),
             packageNotDownloaded: p => (t.ErrorDownloadPackage(p.Package), p.Error.ToString()),
             unexpected: p => (t.ErrorUnexpected, p.Error.ToString()));
+    }
+
+    // The step that asked for the lookup on its own line, then the rest of the details.
+    private static string AfterStep(Strings t, PlaceLookupStep step, string details)
+    {
+        var asked = step.Match(
+            goingToBookmark: s => t.ErrorStepBookmark(s.Name),
+            goingThroughHistory: _ => t.ErrorStepHistory,
+            reopeningTabs: _ => t.ErrorStepReopenTabs,
+            reloadingTab: _ => t.ErrorStepReloadTab);
+        return asked + Environment.NewLine + Environment.NewLine + details;
     }
 
     // The cause and what the user can do about it first, then the error as it came.
