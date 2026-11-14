@@ -28,9 +28,9 @@ internal static class TreePaneView
         var theme = ui.Theme;
         var tree = ui.State.Tree;
         tree.SetStyle(theme, ui.State.NodeIconPalette, ui.State.Icons);
-        tree.ShowTokens(ui.State.Display.TreeTokens);
-        tree.ShowEmptyTables(ui.State.Display.ShowEmptyMetadataTables);
-        tree.NestNamespaces(ui.State.Display.NestedNamespaces);
+        tree.ShowTokens(ui.State.Display.Options.TreeTokens);
+        tree.ShowEmptyTables(ui.State.Display.Options.ShowEmptyMetadataTables);
+        tree.NestNamespaces(ui.State.Display.Options.NestedNamespaces);
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         Toolbar(ui, navigation, assemblies);
         ui.Separator();
@@ -394,7 +394,7 @@ internal static class TreePaneView
 
     private static void OpenContextMenu(Ui<UiState> ui, BrowseNode node, PointF at)
     {
-        ui.State.MenuTarget = node;
+        ui.State.Tree.OpenMenuOn(node);
         ui.OpenContextMenu(MenuId, at);
     }
 
@@ -406,7 +406,7 @@ internal static class TreePaneView
             return;
         }
 
-        var node = ui.State.MenuTarget;
+        var node = ui.State.Tree.MenuTarget;
         if (node is null)
         {
             return;

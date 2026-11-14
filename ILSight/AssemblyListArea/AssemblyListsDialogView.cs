@@ -186,7 +186,7 @@ internal static class AssemblyListsDialogView
 
     private static void EditName(Ui<UiState> ui, ListsDialogMode.Renaming renaming, int listId)
     {
-        var begin = TryTakeFocus(renaming);
+        var begin = renaming.TryTakeFocus();
         var result = ui.InlineEdit(NameId, ref renaming.NewName, begin, Sizing.Grow());
         if (result == InlineEditResult.Editing)
         {
@@ -199,13 +199,6 @@ internal static class AssemblyListsDialogView
         {
             ui.Focus(listId, takesText: false);
         }
-    }
-
-    private static bool TryTakeFocus(ListsDialogMode.Renaming renaming)
-    {
-        var focus = renaming.IsFocusPending;
-        renaming.IsFocusPending = false;
-        return focus;
     }
 
     private static void FinishEditingName(Ui<UiState> ui, InlineEditResult result)

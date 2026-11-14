@@ -325,7 +325,7 @@ internal static class AppRoot
             FetchNuGetIconHandler = new FetchNuGetIconHandler(new FetchNuGetIconHandlerAdapter(nuGet)),
             ReadNuGetDetailsHandler = new ReadNuGetDetailsHandler(new ReadNuGetDetailsHandlerAdapter(nuGet)),
             ProcessPicker = new ProcessPicker { Browser = new ProcessBrowser(processes) },
-            Display = saved.Display ?? DisplayOptions.Default,
+            Display = new ScreenDisplay { Options = saved.Display ?? DisplayOptions.Default },
             Analyzer = new AnalyzerRows { AppCommands = appCommands },
             MainLayout = new MainLayout { Dock = DockPanels.Restore(saved.Layout) },
         };

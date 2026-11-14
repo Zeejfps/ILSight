@@ -48,7 +48,7 @@ internal static class DiagramView
     {
         var view = DocumentPanels.GetView(ui.State.Documents, tab).Diagram;
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground });
-        if (!ui.State.Display.ShowOmnibar)
+        if (!ui.State.Display.Options.ShowOmnibar)
         {
             OwnToolbar(ui, tab);
         }

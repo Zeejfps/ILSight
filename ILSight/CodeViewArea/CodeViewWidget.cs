@@ -1099,7 +1099,7 @@ public static class CodeViewWidget
 
     private static CodeHtmlStyle CopyStyleOf(Ui<UiState> ui, CodeViewFrame frame)
     {
-        var family = CodeDisplay.GetFontName(ui.State.Display.Font);
+        var family = CodeDisplay.GetFontName(ui.State.Display.Options.Font);
         return new CodeHtmlStyle
         {
             Palette = frame.Palette,

@@ -121,7 +121,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
     private void ExpandWithAnalyses(AnalyzerSymbolNode symbol)
     {
         View.SetExpanded(symbol, true);
-        foreach (var child in Analysis.EnsureChildren(symbol))
+        foreach (var child in symbol.EnsureChildren())
         {
             if (child is AnalyzerSymbolNode accessor)
             {
@@ -143,7 +143,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
     {
         return node switch
         {
-            AnalyzerSymbolNode symbol => Analysis.EnsureChildren(symbol).Count > 0,
+            AnalyzerSymbolNode symbol => symbol.EnsureChildren().Count > 0,
             AnalyzerKindNode kind => !kind.IsDone || kind.Found.Count > 0,
             AnalyzerMessageNode or AnalyzerPendingNode or AnalyzerFailedNode => false,
             _ => throw new UnreachableException(),
@@ -162,7 +162,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         switch (node)
         {
             case AnalyzerSymbolNode symbol:
-                return Analysis.EnsureChildren(symbol);
+                return symbol.EnsureChildren();
             case AnalyzerKindNode kind:
                 AskToRun(kind);
                 return ListResults(kind);

@@ -36,7 +36,7 @@ internal static class MainMenuView
 
     private static bool IsInTitleBar(Ui<UiState> ui)
     {
-        if (ui.State.Display.SystemTitleBar)
+        if (ui.State.Display.Options.SystemTitleBar)
         {
             return false;
         }

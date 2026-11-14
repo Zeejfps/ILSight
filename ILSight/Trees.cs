@@ -6,7 +6,7 @@ namespace ILSight;
 /// (<see cref="BrowseTree"/> keeps what the tree's rows show and how they expand).</summary>
 public static class Trees
 {
-    /// <summary>Forgets what the tree had expanded and selected, and the menu's target, once the list
+    /// <summary>Forgets what the tree had expanded and selected, and its menu's target, once the list
     /// was cleared; rebuilds its roots when the open assemblies changed; and lists the analyzer's rows
     /// again when its roots changed. The roots of the assemblies read from <paramref name="reopening"/>
     /// spin while they are reopened.</summary>
@@ -28,6 +28,5 @@ public static class Trees
         }
 
         uiState.Tree.Forget();
-        uiState.MenuTarget = null;
     }
 }

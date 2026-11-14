@@ -307,7 +307,7 @@ internal sealed class AppStateDriver
     {
         if (_ui is not null)
         {
-            _ui.Display = _ui.Display with { PreviewTabs = false };
+            _ui.Display.Set(_ui.Display.Options with { PreviewTabs = false });
         }
 
         AppState.Navigation.UsePreviewTabs(false);

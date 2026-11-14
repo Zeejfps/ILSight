@@ -357,7 +357,7 @@ public sealed class DiagramViewTests
         var app = await PickFromTreeAsync("Car", "Show in diagram");
         Assert.True(app.Frames.Drew("Fit to view"));
 
-        app.Ui.Display = app.Ui.Display with { ShowOmnibar = false };
+        app.Ui.Display.Set(app.Ui.Display.Options with { ShowOmnibar = false });
         app.Run(2);
 
         Assert.True(app.Frames.Drew("Fit to view"));

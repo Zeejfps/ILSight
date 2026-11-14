@@ -38,7 +38,7 @@ internal static class AppFrames
         uiState.Appearance.ApplyThemeAndLanguage(Theming.ResolveTheme(appState), appState.Locale);
         uiState.Appearance.ApplyIconTheme(IconTheming.ResolveIconTheme(appState));
         Trees.SyncTrees(uiState, appState.Assemblies, appState.Analyzer, appState.ApiVisibility, appState.Reopens.Files);
-        appState.Navigation.UsePreviewTabs(uiState.Display.PreviewTabs);
+        appState.Navigation.UsePreviewTabs(uiState.Display.Options.PreviewTabs);
         DocumentPanels.FollowTabContent(uiState);
         uiState.TabFocus.Follow(appState.Navigation.ActiveTab);
         QueuedCommands.RunViewCommands(uiState, appState);
@@ -354,7 +354,7 @@ internal static class AppFrames
 
     private static void DrawAtChosenScale(Ui<UiState> ui)
     {
-        ui.Scale = ui.State.Display.UiScale;
+        ui.Scale = ui.State.Display.Options.UiScale;
     }
 
     private static void DrawCodeInChosenFont(Ui<UiState> ui, CodeFontFaces codeFonts)
@@ -372,7 +372,7 @@ internal static class AppFrames
     /// null. A chosen font whose file cannot be read is given up for the bundled one.</summary>
     internal static FontFace? TakeCodeFontFace(UiState uiState, CodeFontFaces codeFonts)
     {
-        var chosen = uiState.Display.Font;
+        var chosen = uiState.Display.Options.Font;
         if (!uiState.Shown.TryTakeCodeFont(chosen))
         {
             return null;
@@ -384,7 +384,7 @@ internal static class AppFrames
             return face;
         }
 
-        CodeDisplay.SetCodeFont(uiState, null);
+        uiState.Display.SetCodeFont(null);
         uiState.Shown.TryTakeCodeFont(null);
         return codeFonts.Bundled;
     }

@@ -119,7 +119,7 @@ internal static class DocumentsView
         var lines = !tab.Load.IsBusy && tab.Node is not null && tab.Document.Error is null ? bookmarks.ListMarkedLines(tab.Document, tab.Node) : null;
         var view = DocumentPanels.GetView(ui.State.Documents, tab);
         var document = GetDocumentToShow(ui.State, view, tab);
-        var result = CodeViewWidget.RenderCodeView(ui, "code", document, view.Code, lines, tooltips: tooltips, display: ui.State.Display,
+        var result = CodeViewWidget.RenderCodeView(ui, "code", document, view.Code, lines, tooltips: tooltips, display: ui.State.Display.Options,
             closedAssembly: tab.Load.ClosedAssembly);
         if (result.Intent is not null)
         {
@@ -155,13 +155,13 @@ internal static class DocumentsView
         switch (zoom)
         {
             case CodeZoom.In:
-                CodeDisplay.ZoomCode(uiState, 1);
+                uiState.Display.ZoomCode(uiState.Theme, 1);
                 break;
             case CodeZoom.Out:
-                CodeDisplay.ZoomCode(uiState, -1);
+                uiState.Display.ZoomCode(uiState.Theme, -1);
                 break;
             case CodeZoom.Reset:
-                CodeDisplay.ResetCodeZoom(uiState);
+                uiState.Display.ResetCodeZoom();
                 break;
         }
     }
@@ -171,7 +171,7 @@ internal static class DocumentsView
         var content = tab.Content;
         if (content is TabContent.Report report)
         {
-            return ShownReports.GetDocument(view.Report, report.Export, screen.Strings);
+            return view.Report.GetDocument(report.Export, screen.Strings);
         }
 
         if (!IsNote(content))
@@ -179,7 +179,7 @@ internal static class DocumentsView
             return tab.Document;
         }
 
-        return TabPlaceholders.GetDocument(view.Placeholder, content, screen.Strings);
+        return view.Placeholder.GetDocument(content, screen.Strings);
     }
 
     private static bool IsNote(TabContent content)

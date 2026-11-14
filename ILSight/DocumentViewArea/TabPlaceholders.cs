@@ -3,21 +3,9 @@ using ILSight.Core;
 
 namespace ILSight.DocumentViewArea;
 
+/// <summary>What a tab's placeholder note says (<see cref="TabPlaceholder"/> keeps it written).</summary>
 public static class TabPlaceholders
 {
-    /// <summary>The note for <paramref name="content"/>, written with <paramref name="t"/>.</summary>
-    public static DecompiledDocument GetDocument(TabPlaceholder placeholder, TabContent content, Strings t)
-    {
-        if (placeholder.Written.TryGet((content, new ByReference<Strings>(t)), out var document))
-        {
-            return document;
-        }
-
-        document = Documents.CreateFromText("", $"// {Write(t, content)}");
-        placeholder.Written = new Memo<(TabContent, ByReference<Strings>), DecompiledDocument>((content, new ByReference<Strings>(t)), document);
-        return document;
-    }
-
     /// <summary>What the note for <paramref name="content"/> says.</summary>
     internal static string Write(Strings t, TabContent content)
     {

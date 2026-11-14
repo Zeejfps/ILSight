@@ -473,11 +473,21 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
         View.CollapseAll();
     }
 
-    /// <summary>Collapses everything and selects nothing, as when the nodes it showed are gone.</summary>
+    /// <summary>The node the tree's context menu was opened on.</summary>
+    public BrowseNode? MenuTarget { get; private set; }
+
+    public void OpenMenuOn(BrowseNode node)
+    {
+        MenuTarget = node;
+    }
+
+    /// <summary>Collapses everything and selects nothing, and forgets the menu's target, as when the nodes it
+    /// showed are gone.</summary>
     public void Forget()
     {
         View.ClearSelection();
         CollapseAll();
+        MenuTarget = null;
     }
 
     public bool HasChildren(BrowseNode node)

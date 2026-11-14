@@ -58,7 +58,7 @@ public static class ScreenLayout
             OpenSearch(uiState);
             return;
         }
-        if (!uiState.Display.ShowOmnibar)
+        if (!uiState.Display.Options.ShowOmnibar)
         {
             OpenSearch(uiState);
             return;

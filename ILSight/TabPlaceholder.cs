@@ -1,4 +1,5 @@
 using ILSight.Core;
+using ILSight.DocumentViewArea;
 
 namespace ILSight;
 
@@ -6,6 +7,19 @@ namespace ILSight;
 /// language, written again only when what it says changes.</summary>
 public sealed class TabPlaceholder
 {
-    /// <summary>The note written, by what it says and the language.</summary>
-    public Memo<(TabContent, ByReference<Strings>), DecompiledDocument> Written;
+    private Memo<(TabContent, ByReference<Strings>), DecompiledDocument> _written;
+
+    /// <summary>The note for <paramref name="content"/>, written with <paramref name="t"/>.</summary>
+    public DecompiledDocument GetDocument(TabContent content, Strings t)
+    {
+        var key = (content, new ByReference<Strings>(t));
+        if (_written.TryGet(key, out var document))
+        {
+            return document;
+        }
+
+        document = Documents.CreateFromText("", $"// {TabPlaceholders.Write(t, content)}");
+        _written = new Memo<(TabContent, ByReference<Strings>), DecompiledDocument>(key, document);
+        return document;
+    }
 }

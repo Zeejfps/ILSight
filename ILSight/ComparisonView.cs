@@ -26,7 +26,7 @@ internal static class ComparisonView
         rows.SetStyle(ui.Theme, ui.State.NodeIconPalette, ui.State.Icons, ui.State.Strings);
         rows.FollowDiff(FindDiff(comparison));
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground });
-        if (!ui.State.Display.ShowOmnibar)
+        if (!ui.State.Display.Options.ShowOmnibar)
         {
             OwnToolbar(ui, assemblies, tab, comparison);
         }

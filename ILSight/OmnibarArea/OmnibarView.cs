@@ -32,7 +32,7 @@ internal static class OmnibarView
     public static void Render(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DecompilerSetup setup,
         DocumentTab tab)
     {
-        if (!ui.State.Display.ShowOmnibar)
+        if (!ui.State.Display.Options.ShowOmnibar)
         {
             return;
         }

@@ -88,7 +88,7 @@ public sealed class OmnibarTests
     {
         var app = await ShowingAsync("Greeter");
 
-        CodeDisplay.SetDisplayOptions(app.Ui, app.Ui.Display with { NestedNamespaces = true });
+        app.Ui.Display.Set(app.Ui.Display.Options with { NestedNamespaces = true });
         app.Run(2);
         var labels = ActiveCrumbs(app)
             .Select(c => c.Label)
@@ -229,7 +229,7 @@ public sealed class OmnibarTests
     {
         var app = await ShowingAsync("Greeter");
 
-        CodeDisplay.SetDisplayOptions(app.Ui, app.Ui.Display with { ShowOmnibar = false });
+        app.Ui.Display.Set(app.Ui.Display.Options with { ShowOmnibar = false });
         app.Run(2);
         var searchIcon = BuiltInGlyphs.Text(BuiltInGlyphs.Icons.SearchField);
         var searchButtons = app.Frames.TextRects()
