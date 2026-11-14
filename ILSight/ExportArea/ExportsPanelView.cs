@@ -140,7 +140,7 @@ internal static class ExportsPanelView
     private static void HandleKey(Ui<UiState> ui, ExportQueue queue, List<ExportReport> finished, Rows rows, List<ExportRun> runs, int index)
     {
         var stroke = ui.Input.Keys[index];
-        var selected = ui.State.SelectedExport;
+        var selected = ui.State.ExportsPanel.Selected;
         if (selected is not null && ActOnSelected(ui, queue, finished, rows, selected, stroke, index))
         {
             return;
@@ -176,7 +176,7 @@ internal static class ExportsPanelView
 
     private static void MoveSelection(Ui<UiState> ui, Rows rows, List<ExportRun> runs, KeyStroke stroke)
     {
-        var selected = ui.State.SelectedExport;
+        var selected = ui.State.ExportsPanel.Selected;
         var index = selected is null ? -1 : runs.IndexOf(selected);
         var before = index;
         UiWidgets.ApplyListKey(stroke, ref index, runs.Count, PageRows);
@@ -186,7 +186,7 @@ internal static class ExportsPanelView
         }
 
         var moved = runs[index];
-        ui.State.SelectedExport = moved;
+        ui.State.ExportsPanel.Select(moved);
         using (ui.Id(RowIdOf(moved)))
         {
             ui.ScrollIntoView(rows.ListId, ui.GetId("row"));
@@ -226,7 +226,7 @@ internal static class ExportsPanelView
 
     private static void OpenMenu(Ui<UiState> ui, Rows rows, ExportRun run, PointF? at)
     {
-        ui.State.ExportMenuTarget = run;
+        ui.State.ExportsPanel.TargetMenu(run);
         ui.OpenContextMenu(rows.MenuId, at);
     }
 
@@ -235,7 +235,7 @@ internal static class ExportsPanelView
         var hit = ui.Interact(ui.GetId("row"));
         if (hit.Pressed)
         {
-            ui.State.SelectedExport = run;
+            ui.State.ExportsPanel.Select(run);
             ui.Focus(rows.ListId, takesText: false);
         }
         if (hit.DoubleClicked)
@@ -245,7 +245,7 @@ internal static class ExportsPanelView
 
         if (hit.ClickedWith(PointerButton.Right))
         {
-            ui.State.SelectedExport = run;
+            ui.State.ExportsPanel.Select(run);
             OpenMenu(ui, rows, run, ui.Input.Pointer);
         }
         return hit;
@@ -254,7 +254,7 @@ internal static class ExportsPanelView
     private static uint RowBackground(Ui<UiState> ui, Rows rows, ExportRun run, Interaction hit)
     {
         var theme = ui.Theme;
-        if (ui.State.SelectedExport == run)
+        if (ui.State.ExportsPanel.Selected == run)
         {
             return ui.HasFocus(rows.ListId) ? theme.Selection : theme.SelectionInactive;
         }
@@ -652,7 +652,7 @@ internal static class ExportsPanelView
             return;
         }
 
-        var run = ui.State.ExportMenuTarget;
+        var run = ui.State.ExportsPanel.MenuTarget;
         if (run is null)
         {
             return;

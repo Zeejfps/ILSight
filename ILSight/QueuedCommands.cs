@@ -32,9 +32,9 @@ internal static class QueuedCommands
             expandNodes: static (s, expand) => ExpandListed(s.uiState.Tree, s.appState.ListSession.Assemblies, expand.Nodes),
             focusCard: static (s, focus) => FocusCard(s.uiState.Documents, s.appState.ListSession.Navigation, focus.Tab, focus.Type),
             showAnalysis: static (s, show) => ShowAnalysis(s.uiState.Analyzer, s.appState.ListSession.Analyzer, show.Root),
-            openWebPage: static (s, open) => s.uiState.WebPagesToOpen.Enqueue(open.Url),
-            quit: static (s, _) => s.uiState.QuitAsked = true,
-            openFile: static (s, open) => s.uiState.FilesToOpen.Enqueue(open.Path));
+            openWebPage: static (s, open) => s.uiState.Shell.OpenWebPage(open.Url),
+            quit: static (s, _) => s.uiState.Shell.Quit(),
+            openFile: static (s, open) => s.uiState.Shell.OpenFile(open.Path));
     }
 
     private static void ShowTabIfOpen(UiState uiState, Navigation navigation, DocumentTab tab, DocumentTab? beside)

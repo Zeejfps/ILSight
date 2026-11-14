@@ -59,20 +59,9 @@ public sealed class UiState : IUiState
     /// <summary>The document whose tab's context menu was opened.</summary>
     public DocumentTab? TabMenuTarget;
 
-    /// <summary>The web pages the features asked to open, which the app hands to the browser once the
-    /// frame is drawn.</summary>
-    public Queue<string> WebPagesToOpen { get; } = new();
-
-    /// <summary>Whether the app is to close once the frame is drawn.</summary>
-    public bool QuitAsked;
-
-    /// <summary>The files the features asked to open, which the app hands to the OS once the frame is
-    /// drawn.</summary>
-    public Queue<string> FilesToOpen { get; } = new();
-
-    /// <summary>The folders the features asked to open, which the app hands to the OS once the frame is
-    /// drawn.</summary>
-    public Queue<string> FoldersToOpen { get; } = new();
+    /// <summary>What the features asked of the shell (web pages, files and folders to open, the app to quit), which the
+    /// frame edge hands to the OS once the frame is drawn.</summary>
+    public ShellRequests Shell { get; } = new();
 
     /// <summary>The analyzer's tree as its view shows it.</summary>
     public required AnalyzerRows Analyzer { get; init; }
@@ -148,11 +137,8 @@ public sealed class UiState : IUiState
     /// <summary>Reads the pages <see cref="MetadataGridPages"/> asks for, off the screen's thread.</summary>
     public required ReadMetadataPageHandler ReadMetadataPageHandler { get; init; }
 
-    /// <summary>The export selected in the exports panel, or null; one that is gone is as none.</summary>
-    public ExportRun? SelectedExport;
-
-    /// <summary>The export the exports panel's context menu was opened on, or null.</summary>
-    public ExportRun? ExportMenuTarget;
+    /// <summary>The exports panel's selection and context menu.</summary>
+    public ExportsPanel ExportsPanel { get; } = new();
 
     public ErrorDialog ErrorDialog { get; } = new();
 

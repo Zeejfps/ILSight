@@ -73,12 +73,11 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     // and the next frame shows why.
     private void QuitIfAsked(Ui<UiState> ui)
     {
-        if (!ui.State.QuitAsked)
+        if (!ui.State.Shell.TryTakeQuit())
         {
             return;
         }
 
-        ui.State.QuitAsked = false;
         if (!TryClose(ui.WindowBounds))
         {
             ui.RequestUpdate();

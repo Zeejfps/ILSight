@@ -313,8 +313,8 @@ internal static class AppFrames
 
     private static void OpenAskedWebPages(Ui<UiState> ui)
     {
-        var pages = ui.State.WebPagesToOpen;
-        while (pages.TryDequeue(out var url))
+        var shell = ui.State.Shell;
+        while (shell.TryTakeWebPage(out var url))
         {
             ui.OpenUrl(url);
         }
@@ -322,8 +322,8 @@ internal static class AppFrames
 
     private static void OpenAskedFolders(Ui<UiState> ui)
     {
-        var folders = ui.State.FoldersToOpen;
-        while (folders.TryDequeue(out var path))
+        var shell = ui.State.Shell;
+        while (shell.TryTakeFolder(out var path))
         {
             ui.OpenFolder(path);
         }
@@ -331,8 +331,8 @@ internal static class AppFrames
 
     private static void OpenAskedFiles(Ui<UiState> ui)
     {
-        var files = ui.State.FilesToOpen;
-        while (files.TryDequeue(out var path))
+        var shell = ui.State.Shell;
+        while (shell.TryTakeFile(out var path))
         {
             ui.OpenFile(path);
         }

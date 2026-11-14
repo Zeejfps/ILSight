@@ -217,7 +217,7 @@ internal static class DisplayOptionsPanelView
         }
 
         appState.ChosenThemes.ChooseTheme(custom.Id);
-        screen.FilesToOpen.Enqueue(custom.Path);
+        screen.Shell.OpenFile(custom.Path);
     }
 
     private static void OpenThemesFolderButton(Ui<UiState> ui)
@@ -286,7 +286,7 @@ internal static class DisplayOptionsPanelView
         }
 
         appState.ChosenThemes.ChooseIconTheme(custom.Id);
-        screen.FilesToOpen.Enqueue(custom.Path);
+        screen.Shell.OpenFile(custom.Path);
     }
 
     private static void OpenIconThemesFolderButton(Ui<UiState> ui)
@@ -304,7 +304,7 @@ internal static class DisplayOptionsPanelView
     {
         if (folder is not null)
         {
-            screen.FoldersToOpen.Enqueue(folder);
+            screen.Shell.OpenFolder(folder);
         }
     }
 
