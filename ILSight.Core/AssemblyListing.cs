@@ -81,37 +81,82 @@ public static class AssemblyListing
     /// <summary>Reads the item of the list holding <paramref name="assembly"/> again from its file: the
     /// assembly, or the package it was read out of with the assemblies in it, each taking what is picked
     /// for it now, handed back with them. It is not listed until <see cref="ClosableAssemblyList.TryReplace"/> puts
-    /// it in the item's place, which reads nothing more. Reads the file: call it off the UI thread.</summary>
-    /// <exception cref="AssemblyLoadException">The file can no longer be read.</exception>
-    public static FreshItem ReadAgain(AssemblyList list, LoadedAssembly assembly)
+    /// it in the item's place, which reads nothing more. A file that can no longer be read is
+    /// <see cref="Outcome{T}.Failed"/> with its <see cref="AssemblyLoadException"/>. Reads the file: call it off the UI
+    /// thread.</summary>
+    public static Outcome<FreshItem> ReadAgain(AssemblyList list, LoadedAssembly assembly)
     {
-        var fresh = ReadAssemblyOrPackage(list, assembly.ListedItem.FilePath);
-        if (fresh is LoadedPackage package)
+        LoadedAssembly fresh;
+        try
         {
-            return new FreshItem { Item = fresh, ReadOutOf = LoadedAssemblies.EnsureAssemblies(package) };
+            fresh = ReadAssemblyOrPackage(list, assembly.ListedItem.FilePath);
+        }
+        catch (AssemblyLoadException e)
+        {
+            return new Outcome<FreshItem>.Failed(e);
         }
 
-        return new FreshItem { Item = fresh, ReadOutOf = [] };
+        if (fresh is LoadedPackage package)
+        {
+            return new Outcome<FreshItem>.Ok(new FreshItem { Item = fresh, ReadOutOf = LoadedAssemblies.EnsureAssemblies(package) });
+        }
+
+        return new Outcome<FreshItem>.Ok(new FreshItem { Item = fresh, ReadOutOf = [] });
     }
 
     /// <summary>Lists the assemblies <paramref name="assembly"/> references that can be found, as
     /// following a reference to them does, and returns them. Those that cannot be found are left out; none when
-    /// <paramref name="assembly"/> was released (closed) before. May load files: call it off the UI thread.</summary>
+    /// <paramref name="assembly"/> was released (closed) before. What the library throws reading the references or
+    /// resolving one is <see cref="Outcome{T}.Failed"/>, those listed before it staying listed. May load files: call it
+    /// off the UI thread.</summary>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled.</exception>
-    public static List<LoadedModule> ListReferences(AssemblyList list, LoadedModule assembly, CancellationToken cancellationToken = default)
+    public static Outcome<List<LoadedModule>> ListReferences(AssemblyList list, LoadedModule assembly, CancellationToken cancellationToken = default)
     {
         var generation = list.Generation;
-        var listed = new List<LoadedModule>();
         using var reading = LoadedAssemblies.BeginReading();
         if (!LoadedAssemblies.TryRead(reading, assembly))
         {
-            return listed;
+            return new Outcome<List<LoadedModule>>.Ok([]);
         }
 
-        foreach (var reference in LoadedAssemblies.GetFile(assembly).AssemblyReferences)
+        List<AssemblyReference> references;
+        try
+        {
+            references = LoadedAssemblies.GetFile(assembly).AssemblyReferences.ToList();
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<List<LoadedModule>>.Failed(e);
+        }
+
+        return ListFound(list, LoadedAssemblies.GetResolver(assembly), references, generation, cancellationToken);
+    }
+
+    private static Outcome<List<LoadedModule>> ListFound(AssemblyList list, AssemblyResolver resolver, List<AssemblyReference> references, int generation,
+        CancellationToken cancellationToken)
+    {
+        var listed = new List<LoadedModule>();
+        foreach (var reference in references)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var found = LoadedAssemblies.GetResolver(assembly).FindAssembly(reference);
+            LoadedModule? found;
+            try
+            {
+                found = resolver.FindAssembly(reference);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                return new Outcome<List<LoadedModule>>.Failed(e);
+            }
+
             if (found is null)
             {
                 continue;
@@ -122,7 +167,7 @@ public static class AssemblyListing
                 listed.Add(found);
             }
         }
-        return listed;
+        return new Outcome<List<LoadedModule>>.Ok(listed);
     }
     /// <summary>The listed assembly that defines what <paramref name="reference"/> points at, and the
     /// handle of its definition there: the assembly's own handle for an assembly. Not found when it cannot be resolved

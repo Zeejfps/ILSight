@@ -93,22 +93,32 @@ public static class ILSpyTree
     /// node of the entity with metadata <paramref name="token"/>, when its full name is
     /// <paramref name="memberName"/>, or its nearest ancestor. Loads the assembly without listing it; not found
     /// when it cannot be opened or has neither; unreadable when the library could not read the type system of the
-    /// module either is looked for in, and the other found nothing.</summary>
-    public static async Task<Lookup<BrowseNode>> LocateAsync(AssemblyList list, BrowseSession session, AssemblyPath filePath,
+    /// module either is looked for in, and the other found nothing; what else the library throws looking,
+    /// <see cref="Outcome{T}.Failed"/>. The cancellation of <paramref name="ct"/> is let through.</summary>
+    public static async Task<Outcome<Lookup<BrowseNode>>> LocateAsync(AssemblyList list, BrowseSession session, AssemblyPath filePath,
         IReadOnlyList<string>? treePath, uint token, string memberName, CancellationToken ct)
     {
         Lookup<BrowseNode> byPath = new Lookup<BrowseNode>.NotFound();
-        if (treePath is not null && treePath.Count > 0)
+        Lookup<BrowseNode> byToken;
+        try
         {
-            byPath = await FindAsync(list, session, treePath, ct);
-            if (byPath is Lookup<BrowseNode>.Found)
+            if (treePath is not null && treePath.Count > 0)
             {
-                return byPath;
+                byPath = await FindAsync(list, session, treePath, ct);
             }
+
+            byToken = byPath is Lookup<BrowseNode>.Found ? byPath : await FindEntityAsync(list, session, filePath, token, memberName, ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<Lookup<BrowseNode>>.Failed(e);
         }
 
-        var byToken = await FindEntityAsync(list, session, filePath, token, memberName, ct);
-        return byToken.Match<Lookup<BrowseNode>>(static found => found, _ => byPath, static unreadable => unreadable);
+        return new Outcome<Lookup<BrowseNode>>.Ok(byToken.Match<Lookup<BrowseNode>>(static found => found, _ => byPath, static unreadable => unreadable));
     }
 
     private static async Task<Lookup<BrowseNode>> FindAsync(AssemblyList list, BrowseSession session, IReadOnlyList<string> path, CancellationToken ct)
@@ -180,10 +190,6 @@ public static class ILSpyTree
             return await BrowseSessions.FindOrAncestorAsync(session, assembly, main, entity.MetadataToken, ct);
         }
         catch (ArgumentException)
-        {
-            return null;
-        }
-        catch (BadImageFormatException)
         {
             return null;
         }

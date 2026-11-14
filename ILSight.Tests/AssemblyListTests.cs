@@ -27,7 +27,7 @@ public sealed class AssemblyListTests
         var second = list.Open(typeof(AssemblyList).Assembly.Location);
         list.TargetFrameworks.Pick(first.FilePath, Frameworks.Net48);
 
-        var fresh = AssemblyListing.ReadAgain(list, first);
+        var fresh = AssemblyListing.ReadAgain(list, first).GetValue();
         var listedWhileRead = list.Listed.ToList();
         var replaced = list.TryReplace(first, fresh, out var removed);
         LoadedAssemblies.Release(removed);
@@ -42,11 +42,25 @@ public sealed class AssemblyListTests
     }
 
     [Fact]
+    public void An_assembly_whose_file_the_library_can_no_longer_read_fails_its_read_again_saying_why()
+    {
+        using var temp = new TempDir();
+        var path = temp.Write("Changed.dll", File.ReadAllBytes(Trees.TestAssemblyPath));
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var assembly = list.Open(path);
+        File.WriteAllText(path, "no longer an assembly");
+
+        var read = AssemblyListing.ReadAgain(list, assembly);
+
+        Assert.IsType<AssemblyLoadException>(Assert.IsType<Outcome<FreshItem>.Failed>(read).Error);
+    }
+
+    [Fact]
     public void An_assembly_read_again_after_it_was_closed_is_not_listed()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var assembly = list.Open(Trees.TestAssemblyPath);
-        var fresh = AssemblyListing.ReadAgain(list, assembly);
+        var fresh = AssemblyListing.ReadAgain(list, assembly).GetValue();
         LoadedAssemblies.Release(list.Close(assembly));
 
         var replaced = list.TryReplace(assembly, fresh, out var removed);
@@ -291,7 +305,7 @@ public sealed class AssemblyListTests
         var changes = 0;
         list.Changed += () => changes++;
 
-        var listed = AssemblyListing.ListReferences(list, assembly);
+        var listed = AssemblyListing.ListReferences(list, assembly).GetValue();
 
         var names = listed.Select(a => a.Name).ToList();
         Assert.Contains("System.Runtime", names);

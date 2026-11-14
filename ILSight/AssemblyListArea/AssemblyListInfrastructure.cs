@@ -28,18 +28,42 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         return File.Exists(path);
     }
 
-    /// <summary>Opens on the thread pool and comes back on the UI thread, with what the read failed with (<see cref="UntrustedReads"/>) as
-    /// <see cref="Outcome{T}.Failed"/>.</summary>
-    public Task<Outcome<LoadedAssembly?>> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
+    /// <summary>Opens on the thread pool and comes back on the UI thread. A file the library can't read is listed as
+    /// failed (<see cref="AssemblyListing.Open"/>); the opening cancelled by <paramref name="stop"/> or a clear of the
+    /// list, which nobody asked of this call, comes back as <see cref="Outcome{T}.Failed"/> with that cancellation. The
+    /// cancellation of <paramref name="ct"/>, and anything else, are let through.</summary>
+    public async Task<Outcome<LoadedAssembly?>> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
     {
-        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => OpenFiles(paths, stop), ct)), ct);
+        LoadedAssembly? last;
+        try
+        {
+            last = await Background.Wait(Task.Run(() => OpenFiles(paths, stop), ct));
+        }
+        catch (OperationCanceledException e) when (!ct.IsCancellationRequested)
+        {
+            return new Outcome<LoadedAssembly?>.Failed(e);
+        }
+
+        ct.ThrowIfCancellationRequested();
+        return new Outcome<LoadedAssembly?>.Ok(last);
     }
 
     /// <summary>Opens as <see cref="OpenFilesAsync"/> does, and gives the root node of the last file listed, which
     /// opening shows.</summary>
-    Task<Outcome<BrowseNode?>> AssemblyOpening.IPorts.OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
+    async Task<Outcome<BrowseNode?>> AssemblyOpening.IPorts.OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
     {
-        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => OpenFilesAndFindRootAsync(paths, stop, ct), ct)), ct);
+        BrowseNode? root;
+        try
+        {
+            root = await Background.Wait(Task.Run(() => OpenFilesAndFindRootAsync(paths, stop, ct), ct));
+        }
+        catch (OperationCanceledException e) when (!ct.IsCancellationRequested)
+        {
+            return new Outcome<BrowseNode?>.Failed(e);
+        }
+
+        ct.ThrowIfCancellationRequested();
+        return new Outcome<BrowseNode?>.Ok(root);
     }
 
     private async Task<BrowseNode?> OpenFilesAndFindRootAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken stop, CancellationToken ct)
@@ -53,10 +77,22 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         return await BrowseSessions.EnsureRootAsync(session, last, ct);
     }
 
-    /// <inheritdoc cref="OpenFilesAsync"/>
-    public Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, CancellationToken stop, CancellationToken ct)
+    /// <summary>Lists them on the thread pool and comes back on the UI thread, a reference the library failed to read
+    /// as <see cref="Outcome{T}.Failed"/>, as the core answers it; cancelled as <see cref="OpenFilesAsync"/> is.</summary>
+    public async Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, CancellationToken stop, CancellationToken ct)
     {
-        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => AssemblyListing.ListReferences(assemblies, assembly, stop), ct)), ct);
+        Outcome<List<LoadedModule>> listed;
+        try
+        {
+            listed = await Background.Wait(Task.Run(() => AssemblyListing.ListReferences(assemblies, assembly, stop), ct));
+        }
+        catch (OperationCanceledException e) when (!ct.IsCancellationRequested)
+        {
+            return new Outcome<List<LoadedModule>>.Failed(e);
+        }
+
+        ct.ThrowIfCancellationRequested();
+        return listed;
     }
 
     /// <summary>Checks on the thread pool, under a reading of the assembly, and comes back on the UI thread, with
@@ -74,14 +110,17 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         return checking.Match<PdbChecking>(static ok => new PdbChecking.Checked { Check = ok.Value }, static failed => new PdbChecking.Failed { Error = failed.Error });
     }
 
-    /// <summary>Reads on the thread pool and comes back on the UI thread, with what the read failed with (<see cref="UntrustedReads"/>) as
-    /// <see cref="Outcome{T}.Failed"/>.</summary>
+    /// <summary>Reads on the thread pool and comes back on the UI thread, a file that can no longer be read as
+    /// <see cref="Outcome{T}.Failed"/>, as the core answers it; the cancellation of <paramref name="ct"/>, and
+    /// anything else, are let through.</summary>
     public async Task<Outcome<ReopenedFile>> ReadAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
     {
         var reading = Task.Run(() => ReadItemAgainAsync(item, places, ct), ct);
         try
         {
-            return await UntrustedReads.CatchAsync(Background.Wait(reading), ct);
+            var read = await Background.Wait(reading);
+            ct.ThrowIfCancellationRequested();
+            return read;
         }
         catch (OperationCanceledException)
         {
@@ -91,21 +130,32 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
     }
 
     // A read that ended before the cancellation that drops its answer holds a fresh file nothing lists.
-    private static void ReleaseIfRead(Task<ReopenedFile> reading)
+    private static void ReleaseIfRead(Task<Outcome<ReopenedFile>> reading)
     {
         var ended = reading;
-        if (ended.IsCompletedSuccessfully)
+        if (ended.IsCompletedSuccessfully && ended.Result is Outcome<ReopenedFile>.Ok read)
         {
-            LoadedAssemblies.Release(ended.Result.Fresh.ListModules());
+            LoadedAssemblies.Release(read.Value.Fresh.ListModules());
         }
     }
 
-    /// <inheritdoc cref="OpenFilesAsync"/>
+    /// <summary>Opens as <see cref="OpenFilesAsync"/> does, then finds the nodes; a lookup the library failed fails the
+    /// reopen, as the core answers it.</summary>
     public async Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded,
         IReadOnlyList<NodePath> places, CancellationToken stop, CancellationToken ct)
     {
-        var reopened = await UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => ReopenFilesAsync(paths, expanded, places, stop), ct)), ct);
-        return reopened.Match(static ok => ok.Value, static failed => new Outcome<ReloadedNodes>.Failed(failed.Error));
+        Outcome<ReloadedNodes> reopened;
+        try
+        {
+            reopened = await Background.Wait(Task.Run(() => ReopenFilesAsync(paths, expanded, places, stop), ct));
+        }
+        catch (OperationCanceledException e) when (!ct.IsCancellationRequested)
+        {
+            return new Outcome<ReloadedNodes>.Failed(e);
+        }
+
+        ct.ThrowIfCancellationRequested();
+        return reopened;
     }
 
     private LoadedAssembly? OpenFiles(IEnumerable<AssemblyPath> paths, CancellationToken stop)
@@ -121,15 +171,20 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
 
     // The fresh file is this read's until the answer holding it is made: a read that fails or is cancelled on its way
     // releases it.
-    private async Task<ReopenedFile> ReadItemAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
+    private async Task<Outcome<ReopenedFile>> ReadItemAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
     {
-        var fresh = AssemblyListing.ReadAgain(assemblies, item);
+        var read = AssemblyListing.ReadAgain(assemblies, item);
+        if (read is not Outcome<FreshItem>.Ok { Value: var fresh })
+        {
+            return new Outcome<ReopenedFile>.Failed(((Outcome<FreshItem>.Failed)read).Error);
+        }
+
         var handedOver = false;
         try
         {
             var reopened = new ReopenedFile { Fresh = fresh, Places = await FindPlacesAgainAsync(item, fresh, places, ct) };
             handedOver = true;
-            return reopened;
+            return new Outcome<ReopenedFile>.Ok(reopened);
         }
         finally
         {

@@ -22,34 +22,39 @@ public sealed class BookmarkInfrastructure(ErrorLog errors, AssemblyList assembl
         return BookmarkFile.Write(path, records);
     }
 
-    /// <summary>Looks on the thread pool and comes back on the UI thread, with what the read failed with (<see cref="UntrustedReads"/>) as
-    /// <see cref="Outcome{T}.Failed"/>, except the cancellation of <paramref name="ct"/>, which it lets through. A
-    /// record with this app's place is where it says; one of the real ILSpy's is where ILSpy's tree path, token or
-    /// member name lead.</summary>
-    public Task<Outcome<List<Lookup<NodePath>>>> LookUpPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct)
+    /// <summary>Looks on the thread pool and comes back on the UI thread, the first place the library failed to find
+    /// as the answer's <see cref="Outcome{T}.Failed"/>, as the core answers it; the cancellation of <paramref name="ct"/>
+    /// is let through. A record with this app's place is where it says; one of the real ILSpy's is where ILSpy's tree
+    /// path, token or member name lead.</summary>
+    public async Task<Outcome<List<Lookup<NodePath>>>> LookUpPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct)
     {
-        return UntrustedReads.CatchAsync(Background.Wait(Task.Run(() => FindPlacesAsync(records, ct), ct)), ct);
+        var found = await Background.Wait(Task.Run(() => FindPlacesAsync(records, ct), ct));
+        ct.ThrowIfCancellationRequested();
+        return found;
     }
 
-    private async Task<List<Lookup<NodePath>>> FindPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct)
+#pragma warning disable RL0302 // Absence is each place's Lookup NotFound inside the Outcome, which the check doesn't look into.
+    private async Task<Outcome<List<Lookup<NodePath>>>> FindPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct)
+#pragma warning restore RL0302
     {
         var places = new List<Lookup<NodePath>>(records.Count);
         foreach (var record in records)
         {
-            places.Add(await FindPlaceAsync(record, ct));
-        }
-        return places;
-    }
+            if (record.Location is not null)
+            {
+                places.Add(new Lookup<NodePath>.Found { Value = record.Location });
+                continue;
+            }
 
-    private async Task<Lookup<NodePath>> FindPlaceAsync(BookmarkRecord record, CancellationToken ct)
-    {
-        if (record.Location is not null)
-        {
-            return new Lookup<NodePath>.Found { Value = record.Location };
-        }
+            var treePath = record.ViewState?.SelectedTreeNodePath;
+            var node = await ILSpyTree.LocateAsync(assemblies, session, record.FileName, treePath, record.Token, record.MemberName, ct);
+            if (node is Outcome<Lookup<BrowseNode>>.Failed failed)
+            {
+                return new Outcome<List<Lookup<NodePath>>>.Failed(failed.Error);
+            }
 
-        var treePath = record.ViewState?.SelectedTreeNodePath;
-        var node = await ILSpyTree.LocateAsync(assemblies, session, record.FileName, treePath, record.Token, record.MemberName, ct);
-        return node.Select(static n => n.Path);
+            places.Add(((Outcome<Lookup<BrowseNode>>.Ok)node).Value.Select(static n => n.Path));
+        }
+        return new Outcome<List<Lookup<NodePath>>>.Ok(places);
     }
 }

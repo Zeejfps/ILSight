@@ -120,7 +120,7 @@ public sealed class PackageTests
         var package = list.Open(WritePackage(temp));
         var old = list.Assemblies.ToList();
 
-        var read = AssemblyListing.ReadAgain(list, old[1]);
+        var read = AssemblyListing.ReadAgain(list, old[1]).GetValue();
         var fresh = read.Item;
         var replaced = list.TryReplace(package, read, out var removed);
         LoadedAssemblies.Release(removed);

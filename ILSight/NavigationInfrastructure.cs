@@ -104,8 +104,8 @@ public sealed class NavigationInfrastructure(ErrorLog errors, RefusalLine refusa
 
     /// <summary>Opens and looks on the thread pool, the opening cancelled with the opens under way now, and comes
     /// back on the UI thread: a lookup the library failed as <see cref="Outcome{T}.Failed"/>, as the core answers it,
-    /// and the opening cancelled by newer opens as <see cref="Outcome{T}.Failed"/> with that cancellation, which nobody
-    /// asked of this request. The cancellation of <paramref name="ct"/> is let through.</summary>
+    /// and the opening cancelled by newer opens or a clear of the list as <see cref="Outcome{T}.Failed"/> with that
+    /// cancellation, which nobody asked of this request. The cancellation of <paramref name="ct"/> is let through.</summary>
     public async Task<Outcome<Lookup<BrowseNode>>> OpenAndFindIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct)
     {
         var opening = opens.Token;
@@ -114,7 +114,7 @@ public sealed class NavigationInfrastructure(ErrorLog errors, RefusalLine refusa
         {
             found = await Background.Wait(Task.Run(() => OpenAndLookUpIdAsync(paths, idString, opening), ct));
         }
-        catch (OperationCanceledException e) when (opening.IsCancellationRequested && !ct.IsCancellationRequested)
+        catch (OperationCanceledException e) when (!ct.IsCancellationRequested)
         {
             return new Outcome<Lookup<BrowseNode>>.Failed(e);
         }

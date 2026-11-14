@@ -99,7 +99,7 @@ public sealed class LoadOptionsTests
     {
         var (list, assembly) = OpenWith(Off(DecompilerToggle.AutoLoadAssemblyReferences));
 
-        var listed = AssemblyListing.ListReferences(list, assembly);
+        var listed = AssemblyListing.ListReferences(list, assembly).GetValue();
 
         Assert.Contains(listed, a => a.Name == "System.Runtime");
     }

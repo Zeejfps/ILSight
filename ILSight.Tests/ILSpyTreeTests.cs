@@ -1,3 +1,4 @@
+using System.Reflection.Metadata.Ecma335;
 using ILSight.Core;
 
 namespace ILSight.Tests;
@@ -38,7 +39,7 @@ public sealed class ILSpyTreeTests
                 continue;
             }
 
-            Assert.Equal(node.Path, PathOf((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, path, token: 0, memberName: "", CancellationToken.None)).FoundOrNull));
+            Assert.Equal(node.Path, PathOf((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, path, token: 0, memberName: "", CancellationToken.None)).GetValue().FoundOrNull));
         }
     }
 
@@ -53,9 +54,23 @@ public sealed class ILSpyTreeTests
         var name = calculator.EntityFullName;
         Assert.NotNull(name);
 
-        Assert.Equal(calculator.Path, PathOf((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, token, name, CancellationToken.None)).FoundOrNull));
-        Assert.Equal(calculator.Path, PathOf((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, ["no such file"], token, name, CancellationToken.None)).FoundOrNull));
-        Assert.IsType<Lookup<BrowseNode>.NotFound>(await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, 0x06FFFFFF, name, CancellationToken.None));
+        Assert.Equal(calculator.Path, PathOf((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, token, name, CancellationToken.None)).GetValue().FoundOrNull));
+        Assert.Equal(calculator.Path, PathOf((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, ["no such file"], token, name, CancellationToken.None)).GetValue().FoundOrNull));
+        Assert.IsType<Lookup<BrowseNode>.NotFound>((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, 0x06FFFFFF, name, CancellationToken.None)).GetValue());
+    }
+
+    [Fact]
+    public async Task A_bookmark_whose_member_the_library_cannot_read_is_its_failure_saying_why()
+    {
+        using var temp = new TempDir();
+        var grow = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Circle", "Grow");
+        var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, grow));
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var token = (uint)MetadataTokens.GetToken(grow);
+
+        var located = await ILSpyTree.LocateAsync(list, TestSession.Shared, path, null, token, Trees.FixturesNamespace + ".Circle.Grow", CancellationToken.None);
+
+        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(located).Error);
     }
 
     [Fact]
@@ -66,8 +81,8 @@ public sealed class ILSpyTreeTests
         Assert.NotNull(definedToken);
         var token = (uint)definedToken.Value;
 
-        Assert.IsType<Lookup<BrowseNode>.NotFound>(await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, token, Trees.FixturesNamespace + ".Renamed", CancellationToken.None));
-        Assert.IsType<Lookup<BrowseNode>.NotFound>(await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, ["no such file"], token, "", CancellationToken.None));
+        Assert.IsType<Lookup<BrowseNode>.NotFound>((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, token, Trees.FixturesNamespace + ".Renamed", CancellationToken.None)).GetValue());
+        Assert.IsType<Lookup<BrowseNode>.NotFound>((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, ["no such file"], token, "", CancellationToken.None)).GetValue());
     }
 
     [Fact]
