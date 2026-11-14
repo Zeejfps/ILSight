@@ -95,6 +95,12 @@ public static class GridSchemas
         return new MetadataTooltip { Text = $"{offset:X} \"{text}\"", Groups = [] };
     }
 
+    /// <summary>The tooltip of a value read (an enum, a GUID), as its own text.</summary>
+    public static MetadataTooltip ExplainText(object read)
+    {
+        return new MetadataTooltip { Text = read.ToString() ?? "", Groups = [] };
+    }
+
     /// <summary>The tooltip of a blob read as its bytes (an <see cref="ImmutableArray{T}"/> of bytes): the bytes in
     /// hex.</summary>
     public static MetadataTooltip ExplainBytes(object read)
@@ -112,11 +118,12 @@ public static class GridSchemas
 
     /// <summary>A token that links to its row, explained by what it points at unless
     /// <paramref name="tooltip"/> says otherwise.</summary>
-    public static void AddHandle<TRow>(GridSchemaBuilder<TRow> schema, string name, Func<TRow, EntityHandle> get, Func<TRow, object?>? tooltip = null)
+    public static void AddHandle<TRow>(GridSchemaBuilder<TRow> schema, string name, Func<TRow, EntityHandle> get, Func<TRow, object?>? tooltip = null,
+        Func<object, MetadataTooltip?>? formatTooltip = null)
     {
         var file = schema.File;
         AddColumn(schema, name, "X8", (r, _) => MetadataTokens.GetToken(get(r)),
-            tooltip is null ? (r, _) => Describe(file, get(r)) : (r, _) => tooltip(r), isToken: true);
+            tooltip is null ? (r, _) => Describe(file, get(r)) : (r, _) => tooltip(r), isToken: true, formatTooltip: formatTooltip);
     }
 
     /// <summary>The start of a run of rows of <paramref name="table"/>, as a token, explained by the
@@ -168,17 +175,19 @@ public static class GridSchemas
         return decode(row);
     }
 
-    /// <summary>The index of a GUID in the #GUID heap, explained by the GUID unless
-    /// <paramref name="tooltip"/> says otherwise.</summary>
-    public static void AddGuid<TRow>(GridSchemaBuilder<TRow> schema, string name, Func<TRow, GuidHandle> get, Func<TRow, object?>? tooltip = null)
+    /// <summary>The index of a GUID in the #GUID heap, explained by the GUID read (a <see cref="Guid"/>), made into text
+    /// by <paramref name="formatTooltip"/> after the read, its own text when none is given.</summary>
+    public static void AddGuid<TRow>(GridSchemaBuilder<TRow> schema, string name, Func<TRow, GuidHandle> get,
+        Func<object, MetadataTooltip?>? formatTooltip = null)
     {
         var file = schema.File;
         AddValue(schema, name, r => MetadataTokens.GetHeapOffset(get(r)), "X8",
-            tooltip ?? (r =>
+            r =>
             {
                 var handle = get(r);
-                return handle.IsNil ? null : file.Metadata.GetGuid(handle).ToString();
-            }));
+                return handle.IsNil ? null : file.Metadata.GetGuid(handle);
+            },
+            formatTooltip ?? ExplainText);
     }
 
     /// <summary>What is shown under a selected row.</summary>

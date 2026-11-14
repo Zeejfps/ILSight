@@ -58,40 +58,50 @@ internal static class MetadataNodes
         for (var index = 0; index < entries.Length; index++)
         {
             var entry = entries[index];
+            object? decoded;
+            var failed = false;
             try
             {
-                switch (entry.Type)
-                {
-                    case DebugDirectoryEntryType.CodeView:
-                        var codeView = reader.ReadCodeViewDebugDirectoryData(entry);
-                        result.Add(CreatePart(parent, MetadataTables.CreateDecodedEntryPart(module, file, index, entry,
-                            [$"GUID: {codeView.Guid}", $"Age: {codeView.Age}", $"Path: {codeView.Path}"])));
-                        continue;
-                    case DebugDirectoryEntryType.PdbChecksum:
-                        var checksum = reader.ReadPdbChecksumDebugDirectoryData(entry);
-                        result.Add(CreatePart(parent, MetadataTables.CreateDecodedEntryPart(module, file, index, entry,
-                            [$"AlgorithmName: {checksum.AlgorithmName}", $"Checksum: {Convert.ToHexStringLower(checksum.Checksum.AsSpan())}"])));
-                        continue;
-                    case DebugDirectoryEntryType.EmbeddedPortablePdb:
-                        var symbols = FindEmbeddedSymbols(module);
-                        if (symbols is not null)
-                        {
-                            result.Add(CreateMetadataFolder(module, parent, symbols.File, symbols.Title));
-                        }
-
-                        continue;
-                }
+                decoded = ReadDecoded(reader, module, entry);
             }
             catch (BadImageFormatException)
             {
                 // An entry that cannot be decoded shows its raw bytes, as one of a type ILSpy doesn't decode.
-                result.Add(CreatePart(parent, MetadataTables.CreateRawEntryPart(module, file, index, entry)));
+                decoded = null;
+                failed = true;
+            }
+
+            // An embedded PDB the module has none of shows nothing, as before; the lines are made of what was read,
+            // outside the read's catch.
+            if (decoded is null && entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb && !failed)
+            {
                 continue;
             }
 
-            result.Add(CreatePart(parent, MetadataTables.CreateRawEntryPart(module, file, index, entry)));
+            result.Add(decoded switch
+            {
+                CodeViewDebugDirectoryData codeView => CreatePart(parent, MetadataTables.CreateDecodedEntryPart(module, file, index, entry,
+                    [$"GUID: {codeView.Guid}", $"Age: {codeView.Age}", $"Path: {codeView.Path}"])),
+                PdbChecksumDebugDirectoryData checksum => CreatePart(parent, MetadataTables.CreateDecodedEntryPart(module, file, index, entry,
+                    [$"AlgorithmName: {checksum.AlgorithmName}", $"Checksum: {Convert.ToHexStringLower(checksum.Checksum.AsSpan())}"])),
+                DebugSymbols symbols => CreateMetadataFolder(module, parent, symbols.File, symbols.Title),
+                _ => CreatePart(parent, MetadataTables.CreateRawEntryPart(module, file, index, entry)),
+            });
         }
         return result.ToArray();
+    }
+
+    // What the library decodes of the entry: its CodeView data, its PDB checksum, the embedded PDB's symbols; null for an
+    // entry shown raw (a type not decoded, or an embedded PDB the module has none of).
+    private static object? ReadDecoded(PEReader reader, LoadedModule module, DebugDirectoryEntry entry)
+    {
+        return entry.Type switch
+        {
+            DebugDirectoryEntryType.CodeView => reader.ReadCodeViewDebugDirectoryData(entry),
+            DebugDirectoryEntryType.PdbChecksum => reader.ReadPdbChecksumDebugDirectoryData(entry),
+            DebugDirectoryEntryType.EmbeddedPortablePdb => FindEmbeddedSymbols(module),
+            _ => null,
+        };
     }
 
     private static DebugSymbols? FindEmbeddedSymbols(LoadedModule module)

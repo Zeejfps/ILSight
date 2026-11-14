@@ -51,7 +51,7 @@ internal static class MetadataTables
                 GridSchemas.AddOffset(columns, table);
                 GridSchemas.AddValue(columns, "Generation", r => r.Generation);
                 GridSchemas.AddName(columns, r => r.Name);
-                GridSchemas.AddGuid(columns, "Mvid", r => r.Mvid, r => m.GetGuid(r.Mvid).ToString());
+                GridSchemas.AddGuid(columns, "Mvid", r => r.Mvid);
                 GridSchemas.AddGuid(columns, "GenerationId", r => r.GenerationId);
                 GridSchemas.AddGuid(columns, "BaseGenerationId", r => r.BaseGenerationId);
             }),
@@ -122,9 +122,9 @@ internal static class MetadataTables
             TableIndex.Constant => GridSchemas.AddColumns(Table(() => Rids().Select(rid => m.GetConstant(MetadataTokens.ConstantHandle(rid)))), columns =>
             {
                 GridSchemas.AddOffset(columns, table);
-                GridSchemas.AddValue(columns, "Type", r => r.TypeCode, "X8", r => r.TypeCode.ToString());
+                GridSchemas.AddValue(columns, "Type", r => r.TypeCode, "X8", r => r.TypeCode, GridSchemas.ExplainText);
                 GridSchemas.AddHandle(columns, "Parent", r => r.Parent);
-                GridSchemas.AddBlob(columns, "Value", r => r.Value, r => ConstantText(m, r));
+                GridSchemas.AddBlob(columns, "Value", r => r.Value, r => ReadConstant(m, r), ExplainConstant);
             }),
 
             TableIndex.CustomAttribute => GridSchemas.AddColumns(Table(() => m.CustomAttributes.Select(m.GetCustomAttribute)), columns =>
@@ -264,7 +264,7 @@ internal static class MetadataTables
             TableIndex.File => GridSchemas.AddColumns(Table(() => m.AssemblyFiles.Select(m.GetAssemblyFile)), columns =>
             {
                 GridSchemas.AddOffset(columns, table);
-                GridSchemas.AddValue(columns, "Attributes", r => r.ContainsMetadata ? 1 : 0, "X8", r => r.ContainsMetadata ? "ContainsMetaData" : "ContainsNoMetaData");
+                GridSchemas.AddValue(columns, "Attributes", r => r.ContainsMetadata ? 1 : 0, "X8", r => r.ContainsMetadata, ExplainContainsMetadata);
                 GridSchemas.AddName(columns, r => r.Name);
                 GridSchemas.AddBlob(columns, "HashValue", r => r.HashValue, r => ReadBytes(r.HashValue), GridSchemas.ExplainBytes);
             }),
@@ -344,51 +344,41 @@ internal static class MetadataTables
             TableIndex.Document => GridSchemas.AddColumns(Table(() => m.Documents.Select(m.GetDocument)), columns =>
             {
                 GridSchemas.AddValue(columns, "Name", r => m.GetString(r.Name), tooltip: r => (MetadataTokens.GetHeapOffset(r.Name), m.GetString(r.Name)), formatTooltip: GridSchemas.ExplainHeapString);
-                GridSchemas.AddGuid(columns, "HashAlgorithm", r => r.HashAlgorithm, r =>
+                GridSchemas.AddGuid(columns, "HashAlgorithm", r => r.HashAlgorithm, static read =>
                 {
-                    if (r.HashAlgorithm.IsNil)
-                    {
-                        return null;
-                    }
-
-                    var guid = m.GetGuid(r.HashAlgorithm);
+                    var guid = (Guid)read;
                     if (guid == KnownGuids.HashAlgorithmSHA1)
                     {
-                        return "SHA1 [ff1816ec-aa5e-4d10-87f7-6f4963833460]";
+                        return GridSchemas.ExplainText("SHA1 [ff1816ec-aa5e-4d10-87f7-6f4963833460]");
                     }
 
                     if (guid == KnownGuids.HashAlgorithmSHA256)
                     {
-                        return "SHA256 [8829d00f-11b8-4213-878b-770e8597ac16]";
+                        return GridSchemas.ExplainText("SHA256 [8829d00f-11b8-4213-878b-770e8597ac16]");
                     }
 
-                    return "Unknown [" + guid + "]";
+                    return Unknown(guid);
                 });
                 GridSchemas.AddBlob(columns, "Hash", r => r.Hash, r => ReadBytes(r.Hash), GridSchemas.ExplainBytes);
-                GridSchemas.AddGuid(columns, "Language", r => r.Language, r =>
+                GridSchemas.AddGuid(columns, "Language", r => r.Language, static read =>
                 {
-                    if (r.Language.IsNil)
-                    {
-                        return null;
-                    }
-
-                    var guid = m.GetGuid(r.Language);
+                    var guid = (Guid)read;
                     if (guid == KnownGuids.CSharpLanguageGuid)
                     {
-                        return "Visual C# [3f5162f8-07c6-11d3-9053-00c04fa302a1]";
+                        return GridSchemas.ExplainText("Visual C# [3f5162f8-07c6-11d3-9053-00c04fa302a1]");
                     }
 
                     if (guid == KnownGuids.VBLanguageGuid)
                     {
-                        return "Visual Basic [3a12d0b8-c26c-11d0-b442-00a0244a1dd2]";
+                        return GridSchemas.ExplainText("Visual Basic [3a12d0b8-c26c-11d0-b442-00a0244a1dd2]");
                     }
 
                     if (guid == KnownGuids.FSharpLanguageGuid)
                     {
-                        return "Visual F# [ab4f38c9-b6e6-43ba-be3b-58080b2ccce3]";
+                        return GridSchemas.ExplainText("Visual F# [ab4f38c9-b6e6-43ba-be3b-58080b2ccce3]");
                     }
 
-                    return "Unknown [" + guid + "]";
+                    return Unknown(guid);
                 });
             }),
 
@@ -402,8 +392,8 @@ internal static class MetadataTables
                     }
 
                     var document = m.GetDocument(r.Document);
-                    return $"{MetadataTokens.GetHeapOffset(document.Name):X} \"{m.GetString(document.Name)}\"";
-                });
+                    return (MetadataTokens.GetHeapOffset(document.Name), m.GetString(document.Name));
+                }, GridSchemas.ExplainHeapString);
                 GridSchemas.AddBlob(columns, "SequencePoints", r => r.SequencePointsBlob, r =>
                 {
                     if (r.SequencePointsBlob.IsNil)
@@ -411,14 +401,8 @@ internal static class MetadataTables
                         return null;
                     }
 
-                    var sb = new StringBuilder();
-                    foreach (var p in r.GetSequencePoints())
-                    {
-                        sb.AppendLine($"document='{MetadataTokens.GetToken(p.Document):X8}', offset={p.Offset}, start={p.StartLine};{p.StartColumn}, end={p.EndLine};{p.EndColumn}, hidden={p.IsHidden}");
-                    }
-
-                    return sb.ToString().TrimEnd();
-                });
+                    return r.GetSequencePoints().ToList();
+                }, ExplainSequencePoints);
                 GridSchemas.AddHandle(columns, "LocalSignature", r => r.LocalSignature, r =>
                 {
                     if (r.LocalSignature.IsNil)
@@ -497,12 +481,12 @@ internal static class MetadataTables
     private const char StringQuote = '"';
     private const char CharQuote = '\'';
 
-    private static string? ConstantText(MetadataReader metadata, Constant constant)
+    // The constant's value read from its blob, boxed beside the null constant; null when the blob can't be read.
+    private static ConstantValue? ReadConstant(MetadataReader metadata, Constant constant)
     {
         try
         {
-            var value = metadata.GetBlobReader(constant.Value).ReadConstant(constant.TypeCode);
-            return LiteralText(value);
+            return new ConstantValue(metadata.GetBlobReader(constant.Value).ReadConstant(constant.TypeCode));
         }
         catch (BadImageFormatException)
         {
@@ -512,6 +496,38 @@ internal static class MetadataTables
         {
             return null;
         }
+    }
+
+    private sealed record ConstantValue(object? Value);
+
+    // The app's formatting of a constant read (ReadConstant), after the read: its literal.
+    private static MetadataTooltip ExplainConstant(object read)
+    {
+        return GridSchemas.ExplainText(LiteralText(((ConstantValue)read).Value));
+    }
+
+    // The app's words for the File table's one flag, read as a bool.
+    private static MetadataTooltip ExplainContainsMetadata(object read)
+    {
+        return GridSchemas.ExplainText((bool)read ? "ContainsMetaData" : "ContainsNoMetaData");
+    }
+
+    private static MetadataTooltip Unknown(Guid guid)
+    {
+        return GridSchemas.ExplainText("Unknown [" + guid + "]");
+    }
+
+    // The sequence points read (a list of them) written one a line, after the read; none for no points.
+    private static MetadataTooltip? ExplainSequencePoints(object read)
+    {
+        var sb = new StringBuilder();
+        foreach (var p in (List<System.Reflection.Metadata.SequencePoint>)read)
+        {
+            sb.AppendLine($"document='{MetadataTokens.GetToken(p.Document):X8}', offset={p.Offset}, start={p.StartLine};{p.StartColumn}, end={p.EndLine};{p.EndColumn}, hidden={p.IsHidden}");
+        }
+
+        var text = sb.ToString().TrimEnd();
+        return text.Length == 0 ? null : GridSchemas.ExplainText(text);
     }
 
     private static string LiteralText(object? value)

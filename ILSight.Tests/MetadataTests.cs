@@ -227,6 +227,22 @@ public sealed class MetadataTests
     }
 
     [Fact]
+    public async Task Values_read_for_a_tooltip_are_made_into_its_text_after_the_read()
+    {
+        var assembly = Trees.TestAssembly;
+        var module = await GridAsync(await TableAsync(assembly, "Module"));
+        var constants = await GridAsync(await TableAsync(assembly, "Constant"));
+
+        var mvid = MetadataGrids.FindTooltip(module, 0, module.Column("Mvid"))?.Text;
+        var type = MetadataGrids.FindTooltip(constants, 0, constants.Column("Type"))?.Text;
+        var value = MetadataGrids.FindTooltip(constants, 0, constants.Column("Value"))?.Text;
+
+        Assert.True(Guid.TryParse(mvid, out _), mvid);
+        Assert.True(Enum.TryParse<System.Reflection.Metadata.ConstantTypeCode>(type, out _), type);
+        Assert.False(string.IsNullOrEmpty(value));
+    }
+
+    [Fact]
     public async Task A_flags_cell_explains_each_group_of_its_bits()
     {
         var grid = await TypeDefsAsync();
