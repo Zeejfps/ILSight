@@ -686,6 +686,7 @@
   "error.no_api_reference_page": "Для {name} нет страницы в справочнике API .NET",
   "error.no_api_reference_page_details": "Страницы есть только у пространств имён, а также у типов и членов, видимых за пределами своей сборки.",
   "error.go_back": "Не удалось вернуться к {place}",
+  "error.look_up_place": "Не удаётся найти {place}",
   "error.no_longer_there": "{place} больше не существует.",
   "error.module_unreadable": "Не удалось прочитать {name}",
   "error.decompile": "Не удалось декомпилировать {name}",

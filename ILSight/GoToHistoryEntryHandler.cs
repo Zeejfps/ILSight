@@ -53,7 +53,7 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
             },
             failed =>
             {
-                ports.ReportError(new AppProblem.HistoryPlaceGone { Place = place, Error = failed.Error });
+                ports.ReportError(new AppProblem.PlaceLookupFailed { Place = place, Error = failed.Error });
                 return null;
             },
             static _ => null);

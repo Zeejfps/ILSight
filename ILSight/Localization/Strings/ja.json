@@ -686,6 +686,7 @@
   "error.no_api_reference_page": "{name} には .NET API リファレンスのページがありません",
   "error.no_api_reference_page_details": "ページがあるのは、名前空間と、アセンブリの外から参照できる型とメンバーだけです。",
   "error.go_back": "{place} に戻れません",
+  "error.look_up_place": "{place} を検索できません",
   "error.no_longer_there": "{place} はもう存在しません。",
   "error.module_unreadable": "{name} を読み込めませんでした",
   "error.decompile": "{name} を逆コンパイルできません",

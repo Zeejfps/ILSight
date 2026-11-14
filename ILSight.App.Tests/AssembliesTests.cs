@@ -349,7 +349,9 @@ public sealed class AssembliesTests
 
         var loads = await d.RunAsync(() => new AssemblyReloading(ports).RefreshAssembliesAsync(appState.Lists, appState.ListSession, appState.ViewCommands, appState.Decompiler, [], appState.ListSession.Reload.Start(), CancellationToken.None));
 
-        Assert.Same(error, Assert.IsType<AppProblem.DecompilationFailed>(Assert.Single(ports.Reported)).Error);
+        var reported = Assert.IsType<AppProblem.PlaceLookupFailed>(Assert.Single(ports.Reported));
+        Assert.Same(error, reported.Error);
+        Assert.Equal(location, reported.Place);
         var failed = Assert.IsType<TabContent.Unreadable>(tab.Content);
         Assert.Equal("Unreadable.", failed.Why);
         Assert.Equal(location, failed.Location);

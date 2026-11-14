@@ -59,7 +59,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var failed = Assert.IsType<TabContent.Unreadable>(waiting.Reopened.Tab.Content);
         Assert.Equal("Unreadable.", failed.Why);
         Assert.Equal(waiting.Record.Location, failed.Location);
-        Assert.Same(error, Assert.IsType<AppProblem.DecompilationFailed>(Assert.Single(ports.Reported)).Error);
+        Assert.Same(error, Assert.IsType<AppProblem.PlaceLookupFailed>(Assert.Single(ports.Reported)).Error);
         Assert.Same(other.Reopened.Tab, Assert.Single(loads).Tab);
         Assert.Empty(d.AppState.ListSession.Reopened.Tabs);
     }

@@ -56,21 +56,11 @@ public abstract record AppProblem
         public required Exception Error { get; init; }
     }
 
-    /// <summary>Finding the place a history entry shows failed with <see cref="Error"/>; not finding it is a refusal
-    /// (<see cref="Refusal.HistoryPlaceGone"/>).</summary>
-    public sealed record HistoryPlaceGone : AppProblem
+    /// <summary>Looking up the place <see cref="Place"/> failed with <see cref="Error"/>: one kind wherever the lookup was
+    /// asked for, a history entry's, a bookmark's, a reopened or reloaded tab's. Not finding it is a refusal where the
+    /// user asked (<see cref="Refusal.HistoryPlaceGone"/>, <see cref="Refusal.BookmarkGone"/>).</summary>
+    public sealed record PlaceLookupFailed : AppProblem
     {
-        public required NodePath Place { get; init; }
-
-        public required Exception Error { get; init; }
-    }
-
-    /// <summary>Finding the place a bookmark marks failed with <see cref="Error"/>; not finding it is a refusal
-    /// (<see cref="Refusal.BookmarkGone"/>).</summary>
-    public sealed record BookmarkGone : AppProblem
-    {
-        public required string Bookmark { get; init; }
-
         public required NodePath Place { get; init; }
 
         public required Exception Error { get; init; }
@@ -229,7 +219,7 @@ public abstract record AppProblem
         Func<AssembliesNotReloaded, TResult> assembliesNotReloaded,
         Func<AnalysisFailed, TResult> analysisFailed, Func<AnalysesNotRestored, TResult> analysesNotRestored,
         Func<Unresolved, TResult> unresolved,
-        Func<HistoryPlaceGone, TResult> historyPlaceGone, Func<BookmarkGone, TResult> bookmarkGone, Func<ModuleUnreadable, TResult> moduleUnreadable,
+        Func<PlaceLookupFailed, TResult> placeLookupFailed, Func<ModuleUnreadable, TResult> moduleUnreadable,
         Func<BookmarksNotExported, TResult> bookmarksNotExported,
         Func<BookmarksNotImported, TResult> bookmarksNotImported,
         Func<ImportedBookmarksUnreadable, TResult> importedBookmarksUnreadable,
@@ -253,8 +243,7 @@ public abstract record AppProblem
             AnalysisFailed c => analysisFailed(c),
             AnalysesNotRestored c => analysesNotRestored(c),
             Unresolved c => unresolved(c),
-            HistoryPlaceGone c => historyPlaceGone(c),
-            BookmarkGone c => bookmarkGone(c),
+            PlaceLookupFailed c => placeLookupFailed(c),
             ModuleUnreadable c => moduleUnreadable(c),
             BookmarksNotExported c => bookmarksNotExported(c),
             BookmarksNotImported c => bookmarksNotImported(c),

@@ -686,6 +686,7 @@
   "error.no_api_reference_page": "{name}에 대한 .NET API 참조 페이지가 없습니다",
   "error.no_api_reference_page_details": "네임스페이스와 어셈블리 외부에서 볼 수 있는 형식 및 멤버에만 페이지가 있습니다.",
   "error.go_back": "{place}(으)로 돌아갈 수 없습니다",
+  "error.look_up_place": "{place}을(를) 조회할 수 없습니다",
   "error.no_longer_there": "{place}이(가) 더 이상 없습니다.",
   "error.module_unreadable": "{name}을(를) 읽을 수 없습니다",
   "error.decompile": "{name}을(를) 디컴파일할 수 없습니다",

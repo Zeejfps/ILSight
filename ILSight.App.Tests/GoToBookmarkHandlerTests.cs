@@ -56,6 +56,24 @@ public sealed class GoToBookmarkHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_LookupFailed_ReportsTheLookupsFailureAsEveryPlaceLookupDoes()
+    {
+        var (d, bookmark) = await BookmarkedAsync();
+        var ports = new FakeGoToBookmarkHandlerPorts();
+        var error = new InvalidOperationException("Unreadable.");
+
+        var going = d.BeginAsync(() => new GoToBookmarkHandler(ports).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Bookmarks, d.AppState.Decompiler, bookmark, d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        Assert.Single(ports.Answers).SetResult(new Outcome<Lookup<BrowseNode>>.Failed(error));
+        var load = await d.EndAsync(going);
+        Assert.Null(load);
+
+        var reported = Assert.IsType<AppProblem.PlaceLookupFailed>(Assert.Single(ports.Reported));
+        Assert.Same(error, reported.Error);
+        Assert.Equal(bookmark.Place, reported.Place);
+        Assert.Equal(Strings.En.ErrorLookUpPlace(bookmark.Place.Label), ProblemTexts.Describe(Strings.En, reported).Title);
+    }
+
+    [Fact]
     public async Task HandleAsync_SomethingElseAskedForMeanwhile_ShowsAndReportsNothing()
     {
         var (d, bookmark) = await BookmarkedAsync();
