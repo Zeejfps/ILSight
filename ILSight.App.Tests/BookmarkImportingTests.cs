@@ -32,11 +32,16 @@ public sealed class BookmarkImportingTests
         return new BookmarksRead.Read { Bookmarks = records, Problems = [] };
     }
 
-    private static List<Lookup<NodePath>> PlacesOf(IEnumerable<Bookmark> bookmarks)
+    private static List<Outcome<Lookup<NodePath>>> PlacesOf(IEnumerable<Bookmark> bookmarks)
     {
         return bookmarks
-            .Select(static Lookup<NodePath> (b) => new Lookup<NodePath>.Found { Value = b.Place })
+            .Select(static b => Found(b.Place))
             .ToList();
+    }
+
+    private static Outcome<Lookup<NodePath>> Found(NodePath place)
+    {
+        return new Outcome<Lookup<NodePath>>.Ok(new Lookup<NodePath>.Found { Value = place });
     }
 
     [Fact]
@@ -48,7 +53,7 @@ public sealed class BookmarkImportingTests
         var imports = new BookmarkImports();
 
         var importing = new BookmarkImporting(ports).ImportAsync(bookmarks, imports, Path, CancellationToken.None);
-        Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<NodePath>>>.Ok([new Lookup<NodePath>.Found { Value = file[0].Place }, new Lookup<NodePath>.NotFound()]));
+        Assert.Single(ports.Answers).SetResult([Found(file[0].Place), new Outcome<Lookup<NodePath>>.Ok(new Lookup<NodePath>.NotFound())]);
         await importing.WithinPatienceAsync();
 
         Assert.Equal([Path], ports.Read);
@@ -70,7 +75,7 @@ public sealed class BookmarkImportingTests
         var imports = new BookmarkImports();
 
         var importing = new BookmarkImporting(ports).ImportAsync(bookmarks, imports, Path, CancellationToken.None);
-        Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<NodePath>>>.Ok(PlacesOf(file)));
+        Assert.Single(ports.Answers).SetResult(PlacesOf(file));
         await importing.WithinPatienceAsync();
 
         Assert.NotNull(imports.Asking);
@@ -89,7 +94,7 @@ public sealed class BookmarkImportingTests
         var imports = new BookmarkImports();
         var importing = new BookmarkImporting(ports);
         var reading = importing.ImportAsync(bookmarks, imports, Path, CancellationToken.None);
-        Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<NodePath>>>.Ok(PlacesOf([file[0], file[0], file[1]])));
+        Assert.Single(ports.Answers).SetResult(PlacesOf([file[0], file[0], file[1]]));
         await reading.WithinPatienceAsync();
         var asked = imports.Asking;
         Assert.NotNull(asked);
@@ -118,17 +123,24 @@ public sealed class BookmarkImportingTests
     }
 
     [Fact]
-    public async Task ImportAsync_LookupFailed_ReportsTheFileNotImported()
+    public async Task ImportAsync_OneLookupFailed_TakesTheOtherAndReportsTheFailedOneOnceWithWhy()
     {
-        var ports = new FakeBookmarkImportingPorts { File = FileOf(await TwoBookmarksAsync()) };
+        var file = await TwoBookmarksAsync();
+        var ports = new FakeBookmarkImportingPorts { File = FileOf(file) };
         var bookmarks = new BookmarkList();
         var imports = new BookmarkImports();
+        var error = new InvalidOperationException("Unreadable.");
 
         var importing = new BookmarkImporting(ports).ImportAsync(bookmarks, imports, Path, CancellationToken.None);
-        Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<NodePath>>>.Failed(new InvalidOperationException("Unreadable.")));
+        Assert.Single(ports.Answers).SetResult([new Outcome<Lookup<NodePath>>.Failed(error), Found(file[1].Place)]);
         await importing.WithinPatienceAsync();
 
-        Assert.Equal("exported.json", Assert.IsType<AppProblem.BookmarksNotImported>(Assert.Single(ports.Reported)).File);
-        Assert.Empty(bookmarks.Items);
+        Assert.Equal(["Bookmark 2"], bookmarks.Items.Select(static b => b.Name));
+        var reported = Assert.IsType<AppProblem.ImportedBookmarksNotPlaced>(Assert.Single(ports.Reported));
+        Assert.Equal("exported.json", reported.File);
+        var failed = Assert.Single(reported.Failed);
+        Assert.StartsWith("Bookmark 1: ", failed.Bookmark, StringComparison.Ordinal);
+        Assert.Same(error, failed.Error);
+        Assert.Empty(ports.Refused);
     }
 }

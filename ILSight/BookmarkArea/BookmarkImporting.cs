@@ -23,10 +23,10 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
         BookmarksRead ReadBookmarks(string path);
 
         /// <summary>The place in the open assemblies of the bookmark each of <paramref name="records"/> describes, in
-        /// the same order: not found for one not there, unreadable for one in a module whose type system the library
-        /// could not read; looked for without holding up the screen. A lookup that failed
-        /// comes back as <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<List<Lookup<NodePath>>>> LookUpPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct);
+        /// the same order, each as its own lookup came out: not found for one not there, unreadable for one in a module
+        /// whose type system the library could not read, <see cref="Outcome{T}.Failed"/> for one whose lookup failed;
+        /// looked for without holding up the screen.</summary>
+        Task<List<Outcome<Lookup<NodePath>>>> LookUpPlacesAsync(IReadOnlyList<BookmarkRecord> records, CancellationToken ct);
     }
 
     /// <summary>Reads the bookmarks in the file at <paramref name="path"/> and finds the place of each: takes them
@@ -65,19 +65,7 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
         TakeImported(bookmarks, imports, records, found, file);
     }
 
-    private void TakeImported(BookmarkList bookmarks, BookmarkImports imports, List<BookmarkRecord> records, Outcome<List<Lookup<NodePath>>> found,
-        string file)
-    {
-        found.Switch(
-            ok => TakeImported(bookmarks, imports, records, ok.Value, file),
-            failed => ports.ReportError(new AppProblem.BookmarksNotImported
-            {
-                File = file,
-                Reason = failed.Error.ToString(),
-            }));
-    }
-
-    private void TakeImported(BookmarkList bookmarks, BookmarkImports imports, List<BookmarkRecord> records, List<Lookup<NodePath>> places,
+    private void TakeImported(BookmarkList bookmarks, BookmarkImports imports, List<BookmarkRecord> records, List<Outcome<Lookup<NodePath>>> places,
         string file)
     {
         var found = records.Zip(places, static (record, place) => new FoundBookmark
@@ -85,6 +73,7 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
             Record = record,
             Place = place,
         }).ToList();
+        ReportFailedBookmarks(found, file);
         ReportLostBookmarks(found, file);
         var imported = found
             .Select(f => CreateBookmark(bookmarks, f))
@@ -105,7 +94,7 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
 
     private void ReportLostBookmarks(List<FoundBookmark> found, string file)
     {
-        var lost = found.FindAll(static f => f.Place is not Lookup<NodePath>.Found);
+        var lost = found.FindAll(static f => f.Place is Outcome<Lookup<NodePath>>.Ok { Value: not Lookup<NodePath>.Found });
         if (lost.Count == 0)
         {
             return;
@@ -113,10 +102,30 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
 
         var lines = lost.ConvertAll(DescribeLostBookmark);
         ports.ShowRefusal(new Refusal.ImportedBookmarksLost { File = file, Lost = lines });
-        foreach (var unreadable in Lookup.ListUnreadable(lost.Select(static f => f.Place)))
+        foreach (var unreadable in Lookup.ListUnreadable(lost.Select(static f => ((Outcome<Lookup<NodePath>>.Ok)f.Place).Value)))
         {
             ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable));
         }
+    }
+
+    // Each bookmark whose lookup failed, left out, reported once with why: the others settle as their own lookups came out.
+    private void ReportFailedBookmarks(List<FoundBookmark> found, string file)
+    {
+        var failed = new List<(string Bookmark, Exception Error)>();
+        foreach (var bookmark in found)
+        {
+            if (bookmark.Place is Outcome<Lookup<NodePath>>.Failed failure)
+            {
+                failed.Add((DescribeLostBookmark(bookmark), failure.Error));
+            }
+        }
+
+        if (failed.Count == 0)
+        {
+            return;
+        }
+
+        ports.ReportError(new AppProblem.ImportedBookmarksNotPlaced { File = file, Failed = failed });
     }
 
     private static string DescribeLostBookmark(FoundBookmark lost)
@@ -128,7 +137,7 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
 
     private static Bookmark? CreateBookmark(BookmarkList bookmarks, FoundBookmark found)
     {
-        if (found.Place is not Lookup<NodePath>.Found place)
+        if (found.Place is not Outcome<Lookup<NodePath>>.Ok { Value: Lookup<NodePath>.Found place })
         {
             return null;
         }
@@ -179,6 +188,6 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
     {
         public required BookmarkRecord Record { get; init; }
 
-        public required Lookup<NodePath> Place { get; init; }
+        public required Outcome<Lookup<NodePath>> Place { get; init; }
     }
 }

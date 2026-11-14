@@ -726,6 +726,7 @@
   "error.import_bookmarks": "Impossible d’importer les signets de {file}",
   "error.bookmarks_not_found": "Certains signets de {file} sont introuvables et ont été ignorés",
   "error.bookmarks_unreadable": "Certains signets de {file} sont illisibles et ont été ignorés",
+  "error.bookmark_places_failed": "Impossible de rechercher l’emplacement de certains signets de {file} : ils ont été ignorés",
   "error.not_bookmarks_file": "Ce n’est pas un fichier de signets.",
   "error.bookmark_place_unreadable": "#{entry} : l’emplacement où il a été créé est illisible.",
   "error.theme": "Problèmes dans le thème {file}",

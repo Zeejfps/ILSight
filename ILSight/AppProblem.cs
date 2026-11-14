@@ -100,6 +100,16 @@ public abstract record AppProblem
         public required IReadOnlyList<BookmarkEntryProblem> Problems { get; init; }
     }
 
+    /// <summary>Looking up where some bookmarks imported from <see cref="File"/> go failed, each with why: they were left
+    /// out, and the others settled as their own lookups came out.</summary>
+    public sealed record ImportedBookmarksNotPlaced : AppProblem
+    {
+        public required string File { get; init; }
+
+        /// <summary>Each bookmark left out, as the refusal line describes one lost, and why its lookup failed.</summary>
+        public required IReadOnlyList<(string Bookmark, Exception Error)> Failed { get; init; }
+    }
+
     public sealed record ComparisonFailed : AppProblem
     {
         public required string Left { get; init; }
@@ -222,7 +232,7 @@ public abstract record AppProblem
         Func<PlaceLookupFailed, TResult> placeLookupFailed, Func<ModuleUnreadable, TResult> moduleUnreadable,
         Func<BookmarksNotExported, TResult> bookmarksNotExported,
         Func<BookmarksNotImported, TResult> bookmarksNotImported,
-        Func<ImportedBookmarksUnreadable, TResult> importedBookmarksUnreadable,
+        Func<ImportedBookmarksUnreadable, TResult> importedBookmarksUnreadable, Func<ImportedBookmarksNotPlaced, TResult> importedBookmarksNotPlaced,
         Func<ComparisonFailed, TResult> comparisonFailed, Func<DecompilationFailed, TResult> decompilationFailed,
         Func<TypeNotDiagrammed, TResult> typeNotDiagrammed, Func<DiagramNotReopened, TResult> diagramNotReopened,
         Func<DiagramNotLaidOut, TResult> diagramNotLaidOut, Func<ResourceNotSaved, TResult> resourceNotSaved,
@@ -248,6 +258,7 @@ public abstract record AppProblem
             BookmarksNotExported c => bookmarksNotExported(c),
             BookmarksNotImported c => bookmarksNotImported(c),
             ImportedBookmarksUnreadable c => importedBookmarksUnreadable(c),
+            ImportedBookmarksNotPlaced c => importedBookmarksNotPlaced(c),
             ComparisonFailed c => comparisonFailed(c),
             DecompilationFailed c => decompilationFailed(c),
             TypeNotDiagrammed c => typeNotDiagrammed(c),

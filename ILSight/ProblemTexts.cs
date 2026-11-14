@@ -41,6 +41,7 @@ public static class ProblemTexts
             bookmarksNotExported: p => (t.ErrorExportBookmarks, p.Reason),
             bookmarksNotImported: p => (t.ErrorImportBookmarks(p.File), p.Reason),
             importedBookmarksUnreadable: p => (t.ErrorBookmarksUnreadable(p.File), DescribeEntryProblems(t, p.Problems)),
+            importedBookmarksNotPlaced: p => (t.ErrorBookmarkPlacesFailed(p.File), DescribePlaceFailures(p.Failed)),
             comparisonFailed: p => (t.ErrorCompare(p.Left, p.Right), p.Error.ToString()),
             decompilationFailed: p => (t.ErrorDecompile(p.Node), p.Error.ToString()),
             typeNotDiagrammed: p => (t.ErrorShowInDiagram(p.Type.Name), p.Error.ToString()),
@@ -65,6 +66,11 @@ public static class ProblemTexts
     private static string DescribeEntryProblems(Strings t, IReadOnlyList<BookmarkEntryProblem> problems)
     {
         return string.Join(Environment.NewLine, problems.Select(p => DescribeEntryProblem(t, p)));
+    }
+
+    private static string DescribePlaceFailures(IReadOnlyList<(string Bookmark, Exception Error)> failed)
+    {
+        return string.Join(Environment.NewLine, failed.Select(static f => $"{f.Bookmark}: {f.Error}"));
     }
 
     private static string DescribeEntryProblem(Strings t, BookmarkEntryProblem problem)
