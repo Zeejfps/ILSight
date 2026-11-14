@@ -1,5 +1,6 @@
 using ILSight.AssemblyArea;
 using ILSight.DiagramArea;
+using ILSight.ExportArea;
 using ILSight.SearchArea;
 
 namespace ILSight;
@@ -19,4 +20,7 @@ public sealed record AdapterHooks
 
     /// <summary>The port showing a type on a diagram reads its card and its neighbours' through.</summary>
     public Func<DiagramGrowing.IPorts, DiagramGrowing.IPorts>? Growing { get; init; }
+
+    /// <summary>The port an export writes through.</summary>
+    public Func<ExportWriting.IPorts, ExportWriting.IPorts>? Exporting { get; init; }
 }

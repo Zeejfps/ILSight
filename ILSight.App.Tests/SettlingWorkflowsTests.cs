@@ -1,5 +1,6 @@
 using ILSight.Core;
 using ILSight.DiagramArea;
+using ILSight.ExportArea;
 
 namespace ILSight.App.Tests;
 
@@ -31,6 +32,24 @@ public sealed class SettlingWorkflowsTests
         Assert.Equal("broken", app.Ui.Search.Results.RunFailure);
         Assert.Contains(app.Frames.TextRects(), static t => t.Text == "Search failed (broken)");
         Assert.Equal("broken", ReportedOnce(app.AppState).Error.Message);
+    }
+
+    [Fact]
+    public async Task An_export_that_throws_is_reported_once_and_stays_in_the_exports_panel_failed()
+    {
+        var ports = new FakeExportWritingPorts { CodeFileThrows = new InvalidOperationException("broken") };
+        var d = AppStateDriver.OpenedWith(new AdapterHooks { Exporting = _ => ports });
+        var greeter = await d.FixtureAsync("Greeter");
+        using var temp = new TempDir();
+
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, greeter, temp.PathOf("Greeter.cs")));
+        d.RunUntil(() => d.AppState.FinishedExports.Count == 1);
+        d.Settle();
+
+        var failed = Assert.IsType<ExportEnd.Failed>(Assert.Single(d.AppState.FinishedExports).End);
+        Assert.Equal("broken", failed.Error.Message);
+        Assert.False(d.AppState.Export.IsRunning);
+        Assert.Equal("broken", ReportedOnce(d.AppState).Error.Message);
     }
 
     [Fact]

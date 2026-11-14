@@ -643,8 +643,14 @@ public sealed class ExportDialogTests : IDisposable
         app.OpenExportSetup(null);
         app.Ui.ExportSetup.Folder = _temp.Path;
 
-        app.Run(2);
+        // The folder is looked at off the UI thread: wait for the warning, not a count of frames.
+        app.Frames.WaitUntil(() => HoldsFilesWarningShown(app), AppStateDriver.Patience);
 
-        Assert.Contains(app.Frames.Canvas.Texts, t => t.Inputs.Text.StartsWith("This folder already holds files.", StringComparison.Ordinal));
+        Assert.True(HoldsFilesWarningShown(app));
+    }
+
+    private static bool HoldsFilesWarningShown(AppDriver app)
+    {
+        return app.Frames.Canvas.Texts.Any(static t => t.Inputs.Text.StartsWith("This folder already holds files.", StringComparison.Ordinal));
     }
 }

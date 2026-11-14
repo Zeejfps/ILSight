@@ -27,9 +27,18 @@ internal sealed class FakeExportWritingPorts : ExportWriting.IPorts
         return AreFoldersThere;
     }
 
+    /// <summary>What writing a code file throws, as a bug none of its answers covers; none when null.</summary>
+    public Exception? CodeFileThrows { get; init; }
+
     public Task<ExportOutcome<string>> WriteCodeFileAsync(ExportWork.CodeFile work, ExportTurn.Started start, CancellationToken ct)
     {
         Asked.Add(work);
+        var throws = CodeFileThrows;
+        if (throws is not null)
+        {
+            return Task.FromException<ExportOutcome<string>>(throws);
+        }
+
         return Task.FromResult(CodeFile);
     }
 

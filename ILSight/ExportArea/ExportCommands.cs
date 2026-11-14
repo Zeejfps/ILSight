@@ -77,6 +77,21 @@ public static class ExportCommands
         var ticket = Exports.Enter(appState.Export, appState.ViewCommands, work.Job);
         appState.Workflows.StartSettling(nameof(ExportWriting),
             ct => appState.ExportWriting.HandleAsync(appState.FinishedExports, appState.ViewCommands, work, ticket, ct),
-            _ => appState.Export.Drop(ticket.Run));
+            error => FailWriting(appState, work, ticket, error));
+    }
+
+    // An export whose workflow failed ends its turn and stays in the exports panel, failed with why, until the user
+    // removes or clears it, as one whose work failed does; the edge reports it once. Its time and folder aren't known.
+    private static void FailWriting(AppState appState, ExportWork work, ExportTicket ticket, Exception error)
+    {
+        appState.Export.Drop(ticket.Run);
+        appState.FinishedExports.Add(new ExportReport
+        {
+            Run = ticket.Run,
+            Job = ticket.Job,
+            End = new ExportEnd.Failed { Subject = work.Subject, Error = error },
+            Elapsed = TimeSpan.Zero,
+            FolderExists = false,
+        });
     }
 }

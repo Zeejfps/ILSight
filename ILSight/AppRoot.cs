@@ -233,7 +233,7 @@ internal static class AppRoot
             LookUpTooltipHandler = new LookUpTooltipHandler(new LookUpTooltipHandlerAdapter(assemblies)),
             RunSearchHandler = new RunSearchHandler(MakePort<RunSearchHandler.IPorts>(new RunSearchHandlerAdapter(session), hooks?.Searching)),
             ExpandNamespacesHandler = new ExpandNamespacesHandler(tree),
-            ExportWriting = new ExportWriting(exports),
+            ExportWriting = new ExportWriting(MakePort<ExportWriting.IPorts>(exports, hooks?.Exporting)),
             SaveResourceHandler = new SaveResourceHandler(exports),
             ExtractPackageFileHandler = new ExtractPackageFileHandler(exports),
             CheckExportFilesHandler = new CheckExportFilesHandler(exports),
