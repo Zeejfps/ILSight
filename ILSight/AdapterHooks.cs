@@ -1,4 +1,5 @@
 using ILSight.AssemblyArea;
+using ILSight.BookmarkArea;
 using ILSight.DiagramArea;
 using ILSight.SearchArea;
 
@@ -16,6 +17,9 @@ public sealed record AdapterHooks
 
     /// <summary>The port a comparison's runs compare two assemblies through.</summary>
     public Func<CompareAssembliesHandler.IPorts, CompareAssembliesHandler.IPorts>? Comparing { get; init; }
+
+    /// <summary>The port going to a bookmark looks its place up through.</summary>
+    public Func<GoToBookmarkHandler.IPorts, GoToBookmarkHandler.IPorts>? GoingToBookmarks { get; init; }
 
     /// <summary>The port showing a type on a diagram reads its card and its neighbours' through.</summary>
     public Func<DiagramGrowing.IPorts, DiagramGrowing.IPorts>? Growing { get; init; }

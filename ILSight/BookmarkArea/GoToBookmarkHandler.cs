@@ -23,12 +23,12 @@ public sealed class GoToBookmarkHandler(GoToBookmarkHandler.IPorts ports)
     }
 
     /// <summary>Shows the line <paramref name="bookmark"/> marks in the active tab, opening its assembly first if it
-    /// is not open, and records it in the history; says the bookmark gone when its place is. Returns the load that
-    /// started in the tab, for the edge that started this to start under the tab's work; null when none started,
-    /// as when something else was asked for meanwhile.</summary>
-    public async Task<DecompileTicket?> HandleAsync(AppState appState, Bookmark bookmark, CancellationToken ct)
+    /// is not open, and records it in the history; says the bookmark gone when its place is. <paramref name="ticket"/>
+    /// is the request the edge began (<see cref="Navigation.BeginResolving"/>), which it ends, as failed, should this
+    /// throw. Returns the load that started in the tab, for the edge that started this to start under the tab's work;
+    /// null when none started, as when something else was asked for meanwhile.</summary>
+    public async Task<DecompileTicket?> HandleAsync(AppState appState, Bookmark bookmark, ResolveTicket ticket, CancellationToken ct)
     {
-        var ticket = appState.Navigation.BeginResolving(inNewTab: false);
         var found = await ports.LookUpPlaceAsync(bookmark.Place, ct);
         var resolved = appState.Navigation.EndResolving(ticket.Intent, found);
         return ShowBookmarkPlace(appState, bookmark, resolved, ticket.Destination);

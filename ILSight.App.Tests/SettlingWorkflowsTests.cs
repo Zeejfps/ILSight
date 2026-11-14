@@ -1,5 +1,7 @@
 using ILSight.Core;
 using ILSight.DiagramArea;
+using ILSight.BookmarkArea;
+using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;
 
@@ -72,6 +74,28 @@ public sealed class SettlingWorkflowsTests
         d.Settle();
 
         Assert.False(diagram.IsBusy);
+        Assert.Equal("broken", ReportedOnce(d.AppState).Error.Message);
+    }
+
+    [Fact]
+    public async Task A_bookmark_lookup_that_throws_is_reported_once_and_stops_resolving()
+    {
+        var ports = new FakeGoToBookmarkHandlerPorts();
+        var d = AppStateDriver.OpenedWith(new AdapterHooks { GoingToBookmarks = _ => ports });
+        d.Show(await d.FixtureAsync("Outline"));
+        var tab = d.AppState.Navigation.ActiveTab;
+        Assert.NotNull(tab);
+        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark));
+        var bookmark = Assert.Single(d.AppState.Bookmarks.Items);
+
+        d.InTurn(() => Commands.StartGoingToBookmark(d.AppState, bookmark));
+        d.RunUntil(() => ports.Answers.Count == 1);
+        var resolving = d.AppState.IsResolving;
+        ports.Answers[0].SetException(new InvalidOperationException("broken"));
+        d.Settle();
+
+        Assert.True(resolving);
+        Assert.False(d.AppState.IsResolving);
         Assert.Equal("broken", ReportedOnce(d.AppState).Error.Message);
     }
 }

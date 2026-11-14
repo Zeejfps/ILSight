@@ -382,6 +382,19 @@ public sealed class Navigation
         return new ResolveTicket { Intent = _intent.BeginResolving(), Destination = destination };
     }
 
+    /// <summary>Ends the request <paramref name="ticket"/> began when the workflow looking its place up failed (the
+    /// edge's settle, which reports why): the app no longer says it is resolving, unless another request began since,
+    /// and what is found for it later is dropped.</summary>
+    public void FailResolving(ResolveTicket ticket)
+    {
+        if (!_intent.IsCurrent(ticket.Intent))
+        {
+            return;
+        }
+
+        _intent.StopResolving();
+    }
+
     /// <summary>Begins opening the code of a type or member picked on <paramref name="diagram"/> beside it, in a new
     /// tab when <paramref name="inNewTab"/>: begins the request whose lookup finds the code
     /// (<see cref="BeginResolving"/>); going back returns to the diagram, recorded when its tab was brought to the

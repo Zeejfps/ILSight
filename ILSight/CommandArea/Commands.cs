@@ -1,4 +1,5 @@
 using ILSight.Core;
+using ILSight.BookmarkArea;
 using ILSight.Core.Analysis;
 using ILSight.CodeTooltipArea;
 using ILSight.AssemblyListArea;
@@ -521,6 +522,24 @@ public static class Commands
         Func<AppState, T, TWork, CancellationToken, Task> run, Func<TWork, CancellationToken> cancelledOnPurposeBy) where TWork : class
     {
         appState.Workflows.Start(name, ct => run(appState, subject, work, ct), cancelledOnPurposeBy(work));
+    }
+
+    /// <summary>Goes to the line <paramref name="bookmark"/> marks once the frame is drawn (<see cref="StartGoingToBookmark"/>).</summary>
+    public static void GoToBookmarkLater(UiState uiState, Bookmark bookmark)
+    {
+        Later(uiState, bookmark, static (a, b) => StartGoingToBookmark(a, b));
+    }
+
+    /// <summary>Begins the request to go to the line <paramref name="bookmark"/> marks, which the app says it is
+    /// resolving until it ends, and starts finding its place (<see cref="GoToBookmarkHandler"/>), then the load it
+    /// starts in the tab; when that workflow fails, the edge reports it and the request stops resolving
+    /// (<see cref="Navigation.FailResolving"/>), unless a newer one began.</summary>
+    public static void StartGoingToBookmark(AppState appState, Bookmark bookmark)
+    {
+        var lookup = appState.Navigation.BeginResolving(inNewTab: false);
+        appState.Workflows.StartSettling(nameof(GoToBookmarkHandler),
+            async ct => StartDecompiling(appState, await appState.GoToBookmarkHandler.HandleAsync(appState, bookmark, lookup, ct)),
+            _ => appState.Navigation.FailResolving(lookup));
     }
 
     /// <summary>Starts bringing in what <paramref name="load"/> started loading in its tab

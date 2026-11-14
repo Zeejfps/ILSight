@@ -242,7 +242,7 @@ internal static class AppRoot
             ShowInMetadataHandler = new ShowInMetadataHandler(navigation),
             ShowInApiReferenceHandler = new ShowInApiReferenceHandler(navigation),
             OpenAndShowIdHandler = new OpenAndShowIdHandler(navigation),
-            GoToBookmarkHandler = new GoToBookmarkHandler(navigation),
+            GoToBookmarkHandler = new GoToBookmarkHandler(MakePort<GoToBookmarkHandler.IPorts>(navigation, hooks?.GoingToBookmarks)),
             ShowReopenedNodesHandler = new ShowReopenedNodesHandler(navigation),
             BookmarkImporting = new BookmarkImporting(bookmarks),
             ExportBookmarksHandler = new ExportBookmarksHandler(bookmarks),

@@ -1,3 +1,4 @@
+using ILSight.CommandArea;
 using ILSight.Core;
 using System.Text.Json;
 using ILSight.SettingArea;
@@ -92,7 +93,7 @@ public sealed class SavedPlacesTests : IDisposable
         var d = Restored(WithBookmark($"\"Path\": {GreeterPath}"));
 
         var bookmark = Assert.Single(d.AppState.Bookmarks.Items);
-        d.Start((a, ct) => a.GoToBookmarkHandler.HandleAsync(a, bookmark, ct));
+        d.InTurn(() => Commands.StartGoingToBookmark(d.AppState, bookmark));
         d.Settle();
 
         Assert.Same(await d.FixtureAsync("Greeter"), d.AppState.Navigation.ActiveTab?.Node);
@@ -131,7 +132,7 @@ public sealed class SavedPlacesTests : IDisposable
         var d = Restored(WithBookmark($"\"Path\": {missingPath}"));
 
         var bookmark = Assert.Single(d.AppState.Bookmarks.Items);
-        d.Start((a, ct) => a.GoToBookmarkHandler.HandleAsync(a, bookmark, ct));
+        d.InTurn(() => Commands.StartGoingToBookmark(d.AppState, bookmark));
         d.Settle();
         var saved = Saved(d).GetProperty("Bookmarks")[0];
 
