@@ -2,6 +2,7 @@ using ILSight.AssemblyArea;
 using ILSight.BookmarkArea;
 using ILSight.DiagramArea;
 using ILSight.ExportArea;
+using ILSight.ILSightAppArea;
 using ILSight.SearchArea;
 
 namespace ILSight;
@@ -27,4 +28,7 @@ public sealed record AdapterHooks
 
     /// <summary>The port an export writes through.</summary>
     public Func<ExportWriting.IPorts, ExportWriting.IPorts>? Exporting { get; init; }
+
+    /// <summary>The port the window is brought to the front through.</summary>
+    public Func<IWindowFront, IWindowFront>? BringingToFront { get; init; }
 }

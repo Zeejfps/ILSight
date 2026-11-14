@@ -92,7 +92,7 @@ internal static class AppRoot
         AppUpdates.IPorts? updates = null, AdapterHooks? hooks = null)
     {
         var restored = RestoreApp(loadResult, session, nuGetRequests, runtimeScan, processes, updates, hooks);
-        var app = new ILSightApp(restored.AppState, restored.Screen, restored.Start, inbox);
+        var app = new ILSightApp(restored.AppState, restored.Screen, restored.Start, inbox, MakePort<IWindowFront>(new WindowFrontAdapter(), hooks?.BringingToFront));
         return new BuiltApp { Restored = restored, App = app };
     }
 

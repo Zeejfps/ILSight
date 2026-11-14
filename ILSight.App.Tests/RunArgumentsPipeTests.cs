@@ -168,11 +168,12 @@ public sealed class RunArgumentsPipeTests
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
         using var receiver = await RunPipes.ClaimAsync(address);
         Assert.NotNull(receiver);
-        var app = new AppDriver(inbox: receiver.Inbox);
+        var front = new FrontRecord();
+        var app = new AppDriver(inbox: receiver.Inbox, hooks: new AdapterHooks { BringingToFront = front.Over });
         app.Run();
 
         await HandOverAsync(address, Arguments("--navigateto=" + GreetId, AppStateDriver.FixturePath));
-        app.Frames.WaitUntil(() => app.WasFrontRequested, Waits.Patience);
+        app.Frames.WaitUntil(() => front.Times == 1, Waits.Patience);
         app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Method, Waits.Patience);
         app.Settle(1);
 

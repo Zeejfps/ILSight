@@ -21,21 +21,25 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     private readonly AppState _appState;
     private readonly ListStart _start;
     private readonly Channel<RunArguments> _inbox;
+    private readonly IWindowFront _windowFront;
     private readonly CodeFontFaces _codeFonts = new() { Bundled = ReadFont(MonoFonts.Code, MonoFontFile) };
 
     /// <param name="appState">The app state, its start recorded on it.</param>
     /// <param name="uiState">The screen over it.</param>
     /// <param name="start">The start the root recorded on <paramref name="appState"/>, for this app to start.</param>
     /// <param name="inbox">Where the arguments of this run, put there first, and of the runs handed to it arrive.</param>
+    /// <param name="windowFront">The port the window is brought to the front through.</param>
     internal ILSightApp(
         AppState appState,
         UiState uiState,
         ListStart start,
-        Channel<RunArguments> inbox) : base(uiState)
+        Channel<RunArguments> inbox,
+        IWindowFront windowFront) : base(uiState)
     {
         _appState = appState;
         _start = start;
         _inbox = inbox;
+        _windowFront = windowFront;
     }
 
     protected override void OnStartup(ImmediateGuiAppHost<UiState> host)
@@ -61,7 +65,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
         AppFrames.StartFrame(ui.State, _appState);
         AppFrames.FollowNuGetPicker(ui, _appState);
         Draw(ui, draw);
-        AppFrames.FinishFrame(ui, _appState, _codeFonts);
+        AppFrames.FinishFrame(ui, _appState, _codeFonts, _windowFront);
         QuitIfAsked(ui);
     }
 

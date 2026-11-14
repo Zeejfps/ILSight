@@ -278,8 +278,9 @@ internal static class AppFrames
     /// <summary>Does what comes after drawing a frame: keeps what the screen changed, runs what it asked of
     /// the app state, asks for another frame when there is more to show, saves the changed settings, has
     /// the window draw at the chosen scale, code in the chosen font and icons in their fonts from the next
-    /// frame, and opens the web pages and files asked for.</summary>
-    internal static void FinishFrame(Ui<UiState> ui, AppState appState, CodeFontFaces codeFonts)
+    /// frame, opens the web pages and files asked for, and brings the window to the front through
+    /// <paramref name="windowFront"/> when a later run asked for it.</summary>
+    internal static void FinishFrame(Ui<UiState> ui, AppState appState, CodeFontFaces codeFonts, IWindowFront windowFront)
     {
         KeepScreenChanges(ui.State, appState);
         StartAskedWork(ui.State, appState);
@@ -292,10 +293,10 @@ internal static class AppFrames
         OpenAskedWebPages(ui);
         OpenAskedFiles(ui);
         OpenAskedFolders(ui);
-        BringToFrontIfAsked(ui, appState);
+        BringToFrontIfAsked(ui, appState, windowFront);
     }
 
-    private static void BringToFrontIfAsked(Ui<UiState> ui, AppState appState)
+    private static void BringToFrontIfAsked(Ui<UiState> ui, AppState appState, IWindowFront windowFront)
     {
         if (!appState.FrontAsked)
         {
@@ -303,7 +304,7 @@ internal static class AppFrames
         }
 
         appState.FrontAsked = false;
-        ui.BringWindowToFront();
+        windowFront.BringToFront(ui);
     }
 
     private static void OpenAskedWebPages(Ui<UiState> ui)
