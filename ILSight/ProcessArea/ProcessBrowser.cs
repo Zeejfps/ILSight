@@ -119,6 +119,31 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
         Scan = found.Match<ProcessScan>(static ok => new ProcessScan.Scanned(ok.Value), ReportScanFailure);
     }
 
+    /// <summary>Ends <paramref name="scan"/> as failed with <paramref name="error"/> when its workflow failed (the edge's
+    /// settle, which reports it), unless a newer scan started or the dialog closed since.</summary>
+    public void FailScan(WorkTicket scan, Exception error)
+    {
+        if (!_scans.TryFinish(scan))
+        {
+            return;
+        }
+
+        Scan = new ProcessScan.Failed(error.Message);
+    }
+
+    /// <summary>Ends <paramref name="listing"/> as failed with <paramref name="error"/> when its workflow failed (the
+    /// edge's settle, which reports it): the process shows unreachable, saying why, unless another listing started
+    /// since.</summary>
+    public void FailListing(ModuleListingTicket listing, Exception error)
+    {
+        if (!_listings.TryFinish(listing.Work))
+        {
+            return;
+        }
+
+        Modules = new ModuleScan.Unreachable { Process = listing.Process, Detail = error.Message, EntryAssembly = null };
+    }
+
     private ProcessScan.Failed ReportScanFailure(Outcome<IReadOnlyList<RunningProcess>>.Failed failed)
     {
         // Listing reports a process it can't reach as a row, so a failure here is a bug.

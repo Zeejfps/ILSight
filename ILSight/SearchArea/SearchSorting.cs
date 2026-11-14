@@ -48,6 +48,18 @@ public sealed class SearchSorting
         Applied = Asked;
     }
 
+    /// <summary>Ends the sort <paramref name="ticket"/> was given for, which failed: the order asked for is the one the
+    /// results are in. Nothing when a newer sort started since, or it was cancelled.</summary>
+    public void Fail(SearchSortTicket ticket)
+    {
+        if (!_sorts.TryFinish(ticket.Work))
+        {
+            return;
+        }
+
+        Asked = Applied;
+    }
+
     /// <summary>Ends the sort <paramref name="ticket"/> was given for: the results are in its order from now on.
     /// False when a newer sort started since, or it was cancelled, and its result should be dropped.</summary>
     public bool TryFinish(SearchSortTicket ticket)

@@ -44,6 +44,13 @@ public sealed class PresetScan
         return true;
     }
 
+    /// <summary>Ends the look when it failed (the edge's settle, which reports why): nothing is being looked for any
+    /// more, and the menu asks again the next time it opens.</summary>
+    public void Fail()
+    {
+        _isStarted = false;
+    }
+
     /// <summary>Takes the presets found, which the menu shows from then on.</summary>
     public void Take(IReadOnlyList<AssemblyListPreset> presets)
     {

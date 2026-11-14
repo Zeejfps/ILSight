@@ -31,8 +31,8 @@ internal static class NuGetPickerView
     {
         var picker = uiState.NuGetPicker;
         picker.Open();
-        Commands.Start(uiState, nameof(ReadNuGetSetupHandler), (Handler: uiState.ReadNuGetSetupHandler, Picker: picker),
-            static (_, s, ct) => s.Handler.HandleAsync(s.Picker, ct));
+        Commands.StartSettling(uiState, nameof(ReadNuGetSetupHandler), (Handler: uiState.ReadNuGetSetupHandler, Picker: picker),
+            static (_, s, ct) => s.Handler.HandleAsync(s.Picker, ct), static (_, s, _) => s.Handler.UseDefaultSetup(s.Picker));
     }
 
     /// <summary>Draws the dialog, over the search for what was typed, which starts before it draws (see
@@ -121,8 +121,9 @@ internal static class NuGetPickerView
             return;
         }
 
-        Commands.Start(ui.State, nameof(DownloadNuGetPackageHandler), (Handler: ui.State.DownloadNuGetPackageHandler, Browser: browser, Download: download),
-            static (_, d, ct) => d.Handler.HandleAsync(d.Browser, d.Download, ct), download.Work.Token);
+        Commands.StartSettling(ui.State, nameof(DownloadNuGetPackageHandler), (Handler: ui.State.DownloadNuGetPackageHandler, Browser: browser, Download: download),
+            static (_, d, ct) => d.Handler.HandleAsync(d.Browser, d.Download, ct), static (_, d, error) => d.Browser.FailDownload(d.Download, error),
+            download.Work.Token);
     }
 
     private static void TopRow(Ui<UiState> ui, NuGetPicker picker)

@@ -39,6 +39,20 @@ public sealed class ReadNuGetSetupHandler(ReadNuGetSetupHandler.IPorts ports)
             config => ports.CreateSetup(config.Config)));
     }
 
+    /// <summary>Has <paramref name="picker"/> search and download with NuGet's default setup when the workflow reading
+    /// the user's NuGet.Config failed (the edge's settle, which reports it), as a read that failed does; nothing when a
+    /// setup was handed over meanwhile.</summary>
+    public void UseDefaultSetup(NuGetPicker picker)
+    {
+        if (!picker.Browser.IsReadingSetup)
+        {
+            picker.Browser.EndReadingAgain();
+            return;
+        }
+
+        picker.UseSetup(ports.CreateDefaultSetup());
+    }
+
     private NuGetConfigRead ReplaceUnreadableConfig(Outcome<NuGetConfigRead>.Failed failed)
     {
         ports.ReportError(new AppProblem.NuGetConfigUnreadable(failed.Error));

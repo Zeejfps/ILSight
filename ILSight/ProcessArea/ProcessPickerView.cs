@@ -35,7 +35,8 @@ internal static class ProcessPickerView
     // Runs once the frame is drawn; another scan or closing the dialog cancels it.
     private static void Scan(UiState uiState, ProcessBrowser browser, WorkTicket scan)
     {
-        Commands.Start(uiState, nameof(ProcessBrowser.ScanAsync), (Browser: browser, Scan: scan), static (_, s, ct) => s.Browser.ScanAsync(s.Scan, ct), scan.Token);
+        Commands.StartSettling(uiState, nameof(ProcessBrowser.ScanAsync), (Browser: browser, Scan: scan), static (_, s, ct) => s.Browser.ScanAsync(s.Scan, ct),
+            static (_, s, error) => s.Browser.FailScan(s.Scan, error), scan.Token);
     }
 
     /// <summary>Draws the dialog, taking the filter typed and the process selected in the frame they are input, before
@@ -137,8 +138,8 @@ internal static class ProcessPickerView
     // closing the dialog cancel the listing's token too.
     private static void ListLater(UiState uiState, ProcessBrowser browser, ModuleListingTicket listing)
     {
-        Commands.Start(uiState, nameof(ProcessBrowser.ListModulesAsync), (Browser: browser, Listing: listing),
-            static (_, s, ct) => s.Browser.ListModulesAsync(s.Listing, ct), listing.Work.Token);
+        Commands.StartSettling(uiState, nameof(ProcessBrowser.ListModulesAsync), (Browser: browser, Listing: listing),
+            static (_, s, ct) => s.Browser.ListModulesAsync(s.Listing, ct), static (_, s, error) => s.Browser.FailListing(s.Listing, error), listing.Work.Token);
     }
 
     private static string Summary(Strings t, int processes, int modules, int selected)

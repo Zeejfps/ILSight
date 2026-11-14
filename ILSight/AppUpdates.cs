@@ -92,6 +92,30 @@ public sealed class AppUpdates(AppUpdates.IPorts ports)
         Status = downloaded ? new UpdateStatus.Ready(update) : FailedTo(asked);
     }
 
+    /// <summary>Ends <paramref name="check"/> as a check that failed when its workflow failed (the edge's settle, which
+    /// reports it); nothing for a check it no longer counts.</summary>
+    public void FailCheck(UpdateCheck check)
+    {
+        if (check != _check)
+        {
+            return;
+        }
+
+        Status = FailedTo(check.Asked);
+    }
+
+    /// <summary>Ends <paramref name="restart"/> as a restart that failed when its workflow failed (the edge's settle,
+    /// which reports it): the app stays open and says so.</summary>
+    public void FailRestart(UpdateRestart restart)
+    {
+        if (restart != _restart)
+        {
+            return;
+        }
+
+        Status = new UpdateStatus.Failed();
+    }
+
     private static UpdateStatus FailedTo(bool asked)
     {
         return asked ? new UpdateStatus.Failed() : new UpdateStatus.Idle();

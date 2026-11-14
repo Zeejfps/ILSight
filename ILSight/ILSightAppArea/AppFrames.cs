@@ -154,7 +154,8 @@ internal static class AppFrames
     private static void StartReadingDetails(WorkflowRunner workflows, ReadNuGetDetailsHandler readDetails, NuGetBrowser browser,
         VersionDetailsFetch details, CancellationToken closed)
     {
-        workflows.Start(nameof(ReadNuGetDetailsHandler), ct => readDetails.HandleAsync(browser, details, ct), closed);
+        workflows.StartSettling(nameof(ReadNuGetDetailsHandler), ct => readDetails.HandleAsync(browser, details, ct),
+            error => browser.ShowDetails(details, new Outcome<PackageVersionDetails>.Failed(error)), closed);
     }
 
     private static void FollowLoadOptions(UiState uiState, AppState appState)

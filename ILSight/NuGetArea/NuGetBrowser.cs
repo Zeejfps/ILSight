@@ -321,6 +321,16 @@ public sealed class NuGetBrowser
         return true;
     }
 
+    /// <summary>Ends a read again of a config that couldn't be read when its workflow failed: the setup standing in for
+    /// it is kept, and the dialog opened again reads it again.</summary>
+    internal void EndReadingAgain()
+    {
+        if (_setup is SetupState.Ready ready)
+        {
+            _setup = ready with { IsBeingReadAgain = false };
+        }
+    }
+
     /// <summary>Searches and downloads with <paramref name="setup"/> from now on.</summary>
     internal void UseSetup(NuGetSetup setup)
     {
@@ -500,6 +510,13 @@ public sealed class NuGetBrowser
             Version = version,
             Work = _downloads.Start(),
         };
+    }
+
+    /// <summary>Ends <paramref name="download"/> as failed with <paramref name="error"/> when its workflow failed (the
+    /// edge's settle, which reports it), as a download that failed ends.</summary>
+    public void FailDownload(PackageDownloadTicket download, Exception error)
+    {
+        TryFinishDownload(download, new Outcome<string>.Failed(error));
     }
 
     /// <summary>Takes the package file <paramref name="download"/> <paramref name="fetched"/> into the cache, for

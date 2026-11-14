@@ -20,7 +20,8 @@ internal static class FrameworkPickerView
             return;
         }
 
-        Commands.Start(uiState, nameof(FrameworkBrowser.ScanAsync), (Browser: picker.Browser, Scan: scan), static (_, s, ct) => s.Browser.ScanAsync(s.Scan, ct));
+        Commands.StartSettling(uiState, nameof(FrameworkBrowser.ScanAsync), (Browser: picker.Browser, Scan: scan), static (_, s, ct) => s.Browser.ScanAsync(s.Scan, ct),
+            static (_, s, error) => s.Browser.FailScan(s.Scan, error));
     }
 
     public static void Render(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies)

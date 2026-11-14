@@ -372,6 +372,20 @@ public sealed class NuGetBrowserTests
     }
 
     [Fact]
+    public void UseDefaultSetup_TheReadsWorkflowFailed_SearchesTheDefaultSetupsFirstFeedNoLongerReading()
+    {
+        var ports = new FakePorts { ConfigRead = new Outcome<NuGetConfigRead>.Ok(new NuGetConfigRead.Missing()), DefaultSetup = Setup() };
+        var picker = new NuGetPicker { Browser = new NuGetBrowser() };
+        picker.Open();
+        Assert.True(picker.Browser.TryBeginReadingSetup());
+
+        new ReadNuGetSetupHandler(ports).UseDefaultSetup(picker);
+
+        Assert.False(picker.Browser.IsReadingSetup);
+        Assert.Equal(FeedUrl, picker.FeedUrl);
+    }
+
+    [Fact]
     public async Task ReadSetupAsync_ConfigMissing_SearchesNugetOrgSayingNothing()
     {
         var ports = new FakePorts { ConfigRead = new Outcome<NuGetConfigRead>.Ok(new NuGetConfigRead.Missing()), DefaultSetup = Setup() };

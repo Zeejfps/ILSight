@@ -1,3 +1,6 @@
+using ILSight.SearchArea;
+using ILSight.ProcessArea;
+using ILSight.FrameworkArea;
 using ILSight.Core;
 using ILSight.AssemblyArea;
 using ILSight.CommandArea;
@@ -164,5 +167,49 @@ public sealed class SettlingWorkflowsTests
 
         Assert.False(session.Reload.IsRunning);
         Commands.StartLoads(d.AppState, loads);
+    }
+
+    [Fact]
+    public void A_runtime_or_process_scan_whose_workflow_fails_ends_failed_saying_why()
+    {
+        var d = AppStateDriver.Opened();
+        var runtime = d.Ui.Picker.Browser;
+        var processes = d.Ui.ProcessPicker.Browser;
+        var runtimeScan = runtime.Open();
+        Assert.NotNull(runtimeScan);
+        var processScan = processes.StartScan();
+
+        runtime.FailScan(runtimeScan, new InvalidOperationException("broken"));
+        processes.FailScan(processScan, new InvalidOperationException("broken"));
+
+        Assert.Equal("broken", Assert.IsType<RuntimeScan.Failed>(runtime.Scan).Error);
+        Assert.Equal("broken", Assert.IsType<ProcessScan.Failed>(processes.Scan).Error);
+    }
+
+    [Fact]
+    public void A_sort_whose_workflow_fails_ends_with_the_header_showing_the_order_the_rows_are_in()
+    {
+        var results = new SearchResults();
+        var before = results.AskedOrder;
+        var sorting = results.StartSort(SearchSort.Name);
+
+        results.FailSort(sorting);
+
+        Assert.False(results.IsBusy);
+        Assert.Equal(before, results.AskedOrder);
+    }
+
+    [Fact]
+    public void A_preset_look_whose_workflow_fails_is_asked_again_by_the_next_menu()
+    {
+        var scan = new PresetScan();
+        scan.AskForPresets();
+        Assert.True(scan.TryStart());
+
+        scan.Fail();
+        scan.AskForPresets();
+
+        Assert.True(scan.TryStart());
+        Assert.Null(scan.Found);
     }
 }

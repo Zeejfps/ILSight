@@ -514,8 +514,8 @@ internal static class ExportDialogView
             return;
         }
 
-        Commands.Start(uiState, nameof(CheckExportFilesHandler), (Files: files, Check: check),
-            static (a, s, ct) => a.CheckExportFilesHandler.HandleAsync(s.Files, s.Check, ct));
+        Commands.StartSettling(uiState, nameof(CheckExportFilesHandler), (Files: files, Check: check),
+            static (a, s, ct) => a.CheckExportFilesHandler.HandleAsync(s.Files, s.Check, ct), static (_, s, error) => s.Files.Fail(s.Check, error.Message));
     }
 
     // A mistake is something wrong rather than not yet given: typed wrong, or the disk failing to say.

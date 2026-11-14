@@ -689,7 +689,8 @@ public static class Commands
     // Apart, so that a frame that starts no scan makes no closure.
     private static void StartScan(WorkflowRunner workflows, PresetScan scan)
     {
-        workflows.Start(nameof(AssemblyListPresets.FindInstalled), async ct => scan.Take(await Task.Run(AssemblyListPresets.FindInstalled, ct)));
+        workflows.StartSettling(nameof(AssemblyListPresets.FindInstalled), async ct => scan.Take(await Task.Run(AssemblyListPresets.FindInstalled, ct)),
+            _ => scan.Fail());
     }
 
     private static void StartFindingNodes(AppState appState, ReopenedNodesLookup lookup)
@@ -806,6 +807,17 @@ public static class Commands
     public static void Start<T>(UiState uiState, string name, T subject, Func<AppState, T, CancellationToken, Task> workflow, CancellationToken cancelledOnPurposeBy)
     {
         uiState.AppCommands.Enqueue(CreateStart(name, subject, workflow, cancelledOnPurposeBy));
+    }
+
+    /// <summary>As <see cref="Start{T}(UiState, string, T, Func{AppState, T, CancellationToken, Task}, CancellationToken)"/>,
+    /// for a workflow that began a pending state on <paramref name="subject"/>: when it fails, <paramref name="settle"/>
+    /// ends that state, failed where it is shown, and the edge reports the failure once
+    /// (<see cref="WorkflowRunner.StartSettling"/>).</summary>
+    public static void StartSettling<T>(UiState uiState, string name, T subject, Func<AppState, T, CancellationToken, Task> workflow,
+        Action<AppState, T, Exception> settle, CancellationToken cancelledOnPurposeBy = default)
+    {
+        uiState.AppCommands.Enqueue(appState => appState.Workflows.StartSettling(name, ct => workflow(appState, subject, ct),
+            error => settle(appState, subject, error), cancelledOnPurposeBy));
     }
 
     private static AppCommand CreateShowing(string name, Func<AppState, CancellationToken, Task<DecompileTicket?>> show)

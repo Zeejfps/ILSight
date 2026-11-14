@@ -123,6 +123,6 @@ public static class AppStart
     // A method of its own, so that the calls that start nothing allocate no closure.
     private static void StartChecking(WorkflowRunner workflows, AppUpdates updates, UpdateCheck check)
     {
-        workflows.Start(nameof(AppUpdates.CheckAsync), ct => updates.CheckAsync(check, ct));
+        workflows.StartSettling(nameof(AppUpdates.CheckAsync), ct => updates.CheckAsync(check, ct), _ => updates.FailCheck(check));
     }
 }

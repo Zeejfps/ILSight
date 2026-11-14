@@ -301,4 +301,16 @@ public sealed class AppUpdatesTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => adapter.LookUpUpdateAsync(shutdown.Token));
     }
+
+    [Fact]
+    public void FailCheckAndRestart_TheirWorkflowFailed_EndFailedWhenAsked()
+    {
+        var updates = new AppUpdates(new FakePorts());
+        var asked = updates.StartCheck(asked: true);
+        Assert.NotNull(asked);
+
+        updates.FailCheck(asked);
+
+        Assert.IsType<UpdateStatus.Failed>(updates.Status);
+    }
 }

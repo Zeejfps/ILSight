@@ -94,7 +94,8 @@ internal static class AboutDialogView
             return;
         }
 
-        Commands.Start(ui.State, nameof(AppUpdates.CheckAsync), check, static (a, c, ct) => a.Updates.CheckAsync(c, ct));
+        Commands.StartSettling(ui.State, nameof(AppUpdates.CheckAsync), check, static (a, c, ct) => a.Updates.CheckAsync(c, ct),
+            static (a, c, _) => a.Updates.FailCheck(c));
     }
 
     /// <summary>Asks for <paramref name="restart"/>, which the status shows from this frame on, to hand the update
@@ -106,7 +107,8 @@ internal static class AboutDialogView
             return;
         }
 
-        Commands.Start(ui.State, nameof(AppUpdates.RestartToUpdateAsync), restart, static (a, r, ct) => a.Updates.RestartToUpdateAsync(r, a.ViewCommands, ct));
+        Commands.StartSettling(ui.State, nameof(AppUpdates.RestartToUpdateAsync), restart,
+            static (a, r, ct) => a.Updates.RestartToUpdateAsync(r, a.ViewCommands, ct), static (a, r, _) => a.Updates.FailRestart(r));
     }
 
     private static string ButtonText(Ui<UiState> ui, UpdateStatus status)

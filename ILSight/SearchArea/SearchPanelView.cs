@@ -257,8 +257,8 @@ internal static class SearchPanelView
         if (clicked >= 0)
         {
             var sorting = results.StartSort(SortOf(clicked));
-            Commands.Start(ui.State, nameof(Searches.SortAsync), (results, sorting), static (_, s, ct) => Searches.SortAsync(s.results, s.sorting, ct),
-                sorting.Work.Token);
+            Commands.StartSettling(ui.State, nameof(Searches.SortAsync), (results, sorting), static (_, s, ct) => Searches.SortAsync(s.results, s.sorting, ct),
+                static (_, s, _) => s.results.FailSort(s.sorting), sorting.Work.Token);
         }
 
         ResultRows(ui, navigation, setup, table);

@@ -287,6 +287,13 @@ public sealed class SearchResults
         return _sorting.Start(order, _rows);
     }
 
+    /// <summary>Ends <paramref name="sorting"/> when its workflow failed (the edge's settle, which reports it): the rows
+    /// stay in the order they are in, which the header shows again, unless a newer order was asked for since.</summary>
+    public void FailSort(SearchSortTicket sorting)
+    {
+        _sorting.Fail(sorting);
+    }
+
     /// <summary>Shows <paramref name="sorted"/>, the rows as of <see cref="RowsVersion"/> in the order
     /// <paramref name="sorting"/> asked for, keeping the selection in view, unless a newer order was asked for
     /// meanwhile, or the search started again: then they are dropped.</summary>

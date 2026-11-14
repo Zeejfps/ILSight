@@ -70,6 +70,18 @@ public sealed class FrameworkBrowser(FrameworkBrowser.IPorts ports)
         Scan = scanned.Match<RuntimeScan>(static ok => new RuntimeScan.Scanned(ok.Value), ReportFailedScan);
     }
 
+    /// <summary>Ends <paramref name="scan"/> as failed with <paramref name="error"/> when its workflow failed (the edge's
+    /// settle, which reports it), unless a newer scan started or the dialog closed since.</summary>
+    public void FailScan(WorkTicket scan, Exception error)
+    {
+        if (!_scans.TryFinish(scan))
+        {
+            return;
+        }
+
+        Scan = new RuntimeScan.Failed(error.Message);
+    }
+
     private RuntimeScan.Failed ReportFailedScan(Outcome<IReadOnlyList<RuntimeAssembly>>.Failed failed)
     {
         ports.ReportError(new AppProblem.RuntimeNotScanned(failed.Error));
