@@ -98,7 +98,7 @@ internal static class AppFrames
             return;
         }
 
-        var now = ui.RealTime;
+        var now = TimeSpan.FromSeconds(ui.RealTime);
         var search = picker.Update(now);
         if (search is not null)
         {
@@ -109,7 +109,7 @@ internal static class AppFrames
 
         if (picker.Browser.IsSettling)
         {
-            ui.RequestUpdateIn(picker.Browser.CalculateSecondsToSettle(now));
+            ui.RequestUpdateIn(picker.Browser.CalculateTimeToSettle(now).TotalSeconds);
         }
     }
 
@@ -459,15 +459,15 @@ internal static class AppFrames
 
     private static void SaveChangedSettings(Ui<UiState> ui, AppState appState)
     {
-        var saving = appState.SettingsSaving.SaveIfChanged(appState, ui.RealTime);
-        var retryIn = saving.Match<double?>(
+        var saving = appState.SettingsSaving.SaveIfChanged(appState, TimeSpan.FromSeconds(ui.RealTime));
+        var retryIn = saving.Match<TimeSpan?>(
             static _ => null,
             static _ => null,
             static waiting => waiting.RetryIn,
             static failed => failed.RetryIn);
         if (retryIn is not null)
         {
-            ui.RequestUpdateIn(retryIn.Value);
+            ui.RequestUpdateIn(retryIn.Value.TotalSeconds);
         }
     }
 }

@@ -9,7 +9,7 @@ namespace ILSight.SearchArea;
 /// Every part changes only through its methods. Used on the UI thread only.</summary>
 public sealed class SearchResults
 {
-    private const double DebounceSeconds = 0.15;
+    private static readonly TimeSpan Debounce = TimeSpan.FromSeconds(0.15);
 
     private readonly List<SearchResult> _rows = new();
     private readonly HashSet<LoadedAssembly> _searchedAssemblies = new(ReferenceEqualityComparer.Instance);
@@ -56,13 +56,13 @@ public sealed class SearchResults
 
     /// <summary>Starts a search for <paramref name="query"/>, looking for <paramref name="kinds"/>, when the query
     /// settled, or searches assemblies opened since. Does nothing unless the results are <paramref name="shown"/>.
-    /// Returns the seconds left before a typed query settles, or 0. Runs every frame, so no lambda belongs in it.</summary>
-    public double Update(string query, SearchKinds kinds, AssemblyList assemblies, double now, bool shown)
+    /// Returns the time left before a typed query settles, or zero. Runs every frame, so no lambda belongs in it.</summary>
+    public TimeSpan Update(string query, SearchKinds kinds, AssemblyList assemblies, TimeSpan now, bool shown)
     {
         _typed.Note(query, now);
         if (!shown)
         {
-            return 0;
+            return TimeSpan.Zero;
         }
 
         var searched = LastSearched;
@@ -76,7 +76,7 @@ public sealed class SearchResults
             Extend(assemblies, searched);
         }
 
-        return 0;
+        return TimeSpan.Zero;
     }
 
     private bool IsQueryChanged(SearchKinds kinds, SearchedQuery searched)
@@ -84,16 +84,16 @@ public sealed class SearchResults
         return _typed.Text != searched.Query || kinds != searched.Kinds;
     }
 
-    private double RestartWhenSettled(SearchKinds kinds, AssemblyList assemblies, double now, SearchedQuery? searched)
+    private TimeSpan RestartWhenSettled(SearchKinds kinds, AssemblyList assemblies, TimeSpan now, SearchedQuery? searched)
     {
-        var remaining = _typed.CalculateSecondsToSettle(now, DebounceSeconds);
-        if (remaining > 0 && searched is not null && kinds == searched.Kinds)
+        var remaining = _typed.CalculateTimeToSettle(now, Debounce);
+        if (remaining > TimeSpan.Zero && searched is not null && kinds == searched.Kinds)
         {
             return remaining;
         }
 
         Restart(kinds, assemblies);
-        return 0;
+        return TimeSpan.Zero;
     }
 
     private void Restart(SearchKinds kinds, AssemblyList assemblies)

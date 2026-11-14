@@ -54,7 +54,7 @@ internal sealed class AppDriver
 
     private void PumpAtFrameTime()
     {
-        Driver.Now = Frames.RealTime;
+        Driver.Now = TimeSpan.FromSeconds(Frames.RealTime);
         Driver.Pump();
     }
 

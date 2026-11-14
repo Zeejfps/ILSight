@@ -109,7 +109,7 @@ public static class CodeViewWidget
         return row.Index * height;
     }
 
-    private const double CaretBlinkSeconds = 0.53;
+    private static readonly TimeSpan CaretBlink = TimeSpan.FromSeconds(0.53);
 
     private static bool IsCaretShown(Ui<UiState> ui, CodeViewState state, bool focused)
     {
@@ -118,16 +118,18 @@ public static class CodeViewWidget
             return false;
         }
 
-        state.Blink.Follow(state.Selection.Caret, ui.RealTime);
-        var phase = (ui.RealTime - state.Blink.From) % (CaretBlinkSeconds * 2);
+        var now = TimeSpan.FromSeconds(ui.RealTime);
+        state.Blink.Follow(state.Selection.Caret, now);
+        var blinkSeconds = CaretBlink.TotalSeconds;
+        var phaseSeconds = (now - state.Blink.From).TotalSeconds % (blinkSeconds * 2);
         // Nothing else may draw a frame when the caret next shows or hides.
-        ui.RequestUpdateIn(CaretBlinkSeconds - phase % CaretBlinkSeconds);
-        return phase < CaretBlinkSeconds;
+        ui.RequestUpdateIn(blinkSeconds - phaseSeconds % blinkSeconds);
+        return phaseSeconds < blinkSeconds;
     }
 
     private static readonly DisplayOptions Plain = new DisplayOptions { HighlightMatchingBrackets = false };
 
-    private const float FlashSeconds = 1.2f;
+    private static readonly TimeSpan Flash = TimeSpan.FromSeconds(1.2);
     private const float AutoScrollSpeed = 12f;
     private const int KeyScrollColumns = 4;
     private const float GutterPaddingLeft = 8f;
@@ -654,9 +656,9 @@ public static class CodeViewWidget
         return new UiRect(x, y, span.Length * advance, rowHeight);
     }
 
-    private static float AutoScroll(float distance, float unit, float deltaTime)
+    private static float AutoScroll(float distance, float unit, float deltaSeconds)
     {
-        return distance == 0f ? 0f : (distance * AutoScrollSpeed + MathF.Sign(distance) * unit * AutoScrollSpeed) * deltaTime;
+        return distance == 0f ? 0f : (distance * AutoScrollSpeed + MathF.Sign(distance) * unit * AutoScrollSpeed) * deltaSeconds;
     }
 
     private static void FillFrame(Ui<UiState> ui, CodeViewState state, DecompiledDocument document, UiTheme theme, CodeViewPalette palette, CellMetrics cell,
@@ -672,7 +674,7 @@ public static class CodeViewWidget
         ShowFlash(ui, state, theme, palette);
     }
 
-    // The flash fades over FlashSeconds, and is let go once it has faded.
+    // The flash fades over Flash, and is let go once it has faded.
     private static void ShowFlash(Ui<UiState> ui, CodeViewState state, UiTheme theme, CodeViewPalette palette)
     {
         var flash = state.Reveal.Flash;
@@ -682,7 +684,7 @@ public static class CodeViewWidget
             return;
         }
 
-        var t = (float)((ui.RealTime - flash.Value.From) / FlashSeconds);
+        var t = (float)((TimeSpan.FromSeconds(ui.RealTime) - flash.Value.From) / Flash);
         if (t >= 1f)
         {
             state.Reveal.EndFlash();
@@ -769,7 +771,7 @@ public static class CodeViewWidget
         var line = Math.Clamp(reveal.Line, 0, Math.Max(0, document.Lines.Length - 1));
         RevealFolds(state, line);
         state.ScrollY = MathF.Max(0f, GetRowTop(CodeFolding.GetRowOf(state.Folds, line), rowHeight) - viewport / 3f);
-        state.Reveal.ArriveFlashing(line, ui.RealTime);
+        state.Reveal.ArriveFlashing(line, TimeSpan.FromSeconds(ui.RealTime));
         ui.RequestUpdate();
     }
 

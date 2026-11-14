@@ -15,14 +15,14 @@ public sealed class LayoutTransition
     private TypeLayout? _from;
     private TypeLayout? _to;
     private Dictionary<TypeLink, LinkRoute> _fromRoutes = new();
-    private float _elapsed = Seconds;
+    private float _elapsedSeconds = Seconds;
 
     /// <summary>The layout drawn, or moved to; null before the first.</summary>
     public TypeLayout? Layout => _to;
 
-    public bool IsMoving => _elapsed < Seconds;
+    public bool IsMoving => _elapsedSeconds < Seconds;
 
-    public float Progress => Ease.OutCubic(_elapsed / Seconds);
+    public float Progress => Ease.OutCubic(_elapsedSeconds / Seconds);
 
     /// <summary>Starts moving to <paramref name="layout"/> when it is another than <see cref="Layout"/>;
     /// the first layout is drawn at once. True when it was another.</summary>
@@ -36,7 +36,7 @@ public sealed class LayoutTransition
         _from = _to;
         _to = layout;
         _fromRoutes = ListRoutesByLink(_from);
-        _elapsed = GetTransitionStart(_from);
+        _elapsedSeconds = GetTransitionStart(_from);
         return true;
     }
 
@@ -68,7 +68,7 @@ public sealed class LayoutTransition
 
     public void Advance(float seconds)
     {
-        _elapsed = MathF.Min(Seconds, _elapsed + seconds);
+        _elapsedSeconds = MathF.Min(Seconds, _elapsedSeconds + seconds);
     }
 
     /// <summary>Where the top-left of the card of <paramref name="type"/> is drawn now; null when the

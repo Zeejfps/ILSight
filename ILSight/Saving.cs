@@ -14,15 +14,15 @@ public abstract record Saving
 
     public sealed record Saved : Saving;
 
-    /// <summary>A failed write is tried again only in <see cref="RetryIn"/> seconds.</summary>
-    public sealed record Waiting(double RetryIn) : Saving;
+    /// <summary>A failed write is tried again only in <see cref="RetryIn"/>.</summary>
+    public sealed record Waiting(TimeSpan RetryIn) : Saving;
 
-    /// <summary>The write failed, and is tried again in <see cref="RetryIn"/> seconds.</summary>
+    /// <summary>The write failed, and is tried again in <see cref="RetryIn"/>.</summary>
     public sealed record Failed : Saving
     {
         public required string Reason { get; init; }
 
-        public required double RetryIn { get; init; }
+        public required TimeSpan RetryIn { get; init; }
     }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>

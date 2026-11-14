@@ -25,7 +25,7 @@ public sealed class SettingsSaving(SettingsSaving.IPorts ports)
     /// <summary>Saves the settings when what they are saved from changed since the last save written,
     /// unless the assemblies are reloading or a failed write is still waiting to be tried again at
     /// <paramref name="now"/>.</summary>
-    public Saving SaveIfChanged(AppState appState, double now)
+    public Saving SaveIfChanged(AppState appState, TimeSpan now)
     {
         if (appState.IsReloading)
         {
@@ -39,12 +39,12 @@ public sealed class SettingsSaving(SettingsSaving.IPorts ports)
         }
 
         var wait = appState.LastSave.AdvanceRetry(now);
-        if (wait > 0)
+        if (wait > TimeSpan.Zero)
         {
             return new Saving.Waiting(wait);
         }
 
-        return Save(appState).Match<(AppState appState, double now), Saving>((appState, now),
+        return Save(appState).Match<(AppState appState, TimeSpan now), Saving>((appState, now),
             static (_, _) => new Saving.Saved(),
             static (s, failed) => new Saving.Failed
             {

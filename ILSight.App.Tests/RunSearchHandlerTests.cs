@@ -10,11 +10,11 @@ public sealed class RunSearchHandlerTests
 
     private static readonly AssemblyList NoAssemblies = new() { Runtime = TestRuntime.Installed };
 
-    private static SearchRun AskRun(SearchResults results, string query = "Greet", double typedAt = 0)
+    private static SearchRun AskRun(SearchResults results, string query = "Greet", double typedAtSeconds = 0)
     {
-        results.Update(query, SearchKinds.TypesAndMembers, NoAssemblies, typedAt, shown: true);
+        results.Update(query, SearchKinds.TypesAndMembers, NoAssemblies, TimeSpan.FromSeconds(typedAtSeconds), shown: true);
         // A second later, what was typed has settled.
-        results.Update(query, SearchKinds.TypesAndMembers, NoAssemblies, typedAt + 1, shown: true);
+        results.Update(query, SearchKinds.TypesAndMembers, NoAssemblies, TimeSpan.FromSeconds(typedAtSeconds + 1), shown: true);
         return Assert.Single(results.TakeAskedRuns());
     }
 
@@ -49,7 +49,7 @@ public sealed class RunSearchHandlerTests
     {
         var results = new SearchResults();
         var replaced = AskRun(results);
-        var current = AskRun(results, "Hello", typedAt: 2);
+        var current = AskRun(results, "Hello", typedAtSeconds: 2);
         var ports = new FakeRunSearchHandlerPorts { Found = [Failure] };
 
         await new RunSearchHandler(ports).HandleAsync(results, replaced, CancellationToken.None);

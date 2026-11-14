@@ -62,7 +62,7 @@ public sealed class UserIconThemeTests : IDisposable
         Assert.Equal(BuiltInIconThemes.Reference.Icons.NodeClass, IconTheming.ResolveIconTheme(appState).Icons.NodeClass);
 
         appState.ChosenThemes.ChooseIconTheme(Id("mine"));
-        Assert.IsType<Saving.Saved>(appState.SettingsSaving.SaveIfChanged(appState, 0));
+        Assert.IsType<Saving.Saved>(appState.SettingsSaving.SaveIfChanged(appState, TimeSpan.FromSeconds(0)));
 
         Assert.Equal("mine", Settings().IconTheme.Text);
     }

@@ -27,7 +27,7 @@ public sealed class Search
 
     /// <summary>Starts a search when the query settled, or searches assemblies opened since, as
     /// <see cref="SearchResults.Update"/> does. Runs every frame.</summary>
-    public double Update(AssemblyList assemblies, double now, bool shown)
+    public TimeSpan Update(AssemblyList assemblies, TimeSpan now, bool shown)
     {
         return Results.Update(Query, Kinds, assemblies, now, shown);
     }

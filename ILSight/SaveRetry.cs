@@ -3,11 +3,11 @@ using System.Diagnostics;
 namespace ILSight;
 
 /// <summary>Whether writing the settings is failing. A failure is reported once until a write
-/// succeeds, and the autosave waits <see cref="DelaySeconds"/> before trying again, from the first
+/// succeeds, and the autosave waits <see cref="Delay"/> before trying again, from the first
 /// frame that asks after the failure.</summary>
 public abstract record SaveRetry
 {
-    public const double DelaySeconds = 2;
+    public static readonly TimeSpan Delay = TimeSpan.FromSeconds(2);
 
     private SaveRetry()
     {
@@ -20,7 +20,7 @@ public abstract record SaveRetry
     public sealed record Failed : SaveRetry;
 
     /// <summary>A write failed, and the wait for the next try began at <see cref="Since"/>.</summary>
-    public sealed record Waiting(double Since) : SaveRetry;
+    public sealed record Waiting(TimeSpan Since) : SaveRetry;
 
     /// <summary>What the handler of whichever case this is makes of it and <paramref name="state"/>, which it is
     /// handed, so that a handler that needs the caller's values can be static and allocate nothing.</summary>

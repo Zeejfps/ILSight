@@ -32,18 +32,24 @@ public sealed class LastSave
     }
 
     /// <summary>How long a failed write still waits at <paramref name="now"/> before it is tried again, the wait
-    /// beginning with the first ask after the failure; 0 when writes are going through.</summary>
-    public double AdvanceRetry(double now)
+    /// beginning with the first ask after the failure; zero when writes are going through.</summary>
+    public TimeSpan AdvanceRetry(TimeSpan now)
     {
-        return _retry.Match<(LastSave save, double now), double>((this, now),
-            static (_, _) => 0,
+        return _retry.Match<(LastSave save, TimeSpan now), TimeSpan>((this, now),
+            static (_, _) => TimeSpan.Zero,
             static (s, _) => s.save.StartWaiting(s.now),
-            static (s, waiting) => Math.Max(0, SaveRetry.DelaySeconds - (s.now - waiting.Since)));
+            static (s, waiting) => CalculateWaitLeft(s.now, waiting.Since));
     }
 
-    private double StartWaiting(double now)
+    private TimeSpan StartWaiting(TimeSpan now)
     {
         _retry = new SaveRetry.Waiting(now);
-        return SaveRetry.DelaySeconds;
+        return SaveRetry.Delay;
+    }
+
+    private static TimeSpan CalculateWaitLeft(TimeSpan now, TimeSpan since)
+    {
+        var left = SaveRetry.Delay - (now - since);
+        return left > TimeSpan.Zero ? left : TimeSpan.Zero;
     }
 }

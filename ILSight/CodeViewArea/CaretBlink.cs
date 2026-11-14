@@ -8,11 +8,11 @@ internal sealed class CaretBlink
     private TextPosition _caret;
 
     /// <summary>When the caret last moved.</summary>
-    public double From { get; private set; }
+    public TimeSpan From { get; private set; }
 
     /// <summary>Starts the blink over at <paramref name="now"/> when <paramref name="caret"/> is not where the caret
     /// was.</summary>
-    public void Follow(TextPosition caret, double now)
+    public void Follow(TextPosition caret, TimeSpan now)
     {
         if (caret == _caret)
         {

@@ -90,10 +90,10 @@ public static class MainView
 
     private static void UpdateSearch(Ui<UiState> ui, Search search, AssemblyList assemblies, bool shown)
     {
-        var wait = search.Update(assemblies, ui.RealTime, shown);
-        if (wait > 0)
+        var wait = search.Update(assemblies, TimeSpan.FromSeconds(ui.RealTime), shown);
+        if (wait > TimeSpan.Zero)
         {
-            ui.RequestUpdateIn(wait);
+            ui.RequestUpdateIn(wait.TotalSeconds);
         }
     }
 
