@@ -305,19 +305,19 @@ public sealed class CodeViewTests
         view.Click(3, 0);
         view.Frames.Wait(1);
         view.Click(3, 2, modifiers: KeyModifiers.Shift);
-        var selected = view.State.HasSelection;
+        var selected = view.State.Selection.HasSelection;
         var scrolled = !view.DrawnText().Any(d => d.Text == "line 0");
 
         view.Document = view.Document;
         view.Run();
-        var kept = view.State.HasSelection;
+        var kept = view.State.Selection.HasSelection;
         view.Document = CodeViewDriver.Numbered(1000, "row ");
         view.Run(2);
 
         Assert.True(selected);
         Assert.True(scrolled);
         Assert.True(kept);
-        Assert.False(view.State.HasSelection);
+        Assert.False(view.State.Selection.HasSelection);
         Assert.Contains(("row 0", CodeViewDriver.Origin), view.DrawnText());
     }
 

@@ -8,7 +8,7 @@ namespace ILSight.CodeViewArea;
 public sealed class CodeSelection : TextSelection<DecompiledDocument, TextPosition>
 {
     /// <summary>The folds of the view this selection belongs to, which say what a block is. The selection
-    /// owns them as it has to read them and is made with the view; see <see cref="CodeViewState.Folds"/>.</summary>
+    /// owns them as it has to read them and is made with the view; the view reads them here.</summary>
     internal readonly CodeFolds Folds = new();
 
     protected override (TextPosition Start, TextPosition End) WordAt(DecompiledDocument document, TextPosition at)

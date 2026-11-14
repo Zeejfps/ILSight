@@ -33,9 +33,6 @@ public sealed class AssemblyComparison
     /// then dropped; once the comparison is closed, what is in flight is cancelled and its result dropped.</summary>
     public LatestWork Work { get; } = new();
 
-    /// <summary>True while a comparison runs in the background.</summary>
-    public bool IsComparing => Work.IsRunning;
-
     /// <summary>Counts up whenever the sides are swapped or the comparison takes in more or less; it never counts down.</summary>
     public int Version { get; private set; }
 

@@ -61,7 +61,7 @@ public sealed class CodeViewFoldTests
         var view = await OutlineAsync();
         var document = view.Document;
         var first = document.GetPosition("public int First()").Line;
-        var row = CodeFolding.GetRowOf(view.State.Folds, first);
+        var row = CodeFolding.GetRowOf(view.State.Selection.Folds, first);
 
         var (x, y) = view.ChevronOf(row);
         view.Frames.MovePointer(x, y).Frame();
@@ -149,7 +149,7 @@ public sealed class CodeViewFoldTests
         var document = view.Document;
         var first = document.GetPosition("public int First()").Line;
         var end = document.FoldAt("public int First()").EndLine + 2;
-        ClickChevron(view, CodeFolding.GetRowOf(view.State.Folds, first));
+        ClickChevron(view, CodeFolding.GetRowOf(view.State.Selection.Folds, first));
 
         view.MoveTo(first - 1, 0);
         view.Frames.Press().Frame();

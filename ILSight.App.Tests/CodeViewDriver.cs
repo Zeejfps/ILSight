@@ -141,7 +141,7 @@ internal sealed class CodeViewDriver
     /// <summary>Where <paramref name="column"/> of the row <paramref name="line"/> is shown on is, the view scrolled to the top.</summary>
     public (float X, float Y) PointOf(int line, int column)
     {
-        return PointOf(CodeFolding.GetRowOf(State.Folds, line), column);
+        return PointOf(CodeFolding.GetRowOf(State.Selection.Folds, line), column);
     }
 
     public UiFrames MoveTo(CodeRow row, int column)
@@ -152,7 +152,7 @@ internal sealed class CodeViewDriver
 
     public UiFrames MoveTo(int line, int column)
     {
-        return MoveTo(CodeFolding.GetRowOf(State.Folds, line), column);
+        return MoveTo(CodeFolding.GetRowOf(State.Selection.Folds, line), column);
     }
 
     /// <summary>Clicks at the cell, as <see cref="Click(ValueTuple{float, float}, PointerButton, KeyModifiers)"/>.</summary>
@@ -164,7 +164,7 @@ internal sealed class CodeViewDriver
     /// <summary>Clicks at <paramref name="column"/> of the row <paramref name="line"/> is shown on.</summary>
     public CodeViewResult Click(int line, int column, PointerButton button = PointerButton.Left, KeyModifiers modifiers = KeyModifiers.None)
     {
-        return Click(CodeFolding.GetRowOf(State.Folds, line), column, button, modifiers);
+        return Click(CodeFolding.GetRowOf(State.Selection.Folds, line), column, button, modifiers);
     }
 
     /// <summary>Clicks at <paramref name="at"/> and returns what the press asked for, or else what the release did.</summary>

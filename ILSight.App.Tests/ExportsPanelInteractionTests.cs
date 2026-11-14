@@ -45,7 +45,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
 
     private static ExportRun RunOf(AppDriver app, string name)
     {
-        return app.AppState.FinishedExports.Single(r => r.Name == name).Run;
+        return app.AppState.FinishedExports.Single(r => r.Job.Name == name).Run;
     }
 
     [Fact]
@@ -86,7 +86,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
 
         app.Frames.Key(KeyboardKey.Delete).Frame();
 
-        Assert.Equal("Farewell", Assert.Single(app.AppState.FinishedExports).Name);
+        Assert.Equal("Farewell", Assert.Single(app.AppState.FinishedExports).Job.Name);
     }
 
     [Fact]
@@ -109,7 +109,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
         Assert.True(app.Frames.Drew("Copy folder path"));
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Remove from history")).Frame();
 
-        Assert.Equal("Farewell", Assert.Single(app.AppState.FinishedExports).Name);
+        Assert.Equal("Farewell", Assert.Single(app.AppState.FinishedExports).Job.Name);
     }
 
     [Fact]

@@ -45,7 +45,7 @@ public sealed class ThemeFile : IUserThemeFile<ThemeFile, ThemeContents, AppThem
     public required ThemeId<ThemeFile> Id { get; init; }
 
     /// <summary>Where the file is, as errors name it.</summary>
-    public string File => Json.File;
+    string IThemeFile<ThemeFile>.File => Json.File;
 
     public required ThemeName Name { get; init; }
 
@@ -58,5 +58,5 @@ public sealed class ThemeFile : IUserThemeFile<ThemeFile, ThemeContents, AppThem
     /// <summary>The palette and colors the file sets; null when it could not be read as a JSON object.</summary>
     public ThemeContents? Contents { get; init; }
 
-    public IReadOnlyList<ThemeError> Errors => Json.Errors;
+    IReadOnlyList<ThemeError> IThemeFile<ThemeFile>.Errors => Json.Errors;
 }

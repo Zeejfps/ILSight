@@ -72,12 +72,12 @@ public sealed class SettlingWorkflowsTests
         d.RunUntil(() => ports.Answers.Count == 1);
         var comparison = d.AppState.ListSession.Navigation.ActiveTab?.Comparison;
         Assert.NotNull(comparison);
-        Assert.True(comparison.IsComparing);
+        Assert.True(comparison.Work.IsRunning);
 
         ports.Answers[0].SetException(new InvalidOperationException("broken"));
         d.Settle();
 
-        Assert.False(comparison.IsComparing);
+        Assert.False(comparison.Work.IsRunning);
         Assert.IsType<ComparisonFailure.Failed>(Assert.IsType<ComparisonResult.Failed>(comparison.Result).Failure);
         Assert.Equal("broken", ReportedOnce(d.AppState).Error.Message);
     }

@@ -13,8 +13,4 @@ public sealed record ExportReport
     public required TimeSpan Elapsed { get; init; }
 
     public required bool FolderExists { get; init; }
-
-    public string Name => Job.Name;
-
-    public string Folder => Job.Folder;
 }

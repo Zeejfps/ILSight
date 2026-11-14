@@ -294,7 +294,7 @@ internal static class NodeDecompiler
         var declaring = member.DeclaringTypeDefinition;
         if (declaring is null)
         {
-            WriteSyntaxTree(reading, module, output, settings, d => d.Decompile(request.Definition.Handle), cancellationToken);
+            WriteSyntaxTree(reading, module, output, settings, d => d.Decompile(request.Definition.Reference.Handle), cancellationToken);
             return;
         }
         WriteHeader(module, output, member.DeclaringType, ConversionFlags.UseFullyQualifiedEntityNames | ConversionFlags.UseFullyQualifiedTypeNames);
@@ -326,7 +326,7 @@ internal static class NodeDecompiler
             {
                 var memberDisassembler = CreateDisassembler(s.reading, member.Definition.Module, RequireTypeSystem(s.output.TypeSystem), s.output, s.language, s.settings,
                     s.cancellationToken);
-                DisassembleMember(memberDisassembler, LoadedAssemblies.GetFile(member.Definition.Module), member.Definition.Handle);
+                DisassembleMember(memberDisassembler, LoadedAssemblies.GetFile(member.Definition.Module), member.Definition.Reference.Handle);
             },
             static (s, summary) => WriteSummary(summary.Info, s.output, s.cancellationToken),
             static (s, resource) => WriteResource(resource, s.output),

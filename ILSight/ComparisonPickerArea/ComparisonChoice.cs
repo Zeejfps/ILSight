@@ -37,7 +37,6 @@ public sealed class ComparisonChoice
     }
 
     /// <summary>The assembly selected to compare with, or null when none is.</summary>
-    public LoadedModule? Selected => Selection.Item;
 
     /// <summary>Opens the dialog to pick what to compare <paramref name="compared"/> with.</summary>
     public void Open(LoadedModule compared)
@@ -124,7 +123,7 @@ public sealed class ComparisonChoice
         }
 
         _appliedFilter = filter;
-        var selected = Selected;
+        var selected = Selection.Item;
         _filtered.Clear();
         var trimmed = filter.Trim();
         foreach (var candidate in _candidates)

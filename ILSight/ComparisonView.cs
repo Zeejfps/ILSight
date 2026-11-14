@@ -131,7 +131,7 @@ internal static class ComparisonView
             ui.Text(t.ComparisonAddedCount(diff.Added), color: theme.Success);
             ui.Text(t.ComparisonRemovedCount(diff.Removed), color: theme.Danger);
             ui.Text(t.ComparisonChangedCount(diff.Changed), color: theme.Warning);
-            if (comparison.IsComparing)
+            if (comparison.Work.IsRunning)
             {
                 ui.Text(t.ComparisonComparing, color: theme.TextMuted);
             }

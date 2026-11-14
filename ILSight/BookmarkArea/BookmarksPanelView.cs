@@ -58,7 +58,7 @@ internal static class BookmarksPanelView
         var palette = ui.State.Appearance.CodeViewPalette;
         var renaming = panel.Renaming.Bookmark is not null;
         Bookmark? removed = null;
-        var selected = panel.Selected;
+        var selected = panel.Selection.Item;
         if (table.Focused && !renaming && selected is not null && ui.Input.TakeKey(KeyboardKey.F2))
         {
             RenameInPlace(panel, selected);
@@ -84,7 +84,7 @@ internal static class BookmarksPanelView
     private static void Answer(Ui<UiState> ui, TableBody body)
     {
         var panel = ui.State.BookmarksPanel;
-        var selected = panel.Selected;
+        var selected = panel.Selection.Item;
         if (selected is null)
         {
             return;
@@ -130,7 +130,7 @@ internal static class BookmarksPanelView
         var theme = ui.Theme;
         var panel = ui.State.BookmarksPanel;
         var any = bookmarks.HasEnabled();
-        var selected = panel.Selected;
+        var selected = panel.Selection.Item;
         using (ui.PaneToolbar())
         {
             if (ui.IconButton("previous", ui.State.Appearance.Icons.BookmarksPrevious, t.BookmarksPrevious, any))
@@ -359,7 +359,7 @@ internal static class BookmarksPanelView
         }
 
         var panel = ui.State.BookmarksPanel;
-        var bookmark = panel.Selected;
+        var bookmark = panel.Selection.Item;
         if (bookmark is null)
         {
             return;
@@ -403,7 +403,7 @@ internal static class BookmarksPanelView
         Bookmark? removed = null;
         foreach (var stroke in ui.Input.Keys)
         {
-            var bookmark = panel.Selected;
+            var bookmark = panel.Selection.Item;
             if (bookmark is null)
             {
                 break;
@@ -450,7 +450,7 @@ internal static class BookmarksPanelView
     /// nothing when none is enabled.</summary>
     internal static void Step(BookmarksPanel panel, AppState appState, int direction)
     {
-        var bookmark = appState.Bookmarks.FindNext(panel.Selected, direction);
+        var bookmark = appState.Bookmarks.FindNext(panel.Selection.Item, direction);
         if (bookmark is null)
         {
             return;

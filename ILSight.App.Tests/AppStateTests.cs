@@ -513,7 +513,7 @@ public sealed class AppStateTests
         var rows = search.Results.Rows.ToArray();
         Assert.Single(rows);
         search.Results.Select(search.Results.Rows[0]);
-        var selectedRow = search.Results.SelectedRow;
+        var selectedRow = search.Results.Selection.Item;
         Assert.NotNull(selectedRow);
         var selected = selectedRow.Node;
 
@@ -530,7 +530,7 @@ public sealed class AppStateTests
 
         Assert.All(rows, r => Assert.Contains(r, search.Results.Rows));
         Assert.True(search.Results.Rows.Count > rows.Length);
-        Assert.Same(selected, search.Results.SelectedRow?.Node);
+        Assert.Same(selected, search.Results.Selection.Item?.Node);
     }
 
     [Fact]
@@ -548,7 +548,7 @@ public sealed class AppStateTests
         d.Settle();
         Assert.Contains(search.Results.Rows, r => r.Node.Assembly != greeter.Assembly);
         search.Results.Select(search.Results.Rows.First(r => r.Node.Assembly == greeter.Assembly));
-        var selectedRow = search.Results.SelectedRow;
+        var selectedRow = search.Results.Selection.Item;
         Assert.NotNull(selectedRow);
         var selected = selectedRow.Node;
 
@@ -557,7 +557,7 @@ public sealed class AppStateTests
         d.Settle();
 
         Assert.All(search.Results.Rows, r => Assert.Equal(greeter.Assembly, r.Node.Assembly));
-        Assert.Same(selected, search.Results.SelectedRow?.Node);
+        Assert.Same(selected, search.Results.Selection.Item?.Node);
     }
 
     [Fact]
@@ -597,13 +597,13 @@ public sealed class AppStateTests
         Assert.True(search.Results.Rows.Count > 3);
 
         search.Results.Move(1);
-        Assert.Same(search.Results.Rows[0], search.Results.SelectedRow);
+        Assert.Same(search.Results.Rows[0], search.Results.Selection.Item);
         search.Results.Move(2);
-        Assert.Same(search.Results.Rows[2], search.Results.SelectedRow);
+        Assert.Same(search.Results.Rows[2], search.Results.Selection.Item);
         search.Results.Move(-10);
-        Assert.Same(search.Results.Rows[0], search.Results.SelectedRow);
+        Assert.Same(search.Results.Rows[0], search.Results.Selection.Item);
         search.Results.Move(search.Results.Rows.Count);
-        Assert.Same(search.Results.Rows[search.Results.Rows.Count - 1], search.Results.SelectedRow);
+        Assert.Same(search.Results.Rows[search.Results.Rows.Count - 1], search.Results.Selection.Item);
     }
 
     [Fact]

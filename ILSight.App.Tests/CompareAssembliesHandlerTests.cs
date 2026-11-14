@@ -36,12 +36,12 @@ public sealed class CompareAssembliesHandlerTests
         var diff = await DiffAsync(run);
 
         var comparing = d.BeginAsync(() => new CompareAssembliesHandler(ports).HandleAsync(run, CancellationToken.None));
-        Assert.True(comparison.IsComparing);
+        Assert.True(comparison.Work.IsRunning);
         Assert.Single(ports.Answers).SetResult(new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Read { Value = diff }));
         await d.EndAsync(comparing);
 
         Assert.Same(diff, Assert.IsType<ComparisonResult.Compared>(comparison.Result).Diff);
-        Assert.False(comparison.IsComparing);
+        Assert.False(comparison.Work.IsRunning);
         Assert.Empty(ports.Reported);
     }
 
@@ -98,6 +98,6 @@ public sealed class CompareAssembliesHandlerTests
 
         Assert.Null(run);
         Assert.IsType<ComparisonFailure.AssemblyClosed>(Assert.IsType<ComparisonResult.Failed>(comparison.Result).Failure);
-        Assert.False(comparison.IsComparing);
+        Assert.False(comparison.Work.IsRunning);
     }
 }

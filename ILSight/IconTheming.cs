@@ -17,7 +17,6 @@ public static class IconTheming
     {
         public required ThemeId<IconThemeFile> Id { get; init; }
         public required ThemeJson Json { get; init; }
-        public string File => Json.File;
         public required ThemeName Name;
         public ThemeParent<IconThemeFile>? Extends;
         public readonly Dictionary<string, IconFont> Fonts = new();
@@ -380,7 +379,7 @@ public static class IconTheming
             theme.Json.AddError(line, ThemeProblem.NotACodepoint, subject, glyph);
             return null;
         }
-        return new IconValue.Glyph { Font = font, Codepoint = codepoint.Value, File = theme.File, Line = line };
+        return new IconValue.Glyph { Font = font, Codepoint = codepoint.Value, File = theme.Json.File, Line = line };
     }
 
     private static int? ParseCodepoint(string hex)
@@ -422,7 +421,7 @@ public static class IconTheming
             theme.Json.AddError(named.Line, ThemeProblem.InvalidSvg, named.Subject, $"{named.Path}: {error}");
             return null;
         }
-        return new IconValue.Picture { SvgPath = named.Path, Svg = svg, File = theme.File, Line = named.Line };
+        return new IconValue.Picture { SvgPath = named.Path, Svg = svg, File = theme.Json.File, Line = named.Line };
     }
 
     private static string DecodeText(byte[] bytes)

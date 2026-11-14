@@ -85,7 +85,7 @@ public sealed class BookmarkTests : IDisposable
         d.Settle();
         var commands = d.TakeViewCommands();
 
-        Assert.Same(bookmarks.Items[1], panel.Selected);
+        Assert.Same(bookmarks.Items[1], panel.Selection.Item);
         Assert.Contains(new ViewCommand.ShowTab { Tab = tab, Beside = null }, commands);
         Assert.Contains(new ViewCommand.RevealLine { Tab = tab, Line = line }, commands);
         Assert.NotNull(tab.Node);
@@ -220,14 +220,14 @@ public sealed class BookmarkTests : IDisposable
     public async Task Clicking_the_margin_asks_to_toggle_that_line_and_a_bookmarked_line_is_marked()
     {
         var view = CodeViewDriver.Showing(await CodeViewDriver.OutlineAsync(), 1200f, frames: 2);
-        var line = CodeFolding.GetLineAt(view.State.Folds, new CodeRow(3));
+        var line = CodeFolding.GetLineAt(view.State.Selection.Folds, new CodeRow(3));
 
-        view.Bookmarks = new Dictionary<int, bool> { [CodeFolding.GetLineAt(view.State.Folds, new CodeRow(5))] = true };
+        view.Bookmarks = new Dictionary<int, bool> { [CodeFolding.GetLineAt(view.State.Selection.Folds, new CodeRow(5))] = true };
         var clicked = view.Click(view.MarkOf(new CodeRow(3)));
 
         Assert.Equal(line, Assert.IsType<CodeViewIntent.ToggleBookmark>(clicked.Intent).Line);
         Assert.Equal(2, view.Frames.Canvas.Texts.Count(t => t.Inputs.Text == BuiltInGlyphs.Text(BuiltInGlyphs.Icons.CodeBookmark)));
-        Assert.False(view.State.HasSelection);
+        Assert.False(view.State.Selection.HasSelection);
     }
 
     [Fact]
@@ -335,7 +335,7 @@ public sealed class BookmarkTests : IDisposable
         BookmarksPanelView.Remove(panel, bookmarks, bookmarks.Items[0]);
         app.Run(2);
 
-        Assert.Same(second, panel.Selected);
+        Assert.Same(second, panel.Selection.Item);
     }
 
     [Fact]
@@ -358,7 +358,7 @@ public sealed class BookmarkTests : IDisposable
         BookmarksPanelView.Remove(panel, bookmarks, bookmarks.Items[1]);
         app.Run(2);
 
-        Assert.Same(third, panel.Selected);
+        Assert.Same(third, panel.Selection.Item);
     }
 
     [Fact]

@@ -35,7 +35,7 @@ internal static class ResourceNodes
         return new ResourceData
         {
             Description = file.Description,
-            FileName = file.FileName,
+            FileName = file.File.Name,
             ReadData = () => PackageContents.ReadFileData(file),
         };
     }

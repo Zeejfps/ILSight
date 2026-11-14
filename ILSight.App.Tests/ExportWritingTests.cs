@@ -33,7 +33,7 @@ public sealed class ExportWritingTests
         var report = Assert.Single(finished);
         Assert.Equal(ticket.Run, report.Run);
         Assert.Equal(ExportKind.CSharpFile, report.Job.Kind);
-        Assert.Equal(Folder, report.Folder);
+        Assert.Equal(Folder, report.Job.Folder);
         Assert.Equal([work.File], Assert.IsType<ExportEnd.Finished>(report.End).Written);
         Assert.Equal(TimeSpan.FromSeconds(2), report.Elapsed);
         Assert.True(report.FolderExists);

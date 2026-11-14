@@ -96,7 +96,7 @@ public sealed class ExportsPanelTests : IDisposable
         d.Settle();
 
         Exports.RemoveFinishedExport(d.AppState, d.AppState.FinishedExports[0]);
-        Assert.Equal("Farewell", Assert.Single(d.AppState.FinishedExports).Name);
+        Assert.Equal("Farewell", Assert.Single(d.AppState.FinishedExports).Job.Name);
         Exports.ClearFinishedExports(d.AppState);
 
         Assert.Empty(d.AppState.FinishedExports);
@@ -117,7 +117,7 @@ public sealed class ExportsPanelTests : IDisposable
         d.Settle();
 
         var report = Assert.Single(d.AppState.FinishedExports);
-        Assert.Equal("Greeter", report.Name);
+        Assert.Equal("Greeter", report.Job.Name);
         Assert.False(File.Exists(farewell));
     }
 

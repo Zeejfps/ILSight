@@ -37,7 +37,6 @@ public sealed class SearchResults
 
     public ItemSelection<SearchResult> Selection { get; } = new();
 
-    public SearchResult? SelectedRow => Selection.Item;
 
     /// <summary>Whether results may still arrive, or be sorted into the order asked for.</summary>
     public bool IsBusy => _runs.IsRunning || _sorting.IsSorting;

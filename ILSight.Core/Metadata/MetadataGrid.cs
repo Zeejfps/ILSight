@@ -41,10 +41,6 @@ public abstract class MetadataGrid
     /// <summary>The first line of each cell viewed and how many lines follow it, by its index.</summary>
     internal readonly Dictionary<int, (string FirstLine, int MoreLines)> LineCells = new();
 
-    /// <summary>What names the kind of rows, the same for a table in any assembly: where a
-    /// column's flags filter is kept.</summary>
-    public string Key => Schema.Key;
-
     /// <summary>Whether the selected row shows its <see cref="MetadataGrids.FindDetails"/> under it, as a debug
     /// information's decoded value does.</summary>
     public bool HasDetails => Schema.Details is not null;

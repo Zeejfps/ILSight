@@ -195,12 +195,12 @@ internal static class SearchPanelView
 
     private static SearchResult? PickSelected(SearchResults results)
     {
-        if (results.SelectedRow == null)
+        if (results.Selection.Item == null)
         {
             results.Move(1);
         }
 
-        return results.SelectedRow;
+        return results.Selection.Item;
     }
 
     private static void ResultCount(Ui<UiState> ui, SearchResults results)
@@ -305,7 +305,7 @@ internal static class SearchPanelView
         }
 
         results.Selection.TakeFrom(results.Rows);
-        var selected = results.SelectedRow;
+        var selected = results.Selection.Item;
         if (body.Activated && selected != null)
         {
             Commands.DecompileLater(ui.State, navigation.ShowNode(selected.Node, setup, body.InNewTab));

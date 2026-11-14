@@ -69,7 +69,7 @@ internal static class ComparisonPickerView
             {
                 ui.Spacer();
                 close |= ui.Button(t.PickerCancel, id: "compare-picker-cancel");
-                compare |= ui.Button(t.ComparePickerCompare, enabled: choice.Selected is not null, id: "compare-picker-compare", variant: ButtonVariant.Primary);
+                compare |= ui.Button(t.ComparePickerCompare, enabled: choice.Selection.Item is not null, id: "compare-picker-compare", variant: ButtonVariant.Primary);
             }
         }
         if (compare)
@@ -164,7 +164,7 @@ internal static class ComparisonPickerView
     private static bool TryCompareWithSelected(UiState screen, Navigation navigation, AssemblyList assemblies, ComparisonChoice choice, LoadedModule compared,
         Strings t)
     {
-        var other = choice.Selected;
+        var other = choice.Selection.Item;
         if (other is null)
         {
             return false;

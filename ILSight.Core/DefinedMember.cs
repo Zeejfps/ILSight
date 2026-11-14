@@ -9,8 +9,6 @@ public sealed class DefinedMember
 {
     public required LoadedModule Module { get; init; }
 
-    public EntityHandle Handle => Reference.Handle;
-
     public required CodeReference.Entity Reference { get; init; }
 
     public required MemberShape Shape { get; init; }

@@ -78,7 +78,7 @@ public sealed class BrowseSession
 
         if (node.Subject is NodeSubject.MemberDefinition member)
         {
-            EnsureIndex(member.Definition.Module).TryAdd(member.Definition.Handle, node);
+            EnsureIndex(member.Definition.Module).TryAdd(member.Definition.Reference.Handle, node);
         }
 
         if (node.Subject is NodeSubject.Module module)

@@ -33,8 +33,6 @@ public sealed class CodeViewState
 
     public CodeSelection Selection { get; } = new();
 
-    internal CodeFolds Folds => Selection.Folds;
-
     /// <summary>Where the view stands now; where it is to be returned to while that waits for it to be drawn.</summary>
     public CodeViewPosition Position
     {
@@ -46,7 +44,7 @@ public sealed class CodeViewState
             }
 
             var rowHeight = Layout.RowHeight;
-            var top = rowHeight > 0f && Folds.RowCount > 0 ? CodeFolding.GetLineAt(Folds, CodeFolding.ClampRow(Folds, CodeViewWidget.GetRowAt(ScrollY, rowHeight))) : 0;
+            var top = rowHeight > 0f && Selection.Folds.RowCount > 0 ? CodeFolding.GetLineAt(Selection.Folds, CodeFolding.ClampRow(Selection.Folds, CodeViewWidget.GetRowAt(ScrollY, rowHeight))) : 0;
             return new CodeViewPosition
             {
                 TopLine = top,
@@ -57,8 +55,6 @@ public sealed class CodeViewState
         }
     }
 
-    public bool HasSelection => Selection.HasSelection;
-
     /// <summary>Takes in <paramref name="document"/>, unless it is the one shown already.</summary>
     internal void ShowDocument(DecompiledDocument document)
     {
@@ -68,7 +64,7 @@ public sealed class CodeViewState
         }
 
         Layout.Show(document);
-        Folds.Reset(document);
+        Selection.Folds.Reset(document);
         Selection.Select(default, default);
         Pointer.Forget();
         ScrollX = ScrollY = 0f;
@@ -82,7 +78,7 @@ public sealed class CodeViewState
     {
         if (Layout.RowHeight > 0f)
         {
-            ScrollY = CodeViewWidget.GetRowTop(CodeFolding.GetRowOf(Folds, top.Line), Layout.RowHeight) + top.Within;
+            ScrollY = CodeViewWidget.GetRowTop(CodeFolding.GetRowOf(Selection.Folds, top.Line), Layout.RowHeight) + top.Within;
         }
     }
 
@@ -90,13 +86,13 @@ public sealed class CodeViewState
     {
         if (deltaY != 0f)
         {
-            ScrollY = Math.Clamp(ScrollY + deltaY, 0f, MathF.Max(0f, Folds.RowCount * rowHeight - viewport));
+            ScrollY = Math.Clamp(ScrollY + deltaY, 0f, MathF.Max(0f, Selection.Folds.RowCount * rowHeight - viewport));
         }
     }
 
     internal void ScrollToCaret(DecompiledDocument document, float rowHeight, float advance, float textLeft, UiRect content)
     {
-        var folds = Folds;
+        var folds = Selection.Folds;
         var caret = Selection.Caret;
         var row = CodeFolding.GetRowOf(folds, caret.Line);
         var top = CodeViewWidget.GetRowTop(row, rowHeight);

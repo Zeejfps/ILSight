@@ -48,7 +48,7 @@ public sealed class MetadataFilters
 
     private static string GetKey(MetadataGrid grid, int column)
     {
-        return $"{grid.Key}/{grid.Columns[column].Name}";
+        return $"{grid.Schema.Key}/{grid.Columns[column].Name}";
     }
 
     /// <summary>Every filter that filters something, to save.</summary>

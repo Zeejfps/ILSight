@@ -43,7 +43,7 @@ internal static class ErrorDialogView
             List(ui, errors, shown);
         }
 
-        var selected = shown.SelectedError;
+        var selected = shown.Selection.Item;
         if (selected is not null)
         {
             using (ui.Row(new Box { Gap = theme.GapTight, AlignY = Align.Center }))
@@ -81,7 +81,7 @@ internal static class ErrorDialogView
 
     private static DecompiledDocument GetSelectedDocument(ErrorDialog dialog, Strings t)
     {
-        var error = dialog.SelectedError;
+        var error = dialog.Selection.Item;
         if (error is null)
         {
             return DecompiledDocument.Empty;

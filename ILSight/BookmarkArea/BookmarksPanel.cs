@@ -16,8 +16,6 @@ public sealed class BookmarksPanel
     /// <summary>The cell of the selected bookmark current in the panel, and the text selected in it.</summary>
     public TableCellSelection Cells { get; }
 
-    public Bookmark? Selected => Selection.Item;
-
     public BookmarkRenaming Renaming { get; } = new();
 
     /// <summary>The name typed so far for the bookmark being renamed. A field, for the edit box to take by

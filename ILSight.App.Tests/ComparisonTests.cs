@@ -291,7 +291,7 @@ public sealed class ComparisonTests
 
         Assert.True(comparison.Work.IsClosed);
         Assert.IsType<ComparisonResult.NotYet>(comparison.Result);
-        Assert.False(comparison.IsComparing);
+        Assert.False(comparison.Work.IsRunning);
     }
 
     [Fact]
@@ -452,7 +452,7 @@ public sealed class ComparisonTests
 
         comparison.ShowFailure(failure);
 
-        Assert.False(comparison.IsComparing);
+        Assert.False(comparison.Work.IsRunning);
         Assert.True(ticket.Token.IsCancellationRequested);
         Assert.Equal(new ComparisonResult.Failed { Failure = failure }, comparison.Result);
         Assert.False(comparison.Work.TryFinish(ticket));

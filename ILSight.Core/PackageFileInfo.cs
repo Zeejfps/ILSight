@@ -14,6 +14,4 @@ public sealed class PackageFileInfo
     public bool IsImage => ResourceImages.IsImageName(File.Name);
 
     public string Description => $"{File.FullName} ({File.Length} bytes)";
-
-    public string FileName => File.Name;
 }

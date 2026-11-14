@@ -12,9 +12,8 @@ public sealed class ErrorDialog
     /// <summary>The error the dialog shows.</summary>
     public ItemSelection<AppError> Selection { get; } = new();
 
-    public AppError? SelectedError => Selection.Item;
 
-    /// <summary>The view of <see cref="SelectedError"/>'s text.</summary>
+    /// <summary>The view of selected error's text.</summary>
     public CodeViewState View { get; } = new();
 
     /// <summary>Opens the dialog on the newest of <paramref name="errors"/>, unless there are none.</summary>

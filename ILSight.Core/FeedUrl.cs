@@ -9,7 +9,9 @@ public sealed record FeedUrl
     /// <summary>The URL as it was given.</summary>
     public required WebUrl Address { get; init; }
 
+#pragma warning disable RL0408 // A one-part wrapper hiding nothing: the URL is the whole feed identity, and its text is what equality, hashing and display compare.
     public string Text => Address.Text;
+#pragma warning restore RL0408
 
     public bool Equals(FeedUrl? other)
     {

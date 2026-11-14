@@ -388,8 +388,8 @@ public sealed class ExportTests : IDisposable
 
         var report = Assert.Single(d.AppState.FinishedExports);
         var finished = Assert.IsType<ExportEnd.Finished>(report.End);
-        Assert.Equal("Greeter", report.Name);
-        Assert.Equal(_temp.Path, report.Folder);
+        Assert.Equal("Greeter", report.Job.Name);
+        Assert.Equal(_temp.Path, report.Job.Folder);
         Assert.Equal([path], finished.Written);
         Assert.Empty(finished.Problems);
     }

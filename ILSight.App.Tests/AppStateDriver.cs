@@ -338,7 +338,7 @@ internal sealed class AppStateDriver
         }
 
         var comparison = tab.Comparison;
-        return comparison is null || !comparison.IsComparing;
+        return comparison is null || !comparison.Work.IsRunning;
     }
 
     private bool IsSearching()

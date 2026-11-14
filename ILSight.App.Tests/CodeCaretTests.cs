@@ -137,7 +137,7 @@ public sealed class CodeCaretTests
         view.Key(KeyboardKey.DownArrow).Frame();
         view.Key(KeyboardKey.RightArrow).Frame();
         Assert.Equal(new TextPosition { Line = 2, Column = 3 }, view.State.Selection.Caret);
-        Assert.False(view.State.HasSelection);
+        Assert.False(view.State.Selection.HasSelection);
 
         view.Key(KeyboardKey.RightArrow, KeyModifiers.Shift).Frame();
         view.Key(KeyboardKey.RightArrow, KeyModifiers.Shift).Frame();
@@ -146,7 +146,7 @@ public sealed class CodeCaretTests
 
         view.Key(KeyboardKey.LeftArrow).Frame();
         Assert.Equal(new TextPosition { Line = 2, Column = 3 }, view.State.Selection.Caret);
-        Assert.False(view.State.HasSelection);
+        Assert.False(view.State.Selection.HasSelection);
     }
 
     [Fact]

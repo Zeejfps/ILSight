@@ -46,7 +46,7 @@ public sealed class ComparisonPickerTests
         var picker = OpenPicker(d, OlderPath);
 
         Assert.Equal([NewerPath, AppStateDriver.FixturePath], ShownPaths(picker));
-        Assert.Equal(NewerPath, picker.Choice.Selected?.FilePath.Text);
+        Assert.Equal(NewerPath, picker.Choice.Selection.Item?.FilePath.Text);
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public sealed class ComparisonPickerTests
         picker.Filter = "nothing like it";
         picker.Update(d.AppState.ListSession.Assemblies);
         Assert.Empty(picker.Choice.Filtered);
-        Assert.Null(picker.Choice.Selected);
+        Assert.Null(picker.Choice.Selection.Item);
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public sealed class ComparisonPickerTests
         picker.Filter = "Tests";
         picker.Update(d.AppState.ListSession.Assemblies);
 
-        Assert.Equal(AppStateDriver.FixturePath, picker.Choice.Selected?.FilePath.Text);
+        Assert.Equal(AppStateDriver.FixturePath, picker.Choice.Selection.Item?.FilePath.Text);
     }
 
     [Fact]
@@ -89,11 +89,11 @@ public sealed class ComparisonPickerTests
         var picker = OpenPicker(d, OlderPath);
         var rows = picker.Choice.Filtered.ToList();
         picker.Choice.Selection.Select(rows[1], rows);
-        var selected = picker.Choice.Selected;
+        var selected = picker.Choice.Selection.Item;
 
         rows.Clear();
 
-        Assert.Same(selected, picker.Choice.Selected);
+        Assert.Same(selected, picker.Choice.Selection.Item);
     }
 
     [Fact]

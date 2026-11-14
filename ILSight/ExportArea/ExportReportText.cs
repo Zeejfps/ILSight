@@ -68,7 +68,7 @@ internal static class ExportReportText
 
     private static string Summarize(Strings t, ExportReport report)
     {
-        return report.End.Match((t, report.Name),
+        return report.End.Match((t, report.Job.Name),
             static (s, finished) => SummarizeFinished(s.t, s.Name, finished),
             static (s, _) => s.t.ExportSummaryCancelled(s.Name),
             static (s, _) => s.t.ExportSummaryFailed(s.Name));
@@ -102,7 +102,7 @@ internal static class ExportReportText
     {
         text.AppendLine(Summarize(t, report));
         text.AppendLine(KindOf(t, report.Job.Kind));
-        text.AppendLine(report.Folder);
+        text.AppendLine(report.Job.Folder);
         text.AppendLine(t.ExportTook(FormatDuration(t, report.Elapsed)));
         text.AppendLine();
         report.End.Switch((text, t, kind: report.Job.Kind),

@@ -254,7 +254,7 @@ public sealed class OmnibarTests
         app.Frames.Key(KeyboardKey.L, KeyModifiers.Control).Frame(2);
 
         Assert.False(app.Ui.Omnibar.IsSearching);
-        Assert.True(view.Code.Folds.AnyCollapsed);
+        Assert.True(view.Code.Selection.Folds.AnyCollapsed);
     }
 
     private const string Panel = "document-1";

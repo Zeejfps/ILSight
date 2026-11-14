@@ -211,7 +211,7 @@ public static class Exports
         var report = FindFinishedExport(finished, run);
         if (report is not null)
         {
-            return report.Folder;
+            return report.Job.Folder;
         }
 
         var queued = FindQueuedExport(queue, run);

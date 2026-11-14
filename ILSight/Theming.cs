@@ -14,7 +14,6 @@ public static class Theming
     {
         public required ThemeId<ThemeFile> Id { get; init; }
         public required ThemeJson Json { get; init; }
-        public string File => Json.File;
         public required ThemeName Name;
         public ThemeType? Type;
         public ThemeParent<ThemeFile>? Extends;
@@ -83,7 +82,7 @@ public static class Theming
         }
 
         var errors = new List<ThemeError>();
-        var theme = BuildTheme(merged, file.File, errors);
+        var theme = BuildTheme(merged, file.Json.File, errors);
         catalog.AddErrors(errors);
         return theme;
     }
@@ -92,7 +91,7 @@ public static class Theming
     {
         if (root.Type is null)
         {
-            catalog.AddError(new ThemeError { File = root.File, Line = 0, Problem = ThemeProblem.NoType });
+            catalog.AddError(new ThemeError { File = root.Json.File, Line = 0, Problem = ThemeProblem.NoType });
             return null;
         }
         return catalog.GetBuiltInContents(GetIdOfType(root.Type.Value));
@@ -701,7 +700,7 @@ public static class Theming
                 continue;
             }
 
-            theme.Palette[name] = new ThemeValue { Text = color, File = theme.File, Line = nameLine };
+            theme.Palette[name] = new ThemeValue { Text = color, File = theme.Json.File, Line = nameLine };
         }
     }
 
@@ -732,7 +731,7 @@ public static class Theming
             return;
         }
 
-        var value = new ThemeValue { Text = text, File = theme.File, Line = line };
+        var value = new ThemeValue { Text = text, File = theme.Json.File, Line = line };
         if (!value.IsPaletteName && !IsValidColor(theme, key, text, line))
         {
             return;

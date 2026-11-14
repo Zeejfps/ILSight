@@ -505,16 +505,16 @@ internal static class ExportsPanelView
                 using (ui.Row(TopLine(theme)))
                 {
                     Glyph(ui, OutcomeIcon(ui.State.Appearance.Icons, report), OutcomeColor(theme, report));
-                    Name(ui, report.Name);
+                    Name(ui, report.Job.Name);
                     FinishedActions(ui, rows, report);
                     removed = ui.IconButton("remove", ui.State.Appearance.Icons.ExportRemove, t.ExportsRemove);
                 }
                 var detail = ui.Memo("detail", (report, t), static a => DescribeFinished(a.t, a.report));
                 Detail(ui, detail, OutcomeTextColor(theme, report));
-                Folder(ui, report.Folder);
+                Folder(ui, report.Job.Folder);
             }
             RecordFinishedPaths(ui, hit.Id, report.Run);
-            ui.Tooltip(hit.Id, report.Folder);
+            ui.Tooltip(hit.Id, report.Job.Folder);
         }
         ui.Separator();
         return removed;
@@ -565,12 +565,12 @@ internal static class ExportsPanelView
         var t = ui.State.Appearance.Strings;
         if (labelled && ui.Button(t.ExportOpenFolder, id: "open-folder", icon: new UiIcon(ui.State.Appearance.Icons.ExportOpenFolder)))
         {
-            ui.OpenFolder(report.Folder);
+            ui.OpenFolder(report.Job.Folder);
         }
 
         if (!labelled && ui.IconButton("open-folder", ui.State.Appearance.Icons.ExportOpenFolder, t.ExportOpenFolder))
         {
-            ui.OpenFolder(report.Folder);
+            ui.OpenFolder(report.Job.Folder);
         }
     }
 
@@ -679,12 +679,12 @@ internal static class ExportsPanelView
 
         if (ui.MenuItem(t.ExportOpenFolder, enabled: report.FolderExists, id: "open-folder", icon: new UiIcon(ui.State.Appearance.Icons.ExportOpenFolder)))
         {
-            ui.OpenFolder(report.Folder);
+            ui.OpenFolder(report.Job.Folder);
         }
 
         if (ui.MenuItem(t.ExportsCopyFolder, Shortcuts.Copy, id: "copy-folder"))
         {
-            ui.ClipboardText = report.Folder;
+            ui.ClipboardText = report.Job.Folder;
         }
 
         ui.MenuSeparator();

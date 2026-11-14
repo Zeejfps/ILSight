@@ -72,7 +72,7 @@ public sealed class TabLoadsTests
         var run = Assert.Single(runs);
         Assert.Same(tab.Comparison, run.Comparison);
         Assert.Equal(ApiScope.AllDeclared, run.Scope);
-        Assert.True(run.Comparison.IsComparing);
+        Assert.True(run.Comparison.Work.IsRunning);
         Assert.Equal(0, other);
         Assert.Empty(d.AppState.ListSession.Reopened.Tabs);
     }

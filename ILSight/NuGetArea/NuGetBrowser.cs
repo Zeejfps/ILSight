@@ -41,7 +41,6 @@ public sealed class NuGetBrowser
 
     public ItemSelection<FeedPackage> Selection { get; } = new();
 
-    public FeedPackage? Selected => Selection.Item;
 
     /// <summary>The feed last searched and whether prereleases counted, for the settings to keep.</summary>
     public SavedNuGetSearch? KeptSearch { get; private set; }
@@ -227,7 +226,7 @@ public sealed class NuGetBrowser
     {
         get
         {
-            if (Selected is null)
+            if (Selection.Item is null)
             {
                 return false;
             }
@@ -251,7 +250,7 @@ public sealed class NuGetBrowser
     {
         get
         {
-            var selected = Selected;
+            var selected = Selection.Item;
             var version = Version;
             if (selected is null || version is null)
             {
@@ -490,7 +489,7 @@ public sealed class NuGetBrowser
     public PackageDownloadTicket? StartDownload()
     {
         var version = Version;
-        var package = Selected;
+        var package = Selection.Item;
         var setup = FindReadySetup();
         var shown = _shown;
         if (!CanOpen || version is null || package is null || setup is null || shown is null)
@@ -581,7 +580,7 @@ public sealed class NuGetBrowser
     /// <summary>Offers the versions of the package selected, picking its latest, once another is selected.</summary>
     public void FollowSelection()
     {
-        var package = Selected;
+        var package = Selection.Item;
         var offered = Choice?.Package;
         if (package == offered)
         {

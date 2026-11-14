@@ -44,17 +44,17 @@ public static class CodeViewWidget
     public static void SetCollapsed(CodeViewState state, int fold, bool collapsed)
     {
         var top = GetTopAnchor(state);
-        state.Folds.SetCollapsed(fold, collapsed);
+        state.Selection.Folds.SetCollapsed(fold, collapsed);
         state.KeepTop(top);
     }
 
     /// <summary>Collapses or expands the innermost fold around <paramref name="line"/>.</summary>
     public static void ToggleFold(CodeViewState state, int line)
     {
-        var fold = CodeFolding.FindInnermost(state.Folds, line);
+        var fold = CodeFolding.FindInnermost(state.Selection.Folds, line);
         if (fold is not null)
         {
-            SetCollapsed(state, fold.Value, !CodeFolding.IsCollapsed(state.Folds, fold.Value));
+            SetCollapsed(state, fold.Value, !CodeFolding.IsCollapsed(state.Selection.Folds, fold.Value));
         }
     }
 
@@ -71,7 +71,7 @@ public static class CodeViewWidget
     internal static void RevealFolds(CodeViewState state, int line)
     {
         var top = GetTopAnchor(state);
-        if (state.Folds.TryReveal(line))
+        if (state.Selection.Folds.TryReveal(line))
         {
             state.KeepTop(top);
         }
@@ -80,13 +80,13 @@ public static class CodeViewWidget
     private static void SetAll(CodeViewState state, bool collapsed)
     {
         var top = GetTopAnchor(state);
-        state.Folds.SetAll(collapsed);
+        state.Selection.Folds.SetAll(collapsed);
         state.KeepTop(top);
     }
 
     private static (int Line, float Within) GetTopAnchor(CodeViewState state)
     {
-        var folds = state.Folds;
+        var folds = state.Selection.Folds;
         if (state.Layout.RowHeight <= 0f || folds.RowCount == 0)
         {
             return (0, 0f);
@@ -167,7 +167,7 @@ public static class CodeViewWidget
         var advance = cell.Advance;
         var rowHeight = RowHeightFor(theme, fontSize, cell);
         state.Layout.TakeRowHeight(rowHeight);
-        var folds = state.Folds;
+        var folds = state.Selection.Folds;
         var digits = LineNumberDigits(document, shown);
         var markWidth = gutter ? theme.IconSize + GutterPaddingLeft : 0f;
         var foldLeft = gutter ? markWidth + digits * advance + GutterPaddingRight : 0f;
@@ -654,7 +654,7 @@ public static class CodeViewWidget
 
         var span = document.Lines[at.Value.Line].Spans[at.Value.Span];
         var x = hovered.TextX - state.Layout.ScrollX + span.Start * advance;
-        var y = hovered.TextY + GetRowTop(CodeFolding.GetRowOf(state.Folds, at.Value.Line), rowHeight) - state.Layout.ScrollY;
+        var y = hovered.TextY + GetRowTop(CodeFolding.GetRowOf(state.Selection.Folds, at.Value.Line), rowHeight) - state.Layout.ScrollY;
         return new UiRect(x, y, span.Length * advance, rowHeight);
     }
 
@@ -668,7 +668,7 @@ public static class CodeViewWidget
         bool hoverNavigable)
     {
         var frame = state.Frame;
-        frame.Lay(document, state.Folds.Layout, palette, theme, cell, rowHeight, gutter, ui.State.Appearance.Icons.CodeBookmark, active);
+        frame.Lay(document, state.Selection.Folds.Layout, palette, theme, cell, rowHeight, gutter, ui.State.Appearance.Icons.CodeBookmark, active);
         var underline = hoverNavigable && !state.Pointer.PressMoved ? hover.Span : null;
         frame.Mark(state.Selection.Start, state.Selection.End, highlight, underline, hover, bookmarks);
         var findActive = state.Find.IsOpen && state.Query.Length > 0;
@@ -755,7 +755,7 @@ public static class CodeViewWidget
         state.Reveal.Arrive();
         var top = Math.Clamp(restore.TopLine, 0, Math.Max(0, document.Lines.Length - 1));
         RevealFolds(state, top);
-        state.ScrollY = GetRowTop(CodeFolding.GetRowOf(state.Folds, top), rowHeight);
+        state.ScrollY = GetRowTop(CodeFolding.GetRowOf(state.Selection.Folds, top), rowHeight);
         state.ScrollX = restore.ScrollX;
         state.Selection.Select(CodeText.Clamp(document, restore.Anchor), CodeText.Clamp(document, restore.Caret));
     }
@@ -772,7 +772,7 @@ public static class CodeViewWidget
 
         var line = Math.Clamp(reveal.Line, 0, Math.Max(0, document.Lines.Length - 1));
         RevealFolds(state, line);
-        state.ScrollY = MathF.Max(0f, GetRowTop(CodeFolding.GetRowOf(state.Folds, line), rowHeight) - viewport / 3f);
+        state.ScrollY = MathF.Max(0f, GetRowTop(CodeFolding.GetRowOf(state.Selection.Folds, line), rowHeight) - viewport / 3f);
         state.Reveal.ArriveFlashing(line, TimeSpan.FromSeconds(ui.RealTime));
         ui.RequestUpdate();
     }
@@ -793,7 +793,7 @@ public static class CodeViewWidget
         }
 
         RevealFolds(state, match.Line);
-        var top = GetRowTop(CodeFolding.GetRowOf(state.Folds, match.Line), rowHeight);
+        var top = GetRowTop(CodeFolding.GetRowOf(state.Selection.Folds, match.Line), rowHeight);
         if (!IsRowInView(top, rowHeight, state.ScrollY, viewport))
         {
             state.ScrollY = MathF.Max(0f, top - viewport / 3f);
@@ -936,7 +936,7 @@ public static class CodeViewWidget
         var byWord = (modifiers & (mac ? KeyModifiers.Alt : KeyModifiers.Control)) != 0;
         var extend = (modifiers & KeyModifiers.Shift) != 0;
         var alt = (modifiers & KeyModifiers.Alt) != 0;
-        var folds = state.Folds;
+        var folds = state.Selection.Folds;
         var selection = state.Selection;
         var caret = CodeText.Clamp(document, selection.Caret);
         var collapses = !extend && selection.HasSelection;
@@ -1005,7 +1005,7 @@ public static class CodeViewWidget
     {
         var goal = state.Keys.Goal;
         var column = goal is not null && goal.Value.At == state.Selection.Caret ? goal.Value.Column : caret.Column;
-        var to = CodeCaret.MoveRows(document, state.Folds, caret, rows, column);
+        var to = CodeCaret.MoveRows(document, state.Selection.Folds, caret, rows, column);
         PutCaret(state, to, extend);
         state.Keys.AimAt(new CaretGoal { At = to, Column = column });
     }
@@ -1021,7 +1021,7 @@ public static class CodeViewWidget
     {
         if (ui.IsPressedAt(Shortcuts.Find, index))
         {
-            if (!state.Find.IsOpen && state.HasSelection && state.Selection.Anchor.Line == state.Selection.Caret.Line)
+            if (!state.Find.IsOpen && state.Selection.HasSelection && state.Selection.Anchor.Line == state.Selection.Caret.Line)
             {
                 state.Query = GetSelectedText(state);
             }
@@ -1047,7 +1047,7 @@ public static class CodeViewWidget
         }
         if (ui.IsPressedAt(Shortcuts.ToggleAllFolds, index))
         {
-            if (state.Folds.AnyCollapsed)
+            if (state.Selection.Folds.AnyCollapsed)
             {
                 ExpandAll(state);
             }
@@ -1073,12 +1073,12 @@ public static class CodeViewWidget
             state.Selection.Select(default, CodeText.End(document));
             return true;
         }
-        if (state.HasSelection && ui.IsPressedAt(Shortcuts.CopyPlainText, index))
+        if (state.Selection.HasSelection && ui.IsPressedAt(Shortcuts.CopyPlainText, index))
         {
             ui.ClipboardText = GetSelectedText(state);
             return true;
         }
-        if (state.HasSelection && ui.IsPressedAt(Shortcuts.Copy, index))
+        if (state.Selection.HasSelection && ui.IsPressedAt(Shortcuts.Copy, index))
         {
             CopySelection(ui, state);
             return true;
@@ -1088,7 +1088,7 @@ public static class CodeViewWidget
 
     private static void FoldAtCaret(CodeViewState state, bool collapse)
     {
-        var fold = CodeFolding.FindInnermost(state.Folds, state.Selection.Caret.Line, collapsed: !collapse);
+        var fold = CodeFolding.FindInnermost(state.Selection.Folds, state.Selection.Caret.Line, collapsed: !collapse);
         if (fold is not null)
         {
             SetCollapsed(state, fold.Value, collapse);
@@ -1235,12 +1235,12 @@ public static class CodeViewWidget
 
         var target = state.Pointer.Menu;
 
-        if (ui.MenuItem(t.CodeCopy, Shortcuts.Copy, enabled: state.HasSelection, id: "copy"))
+        if (ui.MenuItem(t.CodeCopy, Shortcuts.Copy, enabled: state.Selection.HasSelection, id: "copy"))
         {
             CopySelection(ui, state);
         }
 
-        if (ui.MenuItem(t.CodeCopyPlainText, Shortcuts.CopyPlainText, enabled: state.HasSelection, id: "copy-plain-text"))
+        if (ui.MenuItem(t.CodeCopyPlainText, Shortcuts.CopyPlainText, enabled: state.Selection.HasSelection, id: "copy-plain-text"))
         {
             ui.ClipboardText = GetSelectedText(state);
         }
@@ -1263,7 +1263,7 @@ public static class CodeViewWidget
         if (document.Folds.Length > 0)
         {
             ui.MenuSeparator();
-            var fold = line is not null ? CodeFolding.FindInnermost(state.Folds, line.Value) : null;
+            var fold = line is not null ? CodeFolding.FindInnermost(state.Selection.Folds, line.Value) : null;
             if (ui.MenuItem(t.CodeToggleFold, Shortcuts.ToggleFold, id: "toggle-fold", enabled: fold is not null) && line is not null)
             {
                 ToggleFold(state, line.Value);

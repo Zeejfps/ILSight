@@ -132,7 +132,7 @@ public sealed class IconThemeLoadingTests
         var assets = new MemoryIconAssets().With("bad.svg", "<svg");
         var file = User("bad", json, assets);
 
-        var error = Assert.Single(file.Errors);
+        var error = Assert.Single(file.Json.Errors);
 
         Assert.Equal(problem, error.Problem);
         Assert.Equal(subject, error.Subject);
@@ -146,7 +146,7 @@ public sealed class IconThemeLoadingTests
     {
         var file = User("older", """{ "icons": { "file.exit": { "font": "lucide", "glyph": "E10E" }, "node.class": { "font": "lucide", "glyph": "E061" } } }""");
 
-        Assert.Empty(file.Errors);
+        Assert.Empty(file.Json.Errors);
         Assert.Equal(["node.class"], Assert.IsType<IconThemeContents>(file.Contents).Icons.Keys);
     }
 
@@ -155,7 +155,7 @@ public sealed class IconThemeLoadingTests
     {
         var file = User("sized", """{ "icons": { "node.class": { "font": "lucide", "glyph": "E061", "size": 3 } } }""");
 
-        var error = Assert.Single(file.Errors);
+        var error = Assert.Single(file.Json.Errors);
 
         Assert.Equal((ThemeProblem.UnknownKey, "icons.node.class.size"), (error.Problem, error.Subject));
         Assert.Equal(0xE061, Assert.IsType<IconValue.Glyph>(Assert.IsType<IconThemeContents>(file.Contents).Icons["node.class"]).Codepoint);
@@ -235,7 +235,7 @@ public sealed class IconThemeLoadingTests
             }
             """);
 
-        Assert.Empty(file.Errors);
+        Assert.Empty(file.Json.Errors);
         Assert.Equal(0xE061, Assert.IsType<IconValue.Glyph>(Assert.IsType<IconThemeContents>(file.Contents).Icons["node.class"]).Codepoint);
     }
 

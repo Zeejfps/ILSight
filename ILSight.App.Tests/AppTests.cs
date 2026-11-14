@@ -168,7 +168,7 @@ public sealed class AppTests
 
         app.Frames.ClickOn(Selector.WithText("2 errors")).Frame();
         Assert.True(app.Ui.ErrorDialog.IsOpen);
-        Assert.Equal("Cannot save broken.dll", app.Ui.ErrorDialog.SelectedError?.Words().Title);
+        Assert.Equal("Cannot save broken.dll", app.Ui.ErrorDialog.Selection.Item?.Words().Title);
 
         app.Frames.ClickOn(Selector.WithText("Copy"));
         Assert.Equal(app.AppState.Errors.Entries[1].Words().FullText, app.Frames.Clipboard.Text);
@@ -230,7 +230,7 @@ public sealed class AppTests
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Errors")).Frame();
 
         Assert.True(app.Ui.ErrorDialog.IsOpen);
-        Assert.Equal("Cannot save second.dll", app.Ui.ErrorDialog.SelectedError?.Words().Title);
+        Assert.Equal("Cannot save second.dll", app.Ui.ErrorDialog.Selection.Item?.Words().Title);
     }
 
     [Fact]
@@ -272,7 +272,7 @@ public sealed class AppTests
         Assert.True(app.Frames.Drew("2 errors"));
         app.Frames.ClickOn(Selector.WithText("2 errors")).Frame();
         Assert.True(app.Ui.ErrorDialog.IsOpen);
-        Assert.Equal("Cannot save second.dll", app.Ui.ErrorDialog.SelectedError?.Words().Title);
+        Assert.Equal("Cannot save second.dll", app.Ui.ErrorDialog.Selection.Item?.Words().Title);
     }
 
     [Fact]
@@ -495,9 +495,9 @@ public sealed class AppTests
 
         var search = app.Ui.Search;
         app.Frames.Key(KeyboardKey.DownArrow).Frame();
-        Assert.Same(search.Results.Rows[0], search.Results.SelectedRow);
+        Assert.Same(search.Results.Rows[0], search.Results.Selection.Item);
         app.Frames.Key(KeyboardKey.DownArrow).Frame();
-        Assert.Same(search.Results.Rows[1], search.Results.SelectedRow);
+        Assert.Same(search.Results.Rows[1], search.Results.Selection.Item);
         app.Frames.Key(KeyboardKey.Enter).Frame();
         app.Settle();
 
@@ -534,7 +534,7 @@ public sealed class AppTests
         var app = Searching("Greet", moreRowsThan: 2);
         var search = app.Ui.Search;
         search.Results.Select(search.Results.Rows[search.Results.Rows.Count - 1]);
-        var selectedRow = search.Results.SelectedRow;
+        var selectedRow = search.Results.Selection.Item;
         Assert.NotNull(selectedRow);
         var selected = selectedRow.Node;
         var names = search.Results.Rows.Select(r => r.Text).ToList();
@@ -544,20 +544,20 @@ public sealed class AppTests
         app.Frames.ClickOn(Selector.WithText("Name")).Frame();
         app.RunOut();
         Assert.Equal(names.Order(StringComparer.OrdinalIgnoreCase), search.Results.Rows.Select(r => r.Text));
-        Assert.Same(selected, search.Results.SelectedRow?.Node);
+        Assert.Same(selected, search.Results.Selection.Item?.Node);
         Assert.True(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.SortAscending)));
 
         app.Frames.ClickOn(Selector.WithText("Name")).Frame();
         app.RunOut();
         Assert.Equal(names.OrderDescending(StringComparer.OrdinalIgnoreCase), search.Results.Rows.Select(r => r.Text));
-        Assert.Same(selected, search.Results.SelectedRow?.Node);
+        Assert.Same(selected, search.Results.Selection.Item?.Node);
         Assert.True(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.SortDescending)));
 
         app.Frames.ClickOn(Selector.WithText("Name")).Frame();
         app.RunOut();
         Assert.Equal(SearchSort.Relevance, search.Results.AskedOrder.Sort);
         Assert.Equal(names, search.Results.Rows.Select(r => r.Text));
-        Assert.Same(selected, search.Results.SelectedRow?.Node);
+        Assert.Same(selected, search.Results.Selection.Item?.Node);
 
         app.Frames.ClickOn(Selector.WithText("Assembly")).Frame();
         app.RunOut();

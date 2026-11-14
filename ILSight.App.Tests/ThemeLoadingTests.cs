@@ -134,7 +134,7 @@ public sealed class ThemeLoadingTests
     {
         var file = User("bad", json);
 
-        var error = Assert.Single(file.Errors);
+        var error = Assert.Single(file.Json.Errors);
 
         Assert.Equal(problem, error.Problem);
         Assert.Equal(subject, error.Subject);
@@ -160,7 +160,7 @@ public sealed class ThemeLoadingTests
             }
             """);
 
-        var error = Assert.Single(file.Errors);
+        var error = Assert.Single(file.Json.Errors);
 
         var contents = Assert.IsType<ThemeContents>(file.Contents);
         Assert.Equal((ThemeProblem.NotAColor, 5, "#12345"), (error.Problem, error.Line, error.Detail));

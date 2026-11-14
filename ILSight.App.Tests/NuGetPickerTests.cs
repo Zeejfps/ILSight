@@ -143,7 +143,7 @@ public sealed class NuGetPickerTests : IDisposable
         var picker = OpenPicker(posted);
 
         Assert.Equal("Fixtures", Assert.Single(picker.Browser.Results).Id.Text);
-        Assert.Equal("Fixtures", picker.Browser.Selected?.Id.Text);
+        Assert.Equal("Fixtures", picker.Browser.Selection.Item?.Id.Text);
         Assert.Equal("2.0.0", picker.Browser.Version?.Text);
         var choice = picker.Browser.Choice;
         Assert.NotNull(choice);
@@ -282,7 +282,7 @@ public sealed class NuGetPickerTests : IDisposable
 
         Assert.False(picker.IsFeedUrlValid);
         Assert.Empty(picker.Browser.Results);
-        Assert.Null(picker.Browser.Selected);
+        Assert.Null(picker.Browser.Selection.Item);
         Assert.Equal(requests, _fake.Requested.Count);
     }
 
@@ -344,7 +344,7 @@ public sealed class NuGetPickerTests : IDisposable
 
         var failed = ReadDetails(picker, posted);
         _fake.Answer(DetailsUrl, """{ "catalogEntry": { "licenseExpression": "MIT" } }""");
-        var selected = picker.Browser.Selected;
+        var selected = picker.Browser.Selection.Item;
         Assert.NotNull(selected);
         picker.Browser.RetryDetails(selected, Packages.Version("2.0.0"));
         var retried = ReadDetails(picker, posted);
@@ -357,7 +357,7 @@ public sealed class NuGetPickerTests : IDisposable
     {
         VersionDetails? DetailsNow()
         {
-            var selected = picker.Browser.Selected;
+            var selected = picker.Browser.Selection.Item;
             Assert.NotNull(selected);
             return picker.Browser.EnsureDetails(selected, Packages.Version("2.0.0"));
         }
@@ -422,7 +422,7 @@ public sealed class NuGetPickerTests : IDisposable
         var picker = OpenPicker(posted);
 
         var details = ReadDetails(picker, posted);
-        var selected = picker.Browser.Selected;
+        var selected = picker.Browser.Selection.Item;
         Assert.NotNull(selected);
         var again = picker.Browser.EnsureDetails(selected, Packages.Version("2.0.0"));
 

@@ -52,7 +52,7 @@ public sealed class IconThemeFile : IUserThemeFile<IconThemeFile, IconThemeConte
 
     public required ThemeId<IconThemeFile> Id { get; init; }
 
-    public string File => Json.File;
+    string IThemeFile<IconThemeFile>.File => Json.File;
 
     public required ThemeName Name { get; init; }
 
@@ -61,5 +61,5 @@ public sealed class IconThemeFile : IUserThemeFile<IconThemeFile, IconThemeConte
     /// <summary>The fonts and icons the file sets; null when it could not be read as a JSON object.</summary>
     public IconThemeContents? Contents { get; init; }
 
-    public IReadOnlyList<ThemeError> Errors => Json.Errors;
+    IReadOnlyList<ThemeError> IThemeFile<IconThemeFile>.Errors => Json.Errors;
 }

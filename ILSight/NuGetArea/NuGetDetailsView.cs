@@ -38,7 +38,7 @@ internal static class NuGetDetailsView
         };
         using (ui.Panel(frame))
         {
-            var package = picker.Browser.Selected;
+            var package = picker.Browser.Selection.Item;
             if (package == null)
             {
                 NoSelection(ui);
