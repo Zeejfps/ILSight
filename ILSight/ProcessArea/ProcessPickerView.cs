@@ -29,13 +29,13 @@ internal static class ProcessPickerView
     public static void Open(UiState uiState)
     {
         var picker = uiState.ProcessPicker;
-        Scan(uiState, picker.Browser, picker.Open());
+        Scan(uiState.AppCommands, picker.Browser, picker.Open());
     }
 
     // Runs once the frame is drawn; another scan or closing the dialog cancels it.
-    private static void Scan(UiState uiState, ProcessBrowser browser, WorkTicket scan)
+    private static void Scan(IAppCommandWriter commands, ProcessBrowser browser, WorkTicket scan)
     {
-        Commands.StartSettling(uiState, nameof(ProcessBrowser.ScanAsync), (Browser: browser, Scan: scan), static (_, s, ct) => s.Browser.ScanAsync(s.Scan, ct),
+        Commands.StartSettling(commands, nameof(ProcessBrowser.ScanAsync), (Browser: browser, Scan: scan), static (_, s, ct) => s.Browser.ScanAsync(s.Scan, ct),
             static (_, s, error) => s.Browser.FailScan(s.Scan, error), scan.Token);
     }
 
@@ -61,7 +61,7 @@ internal static class ProcessPickerView
 
         if (open && browser.CanOpen)
         {
-            Commands.OpenFilesLater(ui.State, navigation.BeginOpening(browser.ListToOpen()));
+            Commands.OpenFilesLater(ui.State.AppCommands, navigation.BeginOpening(browser.ListToOpen()));
             ui.RequestUpdate();
             close = true;
         }
@@ -101,7 +101,7 @@ internal static class ProcessPickerView
                 open |= Processes(ui, browser, processListId);
             }
 
-            FollowSelection(ui.State, browser);
+            FollowSelection(ui.State.AppCommands, browser);
 
             using (Pane(ui, 1f - ProcessPaneShare))
             {
@@ -117,7 +117,7 @@ internal static class ProcessPickerView
             ui.Spacer();
             if (ui.Button(t.ProcessPickerRefresh, enabled: browser.Scan is not ProcessScan.Scanning, id: "process-refresh"))
             {
-                Scan(ui.State, browser, browser.StartScan());
+                Scan(ui.State.AppCommands, browser, browser.StartScan());
             }
 
             close |= ui.Button(t.PickerCancel, id: "process-cancel");
@@ -125,20 +125,20 @@ internal static class ProcessPickerView
         }
     }
 
-    private static void FollowSelection(UiState uiState, ProcessBrowser browser)
+    private static void FollowSelection(IAppCommandWriter commands, ProcessBrowser browser)
     {
         var listing = browser.FollowSelection();
         if (listing is not null)
         {
-            ListLater(uiState, browser, listing);
+            ListLater(commands, browser, listing);
         }
     }
 
     // A method of its own, so that the frames that list nothing allocate no closure. Picking another process and
     // closing the dialog cancel the listing's token too.
-    private static void ListLater(UiState uiState, ProcessBrowser browser, ModuleListingTicket listing)
+    private static void ListLater(IAppCommandWriter commands, ProcessBrowser browser, ModuleListingTicket listing)
     {
-        Commands.StartSettling(uiState, nameof(ProcessBrowser.ListModulesAsync), (Browser: browser, Listing: listing),
+        Commands.StartSettling(commands, nameof(ProcessBrowser.ListModulesAsync), (Browser: browser, Listing: listing),
             static (_, s, ct) => s.Browser.ListModulesAsync(s.Listing, ct), static (_, s, error) => s.Browser.FailListing(s.Listing, error), listing.Work.Token);
     }
 

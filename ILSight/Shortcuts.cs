@@ -89,26 +89,26 @@ internal static class Shortcuts
     [
         new Binding { Keys = Search, Run = static (ui, _) => ScreenLayout.OpenSearch(ui.State), WhileTyping = true },
         new Binding { Keys = OmnibarSearch, Run = static (ui, _) => SearchInOmnibarUnlessFolding(ui), WhileTyping = true },
-        new Binding { Keys = Back, Run = static (ui, appState) => GoBack(ui.State, appState), WhileTyping = true },
-        new Binding { Keys = Forward, Run = static (ui, appState) => GoForward(ui.State, appState), WhileTyping = true },
+        new Binding { Keys = Back, Run = static (ui, appState) => GoBack(ui.State.AppCommands, appState), WhileTyping = true },
+        new Binding { Keys = Forward, Run = static (ui, appState) => GoForward(ui.State.AppCommands, appState), WhileTyping = true },
         new Binding { Keys = Open, Run = static (ui, appState) => MainMenuView.OpenFile(ui, appState.ListSession.Navigation) },
         new Binding { Keys = Settings, Run = static (ui, _) => ScreenLayout.OpenPanel(ui.State, DockView.DisplayOptions), WhileTyping = true },
         new Binding { Keys = SaveCode, Run = static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, appState.ListSession.Navigation, appState.Decompiler.Setup.Language) },
         new Binding { Keys = Export, Run = static (ui, appState) => ui.State.ExportSetup.Open(appState.ListSession.Assemblies.Assemblies, Exports.FindActiveAssembly(appState.ListSession.Navigation)) },
-        new Binding { Keys = ReloadAll, Run = static (ui, _) => Commands.ReloadLater(ui.State, ui.State.Tree.ListExpandedPaths()) },
+        new Binding { Keys = ReloadAll, Run = static (ui, _) => Commands.ReloadLater(ui.State.AppCommands, ui.State.Tree.ListExpandedPaths()) },
         new Binding { Keys = CloseTab, Run = static (ui, _) => DocumentPanels.CloseActiveTab(ui.State) },
         new Binding { Keys = NextTab, Run = static (ui, appState) => DocumentPanels.CycleTab(ui.State, appState.ListSession.Navigation, appState.Decompiler.Setup, 1) },
         new Binding { Keys = PreviousTab, Run = static (ui, appState) => DocumentPanels.CycleTab(ui.State, appState.ListSession.Navigation, appState.Decompiler.Setup, -1) },
     ];
 
-    private static void GoBack(UiState screen, AppState appState)
+    private static void GoBack(IAppCommandWriter commands, AppState appState)
     {
-        Commands.MoveLater(screen, appState.ListSession.Navigation.GoBack(appState.ListSession.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
+        Commands.MoveLater(commands, appState.ListSession.Navigation.GoBack(appState.ListSession.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
     }
 
-    private static void GoForward(UiState screen, AppState appState)
+    private static void GoForward(IAppCommandWriter commands, AppState appState)
     {
-        Commands.MoveLater(screen, appState.ListSession.Navigation.GoForward(appState.ListSession.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
+        Commands.MoveLater(commands, appState.ListSession.Navigation.GoForward(appState.ListSession.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
     }
 
     /// <summary>Runs the app-wide shortcuts pressed this frame, and goes back and forward with the
@@ -118,12 +118,12 @@ internal static class Shortcuts
         var input = ui.Input;
         if (input.WasPressed(PointerButton.Back))
         {
-            GoBack(ui.State, appState);
+            GoBack(ui.State.AppCommands, appState);
         }
 
         if (input.WasPressed(PointerButton.Forward))
         {
-            GoForward(ui.State, appState);
+            GoForward(ui.State.AppCommands, appState);
         }
 
         foreach (var binding in Bindings)

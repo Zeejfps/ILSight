@@ -497,7 +497,7 @@ public sealed class CloseAssembliesTests
     {
         using var temp = new TempDir();
         var app = OpenedWithKeyboard(temp);
-        DiagramView.ShowInNewDiagramLater(app.Ui, (await KeyboardKeyOfAsync(app)).Definition, "Keys");
+        DiagramView.ShowInNewDiagramLater(app.Ui.AppCommands, (await KeyboardKeyOfAsync(app)).Definition, "Keys");
         app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Diagram?.Cards.Count > 0, Waits.Patience);
         app.Settle(2);
         var tab = app.AppState.ListSession.Navigation.ActiveTab;

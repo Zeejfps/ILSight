@@ -21,7 +21,7 @@ public sealed class DiagramTests
 
     private static async Task<TypeDiagram> ShowInNewAsync(AppStateDriver d, string type)
     {
-        DiagramView.ShowInNewDiagramLater(d.Ui, await TypeOfAsync(d, type), Names.Diagram(await TypeOfAsync(d, type)));
+        DiagramView.ShowInNewDiagramLater(d.Ui.AppCommands, await TypeOfAsync(d, type), Names.Diagram(await TypeOfAsync(d, type)));
         d.Settle();
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -32,7 +32,7 @@ public sealed class DiagramTests
 
     private static async Task ShowInAsync(AppStateDriver d, string type)
     {
-        DiagramView.ShowInDiagramLater(d.Ui, await TypeOfAsync(d, type), Names.Diagram(await TypeOfAsync(d, type)));
+        DiagramView.ShowInDiagramLater(d.Ui.AppCommands, await TypeOfAsync(d, type), Names.Diagram(await TypeOfAsync(d, type)));
         d.Settle();
     }
 
@@ -198,8 +198,8 @@ public sealed class DiagramTests
         var first = new DiagramMeasures { Cards = all, Links = [] };
         var second = new DiagramMeasures { Cards = [all[0]], Links = [] };
 
-        DiagramFaces.LayOutLater(d.Ui, diagram, first);
-        DiagramFaces.LayOutLater(d.Ui, diagram, second);
+        DiagramFaces.LayOutLater(d.Ui.AppCommands, diagram, first);
+        DiagramFaces.LayOutLater(d.Ui.AppCommands, diagram, second);
         d.Settle();
 
         Assert.NotNull(diagram.Layout);
@@ -211,7 +211,7 @@ public sealed class DiagramTests
     public async Task Closing_a_diagram_drops_what_it_was_reading()
     {
         var d = AppStateDriver.Opened();
-        DiagramView.ShowInNewDiagramLater(d.Ui, await TypeOfAsync(d, "Vehicle"), Names.Diagram(await TypeOfAsync(d, "Vehicle")));
+        DiagramView.ShowInNewDiagramLater(d.Ui.AppCommands, await TypeOfAsync(d, "Vehicle"), Names.Diagram(await TypeOfAsync(d, "Vehicle")));
         d.NextFrame();
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -251,7 +251,7 @@ public sealed class DiagramTests
         var d = AppStateDriver.Opened();
         var member = (await d.FixtureAsync("Greeter").GetChildAsync("Twice() : int")).Definition;
 
-        DiagramView.ShowInNewDiagramLater(d.Ui, member, Names.Diagram(member));
+        DiagramView.ShowInNewDiagramLater(d.Ui.AppCommands, member, Names.Diagram(member));
         d.Settle();
 
         var refused = Assert.IsType<Refusal.TypeNotDiagrammed>(d.AppState.Refusals.Shown);

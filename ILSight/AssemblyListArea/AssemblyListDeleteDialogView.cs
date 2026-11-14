@@ -42,7 +42,7 @@ internal static class AssemblyListDeleteDialogView
 
                     if (ui.Button(t.ListsDeleteConfirm, id: "delete-confirm", variant: ButtonVariant.Primary))
                     {
-                        Commands.OpenListLater(ui.State, Delete(dialog, lists, session, view, name));
+                        Commands.OpenListLater(ui.State.AppCommands, Delete(dialog, lists, session, view, name));
                         ui.RequestUpdate();
                     }
                 }

@@ -210,10 +210,10 @@ internal static class MainMenuView
             new(t.FileFilterAssembliesAndPackages, ["*.dll", "*.exe", "*.winmd", "*.wasm", "*.nupkg", "*.zip"]),
             new(t.FileFilterAll, ["*.*"]),
         ];
-        ui.PickFile(t.FileOpenTitle, null, filters, path => OpenPicked(screen, navigation, path));
+        ui.PickFile(t.FileOpenTitle, null, filters, path => OpenPicked(screen.AppCommands, navigation, path));
     }
 
-    private static void OpenPicked(UiState screen, Navigation navigation, string path)
+    private static void OpenPicked(IAppCommandWriter commands, Navigation navigation, string path)
     {
         var file = AssemblyPath.Parse(path);
         if (file is null)
@@ -221,7 +221,7 @@ internal static class MainMenuView
             return;
         }
 
-        Commands.OpenFilesLater(screen, navigation.BeginOpening([file]));
+        Commands.OpenFilesLater(commands, navigation.BeginOpening([file]));
     }
 
     private static void FileMenu(Ui<UiState> ui, AppState appState)
@@ -278,12 +278,12 @@ internal static class MainMenuView
         var t = ui.State.Appearance.Strings;
         if (ui.MenuItem(t.ViewBack, Shortcuts.Back, enabled: appState.ListSession.Navigation.CanGoBack, id: "back"))
         {
-            Commands.MoveLater(ui.State, appState.ListSession.Navigation.GoBack(appState.ListSession.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
+            Commands.MoveLater(ui.State.AppCommands, appState.ListSession.Navigation.GoBack(appState.ListSession.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
         }
 
         if (ui.MenuItem(t.ViewForward, Shortcuts.Forward, enabled: appState.ListSession.Navigation.CanGoForward, id: "forward"))
         {
-            Commands.MoveLater(ui.State, appState.ListSession.Navigation.GoForward(appState.ListSession.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
+            Commands.MoveLater(ui.State.AppCommands, appState.ListSession.Navigation.GoForward(appState.ListSession.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
         }
 
         ui.MenuSeparator();
@@ -328,7 +328,7 @@ internal static class MainMenuView
             var id = catalog.Ids[i];
             if (ui.MenuRadioItem(names[i], current == id, id: id.Text))
             {
-                Commands.Later(ui.State, id, static (a, theme) => a.ChosenThemes.ChooseTheme(theme));
+                Commands.Later(ui.State.AppCommands, id, static (a, theme) => a.ChosenThemes.ChooseTheme(theme));
             }
         }
     }
@@ -352,7 +352,7 @@ internal static class MainMenuView
         var selected = current == visibility;
         if (ui.MenuRadioItem(label, selected))
         {
-            Commands.Later(ui.State, visibility, static (a, v) => a.ApiVisibility = v);
+            Commands.Later(ui.State.AppCommands, visibility, static (a, v) => a.ApiVisibility = v);
         }
     }
 
@@ -455,7 +455,7 @@ internal static class MainMenuView
             var (locale, endonym) = locales[i];
             if (ui.MenuRadioItem(endonym, current == locale))
             {
-                Commands.Later(ui.State, locale, static (a, l) => a.Locale = l);
+                Commands.Later(ui.State.AppCommands, locale, static (a, l) => a.Locale = l);
             }
         }
     }

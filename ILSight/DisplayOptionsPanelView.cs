@@ -192,7 +192,7 @@ internal static class DisplayOptionsPanelView
         var picked = PickFrom(ui, "theme", labels, current, themes.Ids, themes.Revision);
         if (picked is not null)
         {
-            Commands.Later(ui.State, themes.Ids[picked.Value], static (a, theme) => a.ChosenThemes.ChooseTheme(theme));
+            Commands.Later(ui.State.AppCommands, themes.Ids[picked.Value], static (a, theme) => a.ChosenThemes.ChooseTheme(theme));
         }
     }
 
@@ -204,7 +204,7 @@ internal static class DisplayOptionsPanelView
             return;
         }
 
-        Commands.Later(ui.State, (screen: ui.State, t), static (a, s) => CustomizeTheme(s.screen, a, s.t));
+        Commands.Later(ui.State.AppCommands, (screen: ui.State, t), static (a, s) => CustomizeTheme(s.screen, a, s.t));
     }
 
     private static void CustomizeTheme(UiState screen, AppState appState, Strings t)
@@ -228,7 +228,7 @@ internal static class DisplayOptionsPanelView
             return;
         }
 
-        Commands.Later(ui.State, ui.State, static (a, screen) => OpenFolder(screen, a.UserThemes.PrepareFolder()));
+        Commands.Later(ui.State.AppCommands, ui.State, static (a, screen) => OpenFolder(screen, a.UserThemes.PrepareFolder()));
     }
 
     private static void ReloadThemesButton(Ui<UiState> ui)
@@ -236,7 +236,7 @@ internal static class DisplayOptionsPanelView
         var t = ui.State.Appearance.Strings;
         if (ui.IconButton("reload-themes", ui.State.Appearance.Icons.OptionsReloadThemes, t.DisplayOptionsReloadThemes, variant: ButtonVariant.Neutral))
         {
-            Commands.Later(ui.State, static a => a.UserThemes.ReloadThemes());
+            Commands.Later(ui.State.AppCommands, static a => a.UserThemes.ReloadThemes());
         }
     }
 
@@ -261,7 +261,7 @@ internal static class DisplayOptionsPanelView
         var picked = PickFrom(ui, "icon-theme", labels, current, themes.Ids, themes.Revision);
         if (picked is not null)
         {
-            Commands.Later(ui.State, themes.Ids[picked.Value], static (a, theme) => a.ChosenThemes.ChooseIconTheme(theme));
+            Commands.Later(ui.State.AppCommands, themes.Ids[picked.Value], static (a, theme) => a.ChosenThemes.ChooseIconTheme(theme));
         }
     }
 
@@ -273,7 +273,7 @@ internal static class DisplayOptionsPanelView
             return;
         }
 
-        Commands.Later(ui.State, (screen: ui.State, t), static (a, s) => CustomizeIconTheme(s.screen, a, s.t));
+        Commands.Later(ui.State.AppCommands, (screen: ui.State, t), static (a, s) => CustomizeIconTheme(s.screen, a, s.t));
     }
 
     private static void CustomizeIconTheme(UiState screen, AppState appState, Strings t)
@@ -297,7 +297,7 @@ internal static class DisplayOptionsPanelView
             return;
         }
 
-        Commands.Later(ui.State, ui.State, static (a, screen) => OpenFolder(screen, a.UserIconThemes.PrepareFolder()));
+        Commands.Later(ui.State.AppCommands, ui.State, static (a, screen) => OpenFolder(screen, a.UserIconThemes.PrepareFolder()));
     }
 
     private static void OpenFolder(UiState screen, string? folder)
@@ -313,7 +313,7 @@ internal static class DisplayOptionsPanelView
         var t = ui.State.Appearance.Strings;
         if (ui.IconButton("reload-icon-themes", ui.State.Appearance.Icons.OptionsReloadIconThemes, t.DisplayOptionsReloadIconThemes, variant: ButtonVariant.Neutral))
         {
-            Commands.Later(ui.State, static a => a.UserIconThemes.ReloadThemes());
+            Commands.Later(ui.State.AppCommands, static a => a.UserIconThemes.ReloadThemes());
         }
     }
 
@@ -359,7 +359,7 @@ internal static class DisplayOptionsPanelView
         var picked = PickFrom(ui, "language", LocaleLabels, Locales.FindIndex(chosen));
         if (picked is not null)
         {
-            Commands.Later(ui.State, Locales.All[picked.Value].Locale, static (a, locale) => a.Locale = locale);
+            Commands.Later(ui.State.AppCommands, Locales.All[picked.Value].Locale, static (a, locale) => a.Locale = locale);
         }
     }
 

@@ -366,7 +366,7 @@ public static class DocumentPanels
     internal static string OpenTabForPanel(UiState uiState)
     {
         var panel = uiState.Documents.CreatePanel();
-        Commands.Later(uiState, (uiState, panel), static (a, s) => QueuedCommands.OpenTabIn(s.uiState, a, s.panel, focus: false));
+        Commands.Later(uiState.AppCommands, (uiState, panel), static (a, s) => QueuedCommands.OpenTabIn(s.uiState, a, s.panel, focus: false));
         return panel;
     }
 
@@ -391,7 +391,7 @@ public static class DocumentPanels
         }
 
         uiState.Documents.RemoveView(tab);
-        Commands.Later(uiState, (uiState, tab), static (a, s) => QueuedCommands.CloseTabAndFocusNext(s.uiState, a, s.tab));
+        Commands.Later(uiState.AppCommands, (uiState, tab), static (a, s) => QueuedCommands.CloseTabAndFocusNext(s.uiState, a, s.tab));
     }
 
     /// <summary>Focuses the tab of the panel the layout focuses now, else the first group's front tab, among
@@ -409,7 +409,7 @@ public static class DocumentPanels
             return;
         }
 
-        FocusTab(uiState, navigation, setup, next);
+        FocusTab(uiState.AppCommands, navigation, setup, next);
     }
 
     // Loops, not LINQ, so it allocates nothing.
@@ -454,9 +454,9 @@ public static class DocumentPanels
         return FindFrontTab(uiState, split.Second);
     }
 
-    private static void FocusTab(UiState uiState, Navigation navigation, DecompilerSetup setup, DocumentTab tab)
+    private static void FocusTab(IAppCommandWriter commands, Navigation navigation, DecompilerSetup setup, DocumentTab tab)
     {
-        Commands.DecompileLater(uiState, navigation.FocusTab(tab, setup));
+        Commands.DecompileLater(commands, navigation.FocusTab(tab, setup));
     }
 
     /// <summary>Focuses another tab when the active one was closed by a feature, as <see cref="FocusNextTab"/> does,
@@ -502,7 +502,7 @@ public static class DocumentPanels
         }
 
         uiState.MainLayout.Dock.Activate(DocumentPanels.GetPanel(uiState.Documents, tab));
-        FocusTab(uiState, navigation, setup, tab);
+        FocusTab(uiState.AppCommands, navigation, setup, tab);
     }
 
     /// <summary>Called after the documents are drawn: makes the tab the user last pressed, docked or brought to
@@ -522,7 +522,7 @@ public static class DocumentPanels
             return;
         }
 
-        FocusTab(uiState, navigation, setup, tab);
+        FocusTab(uiState.AppCommands, navigation, setup, tab);
     }
 
     /// <summary>Brings the next tab of the active tab's group to the front, or the previous one, as
@@ -740,7 +740,7 @@ public static class DocumentPanels
         var setup = decompiler.Setup;
         foreach (var tab in ListFrontTabs(uiState))
         {
-            Commands.DecompileLater(uiState, Decompilation.StartDecompilingAgainIfOutdated(tab, setup.Language, setup.Options));
+            Commands.DecompileLater(uiState.AppCommands, Decompilation.StartDecompilingAgainIfOutdated(tab, setup.Language, setup.Options));
         }
     }
 

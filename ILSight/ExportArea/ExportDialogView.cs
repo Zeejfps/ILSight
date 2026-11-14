@@ -413,7 +413,7 @@ internal static class ExportDialogView
         var on = DecompilerToggles.IsOn(options, toggle);
         if (ui.Checkbox(label, ref on, id: name, compact: true))
         {
-            Commands.Later(ui.State, (toggle, on), static (a, s) => Preferences.SetDecompilerToggle(a, s.toggle, s.on));
+            Commands.Later(ui.State.AppCommands, (toggle, on), static (a, s) => Preferences.SetDecompilerToggle(a, s.toggle, s.on));
         }
     }
 
@@ -490,7 +490,7 @@ internal static class ExportDialogView
             ui.Text(BlockerText(t, blocker), color: color, size: theme.FontSizeSmall, wrap: true);
             if (blocker is ExportBlocker.CheckFailed && ui.Button(t.NugetRetry, id: "export-check-retry", variant: ButtonVariant.Ghost))
             {
-                RetryCheck(ui.State, setup.Files);
+                RetryCheck(ui.State.AppCommands, setup.Files);
             }
 
             if (ui.Button(t.ExportCancel, id: "export-cancel", variant: ButtonVariant.Ghost))
@@ -500,13 +500,13 @@ internal static class ExportDialogView
 
             if (ui.Button(t.ExportConfirm, enabled: blocker is null, id: "export-start", variant: ButtonVariant.Primary))
             {
-                Commands.Later(ui.State, setup, static (a, s) => Start(s, a));
+                Commands.Later(ui.State.AppCommands, setup, static (a, s) => Start(s, a));
             }
         }
     }
 
     // The disk is asked once the frame is drawn, but the dialog shows it being looked at from this frame on.
-    private static void RetryCheck(UiState uiState, ExportFileChecks files)
+    private static void RetryCheck(IAppCommandWriter commands, ExportFileChecks files)
     {
         var check = files.Retry();
         if (check is null)
@@ -514,7 +514,7 @@ internal static class ExportDialogView
             return;
         }
 
-        Commands.StartSettling(uiState, nameof(CheckExportFilesHandler), (Files: files, Check: check),
+        Commands.StartSettling(commands, nameof(CheckExportFilesHandler), (Files: files, Check: check),
             static (a, s, ct) => a.CheckExportFilesHandler.HandleAsync(s.Files, s.Check, ct), static (_, s, error) => s.Files.Fail(s.Check, error.Message));
     }
 

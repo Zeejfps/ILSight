@@ -193,7 +193,7 @@ public sealed class AppTests
 
         app.Frames.Run(app.Frames.FrameTime, ui => app.App.RunFrame(ui, (drawn, _) =>
         {
-            Commands.Later(drawn.State, ran, static (_, r) => r.Add("queued before the failure"));
+            Commands.Later(drawn.State.AppCommands, ran, static (_, r) => r.Add("queued before the failure"));
             throw failure;
         }));
 

@@ -103,12 +103,12 @@ internal static class DocumentsView
         if (picked.Target is not null && node is not null)
         {
             var load = navigation.ShowMetadataLink(session, node, picked.Target.Value, picked.InNewTab, setup);
-            Commands.DecompileLater(ui.State, load);
+            Commands.DecompileLater(ui.State.AppCommands, load);
         }
 
         if (picked.Definition != null)
         {
-            Commands.FollowLater(ui.State, picked.Definition, navigation.BeginResolving(picked.InNewTab));
+            Commands.FollowLater(ui.State.AppCommands, picked.Definition, navigation.BeginResolving(picked.InNewTab));
         }
     }
 
@@ -134,20 +134,20 @@ internal static class DocumentsView
         var closed = tab.Load.ClosedAssembly;
         if (closed is not null && !intent.CanRunWhenClosed)
         {
-            Commands.RefuseLater(ui.State, new Refusal.AssemblyClosed { Assembly = closed });
+            Commands.RefuseLater(ui.State.AppCommands, new Refusal.AssemblyClosed { Assembly = closed });
             return;
         }
 
         intent.Switch((ui, navigation, tab),
-            navigate: static (s, navigate) => Commands.FollowLater(s.ui.State, navigate.Target, s.navigation.BeginResolving(navigate.InNewTab)),
-            toggleBookmark: static (s, toggle) => Commands.Later(s.ui.State, (screen: s.ui.State, s.tab, line: toggle.Line, t: s.ui.State.Appearance.Strings),
+            navigate: static (s, navigate) => Commands.FollowLater(s.ui.State.AppCommands, navigate.Target, s.navigation.BeginResolving(navigate.InNewTab)),
+            toggleBookmark: static (s, toggle) => Commands.Later(s.ui.State.AppCommands, (screen: s.ui.State, s.tab, line: toggle.Line, t: s.ui.State.Appearance.Strings),
                 static (a, s) => ToggleLineBookmark(s.screen, a, s.tab, s.line, s.t)),
             analyze: static (s, analyze) => Commands.AnalyzeLater(s.ui.State, analyze.Entity),
-            showInMetadata: static (s, metadata) => Commands.ShowInMetadataLater(s.ui.State, metadata.Target, s.navigation.BeginResolving(inNewTab: false)),
-            showInApiReference: static (s, reference) => Commands.Start(s.ui.State, nameof(ShowInApiReferenceHandler), reference.Entity,
+            showInMetadata: static (s, metadata) => Commands.ShowInMetadataLater(s.ui.State.AppCommands, metadata.Target, s.navigation.BeginResolving(inNewTab: false)),
+            showInApiReference: static (s, reference) => Commands.Start(s.ui.State.AppCommands, nameof(ShowInApiReferenceHandler), reference.Entity,
                 static (a, entity, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, entity, ct)),
-            showInDiagram: static (s, diagram) => DiagramView.ShowInDiagramLater(s.ui.State, diagram.Type, s.ui.State.Appearance.Strings.DiagramTitle(diagram.Type.Name)),
-            showInNewDiagram: static (s, diagram) => DiagramView.ShowInNewDiagramLater(s.ui.State, diagram.Type, s.ui.State.Appearance.Strings.DiagramTitle(diagram.Type.Name)));
+            showInDiagram: static (s, diagram) => DiagramView.ShowInDiagramLater(s.ui.State.AppCommands, diagram.Type, s.ui.State.Appearance.Strings.DiagramTitle(diagram.Type.Name)),
+            showInNewDiagram: static (s, diagram) => DiagramView.ShowInNewDiagramLater(s.ui.State.AppCommands, diagram.Type, s.ui.State.Appearance.Strings.DiagramTitle(diagram.Type.Name)));
     }
 
     private static void Zoom(UiState uiState, CodeZoom zoom)

@@ -143,7 +143,7 @@ internal static class StatusBarView
         var i = ui.Pressable(ui.GetId("refusal"), enabled: true, out var activated, out var ring);
         if (i.Clicked)
         {
-            Commands.Later(ui.State, static a => a.Refusals.Dismiss());
+            Commands.Later(ui.State.AppCommands, static a => a.Refusals.Dismiss());
         }
 
         if (activated && items is not null)

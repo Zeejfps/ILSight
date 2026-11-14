@@ -182,7 +182,7 @@ internal static class SearchPanelView
             var row = PickSelected(search.Results);
             if (row != null)
             {
-                Commands.DecompileLater(ui.State, navigation.ShowNode(row.Node, setup));
+                Commands.DecompileLater(ui.State.AppCommands, navigation.ShowNode(row.Node, setup));
             }
 
             return;
@@ -257,7 +257,7 @@ internal static class SearchPanelView
         if (clicked >= 0)
         {
             var sorting = results.StartSort(SortOf(clicked));
-            Commands.StartSettling(ui.State, nameof(Searches.SortAsync), (results, sorting), static (_, s, ct) => Searches.SortAsync(s.results, s.sorting, ct),
+            Commands.StartSettling(ui.State.AppCommands, nameof(Searches.SortAsync), (results, sorting), static (_, s, ct) => Searches.SortAsync(s.results, s.sorting, ct),
                 static (_, s, _) => s.results.FailSort(s.sorting), sorting.Work.Token);
         }
 
@@ -308,7 +308,7 @@ internal static class SearchPanelView
         var selected = results.Selection.Item;
         if (body.Activated && selected != null)
         {
-            Commands.DecompileLater(ui.State, navigation.ShowNode(selected.Node, setup, body.InNewTab));
+            Commands.DecompileLater(ui.State.AppCommands, navigation.ShowNode(selected.Node, setup, body.InNewTab));
         }
     }
 
@@ -323,7 +323,7 @@ internal static class SearchPanelView
         {
             if (row.Interaction.Clicked)
             {
-                Commands.DecompileLater(ui.State, navigation.ShowNode(node, setup));
+                Commands.DecompileLater(ui.State.AppCommands, navigation.ShowNode(node, setup));
             }
 
             NameCell(ui, row, result);

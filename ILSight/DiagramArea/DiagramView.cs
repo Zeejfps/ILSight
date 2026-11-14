@@ -379,7 +379,7 @@ internal static class DiagramView
         view.PressOn(hit);
     }
 
-    private static void OpenCode(UiState screen, Navigation navigation, TypeDiagram diagram, CardRow? row, bool inNewTab)
+    private static void OpenCode(IAppCommandWriter commands, Navigation navigation, TypeDiagram diagram, CardRow? row, bool inNewTab)
     {
         if (row is null)
         {
@@ -392,7 +392,7 @@ internal static class DiagramView
             return;
         }
 
-        Commands.FollowLater(screen, target, navigation.BeginResolvingFromDiagram(diagram, inNewTab));
+        Commands.FollowLater(commands, target, navigation.BeginResolvingFromDiagram(diagram, inNewTab));
     }
 
     private static void Pan(Ui<UiState> ui, DiagramViewState view, Interaction i)
@@ -449,7 +449,7 @@ internal static class DiagramView
         }
         if (i.ClickedWith(PointerButton.Middle))
         {
-            OpenCode(ui.State, navigation, diagram, RowOf(hit), inNewTab: true);
+            OpenCode(ui.State.AppCommands, navigation, diagram, RowOf(hit), inNewTab: true);
             return;
         }
         if (!i.Clicked)
@@ -463,7 +463,7 @@ internal static class DiagramView
         }
 
         Pick(view, view.PressedOn);
-        OpenCode(ui.State, navigation, diagram, RowOf(view.PressedOn), IsCommandHeld(ui.Input.Modifiers));
+        OpenCode(ui.State.AppCommands, navigation, diagram, RowOf(view.PressedOn), IsCommandHeld(ui.Input.Modifiers));
     }
 
     private static void OpenMenu(Ui<UiState> ui, DiagramViewState view, DiagramHit hit)
@@ -708,25 +708,25 @@ internal static class DiagramView
 
         ui.HideTooltip();
         var inNewTab = click.Button == PointerButton.Middle || IsCommandHeld(ui.Input.Modifiers);
-        Commands.FollowLater(ui.State, reference, navigation.BeginResolvingFromDiagram(diagram, inNewTab));
+        Commands.FollowLater(ui.State.AppCommands, reference, navigation.BeginResolvingFromDiagram(diagram, inNewTab));
     }
 
     /// <summary>Asks for the type <paramref name="type"/> points at to be shown on the diagram the user last worked
     /// in once the frame is drawn, on a new one titled <paramref name="newTitle"/> when none is open
     /// (<see cref="Diagrams.ShowInDiagram"/>), and for its card and those of its neighbours to be read then, on a
     /// token closing the diagram cancels.</summary>
-    internal static void ShowInDiagramLater(UiState uiState, CodeReference.Entity type, string newTitle)
+    internal static void ShowInDiagramLater(IAppCommandWriter commands, CodeReference.Entity type, string newTitle)
     {
-        Commands.StartSettlingLater(uiState, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, newTitle), static (a, s) => Diagrams.ShowInDiagram(a.ListSession.Navigation, s.type, s.newTitle),
+        Commands.StartSettlingLater(commands, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, newTitle), static (a, s) => Diagrams.ShowInDiagram(a.ListSession.Navigation, s.type, s.newTitle),
             static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token,
             static (_, read, error) => read.Diagram.FailReading(read.Read, error.Message));
     }
 
     /// <summary>As <see cref="ShowInDiagramLater"/>, on a new diagram titled <paramref name="title"/>
     /// (<see cref="Diagrams.ShowInNewDiagram"/>).</summary>
-    internal static void ShowInNewDiagramLater(UiState uiState, CodeReference.Entity type, string title)
+    internal static void ShowInNewDiagramLater(IAppCommandWriter commands, CodeReference.Entity type, string title)
     {
-        Commands.StartSettlingLater(uiState, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, title), static (a, s) => Diagrams.ShowInNewDiagram(a.ListSession.Navigation, s.type, s.title),
+        Commands.StartSettlingLater(commands, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, title), static (a, s) => Diagrams.ShowInNewDiagram(a.ListSession.Navigation, s.type, s.title),
             static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token,
             static (_, read, error) => read.Diagram.FailReading(read.Read, error.Message));
     }
@@ -735,7 +735,7 @@ internal static class DiagramView
     private static void StartExpanding(UiState uiState, string name, TypeDiagram diagram, TypeCard card,
         Func<AppState, (TypeDiagram Diagram, TypeCard Card), ExpansionRead, CancellationToken, Task> run)
     {
-        Commands.StartSettlingLater<(TypeDiagram Diagram, TypeCard Card), ExpansionRead>(uiState, name, (diagram, card), static (_, s) => ExpansionRead.Start(s.Diagram, s.Card), run,
+        Commands.StartSettlingLater<(TypeDiagram Diagram, TypeCard Card), ExpansionRead>(uiState.AppCommands, name, (diagram, card), static (_, s) => ExpansionRead.Start(s.Diagram, s.Card), run,
             static read => read.Diagram.Token, static (_, read, error) => read.Diagram.FailReading(read.Read, error.Message));
     }
 
@@ -767,12 +767,12 @@ internal static class DiagramView
         var t = ui.State.Appearance.Strings;
         if (ui.MenuItem(t.TreeOpen, id: "open"))
         {
-            Commands.FollowLater(ui.State, card.Type, navigation.BeginResolvingFromDiagram(diagram, inNewTab: false));
+            Commands.FollowLater(ui.State.AppCommands, card.Type, navigation.BeginResolvingFromDiagram(diagram, inNewTab: false));
         }
 
         if (ui.MenuItem(t.TreeOpenInNewTab, id: "open-in-new-tab"))
         {
-            Commands.FollowLater(ui.State, card.Type, navigation.BeginResolvingFromDiagram(diagram, inNewTab: true));
+            Commands.FollowLater(ui.State.AppCommands, card.Type, navigation.BeginResolvingFromDiagram(diagram, inNewTab: true));
         }
 
         ui.MenuSeparator();
@@ -780,7 +780,7 @@ internal static class DiagramView
         ui.MenuSeparator();
         if (ui.MenuItem(t.DiagramRemove, id: "remove"))
         {
-            Commands.Later(ui.State, (view, diagram, card), static (_, s) => Remove(s.view, s.diagram, s.card));
+            Commands.Later(ui.State.AppCommands, (view, diagram, card), static (_, s) => Remove(s.view, s.diagram, s.card));
         }
     }
 

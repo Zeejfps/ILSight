@@ -40,7 +40,7 @@ internal static class DecompilerOptionsPanelView
             ui.Separator(theme.IconSize);
             if (ui.IconButton("reset", ui.State.Appearance.Icons.OptionsResetDecompiler, t.DecompilerOptionsReset, options.HasChanges))
             {
-                Commands.Later(ui.State, static a => Preferences.ResetDecompilerToggles(a));
+                Commands.Later(ui.State.AppCommands, static a => Preferences.ResetDecompilerToggles(a));
             }
         }
         ui.Separator();
@@ -147,7 +147,7 @@ internal static class DecompilerOptionsPanelView
                 : ui.Checkbox(title, ref all, id: "all", enabled: allowed, width: Sizing.Grow(), bold: bold);
             if (flipped)
             {
-                Commands.Later(ui.State, (toggles: section.Toggles, on: all == true), static (a, s) => Preferences.SetDecompilerToggles(a, s.toggles, s.on));
+                Commands.Later(ui.State.AppCommands, (toggles: section.Toggles, on: all == true), static (a, s) => Preferences.SetDecompilerToggles(a, s.toggles, s.on));
             }
         }
         if (!allowed && tooNew is not null)
@@ -257,7 +257,7 @@ internal static class DecompilerOptionsPanelView
                 : ui.Checkbox(label, ref on, id: toggle.Name, enabled: enabled, width: Sizing.Grow(), bold: bold);
             if (flipped)
             {
-                Commands.Later(ui.State, (toggle, on), static (a, s) => Preferences.SetDecompilerToggle(a, s.toggle, s.on));
+                Commands.Later(ui.State.AppCommands, (toggle, on), static (a, s) => Preferences.SetDecompilerToggle(a, s.toggle, s.on));
             }
         }
     }

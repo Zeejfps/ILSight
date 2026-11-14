@@ -94,7 +94,7 @@ internal static class AboutDialogView
             return;
         }
 
-        Commands.StartSettling(ui.State, nameof(AppUpdates.CheckAsync), check, static (a, c, ct) => a.Updates.CheckAsync(c, ct),
+        Commands.StartSettling(ui.State.AppCommands, nameof(AppUpdates.CheckAsync), check, static (a, c, ct) => a.Updates.CheckAsync(c, ct),
             static (a, c, _) => a.Updates.FailCheck(c));
     }
 
@@ -107,7 +107,7 @@ internal static class AboutDialogView
             return;
         }
 
-        Commands.StartSettling(ui.State, nameof(AppUpdates.RestartToUpdateAsync), restart,
+        Commands.StartSettling(ui.State.AppCommands, nameof(AppUpdates.RestartToUpdateAsync), restart,
             static (a, r, ct) => a.Updates.RestartToUpdateAsync(r, a.ViewCommands, ct), static (a, r, _) => a.Updates.FailRestart(r));
     }
 
@@ -157,7 +157,7 @@ internal static class AboutDialogView
         var check = isCheckAutomatic;
         if (ui.Checkbox(t.AboutCheckAutomatically, ref check, id: "about-check-automatically", compact: true))
         {
-            Commands.Later(ui.State, check, static (a, on) => a.IsUpdateCheckAutomatic = on);
+            Commands.Later(ui.State.AppCommands, check, static (a, on) => a.IsUpdateCheckAutomatic = on);
         }
     }
 

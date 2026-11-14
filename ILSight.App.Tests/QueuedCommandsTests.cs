@@ -11,10 +11,10 @@ public sealed class QueuedCommandsTests
         d.Ui.AppCommands.Enqueue(static _ => throw new InvalidOperationException("broken"));
         d.Ui.AppCommands.Enqueue(_ => ranAfter = true);
 
-        d.InTurn(() => QueuedCommands.RunAppCommands(d.Ui, d.AppState));
+        d.InTurn(() => QueuedCommands.RunAppCommands(d.Ui.AppCommands, d.AppState));
 
         Assert.True(ranAfter);
-        Assert.Empty(d.Ui.AppCommands);
+        Assert.True(d.Ui.AppCommands.IsEmpty);
         var problem = Assert.IsType<AppProblem.Unexpected>(Assert.Single(d.AppState.Errors.Entries).Problem);
         Assert.Equal("broken", problem.Error.Message);
     }

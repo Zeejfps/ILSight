@@ -148,12 +148,12 @@ internal static class OmnibarView
         ui.Tooltip(i.Id, NodeText.Tooltip(node));
         if (i.Clicked)
         {
-            Commands.DecompileLater(ui.State, PickNode(navigation, node, IsCommandHeld(ui), setup));
+            Commands.DecompileLater(ui.State.AppCommands, PickNode(navigation, node, IsCommandHeld(ui), setup));
         }
 
         if (i.ClickedWith(PointerButton.Middle))
         {
-            Commands.DecompileLater(ui.State, navigation.ShowNode(node, setup, inNewTab: true));
+            Commands.DecompileLater(ui.State.AppCommands, navigation.ShowNode(node, setup, inNewTab: true));
         }
     }
 
@@ -340,7 +340,7 @@ internal static class OmnibarView
         }
 
         omnibar.CloseMenu();
-        Commands.DecompileLater(ui.State, PickNode(navigation, node, picked.InNewTab, setup));
+        Commands.DecompileLater(ui.State.AppCommands, PickNode(navigation, node, picked.InNewTab, setup));
     }
 
     private static bool Filter(Ui<UiState> ui, CrumbMenu menu, IReadOnlyList<BrowseNode> shown)
@@ -465,7 +465,7 @@ internal static class OmnibarView
         }
 
         omnibar.StopSearch();
-        Commands.DecompileLater(ui.State, navigation.ShowNode(match.Node, setup, clicked.InNewTab));
+        Commands.DecompileLater(ui.State.AppCommands, navigation.ShowNode(match.Node, setup, clicked.InNewTab));
     }
 
     private static void SyntaxTooltip(Ui<UiState> ui, Omnibar omnibar, int fieldId)

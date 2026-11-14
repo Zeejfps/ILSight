@@ -246,7 +246,7 @@ public sealed class SavedDocumentsTests : IDisposable
         Assert.NotNull(greeter);
         MoveRightOf(app, greeter, outline);
         app.Show(await app.FixtureAsync("Farewell"), 4);
-        DiagramView.ShowInNewDiagramLater(app.Ui, (await app.FixtureAsync("Vehicle")).Definition, Names.Diagram((await app.FixtureAsync("Vehicle")).Definition));
+        DiagramView.ShowInNewDiagramLater(app.Ui.AppCommands, (await app.FixtureAsync("Vehicle")).Definition, Names.Diagram((await app.FixtureAsync("Vehicle")).Definition));
         app.Settle(2);
         var diagram = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(diagram);

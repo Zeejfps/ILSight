@@ -20,7 +20,7 @@ internal static class FrameworkPickerView
             return;
         }
 
-        Commands.StartSettling(uiState, nameof(FrameworkBrowser.ScanAsync), (Browser: picker.Browser, Scan: scan), static (_, s, ct) => s.Browser.ScanAsync(s.Scan, ct),
+        Commands.StartSettling(uiState.AppCommands, nameof(FrameworkBrowser.ScanAsync), (Browser: picker.Browser, Scan: scan), static (_, s, ct) => s.Browser.ScanAsync(s.Scan, ct),
             static (_, s, error) => s.Browser.FailScan(s.Scan, error));
     }
 
@@ -77,7 +77,7 @@ internal static class FrameworkPickerView
 
         if (open && browser.HasSelection)
         {
-            Commands.OpenFilesLater(ui.State, navigation.BeginOpening(ListPaths(browser.ListSelected())));
+            Commands.OpenFilesLater(ui.State.AppCommands, navigation.BeginOpening(ListPaths(browser.ListSelected())));
             ui.RequestUpdate();
             close = true;
         }

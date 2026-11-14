@@ -78,7 +78,7 @@ internal static class ComparisonView
             ui.Separator(ui.Theme.IconSize);
             if (ui.IconButton("swap", icons.ComparisonSwap, why ?? t.ComparisonSwap, enabled: why is null))
             {
-                Commands.CompareLater(ui.State, Comparisons.SwapComparedAssemblies(assemblies, comparison));
+                Commands.CompareLater(ui.State.AppCommands, Comparisons.SwapComparedAssemblies(assemblies, comparison));
             }
 
             ui.Separator(ui.Theme.IconSize);
@@ -101,7 +101,7 @@ internal static class ComparisonView
         var all = comparison.Scope == ApiScope.AllDeclared;
         if (ui.Checkbox(ui.State.Appearance.Strings.ComparisonShowHiddenMembers, ref all, id: "show-hidden-members", enabled: enabled))
         {
-            Commands.CompareLater(ui.State, Comparisons.ChangeComparedScope(assemblies, comparison, ScopeOf(all)));
+            Commands.CompareLater(ui.State.AppCommands, Comparisons.ChangeComparedScope(assemblies, comparison, ScopeOf(all)));
         }
     }
 
@@ -175,7 +175,7 @@ internal static class ComparisonView
         var result = ui.TreeView(TreeId, rows.Roots, rows, rows.View, box);
         if (result.Activated)
         {
-            Open(ui.State, navigation, result.Node, inNewTab: false);
+            Open(ui.State.AppCommands, navigation, result.Node, inNewTab: false);
         }
 
         if (result.ContextMenuRequested && result.Node is not null)
@@ -184,7 +184,7 @@ internal static class ComparisonView
         }
     }
 
-    private static void Open(UiState screen, Navigation navigation, ApiEntry? entry, bool inNewTab)
+    private static void Open(IAppCommandWriter commands, Navigation navigation, ApiEntry? entry, bool inNewTab)
     {
         if (entry is null)
         {
@@ -197,7 +197,7 @@ internal static class ComparisonView
             return;
         }
 
-        Commands.FollowLater(screen, side.Reference, navigation.BeginResolving(inNewTab));
+        Commands.FollowLater(commands, side.Reference, navigation.BeginResolving(inNewTab));
     }
 
     private static ApiSide? LeftOf(ApiEntry entry)
@@ -245,12 +245,12 @@ internal static class ComparisonView
         var right = RightOf(entry);
         if (ui.MenuItem(t.ComparisonOpenLeft, enabled: left != null, id: "open-left") && left != null)
         {
-            Commands.FollowLater(ui.State, left.Reference, navigation.BeginResolving(inNewTab: false));
+            Commands.FollowLater(ui.State.AppCommands, left.Reference, navigation.BeginResolving(inNewTab: false));
         }
 
         if (ui.MenuItem(t.ComparisonOpenRight, enabled: right != null, id: "open-right") && right != null)
         {
-            Commands.FollowLater(ui.State, right.Reference, navigation.BeginResolving(inNewTab: false));
+            Commands.FollowLater(ui.State.AppCommands, right.Reference, navigation.BeginResolving(inNewTab: false));
         }
     }
 }

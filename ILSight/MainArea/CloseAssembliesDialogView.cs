@@ -39,7 +39,7 @@ internal static class CloseAssembliesDialogView
             var included = closer.Rows.CountIncluded();
             if (included > 0)
             {
-                Commands.Later(ui.State, closer.Rows.ListToClose(), static (a, items) => Commands.CloseAssemblies(a, items));
+                Commands.Later(ui.State.AppCommands, closer.Rows.ListToClose(), static (a, items) => Commands.CloseAssemblies(a, items));
                 cancel = true;
             }
         }

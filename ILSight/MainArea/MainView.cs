@@ -58,7 +58,7 @@ public static class MainView
             return;
         }
 
-        Commands.OpenDroppedLater(ui.State, dropped);
+        Commands.OpenDroppedLater(ui.State.AppCommands, dropped);
     }
 
     private static void Panels(Ui<UiState> ui, AppState appState)

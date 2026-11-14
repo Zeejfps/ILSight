@@ -37,7 +37,7 @@ internal static class ToolbarView
                 ListPicker(ui, lists, session, view);
                 if (ui.IconButton("manage-lists", ui.State.Appearance.Icons.ToolbarManageLists, t.ListsManage, variant: ButtonVariant.Neutral))
                 {
-                    Commands.Later(ui.State, ui.State.ListsDialog, static (a, dialog) => AssemblyListsDialogView.Open(dialog, a));
+                    Commands.Later(ui.State.AppCommands, ui.State.ListsDialog, static (a, dialog) => AssemblyListsDialogView.Open(dialog, a));
                 }
             }
 
@@ -100,7 +100,7 @@ internal static class ToolbarView
         {
             if (back.Clicked)
             {
-                Commands.MoveLater(ui.State, navigation.GoBack(session.Assemblies, finishedExports, setup));
+                Commands.MoveLater(ui.State.AppCommands, navigation.GoBack(session.Assemblies, finishedExports, setup));
             }
 
             if (back.IsOpen)
@@ -114,7 +114,7 @@ internal static class ToolbarView
         {
             if (forward.Clicked)
             {
-                Commands.MoveLater(ui.State, navigation.GoForward(session.Assemblies, finishedExports, setup));
+                Commands.MoveLater(ui.State.AppCommands, navigation.GoForward(session.Assemblies, finishedExports, setup));
             }
 
             if (forward.IsOpen)
@@ -143,7 +143,7 @@ internal static class ToolbarView
         ui.MenuSeparator();
         if (ui.MenuItem(t.ListsManage, id: "manage", icon: new UiIcon(ui.State.Appearance.Icons.ListsManage)))
         {
-            Commands.Later(ui.State, ui.State.ListsDialog, static (a, dialog) => AssemblyListsDialogView.Open(dialog, a));
+            Commands.Later(ui.State.AppCommands, ui.State.ListsDialog, static (a, dialog) => AssemblyListsDialogView.Open(dialog, a));
         }
     }
 
@@ -180,7 +180,7 @@ internal static class ToolbarView
             return;
         }
 
-        Commands.OpenListLater(ui.State, AssemblyLists.SwitchAssemblyList(lists, session, view, name));
+        Commands.OpenListLater(ui.State.AppCommands, AssemblyLists.SwitchAssemblyList(lists, session, view, name));
         // The picker, drawn above this frame, shows the list only in the next one.
         ui.RequestUpdate();
     }
@@ -210,7 +210,7 @@ internal static class ToolbarView
         {
             if (ui.MenuRadioItem(label, version == current))
             {
-                Commands.Later(ui.State, version, static (a, v) => Preferences.SetLanguageVersion(a, v));
+                Commands.Later(ui.State.AppCommands, version, static (a, v) => Preferences.SetLanguageVersion(a, v));
             }
         }
     }
@@ -239,7 +239,7 @@ internal static class ToolbarView
 
                 if (ui.MenuItem(text, id: "entry", icon: icon))
                 {
-                    Commands.MoveLater(ui.State, navigation.GoToEntry(i, assemblies, finished, setup));
+                    Commands.MoveLater(ui.State.AppCommands, navigation.GoToEntry(i, assemblies, finished, setup));
                     return;
                 }
             }

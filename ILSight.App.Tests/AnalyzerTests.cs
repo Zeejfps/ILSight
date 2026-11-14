@@ -562,7 +562,7 @@ public sealed class AnalyzerTests
 
     private static AnalyzerRows NewRows()
     {
-        return new AnalyzerRows { AppCommands = new Queue<AppCommand>() };
+        return new AnalyzerRows { AppCommands = new AppCommandQueue() };
     }
 
     [Fact]
@@ -583,7 +583,7 @@ public sealed class AnalyzerTests
     public async Task An_analysis_row_lists_a_loading_row_and_asks_once_to_run()
     {
         var d = AppStateDriver.Opened();
-        var asked = new Queue<AppCommand>();
+        var asked = new AppCommandQueue();
         var rows = new AnalyzerRows { AppCommands = asked };
         var kind = await NewKindAsync(d);
 
@@ -591,7 +591,8 @@ public sealed class AnalyzerTests
         Assert.Same(rows.Loading, Assert.Single(rows.ListChildren(kind)));
         rows.ListChildren(kind);
 
-        Assert.Single(asked);
+        Assert.True(asked.TryTake(out _));
+        Assert.True(asked.IsEmpty);
     }
 
     [Fact]

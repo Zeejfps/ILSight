@@ -89,7 +89,7 @@ public sealed class SettlingWorkflowsTests
         var d = AppStateDriver.OpenedWith(new AdapterHooks { Growing = _ => ports });
         var greeter = (await d.FixtureAsync("Greeter")).Definition;
         Assert.NotNull(greeter);
-        d.InTurn(() => DiagramView.ShowInNewDiagramLater(d.Ui, greeter, "Greeter"));
+        d.InTurn(() => DiagramView.ShowInNewDiagramLater(d.Ui.AppCommands, greeter, "Greeter"));
         d.RunUntil(() => ports.Requests.Count == 1);
         var diagram = d.AppState.ListSession.Navigation.ActiveTab?.Diagram;
         Assert.NotNull(diagram);

@@ -37,7 +37,7 @@ public sealed class UiState : IUiState
     internal ShownChanges Shown { get; } = new();
 
     /// <summary>What the screen asked of the app state while it drew, for the app to run once the frame is drawn.</summary>
-    public required Queue<AppCommand> AppCommands { get; init; }
+    public required AppCommandQueue AppCommands { get; init; }
 
     /// <summary>Where the views and the open documents are docked, all as tabs: side by side,
     /// stacked or in floating windows.</summary>

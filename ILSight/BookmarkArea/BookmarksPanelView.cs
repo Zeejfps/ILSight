@@ -48,7 +48,7 @@ internal static class BookmarksPanelView
         Menu(ui);
         if (removed is not null)
         {
-            Commands.Later(ui.State, (panel, removed), static (a, s) => Remove(s.panel, a.Bookmarks, s.removed));
+            Commands.Later(ui.State.AppCommands, (panel, removed), static (a, s) => Remove(s.panel, a.Bookmarks, s.removed));
         }
     }
 
@@ -92,7 +92,7 @@ internal static class BookmarksPanelView
 
         if (body.Activated && panel.Renaming.Bookmark is null)
         {
-            Commands.GoToBookmarkLater(ui.State, selected);
+            Commands.GoToBookmarkLater(ui.State.AppCommands, selected);
         }
 
         if (body.EditRequested && panel.Cells.Column == NameColumn)
@@ -135,18 +135,18 @@ internal static class BookmarksPanelView
         {
             if (ui.IconButton("previous", ui.State.Appearance.Icons.BookmarksPrevious, t.BookmarksPrevious, any))
             {
-                Commands.Later(ui.State, panel, static (a, p) => Step(p, a, -1));
+                Commands.Later(ui.State.AppCommands, panel, static (a, p) => Step(p, a, -1));
             }
 
             if (ui.IconButton("next", ui.State.Appearance.Icons.BookmarksNext, t.BookmarksNext, any))
             {
-                Commands.Later(ui.State, panel, static (a, p) => Step(p, a, 1));
+                Commands.Later(ui.State.AppCommands, panel, static (a, p) => Step(p, a, 1));
             }
 
             ui.Separator(theme.IconSize);
             if (ui.IconButton("delete", ui.State.Appearance.Icons.BookmarksDelete, t.BookmarksDelete, selected is not null) && selected is not null)
             {
-                Commands.Later(ui.State, (panel, selected), static (a, s) => Remove(s.panel, a.Bookmarks, s.selected));
+                Commands.Later(ui.State.AppCommands, (panel, selected), static (a, s) => Remove(s.panel, a.Bookmarks, s.selected));
             }
 
             ui.Separator(theme.IconSize);
@@ -166,14 +166,14 @@ internal static class BookmarksPanelView
     {
         var t = ui.State.Appearance.Strings;
         var screen = ui.State;
-        ui.PickSaveFile(t.BookmarksExportTitle, null, SuggestedExportName, Filters(t), path => Commands.Later(screen, path, static (a, p) => a.ExportBookmarksHandler.Handle(a.Bookmarks, p)));
+        ui.PickSaveFile(t.BookmarksExportTitle, null, SuggestedExportName, Filters(t), path => Commands.Later(screen.AppCommands, path, static (a, p) => a.ExportBookmarksHandler.Handle(a.Bookmarks, p)));
     }
 
     private static void PickImportFile(Ui<UiState> ui)
     {
         var t = ui.State.Appearance.Strings;
         var screen = ui.State;
-        ui.PickFile(t.BookmarksImportTitle, null, Filters(t), path => Commands.Start(screen, nameof(BookmarkImporting.ImportAsync), path, static (a, p, ct) => a.BookmarkImporting.ImportAsync(a.Bookmarks, a.Imports, p, ct)));
+        ui.PickFile(t.BookmarksImportTitle, null, Filters(t), path => Commands.Start(screen.AppCommands, nameof(BookmarkImporting.ImportAsync), path, static (a, p, ct) => a.BookmarkImporting.ImportAsync(a.Bookmarks, a.Imports, p, ct)));
     }
 
     private static string Shown(Bookmark bookmark, int column)
@@ -223,7 +223,7 @@ internal static class BookmarksPanelView
 
         if (mark.Clicked)
         {
-            Commands.Later(ui.State, bookmark, static (a, b) => ToggleEnabled(a, b));
+            Commands.Later(ui.State.AppCommands, bookmark, static (a, b) => ToggleEnabled(a, b));
         }
 
         var color = bookmark.Enabled ? palette.Bookmark : palette.GutterText;
@@ -260,7 +260,7 @@ internal static class BookmarksPanelView
         var followed = row.TextCell(LocationColumn, bookmark.Location, color, link: new UiIcon(ui.State.Appearance.Icons.LinkBookmark), linkTooltip: t.BookmarksGoTo);
         if (followed)
         {
-            Commands.GoToBookmarkLater(ui.State, bookmark);
+            Commands.GoToBookmarkLater(ui.State.AppCommands, bookmark);
         }
     }
 
@@ -335,7 +335,7 @@ internal static class BookmarksPanelView
         var stillHere = ui.HasFocus(ui.GetId("name"));
         if (result == InlineEditResult.Committed)
         {
-            CommitRename(ui.State, panel);
+            CommitRename(ui.State.AppCommands, panel);
         }
         else
         {
@@ -367,7 +367,7 @@ internal static class BookmarksPanelView
 
         if (ui.MenuItem(t.BookmarksGoTo, Shortcuts.Enter, id: "go-to"))
         {
-            Commands.GoToBookmarkLater(ui.State, bookmark);
+            Commands.GoToBookmarkLater(ui.State.AppCommands, bookmark);
         }
 
         if (ui.MenuItem(t.CodeCopy, Shortcuts.Copy, enabled: panel.Cells.HasCell, id: "copy"))
@@ -383,12 +383,12 @@ internal static class BookmarksPanelView
 
         if (ui.MenuItem(bookmark.Enabled ? t.BookmarksDisable : t.BookmarksEnable, Shortcuts.Space, id: "enable"))
         {
-            Commands.Later(ui.State, bookmark, static (a, b) => ToggleEnabled(a, b));
+            Commands.Later(ui.State.AppCommands, bookmark, static (a, b) => ToggleEnabled(a, b));
         }
 
         if (ui.MenuItem(t.BookmarksDelete, Shortcuts.Delete, id: "delete"))
         {
-            Commands.Later(ui.State, (panel, bookmark), static (a, s) => Remove(s.panel, a.Bookmarks, s.bookmark));
+            Commands.Later(ui.State.AppCommands, (panel, bookmark), static (a, s) => Remove(s.panel, a.Bookmarks, s.bookmark));
         }
     }
 
@@ -417,7 +417,7 @@ internal static class BookmarksPanelView
             switch (stroke.Key)
             {
                 case KeyboardKey.Space:
-                    Commands.Later(ui.State, bookmark, static (a, b) => ToggleEnabled(a, b));
+                    Commands.Later(ui.State.AppCommands, bookmark, static (a, b) => ToggleEnabled(a, b));
                     break;
                 case KeyboardKey.Delete:
                     removed = bookmark;
@@ -467,7 +467,7 @@ internal static class BookmarksPanelView
         panel.StartRename(bookmark);
     }
 
-    private static void CommitRename(UiState screen, BookmarksPanel panel)
+    private static void CommitRename(IAppCommandWriter commands, BookmarksPanel panel)
     {
         var bookmark = panel.Renaming.End();
         if (bookmark is null)
@@ -475,7 +475,7 @@ internal static class BookmarksPanelView
             return;
         }
 
-        Commands.Later(screen, (bookmark, name: panel.RenameText), static (a, s) => a.Bookmarks.Rename(s.bookmark, s.name));
+        Commands.Later(commands, (bookmark, name: panel.RenameText), static (a, s) => a.Bookmarks.Rename(s.bookmark, s.name));
     }
 
     private static void ToggleEnabled(AppState appState, Bookmark bookmark)

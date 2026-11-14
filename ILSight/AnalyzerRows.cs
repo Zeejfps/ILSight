@@ -13,7 +13,7 @@ namespace ILSight;
 public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
 {
     /// <summary>Where the rows ask for an analysis to run.</summary>
-    public required Queue<AppCommand> AppCommands { private get; init; }
+    public required IAppCommandWriter AppCommands { private get; init; }
 
     private readonly HashSet<AnalyzerKindNode> _asked = new();
     private UiTheme _theme = UiTheme.Dark;

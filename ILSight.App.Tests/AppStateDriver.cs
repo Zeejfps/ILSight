@@ -287,7 +287,7 @@ internal sealed class AppStateDriver
         AppFrames.StartFrame(Ui, AppState);
         AppFrames.KeepScreenChanges(Ui, AppState);
         AppFrames.StartAskedWork(Ui, AppState);
-        QueuedCommands.RunAppCommands(Ui, AppState);
+        QueuedCommands.RunAppCommands(Ui.AppCommands, AppState);
     }
 
     /// <summary>What a step of waiting does: a pump, or for a driver under an <see cref="AppDriver"/>, frames, which
@@ -400,7 +400,7 @@ internal sealed class AppStateDriver
     public void SwitchList(string name)
     {
         using var turn = _posted.Install();
-        Commands.OpenListLater(Ui, AssemblyLists.SwitchAssemblyList(AppState.Lists, AppState.ListSession, AppState.KeptScreen.View, name));
+        Commands.OpenListLater(Ui.AppCommands, AssemblyLists.SwitchAssemblyList(AppState.Lists, AppState.ListSession, AppState.KeptScreen.View, name));
         NextFrame();
     }
 
@@ -409,7 +409,7 @@ internal sealed class AppStateDriver
     public void DeleteList(string name)
     {
         using var turn = _posted.Install();
-        Commands.OpenListLater(Ui, AssemblyLists.DeleteAssemblyList(AppState.Lists, AppState.ListSession, AppState.KeptScreen.View, name));
+        Commands.OpenListLater(Ui.AppCommands, AssemblyLists.DeleteAssemblyList(AppState.Lists, AppState.ListSession, AppState.KeptScreen.View, name));
         NextFrame();
     }
 

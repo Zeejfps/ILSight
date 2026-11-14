@@ -157,7 +157,7 @@ internal static class ResourceImageView
         var fileName = node.ResourceFileName ?? throw new InvalidOperationException($"{node.Text} is no resource.");
         var screen = ui.State;
         ui.PickSaveFile(t.ResourceExportTitle, null, fileName, ExportFilters(t, fileName),
-            path => Commands.Later(screen, (node, path), static (a, s) => ExportArea.ExportCommands.SaveResource(a, s.node, s.path)));
+            path => Commands.Later(screen.AppCommands, (node, path), static (a, s) => ExportArea.ExportCommands.SaveResource(a, s.node, s.path)));
     }
 
     private const string XamlExtension = ".xaml";

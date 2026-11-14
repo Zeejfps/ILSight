@@ -286,14 +286,14 @@ public sealed class WorkflowRunnerTests
         var driver = new AppStateDriver();
         var seen = new SeenWorkflow();
 
-        Commands.Later(driver.Ui, seen, static (_, s) => s.Steps.Add("command before"));
-        Commands.Start(driver.Ui, "waiting for shutdown", seen, static (_, s, ct) =>
+        Commands.Later(driver.Ui.AppCommands, seen, static (_, s) => s.Steps.Add("command before"));
+        Commands.Start(driver.Ui.AppCommands, "waiting for shutdown", seen, static (_, s, ct) =>
         {
             s.Steps.Add("workflow");
             s.Token = ct;
             return Task.Delay(Timeout.Infinite, ct);
         });
-        Commands.Later(driver.Ui, seen, static (_, s) => s.Steps.Add("command after"));
+        Commands.Later(driver.Ui.AppCommands, seen, static (_, s) => s.Steps.Add("command after"));
         var askedBeforeTheFrameEnds = seen.Steps.Count;
         driver.NextFrame();
         var startedInOrder = seen.Steps.ToList();

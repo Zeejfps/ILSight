@@ -4,7 +4,7 @@ using ILSight.CommandArea;
 namespace ILSight;
 
 /// <summary>The edge where the workflows the screen asks for through
-/// <see cref="Commands.Start(UiState, string, AppWorkflow)"/> and the app's start run, and the only code that starts
+/// <see cref="Commands.Start(IAppCommandWriter, string, AppWorkflow)"/> and the app's start run, and the only code that starts
 /// them. Each runs with a token of its own, linked to the app shutting down and to whatever else may cancel it on
 /// purpose (the newer work that supersedes it, the dialog that closes it); is counted in the app's background work
 /// until it ends unless it runs until shutdown; and has an exception it ends with reported once, unless it is the

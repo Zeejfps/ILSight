@@ -68,7 +68,7 @@ internal static class ErrorDialogView
             ui.Tooltip(ui.GetId("error-copy"), t.ErrorsCopyTooltip);
             if (ui.Button(t.ErrorsClear, id: "error-clear", variant: ButtonVariant.Ghost))
             {
-                Commands.Later(ui.State, shown, static (a, s) => ClearErrors(a.Errors, s));
+                Commands.Later(ui.State.AppCommands, shown, static (a, s) => ClearErrors(a.Errors, s));
             }
 
             ui.Spacer();

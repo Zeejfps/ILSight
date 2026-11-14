@@ -50,12 +50,12 @@ internal static class AnalyzerPanelView
             ui.Separator(theme.IconSize);
             if (ui.IconButton("remove", ui.State.Appearance.Icons.AnalyzerRemove, t.AnalyzerRemoveAnalysis, root is not null) && root is not null)
             {
-                Commands.Later(ui.State, root, static (a, r) => a.ListSession.Analyzer.RemoveRoot(r));
+                Commands.Later(ui.State.AppCommands, root, static (a, r) => a.ListSession.Analyzer.RemoveRoot(r));
             }
 
             if (ui.IconButton("clear", ui.State.Appearance.Icons.AnalyzerRemoveAll, t.AnalyzerRemoveAll, any))
             {
-                Commands.Later(ui.State, static a => a.ListSession.Analyzer.ClearRoots());
+                Commands.Later(ui.State.AppCommands, static a => a.ListSession.Analyzer.ClearRoots());
             }
         }
     }
@@ -73,7 +73,7 @@ internal static class AnalyzerPanelView
 
         if (result.Activated)
         {
-            GoTo(ui.State, navigation, result.Node);
+            GoTo(ui.State.AppCommands, navigation, result.Node);
         }
 
         if (result.ContextMenuRequested && result.Node is AnalyzerSymbolNode)
@@ -91,7 +91,7 @@ internal static class AnalyzerPanelView
 
         if (ui.IsPressed(Shortcuts.Delete))
         {
-            RemoveSelectedAnalysis(ui.State, rows);
+            RemoveSelectedAnalysis(ui.State.AppCommands, rows);
         }
     }
 
@@ -110,20 +110,20 @@ internal static class AnalyzerPanelView
     {
         offer.Switch(
             runs => Commands.AnalyzeLater(screen, runs.Target),
-            unavailable => Commands.RefuseLater(screen, unavailable.Why),
+            unavailable => Commands.RefuseLater(screen.AppCommands, unavailable.Why),
             static _ => { });
     }
 
-    private static void RemoveSelectedAnalysis(UiState screen, AnalyzerRows rows)
+    private static void RemoveSelectedAnalysis(IAppCommandWriter commands, AnalyzerRows rows)
     {
         var root = rows.FindSelectedRoot();
         if (root is not null)
         {
-            Commands.Later(screen, root, static (a, r) => a.ListSession.Analyzer.RemoveRoot(r));
+            Commands.Later(commands, root, static (a, r) => a.ListSession.Analyzer.RemoveRoot(r));
         }
     }
 
-    private static void GoTo(UiState screen, Navigation navigation, AnalyzerNode? node)
+    private static void GoTo(IAppCommandWriter commands, Navigation navigation, AnalyzerNode? node)
     {
         if (node is not AnalyzerSymbolNode symbol)
         {
@@ -136,7 +136,7 @@ internal static class AnalyzerPanelView
             return;
         }
 
-        Commands.FollowLater(screen, reference, navigation.BeginResolving(inNewTab: false));
+        Commands.FollowLater(commands, reference, navigation.BeginResolving(inNewTab: false));
     }
 
     private static void ContextMenu(Ui<UiState> ui, Navigation navigation, AnalyzerTree analyzer)
@@ -165,12 +165,12 @@ internal static class AnalyzerPanelView
         ui.MenuSeparator();
         if (isRoot && ui.MenuItem(t.AnalyzerRemove, id: "remove"))
         {
-            Commands.Later(ui.State, node, static (a, n) => a.ListSession.Analyzer.RemoveRoot(n));
+            Commands.Later(ui.State.AppCommands, node, static (a, n) => a.ListSession.Analyzer.RemoveRoot(n));
         }
 
         if (ui.MenuItem(t.AnalyzerClear, id: "clear"))
         {
-            Commands.Later(ui.State, static a => a.ListSession.Analyzer.ClearRoots());
+            Commands.Later(ui.State.AppCommands, static a => a.ListSession.Analyzer.ClearRoots());
         }
     }
 
@@ -195,12 +195,12 @@ internal static class AnalyzerPanelView
         var t = ui.State.Appearance.Strings;
         if (ui.MenuItem(t.AnalyzerGoTo, Shortcuts.Enter, id: "go-to"))
         {
-            Commands.FollowLater(ui.State, target, navigation.BeginResolving(inNewTab: false));
+            Commands.FollowLater(ui.State.AppCommands, target, navigation.BeginResolving(inNewTab: false));
         }
 
         if (ui.MenuItem(t.CodeOpenInNewTab, id: "open-in-new-tab"))
         {
-            Commands.FollowLater(ui.State, target, navigation.BeginResolving(inNewTab: true));
+            Commands.FollowLater(ui.State.AppCommands, target, navigation.BeginResolving(inNewTab: true));
         }
     }
 

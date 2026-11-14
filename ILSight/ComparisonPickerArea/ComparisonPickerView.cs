@@ -74,7 +74,7 @@ internal static class ComparisonPickerView
         }
         if (compare)
         {
-            close |= TryCompareWithSelected(ui.State, navigation, assemblies, choice, compared, t);
+            close |= TryCompareWithSelected(ui.State.AppCommands, navigation, assemblies, choice, compared, t);
         }
 
         if (close)
@@ -161,7 +161,7 @@ internal static class ComparisonPickerView
         ui.Text(moniker, color: ui.Theme.TextMuted, size: ui.Theme.FontSizeSmall);
     }
 
-    private static bool TryCompareWithSelected(UiState screen, Navigation navigation, AssemblyList assemblies, ComparisonChoice choice, LoadedModule compared,
+    private static bool TryCompareWithSelected(IAppCommandWriter commands, Navigation navigation, AssemblyList assemblies, ComparisonChoice choice, LoadedModule compared,
         Strings t)
     {
         var other = choice.Selection.Item;
@@ -170,7 +170,7 @@ internal static class ComparisonPickerView
             return false;
         }
 
-        Commands.CompareLater(screen, Comparisons.CompareAssemblies(navigation, assemblies, compared, other, t.ComparisonTitle(compared.Name)));
+        Commands.CompareLater(commands, Comparisons.CompareAssemblies(navigation, assemblies, compared, other, t.ComparisonTitle(compared.Name)));
         return true;
     }
 }

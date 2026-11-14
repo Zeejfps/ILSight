@@ -321,7 +321,7 @@ internal static class AppRoot
     private static UiState CreateUiState(ViewSettings saved, BackgroundWork work, Action<AppProblem> reportError, BrowseSession session,
         HttpMessageHandler? nuGetRequests, FrameworkBrowser.IPorts runtimeScan, ProcessBrowser.IPorts processes)
     {
-        var appCommands = new Queue<AppCommand>();
+        var appCommands = new AppCommandQueue();
         // A null nuGetRequests uses the app's shared connections.
         var nuGet = new NuGetClient(nuGetRequests);
         var uiState = new UiState

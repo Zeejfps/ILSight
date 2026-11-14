@@ -437,12 +437,12 @@ internal static class AppFrames
 
     private static void RunAppCommandsAndRedraw(Ui<UiState> ui, AppState appState)
     {
-        if (ui.State.AppCommands.Count == 0)
+        if (ui.State.AppCommands.IsEmpty)
         {
             return;
         }
 
-        QueuedCommands.RunAppCommands(ui.State, appState);
+        QueuedCommands.RunAppCommands(ui.State.AppCommands, appState);
         ui.RequestUpdate();
     }
 

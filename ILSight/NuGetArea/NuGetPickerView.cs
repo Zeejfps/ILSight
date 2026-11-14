@@ -31,7 +31,7 @@ internal static class NuGetPickerView
     {
         var picker = uiState.NuGetPicker;
         picker.Open();
-        Commands.StartSettling(uiState, nameof(ReadNuGetSetupHandler), (Handler: uiState.ReadNuGetSetupHandler, Picker: picker),
+        Commands.StartSettling(uiState.AppCommands, nameof(ReadNuGetSetupHandler), (Handler: uiState.ReadNuGetSetupHandler, Picker: picker),
             static (_, s, ct) => s.Handler.HandleAsync(s.Picker, ct), static (_, s, _) => s.Handler.UseDefaultSetup(s.Picker));
     }
 
@@ -61,7 +61,7 @@ internal static class NuGetPickerView
         var file = AssemblyPath.Parse(path);
         if (file is not null)
         {
-            Commands.OpenFilesLater(ui.State, navigation.BeginOpening([file]));
+            Commands.OpenFilesLater(ui.State.AppCommands, navigation.BeginOpening([file]));
         }
 
         picker.IsOpen = false;
@@ -121,7 +121,7 @@ internal static class NuGetPickerView
             return;
         }
 
-        Commands.StartSettling(ui.State, nameof(DownloadNuGetPackageHandler), (Handler: ui.State.DownloadNuGetPackageHandler, Browser: browser, Download: download),
+        Commands.StartSettling(ui.State.AppCommands, nameof(DownloadNuGetPackageHandler), (Handler: ui.State.DownloadNuGetPackageHandler, Browser: browser, Download: download),
             static (_, d, ct) => d.Handler.HandleAsync(d.Browser, d.Download, ct), static (_, d, error) => d.Browser.FailDownload(d.Download, error),
             download.Work.Token);
     }

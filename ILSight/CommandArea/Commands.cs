@@ -16,38 +16,38 @@ public static class Commands
 {
     /// <summary>Asks for <paramref name="run"/> to be done to the app state once the frame is drawn.
     /// Pass a <c>static</c> lambda.</summary>
-    public static void Later(UiState uiState, AppCommand run)
+    public static void Later(IAppCommandWriter commands, AppCommand run)
     {
-        uiState.AppCommands.Enqueue(run);
+        commands.Enqueue(run);
     }
 
     /// <summary>Asks for <paramref name="run"/> to be done to the app state and <paramref name="subject"/>
     /// once the frame is drawn. Pass a <c>static</c> lambda, handing it what it acts on as
     /// <paramref name="subject"/>, so that nothing is allocated unless this is called.</summary>
-    public static void Later<T>(UiState uiState, T subject, Action<AppState, T> run)
+    public static void Later<T>(IAppCommandWriter commands, T subject, Action<AppState, T> run)
     {
-        uiState.AppCommands.Enqueue(AppCommandFactory.Create(subject, run));
+        commands.Enqueue(AppCommandFactory.Create(subject, run));
     }
 
     /// <summary>Tells the user <paramref name="refusal"/> once the frame is drawn, as a command they asked for that is
     /// unavailable now says why where they acted (the refusal line), never as a failure.</summary>
-    public static void RefuseLater(UiState uiState, Refusal refusal)
+    public static void RefuseLater(IAppCommandWriter commands, Refusal refusal)
     {
-        Later(uiState, refusal, static (a, r) => a.Refusals.Show(r));
+        Later(commands, refusal, static (a, r) => a.Refusals.Show(r));
     }
 
     /// <summary>Asks for what <paramref name="load"/> started loading in its tab, if anything, to be brought in once
     /// the frame is drawn (<see cref="StartDecompiling(AppState, DecompileTicket?)"/>): the draw points the tab in the
     /// frame of its input, and only the decompile, which takes longer than a frame, waits for the edge. Allocates
     /// nothing when no load started.</summary>
-    public static void DecompileLater(UiState uiState, DecompileTicket? load)
+    public static void DecompileLater(IAppCommandWriter commands, DecompileTicket? load)
     {
         if (load is null)
         {
             return;
         }
 
-        uiState.AppCommands.Enqueue(CreateDecompile(load));
+        commands.Enqueue(CreateDecompile(load));
     }
 
     private static AppCommand CreateDecompile(DecompileTicket load)
@@ -63,23 +63,23 @@ public static class Commands
     /// started there: the draw began the request in the frame of its input (the app says it is resolving), and only
     /// the lookup, which takes longer than a frame, waits for the edge. Nothing when <paramref name="lookup"/> is
     /// null.</summary>
-    public static void FollowLater(UiState uiState, CodeReference.Navigable reference, ResolveTicket? lookup)
+    public static void FollowLater(IAppCommandWriter commands, CodeReference.Navigable reference, ResolveTicket? lookup)
     {
         if (lookup is null)
         {
             return;
         }
 
-        StartResolving(uiState, nameof(NavigateHandler), (reference, lookup), lookup,
+        StartResolving(commands, nameof(NavigateHandler), (reference, lookup), lookup,
             static (a, s, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, s.reference, s.lookup, ct));
     }
 
     // A lookup the user asked for, which the app says it is resolving until it ends: when its workflow fails, the edge
     // reports it and the request stops resolving (Navigation.FailResolving).
-    private static void StartResolving<T>(UiState uiState, string name, T subject, ResolveTicket lookup,
+    private static void StartResolving<T>(IAppCommandWriter commands, string name, T subject, ResolveTicket lookup,
         Func<AppState, T, CancellationToken, Task<DecompileTicket?>> show)
     {
-        uiState.AppCommands.Enqueue(appState => StartShowingResolved(appState, name, lookup, ct => show(appState, subject, ct)));
+        commands.Enqueue(appState => StartShowingResolved(appState, name, lookup, ct => show(appState, subject, ct)));
     }
 
     private static void StartShowingResolved(AppState appState, string name, ResolveTicket lookup, Func<CancellationToken, Task<DecompileTicket?>> show)
@@ -89,9 +89,9 @@ public static class Commands
 
     /// <summary>As <see cref="FollowLater"/>, showing the metadata table row that defines what
     /// <paramref name="reference"/> points at (<see cref="ShowInMetadataHandler"/>).</summary>
-    public static void ShowInMetadataLater(UiState uiState, CodeReference.Navigable reference, ResolveTicket lookup)
+    public static void ShowInMetadataLater(IAppCommandWriter commands, CodeReference.Navigable reference, ResolveTicket lookup)
     {
-        StartResolving(uiState, nameof(ShowInMetadataHandler), (reference, lookup), lookup,
+        StartResolving(commands, nameof(ShowInMetadataHandler), (reference, lookup), lookup,
             static (a, s, ct) => a.ShowInMetadataHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, s.reference, s.lookup, ct));
     }
 
@@ -114,7 +114,7 @@ public static class Commands
     /// <summary>Asks for <paramref name="symbol"/> to be analyzed once the frame is drawn (<see cref="Analyze"/>).</summary>
     public static void AnalyzeLater(UiState uiState, AnalysisSymbol symbol)
     {
-        Later(uiState, (screen: uiState, symbol), static (a, s) => Analyze(a, s.screen, s.symbol));
+        Later(uiState.AppCommands, (screen: uiState, symbol), static (a, s) => Analyze(a, s.screen, s.symbol));
     }
 
     /// <summary>Analyzes <paramref name="symbol"/>: the analyzer opens, if it is not, with the root analyzing it
@@ -183,9 +183,9 @@ public static class Commands
     /// to be expanded once the frame is drawn (<see cref="StartExpandingNamespaces"/>): the draw expanded the assemblies
     /// in the frame of its input, and only building their children, which takes longer than a frame, waits for the
     /// edge.</summary>
-    public static void ExpandNamespacesLater(UiState uiState, BrowseTree tree, NamespaceExpansion expansion)
+    public static void ExpandNamespacesLater(IAppCommandWriter commands, BrowseTree tree, NamespaceExpansion expansion)
     {
-        uiState.AppCommands.Enqueue(CreateExpandNamespaces(tree, expansion));
+        commands.Enqueue(CreateExpandNamespaces(tree, expansion));
     }
 
     private static AppCommand CreateExpandNamespaces(BrowseTree tree, NamespaceExpansion expansion)
@@ -356,14 +356,14 @@ public static class Commands
     /// (<see cref="AssemblyOpening"/>), then the load of the last one shown: the input began the request in its own
     /// frame, and only opening the files, which takes longer than a frame, waits for the edge. Nothing when
     /// <paramref name="opening"/> is null.</summary>
-    public static void OpenFilesLater(UiState uiState, FileOpening? opening)
+    public static void OpenFilesLater(IAppCommandWriter commands, FileOpening? opening)
     {
         if (opening is null)
         {
             return;
         }
 
-        Later(uiState, opening, static (a, o) => StartOpening(a, o));
+        Later(commands, opening, static (a, o) => StartOpening(a, o));
     }
 
     // A request the input began opening: when its workflow fails, the app no longer says it is opening its files.
@@ -377,25 +377,25 @@ public static class Commands
     /// <summary>Asks for the files among <paramref name="dropped"/> to be opened once the frame is drawn
     /// (<see cref="AssemblyOpening.OpenDroppedFilesAsync"/>), then the load of the last one shown, cancelled with the
     /// opens under way; when its workflow fails, the app no longer says it is opening them.</summary>
-    public static void OpenDroppedLater(UiState uiState, IReadOnlyList<string> dropped)
+    public static void OpenDroppedLater(IAppCommandWriter commands, IReadOnlyList<string> dropped)
     {
-        uiState.AppCommands.Enqueue(appState => StartShowingSettled(appState, nameof(AssemblyOpening.OpenDroppedFilesAsync),
+        commands.Enqueue(appState => StartShowingSettled(appState, nameof(AssemblyOpening.OpenDroppedFilesAsync),
             ct => appState.AssemblyOpening.OpenDroppedFilesAsync(appState, dropped, ct), _ => appState.ListSession.Navigation.FailOpening(), appState.ListSession.Opens.Token));
     }
 
     /// <summary>Asks for the assemblies <paramref name="assembly"/> references to be opened once the frame is drawn
     /// (<see cref="AssemblyOpening.OpenDependenciesAsync"/>), cancelled with the opens under way then.</summary>
-    public static void OpenDependenciesLater(UiState uiState, LoadedModule assembly)
+    public static void OpenDependenciesLater(IAppCommandWriter commands, LoadedModule assembly)
     {
-        StartLater(uiState, nameof(AssemblyOpening.OpenDependenciesAsync), assembly, static (a, _) => a.ListSession.Opens,
+        StartLater(commands, nameof(AssemblyOpening.OpenDependenciesAsync), assembly, static (a, _) => a.ListSession.Opens,
             static (a, m, _, ct) => a.AssemblyOpening.OpenDependenciesAsync(m, ct), static opens => opens.Token);
     }
 
     /// <summary>Asks for every assembly of the open list to be reloaded once the frame is drawn
     /// (<see cref="StartReloading"/>).</summary>
-    public static void ReloadLater(UiState uiState, List<NodePath> expanded)
+    public static void ReloadLater(IAppCommandWriter commands, List<NodePath> expanded)
     {
-        Later(uiState, expanded, static (a, e) => StartReloading(a, e));
+        Later(commands, expanded, static (a, e) => StartReloading(a, e));
     }
 
     /// <summary>Starts reloading every assembly of the open list now (<see cref="AssemblyReloading.RefreshAssembliesAsync(SavedAssemblyLists, OpenListSession, Queue{ViewCommand}, DecompilerChoice, IReadOnlyList{NodePath}, ReloadTicket, CancellationToken)"/>),
@@ -411,14 +411,14 @@ public static class Commands
             error => StartLoads(appState, AssemblyReloading.FailReload(session, ticket, error)), ticket.Token);
     }
 
-    /// <summary>As <see cref="Start{T}(UiState, string, T, Func{AppState, T, CancellationToken, Task{List{DecompileTicket}}})"/>,
+    /// <summary>As <see cref="Start{T}(IAppCommandWriter, string, T, Func{AppState, T, CancellationToken, Task{List{DecompileTicket}}})"/>,
     /// for a reopen of <paramref name="assembly"/>'s file: when its workflow fails, the file is no longer shown
     /// reopening (<see cref="Reopens.Stop"/>).</summary>
-    public static void StartReopening<T>(UiState uiState, string name, LoadedModule assembly, T subject,
+    public static void StartReopening<T>(IAppCommandWriter commands, string name, LoadedModule assembly, T subject,
         Func<AppState, T, CancellationToken, Task<List<DecompileTicket>>> show)
     {
         var path = assembly.ListedItem.FilePath;
-        uiState.AppCommands.Enqueue(appState => appState.Workflows.StartSettling(name,
+        commands.Enqueue(appState => appState.Workflows.StartSettling(name,
             async ct => StartDecompiling(appState, await show(appState, subject, ct)), _ => appState.Reopens.Stop(path)));
     }
 
@@ -426,14 +426,14 @@ public static class Commands
     /// is drawn (<see cref="StartOpeningList"/>), then the loads that started in the tabs: the draw switched
     /// the list in the frame of its input, and only opening its files, which takes longer than a frame, waits for the
     /// edge. Nothing when <paramref name="opening"/> is null.</summary>
-    public static void OpenListLater(UiState uiState, ListOpening? opening)
+    public static void OpenListLater(IAppCommandWriter commands, ListOpening? opening)
     {
         if (opening is null)
         {
             return;
         }
 
-        uiState.AppCommands.Enqueue(CreateOpenList(opening));
+        commands.Enqueue(CreateOpenList(opening));
     }
 
     private static AppCommand CreateOpenList(ListOpening opening)
@@ -480,14 +480,14 @@ public static class Commands
     /// <summary>Asks for what going to a history entry left, <paramref name="move"/>, to be started once the frame is
     /// drawn (<see cref="StartMoving"/>): the draw went to the entry in the frame of its input, and only the load or the
     /// lookup, which take longer than a frame, wait for the edge. Allocates nothing when it left nothing.</summary>
-    public static void MoveLater(UiState uiState, HistoryMove? move)
+    public static void MoveLater(IAppCommandWriter commands, HistoryMove? move)
     {
         if (move is null)
         {
             return;
         }
 
-        uiState.AppCommands.Enqueue(CreateMove(move));
+        commands.Enqueue(CreateMove(move));
     }
 
     private static AppCommand CreateMove(HistoryMove move)
@@ -520,14 +520,14 @@ public static class Commands
     /// <summary>Asks for the comparison <paramref name="run"/> started, if any, to be run once the frame is drawn
     /// (<see cref="StartComparing"/>): the draw changed the comparison in the frame of its input, and only comparing,
     /// which takes longer than a frame, waits for the edge. Allocates nothing when none started.</summary>
-    public static void CompareLater(UiState uiState, ComparisonRun? run)
+    public static void CompareLater(IAppCommandWriter commands, ComparisonRun? run)
     {
         if (run is null)
         {
             return;
         }
 
-        uiState.AppCommands.Enqueue(CreateCompare(run));
+        commands.Enqueue(CreateCompare(run));
     }
 
     private static AppCommand CreateCompare(ComparisonRun run)
@@ -554,20 +554,20 @@ public static class Commands
     /// such as a diagram it started reading cards for, which closing it cancels (R009). Nothing runs when
     /// <paramref name="start"/> started nothing. Pass <c>static</c> lambdas, handing them what they act on as
     /// <paramref name="subject"/>, so that nothing is allocated unless this is called.</summary>
-    public static void StartLater<T, TWork>(UiState uiState, string name, T subject, Func<AppState, T, TWork?> start,
+    public static void StartLater<T, TWork>(IAppCommandWriter commands, string name, T subject, Func<AppState, T, TWork?> start,
         Func<AppState, T, TWork, CancellationToken, Task> run, Func<TWork, CancellationToken> cancelledOnPurposeBy) where TWork : class
     {
-        uiState.AppCommands.Enqueue(CreateStartLater(name, subject, start, run, cancelledOnPurposeBy));
+        commands.Enqueue(CreateStartLater(name, subject, start, run, cancelledOnPurposeBy));
     }
 
     /// <summary>As <see cref="StartLater{T, TWork}"/>, for work whose start recorded a pending state: one that ends with an
     /// unexpected exception, reported, has <paramref name="settle"/> settle that state with the work it was for
     /// (<see cref="WorkflowRunner.StartSettling"/>).</summary>
-    public static void StartSettlingLater<T, TWork>(UiState uiState, string name, T subject, Func<AppState, T, TWork?> start,
+    public static void StartSettlingLater<T, TWork>(IAppCommandWriter commands, string name, T subject, Func<AppState, T, TWork?> start,
         Func<AppState, T, TWork, CancellationToken, Task> run, Func<TWork, CancellationToken> cancelledOnPurposeBy, Action<T, TWork, Exception> settle)
         where TWork : class
     {
-        uiState.AppCommands.Enqueue(CreateStartSettlingLater(name, subject, start, run, cancelledOnPurposeBy, settle));
+        commands.Enqueue(CreateStartSettlingLater(name, subject, start, run, cancelledOnPurposeBy, settle));
     }
 
     private static AppCommand CreateStartSettlingLater<T, TWork>(string name, T subject, Func<AppState, T, TWork?> start,
@@ -617,9 +617,9 @@ public static class Commands
     }
 
     /// <summary>Goes to the line <paramref name="bookmark"/> marks once the frame is drawn (<see cref="StartGoingToBookmark"/>).</summary>
-    public static void GoToBookmarkLater(UiState uiState, Bookmark bookmark)
+    public static void GoToBookmarkLater(IAppCommandWriter commands, Bookmark bookmark)
     {
-        Later(uiState, bookmark, static (a, b) => StartGoingToBookmark(a, b));
+        Later(commands, bookmark, static (a, b) => StartGoingToBookmark(a, b));
     }
 
     /// <summary>Begins the request to go to the line <paramref name="bookmark"/> marks, which the app says it is
@@ -775,76 +775,76 @@ public static class Commands
     /// place among the commands queued, and counted in the app's background work as <paramref name="name"/> until it
     /// ends. It runs on the UI thread up to its first await before the next command does. Pass a <c>static</c>
     /// lambda.</summary>
-    public static void Start(UiState uiState, string name, AppWorkflow workflow)
+    public static void Start(IAppCommandWriter commands, string name, AppWorkflow workflow)
     {
-        uiState.AppCommands.Enqueue(CreateStart(name, workflow));
+        commands.Enqueue(CreateStart(name, workflow));
     }
 
-    /// <summary>As <see cref="Start(UiState, string, AppWorkflow)"/>, over the app state and
+    /// <summary>As <see cref="Start(IAppCommandWriter, string, AppWorkflow)"/>, over the app state and
     /// <paramref name="subject"/>. Pass a <c>static</c> lambda, handing it what it acts on as
     /// <paramref name="subject"/>, so that nothing is allocated unless this is called.</summary>
-    public static void Start<T>(UiState uiState, string name, T subject, Func<AppState, T, CancellationToken, Task> workflow)
+    public static void Start<T>(IAppCommandWriter commands, string name, T subject, Func<AppState, T, CancellationToken, Task> workflow)
     {
-        uiState.AppCommands.Enqueue(CreateStart(name, subject, workflow));
+        commands.Enqueue(CreateStart(name, subject, workflow));
     }
 
-    /// <summary>As <see cref="Start(UiState, string, AppWorkflow)"/>, for a workflow that points a tab at what it is to
+    /// <summary>As <see cref="Start(IAppCommandWriter, string, AppWorkflow)"/>, for a workflow that points a tab at what it is to
     /// show and returns the load it started there, which is started once the workflow ends
     /// (<see cref="StartShowing(AppState, string, Func{CancellationToken, Task{DecompileTicket?}})"/>). Pass a
     /// <c>static</c> lambda.</summary>
-    public static void Start(UiState uiState, string name, Func<AppState, CancellationToken, Task<DecompileTicket?>> show)
+    public static void Start(IAppCommandWriter commands, string name, Func<AppState, CancellationToken, Task<DecompileTicket?>> show)
     {
-        uiState.AppCommands.Enqueue(CreateShowing(name, show));
+        commands.Enqueue(CreateShowing(name, show));
     }
 
-    /// <summary>As <see cref="Start(UiState, string, Func{AppState, CancellationToken, Task{DecompileTicket?}})"/>, over
+    /// <summary>As <see cref="Start(IAppCommandWriter, string, Func{AppState, CancellationToken, Task{DecompileTicket?}})"/>, over
     /// the app state and <paramref name="subject"/>. Pass a <c>static</c> lambda, handing it what it acts on as
     /// <paramref name="subject"/>, so that nothing is allocated unless this is called.</summary>
-    public static void Start<T>(UiState uiState, string name, T subject, Func<AppState, T, CancellationToken, Task<DecompileTicket?>> show)
+    public static void Start<T>(IAppCommandWriter commands, string name, T subject, Func<AppState, T, CancellationToken, Task<DecompileTicket?>> show)
     {
-        uiState.AppCommands.Enqueue(CreateShowing(name, subject, show));
+        commands.Enqueue(CreateShowing(name, subject, show));
     }
 
-    /// <summary>As <see cref="Start{T}(UiState, string, T, Func{AppState, T, CancellationToken, Task{DecompileTicket?}})"/>,
+    /// <summary>As <see cref="Start{T}(IAppCommandWriter, string, T, Func{AppState, T, CancellationToken, Task{DecompileTicket?}})"/>,
     /// for a workflow that points several tabs and returns each load it started.</summary>
-    public static void Start<T>(UiState uiState, string name, T subject, Func<AppState, T, CancellationToken, Task<List<DecompileTicket>>> show)
+    public static void Start<T>(IAppCommandWriter commands, string name, T subject, Func<AppState, T, CancellationToken, Task<List<DecompileTicket>>> show)
     {
-        uiState.AppCommands.Enqueue(CreateShowing(name, subject, show));
+        commands.Enqueue(CreateShowing(name, subject, show));
     }
 
-    /// <summary>As <see cref="Start(UiState, string, Func{AppState, CancellationToken, Task{DecompileTicket?}})"/>, for
+    /// <summary>As <see cref="Start(IAppCommandWriter, string, Func{AppState, CancellationToken, Task{DecompileTicket?}})"/>, for
     /// a workflow that returns the loads it started in tabs of every kind
     /// (<see cref="StartShowing(AppState, string, Func{CancellationToken, Task{TabLoads}})"/>).</summary>
-    public static void Start(UiState uiState, string name, Func<AppState, CancellationToken, Task<TabLoads>> show)
+    public static void Start(IAppCommandWriter commands, string name, Func<AppState, CancellationToken, Task<TabLoads>> show)
     {
-        uiState.AppCommands.Enqueue(CreateShowing(name, show));
+        commands.Enqueue(CreateShowing(name, show));
     }
 
-    /// <summary>As <see cref="Start(UiState, string, Func{AppState, CancellationToken, Task{TabLoads}})"/>, over the
+    /// <summary>As <see cref="Start(IAppCommandWriter, string, Func{AppState, CancellationToken, Task{TabLoads}})"/>, over the
     /// app state and <paramref name="subject"/>. Pass a <c>static</c> lambda, handing it what it acts on as
     /// <paramref name="subject"/>, so that nothing is allocated unless this is called.</summary>
-    public static void Start<T>(UiState uiState, string name, T subject, Func<AppState, T, CancellationToken, Task<TabLoads>> show)
+    public static void Start<T>(IAppCommandWriter commands, string name, T subject, Func<AppState, T, CancellationToken, Task<TabLoads>> show)
     {
-        uiState.AppCommands.Enqueue(CreateShowing(name, subject, show));
+        commands.Enqueue(CreateShowing(name, subject, show));
     }
 
-    /// <summary>As <see cref="Start{T}(UiState, string, T, Func{AppState, T, CancellationToken, Task})"/>, for a
+    /// <summary>As <see cref="Start{T}(IAppCommandWriter, string, T, Func{AppState, T, CancellationToken, Task})"/>, for a
     /// workflow that <paramref name="cancelledOnPurposeBy"/> cancels on purpose, such as the token of the work it was
     /// started as, which newer work or closing a dialog cancels: its token fires with it too, and ending cancelled
     /// by it is not a failure.</summary>
-    public static void Start<T>(UiState uiState, string name, T subject, Func<AppState, T, CancellationToken, Task> workflow, CancellationToken cancelledOnPurposeBy)
+    public static void Start<T>(IAppCommandWriter commands, string name, T subject, Func<AppState, T, CancellationToken, Task> workflow, CancellationToken cancelledOnPurposeBy)
     {
-        uiState.AppCommands.Enqueue(CreateStart(name, subject, workflow, cancelledOnPurposeBy));
+        commands.Enqueue(CreateStart(name, subject, workflow, cancelledOnPurposeBy));
     }
 
-    /// <summary>As <see cref="Start{T}(UiState, string, T, Func{AppState, T, CancellationToken, Task}, CancellationToken)"/>,
+    /// <summary>As <see cref="Start{T}(IAppCommandWriter, string, T, Func{AppState, T, CancellationToken, Task}, CancellationToken)"/>,
     /// for a workflow that began a pending state on <paramref name="subject"/>: when it fails, <paramref name="settle"/>
     /// ends that state, failed where it is shown, and the edge reports the failure once
     /// (<see cref="WorkflowRunner.StartSettling"/>).</summary>
-    public static void StartSettling<T>(UiState uiState, string name, T subject, Func<AppState, T, CancellationToken, Task> workflow,
+    public static void StartSettling<T>(IAppCommandWriter commands, string name, T subject, Func<AppState, T, CancellationToken, Task> workflow,
         Action<AppState, T, Exception> settle, CancellationToken cancelledOnPurposeBy = default)
     {
-        uiState.AppCommands.Enqueue(appState => appState.Workflows.StartSettling(name, ct => workflow(appState, subject, ct),
+        commands.Enqueue(appState => appState.Workflows.StartSettling(name, ct => workflow(appState, subject, ct),
             error => settle(appState, subject, error), cancelledOnPurposeBy));
     }
 

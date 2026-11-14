@@ -440,7 +440,7 @@ internal ref struct MetadataGridFrame
             return false;
         }
 
-        Commands.RefuseLater(Ui.State, new Refusal.AssemblyClosed { Assembly = closed });
+        Commands.RefuseLater(Ui.State.AppCommands, new Refusal.AssemblyClosed { Assembly = closed });
         return true;
     }
 
