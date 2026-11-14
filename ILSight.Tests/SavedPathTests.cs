@@ -54,9 +54,21 @@ public sealed class SavedPathTests : IDisposable
     }
 
     [Fact]
-    public async Task A_path_to_a_file_that_failed_finds_nothing_in_a_list_that_does_not_list_it()
+    public async Task A_path_to_a_file_there_that_cannot_be_read_and_is_not_listed_is_a_failed_lookup_saying_why()
     {
         var failed = await SampleAsync("FailedAssembly");
+
+        var found = await NodeLookup.FindAsync(new AssemblyList { Runtime = TestRuntime.Installed }, TestSession.Shared, failed.Path, CancellationToken.None);
+
+        var why = Assert.IsType<AssemblyLoadException>(Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(found).Error);
+        Assert.IsType<BadImageFormatException>(why.InnerException);
+    }
+
+    [Fact]
+    public async Task A_path_to_a_file_gone_finds_nothing()
+    {
+        var failed = await SampleAsync("FailedAssembly");
+        File.Delete(failed.Path.FilePath.Text);
 
         Assert.Null(await new AssemblyList { Runtime = TestRuntime.Installed }.FindNodeAsync(failed.Path));
     }

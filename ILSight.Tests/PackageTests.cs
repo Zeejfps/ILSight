@@ -104,7 +104,7 @@ public sealed class PackageTests
         var sibling = package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Core.dll"));
         list.TargetFrameworks.Pick(sibling, Frameworks.Net48);
         LoadedAssemblies.Release(list.CloseAll());
-        var assembly = AssemblyListing.TryLoad(list, package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Tests.dll")));
+        var assembly = AssemblyListing.TryLoad(list, package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Tests.dll"))).GetValue().FoundOrNull;
         Assert.NotNull(assembly);
 
         LoadedAssemblies.Release(list.Close(assembly));
@@ -161,7 +161,7 @@ public sealed class PackageTests
         var package = list.Open(WritePackage(temp));
         var path = package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Tests.dll"));
 
-        var assembly = AssemblyListing.TryLoad(list, path);
+        var assembly = AssemblyListing.TryLoad(list, path).GetValue().FoundOrNull;
         Assert.NotNull(assembly);
 
         Assert.Same(await package.ReadRootAsync().GetChildAsync(LibFolder), (await assembly.ReadRootAsync()).Parent);

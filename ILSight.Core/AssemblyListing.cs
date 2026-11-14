@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Runtime.ExceptionServices;
 using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 using AssemblyReference = ICSharpCode.Decompiler.Metadata.AssemblyReference;
@@ -187,7 +188,7 @@ public static class AssemblyListing
         CodeReference.Navigable reference, CancellationToken ct)
     {
         var generation = list.Generation;
-        var owner = TryLoadAssembly(list, reference.FilePath, generation);
+        var owner = FindAssemblyToLookIn(list, reference.FilePath, generation);
         if (owner is null || !LoadedAssemblies.TryRead(reading, owner))
         {
             return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound();
@@ -323,13 +324,14 @@ public static class AssemblyListing
     }
 
     /// <summary>The definition of the type <paramref name="anchor"/> names, loading the assembly that
-    /// defines it without listing it; not found when its file cannot be read or no longer defines it; unreadable when
+    /// defines it without listing it; not found when no file is there or it no longer defines it (a file there that
+    /// can't be read throws its <see cref="AssemblyLoadException"/>, the lookup's failure with why); unreadable when
     /// the library could not read its type system. What else the library throws reading it goes on to the caller, as
     /// above. Call it off the UI thread.</summary>
     internal static async Task<Lookup<ITypeDefinition>> FindTypeDefinitionAsync(AssemblyList list, ModuleReading reading, TypeAnchor anchor,
         CancellationToken ct)
     {
-        var assembly = TryLoadAssembly(list, anchor.AssemblyPath);
+        var assembly = FindAssemblyToLookIn(list, anchor.AssemblyPath);
         if (assembly is null)
         {
             return new Lookup<ITypeDefinition>.NotFound();
@@ -346,7 +348,7 @@ public static class AssemblyListing
         CancellationToken ct)
     {
         var generation = list.Generation;
-        var owner = TryLoadAssembly(list, entity.FilePath, generation);
+        var owner = FindAssemblyToLookIn(list, entity.FilePath, generation);
         if (owner is null)
         {
             return new Lookup<ResolvedEntity>.NotFound();
@@ -387,12 +389,19 @@ public static class AssemblyListing
     }
 
     /// <summary>The listed item <paramref name="path"/> names: its assembly, opened and listed if it is not
-    /// and its file still exists, or the file listed as failed there. Null if the file cannot be opened,
-    /// or the list was cleared meanwhile. May load files: call it off the UI thread.</summary>
+    /// and its file still exists, or the file listed as failed there. Null if no file is there, or the list was cleared
+    /// meanwhile; a file there that can't be read, and isn't listed as failed, throws its
+    /// <see cref="AssemblyLoadException"/>. May load files: call it off the UI thread.</summary>
     internal static LoadedAssembly? OpenListed(AssemblyList list, AssemblyPath path)
     {
         var generation = list.Generation;
-        var assembly = TryLoad(list, path, generation) ?? list.FindListedFailure(path);
+        var load = TryLoad(list, path, generation);
+        var assembly = load is Outcome<Lookup<LoadedAssembly>>.Ok { Value: Lookup<LoadedAssembly>.Found found } ? found.Value : list.FindListedFailure(path);
+        if (assembly is null && load is Outcome<Lookup<LoadedAssembly>>.Failed failed)
+        {
+            ExceptionDispatchInfo.Throw(failed.Error);
+        }
+
         if (assembly is null || !TryList(list, assembly, generation))
         {
             return null;
@@ -421,22 +430,30 @@ public static class AssemblyListing
         return null;
     }
 
-    internal static LoadedAssembly? TryLoad(AssemblyList list, AssemblyPath path)
+    /// <summary>The assembly at <paramref name="path"/>, loaded without listing it, as of the list's generation now
+    /// (<see cref="TryLoad(AssemblyList, AssemblyPath, int)"/>).</summary>
+    internal static Outcome<Lookup<LoadedAssembly>> TryLoad(AssemblyList list, AssemblyPath path)
     {
         return TryLoad(list, path, list.Generation);
     }
 
     /// <summary>The assembly at <paramref name="path"/> to look a saved place up in, loaded without listing it: null when
-    /// no file is there, or it is a package, which has no metadata of its own. A file there that can't be read throws
-    /// its <see cref="AssemblyLoadException"/>: a file that can't be read is not a file that is gone.</summary>
+    /// no file is there (<see cref="TryLoad(AssemblyList, AssemblyPath, int)"/>), or it is a package, which has no
+    /// metadata of its own. A file there that can't be read throws its <see cref="AssemblyLoadException"/>: a file that
+    /// can't be read is not a file that is gone.</summary>
     internal static LoadedModule? FindAssemblyToLookIn(AssemblyList list, AssemblyPath path)
+    {
+        return FindAssemblyToLookIn(list, path, list.Generation);
+    }
+
+    private static LoadedModule? FindAssemblyToLookIn(AssemblyList list, AssemblyPath path, int generation)
     {
         LoadedAssembly assembly;
         try
         {
-            assembly = GetAssembly(list, path, list.Generation);
+            assembly = GetAssembly(list, path, generation);
         }
-        catch (AssemblyLoadException e) when (e.InnerException is FileNotFoundException or DirectoryNotFoundException)
+        catch (AssemblyLoadException e) when (IsNotThere(e, path))
         {
             return null;
         }
@@ -444,29 +461,62 @@ public static class AssemblyListing
         return assembly is LoadedModule module ? module : null;
     }
 
-    /// <summary>The assembly at <paramref name="path"/>, as <see cref="TryLoad(AssemblyList, AssemblyPath, int)"/> loads it;
-    /// null for a package, which has no metadata of its own, or a file that failed to load.</summary>
-    internal static LoadedModule? TryLoadAssembly(AssemblyList list, AssemblyPath path)
+    /// <summary>The assembly at <paramref name="path"/>, loaded without listing it: found; not found when no file is
+    /// there, at the check or by the read's <see cref="FileNotFoundException"/> or <see cref="DirectoryNotFoundException"/>
+    /// naming the path asked for or its package (a file can go between the check and the read); failed, with its
+    /// <see cref="AssemblyLoadException"/>, for a file there that can't be read: a lock, a corrupt file, another file it
+    /// needs missing.</summary>
+    internal static Outcome<Lookup<LoadedAssembly>> TryLoad(AssemblyList list, AssemblyPath path, int generation)
     {
-        return TryLoadAssembly(list, path, list.Generation);
-    }
-
-    private static LoadedModule? TryLoadAssembly(AssemblyList list, AssemblyPath path, int generation)
-    {
-        var assembly = TryLoad(list, path, generation);
-        return assembly is LoadedModule module ? module : null;
-    }
-
-    internal static LoadedAssembly? TryLoad(AssemblyList list, AssemblyPath path, int generation)
-    {
+        LoadedAssembly assembly;
         try
         {
-            return GetAssembly(list, path, generation);
+            assembly = GetAssembly(list, path, generation);
         }
-        catch (AssemblyLoadException)
+        catch (AssemblyLoadException e) when (IsNotThere(e, path))
         {
-            return null;
+            return new Outcome<Lookup<LoadedAssembly>>.Ok(new Lookup<LoadedAssembly>.NotFound());
         }
+        catch (AssemblyLoadException e)
+        {
+            return new Outcome<Lookup<LoadedAssembly>>.Failed(e);
+        }
+
+        return new Outcome<Lookup<LoadedAssembly>>.Ok(new Lookup<LoadedAssembly>.Found { Value = assembly });
+    }
+
+    // "Not there" is asked of what the read threw, never assumed of every failure: the file asked for, or the package it
+    // is in, missing, or a folder of its path. Another file missing (one it needs), a lock or a corrupt file is a failure.
+    private static bool IsNotThere(AssemblyLoadException e, AssemblyPath path)
+    {
+        return e.InnerException switch
+        {
+            DirectoryNotFoundException => true,
+            FileNotFoundException missing => NamesPathOrPackage(missing.FileName, path),
+            _ => false,
+        };
+    }
+
+    private static bool NamesPathOrPackage(string? file, AssemblyPath path)
+    {
+        if (file is null)
+        {
+            return false;
+        }
+
+        var named = AssemblyPath.Parse(file);
+        if (named is null)
+        {
+            return false;
+        }
+
+        if (named.Equals(path))
+        {
+            return true;
+        }
+
+        var inPackage = AssemblyPackages.SplitPath(path);
+        return inPackage is not null && named.Equals(inPackage.Value.Package);
     }
 
     private static LoadedAssembly GetAssembly(AssemblyList list, AssemblyPath path, int generation)
@@ -598,7 +648,7 @@ public static class AssemblyListing
             return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound();
         }
 
-        var assembly = TryLoadAssembly(list, AssemblyPath.Of(DecompilerFacts.GetMetadataFile(definition).FileName), generation);
+        var assembly = FindAssemblyToLookIn(list, AssemblyPath.Of(DecompilerFacts.GetMetadataFile(definition).FileName), generation);
         if (assembly is null)
         {
             return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound();
@@ -712,7 +762,7 @@ public static class AssemblyListing
         var file = AssemblyPackages.FindFile(package, fullName);
         if (file is null)
         {
-            throw new AssemblyLoadException(path, $"'{container.FilePath}' holds no '{fullName}'.");
+            throw new AssemblyLoadException(path, $"'{container.FilePath}' holds no '{fullName}'.", new FileNotFoundException($"'{container.FilePath}' holds no '{fullName}'.", path.Text));
         }
 
         var image = ReadPackageFile(list, package, file);

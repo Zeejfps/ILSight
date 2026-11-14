@@ -100,6 +100,26 @@ public sealed class AssemblyListTests
     }
 
     [Fact]
+    public void Loading_answers_loaded_not_there_or_failed_with_why()
+    {
+        using var temp = new TempDir();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var corrupt = AssemblyPath.Of(temp.Write("corrupt.dll", "no assembly"));
+        var gone = AssemblyPath.Of(temp.PathOf("gone.dll"));
+        var folderGone = AssemblyPath.Of(temp.PathOf(Path.Combine("no-folder", "gone.dll")));
+
+        var loaded = AssemblyListing.TryLoad(list, AssemblyPath.Of(Trees.TestAssemblyPath));
+
+        Assert.IsType<Lookup<LoadedAssembly>.Found>(Assert.IsType<Outcome<Lookup<LoadedAssembly>>.Ok>(loaded).Value);
+        Assert.IsType<Lookup<LoadedAssembly>.NotFound>(Assert.IsType<Outcome<Lookup<LoadedAssembly>>.Ok>(AssemblyListing.TryLoad(list, gone)).Value);
+        Assert.IsType<Lookup<LoadedAssembly>.NotFound>(Assert.IsType<Outcome<Lookup<LoadedAssembly>>.Ok>(AssemblyListing.TryLoad(list, folderGone)).Value);
+        var failed = Assert.IsType<Outcome<Lookup<LoadedAssembly>>.Failed>(AssemblyListing.TryLoad(list, corrupt));
+        Assert.IsType<BadImageFormatException>(Assert.IsType<AssemblyLoadException>(failed.Error).InnerException);
+        Assert.Throws<AssemblyLoadException>(() => AssemblyListing.FindAssemblyToLookIn(list, corrupt));
+        Assert.Null(AssemblyListing.FindAssemblyToLookIn(list, gone));
+    }
+
+    [Fact]
     public void Open_and_close_update_the_snapshot_paths_version_and_listeners()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };

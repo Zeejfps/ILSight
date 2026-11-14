@@ -35,7 +35,8 @@ public sealed class AssemblyResolver
     }
 
     /// <summary>The module <paramref name="moduleName"/> names, a file beside <paramref name="mainModule"/>'s, read;
-    /// null when there is none.</summary>
+    /// null when there is none (unresolved only for not there); a file there that can't be read throws its
+    /// <see cref="AssemblyLoadException"/>, the failure of what asked, with why.</summary>
     internal LoadedModule? FindModule(MetadataFile mainModule, string moduleName)
     {
         var directory = Path.GetDirectoryName(mainModule.FileName);
@@ -55,7 +56,7 @@ public sealed class AssemblyResolver
             return null;
         }
 
-        return AssemblyListing.TryLoadAssembly(List, path);
+        return AssemblyListing.FindAssemblyToLookIn(List, path);
     }
 
     /// <summary>The assembly <paramref name="reference"/> names: read from its file, when the list loads
@@ -82,7 +83,8 @@ public sealed class AssemblyResolver
     }
 
     /// <summary>The assembly <paramref name="reference"/> names, one read already as new as it asks for,
-    /// else read from its file, else any read of its name; for loading it whatever the list's options.</summary>
+    /// else read from its file, else any read of its name; for loading it whatever the list's options. A file found for
+    /// it that can't be read throws its <see cref="AssemblyLoadException"/>: not there is the only unresolved.</summary>
     internal LoadedModule? FindAssembly(IAssemblyReference reference)
     {
         var known = List.FindKnown(reference, exactOrNewer: true, listedOnly: false);
@@ -92,7 +94,7 @@ public sealed class AssemblyResolver
         }
 
         var path = FindAssemblyFile(reference);
-        var loaded = path is not null ? AssemblyListing.TryLoadAssembly(List, path) : null;
+        var loaded = path is not null ? AssemblyListing.FindAssemblyToLookIn(List, path) : null;
         if (loaded is not null)
         {
             return loaded;

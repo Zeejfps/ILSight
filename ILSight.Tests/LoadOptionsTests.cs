@@ -53,7 +53,7 @@ public sealed class LoadOptionsTests
         var generation = list.Generation;
         AssemblyListing.TryChangeLoadOptions(list, Off(DecompilerToggle.ApplyWindowsRuntimeProjections));
 
-        var readBefore = AssemblyListing.TryLoad(list, AssemblyPath.Of(Trees.TestAssemblyPath), generation);
+        var readBefore = AssemblyListing.TryLoad(list, AssemblyPath.Of(Trees.TestAssemblyPath), generation).GetValue().FoundOrNull;
         var opened = list.OpenModule(Trees.TestAssemblyPath);
 
         Assert.NotSame(readBefore, opened);

@@ -98,11 +98,11 @@ internal static class Trees
 
     public static LoadedAssembly? TryLoad(this AssemblyList list, string path)
     {
-        return AssemblyListing.TryLoad(list, AssemblyPath.Of(path));
+        return AssemblyListing.TryLoad(list, AssemblyPath.Of(path)).GetValue().FoundOrNull;
     }
 
     public static LoadedAssembly? TryLoad(this AssemblyList list, string path, int generation)
     {
-        return AssemblyListing.TryLoad(list, AssemblyPath.Of(path), generation);
+        return AssemblyListing.TryLoad(list, AssemblyPath.Of(path), generation).GetValue().FoundOrNull;
     }
 }
