@@ -58,6 +58,7 @@ internal static class DiagramView
             EmptyHint(ui, diagram);
             return;
         }
+        ReadFailure(ui, diagram.ReadFailure);
         DiagramFaces.MeasureIfChanged(ui, view, diagram);
         Canvas(ui, navigation, tooltips, view, diagram);
         CardMenu(ui, navigation, view, diagram, tab.ClosedAssembly);
@@ -134,8 +135,29 @@ internal static class DiagramView
     private static void EmptyHint(Ui<UiState> ui, TypeDiagram diagram)
     {
         var t = ui.State.Strings;
+        var failure = diagram.ReadFailure;
+        if (failure is not null && !diagram.IsBusy)
+        {
+            DocumentsView.Hint(ui, ui.Memo("diagram-read-failed", (failure, t), static a => a.t.DiagramReadFailed(a.failure)));
+            return;
+        }
+
         var text = diagram.IsBusy ? t.DiagramReading : t.DiagramEmpty;
         DocumentsView.Hint(ui, text);
+    }
+
+    // Above the cards it shows, the last read that failed, until a read is started again.
+    private static void ReadFailure(Ui<UiState> ui, string? failure)
+    {
+        if (failure is null)
+        {
+            return;
+        }
+
+        var theme = ui.Theme;
+        var text = ui.Memo("diagram-read-failed", (failure, t: ui.State.Strings), static a => a.t.DiagramReadFailed(a.failure));
+        ui.Text(text, new Box { Width = Sizing.Grow(), Padding = new Spacing(theme.Gap, theme.GapTight) }, color: theme.Warning, size: theme.FontSizeSmall,
+            wrap: true);
     }
 
     private static void Canvas(Ui<UiState> ui, Navigation navigation, CodeTooltips tooltips, DiagramViewState view, TypeDiagram diagram)
@@ -697,7 +719,7 @@ internal static class DiagramView
     {
         Commands.StartSettlingLater(uiState, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, newTitle), static (a, s) => Diagrams.ShowInDiagram(a, s.type, s.newTitle),
             static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token,
-            static (_, read, _) => read.Diagram.FinishReading(read.Read));
+            static (_, read, error) => read.Diagram.FailReading(read.Read, error.Message));
     }
 
     /// <summary>As <see cref="ShowInDiagramLater"/>, on a new diagram titled <paramref name="title"/>
@@ -706,7 +728,15 @@ internal static class DiagramView
     {
         Commands.StartSettlingLater(uiState, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, title), static (a, s) => Diagrams.ShowInNewDiagram(a, s.type, s.title),
             static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token,
-            static (_, read, _) => read.Diagram.FinishReading(read.Read));
+            static (_, read, error) => read.Diagram.FailReading(read.Read, error.Message));
+    }
+
+    // A read the card's menu started: settled failed on the diagram when its workflow fails.
+    private static void StartExpanding(UiState uiState, string name, TypeDiagram diagram, TypeCard card,
+        Func<AppState, (TypeDiagram Diagram, TypeCard Card), ExpansionRead, CancellationToken, Task> run)
+    {
+        Commands.StartSettlingLater<(TypeDiagram Diagram, TypeCard Card), ExpansionRead>(uiState, name, (diagram, card), static (_, s) => ExpansionRead.Start(s.Diagram, s.Card), run,
+            static read => read.Diagram.Token, static (_, read, error) => read.Diagram.FailReading(read.Read, error.Message));
     }
 
     private static void CardMenu(Ui<UiState> ui, Navigation navigation, DiagramViewState view, TypeDiagram diagram, string? closedAssembly)
@@ -760,15 +790,14 @@ internal static class DiagramView
         var open = why is null;
         if (HasLinks(card, Diagrams.IsBaseLink) && ui.MenuItem(t.DiagramAddBases, enabled: open && Diagrams.HasMissingBases(diagram, card), id: "add-bases", detail: why))
         {
-            Commands.Start(ui.State, nameof(DiagramGrowing.ExpandBasesAsync), (diagram, card), static (a, s, ct) => a.DiagramGrowing.ExpandBasesAsync(s.diagram, s.card, ct),
-                diagram.Token);
+            StartExpanding(ui.State, nameof(DiagramGrowing.ExpandBasesAsync), diagram, card, static (a, _, read, ct) => a.DiagramGrowing.ExpandBasesAsync(read, ct));
         }
 
         if (HasLinks(card, Diagrams.IsInterfaceLink)
             && ui.MenuItem(t.DiagramAddInterfaces, enabled: open && Diagrams.HasMissingInterfaces(diagram, card), id: "add-interfaces", detail: why))
         {
-            Commands.Start(ui.State, nameof(DiagramGrowing.ExpandInterfacesAsync), (diagram, card),
-                static (a, s, ct) => a.DiagramGrowing.ExpandInterfacesAsync(s.diagram, s.card, ct), diagram.Token);
+            StartExpanding(ui.State, nameof(DiagramGrowing.ExpandInterfacesAsync), diagram, card,
+                static (a, _, read, ct) => a.DiagramGrowing.ExpandInterfacesAsync(read, ct));
         }
 
         if (card.CanHaveDerived)
@@ -776,15 +805,14 @@ internal static class DiagramView
             var derivedItem = DerivedItemOf(ui, card);
             if (ui.MenuItem(derivedItem, enabled: open, id: "add-derived", detail: why))
             {
-                Commands.Start(ui.State, nameof(DiagramGrowing.ExpandDerivedAsync), (diagram, card),
-                    static (a, s, ct) => a.DiagramGrowing.ExpandDerivedAsync(s.diagram, s.card, ct), diagram.Token);
+                StartExpanding(ui.State, nameof(DiagramGrowing.ExpandDerivedAsync), diagram, card,
+                    static (a, _, read, ct) => a.DiagramGrowing.ExpandDerivedAsync(read, ct));
             }
         }
 
         if (HasLinks(card, Diagrams.IsHeldLink) && ui.MenuItem(t.DiagramAddHeld, enabled: open && Diagrams.HasMissingHeld(diagram, card), id: "add-held", detail: why))
         {
-            Commands.Start(ui.State, nameof(DiagramGrowing.ExpandHeldAsync), (diagram, card), static (a, s, ct) => a.DiagramGrowing.ExpandHeldAsync(s.diagram, s.card, ct),
-                diagram.Token);
+            StartExpanding(ui.State, nameof(DiagramGrowing.ExpandHeldAsync), diagram, card, static (a, _, read, ct) => a.DiagramGrowing.ExpandHeldAsync(read, ct));
         }
     }
 

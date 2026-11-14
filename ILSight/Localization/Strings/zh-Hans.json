@@ -476,6 +476,7 @@
   "diagram.inherited_from": "继承自 {type}",
   "diagram.reading": "正在读取类型…",
   "diagram.empty": "从树或代码中使用“在类图中显示”添加类型",
+  "diagram.read_failed": "读取类型失败（{why}）",
 
   "comparison.title": "{name} API 差异",
   "comparison.comparing": "正在比较…",

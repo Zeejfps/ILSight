@@ -58,7 +58,7 @@ public sealed class SettlingWorkflowsTests
     }
 
     [Fact]
-    public async Task A_diagram_read_that_throws_is_reported_once_and_the_diagram_stops_reading()
+    public async Task A_diagram_read_that_throws_is_reported_once_and_the_diagram_shows_it_failed_saying_why()
     {
         var ports = new FakeDiagramGrowingPorts();
         var d = AppStateDriver.OpenedWith(new AdapterHooks { Growing = _ => ports });
@@ -74,6 +74,7 @@ public sealed class SettlingWorkflowsTests
         d.Settle();
 
         Assert.False(diagram.IsBusy);
+        Assert.Equal("broken", diagram.ReadFailure);
         Assert.Equal("broken", ReportedOnce(d.AppState).Error.Message);
     }
 }

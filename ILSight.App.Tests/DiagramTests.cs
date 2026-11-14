@@ -129,9 +129,9 @@ public sealed class DiagramTests
         var vehicleType = await TypeOfAsync(d, "Vehicle");
         var vehicle = diagram.Cards.Single(c => c.Type == vehicleType);
 
-        d.Start((a, ct) => a.DiagramGrowing.ExpandHeldAsync(diagram, vehicle, ct));
+        d.Start((a, ct) => a.DiagramGrowing.ExpandHeldAsync(ExpansionRead.Start(diagram, vehicle), ct));
         d.Settle();
-        d.Start((a, ct) => a.DiagramGrowing.ExpandDerivedAsync(diagram, vehicle, ct));
+        d.Start((a, ct) => a.DiagramGrowing.ExpandDerivedAsync(ExpansionRead.Start(diagram, vehicle), ct));
         d.Settle();
 
         Assert.Equal(["Bike", "Car", "Garage", "IDriven", "Vehicle"], CardNames(diagram));
@@ -148,7 +148,7 @@ public sealed class DiagramTests
         var breakdown = diagram.Cards[0];
         Assert.True(Diagrams.HasMissingBases(diagram, breakdown));
 
-        d.Start((a, ct) => a.DiagramGrowing.ExpandBasesAsync(diagram, breakdown, ct));
+        d.Start((a, ct) => a.DiagramGrowing.ExpandBasesAsync(ExpansionRead.Start(diagram, breakdown), ct));
         d.Settle();
 
         Assert.Equal(["Breakdown", "Exception"], CardNames(diagram));
@@ -165,7 +165,7 @@ public sealed class DiagramTests
         var diagram = await ShowInNewAsync(d, "IDriven");
 
         var idriven = diagram.Cards[0];
-        d.Start((a, ct) => a.DiagramGrowing.ExpandDerivedAsync(diagram, idriven, ct));
+        d.Start((a, ct) => a.DiagramGrowing.ExpandDerivedAsync(ExpansionRead.Start(diagram, idriven), ct));
         d.Settle();
 
         Assert.Equal(["Car", "IDriven"], CardNames(diagram));

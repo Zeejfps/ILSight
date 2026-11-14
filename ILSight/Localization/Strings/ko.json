@@ -476,6 +476,7 @@
   "diagram.inherited_from": "{type}에서 상속",
   "diagram.reading": "형식을 읽는 중…",
   "diagram.empty": "트리나 코드에서 다이어그램에 표시로 형식을 추가하세요",
+  "diagram.read_failed": "형식을 읽지 못했습니다 ({why})",
 
   "comparison.title": "{name} API 차이",
   "comparison.comparing": "비교하는 중…",

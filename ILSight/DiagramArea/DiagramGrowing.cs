@@ -41,7 +41,7 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
     {
         var cards = await ports.ReadWithNeighboursAsync(read.Type, ct);
         var diagram = read.Diagram;
-        diagram.FinishReading(read.Read);
+        FinishOrFail(diagram, read.Read, cards);
         if (diagram.IsClosed)
         {
             return;
@@ -53,6 +53,12 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
                 unreadable => ReportModuleUnreadable(unreadable.Module),
                 static _ => { }),
             failed => ReportUnreadable(read.Type, failed.Error));
+    }
+
+    // A read the library failed shows failed where the diagram is, besides being reported.
+    private static void FinishOrFail<T>(TypeDiagram diagram, CardRead reading, Outcome<T> read)
+    {
+        read.Switch(_ => diagram.FinishReading(reading), failed => diagram.FailReading(reading, failed.Error.Message));
     }
 
     private void TakeHome(Queue<ViewCommand> viewCommands, NeighboursRead read, List<TypeCard> cards)
@@ -68,54 +74,54 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
         viewCommands.Enqueue(new ViewCommand.FocusCard { Tab = read.Tab, Type = cards[0].Type });
     }
 
-    /// <summary>Adds to <paramref name="diagram"/> the types <paramref name="card"/> derives from, or, for an
-    /// interface, the interfaces it extends; drops them when the diagram was closed meanwhile.
+    /// <summary>Adds to <paramref name="read"/>'s diagram the types its card derives from, or, for an
+    /// interface, the interfaces it extends; drops them when the diagram was closed meanwhile, and shows a read the library
+    /// failed as failed on the diagram.
     /// <paramref name="ct"/> is the workflow's token, which the edge that starts it links to the diagram's
     /// closing.</summary>
-    public Task ExpandBasesAsync(TypeDiagram diagram, TypeCard card, CancellationToken ct)
+    public Task ExpandBasesAsync(ExpansionRead read, CancellationToken ct)
     {
-        return AddCardsAsync(diagram, card, Diagrams.ListMissing(diagram, card, Diagrams.IsBaseLink), ct);
+        return AddCardsAsync(read, Diagrams.ListMissing(read.Diagram, read.Card, Diagrams.IsBaseLink), ct);
     }
 
-    /// <summary>Adds to <paramref name="diagram"/> the interfaces <paramref name="card"/> implements, as
+    /// <summary>Adds to <paramref name="read"/>'s diagram the interfaces its card implements, as
     /// <see cref="ExpandBasesAsync"/> adds its bases.</summary>
-    public Task ExpandInterfacesAsync(TypeDiagram diagram, TypeCard card, CancellationToken ct)
+    public Task ExpandInterfacesAsync(ExpansionRead read, CancellationToken ct)
     {
-        return AddCardsAsync(diagram, card, Diagrams.ListMissing(diagram, card, Diagrams.IsInterfaceLink), ct);
+        return AddCardsAsync(read, Diagrams.ListMissing(read.Diagram, read.Card, Diagrams.IsInterfaceLink), ct);
     }
 
-    /// <summary>Adds to <paramref name="diagram"/> the types <paramref name="card"/>'s properties hold, as
+    /// <summary>Adds to <paramref name="read"/>'s diagram the types its card's properties hold, as
     /// <see cref="ExpandBasesAsync"/> adds its bases.</summary>
-    public Task ExpandHeldAsync(TypeDiagram diagram, TypeCard card, CancellationToken ct)
+    public Task ExpandHeldAsync(ExpansionRead read, CancellationToken ct)
     {
-        return AddCardsAsync(diagram, card, Diagrams.ListMissing(diagram, card, Diagrams.IsHeldLink), ct);
+        return AddCardsAsync(read, Diagrams.ListMissing(read.Diagram, read.Card, Diagrams.IsHeldLink), ct);
     }
 
-    private async Task AddCardsAsync(TypeDiagram diagram, TypeCard card, List<CodeReference.Entity> types, CancellationToken ct)
+    private async Task AddCardsAsync(ExpansionRead expansion, List<CodeReference.Entity> types, CancellationToken ct)
     {
         if (types.Count == 0)
         {
+            expansion.Diagram.FinishReading(expansion.Read);
             return;
         }
 
-        var reading = diagram.StartReading();
         var read = await ports.ReadCardsAsync(types, ct);
-        FinishAdding(diagram, reading, card, read);
+        FinishAdding(expansion.Diagram, expansion.Read, expansion.Card, read);
     }
 
-    /// <summary>Looks in the open assemblies for the types deriving from <paramref name="card"/>, or implementing it,
-    /// and adds them to <paramref name="diagram"/>, as <see cref="ExpandBasesAsync"/> adds its bases, naming each module
+    /// <summary>Looks in the open assemblies for the types deriving from <paramref name="expansion"/>'s card, or implementing it,
+    /// and adds them to its diagram, as <see cref="ExpandBasesAsync"/> adds its bases, naming each module
     /// the search reached that could not be read.</summary>
-    public async Task ExpandDerivedAsync(TypeDiagram diagram, TypeCard card, CancellationToken ct)
+    public async Task ExpandDerivedAsync(ExpansionRead expansion, CancellationToken ct)
     {
-        var reading = diagram.StartReading();
-        var read = await ports.ReadDerivedAsync(card.Type, ct);
-        FinishAdding(diagram, reading, card, read);
+        var read = await ports.ReadDerivedAsync(expansion.Card.Type, ct);
+        FinishAdding(expansion.Diagram, expansion.Read, expansion.Card, read);
     }
 
     private void FinishAdding(TypeDiagram diagram, CardRead reading, TypeCard card, Outcome<ScopeSearch<TypeCard>> read)
     {
-        diagram.FinishReading(reading);
+        FinishOrFail(diagram, reading, read);
         if (diagram.IsClosed)
         {
             return;
@@ -137,7 +143,7 @@ public sealed class DiagramGrowing(DiagramGrowing.IPorts ports)
 
     private void FinishAdding(TypeDiagram diagram, CardRead reading, TypeCard card, Outcome<List<Lookup<TypeCard>>> read)
     {
-        diagram.FinishReading(reading);
+        FinishOrFail(diagram, reading, read);
         if (diagram.IsClosed)
         {
             return;

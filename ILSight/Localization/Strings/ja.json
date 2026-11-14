@@ -476,6 +476,7 @@
   "diagram.inherited_from": "{type} から継承",
   "diagram.reading": "型を読み込んでいます…",
   "diagram.empty": "ツリーまたはコードから「クラス図に表示」で型を追加します",
+  "diagram.read_failed": "型を読み込めませんでした ({why})",
 
   "comparison.title": "{name} の API 差分",
   "comparison.comparing": "比較しています…",

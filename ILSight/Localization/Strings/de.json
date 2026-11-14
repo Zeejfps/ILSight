@@ -476,6 +476,7 @@
   "diagram.inherited_from": "von {type}",
   "diagram.reading": "Typen werden gelesen…",
   "diagram.empty": "Typen mit „Im Diagramm anzeigen“ aus der Baumansicht oder dem Code hinzufügen",
+  "diagram.read_failed": "Die Typen konnten nicht gelesen werden ({why})",
 
   "comparison.title": "API-Unterschiede von {name}",
   "comparison.comparing": "Wird verglichen…",

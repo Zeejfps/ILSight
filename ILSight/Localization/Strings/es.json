@@ -476,6 +476,7 @@
   "diagram.inherited_from": "de {type}",
   "diagram.reading": "Leyendo tipos…",
   "diagram.empty": "Agregue tipos con Mostrar en el diagrama, desde el árbol o el código",
+  "diagram.read_failed": "No se pudieron leer los tipos ({why})",
 
   "comparison.title": "Diferencias de API de {name}",
   "comparison.comparing": "Comparando…",

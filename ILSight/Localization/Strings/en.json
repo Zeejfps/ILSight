@@ -485,6 +485,7 @@
   "diagram.inherited_from": "from {type}",
   "diagram.reading": "Reading types…",
   "diagram.empty": "Add types with Show in diagram, from the tree or the code",
+  "diagram.read_failed": "Reading the types failed ({why})",
 
   "comparison.title": "{name} API diff",
   "comparison.comparing": "Comparing…",
