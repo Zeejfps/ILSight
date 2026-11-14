@@ -104,12 +104,21 @@ public static class Analyzers
     }
 
     /// <summary>The type or member <paramref name="definition"/> names, loading its assembly's file
-    /// without listing it, once the read of its type system ended; not found when the file or the entity is gone,
-    /// unreadable when the library could not read the file; what else the library throws resolving or describing it,
-    /// <see cref="Outcome{T}.Failed"/>.</summary>
+    /// without listing it, once the read of its type system ended; not found when the file is gone or its module has
+    /// no such row, unreadable when the library could not read the module; a file there that can't be read, and what
+    /// else the library throws resolving or describing it, <see cref="Outcome{T}.Failed"/>.</summary>
     public static async Task<Outcome<Lookup<AnalysisSymbol>>> FindAsync(AssemblyList list, CodeAnchor definition, CancellationToken ct)
     {
-        var assembly = TryLoad(list, definition);
+        LoadedModule? assembly;
+        try
+        {
+            assembly = AssemblyListing.FindAssemblyToLookIn(list, definition.FilePath);
+        }
+        catch (AssemblyLoadException e)
+        {
+            return new Outcome<Lookup<AnalysisSymbol>>.Failed(e);
+        }
+
         if (assembly is null)
         {
             return new Outcome<Lookup<AnalysisSymbol>>.Ok(new Lookup<AnalysisSymbol>.NotFound());
@@ -118,60 +127,40 @@ public static class Analyzers
         using var reading = LoadedAssemblies.BeginReading();
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
         return read.Match(
-            r => Find(r.TypeSystem.MainModule, definition, ct).Match<Outcome<Lookup<AnalysisSymbol>>>(
-                static ok => new Outcome<Lookup<AnalysisSymbol>>.Ok(Lookup.FromNullable(ok.Value)),
-                static failed => new Outcome<Lookup<AnalysisSymbol>>.Failed(failed.Error)),
+            r => Find(assembly, r.TypeSystem.MainModule, definition, ct),
             u => new Outcome<Lookup<AnalysisSymbol>>.Ok(Lookup.FromUnreadable<AnalysisSymbol>(assembly, u)),
             static _ => new Outcome<Lookup<AnalysisSymbol>>.Ok(new Lookup<AnalysisSymbol>.NotFound()));
     }
 
-    private static LoadedModule? TryLoad(AssemblyList list, CodeAnchor definition)
-    {
-        try
-        {
-            return AssemblyListing.TryLoadAssembly(list, definition.FilePath);
-        }
-        catch (BadImageFormatException)
-        {
-            return null;
-        }
-        catch (IOException)
-        {
-            return null;
-        }
-    }
-
-    // A saved token the module no longer has can surface as any of the three exceptions taken as not found.
-    private static Outcome<AnalysisSymbol?> Find(MetadataModule main, CodeAnchor definition, CancellationToken ct)
+    // Whether the saved token still names a row is asked of the module first; what the library throws resolving one
+    // that does is a failure: the module's own as unreadable, the rest with why.
+    private static Outcome<Lookup<AnalysisSymbol>> Find(LoadedModule assembly, MetadataModule main, CodeAnchor definition, CancellationToken ct)
     {
         SymbolFacts? facts;
         try
         {
+            if (!SavedTokens.IsInModule(main, definition.Token))
+            {
+                return new Outcome<Lookup<AnalysisSymbol>>.Ok(new Lookup<AnalysisSymbol>.NotFound());
+            }
+
             var entity = main.ResolveEntity(MetadataTokens.EntityHandle(definition.Token));
             facts = entity is not null ? ReadFacts(entity) : null;
         }
-        catch (ArgumentException)
+        catch (BadImageFormatException e)
         {
-            return new Outcome<AnalysisSymbol?>.Ok(null);
-        }
-        catch (BadImageFormatException)
-        {
-            return new Outcome<AnalysisSymbol?>.Ok(null);
+            return new Outcome<Lookup<AnalysisSymbol>>.Ok(new Lookup<AnalysisSymbol>.Unreadable { Module = new UnreadableModule { Module = assembly, Why = e } });
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             throw;
         }
-        catch (InvalidOperationException)
-        {
-            return new Outcome<AnalysisSymbol?>.Ok(null);
-        }
         catch (Exception e)
         {
-            return new Outcome<AnalysisSymbol?>.Failed(e);
+            return new Outcome<Lookup<AnalysisSymbol>>.Failed(e);
         }
 
-        return new Outcome<AnalysisSymbol?>.Ok(facts is not null ? Compose(facts) : null);
+        return new Outcome<Lookup<AnalysisSymbol>>.Ok(Lookup.FromNullable(facts is not null ? Compose(facts) : null));
     }
 
     private static IReadOnlyList<AnalysisKind> ListKinds(ISymbol symbol)

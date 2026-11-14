@@ -35,6 +35,30 @@ public sealed class AnalysisTests
     }
 
     [Fact]
+    public async Task A_saved_token_the_module_has_no_row_for_is_asked_and_not_found()
+    {
+        var (list, _) = Trees.OpenTestAssembly();
+        var path = AssemblyPath.Of(Trees.TestAssemblyPath);
+        var pastTheEnd = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = path, Token = 0x06FFFFFF };
+        var noEntities = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = path, Token = 0x23000001 };
+
+        Assert.IsType<Lookup<AnalysisSymbol>.NotFound>((await Analyzers.FindAsync(list, pastTheEnd, CancellationToken.None)).GetValue());
+        Assert.IsType<Lookup<AnalysisSymbol>.NotFound>((await Analyzers.FindAsync(list, noEntities, CancellationToken.None)).GetValue());
+    }
+
+    [Fact]
+    public async Task A_saved_symbol_in_a_file_that_cannot_be_read_fails_one_in_a_file_gone_is_not_found()
+    {
+        using var temp = new TempDir();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var unreadable = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = AssemblyPath.Of(temp.Write("notes.dll", "not an assembly")), Token = 0x06000001 };
+        var gone = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = AssemblyPath.Of(temp.PathOf("gone.dll")), Token = 0x06000001 };
+
+        Assert.IsType<AssemblyLoadException>(Assert.IsType<Outcome<Lookup<AnalysisSymbol>>.Failed>(await Analyzers.FindAsync(list, unreadable, CancellationToken.None)).Error);
+        Assert.IsType<Lookup<AnalysisSymbol>.NotFound>((await Analyzers.FindAsync(list, gone, CancellationToken.None)).GetValue());
+    }
+
+    [Fact]
     public async Task An_analysis_reaching_a_member_the_library_cannot_read_ends_failed_saying_why()
     {
         using var temp = new TempDir();

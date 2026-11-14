@@ -417,6 +417,24 @@ public static class AssemblyListing
         return TryLoad(list, path, list.Generation);
     }
 
+    /// <summary>The assembly at <paramref name="path"/> to look a saved place up in, loaded without listing it: null when
+    /// no file is there, or it is a package, which has no metadata of its own. A file there that can't be read throws
+    /// its <see cref="AssemblyLoadException"/>: a file that can't be read is not a file that is gone.</summary>
+    internal static LoadedModule? FindAssemblyToLookIn(AssemblyList list, AssemblyPath path)
+    {
+        LoadedAssembly assembly;
+        try
+        {
+            assembly = GetAssembly(list, path, list.Generation);
+        }
+        catch (AssemblyLoadException e) when (e.InnerException is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return null;
+        }
+
+        return assembly is LoadedModule module ? module : null;
+    }
+
     /// <summary>The assembly at <paramref name="path"/>, as <see cref="TryLoad(AssemblyList, AssemblyPath, int)"/> loads it;
     /// null for a package, which has no metadata of its own, or a file that failed to load.</summary>
     internal static LoadedModule? TryLoadAssembly(AssemblyList list, AssemblyPath path)

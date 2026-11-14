@@ -74,6 +74,20 @@ public sealed class ILSpyTreeTests
     }
 
     [Fact]
+    public async Task A_bookmark_in_a_file_that_cannot_be_read_is_its_failure_not_a_file_gone()
+    {
+        using var temp = new TempDir();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var unreadable = AssemblyPath.Of(temp.Write("notes.dll", "not an assembly"));
+        var gone = AssemblyPath.Of(temp.PathOf("gone.dll"));
+
+        var located = await ILSpyTree.LocateAsync(list, TestSession.Shared, unreadable, null, 0x06000001, "N.T.M", CancellationToken.None);
+
+        Assert.IsType<AssemblyLoadException>(Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(located).Error);
+        Assert.IsType<Lookup<BrowseNode>.NotFound>((await ILSpyTree.LocateAsync(list, TestSession.Shared, gone, null, 0x06000001, "N.T.M", CancellationToken.None)).GetValue());
+    }
+
+    [Fact]
     public async Task A_token_that_names_an_entity_of_another_name_finds_nothing()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
