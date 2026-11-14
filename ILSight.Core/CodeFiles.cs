@@ -9,17 +9,39 @@ public static class CodeFiles
     /// <summary>Writes <paramref name="node"/>'s code in <paramref name="language"/> to the file at
     /// <paramref name="path"/>, as <see cref="NodeContentLoader.ToCodeExportAsync"/> says what it is, once the read of
     /// its module's type system ended: the path written, or, for code that reads it, the module the library could not
-    /// read, with nothing written. Throws when decompiling or writing fails. The file is replaced only once the code is
-    /// whole. A unit reading the node's module: closed, writing nothing, when it was released (closed) before.</summary>
-    public static async Task<TypeSystemWork<string>> SaveAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language,
+    /// read, with nothing written. What the library throws decompiling, or the disk writing, is
+    /// <see cref="Outcome{T}.Failed"/>; the cancellation of <paramref name="cancellationToken"/> is let through. The file
+    /// is replaced only once the code is whole. A unit reading the node's module: closed, writing nothing, when it was
+    /// released (closed) before.</summary>
+    public static async Task<Outcome<TypeSystemWork<string>>> SaveAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language,
         DecompilerOptions options, string path, CancellationToken cancellationToken = default)
     {
         using var reading = LoadedAssemblies.BeginReading();
         if (node.Assembly is LoadedModule own && !LoadedAssemblies.TryRead(reading, own))
         {
-            return new TypeSystemWork<string>.Closed { Module = own };
+            return new Outcome<TypeSystemWork<string>>.Ok(new TypeSystemWork<string>.Closed { Module = own });
         }
 
+        TypeSystemWork<string> written;
+        try
+        {
+            written = await SaveUnderReadingAsync(session, reading, node, language, options, path, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<TypeSystemWork<string>>.Failed(e);
+        }
+
+        return new Outcome<TypeSystemWork<string>>.Ok(written);
+    }
+
+    private static async Task<TypeSystemWork<string>> SaveUnderReadingAsync(BrowseSession session, ModuleReading reading, BrowseNode node,
+        DecompilationLanguage language, DecompilerOptions options, string path, CancellationToken cancellationToken)
+    {
         var export = await NodeContentLoader.ToCodeExportAsync(session, node, cancellationToken);
         var module = FindModule(export);
         if (module is null)

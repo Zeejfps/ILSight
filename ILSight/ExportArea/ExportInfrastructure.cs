@@ -7,9 +7,9 @@ namespace ILSight.ExportArea;
 /// <summary>Reaches the app's error reports, the clock and the disk, for <see cref="ExportWriting"/>,
 /// <see cref="SaveResourceHandler"/>, <see cref="ExtractPackageFileHandler"/> and
 /// <see cref="CheckExportFilesHandler"/>. An export's work runs on the thread pool and comes back on the UI thread, on a
-/// token its turn's cancellation and the workflow's both cancel: what it threw comes back as
-/// <see cref="ExportOutcome{T}.Failed"/> (the decompiler's reads of the user's assemblies, <see cref="UntrustedReads"/>),
-/// its turn's cancellation as <see cref="ExportOutcome{T}.Stopped"/>, and the workflow's own cancellation is let
+/// token its turn's cancellation and the workflow's both cancel: what the library (or the disk it writes to) failed with
+/// comes back as <see cref="ExportOutcome{T}.Failed"/>, as the core answers it, its turn's cancellation as
+/// <see cref="ExportOutcome{T}.Stopped"/>, and the workflow's own cancellation, and anything else, are let
 /// through.</summary>
 public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, BrowseSession session)
     : ExportWriting.IPorts, SaveResourceHandler.IPorts, ExtractPackageFileHandler.IPorts, CheckExportFilesHandler.IPorts
@@ -62,10 +62,12 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
         return RunOverTypeSystemAsync(token => AssemblyExport.GeneratePdbAsync(work.Assembly, work.Options, work.File, start.Progress, token), start, ct);
     }
 
-    /// <remarks>An assembly closed before the export began stops it, writing nothing.</remarks>
+    /// <remarks>An assembly closed before the export began stops it, writing nothing; each assembly the library failed
+    /// on is a failure of the list it answers.</remarks>
     public Task<ExportOutcome<List<PdbFailure>>> WritePdbsAsync(ExportWork.Pdbs work, ExportTurn.Started start, CancellationToken ct)
     {
-        return RunOverModulesAsync(token => AssemblyExport.GeneratePdbsAsync(work.Assemblies, work.Options, work.Folder, start.Progress, token), start, ct);
+        return RunOverModulesAsync<List<PdbFailure>>(async token => new Outcome<ModuleRead<List<PdbFailure>>>.Ok(
+            await AssemblyExport.GeneratePdbsAsync(work.Assemblies, work.Options, work.Folder, start.Progress, token)), start, ct);
     }
 
     /// <remarks>An assembly the library could not read fails the export, saying why.</remarks>
@@ -74,47 +76,48 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
         return RunOverTypeSystemAsync(token => ClassDiagrams.WriteAsync(work.Assembly, work.Folder, start.Progress, token), start, ct);
     }
 
+    /// <remarks>Each file it could not write is a failure of the list it answers.</remarks>
     public Task<ExportOutcome<ExtractedFiles>> ExtractPackageFolderAsync(ExportWork.PackageFolder work, ExportTurn.Started start, CancellationToken ct)
     {
-        return RunAsync(token => PackageExtraction.ExtractFolder(work.Place.Container.Package, work.Place.Folder, work.Folder, start.Progress, token), start,
-            ct);
+        return RunAsync(token => new Outcome<ExtractedFiles>.Ok(PackageExtraction.ExtractFolder(work.Place.Container.Package, work.Place.Folder, work.Folder,
+            start.Progress, token)), start, ct);
     }
 
     // Runs work on the thread pool and comes back on the UI thread.
-    private static async Task<ExportOutcome<T>> RunAsync<T>(Func<CancellationToken, T> work, ExportTurn.Started start, CancellationToken ct)
+    private static async Task<ExportOutcome<T>> RunAsync<T>(Func<CancellationToken, Outcome<T>> work, ExportTurn.Started start, CancellationToken ct)
     {
         using var link = CancellationTokenSource.CreateLinkedTokenSource(start.Token, ct);
         var token = link.Token;
-        return await CatchAsync(Background.Run(() => work(token)), start, ct);
+        return await StopOrMatchAsync(Background.Run(() => work(token)), start, ct);
     }
 
-    private static async Task<ExportOutcome<T>> RunAsync<T>(Func<CancellationToken, Task<T>> work, ExportTurn.Started start, CancellationToken ct)
+    private static async Task<ExportOutcome<T>> RunAsync<T>(Func<CancellationToken, Task<Outcome<T>>> work, ExportTurn.Started start, CancellationToken ct)
     {
         using var link = CancellationTokenSource.CreateLinkedTokenSource(start.Token, ct);
         var token = link.Token;
-        return await CatchAsync(Background.Wait(Task.Run(() => work(token), CancellationToken.None)), start, ct);
+        return await StopOrMatchAsync(Background.Wait(Task.Run(() => work(token), CancellationToken.None)), start, ct);
     }
 
-    // The work decompiles the user's assemblies, so what it throws is its failure (UntrustedReads); the cancellation of
+    // The core answers what the library failed with; the turn's cancellation stops the export, and the cancellation of
     // ct, the workflow's, is let through.
-    private static async Task<ExportOutcome<T>> CatchAsync<T>(BackgroundWork<T> work, ExportTurn.Started start, CancellationToken ct)
+    private static async Task<ExportOutcome<T>> StopOrMatchAsync<T>(BackgroundWork<Outcome<T>> work, ExportTurn.Started start, CancellationToken ct)
     {
-        var outcome = await UntrustedReads.CatchAsync(work, ct);
-        return outcome.Match(static ok => new ExportOutcome<T>.Done(ok.Value), failed => ToFailedOrStopped<T>(failed.Error, start));
-    }
-
-    private static ExportOutcome<T> ToFailedOrStopped<T>(Exception error, ExportTurn.Started start)
-    {
-        if (error is OperationCanceledException && start.Token.IsCancellationRequested)
+        Outcome<T> outcome;
+        try
+        {
+            outcome = await work;
+        }
+        catch (OperationCanceledException) when (start.Token.IsCancellationRequested && !ct.IsCancellationRequested)
         {
             return new ExportOutcome<T>.Stopped();
         }
 
-        return new ExportOutcome<T>.Failed(error);
+        ct.ThrowIfCancellationRequested();
+        return outcome.Match<ExportOutcome<T>>(static ok => new ExportOutcome<T>.Done(ok.Value), static failed => new ExportOutcome<T>.Failed(failed.Error));
     }
 
-    private static async Task<ExportOutcome<T>> RunOverTypeSystemAsync<T>(Func<CancellationToken, Task<TypeSystemWork<T>>> work, ExportTurn.Started start,
-        CancellationToken ct)
+    private static async Task<ExportOutcome<T>> RunOverTypeSystemAsync<T>(Func<CancellationToken, Task<Outcome<TypeSystemWork<T>>>> work,
+        ExportTurn.Started start, CancellationToken ct)
     {
         var outcome = await RunAsync(work, start, ct);
         return outcome.Match(
@@ -126,7 +129,7 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
             static failed => new ExportOutcome<T>.Failed(failed.Error));
     }
 
-    private static async Task<ExportOutcome<T>> RunOverModulesAsync<T>(Func<CancellationToken, Task<ModuleRead<T>>> work, ExportTurn.Started start,
+    private static async Task<ExportOutcome<T>> RunOverModulesAsync<T>(Func<CancellationToken, Task<Outcome<ModuleRead<T>>>> work, ExportTurn.Started start,
         CancellationToken ct)
     {
         var outcome = await RunAsync(work, start, ct);

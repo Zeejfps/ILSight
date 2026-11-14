@@ -224,31 +224,45 @@ public static class ApiEntries
     /// <summary>Compares the API of <paramref name="left"/> with that of <paramref name="right"/>, taking in
     /// what <paramref name="scope"/> says, once the reads of both assemblies' type systems ended; the first the library
     /// could not read, when it could not, with nothing compared. Reads both assemblies' types: call it off the UI
-    /// thread. A unit reading both: the first released (closed) before, when one was, with nothing compared.</summary>
-    public static async Task<TypeSystemWork<ApiDiff>> CompareAsync(LoadedModule left, LoadedModule right, ApiScope scope, CancellationToken cancellationToken)
+    /// thread. A unit reading both: the first released (closed) before, when one was, with nothing compared. What the
+    /// library throws reading their APIs is <see cref="Outcome{T}.Failed"/>; the cancellation of
+    /// <paramref name="cancellationToken"/> is let through.</summary>
+    public static async Task<Outcome<TypeSystemWork<ApiDiff>>> CompareAsync(LoadedModule left, LoadedModule right, ApiScope scope,
+        CancellationToken cancellationToken)
     {
         using var reading = LoadedAssemblies.BeginReading();
         var reads = await LoadedAssemblies.ReadTypeSystemsAsync(reading, [left, right], cancellationToken);
         var closed = new[] { left, right }.FirstOrDefault(m => !reads.Modules.Contains(m));
         if (closed is not null)
         {
-            return new TypeSystemWork<ApiDiff>.Closed { Module = closed };
+            return new Outcome<TypeSystemWork<ApiDiff>>.Ok(new TypeSystemWork<ApiDiff>.Closed { Module = closed });
         }
 
         if (reads.Unreadable.Count > 0)
         {
-            return new TypeSystemWork<ApiDiff>.Unreadable { Module = reads.Unreadable[0] };
+            return new Outcome<TypeSystemWork<ApiDiff>>.Ok(new TypeSystemWork<ApiDiff>.Unreadable { Module = reads.Unreadable[0] });
         }
 
-        var diff = Compare(left, reads.Read[LoadedAssemblies.GetFile(left)].MainModule, right, reads.Read[LoadedAssemblies.GetFile(right)].MainModule, scope,
-            cancellationToken);
-        return new TypeSystemWork<ApiDiff>.Done { Value = diff };
+        List<ApiEntry> namespaces;
+        try
+        {
+            namespaces = CompareNamespaces(reads.Read[LoadedAssemblies.GetFile(left)].MainModule, reads.Read[LoadedAssemblies.GetFile(right)].MainModule, scope,
+                cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<TypeSystemWork<ApiDiff>>.Failed(e);
+        }
+
+        return new Outcome<TypeSystemWork<ApiDiff>>.Ok(new TypeSystemWork<ApiDiff>.Done { Value = Compare(left, right, scope, namespaces) });
     }
 
-    private static ApiDiff Compare(LoadedModule left, MetadataModule leftMain, LoadedModule right, MetadataModule rightMain, ApiScope scope,
-        CancellationToken cancellationToken)
+    private static ApiDiff Compare(LoadedModule left, LoadedModule right, ApiScope scope, List<ApiEntry> namespaces)
     {
-        var namespaces = CompareNamespaces(leftMain, rightMain, scope, cancellationToken);
         return new ApiDiff
         {
             LeftName = left.NameAndVersion,

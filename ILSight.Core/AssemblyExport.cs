@@ -15,20 +15,36 @@ public static class AssemblyExport
     /// <summary>Decompiles <paramref name="assembly"/> into a project whose file is
     /// <paramref name="projectPath"/>, with its code and resources in the folder beside it, and
     /// writes what <paramref name="extras"/> asks for besides. A unit reading the assembly: closed, writing nothing,
-    /// when it was released (closed) before.</summary>
+    /// when it was released (closed) before. What the library throws decompiling or writing it, the disk's failures
+    /// among them, is <see cref="Outcome{T}.Failed"/>; the cancellation of <paramref name="cancellationToken"/> is let
+    /// through.</summary>
     /// <exception cref="ArgumentException"><paramref name="projectPath"/> is no absolute path of a file.</exception>
-    public static async Task<ModuleRead<ExportedProject>> ExportProjectAsync(LoadedModule assembly, DecompilerOptions options, string projectPath,
-        ProjectExtras? extras = null, IProgress<ExportProgress>? progress = null, CancellationToken cancellationToken = default)
+    public static async Task<Outcome<ModuleRead<ExportedProject>>> ExportProjectAsync(LoadedModule assembly, DecompilerOptions options,
+        string projectPath, ProjectExtras? extras = null, IProgress<ExportProgress>? progress = null, CancellationToken cancellationToken = default)
     {
+        var path = FullFilePath.Of(projectPath);
         using var reading = LoadedAssemblies.BeginReading();
         if (!LoadedAssemblies.TryRead(reading, assembly))
         {
-            return new ModuleRead<ExportedProject>.Closed { Module = assembly };
+            return new Outcome<ModuleRead<ExportedProject>>.Ok(new ModuleRead<ExportedProject>.Closed { Module = assembly });
         }
 
         var part = BeginPart(progress, assembly, 0, WholeExport);
-        var project = await ExportProjectAsync(reading, assembly, options, FullFilePath.Of(projectPath), extras ?? ProjectExtras.None, part, cancellationToken);
-        return new ModuleRead<ExportedProject>.Read { Value = project };
+        ExportedProject project;
+        try
+        {
+            project = await ExportProjectAsync(reading, assembly, options, path, extras ?? ProjectExtras.None, part, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<ModuleRead<ExportedProject>>.Failed(e);
+        }
+
+        return new Outcome<ModuleRead<ExportedProject>>.Ok(new ModuleRead<ExportedProject>.Read { Value = project });
     }
 
     private static async Task<ExportedProject> ExportProjectAsync(ModuleReading reading, LoadedModule assembly, DecompilerOptions options,
@@ -99,21 +115,38 @@ public static class AssemblyExport
     /// <summary>Decompiles each of <paramref name="projects"/> into a project in a folder of its own,
     /// named as the project, beside <paramref name="solutionPath"/>, then writes the solution that
     /// holds them. A unit reading every assembly: closed, writing nothing, with the first of them released (closed)
-    /// before.</summary>
+    /// before. What the library throws decompiling or writing them is <see cref="Outcome{T}.Failed"/>, as
+    /// <see cref="ExportProjectAsync(LoadedModule, DecompilerOptions, string, ProjectExtras, IProgress{ExportProgress}, CancellationToken)"/>
+    /// says.</summary>
     /// <exception cref="ArgumentException"><paramref name="solutionPath"/> is no absolute path of a file.</exception>
-    public static async Task<ModuleRead<List<ExportedProject>>> ExportSolutionAsync(IReadOnlyList<SolutionProject> projects, DecompilerOptions options,
-        string solutionPath, ProjectExtras? extras = null, IProgress<ExportProgress>? progress = null, CancellationToken cancellationToken = default)
+    public static async Task<Outcome<ModuleRead<List<ExportedProject>>>> ExportSolutionAsync(IReadOnlyList<SolutionProject> projects,
+        DecompilerOptions options, string solutionPath, ProjectExtras? extras = null, IProgress<ExportProgress>? progress = null,
+        CancellationToken cancellationToken = default)
     {
+        var folder = FullFilePath.Of(solutionPath).Folder;
         var assemblies = projects.Select(static p => p.Assembly).ToList();
         using var reading = LoadedAssemblies.BeginReading();
         if (!TryReadAll(reading, assemblies, out var closed))
         {
-            return new ModuleRead<List<ExportedProject>>.Closed { Module = closed };
+            return new Outcome<ModuleRead<List<ExportedProject>>>.Ok(new ModuleRead<List<ExportedProject>>.Closed { Module = closed });
         }
 
-        var exported = await ExportSolutionAsync(reading, projects, assemblies, options, solutionPath, extras ?? ProjectExtras.None, progress,
-            cancellationToken);
-        return new ModuleRead<List<ExportedProject>>.Read { Value = exported };
+        List<ExportedProject> exported;
+        try
+        {
+            exported = await ExportSolutionAsync(reading, projects, assemblies, options, folder, solutionPath, extras ?? ProjectExtras.None, progress,
+                cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<ModuleRead<List<ExportedProject>>>.Failed(e);
+        }
+
+        return new Outcome<ModuleRead<List<ExportedProject>>>.Ok(new ModuleRead<List<ExportedProject>>.Read { Value = exported });
     }
 
     private static bool TryReadAll(ModuleReading reading, IReadOnlyList<LoadedModule> assemblies, [NotNullWhen(false)] out LoadedModule? closed)
@@ -132,10 +165,9 @@ public static class AssemblyExport
     }
 
     private static async Task<List<ExportedProject>> ExportSolutionAsync(ModuleReading reading, IReadOnlyList<SolutionProject> projects,
-        IReadOnlyList<LoadedModule> assemblies, DecompilerOptions options, string solutionPath, ProjectExtras withExtras, IProgress<ExportProgress>? progress,
-        CancellationToken cancellationToken)
+        IReadOnlyList<LoadedModule> assemblies, DecompilerOptions options, string folder, string solutionPath, ProjectExtras withExtras,
+        IProgress<ExportProgress>? progress, CancellationToken cancellationToken)
     {
-        var folder = FullFilePath.Of(solutionPath).Folder;
         var bounds = PartBounds(assemblies);
         var exported = new List<ExportedProject>();
         for (var i = 0; i < projects.Count; i++)
@@ -161,12 +193,27 @@ public static class AssemblyExport
     /// that maps its IL to that code, with the code embedded. The file is replaced only once the PDB
     /// is whole.</summary>
     /// <remarks>Once the read of the assembly's type system ended: for an assembly the library could not read, says so
-    /// and writes nothing.</remarks>
-    public static Task<TypeSystemWork<string>> GeneratePdbAsync(LoadedModule assembly, DecompilerOptions options, string path,
+    /// and writes nothing. What the library throws decompiling or writing it is <see cref="Outcome{T}.Failed"/>; the
+    /// cancellation of <paramref name="cancellationToken"/> is let through.</remarks>
+    public static async Task<Outcome<TypeSystemWork<string>>> GeneratePdbAsync(LoadedModule assembly, DecompilerOptions options, string path,
         IProgress<ExportProgress>? progress = null, CancellationToken cancellationToken = default)
     {
-        return LoadedAssemblies.WithTypeSystemAsync(assembly, (reading, typeSystem) => GeneratePdb(reading, assembly, typeSystem, options, path, embedSources: true,
-            BeginPart(progress, assembly, 0, WholeExport), cancellationToken), cancellationToken);
+        TypeSystemWork<string> written;
+        try
+        {
+            written = await LoadedAssemblies.WithTypeSystemAsync(assembly, (reading, typeSystem) => GeneratePdb(reading, assembly, typeSystem, options, path,
+                embedSources: true, BeginPart(progress, assembly, 0, WholeExport), cancellationToken), cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<TypeSystemWork<string>>.Failed(e);
+        }
+
+        return new Outcome<TypeSystemWork<string>>.Ok(written);
     }
 
     private static string GeneratePdb(ModuleReading reading, LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerOptions options, string path,

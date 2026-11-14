@@ -42,11 +42,22 @@ public sealed class DiagramTests : IDisposable
     }
 
     [Fact]
+    public async Task A_diagrammer_of_a_module_whose_member_the_library_cannot_read_is_its_failure_saying_why()
+    {
+        var add = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Calculator`1", "Add");
+        var module = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(BrokenAssemblies.WriteUnreadableMethodName(_temp, Trees.TestAssemblyPath, add));
+
+        var written = await ClassDiagrams.WriteAsync(module, _temp.PathOf("broken diagram"));
+
+        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<TypeSystemWork<string>>.Failed>(written).Error);
+    }
+
+    [Fact]
     public async Task The_diagrammer_is_written_as_a_page_with_its_script_styles_and_icon()
     {
         var folder = _temp.PathOf("diagram");
 
-        var page = Assert.IsType<TypeSystemWork<string>.Done>(await ClassDiagrams.WriteAsync(Trees.TestAssembly, folder)).Value;
+        var page = Assert.IsType<TypeSystemWork<string>.Done>((await ClassDiagrams.WriteAsync(Trees.TestAssembly, folder)).GetValue()).Value;
 
         Assert.Equal(Path.Combine(folder, ClassDiagrams.PageFileName), page);
         Assert.True(File.Exists(Path.Combine(folder, "script.js")));

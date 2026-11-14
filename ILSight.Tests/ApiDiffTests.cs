@@ -22,8 +22,22 @@ public sealed class ApiDiffTests
     private static async Task<ApiDiff> ReadDiffAsync(ApiScope scope)
     {
         var opened = s_opened.Value;
-        var compared = await ApiEntries.CompareAsync(opened.Left, opened.Right, scope, CancellationToken.None);
+        var compared = (await ApiEntries.CompareAsync(opened.Left, opened.Right, scope, CancellationToken.None)).GetValue();
         return Assert.IsType<TypeSystemWork<ApiDiff>.Done>(compared).Value;
+    }
+
+    [Fact]
+    public async Task A_comparison_reaching_a_member_the_library_cannot_read_is_its_failure_saying_why()
+    {
+        using var temp = new TempDir();
+        var add = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Calculator`1", "Add");
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var left = list.OpenModule(Trees.TestAssemblyPath);
+        var right = list.OpenModule(BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, add));
+
+        var compared = await ApiEntries.CompareAsync(left, right, ApiScope.PublicApi, CancellationToken.None);
+
+        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<TypeSystemWork<ApiDiff>>.Failed>(compared).Error);
     }
 
     private static ApiEntry Entry(ApiDiff diff, params ReadOnlySpan<string> path)

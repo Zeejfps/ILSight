@@ -30,12 +30,27 @@ public static partial class ClassDiagrams
     /// <summary>Writes the diagrammer of <paramref name="assembly"/> into <paramref name="folder"/>,
     /// creating it, and returns the path of its page.</summary>
     /// <remarks>Once the read of the assembly's type system ended: for an assembly the library could not read, says so
-    /// and writes nothing.</remarks>
-    public static Task<TypeSystemWork<string>> WriteAsync(LoadedModule assembly, string folder, IProgress<ExportProgress>? progress = null,
+    /// and writes nothing. What the library throws reading it, or the disk writing it, is
+    /// <see cref="Outcome{T}.Failed"/>; the cancellation of <paramref name="cancellationToken"/> is let through.</remarks>
+    public static async Task<Outcome<TypeSystemWork<string>>> WriteAsync(LoadedModule assembly, string folder, IProgress<ExportProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        return LoadedAssemblies.WithTypeSystemAsync(assembly, (_, typeSystem) => Write(assembly, typeSystem.MainModule, folder, progress, cancellationToken),
-            cancellationToken);
+        TypeSystemWork<string> written;
+        try
+        {
+            written = await LoadedAssemblies.WithTypeSystemAsync(assembly, (_, typeSystem) => Write(assembly, typeSystem.MainModule, folder, progress,
+                cancellationToken), cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<TypeSystemWork<string>>.Failed(e);
+        }
+
+        return new Outcome<TypeSystemWork<string>>.Ok(written);
     }
 
     private static string Write(LoadedModule assembly, MetadataModule main, string folder, IProgress<ExportProgress>? progress,
