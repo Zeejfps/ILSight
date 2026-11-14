@@ -290,46 +290,6 @@ public static class NuGetFeeds
         return Path.Combine(folder, lowerId, lowerVersion, $"{lowerId}.{lowerVersion}.nupkg");
     }
 
-    // nuget.org takes no icon file larger.
-    private const int MaxBytes = 1024 * 1024;
-
-    /// <summary>The picture at <paramref name="url"/>, shrunk to fit a square <paramref name="side"/>
-    /// pixels across.</summary>
-    /// <exception cref="HttpRequestException">The picture could not be fetched.</exception>
-    /// <exception cref="InvalidDataException">It is no picture, or too large a file.</exception>
-    public static async Task<ResourceImage> GetIconAsync(PackageIcons icons, WebUrl url, int side, CancellationToken cancellationToken = default)
-    {
-        await icons.Fetches.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            var bytes = await ReadIconBytesAsync(icons, url, cancellationToken).ConfigureAwait(false);
-            var read = ResourceImages.DecodeImage(bytes);
-            return read.Match(decoded => ResourceImages.FitInto(decoded.Image, side), static unreadable => throw new InvalidDataException(unreadable.Why));
-        }
-        finally
-        {
-            icons.Fetches.Release();
-        }
-    }
-
-    private static async Task<byte[]> ReadIconBytesAsync(PackageIcons icons, WebUrl url, CancellationToken cancellationToken)
-    {
-        using var response = await icons.Client.GetAsync(url.Uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
-        if (response.Content.Headers.ContentLength > MaxBytes)
-        {
-            throw new InvalidDataException($"The icon at {url} is larger than {MaxBytes} bytes.");
-        }
-
-        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
-        if (bytes.Length > MaxBytes)
-        {
-            throw new InvalidDataException($"The icon at {url} is larger than {MaxBytes} bytes.");
-        }
-
-        return bytes;
-    }
-
     /// <summary>What the user's NuGet.Config came to: missing, unreadable, or what it says.</summary>
     public static NuGetConfigRead ReadUserConfig()
     {

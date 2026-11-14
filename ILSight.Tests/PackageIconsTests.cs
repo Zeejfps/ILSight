@@ -15,7 +15,7 @@ public sealed class PackageIconsTests
         fake.Answer(IconUrl, """<svg xmlns="http://www.w3.org/2000/svg" width="256" height="128"><rect width="256" height="128" fill="red"/></svg>""");
         var icons = NuGetFeeds.CreateIcons(fake);
 
-        var icon = await NuGetFeeds.GetIconAsync(icons, Icon, 64);
+        var icon = await icons.GetIconAsync(Icon, 64);
 
         Assert.Equal(64, icon.Width);
         Assert.Equal(32, icon.Height);
@@ -28,7 +28,7 @@ public sealed class PackageIconsTests
         fake.Answer(IconUrl, "<html>not found</html>");
         var icons = NuGetFeeds.CreateIcons(fake);
 
-        await Assert.ThrowsAsync<InvalidDataException>(() => NuGetFeeds.GetIconAsync(icons, Icon, 64));
+        await Assert.ThrowsAsync<InvalidDataException>(() => icons.GetIconAsync(Icon, 64));
     }
 
     [Fact]

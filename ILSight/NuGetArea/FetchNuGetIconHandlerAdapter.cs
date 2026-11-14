@@ -12,6 +12,6 @@ public sealed class FetchNuGetIconHandlerAdapter(NuGetClient client) : FetchNuGe
     /// <see cref="Outcome{T}.Failed"/>.</summary>
     public Task<Outcome<ResourceImage>> DownloadIconAsync(WebUrl url, int side, CancellationToken ct)
     {
-        return NetworkFailures.CatchAsync(Background.Wait(NuGetFeeds.GetIconAsync(client.Icons, url, side, ct)), ct);
+        return NetworkFailures.CatchAsync(Background.Wait(client.Icons.GetIconAsync(url, side, ct)), ct);
     }
 }
