@@ -6,6 +6,25 @@ namespace ILSight.App.Tests;
 public sealed class NavigateHandlerTests
 {
     [Fact]
+    public void FailResolving_TheLookupsWorkflowFailed_StopsResolvingUnlessANewerRequestBegan()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var navigation = d.AppState.Navigation;
+        var failing = navigation.BeginResolving(inNewTab: false);
+
+        navigation.FailResolving(failing);
+        var stopped = navigation.IsResolving;
+        var older = navigation.BeginResolving(inNewTab: false);
+        var newer = navigation.BeginResolving(inNewTab: false);
+        navigation.FailResolving(older);
+
+        Assert.False(stopped);
+        Assert.True(navigation.IsResolving);
+        navigation.FailResolving(newer);
+        Assert.False(navigation.IsResolving);
+    }
+
+    [Fact]
     public async Task HandleAsync_ReferenceFound_ShowsItAndRecordsItInTheHistory()
     {
         var d = AppStateDriver.OpenedWithoutScreen();

@@ -20,7 +20,7 @@ public sealed class ShowInApiReferenceHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_NoPageOrLookupFailed_ReportsThereIsNone()
+    public async Task HandleAsync_NoPageRefusesItButALookupThatFailedIsReported()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         d.TakeViewCommands();
@@ -32,9 +32,9 @@ public sealed class ShowInApiReferenceHandlerTests
         await d.RunAsync(() => new ShowInApiReferenceHandler(failed).HandleAsync(d.AppState.ViewCommands, hidden, CancellationToken.None));
 
         Assert.Equal([new Refusal.NoApiReferencePage { Name = "Hidden" }], none.Refused);
-        Assert.Equal([new Refusal.NoApiReferencePage { Name = "Hidden" }], failed.Refused);
+        Assert.Empty(failed.Refused);
         Assert.Empty(none.Reported);
-        Assert.Empty(failed.Reported);
+        Assert.Equal("unreadable", Assert.IsType<AppProblem.Unresolved>(Assert.Single(failed.Reported)).Error.Message);
         Assert.Empty(d.TakeViewCommands());
     }
 }

@@ -69,14 +69,29 @@ public static class Commands
             return;
         }
 
-        Start(uiState, nameof(NavigateHandler), (reference, lookup), static (a, s, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, s.reference, s.lookup, ct));
+        StartResolving(uiState, nameof(NavigateHandler), (reference, lookup), lookup,
+            static (a, s, ct) => a.NavigateHandler.HandleAsync(a.Navigation, a.Decompiler, s.reference, s.lookup, ct));
+    }
+
+    // A lookup the user asked for, which the app says it is resolving until it ends: when its workflow fails, the edge
+    // reports it and the request stops resolving (Navigation.FailResolving).
+    private static void StartResolving<T>(UiState uiState, string name, T subject, ResolveTicket lookup,
+        Func<AppState, T, CancellationToken, Task<DecompileTicket?>> show)
+    {
+        uiState.AppCommands.Enqueue(appState => StartShowingResolved(appState, name, lookup, ct => show(appState, subject, ct)));
+    }
+
+    private static void StartShowingResolved(AppState appState, string name, ResolveTicket lookup, Func<CancellationToken, Task<DecompileTicket?>> show)
+    {
+        appState.Workflows.StartSettling(name, async ct => StartDecompiling(appState, await show(ct)), _ => appState.Navigation.FailResolving(lookup));
     }
 
     /// <summary>As <see cref="FollowLater"/>, showing the metadata table row that defines what
     /// <paramref name="reference"/> points at (<see cref="ShowInMetadataHandler"/>).</summary>
     public static void ShowInMetadataLater(UiState uiState, CodeReference.Navigable reference, ResolveTicket lookup)
     {
-        Start(uiState, nameof(ShowInMetadataHandler), (reference, lookup), static (a, s, ct) => a.ShowInMetadataHandler.HandleAsync(a.Navigation, a.Decompiler, s.reference, s.lookup, ct));
+        StartResolving(uiState, nameof(ShowInMetadataHandler), (reference, lookup), lookup,
+            static (a, s, ct) => a.ShowInMetadataHandler.HandleAsync(a.Navigation, a.Decompiler, s.reference, s.lookup, ct));
     }
 
     /// <summary>Asks for what <paramref name="reference"/> points at to be analyzed once the frame is drawn: the analyzer
@@ -424,7 +439,8 @@ public static class Commands
     public static void StartMoving(AppState appState, HistoryMove move)
     {
         move.Switch(load => StartDecompiling(appState, load),
-            lookup => StartShowing(appState, nameof(GoToHistoryEntryHandler), ct => appState.GoToHistoryEntryHandler.HandleAsync(appState.Navigation, appState.Decompiler, lookup, ct)),
+            lookup => StartShowingResolved(appState, nameof(GoToHistoryEntryHandler), lookup.Ticket,
+                ct => appState.GoToHistoryEntryHandler.HandleAsync(appState.Navigation, appState.Decompiler, lookup, ct)),
             read => StartReadingPlace(appState, read), run => StartComparing(appState, run));
     }
 

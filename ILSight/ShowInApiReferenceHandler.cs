@@ -7,7 +7,8 @@ public sealed class ShowInApiReferenceHandler(ShowInApiReferenceHandler.IPorts p
 {
     public interface IPorts
     {
-        /// <summary>Tells the user the type or member is in a module that could not be read.</summary>
+        /// <summary>Tells the user the type or member is in a module that could not be read, or looking it up
+        /// failed.</summary>
         void ReportError(AppProblem problem);
 
         /// <summary>Tells the user what they asked for was refused, and why, where they acted.</summary>
@@ -26,10 +27,11 @@ public sealed class ShowInApiReferenceHandler(ShowInApiReferenceHandler.IPorts p
     public async Task HandleAsync(Queue<ViewCommand> viewCommands, CodeReference.Entity reference, CancellationToken ct)
     {
         var answer = await ports.LookUpApiReferencePageAsync(reference, ct);
-        var page = answer.Match(static ok => ok.Value, static _ => new Lookup<string>.NotFound());
-        page.Switch(
-            found => viewCommands.Enqueue(new ViewCommand.OpenWebPage(found.Value)),
-            _ => ports.ShowRefusal(new Refusal.NoApiReferencePage { Name = reference.Name }),
-            unreadable => ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module)));
+        answer.Switch(
+            ok => ok.Value.Switch(
+                found => viewCommands.Enqueue(new ViewCommand.OpenWebPage(found.Value)),
+                _ => ports.ShowRefusal(new Refusal.NoApiReferencePage { Name = reference.Name }),
+                unreadable => ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module))),
+            failed => ports.ReportError(new AppProblem.Unresolved { Reference = reference, Error = failed.Error }));
     }
 }
