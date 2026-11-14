@@ -42,9 +42,10 @@ limited to frame-driven UIs.
     so its callbacks (a `Progress<T>`) post there; a task it holds is awaited; work elsewhere by design (real I/O, a
     server) is awaited by its condition, bounded, never by a fixed count of frames or pumps or a delay; frames are
     counted only for what the app promises in frames. A bound guards a hang (sized for a full run; never none), never
-    speed; work started together is ordered by the test, or only what every order gives is asserted, unless that
-    order is the contract under test. Wait for what lasts (the effect at its port, a count), never a state held a
-    frame or a turn.
+    speed: one per test, its own or a per-test timeout in the suite's checked-in runner settings, not a command-line
+    flag (a run-ending hang dump is a backstop). Work started together is ordered by the test, or only what every
+    order gives is asserted, unless that order is the contract under test. Wait for what lasts (the effect at its
+    port, a count), never a state held a frame or a turn.
   - **Seams:** use cases through their public methods with a fake port; domain code directly; adapters and queries
     against a real or local database. Never private methods; no interface only to fake.
 - **Test input** (fixtures a test compiles and reads back) is data, exempt from every rule: its folder is marked
@@ -323,14 +324,16 @@ nullable exception).
   hover alone (never a failure record); its format, and how the details open, are the product's.
 - **Whatever fails stays where it was shown**, failed with why, until retried, dismissed or removed by product
   policy; never dropped, left pending or shown empty. An unexpected one is also reported once, saying the operation
-  that failed (wherever asked), its cause and what the user can do (which reports are one incident is the product's).
-  What presents it never takes the focus or input meant for something else, nor marks it read by appearing; whether it
-  appears by itself, waits on an indicator or interrupts is the product's.
+  that failed (wherever asked; the step that asked may be named beside its kind), its cause and what the user can do
+  (which reports are one incident is the product's). What presents it never takes the focus or input meant for
+  something else, nor marks it read by appearing; whether it appears by itself, waits on an indicator or interrupts is
+  the product's.
 - **Batches and absence:** independent items keep their own outcomes, the batch failing only for what fails every item;
   an atomic batch or dependent steps follow the operation's completion contract. "Not there" is the source's own
   absence answer, asked first where it has one; an exception is not there only where it unambiguously means the object
   asked for is absent (`KeyNotFoundException`, `FileNotFoundException` / `DirectoryNotFoundException` naming it), else
-  a failure. A check first is a shortcut, not proof the read will succeed.
+  a failure. A check first is a shortcut, not proof the read will succeed. A dependency's failure degrades or fails
+  the operation by its contract, said failed with why, never as not there.
 - **Restore and retry:** unreadable restored state is kept as saved; a reload keeps saved references and user intent
   the product promises, failed or not, resolving them again (content derived from sources alone follows its reload
   contract). A failed read is reread only on a trigger the product chose (Retry, reload, a change to what it names, a
@@ -351,7 +354,8 @@ nullable exception).
   requested unit's failure case with why, shown where its answer would be, in the project calling it (your core's
   answer carries the case); never list your own code.
 - **Lazy library failures are translated inside each adapter member's read**, every touch of the library's objects
-  inside, the app's sorting and formatting after the outermost catch, on values read out: it returns values it read (freely enumerable) or its own
+  inside (a walk's choice of what to touch, a helper taking them), the app's sorting and formatting (helpers too) after
+  the outermost catch, on values read out: it returns values it read (freely enumerable) or its own
   `IAsyncEnumerable<T>` iterator, never deferred library execution; the iterator catches each item's read, owns its
   source (`await using`), and is consumed in one loop with no other call to it.
 - **A shared read whose outcome is a value** is awaited and matched by the unit needing it before its sync read
@@ -361,11 +365,12 @@ nullable exception).
   edge links a workflow's token to what cancels it on purpose (shutdown, newer work, a closed dialog), ending quietly
   only for those (never a `Failed` holding a cancellation); an app-set deadline is a timeout (an adapter's `TimedOut`
   case, or the edge's report). Work a change makes stale never commits nor is said as a failure: where cancellation is
-  its protocol, the change cancels first; where an answer is (superseded, a refused ticket), the check answers. A
-  canceller appearing partway (a state change returns a ticket newer work cancels) ends
-  the workflow, which returns it (`[MustUse]`) for the edge to start the I/O linked to it, no catch in the workflow;
-  later steps needing the outcome await a port member taking the ticket (`Stopped` if cancelled). **Newest wins by
-  the current ticket:** the state commits a result only while its ticket is current.
+  its protocol, the change cancels first, what ends a generation owning its work's token so no caller can forget;
+  where an answer is (superseded, a refused ticket), the check answers. A canceller appearing partway (a state change
+  returns a ticket newer work cancels) ends the workflow, which returns it (`[MustUse]`) for the edge to start the I/O
+  linked to it, no catch in the workflow; later steps needing the outcome await a port member taking the ticket
+  (`Stopped` if cancelled). **Newest wins by the current ticket:** the state commits a result only while its ticket
+  is current.
 - **An effect that can't be undone** (a charge) and what must follow are one transaction, or the work is recorded
   durably first and a worker does the effect under an idempotency key its provider honours, then the rest, replaying
   pending work after an interruption; never the request's token, `CancellationToken.None` or a grace period.

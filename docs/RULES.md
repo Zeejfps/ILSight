@@ -145,6 +145,17 @@ Test conventions:
   right ones; the state waited for by ZGF's `WaitUntil` (ILSight's first) was missed whether it held a frame or a turn;
   looked at, or recorded by the driver, every frame, a frame's state was seen and a turn's not; the effect at the
   window's port was seen in both.
+  **The hang guard is per test, wherever the suite runs.** One guard covers the whole test, so an await of a call the
+  test made on the spot needs no bound of its own where the test is guarded in every run the suite has: a per-test
+  timeout, the test's own or the runner's, set in the suite's own settings (a file the runner reads, checked in with
+  the tests), which fails the test by name and runs the rest. A hang timeout over the run (a hang dump that kills the
+  test host) names the test but runs nothing after it: a backstop, not the guard. A flag one command line passes
+  guards that run only; the job's run, with its own command, hangs as with none. A wait by condition keeps its own
+  bound beside it, which says what never came (RULE-ISSUES BK6). In testing (R010 S27 C: the same suite, its first test
+  awaiting an export it started, which a product bug never finishes), no guard (ILSight's) hung the job until killed;
+  a hang timeout on one developer's command line left the job's run the same; one in the suite's settings ended the
+  run after 5 minutes, the test named, the two after it not run; a per-test timeout in the suite's settings failed it
+  by name and passed the other two.
 - **Test data uses object initializers** (R005), so every value in a fixture the test builds is labelled. (Code the
   code under test reads as its input is another thing: test input, which no rule reshapes, above.)
 - **Shared helpers live in one place** (a shared test project), not copied into each test project.
@@ -2628,6 +2639,15 @@ var message = account.Withdraw(amount).Match(
   any load failure taken as not found (ILSight's resolver and navigation lookups) said five gone, three wrongly, with
   nothing to retry; whatever the read threw after the check a failure said the deleted file failed; the exception naming
   the file asked for as not there and the rest failures said both gone and failed three with why.
+  A failure of what an operation reads on the way (a dependency, a reference beside the file) is still a failure; what
+  it does to the operation is the operation's completion contract (as for a batch). Where the dependency is optional
+  (a decompiler can read a reference by name only), the operation degrades and says so: the result marks what was read
+  without it, as not there or as failed with why, the failure reported once as that dependency's (its operation, cause
+  and recovery); never folded into "not there". Where it is required, the operation fails with why (RULE-ISSUES BK2).
+  In testing (S38 d-f, Shop.dll decompiled, its references there, gone, locked and corrupt), a failed reference failing
+  the decompilation (ILSight's resolver since Batch AF) left the user no output for a lock; failures read as unresolved
+  like the gone one said three not found, two of them there; read by name only and said as what each is, the output
+  came, one not found, two failed with why, each reported once.
   **A run with no window of its own says it through the reporting contract of how it was invoked.** A second run
   handing its command line over, a CLI, a request to a service, a scheduled job, a dedicated game server: what it must
   tell (a hand-over still unknown, below) goes where whoever invoked it reads its outcome. A request says it in its
@@ -2745,6 +2765,11 @@ var message = account.Withdraw(amount).Match(
   twice; the operation's kind listed it once, the decompilation apart. Two lookups failing, one denied access to its
   folder and one on a corrupt module: one kind for the operation told the denied one to retry once the module reads; a
   kind per cause, the operation still said, gave each its recovery.
+  What is said where the user acted may name the step they took that asked for the operation (going to a bookmark,
+  going back): context the report carries beside its kind, never a kind per step, so the step is said and the failure
+  is still one kind, listed once, its advice the cause's (RULE-ISSUES BK1). In testing (S37 f, one lookup failing from
+  a bookmark and going back), one kind with no step (ILSight's) named neither the bookmark nor the step back; a kind per
+  step named both and listed the one failure twice; the step said beside the kind named both and listed it once.
   **A failure nobody asked about never takes the user's input.** A failure nobody asked about now (a background
   export, a read started earlier) settles where it was shown and is recorded; whatever presents it may not take the
   focus or the pointer, consume input meant for something else, or mark it read by appearing: opened by itself as a
@@ -2975,6 +3000,18 @@ reason.
   outside, the corrupt name failed its card and the bug was logged once; formatted in the cell's catch (ILSight's grid
   tooltips), the bug was said as the cell's failure; moved out of the cell's catch only, it failed the whole page as
   unreadable; split at the outermost catch, the cut-short cell failed in place and the bug was logged once.
+  What decides which of the library's objects are touched is the read: a walk's choice of what to follow (neighbours,
+  derived types, its filters of hidden types or of an implicit base) stays inside, a predicate over what the walk reads;
+  what is shown of what was read is the app's, outside. Moved out, the walk reads what the app chose never to read, and
+  its failures fail what the user sees (RULE-ISSUES BK3). A helper that makes text is placed by what it takes, whoever
+  wrote it: the library's objects (a signature decoded from its blob, its own `ToString` of its objects) are the read;
+  values already read out (a hex string of bytes read, an enum's `ToString`) are formatting (RULE-ISSUES BK4). In
+  testing (S39, a type whose compiler-generated neighbour is corrupt and never shown; members with a corrupt signature
+  and an empty token blob, on which the library's own hex helper has a bug), the hidden-type filter after the catch
+  failed the whole diagram for the hidden type; inside the walk (ILSight's), the diagram was drawn. Helpers placed by
+  who wrote them said the hex helper's bug as the member unreadable; by what they return (text outside), the corrupt
+  signature reached the edge as the app's bug; by what they take, the signature failed its member in place and the
+  helper's bug was logged once.
 - **A shared read's outcome is awaited and matched by the unit that needs it, before its sync read starts.** A read
   kept as one task whose outcome is a value (a module's type system, read once ahead of its first use: R010 point 4) is
   needed by sync code inside other units' library reads (decompiling a member; an analysis whose library code asks for
@@ -3110,6 +3147,14 @@ reason.
   it; the token cancelled after the generation, the open failed where its check fell between; cancelled first, it
   ended quietly wherever it fell; the generation ended alone with a check that answers "superseded", it ended quietly
   and listed nothing.
+  The order is kept where the change is made, not by each caller. What ends a generation owns ending its work: a token
+  source per generation, which its own end cancels before the generation changes and which the edge links into each
+  piece of work's token beside its own, so a change written later cannot forget. Where it cannot own one, its end takes
+  the ending of the work in flight as a required argument; a guard that throws when reached with nothing cancelled stays
+  as detection of that bug, not as the protocol (RULE-ISSUES BK5). In testing (S36 e-g, a clear and new load options,
+  the later change written without cancelling first), the edge cancelling first with the core's guard (ILSight's)
+  failed the open the new options made stale, logged; the end taking the cancellation as an argument, and the core
+  owning the generation's token, ended both quietly.
 - **A deadline is a timeout, whoever sets it.** Cancelled on purpose means someone wants the work gone: shutdown, newer
   work, a closed dialog. A deadline the app sets itself (`CancelAfter`, a timer, `WaitAsync(timeout)`) says the work
   didn't finish in time, which someone must hear, so it never joins the tokens linked as on purpose. Whoever sets it
@@ -3192,10 +3237,10 @@ reason.
 - [ ] With a lazily reading library, every touch of its objects is inside the catch and the app's formatting outside, on values read out first.
 - [ ] Work the app ends on purpose is cancelled through the token the edge links, never answered as `Failed` with a cancellation in it.
 - [ ] A one-line place is fitted to the space it is drawn in, by the renderer's width model, what follows keeping its place; its details are reachable by every way the line is reached (keyboard and assistive technology too), never hover alone.
-- [ ] A failure nobody asked about never takes the focus, the pointer or input meant for something else, nor is marked read by appearing; whether it appears by itself, waits on an indicator or interrupts is the product's. A report says the operation that failed (wherever it was asked), its cause and what the user can do; which reports are one incident is the product's.
-- [ ] Inside a library's catch are only reads; the app's ordering, filtering and formatting run after the outermost catch, on values read out.
-- [ ] A change that makes work in flight stale never lets its result commit nor says it as a failure: under a cancellation protocol it cancels the token before changing what the work checks; under an answer protocol (superseded, a refused ticket) the check answers it.
-- [ ] `FileNotFoundException` naming the file asked for is not there, after a check too; one naming another file, a lock or a corrupt file is a failure.
+- [ ] A failure nobody asked about never takes the focus, the pointer or input meant for something else, nor is marked read by appearing; whether it appears by itself, waits on an indicator or interrupts is the product's. A report says the operation that failed (wherever it was asked), its cause and what the user can do, and may name the step that asked beside its kind; which reports are one incident is the product's.
+- [ ] Inside a library's catch are only reads; the app's ordering, filtering and formatting run after the outermost catch, on values read out. A walk's choice of what to touch is the read; a helper that makes text is the read when it takes the library's objects, formatting when it takes values read out.
+- [ ] A change that makes work in flight stale never lets its result commit nor says it as a failure: under a cancellation protocol it cancels the token before changing what the work checks; under an answer protocol (superseded, a refused ticket) the check answers it. What ends a generation owns its work's token (or takes the cancellation as a required argument), so no caller can forget the order.
+- [ ] `FileNotFoundException` naming the file asked for is not there, after a check too; one naming another file, a lock or a corrupt file is a failure. A dependency's failure degrades or fails the operation by its completion contract, said failed with why, never as not there.
 - [ ] Restored state whose source can't be read now is kept as saved: failed in place with why, saved unchanged, read again when its source can be; unless removed by the user or an explicit product policy (an expiry), every kind alike; reading the sources again keeps the saved references and user intent the product promises to retain and resolves each again (content derived from the sources alone is reconciled by the product's reload contract). A failed read is read again only when a trigger the product chose asks (the user's Retry or reload, a change to what it names, a bounded schedule), at least one reaching a source back unchanged; never by the draw finding it failed; failing again the same way isn't reported again.
 - [ ] A hand-over whose acknowledgement can be lost answers taken, not taken or unknown (never a `bool`), the receiver acknowledging only what it took; what unknown means (at most once; a bounded retry with an id the receiver takes once, said when still unknown; at least once, kept durably and sent until answered across the sender's restarts, with that id; a duplicate accepted) is the product's contract, written in the one branch that reads it; the id deduplicates, only keeping and sending again delivers.
 - [ ] An edge that runs independent units in a loop (queued commands, messages) catches around each one inside the loop (RL0906); a loop of one unit's steps (migrations that build on each other) has one boundary and stops at the first failure; code that runs once a task has ended lets its cancellation through (RL0905).
