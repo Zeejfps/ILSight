@@ -156,6 +156,18 @@ public sealed class ThemeFolder(ThemeFolderWatch watch)
     public async Task<Outcome<ThemeFolderEvent>> WaitForChangeAsync(CancellationToken ct)
     {
         using var stopping = ct.Register(watch.Stop);
-        return await FileReadFailures.CatchAsync(Background.Wait(watch.NextChangeAsync(ct)), ct);
+        try
+        {
+            return await FileReadFailures.CatchAsync(Background.Wait(watch.NextChangeAsync(ct)), ct);
+        }
+        finally
+        {
+            // The wait's own cancellation runs before the stop registered above, and may end this wait, disposing
+            // that registration, before the stop has run: stopping here too keeps the watch from outliving shutdown.
+            if (ct.IsCancellationRequested)
+            {
+                watch.Stop();
+            }
+        }
     }
 }

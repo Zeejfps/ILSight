@@ -21,14 +21,30 @@ public sealed class UserThemesAdapterTests : IDisposable
         var adapter = new UserColorThemesAdapter(new ErrorLog());
         Assert.True(adapter.TryStartWatching(folder, out _));
         using var shutdown = new CancellationTokenSource();
-        var waiting = adapter.WaitForChangeAsync(shutdown.Token);
+        var waiting = StartWithoutContextAsync(() => adapter.WaitForChangeAsync(shutdown.Token));
 
         await shutdown.CancelAsync();
 
-        // The wait ends on the thread pool, which a busy run may hold up: the test waits for it to end, however long.
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiting);
-        var after = await adapter.WaitForChangeAsync(CancellationToken.None);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiting.WaitAsync(AppStateDriver.Patience));
+        var after = await StartWithoutContextAsync(() => adapter.WaitForChangeAsync(CancellationToken.None)).WaitAsync(AppStateDriver.Patience);
         Assert.Equal(ThemeFolderEventKind.Stopped, Assert.IsType<Outcome<ThemeFolderEvent>.Ok>(after).Value.Kind);
+    }
+
+    // Starts the wait with no synchronization context, as the app's adapter is awaited where there is no UI thread, so
+    // it continues on the thread pool: not on the test framework's context, whose few threads the other tests' frames
+    // block under load. The test then waits for the wait's end, bounded only by the suite's patience for work elsewhere.
+    private static Task<T> StartWithoutContextAsync<T>(Func<Task<T>> start)
+    {
+        var context = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(null);
+        try
+        {
+            return start();
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(context);
+        }
     }
 
     [Fact]
