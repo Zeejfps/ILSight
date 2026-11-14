@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using ILSight.OmnibarArea;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
@@ -24,7 +25,7 @@ public static class MainView
     {
         using var screen = ui.Screen();
         Shortcuts.Handle(ui, appState);
-        OpenDropped(ui);
+        OpenDropped(ui, ui.State.AppCommands);
         using (ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f }))
         {
             MainMenuView.Render(ui, appState);
@@ -39,7 +40,7 @@ public static class MainView
         ComparisonPickerView.Render(ui, ui.State.ComparisonPicker, ui.State.Appearance, ui.State.AppCommands, appState.ListSession.Navigation, appState.ListSession.Assemblies);
         NuGetPickerView.Render(ui);
         ProcessPickerView.Render(ui, appState.ListSession.Navigation);
-        CloseAssembliesDialogView.Render(ui, appState.ListSession.Assemblies);
+        CloseAssembliesDialogView.Render(ui, ui.State.Closer, ui.State.Appearance, ui.State.AppCommands, appState.ListSession.Assemblies);
         AssemblyListsDialogView.Render(ui, appState.Lists, appState.ListSession, appState.KeptScreen.View);
         AssemblyListDeleteDialogView.Render(ui, ui.State.Appearance, ui.State.ListsDialog, ui.State.AppCommands, appState.Lists, appState.ListSession, appState.KeptScreen.View);
         BookmarkImportDialogView.Render(ui, ui.State.Appearance, ui.State.AppCommands, appState.Imports);
@@ -47,10 +48,10 @@ public static class MainView
         DisplayOptionsResetDialogView.Render(ui, ui.State.Appearance, ui.State.Display);
         ExportDialogView.Render(ui, ui.State.ExportSetup, ui.State.Appearance, ui.State.ExportColumns, ui.State.AppCommands, appState.Decompiler.Setup.Options);
         ErrorDialogView.Render(ui, ui.State.Appearance, ui.State.ErrorDialog, ui.State.Display, ui.State.AppCommands, appState.Errors);
-        AboutDialogView.Render(ui, appState);
+        AboutDialogView.Render(ui, ui.State.About, ui.State.Appearance, ui.State.AppCommands, ui.State.ShippedLicenses, appState);
     }
 
-    private static void OpenDropped(Ui<UiState> ui)
+    private static void OpenDropped(Ui ui, IAppCommandWriter commands)
     {
         var dropped = ui.Input.TakeDroppedFiles();
         if (dropped.Count == 0)
@@ -58,13 +59,13 @@ public static class MainView
             return;
         }
 
-        Commands.OpenDroppedLater(ui.State.AppCommands, dropped);
+        Commands.OpenDroppedLater(commands, dropped);
     }
 
     private static void Panels(Ui<UiState> ui, AppState appState)
     {
         var t = ui.State.Appearance.Strings;
-        UpdateSearches(ui, appState.ListSession.Assemblies);
+        UpdateSearches(ui, ui.State.MainLayout, ui.State.Search, ui.State.Omnibar, appState.ListSession.Assemblies);
         if (IsLayoutEmpty(ui.State.MainLayout.Dock))
         {
             DocumentsView.Hint(ui, t.ViewEmptyHint);
@@ -72,7 +73,7 @@ public static class MainView
         }
         DockSpace(ui, appState);
         SyncAfterDocuments(ui, appState);
-        RemoveReleasedImages(ui);
+        RemoveReleasedImages(ui, ui.State.Documents);
     }
 
     private static void SyncAfterDocuments(Ui<UiState> ui, AppState appState)
@@ -81,14 +82,14 @@ public static class MainView
         DocumentPanels.SyncActiveTab(ui.State, appState.ListSession.Navigation, appState.Decompiler.Setup);
     }
 
-    private static void UpdateSearches(Ui<UiState> ui, AssemblyList assemblies)
+    private static void UpdateSearches(Ui ui, MainLayout mainLayout, Search search, Omnibar omnibar, AssemblyList assemblies)
     {
-        var shown = ui.State.MainLayout.Dock.Contains(DockPanels.Search);
-        UpdateSearch(ui, ui.State.Search, assemblies, shown);
-        UpdateSearch(ui, ui.State.Omnibar.Search, assemblies, ui.State.Omnibar.IsSearching);
+        var shown = mainLayout.Dock.Contains(DockPanels.Search);
+        UpdateSearch(ui, search, assemblies, shown);
+        UpdateSearch(ui, omnibar.Search, assemblies, omnibar.IsSearching);
     }
 
-    private static void UpdateSearch(Ui<UiState> ui, Search search, AssemblyList assemblies, bool shown)
+    private static void UpdateSearch(Ui ui, Search search, AssemblyList assemblies, bool shown)
     {
         var wait = search.Update(assemblies, TimeSpan.FromSeconds(ui.RealTime), shown);
         if (wait > TimeSpan.Zero)
@@ -120,7 +121,7 @@ public static class MainView
         }
         TabMenuView.OpenOnRightClick(ui, tabMenu);
         TabMenuView.Render(ui, appState.ListSession.Navigation);
-        TabMenuView.KeepOpenOnDoubleClick(ui, doubleClicked);
+        TabMenuView.KeepOpenOnDoubleClick(ui, ui.State.Documents, ui.State.AppCommands, doubleClicked);
     }
 
     private static DockTab Tab(UiState screen, Navigation navigation, Strings t, string panel)
@@ -159,7 +160,7 @@ public static class MainView
                 TreePaneView.Render(ui, appState.ListSession.Navigation, appState.ListSession.Assemblies, appState.Decompiler.Setup);
                 break;
             case DockView.Search:
-                SearchPanelView.Render(ui, appState.ListSession.Navigation, appState.Decompiler.Setup);
+                SearchPanelView.Render(ui, ui.State.Appearance, ui.State.Search, ui.State.AppCommands, ui.State.SearchColumns, appState.ListSession.Navigation, appState.Decompiler.Setup);
                 break;
             case DockView.Bookmarks:
                 BookmarksPanelView.Render(ui, ui.State.Appearance, ui.State.BookmarksPanel, ui.State.AppCommands, ui.State.BookmarkColumns, appState.Bookmarks, appState.ListSession.Assemblies);
@@ -193,9 +194,9 @@ public static class MainView
             appState.Bookmarks, appState.Tooltips, tab);
     }
 
-    private static void RemoveReleasedImages(Ui<UiState> ui)
+    private static void RemoveReleasedImages(Ui ui, DocumentViews documents)
     {
-        var released = ui.State.Documents.TakeReleasedImages();
+        var released = documents.TakeReleasedImages();
         for (var i = 0; i < released.Count; i++)
         {
             ui.RemoveImage(released[i]);

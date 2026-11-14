@@ -13,15 +13,14 @@ internal static class CloseAssembliesDialogView
 {
     private const string FilterId = "close-filter";
 
-    public static void Render(Ui<UiState> ui, AssemblyList assemblies)
+    public static void Render(Ui ui, AssemblyCloser closer, Appearance appearance, IAppCommandWriter commands, AssemblyList assemblies)
     {
-        var closer = ui.State.Closer;
         if (closer.IsOpen)
         {
             closer.Rows.Update(assemblies);
         }
 
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var close = false;
         var cancel = false;
         using (var dialog = ui.WindowDialog("close-assemblies", t.CloseAssembliesTitle, ref closer.IsOpen,
@@ -30,7 +29,7 @@ internal static class CloseAssembliesDialogView
         {
             if (dialog.IsOpen)
             {
-                Content(ui, closer, ref close, ref cancel);
+                Content(ui, appearance, closer, ref close, ref cancel);
             }
         }
 
@@ -39,7 +38,7 @@ internal static class CloseAssembliesDialogView
             var included = closer.Rows.CountIncluded();
             if (included > 0)
             {
-                Commands.Later(ui.State.AppCommands, closer.Rows.ListToClose(), static (a, items) => Commands.CloseAssemblies(a, items));
+                Commands.Later(commands, closer.Rows.ListToClose(), static (a, items) => Commands.CloseAssemblies(a, items));
                 cancel = true;
             }
         }
@@ -54,9 +53,9 @@ internal static class CloseAssembliesDialogView
         closer.Window.Settle(ui.Input.IsDown(PointerButton.Left));
     }
 
-    private static void Content(Ui<UiState> ui, AssemblyCloser closer, ref bool close, ref bool cancel)
+    private static void Content(Ui ui, Appearance appearance, AssemblyCloser closer, ref bool close, ref bool cancel)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var shown = AssemblyClosing.ListShown(closer);
         using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
@@ -66,7 +65,7 @@ internal static class CloseAssembliesDialogView
                 ui.Focus(ui.GetId(FilterId));
             }
 
-            close |= ui.TextField(FilterId, ref closer.Filter, t.ExportFilter, Sizing.Grow(), ui.State.Appearance.Icons.ExportFilter, clearable: true);
+            close |= ui.TextField(FilterId, ref closer.Filter, t.ExportFilter, Sizing.Grow(), appearance.Icons.ExportFilter, clearable: true);
             ui.Checkbox(t.ExportSelectedOnly, ref closer.SelectedOnly, id: "close-selected-only");
         }
         using (ui.Row(new Box { Padding = new Spacing(theme.Gap + theme.BorderWidth, 0f, 0f, 0f) }))
@@ -81,7 +80,7 @@ internal static class CloseAssembliesDialogView
         {
             if (shown.Count == 0)
             {
-                NoMatch(ui, closer);
+                NoMatch(ui, appearance, closer);
             }
             else
             {
@@ -114,9 +113,9 @@ internal static class CloseAssembliesDialogView
         };
     }
 
-    private static void NoMatch(Ui<UiState> ui, AssemblyCloser closer)
+    private static void NoMatch(Ui ui, Appearance appearance, AssemblyCloser closer)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         using (ui.Column(new Box { Height = Sizing.Grow(), Gap = theme.Gap, AlignX = Align.Center, AlignY = Align.Center }))
         {
@@ -128,7 +127,7 @@ internal static class CloseAssembliesDialogView
         }
     }
 
-    private static void Rows(Ui<UiState> ui, AssemblyCloser closer, List<CloseChoice> shown)
+    private static void Rows(Ui ui, AssemblyCloser closer, List<CloseChoice> shown)
     {
         var theme = ui.Theme;
         using (ui.Scroll("close-choices", new Box { Height = Sizing.Grow(), Padding = new Spacing(0f, theme.GapTight) }))
@@ -140,7 +139,7 @@ internal static class CloseAssembliesDialogView
         }
     }
 
-    private static void Row(Ui<UiState> ui, AssemblyCloser closer, List<CloseChoice> shown, CloseChoice choice)
+    private static void Row(Ui ui, AssemblyCloser closer, List<CloseChoice> shown, CloseChoice choice)
     {
         var theme = ui.Theme;
         var assembly = choice.Assembly;

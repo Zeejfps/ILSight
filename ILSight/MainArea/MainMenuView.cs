@@ -24,7 +24,7 @@ internal static class MainMenuView
         {
             RenderSystemMenuBar(ui, appState);
         }
-        else if (IsInTitleBar(ui))
+        else if (IsInTitleBar(ui, ui.State.Display))
         {
             RenderInTitleBar(ui, appState);
         }
@@ -34,9 +34,9 @@ internal static class MainMenuView
         }
     }
 
-    private static bool IsInTitleBar(Ui<UiState> ui)
+    private static bool IsInTitleBar(Ui ui, ScreenDisplay display)
     {
-        if (ui.State.Display.Options.SystemTitleBar)
+        if (display.Options.SystemTitleBar)
         {
             return false;
         }
@@ -59,23 +59,23 @@ internal static class MainMenuView
             };
             using (ui.MenuBar("menu", menus))
             {
-                WindowMenu(ui);
+                WindowMenu(ui, ui.State.Appearance);
                 Menus(ui, appState);
             }
             ui.TitleBarDragArea("title-bar-drag");
         }
     }
 
-    private static void WindowMenu(Ui<UiState> ui)
+    private static void WindowMenu(Ui ui, Appearance appearance)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         using var menu = ui.AppIconMenu(AppIconId);
         if (!menu.IsOpen)
         {
             return;
         }
 
-        var icons = ui.State.Appearance.Icons;
+        var icons = appearance.Icons;
         var maximized = ui.WindowBounds.Maximized;
         if (ui.MenuItem(t.WindowRestore, enabled: maximized, id: "restore", icon: new UiIcon(icons.WindowRestore)))
         {
@@ -112,7 +112,7 @@ internal static class MainMenuView
             FileAndViewMenus(ui, appState);
             using (ui.Menu(t.MenuWindow, id: "window", role: AppMenuRole.Window))
             {
-                SystemWindowMenu(ui);
+                SystemWindowMenu(ui, ui.State.Appearance);
             }
 
             // Left empty: macOS gives a Help menu a search of every item.
@@ -150,9 +150,9 @@ internal static class MainMenuView
     }
 
     // macOS ends this menu with the open windows.
-    private static void SystemWindowMenu(Ui<UiState> ui)
+    private static void SystemWindowMenu(Ui ui, Appearance appearance)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         ui.SystemMenuItem(t.WindowMinimize, AppMenuSystemAction.Minimize, Shortcuts.Minimize);
         ui.SystemMenuItem(t.WindowZoom, AppMenuSystemAction.Zoom);
         ui.MenuSeparator();
@@ -175,7 +175,7 @@ internal static class MainMenuView
         {
             if (help.IsOpen)
             {
-                HelpMenu(ui);
+                HelpMenu(ui, ui.State.Appearance, ui.State.About);
             }
         }
     }
@@ -201,15 +201,15 @@ internal static class MainMenuView
 
     /// <summary>Asks which file to open; the file picked begins a request in <paramref name="navigation"/> as it is
     /// answered, and only opening it is queued.</summary>
-    public static void OpenFile(Ui<UiState> ui, Navigation navigation)
+    public static void OpenFile(Ui ui, Appearance appearance, IAppCommandWriter commands, Navigation navigation)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         FileFilter[] filters =
         [
             new(t.FileFilterAssembliesAndPackages, ["*.dll", "*.exe", "*.winmd", "*.wasm", "*.nupkg", "*.zip"]),
             new(t.FileFilterAll, ["*.*"]),
         ];
-        ui.PickFile(t.FileOpenTitle, null, filters, path => OpenPicked(ui.State.AppCommands, navigation, path));
+        ui.PickFile(t.FileOpenTitle, null, filters, path => OpenPicked(commands, navigation, path));
     }
 
     private static void OpenPicked(IAppCommandWriter commands, Navigation navigation, string path)
@@ -229,7 +229,7 @@ internal static class MainMenuView
         var icons = ui.State.Appearance.Icons;
         if (ui.MenuItem(t.FileOpen, Shortcuts.Open, id: "open", icon: new UiIcon(icons.FileOpen)))
         {
-            OpenFile(ui, appState.ListSession.Navigation);
+            OpenFile(ui, ui.State.Appearance, ui.State.AppCommands, appState.ListSession.Navigation);
         }
 
         if (ui.MenuItem(t.FileOpenFromFramework, id: "open-from-framework", icon: new UiIcon(icons.FileOpenFromFramework)))
@@ -248,27 +248,27 @@ internal static class MainMenuView
         }
 
         ui.MenuSeparator();
-        ExportItems(ui, appState);
+        ExportItems(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.Tree, ui.State.ExportSetup, appState);
     }
 
-    private static void ExportItems(Ui<UiState> ui, AppState appState)
+    private static void ExportItems(Ui ui, Appearance appearance, IAppCommandWriter commands, BrowseTree tree, ExportSetup exportSetup, AppState appState)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var canSave = Exports.CanSaveCode(appState.ListSession.Navigation.ActiveTab?.Node);
-        if (ui.MenuItem(t.FileSaveCode, Shortcuts.SaveCode, enabled: canSave, id: "save-code", icon: new UiIcon(ui.State.Appearance.Icons.FileSaveCode)))
+        if (ui.MenuItem(t.FileSaveCode, Shortcuts.SaveCode, enabled: canSave, id: "save-code", icon: new UiIcon(appearance.Icons.FileSaveCode)))
         {
-            SaveDialogs.PickActiveCodeFile(ui, ui.State.Appearance, ui.State.AppCommands, appState.ListSession.Navigation, appState.Decompiler.Setup.Language);
+            SaveDialogs.PickActiveCodeFile(ui, appearance, commands, appState.ListSession.Navigation, appState.Decompiler.Setup.Language);
         }
 
-        var anyOpen = ui.State.Tree.Roots.Count > 0;
-        if (ui.MenuItem(t.FileExport, Shortcuts.Export, enabled: anyOpen, id: "export", icon: new UiIcon(ui.State.Appearance.Icons.FileExportProject)))
+        var anyOpen = tree.Roots.Count > 0;
+        if (ui.MenuItem(t.FileExport, Shortcuts.Export, enabled: anyOpen, id: "export", icon: new UiIcon(appearance.Icons.FileExportProject)))
         {
-            ui.State.ExportSetup.Open(appState.ListSession.Assemblies.Assemblies, Exports.FindActiveAssembly(appState.ListSession.Navigation));
+            exportSetup.Open(appState.ListSession.Assemblies.Assemblies, Exports.FindActiveAssembly(appState.ListSession.Navigation));
         }
 
-        if (ui.MenuItem(t.FileGeneratePdbs, enabled: anyOpen, id: "generate-pdbs", icon: new UiIcon(ui.State.Appearance.Icons.FileGeneratePdb)))
+        if (ui.MenuItem(t.FileGeneratePdbs, enabled: anyOpen, id: "generate-pdbs", icon: new UiIcon(appearance.Icons.FileGeneratePdb)))
         {
-            SaveDialogs.PickPdbFolder(ui, ui.State.Appearance, ui.State.AppCommands);
+            SaveDialogs.PickPdbFolder(ui, appearance, commands);
         }
     }
 
@@ -288,7 +288,7 @@ internal static class MainMenuView
         ui.MenuSeparator();
         DecompilerMenu(ui, appState.Decompiler);
         ui.MenuSeparator();
-        ApiVisibilityMenu(ui, appState.ApiVisibility);
+        ApiVisibilityMenu(ui, ui.State.Appearance, ui.State.AppCommands, appState.ApiVisibility);
         ui.MenuSeparator();
         PanelsMenu(ui);
         if (ui.MenuItem(t.ViewCloseAllDocuments, enabled: appState.ListSession.Navigation.OpenTabs.Count > 0, id: "close-all-documents"))
@@ -308,13 +308,13 @@ internal static class MainMenuView
         }
 
         ui.MenuSeparator();
-        ThemeMenu(ui, appState.Themes, appState.ChosenThemes.Theme);
-        LanguageMenu(ui, appState.Locale);
+        ThemeMenu(ui, ui.State.Appearance, ui.State.AppCommands, appState.Themes, appState.ChosenThemes.Theme);
+        LanguageMenu(ui, ui.State.Appearance, ui.State.AppCommands, appState.Locale);
     }
 
-    private static void ThemeMenu(Ui<UiState> ui, ThemeCatalog<ThemeFile, ThemeContents, AppTheme> catalog, ThemeId<ThemeFile> current)
+    private static void ThemeMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, ThemeCatalog<ThemeFile, ThemeContents, AppTheme> catalog, ThemeId<ThemeFile> current)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         using var themes = ui.SubMenu(t.ViewTheme, id: "theme");
         if (!themes.IsOpen)
         {
@@ -327,31 +327,31 @@ internal static class MainMenuView
             var id = catalog.Ids[i];
             if (ui.MenuRadioItem(names[i], current == id, id: id.Text))
             {
-                Commands.Later(ui.State.AppCommands, id, static (a, theme) => a.ChosenThemes.ChooseTheme(theme));
+                Commands.Later(commands, id, static (a, theme) => a.ChosenThemes.ChooseTheme(theme));
             }
         }
     }
 
-    private static void ApiVisibilityMenu(Ui<UiState> ui, ApiVisibility current)
+    private static void ApiVisibilityMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, ApiVisibility current)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         using var shown = ui.SubMenu(t.ViewShownApi, id: "shown-api");
         if (!shown.IsOpen)
         {
             return;
         }
 
-        ApiVisibilityItem(ui, current, t.ViewShownPublicOnly, ApiVisibility.PublicOnly);
-        ApiVisibilityItem(ui, current, t.ViewShownSourceDeclared, ApiVisibility.AllButCompilerGenerated);
-        ApiVisibilityItem(ui, current, t.ViewShownAll, ApiVisibility.All);
+        ApiVisibilityItem(ui, commands, current, t.ViewShownPublicOnly, ApiVisibility.PublicOnly);
+        ApiVisibilityItem(ui, commands, current, t.ViewShownSourceDeclared, ApiVisibility.AllButCompilerGenerated);
+        ApiVisibilityItem(ui, commands, current, t.ViewShownAll, ApiVisibility.All);
     }
 
-    private static void ApiVisibilityItem(Ui<UiState> ui, ApiVisibility current, string label, ApiVisibility visibility)
+    private static void ApiVisibilityItem(Ui ui, IAppCommandWriter commands, ApiVisibility current, string label, ApiVisibility visibility)
     {
         var selected = current == visibility;
         if (ui.MenuRadioItem(label, selected))
         {
-            Commands.Later(ui.State.AppCommands, visibility, static (a, v) => a.ApiVisibility = v);
+            Commands.Later(commands, visibility, static (a, v) => a.ApiVisibility = v);
         }
     }
 
@@ -365,47 +365,47 @@ internal static class MainMenuView
             return;
         }
 
-        if (PanelItem(ui, t.PanelAssemblies, DockView.Assemblies))
+        if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.PanelAssemblies, DockView.Assemblies))
         {
             ScreenLayout.OpenPanel(screen, DockView.Assemblies);
         }
 
-        if (PanelItem(ui, t.ViewBookmarks, DockView.Bookmarks))
+        if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.ViewBookmarks, DockView.Bookmarks))
         {
             ScreenLayout.OpenPanel(screen, DockView.Bookmarks);
         }
 
-        if (PanelItem(ui, t.PanelAnalyzer, DockView.Analyzer))
+        if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.PanelAnalyzer, DockView.Analyzer))
         {
             ScreenLayout.OpenPanel(screen, DockView.Analyzer);
         }
 
-        if (PanelItem(ui, t.PanelSearch, DockView.Search, Shortcuts.Search))
+        if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.PanelSearch, DockView.Search, Shortcuts.Search))
         {
             ScreenLayout.OpenSearch(screen);
         }
 
-        if (PanelItem(ui, t.PanelDecompilerOptions, DockView.DecompilerOptions))
+        if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.PanelDecompilerOptions, DockView.DecompilerOptions))
         {
             ScreenLayout.OpenPanel(screen, DockView.DecompilerOptions);
         }
 
-        if (PanelItem(ui, t.PanelDisplayOptions, DockView.DisplayOptions))
+        if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.PanelDisplayOptions, DockView.DisplayOptions))
         {
             ScreenLayout.OpenPanel(screen, DockView.DisplayOptions);
         }
 
-        if (PanelItem(ui, t.PanelExports, DockView.Exports))
+        if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.PanelExports, DockView.Exports))
         {
             ScreenLayout.OpenPanel(screen, DockView.Exports);
         }
     }
 
-    private static bool PanelItem(Ui<UiState> ui, string label, DockView view, Shortcut? shortcut = null)
+    private static bool PanelItem(Ui ui, MainLayout mainLayout, Appearance appearance, string label, DockView view, Shortcut? shortcut = null)
     {
         var panel = DockPanels.NameOf(view);
-        var open = ui.State.MainLayout.Dock.Contains(panel);
-        return ui.MenuItem(label, shortcut, check: open, id: panel, icon: DockPanels.Icon(ui.State.Appearance.Icons, view));
+        var open = mainLayout.Dock.Contains(panel);
+        return ui.MenuItem(label, shortcut, check: open, id: panel, icon: DockPanels.Icon(appearance.Icons, view));
     }
 
     private static void DecompilerMenu(Ui<UiState> ui, DecompilerChoice decompiler)
@@ -430,18 +430,18 @@ internal static class MainMenuView
         }
     }
 
-    private static void HelpMenu(Ui<UiState> ui)
+    private static void HelpMenu(Ui ui, Appearance appearance, AboutDialog aboutDialog)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         if (ui.MenuItem(t.HelpAbout, id: "about"))
         {
-            ui.State.About.Open();
+            aboutDialog.Open();
         }
     }
 
-    private static void LanguageMenu(Ui<UiState> ui, Locale current)
+    private static void LanguageMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, Locale current)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         using var languages = ui.SubMenu(t.ViewLanguage, id: "language");
         if (!languages.IsOpen)
         {
@@ -454,7 +454,7 @@ internal static class MainMenuView
             var (locale, endonym) = locales[i];
             if (ui.MenuRadioItem(endonym, current == locale))
             {
-                Commands.Later(ui.State.AppCommands, locale, static (a, l) => a.Locale = l);
+                Commands.Later(commands, locale, static (a, l) => a.Locale = l);
             }
         }
     }

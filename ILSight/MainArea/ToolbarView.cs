@@ -34,7 +34,7 @@ internal static class ToolbarView
         {
             using (Group(ui))
             {
-                ListPicker(ui, lists, session, view);
+                ListPicker(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.ListsDialog, lists, session, view);
                 if (ui.IconButton("manage-lists", ui.State.Appearance.Icons.ToolbarManageLists, t.ListsManage, variant: ButtonVariant.Neutral))
                 {
                     Commands.Later(ui.State.AppCommands, ui.State.ListsDialog, static (a, dialog) => AssemblyListsDialogView.Open(dialog, a));
@@ -46,7 +46,7 @@ internal static class ToolbarView
                 var openTip = ui.Memo("open-tip", t, static s => s.ToolbarOpen(Shortcuts.Open));
                 if (ui.IconButton("open", ui.State.Appearance.Icons.ToolbarOpen, openTip, variant: ButtonVariant.Neutral))
                 {
-                    MainMenuView.OpenFile(ui, session.Navigation);
+                    MainMenuView.OpenFile(ui, ui.State.Appearance, ui.State.AppCommands, session.Navigation);
                 }
 
                 var searchTip = ui.Memo("search-tip", t, static s => s.SearchFieldTooltip(Shortcuts.Search));
@@ -72,7 +72,7 @@ internal static class ToolbarView
 
                 if (DecompilationLanguages.ShowsCSharp(language))
                 {
-                    LanguageVersion(ui, decompiler.Setup.Options);
+                    LanguageVersion(ui, ui.State.Appearance, ui.State.AppCommands, decompiler.Setup.Options);
                     if (ui.IconButton("decompiler-options", ui.State.Appearance.Icons.ToolbarDecompilerOptions, t.PanelDecompilerOptions, variant: ButtonVariant.Neutral))
                     {
                         ScreenLayout.OpenPanel(ui.State, DockView.DecompilerOptions);
@@ -124,9 +124,9 @@ internal static class ToolbarView
         }
     }
 
-    private static void ListPicker(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
+    private static void ListPicker(Ui ui, Appearance appearance, IAppCommandWriter commands, AssemblyListsDialog listsDialog, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var width = ListPickerWidth(ui, lists);
         using var menu = ui.SelectButton("list", lists.Active, width, t.ListsPick, revision: lists.Count);
         if (!menu.IsOpen)
@@ -137,18 +137,18 @@ internal static class ToolbarView
         var names = lists.Names;
         for (var i = 0; i < names.Count; i++)
         {
-            ListItem(ui, lists, session, view, names[i]);
+            ListItem(ui, commands, lists, session, view, names[i]);
         }
 
         ui.MenuSeparator();
-        if (ui.MenuItem(t.ListsManage, id: "manage", icon: new UiIcon(ui.State.Appearance.Icons.ListsManage)))
+        if (ui.MenuItem(t.ListsManage, id: "manage", icon: new UiIcon(appearance.Icons.ListsManage)))
         {
-            Commands.Later(ui.State.AppCommands, ui.State.ListsDialog, static (a, dialog) => AssemblyListsDialogView.Open(dialog, a));
+            Commands.Later(commands, listsDialog, static (a, dialog) => AssemblyListsDialogView.Open(dialog, a));
         }
     }
 
     // Measured again only when the lists or the theme changed, so a frame allocates nothing.
-    private static float ListPickerWidth(Ui<UiState> ui, SavedAssemblyLists lists)
+    private static float ListPickerWidth(Ui ui, SavedAssemblyLists lists)
     {
         var measured = ui.GetState<MeasuredWidth>(ui.GetId("list-width"));
         var unchanged = lists.Revision == measured.Revision && ReferenceEquals(ui.Theme, measured.Theme);
@@ -172,7 +172,7 @@ internal static class ToolbarView
         public float Width;
     }
 
-    private static void ListItem(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
+    private static void ListItem(Ui ui, IAppCommandWriter commands, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
         var active = name == lists.Active;
         if (!ui.MenuRadioItem(name, active, id: ListItemPrefix + name))
@@ -180,7 +180,7 @@ internal static class ToolbarView
             return;
         }
 
-        Commands.OpenListLater(ui.State.AppCommands, AssemblyLists.SwitchAssemblyList(lists, session, view, name));
+        Commands.OpenListLater(commands, AssemblyLists.SwitchAssemblyList(lists, session, view, name));
         // The picker, drawn above this frame, shows the list only in the next one.
         ui.RequestUpdate();
     }
@@ -195,9 +195,9 @@ internal static class ToolbarView
     ]);
     }
 
-    private static void LanguageVersion(Ui<UiState> ui, DecompilerOptions options)
+    private static void LanguageVersion(Ui ui, Appearance appearance, IAppCommandWriter commands, DecompilerOptions options)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var current = options.LanguageVersion;
         using var menu = ui.SelectButton("language-version", CSharpVersions.Label(current), ui.SelectButtonWidth(CSharpVersions.Labels),
             t.ToolbarLanguageVersion);
@@ -210,12 +210,12 @@ internal static class ToolbarView
         {
             if (ui.MenuRadioItem(label, version == current))
             {
-                Commands.Later(ui.State.AppCommands, version, static (a, v) => Preferences.SetLanguageVersion(a, v));
+                Commands.Later(commands, version, static (a, v) => Preferences.SetLanguageVersion(a, v));
             }
         }
     }
 
-    private static Ui.Scope Group(Ui<UiState> ui)
+    private static Ui.Scope Group(Ui ui)
     {
         return ui.Row(new Box { Width = Sizing.Fit(), Gap = ui.Theme.Gap, AlignY = Align.Center });
     }

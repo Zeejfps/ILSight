@@ -13,16 +13,16 @@ internal static class AboutDialogView
     private const float IconScale = 4f;
     private const float NameScale = 1.25f;
 
-    public static void Render(Ui<UiState> ui, AppState appState)
+    public static void Render(Ui ui, AboutDialog aboutDialog, Appearance appearance, IAppCommandWriter commands, string? shippedLicenses, AppState appState)
     {
-        if (!ui.State.About.IsOpen)
+        if (!aboutDialog.IsOpen)
         {
             return;
         }
 
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var box = new Box { Width = Sizing.Grow(0f, AppLayout.AboutDialogWidth) };
-        using var dialog = ui.Dialog("about", t.AboutTitle, ref ui.State.About.IsOpen, box);
+        using var dialog = ui.Dialog("about", t.AboutTitle, ref aboutDialog.IsOpen, box);
         if (!dialog.IsOpen)
         {
             return;
@@ -30,26 +30,26 @@ internal static class AboutDialogView
 
         using (ui.Column(new Box { Width = Sizing.Grow(), Gap = ui.Theme.DialogGap }))
         {
-            Identity(ui, appState.Updates, appState.IsUpdateCheckAutomatic);
-            Versions(ui);
+            Identity(ui, appearance, commands, appState.Updates, appState.IsUpdateCheckAutomatic);
+            Versions(ui, appearance);
         }
-        Actions(ui);
+        Actions(ui, appearance, shippedLicenses, aboutDialog);
     }
 
-    private static void Identity(Ui<UiState> ui, AppUpdates updates, bool isCheckAutomatic)
+    private static void Identity(Ui ui, Appearance appearance, IAppCommandWriter commands, AppUpdates updates, bool isCheckAutomatic)
     {
         var theme = ui.Theme;
         using var row = ui.Row(new Box { Width = Sizing.Grow(), Gap = theme.DialogGap, AlignY = Align.Center });
         ui.AppIcon(theme.IconSize * IconScale);
         using var text = ui.Column(new Box { Width = Sizing.Grow(), Gap = theme.Gap });
-        NameAndVersion(ui);
-        UpdateRow(ui, updates);
-        CheckAutomatically(ui, isCheckAutomatic);
+        NameAndVersion(ui, appearance);
+        UpdateRow(ui, appearance, commands, updates);
+        CheckAutomatically(ui, appearance, commands, isCheckAutomatic);
     }
 
-    private static void NameAndVersion(Ui<UiState> ui)
+    private static void NameAndVersion(Ui ui, Appearance appearance)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var version = ui.Memo("about-version", t, static s => s.AboutVersion(AppVersions.App));
         using var lines = ui.Column(new Box { Width = Sizing.Grow(), Gap = theme.GapTight });
@@ -58,61 +58,61 @@ internal static class AboutDialogView
     }
 
     // What came of a check goes beside the button, so that the result moves nothing.
-    private static void UpdateRow(Ui<UiState> ui, AppUpdates updates)
+    private static void UpdateRow(Ui ui, Appearance appearance, IAppCommandWriter commands, AppUpdates updates)
     {
         using var row = ui.Row(new Box { Width = Sizing.Grow(), Gap = ui.Theme.Gap, AlignY = Align.Center });
-        UpdateButton(ui, updates);
-        UpdateResult(ui, updates.Status);
+        UpdateButton(ui, appearance, commands, updates);
+        UpdateResult(ui, appearance, updates.Status);
     }
 
-    private static void UpdateButton(Ui<UiState> ui, AppUpdates updates)
+    private static void UpdateButton(Ui ui, Appearance appearance, IAppCommandWriter commands, AppUpdates updates)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         if (updates.Status is UpdateStatus.Ready ready)
         {
             var label = ui.Memo("about-restart", (t, Version: AppUpdates.GetVersion(ready.Update)), static a => a.t.AboutRestartToUpdate(a.Version));
             if (ui.Button(label, id: "about-updates"))
             {
-                Restart(ui, updates.StartRestart());
+                Restart(ui, commands, updates.StartRestart());
             }
 
             return;
         }
-        var text = ButtonText(ui, updates.Status);
+        var text = ButtonText(ui, appearance, updates.Status);
         if (ui.Button(text, enabled: updates.CanCheck(), id: "about-updates", variant: ButtonVariant.Neutral))
         {
-            Check(ui, updates.StartCheck(asked: true));
+            Check(ui, commands, updates.StartCheck(asked: true));
         }
     }
 
     // The status shows the check from this frame on; it looks for a newer version once the frame is drawn.
-    private static void Check(Ui<UiState> ui, UpdateCheck? check)
+    private static void Check(Ui ui, IAppCommandWriter commands, UpdateCheck? check)
     {
         if (check is null)
         {
             return;
         }
 
-        Commands.StartSettling(ui.State.AppCommands, nameof(AppUpdates.CheckAsync), check, static (a, c, ct) => a.Updates.CheckAsync(c, ct),
+        Commands.StartSettling(commands, nameof(AppUpdates.CheckAsync), check, static (a, c, ct) => a.Updates.CheckAsync(c, ct),
             static (a, c, _) => a.Updates.FailCheck(c));
     }
 
     /// <summary>Asks for <paramref name="restart"/>, which the status shows from this frame on, to hand the update
     /// over once the frame is drawn; nothing when none is ready.</summary>
-    internal static void Restart(Ui<UiState> ui, UpdateRestart? restart)
+    internal static void Restart(Ui ui, IAppCommandWriter commands, UpdateRestart? restart)
     {
         if (restart is null)
         {
             return;
         }
 
-        Commands.StartSettling(ui.State.AppCommands, nameof(AppUpdates.RestartToUpdateAsync), restart,
+        Commands.StartSettling(commands, nameof(AppUpdates.RestartToUpdateAsync), restart,
             static (a, r, ct) => a.Updates.RestartToUpdateAsync(r, a.ViewCommands, ct), static (a, r, _) => a.Updates.FailRestart(r));
     }
 
-    private static string ButtonText(Ui<UiState> ui, UpdateStatus status)
+    private static string ButtonText(Ui ui, Appearance appearance, UpdateStatus status)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         if (status is UpdateStatus.Checking)
         {
             return t.AboutCheckingForUpdates;
@@ -132,9 +132,9 @@ internal static class AboutDialogView
         return t.AboutCheckForUpdates;
     }
 
-    private static void UpdateResult(Ui<UiState> ui, UpdateStatus status)
+    private static void UpdateResult(Ui ui, Appearance appearance, UpdateStatus status)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         if (status is UpdateStatus.UpToDate)
         {
             ui.Text(t.AboutUpToDate, color: ui.Theme.TextMuted, wrap: true);
@@ -150,19 +150,19 @@ internal static class AboutDialogView
         // Every other status, now and later, is no check's result: nothing shows.
     }
 
-    private static void CheckAutomatically(Ui<UiState> ui, bool isCheckAutomatic)
+    private static void CheckAutomatically(Ui ui, Appearance appearance, IAppCommandWriter commands, bool isCheckAutomatic)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var check = isCheckAutomatic;
         if (ui.Checkbox(t.AboutCheckAutomatically, ref check, id: "about-check-automatically", compact: true))
         {
-            Commands.Later(ui.State.AppCommands, check, static (a, on) => a.IsUpdateCheckAutomatic = on);
+            Commands.Later(commands, check, static (a, on) => a.IsUpdateCheckAutomatic = on);
         }
     }
 
-    private static void Versions(Ui<UiState> ui)
+    private static void Versions(Ui ui, Appearance appearance)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var labelWidth = MeasureLabels(ui, t);
         using var rows = ui.Column(new Box { Width = Sizing.Grow(), Gap = ui.Theme.GapTight });
         VersionRow(ui, t.AboutDecompiler, AppVersions.Decompiler, labelWidth);
@@ -170,7 +170,7 @@ internal static class AboutDialogView
         VersionRow(ui, t.AboutSystem, AppVersions.System, labelWidth);
     }
 
-    private static float MeasureLabels(Ui<UiState> ui, Strings t)
+    private static float MeasureLabels(Ui ui, Strings t)
     {
         var size = ui.Theme.FontSizeSmall;
         var decompiler = ui.MeasureText(t.AboutDecompiler, size);
@@ -180,7 +180,7 @@ internal static class AboutDialogView
         return MathF.Ceiling(widest);
     }
 
-    private static void VersionRow(Ui<UiState> ui, string label, string version, float labelWidth)
+    private static void VersionRow(Ui ui, string label, string version, float labelWidth)
     {
         var theme = ui.Theme;
         var size = theme.FontSizeSmall;
@@ -191,30 +191,30 @@ internal static class AboutDialogView
         }
     }
 
-    private static void Actions(Ui<UiState> ui)
+    private static void Actions(Ui ui, Appearance appearance, string? shippedLicenses, AboutDialog aboutDialog)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         using (ui.DialogActions())
         {
-            LicensesButton(ui);
+            LicensesButton(ui, appearance, shippedLicenses);
             ui.Spacer();
             if (ui.Button(t.AboutClose, id: "about-close", variant: ButtonVariant.Neutral))
             {
-                ui.State.About.Close();
+                aboutDialog.Close();
             }
         }
     }
 
-    private static void LicensesButton(Ui<UiState> ui)
+    private static void LicensesButton(Ui ui, Appearance appearance, string? shippedLicenses)
     {
-        var t = ui.State.Appearance.Strings;
-        var licenses = ui.State.ShippedLicenses;
+        var t = appearance.Strings;
+        var licenses = shippedLicenses;
         if (licenses is null)
         {
             return;
         }
 
-        var icon = new UiIcon(ui.State.Appearance.Icons.AboutOpenLicensesFolder);
+        var icon = new UiIcon(appearance.Icons.AboutOpenLicensesFolder);
         if (ui.Button(t.AboutLicenses, id: "about-licenses", variant: ButtonVariant.Neutral, icon: icon))
         {
             ui.OpenFolder(licenses);

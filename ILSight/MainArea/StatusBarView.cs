@@ -42,13 +42,13 @@ internal static class StatusBarView
                 var refusal = appState.Refusals.Shown;
                 if (refusal is not null)
                 {
-                    RefusalNote(ui, refusal);
+                    RefusalNote(ui, ui.State.Appearance, ui.State.RefusalDetails, ui.State.AppCommands, refusal);
                     Dot(ui);
                 }
 
                 if (appState.Updates.Status is UpdateStatus.Ready)
                 {
-                    RestartToUpdateButton(ui, appState.Updates);
+                    RestartToUpdateButton(ui, ui.State.Appearance, ui.State.AppCommands, appState.Updates);
                     Dot(ui);
                 }
                 var activity = DescribeActivity(appState, t);
@@ -59,7 +59,7 @@ internal static class StatusBarView
                 }
                 if (appState.Errors.Entries.Count > 0)
                 {
-                    ErrorIndicator(ui, appState.Errors);
+                    ErrorIndicator(ui, ui.State.Appearance, ui.State.ErrorDialog, appState.Errors);
                     Dot(ui);
                 }
                 ui.Text(DecompilationLanguages.Label(appState.Decompiler.Setup.Language), color: theme.TextMuted, size: size);
@@ -104,19 +104,19 @@ internal static class StatusBarView
         return tab is not null && tab.Load.IsBusy;
     }
 
-    private static void Dot(Ui<UiState> ui)
+    private static void Dot(Ui ui)
     {
         ui.Text("·", color: ui.Theme.TextDisabled, size: ui.Theme.FontSizeSmall);
     }
 
-    private static void RestartToUpdateButton(Ui<UiState> ui, AppUpdates updates)
+    private static void RestartToUpdateButton(Ui ui, Appearance appearance, IAppCommandWriter commands, AppUpdates updates)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var i = ui.Clickable("restart-to-update");
         if (i.Clicked)
         {
-            AboutDialogView.Restart(ui, updates.StartRestart());
+            AboutDialogView.Restart(ui, commands, updates.StartRestart());
         }
 
         using (ui.Row(i.Id, new Box
@@ -132,18 +132,18 @@ internal static class StatusBarView
         }
     }
 
-    private static void RefusalNote(Ui<UiState> ui, Refusal refusal)
+    private static void RefusalNote(Ui ui, Appearance appearance, RefusalDetails refusalDetails, IAppCommandWriter commands, Refusal refusal)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
-        var opened = ui.State.RefusalDetails;
+        var opened = refusalDetails;
         opened.CloseUnlessFor(refusal);
         var items = refusal.ListItems();
         // A Tab stop, so the note is reached as the line is, by the keyboard too: Enter (or Space) opens its whole list.
         var i = ui.Pressable(ui.GetId("refusal"), enabled: true, out var activated, out var ring);
         if (i.Clicked)
         {
-            Commands.Later(ui.State.AppCommands, static a => a.Refusals.Dismiss());
+            Commands.Later(commands, static a => a.Refusals.Dismiss());
         }
 
         if (activated && items is not null)
@@ -181,7 +181,7 @@ internal static class StatusBarView
 
     // The list, an item a line, below the note (above it, the bar being at the window's foot); Escape or a press
     // elsewhere closes it.
-    private static void RefusalDetailsFlyout(Ui<UiState> ui, RefusalDetails opened, int noteId, IReadOnlyList<string>? items)
+    private static void RefusalDetailsFlyout(Ui ui, RefusalDetails opened, int noteId, IReadOnlyList<string>? items)
     {
         if (items is null)
         {
@@ -213,14 +213,14 @@ internal static class StatusBarView
         return $"{refusal.Words(t).Why}\n{t.StatusDismissRefusal}";
     }
 
-    private static void ErrorIndicator(Ui<UiState> ui, ErrorLog errors)
+    private static void ErrorIndicator(Ui ui, Appearance appearance, ErrorDialog errorDialog, ErrorLog errors)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var i = ui.Clickable("errors");
         if (i.Clicked)
         {
-            ui.State.ErrorDialog.Open(errors.Entries);
+            errorDialog.Open(errors.Entries);
         }
 
         using (ui.Row(i.Id, new Box
@@ -233,10 +233,10 @@ internal static class StatusBarView
             Background = i.Held ? theme.Pressed(theme.DangerSurface) : i.Hovered ? theme.DangerSurface : 0u,
         }))
         {
-            ui.Glyph(ui.State.Appearance.Icons.StatusError, theme.Danger, theme.IconSize);
+            ui.Glyph(appearance.Icons.StatusError, theme.Danger, theme.IconSize);
             ui.Text(ui.Memo("status-errors", (errors.Entries.Count, t), static a => a.t.StatusErrors(a.Count)), color: theme.Danger,
                 size: theme.FontSizeSmall);
         }
-        ui.Tooltip(i.Id, ui.State.ErrorDialog.Texts.GetText(errors.Entries[^1], t).Summary);
+        ui.Tooltip(i.Id, errorDialog.Texts.GetText(errors.Entries[^1], t).Summary);
     }
 }

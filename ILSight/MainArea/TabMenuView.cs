@@ -1,4 +1,5 @@
 using ZGF.Gui.Immediate;
+using ILSight.DocumentViewArea;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.CommandArea;
 
@@ -29,20 +30,20 @@ internal static class TabMenuView
     }
 
     /// <summary>Keeps the tab double-clicked open, when it is a document's.</summary>
-    public static void KeepOpenOnDoubleClick(Ui<UiState> ui, string? panel)
+    public static void KeepOpenOnDoubleClick(Ui ui, DocumentViews documents, IAppCommandWriter commands, string? panel)
     {
         if (panel is null)
         {
             return;
         }
 
-        var tab = ui.State.Documents.FindTab(panel);
+        var tab = documents.FindTab(panel);
         if (tab is null)
         {
             return;
         }
 
-        Commands.Later(ui.State.AppCommands, tab, static (a, kept) => a.ListSession.Navigation.KeepTabOpen(kept));
+        Commands.Later(commands, tab, static (a, kept) => a.ListSession.Navigation.KeepTabOpen(kept));
     }
 
     public static void Render(Ui<UiState> ui, Navigation navigation)
@@ -73,7 +74,7 @@ internal static class TabMenuView
         var screen = ui.State;
         var group = DocumentPanels.ListTabsInGroup(screen, tab);
         var index = group.IndexOf(tab);
-        KeepOpenItem(ui, navigation, tab);
+        KeepOpenItem(ui, ui.State.Appearance, ui.State.AppCommands, navigation, tab);
         if (ui.MenuItem(t.TabClose, Shortcuts.CloseTab, id: "close"))
         {
             DocumentPanels.CloseTab(screen, tab);
@@ -106,16 +107,16 @@ internal static class TabMenuView
         return index < group.Count - 1;
     }
 
-    private static void KeepOpenItem(Ui<UiState> ui, Navigation navigation, DocumentTab tab)
+    private static void KeepOpenItem(Ui ui, Appearance appearance, IAppCommandWriter commands, Navigation navigation, DocumentTab tab)
     {
         if (tab != navigation.PreviewTab)
         {
             return;
         }
 
-        if (ui.MenuItem(ui.State.Appearance.Strings.TabKeepOpen, id: "keep-open"))
+        if (ui.MenuItem(appearance.Strings.TabKeepOpen, id: "keep-open"))
         {
-            Commands.Later(ui.State.AppCommands, tab, static (a, kept) => a.ListSession.Navigation.KeepTabOpen(kept));
+            Commands.Later(commands, tab, static (a, kept) => a.ListSession.Navigation.KeepTabOpen(kept));
         }
 
         ui.MenuSeparator();

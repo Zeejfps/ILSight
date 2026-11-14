@@ -25,18 +25,18 @@ internal static class SearchPanelView
     /// <summary>The search panel. A result picked shows in <paramref name="navigation"/>'s tabs in this frame, in
     /// <paramref name="setup"/>, in the preview tab while
     /// <see cref="Navigation.PreviewTabs"/>; only its decompile is queued.</summary>
-    public static void Render(Ui<UiState> ui, Navigation navigation, DecompilerSetup setup)
+    public static void Render(Ui ui, Appearance appearance, Search search, IAppCommandWriter commands, TableColumns searchColumns, Navigation navigation, DecompilerSetup setup)
     {
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         using (ui.PaneToolbar(new Box { Gap = ui.Theme.Gap }))
         {
-            KindsButton(ui);
-            Field(ui, ui.State.Appearance, ui.State.Search, ui.State.AppCommands, navigation, setup);
-            ResultCount(ui, ui.State.Appearance, ui.State.Search.Results);
+            KindsButton(ui, appearance, search);
+            Field(ui, appearance, search, commands, navigation, setup);
+            ResultCount(ui, appearance, search.Results);
         }
         ui.Separator();
-        Unsearched(ui, ui.State.Appearance, ui.State.Search.Results);
-        Results(ui, ui.State.Appearance, ui.State.Search, ui.State.SearchColumns, ui.State.AppCommands, navigation, setup);
+        Unsearched(ui, appearance, search.Results);
+        Results(ui, appearance, search, searchColumns, commands, navigation, setup);
     }
 
     private static void Unsearched(Ui ui, Appearance appearance, SearchResults results)
@@ -54,17 +54,17 @@ internal static class SearchPanelView
         }
     }
 
-    private static void KindsButton(Ui<UiState> ui)
+    private static void KindsButton(Ui ui, Appearance appearance, Search search)
     {
-        var t = ui.State.Appearance.Strings;
-        var kinds = ui.State.Search.Kinds;
+        var t = appearance.Strings;
+        var kinds = search.Kinds;
         var summary = ui.Memo("search-kinds", (kinds, t), static a => Summary(a.t, a.kinds));
         var width = ui.SelectButtonWidth(Summaries.GetValue(t, ListAllSummaries));
         var tooltip = ui.Memo("search-kinds-tip", (kinds, t), static a => Description(a.t, a.kinds));
         using var menu = ui.SelectButton("search-kinds", summary, width, tooltip);
         if (menu.IsOpen)
         {
-            KindsMenu(ui, ui.State.Search, ui.State.Appearance);
+            KindsMenu(ui, search, appearance);
         }
     }
 

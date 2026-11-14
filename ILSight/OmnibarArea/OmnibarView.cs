@@ -45,7 +45,7 @@ internal static class OmnibarView
         }
         else
         {
-            PathBar(ui, navigation, assemblies, setup, tab, panel);
+            PathBar(ui, ui.State.Documents, ui.State.Tree, ui.State.Appearance, ui.State.AppCommands, ui.State.Omnibar, navigation, assemblies, setup, tab, panel);
         }
 
         ui.Separator();
@@ -73,11 +73,11 @@ internal static class OmnibarView
         return false;
     }
 
-    private static void PathBar(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DecompilerSetup setup,
+    private static void PathBar(Ui ui, DocumentViews documents, BrowseTree tree, Appearance appearance, IAppCommandWriter commands, Omnibar omnibar, Navigation navigation, AssemblyList assemblies, DecompilerSetup setup,
         DocumentTab tab, string panel)
     {
-        var view = DocumentPanels.GetView(ui.State.Documents, tab);
-        view.Breadcrumb.Follow(tab.Node, ui.State.Tree);
+        var view = DocumentPanels.GetView(documents, tab);
+        view.Breadcrumb.Follow(tab.Node, tree);
         var crumbs = view.Breadcrumb.Crumbs;
         var closed = tab.Load.ClosedAssembly;
         var menuOwner = 0;
@@ -89,23 +89,23 @@ internal static class OmnibarView
                 {
                     if (closed is not null)
                     {
-                        ClosedCrumb(ui, ui.State.Appearance, crumbs[i], i, closed);
+                        ClosedCrumb(ui, appearance, crumbs[i], i, closed);
                         continue;
                     }
 
-                    CrumbButton(ui, ui.State.Appearance, ui.State.AppCommands, navigation, setup, crumbs[i], i);
-                    var owner = ChildrenButton(ui, ui.State.Tree, ui.State.Omnibar, ui.State.Appearance, panel, crumbs, i);
+                    CrumbButton(ui, appearance, commands, navigation, setup, crumbs[i], i);
+                    var owner = ChildrenButton(ui, tree, omnibar, appearance, panel, crumbs, i);
                     if (owner != 0)
                     {
                         menuOwner = owner;
                     }
                 }
             }
-            ContentTools(ui, ui.State.Appearance, ui.State.Documents, ui.State.AppCommands, assemblies, tab);
-            SearchArea(ui, ui.State.Omnibar, panel);
-            SearchButton(ui, panel);
+            ContentTools(ui, appearance, documents, commands, assemblies, tab);
+            SearchArea(ui, omnibar, panel);
+            SearchButton(ui, appearance, omnibar, panel);
         }
-        ChildrenMenu(ui, ui.State.Omnibar, ui.State.Tree, ui.State.Appearance, ui.State.AppCommands, navigation, setup, panel, menuOwner);
+        ChildrenMenu(ui, omnibar, tree, appearance, commands, navigation, setup, panel, menuOwner);
     }
 
     private static void ContentTools(Ui ui, Appearance appearance, DocumentViews documents, IAppCommandWriter commands, AssemblyList assemblies, DocumentTab tab)
@@ -276,13 +276,13 @@ internal static class OmnibarView
         }
     }
 
-    private static void SearchButton(Ui<UiState> ui, string panel)
+    private static void SearchButton(Ui ui, Appearance appearance, Omnibar omnibar, string panel)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var tooltip = ui.Memo("omnibar-search-tip", t, static s => s.SearchFieldTooltip(Shortcuts.OmnibarSearch));
-        if (ui.IconButton("search", ui.State.Appearance.Icons.SearchField, tooltip))
+        if (ui.IconButton("search", appearance.Icons.SearchField, tooltip))
         {
-            ui.State.Omnibar.StartSearch(panel);
+            omnibar.StartSearch(panel);
         }
     }
 
