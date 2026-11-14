@@ -290,6 +290,20 @@ public sealed class TabLoad
         });
     }
 
+    /// <summary>Lets go of the node, as <see cref="ShowUnreadable"/> does, when looking for it at
+    /// <paramref name="location"/> failed with <paramref name="error"/>: the tab says its file couldn't be read, and why,
+    /// keeping the place for a reload to look for again.</summary>
+    public void ShowLookupFailed(NodePath location, Exception error)
+    {
+        ReleaseNode(new TabContent.Unreadable
+        {
+            Location = location,
+            Title = Title,
+            Module = location.FilePath.FileName,
+            Why = error.Message,
+        });
+    }
+
     private void ReleaseNode(TabContent content)
     {
         _changes++;

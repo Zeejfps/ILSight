@@ -621,7 +621,10 @@ public static class Commands
 
     private static void StartFindingNodes(AppState appState, ReopenedNodesLookup lookup)
     {
-        StartShowing(appState, nameof(ShowReopenedNodesHandler), ct => appState.ShowReopenedNodesHandler.HandleAsync(appState.Reopened, appState.Navigation, appState.Decompiler, appState.ViewCommands, lookup, ct));
+        appState.Workflows.StartSettling(nameof(ShowReopenedNodesHandler),
+            async ct => StartDecompiling(appState, await appState.ShowReopenedNodesHandler.HandleAsync(appState.Reopened, appState.Navigation,
+                appState.Decompiler, appState.ViewCommands, lookup, ct)),
+            error => ShowReopenedNodesHandler.ShowLookupFailed(appState.Reopened, appState.Navigation, lookup.Nodes, error));
     }
 
     private static void StartReadingCards(AppState appState, SavedDiagramRead read)

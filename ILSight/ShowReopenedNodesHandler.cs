@@ -18,9 +18,9 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
     }
 
     /// <summary>Finds the nodes <paramref name="lookup"/>'s tabs wait for and shows each, back where its view stood
-    /// when it was shown in the language the app shows now, or that it is gone; all of them gone when finding them
-    /// failed. A tab pointed elsewhere or closed meanwhile is left alone. Returns the loads that started in the tabs,
-    /// for the edge that started this to start under each tab's work.</summary>
+    /// when it was shown in the language the app shows now, or that it is gone; when finding them failed, each saying
+    /// so, and why, where its document was. A tab pointed elsewhere or closed meanwhile is left alone. Returns the loads
+    /// that started in the tabs, for the edge that started this to start under each tab's work.</summary>
     public async Task<List<DecompileTicket>> HandleAsync(ReopenedTabs reopened, Navigation navigation, DecompilerChoice decompiler,
         Queue<ViewCommand> viewCommands, ReopenedNodesLookup lookup, CancellationToken ct)
     {
@@ -34,8 +34,33 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
             .Select(static n => n.Place)
             .ToList();
         var found = await ports.LookUpListedPlacesAsync(places, ct);
-        var shown = found.Match(static ok => ok.Value, _ => places.ConvertAll(static _ => (Lookup<BrowseNode>)new Lookup<BrowseNode>.NotFound()));
-        return ShowReopenedNodes(reopened, navigation, decompiler, viewCommands, nodes, shown);
+        if (found is Outcome<List<Lookup<BrowseNode>>>.Failed failed)
+        {
+            ShowLookupFailed(reopened, navigation, nodes, failed.Error);
+            return [];
+        }
+
+        return ShowReopenedNodes(reopened, navigation, decompiler, viewCommands, nodes, ((Outcome<List<Lookup<BrowseNode>>>.Ok)found).Value);
+    }
+
+    /// <summary>Has each of <paramref name="nodes"/> still waiting, in a tab still open, say that finding its place
+    /// failed with <paramref name="error"/>, where its document was; the edge's settle when the workflow that finds them
+    /// fails.</summary>
+    internal static void ShowLookupFailed(ReopenedTabs reopened, Navigation navigation, IReadOnlyList<WaitingNode> nodes, Exception error)
+    {
+        foreach (var waiting in nodes)
+        {
+            if (!SavedDocuments.TryFinishWaiting(reopened, waiting.Reopened))
+            {
+                continue;
+            }
+
+            var tab = waiting.Reopened.Tab;
+            if (navigation.IsOpen(tab))
+            {
+                tab.Load.ShowLookupFailed(waiting.Record.Location, error);
+            }
+        }
     }
 
     // shown holds what was found for each of nodes, in the same order.

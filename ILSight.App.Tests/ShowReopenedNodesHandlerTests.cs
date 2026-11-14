@@ -43,7 +43,7 @@ public sealed class ShowReopenedNodesHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_LookupFailed_ShowsTheTabsPlaceGone()
+    public async Task HandleAsync_LookupFailed_ShowsEachTabFailedSayingWhy()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var waiting = await WaitForGreeterAsync(d);
@@ -54,7 +54,10 @@ public sealed class ShowReopenedNodesHandlerTests
         var loads = await d.EndAsync(showing);
 
         Assert.Empty(loads);
-        Assert.IsType<TabContent.Gone>(waiting.Reopened.Tab.Content);
+        var failed = Assert.IsType<TabContent.Unreadable>(waiting.Reopened.Tab.Content);
+        Assert.Equal("Unreadable.", failed.Why);
+        Assert.Equal(waiting.Record.Location, failed.Location);
+        Assert.Empty(d.AppState.Reopened.Tabs);
     }
 
     [Fact]
