@@ -176,7 +176,7 @@ public abstract record AppProblem
         public required string File { get; init; }
 
         /// <summary>Each bookmark left out, as the refusal line describes one lost, and why its lookup failed.</summary>
-        public required IReadOnlyList<(string Bookmark, Exception Error)> Failed { get; init; }
+        public required IReadOnlyList<(LostBookmark Bookmark, Exception Error)> Failed { get; init; }
     }
 
     public sealed record ComparisonFailed : AppProblem

@@ -139,7 +139,7 @@ internal static class StatusBarView
         var theme = ui.Theme;
         var opened = refusalDetails;
         opened.CloseUnlessFor(refusal);
-        var items = refusal.ListItems();
+        var items = refusal.ListItems(t);
         // A Tab stop, so the note is reached as the line is, by the keyboard too: Enter (or Space) opens its whole list.
         var i = ui.Pressable(ui.GetId("refusal"), enabled: true, out var activated, out var ring);
         if (i.Clicked)
@@ -205,7 +205,7 @@ internal static class StatusBarView
 
     private static string DescribeRefusal(Refusal refusal, Strings t)
     {
-        var items = refusal.ListItems();
+        var items = refusal.ListItems(t);
         if (items is null)
         {
             return t.StatusDismissRefusal;

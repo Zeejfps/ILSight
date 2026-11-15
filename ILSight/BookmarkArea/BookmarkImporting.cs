@@ -111,7 +111,7 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
     // Each bookmark whose lookup failed, left out, reported once with why: the others settle as their own lookups came out.
     private void ReportFailedBookmarks(List<FoundBookmark> found, string file)
     {
-        var failed = new List<(string Bookmark, Exception Error)>();
+        var failed = new List<(LostBookmark Bookmark, Exception Error)>();
         foreach (var bookmark in found)
         {
             if (bookmark.Place is Outcome<Lookup<NodePath>>.Failed failure)
@@ -128,13 +128,10 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
         ports.ReportError(new AppProblem.ImportedBookmarksNotPlaced { File = file, Failed = failed });
     }
 
-    private static string DescribeLostBookmark(FoundBookmark lost)
+    private static LostBookmark DescribeLostBookmark(FoundBookmark lost)
     {
         var record = lost.Record;
-        var location = record.LocationNodeName ?? record.MemberName;
-        // A notation, the same in every language: the bookmark's name, where it pointed and its file, as ILSpy saved
-        // them; nothing in it is translated.
-        return $"{record.Name}: {location} ({record.FileName})";
+        return new LostBookmark { Name = record.Name, Location = record.LocationNodeName ?? record.MemberName, File = $"{record.FileName}" };
     }
 
     private static Bookmark? CreateBookmark(BookmarkList bookmarks, FoundBookmark found)

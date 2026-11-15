@@ -139,8 +139,27 @@ public sealed class BookmarkImportingTests
         var reported = Assert.IsType<AppProblem.ImportedBookmarksNotPlaced>(Assert.Single(ports.Reported));
         Assert.Equal("exported.json", reported.File);
         var failed = Assert.Single(reported.Failed);
-        Assert.StartsWith("Bookmark 1: ", failed.Bookmark, StringComparison.Ordinal);
+        Assert.Equal("Bookmark 1", failed.Bookmark.Name);
         Assert.Same(error, failed.Error);
         Assert.Empty(ports.Refused);
+    }
+
+    [Fact]
+    public void Lost_bookmarks_are_joined_by_each_languages_template_and_separator_the_values_as_they_are()
+    {
+        var lost = new Refusal.ImportedBookmarksLost
+        {
+            File = "exported.json",
+            Lost =
+            [
+                new LostBookmark { Name = "Start", Location = "Shop.Cart.Sum()", File = "Shop.dll" },
+                new LostBookmark { Name = "End", Location = "Shop.Order", File = "Shop.dll" },
+            ],
+        };
+
+        Assert.Equal("Start: Shop.Cart.Sum() (Shop.dll); End: Shop.Order (Shop.dll)", lost.Words(Strings.For(Locale.En)).Why);
+        Assert.Equal("Start : Shop.Cart.Sum() (Shop.dll) ; End : Shop.Order (Shop.dll)", lost.Words(Strings.For(Locale.Fr)).Why);
+        Assert.Equal("Start：Shop.Cart.Sum()（Shop.dll）、End：Shop.Order（Shop.dll）", lost.Words(Strings.For(Locale.Ja)).Why);
+        Assert.Equal(["Start：Shop.Cart.Sum()（Shop.dll）", "End：Shop.Order（Shop.dll）"], lost.ListItems(Strings.For(Locale.Ja)));
     }
 }

@@ -118,7 +118,7 @@ public abstract record Refusal
     {
         public required string File { get; init; }
 
-        public required IReadOnlyList<string> Lost { get; init; }
+        public required IReadOnlyList<BookmarkArea.LostBookmark> Lost { get; init; }
     }
 
     /// <summary><see cref="Count"/> bookmarks, imported or restored, were left out because others mark their lines.</summary>
@@ -129,13 +129,13 @@ public abstract record Refusal
 
     /// <summary>The items of the list the refusal tells of, whole, for the note's details, where its line may show only
     /// part of them in the room it is drawn in: every ignored argument, every bookmark an import lost; null where it
-    /// tells of no list.</summary>
-    public IReadOnlyList<string>? ListItems()
+    /// tells of no list. In <paramref name="t"/>'s language where an item is the app's words.</summary>
+    public IReadOnlyList<string>? ListItems(Strings t)
     {
         return this switch
         {
             ArgumentsIgnored r => r.Arguments,
-            ImportedBookmarksLost r => r.Lost,
+            ImportedBookmarksLost r => r.Lost.Select(b => b.Words(t)).ToArray(),
             _ => null,
         };
     }
@@ -159,7 +159,7 @@ public abstract record Refusal
             TypeNotDiagrammed r => (t.ErrorShowInDiagram(r.Type.Name), t.ErrorNoDefinition(r.Type)),
             PdbUnusable r => (t.ErrorSelectPdb(System.IO.Path.GetFileName(r.PdbPath), r.Assembly), ProblemTexts.DescribePdbCheck(t, r.Check, r.Assembly)),
             NotBookmarksFile r => (t.ErrorImportBookmarks(System.IO.Path.GetFileName(r.Path)), t.ErrorNotBookmarksFile),
-            ImportedBookmarksLost r => (t.ErrorBookmarksNotFound(r.File), string.Join("; ", r.Lost)),
+            ImportedBookmarksLost r => (t.ErrorBookmarksNotFound(r.File), BookmarkArea.LostBookmark.JoinWords(t, r.Lost)),
             BookmarksLeftOut r => (t.ErrorDuplicateBookmarks(r.Count), ""),
             _ => throw new UnreachableException($"Refusal.Words does not handle {GetType().Name}."),
         };

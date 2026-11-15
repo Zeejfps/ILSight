@@ -67,7 +67,7 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
 
         FollowGoneRoots(roots);
         _roots = roots;
-        _rootLabels = ListRootLabels(roots);
+        _rootLabels = ListRootLabels(roots, _strings);
         _revision++;
         return true;
     }
@@ -273,7 +273,14 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
         _theme = theme;
         _iconColors = iconColors;
         _icons = icons;
+        if (ReferenceEquals(_strings, strings))
+        {
+            return;
+        }
+
+        // The labels of assemblies told apart by their folder are in the language's template.
         _strings = strings;
+        _rootLabels = ListRootLabels(_roots, strings);
     }
 
     /// <summary>Writes each type's and member's metadata token after its name as <paramref name="format"/> says.</summary>
@@ -585,7 +592,7 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
         return NodeText.Secondary(node);
     }
 
-    private static Dictionary<BrowseNode, RootLabel> ListRootLabels(BrowseNode[] roots)
+    private static Dictionary<BrowseNode, RootLabel> ListRootLabels(BrowseNode[] roots, Strings strings)
     {
         var labels = new Dictionary<BrowseNode, RootLabel>(ReferenceEqualityComparer.Instance);
         var byName = roots
@@ -617,8 +624,8 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
             var hints = ListFolderHints(nodes);
             for (var i = 0; i < nodes.Count; i++)
             {
-                // A notation, the same in every language: the name, and the folder that tells it apart.
-                var label = $"{nodes[i].Assembly.Name} ({hints[i]})";
+                // The language's template: the name, and the folder that tells it apart, as they are.
+                var label = strings.TreeRootInFolder(name: nodes[i].Assembly.Name, folder: hints[i]);
                 labels[nodes[i]] = new RootLabel { Title = label, Row = label };
             }
         }

@@ -176,7 +176,7 @@ public sealed class RunArgumentsTests
         app.Frames.MovePointer(note.X + 2f, note.Y + note.Height / 2).Frame(90);
 
         Assert.True(indicator.X + indicator.Width <= 1000f, $"The error indicator ends at {indicator.X + indicator.Width}, past the window.");
-        var details = refused.ListItems();
+        var details = refused.ListItems(t);
         Assert.NotNull(details);
         Assert.All(ignored, argument => Assert.Contains(argument, details));
         // The tooltip wraps the whole list, the last argument ending its last line, above how to dismiss the note.
