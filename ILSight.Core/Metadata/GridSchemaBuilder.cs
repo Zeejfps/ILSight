@@ -9,7 +9,8 @@ public sealed class GridSchemaBuilder<TRow>
 {
     private readonly List<GridColumn> _columns = [];
     private int _nameColumn = -1;
-    private Func<object, MetadataRowDetails?>? _details;
+    private Func<object, object?>? _details;
+    private Func<object, MetadataRowDetails?>? _formatDetails;
 
     /// <summary>What names the kind of rows, the same for a table in any assembly.</summary>
     public required string Key { get; init; }
@@ -33,10 +34,12 @@ public sealed class GridSchemaBuilder<TRow>
         _nameColumn = _columns.Count;
     }
 
-    /// <summary>Takes <paramref name="details"/> as what is shown under a selected row.</summary>
-    public void KeepDetails(Func<object, MetadataRowDetails?> details)
+    /// <summary>Takes what <paramref name="read"/> reads of a row, made by <paramref name="format"/> after the read's
+    /// catch, as what is shown under a selected row.</summary>
+    public void KeepDetails(Func<object, object?> read, Func<object, MetadataRowDetails?> format)
     {
-        _details = details;
+        _details = read;
+        _formatDetails = format;
     }
 
     public GridSchema<TRow> ToSchema()
@@ -50,6 +53,7 @@ public sealed class GridSchemaBuilder<TRow>
             Columns = _columns.ToArray(),
             NameColumn = _nameColumn,
             Details = _details,
+            FormatDetails = _formatDetails,
         };
     }
 }

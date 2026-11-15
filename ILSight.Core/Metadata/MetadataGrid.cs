@@ -128,7 +128,7 @@ public abstract class MetadataGrid
                 return known;
             }
 
-            var result = MetadataGrids.ReadDetails(this, row);
+            var result = MetadataGrids.MakeDetails(this, MetadataGrids.ReadDetails(this, row));
             _details[row] = result;
             return result;
         }

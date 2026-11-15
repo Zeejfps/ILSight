@@ -98,6 +98,60 @@ public sealed class MetadataTests
         Assert.Equal("The app's bug.", failure.Message);
     }
 
+    [Fact]
+    public void A_value_the_app_fails_to_format_of_what_was_read_is_the_apps_failure_not_an_unreadable_page()
+    {
+        var grid = MemberRefGrid(columns => columns.Select(c => c.Column.Name == "Name"
+            ? c with { FormatValue = static _ => throw new InvalidOperationException("The app's bug.") }
+            : c).ToList(), null, null);
+
+        var failure = Assert.Throws<InvalidOperationException>(() => MetadataGrids.ReadPage(grid, 0));
+
+        Assert.Equal("The app's bug.", failure.Message);
+    }
+
+    [Fact]
+    public void Row_details_the_app_fails_to_make_of_what_was_read_are_the_apps_failure_not_an_unreadable_page()
+    {
+        var grid = MemberRefGrid(static columns => columns, static _ => "read", static _ => throw new InvalidOperationException("The app's bug."));
+
+        var failure = Assert.Throws<InvalidOperationException>(() => MetadataGrids.ReadPage(grid, 0));
+
+        Assert.Equal("The app's bug.", failure.Message);
+    }
+
+    [Fact]
+    public void Row_details_whose_read_fails_say_why_in_their_place_and_the_page_reads()
+    {
+        var grid = MemberRefGrid(static columns => columns, static _ => throw new BadImageFormatException("Cut short."),
+            static _ => new MetadataRowDetails.Text { Content = "made", Extension = null });
+
+        var page = Assert.IsType<ModuleRead<MetadataGridPage>.Read>(MetadataGrids.ReadPage(grid, 0).GetValue()).Value;
+
+        Assert.Equal(new MetadataRowDetails.Failed("Cut short."), page.Details[0]);
+    }
+
+    // The test assembly's MemberRef table, paged, its columns as given and its rows' details read and made as given.
+    private static MetadataGrid.Paged MemberRefGrid(Func<IReadOnlyList<GridColumn>, IReadOnlyList<GridColumn>> columnsOf,
+        Func<object, object?>? readDetails, Func<object, MetadataRowDetails?>? makeDetails)
+    {
+        var module = Assert.IsType<LoadedModule>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath));
+        var file = LoadedAssemblies.GetFile(module);
+        var table = MetadataTables.Create(TableIndex.MemberRef, file);
+        Assert.NotNull(table);
+        var columns = columnsOf(table.Columns);
+        var schema = new GridSchema<object>
+        {
+            Key = table.Key, Table = table.Table, File = file, ReadRows = table.ReadRows, Columns = columns, Details = readDetails,
+            FormatDetails = makeDetails,
+        };
+        return new MetadataGrid.Paged
+        {
+            Title = "MemberRef", Module = module, File = file, Schema = schema, Rows = schema.ReadRows(), GridColumns = columns,
+            Columns = columns.Select(static c => c.Column).ToArray(),
+        };
+    }
+
     // The test assembly's MemberRef table, paged, its Name column's tooltip read and made as given.
     private static MetadataGrid.Paged MemberRefGridWithNameTooltip(Func<object, int, object?> read, Func<object, MetadataTooltip?>? make)
     {

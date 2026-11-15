@@ -41,7 +41,7 @@ internal static class CustomDebugInformationTable
         GridSchemas.AddValue(table, "Info", r => FindInfo(m, r));
         GridSchemas.AddBlob(table, "Value", r => r.Value, r => r.Value.IsNil ? "<nil>" : m.GetBlobReader(r.Value).ToHexString());
         GridSchemas.AddValue(table, "ValueLength", r => m.GetBlobReader(r.Value).Length, "X8");
-        GridSchemas.SetDetails(table, r => Details(m, r));
+        GridSchemas.SetDetails(table, r => ReadDetails(m, r), MakeDetails);
         return table.ToSchema();
     }
 
@@ -101,39 +101,46 @@ internal static class CustomDebugInformationTable
         };
     }
 
-    private static MetadataRowDetails? Details(MetadataReader metadata, CustomDebugInformation row)
+    // The read half of a row's details, inside the row's catch: its kind, where its value's blob is, and for embedded
+    // source the extension of the document it is; null for a row with no value or kind.
+    private static DetailsRead? ReadDetails(MetadataReader metadata, CustomDebugInformation row)
     {
         if (row.Value.IsNil || row.Kind.IsNil)
         {
             return null;
         }
 
-        var reader = metadata.GetBlobReader(row.Value);
+        var kind = metadata.GetGuid(row.Kind);
+        return new DetailsRead
+        {
+            Kind = kind,
+            Value = metadata.GetBlobReader(row.Value),
+            Extension = kind == KnownGuids.EmbeddedSource ? EmbeddedSourceExtension(metadata, row.Parent) : null,
+        };
+    }
+
+    // The format half, after the read's catch: the app's own decoding of the value's bytes, whose failure on bad data is
+    // the bytes shown in hex; anything else it throws is the app's bug.
+    private static MetadataRowDetails MakeDetails(DetailsRead read)
+    {
+        var reader = read.Value;
         try
         {
-            return Parse(metadata, row, ref reader);
+            return Parse(read, ref reader);
         }
         catch (BadImageFormatException)
         {
-            return new MetadataRowDetails.Text
-            {
-                Content = metadata.GetBlobReader(row.Value).ToHexString(),
-                Extension = null,
-            };
+            return new MetadataRowDetails.Text { Content = read.Value.ToHexString(), Extension = null };
         }
         catch (InvalidDataException)
         {
-            return new MetadataRowDetails.Text
-            {
-                Content = metadata.GetBlobReader(row.Value).ToHexString(),
-                Extension = null,
-            };
+            return new MetadataRowDetails.Text { Content = read.Value.ToHexString(), Extension = null };
         }
     }
 
-    private static MetadataRowDetails Parse(MetadataReader metadata, CustomDebugInformation row, ref BlobReader reader)
+    private static MetadataRowDetails Parse(DetailsRead read, ref BlobReader reader)
     {
-        var kind = metadata.GetGuid(row.Kind);
+        var kind = read.Kind;
         if (kind == KnownGuids.StateMachineHoistedLocalScopes)
         {
             var rows = new List<IReadOnlyList<string>>();
@@ -174,7 +181,7 @@ internal static class CustomDebugInformationTable
             return new MetadataRowDetails.Text
             {
                 Content = textReader.ReadToEnd(),
-                Extension = EmbeddedSourceExtension(metadata, row.Parent),
+                Extension = read.Extension,
             };
         }
         if (kind == KnownGuids.CompilationOptions)
@@ -248,5 +255,15 @@ internal static class CustomDebugInformationTable
         var s = reader.ReadUTF8(length);
         reader.ReadByte();
         return s;
+    }
+
+    // A row's details as read: plain values, and the reader of its value's blob, which the format half decodes.
+    private sealed record DetailsRead
+    {
+        public required Guid Kind { get; init; }
+
+        public required BlobReader Value { get; init; }
+
+        public required string? Extension { get; init; }
     }
 }

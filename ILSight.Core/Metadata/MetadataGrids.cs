@@ -94,7 +94,7 @@ public static class MetadataGrids
         var values = new object?[rows * columns];
         var tooltips = new object?[rows * columns];
         var links = new MetadataAddress?[rows * columns];
-        var details = new MetadataRowDetails?[rows];
+        var details = new object?[rows];
         var definitions = new CodeReference.Navigable?[rows];
         var listed = new Dictionary<TableIndex, bool>();
         for (var r = 0; r < rows; r++)
@@ -103,7 +103,7 @@ public static class MetadataGrids
             for (var column = 0; column < columns; column++)
             {
                 var index = r * columns + column;
-                var value = ReadValue(grid, row, column);
+                var value = ReadCell(grid, row, column);
                 values[index] = value;
                 tooltips[index] = ReadTooltip(grid, row, column, value);
                 links[index] = grid.GridColumns[column].Column.IsToken ? ReadLink(grid.File, listed, value) : null;
@@ -116,16 +116,26 @@ public static class MetadataGrids
         return new ReadGridPage { Values = values, Tooltips = tooltips, Links = links, Details = details, Definitions = definitions };
     }
 
+    // The app's formatting of a page as read, after the read's outermost catch: each cell's value and tooltip, each row's
+    // details.
     private static MetadataGridPage MakePage(MetadataGrid grid, ReadGridPage read)
     {
         var columns = grid.GridColumns.Count;
+        var values = new object?[read.Values.Length];
         var tooltips = new MetadataTooltip?[read.Tooltips.Length];
         for (var index = 0; index < tooltips.Length; index++)
         {
+            values[index] = FormatCell(grid, index % columns, read.Values[index]);
             tooltips[index] = MakeTooltip(grid, index % columns, read.Tooltips[index]);
         }
 
-        return new MetadataGridPage { Values = read.Values, Tooltips = tooltips, Links = read.Links, Details = read.Details, Definitions = read.Definitions };
+        var details = new MetadataRowDetails?[read.Details.Length];
+        for (var row = 0; row < details.Length; row++)
+        {
+            details[row] = MakeDetails(grid, read.Details[row]);
+        }
+
+        return new MetadataGridPage { Values = values, Tooltips = tooltips, Links = read.Links, Details = details, Definitions = read.Definitions };
     }
 
     /// <summary>The page at <paramref name="page"/> of <paramref name="grid"/> when reading it failed with
@@ -252,9 +262,10 @@ public static class MetadataGrids
         return grid.FindDetails(row);
     }
 
-    /// <summary>What is shown under <paramref name="row"/>, read through the grid's file; why when reading it
-    /// failed.</summary>
-    internal static MetadataRowDetails? ReadDetails(MetadataGrid grid, int row)
+    /// <summary>What the schema's read half reads under <paramref name="row"/> through the grid's file, its facts,
+    /// inside the row's catch, which <see cref="MakeDetails"/> makes into what is shown after it; null when it has
+    /// nothing; why, a <see cref="MetadataRowDetails.Failed"/>, when reading it failed.</summary>
+    internal static object? ReadDetails(MetadataGrid grid, int row)
     {
         var details = grid.Schema.Details;
         if (details is null)
@@ -262,7 +273,7 @@ public static class MetadataGrids
             return null;
         }
 
-#pragma warning disable RL0902 // The schema's delegate reads ICSharpCode.Decompiler's metadata (a listed untrusted library): its failure is the row's.
+#pragma warning disable RL0902 // The schema's read half reads ICSharpCode.Decompiler's metadata (a listed untrusted library): its failure is the row's.
         try
         {
             return details(grid.Rows[row]);
@@ -272,6 +283,20 @@ public static class MetadataGrids
             return new MetadataRowDetails.Failed(e.Message);
         }
 #pragma warning restore RL0902
+    }
+
+    /// <summary>The app's rules over what a row's details read (<see cref="ReadDetails"/>), after the read's outermost
+    /// catch: nothing, a read that failed saying why, else the schema's format half makes the facts into what is
+    /// shown.</summary>
+    internal static MetadataRowDetails? MakeDetails(MetadataGrid grid, object? read)
+    {
+        if (read is null or MetadataRowDetails.Failed)
+        {
+            return (MetadataRowDetails?)read;
+        }
+
+        var format = grid.Schema.FormatDetails ?? throw new UnreachableException("A schema that reads details makes them.");
+        return format(read);
     }
 
     /// <summary>A cell's text up to its first line break, and how many lines follow it — none for
@@ -618,20 +643,32 @@ public static class MetadataGrids
     /// <see cref="MetadataCellFailure"/> for one whose read failed.</summary>
     internal static object? ReadValue(MetadataGrid grid, int row, int column)
     {
+        return FormatCell(grid, column, ReadCell(grid, row, column));
+    }
+
+    // The read half of a cell's value, inside the cell's catch: what the column's delegate reads, or its failure.
+    private static object? ReadCell(MetadataGrid grid, int row, int column)
+    {
         var info = grid.GridColumns[column];
-        object? read;
 #pragma warning disable RL0902 // The column's delegate reads ICSharpCode.Decompiler's metadata (a listed untrusted library): its failure is the cell's.
         try
         {
-            read = info.Value(grid.Rows[row], row + 1);
+            return info.Value(grid.Rows[row], row + 1);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
             return new MetadataCellFailure { Reason = e.Message };
         }
 #pragma warning restore RL0902
+    }
 
-        return read is null || info.FormatValue is null ? read : info.FormatValue(read);
+    // The format half of a cell's value, after the read's outermost catch (a paged grid's page's included): what was
+    // read made into the cell's value by the column's format half, if it has one; nothing read, or a failed read, as it
+    // is.
+    private static object? FormatCell(MetadataGrid grid, int column, object? read)
+    {
+        var info = grid.GridColumns[column];
+        return read is null or MetadataCellFailure || info.FormatValue is null ? read : info.FormatValue(read);
     }
 
     private static string FormatValue(object? value, string? format)
@@ -698,7 +735,8 @@ public static class MetadataGrids
         public required string Reason { get; init; }
     }
 
-    // A page as read, inside its catch: each cell's tooltip as its facts, which MakePage makes into tooltips after it.
+    // A page as read, inside its catch: each cell's value and tooltip and each row's details as read, which MakePage
+    // formats after it.
     private sealed record ReadGridPage
     {
         public required object?[] Values { get; init; }
@@ -707,7 +745,7 @@ public static class MetadataGrids
 
         public required MetadataAddress?[] Links { get; init; }
 
-        public required MetadataRowDetails?[] Details { get; init; }
+        public required object?[] Details { get; init; }
 
         public required CodeReference.Navigable?[] Definitions { get; init; }
     }

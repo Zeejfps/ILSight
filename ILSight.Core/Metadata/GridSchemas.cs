@@ -205,10 +205,13 @@ public static class GridSchemas
             formatTooltip ?? ExplainText);
     }
 
-    /// <summary>What is shown under a selected row.</summary>
-    public static void SetDetails<TRow>(GridSchemaBuilder<TRow> schema, Func<TRow, MetadataRowDetails?> get)
+    /// <summary>What is shown under a selected row: what <paramref name="read"/> reads of it through the library, inside
+    /// the row's catch, made into what is shown by <paramref name="format"/> after it, outside; nothing when the read is
+    /// null.</summary>
+    public static void SetDetails<TRow, TRead>(GridSchemaBuilder<TRow> schema, Func<TRow, TRead?> read, Func<TRead, MetadataRowDetails?> format)
+        where TRead : class
     {
-        schema.KeepDetails(r => get(GetRow<TRow>(r)));
+        schema.KeepDetails(r => read(GetRow<TRow>(r)), f => format((TRead)f));
     }
 
     private static void AddColumn<TRow, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T>(GridSchemaBuilder<TRow> schema, string name, string? format, Func<TRow, int, T> value,

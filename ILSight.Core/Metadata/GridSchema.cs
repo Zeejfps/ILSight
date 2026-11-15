@@ -22,8 +22,13 @@ public class GridSchema
     /// <summary>The column naming each row, or -1.</summary>
     internal int NameColumn { get; init; } = -1;
 
-    /// <summary>What is shown under a selected row, for a grid that shows something.</summary>
-    internal Func<object, MetadataRowDetails?>? Details { get; init; }
+    /// <summary>The read half of what is shown under a selected row, for a grid that shows something: what it reads of
+    /// the row through the library, its facts, inside the row's catch; null when the row has nothing to show.</summary>
+    internal Func<object, object?>? Details { get; init; }
+
+    /// <summary>The format half of what is shown under a selected row: the facts <see cref="Details"/> read made into
+    /// it by the app's rules, after the read's outermost catch, so a bug in it is no unreadable row.</summary>
+    internal Func<object, MetadataRowDetails?>? FormatDetails { get; init; }
 }
 
 /// <summary>A <see cref="GridSchema"/> over rows of <typeparamref name="TRow"/>, made by a
