@@ -14,7 +14,7 @@ public static class ExportCommands
     /// <remarks>The code is in <paramref name="setup"/>'s language and with its options as they were when the user
     /// asked for the save, the setup the file was named for (<see cref="SaveDialogs.PickCodeFile"/>): the code the
     /// user was looking at. A language or option changed while the save dialog was open reaches neither; the current
-    /// setup is never read here. The notes the app writes into the file beside the code (a reference read by name
+    /// setup is never read here. The dialog's title tells the user so ("Save C# code as shown"). The notes the app writes into the file beside the code (a reference read by name
     /// only, why the code could not be decompiled, a summary's labels) are in the app's language as it stands when the
     /// save runs, once the file is picked, as the tab shows them; the code itself is in no app language.</remarks>
     public static void SaveCode(AppState appState, BrowseNode node, DecompilerSetup setup, string path)
@@ -45,7 +45,8 @@ public static class ExportCommands
     /// several as a solution with a folder per project.</summary>
     /// <remarks>The decompiler's options are taken as they stand when the request starts (the dialog's own options
     /// are the app's, so what it shows as it closes) and kept until the export's turn ends; nothing in the request
-    /// was chosen from them.</remarks>
+    /// was chosen from them. The note under the dialog's code options tells the user so
+    /// ("export.options_code_kept"), as an option changed while the export waits its turn doesn't reach it.</remarks>
     public static void StartExport(AppState appState, ExportRequest request)
     {
         StartWriting(appState, Exports.ToWork(request, appState.Decompiler.Setup.Options));

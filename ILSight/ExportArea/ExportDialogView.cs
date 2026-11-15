@@ -386,7 +386,8 @@ internal static class ExportDialogView
     }
 
     // The same options as in the decompiler options panel, so changing them changes the code being browsed too, which
-    // the note under the heading says before they are changed.
+    // the note under the heading says before they are changed; the second note says the export keeps them as they are
+    // when Export is clicked, so a change while it waits its turn doesn't reach it (ExportCommands.StartExport).
     private static void CodeOptions(Ui ui, Appearance appearance, IAppCommandWriter commands, DecompilerOptions options)
     {
         var t = appearance.Strings;
@@ -394,6 +395,7 @@ internal static class ExportDialogView
         {
             ui.Label(t.ExportOptionsCode, bold: true);
             Caption(ui, t.ExportOptionsCodeNote);
+            Caption(ui, t.ExportOptionsCodeKept);
             Toggle(ui, appearance, commands, options, RemoveDeadCode);
             Toggle(ui, appearance, commands, options, RemoveDeadStores);
             Toggle(ui, appearance, commands, options, DebugSymbolNames);

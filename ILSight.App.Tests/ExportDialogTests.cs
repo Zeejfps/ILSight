@@ -572,6 +572,7 @@ public sealed class ExportDialogTests : IDisposable
 
         Assert.True(app.Frames.Drew("SDK-style project files"));
         Assert.True(app.Frames.Drew("These also change the code you browse."));
+        Assert.True(app.Frames.Drew("The export uses them as they are when you click Export, even while it waits its turn."));
     }
 
     [Fact]

@@ -162,12 +162,12 @@ public sealed class ExportTests : IDisposable
         app.Frames.Key(Shortcuts.SaveCode).Frame(2);
         app.Settle();
 
-        Assert.Equal(["Save code"], app.Frames.FilePicker.Titles);
+        Assert.Equal(["Save C# code as shown"], app.Frames.FilePicker.Titles);
         Assert.Contains("public class Greeter", await File.ReadAllTextAsync(path));
     }
 
     [Fact]
-    public async Task Code_saved_in_CSharp_stays_CSharp_with_the_options_asked_when_the_language_switches_while_the_file_picker_is_open()
+    public async Task Code_saved_in_CSharp_stays_CSharp_with_the_options_asked_when_the_language_switches_while_the_file_picker_is_open_and_its_title_says_so()
     {
         var app = AppDriver.Opened();
         app.Show(await app.FixtureAsync("Greeter"), frames: 2);
@@ -187,14 +187,40 @@ public sealed class ExportTests : IDisposable
         app.Frames.Key(Shortcuts.SaveCode).Frame(2);
         app.Settle();
 
+        // Told to the user where they asked: the code in the language shown, as shown, whatever changes while it's open.
+        Assert.Equal(["Save C# code as shown"], app.Frames.FilePicker.Titles);
         Assert.Equal("Greeter.cs", app.Frames.FilePicker.LastSave.FileName);
         Assert.Equal(DecompilationLanguage.IL, app.AppState.Decompiler.Setup.Language);
+        Assert.False(DecompilerToggles.IsOn(app.AppState.Decompiler.Setup.Options, stringConcat));
         var code = await File.ReadAllTextAsync(path);
         Assert.Contains("public class Greeter", code);
         Assert.DoesNotContain(".class", code);
         Assert.DoesNotContain("string.Concat", code);
         Assert.Equal(ExportKind.CSharpFile, Assert.Single(app.AppState.FinishedExports).Job.Kind);
         Assert.Empty(app.AppState.Errors.Entries);
+    }
+
+    [Fact]
+    public async Task Code_saved_with_an_option_on_turned_off_while_the_file_picker_is_open_keeps_it_on_as_the_title_said()
+    {
+        var app = AppDriver.Opened();
+        app.Show(await app.FixtureAsync("Greeter"), frames: 2);
+        var stringConcat = DecompilerToggles.FindToggle("StringConcat");
+        Assert.NotNull(stringConcat);
+        Assert.True(DecompilerToggles.IsOn(app.AppState.Decompiler.Setup.Options, stringConcat));
+        var path = _temp.PathOf("Greeter.cs");
+        app.Frames.FilePicker.OnOpen = () => Preferences.SetDecompilerToggle(app.AppState, stringConcat, false);
+        app.Frames.FilePicker.Answer = path;
+
+        app.Frames.Key(Shortcuts.SaveCode).Frame(2);
+        app.Settle();
+
+        Assert.Equal(["Save C# code as shown"], app.Frames.FilePicker.Titles);
+        Assert.False(DecompilerToggles.IsOn(app.AppState.Decompiler.Setup.Options, stringConcat));
+        var code = await File.ReadAllTextAsync(path);
+        Assert.Contains("public class Greeter", code);
+        Assert.DoesNotContain("string.Concat", code);
+        Assert.IsType<ExportEnd.Finished>(Assert.Single(app.AppState.FinishedExports).End);
     }
 
     [Fact]
