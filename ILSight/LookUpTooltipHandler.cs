@@ -5,7 +5,7 @@ namespace ILSight;
 
 /// <summary>Looks up the tooltip of a reference hovered in code through <see cref="IPorts"/>, without holding up the
 /// screen, and keeps it; a reference that could not be described has none, and one into a module that could not be
-/// read says so.</summary>
+/// read says so. Describing it that failed otherwise is the app's failure, said nowhere else: it is reported.</summary>
 public sealed class LookUpTooltipHandler(LookUpTooltipHandler.IPorts ports)
 {
     public interface IPorts
@@ -15,12 +15,21 @@ public sealed class LookUpTooltipHandler(LookUpTooltipHandler.IPorts ports)
         /// holding up the screen. Working it out that failed comes back as <see cref="Outcome{T}.Failed"/>; the
         /// cancellation of <paramref name="ct"/> is let through.</summary>
         Task<Outcome<Lookup<CodeTooltip>>> DescribeReferenceAsync(CodeReference.Entity reference, CancellationToken ct);
+
+        void ReportError(AppProblem problem);
     }
 
-    /// <summary>Makes <paramref name="lookup"/> and keeps what it found in <paramref name="tooltips"/>.</summary>
+    /// <summary>Makes <paramref name="lookup"/> and keeps what it found in <paramref name="tooltips"/>; a lookup that
+    /// failed is kept as no tooltip, once, and reported with its exception.</summary>
     public async Task HandleAsync(CodeTooltips tooltips, TooltipLookup lookup, CancellationToken ct)
     {
         var described = await ports.DescribeReferenceAsync(lookup.Reference, ct);
-        tooltips.Finish(lookup, described.Match(static ok => ok.Value, static _ => new Lookup<CodeTooltip>.NotFound()));
+        tooltips.Finish(lookup, described.Match(static ok => ok.Value, ReportFailed));
+    }
+
+    private Lookup<CodeTooltip> ReportFailed(Outcome<Lookup<CodeTooltip>>.Failed failed)
+    {
+        ports.ReportError(new AppProblem.Unexpected(failed.Error));
+        return new Lookup<CodeTooltip>.NotFound();
     }
 }

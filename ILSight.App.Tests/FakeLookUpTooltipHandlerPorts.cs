@@ -10,6 +10,13 @@ internal sealed class FakeLookUpTooltipHandlerPorts : LookUpTooltipHandler.IPort
 
     public List<CodeReference.Entity> Asked { get; } = [];
 
+    public List<AppProblem> Reported { get; } = [];
+
+    public void ReportError(AppProblem problem)
+    {
+        Reported.Add(problem);
+    }
+
     public Task<Outcome<Lookup<CodeTooltip>>> DescribeReferenceAsync(CodeReference.Entity reference, CancellationToken ct)
     {
         Asked.Add(reference);

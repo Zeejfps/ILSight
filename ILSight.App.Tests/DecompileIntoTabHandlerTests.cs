@@ -83,6 +83,34 @@ public sealed class DecompileIntoTabHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_AMethodsCSharpFailedBesideItsIL_ShowsTheCodeAndReportsTheFailureWithItsException()
+    {
+        var d = AppStateDriver.OpenedWithoutScreen();
+        var greeter = await d.FixtureAsync("Greeter");
+        var viewCommands = new Queue<ViewCommand>();
+        var (navigation, tab) = FirstTab(viewCommands);
+        var ports = new FakeDecompileIntoTabHandlerPorts();
+        var load = navigation.Restore(tab, greeter, In(DecompilationLanguage.ILWithCSharp), AtLineTen);
+        Assert.NotNull(load);
+        var error = new InvalidOperationException("Unexpected IL at offset 0x12.");
+        var text = Documents.CreateFromText("Greeter", "// Greeter");
+        var code = new NodeContent.Code(new DecompiledDocument
+        {
+            Title = text.Title, Language = text.Language, Error = null, Lines = text.Lines, Definitions = text.Definitions, Statements = text.Statements,
+            EntityNames = text.EntityNames, Folds = text.Folds, PartFailures = [error],
+        });
+
+        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, DocumentNoteTexts.For(Locale.En), NodeQueries.FirstGridRows, CancellationToken.None));
+        Assert.Single(ports.Requests).Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Read { Value = code }));
+        await d.EndAsync(handling);
+
+        Assert.Same(code.Document, Assert.IsType<TabContent.Code>(tab.Content).Document);
+        var reported = Assert.IsType<AppProblem.DecompilationFailed>(Assert.Single(ports.Reported));
+        Assert.Same(error, reported.Error);
+        Assert.Equal(greeter.FullName, reported.Node);
+    }
+
+    [Fact]
     public async Task HandleAsync_ModuleClosedBeforeTheDecompileBegan_StopsTheLoadAndSaysTheAssemblyWasClosed()
     {
         var d = AppStateDriver.OpenedWithoutScreen();

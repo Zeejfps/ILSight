@@ -37,6 +37,7 @@ internal sealed class DocumentBuilder : ITextOutput
     private readonly Stack<OpenFold> _openFolds = new();
     private readonly List<(OpenFold Start, int EndLine)> _folds = new();
     private readonly List<PlacedNote> _notes = new();
+    private readonly List<Exception> _partFailures = new();
     public LoadedModule? Assembly { get; internal init; }
 
     /// <summary>The type system of <see cref="Assembly"/>, as the unit writing awaited its read before it began; null
@@ -46,6 +47,14 @@ internal sealed class DocumentBuilder : ITextOutput
     /// <summary>The references of <see cref="Assembly"/> whose file could not be read, which the code was written reading
     /// by name only; the document carries them.</summary>
     public IReadOnlyList<UnreadReference> UnreadReferences { get; private set; } = [];
+
+    /// <summary>Keeps <paramref name="error"/>, what writing a part of the code threw where the rest is written and the
+    /// text says the part failed in its place (a method whose C# could not be written above its IL), for the document,
+    /// whose failure it is to report.</summary>
+    internal void NotePartFailure(Exception error)
+    {
+        _partFailures.Add(error);
+    }
 
     /// <summary>Says, as comments in <paramref name="notes"/>' words, every reference the code was read without, as
     /// what each is: each of <paramref name="unread"/> found but unreadable (its cause's note), why, and the step that
@@ -167,7 +176,8 @@ internal sealed class DocumentBuilder : ITextOutput
         var built = lines.MoveToImmutable();
         var statements = ListStatements();
         return new DecompiledDocument { Title = title, Language = Language, Error = error, Lines = built, Definitions = _definitions, Statements = statements,
-            EntityNames = NameAnchoredEntities(statements), Folds = ListFoldRegions(built), UnreadReferences = UnreadReferences, Notes = [.._notes] };
+            EntityNames = NameAnchoredEntities(statements), Folds = ListFoldRegions(built), UnreadReferences = UnreadReferences, Notes = [.._notes],
+            PartFailures = [.._partFailures] };
     }
 
     private Dictionary<(AssemblyPath FilePath, int Token), string> NameAnchoredEntities(Dictionary<int, CodeAnchor> statements)

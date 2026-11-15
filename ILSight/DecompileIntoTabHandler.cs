@@ -43,6 +43,7 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
         }
 
         ReportUnreadReferences(load.Document);
+        ReportPartFailures(ticket.Node, load.Document);
         var tab = ticket.Tab;
         var arrival = load.TakeArrival();
         var failure = FindFailure(load, loaded);
@@ -93,6 +94,16 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
             {
                 ports.ReportError(LookupFailures.OfUnreadReference(unread));
             }
+        }
+    }
+
+    // A part of the code that failed where the rest is shown (a method's C# above its IL) is the decompilation's failure,
+    // said in its place in the text and reported with its exception.
+    private void ReportPartFailures(BrowseNode node, DecompiledDocument document)
+    {
+        foreach (var error in document.PartFailures)
+        {
+            ports.ReportError(new AppProblem.DecompilationFailed { Node = node.FullName, Error = error });
         }
     }
 

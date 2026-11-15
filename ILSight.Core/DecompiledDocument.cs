@@ -38,6 +38,11 @@ public sealed class DecompiledDocument
     /// name only; empty for most.</summary>
     public IReadOnlyList<UnreadReference> UnreadReferences { get; init; } = [];
 
+    /// <summary>What writing parts of the code threw where the rest was written, each said in its place in the text (a
+    /// method whose C# could not be written above its IL): the exceptions, never in the text, for the app to report;
+    /// empty for most.</summary>
+    public IReadOnlyList<Exception> PartFailures { get; init; } = [];
+
     public required ImmutableArray<DocumentLine> Lines { get; init; }
 
     /// <summary>The app's notes the lines hold beside the code, each kept as its cause and where it stands, ordered by

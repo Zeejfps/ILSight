@@ -247,7 +247,7 @@ internal static class AppRoot
             ExportBookmarksHandler = new ExportBookmarksHandler(bookmarks),
             SettingsSaving = new SettingsSaving(new SettingsSavingAdapter(errors)),
             BuildChildrenHandler = new BuildChildrenHandler(tree),
-            LookUpTooltipHandler = new LookUpTooltipHandler(new LookUpTooltipHandlerAdapter(assemblies)),
+            LookUpTooltipHandler = new LookUpTooltipHandler(new LookUpTooltipHandlerAdapter(errors, assemblies)),
             RunSearchHandler = new RunSearchHandler(MakePort<RunSearchHandler.IPorts>(new RunSearchHandlerAdapter(session), hooks?.Searching)),
             ExpandNamespacesHandler = new ExpandNamespacesHandler(tree),
             ExportWriting = new ExportWriting(MakePort<ExportWriting.IPorts>(exports, hooks?.Exporting)),

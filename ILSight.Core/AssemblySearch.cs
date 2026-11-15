@@ -50,6 +50,8 @@ public static class AssemblySearch
             static _ => Task.FromResult<string?>(null));
     }
 
+    // What the library throws on the assembly's metadata (as placing a match does) is the assembly's failure, said in
+    // the search; anything else is a bug of the search's own, which goes on to the workflow's edge and its error report.
     private static async Task<string?> TrySearchAssemblyAsync(Search search, LoadedModule assembly, MetadataModule main, CancellationToken ct)
     {
         try
@@ -57,11 +59,11 @@ public static class AssemblySearch
             await SearchAssemblyAsync(search, assembly, main, ct);
             return null;
         }
-        catch (OperationCanceledException) when (search.CancellationToken.IsCancellationRequested)
+        catch (BadImageFormatException e)
         {
-            throw;
+            return e.Message;
         }
-        catch (Exception e)
+        catch (InvalidOperationException e)
         {
             return e.Message;
         }

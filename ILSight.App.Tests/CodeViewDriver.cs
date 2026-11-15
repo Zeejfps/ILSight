@@ -68,7 +68,7 @@ internal sealed class CodeViewDriver
             return;
         }
 
-        var handler = new LookUpTooltipHandler(new LookUpTooltipHandlerAdapter(tooltips.Assemblies));
+        var handler = new LookUpTooltipHandler(new LookUpTooltipHandlerAdapter(new ErrorLog(), tooltips.Assemblies));
         Commands.StartLookingUpTooltips(_workflows, handler, tooltips);
     }
 

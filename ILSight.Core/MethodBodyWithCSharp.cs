@@ -14,7 +14,8 @@ namespace ILSight.Core;
 /// Disassembles a method's body with the C# it decompiles to written above the instructions: each
 /// statement's lines before the instruction it starts at, as comments. Written to a
 /// <see cref="DocumentBuilder"/>, the statement keeps C#'s colors and the rest of its lines are dimmed.
-/// A method whose C# cannot be decompiled says so above its first instruction.
+/// A method whose C# cannot be decompiled says so above its first instruction, and its exception goes to the
+/// document's part failures when the output is a document.
 /// </summary>
 internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
 {
@@ -26,6 +27,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     private readonly DecompilerTypeSystem _typeSystem;
     private readonly DecompilerSettings _settings;
     private readonly CancellationToken _cancellationToken;
+    private readonly DocumentBuilder? _document;
     private List<SequencePoint> _points = [];
     private DecompiledDocument? _csharp;
     private string? _failure;
@@ -42,6 +44,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         _typeSystem = typeSystem;
         _settings = settings;
         _cancellationToken = cancellationToken;
+        _document = output as DocumentBuilder;
     }
 
     public override void Disassemble(MetadataFile module, MethodDefinitionHandle handle)
@@ -82,6 +85,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         catch (Exception e) when (e is not OperationCanceledException)
         {
             _failure = $"(C# could not be decompiled: {e.Message})";
+            _document?.NotePartFailure(e);
             return null;
         }
     }

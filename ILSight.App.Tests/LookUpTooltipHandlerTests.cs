@@ -28,18 +28,21 @@ public sealed class LookUpTooltipHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_Failed_KeepsNoTooltip()
+    public async Task HandleAsync_Failed_KeepsNoTooltipAndReportsTheFailureWithItsException()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var assemblies = d.AppState.ListSession.Assemblies;
         var tooltips = new CodeTooltips { Assemblies = assemblies, Version = assemblies.Version };
         var lookup = await AskForGreeterAsync(d, tooltips);
-        var ports = new FakeLookUpTooltipHandlerPorts { Answer = new Outcome<Lookup<CodeTooltip>>.Failed(new InvalidDataException("unreadable")) };
+        var error = new InvalidDataException("unreadable");
+        var ports = new FakeLookUpTooltipHandlerPorts { Answer = new Outcome<Lookup<CodeTooltip>>.Failed(error) };
 
         await d.RunAsync(() => new LookUpTooltipHandler(ports).HandleAsync(tooltips, lookup, CancellationToken.None));
 
         Assert.True(tooltips.TryGetOrAskTooltip(lookup.Reference, out var kept));
         Assert.IsType<Lookup<CodeTooltip>.NotFound>(kept);
+        var reported = Assert.IsType<AppProblem.Unexpected>(Assert.Single(ports.Reported));
+        Assert.Same(error, reported.Error);
     }
 
     [Fact]
