@@ -10,6 +10,14 @@ public abstract record DocumentNote
     {
     }
 
+    /// <summary><paramref name="text"/>, a value said in a note, on one line, each line break a space: a note runs to
+    /// its line's end, and keeps its line count in every language, so a value from outside (an exception's message)
+    /// never breaks it.</summary>
+    internal static string OneLine(string text)
+    {
+        return text.ReplaceLineEndings(" ");
+    }
+
     /// <summary>What goes before the comment marker on the note's line, past what the line held before it.</summary>
     internal virtual string Lead => "";
 

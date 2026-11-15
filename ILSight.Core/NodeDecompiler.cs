@@ -144,7 +144,7 @@ internal static class NodeDecompiler
     {
         var error = new DocumentBuilder { Language = language };
         WriteNote(error, new DocumentNote.DecompileFailed(request.FullName), notes);
-        WriteNote(error, new DocumentNote.FailureCause(OneLine(thrown.Message)), notes);
+        WriteNote(error, new DocumentNote.FailureCause(DocumentNote.OneLine(thrown.Message)), notes);
         return error.BuildFailure(request.Title, thrown);
     }
 
@@ -154,15 +154,9 @@ internal static class NodeDecompiler
     {
         var error = failure.Assembly.Error;
         var builder = new DocumentBuilder { Language = language };
-        var why = error.InnerException is null ? null : OneLine(error.InnerException.Message);
+        var why = error.InnerException is null ? null : DocumentNote.OneLine(error.InnerException.Message);
         WriteNote(builder, new DocumentNote.AssemblyUnreadable { File = error.FilePath.FileName, Why = why }, notes);
         return builder.BuildFailure(failure.Title, error);
-    }
-
-    // A note runs to its line's end: a message of several lines is said on one, its line breaks spaces.
-    private static string OneLine(string text)
-    {
-        return string.Join(' ', text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
     }
 
     // Code read through a type system that read a reference by name only, not found or its file unreadable, says so first.
