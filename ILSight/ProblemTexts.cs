@@ -44,9 +44,9 @@ public static class ProblemTexts
             placeLookupFileDamaged: p => (t.ErrorLookUpPlace(p.Place.Label),
                 AfterStep(t, p.Step, Advise(t.ErrorFileDamaged(p.File.FileName), p.Error))),
             referenceFileDenied: p => (t.ErrorReadReference(p.Unread.Name, p.Unread.Module),
-                Degraded(t, p.Unread, t.ErrorFileDenied(p.Unread.Error.FilePath.FileName))),
+                Degraded(t, p.Unread, t.ErrorReferenceFileDenied(p.Unread.Error.FilePath.FileName))),
             referenceFileDamaged: p => (t.ErrorReadReference(p.Unread.Name, p.Unread.Module),
-                Degraded(t, p.Unread, t.ErrorFileDamaged(p.Unread.Error.FilePath.FileName))),
+                Degraded(t, p.Unread, t.ErrorReferenceFileDamaged(p.Unread.Error.FilePath.FileName))),
             moduleUnreadable: p => (t.ErrorModuleUnreadable(p.Module), p.Why.ToString()),
             bookmarksNotExported: p => (t.ErrorExportBookmarks, p.Reason),
             bookmarksNotImported: p => (t.ErrorImportBookmarks(p.File), p.Reason),
@@ -84,10 +84,11 @@ public static class ProblemTexts
         return asked + Environment.NewLine + Environment.NewLine + details;
     }
 
-    // What the code shows without the reference and how to read it again, the cause's advice, then the error as it came.
-    private static string Degraded(Strings t, UnreadReference unread, string advice)
+    // What the code shows without the reference and the step that reads it again, the cause, then the error as it came.
+    // The code is kept, so the cause's own "try again" would reuse it: the step named is the reload.
+    private static string Degraded(Strings t, UnreadReference unread, string cause)
     {
-        return t.ErrorReadReferenceDegraded(unread.Name, unread.Module) + Environment.NewLine + Environment.NewLine + Advise(advice, unread.Error);
+        return t.ErrorReadReferenceDegraded(unread.Name, unread.Module) + Environment.NewLine + Environment.NewLine + Advise(cause, unread.Error);
     }
 
     // The cause and what the user can do about it first, then the error as it came.

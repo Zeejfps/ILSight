@@ -695,6 +695,8 @@
   "error.file_damaged": "{file} 不是可读取的 .NET 程序集或包。请替换该文件，或将其关闭。",
   "error.read_reference": "无法读取 {assembly} 引用的 {name}",
   "error.read_reference_degraded": "{assembly} 的代码在仅按名称读取 {name} 的情况下显示。文件可读后，请重新加载 {assembly}。",
+  "error.reference_file_denied": "无法打开 {file}：访问被拒绝，或其他程序锁定了它。",
+  "error.reference_file_damaged": "{file} 不是可读取的 .NET 程序集或包。",
   "error.no_longer_there": "{place} 已不存在。",
   "error.module_unreadable": "无法读取 {name}",
   "error.decompile": "无法反编译 {name}",

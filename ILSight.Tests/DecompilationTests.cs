@@ -403,6 +403,7 @@ public sealed class DecompilationTests
         Assert.Null(document.Error);
         Assert.StartsWith("// Warning: the reference PathsLibrary was read by name only", document.Lines[0].Text);
         Assert.Contains("PathsLibrary.dll could not be read", document.Lines[0].Text);
+        Assert.EndsWith("Reload PathsSample.dll once it can be read.", document.Lines[0].Text);
         Assert.Contains("Take(", Documents.GetText(document));
         var unread = Assert.Single(document.UnreadReferences);
         Assert.Equal("PathsLibrary", unread.Name);

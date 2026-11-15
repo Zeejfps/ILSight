@@ -44,7 +44,8 @@ internal sealed class DocumentBuilder : ITextOutput
     public IReadOnlyList<UnreadReference> UnreadReferences { get; private set; } = [];
 
     /// <summary>Says, as comments, every reference the code was read without, as what each is: each of
-    /// <paramref name="unread"/> found but unreadable, and why, then each of <paramref name="missing"/> not found; keeps the
+    /// <paramref name="unread"/> found but unreadable, why, and the step that reads it again (the module's code is kept,
+    /// so decompiling again would not), then each of <paramref name="missing"/> not found; keeps the
     /// unread for the document, whose failures they are.</summary>
     public void WriteUnreadReferences(IReadOnlyList<UnreadReference> unread, IReadOnlyList<string> missing)
     {
@@ -52,7 +53,7 @@ internal sealed class DocumentBuilder : ITextOutput
         foreach (var reference in unread)
         {
             var why = reference.Error.InnerException?.Message ?? reference.Error.Message;
-            Write($"// Warning: the reference {reference.Name} was read by name only: {reference.Error.FilePath} could not be read. {why}", SpanKind.Comment);
+            Write($"// Warning: the reference {reference.Name} was read by name only: {reference.Error.FilePath} could not be read. {why} Reload {reference.Module} once it can be read.", SpanKind.Comment);
             WriteLine();
         }
 

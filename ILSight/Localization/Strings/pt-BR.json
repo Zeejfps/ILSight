@@ -695,6 +695,8 @@
   "error.file_damaged": "{file} não é um assembly nem um pacote .NET que possa ser lido. Substitua o arquivo ou feche-o.",
   "error.read_reference": "Não é possível ler {name}, referenciado por {assembly}",
   "error.read_reference_degraded": "O código de {assembly} é mostrado lendo {name} apenas pelo nome. Recarregue {assembly} quando o arquivo puder ser lido.",
+  "error.reference_file_denied": "Não foi possível abrir {file}: o acesso foi negado, ou outro programa o mantém bloqueado.",
+  "error.reference_file_damaged": "{file} não é um assembly nem um pacote .NET que possa ser lido.",
   "error.no_longer_there": "{place} não existe mais.",
   "error.module_unreadable": "Não foi possível ler {name}",
   "error.decompile": "Não é possível descompilar {name}",

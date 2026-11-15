@@ -695,6 +695,8 @@
   "error.file_damaged": "{file} не является читаемой сборкой или пакетом .NET. Замените файл или закройте его.",
   "error.read_reference": "Не удаётся прочитать {name}, на которую ссылается {assembly}",
   "error.read_reference_degraded": "Код {assembly} показан с чтением {name} только по имени. Перезагрузите {assembly}, когда файл станет доступен для чтения.",
+  "error.reference_file_denied": "Не удалось открыть {file}: доступ запрещён, или файл заблокирован другой программой.",
+  "error.reference_file_damaged": "{file} не является читаемой сборкой или пакетом .NET.",
   "error.no_longer_there": "{place} больше не существует.",
   "error.module_unreadable": "Не удалось прочитать {name}",
   "error.decompile": "Не удалось декомпилировать {name}",

@@ -695,6 +695,8 @@
   "error.file_damaged": "{file} ist keine lesbare .NET-Assembly und kein lesbares Paket. Ersetzen Sie die Datei, oder schließen Sie sie.",
   "error.read_reference": "{name}, auf das {assembly} verweist, kann nicht gelesen werden",
   "error.read_reference_degraded": "Der Code von {assembly} wird angezeigt, wobei {name} nur über den Namen gelesen wird. Laden Sie {assembly} neu, sobald die Datei gelesen werden kann.",
+  "error.reference_file_denied": "{file} konnte nicht geöffnet werden: Der Zugriff wurde verweigert, oder ein anderes Programm hält die Datei gesperrt.",
+  "error.reference_file_damaged": "{file} ist keine lesbare .NET-Assembly und kein lesbares Paket.",
   "error.no_longer_there": "{place} ist nicht mehr vorhanden.",
   "error.module_unreadable": "{name} konnte nicht gelesen werden",
   "error.decompile": "{name} kann nicht dekompiliert werden",
