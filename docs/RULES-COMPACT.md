@@ -211,13 +211,13 @@ on purpose, a published member).
   `<Noun>Service` / `Rules` / `Logic` / `Common` / `Core`. No methods callers must call in a set order. No interface
   without two real implementations (ports excepted). No public setter, mutable field or collection that skips the rule;
   a collection handed in only to write into (an outbox) is held privately (`{ private get; init; }`), readers asking its
-  owner. Use cases sharing a step: R001.
+  owner.
 - **One kind of input, one path:** input arriving at more than one moment has one handler, the first copy included,
   handed it once what it decides from is in place (the start recorded, or the restore finished) and before what accepts
   later copies opens (the inbox made holding it).
-- **A helper lives where what it knows belongs**: a rule's change on the type keeping the rule (never another type's
-  functions it forwards its private parts to), a calculation on its concept, even with one caller; only a caller's own
-  policy (its wording) is its private method. It moves with its last caller; with none, delete it.
+- **A helper lives where what it knows belongs**: a rule's change on the type keeping the rule (never functions
+  elsewhere handed its private parts), a calculation on its concept even with one caller, a caller's own policy (its
+  wording) its private method; it moves with its last caller, deleted with none.
 - **A rule across parts is kept by one type holding every part privately** (a setting it spans, its lock and its event's
   delegate included), every change its method: exempted ones named for what they are (`Restore`), a step callers take
   before their I/O (`BeginOpening`) included; never public parts, a second type over them, or another type's functions
@@ -356,10 +356,10 @@ nullable exception).
 - **Whatever fails stays where it was shown**, failed with why, until retried, dismissed or removed by product policy;
   never dropped, left pending or shown empty. An unexpected one is also reported once, saying the operation that failed
   (wherever asked; the step that asked may be named beside its kind), its cause (structured where clients tell causes
-  apart) and an applicable recovery (for a cause known only by its message, what the operation's contract holds: asking
-  again where a retry is safe and could meet other conditions, a report where reports are taken; none invented). What
-  presents it never takes the focus or input meant for something else, nor marks it read by appearing; whether it
-  appears by itself, waits on an indicator or interrupts, and kinds, incident identity and grouping, are the product's.
+  apart) and an applicable recovery (for a cause known only by its message, only what the operation's contract supports:
+  a retry where safe and conditions may differ, a report where taken, or neither). What presents it never takes the
+  focus or input meant for something else, nor marks it read by appearing; whether it appears by itself, waits on an
+  indicator or interrupts, and kinds, incident identity and grouping, are the product's.
 - **Messages:**
   - **Identity, not presentation:** a shared recovery and a shared cause's identity are defined once, every message
     saying either found from it, each presentation its own message, its words localization's; distinct causes may pick
@@ -372,15 +372,15 @@ nullable exception).
   - **Commentary, not content:** content the app shows is as produced; the app's notes inside it are its messages. A
     language switch keeps the product's stated contract (which text is live, which a record kept as made); live text
     follows alike, a note with its labels (kept as its cause, found when drawn or made again). Text that left the app (a
-    saved file: its stated contract) keeps its language. Copy and Find read what is drawn. A kept place (a bookmark)
-    uses the content's terms, never an offset into drawn text. A format's published documentation (a schema's
-    descriptions) is in the product's documentation languages. A value from outside in a one-line place (a note, a
-    title, a row) has its control characters escaped visibly and unambiguously, the escape character too, where it names
-    something.
+    saved file: its stated contract) keeps its language. Ordinary Copy and Find read what is drawn; a command named for
+    diagnostics carries what it promises. A kept place (a bookmark) uses the content's terms, never an offset into drawn
+    text. A format's published documentation (a schema's descriptions) is in the product's documentation languages. A
+    value from outside drawn on one line (a note, title, row) keeps it: line breaks, control and format characters shown
+    escaped, unambiguously where it names something, the escape character too.
   - **Diagnostics, not messages:** a stack trace (`ToString()`) is never a failure's message or summary; what the user
-    reads suits its audience (an unknown cause's own message only where the product's disclosure contract allows).
-    Diagnostics shown or sent are labelled by the message each is behind, laid out as the product chooses, ordinary
-    Copy taking only what is drawn (a recovery asking for a report needs them).
+    reads suits its audience (an unknown cause's own message only where the product's disclosure contract allows, else
+    the operation and an identifier finding its diagnostic). Diagnostics shown or sent are labelled by the message each
+    is behind, laid out as the product chooses (a recovery asking for a report needs them).
 - **Batches and absence:** independent items keep their own outcomes, the batch failing only for what fails every item;
   an atomic batch or dependent steps follow the operation's completion contract. "Not there" is the source's own absence
   answer, asked first where it has one; an exception is not there only where it unambiguously means the object asked for
@@ -406,13 +406,14 @@ nullable exception).
   arrive); or a stated duplicate. Only resending delivers.
 - **No empty catches or log-and-rethrow.** Decision code propagates; adapters catch only what they translate; edges
   catch per unit (around each independent item; one boundary around one unit's dependent steps, stopping at the first
-  failure), recording each unexpected failure once with its diagnostic in the product's record (a log, or with none
-  where it is reported); an expected one said by its cause needs none. A task whose every ending is no news is awaited
-  with `ConfigureAwait(ContinueOnCapturedContext | SuppressThrowing)` (plain `Task` only), else its failure propagates.
-  The one exception: a library in `rulelab.untrusted_libraries` reading the user's data (in an adapter, a conversion
-  step, or a library object that is data) is caught around the read only, all but requested cancellation, into the
-  requested unit's failure case with why, shown where its answer would be, in the project calling it (your core's answer
-  carries the case); never list your own code.
+  failure), recording each unexpected failure once with its diagnostic in the product's failure record; one a contract
+  names expected (the operation's, a library's, the product's) needs none. A task whose every ending is no news is
+  awaited with `ConfigureAwait(ContinueOnCapturedContext | SuppressThrowing)` (plain `Task` only), else its failure
+  propagates. The one exception: a library in `rulelab.untrusted_libraries` reading the user's data (in an adapter, a
+  conversion step, or a library object that is data) is caught around the read only (an app callback it calls only
+  collects, or keeps its own failure apart), all but requested cancellation, into the requested unit's failure case with
+  why, shown where its answer would be, in the project calling it (your core's answer carries the case); never list your
+  own code.
 - **Lazy library failures are translated inside each adapter member's read**, told by what the code does: inside, the
   library's reads and the facts they decode (its own predicates included); after the outermost catch, the app's policy
   (which analyses apply, what to read next, decided on facts read under a narrow catch), ordering (even text it sorts
@@ -466,10 +467,9 @@ Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100
   under `await using`.
 - **Nothing fire-and-forget:** every task is awaited; work that must outlive the request goes on a queue (an outbox) a
   worker drains. No `async void` but event handlers, which are edges (`try` / `catch`, VSTHRD100 suppressed, why).
-- **A workflow awaits what its completion contract needs:** its later steps' inputs and every effect its caller is
-  told is done, a final save included. Only work independent of it is handed back
-  to the edge, as a kind of its own (R008) inside the success case. Work handed back partway ends the workflow there:
-  the edge starts it and the rest, never held by a later wait.
+- **A workflow awaits what its completion contract needs:** its later steps' inputs and every effect its caller is told
+  is done, a final save included. Only work independent of it goes back to the edge, a kind of its own (R008) in the
+  success case; handing work back partway ends the workflow, the edge starting it and the rest.
 - **Work a state's own change implies**, whichever workflow makes it, is recorded by the change as pending, once per
   item, and dispatched by an owning edge's step that follows every change. **A read started early** (a warm-up) is
   that read: one task the later use awaits, its failure a value, started by an edge.
