@@ -417,6 +417,20 @@ public sealed class DecompilationTests
         Assert.Same(unread.Error, failed.Error.InnerException);
     }
 
+    [Fact]
+    public async Task A_reference_not_found_is_named_in_the_code_as_not_found_and_reported_as_nothing()
+    {
+        using var temp = new TempDir();
+        var sample = temp.Copy(Trees.PathsBeforePath, "PathsSample.dll");
+        var overloads = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(sample).ReadRootAsync().GetChildAsync("PathsSample", "Overloads");
+
+        var document = await overloads.DecompileAsync(DecompilationLanguage.CSharp);
+
+        Assert.Null(document.Error);
+        Assert.Contains(document.Lines, l => l.Text == "// Warning: the reference PathsLibrary was read by name only: it was not found.");
+        Assert.Empty(document.UnreadReferences);
+    }
+
     private static EntityHandle GetTypeReference(string path, string name)
     {
         using var pe = new PEReader(File.OpenRead(path));

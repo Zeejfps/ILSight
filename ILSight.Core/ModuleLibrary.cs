@@ -20,6 +20,8 @@ internal sealed class ModuleLibrary
 
     private readonly List<UnreadReference> _unreadReferences = [];
 
+    private readonly List<string> _missingReferences = [];
+
     private readonly TaskCompletionSource _released = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private int _readings;
@@ -75,6 +77,30 @@ internal sealed class ModuleLibrary
             }
 
             _unreadReferences.Add(new UnreadReference { Name = name, Module = Path.GetFileName(File.FileName), Error = error });
+        }
+    }
+
+    /// <summary>The names of the references no file was found for, each once, in the order met: the type systems read
+    /// them by name only (<see cref="ReadingResolver"/>). Not found is no failure; the code says it was read without
+    /// them.</summary>
+    public IReadOnlyList<string> ListMissingReferences()
+    {
+        lock (_missingReferences)
+        {
+            return [.. _missingReferences];
+        }
+    }
+
+    /// <summary>Notes that no file was found for the reference <paramref name="name"/>; a name noted already is kept
+    /// once.</summary>
+    public void NoteMissingReference(string name)
+    {
+        lock (_missingReferences)
+        {
+            if (!_missingReferences.Exists(m => string.Equals(m, name, StringComparison.OrdinalIgnoreCase)))
+            {
+                _missingReferences.Add(name);
+            }
         }
     }
 

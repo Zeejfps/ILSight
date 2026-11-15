@@ -43,9 +43,10 @@ internal sealed class DocumentBuilder : ITextOutput
     /// by name only; the document carries them.</summary>
     public IReadOnlyList<UnreadReference> UnreadReferences { get; private set; } = [];
 
-    /// <summary>Says, as comments, that each of <paramref name="unread"/> was read by name only, and why, and keeps them
-    /// for the document.</summary>
-    public void WriteUnreadReferences(IReadOnlyList<UnreadReference> unread)
+    /// <summary>Says, as comments, every reference the code was read without, as what each is: each of
+    /// <paramref name="unread"/> found but unreadable, and why, then each of <paramref name="missing"/> not found; keeps the
+    /// unread for the document, whose failures they are.</summary>
+    public void WriteUnreadReferences(IReadOnlyList<UnreadReference> unread, IReadOnlyList<string> missing)
     {
         UnreadReferences = unread;
         foreach (var reference in unread)
@@ -54,7 +55,14 @@ internal sealed class DocumentBuilder : ITextOutput
             Write($"// Warning: the reference {reference.Name} was read by name only: {reference.Error.FilePath} could not be read. {why}", SpanKind.Comment);
             WriteLine();
         }
+
+        foreach (var name in missing)
+        {
+            Write($"// Warning: the reference {name} was read by name only: it was not found.", SpanKind.Comment);
+            WriteLine();
+        }
     }
+
     private int _lineFirstSpan;
     private int _indentLevel;
     private bool _lineStarted;

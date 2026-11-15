@@ -136,6 +136,13 @@ public static class LoadedAssemblies
         return GetLibrary(module).ListUnreadReferences();
     }
 
+    /// <summary>The names of the references of <paramref name="module"/> no file was found for, which its type systems
+    /// read by name only.</summary>
+    internal static IReadOnlyList<string> ListMissingReferences(LoadedModule module)
+    {
+        return GetLibrary(module).ListMissingReferences();
+    }
+
     /// <summary>The library's file <paramref name="module"/> was read from.</summary>
     internal static MetadataFile GetFile(LoadedModule module)
     {

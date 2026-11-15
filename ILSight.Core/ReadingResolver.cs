@@ -6,7 +6,8 @@ namespace ILSight.Core;
 /// once it is added to the unit's reading, so it isn't released while the unit reads it; one closed is handed out as
 /// not found. A type system's build also records what it was handed (<see cref="TypeSystemBuild{T}"/>), as values: it
 /// holds nothing past the unit. A reference whose file is there but can't be read is read by name only, the failure
-/// noted on the module (<see cref="ModuleLibrary.NoteUnreadReference"/>).</summary>
+/// noted on the module (<see cref="ModuleLibrary.NoteUnreadReference"/>); one not found is read by name only and noted
+/// as not found (<see cref="ModuleLibrary.NoteMissingReference"/>).</summary>
 internal sealed class ReadingResolver : IAssemblyResolver
 {
     private readonly ModuleLibrary _resolving;
@@ -40,7 +41,7 @@ internal sealed class ReadingResolver : IAssemblyResolver
             return ReadByNameOnly(reference.Name, e);
         }
 
-        return HandOut(found);
+        return HandOut(found, reference.Name);
     }
 
     public MetadataFile? ResolveModule(MetadataFile mainModule, string moduleName)
@@ -55,7 +56,7 @@ internal sealed class ReadingResolver : IAssemblyResolver
             return ReadByNameOnly(moduleName, e);
         }
 
-        return HandOut(found);
+        return HandOut(found, moduleName);
     }
 
     // A file found for the reference that can't be read degrades the type system rather than failing it: the reference
@@ -82,10 +83,12 @@ internal sealed class ReadingResolver : IAssemblyResolver
         return Task.FromResult(ResolveModule(mainModule, moduleName));
     }
 
-    private MetadataFile? HandOut(LoadedModule? module)
+    // A reference not found is read by name only too: the code says it was read without it, but it is no failure.
+    private MetadataFile? HandOut(LoadedModule? module, string name)
     {
         if (module is null)
         {
+            _resolving.NoteMissingReference(name);
             return null;
         }
 

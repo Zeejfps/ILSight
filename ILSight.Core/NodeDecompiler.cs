@@ -161,7 +161,7 @@ internal static class NodeDecompiler
         return builder.BuildFailure(failure.Title, error);
     }
 
-    // Code read through a type system that read a reference by name only, its file there but unreadable, says so first.
+    // Code read through a type system that read a reference by name only, not found or its file unreadable, says so first.
     private static void WriteUnreadReferences(DocumentBuilder builder, DocumentRequest request, DecompilerTypeSystem? typeSystem)
     {
         var module = builder.Assembly;
@@ -170,7 +170,7 @@ internal static class NodeDecompiler
             return;
         }
 
-        builder.WriteUnreadReferences(LoadedAssemblies.ListUnreadReferences(module));
+        builder.WriteUnreadReferences(LoadedAssemblies.ListUnreadReferences(module), LoadedAssemblies.ListMissingReferences(module));
     }
 
     /// <summary>The module the document of <paramref name="request"/> is read from; null for a package's.</summary>
