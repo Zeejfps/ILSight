@@ -58,6 +58,8 @@ public static class NuGetConfigs
         {
             return new NuGetConfigRead.Missing();
         }
+        // Not there: the reader opens only the path (a document type the config names is not fetched), so a missing
+        // folder is one of the path's.
         catch (DirectoryNotFoundException)
         {
             return new NuGetConfigRead.Missing();

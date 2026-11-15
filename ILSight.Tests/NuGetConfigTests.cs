@@ -42,6 +42,31 @@ public sealed class NuGetConfigTests
     }
 
     [Fact]
+    public void A_config_whose_folder_is_missing_is_missing()
+    {
+        using var temp = new TempDir();
+
+        var read = NuGetConfigs.Read(Path.Combine(temp.PathOf("gone"), "NuGet.Config"), CreateEnvironment(null));
+
+        Assert.IsType<NuGetConfigRead.Missing>(read);
+    }
+
+    [Fact]
+    public void A_config_naming_a_document_type_in_a_missing_folder_is_read_as_the_reader_opens_only_its_path()
+    {
+        using var temp = new TempDir();
+        var path = temp.Write("NuGet.Config", """
+            <?xml version="1.0"?>
+            <!DOCTYPE configuration SYSTEM "gone/configuration.dtd">
+            <configuration />
+            """);
+
+        var read = NuGetConfigs.Read(path, CreateEnvironment(null));
+
+        Assert.IsType<NuGetConfigRead.Read>(read);
+    }
+
+    [Fact]
     public void A_config_that_is_no_xml_is_unreadable_saying_why()
     {
         using var temp = new TempDir();

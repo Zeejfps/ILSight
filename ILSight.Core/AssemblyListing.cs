@@ -488,6 +488,9 @@ public static class AssemblyListing
 
     // "Not there" is asked of what the read threw, never assumed of every failure: the file asked for, or the package it
     // is in, missing, or a folder of its path. Another file missing (one it needs), a lock or a corrupt file is a failure.
+    // A DirectoryNotFoundException names no file; it is a folder of the path's because the read opens nothing else: the
+    // file, its WebCIL or package reading, or the package then a file out of it in memory (Read); the module's
+    // resolver and its symbols open files only when first used, after the load.
     private static bool IsNotThere(AssemblyLoadException e, AssemblyPath path)
     {
         return e.InnerException switch
