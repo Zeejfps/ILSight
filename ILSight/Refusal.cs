@@ -146,7 +146,7 @@ public abstract record Refusal
         return this switch
         {
             ResourceNotSaved r => (t.ErrorSaveResource(r.Resource), t.DocumentClosed(r.Assembly)),
-            PdbNotRead r => (t.ErrorSelectPdb(r.Pdb, r.Assembly), t.DocumentClosed(r.Assembly)),
+            PdbNotRead r => (t.ErrorSelectPdb(file: r.Pdb, name: r.Assembly), t.DocumentClosed(r.Assembly)),
             NotFullPath r => (t.ErrorOpenFile(r.Path), t.ErrorNotFullPath),
             AssemblyClosed r => (t.DocumentClosed(r.Assembly), ""),
             NotAnalyzable r => (t.ErrorAnalyzeSymbol(r.Symbol), t.ErrorNotOpenable),
@@ -157,7 +157,7 @@ public abstract record Refusal
             HistoryPlaceGone r => (t.ErrorGoBack(r.Place.Label), t.ErrorNoLongerThere(r.Place)),
             BookmarkGone r => (t.ErrorGoToBookmark(r.Bookmark), t.ErrorNoLongerThere(r.Place)),
             TypeNotDiagrammed r => (t.ErrorShowInDiagram(r.Type.Name), t.ErrorNoDefinition(r.Type)),
-            PdbUnusable r => (t.ErrorSelectPdb(System.IO.Path.GetFileName(r.PdbPath), r.Assembly), ProblemTexts.DescribePdbCheck(t, r.Check, r.Assembly)),
+            PdbUnusable r => (t.ErrorSelectPdb(file: System.IO.Path.GetFileName(r.PdbPath), name: r.Assembly), ProblemTexts.DescribePdbCheck(t, r.Check, r.Assembly)),
             NotBookmarksFile r => (t.ErrorImportBookmarks(System.IO.Path.GetFileName(r.Path)), t.ErrorNotBookmarksFile),
             ImportedBookmarksLost r => (t.ErrorBookmarksNotFound(r.File), BookmarkArea.LostBookmark.JoinWords(t, r.Lost)),
             BookmarksLeftOut r => (t.ErrorDuplicateBookmarks(r.Count), ""),

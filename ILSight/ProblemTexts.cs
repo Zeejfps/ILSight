@@ -30,11 +30,11 @@ public static class ProblemTexts
     {
         return problem.Match<(string Title, string Details)>(
             openFailed: p => (t.ErrorOpenAssemblies, p.Error.ToString()),
-            pdbUnusable: p => (t.ErrorSelectPdb(Path.GetFileName(p.PdbPath), p.Assembly),
+            pdbUnusable: p => (t.ErrorSelectPdb(file: Path.GetFileName(p.PdbPath), name: p.Assembly),
                 DescribePdbCheck(t, p.Check, p.Assembly) + Environment.NewLine + p.PdbPath),
             assemblyNotReloaded: p => (t.ErrorReloadAssembly(p.Assembly), p.Error.ToString()),
             assembliesNotReloaded: p => (t.ErrorReloadAssemblies, p.Error.ToString()),
-            analysisFailed: p => (t.ErrorAnalyze(p.Subject, AnalyzerText.Header(t, p.Kind)), p.Error.ToString()),
+            analysisFailed: p => (t.ErrorAnalyze(name: p.Subject, analysis: AnalyzerText.Header(t, p.Kind)), p.Error.ToString()),
             analysesNotRestored: p => (t.ErrorRestoreAnalyses, p.Error.ToString()),
             unresolved: p => (t.ErrorResolve(p.Reference.Name), p.Error.ToString()),
             unresolvedFileDenied: p => (t.ErrorResolve(p.Reference.Name), Advise(Denied(t, p.File), p.Error)),
@@ -44,9 +44,9 @@ public static class ProblemTexts
                 AfterStep(t, p.Step, Advise(Denied(t, p.File), p.Error))),
             placeLookupFileDamaged: p => (t.ErrorLookUpPlace(p.Place.Label),
                 AfterStep(t, p.Step, Advise(Damaged(t, p.File), p.Error))),
-            referenceFileDenied: p => (t.ErrorReadReference(p.Unread.Name, p.Unread.Module),
+            referenceFileDenied: p => (t.ErrorReadReference(name: p.Unread.Name, assembly: p.Unread.Module),
                 Degraded(t, p.Unread, t.ErrorFileDenied(p.Unread.Error.FilePath.FileName))),
-            referenceFileDamaged: p => (t.ErrorReadReference(p.Unread.Name, p.Unread.Module),
+            referenceFileDamaged: p => (t.ErrorReadReference(name: p.Unread.Name, assembly: p.Unread.Module),
                 Degraded(t, p.Unread, t.ErrorFileDamaged(p.Unread.Error.FilePath.FileName))),
             moduleUnreadable: p => (t.CauseModuleUnreadableTitle(p.Module), p.Why.ToString()),
             bookmarksNotExported: p => (t.ErrorExportBookmarks, p.Reason),
@@ -103,7 +103,7 @@ public static class ProblemTexts
     // The code is kept, so the cause's own "try again" would reuse it: the step named is the reload.
     private static string Degraded(Strings t, UnreadReference unread, string cause)
     {
-        return t.ErrorReadReferenceDegraded(unread.Name, unread.Module) + Environment.NewLine + Environment.NewLine + Advise(cause, unread.Error);
+        return t.ErrorReadReferenceDegraded(assembly: unread.Module, name: unread.Name) + Environment.NewLine + Environment.NewLine + Advise(cause, unread.Error);
     }
 
     // The cause and what the user can do about it first, then the error as it came.

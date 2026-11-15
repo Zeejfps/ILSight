@@ -259,9 +259,9 @@ internal static class ToolbarView
     private static string SayWhyNotShown(Strings strings, HistoryEntry entry, string text)
     {
         return entry.Match(
-            node => strings.ToolbarHistoryClosed(text, NameOf(node.Place.FilePath)),
-            diagram => strings.ToolbarHistoryClosed(text, NameDiagramAssemblies(diagram)),
-            comparison => strings.ToolbarHistoryClosed(text, NameComparedAssemblies(comparison)),
+            node => strings.ToolbarHistoryClosed(place: text, name: NameOf(node.Place.FilePath)),
+            diagram => strings.ToolbarHistoryClosed(place: text, name: NameDiagramAssemblies(diagram)),
+            comparison => strings.ToolbarHistoryClosed(place: text, name: NameComparedAssemblies(comparison)),
             report => strings.ToolbarHistoryReportRemoved(text));
     }
 

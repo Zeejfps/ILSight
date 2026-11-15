@@ -72,7 +72,7 @@ internal static class SearchPanelView
             using (ui.Id(i))
             {
                 var line = ui.Memo("not-shown", (notShown, t),
-                    static a => a.t.SearchFoundNotShown(a.notShown.Name ?? $"0x{a.notShown.Token:X8}", a.notShown.Assembly.FilePath.FileName, a.notShown.Why));
+                    static a => a.t.SearchFoundNotShown(what: a.notShown.Name ?? $"0x{a.notShown.Token:X8}", name: a.notShown.Assembly.FilePath.FileName, why: a.notShown.Why));
                 ui.Text(line, color: theme.Warning, size: theme.FontSizeSmall);
             }
         }

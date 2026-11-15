@@ -45,7 +45,7 @@ internal static class ResourceImageView
         var theme = ui.Theme;
         using (ui.PaneToolbar(new Box { Gap = theme.Gap }))
         {
-            ui.Text(t.ResourceImageInfo(image.Format, image.Width, image.Height), new Box { Width = Sizing.Grow() }, color: theme.TextMuted,
+            ui.Text(t.ResourceImageInfo(format: image.Format, width: image.Width, height: image.Height), new Box { Width = Sizing.Grow() }, color: theme.TextMuted,
                 overflow: TextOverflow.Ellipsis);
             if (!picture.ShowsSource)
             {
