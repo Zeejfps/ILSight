@@ -13,6 +13,10 @@ internal sealed class EndingTheGenerationBeforeReopening(AssemblyReloading.IPort
     /// <summary>Run as the first reopen begins, before it reads anything.</summary>
     public Action End { get; set; } = static () => { };
 
+    /// <summary>Run as the first reopen has listed its files again, before the reload takes what it found; the reopen
+    /// then ends as its token says (cancelled, when this stopped the reload).</summary>
+    public Action AfterFirstReopen { get; set; } = static () => { };
+
     /// <summary>What each reopen after the first waits for before it reads, when set.</summary>
     public Task? LaterReopensWaitFor { get; set; }
 
@@ -43,8 +47,13 @@ internal sealed class EndingTheGenerationBeforeReopening(AssemblyReloading.IPort
         if (_reopens == 1)
         {
             End();
+            var reopened = await real.ReopenFilesAsync(paths, expanded, places, work, ct);
+            AfterFirstReopen();
+            ct.ThrowIfCancellationRequested();
+            return reopened;
         }
-        else if (LaterReopensWaitFor is not null)
+
+        if (LaterReopensWaitFor is not null)
         {
             await LaterReopensWaitFor;
         }

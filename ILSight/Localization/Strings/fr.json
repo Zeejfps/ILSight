@@ -341,6 +341,7 @@
   "document.gone": "{location} n’existe plus après le rechargement.",
   "cause.module_unreadable.sentence": "Impossible de lire {name} ({why}).",
   "document.closed": "{name} a été fermé.",
+  "document.not_reloaded": "{location} n’a pas été rechargé : le rechargement a été arrêté. Utilisez Tout recharger pour le rechercher à nouveau.",
   "code.copy": "Copier",
   "code.copy_plain_text": "Copier en texte brut",
   "code.select_all": "Tout sélectionner",

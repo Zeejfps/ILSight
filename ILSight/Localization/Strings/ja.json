@@ -341,6 +341,7 @@
   "document.gone": "再読み込み後、{location} が見つかりません。",
   "cause.module_unreadable.sentence": "{name} を読み込めませんでした ({why})。",
   "document.closed": "{name} は閉じられました。",
+  "document.not_reloaded": "{location} は再読み込みされませんでした（再読み込みが停止されました）。もう一度探すには「すべて再読み込み」を使用してください。",
   "code.copy": "コピー",
   "code.copy_plain_text": "プレーンテキストとしてコピー",
   "code.select_all": "すべて選択",

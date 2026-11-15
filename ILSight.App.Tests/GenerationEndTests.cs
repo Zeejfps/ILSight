@@ -1,5 +1,6 @@
 using ILSight.AssemblyListArea;
 using ILSight.CommandArea;
+using ILSight.DocumentViewArea;
 using ILSight.Core;
 
 namespace ILSight.App.Tests;
@@ -30,7 +31,7 @@ public sealed class GenerationEndTests
         Assert.Empty(session.Assemblies.Assemblies);
         Assert.Empty(d.AppState.Errors.Entries);
         Assert.False(session.Reload.IsRunning);
-        Assert.IsType<TabContent.Gone>(tab.Content);
+        Assert.Equal(ReloadEnd.AssemblyClosed, Assert.IsType<TabContent.NotReloaded>(tab.Content).End);
     }
 
     [Fact]
@@ -48,7 +49,33 @@ public sealed class GenerationEndTests
         d.RunUntil(() => appState.Work.Outstanding.Count == 0);
 
         Assert.False(appState.ListSession.Reload.IsRunning);
-        Assert.IsType<TabContent.Gone>(tab.Content);
+        var shown = Assert.IsType<TabContent.NotReloaded>(tab.Content);
+        Assert.Equal(ReloadEnd.AssemblyClosed, shown.End);
+        Assert.Equal($"{shown.Location.FilePath.FileName} was closed.", TabPlaceholders.Write(Strings.For(Locale.En), tab.Content));
+        Assert.Empty(appState.Errors.Entries);
+    }
+
+    [Fact]
+    public void A_reload_stopped_with_its_assembly_listed_again_says_the_tab_was_not_reloaded_never_gone()
+    {
+        EndingTheGenerationBeforeReopening? ports = null;
+        var d = AppStateDriver.OpenedWith(new AdapterHooks { Reloading = real => ports = new EndingTheGenerationBeforeReopening(real) });
+        Assert.NotNull(ports);
+        var appState = d.AppState;
+        var session = appState.ListSession;
+        var tab = session.Navigation.ActiveTab;
+        Assert.NotNull(tab);
+        ports.AfterFirstReopen = () => session.Reload.Stop();
+
+        d.InTurn(() => Commands.StartReloading(appState, []));
+        d.RunUntil(() => appState.Work.Outstanding.Count == 0);
+
+        Assert.False(session.Reload.IsRunning);
+        var shown = Assert.IsType<TabContent.NotReloaded>(tab.Content);
+        Assert.Equal(ReloadEnd.Stopped, shown.End);
+        Assert.True(session.Assemblies.IsListed(shown.Location.FilePath));
+        Assert.Equal($"{shown.Location.Label} was not reloaded: the reload was stopped. Use Reload all to look for it again.",
+            TabPlaceholders.Write(Strings.For(Locale.En), tab.Content));
         Assert.Empty(appState.Errors.Entries);
     }
 

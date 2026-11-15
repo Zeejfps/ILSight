@@ -80,6 +80,7 @@ public sealed class TabLoad
         reloading: static _ => null,
         reopening: static _ => null,
         gone: static _ => null,
+        notReloaded: static _ => null,
         unreadable: static _ => null);
 
     /// <summary>Where the load points: the path of its node, or while the node is away the path it is found again by
@@ -98,6 +99,7 @@ public sealed class TabLoad
         reloading: static reloading => reloading.Location,
         reopening: static _ => null,
         gone: static gone => gone.Location,
+        notReloaded: static notReloaded => notReloaded.Location,
         unreadable: static unreadable => unreadable.Location);
 
     /// <summary>The code, document or markup the load shows, or an empty document while it shows none.</summary>
@@ -115,6 +117,7 @@ public sealed class TabLoad
         reloading: static _ => DecompiledDocument.Empty,
         reopening: static _ => DecompiledDocument.Empty,
         gone: static _ => DecompiledDocument.Empty,
+        notReloaded: static _ => DecompiledDocument.Empty,
         unreadable: static _ => DecompiledDocument.Empty);
 
     /// <summary>The name of the node shown, kept while the node is away; null when the load is of no node.</summary>
@@ -132,6 +135,7 @@ public sealed class TabLoad
         reloading: static reloading => reloading.Title,
         reopening: static _ => null,
         gone: static gone => gone.Title,
+        notReloaded: static notReloaded => notReloaded.Title,
         unreadable: static unreadable => unreadable.Title);
 
     public DecompilationLanguage Language => _language;
@@ -275,6 +279,14 @@ public sealed class TabLoad
     public void ShowGone(NodePath location)
     {
         ReleaseNode(new TabContent.Gone { Location = location, Title = Title });
+    }
+
+    /// <summary>Lets go of the node, whose place at <paramref name="location"/> a reload was to look for again and
+    /// ended with no answer, for <paramref name="end"/>, cancelling what was in flight; the place is kept for the next
+    /// reload.</summary>
+    public void ShowNotReloaded(NodePath location, ReloadEnd end)
+    {
+        ReleaseNode(new TabContent.NotReloaded { Location = location, Title = Title, End = end });
     }
 
     /// <summary>Lets go of the node, whose place at <paramref name="location"/> is in <paramref name="unreadable"/>,

@@ -34,6 +34,13 @@ public static class TabPlaceholders
             return t.DocumentGone(gone.Location.Label);
         }
 
+        if (content is TabContent.NotReloaded notReloaded)
+        {
+            return notReloaded.End == ReloadEnd.AssemblyClosed
+                ? t.DocumentClosed(notReloaded.Location.FilePath.FileName)
+                : t.DocumentNotReloaded(notReloaded.Location.Label);
+        }
+
         if (content is TabContent.Unreadable unreadable)
         {
             return t.CauseModuleUnreadableSentence(unreadable.Module, unreadable.Why);

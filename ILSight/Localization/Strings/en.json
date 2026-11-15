@@ -348,6 +348,7 @@
   "document.gone": "{location} is gone after reloading.",
   "cause.module_unreadable.sentence": "{name} couldn't be read ({why}).",
   "document.closed": "{name} was closed.",
+  "document.not_reloaded": "{location} was not reloaded: the reload was stopped. Use Reload all to look for it again.",
 
   "code.copy": "Copy",
 

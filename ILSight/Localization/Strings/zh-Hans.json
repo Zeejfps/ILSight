@@ -341,6 +341,7 @@
   "document.gone": "重新加载后 {location} 已不存在。",
   "cause.module_unreadable.sentence": "无法读取 {name}（{why}）。",
   "document.closed": "{name} 已关闭。",
+  "document.not_reloaded": "{location} 未重新加载：重新加载已停止。使用“全部重新加载”再次查找。",
   "code.copy": "复制",
   "code.copy_plain_text": "复制为纯文本",
   "code.select_all": "全选",

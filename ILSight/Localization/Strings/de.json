@@ -341,6 +341,7 @@
   "document.gone": "{location} ist nach dem Neuladen nicht mehr vorhanden.",
   "cause.module_unreadable.sentence": "{name} konnte nicht gelesen werden ({why}).",
   "document.closed": "{name} wurde geschlossen.",
+  "document.not_reloaded": "{location} wurde nicht neu geladen: Das Neuladen wurde angehalten. Mit „Alle neu laden“ erneut suchen.",
   "code.copy": "Kopieren",
   "code.copy_plain_text": "Als Nur-Text kopieren",
   "code.select_all": "Alles auswählen",

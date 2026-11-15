@@ -52,6 +52,7 @@ internal static class DocumentsView
             reloading: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
             reopening: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
             gone: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
+            notReloaded: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
             unreadable: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab));
     }
 
@@ -187,7 +188,7 @@ internal static class DocumentsView
     private static bool IsNote(TabContent content)
     {
         return content is TabContent.Loading or TabContent.Failed or TabContent.Reloading or TabContent.Reopening or TabContent.Gone
-            or TabContent.Unreadable;
+            or TabContent.NotReloaded or TabContent.Unreadable;
     }
 
     private static void ToggleLineBookmark(BookmarksPanel bookmarksPanel, AppState appState, DocumentTab tab, int line, Strings t)

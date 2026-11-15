@@ -107,6 +107,18 @@ public abstract record TabContent
         public required string? Title { get; init; }
     }
 
+    /// <summary>The reload that was to find the node at <see cref="Location"/> again ended with no answer, for
+    /// <see cref="End"/>: nothing was looked for, so the node is not said gone, and the place is kept for the next reload
+    /// to look for again; <see cref="Title"/> is the node's name as it was last known, if it was.</summary>
+    public sealed record NotReloaded : TabContent
+    {
+        public required NodePath Location { get; init; }
+
+        public required string? Title { get; init; }
+
+        public required ReloadEnd End { get; init; }
+    }
+
     /// <summary>The node at <see cref="Location"/> is in <see cref="Module"/>, a file whose type system the library
     /// could not read, for <see cref="Why"/>, so it was not found again; <see cref="Title"/> is the node's name as it
     /// was last known, if it was.</summary>
@@ -127,7 +139,7 @@ public abstract record TabContent
         Func<Table, TResult> table, Func<Picture, TResult> picture, Func<Report, TResult> report,
         Func<Diagram, TResult> diagram, Func<Comparison, TResult> comparison, Func<Failed, TResult> failed,
         Func<Stopped, TResult> stopped, Func<Reloading, TResult> reloading, Func<Reopening, TResult> reopening, Func<Gone, TResult> gone,
-        Func<Unreadable, TResult> unreadable)
+        Func<NotReloaded, TResult> notReloaded, Func<Unreadable, TResult> unreadable)
     {
         return this switch
         {
@@ -144,6 +156,7 @@ public abstract record TabContent
             Reloading c => reloading(c),
             Reopening c => reopening(c),
             Gone c => gone(c),
+            NotReloaded c => notReloaded(c),
             Unreadable c => unreadable(c),
             _ => throw new UnreachableException($"TabContent.Match does not handle {GetType().Name}."),
         };
@@ -155,7 +168,7 @@ public abstract record TabContent
         Action<TState, Code> code, Action<TState, Table> table, Action<TState, Picture> picture,
         Action<TState, Report> report, Action<TState, Diagram> diagram, Action<TState, Comparison> comparison,
         Action<TState, Failed> failed, Action<TState, Stopped> stopped, Action<TState, Reloading> reloading, Action<TState, Reopening> reopening,
-        Action<TState, Gone> gone, Action<TState, Unreadable> unreadable)
+        Action<TState, Gone> gone, Action<TState, NotReloaded> notReloaded, Action<TState, Unreadable> unreadable)
     {
         switch (this)
         {
@@ -197,6 +210,9 @@ public abstract record TabContent
                 return;
             case Gone c:
                 gone(state, c);
+                return;
+            case NotReloaded c:
+                notReloaded(state, c);
                 return;
             case Unreadable c:
                 unreadable(state, c);

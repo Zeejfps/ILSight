@@ -322,16 +322,18 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
 
     /// <summary>Ends the reload <paramref name="ticket"/> was given for when its reopen ended quietly, cancelled on
     /// purpose (a stop, a newer reload, the end of the generation it reads in): each of <paramref name="tabs"/> still
-    /// showing what this reload left it showing, reloading, stops waiting, its place gone; and the reload ends, unless a
-    /// newer one or a stop replaced it (whose tabs, shown again, are theirs). Returns the loads the tabs reopened from
-    /// the open list's saved documents started, when the reload ended here.</summary>
+    /// showing what this reload left it showing, reloading, stops waiting and says what ended it, read from the list as
+    /// it stands, never gone, as no lookup ran: its assembly closed when the list no longer holds it (Close All, the list
+    /// cleared), else the reload stopped, its place kept for the next; a tab a newer reload shows reloading is that
+    /// reload's. The reload ends, unless a newer one or a stop replaced it (whose tabs, shown again, are theirs). Returns
+    /// the loads the tabs reopened from the open list's saved documents started, when the reload ended here.</summary>
     public static TabLoads EndQuietly(OpenListSession session, ReloadTicket ticket, IReadOnlyList<ReloadingTab> tabs)
     {
         foreach (var reloading in tabs)
         {
             if (IsStillShowing(session.Navigation, reloading))
             {
-                reloading.Tab.Load.ShowGone(reloading.Location);
+                reloading.Tab.Load.ShowNotReloaded(reloading.Location, WhatEnded(session.Assemblies, reloading.Location));
             }
         }
 
@@ -341,6 +343,11 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
         }
 
         return SavedDocuments.ShowReopenedDocuments(session.Navigation, session.Reopened, session.Assemblies);
+    }
+
+    private static ReloadEnd WhatEnded(AssemblyList assemblies, NodePath location)
+    {
+        return assemblies.IsListed(location.FilePath) ? ReloadEnd.Stopped : ReloadEnd.AssemblyClosed;
     }
 
     private static TabLoads ShowReloadFailed(OpenListSession session, Exception error)

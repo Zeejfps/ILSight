@@ -341,6 +341,7 @@
   "document.gone": "После перезагрузки {location} отсутствует.",
   "cause.module_unreadable.sentence": "Не удалось прочитать {name} ({why}).",
   "document.closed": "Сборка {name} закрыта.",
+  "document.not_reloaded": "{location} не перезагружен: перезагрузка остановлена. Чтобы найти его снова, используйте «Перезагрузить все».",
   "code.copy": "Копировать",
   "code.copy_plain_text": "Копировать как обычный текст",
   "code.select_all": "Выделить всё",

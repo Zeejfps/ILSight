@@ -341,6 +341,7 @@
   "document.gone": "{location} ya no existe tras recargar.",
   "cause.module_unreadable.sentence": "No se pudo leer {name} ({why}).",
   "document.closed": "Se cerró {name}.",
+  "document.not_reloaded": "{location} no se recargó: la recarga se detuvo. Usa Recargar todo para buscarlo de nuevo.",
   "code.copy": "Copiar",
   "code.copy_plain_text": "Copiar como texto sin formato",
   "code.select_all": "Seleccionar todo",
