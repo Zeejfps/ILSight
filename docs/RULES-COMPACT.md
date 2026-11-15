@@ -86,8 +86,11 @@ disposable result).
   it, explicitly. A framework context typed by the whole state (`Ui<TState>`) is the whole: a function reading one part
   takes the untyped context and the part (with none, the context the framework requires beside the part, nothing else
   read through it), as does context carried through a dispatch tuple (a library's `Match`); one only writing to a part
-  (a command queue) takes its writing side. Group state by ownership and invariants (R004); a parameter count never
-  justifies the whole, and a parameter object holds exactly the call's inputs, none copied from another call's.
+  (a command queue) takes its writing side. The root view (its private steps that only hand views parts) and the edge
+  (its dispatch tuple) keep the whole. Group state by ownership and invariants (R004); a parameter count never
+  justifies the whole, and a parameter object holds exactly the call's inputs (nested scopes: their items' targets),
+  none copied from another call's, owners not values where held. A dispatch (a table or direct checks) states once a
+  condition every entry must meet.
 - **A library object that reads lazily is I/O by what its reads can reach as made:** decoding bytes already read,
   each read bounded, it is data, readable anywhere, a draw included (failures caught per unit, R009); reaching a file
   or the network, only adapters and their shared I/O code read it (list types whose every instance is I/O). Kept by
@@ -210,9 +213,10 @@ on purpose, a published member).
   setting them (a framework's interface is no exception). It hands out only objects none of whose members can break its
   rule, splitting an object carrying two rules' state; per-object state of what it hands out is a separate object only
   it holds (not `internal` members, not keyed in it). That type is the smallest holding all the rule constrains, never a
-  container also holding unrelated state (app state, a screen); a change across parts no rule ties takes them. Feature
-  state is in the feature's part, held for its intended owner and lifetime (separate for independent instances, one for
-  places kept in step; per request, session or job in a service), never loose on the whole.
+  container also holding unrelated state (app state, a screen), and hands a framework that must reach its state (a
+  dock widget) that state itself; a change across parts no rule ties takes them. Feature state is in the feature's part,
+  held for its intended owner and lifetime (separate for independent instances, one for places kept in step; per
+  request, session or job in a service), never loose on the whole; a save reads it there.
 - **What it covers is read from the domain contract**, not from what a user asked for or which kinds had a shape for
   it; a transition left out is named so. Each is handled alike for every kind, restoration and late results included,
   from values held, without a wait; what it keeps about a place is a value, never the document (what a history records
