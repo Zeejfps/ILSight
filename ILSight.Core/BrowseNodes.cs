@@ -297,7 +297,11 @@ public static class BrowseNodes
 
     /// <summary>The node of <paramref name="subject"/>, under <paramref name="parent"/>, which for a namespace may be one
     /// extending the name of <paramref name="enclosingNamespace"/> by a segment, with the values it shows (its full
-    /// name, visibility, definition and activation) read now from what the subject stands for.</summary>
+    /// name, visibility, definition and activation) read now from what the subject stands for. It is made inside its
+    /// parent's listing (<see cref="CreateChildren"/>, under the session's catch), so it only reads: the full name and
+    /// the visibility are the library's values (its formatter, the flags a definition read), the activation the
+    /// reference a read took out; what analyses it offers, the app's table, is decided outside that catch when first
+    /// asked for (<see cref="BrowseNode.Analysis"/>), from the facts read here.</summary>
     internal static BrowseNode Create(BrowseNode? parent, NodeSubject subject, BrowseNode? enclosingNamespace = null)
     {
         var text = GetText(subject);
@@ -316,7 +320,7 @@ public static class BrowseNodes
             Visibility = NodeDefinitions.GetVisibility(subject),
             Reference = NodeDefinitions.ReferenceOf(subject),
             Activation = NodeDefinitions.GetActivation(subject),
-            Analysis = Analysis.Analyzers.Of(subject),
+            AnalysisFacts = Analysis.Analyzers.Of(subject),
             CanHaveChildren = CanHaveChildren(subject),
             Name = GetName(subject, assembly, text),
             IsCode = IsCode(subject),

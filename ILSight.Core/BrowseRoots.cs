@@ -46,7 +46,7 @@ internal static class BrowseRoots
             Visibility = NodeVisibility.Open,
             Reference = null,
             Activation = Open,
-            Analysis = null,
+            AnalysisFacts = null,
             CanHaveChildren = canHaveChildren,
             Name = name,
             IsCode = isCode,

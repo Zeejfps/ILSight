@@ -111,16 +111,18 @@ public static class Analyzers
         };
     }
 
-    /// <summary>The type or member a node of <paramref name="subject"/> stands for — for a base or derived type
-    /// entry the type it names — or null for any other node.</summary>
-    internal static AnalysisSymbol? Of(NodeSubject subject)
+    /// <summary>The facts of the type or member a node of <paramref name="subject"/> stands for — for a base or derived
+    /// type entry the type it names — or null for any other node: only what the read takes out of the library, so that
+    /// a node made inside its parent's listing never runs the app's table there. The analyses offered are composed from
+    /// them when first asked for (<see cref="AnalysisFacts.Symbol"/>).</summary>
+    internal static AnalysisFacts? Of(NodeSubject subject)
     {
-        return subject.Match<AnalysisSymbol?>(
+        return subject.Match<AnalysisFacts?>(
             module: static _ => null,
             @namespace: static _ => null,
             failedAssembly: static _ => null,
-            typeDefinition: static type => Describe(NodeDefinitions.GetSymbol(type.Definition)),
-            memberDefinition: static member => Describe(NodeDefinitions.GetSymbol(member.Definition)),
+            typeDefinition: static type => Read(NodeDefinitions.GetSymbol(type.Definition)),
+            memberDefinition: static member => Read(NodeDefinitions.GetSymbol(member.Definition)),
             references: static _ => null,
             assemblyReference: static _ => null,
             referencedTypes: static _ => null,
@@ -132,7 +134,7 @@ public static class Analyzers
             baseTypes: static _ => null,
             baseType: static baseType => DescribeBase(baseType.Value),
             derivedTypes: static _ => null,
-            derivedType: static derived => Describe(NodeDefinitions.GetSymbol(derived.Value)),
+            derivedType: static derived => Read(NodeDefinitions.GetSymbol(derived.Value)),
             unreadableModule: static _ => null,
             resources: static _ => null,
             resourceContainer: static _ => null,
@@ -144,7 +146,7 @@ public static class Analyzers
             packageFile: static _ => null);
     }
 
-    private static AnalysisSymbol? DescribeBase(BaseTypeInfo baseType)
+    private static AnalysisFacts? DescribeBase(BaseTypeInfo baseType)
     {
         var definition = NodeDefinitions.GetSymbols(baseType).Definition;
         if (definition is null)
@@ -152,7 +154,27 @@ public static class Analyzers
             return null;
         }
 
-        return Describe(definition);
+        return Read(definition);
+    }
+
+    private static AnalysisFacts? Read(ISymbol symbol)
+    {
+        var facts = ReadFacts(symbol);
+        return facts is not null ? new AnalysisFacts(facts) : null;
+    }
+
+    /// <summary>The symbol <paramref name="facts"/> were read from, described with the analyses the app's table offers
+    /// for it: the app's part, run outside any read's catch, so that a bug in the table fails whatever asked for it
+    /// at its edge.</summary>
+    internal static AnalysisSymbol Compose(AnalysisFacts facts)
+    {
+        return Compose(facts.Facts, Kinds);
+    }
+
+    /// <summary>As <see cref="Compose(AnalysisFacts)"/>, the analyses offered taken from <paramref name="table"/>.</summary>
+    internal static AnalysisSymbol Compose(AnalysisFacts facts, IReadOnlyList<AnalysisKind> table)
+    {
+        return Compose(facts.Facts, table);
     }
 
     /// <summary>The type or member <paramref name="definition"/> names, loading its assembly's file
@@ -361,12 +383,6 @@ public static class Analyzers
         return AssemblyListing.GetLoadedFrom(list, file);
     }
 
-    private static AnalysisSymbol? Describe(ISymbol symbol)
-    {
-        var facts = ReadFacts(symbol);
-        return facts is not null ? Compose(facts, Kinds) : null;
-    }
-
     // Every touch of the library's objects describing a symbol: its properties, the library's own formatter and the
     // walk to its accessors.
     private static SymbolFacts? ReadFacts(ISymbol symbol)
@@ -491,22 +507,5 @@ public static class Analyzers
         }
 
         return container.Length == 0 ? assembly : $"{container} ({assembly})";
-    }
-
-    // What describing a symbol reads of it. The container is the full name of the type declaring it, else a type's
-    // namespace, else empty (a module's: its file); a module has no assembly name of its own here.
-    private sealed record SymbolFacts
-    {
-        public required ISymbol Symbol { get; init; }
-        public required SymbolShape Shape { get; init; }
-        public required NodeAccessibility Accessibility { get; init; }
-        public required string Label { get; init; }
-        public required string Container { get; init; }
-        public required string? AssemblyName { get; init; }
-        public required CodeReference.Navigable? Reference { get; init; }
-        public required OfferFacts Offers { get; init; }
-        public required IReadOnlyList<SymbolFacts> Accessors { get; init; }
-        public required AssemblyPath? File { get; init; }
-        public required CodeAnchor? Definition { get; init; }
     }
 }

@@ -109,6 +109,14 @@ public static class Commands
         Later(commands, (panels, rows, symbol), static (a, s) => Analyze(a, s.panels, s.rows, s.symbol));
     }
 
+    /// <summary>Asks for what <paramref name="facts"/> were read from to be analyzed once the frame is drawn
+    /// (<see cref="Analyze"/>): the analyses it offers are composed by the app's table then, in the command, so a bug in
+    /// the table is reported once at the command's edge, never in the draw that offered "Analyze".</summary>
+    public static void AnalyzeLater(IAppCommandWriter commands, Panels panels, AnalyzerRows rows, AnalysisFacts facts)
+    {
+        Later(commands, (panels, rows, facts), static (a, s) => Analyze(a, s.panels, s.rows, s.facts.Symbol));
+    }
+
     /// <summary>Analyzes <paramref name="symbol"/>: the analyzer opens, if it is not, with the root analyzing it
     /// selected (<see cref="AnalyzerPanelView.ShowAnalysis"/>). When the list doesn't hold its assembly, a root shows as
     /// loading while the assembly is listed, as following a reference into it lists it, and the analysis lands then

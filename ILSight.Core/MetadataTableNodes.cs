@@ -59,7 +59,7 @@ internal static class MetadataTableNodes
             Visibility = NodeVisibility.Open,
             Reference = null,
             Activation = Open,
-            Analysis = null,
+            AnalysisFacts = null,
             CanHaveChildren = part.Part is MetadataPart.DebugDirectory,
             Name = text,
             IsCode = part.Part is not (MetadataPart.Grid or MetadataPart.DebugDirectory),

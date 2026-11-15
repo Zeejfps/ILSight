@@ -305,7 +305,7 @@ internal static class TreePaneView
             return;
         }
 
-        var analysis = picked.Analysis;
+        var analysis = picked.AnalysisFacts;
         if (analysis is null)
         {
             return;
@@ -442,7 +442,7 @@ internal static class TreePaneView
         }
 
         DocsItem(ui, appearance, node);
-        var analysis = node.Analysis;
+        var analysis = node.AnalysisFacts;
         if (analysis is not null && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
         {
             Commands.AnalyzeLater(commands, panels, analyzerRows, analysis);

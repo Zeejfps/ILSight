@@ -225,4 +225,26 @@ public sealed class AnalysisTests
         Assert.True(facts.HasBody);
         Assert.Equal(TypeKind.Class, facts.DeclaringDefinitionKind);
     }
+
+    [Fact]
+    public async Task A_bug_in_the_table_never_fails_the_listing_of_a_types_members_and_fails_the_ask_for_a_members_analyses()
+    {
+        var (_, assembly) = Trees.OpenTestAssembly();
+        var session = new BrowseSession();
+        var calculator = await assembly.CalculatorAsync();
+        var buggy = new AnalysisKind
+        {
+            Name = AnalysisName.UsedBy, Order = 1, Prepare = static _ => null, Applies = static _ => throw new InvalidOperationException("the table's bug"),
+        };
+
+        var listed = Assert.IsType<ChildrenState.Ready>(await BrowseSessions.GetChildrenAsync(session, calculator)).Children;
+        var add = listed.Single(static c => c.Text == "Add(T) : void");
+        var facts = Assert.IsType<AnalysisFacts>(add.AnalysisFacts);
+        var thrown = Assert.Throws<InvalidOperationException>(() => Analyzers.Compose(facts, [buggy]));
+
+        Assert.Equal("the table's bug", thrown.Message);
+        Assert.Contains(listed, static c => c.Text == "Describe() : string");
+        Assert.Same(add.Analysis, add.Analysis);
+        Assert.NotEmpty(Assert.IsType<AnalysisSymbol>(add.Analysis).Kinds);
+    }
 }

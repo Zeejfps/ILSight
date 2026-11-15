@@ -8,7 +8,8 @@ namespace ILSight.Core;
 /// A node of the browse tree: what it stands for and where it sits, and the values it shows, read from the library's
 /// objects when it was made. Its children are built and kept by a <see cref="BrowseSession"/>, so the same entity is
 /// the same node object for as long as its <see cref="Assembly"/> lives: make one only through
-/// <see cref="BrowseNodes"/>, as the session does. A node never changes after it is made.
+/// <see cref="BrowseNodes"/>, as the session does. A node never changes after it is made (its analyses, decided from
+/// facts it read then, are composed once, when first asked for).
 /// </summary>
 public sealed class BrowseNode
 {
@@ -65,9 +66,15 @@ public sealed class BrowseNode
     /// <summary>What activating the node does, worked out when the node was made.</summary>
     public required Activation Activation { get; init; }
 
-    /// <summary>What analyses run on for the node: the type or member it stands for, or for a base or derived type
-    /// entry the type it names; null for any other node. Read when the node was made.</summary>
-    public required Analysis.AnalysisSymbol? Analysis { get; init; }
+    /// <summary>The facts of what analyses run on for the node: the type or member it stands for, or for a base or
+    /// derived type entry the type it names; null for any other node. Read when the node was made; the analyses offered
+    /// are decided from them when first asked for, never as the node is made.</summary>
+    public required Analysis.AnalysisFacts? AnalysisFacts { get; init; }
+
+    /// <summary>What analyses run on for the node, with the analyses the app's table offers for it (<see
+    /// cref="Analysis.AnalysisFacts.Symbol"/>), composed when first asked for; null for a node with nothing to analyze.
+    /// Throws what a bug in the table throws, to the one asking.</summary>
+    public Analysis.AnalysisSymbol? Analysis => AnalysisFacts?.Symbol;
 
     /// <summary>Whether the node may have children, guessed when it was made without building them.</summary>
     public required bool CanHaveChildren { get; init; }
