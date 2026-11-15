@@ -66,7 +66,7 @@ public sealed class OptionSearchTests
         app.Run();
         Assert.Empty(Marks(app));
 
-        app.Ui.DisplayOptionsQuery = "numbers";
+        app.Ui.DisplayOptionsPanel.Query = "numbers";
         app.Run();
 
         var mark = Assert.Single(Marks(app));
@@ -80,7 +80,7 @@ public sealed class OptionSearchTests
     {
         var app = AppDriver.Opened(width: 1600f);
         ScreenLayout.OpenPanel(app.Ui, DockView.DecompilerOptions);
-        app.Ui.DecompilerOptionsQuery = "F# code";
+        app.Ui.DecompilerOptionsPanel.Query = "F# code";
         app.Run();
 
         var title = app.TextRect("F#");
@@ -92,7 +92,7 @@ public sealed class OptionSearchTests
     {
         var app = AppDriver.Opened(width: 1600f);
         ScreenLayout.OpenPanel(app.Ui, DockView.DecompilerOptions);
-        app.Ui.DecompilerOptionsQuery = "switch";
+        app.Ui.DecompilerOptionsPanel.Query = "switch";
         app.Run();
 
         Assert.NotEmpty(Marks(app));
@@ -145,13 +145,13 @@ public sealed class OptionSearchTests
         app.Run();
         Assert.False(app.Frames.Drew("switch expressions"));
 
-        app.Ui.DecompilerOptionsQuery = "switch expressions";
+        app.Ui.DecompilerOptionsPanel.Query = "switch expressions";
         app.Run();
         Assert.True(app.Frames.Drew("switch expressions"));
         Assert.True(app.Frames.Drew("C# 8.0 / VS 2019"));
         Assert.False(app.Frames.Drew("Extension members"));
 
-        app.Ui.DecompilerOptionsQuery = "";
+        app.Ui.DecompilerOptionsPanel.Query = "";
         app.Run();
         Assert.False(app.Frames.Drew("switch expressions"));
         Assert.Contains(nameof(CSharpVersion.CSharp8), app.Ui.FoldedOptionGroups.Folded);
@@ -162,7 +162,7 @@ public sealed class OptionSearchTests
     {
         var app = AppDriver.Opened(width: 1600f);
         ScreenLayout.OpenPanel(app.Ui, DockView.DecompilerOptions);
-        app.Ui.DecompilerOptionsQuery = "switch expressions";
+        app.Ui.DecompilerOptionsPanel.Query = "switch expressions";
         app.Run();
 
         app.Frames.ClickOn(Selector.WithText("C# 8.0 / VS 2019"));
@@ -177,7 +177,7 @@ public sealed class OptionSearchTests
     {
         var app = AppDriver.Opened(width: 1600f);
         ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
-        app.Ui.DisplayOptionsQuery = "line";
+        app.Ui.DisplayOptionsPanel.Query = "line";
         app.Run();
 
         Assert.True(WasLineDrawn(app, "Line numbers"));
@@ -192,13 +192,13 @@ public sealed class OptionSearchTests
     {
         var app = AppDriver.Opened(width: 1600f);
         ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
-        app.Ui.DisplayOptionsQuery = "nothing-is-called-this";
+        app.Ui.DisplayOptionsPanel.Query = "nothing-is-called-this";
         app.Run();
         Assert.True(app.Frames.Drew("No options match the search."));
 
         app.Frames.ClickOn(Selector.WithText("Clear search")).Frame(2);
 
-        Assert.Equal("", app.Ui.DisplayOptionsQuery);
+        Assert.Equal("", app.Ui.DisplayOptionsPanel.Query);
         Assert.True(app.Frames.Drew("UI scale"));
     }
 
@@ -210,11 +210,11 @@ public sealed class OptionSearchTests
         app.Run();
         app.Frames.ClickOn(Selector.WithText("Search options")).Frame();
         app.Frames.Type("line").Frame();
-        Assert.Equal("line", app.Ui.DisplayOptionsQuery);
+        Assert.Equal("line", app.Ui.DisplayOptionsPanel.Query);
 
         app.Frames.Key(KeyboardKey.Escape).Frame(2);
 
-        Assert.Equal("", app.Ui.DisplayOptionsQuery);
+        Assert.Equal("", app.Ui.DisplayOptionsPanel.Query);
         Assert.True(app.Frames.Drew("UI scale"));
     }
 
@@ -227,7 +227,7 @@ public sealed class OptionSearchTests
         var empty = app.Frames.Canvas.Lines.Count;
 
         // Spaces alone hide no option, so the only lines it adds are the cross's two.
-        app.Ui.DisplayOptionsQuery = "  ";
+        app.Ui.DisplayOptionsPanel.Query = "  ";
         app.Run(2);
 
         Assert.Equal(empty + 2, app.Frames.Canvas.Lines.Count);

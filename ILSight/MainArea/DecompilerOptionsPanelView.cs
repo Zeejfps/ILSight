@@ -17,30 +17,29 @@ internal static class DecompilerOptionsPanelView
 
     private static readonly CSharpVersion Newest = Sections.Max(static s => FindVersion(s.Group) ?? 0);
 
-    public static void Render(Ui<UiState> ui, DecompilerOptions options)
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, DecompilerOptionsPanel panel, FoldedGroups folded, DecompilerOptions options)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
-        var folded = ui.State.FoldedOptionGroups;
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         using (ui.PaneToolbar())
         {
-            OptionSearch.Field(ui, ui.State.Appearance, ref ui.State.DecompilerOptionsQuery);
-            var searching = ui.State.DecompilerOptionsQuery.Trim().Length > 0;
-            if (ui.IconButton("collapse", ui.State.Appearance.Icons.OptionsCollapseAll, t.CodeCollapseAll, !searching && !AllFolded(folded)))
+            OptionSearch.Field(ui, appearance, ref panel.Query);
+            var searching = panel.Query.Trim().Length > 0;
+            if (ui.IconButton("collapse", appearance.Icons.OptionsCollapseAll, t.CodeCollapseAll, !searching && !AllFolded(folded)))
             {
                 folded.Fold(Sections.Select(static s => s.Key));
             }
 
-            if (ui.IconButton("expand", ui.State.Appearance.Icons.OptionsExpandAll, t.CodeExpandAll, !searching && folded.Count > 0))
+            if (ui.IconButton("expand", appearance.Icons.OptionsExpandAll, t.CodeExpandAll, !searching && folded.Count > 0))
             {
                 folded.UnfoldAll();
             }
 
             ui.Separator(theme.IconSize);
-            if (ui.IconButton("reset", ui.State.Appearance.Icons.OptionsResetDecompiler, t.DecompilerOptionsReset, options.HasChanges))
+            if (ui.IconButton("reset", appearance.Icons.OptionsResetDecompiler, t.DecompilerOptionsReset, options.HasChanges))
             {
-                Commands.Later(ui.State.AppCommands, static a => Preferences.ResetDecompilerToggles(a));
+                Commands.Later(commands, static a => Preferences.ResetDecompilerToggles(a));
             }
         }
         ui.Separator();
@@ -55,11 +54,11 @@ internal static class DecompilerOptionsPanelView
             ui.Separator();
         }
 
-        var words = OptionSearch.SplitWords(ui.State.DecompilerOptionsQuery);
+        var words = OptionSearch.SplitWords(panel.Query);
         var sections = words.Length == 0 ? Sections : FindMatchingSections(t, words);
         if (sections.Length == 0)
         {
-            OptionSearch.NoMatch(ui, ui.State.Appearance, ref ui.State.DecompilerOptionsQuery);
+            OptionSearch.NoMatch(ui, appearance, ref panel.Query);
             return;
         }
         // A search shows every group open, and leaves the folds as they were for when it is cleared.
@@ -75,14 +74,14 @@ internal static class DecompilerOptionsPanelView
                 {
                     if (toggle is null)
                     {
-                        if (Header(ui, shownFolds, section, options, rowHeight, tooNew))
+                        if (Header(ui, appearance, commands, panel.Query, shownFolds, section, options, rowHeight, tooNew))
                         {
                             flipped = section.Key;
                         }
                     }
                     else
                     {
-                        Toggle(ui, toggle, options, rowHeight);
+                        Toggle(ui, appearance, commands, panel.Query, toggle, options, rowHeight);
                     }
                 }
             }
@@ -117,10 +116,10 @@ internal static class DecompilerOptionsPanelView
         return DecompilerOptionLabels.Label(t, toggle.Name) ?? toggle.Name;
     }
 
-    private static bool Header(Ui<UiState> ui, FoldedGroups? folded, DecompilerOptionSection section, DecompilerOptions options, float rowHeight,
+    private static bool Header(Ui ui, Appearance appearance, IAppCommandWriter commands, string query, FoldedGroups? folded, DecompilerOptionSection section, DecompilerOptions options, float rowHeight,
         string? tooNew)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var isFolded = IsFolded(folded, section);
         var allowed = IsAllowed(section, options);
@@ -135,19 +134,19 @@ internal static class DecompilerOptionsPanelView
             Background = item.Hovered ? theme.RowHover : 0u,
         }))
         {
-            var icons = ui.State.Appearance.Icons;
+            var icons = appearance.Icons;
             var mark = isFolded ? icons.OptionsGroupFolded : icons.OptionsGroupUnfolded;
             ui.Icon(new UiIcon(mark, theme.TextMuted));
             var all = State(section, options);
             var title = Title(t, section);
             var bold = HasChangedToggle(section, options);
-            var runs = OptionSearch.EnsureMarkedRuns(ui, ui.State.Appearance, ui.State.DecompilerOptionsQuery, title, ui.StyleText(allowed ? null : theme.TextDisabled, bold: bold));
+            var runs = OptionSearch.EnsureMarkedRuns(ui, appearance, query, title, ui.StyleText(allowed ? null : theme.TextDisabled, bold: bold));
             var flipped = runs is not null
-                ? ui.Checkbox(runs, OptionSearch.GetMarkBackground(ui, ui.State.Appearance), ref all, "all", allowed, Sizing.Grow())
+                ? ui.Checkbox(runs, OptionSearch.GetMarkBackground(ui, appearance), ref all, "all", allowed, Sizing.Grow())
                 : ui.Checkbox(title, ref all, id: "all", enabled: allowed, width: Sizing.Grow(), bold: bold);
             if (flipped)
             {
-                Commands.Later(ui.State.AppCommands, (toggles: section.Toggles, on: all == true), static (a, s) => Preferences.SetDecompilerToggles(a, s.toggles, s.on));
+                Commands.Later(commands, (toggles: section.Toggles, on: all == true), static (a, s) => Preferences.SetDecompilerToggles(a, s.toggles, s.on));
             }
         }
         if (!allowed && tooNew is not null)
@@ -234,9 +233,9 @@ internal static class DecompilerOptionsPanelView
         return false;
     }
 
-    private static void Toggle(Ui<UiState> ui, DecompilerToggle toggle, DecompilerOptions options, float rowHeight)
+    private static void Toggle(Ui ui, Appearance appearance, IAppCommandWriter commands, string query, DecompilerToggle toggle, DecompilerOptions options, float rowHeight)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         using (ui.Row(new Box
         {
@@ -251,13 +250,13 @@ internal static class DecompilerOptionsPanelView
             var enabled = DecompilerToggles.Allows(options, toggle);
             var bold = DecompilerToggles.IsChanged(options, toggle);
             var style = ui.StyleText(enabled ? null : theme.TextDisabled, bold: bold);
-            var runs = OptionSearch.EnsureMarkedRuns(ui, ui.State.Appearance, ui.State.DecompilerOptionsQuery, label, style);
+            var runs = OptionSearch.EnsureMarkedRuns(ui, appearance, query, label, style);
             var flipped = runs is not null
-                ? ui.Checkbox(runs, OptionSearch.GetMarkBackground(ui, ui.State.Appearance), ref on, toggle.Name, enabled, Sizing.Grow())
+                ? ui.Checkbox(runs, OptionSearch.GetMarkBackground(ui, appearance), ref on, toggle.Name, enabled, Sizing.Grow())
                 : ui.Checkbox(label, ref on, id: toggle.Name, enabled: enabled, width: Sizing.Grow(), bold: bold);
             if (flipped)
             {
-                Commands.Later(ui.State.AppCommands, (toggle, on), static (a, s) => Preferences.SetDecompilerToggle(a, s.toggle, s.on));
+                Commands.Later(commands, (toggle, on), static (a, s) => Preferences.SetDecompilerToggle(a, s.toggle, s.on));
             }
         }
     }

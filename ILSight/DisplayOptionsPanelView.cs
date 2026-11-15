@@ -37,11 +37,11 @@ internal static class DisplayOptionsPanelView
         using var panel = ui.Column(new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Gap = 0f });
         using (ui.PaneToolbar())
         {
-            OptionSearch.Field(ui, ui.State.Appearance, ref ui.State.DisplayOptionsQuery);
+            OptionSearch.Field(ui, ui.State.Appearance, ref ui.State.DisplayOptionsPanel.Query);
         }
 
         ui.Separator();
-        var words = OptionSearch.SplitWords(ui.State.DisplayOptionsQuery);
+        var words = OptionSearch.SplitWords(ui.State.DisplayOptionsPanel.Query);
         using var pane = ui.Scroll(PaneId, new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Gap = 0f });
         using var form = ui.Column(new Box
         {
@@ -59,7 +59,7 @@ internal static class DisplayOptionsPanelView
         }
         else if (!shown)
         {
-            OptionSearch.NoMatch(ui, ui.State.Appearance, ref ui.State.DisplayOptionsQuery);
+            OptionSearch.NoMatch(ui, ui.State.Appearance, ref ui.State.DisplayOptionsPanel.Query);
         }
     }
 
@@ -764,7 +764,7 @@ internal static class DisplayOptionsPanelView
         });
         using (ui.Column(new Box { Width = TitleWidth(ui, title, changed), Gap = theme.GapTight }))
         {
-            var query = ui.State.DisplayOptionsQuery;
+            var query = ui.State.DisplayOptionsPanel.Query;
             var mark = OptionSearch.GetMarkBackground(ui, ui.State.Appearance);
             var titleRuns = OptionSearch.EnsureMarkedRuns(ui, ui.State.Appearance, query, title, ui.StyleText(bold: changed));
             if (titleRuns is not null)

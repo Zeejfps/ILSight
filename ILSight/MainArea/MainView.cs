@@ -119,8 +119,8 @@ public static class MainView
             tabMenu = dock.TabMenu;
             doubleClicked = dock.TabDoubleClicked;
         }
-        TabMenuView.OpenOnRightClick(ui, tabMenu);
-        TabMenuView.Render(ui, appState.ListSession.Navigation);
+        TabMenuView.OpenOnRightClick(ui, ui.State.Documents, ui.State.TabMenu, tabMenu);
+        TabMenuView.Render(ui, ui.State.TabMenu, appState.ListSession.Navigation);
         TabMenuView.KeepOpenOnDoubleClick(ui, ui.State.Documents, ui.State.AppCommands, doubleClicked);
     }
 
@@ -169,7 +169,7 @@ public static class MainView
                 AnalyzerPanelView.Render(ui, appState.ListSession.Navigation, appState.ListSession.Analyzer);
                 break;
             case DockView.DecompilerOptions:
-                DecompilerOptionsPanelView.Render(ui, appState.Decompiler.Setup.Options);
+                DecompilerOptionsPanelView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.DecompilerOptionsPanel, ui.State.FoldedOptionGroups, appState.Decompiler.Setup.Options);
                 break;
             case DockView.DisplayOptions:
                 DisplayOptionsPanelView.Render(ui, appState);

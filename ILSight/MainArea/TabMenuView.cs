@@ -12,20 +12,20 @@ internal static class TabMenuView
     private const string MenuId = "tab-menu";
 
     /// <summary>Opens the menu on the tab right-clicked, when it is a document's.</summary>
-    public static void OpenOnRightClick(Ui<UiState> ui, DockTabMenu? request)
+    public static void OpenOnRightClick(Ui ui, DocumentViews documents, TabMenu tabMenu, DockTabMenu? request)
     {
         if (request is null)
         {
             return;
         }
 
-        var tab = ui.State.Documents.FindTab(request.Value.Panel);
+        var tab = documents.FindTab(request.Value.Panel);
         if (tab is null)
         {
             return;
         }
 
-        ui.State.TabMenuTarget = tab;
+        tabMenu.TargetMenu(tab);
         ui.OpenContextMenu(MenuId, request.Value.At);
     }
 
@@ -46,7 +46,7 @@ internal static class TabMenuView
         Commands.Later(commands, tab, static (a, kept) => a.ListSession.Navigation.KeepTabOpen(kept));
     }
 
-    public static void Render(Ui<UiState> ui, Navigation navigation)
+    public static void Render(Ui<UiState> ui, TabMenu tabMenu, Navigation navigation)
     {
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
@@ -54,7 +54,7 @@ internal static class TabMenuView
             return;
         }
 
-        var tab = ui.State.TabMenuTarget;
+        var tab = tabMenu.Target;
         if (tab is null)
         {
             return;

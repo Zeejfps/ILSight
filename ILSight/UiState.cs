@@ -56,8 +56,8 @@ public sealed class UiState : IUiState
     /// <summary>The browse tree over the open assemblies, with the view's expansion and selection.</summary>
     public required BrowseTree Tree { get; init; }
 
-    /// <summary>The document whose tab's context menu was opened.</summary>
-    public DocumentTab? TabMenuTarget;
+    /// <summary>The context menu of a document's tab.</summary>
+    public TabMenu TabMenu { get; } = new();
 
     /// <summary>What the features asked of the shell (web pages, files and folders to open, the app to quit), which the
     /// frame edge hands to the OS once the frame is drawn.</summary>
@@ -100,11 +100,11 @@ public sealed class UiState : IUiState
     /// <summary>The decompiler options panel's folded groups.</summary>
     public required FoldedGroups FoldedOptionGroups { get; init; }
 
-    /// <summary>What the decompiler options panel is searched for; empty shows every option.</summary>
-    public string DecompilerOptionsQuery = "";
+    /// <summary>The decompiler options panel's search.</summary>
+    public DecompilerOptionsPanel DecompilerOptionsPanel { get; } = new();
 
-    /// <summary>What the display options panel is searched for; empty shows every option.</summary>
-    public string DisplayOptionsQuery = "";
+    /// <summary>The display options panel's search.</summary>
+    public DisplayOptionsPanel DisplayOptionsPanel { get; } = new();
 
     /// <summary>How the documents draw code: its size and the aids drawn around it, and their reset asked of the user.</summary>
     public required ScreenDisplay Display { get; init; }
