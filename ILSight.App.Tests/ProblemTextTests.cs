@@ -89,6 +89,31 @@ public sealed class ProblemTextTests
         Assert.Equal(error.ToString(), text.TechnicalDetails);
     }
 
+    [Theory]
+    [MemberData(nameof(LocalizationTests.AllLocales), MemberType = typeof(LocalizationTests))]
+    public void A_nuget_config_failing_to_read_says_a_restart_reads_it_again_and_to_report_it_never_to_try_again(Locale locale)
+    {
+        var t = Strings.For(locale);
+        var error = Thrown("Object reference not set to an instance of an object.");
+
+        var text = ProblemTexts.Describe(t, new AppProblem.NuGetConfigUnreadable(error));
+
+        Assert.Equal(t.CauseNugetConfigUnreadableTitle, text.Title);
+        Assert.Equal(t.ErrorCauseAndRecovery(cause: error.Message, recovery: t.ErrorRecoveryFixNugetConfigOrReport), text.Details);
+        Assert.DoesNotContain(t.ErrorRecoveryTryAgain, text.Details);
+        Assert.Contains("ILSight", t.ErrorRecoveryFixNugetConfigOrReport);
+        Assert.Equal(error.ToString(), text.TechnicalDetails);
+    }
+
+    [Fact]
+    public void A_nuget_config_that_cannot_be_read_says_in_the_dialog_that_a_restart_reads_it_again()
+    {
+        var notice = Strings.En.CauseNugetConfigUnreadableNotice("Data at the root level is invalid.");
+
+        Assert.Equal("Couldn’t read your NuGet.Config (Data at the root level is invalid.), so nuget.org is searched instead. "
+            + "Fix it, then restart ILSight to read it again.", notice);
+    }
+
     [Fact]
     public void A_problem_with_no_exception_has_no_technical_details_and_copies_as_before()
     {

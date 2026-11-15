@@ -71,7 +71,7 @@ public static class ProblemTexts
                 $"{p.Path}{Environment.NewLine}{p.Reason}", null),
             themesNotWatched: p => (p.Kind == ThemeKind.Color ? t.ErrorWatchThemes : t.ErrorWatchIconThemes, p.Reason, null),
             runtimeNotScanned: p => AskAgain(t, t.ErrorScanRuntime, p.Error),
-            nuGetConfigUnreadable: p => Thrown(t.CauseNugetConfigUnreadableTitle, p.Error),
+            nuGetConfigUnreadable: p => FixNuGetConfigOrReport(t, p.Error),
             nuGetSearchFailed: p => AskAgain(t, t.ErrorSearchNuget(p.Feed), p.Error),
             packageNotDownloaded: p => AskAgain(t, t.ErrorDownloadPackage(p.Package), p.Error),
             unexpected: p => Reportable(t, t.ErrorUnexpected, p.Error));
@@ -124,6 +124,15 @@ public static class ProblemTexts
     private static (string Title, string Details, Exception? Diagnostic) AskAgain(Strings t, string title, Exception error)
     {
         return (title, t.ErrorCauseAndRecovery(cause: error.Message, recovery: t.ErrorRecoveryTryAgain), error);
+    }
+
+    // The user's NuGet.Config failing to read unexpectedly: the setup is read once a session and kept, so asking again
+    // would reuse it; what reads it again is a restart (ReadNuGetSetupHandler), after fixing the file. The catch takes
+    // any failure, the app's own among them, which ILSight takes reports of: the report beside it.
+    private static (string Title, string Details, Exception? Diagnostic) FixNuGetConfigOrReport(Strings t, Exception error)
+    {
+        return (t.CauseNugetConfigUnreadableTitle,
+            t.ErrorCauseAndRecovery(cause: error.Message, recovery: t.ErrorRecoveryFixNugetConfigOrReport), error);
     }
 
     // A failure whose cause the app knows only by the exception, of an operation whose contract holds both: asking
