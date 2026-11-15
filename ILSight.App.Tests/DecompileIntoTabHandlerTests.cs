@@ -76,8 +76,8 @@ public sealed class DecompileIntoTabHandlerTests
         var text = ProblemTexts.Describe(Strings.En, reported);
         Assert.Equal(Strings.En.ErrorReadReference("Locked", "Greeter.dll"), text.Title);
         Assert.StartsWith(Strings.En.ErrorReadReferenceDegraded("Locked", "Greeter.dll"), text.Details);
-        Assert.Contains(Strings.En.ErrorReferenceFileDenied("Locked.dll"), text.Details);
-        Assert.DoesNotContain(Strings.En.ErrorFileDenied("Locked.dll"), text.Details);
+        Assert.Contains(Strings.En.ErrorFileDenied("Locked.dll"), text.Details);
+        Assert.DoesNotContain(Strings.En.ErrorRecoveryMakeReadable, text.Details);
     }
 
     [Fact]

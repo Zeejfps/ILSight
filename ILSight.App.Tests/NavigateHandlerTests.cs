@@ -87,7 +87,7 @@ public sealed class NavigateHandlerTests
         Assert.Equal(file, reported.File);
         var text = ProblemTexts.Describe(Strings.En, reported);
         Assert.Equal(Strings.En.ErrorResolve(reference.Name), text.Title);
-        Assert.StartsWith(Strings.En.ErrorFileDamaged("Damaged.dll"), text.Details);
+        Assert.StartsWith("Damaged.dll isn't a .NET assembly or package that can be read. Replace the file, or close it.", text.Details);
     }
 
     [Fact]

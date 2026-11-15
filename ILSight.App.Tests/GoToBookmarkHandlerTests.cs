@@ -91,7 +91,7 @@ public sealed class GoToBookmarkHandlerTests
         Assert.Equal(file, deniedLookup.File);
         var deniedText = ProblemTexts.Describe(Strings.En, deniedReport);
         Assert.Equal(Strings.En.ErrorLookUpPlace(bookmark.Place.Label), deniedText.Title);
-        Assert.StartsWith(Strings.En.ErrorStepBookmark(bookmark.Name) + Environment.NewLine + Environment.NewLine + Strings.En.ErrorFileDenied("Locked.dll"),
+        Assert.StartsWith(Strings.En.ErrorStepBookmark(bookmark.Name) + Environment.NewLine + Environment.NewLine + "Locked.dll couldn't be opened: access to it was denied, or another program has it locked. Make it readable, then try again.",
             deniedText.Details);
         var damagedLookup = Assert.IsType<AppProblem.PlaceLookupFileDamaged>(damagedReport);
         Assert.Same(damaged, damagedLookup.Error);

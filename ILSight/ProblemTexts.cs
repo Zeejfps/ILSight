@@ -36,17 +36,17 @@ public static class ProblemTexts
             analysisFailed: p => (t.ErrorAnalyze(p.Subject, AnalyzerText.Header(t, p.Kind)), p.Error.ToString()),
             analysesNotRestored: p => (t.ErrorRestoreAnalyses, p.Error.ToString()),
             unresolved: p => (t.ErrorResolve(p.Reference.Name), p.Error.ToString()),
-            unresolvedFileDenied: p => (t.ErrorResolve(p.Reference.Name), Advise(t.ErrorFileDenied(p.File.FileName), p.Error)),
-            unresolvedFileDamaged: p => (t.ErrorResolve(p.Reference.Name), Advise(t.ErrorFileDamaged(p.File.FileName), p.Error)),
+            unresolvedFileDenied: p => (t.ErrorResolve(p.Reference.Name), Advise(Denied(t, p.File), p.Error)),
+            unresolvedFileDamaged: p => (t.ErrorResolve(p.Reference.Name), Advise(Damaged(t, p.File), p.Error)),
             placeLookupFailed: p => (t.ErrorLookUpPlace(p.Place.Label), AfterStep(t, p.Step, p.Error.ToString())),
             placeLookupFileDenied: p => (t.ErrorLookUpPlace(p.Place.Label),
-                AfterStep(t, p.Step, Advise(t.ErrorFileDenied(p.File.FileName), p.Error))),
+                AfterStep(t, p.Step, Advise(Denied(t, p.File), p.Error))),
             placeLookupFileDamaged: p => (t.ErrorLookUpPlace(p.Place.Label),
-                AfterStep(t, p.Step, Advise(t.ErrorFileDamaged(p.File.FileName), p.Error))),
+                AfterStep(t, p.Step, Advise(Damaged(t, p.File), p.Error))),
             referenceFileDenied: p => (t.ErrorReadReference(p.Unread.Name, p.Unread.Module),
-                Degraded(t, p.Unread, t.ErrorReferenceFileDenied(p.Unread.Error.FilePath.FileName))),
+                Degraded(t, p.Unread, t.ErrorFileDenied(p.Unread.Error.FilePath.FileName))),
             referenceFileDamaged: p => (t.ErrorReadReference(p.Unread.Name, p.Unread.Module),
-                Degraded(t, p.Unread, t.ErrorReferenceFileDamaged(p.Unread.Error.FilePath.FileName))),
+                Degraded(t, p.Unread, t.ErrorFileDamaged(p.Unread.Error.FilePath.FileName))),
             moduleUnreadable: p => (t.ErrorModuleUnreadable(p.Module), p.Why.ToString()),
             bookmarksNotExported: p => (t.ErrorExportBookmarks, p.Reason),
             bookmarksNotImported: p => (t.ErrorImportBookmarks(p.File), p.Reason),
@@ -82,6 +82,20 @@ public static class ProblemTexts
             reopeningTabs: _ => t.ErrorStepReopenTabs,
             reloadingTab: _ => t.ErrorStepReloadTab);
         return asked + Environment.NewLine + Environment.NewLine + details;
+    }
+
+    // A file that couldn't be opened, as the cause of a lookup that reads it again when asked again: the cause in its
+    // words and its recovery, each defined once (error.file_denied, error.recovery_make_readable) for every kind whose
+    // cause it is.
+    private static string Denied(Strings t, AssemblyPath file)
+    {
+        return t.ErrorCauseAndRecovery(t.ErrorFileDenied(file.FileName), t.ErrorRecoveryMakeReadable);
+    }
+
+    // A file that isn't one that can be read, as the cause of a lookup, as Denied.
+    private static string Damaged(Strings t, AssemblyPath file)
+    {
+        return t.ErrorCauseAndRecovery(t.ErrorFileDamaged(file.FileName), t.ErrorRecoveryReplaceFile);
     }
 
     // What the code shows without the reference and the step that reads it again, the cause, then the error as it came.
