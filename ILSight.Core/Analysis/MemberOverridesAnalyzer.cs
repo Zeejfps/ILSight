@@ -7,12 +7,18 @@ internal static class MemberOverridesAnalyzer
 {
     public static AnalysisRun? Prepare(ISymbol? symbol)
     {
-        if (symbol is not IMember { SymbolKind: SymbolKind.Event or SymbolKind.Indexer or SymbolKind.Method or SymbolKind.Property, IsOverride: true } member)
+        if (symbol is not IMember member)
         {
             return null;
         }
 
         return _ => Analyze(member);
+    }
+
+    /// <summary>An event, indexer, method or property that overrides.</summary>
+    public static bool Applies(OfferFacts facts)
+    {
+        return facts.SymbolKind is SymbolKind.Event or SymbolKind.Indexer or SymbolKind.Method or SymbolKind.Property && facts.IsOverride;
     }
 
     private static IEnumerable<ISymbol> Analyze(IMember member)

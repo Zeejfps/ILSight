@@ -12,12 +12,18 @@ internal static class FieldAccessAnalyzer
 {
     public static AnalysisRun? Prepare(FieldAccessKind kind, ISymbol? symbol)
     {
-        if (symbol is not IField field || (kind != FieldAccessKind.Read && field.IsConst))
+        if (symbol is not IField field)
         {
             return null;
         }
 
         return context => Analyze(kind, field, context);
+    }
+
+    /// <summary>A field; only read, when it is a constant.</summary>
+    public static bool Applies(FieldAccessKind kind, OfferFacts facts)
+    {
+        return facts.Sort == AnalyzedSort.Field && (kind == FieldAccessKind.Read || !facts.IsConst);
     }
 
     private static IEnumerable<ISymbol> Analyze(FieldAccessKind kind, IField field, AnalyzerContext context)

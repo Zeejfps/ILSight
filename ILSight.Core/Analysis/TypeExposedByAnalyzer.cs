@@ -17,6 +17,12 @@ internal static class TypeExposedByAnalyzer
         return context => Analyze(type, context);
     }
 
+    /// <summary>Any type.</summary>
+    public static bool Applies(OfferFacts facts)
+    {
+        return facts.Sort == AnalyzedSort.Type;
+    }
+
     private static IEnumerable<ISymbol> Analyze(ITypeDefinition analyzed, AnalyzerContext context)
     {
         var visitor = new TypeDefinitionUsedVisitor(analyzed);

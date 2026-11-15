@@ -7,13 +7,20 @@ internal static class MemberImplementsInterfaceAnalyzer
 {
     public static AnalysisRun? Prepare(ISymbol? symbol)
     {
-        if (symbol is not IMember { SymbolKind: SymbolKind.Event or SymbolKind.Indexer or SymbolKind.Method or SymbolKind.Property, IsStatic: false } member
-            || member.DeclaringTypeDefinition?.Kind is not (TypeKind.Class or TypeKind.Struct))
+        if (symbol is not IMember member)
         {
             return null;
         }
 
         return _ => Analyze(member);
+    }
+
+    /// <summary>An instance event, indexer, method or property of a class or struct.</summary>
+    public static bool Applies(OfferFacts facts)
+    {
+        return facts.SymbolKind is SymbolKind.Event or SymbolKind.Indexer or SymbolKind.Method or SymbolKind.Property
+            && !facts.IsStatic
+            && facts.DeclaringDefinitionKind is TypeKind.Class or TypeKind.Struct;
     }
 
     private static IEnumerable<ISymbol> Analyze(IMember member)

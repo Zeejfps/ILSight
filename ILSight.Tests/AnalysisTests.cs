@@ -192,4 +192,37 @@ public sealed class AnalysisTests
 
         Assert.Equal([core.FilePath.FileName], scanned.Select(static t => Path.GetFileName(t.MainModule.MetadataFile.FileName)));
     }
+
+    [Fact]
+    public async Task A_bug_in_which_analyses_apply_is_the_apps_not_the_symbol_unreadable_and_the_table_decides_on_facts_read_out()
+    {
+        var (list, _) = Trees.OpenTestAssembly();
+        var add = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Calculator`1", "Add");
+        var anchor = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = AssemblyPath.Of(Trees.TestAssemblyPath), Token = MetadataTokens.GetToken(add) };
+        var asked = new List<OfferFacts>();
+        var recording = new AnalysisKind
+        {
+            Name = AnalysisName.Uses, Order = 1, Prepare = static _ => null,
+            Applies = f =>
+            {
+                asked.Add(f);
+                return f.HasBody;
+            },
+        };
+        var buggy = new AnalysisKind
+        {
+            Name = AnalysisName.UsedBy, Order = 2, Prepare = static _ => null, Applies = static _ => throw new InvalidOperationException("the table's bug"),
+        };
+
+        var offered = Assert.IsType<Lookup<AnalysisSymbol>.Found>((await Analyzers.FindAsync(list, anchor, [recording], CancellationToken.None)).GetValue()).Value;
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() => Analyzers.FindAsync(list, anchor, [recording, buggy], CancellationToken.None));
+
+        Assert.Equal("the table's bug", thrown.Message);
+        Assert.Same(recording, Assert.Single(offered.Kinds));
+        var facts = asked[0];
+        Assert.Equal(AnalyzedSort.Method, facts.Sort);
+        Assert.Equal(SymbolKind.Method, facts.SymbolKind);
+        Assert.True(facts.HasBody);
+        Assert.Equal(TypeKind.Class, facts.DeclaringDefinitionKind);
+    }
 }

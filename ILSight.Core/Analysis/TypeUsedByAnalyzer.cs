@@ -21,6 +21,12 @@ internal static class TypeUsedByAnalyzer
         return context => Analyze(type, context);
     }
 
+    /// <summary>Any type.</summary>
+    public static bool Applies(OfferFacts facts)
+    {
+        return facts.Sort == AnalyzedSort.Type;
+    }
+
     private static IEnumerable<ISymbol> Analyze(ITypeDefinition analyzedType, AnalyzerContext context)
     {
         var scope = AnalyzerScope.Create(context, analyzedType);

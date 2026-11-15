@@ -12,12 +12,18 @@ internal static class MethodUsedByAnalyzer
 {
     public static AnalysisRun? Prepare(ISymbol? symbol)
     {
-        if (symbol is not IMethod method || (!method.IsVirtual && method.ParentModule is null))
+        if (symbol is not IMethod method)
         {
             return null;
         }
 
         return context => Analyze(method, context);
+    }
+
+    /// <summary>A method that is virtual or in a module.</summary>
+    public static bool Applies(OfferFacts facts)
+    {
+        return facts.Sort == AnalyzedSort.Method && (facts.IsVirtual || facts.HasParentModule);
     }
 
     internal static IEnumerable<ISymbol> Analyze(IMethod analyzed, AnalyzerContext context)

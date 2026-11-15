@@ -11,12 +11,18 @@ internal static class MethodUsesAnalyzer
 {
     public static AnalysisRun? Prepare(ISymbol? symbol)
     {
-        if (symbol is not IMethod method || !method.HasBody)
+        if (symbol is not IMethod method)
         {
             return null;
         }
 
         return context => Analyze(method, context);
+    }
+
+    /// <summary>A method with a body.</summary>
+    public static bool Applies(OfferFacts facts)
+    {
+        return facts.Sort == AnalyzedSort.Method && facts.HasBody;
     }
 
     private static IEnumerable<ISymbol> Analyze(IMethod method, AnalyzerContext context)

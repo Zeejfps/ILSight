@@ -8,7 +8,7 @@ internal static class InheritorsAnalyzer<T> where T : class, IMember
 {
     public static AnalysisRun? Prepare(bool overrides, ISymbol? symbol)
     {
-        if (symbol is not T member || !Applies(overrides, member))
+        if (symbol is not T member)
         {
             return null;
         }
@@ -16,11 +16,18 @@ internal static class InheritorsAnalyzer<T> where T : class, IMember
         return context => Analyze(overrides, member, context);
     }
 
-    private static bool Applies(bool overrides, T member)
+    /// <summary>A member of <paramref name="sort"/>: overridden, when overridable outside an interface; implemented,
+    /// when declared by an interface.</summary>
+    public static bool Applies(bool overrides, AnalyzedSort sort, OfferFacts facts)
     {
+        if (facts.Sort != sort)
+        {
+            return false;
+        }
+
         return overrides
-        ? member.IsOverridable && member.DeclaringType.Kind != TypeKind.Interface
-        : member.DeclaringType.Kind == TypeKind.Interface;
+        ? facts.IsOverridable && facts.DeclaringTypeKind != TypeKind.Interface
+        : facts.DeclaringTypeKind == TypeKind.Interface;
     }
 
     private static IEnumerable<ISymbol> Analyze(bool overrides, T analyzed, AnalyzerContext context)

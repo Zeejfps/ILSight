@@ -16,25 +16,77 @@ public static class Analyzers
 
     private static readonly AnalysisKind[] Kinds =
     [
-        new AnalysisKind { Name = AnalysisName.AppliedTo, Order = 10, Prepare = AttributeAppliedToAnalyzer.Prepare },
-        new AnalysisKind { Name = AnalysisName.ImplementedBy, Order = 10, Prepare = static s => InheritorsAnalyzer<IEvent>.Prepare(overrides: false, s) },
-        new AnalysisKind { Name = AnalysisName.OverriddenBy, Order = 20, Prepare = static s => InheritorsAnalyzer<IEvent>.Prepare(overrides: true, s) },
-        new AnalysisKind { Name = AnalysisName.ReadBy, Order = 10, Prepare = static s => FieldAccessAnalyzer.Prepare(FieldAccessKind.Read, s) },
-        new AnalysisKind { Name = AnalysisName.AssignedBy, Order = 20, Prepare = static s => FieldAccessAnalyzer.Prepare(FieldAccessKind.Write, s) },
-        new AnalysisKind { Name = AnalysisName.AddressTakenBy, Order = 30, Prepare = static s => FieldAccessAnalyzer.Prepare(FieldAccessKind.AddressOf, s) },
-        new AnalysisKind { Name = AnalysisName.Implements, Order = 40, Prepare = MemberImplementsInterfaceAnalyzer.Prepare },
-        new AnalysisKind { Name = AnalysisName.Overrides, Order = 35, Prepare = MemberOverridesAnalyzer.Prepare },
-        new AnalysisKind { Name = AnalysisName.ImplementedBy, Order = 40, Prepare = static s => InheritorsAnalyzer<IMethod>.Prepare(overrides: false, s) },
-        new AnalysisKind { Name = AnalysisName.OverriddenBy, Order = 30, Prepare = static s => InheritorsAnalyzer<IMethod>.Prepare(overrides: true, s) },
-        new AnalysisKind { Name = AnalysisName.UsedBy, Order = 20, Prepare = MethodUsedByAnalyzer.Prepare },
-        new AnalysisKind { Name = AnalysisName.Uses, Order = 10, Prepare = MethodUsesAnalyzer.Prepare },
-        new AnalysisKind { Name = AnalysisName.UsedBy, Order = 5, Prepare = MemberUsedByAnalyzer.Prepare },
-        new AnalysisKind { Name = AnalysisName.ImplementedBy, Order = 10, Prepare = static s => InheritorsAnalyzer<IProperty>.Prepare(overrides: false, s) },
-        new AnalysisKind { Name = AnalysisName.OverriddenBy, Order = 20, Prepare = static s => InheritorsAnalyzer<IProperty>.Prepare(overrides: true, s) },
-        new AnalysisKind { Name = AnalysisName.ExposedBy, Order = 40, Prepare = TypeExposedByAnalyzer.Prepare },
-        new AnalysisKind { Name = AnalysisName.ExtensionMethods, Order = 50, Prepare = TypeExtensionMethodsAnalyzer.Prepare },
-        new AnalysisKind { Name = AnalysisName.InstantiatedBy, Order = 20, Prepare = TypeInstantiatedByAnalyzer.Prepare },
-        new AnalysisKind { Name = AnalysisName.UsedBy, Order = 30, Prepare = TypeUsedByAnalyzer.Prepare, SortsResults = true },
+        new AnalysisKind
+        {
+            Name = AnalysisName.AppliedTo, Order = 10, Prepare = AttributeAppliedToAnalyzer.Prepare, Applies = AttributeAppliedToAnalyzer.Applies,
+        },
+        new AnalysisKind
+        {
+            Name = AnalysisName.ImplementedBy, Order = 10, Prepare = static s => InheritorsAnalyzer<IEvent>.Prepare(overrides: false, s),
+            Applies = static f => InheritorsAnalyzer<IEvent>.Applies(overrides: false, AnalyzedSort.Event, f),
+        },
+        new AnalysisKind
+        {
+            Name = AnalysisName.OverriddenBy, Order = 20, Prepare = static s => InheritorsAnalyzer<IEvent>.Prepare(overrides: true, s),
+            Applies = static f => InheritorsAnalyzer<IEvent>.Applies(overrides: true, AnalyzedSort.Event, f),
+        },
+        new AnalysisKind
+        {
+            Name = AnalysisName.ReadBy, Order = 10, Prepare = static s => FieldAccessAnalyzer.Prepare(FieldAccessKind.Read, s),
+            Applies = static f => FieldAccessAnalyzer.Applies(FieldAccessKind.Read, f),
+        },
+        new AnalysisKind
+        {
+            Name = AnalysisName.AssignedBy, Order = 20, Prepare = static s => FieldAccessAnalyzer.Prepare(FieldAccessKind.Write, s),
+            Applies = static f => FieldAccessAnalyzer.Applies(FieldAccessKind.Write, f),
+        },
+        new AnalysisKind
+        {
+            Name = AnalysisName.AddressTakenBy, Order = 30, Prepare = static s => FieldAccessAnalyzer.Prepare(FieldAccessKind.AddressOf, s),
+            Applies = static f => FieldAccessAnalyzer.Applies(FieldAccessKind.AddressOf, f),
+        },
+        new AnalysisKind
+        {
+            Name = AnalysisName.Implements, Order = 40, Prepare = MemberImplementsInterfaceAnalyzer.Prepare,
+            Applies = MemberImplementsInterfaceAnalyzer.Applies,
+        },
+        new AnalysisKind { Name = AnalysisName.Overrides, Order = 35, Prepare = MemberOverridesAnalyzer.Prepare, Applies = MemberOverridesAnalyzer.Applies },
+        new AnalysisKind
+        {
+            Name = AnalysisName.ImplementedBy, Order = 40, Prepare = static s => InheritorsAnalyzer<IMethod>.Prepare(overrides: false, s),
+            Applies = static f => InheritorsAnalyzer<IMethod>.Applies(overrides: false, AnalyzedSort.Method, f),
+        },
+        new AnalysisKind
+        {
+            Name = AnalysisName.OverriddenBy, Order = 30, Prepare = static s => InheritorsAnalyzer<IMethod>.Prepare(overrides: true, s),
+            Applies = static f => InheritorsAnalyzer<IMethod>.Applies(overrides: true, AnalyzedSort.Method, f),
+        },
+        new AnalysisKind { Name = AnalysisName.UsedBy, Order = 20, Prepare = MethodUsedByAnalyzer.Prepare, Applies = MethodUsedByAnalyzer.Applies },
+        new AnalysisKind { Name = AnalysisName.Uses, Order = 10, Prepare = MethodUsesAnalyzer.Prepare, Applies = MethodUsesAnalyzer.Applies },
+        new AnalysisKind { Name = AnalysisName.UsedBy, Order = 5, Prepare = MemberUsedByAnalyzer.Prepare, Applies = MemberUsedByAnalyzer.Applies },
+        new AnalysisKind
+        {
+            Name = AnalysisName.ImplementedBy, Order = 10, Prepare = static s => InheritorsAnalyzer<IProperty>.Prepare(overrides: false, s),
+            Applies = static f => InheritorsAnalyzer<IProperty>.Applies(overrides: false, AnalyzedSort.Property, f),
+        },
+        new AnalysisKind
+        {
+            Name = AnalysisName.OverriddenBy, Order = 20, Prepare = static s => InheritorsAnalyzer<IProperty>.Prepare(overrides: true, s),
+            Applies = static f => InheritorsAnalyzer<IProperty>.Applies(overrides: true, AnalyzedSort.Property, f),
+        },
+        new AnalysisKind { Name = AnalysisName.ExposedBy, Order = 40, Prepare = TypeExposedByAnalyzer.Prepare, Applies = TypeExposedByAnalyzer.Applies },
+        new AnalysisKind
+        {
+            Name = AnalysisName.ExtensionMethods, Order = 50, Prepare = TypeExtensionMethodsAnalyzer.Prepare, Applies = TypeExtensionMethodsAnalyzer.Applies,
+        },
+        new AnalysisKind
+        {
+            Name = AnalysisName.InstantiatedBy, Order = 20, Prepare = TypeInstantiatedByAnalyzer.Prepare, Applies = TypeInstantiatedByAnalyzer.Applies,
+        },
+        new AnalysisKind
+        {
+            Name = AnalysisName.UsedBy, Order = 30, Prepare = TypeUsedByAnalyzer.Prepare, Applies = TypeUsedByAnalyzer.Applies, SortsResults = true,
+        },
     ];
 
     /// <summary>ILSpy's English name for <paramref name="kind"/>.</summary>
@@ -107,7 +159,15 @@ public static class Analyzers
     /// without listing it, once the read of its type system ended; not found when the file is gone or its module has
     /// no such row, unreadable when the library could not read the module; a file there that can't be read, and what
     /// else the library throws resolving or describing it, <see cref="Outcome{T}.Failed"/>.</summary>
-    public static async Task<Outcome<Lookup<AnalysisSymbol>>> FindAsync(AssemblyList list, CodeAnchor definition, CancellationToken ct)
+    public static Task<Outcome<Lookup<AnalysisSymbol>>> FindAsync(AssemblyList list, CodeAnchor definition, CancellationToken ct)
+    {
+        return FindAsync(list, definition, Kinds, ct);
+    }
+
+    /// <summary>As <see cref="FindAsync(AssemblyList, CodeAnchor, CancellationToken)"/>, the analyses offered for the
+    /// symbol taken from <paramref name="table"/>.</summary>
+    internal static async Task<Outcome<Lookup<AnalysisSymbol>>> FindAsync(AssemblyList list, CodeAnchor definition, IReadOnlyList<AnalysisKind> table,
+        CancellationToken ct)
     {
         LoadedModule? assembly;
         try
@@ -127,14 +187,16 @@ public static class Analyzers
         using var reading = LoadedAssemblies.BeginReading();
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
         return read.Match(
-            r => Find(assembly, r.TypeSystem.MainModule, definition, ct),
+            r => Find(assembly, r.TypeSystem.MainModule, definition, table, ct),
             u => new Outcome<Lookup<AnalysisSymbol>>.Ok(Lookup.FromUnreadable<AnalysisSymbol>(assembly, u)),
             static _ => new Outcome<Lookup<AnalysisSymbol>>.Ok(new Lookup<AnalysisSymbol>.NotFound()));
     }
 
     // Whether the saved token still names a row is asked of the module first; what the library throws resolving one
-    // that does is a failure: the module's own as unreadable, the rest with why.
-    private static Outcome<Lookup<AnalysisSymbol>> Find(LoadedModule assembly, MetadataModule main, CodeAnchor definition, CancellationToken ct)
+    // that does is a failure: the module's own as unreadable, the rest with why. The analyses offered are the app's
+    // decision, made after the catch.
+    private static Outcome<Lookup<AnalysisSymbol>> Find(LoadedModule assembly, MetadataModule main, CodeAnchor definition,
+        IReadOnlyList<AnalysisKind> table, CancellationToken ct)
     {
         SymbolFacts? facts;
         try
@@ -160,12 +222,13 @@ public static class Analyzers
             return new Outcome<Lookup<AnalysisSymbol>>.Failed(e);
         }
 
-        return new Outcome<Lookup<AnalysisSymbol>>.Ok(Lookup.FromNullable(facts is not null ? Compose(facts) : null));
+        return new Outcome<Lookup<AnalysisSymbol>>.Ok(Lookup.FromNullable(facts is not null ? Compose(facts, table) : null));
     }
 
-    private static IReadOnlyList<AnalysisKind> ListKinds(ISymbol symbol)
+    // The app's table, applied on facts read out: the analyses that apply, in their order.
+    private static IReadOnlyList<AnalysisKind> ListKinds(OfferFacts facts, IReadOnlyList<AnalysisKind> table)
     {
-        return Kinds.Where(k => k.Prepare(symbol) is not null).OrderBy(static k => k.Order).ToArray();
+        return table.Where(k => k.Applies(facts)).OrderBy(static k => k.Order).ToArray();
     }
 
     /// <summary>Runs <paramref name="kind"/> on <paramref name="symbol"/> over the open assemblies on
@@ -189,7 +252,7 @@ public static class Analyzers
                 return new Outcome.Done();
             }
 
-            var run = kind.Prepare(entity);
+            var run = symbol.Kinds.Contains(kind) ? kind.Prepare(entity) : null;
             if (run is null)
             {
                 throw new ArgumentException($"The analysis {kind.Name} does not apply to {symbol.Label}.", nameof(kind));
@@ -272,7 +335,7 @@ public static class Analyzers
                 ct.ThrowIfCancellationRequested();
                 if (facts is not null)
                 {
-                    take(Compose(facts));
+                    take(Compose(facts, Kinds));
                 }
             }
         }
@@ -301,7 +364,7 @@ public static class Analyzers
     private static AnalysisSymbol? Describe(ISymbol symbol)
     {
         var facts = ReadFacts(symbol);
-        return facts is not null ? Compose(facts) : null;
+        return facts is not null ? Compose(facts, Kinds) : null;
     }
 
     // Every touch of the library's objects describing a symbol: its properties, the library's own formatter and the
@@ -327,7 +390,7 @@ public static class Analyzers
             Symbol = module, Shape = new SymbolShape.Assembly(), Accessibility = NodeAccessibility.Public, Label = module.AssemblyName,
             Container = module.MetadataFile?.FileName ?? "", AssemblyName = null,
             Reference = file is not null ? CodeReferences.CreateAssembly(module.AssemblyName, file) : null,
-            Kinds = ListKinds(module), Accessors = [], File = file, Definition = null,
+            Offers = OfferFacts.OfModule, Accessors = [], File = file, Definition = null,
         };
     }
 
@@ -340,19 +403,50 @@ public static class Analyzers
         {
             Symbol = entity, Shape = EntityText.SymbolShapeOf(entity), Accessibility = EntityText.Map(entity.Accessibility), Label = EntityText.Label(entity),
             Container = outer is not null ? EntityText.FullName(outer) : entity is ITypeDefinition type ? type.Namespace : "",
-            AssemblyName = entity.ParentModule?.AssemblyName, Reference = CodeReferences.Find(entity), Kinds = ListKinds(entity),
+            AssemblyName = entity.ParentModule?.AssemblyName, Reference = CodeReferences.Find(entity), Offers = ReadOfferFacts(entity),
             Accessors = Members.Accessors(entity).Select(static m => ReadEntityFacts(m)).ToArray(),
             File = path, Definition = DefinitionOf(entity, path),
         };
     }
 
-    // The app's part, on values the read took out: where the symbol is, as the analyzer shows it.
-    private static AnalysisSymbol Compose(SymbolFacts facts)
+    // What the app's table of analyses decides on, read with the rest: the library's flags and kinds, its walk to the
+    // accessors and to the base types.
+    private static OfferFacts ReadOfferFacts(IEntity entity)
+    {
+        var member = entity as IMember;
+        var method = entity as IMethod;
+        return new OfferFacts
+        {
+            Sort = SortOf(entity), SymbolKind = entity.SymbolKind, IsStatic = entity.IsStatic, IsAbstract = entity.IsAbstract,
+            IsOverride = member?.IsOverride ?? false, IsOverridable = member?.IsOverridable ?? false, IsVirtual = method?.IsVirtual ?? false,
+            IsConst = entity is IField { IsConst: true }, HasBody = method?.HasBody ?? false, HasParentModule = entity.ParentModule is not null,
+            DeclaringTypeKind = member?.DeclaringType.Kind, DeclaringDefinitionKind = entity.DeclaringTypeDefinition?.Kind,
+            HasAccessors = member is IProperty or IEvent && Members.Accessors(member).Any(),
+            IsAttribute = entity is ITypeDefinition type && type.GetNonInterfaceBaseTypes().Any(static t => t.IsKnownType(KnownTypeCode.Attribute)),
+        };
+    }
+
+    private static AnalyzedSort SortOf(IEntity entity)
+    {
+        return entity switch
+        {
+            ITypeDefinition => AnalyzedSort.Type,
+            IField => AnalyzedSort.Field,
+            IMethod => AnalyzedSort.Method,
+            IProperty => AnalyzedSort.Property,
+            IEvent => AnalyzedSort.Event,
+            _ => AnalyzedSort.Other,
+        };
+    }
+
+    // The app's part, on values the read took out: where the symbol is, as the analyzer shows it, and the analyses
+    // the table offers for it.
+    private static AnalysisSymbol Compose(SymbolFacts facts, IReadOnlyList<AnalysisKind> table)
     {
         var described = new AnalysisSymbol
         {
             Shape = facts.Shape, Accessibility = facts.Accessibility, Label = facts.Label, Location = Where(facts.Container, facts.AssemblyName),
-            Reference = facts.Reference, Kinds = facts.Kinds, Accessors = facts.Accessors.Select(static a => Compose(a)).ToArray(),
+            Reference = facts.Reference, Kinds = ListKinds(facts.Offers, table), Accessors = facts.Accessors.Select(a => Compose(a, table)).ToArray(),
             File = facts.File, Definition = facts.Definition,
         };
         return Keep(described, facts.Symbol);
@@ -410,7 +504,7 @@ public static class Analyzers
         public required string Container { get; init; }
         public required string? AssemblyName { get; init; }
         public required CodeReference.Navigable? Reference { get; init; }
-        public required IReadOnlyList<AnalysisKind> Kinds { get; init; }
+        public required OfferFacts Offers { get; init; }
         public required IReadOnlyList<SymbolFacts> Accessors { get; init; }
         public required AssemblyPath? File { get; init; }
         public required CodeAnchor? Definition { get; init; }

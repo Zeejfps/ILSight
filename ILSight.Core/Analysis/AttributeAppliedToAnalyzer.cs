@@ -16,13 +16,13 @@ internal static class AttributeAppliedToAnalyzer
             return null;
         }
 
-        var baseTypes = type.GetNonInterfaceBaseTypes();
-        if (!baseTypes.Any(t => t.IsKnownType(KnownTypeCode.Attribute)))
-        {
-            return null;
-        }
-
         return context => Analyze(type, context);
+    }
+
+    /// <summary>An attribute type: a type with <see cref="System.Attribute"/> among its base types.</summary>
+    public static bool Applies(OfferFacts facts)
+    {
+        return facts.Sort == AnalyzedSort.Type && facts.IsAttribute;
     }
 
     private static IEnumerable<ISymbol> Analyze(ITypeDefinition attributeType, AnalyzerContext context)

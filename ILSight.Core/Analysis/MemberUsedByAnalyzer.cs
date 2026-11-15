@@ -12,13 +12,13 @@ internal static class MemberUsedByAnalyzer
             return null;
         }
 
-        var accessors = Members.Accessors(member);
-        if (!accessors.Any())
-        {
-            return null;
-        }
-
         return context => Analyze(member, context);
+    }
+
+    /// <summary>A property or event with an accessor.</summary>
+    public static bool Applies(OfferFacts facts)
+    {
+        return facts.Sort is AnalyzedSort.Property or AnalyzedSort.Event && facts.HasAccessors;
     }
 
     private static IEnumerable<ISymbol> Analyze(IMember member, AnalyzerContext context)
