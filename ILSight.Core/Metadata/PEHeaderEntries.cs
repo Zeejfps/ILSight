@@ -731,15 +731,13 @@ namespace ILSight.Core.Metadata
 				GridSchemas.AddValue(columns, "Timestamp", e => e.Stamp);
 				GridSchemas.AddValue(columns, "MajorVersion", e => e.MajorVersion);
 				GridSchemas.AddValue(columns, "MinorVersion", e => e.MinorVersion);
-				GridSchemas.AddValue(columns, "Type", e => e.Type.ToString());
+				GridSchemas.AddValue(columns, "Type", e => e.Type, static t => t.ToString());
 				GridSchemas.AddValue(columns, "SizeOfRawData", e => e.DataSize);
 				GridSchemas.AddValue(columns, "AddressOfRawData", e => e.DataRelativeVirtualAddress, "X8");
 				GridSchemas.AddValue(columns, "PointerToRawData", e => e.DataPointer, "X8");
-				GridSchemas.AddValue(columns, "RawData", e =>
-				{
-					var data = reader.GetEntireImage().GetContent(reader.IsLoadedImage ? e.DataRelativeVirtualAddress : e.DataPointer, e.DataSize);
-					return data.ToHexString(data.Length);
-				});
+				GridSchemas.AddValue(columns, "RawData",
+					e => reader.GetEntireImage().GetContent(reader.IsLoadedImage ? e.DataRelativeVirtualAddress : e.DataPointer, e.DataSize),
+					static data => data.ToHexString(data.Length));
 			});
 		}
 

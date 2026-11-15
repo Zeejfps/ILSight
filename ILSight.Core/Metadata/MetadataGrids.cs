@@ -613,20 +613,25 @@ public static class MetadataGrids
         };
     }
 
-    /// <summary>A cell's value, read through the grid's file (for a paged grid, I/O: off the screen's thread); a
+    /// <summary>A cell's value, read through the grid's file (for a paged grid, I/O: off the screen's thread), then
+    /// made into its text by the column's format half, if it has one, after the read's catch; a
     /// <see cref="MetadataCellFailure"/> for one whose read failed.</summary>
     internal static object? ReadValue(MetadataGrid grid, int row, int column)
     {
+        var info = grid.GridColumns[column];
+        object? read;
 #pragma warning disable RL0902 // The column's delegate reads ICSharpCode.Decompiler's metadata (a listed untrusted library): its failure is the cell's.
         try
         {
-            return grid.GridColumns[column].Value(grid.Rows[row], row + 1);
+            read = info.Value(grid.Rows[row], row + 1);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
             return new MetadataCellFailure { Reason = e.Message };
         }
 #pragma warning restore RL0902
+
+        return read is null || info.FormatValue is null ? read : info.FormatValue(read);
     }
 
     private static string FormatValue(object? value, string? format)

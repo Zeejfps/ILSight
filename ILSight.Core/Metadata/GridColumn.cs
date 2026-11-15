@@ -10,7 +10,14 @@ public sealed record GridColumn
 
     public required string? Format { get; init; }
 
+    /// <summary>The read of the cell's value: what it reads of the row through the library, inside the cell's
+    /// catch.</summary>
     public required Func<object, int, object?> Value { get; init; }
+
+    /// <summary>The format half of the cell's value: what <see cref="Value"/> read made into the cell's one value (its
+    /// text) by the app's rules, after the read's catch, so a bug in it is no unreadable cell; null when the read is the
+    /// value. The grid sorts and filters by what it makes.</summary>
+    public Func<object, object?>? FormatValue { get; init; }
 
     /// <summary>The read half of the cell's tooltip: what it reads of the row through the library, its facts, inside the
     /// cell's catch; null when the column explains nothing.</summary>

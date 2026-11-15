@@ -344,6 +344,19 @@ public sealed class MetadataTests
     }
 
     [Fact]
+    public async Task The_debug_directory_raw_data_is_hex_made_after_the_read_and_sorted_by_that_text()
+    {
+        var grid = await GridAsync(await MetadataAsync(Trees.TestAssembly).GetChildAsync("Debug Directory"));
+        var rawData = grid.Column("RawData");
+
+        var texts = Enumerable.Range(0, grid.RowCount).Select(r => MetadataGrids.GetText(grid, r, rawData)).ToList();
+        var sorted = MetadataGrids.OrderRows(grid, rawData, descending: false).Select(r => MetadataGrids.GetText(grid, r, rawData)).ToList();
+
+        Assert.Contains(texts, t => t.Length > 0 && t != "?" && t.All(c => char.IsAsciiHexDigit(c) || c is ' ' or '-'));
+        Assert.Equal(texts.Order(StringComparer.CurrentCulture), sorted);
+    }
+
+    [Fact]
     public async Task The_debug_directory_shows_the_embedded_pdb_the_assembly_already_loaded()
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.EmbeddedPdbPath);

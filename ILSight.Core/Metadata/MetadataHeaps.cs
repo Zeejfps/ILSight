@@ -45,7 +45,7 @@ internal static class MetadataHeaps
         {
             GridSchemas.AddValue(columns, "Index", h => m.GetHeapOffset(h));
             GridSchemas.AddValue(columns, "Length", _ => 16);
-            GridSchemas.AddValue(columns, "Value", h => m.GetGuid(h).ToString());
+            GridSchemas.AddValue(columns, "Value", h => m.GetGuid(h), static g => g.ToString());
         }));
 
         IEnumerable<BlobHandle> Blobs()

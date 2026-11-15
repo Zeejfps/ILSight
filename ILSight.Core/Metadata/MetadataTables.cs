@@ -145,7 +145,7 @@ internal static class MetadataTables
             {
                 GridSchemas.AddOffset(columns, table);
                 GridSchemas.AddHandle(columns, "Parent", r => r.Parent);
-                GridSchemas.AddValue(columns, "Action", r => r.Action, "X8", r => r.Action.ToString());
+                GridSchemas.AddValue(columns, "Action", r => r.Action, "X8", r => r.Action, GridSchemas.ExplainText);
                 GridSchemas.AddBlob(columns, "PermissionSet", r => r.PermissionSet);
             }),
 
@@ -244,7 +244,7 @@ internal static class MetadataTables
             TableIndex.Assembly => GridSchemas.AddColumns(Table<AssemblyDefinition>(() => m.IsAssembly ? [m.GetAssemblyDefinition()] : []), columns =>
             {
                 GridSchemas.AddOffset(columns, table);
-                GridSchemas.AddValue(columns, "HashAlgorithm", r => r.HashAlgorithm, "X4", r => r.HashAlgorithm.ToString());
+                GridSchemas.AddValue(columns, "HashAlgorithm", r => r.HashAlgorithm, "X4", r => r.HashAlgorithm, GridSchemas.ExplainText);
                 GridSchemas.AddValue(columns, "Flags", r => r.Flags, "X4");
                 GridSchemas.AddValue(columns, "Version", r => r.Version);
                 GridSchemas.AddName(columns, r => r.Name);
@@ -455,7 +455,7 @@ internal static class MetadataTables
             {
                 GridSchemas.AddOffset(columns, table);
                 GridSchemas.AddHandle(columns, "Handle", r => r.Handle);
-                GridSchemas.AddValue(columns, "FuncCode", r => r.Operation, "X8", r => r.Operation.ToString());
+                GridSchemas.AddValue(columns, "FuncCode", r => r.Operation, "X8", r => r.Operation, GridSchemas.ExplainText);
             }),
 
             TableIndex.EncMap => GridSchemas.AddColumns(Table(m.GetEditAndContinueMapEntries), columns =>

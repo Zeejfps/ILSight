@@ -70,6 +70,21 @@ public static class GridSchemas
         AddColumn(schema, name, format, (r, _) => get(r), tooltip is null ? null : (r, _) => tooltip(r), formatTooltip: formatTooltip);
     }
 
+    /// <summary>A column of what <paramref name="read"/> reads, made into the cell's text by <paramref name="format"/>
+    /// after the cell's read, outside its catch: the text is still the cell's one value, which the grid sorts and
+    /// filters by.</summary>
+    public static void AddValue<TRow, TRead>(GridSchemaBuilder<TRow> schema, string name, Func<TRow, TRead> read, Func<TRead, string> format)
+    {
+        schema.AddColumn(new GridColumn
+        {
+            Column = new MetadataColumn { Name = name, IsToken = false, IsNumeric = false, Flags = null },
+            Format = null,
+            Value = (r, _) => read(GetRow<TRow>(r)),
+            FormatValue = v => format((TRead)v),
+            Tooltip = null,
+        });
+    }
+
     /// <summary>Where each row of <paramref name="table"/>, which <paramref name="schema"/> lists, starts in the file.</summary>
     public static void AddOffset<TRow>(GridSchemaBuilder<TRow> schema, TableIndex table)
     {
