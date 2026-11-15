@@ -29,7 +29,6 @@
   "file.filter_snk": "Strong-name key",
 
   "view.decompiler": "Decompiler",
-
   "view.decompiler_il_with_csharp": "{il} with {csharp}",
   "view.shown_api": "Show types and members",
   "view.shown_public_only": "Public only",
