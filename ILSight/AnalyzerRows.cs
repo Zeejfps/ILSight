@@ -233,7 +233,21 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
     private TreeRow CreateSymbolRow(AnalysisSymbol symbol)
     {
         var icon = NodeIcons.Icon(NodeIcons.Of(symbol.Shape), symbol.Accessibility, _iconColors, _icons);
-        return new TreeRow(symbol.Label, icon, Tooltip: symbol.Location, Secondary: symbol.Location);
+        var where = Where(_strings, symbol.Location);
+        return new TreeRow(symbol.Label, icon, Tooltip: where, Secondary: where);
+    }
+
+    /// <summary>Where a symbol is, for a person: its container and its assembly by the language's template, or whichever
+    /// of them it has.</summary>
+    internal static string Where(Strings t, SymbolLocation location)
+    {
+        var assembly = location.Assembly;
+        if (assembly is null)
+        {
+            return location.Container;
+        }
+
+        return location.Container.Length == 0 ? assembly : t.AnalyzerLocation(container: location.Container, assembly: assembly);
     }
 
     private TreeRow CreateKindRow(AnalyzerKindNode kind)

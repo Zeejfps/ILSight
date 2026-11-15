@@ -162,4 +162,23 @@ public sealed class BookmarkImportingTests
         Assert.Equal("Start：Shop.Cart.Sum()（Shop.dll）、End：Shop.Order（Shop.dll）", lost.Words(Strings.For(Locale.Ja)).Why);
         Assert.Equal(["Start：Shop.Cart.Sum()（Shop.dll）", "End：Shop.Order（Shop.dll）"], lost.ListItems(Strings.For(Locale.Ja)));
     }
+
+    [Fact]
+    public void A_failed_lookup_and_an_entry_left_out_are_said_by_each_languages_template_the_failure_by_its_message()
+    {
+        var bookmark = new LostBookmark { Name = "Start", Location = "Shop.Cart.Sum()", File = "Shop.dll" };
+        var failed = new AppProblem.ImportedBookmarksNotPlaced { File = "exported.json", Failed = [(bookmark, new InvalidOperationException("Unreadable."))] };
+        var unread = new AppProblem.ImportedBookmarksUnreadable
+        {
+            File = "exported.json",
+            Problems = [new BookmarkEntryProblem.NotABookmark { Entry = 2, Detail = "No name." }],
+        };
+
+        Assert.Equal("Start: Shop.Cart.Sum() (Shop.dll): Unreadable.", ProblemTexts.Describe(Strings.For(Locale.En), failed).Details);
+        Assert.Equal("Start : Shop.Cart.Sum() (Shop.dll) : Unreadable.", ProblemTexts.Describe(Strings.For(Locale.Fr), failed).Details);
+        Assert.Equal("Start：Shop.Cart.Sum()（Shop.dll）：Unreadable.", ProblemTexts.Describe(Strings.For(Locale.Ja), failed).Details);
+        Assert.Equal("#2: No name.", ProblemTexts.Describe(Strings.For(Locale.En), unread).Details);
+        Assert.Equal("#2 : No name.", ProblemTexts.Describe(Strings.For(Locale.Fr), unread).Details);
+        Assert.Equal("#2：No name.", ProblemTexts.Describe(Strings.For(Locale.Ja), unread).Details);
+    }
 }

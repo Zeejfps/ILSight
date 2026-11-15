@@ -14,7 +14,7 @@ public sealed class AnalysisSymbol
     public required string Label { get; init; }
 
     /// <summary>Where it is: the declaring type, or for a type its namespace, and the assembly.</summary>
-    public required string Location { get; init; }
+    public required SymbolLocation Location { get; init; }
 
     /// <summary>What to navigate to it by; null when it cannot be shown.</summary>
     public required CodeReference.Navigable? Reference { get; init; }

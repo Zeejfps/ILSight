@@ -461,7 +461,7 @@ public static class Analyzers
     {
         var described = new AnalysisSymbol
         {
-            Shape = facts.Shape, Accessibility = facts.Accessibility, Label = facts.Label, Location = Where(facts.Container, facts.AssemblyName),
+            Shape = facts.Shape, Accessibility = facts.Accessibility, Label = facts.Label, Location = new SymbolLocation { Container = facts.Container, Assembly = facts.AssemblyName },
             Reference = facts.Reference, Kinds = ListKinds(facts.Offers, table), Accessors = facts.Accessors.Select(a => Compose(a, table)).ToArray(),
             File = facts.File, Definition = facts.Definition,
         };
@@ -497,15 +497,5 @@ public static class Analyzers
         }
 
         return kept;
-    }
-
-    private static string Where(string container, string? assembly)
-    {
-        if (assembly is null)
-        {
-            return container;
-        }
-
-        return container.Length == 0 ? assembly : $"{container} ({assembly})";
     }
 }

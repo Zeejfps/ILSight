@@ -90,7 +90,7 @@ public sealed class AnalysisTests
         var plus = Assert.Single(callers);
         Assert.Equal(new SymbolShape.Member(MemberShape.Operator), plus.Shape);
         Assert.StartsWith("operator +", plus.Label);
-        Assert.Equal(Trees.FixturesNamespace + ".Calculator<T> (ILSight.Tests)", plus.Location);
+        Assert.Equal(new SymbolLocation { Container = Trees.FixturesNamespace + ".Calculator<T>", Assembly = "ILSight.Tests" }, plus.Location);
         var calculator = add.Parent;
         Assert.NotNull(calculator);
         Assert.Same((await calculator.ListChildrenAsync()).Single(c => c.Is(MemberShape.Operator)), await list.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(plus.Reference)));

@@ -112,21 +112,23 @@ public static class ProblemTexts
         return advice + Environment.NewLine + Environment.NewLine + error;
     }
 
+    // One problem a line: the lines are the layout, each line's words the language's.
     private static string DescribeEntryProblems(Strings t, IReadOnlyList<BookmarkEntryProblem> problems)
     {
         return string.Join(Environment.NewLine, problems.Select(p => DescribeEntryProblem(t, p)));
     }
 
+    // Each bookmark and why its lookup failed, by its cause's message; the exception stays on the problem logged.
     private static string DescribePlaceFailures(Strings t, IReadOnlyList<(LostBookmark Bookmark, Exception Error)> failed)
     {
-        return string.Join(Environment.NewLine, failed.Select(f => $"{f.Bookmark.Words(t)}: {f.Error}"));
+        return string.Join(Environment.NewLine, failed.Select(f => t.BookmarkPlaceFailed(bookmark: f.Bookmark.Words(t), error: f.Error.Message)));
     }
 
     private static string DescribeEntryProblem(Strings t, BookmarkEntryProblem problem)
     {
         return problem.Match(
             placeUnreadable: p => t.ErrorBookmarkPlaceUnreadable(p.Entry),
-            notABookmark: n => $"#{n.Entry}: {n.Detail}");
+            notABookmark: n => t.BookmarkEntryProblem(entry: n.Entry, detail: n.Detail));
     }
 
     internal static string DescribePdbCheck(Strings t, PdbCheck check, string name)

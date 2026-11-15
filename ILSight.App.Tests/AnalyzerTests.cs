@@ -250,7 +250,7 @@ public sealed class AnalyzerTests
         var d = AppStateDriver.Opened();
         var nowhere = new AnalysisSymbol
         {
-            Shape = new SymbolShape.Assembly(), Accessibility = NodeAccessibility.Public, Label = "Nowhere", Location = "",
+            Shape = new SymbolShape.Assembly(), Accessibility = NodeAccessibility.Public, Label = "Nowhere", Location = new SymbolLocation { Container = "", Assembly = null },
             Reference = null, Kinds = [], Accessors = [], File = null, Definition = null,
         };
 
@@ -695,5 +695,16 @@ public sealed class AnalyzerTests
         app.Frames.Key(KeyboardKey.Delete).Frame(2);
 
         Assert.Empty(d.AppState.ListSession.Analyzer.Roots);
+    }
+
+    [Fact]
+    public void Where_a_symbol_is_is_said_by_each_languages_template_its_values_as_they_are()
+    {
+        var member = new SymbolLocation { Container = "Shop.Cart", Assembly = "Shop" };
+
+        Assert.Equal("Shop.Cart (Shop)", AnalyzerRows.Where(Strings.For(Locale.En), member));
+        Assert.Equal("Shop.Cart（Shop）", AnalyzerRows.Where(Strings.For(Locale.Ja), member));
+        Assert.Equal("Shop", AnalyzerRows.Where(Strings.For(Locale.Ja), new SymbolLocation { Container = "", Assembly = "Shop" }));
+        Assert.Equal("Shop.Cart", AnalyzerRows.Where(Strings.For(Locale.Ja), new SymbolLocation { Container = "Shop.Cart", Assembly = null }));
     }
 }
