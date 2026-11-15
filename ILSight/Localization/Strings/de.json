@@ -352,6 +352,7 @@
   "document_note.resolves_to": "Wird aufgelöst zu {path}",
   "document_note.truncated": "Nach {bytes} Bytes abgeschnitten.",
   "document_note.architecture": "Architektur: {architecture}",
+  "document_note.architecture_preferred": "Architektur: {platform} ({bits}-Bit bevorzugt)",
   "document_note.target_framework": "Zielframework: {framework}",
   "document_note.entry_point": "Einstiegspunkt: {method}",
   "document_note.forwarded_to": "Weitergeleitet an {destination}",

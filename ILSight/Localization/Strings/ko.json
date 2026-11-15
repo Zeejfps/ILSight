@@ -352,6 +352,7 @@
   "document_note.resolves_to": "확인된 위치: {path}",
   "document_note.truncated": "{bytes}바이트 이후는 잘렸습니다.",
   "document_note.architecture": "아키텍처: {architecture}",
+  "document_note.architecture_preferred": "아키텍처: {platform} ({bits}비트 우선)",
   "document_note.target_framework": "대상 프레임워크: {framework}",
   "document_note.entry_point": "진입점: {method}",
   "document_note.forwarded_to": "{destination}(으)로 전달됨",

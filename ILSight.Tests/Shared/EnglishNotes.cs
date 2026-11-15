@@ -58,9 +58,15 @@ internal sealed class EnglishNotes : IDocumentNotes
         return $"Truncated after {bytes} bytes.";
     }
 
-    public string Architecture(string architecture)
+    public string Architecture(ModuleArchitecture architecture)
     {
-        return $"Architecture: {architecture}";
+        var bits = architecture.PreferredBits;
+        if (bits is null)
+        {
+            return $"Architecture: {architecture.Platform}";
+        }
+
+        return $"Architecture: {architecture.Platform} ({bits.Value}-bit preferred)";
     }
 
     public string TargetFramework(string framework)

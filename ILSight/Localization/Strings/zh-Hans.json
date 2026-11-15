@@ -352,6 +352,7 @@
   "document_note.resolves_to": "解析为 {path}",
   "document_note.truncated": "已在 {bytes} 字节后截断。",
   "document_note.architecture": "体系结构：{architecture}",
+  "document_note.architecture_preferred": "体系结构：{platform}（首选 {bits} 位）",
   "document_note.target_framework": "目标框架：{framework}",
   "document_note.entry_point": "入口点：{method}",
   "document_note.forwarded_to": "已转发到 {destination}",

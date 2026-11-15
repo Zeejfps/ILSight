@@ -359,6 +359,7 @@
   "document_note.resolves_to": "Resolves to {path}",
   "document_note.truncated": "Truncated after {bytes} bytes.",
   "document_note.architecture": "Architecture: {architecture}",
+  "document_note.architecture_preferred": "Architecture: {platform} ({bits}-bit preferred)",
   "document_note.target_framework": "Target framework: {framework}",
   "document_note.entry_point": "Entry point: {method}",
   "document_note.forwarded_to": "Forwarded to {destination}",

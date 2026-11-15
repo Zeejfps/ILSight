@@ -352,6 +352,7 @@
   "document_note.resolves_to": "Se resuelve como {path}",
   "document_note.truncated": "Truncado tras {bytes} bytes.",
   "document_note.architecture": "Arquitectura: {architecture}",
+  "document_note.architecture_preferred": "Arquitectura: {platform} (preferencia de {bits} bits)",
   "document_note.target_framework": "Plataforma de destino: {framework}",
   "document_note.entry_point": "Punto de entrada: {method}",
   "document_note.forwarded_to": "Reenviado a {destination}",

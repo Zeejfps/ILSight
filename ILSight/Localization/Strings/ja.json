@@ -352,6 +352,7 @@
   "document_note.resolves_to": "解決先: {path}",
   "document_note.truncated": "{bytes} バイトで切り捨てられました。",
   "document_note.architecture": "アーキテクチャ: {architecture}",
+  "document_note.architecture_preferred": "アーキテクチャ: {platform}（{bits} ビット優先）",
   "document_note.target_framework": "ターゲット フレームワーク: {framework}",
   "document_note.entry_point": "エントリ ポイント: {method}",
   "document_note.forwarded_to": "{destination} に転送されています",

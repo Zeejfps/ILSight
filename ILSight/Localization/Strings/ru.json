@@ -352,6 +352,7 @@
   "document_note.resolves_to": "Разрешается в {path}",
   "document_note.truncated": "Обрезано после {bytes} байт.",
   "document_note.architecture": "Архитектура: {architecture}",
+  "document_note.architecture_preferred": "Архитектура: {platform} (предпочтительно {bits}-разрядная)",
   "document_note.target_framework": "Целевая платформа: {framework}",
   "document_note.entry_point": "Точка входа: {method}",
   "document_note.forwarded_to": "Переадресован в {destination}",

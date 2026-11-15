@@ -549,22 +549,28 @@ internal static class NodeDecompiler
         WriteNote(output, new DocumentNote.EntryPoint { Method = EntityText.FullName(method), Target = reference }, notes);
     }
 
-    private static string ArchitectureOf(PEHeaders headers)
+    // The platform as the build tools name it, and the bitness an AnyCPU module prefers, as ILSpy reads them.
+    internal static ModuleArchitecture ArchitectureOf(PEHeaders headers)
     {
         var machine = headers.CoffHeader.Machine;
         var flags = headers.CorHeader?.Flags ?? 0;
         if (machine != Machine.I386 || (flags & CorFlags.ILOnly) == 0)
         {
-            return machine.ToString();
+            return new ModuleArchitecture { Platform = machine.ToString(), PreferredBits = null };
         }
 
         if ((flags & CorFlags.Requires32Bit) == 0)
         {
-            return "AnyCPU (64-bit preferred)";
+            return new ModuleArchitecture { Platform = AnyCpu, PreferredBits = 64 };
         }
 
-        return (flags & CorFlags.Prefers32Bit) != 0 ? "AnyCPU (32-bit preferred)" : "x86";
+        return (flags & CorFlags.Prefers32Bit) != 0
+            ? new ModuleArchitecture { Platform = AnyCpu, PreferredBits = 32 }
+            : new ModuleArchitecture { Platform = "x86", PreferredBits = null };
     }
+
+    // The platform's name in the build tools' notation, the same in every language.
+    private const string AnyCpu = "AnyCPU";
 
     private static void WriteSummary(SummaryInfo summary, DocumentBuilder output, IDocumentNotes notes, CancellationToken cancellationToken)
     {

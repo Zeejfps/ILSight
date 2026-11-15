@@ -108,7 +108,7 @@ public abstract record DocumentNote
     }
 
     /// <summary>The assembly's architecture, <see cref="Architecture"/>.</summary>
-    public sealed record ArchitectureOf(string Architecture) : DocumentNote
+    public sealed record ArchitectureOf(ModuleArchitecture Architecture) : DocumentNote
     {
         public override string Words(IDocumentNotes notes)
         {

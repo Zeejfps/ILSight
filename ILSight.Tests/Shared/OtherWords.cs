@@ -58,7 +58,7 @@ internal sealed class OtherWords : IDocumentNotes
         return "[x] " + English.Truncated(bytes);
     }
 
-    public string Architecture(string architecture)
+    public string Architecture(ModuleArchitecture architecture)
     {
         return "[x] " + English.Architecture(architecture);
     }

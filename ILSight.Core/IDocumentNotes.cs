@@ -39,8 +39,9 @@ public interface IDocumentNotes
     /// <summary>That a resource's bytes are shown up to <paramref name="bytes"/>.</summary>
     string Truncated(int bytes);
 
-    /// <summary>The assembly's architecture, <paramref name="architecture"/>.</summary>
-    string Architecture(string architecture);
+    /// <summary>The assembly's architecture: <paramref name="architecture"/>'s platform as it is named, and the
+    /// bitness it prefers in the app's words.</summary>
+    string Architecture(ModuleArchitecture architecture);
 
     /// <summary>The framework the assembly was built for, <paramref name="framework"/>.</summary>
     string TargetFramework(string framework);

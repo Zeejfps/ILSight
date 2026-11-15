@@ -63,9 +63,15 @@ public sealed class DocumentNoteTexts(Strings t) : IDocumentNotes
         return t.DocumentNoteTruncated(bytes: bytes);
     }
 
-    public string Architecture(string architecture)
+    public string Architecture(ModuleArchitecture architecture)
     {
-        return t.DocumentNoteArchitecture(architecture: architecture);
+        var bits = architecture.PreferredBits;
+        if (bits is null)
+        {
+            return t.DocumentNoteArchitecture(architecture: architecture.Platform);
+        }
+
+        return t.DocumentNoteArchitecturePreferred(platform: architecture.Platform, bits: bits.Value);
     }
 
     public string TargetFramework(string framework)

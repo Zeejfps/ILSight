@@ -38,4 +38,18 @@ public sealed class DocumentRewordTests
         Assert.Same(made, Documents.Reword(reworded, EnglishNotes.Instance).AsMade);
         Assert.Equal(made.Lines.Select(static l => l.Text), Documents.Reword(reworded, EnglishNotes.Instance).Lines.Select(static l => l.Text));
     }
+
+    [Fact]
+    public async Task An_assemblys_summary_notes_its_architecture_from_the_facts_read()
+    {
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var root = await list.Open(Trees.TestAssemblyPath).ReadRootAsync();
+
+        var made = await root.DecompileAsync(DecompilationLanguage.CSharp);
+
+        var placed = Assert.Single(made.Notes, static n => n.Note is DocumentNote.ArchitectureOf);
+        var note = Assert.IsType<DocumentNote.ArchitectureOf>(placed.Note);
+        Assert.Equal(new ModuleArchitecture { Platform = "AnyCPU", PreferredBits = 64 }, note.Architecture);
+        Assert.Equal("// Architecture: AnyCPU (64-bit preferred)", made.Lines[placed.Line].Text);
+    }
 }

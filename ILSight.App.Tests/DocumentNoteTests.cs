@@ -81,9 +81,21 @@ public sealed class DocumentNoteTests
         Assert.Equal(app.ReferenceNotResolved(), tests.ReferenceNotResolved());
         Assert.Equal(app.ResolvesTo("P"), tests.ResolvesTo("P"));
         Assert.Equal(app.Truncated(65536), tests.Truncated(65536));
-        Assert.Equal(app.Architecture("A"), tests.Architecture("A"));
+        Assert.Equal(app.Architecture(new ModuleArchitecture { Platform = "A", PreferredBits = null }), tests.Architecture(new ModuleArchitecture { Platform = "A", PreferredBits = null }));
+        Assert.Equal(app.Architecture(new ModuleArchitecture { Platform = "A", PreferredBits = 64 }), tests.Architecture(new ModuleArchitecture { Platform = "A", PreferredBits = 64 }));
         Assert.Equal(app.TargetFramework("T"), tests.TargetFramework("T"));
         Assert.Equal(app.EntryPoint("M"), tests.EntryPoint("M"));
         Assert.Equal(app.ForwardedTo("D"), tests.ForwardedTo("D"));
+    }
+
+    [Fact]
+    public void An_architecture_names_its_platform_as_it_is_and_says_the_preferred_bitness_in_the_apps_language()
+    {
+        var preferring = new ModuleArchitecture { Platform = "AnyCPU", PreferredBits = 64 };
+        var stating = new ModuleArchitecture { Platform = "Amd64", PreferredBits = null };
+
+        Assert.Equal("Architecture: AnyCPU (64-bit preferred)", DocumentNoteTexts.For(Locale.En).Architecture(preferring));
+        Assert.Equal("アーキテクチャ: AnyCPU（64 ビット優先）", DocumentNoteTexts.For(Locale.Ja).Architecture(preferring));
+        Assert.Equal("アーキテクチャ: Amd64", DocumentNoteTexts.For(Locale.Ja).Architecture(stating));
     }
 }
