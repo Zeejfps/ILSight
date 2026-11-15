@@ -734,6 +734,7 @@
   "error.file_damaged": "{file} は読み取れる .NET アセンブリまたはパッケージではありません。",
   "error.recovery_replace_file": "ファイルを置き換えるか、閉じてください。",
   "error.recovery_report_bug": "技術的な詳細を含めてこのエラーをコピーし、バグとして報告してください。",
+  "error.recovery_try_again": "もう一度お試しください。",
   "error.cause_and_recovery": "{cause}{recovery}",
   "error.read_reference": "{assembly} が参照する {name} を読み取れません",
   "error.read_reference_degraded": "{assembly} のコードは {name} を名前だけで読み取って表示しています。ファイルを読み取れるようになったら {assembly} を再読み込みしてください。",

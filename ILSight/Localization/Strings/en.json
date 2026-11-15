@@ -749,6 +749,7 @@
   "error.file_damaged": "{file} isn't a .NET assembly or package that can be read.",
   "error.recovery_replace_file": "Replace the file, or close it.",
   "error.recovery_report_bug": "Copy this error, technical details included, and report it as a bug.",
+  "error.recovery_try_again": "Try again.",
   "error.cause_and_recovery": "{cause} {recovery}",
   "error.read_reference": "Cannot read {name}, which {assembly} references",
   "error.read_reference_degraded": "The code of {assembly} is shown reading {name} by name only. Reload {assembly} once the file can be read.",

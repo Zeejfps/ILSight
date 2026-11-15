@@ -32,17 +32,17 @@ public static class ProblemTexts
     private static (string Title, string Details, Exception? Diagnostic) Words(Strings t, AppProblem problem)
     {
         return problem.Match<(string Title, string Details, Exception? Diagnostic)>(
-            openFailed: p => Thrown(t.ErrorOpenAssemblies, p.Error),
+            openFailed: p => AskAgain(t, t.ErrorOpenAssemblies, p.Error),
             pdbUnusable: p => (t.ErrorSelectPdb(file: Path.GetFileName(p.PdbPath), name: p.Assembly),
                 DescribePdbCheck(t, p.Check, p.Assembly) + Environment.NewLine + p.PdbPath, null),
-            assemblyNotReloaded: p => Thrown(t.ErrorReloadAssembly(p.Assembly), p.Error),
-            assembliesNotReloaded: p => Thrown(t.ErrorReloadAssemblies, p.Error),
-            analysisFailed: p => Thrown(t.ErrorAnalyze(name: p.Subject, analysis: AnalyzerText.Header(t, p.Kind)), p.Error),
-            analysesNotRestored: p => Thrown(t.ErrorRestoreAnalyses, p.Error),
-            unresolved: p => Thrown(t.ErrorResolve(p.Reference.Name), p.Error),
+            assemblyNotReloaded: p => AskAgain(t, t.ErrorReloadAssembly(p.Assembly), p.Error),
+            assembliesNotReloaded: p => AskAgain(t, t.ErrorReloadAssemblies, p.Error),
+            analysisFailed: p => Reportable(t, t.ErrorAnalyze(name: p.Subject, analysis: AnalyzerText.Header(t, p.Kind)), p.Error),
+            analysesNotRestored: p => Reportable(t, t.ErrorRestoreAnalyses, p.Error),
+            unresolved: p => AskAgain(t, t.ErrorResolve(p.Reference.Name), p.Error),
             unresolvedFileDenied: p => (t.ErrorResolve(p.Reference.Name), Denied(t, p.File), p.Error),
             unresolvedFileDamaged: p => (t.ErrorResolve(p.Reference.Name), Damaged(t, p.File), p.Error),
-            placeLookupFailed: p => (t.ErrorLookUpPlace(p.Place.Label), AfterStep(t, p.Step, p.Error.Message), p.Error),
+            placeLookupFailed: p => (t.ErrorLookUpPlace(p.Place.Label), AfterStep(t, p.Step, ReportIt(t, p.Error.Message)), p.Error),
             placeLookupFileDenied: p => (t.ErrorLookUpPlace(p.Place.Label),
                 AfterStep(t, p.Step, Denied(t, p.File)), p.Error),
             placeLookupFileDamaged: p => (t.ErrorLookUpPlace(p.Place.Label),
@@ -56,11 +56,11 @@ public static class ProblemTexts
             bookmarksNotImported: p => (t.ErrorImportBookmarks(p.File), p.Reason, null),
             importedBookmarksUnreadable: p => (t.ErrorBookmarksUnreadable(p.File), DescribeEntryProblems(t, p.Problems), null),
             importedBookmarksNotPlaced: p => (t.ErrorBookmarkPlacesFailed(p.File), DescribePlaceFailures(t, p.Failed), null),
-            comparisonFailed: p => Thrown(t.ErrorCompare(left: p.Left, right: p.Right), p.Error),
+            comparisonFailed: p => Reportable(t, t.ErrorCompare(left: p.Left, right: p.Right), p.Error),
             decompilationFailed: p => Reportable(t, t.ErrorDecompile(p.Node), p.Error),
-            typeNotDiagrammed: p => Thrown(t.ErrorShowInDiagram(p.Type.Name), p.Error),
-            diagramNotReopened: p => Thrown(t.ErrorShowInDiagram(p.Diagram.Words(t)), p.Error),
-            diagramNotLaidOut: p => Thrown(t.ErrorLayOutDiagram, p.Error),
+            typeNotDiagrammed: p => Reportable(t, t.ErrorShowInDiagram(p.Type.Name), p.Error),
+            diagramNotReopened: p => Reportable(t, t.ErrorShowInDiagram(p.Diagram.Words(t)), p.Error),
+            diagramNotLaidOut: p => Reportable(t, t.ErrorLayOutDiagram, p.Error),
             resourceNotSaved: p => (t.ErrorSaveResource(p.Resource), p.Reason, null),
             packageFileNotExtracted: p => (t.ErrorExtractFile(p.File), p.Reason, null),
             settingsUnreadable: p => (SettingsTitle(t, p.Problem), $"{p.Path}{Environment.NewLine}{DescribeSettings(t, p.Problem)}", null),
@@ -70,10 +70,10 @@ public static class ProblemTexts
             customThemeNotWritten: p => (p.Kind == ThemeKind.Color ? t.ErrorCustomTheme : t.ErrorCustomIconTheme,
                 $"{p.Path}{Environment.NewLine}{p.Reason}", null),
             themesNotWatched: p => (p.Kind == ThemeKind.Color ? t.ErrorWatchThemes : t.ErrorWatchIconThemes, p.Reason, null),
-            runtimeNotScanned: p => Thrown(t.ErrorScanRuntime, p.Error),
+            runtimeNotScanned: p => AskAgain(t, t.ErrorScanRuntime, p.Error),
             nuGetConfigUnreadable: p => Thrown(t.CauseNugetConfigUnreadableTitle, p.Error),
-            nuGetSearchFailed: p => Thrown(t.ErrorSearchNuget(p.Feed), p.Error),
-            packageNotDownloaded: p => Thrown(t.ErrorDownloadPackage(p.Package), p.Error),
+            nuGetSearchFailed: p => AskAgain(t, t.ErrorSearchNuget(p.Feed), p.Error),
+            packageNotDownloaded: p => AskAgain(t, t.ErrorDownloadPackage(p.Package), p.Error),
             unexpected: p => Reportable(t, t.ErrorUnexpected, p.Error));
     }
 
@@ -109,18 +109,33 @@ public static class ProblemTexts
         return t.ErrorReadReferenceDegraded(assembly: unread.Module, name: unread.Name) + Environment.NewLine + Environment.NewLine + cause;
     }
 
-    // A failure whose cause the app knows only by the exception: the cause said by its message as written, the
-    // exception itself the technical details.
+    // A failure whose cause the app knows only by the exception, of an operation with no recovery that holds whatever
+    // the cause (what it reads isn't read again when asked, and it isn't the app's to report): the cause said by its
+    // message as written, the exception itself the technical details, and no step invented.
     private static (string Title, string Details, Exception? Diagnostic) Thrown(string title, Exception error)
     {
         return (title, error.Message, error);
     }
 
-    // A failure in the app's own code or the decompiler's, a bug to report: the cause by its message, and the recovery
-    // asks for a report, which the copied error's technical details make.
+    // A failure whose cause the app knows only by the exception, of an operation that reads what can change between
+    // asks (a file, a folder, a feed, a download): asking again holds whatever the cause.
+    private static (string Title, string Details, Exception? Diagnostic) AskAgain(Strings t, string title, Exception error)
+    {
+        return (title, t.ErrorCauseAndRecovery(cause: error.Message, recovery: t.ErrorRecoveryTryAgain), error);
+    }
+
+    // A failure in the app's own code or the decompiler's, or of an operation that fails on input that hasn't changed
+    // (what is open, as it was read), a bug to report: the cause by its message, and the recovery asks for a report,
+    // which the copied error's technical details make.
     private static (string Title, string Details, Exception? Diagnostic) Reportable(Strings t, string title, Exception error)
     {
-        return (title, t.ErrorCauseAndRecovery(cause: error.Message, recovery: t.ErrorRecoveryReportBug), error);
+        return (title, ReportIt(t, error.Message), error);
+    }
+
+    // The cause, then the recovery that asks for a report: defined once for every failure that is the app's to report.
+    private static string ReportIt(Strings t, string cause)
+    {
+        return t.ErrorCauseAndRecovery(cause: cause, recovery: t.ErrorRecoveryReportBug);
     }
 
     // One problem a line: the lines are the layout, each line's words the language's.

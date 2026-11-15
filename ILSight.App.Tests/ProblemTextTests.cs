@@ -7,7 +7,7 @@ public sealed class ProblemTextTests
     private const string Frame = "   at ";
 
     [Fact]
-    public void A_failed_comparison_says_its_cause_by_its_message_the_stack_trace_kept_as_technical_details()
+    public void A_failed_comparison_says_its_cause_by_its_message_and_the_report_the_stack_trace_kept_as_technical_details()
     {
         var error = Thrown("The metadata of Shop.dll ends early.");
         var problem = new AppProblem.ComparisonFailed { Left = "Shop.dll", Right = "Shop2.dll", Error = error };
@@ -15,8 +15,8 @@ public sealed class ProblemTextTests
         var text = ProblemTexts.Describe(Strings.En, problem);
 
         Assert.Equal("Cannot compare Shop.dll with Shop2.dll", text.Title);
-        Assert.Equal("The metadata of Shop.dll ends early.", text.Details);
-        Assert.Equal("Cannot compare Shop.dll with Shop2.dll — The metadata of Shop.dll ends early.", text.Summary);
+        Assert.Equal("The metadata of Shop.dll ends early. Copy this error, technical details included, and report it as a bug.", text.Details);
+        Assert.Equal("Cannot compare Shop.dll with Shop2.dll — The metadata of Shop.dll ends early. Copy this error, technical details included, and report it as a bug.", text.Summary);
         Assert.Equal(error.ToString(), text.TechnicalDetails);
         Assert.Contains(Frame, text.TechnicalDetails);
     }
@@ -44,6 +44,35 @@ public sealed class ProblemTextTests
         Assert.Contains(Frame, text.TechnicalDetails);
         var nl = Environment.NewLine;
         Assert.Equal($"{text.Title}{nl}{nl}{text.Details}{nl}{nl}{t.ErrorsTechnicalDetails}{nl}{error}", text.FullText);
+    }
+
+    [Theory]
+    [MemberData(nameof(LocalizationTests.AllLocales), MemberType = typeof(LocalizationTests))]
+    public void A_reload_failing_by_a_cause_known_only_by_its_message_says_the_reload_and_to_ask_again(Locale locale)
+    {
+        var t = Strings.For(locale);
+        var error = new IOException("The specified network name is no longer available.");
+        var problem = new AppProblem.AssemblyNotReloaded { Assembly = "Shop.dll", Error = error };
+
+        var text = ProblemTexts.Describe(t, problem);
+
+        Assert.Equal(t.ErrorReloadAssembly("Shop.dll"), text.Title);
+        Assert.Equal(t.ErrorCauseAndRecovery(cause: error.Message, recovery: t.ErrorRecoveryTryAgain), text.Details);
+    }
+
+    [Theory]
+    [MemberData(nameof(LocalizationTests.AllLocales), MemberType = typeof(LocalizationTests))]
+    public void A_layout_failing_on_the_same_diagram_says_to_report_it_never_to_try_again(Locale locale)
+    {
+        var t = Strings.For(locale);
+        var error = Thrown("Index was outside the bounds of the array.");
+
+        var text = ProblemTexts.Describe(t, new AppProblem.DiagramNotLaidOut(error));
+
+        Assert.Equal(t.ErrorLayOutDiagram, text.Title);
+        Assert.Equal(t.ErrorCauseAndRecovery(cause: error.Message, recovery: t.ErrorRecoveryReportBug), text.Details);
+        Assert.DoesNotContain(t.ErrorRecoveryTryAgain, text.Details);
+        Assert.Equal(error.ToString(), text.TechnicalDetails);
     }
 
     [Fact]
