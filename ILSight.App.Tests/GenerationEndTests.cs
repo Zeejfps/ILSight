@@ -7,7 +7,9 @@ namespace ILSight.App.Tests;
 /// <summary>Work of the list's generation in flight when a change ends that generation and stops no reload (one written
 /// later, standing in here as <see cref="OpenListSession.ClearAssemblies"/> called directly): the work ends quietly, by
 /// what the generation's end does, nothing listed from it and nothing logged. The end runs on the thread that owns the
-/// list, between the work's start and its check, through the port the root hands the work. The reload it ends is not
+/// list, between the work's start and its check, through the port the root hands the work; or, for the check landing
+/// after the list's lock is released and before the end's cancel has reached the edge's token, on a thread of its own,
+/// held inside that cancel. The reload it ends is not
 /// finished (no end of the generation stopped it, as the change that ends it owns doing), so these wait for the work to
 /// end, not for the app to settle.</summary>
 public sealed class GenerationEndTests
@@ -24,6 +26,27 @@ public sealed class GenerationEndTests
         d.InTurn(() => Commands.StartReloading(d.AppState, []));
         d.RunUntil(() => d.AppState.Work.Outstanding.Count == 0);
 
+        Assert.Empty(session.Assemblies.Assemblies);
+        Assert.Empty(d.AppState.Errors.Entries);
+    }
+
+    [Fact]
+    public void A_reload_whose_check_lands_while_the_generations_end_is_still_cancelling_ends_quietly()
+    {
+        HoldingTheGenerationsEndAtTheReopen? ports = null;
+        var d = AppStateDriver.OpenedWith(new AdapterHooks { Reloading = real => ports = new HoldingTheGenerationsEndAtTheReopen(real) });
+        Assert.NotNull(ports);
+        var session = d.AppState.ListSession;
+        var removed = RemovedModules.None;
+        ports.End = () => removed = session.ClearAssemblies();
+
+        d.InTurn(() => Commands.StartReloading(d.AppState, []));
+        d.RunUntil(() => d.AppState.Work.Outstanding.Count == 0);
+        ports.Release();
+        LoadedAssemblies.Release(removed);
+
+        Assert.Equal(false, ports.LinkedReachedAtCheck);
+        Assert.Equal(true, ports.EndingMarkedAtCheck);
         Assert.Empty(session.Assemblies.Assemblies);
         Assert.Empty(d.AppState.Errors.Entries);
     }
