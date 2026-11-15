@@ -617,6 +617,7 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
             var hints = ListFolderHints(nodes);
             for (var i = 0; i < nodes.Count; i++)
             {
+                // A notation, the same in every language: the name, and the folder that tells it apart.
                 var label = $"{nodes[i].Assembly.Name} ({hints[i]})";
                 labels[nodes[i]] = new RootLabel { Title = label, Row = label };
             }

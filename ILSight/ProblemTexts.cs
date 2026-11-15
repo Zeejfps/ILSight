@@ -10,19 +10,20 @@ public static class ProblemTexts
 {
     private const int SummaryLength = 160;
 
-    /// <summary>The title and the first line of the details on one line.</summary>
-    public static string Summarize(string title, string details)
+    /// <summary>The title and the first line of the details on one line, joined as <paramref name="t"/>'s language
+    /// joins them (<c>error.summary</c>).</summary>
+    public static string Summarize(Strings t, string title, string details)
     {
         var end = details.AsSpan().IndexOfAny('\r', '\n');
         var first = (end < 0 ? details : details[..end]).Trim();
-        var summary = first.Length == 0 ? title : $"{title} — {first}";
+        var summary = first.Length == 0 ? title : t.ErrorSummary(title, first);
         return summary.Length > SummaryLength ? summary[..SummaryLength] + "…" : summary;
     }
 
     public static ProblemText Describe(Strings t, AppProblem problem)
     {
         var (title, details) = Words(t, problem);
-        return ProblemText.FromWords(title, details.Trim());
+        return ProblemText.FromWords(t, title, details.Trim());
     }
 
     private static (string Title, string Details) Words(Strings t, AppProblem problem)
@@ -185,6 +186,8 @@ public static class ProblemTexts
         return string.Join(Environment.NewLine, errors.Select(e => DescribeThemeError(t, e)));
     }
 
+    // A notation, the same in every language, as compilers write a diagnostic, so that an editor's jump to the line
+    // reads it: the file, the line when there is one, a colon, then the problem, the only part translated.
     private static string DescribeThemeError(Strings t, ThemeError error)
     {
         var problem = DescribeThemeProblem(t, error);

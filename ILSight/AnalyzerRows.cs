@@ -250,7 +250,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
             return header;
         }
 
-        return $"{header} ({kind.Found.Count})";
+        return _strings.AnalyzerHeaderCount(header, kind.Found.Count);
     }
 
     private TreeRow CreateMessageRow(AnalyzerMessageNode message)
@@ -316,6 +316,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         var anchor = failed.SavedAs;
         return failed.Failure.Match(
             unreadable => _strings.CauseModuleUnreadableRow(unreadable.Name, unreadable.Why),
+            // The saved place as a notation, the same in every language: its file and its token in hex.
             _ => _strings.ErrorNoLongerThere($"{anchor.FilePath.FileName} ({anchor.Token:X8})"),
             lookup => _strings.AnalyzerUnreadable(anchor.FilePath.FileName, lookup.Why));
     }

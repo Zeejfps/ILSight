@@ -132,6 +132,8 @@ public sealed class BookmarkImporting(BookmarkImporting.IPorts ports)
     {
         var record = lost.Record;
         var location = record.LocationNodeName ?? record.MemberName;
+        // A notation, the same in every language: the bookmark's name, where it pointed and its file, as ILSpy saved
+        // them; nothing in it is translated.
         return $"{record.Name}: {location} ({record.FileName})";
     }
 

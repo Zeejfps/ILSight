@@ -82,4 +82,21 @@ public sealed class LocalizationTests
 
         Assert.Equal(Locale.Ja, AppRoot.RestoreAppState(temp.Settings(), TestSession.Shared).Locale);
     }
+
+    [Fact]
+    public void A_count_beside_a_label_and_a_problems_summary_are_joined_by_each_languages_template_the_english_as_before()
+    {
+        var en = Strings.For(Locale.En);
+        var ja = Strings.For(Locale.Ja);
+        var problem = new AppProblem.Unexpected(new InvalidOperationException("Broken."));
+
+        var english = ProblemTexts.Describe(en, problem);
+        var japanese = ProblemTexts.Describe(ja, problem);
+
+        Assert.Equal("Used By (3)", en.AnalyzerHeaderCount("Used By", 3));
+        Assert.Equal("Fields (2)", en.DiagramFoldCount("Fields", 2));
+        Assert.StartsWith($"{en.ErrorUnexpected} — ", english.Summary, StringComparison.Ordinal);
+        Assert.Equal("使用元（3）", ja.AnalyzerHeaderCount("使用元", 3));
+        Assert.StartsWith($"{ja.ErrorUnexpected}：", japanese.Summary, StringComparison.Ordinal);
+    }
 }

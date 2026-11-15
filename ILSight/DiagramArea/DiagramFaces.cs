@@ -194,7 +194,7 @@ internal static class DiagramFaces
         }
 
         var isOpen = Diagrams.IsFoldOpen(view, fold);
-        var text = $"{title} ({members.Count})";
+        var text = stack.Strings.DiagramFoldCount(title, members.Count);
         AddRow(stack, new CardRow
         {
             Content = new CardRowContent.Fold
