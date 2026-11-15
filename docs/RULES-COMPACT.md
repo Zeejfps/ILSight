@@ -40,7 +40,10 @@ limited to frame-driven UIs.
     real adapter (`Func<IPorts, IPorts>`: a decorator wraps it, a fake ignores it), never its parts, or the port itself
     where that adapter is built from values alone (a folder). A test playing a framework reaches state only where it
     does (its simulated input, or its call through a port the root builds), never by a hook handing it an owner's
-    private state.
+    private state; its write lands inside a framework call (the widget's draw) where a follow-up compares the state
+    around that call (either route where all follow the framework's events or compare against what they last saw). An
+    instant between another method's steps is tested by building the state it leaves and driving the code meeting it;
+    no test-only hook, nor reading alone where that state can be built.
   - **Assert only on what reached the test by an order it fixes:** app code it calls runs in the driver's turn (R010),
     so its callbacks (a `Progress<T>`) post there; a task it holds is awaited; work elsewhere by design (real I/O, a
     server) is awaited by its condition, bounded, never by a fixed count of frames or pumps or a delay; frames are
@@ -91,9 +94,11 @@ disposable result).
   through the part), as does context carried through a dispatch tuple (a library's `Match`); one only writing to a part
   (a command queue) takes its writing side. The root view (its private steps that only hand views parts) and an edge's
   dispatch (a `Switch` or a table wiring its handlers) keep the whole; every other dispatch shares only its entries'
-  parts, and handlers take theirs. Group state by ownership and invariants (R004); a parameter count never justifies
-  the whole. A parameter object (nested scopes: their items' targets), assembled or copied, holds exactly inputs right
-  for this call, owners or values as for a wait (above; an export queued as asked), however long it is held. A
+  parts, and handlers take theirs. Group state by ownership and invariants (R004); a parameter count never justifies the
+  whole. A parameter object (nested scopes: their items' targets), assembled or copied, holds only inputs meant for this
+  call; the operation's contract, never how long it is held, decides owners or values (above; an export queued as
+  asked). A request's parts agree: a choice made as asked (a file named for the language) runs with what it was made
+  from, captured or rechecked at the run (refused with why if changed); availability is rechecked at the run. A
   dispatch's guard (a table or direct checks) is stated once, applying by default to new entries; exceptions are
   explicit, never by position alone.
 - **A library object that reads lazily is I/O by what its reads can reach as made:** decoding bytes already read,
@@ -338,15 +343,17 @@ nullable exception).
   product's contract; an unread log tells no one. The channel (a dialog, in an interactive product) is the product's.
   **A one-line place** says what, how many and why in the space it's drawn in (the renderer's width model), giving
   way to what follows, full details reachable every way the line is, keyboard and assistive technology included, not
-  hover alone (never a failure record); its format, and how the details open, are the product's.
+  hover alone; a refusal's details remain a refusal, never a failure record; its format, and how the details open,
+  are the product's.
 - **Whatever fails stays where it was shown**, failed with why, until retried, dismissed or removed by product policy;
   never dropped, left pending or shown empty. An unexpected one is also reported once, saying the operation that failed
   (wherever asked; the step that asked may be named beside its kind), its cause (structured where clients tell causes
   apart) and an applicable recovery; a shared recovery, and a shared cause's identity, are defined once, every message
-  saying either found from it (each shape it takes, a row or a title, a message); wording is localization's, a
-  language's text owning its spacing, punctuation and order, never code: words read as one text (a label and its count)
-  join by the language's template, parts drawn apart are layout, a notation (`file(line): problem`) is the same in every
-  language; kinds, incident identity and grouping are the product's.
+  saying either found from it (each presentation its own message; distinct causes may pick a shared message by their
+  identity in code, never merged before it); wording is localization's, a language's text owning its spacing,
+  punctuation and order, never code: words read as one text (a label and its count) join by the language's template,
+  parts drawn apart are layout, a notation (`file(line): problem`) is the same in every language; kinds, incident
+  identity and grouping are the product's.
   What presents it never takes the focus or input meant for something else, nor marks it read by appearing; whether it
   appears by itself, waits on an indicator or interrupts is the product's.
 - **Batches and absence:** independent items keep their own outcomes, the batch failing only for what fails every item;
@@ -360,8 +367,8 @@ nullable exception).
   only where successful reads establish it, never not there while a failed source could hold it. A partial one, where
   the contract allows, names unread scope and why, partly read sources included, and keeps matches found but not
   shown; each item, or a count per parent that failed (not by the why's words), is the product's. A lookup
-  of one target whose place fails fails with why, or shows an ancestor said to stand in; never not there, nor the
-  ancestor unsaid.
+  of one target whose place fails fails with why, or is degraded by contract, saying what stands in or is missing,
+  with why (an ancestor said to stand in); never not there, nor a substitute unsaid.
 - **Restore and retry:** unreadable restored state is kept as saved; a reload keeps saved references and user intent
   the product promises, failed or not, resolving them again (content derived from sources alone follows its reload
   contract). A failed read is reread only on a trigger the product chose (Retry, reload, a change to what it names, a
@@ -396,16 +403,15 @@ nullable exception).
   edge links a workflow's token to what cancels it on purpose (shutdown, newer work, a closed dialog), ending quietly
   only for those (never a `Failed` holding a cancellation); an app-set deadline is a timeout (an adapter's `TimedOut`
   case, or the edge's report). Work a change makes stale never commits nor is said as a failure: it captures the
-  generation it began in; its freshness is checked and its commit made atomically with the change (under the lock that
-  makes it, or a serialized or atomic step); the check returns `Superseded`, or ensures the generation's own source is
-  cancelled before throwing its cancellation, the edge asking that source, never a linked token or a source each change
-  must remember to cancel. What ends a generation owns that ending (or takes it as a required argument); behind a lock
-  it takes the source with the change and cancels after releasing it. Pending state the work recorded ends with its own
-  end, any outcome (quiet too), by its ticket, never left to cancellers. A canceller appearing partway (a state change
-  returns a ticket newer work cancels) ends the workflow, which returns it (`[MustUse]`) for the edge to start the I/O
-  linked to it, no catch in the workflow; later steps needing the outcome await a port member taking the ticket
-  (`Stopped` if cancelled). **Newest wins by the current ticket:** the state commits a result only while its ticket is
-  current.
+  generation it began in; its freshness (its ticket still current) is checked and its commit made atomically with the
+  change (under the lock that makes it, or a serialized or atomic step); the check returns `Superseded`, or ensures the
+  generation's own source is cancelled before throwing its cancellation, the edge asking that source, never a linked
+  token or a source each change must remember to cancel. What ends a generation owns that ending (or takes it as a
+  required argument); behind a lock it takes the source with the change and cancels after releasing it. Pending state
+  the work recorded ends with its own end, any outcome (quiet too), by its ticket, never left to cancellers. A canceller
+  appearing partway (a state change returns a ticket newer work cancels) ends the workflow, which returns it
+  (`[MustUse]`) for the edge to start the I/O linked to it, no catch in the workflow; later steps needing the outcome
+  await a port member taking the ticket (`Stopped` if cancelled).
 - **An effect that can't be undone** (a charge) and what must follow are one transaction, or the work is recorded
   durably first and a worker does the effect under an idempotency key its provider honours, then the rest, replaying
   pending work after an interruption; never the request's token, `CancellationToken.None` or a grace period.
