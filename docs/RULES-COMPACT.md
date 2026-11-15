@@ -65,7 +65,8 @@ RL0105 (infrastructure in a port signature); suggestions: RL0102 (a use case or 
 disposable result).
 
 - **One port.** A decision-making class reaches I/O, time, randomness, configuration, logging and shared mutable state
-  only through a nested `public interface IPorts` it declares, its only constructor parameter: the codebase's own
+  only through a nested `public interface IPorts` it declares, its only dependency (configured values may come beside it,
+  R005): the codebase's own
   effectful services and I/O code a library declares for other projects' adapters, both
   listed in `rulelab.ambient_types` (listed types are I/O only), and effects handed in as delegates. Used
   directly: language primitives (`Task.Run`, `CancellationToken`), plain data and pure methods of objects passed in, a
@@ -104,8 +105,7 @@ disposable result).
     caller, say which in caller-facing API documentation or the command, dialog or result ("as shown" says neither where
     the shown can change); never an implementation comment alone (values kept as asked while the asker can still change
     them are such a case).
-  - **What it needs is rechecked at the run** (R009), whatever was captured: the preconditions its contract states; the
-    subject's presence only where the contract needs it (a request that captured all it acts on runs on that).
+  - **Recheck the contract's run-time preconditions** (R009), whatever was captured.
 - **A library object that reads lazily is I/O by what its reads can reach as made:** decoding bytes already read,
   each read bounded, it is data, readable anywhere, a draw included (failures caught per unit, R009); reaching a file
   or the network, only adapters and their shared I/O code read it (list types whose every instance is I/O). Kept by
@@ -127,7 +127,7 @@ disposable result).
   takes or releases its result.
 - **The composition root** alone constructs use cases and adapters;
   per-document objects come from a factory it builds (DI: scoped). A function taking the state only to reach a use
-  case is the edge's call. **Configuration becomes initial values** (`required init`, no
+  case is the edge's call. **Configuration becomes initial values** (constructor or `required init`, no
   default on the object), never a settings pass over live objects; a setting changed at run time is a command on its
   owner.
 - **Adapters** (`<Class>Adapter` serving one class's port; one shared by several ports is named for its infrastructure:
@@ -258,16 +258,17 @@ on purpose, a published member).
 
 Build: RL0501 (positional records with 2+ values); suggestion: RL0502 (a generated template method's value by position).
 
-- Data types take values as `required init` properties set by name (optional ones with a default); constructors are
-  for ports and rules spanning several values. Changing state: `required init` sets a private field, methods change it.
+- Data types take values as `required init` properties set by name (optional ones with a default); a constructor takes
+  a port and configured values (R001), or checks a rule spanning several values. Changing state: `required init` sets a
+  private field, methods change it.
 - A rule on one value lives in its `init` accessor; several
   values are checked in a constructor or `From*` factory, properties `private init`. A type with such a
   rule holds its data privately (collections read-only, copied in) and is a class (a record only if nothing changes).
 - Exceptions: inbound DTOs nullable, not `required` (R006); generated keys not `required`; EF row types
   `{ get; set; }`; a one-field wrapper may be positional; no `struct` when zero is invalid; options classes need
   `[Required]` + `ValidateDataAnnotations().ValidateOnStart()`; `where T : new()` → take a `Func<T>`.
-- Values handed to a method generated from a text template, two or more of one
-  type, go in by name: its parameter order is its text's, which a reword changes.
+- Name arguments to a method generated from a text template (returning its text) where two or more parameters share a
+  type: a reword reorders them. List catalogs other projects generate in `rulelab.template_types`.
 
 ## R006: Parse boundary data into the domain
 
@@ -276,7 +277,7 @@ Build: suggestion: RL0601 (`OfType<T>()` dropping a parse's failures).
 - Data you don't control lands in a wire-shaped DTO: nullable `init` properties,
   only the fields accepted, serializer attributes only there.
 - **One** `To<Domain>()` step validates and converts, every error keyed by field path, each value narrowed as checked,
-  returning `Result<T>` (`Success { Value }` or `Failure { Errors }`: at least one, copied in; with `Match`). Unknown
+  returning `Result<T>` (`Success { Value }` or `Failure { Errors }`: at least one, copied in). Unknown
   external values become an error or a deliberate `Unknown` case.
 - Requests, commands, messages: all-or-nothing. An input whose parts stand alone or a format whose
   consumers skip damage: lenient, returning the value and every problem by location (`Lenient<T>`), dropping none; a
@@ -335,9 +336,10 @@ nullable exception).
   wrong doing it; separate cases where refusal and failure are different outcomes; an optional cause within one failure
   outcome stays nullable. A refusal goes where it was asked, alike from every input, or the action shows unavailable
   with why; with no such place, on the app's channel for unasked news; never recorded as a failure (panels, error-level
-  logs, counts, retries) nor marked as one or as cancelled. Channel, retention, lower-level logs and one view marking
-  refusals apart are the product's. An outcome the port's answer lacks (`Closed`) gets a case there, not a made-up
-  exception.
+  logs, counts, retries) nor marked as one or as cancelled by what reads as an outcome (a name, a status, what a count or
+  filter reads, an icon or colour one outcome alone wears; styling outcomes share, and a button's glyph, say none).
+  Channel, retention, lower-level logs and one view marking refusals apart are the product's. An outcome the port's
+  answer lacks (`Closed`) gets a case there, not a made-up exception.
 - **A command's inputs read one availability state**, drawn without a wait (unavailable: why, where pressed; not
   offered: its key does nothing); offering one only a lookup can judge, or showing it checking, is the product's. It is
   rechecked at the run against the preconditions its contract states as they stand, never the request's own values:
@@ -365,12 +367,14 @@ nullable exception).
   - **Text, not notation or layout:** a language's text owns its spacing, punctuation and order, never
     code: words read as one text, and the app's own arrangement of values for a person, join by its template; parts
     drawn apart (items on lines of their own) are layout; a notation is one by what reads it outside the text
-    (`file(line): problem`, a tool's term such as `AnyCPU`), the same in every language, the app's words about it
-    translated.
-  - **Commentary, not content:** content the app shows is as produced; the app's notes inside it
-    are its messages, following a language switch its labels follow (kept as their cause, found when drawn); text that
-    left the app (a saved file: its stated contract) keeps the language it was written in. Copy and Find read what is
-    drawn; a kept place (a bookmark) uses the content's terms, never an offset into drawn text.
+    (`file(line): problem`, a term something outside reads as spelled, such as `AnyCPU`), the same in every language, the
+    app's words about it translated; a display name also seen elsewhere is words.
+  - **Commentary, not content:** content the app shows is as produced; the app's notes inside it are its messages.
+    A language switch keeps the product's stated contract (which text is live, which a record kept as made; a surprising
+    persistence said): live text follows alike, a note with its labels (kept as its cause and found when drawn, or made
+    again at the switch); text that left the app (a saved file: its stated contract) keeps its language. Copy and Find
+    read what is drawn; a kept place (a bookmark) uses the content's terms, never an offset into drawn text. A format's
+    published documentation (a schema's descriptions) is in the product's documentation languages.
   - **Diagnostics, not messages:** a stack trace (`ToString()`) never goes where a failure is shown or summarized;
     only to the log and, where offered (a recovery asking for a report needs it), a labelled diagnostic apart that
     the user opens or sends.
@@ -510,16 +514,16 @@ RL1307. Generated code doesn't count.
 
 - One top-level type per file, named after it (`Result` and `Result<T>` share one). Related types share a folder and
   namespace, grouped by cohesive concept in the layout the project or framework already has (an established one kept;
-  a project may adopt a deterministic convention: R013's README). No folder is named like a type its code meets (in
-  it, around it, or a library type nearby code names: `Process/`).
+  a project may adopt a deterministic convention: R013's README). No folder is named like a non-generic type its code
+  meets (in it, around it, or a library type nearby code names: `Process/`); `Outcome/` beside `Outcome<T>` hides
+  nothing.
 - **A call names its function's type: no `using static`** (an enum's members aside).
 - **Nest a type's parts, not its collaborators** (users are code naming it or reaching it through members; narrow
   members first). Privately: shapes only that type uses and code on its privates it makes
   and hands out (a scope, an enumerator), never code it keeps and calls, nor code others make. Publicly: a union's
   cases, a use case's `IPorts`. Anything else with code, or that others name, gets its own file, even with one user; a
   file-only helper that can't nest (extension methods) is a `file` type.
-- `partial` only where a tool writes the other half;
-  a class too big for one file is split into types by what each knows (R004), not by topic.
+- A class too big for one file is split into types by what each knows (R004), not by topic.
 - Files whose layout alone is data opt out with `rulelab.one_type_per_file =
   false` (RL1303 and RL1308 stay on).
 
