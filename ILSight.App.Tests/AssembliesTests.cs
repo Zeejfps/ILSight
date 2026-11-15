@@ -258,7 +258,7 @@ public sealed class AssembliesTests
     private static async Task<Outcome<ReopenedFile>> ReadAgainAsync(AppState appState, LoadedAssembly item, IReadOnlyList<NodePath> places)
     {
         var fresh = AssemblyListing.ReadAgain(appState.ListSession.Assemblies, item).GetValue();
-        var found = new List<Lookup<BrowseNode>>();
+        var found = new List<Outcome<Lookup<BrowseNode>>>();
         foreach (var place in places)
         {
             found.Add(await BrowseSessions.FindNodeAsync(appState.Session, fresh.Item, place));

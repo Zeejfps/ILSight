@@ -203,4 +203,23 @@ internal static class BrokenAssemblies
 
         throw new InvalidOperationException($"'{path}' declares no method {typeName}.{name}.");
     }
+
+    /// <summary>The property of the assembly at <paramref name="path"/> named <paramref name="name"/>, declared by the
+    /// type named <paramref name="typeName"/>.</summary>
+    public static PropertyDefinitionHandle GetProperty(string path, string typeName, string name)
+    {
+        using var pe = new PEReader(File.OpenRead(path));
+        var reader = pe.GetMetadataReader();
+        var type = reader.GetTypeDefinition(GetTypeHandle(path, typeName));
+        foreach (var handle in type.GetProperties())
+        {
+            var isTheName = reader.StringComparer.Equals(reader.GetPropertyDefinition(handle).Name, name);
+            if (isTheName)
+            {
+                return handle;
+            }
+        }
+
+        throw new InvalidOperationException($"'{path}' declares no property {typeName}.{name}.");
+    }
 }

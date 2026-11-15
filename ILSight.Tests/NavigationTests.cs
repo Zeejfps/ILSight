@@ -250,4 +250,34 @@ public sealed class NavigationTests
 
         Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(byId).Error);
     }
+
+    [Fact]
+    public async Task A_member_whose_place_fails_to_list_is_the_lookups_failure_by_reference_id_and_path_never_an_ancestor_nor_not_found()
+    {
+        using var temp = new TempDir();
+        var grow = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Circle", "Grow");
+        var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, grow));
+        var area = BrokenAssemblies.GetProperty(Trees.TestAssemblyPath, "Circle", "Area");
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var session = TestSession.Shared;
+        var reference = CodeReferences.CreateEntity(EntityKind.Property, "Area", path, area);
+        var (_, healthy) = Trees.OpenTestAssembly();
+        var place = new NodePath { FilePath = path, Steps = (await healthy.FixturesAsync().GetChildAsync("Circle").GetChildAsync("Area : double")).Path.Steps };
+
+        var byReference = await NodeLookup.FindAsync(list, session, reference, CancellationToken.None);
+        var module = Assert.IsType<LoadedModule>(Assert.Single(list.Assemblies));
+        var byId = await NodeLookup.FindByIdAsync(session, "P:ILSight.Tests.Fixtures.Circle.Area", [module], CancellationToken.None);
+        var byPath = await NodeLookup.FindAsync(list, session, place, CancellationToken.None);
+        var listedByPath = await NodeLookup.FindListedAsync(list, session, place, CancellationToken.None);
+        var toExpand = await NodeLookup.FindToExpandAsync(list, session, place, CancellationToken.None);
+
+        // The method whose name can't be read fails the listing of its namespace's types, Circle among them.
+        var fixtures = await module.FixturesAsync();
+        var why = Assert.IsType<ChildrenState.Failed>(await BrowseSessions.GetChildrenAsync(session, fixtures)).Error;
+        Assert.Same(why, Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(byReference).Error);
+        Assert.Same(why, Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(byId).Error);
+        Assert.Same(why, Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(byPath).Error);
+        Assert.Same(why, Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(listedByPath).Error);
+        Assert.IsType<Lookup<BrowseNode>.NotFound>(toExpand.GetValue());
+    }
 }

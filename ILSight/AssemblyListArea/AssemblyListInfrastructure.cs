@@ -162,11 +162,11 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         }
     }
 
-    private async Task<Lookup<BrowseNode>[]> FindPlacesAgainAsync(LoadedAssembly item, FreshItem fresh, IReadOnlyList<NodePath> places, CancellationToken ct)
+    private async Task<Outcome<Lookup<BrowseNode>>[]> FindPlacesAgainAsync(LoadedAssembly item, FreshItem fresh, IReadOnlyList<NodePath> places, CancellationToken ct)
     {
         var old = await BrowseSessions.EnsureRootAsync(session, item, ct);
         await EnsureChildrenAsLoadedAsync(old, await BrowseSessions.EnsureRootAsync(session, fresh.Item, ct), ct);
-        var placeNodes = new Lookup<BrowseNode>[places.Count];
+        var placeNodes = new Outcome<Lookup<BrowseNode>>[places.Count];
         for (var i = 0; i < placeNodes.Length; i++)
         {
             placeNodes[i] = await BrowseSessions.FindNodeAsync(session, fresh.Item, places[i], ct);
@@ -221,7 +221,7 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         foreach (var path in expanded)
         {
             ct.ThrowIfCancellationRequested();
-            var lookup = await NodeLookup.FindAsync(assemblies, session, path, ct);
+            var lookup = await NodeLookup.FindToExpandAsync(assemblies, session, path, ct);
             if (lookup is Outcome<Lookup<BrowseNode>>.Failed failed)
             {
                 return new Outcome<List<BrowseNode>>.Failed(failed.Error);
@@ -229,8 +229,8 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
 
             if (lookup is not Outcome<Lookup<BrowseNode>>.Ok { Value: Lookup<BrowseNode>.Found listed })
             {
-                // A node that is gone, or in a module that could not be read, which shows that where the tree lists
-                // it, is not shown expanded.
+                // A node that is gone, or in a module that could not be read, or under children that failed to
+                // build, each of which shows that where the tree lists it, is not shown expanded.
                 continue;
             }
 

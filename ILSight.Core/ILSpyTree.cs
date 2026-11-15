@@ -94,12 +94,13 @@ public static class ILSpyTree
     /// <paramref name="memberName"/>, or its nearest ancestor. Loads the assembly without listing it; not found
     /// when its file is gone or has neither (a token past the end of its table names nothing); unreadable when the
     /// library could not read the module either is looked for in, and the other found nothing; a file there that can't
-    /// be read, and what else the library throws looking, <see cref="Outcome{T}.Failed"/>. The cancellation of <paramref name="ct"/> is let through.</summary>
+    /// be read, children on the way that failed to build (never not found, nor an ancestor, for what they could hold),
+    /// and what else the library throws looking, <see cref="Outcome{T}.Failed"/>. The cancellation of <paramref name="ct"/> is let through.</summary>
     public static async Task<Outcome<Lookup<BrowseNode>>> LocateAsync(AssemblyList list, BrowseSession session, AssemblyPath filePath,
         IReadOnlyList<string>? treePath, uint token, string memberName, CancellationToken ct)
     {
-        Lookup<BrowseNode> byPath = new Lookup<BrowseNode>.NotFound();
-        Lookup<BrowseNode> byToken;
+        var byPath = NotFound;
+        Outcome<Lookup<BrowseNode>> byToken;
         try
         {
             if (treePath is not null && treePath.Count > 0)
@@ -107,7 +108,9 @@ public static class ILSpyTree
                 byPath = await FindAsync(list, session, treePath, ct);
             }
 
-            byToken = byPath is Lookup<BrowseNode>.Found ? byPath : await FindEntityAsync(list, session, filePath, token, memberName, ct);
+            byToken = byPath is Outcome<Lookup<BrowseNode>>.Ok { Value: Lookup<BrowseNode>.Found }
+                ? byPath
+                : await FindEntityAsync(list, session, filePath, token, memberName, ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -118,85 +121,86 @@ public static class ILSpyTree
             return new Outcome<Lookup<BrowseNode>>.Failed(e);
         }
 
-        return new Outcome<Lookup<BrowseNode>>.Ok(byToken.Match<Lookup<BrowseNode>>(static found => found, _ => byPath, static unreadable => unreadable));
+        // What the token finds wins; when it finds nothing, what the path came to.
+        return byToken is Outcome<Lookup<BrowseNode>>.Ok { Value: Lookup<BrowseNode>.NotFound } ? byPath : byToken;
     }
 
-    private static async Task<Lookup<BrowseNode>> FindAsync(AssemblyList list, BrowseSession session, IReadOnlyList<string> path, CancellationToken ct)
+    private static Outcome<Lookup<BrowseNode>> NotFound => new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound());
+
+    private static async Task<Outcome<Lookup<BrowseNode>>> FindAsync(AssemblyList list, BrowseSession session, IReadOnlyList<string> path,
+        CancellationToken ct)
     {
         var filePath = AssemblyPath.Parse(path[0]);
         if (filePath is null)
         {
-            return new Lookup<BrowseNode>.NotFound();
+            return NotFound;
         }
 
         var assembly = FindModule(list, filePath);
         if (assembly is null)
         {
-            return new Lookup<BrowseNode>.NotFound();
+            return NotFound;
         }
 
-        Lookup<BrowseNode> reached = new Lookup<BrowseNode>.Found { Value = await BrowseSessions.EnsureRootAsync(session, assembly, ct) };
+        var root = await BrowseSessions.EnsureRootAsync(session, assembly, ct);
+        Outcome<Lookup<BrowseNode>> reached = new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Found { Value = root });
         for (var i = 1; i < path.Count; i++)
         {
-            var name = path[i];
-            reached = await reached.ThenFindAsync((node, c) => FindChildAsync(session, node, name, c), ct);
+            if (reached is not Outcome<Lookup<BrowseNode>>.Ok { Value: Lookup<BrowseNode>.Found node })
+            {
+                return reached;
+            }
+
+            var children = await BrowseSessions.ReadChildrenAsync(session, node.Value, ct);
+            reached = BrowseSessions.FindAmongReadable(children, path[i], static (listed, name) => listed.FirstOrDefault(child => NameOf(child) == name));
         }
         return reached;
     }
 
-    private static async Task<Lookup<BrowseNode>> FindChildAsync(BrowseSession session, BrowseNode node, string name, CancellationToken ct)
-    {
-        var children = await BrowseSessions.ListReadableChildrenAsync(session, node, ct);
-        return children.Match(
-            done => Lookup.FromNullable(done.Value.FirstOrDefault(child => NameOf(child) == name)),
-            static unreadable => new Lookup<BrowseNode>.Unreadable { Module = unreadable.Module },
-            static _ => new Lookup<BrowseNode>.NotFound());
-    }
-
-    private static async Task<Lookup<BrowseNode>> FindEntityAsync(AssemblyList list, BrowseSession session, AssemblyPath filePath, uint token,
-        string memberName, CancellationToken ct)
+    private static async Task<Outcome<Lookup<BrowseNode>>> FindEntityAsync(AssemblyList list, BrowseSession session, AssemblyPath filePath,
+        uint token, string memberName, CancellationToken ct)
     {
         if (token == 0)
         {
-            return new Lookup<BrowseNode>.NotFound();
+            return NotFound;
         }
 
         var assembly = FindModule(list, filePath);
         if (assembly is null)
         {
-            return new Lookup<BrowseNode>.NotFound();
+            return NotFound;
         }
 
         using var reading = LoadedAssemblies.BeginReading();
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
         return await read.Match(
             r => FindEntityAsync(session, assembly, r.TypeSystem.MainModule, token, memberName, ct),
-            u => Task.FromResult(Lookup.FromUnreadable<BrowseNode>(assembly, u)),
-            static _ => Task.FromResult<Lookup<BrowseNode>>(new Lookup<BrowseNode>.NotFound()));
+            u => Task.FromResult<Outcome<Lookup<BrowseNode>>>(new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromUnreadable<BrowseNode>(assembly, u))),
+            static _ => Task.FromResult(NotFound));
     }
 
-    private static async Task<Lookup<BrowseNode>> FindEntityAsync(BrowseSession session, LoadedModule assembly, MetadataModule main, uint token,
-        string memberName, CancellationToken ct)
+    private static async Task<Outcome<Lookup<BrowseNode>>> FindEntityAsync(BrowseSession session, LoadedModule assembly, MetadataModule main,
+        uint token, string memberName, CancellationToken ct)
     {
         var resolved = Resolve(assembly, main, (int)token);
         if (resolved is Lookup<IEntity>.Unreadable unreadable)
         {
-            return new Lookup<BrowseNode>.Unreadable { Module = unreadable.Module };
+            return new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Unreadable { Module = unreadable.Module });
         }
 
         if (resolved is not Lookup<IEntity>.Found found)
         {
-            return new Lookup<BrowseNode>.NotFound();
+            return NotFound;
         }
 
         // After a rebuild the token can name another entity.
         var entity = found.Value;
         if (entity.FullName != memberName)
         {
-            return new Lookup<BrowseNode>.NotFound();
+            return NotFound;
         }
 
-        return Lookup.FromNullable(await BrowseSessions.FindOrAncestorAsync(session, assembly, main, entity.MetadataToken, ct));
+        return await BrowseSessions.FindOrAncestorAsync(session, assembly, main, entity.MetadataToken, ct);
     }
 
     // Whether the saved token still names a row is asked of the module first; the library failing to read the module

@@ -84,6 +84,18 @@ public abstract record Lookup<T> where T : notnull
             static _ => Task.FromResult<Lookup<TNext>>(new Lookup<TNext>.NotFound()),
             static unreadable => Task.FromResult<Lookup<TNext>>(new Lookup<TNext>.Unreadable { Module = unreadable.Module }));
     }
+
+    /// <summary>What <paramref name="next"/> finds from the value found, or why it failed; not found or unreadable as
+    /// this is, with nothing more looked up.</summary>
+    public Task<Outcome<Lookup<TNext>>> ThenTryFindAsync<TNext>(Func<T, CancellationToken, Task<Outcome<Lookup<TNext>>>> next, CancellationToken ct)
+        where TNext : notnull
+    {
+        return Match(
+            found => next(found.Value, ct),
+            static _ => Task.FromResult<Outcome<Lookup<TNext>>>(new Outcome<Lookup<TNext>>.Ok(new Lookup<TNext>.NotFound())),
+            static unreadable => Task.FromResult<Outcome<Lookup<TNext>>>(
+                new Outcome<Lookup<TNext>>.Ok(new Lookup<TNext>.Unreadable { Module = unreadable.Module })));
+    }
 }
 
 /// <summary>Lookups made from what a search answered, and what a list of lookups came to.</summary>

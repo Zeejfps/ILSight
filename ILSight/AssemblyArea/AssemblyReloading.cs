@@ -210,7 +210,7 @@ public sealed class AssemblyReloading(AssemblyReloading.IPorts ports)
 
         for (var i = 0; i < tabs.Count; i++)
         {
-            TryShowAgain(navigation, decompiler, tabs[i], new Outcome<Lookup<BrowseNode>>.Ok(reopened.Places[i]), loads, out _);
+            TryShowAgain(navigation, decompiler, tabs[i], reopened.Places[i], loads, out _);
         }
         return loads;
     }

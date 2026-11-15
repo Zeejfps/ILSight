@@ -20,7 +20,7 @@ internal static class SessionQueries
         public async Task<BrowseNode?> FindNodeAsync(NodePath path)
         {
             var found = await BrowseSessions.FindNodeAsync(TestSession.Shared, assembly, path);
-            return found.FoundOrNull;
+            return found.GetValue().FoundOrNull;
         }
     }
 
