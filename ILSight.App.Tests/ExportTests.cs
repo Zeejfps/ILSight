@@ -501,8 +501,26 @@ public sealed class ExportTests : IDisposable
         var report = Assert.Single(d.AppState.FinishedExports);
         var failed = Assert.IsType<ExportEnd.Failed>(report.End);
         Assert.Equal("Cannot save the code of Greeter", ExportReportText.Headline(Strings.En, report.Job.Kind, failed));
-        Assert.Contains("DirectoryNotFoundException", ExportReportText.DetailsOf(failed));
+        Assert.Equal(failed.Error.Message, ExportReportText.CauseOf(failed));
+        Assert.DoesNotContain("DirectoryNotFoundException", ExportReportText.CauseOf(failed));
+        Assert.Contains("DirectoryNotFoundException", ExportReportText.TechnicalDetailsOf(failed));
         Assert.Empty(d.AppState.Errors.Entries);
+
+        // The report a tab shows: the headline and the cause, then the stack trace under its label, apart.
+        var lines = ExportReportText.Write(Strings.En, [report]).Lines.Select(static l => l.Text).ToList();
+        var headline = lines.IndexOf("    Cannot save the code of Greeter");
+        Assert.Equal($"        {failed.Error.Message}", lines[headline + 1]);
+        Assert.Equal("        Technical details", lines[headline + 2]);
+        Assert.StartsWith("            System.IO.DirectoryNotFoundException", lines[headline + 3]);
+        Assert.DoesNotContain(lines.Take(headline + 2), l => l.Contains("Exception") || l.Contains("   at "));
+
+        // A problem of a finished export: its headline says it by its message, the stack trace under the label.
+        var problem = new ExportProblem.FileNotWritten { Path = "Greeter.cs", Error = new ExportError { Message = failed.Error.Message, Details = failed.Error.ToString() } };
+        var finished = report with { End = new ExportEnd.Finished { Written = [], Problems = [problem] } };
+        var problemLines = ExportReportText.Write(Strings.En, [finished]).Lines.Select(static l => l.Text).ToList();
+        var problemLine = problemLines.IndexOf($"    Greeter.cs: {failed.Error.Message}");
+        Assert.Equal("        Technical details", problemLines[problemLine + 1]);
+        Assert.StartsWith("            System.IO.DirectoryNotFoundException", problemLines[problemLine + 2]);
     }
 
     [Fact]

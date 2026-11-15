@@ -128,7 +128,8 @@ internal static class ExportReportText
     {
         text.AppendLine(t.ExportProblemsHeading);
         text.Append(Indent).AppendLine(Headline(t, kind, failed));
-        WriteDetails(text, DetailsOf(failed));
+        text.Append(Indent).Append(Indent).AppendLine(CauseOf(failed));
+        WriteTechnicalDetails(text, t, TechnicalDetailsOf(failed));
         text.AppendLine();
     }
 
@@ -165,10 +166,10 @@ internal static class ExportReportText
     private static void WriteProblem(StringBuilder text, Strings t, ExportKind kind, ExportProblem problem)
     {
         text.Append(Indent).AppendLine(Headline(t, kind, problem));
-        var details = DetailsOf(problem);
+        var details = TechnicalDetailsOf(problem);
         if (details is not null)
         {
-            WriteDetails(text, details);
+            WriteTechnicalDetails(text, t, details);
         }
 
         text.AppendLine();
@@ -185,8 +186,9 @@ internal static class ExportReportText
             fileNotWritten: static file => $"{file.Path}: {file.Error.Message}");
     }
 
-    /// <summary>The full error under <paramref name="problem"/>'s headline, when there is one.</summary>
-    public static string? DetailsOf(ExportProblem problem)
+    /// <summary>The exception behind <paramref name="problem"/> as the runtime wrote it (its type and stack trace),
+    /// under its headline's technical details label, when there is one; the headline says it by its message.</summary>
+    public static string? TechnicalDetailsOf(ExportProblem problem)
     {
         return problem.Match<string?>(
             notDecompiled: static part => part.Error.Details,
@@ -202,8 +204,15 @@ internal static class ExportReportText
         return FailureOf(t, kind, failed.Subject);
     }
 
-    /// <summary>The full error under <paramref name="failed"/>'s headline.</summary>
-    public static string DetailsOf(ExportEnd.Failed failed)
+    /// <summary>What made <paramref name="failed"/> fail, by its exception's message, under its headline.</summary>
+    public static string CauseOf(ExportEnd.Failed failed)
+    {
+        return failed.Error.Message;
+    }
+
+    /// <summary>The exception behind <paramref name="failed"/> as the runtime wrote it (its type and stack trace),
+    /// under the technical details label after its cause.</summary>
+    public static string TechnicalDetailsOf(ExportEnd.Failed failed)
     {
         return failed.Error.ToString();
     }
@@ -223,12 +232,14 @@ internal static class ExportReportText
         };
     }
 
-    private static void WriteDetails(StringBuilder text, string details)
+    // The diagnostic apart from what the user reads, under its label, as the runtime wrote it.
+    private static void WriteTechnicalDetails(StringBuilder text, Strings t, string details)
     {
+        text.Append(Indent).Append(Indent).AppendLine(t.ErrorsTechnicalDetails);
         var lines = details.Split('\n');
         foreach (var line in lines)
         {
-            text.Append(Indent).Append(Indent).AppendLine(line.TrimEnd('\r'));
+            text.Append(Indent).Append(Indent).Append(Indent).AppendLine(line.TrimEnd('\r'));
         }
     }
 }
