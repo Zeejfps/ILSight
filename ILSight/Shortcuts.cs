@@ -89,7 +89,8 @@ internal static class Shortcuts
     }
 
     /// <summary>Runs the app-wide shortcuts pressed this frame, in this order, those that act on a view's selection
-    /// or a document not while a text box takes the keys; and goes back and forward with the pointer's side buttons.</summary>
+    /// or a document last and not while a text box takes the keys; and goes back and forward with the pointer's side
+    /// buttons.</summary>
     public static void Handle(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, ScreenDisplay display, Omnibar omnibar,
         BrowseTree tree, ExportSetup exportSetup, AppState appState)
     {
@@ -126,42 +127,49 @@ internal static class Shortcuts
             GoForward(commands, appState);
         }
 
-        if (!ui.WantsTextInput && ui.IsPressed(Open))
-        {
-            MainMenuView.OpenFile(ui, appearance, commands, navigation);
-        }
-
         if (ui.IsPressed(Settings))
         {
             panels.Open(DockView.DisplayOptions);
         }
 
-        if (!ui.WantsTextInput && ui.IsPressed(SaveCode))
+        // Those below act on a view's selection or a document, so none runs while a text box takes the keys, where the
+        // same keys edit the text; one written below is kept from it too, and one meant to run while typing goes above.
+        if (ui.WantsTextInput)
+        {
+            return;
+        }
+
+        if (ui.IsPressed(Open))
+        {
+            MainMenuView.OpenFile(ui, appearance, commands, navigation);
+        }
+
+        if (ui.IsPressed(SaveCode))
         {
             SaveDialogs.PickActiveCodeFile(ui, appearance, commands, navigation, setup.Language);
         }
 
-        if (!ui.WantsTextInput && ui.IsPressed(Export))
+        if (ui.IsPressed(Export))
         {
             exportSetup.Open(appState.ListSession.Assemblies.Assemblies, Exports.FindActiveAssembly(navigation));
         }
 
-        if (!ui.WantsTextInput && ui.IsPressed(ReloadAll))
+        if (ui.IsPressed(ReloadAll))
         {
             Commands.ReloadLater(commands, tree.ListExpandedPaths());
         }
 
-        if (!ui.WantsTextInput && ui.IsPressed(CloseTab))
+        if (ui.IsPressed(CloseTab))
         {
             panels.CloseActiveTab();
         }
 
-        if (!ui.WantsTextInput && ui.IsPressed(NextTab))
+        if (ui.IsPressed(NextTab))
         {
             panels.CycleTab(navigation, setup, 1);
         }
 
-        if (!ui.WantsTextInput && ui.IsPressed(PreviousTab))
+        if (ui.IsPressed(PreviousTab))
         {
             panels.CycleTab(navigation, setup, -1);
         }
