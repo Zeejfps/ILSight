@@ -342,9 +342,11 @@ nullable exception).
 - **Whatever fails stays where it was shown**, failed with why, until retried, dismissed or removed by product policy;
   never dropped, left pending or shown empty. An unexpected one is also reported once, saying the operation that failed
   (wherever asked; the step that asked may be named beside its kind), its cause (structured where clients tell causes
-  apart) and an applicable recovery; a shared recovery, and a shared cause's identity, are defined once, every
-  message saying either found from it; wording is localization's, a language's text owning its spacing, punctuation and
-  order, never code; kinds, incident identity and grouping are the product's.
+  apart) and an applicable recovery; a shared recovery, and a shared cause's identity, are defined once, every message
+  saying either found from it (each shape it takes, a row or a title, a message); wording is localization's, a
+  language's text owning its spacing, punctuation and order, never code: words read as one text (a label and its count)
+  join by the language's template, parts drawn apart are layout, a notation (`file(line): problem`) is the same in every
+  language; kinds, incident identity and grouping are the product's.
   What presents it never takes the focus or input meant for something else, nor marks it read by appearing; whether it
   appears by itself, waits on an indicator or interrupts is the product's.
 - **Batches and absence:** independent items keep their own outcomes, the batch failing only for what fails every item;
@@ -357,7 +359,9 @@ nullable exception).
   only failures, and, kept for reuse, keeps its mark and advises a trigger that rereads what failed. A definitive answer
   only where successful reads establish it, never not there while a failed source could hold it. A partial one, where
   the contract allows, names unread scope and why, partly read sources included, and keeps matches found but not
-  shown; each item or a count is the product's.
+  shown; each item, or a count per parent that failed (not by the why's words), is the product's. A lookup
+  of one target whose place fails fails with why, or shows an ancestor said to stand in; never not there, nor the
+  ancestor unsaid.
 - **Restore and retry:** unreadable restored state is kept as saved; a reload keeps saved references and user intent
   the product promises, failed or not, resolving them again (content derived from sources alone follows its reload
   contract). A failed read is reread only on a trigger the product chose (Retry, reload, a change to what it names, a
@@ -380,11 +384,11 @@ nullable exception).
 - **Lazy library failures are translated inside each adapter member's read**: only decoding and lazy reads of the
   library's objects inside, told by what the code does; the app's decisions and formatting run on facts read out after
   the outermost catch (even text it sorts by; the app's conditions on what to read next decided outside on facts read
-  under a narrow catch; a helper doing both split). A traversal steered only by the library's own decoded facts
-  (follow a property unless the library hides it) may stay inside; the app's policy goes outside. It returns values it
-  read (freely enumerable) or its own `IAsyncEnumerable<T>` iterator, never deferred library execution; the iterator
-  catches each item's read, owns its source (`await using`), and is consumed in one loop, overlapping no other use of a
-  source that forbids it.
+  under a narrow catch; a helper doing both split). A traversal steered only by the library's own decoded facts (follow
+  a property unless the library hides it) may stay inside; the app's policy goes outside, which analyses apply included.
+  It returns values it read (freely enumerable) or its own `IAsyncEnumerable<T>` iterator, never deferred library
+  execution; the iterator catches each item's read, owns its source (`await using`), and is consumed in one loop,
+  overlapping no other use of a source that forbids it.
 - **A shared read whose outcome is a value** is awaited and matched by the unit needing it before its sync read
   starts; never a sync wait that rethrows, nor a match at each sync caller.
 - **Requested cancellation isn't a failure; a timeout is.** An adapter lets `OperationCanceledException` through when
@@ -396,7 +400,8 @@ nullable exception).
   makes it, or a serialized or atomic step); the check returns `Superseded`, or ensures the generation's own source is
   cancelled before throwing its cancellation, the edge asking that source, never a linked token or a source each change
   must remember to cancel. What ends a generation owns that ending (or takes it as a required argument); behind a lock
-  it takes the source with the change and cancels after releasing it. A canceller appearing partway (a state change
+  it takes the source with the change and cancels after releasing it. Pending state the work recorded ends with its own
+  end, any outcome (quiet too), by its ticket, never left to cancellers. A canceller appearing partway (a state change
   returns a ticket newer work cancels) ends the workflow, which returns it (`[MustUse]`) for the edge to start the I/O
   linked to it, no catch in the workflow; later steps needing the outcome await a port member taking the ticket
   (`Stopped` if cancelled). **Newest wins by the current ticket:** the state commits a result only while its ticket is
