@@ -170,7 +170,8 @@ public static class Analyzers
 
     /// <summary>Runs <paramref name="kind"/> on <paramref name="symbol"/> over the open assemblies on
     /// the thread pool, once the reads of the type systems of the modules it can reach ended, yielding results in
-    /// batches as they are found, and after them each module it reached that the library could not read. Results come
+    /// batches as they are found, and after them each module it reached that the library could not read, then each it
+    /// read only in part. Results come
     /// sorted when the analysis asks for it, after all are found. A unit reading the symbol's module and those it
     /// scans: a module released (closed) before is passed over, the symbol's own finding nothing. What the library
     /// throws as the analysis reads ends the stream with <see cref="Outcome{T}.Failed"/>, after what was found before
@@ -205,6 +206,11 @@ public static class Analyzers
             foreach (var unreadable in context.Unreadable.Values.OrderBy(static u => u.Module.FilePath.FileName, StringComparer.OrdinalIgnoreCase))
             {
                 emit(new AnalysisFind.Unreadable { Name = unreadable.Module.FilePath.FileName, Why = unreadable.Why.Message });
+            }
+
+            foreach (var (name, count, why) in context.PassedOver.List())
+            {
+                emit(new AnalysisFind.PartlyRead { Name = name, Count = count, Why = why });
             }
 
             return new Outcome.Done();

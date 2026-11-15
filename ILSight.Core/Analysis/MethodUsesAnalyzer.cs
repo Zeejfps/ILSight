@@ -30,19 +30,19 @@ internal static class MethodUsesAnalyzer
         var module = (context.TypeSystems.Read.GetValueOrDefault(file)
             ?? throw new InvalidOperationException($"The type system of {file.FileName}, the analyzed method's, was not read before the analysis.")).MainModule;
         return context.EnsureMapping(method).GetMethodParts(DecompilerFacts.GetMethodHandle(method))
-            .SelectMany(part => ScanMethod(module, part)).Distinct();
+            .SelectMany(part => ScanMethod(module, part, context.PassedOver)).Distinct();
     }
 
-    private static IEnumerable<IEntity> ScanMethod(MetadataModule module, MethodDefinitionHandle handle)
+    private static IEnumerable<IEntity> ScanMethod(MetadataModule module, MethodDefinitionHandle handle, PassedOver passedOver)
     {
-        var body = MethodBodies.Read(module.MetadataFile, handle);
+        var body = MethodBodies.Read(module.MetadataFile, handle, passedOver);
         if (body is null)
         {
             yield break;
         }
 
         var types = new TypeDefinitionCollector();
-        foreach (var (opCode, token) in MethodBodies.ListTokens(body))
+        foreach (var (opCode, token) in MethodBodies.ListTokens(module.MetadataFile, body, passedOver))
         {
             var operandType = opCode.GetOperandType();
             if (operandType == OperandType.Type)
@@ -50,7 +50,7 @@ internal static class MethodUsesAnalyzer
                 continue;
             }
 
-            switch (Resolve(module, token))
+            switch (Resolve(module, token, passedOver))
             {
                 case IType type:
                     type.AcceptVisitor(types);
@@ -66,7 +66,8 @@ internal static class MethodUsesAnalyzer
         }
     }
 
-    private static object? Resolve(MetadataModule module, EntityHandle token)
+    // A token the library can't resolve is noted in passedOver: what it names isn't listed.
+    private static object? Resolve(MetadataModule module, EntityHandle token, PassedOver passedOver)
     {
         try
         {
@@ -78,8 +79,9 @@ internal static class MethodUsesAnalyzer
                 _ => null,
             };
         }
-        catch (BadImageFormatException)
+        catch (BadImageFormatException e)
         {
+            passedOver.Note(module.MetadataFile, e);
             return null;
         }
     }

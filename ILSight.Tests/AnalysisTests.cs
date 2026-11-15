@@ -150,6 +150,35 @@ public sealed class AnalysisTests
     }
 
     [Fact]
+    public async Task An_analysis_over_a_module_read_in_part_shows_what_it_found_and_names_the_module_partly_read()
+    {
+        using var temp = new TempDir();
+        var tryGet = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Calculator`1", "TryGet");
+        var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodBody(temp, Trees.TestAssemblyPath, tryGet));
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        list.OpenModule(path.Text);
+        var items = typeof(Fixtures.Calculator<>).GetField("_items", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        Assert.NotNull(items);
+        var anchor = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = path, Token = items.MetadataToken };
+        var symbol = Assert.IsType<Lookup<AnalysisSymbol>.Found>((await Analyzers.FindAsync(list, anchor, CancellationToken.None)).GetValue()).Value;
+        var readBy = symbol.Kinds.Single(static k => Analyzers.GetHeader(k) == "Read By");
+
+        var found = new List<AnalysisFind>();
+        await foreach (var batch in Analyzers.RunAsync(list, symbol, readBy, CancellationToken.None))
+        {
+            found.AddRange(batch.GetValue());
+        }
+
+        var readers = found.OfType<AnalysisFind.Found>().Select(static f => f.Symbol.Label).ToList();
+        Assert.Contains(readers, static l => l.StartsWith("Add(", StringComparison.Ordinal));
+        Assert.DoesNotContain(readers, static l => l.StartsWith("TryGet(", StringComparison.Ordinal));
+        var partly = Assert.IsType<AnalysisFind.PartlyRead>(Assert.Single(found, static f => f is AnalysisFind.PartlyRead));
+        Assert.Equal("UnreadableMethodBody.dll", partly.Name);
+        Assert.Equal(1, partly.Count);
+        Assert.NotEmpty(partly.Why);
+    }
+
+    [Fact]
     public async Task A_scope_scans_the_list_as_it_stood_when_its_reads_were_awaited()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };

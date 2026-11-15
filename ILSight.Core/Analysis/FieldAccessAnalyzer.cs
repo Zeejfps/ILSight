@@ -34,7 +34,7 @@ internal static class FieldAccessAnalyzer
 
         var file = module.MetadataFile;
         return context.EnsureMapping(DecompilerFacts.GetDeclaringTypeDefinition(method)).GetMethodParts(DecompilerFacts.GetMethodHandle(method))
-            .Any(part => MethodBodies.HasToken(MethodBodies.Read(file, part), (opCode, token) =>
+            .Any(part => MethodBodies.HasToken(file, part, context.PassedOver, (opCode, token) =>
                 Is(kind, opCode) && token.Kind.IsMemberKind() && module.ResolveEntity(token) is IField found && Members.IsSame(found, field)));
     }
 

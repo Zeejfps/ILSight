@@ -2,8 +2,8 @@ using System.Diagnostics;
 
 namespace ILSight.Core.Analysis;
 
-/// <summary>What an analysis finds: a symbol, or a module it should have searched that the library could not read,
-/// named beside what the others gave.</summary>
+/// <summary>What an analysis finds: a symbol, or a module it should have searched that the library could not read, or
+/// one it read only in part, named beside what the others gave.</summary>
 public abstract record AnalysisFind
 {
     private AnalysisFind()
@@ -24,12 +24,25 @@ public abstract record AnalysisFind
         public required string Why { get; init; }
     }
 
-    public TResult Match<TResult>(Func<Found, TResult> found, Func<Unreadable, TResult> unreadable)
+    /// <summary>A module the analysis read but for <see cref="Count"/> parts the library couldn't read (a method body,
+    /// an instruction, a token, a method's locals, an attribute's value), the first for <see cref="Why"/>.</summary>
+    public sealed record PartlyRead : AnalysisFind
+    {
+        /// <summary>The module's file name.</summary>
+        public required string Name { get; init; }
+
+        public required int Count { get; init; }
+
+        public required string Why { get; init; }
+    }
+
+    public TResult Match<TResult>(Func<Found, TResult> found, Func<Unreadable, TResult> unreadable, Func<PartlyRead, TResult> partlyRead)
     {
         return this switch
         {
             Found c => found(c),
             Unreadable c => unreadable(c),
+            PartlyRead c => partlyRead(c),
             _ => throw new UnreachableException($"AnalysisFind.Match does not handle {GetType().Name}."),
         };
     }

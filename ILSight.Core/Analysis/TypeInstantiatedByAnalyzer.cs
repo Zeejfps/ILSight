@@ -22,7 +22,7 @@ internal static class TypeInstantiatedByAnalyzer
     {
         return AnalyzerScope.Create(context, type).FindMembersWithCode(
             method => method.ParentModule is MetadataModule module
-                && MethodBodies.HasToken(MethodBodies.Find(method), (opCode, token) => Instantiates(module, opCode, token, type)),
+                && MethodBodies.HasToken(method, context.PassedOver, (opCode, token) => Instantiates(module, opCode, token, type)),
             context.CancellationToken);
     }
 

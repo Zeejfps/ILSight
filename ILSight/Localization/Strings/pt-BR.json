@@ -540,6 +540,7 @@
   "analyzer.loading": "Carregando…",
   "analyzer.hint": "Clique com o botão direito em um tipo ou membro e escolha Analisar, ou selecione-o na árvore e pressione {shortcut}.",
   "analyzer.unreadable": "{name}: não foi possível ler ({why})",
+  "analyzer.partly_read": "{name}: análise parcial, partes não lidas: {count} ({why})",
   "analyzer.clear": "Limpar",
   "analyzer.remove": "Remover",
   "analyzer.remove_analysis": "Remover análise",

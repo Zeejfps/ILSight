@@ -551,6 +551,7 @@
   "analyzer.loading": "Loading…",
   "analyzer.hint": "Right-click a type or member and pick Analyze, or select it in the tree and press {shortcut}.",
   "analyzer.unreadable": "{name}: couldn't be read ({why})",
+  "analyzer.partly_read": "{name}: partly analyzed, parts not read: {count} ({why})",
   "analyzer.clear": "Clear",
   "analyzer.remove": "Remove",
   "analyzer.remove_analysis": "Remove analysis",

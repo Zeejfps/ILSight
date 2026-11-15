@@ -262,6 +262,13 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
             return new TreeRow(_strings.AnalyzerUnreadable(unreadable.Name, unreadable.Why), warning, _theme.Warning);
         }
 
+        var partly = message.PartlyRead;
+        if (partly is not null)
+        {
+            var warning = new UiIcon(_icons.StatusError, _theme.Warning);
+            return new TreeRow(_strings.AnalyzerPartlyRead(partly.Name, partly.Count, partly.Why), warning, _theme.Warning);
+        }
+
         if (message.Error is null)
         {
             return CreateLoadingRow();
@@ -277,6 +284,12 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         if (unreadable is not null)
         {
             return _strings.AnalyzerUnreadable(unreadable.Name, unreadable.Why);
+        }
+
+        var partly = message.PartlyRead;
+        if (partly is not null)
+        {
+            return _strings.AnalyzerPartlyRead(partly.Name, partly.Count, partly.Why);
         }
 
         return message.Error ?? _strings.AnalyzerLoading;

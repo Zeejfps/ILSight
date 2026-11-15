@@ -105,6 +105,24 @@ internal static class BrokenAssemblies
         return temp.Write("UnreadableMethodName.dll", image);
     }
 
+    /// <summary>A copy of the assembly at <paramref name="path"/> whose method <paramref name="method"/> has a body that
+    /// lies outside the file: the file opens and its type system reads, and reading that method's IL throws.</summary>
+    public static string WriteUnreadableMethodBody(TempDir temp, string path, MethodDefinitionHandle method)
+    {
+        var image = File.ReadAllBytes(path);
+        using (var pe = new PEReader(new MemoryStream(image)))
+        {
+            var reader = pe.GetMetadataReader();
+            var rowSize = reader.GetTableRowSize(TableIndex.MethodDef);
+            const int rvaSize = 4;
+            var rowsBefore = MetadataTokens.GetRowNumber(method) - 1;
+            var offset = pe.PEHeaders.MetadataStartOffset + reader.GetTableMetadataOffset(TableIndex.MethodDef) + rowSize * rowsBefore;
+            image.AsSpan(offset, rvaSize).Fill(0x7F);
+        }
+
+        return temp.Write("UnreadableMethodBody.dll", image);
+    }
+
     /// <summary>A copy of the assembly at <paramref name="path"/> read only in part: the body of
     /// <paramref name="unreadableBody"/> lies outside the file, so the library can't read its IL, and the name of
     /// <paramref name="unreadableName"/> points past the string heap, so its type's members can't be listed.</summary>

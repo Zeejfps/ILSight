@@ -23,6 +23,10 @@ public sealed class AnalyzerContext
     /// <summary>The modules the analysis reached that the library could not read, to name beside its results.</summary>
     internal ConcurrentDictionary<LoadedModule, UnreadableModule> Unreadable { get; } = new();
 
+    /// <summary>The parts of the modules the analysis read that the library couldn't read, to name beside its
+    /// results.</summary>
+    internal PassedOver PassedOver { get; } = new();
+
     public CancellationToken CancellationToken { get; internal init; }
 
     /// <summary>How C# maps the compiler-generated code around <paramref name="entity"/> to the

@@ -45,7 +45,7 @@ internal static class MethodUsedByAnalyzer
 
         var users = AnalyzerScope.Create(context, analyzed).FindMembersWithCode(
             method => method.ParentModule is MetadataModule module
-                && MethodBodies.HasToken(MethodBodies.Find(method), (opCode, token) => References(module, opCode, token)),
+                && MethodBodies.HasToken(method, context.PassedOver, (opCode, token) => References(module, opCode, token)),
             context.CancellationToken);
         foreach (var user in users)
         {

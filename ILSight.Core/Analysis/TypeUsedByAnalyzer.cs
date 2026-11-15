@@ -26,17 +26,17 @@ internal static class TypeUsedByAnalyzer
         var scope = AnalyzerScope.Create(context, analyzedType);
         return scope.ListTypeSystems(context.CancellationToken)
             .AsParallel().AsOrdered()
-            .SelectMany(typeSystem => AnalyzeModule(analyzedType, typeSystem)
+            .SelectMany(typeSystem => AnalyzeModule(analyzedType, typeSystem, context.PassedOver)
                 .Distinct()
                 .Where(s => !analyzedType.Equals((s as IEntity)?.DeclaringTypeDefinition)));
     }
 
-    private static IEnumerable<ISymbol> AnalyzeModule(ITypeDefinition analyzedType, DecompilerTypeSystem typeSystem)
+    private static IEnumerable<ISymbol> AnalyzeModule(ITypeDefinition analyzedType, DecompilerTypeSystem typeSystem, PassedOver passedOver)
     {
         var module = typeSystem.MainModule;
         var metadata = module.MetadataFile.Metadata;
         var decoder = new FindTypeDecoder(module, analyzedType);
-        var attributeDecoder = FindTypeInAttributeDecoder.Create(module, analyzedType);
+        var attributeDecoder = FindTypeInAttributeDecoder.Create(module, analyzedType, passedOver);
 
         foreach (var result in CustomAttributes.ListOwners(typeSystem, UsesType))
         {
@@ -64,7 +64,7 @@ internal static class TypeUsedByAnalyzer
             var md = metadata.GetMethodDefinition(h);
             var found = FindTypeDecoder.AnyInMethodSignature(md.DecodeSignature(decoder, default));
             found |= IsUsedInGenericConstraints(metadata, md.GetGenericParameters(), decoder);
-            if (found || IsUsedInMethodBody(module.MetadataFile, h, decoder))
+            if (found || IsUsedInMethodBody(module.MetadataFile, h, decoder, passedOver))
             {
                 var method = module.GetDefinition(h);
                 yield return method.AccessorOwner ?? method;
@@ -105,8 +105,10 @@ internal static class TypeUsedByAnalyzer
             {
                 value = attribute.DecodeValue(attributeDecoder);
             }
-            catch (EnumUnderlyingTypeResolveException)
+            catch (EnumUnderlyingTypeResolveException e)
             {
+                // The value can't be decoded: what type it names is not known.
+                passedOver.Note(module.MetadataFile, e);
                 return false;
             }
             return CustomAttributes.IsOfType(attribute.Constructor, metadata, decoder)
@@ -130,9 +132,9 @@ internal static class TypeUsedByAnalyzer
             .Any(c => decoder.GetTypeFromEntity(metadata, metadata.GetGenericParameterConstraint(c).Type)));
     }
 
-    private static bool IsUsedInMethodBody(MetadataFile module, MethodDefinitionHandle handle, FindTypeDecoder decoder)
+    private static bool IsUsedInMethodBody(MetadataFile module, MethodDefinitionHandle handle, FindTypeDecoder decoder, PassedOver passedOver)
     {
-        var body = MethodBodies.Read(module, handle);
+        var body = MethodBodies.Read(module, handle, passedOver);
         if (body is null)
         {
             return false;
@@ -144,7 +146,7 @@ internal static class TypeUsedByAnalyzer
             return true;
         }
 
-        return MethodBodies.HasToken(body, (_, token) => IsUsedByMember(token));
+        return MethodBodies.HasToken(module, body, passedOver, (_, token) => IsUsedByMember(token));
 
         bool IsUsedByLocals(StandaloneSignatureHandle locals)
         {
@@ -152,9 +154,10 @@ internal static class TypeUsedByAnalyzer
             {
                 return IsUsedBySignature(metadata.GetStandaloneSignature(locals));
             }
-            catch (BadImageFormatException)
+            catch (BadImageFormatException e)
             {
-                // Locals that cannot be read show no use of the type; the code still may.
+                // Locals that cannot be read are passed over, and said so; the code may still show a use.
+                passedOver.Note(module, e);
                 return false;
             }
         }

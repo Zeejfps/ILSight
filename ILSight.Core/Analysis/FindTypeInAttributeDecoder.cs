@@ -15,11 +15,16 @@ internal sealed class FindTypeInAttributeDecoder : ICustomAttributeTypeProvider<
     public required TypeDefinitionHandle Handle { get; init; }
     public required PrimitiveTypeCode PrimitiveType { get; init; }
 
-    /// <summary>A decoder finding <paramref name="type"/> in the attribute values of <paramref name="currentModule"/>.</summary>
-    public static FindTypeInAttributeDecoder Create(MetadataModule currentModule, ITypeDefinition type)
+    /// <summary>Where a type name the library can't parse is noted.</summary>
+    public required PassedOver PassedOver { get; init; }
+
+    /// <summary>A decoder finding <paramref name="type"/> in the attribute values of <paramref name="currentModule"/>,
+    /// noting in <paramref name="passedOver"/> each type name it can't parse.</summary>
+    public static FindTypeInAttributeDecoder Create(MetadataModule currentModule, ITypeDefinition type, PassedOver passedOver)
     {
         return new FindTypeInAttributeDecoder
         {
+            PassedOver = passedOver,
             CurrentModule = currentModule,
             DeclaringModule = type.ParentModule?.MetadataFile ?? throw new InvalidOperationException("Cannot use MetadataModule without PEFile as context."),
             Handle = DecompilerFacts.GetTypeHandle(type),
@@ -78,8 +83,9 @@ internal sealed class FindTypeInAttributeDecoder : ICustomAttributeTypeProvider<
         {
             return GetResultFromResolvedType(ReflectionHelper.ParseReflectionName(name, new SimpleTypeResolveContext(CurrentModule)));
         }
-        catch (ReflectionNameParseException)
+        catch (ReflectionNameParseException e)
         {
+            PassedOver.Note(CurrentModule.MetadataFile, e);
             return TokenSearchResult.NoResult;
         }
     }
@@ -89,7 +95,7 @@ internal sealed class FindTypeInAttributeDecoder : ICustomAttributeTypeProvider<
         var typeCode = type & TokenSearchResult.TypeCodeMask;
         if (typeCode == 0 || typeCode == TokenSearchResult.SystemType)
         {
-            throw new EnumUnderlyingTypeResolveException();
+            throw new EnumUnderlyingTypeResolveException("The underlying type of an enum in an attribute's value could not be resolved.");
         }
 
         return (PrimitiveTypeCode)typeCode;
