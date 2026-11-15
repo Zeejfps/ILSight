@@ -11,7 +11,10 @@ namespace ILSight.ExportArea;
 /// straight into the folder, several as a solution with a folder per project. Project names start
 /// out unique; only renaming can make two clash, which stops the export until it is fixed, as a
 /// key file that is not there does. Everything but the ticks stays for the next time. The
-/// assemblies are ticked on a page of their own, which the dialog opens on when none is ticked yet.
+/// assemblies are ticked on a page of their own, which the dialog opens on when none is ticked yet. Its owner is the
+/// dialog, open once at a time, so it is held once (<see cref="UiState"/>); its window and its table's columns are kept
+/// with the settings (the settings' save reads them here); were the dialog shown in a second place, each would keep
+/// its own.
 /// </summary>
 public sealed class ExportSetup
 {
@@ -34,6 +37,12 @@ public sealed class ExportSetup
     public ExportAssemblies Assemblies { get; } = new();
 
     public AssemblyPicker Picker { get; } = new();
+
+    /// <summary>The columns of the dialog's table of assemblies: assembly, version and project name.</summary>
+    public TableColumns Columns { get; } = new(
+        new TableColumn(3f, 120f),
+        new TableColumn(1f, 64f),
+        new TableColumn(3f, 120f));
 
     /// <summary>What the disk says about <see cref="Folder"/> and <see cref="StrongNameKeyFile"/>, looked at again each
     /// time either changes.</summary>

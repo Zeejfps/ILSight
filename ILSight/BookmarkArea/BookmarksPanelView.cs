@@ -26,7 +26,7 @@ internal static class BookmarksPanelView
 
     private static readonly ConditionalWeakTable<Strings, string[]> HeaderTexts = new();
 
-    public static void Render(Ui ui, Appearance appearance, BookmarksPanel bookmarksPanel, IAppCommandWriter commands, TableColumns bookmarkColumns, BookmarkList bookmarks, AssemblyList assemblies)
+    public static void Render(Ui ui, Appearance appearance, BookmarksPanel bookmarksPanel, IAppCommandWriter commands, BookmarkList bookmarks, AssemblyList assemblies)
     {
         var t = appearance.Strings;
         var panel = bookmarksPanel;
@@ -42,7 +42,7 @@ internal static class BookmarksPanelView
         }
 
         panel.Selection.ShowIn(bookmarks.Items);
-        var table = ui.Table(ListId, bookmarkColumns, panel.Cells);
+        var table = ui.Table(ListId, panel.Columns, panel.Cells);
         table.Header(HeaderTexts.GetValue(t, static t => ListHeaders(t)));
         var removed = List(ui, bookmarksPanel, appearance, commands, bookmarks, assemblies, table);
         Menu(ui, appearance, bookmarksPanel, commands);

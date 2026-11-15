@@ -17,9 +17,10 @@ internal static class DecompilerOptionsPanelView
 
     private static readonly CSharpVersion Newest = Sections.Max(static s => FindVersion(s.Group) ?? 0);
 
-    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, DecompilerOptionsPanel panel, FoldedGroups folded, DecompilerOptions options)
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, DecompilerOptionsPanel panel, DecompilerOptions options)
     {
         var t = appearance.Strings;
+        var folded = panel.Folded;
         var theme = ui.Theme;
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         using (ui.PaneToolbar())

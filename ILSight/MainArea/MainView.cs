@@ -38,14 +38,14 @@ public static class MainView
         FrameworkPickerView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.Picker, appState.ListSession.Navigation, appState.ListSession.Assemblies);
         ComparisonPickerView.Render(ui, ui.State.ComparisonPicker, ui.State.Appearance, ui.State.AppCommands, appState.ListSession.Navigation, appState.ListSession.Assemblies);
         NuGetPickerView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.NuGetPicker, ui.State.DownloadNuGetPackageHandler);
-        ProcessPickerView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.ProcessColumns, ui.State.ProcessModuleColumns, ui.State.ProcessPicker, appState.ListSession.Navigation);
+        ProcessPickerView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.ProcessPicker, appState.ListSession.Navigation);
         CloseAssembliesDialogView.Render(ui, ui.State.Closer, ui.State.Appearance, ui.State.AppCommands, appState.ListSession.Assemblies);
         AssemblyListsDialogView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.ListsDialog, ui.State.Presets, appState.Lists, appState.ListSession, appState.KeptScreen.View);
         AssemblyListDeleteDialogView.Render(ui, ui.State.Appearance, ui.State.ListsDialog, ui.State.AppCommands, appState.Lists, appState.ListSession, appState.KeptScreen.View);
         BookmarkImportDialogView.Render(ui, ui.State.Appearance, ui.State.AppCommands, appState.Imports);
         LayoutResetDialogView.Render(ui, ui.State.Appearance, ui.State.Panels, ui.State.LayoutReset);
         DisplayOptionsResetDialogView.Render(ui, ui.State.Appearance, ui.State.Display);
-        ExportDialogView.Render(ui, ui.State.ExportSetup, ui.State.Appearance, ui.State.ExportColumns, ui.State.AppCommands, appState.Decompiler.Setup.Options);
+        ExportDialogView.Render(ui, ui.State.ExportSetup, ui.State.Appearance, ui.State.AppCommands, appState.Decompiler.Setup.Options);
         ErrorDialogView.Render(ui, ui.State.Appearance, ui.State.ErrorDialog, ui.State.Display, ui.State.AppCommands, appState.Errors);
         AboutDialogView.Render(ui, ui.State.About, ui.State.Appearance, ui.State.AppCommands, ui.State.ShippedLicenses, appState);
     }
@@ -139,16 +139,16 @@ public static class MainView
                 TreePaneView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.Panels, ui.State.Tree, ui.State.Analyzer, ui.State.Display, ui.State.Search, ui.State.ComparisonPicker, ui.State.Closer, ui.State.ExportSetup, appState.ListSession.Navigation, appState.ListSession.Assemblies, appState.Decompiler.Setup);
                 break;
             case DockView.Search:
-                SearchPanelView.Render(ui, ui.State.Appearance, ui.State.Search, ui.State.AppCommands, ui.State.SearchColumns, appState.ListSession.Navigation, appState.Decompiler.Setup);
+                SearchPanelView.Render(ui, ui.State.Appearance, ui.State.Search, ui.State.SearchPanel, ui.State.AppCommands, appState.ListSession.Navigation, appState.Decompiler.Setup);
                 break;
             case DockView.Bookmarks:
-                BookmarksPanelView.Render(ui, ui.State.Appearance, ui.State.BookmarksPanel, ui.State.AppCommands, ui.State.BookmarkColumns, appState.Bookmarks, appState.ListSession.Assemblies);
+                BookmarksPanelView.Render(ui, ui.State.Appearance, ui.State.BookmarksPanel, ui.State.AppCommands, appState.Bookmarks, appState.ListSession.Assemblies);
                 break;
             case DockView.Analyzer:
                 AnalyzerPanelView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.Panels, ui.State.Analyzer, appState.ListSession.Navigation, appState.ListSession.Analyzer);
                 break;
             case DockView.DecompilerOptions:
-                DecompilerOptionsPanelView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.DecompilerOptionsPanel, ui.State.FoldedOptionGroups, appState.Decompiler.Setup.Options);
+                DecompilerOptionsPanelView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.DecompilerOptionsPanel, appState.Decompiler.Setup.Options);
                 break;
             case DockView.DisplayOptions:
                 DisplayOptionsPanelView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.Shell, ui.State.DisplayOptionsPanel, ui.State.Display, ui.State.CodeFonts, appState);

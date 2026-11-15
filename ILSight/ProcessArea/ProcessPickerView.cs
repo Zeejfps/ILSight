@@ -42,7 +42,7 @@ internal static class ProcessPickerView
     /// what they change draws and Open is asked: the modules of a process newly selected show loading in that frame,
     /// and Open finds nothing of the process before; then tells what it found whether it is still open, which stops
     /// what it started once it is not, however it was closed.</summary>
-    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, TableColumns processColumns, TableColumns processModuleColumns, ProcessPicker processPicker, Navigation navigation)
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, ProcessPicker processPicker, Navigation navigation)
     {
         var picker = processPicker;
         var browser = picker.Browser;
@@ -54,7 +54,7 @@ internal static class ProcessPickerView
         {
             if (dialog.IsOpen)
             {
-                Content(ui, appearance, commands, processColumns, processModuleColumns, picker, ref open, ref close);
+                Content(ui, appearance, commands, picker.Columns, picker.ModuleColumns, picker, ref open, ref close);
             }
         }
 

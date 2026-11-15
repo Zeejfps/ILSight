@@ -336,7 +336,7 @@ internal static class AppRoot
             TabFocus = tabFocus,
             Panels = new Panels(layout, documents, tabFocus, search, appCommands),
             Tree = new BrowseTree { Session = session },
-            FoldedOptionGroups = new FoldedGroups { Folded = new HashSet<string>(saved.FoldedOptionGroups ?? []) },
+            DecompilerOptionsPanel = new DecompilerOptionsPanel { Folded = new FoldedGroups { Folded = new HashSet<string>(saved.FoldedOptionGroups ?? []) } },
             Search = search,
             Omnibar = new Omnibar { Search = new Search() },
             Grids = new MetadataGridScreenState { Filters = MetadataFilters.From(saved.FlagsFilters) },

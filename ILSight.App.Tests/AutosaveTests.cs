@@ -74,16 +74,16 @@ public sealed class AutosaveTests : IDisposable
                 screen.Search.LookFor(SearchKinds.Types);
                 break;
             case nameof(AppSettings.FoldedOptionGroups):
-                screen.FoldedOptionGroups.Fold(["Other"]);
+                screen.DecompilerOptionsPanel.Folded.Fold(["Other"]);
                 break;
             case nameof(AppSettings.BookmarkColumns):
-                screen.BookmarkColumns.Restore([1f, 1f, 4f, 1f]);
+                screen.BookmarksPanel.Columns.Restore([1f, 1f, 4f, 1f]);
                 break;
             case nameof(AppSettings.SearchColumns):
-                screen.SearchColumns.Restore([1f, 4f, 1f]);
+                screen.SearchPanel.Columns.Restore([1f, 4f, 1f]);
                 break;
             case nameof(AppSettings.ExportColumns):
-                screen.ExportColumns.Restore([1f, 4f, 1f]);
+                screen.ExportSetup.Columns.Restore([1f, 4f, 1f]);
                 break;
             case nameof(AppSettings.ExportWindow):
                 screen.ExportSetup.Window.Bounds = MovedExportWindow;
@@ -95,10 +95,10 @@ public sealed class AutosaveTests : IDisposable
                 screen.ProcessPicker.Window.Bounds = MovedProcessWindow;
                 break;
             case nameof(AppSettings.ProcessColumns):
-                screen.ProcessColumns.Restore([2f, 1f, 3f, 1f]);
+                screen.ProcessPicker.Columns.Restore([2f, 1f, 3f, 1f]);
                 break;
             case nameof(AppSettings.ProcessModuleColumns):
-                screen.ProcessModuleColumns.Restore([1f, 4f]);
+                screen.ProcessPicker.ModuleColumns.Restore([1f, 4f]);
                 break;
             case nameof(AppSettings.CloseWindow):
                 screen.Closer.Window.Bounds = MovedCloseWindow;

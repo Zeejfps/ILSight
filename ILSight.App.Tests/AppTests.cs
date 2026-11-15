@@ -420,7 +420,7 @@ public sealed class AppTests
             .Take(title)
             .Last(t => IsGroupMark(t.Text));
         app.Frames.Click(chevron.Rect).Frame();
-        Assert.Contains(nameof(CSharpVersion.CSharp8), app.Ui.FoldedOptionGroups.Folded);
+        Assert.Contains(nameof(CSharpVersion.CSharp8), app.Ui.DecompilerOptionsPanel.Folded.Folded);
         Assert.DoesNotContain(app.Frames.Canvas.Texts, t => t.Inputs.Text == "switch expressions");
     }
 
@@ -447,7 +447,7 @@ public sealed class AppTests
         Assert.True(app.Frames.Drew("C# 8.0 / VS 2019"));
 
         app.Frames.ClickOn(Selector.AtPath("dock/decompiler-options/expand"));
-        Assert.Empty(app.Ui.FoldedOptionGroups.Folded);
+        Assert.Empty(app.Ui.DecompilerOptionsPanel.Folded.Folded);
         Assert.True(app.Frames.Drew("Extension members"));
     }
 
@@ -463,7 +463,7 @@ public sealed class AppTests
         app.Frames.ClickOn(Selector.WithText("C# 8.0 / VS 2019"));
         app.Settle(1);
         Assert.All(csharp8, t => Assert.False(DecompilerToggles.IsOn(app.AppState.Decompiler.Setup.Options, t)));
-        Assert.DoesNotContain(nameof(CSharpVersion.CSharp8), app.Ui.FoldedOptionGroups.Folded);
+        Assert.DoesNotContain(nameof(CSharpVersion.CSharp8), app.Ui.DecompilerOptionsPanel.Folded.Folded);
 
         app.Frames.ClickOn(Selector.WithText("switch expressions")).Frame();
         Assert.Equal(csharp8.Length - 1, csharp8.Count(toggle => DecompilerToggles.IsChanged(app.AppState.Decompiler.Setup.Options, toggle)));
@@ -485,7 +485,7 @@ public sealed class AppTests
 
     private static void FoldOptionGroupsBut(AppDriver app, string open)
     {
-        app.Ui.FoldedOptionGroups.Fold(Enum.GetNames<CSharpVersion>().Append("Other").Append("FSharp").Where(g => g != open));
+        app.Ui.DecompilerOptionsPanel.Folded.Fold(Enum.GetNames<CSharpVersion>().Append("Other").Append("FSharp").Where(g => g != open));
     }
 
     [Fact]

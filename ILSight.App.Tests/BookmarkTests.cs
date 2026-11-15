@@ -443,11 +443,11 @@ public sealed class BookmarkTests : IDisposable
     public void The_bookmark_column_widths_are_saved_with_the_settings()
     {
         var d = new AppStateDriver(_temp.Settings());
-        d.Ui.BookmarkColumns.Restore([1f, 1f, 4f, 1f]);
+        d.Ui.BookmarksPanel.Columns.Restore([1f, 1f, 4f, 1f]);
         d.NextFrame();
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
-        var restored = new AppStateDriver(_temp.Settings()).Ui.BookmarkColumns.Weights;
+        var restored = new AppStateDriver(_temp.Settings()).Ui.BookmarksPanel.Columns.Weights;
 
         Assert.Equal([1f, 1f, 4f, 1f], restored);
     }

@@ -25,7 +25,7 @@ internal static class SearchPanelView
     /// <summary>The search panel. A result picked shows in <paramref name="navigation"/>'s tabs in this frame, in
     /// <paramref name="setup"/>, in the preview tab while
     /// <see cref="Navigation.PreviewTabs"/>; only its decompile is queued.</summary>
-    public static void Render(Ui ui, Appearance appearance, Search search, IAppCommandWriter commands, TableColumns searchColumns, Navigation navigation, DecompilerSetup setup)
+    public static void Render(Ui ui, Appearance appearance, Search search, SearchPanel panel, IAppCommandWriter commands, Navigation navigation, DecompilerSetup setup)
     {
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         using (ui.PaneToolbar(new Box { Gap = ui.Theme.Gap }))
@@ -36,7 +36,7 @@ internal static class SearchPanelView
         }
         ui.Separator();
         Unsearched(ui, appearance, search.Results);
-        Results(ui, appearance, search, searchColumns, commands, navigation, setup);
+        Results(ui, appearance, search, panel.Columns, commands, navigation, setup);
     }
 
     private static void Unsearched(Ui ui, Appearance appearance, SearchResults results)

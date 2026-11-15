@@ -99,9 +99,9 @@ internal static class ExportDialogView
     private const string RemoveDeadStores = "RemoveDeadStores";
     private const string DebugSymbolNames = "UseDebugSymbols";
 
-    public static void Render(Ui ui, ExportSetup exportSetup, Appearance appearance, TableColumns exportColumns, IAppCommandWriter commands, DecompilerOptions options)
+    public static void Render(Ui ui, ExportSetup exportSetup, Appearance appearance, IAppCommandWriter commands, DecompilerOptions options)
     {
-        Dialog(ui, exportSetup, appearance, exportColumns, commands, options);
+        Dialog(ui, exportSetup, appearance, exportSetup.Columns, commands, options);
         exportSetup.Window.Settle(ui.Input.IsDown(PointerButton.Left));
     }
 

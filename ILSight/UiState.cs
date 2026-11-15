@@ -67,42 +67,8 @@ public sealed class UiState : IUiState
     /// <summary>The analyzer's tree as its view shows it.</summary>
     public required AnalyzerRows Analyzer { get; init; }
 
-    /// <summary>The columns of the bookmarks panel: mark, name, location and module.</summary>
-    public TableColumns BookmarkColumns { get; } = new(
-        new TableColumn(Fixed: 28f, Controls: true),
-        new TableColumn(2f, 80f),
-        new TableColumn(3f, 80f),
-        new TableColumn(2f, 60f));
-
-    /// <summary>The columns of the export dialog's table: assembly, version and project name.</summary>
-    public TableColumns ExportColumns { get; } = new(
-        new TableColumn(3f, 120f),
-        new TableColumn(1f, 64f),
-        new TableColumn(3f, 120f));
-
-    /// <summary>The columns of the search results: name, location and assembly.</summary>
-    public TableColumns SearchColumns { get; } = new(
-        new TableColumn(3f, 120f),
-        new TableColumn(3f, 80f),
-        new TableColumn(2f, 60f));
-
-    /// <summary>The columns of the running processes: name, id, entry assembly and runtime.</summary>
-    public TableColumns ProcessColumns { get; } = new(
-        new TableColumn(2f, 80f),
-        new TableColumn(1f, 48f),
-        new TableColumn(2f, 80f),
-        new TableColumn(1f, 56f));
-
-    /// <summary>The columns of the assemblies a process loaded: name and folder.</summary>
-    public TableColumns ProcessModuleColumns { get; } = new(
-        new TableColumn(2f, 100f),
-        new TableColumn(3f, 80f));
-
-    /// <summary>The decompiler options panel's folded groups.</summary>
-    public required FoldedGroups FoldedOptionGroups { get; init; }
-
-    /// <summary>The decompiler options panel's search.</summary>
-    public DecompilerOptionsPanel DecompilerOptionsPanel { get; } = new();
+    /// <summary>The decompiler options panel's search and folded groups.</summary>
+    public required DecompilerOptionsPanel DecompilerOptionsPanel { get; init; }
 
     /// <summary>The display options panel's search.</summary>
     public DisplayOptionsPanel DisplayOptionsPanel { get; } = new();
@@ -119,6 +85,9 @@ public sealed class UiState : IUiState
 
     /// <summary>The search panel's query, results and selection.</summary>
     public required Search Search { get; init; }
+
+    /// <summary>The search panel's results table.</summary>
+    public SearchPanel SearchPanel { get; } = new();
 
     /// <summary>The bar over each document: its path, or its search.</summary>
     public required Omnibar Omnibar { get; init; }

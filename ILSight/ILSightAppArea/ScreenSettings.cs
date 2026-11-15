@@ -16,11 +16,11 @@ public static class ScreenSettings
     public static void RestoreScreen(UiState uiState, ViewSettings saved)
     {
         uiState.Search.LookFor(saved.SearchKinds);
-        uiState.BookmarkColumns.Restore(saved.BookmarkColumns);
-        uiState.SearchColumns.Restore(saved.SearchColumns);
-        uiState.ExportColumns.Restore(saved.ExportColumns);
-        uiState.ProcessColumns.Restore(saved.ProcessColumns);
-        uiState.ProcessModuleColumns.Restore(saved.ProcessModuleColumns);
+        uiState.BookmarksPanel.Columns.Restore(saved.BookmarkColumns);
+        uiState.SearchPanel.Columns.Restore(saved.SearchColumns);
+        uiState.ExportSetup.Columns.Restore(saved.ExportColumns);
+        uiState.ProcessPicker.Columns.Restore(saved.ProcessColumns);
+        uiState.ProcessPicker.ModuleColumns.Restore(saved.ProcessModuleColumns);
         uiState.NuGetPicker.RestoreSearch(saved.NuGet);
         uiState.NuGetPicker.Window.Restore(saved.NuGetWindow);
         uiState.ExportSetup.Window.Restore(saved.ExportWindow);
@@ -53,10 +53,10 @@ public static class ScreenSettings
     {
         return new ViewSources
         {
-            BookmarkColumns = uiState.BookmarkColumns.Changes,
-            SearchColumns = uiState.SearchColumns.Changes,
-            ExportColumns = uiState.ExportColumns.Changes,
-            FoldedOptionGroups = uiState.FoldedOptionGroups.Revision,
+            BookmarkColumns = uiState.BookmarksPanel.Columns.Changes,
+            SearchColumns = uiState.SearchPanel.Columns.Changes,
+            ExportColumns = uiState.ExportSetup.Columns.Changes,
+            FoldedOptionGroups = uiState.DecompilerOptionsPanel.Folded.Revision,
             SearchKinds = uiState.Search.Kinds,
             FlagsFilters = uiState.Grids.Filters.Revision,
             ExportWindow = uiState.ExportSetup.Window.Rest.Changes,
@@ -65,8 +65,8 @@ public static class ScreenSettings
             NuGetSearch = uiState.NuGetPicker.Browser.SearchChanges,
             NuGetWindow = uiState.NuGetPicker.Window.Rest.Changes,
             ProcessWindow = uiState.ProcessPicker.Window.Rest.Changes,
-            ProcessColumns = uiState.ProcessColumns.Changes,
-            ProcessModuleColumns = uiState.ProcessModuleColumns.Changes,
+            ProcessColumns = uiState.ProcessPicker.Columns.Changes,
+            ProcessModuleColumns = uiState.ProcessPicker.ModuleColumns.Changes,
             CloseWindow = uiState.Closer.Window.Rest.Changes,
             Documents = uiState.Documents.Revision,
         };
@@ -76,10 +76,10 @@ public static class ScreenSettings
     {
         return new ViewSettings
         {
-            BookmarkColumns = uiState.BookmarkColumns.Weights.ToList(),
-            SearchColumns = uiState.SearchColumns.Weights.ToList(),
-            ExportColumns = uiState.ExportColumns.Weights.ToList(),
-            FoldedOptionGroups = uiState.FoldedOptionGroups.ListInOrder(),
+            BookmarkColumns = uiState.BookmarksPanel.Columns.Weights.ToList(),
+            SearchColumns = uiState.SearchPanel.Columns.Weights.ToList(),
+            ExportColumns = uiState.ExportSetup.Columns.Weights.ToList(),
+            FoldedOptionGroups = uiState.DecompilerOptionsPanel.Folded.ListInOrder(),
             SearchKinds = uiState.Search.Kinds,
             FlagsFilters = uiState.Grids.Filters.ListSaved(),
             ExportWindow = uiState.ExportSetup.Window.Bounds,
@@ -88,8 +88,8 @@ public static class ScreenSettings
             NuGet = uiState.NuGetPicker.Browser.KeptSearch,
             NuGetWindow = uiState.NuGetPicker.Window.Bounds,
             ProcessWindow = uiState.ProcessPicker.Window.Bounds,
-            ProcessColumns = uiState.ProcessColumns.Weights.ToList(),
-            ProcessModuleColumns = uiState.ProcessModuleColumns.Weights.ToList(),
+            ProcessColumns = uiState.ProcessPicker.Columns.Weights.ToList(),
+            ProcessModuleColumns = uiState.ProcessPicker.ModuleColumns.Weights.ToList(),
             CloseWindow = uiState.Closer.Window.Bounds,
             Tabs = DocumentPanels.SavePanels(uiState.Documents),
         };
