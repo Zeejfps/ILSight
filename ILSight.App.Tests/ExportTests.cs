@@ -548,6 +548,26 @@ public sealed class ExportTests : IDisposable
         }
     }
 
+    [Fact]
+    public void Copying_the_whole_report_tab_copies_the_text_it_draws_and_no_trace_it_does_not_show()
+    {
+        var problems = new[] { "A.cs", "B.cs" }
+            .Select(static file => (ExportProblem)new ExportProblem.FileNotWritten { Path = file, Error = ExportErrorOf(new IOException($"{file} is locked.")) })
+            .ToList();
+        var job = new ExportJob { Kind = ExportKind.Project, Name = "Shop", Folder = "C:/out" };
+        var report = new ExportReport { Run = new ExportRun(1), Job = job, FolderExists = true, Elapsed = TimeSpan.FromSeconds(1), End = new ExportEnd.Finished { Written = [], Problems = problems } };
+        var view = CodeViewDriver.Showing(ExportReportText.Write(Strings.En, [report]), height: 2000f);
+
+        view.Key(KeyboardKey.Tab).Frame();
+        view.Key(Shortcuts.SelectAll);
+        view.Key(Shortcuts.Copy);
+
+        var drawn = view.Document.Lines.Select(static l => l.Text).ToList();
+        var copied = view.Frames.Clipboard.Text.ReplaceLineEndings("\n").Split('\n');
+        Assert.Equal(drawn, copied);
+        Assert.Equal(2, copied.Count(static l => l.StartsWith("        System.IO.IOException", StringComparison.Ordinal)));
+    }
+
     // An export error as an export makes one of what it caught, with a stack trace.
     private static ExportError ExportErrorOf(Exception thrown)
     {
