@@ -274,7 +274,7 @@ internal static class NuGetPickerView
         }
 
         var theme = ui.Theme;
-        var note = ui.Memo("nuget-config-unreadable", (why, t: appearance.Strings), static a => a.t.NugetConfigUnreadable(a.why));
+        var note = ui.Memo("nuget-config-unreadable", (why, t: appearance.Strings), static a => a.t.CauseNugetConfigUnreadableNotice(a.why));
         ui.Text(note, new Box { Width = Sizing.Grow(), Padding = new Spacing(theme.Gap, theme.GapTight) }, color: theme.Warning,
             size: theme.FontSizeSmall, wrap: true);
     }

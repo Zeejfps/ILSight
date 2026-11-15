@@ -259,7 +259,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         if (unreadable is not null)
         {
             var warning = new UiIcon(_icons.StatusError, _theme.Warning);
-            return new TreeRow(_strings.AnalyzerUnreadable(unreadable.Name, unreadable.Why), warning, _theme.Warning);
+            return new TreeRow(_strings.CauseModuleUnreadableRow(unreadable.Name, unreadable.Why), warning, _theme.Warning);
         }
 
         var partly = message.PartlyRead;
@@ -283,7 +283,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         var unreadable = message.Unreadable;
         if (unreadable is not null)
         {
-            return _strings.AnalyzerUnreadable(unreadable.Name, unreadable.Why);
+            return _strings.CauseModuleUnreadableRow(unreadable.Name, unreadable.Why);
         }
 
         var partly = message.PartlyRead;
@@ -315,7 +315,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
     {
         var anchor = failed.SavedAs;
         return failed.Failure.Match(
-            unreadable => _strings.AnalyzerUnreadable(unreadable.Name, unreadable.Why),
+            unreadable => _strings.CauseModuleUnreadableRow(unreadable.Name, unreadable.Why),
             _ => _strings.ErrorNoLongerThere($"{anchor.FilePath.FileName} ({anchor.Token:X8})"),
             lookup => _strings.AnalyzerUnreadable(anchor.FilePath.FileName, lookup.Why));
     }

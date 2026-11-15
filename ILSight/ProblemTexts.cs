@@ -47,7 +47,7 @@ public static class ProblemTexts
                 Degraded(t, p.Unread, t.ErrorFileDenied(p.Unread.Error.FilePath.FileName))),
             referenceFileDamaged: p => (t.ErrorReadReference(p.Unread.Name, p.Unread.Module),
                 Degraded(t, p.Unread, t.ErrorFileDamaged(p.Unread.Error.FilePath.FileName))),
-            moduleUnreadable: p => (t.ErrorModuleUnreadable(p.Module), p.Why.ToString()),
+            moduleUnreadable: p => (t.CauseModuleUnreadableTitle(p.Module), p.Why.ToString()),
             bookmarksNotExported: p => (t.ErrorExportBookmarks, p.Reason),
             bookmarksNotImported: p => (t.ErrorImportBookmarks(p.File), p.Reason),
             importedBookmarksUnreadable: p => (t.ErrorBookmarksUnreadable(p.File), DescribeEntryProblems(t, p.Problems)),
@@ -67,7 +67,7 @@ public static class ProblemTexts
                 $"{p.Path}{Environment.NewLine}{p.Reason}"),
             themesNotWatched: p => (p.Kind == ThemeKind.Color ? t.ErrorWatchThemes : t.ErrorWatchIconThemes, p.Reason),
             runtimeNotScanned: p => (t.ErrorScanRuntime, p.Error.ToString()),
-            nuGetConfigUnreadable: p => (t.ErrorReadNugetConfig, p.Error.ToString()),
+            nuGetConfigUnreadable: p => (t.CauseNugetConfigUnreadableTitle, p.Error.ToString()),
             nuGetSearchFailed: p => (t.ErrorSearchNuget(p.Feed), p.Error.ToString()),
             packageNotDownloaded: p => (t.ErrorDownloadPackage(p.Package), p.Error.ToString()),
             unexpected: p => (t.ErrorUnexpected, p.Error.ToString()));
