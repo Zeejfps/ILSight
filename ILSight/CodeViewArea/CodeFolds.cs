@@ -34,6 +34,13 @@ internal sealed class CodeFolds
         Layout = CreateLayout(document, collapsed);
     }
 
+    /// <summary>Takes <paramref name="document"/>, the one shown with its notes in other words (the same folds),
+    /// keeping which are collapsed.</summary>
+    public void TakeWords(DecompiledDocument document)
+    {
+        Layout = CreateLayout(document, Collapsed.ToArray());
+    }
+
     public void SetCollapsed(int fold, bool collapsed)
     {
         if (Collapsed[fold] == collapsed)

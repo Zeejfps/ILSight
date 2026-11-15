@@ -22,6 +22,9 @@ public sealed class TabView
 
     public ShownReport Report { get; } = new();
 
+    /// <summary>The tab's code as shown, its notes in the interface's language.</summary>
+    public ShownCode ShownCode { get; } = new();
+
     /// <summary>The view of the grid last shown.</summary>
     public MetadataGridState? Grid { get; private set; }
 

@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Reflection.Metadata.Ecma335;
 
 namespace ILSight.Core;
@@ -189,6 +190,126 @@ public static class Documents
             FilePath = entity.FilePath,
             Token = MetadataTokens.GetToken(entity.Handle),
         };
+    }
+
+    /// <summary><paramref name="document"/> with its notes (<see cref="DecompiledDocument.Notes"/>) in
+    /// <paramref name="notes"/>' words: each note's line keeps what stands before the note and says the note found again
+    /// from its cause; every other line, the folds and the anchors are the document's own, nothing decompiled again.
+    /// The document itself when its notes already read so.</summary>
+    public static DecompiledDocument Reword(DecompiledDocument document, IDocumentNotes notes)
+    {
+        if (document.Notes.IsEmpty)
+        {
+            return document;
+        }
+
+        var reworded = new Dictionary<int, (int Column, IReadOnlyList<NoteRun> Runs)>(document.Notes.Length);
+        var changed = false;
+        foreach (var placed in document.Notes)
+        {
+            var runs = placed.Note.Runs(notes);
+            reworded[placed.Line] = (placed.Column, runs);
+            changed |= !SaysRuns(document.Lines[placed.Line], placed.Column, runs);
+        }
+
+        if (!changed)
+        {
+            return document;
+        }
+
+        var texts = new string[document.Lines.Length];
+        var counts = new int[document.Lines.Length];
+        var spans = ImmutableArray.CreateBuilder<DocumentSpan>(document.Lines.IsEmpty ? 0 : document.Lines[0].DocumentSpans.Length);
+        for (var i = 0; i < document.Lines.Length; i++)
+        {
+            var line = document.Lines[i];
+            var first = spans.Count;
+            if (reworded.TryGetValue(i, out var note))
+            {
+                texts[i] = RewordLine(line, note.Column, note.Runs, spans);
+            }
+            else
+            {
+                texts[i] = line.Text;
+                spans.AddRange(line.Spans);
+            }
+
+            counts[i] = spans.Count - first;
+        }
+
+        var shared = spans.ToImmutable();
+        var lines = ImmutableArray.CreateBuilder<DocumentLine>(document.Lines.Length);
+        var start = 0;
+        for (var i = 0; i < texts.Length; i++)
+        {
+            lines.Add(new DocumentLine { Text = texts[i], DocumentSpans = shared, FirstSpan = start, SpanCount = counts[i] });
+            start += counts[i];
+        }
+
+        return new DecompiledDocument
+        {
+            Title = document.Title,
+            Language = document.Language,
+            Error = document.Error,
+            Lines = lines.MoveToImmutable(),
+            Definitions = document.Definitions,
+            Statements = document.Statements,
+            EntityNames = document.EntityNames,
+            Folds = document.Folds,
+            UnreadReferences = document.UnreadReferences,
+            Notes = document.Notes,
+            AsMade = document.AsMade,
+        };
+    }
+
+    private static bool SaysRuns(DocumentLine line, int column, IReadOnlyList<NoteRun> runs)
+    {
+        var at = column;
+        foreach (var run in runs)
+        {
+            if (at + run.Text.Length > line.Text.Length)
+            {
+                return false;
+            }
+
+            var order = string.CompareOrdinal(line.Text, at, run.Text, 0, run.Text.Length);
+            if (order != 0)
+            {
+                return false;
+            }
+
+            at += run.Text.Length;
+        }
+
+        return at == line.Text.Length;
+    }
+
+    // The line's text and spans up to the note, then the note's runs to the line's end.
+    private static string RewordLine(DocumentLine line, int column, IReadOnlyList<NoteRun> runs, ImmutableArray<DocumentSpan>.Builder spans)
+    {
+        foreach (var span in line.Spans)
+        {
+            if (span.Start >= column)
+            {
+                break;
+            }
+
+            spans.Add(span.End <= column ? span : span with { Length = column - span.Start });
+        }
+
+        var text = new System.Text.StringBuilder(line.Text, 0, Math.Min(column, line.Text.Length), column + 64);
+        foreach (var run in runs)
+        {
+            if (run.Text.Length == 0)
+            {
+                continue;
+            }
+
+            spans.Add(new DocumentSpan { Start = text.Length, Length = run.Text.Length, Kind = run.Kind, Reference = run.Reference, IsDefinition = false });
+            text.Append(run.Text);
+        }
+
+        return text.ToString();
     }
 
     /// <summary>The whole text, lines joined by '\n'.</summary>

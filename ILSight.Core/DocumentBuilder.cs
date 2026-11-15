@@ -36,6 +36,7 @@ internal sealed class DocumentBuilder : ITextOutput
     private readonly Dictionary<object, int> _localKeys = new();
     private readonly Stack<OpenFold> _openFolds = new();
     private readonly List<(OpenFold Start, int EndLine)> _folds = new();
+    private readonly List<PlacedNote> _notes = new();
     public LoadedModule? Assembly { get; internal init; }
 
     /// <summary>The type system of <see cref="Assembly"/>, as the unit writing awaited its read before it began; null
@@ -57,14 +58,26 @@ internal sealed class DocumentBuilder : ITextOutput
         foreach (var reference in unread)
         {
             var why = reference.Error.InnerException?.Message ?? reference.Error.Message;
-            Write(CommentMarker + notes.ReferenceUnreadable(reference.Name, $"{reference.Error.FilePath}", why, reference.Module), SpanKind.Comment);
+            WriteNote(new DocumentNote.ReferenceUnreadable { Reference = reference.Name, File = $"{reference.Error.FilePath}", Why = why, Module = reference.Module }, notes);
             WriteLine();
         }
 
         foreach (var name in missing)
         {
-            Write(CommentMarker + notes.ReferenceNotFound(name), SpanKind.Comment);
+            WriteNote(new DocumentNote.ReferenceNotFound(name), notes);
             WriteLine();
+        }
+    }
+
+    /// <summary>Writes <paramref name="note"/> in <paramref name="notes"/>' words from here to the end of the line,
+    /// which the caller ends next, and keeps it as its cause and place, for the document to be shown in another
+    /// language without being written again (<see cref="Documents.Reword"/>).</summary>
+    public void WriteNote(DocumentNote note, IDocumentNotes notes)
+    {
+        _notes.Add(new PlacedNote { Line = _lines.Count, Column = Location.Column - 1, Note = note });
+        foreach (var run in note.Runs(notes))
+        {
+            Write(run.Text, run.Kind, run.Reference);
         }
     }
 
@@ -154,7 +167,7 @@ internal sealed class DocumentBuilder : ITextOutput
         var built = lines.MoveToImmutable();
         var statements = ListStatements();
         return new DecompiledDocument { Title = title, Language = Language, Error = error, Lines = built, Definitions = _definitions, Statements = statements,
-            EntityNames = NameAnchoredEntities(statements), Folds = ListFoldRegions(built), UnreadReferences = UnreadReferences };
+            EntityNames = NameAnchoredEntities(statements), Folds = ListFoldRegions(built), UnreadReferences = UnreadReferences, Notes = [.._notes] };
     }
 
     private Dictionary<(AssemblyPath FilePath, int Token), string> NameAnchoredEntities(Dictionary<int, CodeAnchor> statements)

@@ -40,6 +40,20 @@ public sealed class DecompiledDocument
 
     public required ImmutableArray<DocumentLine> Lines { get; init; }
 
+    /// <summary>The app's notes the lines hold beside the code, each kept as its cause and where it stands, ordered by
+    /// line; empty for most.</summary>
+    public ImmutableArray<PlacedNote> Notes { get; init; } = [];
+
+    private readonly DecompiledDocument? _asMade;
+
+    /// <summary>The document as it was made: this one, or the one whose notes it says in another language
+    /// (<see cref="Documents.Reword"/>), whose code, lines, folds and anchors it shares.</summary>
+    public DecompiledDocument AsMade
+    {
+        get => _asMade ?? this;
+        init => _asMade = value;
+    }
+
     /// <summary>The foldable regions, ordered by <see cref="FoldRegion.StartLine"/>, each starting on
     /// a line of its own and nested whole inside any region it starts in.</summary>
     public required ImmutableArray<FoldRegion> Folds { get; init; }

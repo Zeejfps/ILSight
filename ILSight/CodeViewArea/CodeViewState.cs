@@ -55,11 +55,19 @@ public sealed class CodeViewState
         }
     }
 
-    /// <summary>Takes in <paramref name="document"/>, unless it is the one shown already.</summary>
+    /// <summary>Takes in <paramref name="document"/>, unless it is the one shown already; the one shown with its notes
+    /// in other words (the same <see cref="DecompiledDocument.AsMade"/>) keeps where the view stands.</summary>
     internal void ShowDocument(DecompiledDocument document)
     {
         if (ReferenceEquals(document, Layout.Document))
         {
+            return;
+        }
+
+        var shown = Layout.Document;
+        if (shown is not null && ReferenceEquals(shown.AsMade, document.AsMade))
+        {
+            TakeWords(document);
             return;
         }
 
@@ -72,6 +80,26 @@ public sealed class CodeViewState
         Reveal.ForgetStale();
         Find.ClearMatch();
         Keys.Forget();
+    }
+
+    // The same lines, folds and anchors, only the notes' words changed: the scroll, the folds and the selection stay,
+    // a position past a note's new end moved to it.
+    private void TakeWords(DecompiledDocument document)
+    {
+        Layout.TakeWords(document);
+        Selection.Folds.TakeWords(document);
+        Selection.Select(ClampToLine(document, Selection.Anchor), ClampToLine(document, Selection.Caret));
+        Tooltip.Forget();
+    }
+
+    private static TextPosition ClampToLine(DecompiledDocument document, TextPosition at)
+    {
+        if (at.Line >= document.Lines.Length)
+        {
+            return at;
+        }
+
+        return at with { Column = Math.Min(at.Column, document.Lines[at.Line].Text.Length) };
     }
 
     internal void KeepTop((int Line, float Within) top)

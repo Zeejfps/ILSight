@@ -179,7 +179,7 @@ internal static class DocumentsView
 
         if (!IsNote(content))
         {
-            return tab.Document;
+            return view.ShownCode.GetDocument(tab.Document, strings);
         }
 
         return view.Placeholder.GetDocument(content, strings);

@@ -30,6 +30,14 @@ internal sealed class CodeLayout
         ScrollY = 0f;
     }
 
+    /// <summary>Takes <paramref name="document"/>, the one shown with its notes in other words, keeping the
+    /// scroll.</summary>
+    public void TakeWords(DecompiledDocument document)
+    {
+        Document = document;
+        MaxColumns = CodeText.CalculateMaxColumns(document);
+    }
+
     public void TakeRowHeight(float rowHeight)
     {
         RowHeight = rowHeight;

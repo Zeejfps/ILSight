@@ -28,6 +28,44 @@ public sealed class DocumentNoteTests
     }
 
     [Fact]
+    public async Task A_note_in_an_open_tab_follows_a_language_switch_and_the_code_is_not_decompiled_again()
+    {
+        using var temp = new TempDir();
+        var sample = temp.Copy(PathsSamplePath, "PathsSample.dll");
+        temp.Write("PathsLibrary.dll", "no assembly");
+        var app = new AppDriver();
+        app.Open([AssemblyPath.Of(sample)]);
+        app.Settle();
+        var assembly = app.AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.FileName == "PathsSample.dll");
+        var overloads = await assembly.ReadRootAsync().GetChildAsync("PathsSample", "Overloads");
+        app.Show(overloads, frames: 2);
+        var tab = Assert.Single(app.AppState.ListSession.Navigation.OpenTabs);
+        var made = tab.Document;
+        var view = app.Ui.Documents.GetView(tab).Code;
+        Assert.Same(made, view.Layout.Document);
+        Assert.StartsWith("// Warning: the reference PathsLibrary was read by name only: ", made.Lines[0].Text);
+        view.Selection.Select(new TextPosition { Line = 0, Column = made.Lines[0].Text.Length }, new TextPosition { Line = 2, Column = 0 });
+
+        app.AppState.Locale = Locale.Ja;
+        app.Run(2);
+
+        Assert.Same(made, tab.Document);
+        var shown = view.Layout.Document;
+        Assert.NotNull(shown);
+        Assert.Same(made, shown.AsMade);
+        Assert.StartsWith("// 警告: 参照 PathsLibrary は名前だけで読み込まれました。", shown.Lines[0].Text);
+        Assert.EndsWith("読み込めるようになったら PathsSample.dll を再読み込みしてください。", shown.Lines[0].Text);
+        Assert.Equal(made.Lines.Skip(1).Select(static l => l.Text), shown.Lines.Skip(1).Select(static l => l.Text));
+        Assert.Equal(Math.Min(made.Lines[0].Text.Length, shown.Lines[0].Text.Length), view.Selection.Anchor.Column);
+        Assert.Equal(new TextPosition { Line = 2, Column = 0 }, view.Selection.Caret);
+
+        app.AppState.Locale = Locale.En;
+        app.Run(2);
+
+        Assert.Same(made, view.Layout.Document);
+    }
+
+    [Fact]
     public void The_core_tests_english_notes_are_the_apps_english_catalog()
     {
         IDocumentNotes app = DocumentNoteTexts.For(Locale.En);

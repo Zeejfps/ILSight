@@ -141,7 +141,7 @@ internal static class NodeDecompiler
     private static DecompiledDocument DescribeFailure(DocumentRequest request, DecompilationLanguage language, IDocumentNotes notes, Exception thrown)
     {
         var error = new DocumentBuilder { Language = language };
-        error.Write(DocumentBuilder.CommentMarker + notes.DecompileFailed(request.FullName), SpanKind.Comment);
+        error.WriteNote(new DocumentNote.DecompileFailed(request.FullName), notes);
         error.WriteLine();
         error.Write(thrown.ToString(), SpanKind.Comment);
         return error.BuildFailure(request.Title, thrown);
@@ -400,7 +400,7 @@ internal static class NodeDecompiler
         var attributes = RequireTypeSystem(output.TypeSystem).MainModule.GetAssemblyAttributes();
         if (IsReferenceAssembly(attributes))
         {
-            WriteComment(output, notes.ReferenceAssembly());
+            WriteNote(output, new DocumentNote.ReferenceAssembly(), notes);
         }
 
         WriteComment(output, assembly.FullName);
@@ -514,18 +514,19 @@ internal static class NodeDecompiler
         var pe = LoadedAssemblies.FindPEFile(assembly);
         if (pe is not null)
         {
-            WriteComment(output, notes.Architecture(ArchitectureOf(pe.Reader.PEHeaders)));
+            WriteNote(output, new DocumentNote.ArchitectureOf(ArchitectureOf(pe.Reader.PEHeaders)), notes);
         }
 
         if (assembly.TargetFramework is not null)
         {
-            WriteComment(output, notes.TargetFramework(assembly.TargetFramework.Text));
+            WriteNote(output, new DocumentNote.TargetFramework(assembly.TargetFramework.Text), notes);
         }
 
         output.WriteLine();
     }
 
-    // The note's words around the method, which is written as a link where the language's template puts it.
+    // The note's words around the method, which is written as a link where the language's template puts it
+    // (DocumentNote.EntryPoint).
     private static void WriteEntryPoint(EntityHandle handle, DocumentBuilder output, IDocumentNotes notes)
     {
         if (handle.Kind != HandleKind.MethodDefinition)
@@ -545,30 +546,7 @@ internal static class NodeDecompiler
             return;
         }
 
-        var name = EntityText.FullName(method);
-        var note = notes.EntryPoint(name);
-        var at = note.IndexOf(name, StringComparison.Ordinal);
-        if (at < 0)
-        {
-            WriteComment(output, note);
-            return;
-        }
-
-        output.Write(DocumentBuilder.CommentMarker + note[..at], SpanKind.Comment);
-        output.Write(name, SpanKind.Method, reference);
-        WriteCommentRest(output, note[(at + name.Length)..]);
-        output.WriteLine();
-    }
-
-    // What a note says after a link in it, if anything.
-    private static void WriteCommentRest(DocumentBuilder output, string rest)
-    {
-        if (rest.Length == 0)
-        {
-            return;
-        }
-
-        output.Write(rest, SpanKind.Comment);
+        WriteNote(output, new DocumentNote.EntryPoint { Method = EntityText.FullName(method), Target = reference }, notes);
     }
 
     private static string ArchitectureOf(PEHeaders headers)
@@ -621,7 +599,7 @@ internal static class NodeDecompiler
             },
             static (s, forwarded) =>
             {
-                WriteComment(s.output, ForwardedToText(s.notes, forwarded.Destination));
+                WriteNote(s.output, new DocumentNote.ForwardedTo(forwarded.Destination ?? ""), s.notes);
                 s.output.Write(forwarded.FullName, SpanKind.Type, forwarded.Target);
                 s.output.WriteLine();
             },
@@ -640,19 +618,19 @@ internal static class NodeDecompiler
             static (s, module) =>
             {
                 WriteComment(s.output, module.Name);
-                WriteComment(s.output, DescribeModule(s.notes, module.ContainsMetadata));
+                WriteNote(s.output, new DocumentNote.ModuleKind(module.ContainsMetadata), s.notes);
                 WriteImports(s.output, module.Imports);
             },
             static (s, import) =>
             {
                 WriteLink(s.output, import.Method, SpanKind.Method);
-                WriteComment(s.output, s.notes.Calls(import.EntryPoint, import.ModuleName));
+                WriteNote(s.output, new DocumentNote.Calls { Entry = import.EntryPoint, ModuleName = import.ModuleName }, s.notes);
             },
             static (s, reference) =>
             {
                 WriteComment(s.output, reference.Reference.FullName);
                 var path = LoadedAssemblies.GetResolver(reference.Module).FindAssemblyFile(reference.Reference);
-                WriteComment(s.output, path is null ? s.notes.ReferenceNotResolved() : s.notes.ResolvesTo($"{path}"));
+                WriteNote(s.output, new DocumentNote.Resolution(path is null ? null : $"{path}"), s.notes);
             },
             static (s, used) => WriteUsed(s.output, s.notes, used.Entries, "", s.cancellationToken),
             static (s, types) =>
@@ -703,13 +681,8 @@ internal static class NodeDecompiler
     private static void WriteForwardedType(DocumentBuilder output, IDocumentNotes notes, ForwardedLine line)
     {
         output.Write(line.Label, SpanKind.Type, line.Target);
-        output.Write(" " + DocumentBuilder.CommentMarker + ForwardedToText(notes, line.Destination), SpanKind.Comment);
+        output.WriteNote(new DocumentNote.ForwardedTo(line.Destination ?? ""), notes);
         output.WriteLine();
-    }
-
-    private static string ForwardedToText(IDocumentNotes notes, string? destination)
-    {
-        return notes.ForwardedTo(destination ?? "");
     }
 
     private static void WriteTypeDeclaration(DocumentBuilder output, NamespaceEntry.Declared type)
@@ -755,7 +728,7 @@ internal static class NodeDecompiler
         WriteHexDump(data.AsSpan(0, Math.Min(data.Length, MaxResourceBytes)), output);
         if (data.Length > MaxResourceBytes)
         {
-            WriteComment(output, notes.Truncated(MaxResourceBytes));
+            WriteNote(output, new DocumentNote.Truncated(MaxResourceBytes), notes);
         }
     }
 
@@ -792,16 +765,6 @@ internal static class NodeDecompiler
         output.WriteLine();
     }
 
-    private static string DescribeModule(IDocumentNotes notes, bool containsMetadata)
-    {
-        if (containsMetadata)
-        {
-            return notes.ModuleWithMetadata();
-        }
-
-        return notes.ModuleWithoutMetadata();
-    }
-
     private static void WriteImports(DocumentBuilder output, IReadOnlyList<SummaryLink> imports)
     {
         if (imports.Count == 0)
@@ -825,6 +788,13 @@ internal static class NodeDecompiler
     private static void WriteComment(DocumentBuilder output, string text)
     {
         output.Write(DocumentBuilder.CommentMarker + text, SpanKind.Comment);
+        output.WriteLine();
+    }
+
+    // The app's note on a line of its own, kept as its cause (DocumentBuilder.WriteNote).
+    private static void WriteNote(DocumentBuilder output, DocumentNote note, IDocumentNotes notes)
+    {
+        output.WriteNote(note, notes);
         output.WriteLine();
     }
 
