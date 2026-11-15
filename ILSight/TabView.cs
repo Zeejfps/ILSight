@@ -31,6 +31,10 @@ public sealed class TabView
 
     public ComparisonRows Comparison { get; } = new();
 
+    /// <summary>What the view counts toward <see cref="DocumentViewArea.DocumentViews.Revision"/>: its diagram's and its
+    /// comparison's changes.</summary>
+    public int Changes => Diagram.Changes + Comparison.Changes;
+
     /// <summary>The image the tab's picture is drawn as.</summary>
     public required string ImageId { get; init; }
 

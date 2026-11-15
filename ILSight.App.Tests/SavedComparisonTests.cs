@@ -69,9 +69,9 @@ public sealed class SavedComparisonTests : IDisposable
         Assert.NotNull(comparison);
         app.StartComparing(Comparisons.SwapComparedAssemblies(app.AppState.ListSession.Assemblies, comparison));
         app.StartComparing(Comparisons.ChangeComparedScope(app.AppState.ListSession.Assemblies, comparison, ApiScope.AllDeclared));
-        DocumentPanels.GetView(app.Ui.Documents, tab).Comparison.ShowOnlyDifferences(false);
+        app.Ui.Documents.GetView(tab).Comparison.ShowOnlyDifferences(false);
         app.Settle(2);
-        var panel = DocumentPanels.GetPanel(app.Ui.Documents, tab);
+        var panel = app.Ui.Documents.GetPanel(tab);
 
         var next = Restart(app);
 
@@ -79,13 +79,13 @@ public sealed class SavedComparisonTests : IDisposable
         var reopened = restored.Comparison;
         Assert.NotNull(reopened);
         Assert.Equal("ApiDiffSample API diff", restored.Title);
-        Assert.Equal(panel, DocumentPanels.GetPanel(next.Ui.Documents, restored));
+        Assert.Equal(panel, next.Ui.Documents.GetPanel(restored));
         Assert.Equal(RightPath, reopened.LeftPath.Text);
         Assert.Equal(LeftPath, reopened.RightPath.Text);
         var diff = Assert.IsType<ComparisonResult.Compared>(reopened.Result).Diff;
         Assert.Equal(ApiScope.AllDeclared, diff.Scope);
         Assert.Equal("ApiDiffSample (2.0.0.0)", diff.LeftName);
-        Assert.False(DocumentPanels.GetView(next.Ui.Documents, restored).Comparison.OnlyDifferences);
+        Assert.False(next.Ui.Documents.GetView(restored).Comparison.OnlyDifferences);
     }
 
     [Fact]
@@ -102,7 +102,7 @@ public sealed class SavedComparisonTests : IDisposable
         app.Settle(2);
         Assert.Equal(RightPath, ReadSavedComparison().LeftPath.Text);
 
-        DocumentPanels.GetView(app.Ui.Documents, tab).Comparison.ShowOnlyDifferences(false);
+        app.Ui.Documents.GetView(tab).Comparison.ShowOnlyDifferences(false);
         app.Settle(2);
         var savedView = ReadSavedComparison().View;
         Assert.NotNull(savedView);

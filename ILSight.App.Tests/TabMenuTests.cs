@@ -28,7 +28,7 @@ public sealed class TabMenuTests
     {
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        return DocumentPanels.ListTabsInGroup(app.Layout, app.Ui.Documents, tab)
+        return app.Ui.Panels.ListTabsInGroup(tab)
             .Select(t =>
             {
                 Assert.NotNull(t.Node);
@@ -77,12 +77,12 @@ public sealed class TabMenuTests
         var (app, _) = await OpenTabsAsync();
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        var group = app.Layout.Dock.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, tab));
+        var group = app.Layout.Dock.GroupOf(app.Ui.Documents.GetPanel(tab));
         Assert.NotNull(group);
         group.Panels.Add(DockPanels.Bookmarks);
         app.Run(2);
 
-        DocumentPanels.CloseTabsInGroup(app.Layout, app.Ui.Documents, tab);
+        app.Ui.Panels.CloseTabsInGroup(tab);
         app.Settle(2);
 
         Assert.Empty(app.AppState.ListSession.Navigation.OpenTabs);

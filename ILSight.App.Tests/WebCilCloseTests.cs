@@ -98,7 +98,7 @@ public sealed class WebCilCloseTests
         app.Show(strings, 2);
         var tab = app.AppState.ListSession.Navigation.ActiveTab ?? throw new InvalidOperationException("The string heap was shown in no tab.");
         var grid = Assert.IsType<MetadataGrid.Paged>(tab.Grid);
-        var state = DocumentPanels.GetView(app.Ui.Documents, tab).GetGridState(grid);
+        var state = app.Ui.Documents.GetView(tab).GetGridState(grid);
         var last = grid.RowCount - 1;
         var closed = app.Ui.Appearance.Strings.DocumentClosed("LargeApp.wasm");
         app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [module]));

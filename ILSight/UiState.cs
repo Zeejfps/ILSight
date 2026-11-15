@@ -23,8 +23,8 @@ namespace ILSight;
 /// <summary>The screen, one per app: what every view is drawn with this frame (the theme, the editor's
 /// and icons' colors, the icons, the strings of the chosen language), and the state that exists only because there
 /// is a screen: the layout, each tab's view, the trees' and tables' state, the panels and dialogs with
-/// what is selected in them, and UI flags. What the user does to it are static functions grouped by
-/// feature, such as <see cref="DocumentPanels"/> and <see cref="ScreenLayout"/>. It and the app state never
+/// what is selected in them, and UI flags. What the user does to it are its parts' methods, such as
+/// <see cref="Panels"/>', or static functions grouped by feature, such as <see cref="ScreenLayout"/>. It and the app state never
 /// see each other: the app hands it what it shows each frame and runs what it asks of the app state
 /// through <see cref="AppCommands"/>.</summary>
 public sealed class UiState : IUiState

@@ -74,7 +74,7 @@ public sealed class SplitDocumentTests
 
         var d = new AppStateDriver(new AppSettings { Layout = saved });
 
-        var panel = DocumentPanels.GetPanel(d.Ui.Documents, Assert.Single(d.AppState.ListSession.Navigation.OpenTabs));
+        var panel = d.Ui.Documents.GetPanel(Assert.Single(d.AppState.ListSession.Navigation.OpenTabs));
         var panels = d.Layout.Dock.AllGroups().SelectMany(g => g.Panels).ToList();
         Assert.Equal([DockPanels.Assemblies, panel], panels);
         Assert.NotEqual("document-7", panel);
@@ -88,8 +88,8 @@ public sealed class SplitDocumentTests
         var d = app.Driver;
 
         app.Frames.MovePointer(250f, 400f).Frame().Wheel(-5).Frame(2);
-        Assert.True(DocumentPanels.GetView(app.Ui.Documents, left).Code.ScrollY > 0f);
-        Assert.Equal(0f, DocumentPanels.GetView(app.Ui.Documents, right).Code.ScrollY);
+        Assert.True(app.Ui.Documents.GetView(left).Code.ScrollY > 0f);
+        Assert.Equal(0f, app.Ui.Documents.GetView(right).Code.ScrollY);
 
         app.Frames.Click(750f, 400f).Frame();
         Assert.Same(right, d.AppState.ListSession.Navigation.ActiveTab);
@@ -122,7 +122,7 @@ public sealed class SplitDocumentTests
     public async Task Closing_all_documents_from_the_view_menu_closes_the_tabs_of_every_group()
     {
         var (app, left, right) = await SideBySideAsync();
-        Assert.NotSame(app.Layout.Dock.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, left)), app.Layout.Dock.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, right)));
+        Assert.NotSame(app.Layout.Dock.GroupOf(app.Ui.Documents.GetPanel(left)), app.Layout.Dock.GroupOf(app.Ui.Documents.GetPanel(right)));
 
         app.Frames.ClickOn(Selector.WithText("View"));
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Close all documents")).Frame(2);
@@ -144,9 +144,9 @@ public sealed class SplitDocumentTests
         d.Show(await d.FixtureAsync("Outline"), inNewTab: true);
         var right = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(right);
-        var leftGroup = layout.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, left));
+        var leftGroup = layout.GroupOf(app.Ui.Documents.GetPanel(left));
         Assert.NotNull(leftGroup);
-        layout.Dock(DocumentPanels.GetPanel(app.Ui.Documents, right), leftGroup, DockEdge.Right, 0.5f);
+        layout.Dock(app.Ui.Documents.GetPanel(right), leftGroup, DockEdge.Right, 0.5f);
         app.Run(3);
         return (app, left, right);
     }

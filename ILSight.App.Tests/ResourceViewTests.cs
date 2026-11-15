@@ -19,7 +19,7 @@ public sealed class ResourceViewTests
 
     private static string ImageOf(AppDriver app, DocumentTab tab)
     {
-        return DocumentPanels.GetView(app.Ui.Documents, tab).ImageId;
+        return app.Ui.Documents.GetView(tab).ImageId;
     }
 
     [Fact]
@@ -91,12 +91,12 @@ public sealed class ResourceViewTests
     {
         var (app, tab) = await ShowResourceAsync("shape.svg");
         app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-in")).Frame();
-        var zoomedBefore = !DocumentPanels.GetView(app.Ui.Documents, tab).Picture.Zoom.IsOwnSize;
+        var zoomedBefore = !app.Ui.Documents.GetView(tab).Picture.Zoom.IsOwnSize;
 
         app.Show(await app.NodeAsync(["Resources", "logo.png"]), 3);
 
         Assert.True(zoomedBefore);
-        Assert.True(DocumentPanels.GetView(app.Ui.Documents, tab).Picture.Zoom.IsOwnSize);
+        Assert.True(app.Ui.Documents.GetView(tab).Picture.Zoom.IsOwnSize);
         Assert.Equal((2f, 2f), DrawnSize(app, tab));
     }
 
@@ -106,14 +106,14 @@ public sealed class ResourceViewTests
         var (app, tab) = await ShowResourceAsync("shape.svg");
 
         app.Frames.ClickOn(Selector.WithText("Source")).Frame(2);
-        var showsSource = DocumentPanels.GetView(app.Ui.Documents, tab).Picture.ShowsSource;
+        var showsSource = app.Ui.Documents.GetView(tab).Picture.ShowsSource;
         var drewPicture = app.Frames.Canvas.Images.Any(i => i.Inputs.ImageId == ImageOf(app, tab));
         app.Frames.ClickOn(Selector.WithText("Picture")).Frame(2);
 
         Assert.True(showsSource);
         Assert.False(drewPicture);
         Assert.Contains("<svg", Documents.GetText(tab.Document));
-        Assert.False(DocumentPanels.GetView(app.Ui.Documents, tab).Picture.ShowsSource);
+        Assert.False(app.Ui.Documents.GetView(tab).Picture.ShowsSource);
         Assert.Equal((4f, 2f), DrawnSize(app, tab));
     }
 

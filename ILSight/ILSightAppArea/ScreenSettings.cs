@@ -91,7 +91,7 @@ public static class ScreenSettings
             ProcessColumns = uiState.ProcessPicker.Columns.Weights.ToList(),
             ProcessModuleColumns = uiState.ProcessPicker.ModuleColumns.Weights.ToList(),
             CloseWindow = uiState.Closer.Window.Bounds,
-            Tabs = DocumentPanels.SavePanels(uiState.Documents),
+            Tabs = uiState.Documents.SavePanels(),
         };
     }
 }

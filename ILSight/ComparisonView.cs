@@ -22,7 +22,7 @@ internal static class ComparisonView
     /// begins following it in <paramref name="navigation"/> in this frame, queuing only its lookup.</summary>
     public static void Render(Ui ui, DocumentViews documents, Appearance appearance, ScreenDisplay display, IAppCommandWriter commands, Navigation navigation, AssemblyList assemblies, DocumentTab tab, AssemblyComparison comparison)
     {
-        var rows = DocumentPanels.GetView(documents, tab).Comparison;
+        var rows = documents.GetView(tab).Comparison;
         rows.SetStyle(ui.Theme, appearance.NodeIconPalette, appearance.Icons, appearance.Strings);
         rows.FollowDiff(FindDiff(comparison));
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground });
@@ -60,7 +60,7 @@ internal static class ComparisonView
     {
         var t = appearance.Strings;
         var icons = appearance.Icons;
-        var rows = DocumentPanels.GetView(documents, tab).Comparison;
+        var rows = documents.GetView(tab).Comparison;
         var any = rows.Roots.Count > 0;
         var why = DocumentsView.FindClosedText(ui, appearance, tab.ClosedAssembly);
         using (ui.Row(new Box { Gap = ui.Theme.Gap, AlignY = Align.Center }))

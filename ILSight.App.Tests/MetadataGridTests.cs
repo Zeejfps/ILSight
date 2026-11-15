@@ -33,7 +33,7 @@ public sealed class MetadataGridTests
     {
         var grid = tab.Grid;
         Assert.NotNull(grid);
-        return DocumentPanels.GetView(app.Ui.Documents, tab).GetGridState(grid);
+        return app.Ui.Documents.GetView(tab).GetGridState(grid);
     }
 
     private static async Task<(AppDriver App, DocumentTab Tab, MetadataGrid Grid, int Row)> ShowGreeterRowAsync()

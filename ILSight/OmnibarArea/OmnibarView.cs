@@ -38,7 +38,7 @@ internal static class OmnibarView
             return;
         }
 
-        var panel = DocumentPanels.GetPanel(documents, tab);
+        var panel = documents.GetPanel(tab);
         if (ContinueSearch(ui, omnibar, panel))
         {
             SearchBar(ui, appearance, omnibar, commands, navigation, setup);
@@ -76,7 +76,7 @@ internal static class OmnibarView
     private static void PathBar(Ui ui, DocumentViews documents, BrowseTree tree, Appearance appearance, IAppCommandWriter commands, Omnibar omnibar, Navigation navigation, AssemblyList assemblies, DecompilerSetup setup,
         DocumentTab tab, string panel)
     {
-        var view = DocumentPanels.GetView(documents, tab);
+        var view = documents.GetView(tab);
         view.Breadcrumb.Follow(tab.Node, tree);
         var crumbs = view.Breadcrumb.Crumbs;
         var closed = tab.Load.ClosedAssembly;

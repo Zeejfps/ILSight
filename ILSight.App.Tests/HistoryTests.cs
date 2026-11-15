@@ -40,7 +40,7 @@ public sealed class HistoryTests
 
     private static CodeViewState CodeOf(AppDriver app, DocumentTab tab)
     {
-        return DocumentPanels.GetView(app.Ui.Documents, tab).Code;
+        return app.Ui.Documents.GetView(tab).Code;
     }
 
     [Fact]

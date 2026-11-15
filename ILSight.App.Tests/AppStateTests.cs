@@ -109,8 +109,8 @@ public sealed class AppStateTests
         var rows = table.RowCount;
         d.InTurn(() => Commands.CloseAllAssemblies(d.AppState));
         d.NextFrame();
-        var lineBefore = DocumentPanels.GetView(d.Ui.Documents, code).Code.Reveal.Pending;
-        var rowBefore = DocumentPanels.GetView(d.Ui.Documents, grid).GetGridState(table).Pending;
+        var lineBefore = d.Ui.Documents.GetView(code).Code.Reveal.Pending;
+        var rowBefore = d.Ui.Documents.GetView(grid).GetGridState(table).Pending;
 
         d.AppState.ViewCommands.Enqueue(new ViewCommand.ExpandNodes([ns]));
         d.AppState.ViewCommands.Enqueue(new ViewCommand.RevealLine { Tab = code, Line = lines });
@@ -118,8 +118,8 @@ public sealed class AppStateTests
         d.NextFrame();
 
         Assert.False(d.Ui.Tree.View.IsExpanded(ns));
-        Assert.Equal(lineBefore, DocumentPanels.GetView(d.Ui.Documents, code).Code.Reveal.Pending);
-        Assert.Equal(rowBefore, DocumentPanels.GetView(d.Ui.Documents, grid).GetGridState(table).Pending);
+        Assert.Equal(lineBefore, d.Ui.Documents.GetView(code).Code.Reveal.Pending);
+        Assert.Equal(rowBefore, d.Ui.Documents.GetView(grid).GetGridState(table).Pending);
     }
 
     [Fact]
@@ -130,15 +130,15 @@ public sealed class AppStateTests
         var grid = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(grid);
         var documents = d.Ui.Documents;
-        var panel = DocumentPanels.GetPanel(documents, grid);
+        var panel = documents.GetPanel(grid);
         documents.RemoveView(grid);
 
         documents.AddView(grid, panel);
-        DocumentPanels.RevealRow(documents, grid, 2);
+        documents.RevealRow(grid, 2);
         d.NextFrame();
 
         Assert.NotNull(grid.Grid);
-        Assert.Equal(new PendingGridScroll.Reveal(2), DocumentPanels.GetView(documents, grid).GetGridState(grid.Grid).Pending);
+        Assert.Equal(new PendingGridScroll.Reveal(2), documents.GetView(grid).GetGridState(grid.Grid).Pending);
     }
 
     [Fact]
@@ -162,18 +162,18 @@ public sealed class AppStateTests
         var greeter = d.AppState.ListSession.Navigation.OpenTabs[^2];
         var farewell = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(farewell);
-        var farewellPanel = DocumentPanels.GetPanel(d.Ui.Documents, farewell);
+        var farewellPanel = d.Ui.Documents.GetPanel(farewell);
         var documents = d.Layout.Dock;
         documents.Dock(farewellPanel, documents.Root, DockEdge.Right);
-        DocumentPanels.ActivateTab(d.Layout, d.Ui.Documents, d.Ui.AppCommands, d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup, greeter);
+        d.Ui.Panels.ActivateTab(d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup, greeter);
         d.NextFrame();
 
         d.Show(await d.FixtureAsync("Outline"), inNewTab: true);
 
         var outline = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(outline);
-        var outlinePanel = DocumentPanels.GetPanel(d.Ui.Documents, outline);
-        Assert.Same(documents.GroupOf(DocumentPanels.GetPanel(d.Ui.Documents, greeter)), documents.GroupOf(outlinePanel));
+        var outlinePanel = d.Ui.Documents.GetPanel(outline);
+        Assert.Same(documents.GroupOf(d.Ui.Documents.GetPanel(greeter)), documents.GroupOf(outlinePanel));
         Assert.Equal("Outline", d.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
     }
 
@@ -184,19 +184,19 @@ public sealed class AppStateTests
         d.Show(await d.FixtureAsync("Greeter"));
         var greeter = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(greeter);
-        var greeterPanel = DocumentPanels.GetPanel(d.Ui.Documents, greeter);
+        var greeterPanel = d.Ui.Documents.GetPanel(greeter);
         var documents = d.Layout.Dock;
 
         var group = documents.GroupOf(greeterPanel);
         Assert.NotNull(group);
         documents.Dock(greeterPanel, group, DockEdge.Right);
-        DocumentPanels.SyncActiveTab(d.Layout, d.Ui.Documents, d.Ui.TabFocus, d.Ui.AppCommands, d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup);
+        d.Ui.Panels.SyncActiveTab(d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup);
         d.NextFrame();
 
         Assert.Equal(2, d.AppState.ListSession.Navigation.OpenTabs.Count);
         var empty = d.AppState.ListSession.Navigation.OpenTabs.Single(t => t != greeter);
         Assert.Null(empty.Location);
-        Assert.NotSame(documents.GroupOf(greeterPanel), documents.GroupOf(DocumentPanels.GetPanel(d.Ui.Documents, empty)));
+        Assert.NotSame(documents.GroupOf(greeterPanel), documents.GroupOf(d.Ui.Documents.GetPanel(empty)));
         Assert.Same(empty, d.AppState.ListSession.Navigation.ActiveTab);
 
         d.Show(await d.FixtureAsync("Farewell"));
@@ -220,7 +220,7 @@ public sealed class AppStateTests
 
         Assert.Same(greeter, d.AppState.ListSession.Navigation.ActiveTab);
         Assert.DoesNotContain(d.AppState.ListSession.Navigation.OpenTabs, t => t.Node?.Text == "Farewell");
-        var greeterPanel = DocumentPanels.GetPanel(d.Ui.Documents, greeter);
+        var greeterPanel = d.Ui.Documents.GetPanel(greeter);
         Assert.Equal([greeterPanel], d.Layout.Dock.GroupOf(greeterPanel)?.Panels);
     }
 
@@ -374,7 +374,7 @@ public sealed class AppStateTests
         d.GoBack();
         d.NextFrame();
 
-        var view = DocumentPanels.GetView(d.Ui.Documents, tab).Code;
+        var view = d.Ui.Documents.GetView(tab).Code;
         Assert.Same(tab, d.AppState.ListSession.Navigation.ActiveTab);
         Assert.False(tab.Load.IsBusy);
         Assert.Same(document, tab.Document);
@@ -387,7 +387,7 @@ public sealed class AppStateTests
         var d = AppStateDriver.Opened();
         d.Show(await d.FixtureAsync("Greeter"));
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
-        DocumentPanels.ActivateTab(d.Layout, d.Ui.Documents, d.Ui.AppCommands, d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup, d.AppState.ListSession.Navigation.OpenTabs[0]);
+        d.Ui.Panels.ActivateTab(d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup, d.AppState.ListSession.Navigation.OpenTabs[0]);
         d.Settle();
 
         d.GoBack();
@@ -403,7 +403,7 @@ public sealed class AppStateTests
         d.TurnOffPreviewTabs();
         d.Show(await d.FixtureAsync("Greeter"));
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
-        DocumentPanels.ActivateTab(d.Layout, d.Ui.Documents, d.Ui.AppCommands, d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup, d.AppState.ListSession.Navigation.OpenTabs[0]);
+        d.Ui.Panels.ActivateTab(d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup, d.AppState.ListSession.Navigation.OpenTabs[0]);
         d.Settle();
         d.Show(await d.FixtureAsync("Counter"));
 
@@ -423,7 +423,7 @@ public sealed class AppStateTests
         d.Show(await d.FixtureAsync("Outline"), inNewTab: true);
         var outline = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(outline);
-        d.InTurn(() => QueuedCommands.CloseTabAndFocusNext(d.Layout, d.Ui.Documents, d.Ui.AppCommands, d.AppState, outline));
+        d.InTurn(() => QueuedCommands.CloseTabAndFocusNext(d.Ui.Panels, d.AppState, outline));
         d.Settle();
         var focused = d.AppState.ListSession.Navigation.ActiveTab?.Node?.Text;
         Assert.NotNull(focused);
@@ -451,7 +451,7 @@ public sealed class AppStateTests
         d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, reference, a.ListSession.Navigation.BeginResolving(inNewTab: false), ct));
         d.StartShowing(farewell);
         d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, reference, a.ListSession.Navigation.BeginResolving(inNewTab: true), ct));
-        DocumentPanels.ActivateTab(d.Layout, d.Ui.Documents, d.Ui.AppCommands, d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup, d.AppState.ListSession.Navigation.OpenTabs[0]);
+        d.Ui.Panels.ActivateTab(d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup, d.AppState.ListSession.Navigation.OpenTabs[0]);
         d.NextFrame();
         d.Settle();
 
@@ -486,7 +486,7 @@ public sealed class AppStateTests
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
-        var view = DocumentPanels.GetView(d.Ui.Documents, tab).Code;
+        var view = d.Ui.Documents.GetView(tab).Code;
 
         d.StartShowing(await d.NodeAsync(AppStateDriver.FixturesNamespace));
         d.NextFrame();
@@ -580,7 +580,7 @@ public sealed class AppStateTests
         var d = AppStateDriver.Opened();
         d.Ui.Panels.OpenSearch();
 
-        DocumentPanels.OnPanelClosed(d.Layout, d.Ui.Documents, d.Ui.Search, d.Ui.AppCommands, DockPanels.Search);
+        d.Layout.Dock.Close(DockPanels.Search);
 
         Assert.False(d.Ui.Search.TryTakeFocus());
     }

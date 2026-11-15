@@ -368,7 +368,7 @@ public static class SavedDocuments
 
     private static ReopenedTab? Revive(OpenListSession session, DocumentViews documents, DocumentTab tab)
     {
-        var panel = DocumentPanels.FindTabPanel(documents, tab);
+        var panel = documents.FindTabPanel(tab);
         if (panel is null)
         {
             return null;

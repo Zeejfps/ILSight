@@ -25,7 +25,7 @@ internal static class ResourceImageView
         BookmarksPanel bookmarksPanel, Navigation navigation, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab, TabContent.Picture shown)
     {
         var theme = ui.Theme;
-        var view = DocumentPanels.GetView(documents, tab);
+        var view = documents.GetView(tab);
         var image = shown.Image;
         var hasSource = shown.Source is not null;
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = theme.PaneBackground });

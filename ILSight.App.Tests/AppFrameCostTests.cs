@@ -38,7 +38,7 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
         app.Settle(2);
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        app.Layout.Dock.Close(DocumentPanels.GetPanel(app.Ui.Documents, tab));
+        app.Layout.Dock.Close(app.Ui.Documents.GetPanel(tab));
         app.Settle(5);
 
         app.Frames.Canvas.Recording = false;
@@ -60,7 +60,7 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
         app.Settle(5);
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        var panel = DocumentPanels.GetPanel(app.Ui.Documents, tab);
+        var panel = app.Ui.Documents.GetPanel(tab);
         app.Ui.Omnibar.OpenMenu(panel, await app.NodeAsync(AppStateDriver.FixturesNamespace), await app.FixtureAsync("Greeter"));
         app.Settle(5);
 

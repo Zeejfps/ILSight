@@ -93,7 +93,7 @@ public sealed class AppTests
 
         app.Frames.Drag(from, aside, onto).Frame().Release().Frame(2);
 
-        var shownPanel = DocumentPanels.GetPanel(app.Ui.Documents, shown);
+        var shownPanel = app.Ui.Documents.GetPanel(shown);
         Assert.Same(layout.GroupOf(DockPanels.Assemblies), layout.GroupOf(shownPanel));
         Assert.Equal(shownPanel, layout.GroupOf(shownPanel)?.Active);
         Assert.IsType<DockGroup>(layout.Root);

@@ -46,7 +46,7 @@ internal static class DiagramView
     /// it in <paramref name="navigation"/> in this frame, queuing only its lookup.</summary>
     public static void Render(Ui ui, DocumentViews documents, ScreenDisplay display, Appearance appearance, IAppCommandWriter commands, Navigation navigation, CodeTooltips tooltips, DocumentTab tab, TypeDiagram diagram)
     {
-        var view = DocumentPanels.GetView(documents, tab).Diagram;
+        var view = documents.GetView(tab).Diagram;
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground });
         if (!display.Options.ShowOmnibar)
         {
@@ -79,7 +79,7 @@ internal static class DiagramView
     {
         var t = appearance.Strings;
         var icons = appearance.Icons;
-        var view = DocumentPanels.GetView(documents, tab).Diagram;
+        var view = documents.GetView(tab).Diagram;
         var camera = view.Camera;
         var area = GetCanvasRect(ui);
         using (ui.Row(new Box { Gap = ui.Theme.Gap, AlignY = Align.Center }))

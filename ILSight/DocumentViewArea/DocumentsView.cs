@@ -36,7 +36,7 @@ internal static class DocumentsView
         var areaId = ui.GetId("tab-area");
         documents.RecordTabAreaHeight(ui.TryGetRect(areaId, out var area) ? area.Height : ui.Height);
         using var content = ui.Column(areaId, new Box { Height = Sizing.Grow(), Gap = 0f });
-        DocumentPanels.GetView(documents, tab).RecordShown(tab);
+        documents.GetView(tab).RecordShown(tab);
         ClosedBanner(ui, appearance, tab.ClosedAssembly);
         tab.Content.Switch((ui, appearance, commands, documents, panels, display, bookmarksPanel, grids, navigation, session, assemblies, setup, bookmarks, tooltips, tab),
             empty: static (s, _) => Hint(s.ui, s.appearance.Strings.DocumentsHint),
@@ -98,7 +98,7 @@ internal static class DocumentsView
     private static void RenderGrid(Ui ui, Appearance appearance, IAppCommandWriter commands, DocumentViews documents, ScreenDisplay display, MetadataGridScreenState grids, Navigation navigation, BrowseSession session, DecompilerSetup setup,
         DocumentTab tab, MetadataGrid grid)
     {
-        var view = DocumentPanels.GetView(documents, tab);
+        var view = documents.GetView(tab);
         var picked = MetadataGridWidget.RenderMetadataGrid(ui, grids, appearance, display, commands, "grid", view.GetGridState(grid),
             tab.Load.ClosedAssembly);
         var node = tab.Node;
@@ -119,7 +119,7 @@ internal static class DocumentsView
     public static void RenderCode(Ui ui, Appearance appearance, IAppCommandWriter commands, DocumentViews documents, Panels panels, ScreenDisplay display, BookmarksPanel bookmarksPanel, Navigation navigation, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
     {
         var lines = !tab.Load.IsBusy && tab.Node is not null && tab.Document.Error is null ? bookmarks.ListMarkedLines(tab.Document, tab.Node) : null;
-        var view = DocumentPanels.GetView(documents, tab);
+        var view = documents.GetView(tab);
         var document = GetDocumentToShow(appearance.Strings, view, tab);
         var result = CodeViewWidget.RenderCodeView(ui, appearance, display, "code", document, view.Code, lines, tooltips: tooltips, display: display.Options,
             closedAssembly: tab.Load.ClosedAssembly);

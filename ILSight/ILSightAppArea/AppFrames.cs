@@ -238,7 +238,7 @@ internal static class AppFrames
 
     private static void KeepTabPosition(UiState uiState, Navigation navigation, DocumentTab tab)
     {
-        var view = DocumentPanels.FindView(uiState.Documents, tab);
+        var view = uiState.Documents.FindView(tab);
         if (view is null)
         {
             return;

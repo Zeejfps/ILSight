@@ -1,3 +1,5 @@
+using ILSight.Core;
+using ILSight.CodeViewArea;
 using ILSight.DiagramArea;
 
 namespace ILSight.DocumentViewArea;
@@ -37,7 +39,7 @@ public sealed class DocumentViews
             var revision = _ownChanges + _droppedChanges;
             foreach (var view in _views.Values)
             {
-                revision += DocumentPanels.CountViewChanges(view);
+                revision += view.Changes;
             }
 
             return revision;
@@ -136,7 +138,7 @@ public sealed class DocumentViews
         }
 
         _releasedImages.Add(view.ImageId);
-        _droppedChanges += DocumentPanels.CountViewChanges(view);
+        _droppedChanges += view.Changes;
         _ownChanges++;
     }
 
@@ -165,5 +167,222 @@ public sealed class DocumentViews
         var released = _releasedImages.ToArray();
         _releasedImages.Clear();
         return released;
+    }
+
+    /// <summary>How <paramref name="tab"/>, an open tab, is shown.</summary>
+    public TabView GetView(DocumentTab tab)
+    {
+        return _views[tab];
+    }
+
+    /// <summary>The panel <paramref name="tab"/>, an open tab, is docked as.</summary>
+    public string GetPanel(DocumentTab tab)
+    {
+        return GetView(tab).Panel;
+    }
+
+    public bool HasView(DocumentTab tab)
+    {
+        return _views.ContainsKey(tab);
+    }
+
+    /// <summary>Whether a tab with a view is docked as <paramref name="panel"/>.</summary>
+    public bool IsTabPanel(string panel)
+    {
+        return FindTab(panel) is not null;
+    }
+
+    /// <summary>The panel <paramref name="tab"/> is docked as, or null when there is no tab or it has no view.</summary>
+    public string? FindPanel(DocumentTab? tab)
+    {
+        if (tab is null)
+        {
+            return null;
+        }
+
+        if (!_views.TryGetValue(tab, out var view))
+        {
+            return null;
+        }
+
+        return view.Panel;
+    }
+
+    /// <summary>The view of <paramref name="tab"/>, or null when it has none.</summary>
+    public TabView? FindView(DocumentTab tab)
+    {
+        return _views.GetValueOrDefault(tab);
+    }
+
+    /// <summary>The panel <paramref name="tab"/> is docked as, and how its diagram or comparison is viewed, as the
+    /// settings keep it (<see cref="SavePanels"/>); null when it has no view.</summary>
+    public TabPanel? FindTabPanel(DocumentTab tab)
+    {
+        if (!_views.TryGetValue(tab, out var view))
+        {
+            return null;
+        }
+
+        return new TabPanel { Tab = tab, Panel = view.Panel, View = SaveView(tab, view) };
+    }
+
+    /// <summary>The panel each tab with a view is docked as, and how its diagram or comparison is viewed,
+    /// for the settings to keep.</summary>
+    public List<TabPanel> SavePanels()
+    {
+        var panels = new List<TabPanel>();
+        foreach (var (tab, view) in _views)
+        {
+            panels.Add(new TabPanel { Tab = tab, Panel = view.Panel, View = SaveView(tab, view) });
+        }
+
+        return panels;
+    }
+
+    private static TabPanelView SaveView(DocumentTab tab, TabView view)
+    {
+        if (tab.Content is TabContent.Diagram)
+        {
+            return new TabPanelView.Diagram(Diagrams.SaveView(view.Diagram));
+        }
+
+        if (tab.Content is TabContent.Comparison)
+        {
+            return new TabPanelView.Comparison(view.Comparison.SaveView());
+        }
+
+        return new TabPanelView.None();
+    }
+
+    /// <summary>Shows the reopened tab in the panel it was docked as, or in a new one when another tab is shown in
+    /// one by that name, its diagram's or comparison's view returned to how it was saved; returns the panel.</summary>
+    public string AddReopenedView(ReopenedTab reopened)
+    {
+        var panel = ChooseReopenedPanel(reopened.Record.Panel);
+        AddView(reopened.Tab, panel);
+        RestoreDiagramView(reopened);
+        RestoreComparisonView(reopened);
+        return panel;
+    }
+
+    private string ChooseReopenedPanel(string saved)
+    {
+        if (!IsTabPanel(saved))
+        {
+            return saved;
+        }
+
+        return CreatePanel();
+    }
+
+    private void RestoreDiagramView(ReopenedTab reopened)
+    {
+        if (reopened.Record is not DiagramDocumentRecord diagram)
+        {
+            return;
+        }
+
+        var saved = diagram.View;
+        if (saved is null)
+        {
+            return;
+        }
+
+        FindView(reopened.Tab)?.Diagram.RestoreView(saved);
+    }
+
+    private void RestoreComparisonView(ReopenedTab reopened)
+    {
+        if (reopened.Record is not ComparisonDocumentRecord comparison)
+        {
+            return;
+        }
+
+        var saved = comparison.View;
+        if (saved is null)
+        {
+            return;
+        }
+
+        FindView(reopened.Tab)?.Comparison.RestoreView(saved);
+    }
+
+    /// <summary>Returns the view of <paramref name="tab"/>, an open tab, to <paramref name="position"/>, when it is
+    /// a position of the view the tab shows, a grid's or a code view's.</summary>
+    public void RestoreView(DocumentTab tab, ViewPosition position)
+    {
+        var view = _views.GetValueOrDefault(tab);
+        if (view is null)
+        {
+            return;
+        }
+
+        view.RecordShown(tab);
+        var shown = tab.Grid;
+        if (shown is null)
+        {
+            var code = position.Code;
+            if (code is not null)
+            {
+                CodeViewWidget.RestorePosition(view.Code, code.Value);
+            }
+
+            return;
+        }
+        var grid = position.Grid;
+        if (grid is not null)
+        {
+            view.GetGridState(shown).RestorePosition(grid.Value);
+        }
+    }
+
+    /// <summary>Scrolls the code of <paramref name="tab"/>, an open tab, to <paramref name="line"/> and flashes it.</summary>
+    public void RevealLine(DocumentTab tab, int line)
+    {
+        var view = _views.GetValueOrDefault(tab);
+        if (view is null)
+        {
+            return;
+        }
+
+        if (line >= tab.Document.Lines.Length)
+        {
+            return;
+        }
+
+        view.RecordShown(tab);
+        CodeViewWidget.RevealLine(view.Code, line);
+    }
+
+    /// <summary>Selects the grid row <paramref name="row"/> of <paramref name="tab"/>, an open tab, and scrolls to it.</summary>
+    public void RevealRow(DocumentTab tab, int row)
+    {
+        var view = _views.GetValueOrDefault(tab);
+        if (view is null)
+        {
+            return;
+        }
+
+        var grid = tab.Grid;
+        if (grid is null || row >= grid.RowCount)
+        {
+            return;
+        }
+
+        view.RecordShown(tab);
+        view.GetGridState(grid).RevealRow(row);
+    }
+
+    /// <summary>Selects the card of <paramref name="type"/> on the diagram <paramref name="tab"/>, an open tab,
+    /// shows, and brings it into view once it is laid out.</summary>
+    public void FocusCard(DocumentTab tab, CodeReference.Entity type)
+    {
+        var view = _views.GetValueOrDefault(tab);
+        if (view is null)
+        {
+            return;
+        }
+
+        view.Diagram.FocusCard(type);
     }
 }

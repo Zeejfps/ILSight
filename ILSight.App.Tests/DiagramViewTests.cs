@@ -48,7 +48,7 @@ public sealed class DiagramViewTests
             return false;
         }
 
-        if (!DocumentPanels.HasView(app.Ui.Documents, tab))
+        if (!app.Ui.Documents.HasView(tab))
         {
             return false;
         }
@@ -69,7 +69,7 @@ public sealed class DiagramViewTests
 
     private static DiagramViewState ViewOf(AppDriver app, DocumentTab tab)
     {
-        return DocumentPanels.GetView(app.Ui.Documents, tab).Diagram;
+        return app.Ui.Documents.GetView(tab).Diagram;
     }
 
     [Fact]

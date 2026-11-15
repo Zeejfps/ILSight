@@ -25,7 +25,7 @@ public sealed class DockingTests
         app.Show(await app.FixtureAsync("Greeter"));
         var greeter = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(greeter);
-        var greeterPanel = DocumentPanels.GetPanel(app.Ui.Documents, greeter);
+        var greeterPanel = app.Ui.Documents.GetPanel(greeter);
         var layout = app.Layout.Dock;
 
         var group = layout.GroupOf(greeterPanel);
@@ -94,7 +94,7 @@ public sealed class DockingTests
         var split = Assert.IsType<DockSplit>(layout.Root);
         var shown = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(shown);
-        Assert.Same(layout.GroupOf(DocumentPanels.GetPanel(d.Ui.Documents, shown)), split.Second);
+        Assert.Same(layout.GroupOf(d.Ui.Documents.GetPanel(shown)), split.Second);
         Assert.Equal("Greeter", shown.Node?.Text);
     }
 
@@ -123,7 +123,7 @@ public sealed class DockingTests
         var farewell = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(farewell);
         var layout = d.Layout.Dock;
-        layout.Dock(DocumentPanels.GetPanel(app.Ui.Documents, farewell), layout.Root, DockEdge.Bottom);
+        layout.Dock(app.Ui.Documents.GetPanel(farewell), layout.Root, DockEdge.Bottom);
         layout.Float(DockPanels.Assemblies, new UiRect(40f, 40f, 300f, 300f));
         d.Ui.Panels.Open(DockView.Bookmarks);
         app.Run(2);
@@ -136,8 +136,8 @@ public sealed class DockingTests
         var split = Assert.IsType<DockSplit>(layout.Root);
         Assert.Equal([DockPanels.Assemblies], Assert.IsType<DockGroup>(split.First).Panels);
         var documents = Assert.IsType<DockGroup>(split.Second);
-        Assert.Equal(d.AppState.ListSession.Navigation.OpenTabs.Select(tab => DocumentPanels.GetPanel(d.Ui.Documents, tab)).Order(), documents.Panels.Order());
-        Assert.Equal(DocumentPanels.GetPanel(app.Ui.Documents, farewell), documents.Active);
+        Assert.Equal(d.AppState.ListSession.Navigation.OpenTabs.Select(tab => d.Ui.Documents.GetPanel(tab)).Order(), documents.Panels.Order());
+        Assert.Equal(app.Ui.Documents.GetPanel(farewell), documents.Active);
         Assert.Same(farewell, d.AppState.ListSession.Navigation.ActiveTab);
         Assert.Empty(layout.Windows);
         Assert.False(layout.Contains(DockPanels.Bookmarks));

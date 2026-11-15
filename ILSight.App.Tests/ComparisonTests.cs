@@ -123,7 +123,7 @@ public sealed class ComparisonTests
         var comparisonTab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(comparisonTab);
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
-        DocumentPanels.ActivateTab(d.Layout, d.Ui.Documents, d.Ui.AppCommands, d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup, comparisonTab);
+        d.Ui.Panels.ActivateTab(d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup, comparisonTab);
         d.Settle();
         var account = Entry(DiffOf(comparison), "ApiDiffSample", "Account");
         var sides = Assert.IsType<ApiSides.Both>(Assert.IsType<ApiEntry.Entity>(account).Sides);

@@ -91,7 +91,7 @@ internal static class QueuedCommands
             return;
         }
 
-        DocumentPanels.RestoreView(documents, tab, position);
+        documents.RestoreView(tab, position);
     }
 
     private static void RevealLine(DocumentViews documents, Navigation navigation, DocumentTab tab, int line)
@@ -101,7 +101,7 @@ internal static class QueuedCommands
             return;
         }
 
-        DocumentPanels.RevealLine(documents, tab, line);
+        documents.RevealLine(tab, line);
     }
 
     private static void RevealRow(DocumentViews documents, Navigation navigation, DocumentTab tab, int row)
@@ -111,7 +111,7 @@ internal static class QueuedCommands
             return;
         }
 
-        DocumentPanels.RevealRow(documents, tab, row);
+        documents.RevealRow(tab, row);
     }
 
     private static void FocusCard(DocumentViews documents, Navigation navigation, DocumentTab tab, CodeReference.Entity type)
@@ -121,7 +121,7 @@ internal static class QueuedCommands
             return;
         }
 
-        DocumentPanels.FocusCard(documents, tab, type);
+        documents.FocusCard(tab, type);
     }
 
     /// <summary>Runs the commands <paramref name="commands"/> holds for the app state, in the order queued, each a unit
@@ -149,23 +149,19 @@ internal static class QueuedCommands
 
     /// <summary>Opens an empty tab shown in <paramref name="panel"/>, unless the panel was closed meanwhile,
     /// and makes it the active tab when asked to or when the layout focuses its panel.</summary>
-    internal static void OpenTabIn(MainLayout layout, DocumentViews documents, AppState appState, string panel, bool focus)
+    internal static void OpenTabIn(Panels panels, AppState appState, string panel, bool focus)
     {
-        if (!layout.Dock.Contains(panel))
+        var navigation = appState.ListSession.Navigation;
+        var tab = panels.OpenTabIn(navigation, panel, focus);
+        if (tab is null)
         {
             return;
         }
 
-        var tab = appState.ListSession.Navigation.OpenEmptyTab();
-        documents.AddView(tab, panel);
-        var becomesActive = focus || layout.Dock.Focused == panel;
-        if (becomesActive)
-        {
-            Commands.StartDecompiling(appState, appState.ListSession.Navigation.FocusTab(tab, appState.Decompiler.Setup));
-        }
+        Commands.StartDecompiling(appState, navigation.FocusTab(tab, appState.Decompiler.Setup));
     }
 
-    internal static void CloseTabAndFocusNext(MainLayout layout, DocumentViews documents, IAppCommandWriter commands, AppState appState, DocumentTab tab)
+    internal static void CloseTabAndFocusNext(Panels panels, AppState appState, DocumentTab tab)
     {
         var closed = appState.ListSession.Navigation.CloseTab(tab);
         if (!closed.WasActive)
@@ -173,6 +169,6 @@ internal static class QueuedCommands
             return;
         }
 
-        DocumentPanels.FocusNextTab(layout, documents, commands, appState.ListSession.Navigation, appState.Decompiler.Setup);
+        panels.FocusNextTab(appState.ListSession.Navigation, appState.Decompiler.Setup);
     }
 }

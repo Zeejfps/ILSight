@@ -60,7 +60,7 @@ internal static class TabMenuView
             return;
         }
 
-        if (!DocumentPanels.HasView(documents, tab))
+        if (!documents.HasView(tab))
         {
             return;
         }

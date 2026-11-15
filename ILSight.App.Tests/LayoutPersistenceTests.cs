@@ -39,7 +39,7 @@ public sealed class LayoutPersistenceTests : IDisposable
         var layout = next.Layout.Dock;
         var active = next.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
-        var documents = layout.GroupOf(DocumentPanels.GetPanel(next.Ui.Documents, active));
+        var documents = layout.GroupOf(next.Ui.Documents.GetPanel(active));
         Assert.NotNull(documents);
         var views = layout.GroupOf(DockPanels.Analyzer);
         Assert.NotNull(views);

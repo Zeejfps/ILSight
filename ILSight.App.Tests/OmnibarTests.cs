@@ -23,7 +23,7 @@ public sealed class OmnibarTests
     {
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        return DocumentPanels.GetView(app.Ui.Documents, tab).Breadcrumb.Crumbs;
+        return app.Ui.Documents.GetView(tab).Breadcrumb.Crumbs;
     }
 
     private static SemanticNode GetCrumb(AppDriver app, string label)
@@ -105,7 +105,7 @@ public sealed class OmnibarTests
         Assert.NotNull(tab);
 
         ClickCrumb(app, AppStateDriver.FixturesNamespace);
-        var drawn = DocumentPanels.GetView(app.Ui.Documents, tab).Shown;
+        var drawn = app.Ui.Documents.GetView(tab).Shown;
 
         Assert.Same(await app.NodeAsync(AppStateDriver.FixturesNamespace), tab.Node);
         Assert.NotNull(drawn);
@@ -172,7 +172,7 @@ public sealed class OmnibarTests
 
         var active = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
-        Assert.Equal(DocumentPanels.GetPanel(app.Ui.Documents, active), searchedIn);
+        Assert.Equal(app.Ui.Documents.GetPanel(active), searchedIn);
         Assert.Same(await app.FixtureAsync("Farewell"), active.Node);
         Assert.False(omnibar.IsSearching);
         GetCrumb(app, "Farewell");
@@ -220,7 +220,7 @@ public sealed class OmnibarTests
 
         var active = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
-        Assert.True(app.Ui.Omnibar.IsSearchingIn(DocumentPanels.GetPanel(app.Ui.Documents, active)));
+        Assert.True(app.Ui.Omnibar.IsSearchingIn(app.Ui.Documents.GetPanel(active)));
         Assert.True(app.Frames.WantsTextInput);
     }
 
@@ -247,7 +247,7 @@ public sealed class OmnibarTests
         var app = await ShowingAsync("Greeter");
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        var view = DocumentPanels.GetView(app.Ui.Documents, tab);
+        var view = app.Ui.Documents.GetView(tab);
 
         app.Frames.Click(700f, 400f).Frame();
         app.Frames.Key(KeyboardKey.M, KeyModifiers.Control).Frame();

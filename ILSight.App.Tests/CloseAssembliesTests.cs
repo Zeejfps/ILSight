@@ -348,7 +348,7 @@ public sealed class CloseAssembliesTests
         var app = await ShowingGreeterAndKeyboardKeyAsync();
         CloseKeyboardFromTheDialog(app);
         var tab = TabShowing(app, "KeyboardKey");
-        var code = DocumentPanels.GetView(app.Ui.Documents, tab).Code;
+        var code = app.Ui.Documents.GetView(tab).Code;
         var bar = app.TextRect($"{KeyboardFile} was closed.");
         app.Frames.Click(bar.X + 300f, bar.Y + 150f).Frame();
         var (line, column) = tab.Document.GetPosition("enum KeyboardKey");
