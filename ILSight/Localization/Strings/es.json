@@ -344,6 +344,7 @@
   "cause.module_unreadable.note": "Advertencia: la referencia {reference} se leyó solo por su nombre: no se pudo leer {file}. {why} Recarga {module} cuando se pueda leer.",
   "cause.reference_not_found.note": "Advertencia: la referencia {reference} se leyó solo por su nombre: no se encontró.",
   "document_note.decompile_failed": "Error al descompilar {name}",
+  "document_note.failure_cause": "Causa: {message}",
   "document_note.reference_assembly": "Este ensamblado está marcado como «ensamblado de referencia», lo que significa que solo contiene metadatos y no código ejecutable.",
   "document_note.module_with_metadata": "Un módulo de este ensamblado, con metadatos",
   "document_note.module_without_metadata": "Una biblioteca nativa o un módulo sin metadatos",

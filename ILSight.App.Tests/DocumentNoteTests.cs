@@ -74,6 +74,9 @@ public sealed class DocumentNoteTests
         Assert.Equal(app.ReferenceUnreadable("R", "F", "W", "M"), tests.ReferenceUnreadable("R", "F", "W", "M"));
         Assert.Equal(app.ReferenceNotFound("R"), tests.ReferenceNotFound("R"));
         Assert.Equal(app.DecompileFailed("N"), tests.DecompileFailed("N"));
+        Assert.Equal(app.FailureCause("W"), tests.FailureCause("W"));
+        Assert.Equal(app.AssemblyUnreadable("F", null), tests.AssemblyUnreadable("F", null));
+        Assert.Equal(app.AssemblyUnreadable("F", "W"), tests.AssemblyUnreadable("F", "W"));
         Assert.Equal(app.ReferenceAssembly(), tests.ReferenceAssembly());
         Assert.Equal(app.ModuleWithMetadata(), tests.ModuleWithMetadata());
         Assert.Equal(app.ModuleWithoutMetadata(), tests.ModuleWithoutMetadata());
@@ -86,6 +89,17 @@ public sealed class DocumentNoteTests
         Assert.Equal(app.TargetFramework("T"), tests.TargetFramework("T"));
         Assert.Equal(app.EntryPoint("M"), tests.EntryPoint("M"));
         Assert.Equal(app.ForwardedTo("D"), tests.ForwardedTo("D"));
+    }
+
+    [Fact]
+    public void A_failures_cause_is_said_by_its_message_in_the_apps_words_with_no_exception_type_or_stack_frame()
+    {
+        var notes = DocumentNoteTexts.For(Locale.Ja);
+
+        Assert.Equal("原因：Bad IL range.", new DocumentNote.FailureCause("Bad IL range.").Words(notes));
+        Assert.Equal(Strings.For(Locale.Ja).CauseModuleUnreadableSentence(name: "Shop.dll", why: "Access denied."),
+            new DocumentNote.AssemblyUnreadable { File = "Shop.dll", Why = "Access denied." }.Words(notes));
+        Assert.Equal(Strings.For(Locale.Ja).ErrorFileDamaged("Shop.dll"), new DocumentNote.AssemblyUnreadable { File = "Shop.dll", Why = null }.Words(notes));
     }
 
     [Fact]

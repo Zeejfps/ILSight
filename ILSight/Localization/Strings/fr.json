@@ -344,6 +344,7 @@
   "cause.module_unreadable.note": "Avertissement : la référence {reference} n’a été lue que par son nom : {file} n’a pas pu être lu. {why} Rechargez {module} quand il pourra être lu.",
   "cause.reference_not_found.note": "Avertissement : la référence {reference} n’a été lue que par son nom : elle est introuvable.",
   "document_note.decompile_failed": "Erreur lors de la décompilation de {name}",
+  "document_note.failure_cause": "Cause : {message}",
   "document_note.reference_assembly": "Cet assembly est marqué comme « assembly de référence » : il ne contient que des métadonnées et aucun code exécutable.",
   "document_note.module_with_metadata": "Un module de cet assembly, contenant des métadonnées",
   "document_note.module_without_metadata": "Une bibliothèque native, ou un module sans métadonnées",

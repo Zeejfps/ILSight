@@ -371,7 +371,7 @@ public sealed class DecompilationTests
     }
 
     [Fact]
-    public async Task Failures_become_an_error_document()
+    public async Task Failures_become_an_error_document_saying_the_cause_by_its_message_the_exception_kept_apart()
     {
         using var temp = new TempDir();
         var corrupt = temp.Write("corrupt.dll", WithBrokenAttribute(await File.ReadAllBytesAsync(Trees.TestAssemblyPath), "Describe"));
@@ -383,7 +383,10 @@ public sealed class DecompilationTests
         Assert.NotNull(il.Error);
         Assert.Equal("Describe() : string", il.Title);
         Assert.StartsWith("// Error decompiling", il.Lines[0].Text);
-        Assert.Contains(il.SpansOf(), s => s.Text.Contains(nameof(BadImageFormatException)));
+        Assert.IsType<BadImageFormatException>(il.Error);
+        Assert.Equal($"// Cause: {il.Error.Message}", il.Lines[1].Text);
+        Assert.DoesNotContain(nameof(BadImageFormatException), Documents.GetText(il));
+        Assert.DoesNotContain("   at ", Documents.GetText(il));
         Assert.Null(csharp.Error);
         Assert.Contains("Could not decode attribute arguments", Documents.GetText(csharp));
     }

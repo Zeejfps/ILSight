@@ -344,6 +344,7 @@
   "cause.module_unreadable.note": "警告：引用 {reference} 仅按名称读取：无法读取 {file}。{why} 可以读取后，请重新加载 {module}。",
   "cause.reference_not_found.note": "警告：引用 {reference} 仅按名称读取：未找到。",
   "document_note.decompile_failed": "反编译 {name} 时出错",
+  "document_note.failure_cause": "原因：{message}",
   "document_note.reference_assembly": "此程序集标记为“引用程序集”，即只包含元数据，不包含可执行代码。",
   "document_note.module_with_metadata": "此程序集的模块，包含元数据",
   "document_note.module_without_metadata": "本机库，或不包含元数据的模块",

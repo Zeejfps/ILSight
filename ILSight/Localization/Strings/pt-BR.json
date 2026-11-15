@@ -344,6 +344,7 @@
   "cause.module_unreadable.note": "Aviso: a referência {reference} foi lida apenas pelo nome: não foi possível ler {file}. {why} Recarregue {module} quando ele puder ser lido.",
   "cause.reference_not_found.note": "Aviso: a referência {reference} foi lida apenas pelo nome: ela não foi encontrada.",
   "document_note.decompile_failed": "Erro ao descompilar {name}",
+  "document_note.failure_cause": "Causa: {message}",
   "document_note.reference_assembly": "Este assembly está marcado como 'assembly de referência', o que significa que contém apenas metadados e nenhum código executável.",
   "document_note.module_with_metadata": "Um módulo deste assembly, com metadados",
   "document_note.module_without_metadata": "Uma biblioteca nativa ou um módulo sem metadados",

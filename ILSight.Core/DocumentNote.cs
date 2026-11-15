@@ -58,6 +58,30 @@ public abstract record DocumentNote
         }
     }
 
+    /// <summary>What made the decompilation fail: the exception's message as it was written, on one line; its type and
+    /// stack trace stay on the document's <see cref="DecompiledDocument.Error"/>, never in its text.</summary>
+    public sealed record FailureCause(string Message) : DocumentNote
+    {
+        public override string Words(IDocumentNotes notes)
+        {
+            return notes.FailureCause(Message);
+        }
+    }
+
+    /// <summary>That <see cref="File"/> could not be read as an assembly: <see cref="Why"/>, the message of what the
+    /// reading threw, on one line; or, when null, as it is no assembly or package that can be read.</summary>
+    public sealed record AssemblyUnreadable : DocumentNote
+    {
+        public required string File { get; init; }
+
+        public required string? Why { get; init; }
+
+        public override string Words(IDocumentNotes notes)
+        {
+            return notes.AssemblyUnreadable(File, Why);
+        }
+    }
+
     /// <summary>That the assembly holds metadata and no code.</summary>
     public sealed record ReferenceAssembly : DocumentNote
     {

@@ -23,6 +23,16 @@ internal sealed class OtherWords : IDocumentNotes
         return "[x] " + English.DecompileFailed(name);
     }
 
+    public string FailureCause(string message)
+    {
+        return "[x] " + English.FailureCause(message);
+    }
+
+    public string AssemblyUnreadable(string file, string? why)
+    {
+        return "[x] " + English.AssemblyUnreadable(file, why);
+    }
+
     public string ReferenceAssembly()
     {
         return "[x] " + English.ReferenceAssembly();

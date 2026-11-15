@@ -35,7 +35,7 @@ internal static class NodeDecompiler
         cancellationToken.ThrowIfCancellationRequested();
         if (request is DocumentRequest.Failure failure)
         {
-            return DescribeLoadError(failure, language);
+            return DescribeLoadError(failure, language, notes);
         }
 
         var module = ModuleOf(request);
@@ -115,7 +115,7 @@ internal static class NodeDecompiler
         cancellationToken.ThrowIfCancellationRequested();
         if (request is DocumentRequest.Failure failure)
         {
-            return DescribeLoadError(failure, language);
+            return DescribeLoadError(failure, language, notes);
         }
 
         var builder = new DocumentBuilder { Language = language, Assembly = ModuleOf(request), TypeSystem = typeSystem };
@@ -138,26 +138,31 @@ internal static class NodeDecompiler
         }
     }
 
+    // The failure said by the cause's message, as app notes; the exception (its type and stack trace) stays on the
+    // document, for the report that carries it as technical details.
     private static DecompiledDocument DescribeFailure(DocumentRequest request, DecompilationLanguage language, IDocumentNotes notes, Exception thrown)
     {
         var error = new DocumentBuilder { Language = language };
-        error.WriteNote(new DocumentNote.DecompileFailed(request.FullName), notes);
-        error.WriteLine();
-        error.Write(thrown.ToString(), SpanKind.Comment);
+        WriteNote(error, new DocumentNote.DecompileFailed(request.FullName), notes);
+        WriteNote(error, new DocumentNote.FailureCause(OneLine(thrown.Message)), notes);
         return error.BuildFailure(request.Title, thrown);
     }
 
-    private static DecompiledDocument DescribeLoadError(DocumentRequest.Failure failure, DecompilationLanguage language)
+    // A file that could not be read as an assembly, said by the message of what its reading threw, as an app note; the
+    // exception stays on the document.
+    private static DecompiledDocument DescribeLoadError(DocumentRequest.Failure failure, DecompilationLanguage language, IDocumentNotes notes)
     {
         var error = failure.Assembly.Error;
         var builder = new DocumentBuilder { Language = language };
-        WriteComment(builder, error.Message);
-        if (error.InnerException is not null)
-        {
-            builder.Write(error.InnerException.ToString(), SpanKind.Comment);
-        }
-
+        var why = error.InnerException is null ? null : OneLine(error.InnerException.Message);
+        WriteNote(builder, new DocumentNote.AssemblyUnreadable { File = error.FilePath.FileName, Why = why }, notes);
         return builder.BuildFailure(failure.Title, error);
+    }
+
+    // A note runs to its line's end: a message of several lines is said on one, its line breaks spaces.
+    private static string OneLine(string text)
+    {
+        return string.Join(' ', text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
     }
 
     // Code read through a type system that read a reference by name only, not found or its file unreadable, says so first.
@@ -644,13 +649,6 @@ internal static class NodeDecompiler
                 foreach (var type in types.Entries)
                 {
                     WriteLink(s.output, type, SpanKind.Type);
-                }
-            },
-            static (s, error) =>
-            {
-                foreach (var line in error.Exception.ToString().Split('\n'))
-                {
-                    WriteComment(s.output, line.TrimEnd('\r'));
                 }
             });
     }

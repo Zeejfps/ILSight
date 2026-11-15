@@ -185,8 +185,9 @@ public sealed class AssemblyListTests
         Assert.IsType<NodeSubject.FailedAssembly>(root.Subject);
         Assert.Equal("text.dll", root.Text);
         Assert.Empty(await root.ListChildrenAsync());
-        Assert.NotNull(document.Error);
-        Assert.Contains($"Cannot open '{text}'", Documents.GetText(document));
+        var error = Assert.IsType<AssemblyLoadException>(document.Error);
+        var said = error.InnerException is null ? "text.dll isn't a .NET assembly or package that can be read." : $"text.dll couldn't be read ({error.InnerException.Message}).";
+        Assert.Equal($"// {said}", Assert.Single(document.Lines).Text);
     }
 
     [Fact]

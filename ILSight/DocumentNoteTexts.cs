@@ -28,6 +28,16 @@ public sealed class DocumentNoteTexts(Strings t) : IDocumentNotes
         return t.DocumentNoteDecompileFailed(name: name);
     }
 
+    public string FailureCause(string message)
+    {
+        return t.DocumentNoteFailureCause(message);
+    }
+
+    public string AssemblyUnreadable(string file, string? why)
+    {
+        return why is null ? t.ErrorFileDamaged(file) : t.CauseModuleUnreadableSentence(name: file, why: why);
+    }
+
     public string ReferenceAssembly()
     {
         return t.DocumentNoteReferenceAssembly;

@@ -23,6 +23,16 @@ internal sealed class EnglishNotes : IDocumentNotes
         return $"Error decompiling {name}";
     }
 
+    public string FailureCause(string message)
+    {
+        return $"Cause: {message}";
+    }
+
+    public string AssemblyUnreadable(string file, string? why)
+    {
+        return why is null ? $"{file} isn't a .NET assembly or package that can be read." : $"{file} couldn't be read ({why}).";
+    }
+
     public string ReferenceAssembly()
     {
         return "This assembly is marked as 'reference assembly', which means that it only contains metadata and no executable code.";

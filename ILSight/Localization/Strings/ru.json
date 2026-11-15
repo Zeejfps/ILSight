@@ -344,6 +344,7 @@
   "cause.module_unreadable.note": "Предупреждение: ссылка {reference} прочитана только по имени: не удалось прочитать {file}. {why} Перезагрузите {module}, когда файл можно будет прочитать.",
   "cause.reference_not_found.note": "Предупреждение: ссылка {reference} прочитана только по имени: она не найдена.",
   "document_note.decompile_failed": "Ошибка при декомпиляции {name}",
+  "document_note.failure_cause": "Причина: {message}",
   "document_note.reference_assembly": "Эта сборка помечена как «референсная сборка»: она содержит только метаданные и не содержит исполняемого кода.",
   "document_note.module_with_metadata": "Модуль этой сборки, содержащий метаданные",
   "document_note.module_without_metadata": "Нативная библиотека или модуль без метаданных",

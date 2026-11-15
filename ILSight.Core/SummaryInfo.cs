@@ -68,15 +68,12 @@ internal abstract record SummaryInfo
     /// <summary>A line per type, going to it, as base and derived types are listed.</summary>
     public sealed record Types(IReadOnlyList<SummaryLink> Entries) : SummaryInfo;
 
-    public sealed record Error(Exception Exception) : SummaryInfo;
-
     /// <summary>Does what the handler of whichever case this is does with it and <paramref name="state"/>, which
     /// it is handed, so that a handler that needs the caller's values can be static and allocate nothing.</summary>
     public void Switch<TState>(TState state, Action<TState, Comments> comments, Action<TState, Namespace> @namespace,
         Action<TState, ForwardedType> forwardedType, Action<TState, References> references,
         Action<TState, ModuleReference> moduleReference, Action<TState, ImportedMethod> importedMethod,
-        Action<TState, AssemblyReference> assemblyReference, Action<TState, Used> used, Action<TState, Types> types,
-        Action<TState, Error> error)
+        Action<TState, AssemblyReference> assemblyReference, Action<TState, Used> used, Action<TState, Types> types)
     {
         switch (this)
         {
@@ -106,9 +103,6 @@ internal abstract record SummaryInfo
                 return;
             case Types c:
                 types(state, c);
-                return;
-            case Error c:
-                error(state, c);
                 return;
             default:
                 throw new UnreachableException($"SummaryInfo.Switch does not handle {GetType().Name}.");

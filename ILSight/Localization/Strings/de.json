@@ -344,6 +344,7 @@
   "cause.module_unreadable.note": "Warnung: Der Verweis {reference} wurde nur über den Namen gelesen: {file} konnte nicht gelesen werden. {why} Laden Sie {module} neu, sobald die Datei gelesen werden kann.",
   "cause.reference_not_found.note": "Warnung: Der Verweis {reference} wurde nur über den Namen gelesen: Er wurde nicht gefunden.",
   "document_note.decompile_failed": "Fehler beim Dekompilieren von {name}",
+  "document_note.failure_cause": "Ursache: {message}",
   "document_note.reference_assembly": "Diese Assembly ist als „Referenzassembly“ gekennzeichnet; sie enthält also nur Metadaten und keinen ausführbaren Code.",
   "document_note.module_with_metadata": "Ein Modul dieser Assembly mit Metadaten",
   "document_note.module_without_metadata": "Eine native Bibliothek oder ein Modul ohne Metadaten",

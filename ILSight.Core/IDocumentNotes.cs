@@ -18,6 +18,13 @@ public interface IDocumentNotes
     /// <summary>The heading of a document saying why <paramref name="name"/> could not be decompiled.</summary>
     string DecompileFailed(string name);
 
+    /// <summary>What made a decompilation fail, by <paramref name="message"/>, the exception's message as written.</summary>
+    string FailureCause(string message);
+
+    /// <summary>That <paramref name="file"/> could not be read as an assembly, by <paramref name="why"/>, the message
+    /// of what the reading threw; or, when null, as it is no assembly or package that can be read.</summary>
+    string AssemblyUnreadable(string file, string? why);
+
     /// <summary>That the assembly is a reference assembly, holding metadata and no code.</summary>
     string ReferenceAssembly();
 
