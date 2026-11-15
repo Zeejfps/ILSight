@@ -76,8 +76,9 @@ public sealed class DecompileIntoTabHandlerTests
         var text = ProblemTexts.Describe(Strings.En, reported);
         // The full English text, the two names distinct, so a call passing them in the other order fails here.
         Assert.Equal("Cannot read Locked, which Greeter.dll references", text.Title);
-        Assert.StartsWith("The code of Greeter.dll is shown reading Locked by name only. Reload Greeter.dll once the file can be read.", text.Details);
-        Assert.Contains(Strings.En.ErrorFileDenied("Locked.dll"), text.Details);
+        var nl = Environment.NewLine;
+        Assert.Equal($"The code of Greeter.dll is shown reading Locked by name only. Reload Greeter.dll once the file can be read.{nl}{nl}{Strings.En.ErrorFileDenied("Locked.dll")}", text.Details);
+        Assert.Equal(unread.Error.ToString(), text.TechnicalDetails);
         Assert.DoesNotContain(Strings.En.ErrorRecoveryMakeReadable, text.Details);
     }
 

@@ -610,6 +610,7 @@
   "errors.copy_tooltip": "复制完整错误",
   "errors.clear": "清除",
   "errors.close": "关闭",
+  "errors.technical_details": "技术详细信息",
 
   "about.title": "关于",
   "about.version": "版本 {version}",
@@ -730,6 +731,7 @@
   "error.recovery_make_readable": "使其可读后再试一次。",
   "error.file_damaged": "{file} 不是可读取的 .NET 程序集或包。",
   "error.recovery_replace_file": "请替换该文件，或将其关闭。",
+  "error.recovery_report_bug": "请复制此错误（包括技术详细信息），并将其作为缺陷报告。",
   "error.cause_and_recovery": "{cause}{recovery}",
   "error.read_reference": "无法读取 {assembly} 引用的 {name}",
   "error.read_reference_degraded": "{assembly} 的代码在仅按名称读取 {name} 的情况下显示。文件可读后，请重新加载 {assembly}。",

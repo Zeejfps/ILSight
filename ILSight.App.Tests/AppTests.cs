@@ -154,6 +154,42 @@ public sealed class AppTests
     }
 
     [Fact]
+    public void An_errors_stack_trace_shows_only_when_its_technical_details_are_asked_for_and_is_copied_under_their_label()
+    {
+        var app = new AppDriver();
+        Exception thrown;
+        try
+        {
+            throw new InvalidOperationException("Broken.");
+        }
+        catch (InvalidOperationException e)
+        {
+            thrown = e;
+        }
+
+        Errors.Report(app.AppState, new AppProblem.Unexpected(thrown));
+        app.Run(2);
+        app.Frames.ClickOn(Selector.WithText("1 error")).Frame(3);
+        var details = $"Broken. {Strings.En.ErrorRecoveryReportBug}";
+
+        Assert.Equal(details, Shown(app).TrimEnd());
+        Assert.DoesNotContain(nameof(InvalidOperationException), Shown(app));
+
+        app.Frames.ClickOn(Selector.WithText("Technical details")).Frame(2);
+        Assert.Equal(thrown.ToString(), Shown(app).TrimEnd());
+
+        app.Frames.ClickOn(Selector.WithText("Copy"));
+        Assert.EndsWith($"{Strings.En.ErrorsTechnicalDetails}{Environment.NewLine}{thrown}", app.Frames.Clipboard.Text);
+    }
+
+    // The text of the document the error dialog's view shows.
+    private static string Shown(AppDriver app)
+    {
+        var document = app.Ui.ErrorDialog.View.Layout.Document;
+        return document is null ? "" : string.Join(Environment.NewLine, document.Lines.Select(static l => l.Text));
+    }
+
+    [Fact]
     public void Reported_errors_open_when_asked_on_the_newest_to_copy_and_close()
     {
         var app = new AppDriver();

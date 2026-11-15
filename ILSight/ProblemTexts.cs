@@ -22,56 +22,59 @@ public static class ProblemTexts
 
     public static ProblemText Describe(Strings t, AppProblem problem)
     {
-        var (title, details) = Words(t, problem);
-        return ProblemText.FromWords(t, title, details.Trim());
+        var (title, details, diagnostic) = Words(t, problem);
+        return ProblemText.FromWords(t, title, details.Trim(), diagnostic?.ToString() ?? "");
     }
 
-    private static (string Title, string Details) Words(Strings t, AppProblem problem)
+    // The title and the details in the language's words, and the exception behind them, if any: its message is the
+    // cause said in the details, and the whole of it (type, inner exceptions, stack trace) the technical details,
+    // never the details themselves.
+    private static (string Title, string Details, Exception? Diagnostic) Words(Strings t, AppProblem problem)
     {
-        return problem.Match<(string Title, string Details)>(
-            openFailed: p => (t.ErrorOpenAssemblies, p.Error.ToString()),
+        return problem.Match<(string Title, string Details, Exception? Diagnostic)>(
+            openFailed: p => Thrown(t.ErrorOpenAssemblies, p.Error),
             pdbUnusable: p => (t.ErrorSelectPdb(file: Path.GetFileName(p.PdbPath), name: p.Assembly),
-                DescribePdbCheck(t, p.Check, p.Assembly) + Environment.NewLine + p.PdbPath),
-            assemblyNotReloaded: p => (t.ErrorReloadAssembly(p.Assembly), p.Error.ToString()),
-            assembliesNotReloaded: p => (t.ErrorReloadAssemblies, p.Error.ToString()),
-            analysisFailed: p => (t.ErrorAnalyze(name: p.Subject, analysis: AnalyzerText.Header(t, p.Kind)), p.Error.ToString()),
-            analysesNotRestored: p => (t.ErrorRestoreAnalyses, p.Error.ToString()),
-            unresolved: p => (t.ErrorResolve(p.Reference.Name), p.Error.ToString()),
-            unresolvedFileDenied: p => (t.ErrorResolve(p.Reference.Name), Advise(Denied(t, p.File), p.Error)),
-            unresolvedFileDamaged: p => (t.ErrorResolve(p.Reference.Name), Advise(Damaged(t, p.File), p.Error)),
-            placeLookupFailed: p => (t.ErrorLookUpPlace(p.Place.Label), AfterStep(t, p.Step, p.Error.ToString())),
+                DescribePdbCheck(t, p.Check, p.Assembly) + Environment.NewLine + p.PdbPath, null),
+            assemblyNotReloaded: p => Thrown(t.ErrorReloadAssembly(p.Assembly), p.Error),
+            assembliesNotReloaded: p => Thrown(t.ErrorReloadAssemblies, p.Error),
+            analysisFailed: p => Thrown(t.ErrorAnalyze(name: p.Subject, analysis: AnalyzerText.Header(t, p.Kind)), p.Error),
+            analysesNotRestored: p => Thrown(t.ErrorRestoreAnalyses, p.Error),
+            unresolved: p => Thrown(t.ErrorResolve(p.Reference.Name), p.Error),
+            unresolvedFileDenied: p => (t.ErrorResolve(p.Reference.Name), Denied(t, p.File), p.Error),
+            unresolvedFileDamaged: p => (t.ErrorResolve(p.Reference.Name), Damaged(t, p.File), p.Error),
+            placeLookupFailed: p => (t.ErrorLookUpPlace(p.Place.Label), AfterStep(t, p.Step, p.Error.Message), p.Error),
             placeLookupFileDenied: p => (t.ErrorLookUpPlace(p.Place.Label),
-                AfterStep(t, p.Step, Advise(Denied(t, p.File), p.Error))),
+                AfterStep(t, p.Step, Denied(t, p.File)), p.Error),
             placeLookupFileDamaged: p => (t.ErrorLookUpPlace(p.Place.Label),
-                AfterStep(t, p.Step, Advise(Damaged(t, p.File), p.Error))),
+                AfterStep(t, p.Step, Damaged(t, p.File)), p.Error),
             referenceFileDenied: p => (t.ErrorReadReference(name: p.Unread.Name, assembly: p.Unread.Module),
-                Degraded(t, p.Unread, t.ErrorFileDenied(p.Unread.Error.FilePath.FileName))),
+                Degraded(t, p.Unread, t.ErrorFileDenied(p.Unread.Error.FilePath.FileName)), p.Unread.Error),
             referenceFileDamaged: p => (t.ErrorReadReference(name: p.Unread.Name, assembly: p.Unread.Module),
-                Degraded(t, p.Unread, t.ErrorFileDamaged(p.Unread.Error.FilePath.FileName))),
-            moduleUnreadable: p => (t.CauseModuleUnreadableTitle(p.Module), p.Why.ToString()),
-            bookmarksNotExported: p => (t.ErrorExportBookmarks, p.Reason),
-            bookmarksNotImported: p => (t.ErrorImportBookmarks(p.File), p.Reason),
-            importedBookmarksUnreadable: p => (t.ErrorBookmarksUnreadable(p.File), DescribeEntryProblems(t, p.Problems)),
-            importedBookmarksNotPlaced: p => (t.ErrorBookmarkPlacesFailed(p.File), DescribePlaceFailures(t, p.Failed)),
-            comparisonFailed: p => (t.ErrorCompare(left: p.Left, right: p.Right), p.Error.ToString()),
-            decompilationFailed: p => (t.ErrorDecompile(p.Node), p.Error.ToString()),
-            typeNotDiagrammed: p => (t.ErrorShowInDiagram(p.Type.Name), p.Error.ToString()),
-            diagramNotReopened: p => (t.ErrorShowInDiagram(p.Diagram), p.Error.ToString()),
-            diagramNotLaidOut: p => (t.ErrorLayOutDiagram, p.Error.ToString()),
-            resourceNotSaved: p => (t.ErrorSaveResource(p.Resource), p.Reason),
-            packageFileNotExtracted: p => (t.ErrorExtractFile(p.File), p.Reason),
-            settingsUnreadable: p => (SettingsTitle(t, p.Problem), $"{p.Path}{Environment.NewLine}{DescribeSettings(t, p.Problem)}"),
-            settingsNotSaved: p => (t.ErrorSaveSettings, p.Reason),
-            themeFileProblems: p => (ThemeFileTitle(t, p.Kind, Path.GetFileName(p.File)), DescribeThemeErrors(t, p.Errors)),
-            themesFolderNotMade: p => (p.Kind == ThemeKind.Color ? t.ErrorThemesFolder : t.ErrorIconThemesFolder, p.Reason),
+                Degraded(t, p.Unread, t.ErrorFileDamaged(p.Unread.Error.FilePath.FileName)), p.Unread.Error),
+            moduleUnreadable: p => Thrown(t.CauseModuleUnreadableTitle(p.Module), p.Why),
+            bookmarksNotExported: p => (t.ErrorExportBookmarks, p.Reason, null),
+            bookmarksNotImported: p => (t.ErrorImportBookmarks(p.File), p.Reason, null),
+            importedBookmarksUnreadable: p => (t.ErrorBookmarksUnreadable(p.File), DescribeEntryProblems(t, p.Problems), null),
+            importedBookmarksNotPlaced: p => (t.ErrorBookmarkPlacesFailed(p.File), DescribePlaceFailures(t, p.Failed), null),
+            comparisonFailed: p => Thrown(t.ErrorCompare(left: p.Left, right: p.Right), p.Error),
+            decompilationFailed: p => Reportable(t, t.ErrorDecompile(p.Node), p.Error),
+            typeNotDiagrammed: p => Thrown(t.ErrorShowInDiagram(p.Type.Name), p.Error),
+            diagramNotReopened: p => Thrown(t.ErrorShowInDiagram(p.Diagram), p.Error),
+            diagramNotLaidOut: p => Thrown(t.ErrorLayOutDiagram, p.Error),
+            resourceNotSaved: p => (t.ErrorSaveResource(p.Resource), p.Reason, null),
+            packageFileNotExtracted: p => (t.ErrorExtractFile(p.File), p.Reason, null),
+            settingsUnreadable: p => (SettingsTitle(t, p.Problem), $"{p.Path}{Environment.NewLine}{DescribeSettings(t, p.Problem)}", null),
+            settingsNotSaved: p => (t.ErrorSaveSettings, p.Reason, null),
+            themeFileProblems: p => (ThemeFileTitle(t, p.Kind, Path.GetFileName(p.File)), DescribeThemeErrors(t, p.Errors), null),
+            themesFolderNotMade: p => (p.Kind == ThemeKind.Color ? t.ErrorThemesFolder : t.ErrorIconThemesFolder, p.Reason, null),
             customThemeNotWritten: p => (p.Kind == ThemeKind.Color ? t.ErrorCustomTheme : t.ErrorCustomIconTheme,
-                $"{p.Path}{Environment.NewLine}{p.Reason}"),
-            themesNotWatched: p => (p.Kind == ThemeKind.Color ? t.ErrorWatchThemes : t.ErrorWatchIconThemes, p.Reason),
-            runtimeNotScanned: p => (t.ErrorScanRuntime, p.Error.ToString()),
-            nuGetConfigUnreadable: p => (t.CauseNugetConfigUnreadableTitle, p.Error.ToString()),
-            nuGetSearchFailed: p => (t.ErrorSearchNuget(p.Feed), p.Error.ToString()),
-            packageNotDownloaded: p => (t.ErrorDownloadPackage(p.Package), p.Error.ToString()),
-            unexpected: p => (t.ErrorUnexpected, p.Error.ToString()));
+                $"{p.Path}{Environment.NewLine}{p.Reason}", null),
+            themesNotWatched: p => (p.Kind == ThemeKind.Color ? t.ErrorWatchThemes : t.ErrorWatchIconThemes, p.Reason, null),
+            runtimeNotScanned: p => Thrown(t.ErrorScanRuntime, p.Error),
+            nuGetConfigUnreadable: p => Thrown(t.CauseNugetConfigUnreadableTitle, p.Error),
+            nuGetSearchFailed: p => Thrown(t.ErrorSearchNuget(p.Feed), p.Error),
+            packageNotDownloaded: p => Thrown(t.ErrorDownloadPackage(p.Package), p.Error),
+            unexpected: p => Reportable(t, t.ErrorUnexpected, p.Error));
     }
 
     // The step that asked for the lookup on its own line, then the rest of the details.
@@ -99,17 +102,25 @@ public static class ProblemTexts
         return t.ErrorCauseAndRecovery(cause: t.ErrorFileDamaged(file.FileName), recovery: t.ErrorRecoveryReplaceFile);
     }
 
-    // What the code shows without the reference and the step that reads it again, the cause, then the error as it came.
+    // What the code shows without the reference and the step that reads it again, then the cause.
     // The code is kept, so the cause's own "try again" would reuse it: the step named is the reload.
     private static string Degraded(Strings t, UnreadReference unread, string cause)
     {
-        return t.ErrorReadReferenceDegraded(assembly: unread.Module, name: unread.Name) + Environment.NewLine + Environment.NewLine + Advise(cause, unread.Error);
+        return t.ErrorReadReferenceDegraded(assembly: unread.Module, name: unread.Name) + Environment.NewLine + Environment.NewLine + cause;
     }
 
-    // The cause and what the user can do about it first, then the error as it came.
-    private static string Advise(string advice, Exception error)
+    // A failure whose cause the app knows only by the exception: the cause said by its message as written, the
+    // exception itself the technical details.
+    private static (string Title, string Details, Exception? Diagnostic) Thrown(string title, Exception error)
     {
-        return advice + Environment.NewLine + Environment.NewLine + error;
+        return (title, error.Message, error);
+    }
+
+    // A failure in the app's own code or the decompiler's, a bug to report: the cause by its message, and the recovery
+    // asks for a report, which the copied error's technical details make.
+    private static (string Title, string Details, Exception? Diagnostic) Reportable(Strings t, string title, Exception error)
+    {
+        return (title, t.ErrorCauseAndRecovery(cause: error.Message, recovery: t.ErrorRecoveryReportBug), error);
     }
 
     // One problem a line: the lines are the layout, each line's words the language's.

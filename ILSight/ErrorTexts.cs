@@ -8,6 +8,7 @@ public sealed class ErrorTexts
 {
     private Memo<ByReference<Strings>, Dictionary<AppError, ProblemText>> _texts;
     private Memo<ByReference<AppError>, DecompiledDocument> _document;
+    private Memo<ByReference<AppError>, DecompiledDocument> _technicalDocument;
 
     /// <summary><paramref name="error"/> in the words of <paramref name="t"/>, put into them once per language.</summary>
     public ProblemText GetText(AppError error, Strings t)
@@ -17,6 +18,7 @@ public sealed class ErrorTexts
             texts = new Dictionary<AppError, ProblemText>(ReferenceEqualityComparer.Instance);
             _texts = new Memo<ByReference<Strings>, Dictionary<AppError, ProblemText>>(new ByReference<Strings>(t), texts);
             _document = default;
+            _technicalDocument = default;
         }
         if (!texts.TryGetValue(error, out var text))
         {
@@ -27,7 +29,7 @@ public sealed class ErrorTexts
     }
 
     /// <summary><paramref name="error"/>'s details, or its title when it has none, in the words of
-    /// <paramref name="t"/>, as a document for a code view.</summary>
+    /// <paramref name="t"/>, as a document for a code view: what the user reads, without the technical details.</summary>
     public DecompiledDocument GetDocument(AppError error, Strings t)
     {
         var text = GetText(error, t);
@@ -38,6 +40,21 @@ public sealed class ErrorTexts
 
         document = CreateDocument(text);
         _document = new Memo<ByReference<AppError>, DecompiledDocument>(new ByReference<AppError>(error), document);
+        return document;
+    }
+
+    /// <summary><paramref name="error"/>'s technical details (the exception as the runtime wrote it), as a document for
+    /// a code view: what the user opens on purpose; empty when it has none.</summary>
+    public DecompiledDocument GetTechnicalDocument(AppError error, Strings t)
+    {
+        var text = GetText(error, t);
+        if (_technicalDocument.TryGet(new ByReference<AppError>(error), out var document))
+        {
+            return document;
+        }
+
+        document = text.TechnicalDetails.Length == 0 ? DecompiledDocument.Empty : Documents.CreateFromText(text.Title, text.TechnicalDetails);
+        _technicalDocument = new Memo<ByReference<AppError>, DecompiledDocument>(new ByReference<AppError>(error), document);
         return document;
     }
 

@@ -68,8 +68,10 @@ public sealed class AnalyzerTests
         Assert.NotNull(message.Error);
         var error = Assert.Single(d.AppState.Errors.Entries);
         Assert.IsType<AppProblem.Unexpected>(error.Problem);
-        Assert.Contains(nameof(InvalidOperationException), error.Words().Details);
-        Assert.Contains(" at ", error.Words().Details);
+        Assert.DoesNotContain(nameof(InvalidOperationException), error.Words().Details);
+        Assert.DoesNotContain("   at ", error.Words().Details);
+        Assert.Contains(nameof(InvalidOperationException), error.Words().TechnicalDetails);
+        Assert.Contains("   at ", error.Words().TechnicalDetails);
     }
 
     [Theory]

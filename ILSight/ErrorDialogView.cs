@@ -7,7 +7,8 @@ using ILSight.CommandArea;
 namespace ILSight;
 
 /// <summary>The recent errors: a list to pick one from when there are several, the picked one's
-/// title over its details in a selectable monospace view, and Copy, Clear and Close.</summary>
+/// title over its details in a selectable monospace view, a "Technical details" box that shows its exception instead
+/// when it has one, and Copy, Clear and Close.</summary>
 internal static class ErrorDialogView
 {
     /// <summary>Logs <paramref name="problem"/> as having happened at <paramref name="time"/>.</summary>
@@ -58,8 +59,14 @@ internal static class ErrorDialogView
             CodeViewWidget.RenderCodeView(ui, appearance, display, "error-text", GetSelectedDocument(shown, t), shown.View);
         }
 
-        using (ui.Row(new Box { Gap = theme.GapTight }))
+        using (ui.Row(new Box { Gap = theme.GapTight, AlignY = Align.Center }))
         {
+            var technical = selected is null ? "" : shown.Texts.GetText(selected, t).TechnicalDetails;
+            if (technical.Length > 0)
+            {
+                ui.Checkbox(t.ErrorsTechnicalDetails, ref shown.ShowsTechnicalDetails, id: "error-technical-details");
+            }
+
             if (ui.Button(t.ErrorsCopy, id: "error-copy") && selected is not null)
             {
                 ui.ClipboardText = shown.Texts.GetText(selected, t).FullText;
@@ -85,6 +92,12 @@ internal static class ErrorDialogView
         if (error is null)
         {
             return DecompiledDocument.Empty;
+        }
+
+        var technical = dialog.Texts.GetText(error, t).TechnicalDetails;
+        if (dialog.ShowsTechnicalDetails && technical.Length > 0)
+        {
+            return dialog.Texts.GetTechnicalDocument(error, t);
         }
 
         return dialog.Texts.GetDocument(error, t);

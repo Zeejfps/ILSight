@@ -610,6 +610,7 @@
   "errors.copy_tooltip": "오류 전체 복사",
   "errors.clear": "지우기",
   "errors.close": "닫기",
+  "errors.technical_details": "기술 세부 정보",
 
   "about.title": "정보",
   "about.version": "버전 {version}",
@@ -730,6 +731,7 @@
   "error.recovery_make_readable": "읽을 수 있게 한 다음 다시 시도하세요.",
   "error.file_damaged": "{file}은(는) 읽을 수 있는 .NET 어셈블리나 패키지가 아닙니다.",
   "error.recovery_replace_file": "파일을 바꾸거나 닫으세요.",
+  "error.recovery_report_bug": "기술 세부 정보를 포함하여 이 오류를 복사한 다음 버그로 신고하세요.",
   "error.cause_and_recovery": "{cause} {recovery}",
   "error.read_reference": "{assembly}이(가) 참조하는 {name}을(를) 읽을 수 없습니다",
   "error.read_reference_degraded": "{assembly}의 코드는 {name}을(를) 이름으로만 읽어 표시합니다. 파일을 읽을 수 있게 되면 {assembly}을(를) 다시 로드하세요.",

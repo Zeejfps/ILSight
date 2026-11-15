@@ -610,6 +610,7 @@
   "errors.copy_tooltip": "Den gesamten Fehler kopieren",
   "errors.clear": "Leeren",
   "errors.close": "Schließen",
+  "errors.technical_details": "Technische Details",
 
   "about.title": "Info",
   "about.version": "Version {version}",
@@ -730,6 +731,7 @@
   "error.recovery_make_readable": "Machen Sie sie lesbar und versuchen Sie es erneut.",
   "error.file_damaged": "{file} ist keine lesbare .NET-Assembly und kein lesbares Paket.",
   "error.recovery_replace_file": "Ersetzen Sie die Datei, oder schließen Sie sie.",
+  "error.recovery_report_bug": "Kopieren Sie diesen Fehler mit den technischen Details und melden Sie ihn als Bug.",
   "error.cause_and_recovery": "{cause} {recovery}",
   "error.read_reference": "{name}, auf das {assembly} verweist, kann nicht gelesen werden",
   "error.read_reference_degraded": "Der Code von {assembly} wird angezeigt, wobei {name} nur über den Namen gelesen wird. Laden Sie {assembly} neu, sobald die Datei gelesen werden kann.",
