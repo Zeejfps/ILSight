@@ -39,7 +39,7 @@ internal static class SaveDialogs
     {
         var t = appearance.Strings;
         var fileName = node.SuggestCodeFileName(setup.Language);
-        var title = t.ExportSaveCodeAsShownTitle(language: DecompilationLanguages.Label(setup.Language));
+        var title = t.ExportSaveCodeAsShownTitle(language: DecompilationLanguageLabels.Label(t, setup.Language));
         ui.PickSaveFile(title, null, fileName, CodeFilters(t, setup.Language),
             path => Commands.Later(commands, (node, setup, path), static (a, s) => ExportCommands.SaveCode(a, s.node, s.setup, s.path)));
     }

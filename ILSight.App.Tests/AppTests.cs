@@ -357,6 +357,23 @@ public sealed class AppTests
     }
 
     [Fact]
+    public async Task IL_with_CSharp_is_named_in_the_interface_language_IL_and_CSharp_as_they_are()
+    {
+        var app = AppDriver.Opened();
+        app.Show(await app.FixtureAsync("Greeter"), 1);
+        app.Frames.ClickOn(Selector.WithText("IL+C#"));
+        app.Settle(1);
+
+        app.AppState.Locale = Locale.De;
+        app.Run(2);
+
+        Assert.True(app.Frames.Drew("IL mit C#"));
+        Assert.False(app.Frames.Drew("IL with C#"));
+        Assert.Equal("IL", DecompilationLanguageLabels.Label(Strings.For(Locale.Ja), DecompilationLanguage.IL));
+        Assert.Equal("C#", DecompilationLanguageLabels.Label(Strings.For(Locale.Ja), DecompilationLanguage.CSharp));
+    }
+
+    [Fact]
     public void The_language_version_dropdown_decompiles_the_active_tab_again_and_hides_for_IL()
     {
         var app = AppDriver.Opened();

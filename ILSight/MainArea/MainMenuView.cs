@@ -422,7 +422,7 @@ internal static class MainMenuView
         for (var i = 0; i < languages.Count; i++)
         {
             var language = languages[i];
-            var label = DecompilationLanguages.Label(language);
+            var label = DecompilationLanguageLabels.Label(t, language);
             if (ui.MenuRadioItem(label, current == language))
             {
                 panels.ShowInLanguage(decompiler, language);

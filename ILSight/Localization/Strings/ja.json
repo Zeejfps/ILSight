@@ -27,6 +27,7 @@
   "file.filter_pdb": "ポータブル PDB",
   "file.filter_snk": "厳密名キー",
   "view.decompiler": "逆コンパイラー",
+  "view.decompiler_il_with_csharp": "{il}（{csharp} 付き）",
   "view.shown_api": "表示する型とメンバー",
   "view.shown_public_only": "パブリックのみ",
   "view.shown_source_declared": "パブリック、内部、プライベート",

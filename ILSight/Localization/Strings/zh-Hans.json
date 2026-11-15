@@ -27,6 +27,7 @@
   "file.filter_pdb": "可移植 PDB",
   "file.filter_snk": "强名称密钥",
   "view.decompiler": "反编译器",
+  "view.decompiler_il_with_csharp": "{il}（含 {csharp}）",
   "view.shown_api": "显示类型和成员",
   "view.shown_public_only": "仅公共",
   "view.shown_source_declared": "公共、内部和私有",

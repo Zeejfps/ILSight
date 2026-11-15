@@ -27,6 +27,7 @@
   "file.filter_pdb": "PDB portátil",
   "file.filter_snk": "Chave de nome forte",
   "view.decompiler": "Descompilador",
+  "view.decompiler_il_with_csharp": "{il} com {csharp}",
   "view.shown_api": "Mostrar tipos e membros",
   "view.shown_public_only": "Somente públicos",
   "view.shown_source_declared": "Públicos, internos e privados",

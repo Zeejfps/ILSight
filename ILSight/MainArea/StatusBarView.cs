@@ -63,7 +63,7 @@ internal static class StatusBarView
                     ErrorIndicator(ui, appearance, errorDialog, appState.Errors);
                     Dot(ui);
                 }
-                ui.Text(DecompilationLanguages.Label(appState.Decompiler.Setup.Language), color: theme.TextMuted, size: size);
+                ui.Text(ui.Memo("status-language", (appState.Decompiler.Setup.Language, t), static a => DecompilationLanguageLabels.Label(a.t, a.Language)), color: theme.TextMuted, size: size);
                 Dot(ui);
                 ui.Text(ui.Memo("status-count", (tree.Roots.Count, t), static a => a.t.StatusAssemblies(a.Count)), color: theme.TextMuted, size: size);
             }

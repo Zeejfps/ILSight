@@ -27,6 +27,7 @@
   "file.filter_pdb": "Переносимый PDB",
   "file.filter_snk": "Ключ строгого имени",
   "view.decompiler": "Декомпилятор",
+  "view.decompiler_il_with_csharp": "{il} с {csharp}",
   "view.shown_api": "Показывать типы и члены",
   "view.shown_public_only": "Только публичные",
   "view.shown_source_declared": "Публичные, внутренние и закрытые",
