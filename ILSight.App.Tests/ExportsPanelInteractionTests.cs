@@ -29,9 +29,9 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     {
         var app = AppDriver.Opened(width: width, height: TallWindow);
         var greeterNode = await app.FixtureAsync("Greeter");
-        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, Path.Combine(Folder("First"), "Greeter.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, app.AppState.Decompiler.Setup, Path.Combine(Folder("First"), "Greeter.cs")));
         var farewellNode = await app.FixtureAsync("Farewell");
-        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, farewellNode, Path.Combine(Folder("Second"), "Farewell.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, farewellNode, app.AppState.Decompiler.Setup, Path.Combine(Folder("Second"), "Farewell.cs")));
         app.Settle(2);
         return app;
     }

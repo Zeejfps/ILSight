@@ -48,7 +48,7 @@ public sealed class SettlingWorkflowsTests
         var greeter = await d.FixtureAsync("Greeter");
         using var temp = new TempDir();
 
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, greeter, temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, greeter, d.AppState.Decompiler.Setup, temp.PathOf("Greeter.cs")));
         d.RunUntil(() => d.AppState.FinishedExports.Count == 1);
         d.Settle();
 

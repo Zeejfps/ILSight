@@ -46,7 +46,7 @@ public sealed class ExportTests : IDisposable
 
         var saved = await d.FixtureAsync("Greeter");
 
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, path));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, d.AppState.Decompiler.Setup, path));
         d.Settle();
 
         Assert.Contains(".class public auto ansi beforefieldinit ILSight.App.Tests.Fixtures.Greeter", await File.ReadAllTextAsync(path));
@@ -61,7 +61,7 @@ public sealed class ExportTests : IDisposable
 
         var saved = await SampleOf(d).ReadRootAsync();
 
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, path));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, d.AppState.Decompiler.Setup, path));
         d.Settle();
 
         var code = await File.ReadAllTextAsync(path);
@@ -78,7 +78,7 @@ public sealed class ExportTests : IDisposable
         var path = _temp.PathOf("data.json");
 
         Assert.True(Exports.CanSaveCode(node));
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, node, path));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, node, d.AppState.Decompiler.Setup, path));
         d.Settle();
 
         Assert.Equal(BrowseNodes.ReadResource(node), await File.ReadAllBytesAsync(path));
@@ -164,6 +164,37 @@ public sealed class ExportTests : IDisposable
 
         Assert.Equal(["Save code"], app.Frames.FilePicker.Titles);
         Assert.Contains("public class Greeter", await File.ReadAllTextAsync(path));
+    }
+
+    [Fact]
+    public async Task Code_saved_in_CSharp_stays_CSharp_with_the_options_asked_when_the_language_switches_while_the_file_picker_is_open()
+    {
+        var app = AppDriver.Opened();
+        app.Show(await app.FixtureAsync("Greeter"), frames: 2);
+        var asked = app.AppState.Decompiler.Setup;
+        Assert.Equal(DecompilationLanguage.CSharp, asked.Language);
+        var stringConcat = DecompilerToggles.FindToggle("StringConcat");
+        Assert.NotNull(stringConcat);
+        Assert.True(DecompilerToggles.IsOn(asked.Options, stringConcat));
+        var path = _temp.PathOf("Greeter.cs");
+        app.Frames.FilePicker.OnOpen = () =>
+        {
+            app.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
+            Preferences.SetDecompilerToggle(app.AppState, stringConcat, false);
+        };
+        app.Frames.FilePicker.Answer = path;
+
+        app.Frames.Key(Shortcuts.SaveCode).Frame(2);
+        app.Settle();
+
+        Assert.Equal("Greeter.cs", app.Frames.FilePicker.LastSave.FileName);
+        Assert.Equal(DecompilationLanguage.IL, app.AppState.Decompiler.Setup.Language);
+        var code = await File.ReadAllTextAsync(path);
+        Assert.Contains("public class Greeter", code);
+        Assert.DoesNotContain(".class", code);
+        Assert.DoesNotContain("string.Concat", code);
+        Assert.Equal(ExportKind.CSharpFile, Assert.Single(app.AppState.FinishedExports).Job.Kind);
+        Assert.Empty(app.AppState.Errors.Entries);
     }
 
     [Fact]
@@ -334,8 +365,8 @@ public sealed class ExportTests : IDisposable
 
         var greeterNode = await d.FixtureAsync("Greeter");
         var farewellNode = await d.FixtureAsync("Farewell");
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, greeterNode, greeter));
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, farewellNode, farewell));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, greeterNode, d.AppState.Decompiler.Setup, greeter));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, farewellNode, d.AppState.Decompiler.Setup, farewell));
         Assert.Equal(1, d.AppState.Export.WaitingCount);
         d.Settle();
 
@@ -383,7 +414,7 @@ public sealed class ExportTests : IDisposable
 
         var saved = await d.FixtureAsync("Greeter");
 
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, path));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, d.AppState.Decompiler.Setup, path));
         d.Settle();
 
         var report = Assert.Single(d.AppState.FinishedExports);
@@ -417,7 +448,7 @@ public sealed class ExportTests : IDisposable
 
         var saved = await d.FixtureAsync("Greeter");
 
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, path));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, d.AppState.Decompiler.Setup, path));
         d.Settle();
 
         var report = Assert.Single(d.AppState.FinishedExports);

@@ -467,7 +467,7 @@ internal static class TreePaneView
         ExtractItems(ui, appearance, commands, node);
         if (OffersSaveCode(node) && ui.MenuItem(t.FileSaveCode, Shortcuts.SaveCode, id: "save-code", icon: new UiIcon(appearance.Icons.FileSaveCode)))
         {
-            SaveDialogs.PickCodeFile(ui, appearance, commands, setup.Language, node);
+            SaveDialogs.PickCodeFile(ui, appearance, commands, setup, node);
         }
 
         if (node.Subject is NodeSubject.Module module)

@@ -10,11 +10,14 @@ namespace ILSight.ExportArea;
 public static class ExportCommands
 {
     /// <summary>Saves <paramref name="node"/> to the file at <paramref name="path"/>: a resource's bytes as they are,
-    /// else its code in the current language, as one file (<see cref="Exports.ToCodeSave"/>). Projects come from the
-    /// export dialog.</summary>
-    public static void SaveCode(AppState appState, BrowseNode node, string path)
+    /// else its code as one file (<see cref="Exports.ToCodeSave"/>). Projects come from the export dialog.</summary>
+    /// <remarks>The code is in <paramref name="setup"/>'s language and with its options as they were when the user
+    /// asked for the save, the setup the file was named for (<see cref="SaveDialogs.PickCodeFile"/>): the code the
+    /// user was looking at. A language or option changed while the save dialog was open reaches neither; the current
+    /// setup is never read here.</remarks>
+    public static void SaveCode(AppState appState, BrowseNode node, DecompilerSetup setup, string path)
     {
-        var save = Exports.ToCodeSave(node, appState.Decompiler.Setup, path);
+        var save = Exports.ToCodeSave(node, setup, path);
         save.Switch(appState,
             static (a, resource) => SaveResource(a, resource.Node, resource.File),
             static (a, code) => StartWriting(a, code.Work));
@@ -38,12 +41,18 @@ public static class ExportCommands
 
     /// <summary>Exports what <paramref name="request"/> asks for: one assembly as a project straight into the folder,
     /// several as a solution with a folder per project.</summary>
+    /// <remarks>The decompiler's options are taken as they stand when the request starts (the dialog's own options
+    /// are the app's, so what it shows as it closes) and kept until the export's turn ends; nothing in the request
+    /// was chosen from them.</remarks>
     public static void StartExport(AppState appState, ExportRequest request)
     {
         StartWriting(appState, Exports.ToWork(request, appState.Decompiler.Setup.Options));
     }
 
     /// <summary>Writes a portable PDB of <paramref name="assembly"/>'s decompiled C# to <paramref name="path"/>.</summary>
+    /// <remarks>The decompiler's options are taken as they stand once the file is picked and kept until the export's
+    /// turn ends; nothing in the request was chosen from them (the file is named for the assembly, and a PDB is always
+    /// of C#).</remarks>
     public static void GeneratePdb(AppState appState, LoadedModule assembly, string path)
     {
         StartWriting(appState, new ExportWork.Pdb { Assembly = assembly, Options = appState.Decompiler.Setup.Options, File = path });
@@ -58,6 +67,8 @@ public static class ExportCommands
 
     /// <summary>Writes a portable PDB of each open assembly into <paramref name="folder"/>, named after the assembly.
     /// Assemblies that cannot have one, or fail, are the report's problems.</summary>
+    /// <remarks>The open assemblies and the decompiler's options are taken as they stand once the folder is picked
+    /// and kept until the export's turn ends; nothing in the request was chosen from them.</remarks>
     public static void GeneratePdbs(AppState appState, string folder)
     {
         var work = new ExportWork.Pdbs { Assemblies = appState.ListSession.Assemblies.Assemblies, Options = appState.Decompiler.Setup.Options, Folder = folder };

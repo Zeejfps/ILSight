@@ -36,7 +36,7 @@ public sealed class ExportsPanelTests : IDisposable
 
         var saved = await d.FixtureAsync("Greeter");
 
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, d.AppState.Decompiler.Setup, _temp.PathOf("Greeter.cs")));
         d.NextFrame();
 
         var layout = d.Arrangement;
@@ -51,9 +51,9 @@ public sealed class ExportsPanelTests : IDisposable
         var app = AppDriver.Opened(height: TallWindow);
         var first = Folder("First");
         var greeterNode = await app.FixtureAsync("Greeter");
-        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, Path.Combine(first, "Greeter.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, app.AppState.Decompiler.Setup, Path.Combine(first, "Greeter.cs")));
         var farewellNode = await app.FixtureAsync("Farewell");
-        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, farewellNode, Path.Combine(Folder("Second"), "Farewell.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, farewellNode, app.AppState.Decompiler.Setup, Path.Combine(Folder("Second"), "Farewell.cs")));
         app.Settle(2);
 
         app.Frames.ClickOn(Selector.AtPath("dock/exports/#1/open-folder")).Frame();
@@ -67,9 +67,9 @@ public sealed class ExportsPanelTests : IDisposable
         var app = AppDriver.Opened(height: TallWindow);
         var path = _temp.PathOf("Greeter.cs");
         var greeterNode = await app.FixtureAsync("Greeter");
-        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, path));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, app.AppState.Decompiler.Setup, path));
         var farewellNode = await app.FixtureAsync("Farewell");
-        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, farewellNode, _temp.PathOf("Farewell.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, farewellNode, app.AppState.Decompiler.Setup, _temp.PathOf("Farewell.cs")));
         app.Settle(2);
 
         app.Frames.ClickOn(Selector.AtPath("dock/exports/#1/show-report")).Frame(2);
@@ -90,9 +90,9 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var d = AppStateDriver.Opened();
         var saved = await d.FixtureAsync("Greeter");
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, d.AppState.Decompiler.Setup, _temp.PathOf("Greeter.cs")));
         var farewell = await d.FixtureAsync("Farewell");
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, farewell, _temp.PathOf("Farewell.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, farewell, d.AppState.Decompiler.Setup, _temp.PathOf("Farewell.cs")));
         d.Settle();
 
         Exports.RemoveFinishedExport(d.AppState, d.AppState.FinishedExports[0]);
@@ -108,9 +108,9 @@ public sealed class ExportsPanelTests : IDisposable
         var d = AppStateDriver.Opened();
         var farewell = _temp.PathOf("Farewell.cs");
         var saved = await d.FixtureAsync("Greeter");
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, d.AppState.Decompiler.Setup, _temp.PathOf("Greeter.cs")));
         var farewellNode = await d.FixtureAsync("Farewell");
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, farewellNode, farewell));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, farewellNode, d.AppState.Decompiler.Setup, farewell));
         var waiting = Assert.Single(d.AppState.Export.Waiting);
 
         d.AppState.Export.Withdraw(waiting.Run);
@@ -126,7 +126,7 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened(height: TallWindow);
         var greeterNode = await app.FixtureAsync("Greeter");
-        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, app.AppState.Decompiler.Setup, _temp.PathOf("Greeter.cs")));
         app.Settle();
         var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
         Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Later"))).Turn.IsCompleted);
@@ -162,7 +162,7 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened();
         var greeterNode = await app.FixtureAsync("Greeter");
-        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, app.AppState.Decompiler.Setup, _temp.PathOf("Greeter.cs")));
         app.Settle(2);
 
         Assert.True(app.Frames.Drew("Open folder"));
@@ -175,7 +175,7 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened();
         var greeterNode = await app.FixtureAsync("Greeter");
-        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, _temp.PathOf(Path.Combine("missing", "Greeter.cs"))));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, app.AppState.Decompiler.Setup, _temp.PathOf(Path.Combine("missing", "Greeter.cs"))));
         app.Settle(2);
 
         Assert.True(app.Frames.Drew("Show report"));
@@ -195,15 +195,15 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened(height: TallWindow);
         var greeterNode = await app.FixtureAsync("Greeter");
-        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, app.AppState.Decompiler.Setup, _temp.PathOf("Greeter.cs")));
         app.Settle(2);
         var withOne = MeasureFrames(app);
 
         var farewellNode = await app.FixtureAsync("Farewell");
-        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, farewellNode, _temp.PathOf(Path.Combine("missing", "Farewell.cs"))));
-        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, farewellNode, _temp.PathOf("Farewell.cs")));
-        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, _temp.PathOf(Path.Combine("missing", "Greeter.cs"))));
-        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter2.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, farewellNode, app.AppState.Decompiler.Setup, _temp.PathOf(Path.Combine("missing", "Farewell.cs"))));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, farewellNode, app.AppState.Decompiler.Setup, _temp.PathOf("Farewell.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, app.AppState.Decompiler.Setup, _temp.PathOf(Path.Combine("missing", "Greeter.cs"))));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, app.AppState.Decompiler.Setup, _temp.PathOf("Greeter2.cs")));
         app.Settle(2);
         var withFive = MeasureFrames(app);
 
@@ -224,7 +224,7 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened(height: TallWindow);
         var greeterNode = await app.FixtureAsync("Greeter");
-        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, app.AppState.Decompiler.Setup, _temp.PathOf("Greeter.cs")));
         app.Settle();
         var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
         Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Second"))).Turn.IsCompleted);
@@ -270,7 +270,7 @@ public sealed class ExportsPanelTests : IDisposable
 
         var saved = await d.FixtureAsync("Greeter");
 
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, d.AppState.Decompiler.Setup, _temp.PathOf("Greeter.cs")));
         var running = d.AppState.Export.Running;
         Assert.NotNull(running);
         var run = running.Export.Run;
@@ -298,7 +298,7 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened(height: TallWindow);
         var greeterNode = await app.FixtureAsync("Greeter");
-        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, _temp.PathOf("Greeter.cs")));
+        app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, app.AppState.Decompiler.Setup, _temp.PathOf("Greeter.cs")));
         app.Settle(2);
         app.AppState.ListSession.Navigation.ShowReport(app.AppState.FinishedExports[0]);
         app.Run(2);
@@ -320,7 +320,7 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var d = AppStateDriver.Opened();
         var saved = await d.FixtureAsync("Greeter");
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, d.AppState.Decompiler.Setup, _temp.PathOf("Greeter.cs")));
         d.Settle();
         var lookup = d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false);
 
@@ -335,7 +335,7 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var d = AppStateDriver.Opened();
         var saved = await d.FixtureAsync("Greeter");
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, d.AppState.Decompiler.Setup, _temp.PathOf("Greeter.cs")));
         d.Settle();
         d.AppState.ListSession.Navigation.ShowReport(d.AppState.FinishedExports[0]);
         var report = d.AppState.ListSession.Navigation.ActiveTab;
@@ -353,7 +353,7 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var d = AppStateDriver.Opened();
         var saved = await d.FixtureAsync("Greeter");
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, d.AppState.Decompiler.Setup, _temp.PathOf("Greeter.cs")));
         d.Settle();
         var finished = d.AppState.FinishedExports[0];
         d.AppState.ListSession.Navigation.ShowReport(finished);
@@ -376,7 +376,7 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var d = AppStateDriver.Opened();
         var saved = await d.FixtureAsync("Greeter");
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, d.AppState.Decompiler.Setup, _temp.PathOf("Greeter.cs")));
         d.Settle();
         var finished = d.AppState.FinishedExports[0];
         d.AppState.ListSession.Navigation.ShowReport(finished);
@@ -399,7 +399,7 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var d = AppStateDriver.Opened();
         var saved = await d.FixtureAsync("Greeter");
-        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
+        d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, d.AppState.Decompiler.Setup, _temp.PathOf("Greeter.cs")));
         d.Settle();
         d.AppState.ListSession.Navigation.ShowReport(d.AppState.FinishedExports[0]);
         var active = d.AppState.ListSession.Navigation.ActiveTab;

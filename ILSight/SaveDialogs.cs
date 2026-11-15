@@ -11,8 +11,9 @@ namespace ILSight;
 internal static class SaveDialogs
 {
     /// <summary>Asks where to save the active tab's node, when it can be saved: a resource's bytes
-    /// under its own name, else its code in the current language as one file.</summary>
-    public static void PickActiveCodeFile(Ui ui, Appearance appearance, IAppCommandWriter commands, Navigation navigation, DecompilationLanguage language)
+    /// under its own name, else its code as one file, in <paramref name="setup"/>'s language and with its options, the
+    /// setup as the user asks (<see cref="PickCodeFile"/>).</summary>
+    public static void PickActiveCodeFile(Ui ui, Appearance appearance, IAppCommandWriter commands, Navigation navigation, DecompilerSetup setup)
     {
         var node = navigation.ActiveTab?.Node;
         if (!Exports.CanSaveCode(node))
@@ -25,16 +26,19 @@ internal static class SaveDialogs
             ResourceImageView.PickExport(ui, appearance, commands, node);
             return;
         }
-        PickCodeFile(ui, appearance, commands, language, node);
+        PickCodeFile(ui, appearance, commands, setup, node);
     }
 
-    /// <summary>Asks where to save the code of <paramref name="node"/> in <paramref name="language"/> as one file.</summary>
-    public static void PickCodeFile(Ui ui, Appearance appearance, IAppCommandWriter commands, DecompilationLanguage language, BrowseNode node)
+    /// <summary>Asks where to save the code of <paramref name="node"/> as one file, in <paramref name="setup"/>'s
+    /// language and with its options: the file is named, and its filters chosen, for that language, and the save the
+    /// answer queues carries the same setup, so a language or option changed while the dialog is open (it doesn't
+    /// block) reaches neither the name nor the code.</summary>
+    public static void PickCodeFile(Ui ui, Appearance appearance, IAppCommandWriter commands, DecompilerSetup setup, BrowseNode node)
     {
         var t = appearance.Strings;
-        var fileName = node.SuggestCodeFileName(language);
-        ui.PickSaveFile(t.ExportSaveCodeTitle, null, fileName, CodeFilters(t, language),
-            path => Commands.Later(commands, (node, path), static (a, s) => ExportCommands.SaveCode(a, s.node, s.path)));
+        var fileName = node.SuggestCodeFileName(setup.Language);
+        ui.PickSaveFile(t.ExportSaveCodeTitle, null, fileName, CodeFilters(t, setup.Language),
+            path => Commands.Later(commands, (node, setup, path), static (a, s) => ExportCommands.SaveCode(a, s.node, s.setup, s.path)));
     }
 
     private static FileFilter[] CodeFilters(Strings t, DecompilationLanguage language)
@@ -47,7 +51,9 @@ internal static class SaveDialogs
         return [new FileFilter(t.FileFilterIl, ["*.il"]), new FileFilter(t.FileFilterAll, ["*.*"])];
     }
 
-    /// <summary>Asks where to write the portable PDB of <paramref name="assembly"/>.</summary>
+    /// <summary>Asks where to write the portable PDB of <paramref name="assembly"/>; nothing is chosen here from the
+    /// decompiler's options, which the PDB takes as they stand once the file is picked
+    /// (<see cref="ExportCommands.GeneratePdb"/>).</summary>
     public static void PickPdbFile(Ui ui, Appearance appearance, IAppCommandWriter commands, LoadedModule assembly)
     {
         var t = appearance.Strings;
@@ -63,7 +69,9 @@ internal static class SaveDialogs
         ui.PickFolder(t.ExportDiagramTitle, null, folder => Commands.Later(commands, (assembly, folder), static (a, s) => ExportCommands.CreateDiagram(a, s.assembly, s.folder)));
     }
 
-    /// <summary>Asks for the folder the portable PDBs of every open assembly are written into.</summary>
+    /// <summary>Asks for the folder the portable PDBs of every open assembly are written into; nothing is chosen here
+    /// from the decompiler's options, which the PDBs take as they stand once the folder is picked
+    /// (<see cref="ExportCommands.GeneratePdbs"/>).</summary>
     public static void PickPdbFolder(Ui ui, Appearance appearance, IAppCommandWriter commands)
     {
         var t = appearance.Strings;

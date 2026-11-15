@@ -258,7 +258,7 @@ internal static class MainMenuView
         var canSave = Exports.CanSaveCode(appState.ListSession.Navigation.ActiveTab?.Node);
         if (ui.MenuItem(t.FileSaveCode, Shortcuts.SaveCode, enabled: canSave, id: "save-code", icon: new UiIcon(appearance.Icons.FileSaveCode)))
         {
-            SaveDialogs.PickActiveCodeFile(ui, appearance, commands, appState.ListSession.Navigation, appState.Decompiler.Setup.Language);
+            SaveDialogs.PickActiveCodeFile(ui, appearance, commands, appState.ListSession.Navigation, appState.Decompiler.Setup);
         }
 
         var anyOpen = tree.Roots.Count > 0;

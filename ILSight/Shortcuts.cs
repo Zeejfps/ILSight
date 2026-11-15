@@ -156,7 +156,7 @@ internal static class Shortcuts
 
         if (ui.IsPressed(SaveCode))
         {
-            SaveDialogs.PickActiveCodeFile(ui, appearance, commands, navigation, setup.Language);
+            SaveDialogs.PickActiveCodeFile(ui, appearance, commands, navigation, setup);
         }
 
         if (ui.IsPressed(Export))
