@@ -13,10 +13,11 @@ limited to frame-driven UIs.
 - **`.editorconfig`:** a folder of only edge or I/O code is `rulelab.infrastructure = true`, test code
   `rulelab.test_code = true`; the other `rulelab.*` keys are in their rules. The project declares `EdgeAttribute` and
   `MustUseAttribute` itself.
-- **Edges** are where the framework hands control to the app (`Main` and the composition root, a command dispatcher,
-  an HTTP endpoint, middleware, a worker's loop, an `async void` event handler, tests), each type marked `[Edge]`.
-  Only edges start work and create its token (R010) and catch all a unit of work throws (R009); other code takes its
-  token as a parameter, lets unexpected exceptions through and reaches the world through its port.
+- **Edges** are where the framework hands control to the app (`Main` and the composition root, a command dispatcher, an
+  HTTP endpoint, middleware, a worker's loop, an `async void` event handler, tests), each type marked `[Edge]`. Only
+  edges start work and create its token (R010), linking in any source an owner keeps to end its own generation's work
+  (R009), and catch all a unit of work throws (R009); other code takes its token as a parameter, lets unexpected
+  exceptions through and reaches the world through its port.
 - **Edges stay thin:** they translate, start work and catch. A branch on what the world or the state answered (one a
   second edge for the same input would repeat) is a use case over a port (the edge's I/O its adapter) or pure code.
   Ordinary code may hand an edge work, never take an answer from one (RL0106); an adapter's I/O may go through an edge.
@@ -42,10 +43,11 @@ limited to frame-driven UIs.
     so its callbacks (a `Progress<T>`) post there; a task it holds is awaited; work elsewhere by design (real I/O, a
     server) is awaited by its condition, bounded, never by a fixed count of frames or pumps or a delay; frames are
     counted only for what the app promises in frames. A bound guards a hang (sized for a full run; never none), never
-    speed: one per test, its own or a per-test timeout in the suite's checked-in runner settings, not a command-line
-    flag (a run-ending hang dump is a backstop). Work started together is ordered by the test, or only what every
-    order gives is asserted, unless that order is the contract under test. Wait for what lasts (the effect at its
-    port, a count), never a state held a frame or a turn.
+    speed: a per-test timeout, the test's own or in the suite's checked-in runner settings (not a command-line flag),
+    guards the whole test; a wait by condition also keeps its own bound, naming what never came; a run-ending hang
+    timeout is a backstop, its dump the team's choice. Work started together is ordered by the test, or only what every
+    order gives is asserted, unless that order is the contract under test. Wait for what lasts (the effect at its port,
+    a count), never a state held a frame or a turn.
   - **Seams:** use cases through their public methods with a fake port; domain code directly; adapters and queries
     against a real or local database. Never private methods; no interface only to fake.
 - **Test input** (fixtures a test compiles and reads back) is data, exempt from every rule: its folder is marked
@@ -64,10 +66,10 @@ disposable result).
   listed in `rulelab.ambient_types` (listed types are I/O only), and effects handed in as delegates. Used
   directly: language primitives (`Task.Run`, `CancellationToken`), plain data and pure methods of objects passed in, a
   caller's handler for its own policy.
-- **Pure code is called directly**, not injected. Per-kind pure code is `static abstract` on the kind (a type
-  parameter) for a closed set known when compiling, a union for one chosen at run time, a strategy interface from what
-  the root registered for an open set (plugins). Where content decides what else to read, the kind says what it names
-  and the use case reads it through its port. A calculation needing only the time takes `now`.
+- **Pure code is called directly**, not injected. Pure per-kind behaviour uses `static abstract` for compile-time kinds,
+  a union for a closed runtime set, or a root-registered strategy interface for an open set (plugins). Where content
+  decides what else to read, the kind says what it names and the use case reads it through its port. A calculation
+  needing only the time takes `now`.
 - **Port members** are named for the need (`FindOrderAsync`, `Now`), list only what this class uses, and carry values:
   no `DbContext`, `IQueryable`, `HttpClient`, `ILogger`, nor a type holding one. Per-call data is a parameter; calls
   sharing a scope or transaction return a handle (`IAsyncDisposable`). A decision that compared library objects by
@@ -77,14 +79,15 @@ disposable result).
   function takes its port as a parameter (data, port, token). The port is an interface, never a record of functions.
 - **Take the parts of the state you use.** Only edges and work on every part (saving the session: an edge's step) take
   the whole state; a use case that work must follow ends or hands it back. Narrow callees first; a caller converted
-  first passes the state on, never through a port member. A value read as it stands after a wait is taken as its
-  owner (the type holding it current); one read as asked, at the start. A part taken out of a whole is read there,
-  never through a forwarder on the whole (one stands only while internal readers move; a published API keeps it
-  `[Obsolete]` for outside readers, as its compatibility policy says); a member a framework requires of the whole is
-  implemented for it, explicitly. A framework context typed by the whole state (`Ui<TState>`) is the whole: a function
-  reading one part takes the untyped context and the part, as does a tuple carrying it into a library's `Match`; one
-  only writing to a part (a command queue) takes its writing side. Many parts justify neither it nor a per-call
-  bundle: one feature's state is one part, values passed on together one value, a rule's parts its type.
+  first passes the state on, never through a port member. A value read as it stands after a wait is taken as its owner
+  (the type holding it current); one read as asked, at the start. A part taken out of a whole is read there, never
+  through a forwarder on the whole (one stands only while internal readers move; a published API keeps it `[Obsolete]`
+  for outside readers, as its compatibility policy says); a member a framework requires of the whole is implemented for
+  it, explicitly. A framework context typed by the whole state (`Ui<TState>`) is the whole: a function reading one part
+  takes the untyped context and the part (with none, the context the framework requires beside the part, nothing else
+  read through it), as does context carried through a dispatch tuple (a library's `Match`); one only writing to a part
+  (a command queue) takes its writing side. Group state by ownership and invariants (R004); a parameter count never
+  justifies the whole, and a parameter object holds exactly the call's inputs, none copied from another call's.
 - **A library object that reads lazily is I/O by what its reads can reach as made:** decoding bytes already read,
   each read bounded, it is data, readable anywhere, a draw included (failures caught per unit, R009); reaching a file
   or the network, only adapters and their shared I/O code read it (list types whose every instance is I/O). Kept by
@@ -156,9 +159,9 @@ Build: RL0301 (`Async`), RL0302 (`Find*`), RL0303 (`Get*` returning `T?`), RL030
 - **No sentinels:** missing is `T?`, a union case when the miss carries data (`Missing { InsertAt }`), or
   `Get*OrDefault`; -1 before the first row (beside the count after it) and a struct's zero naming no empty value are
   values. "No current item" is `int?` in your code; -1 only where a framework API needs it.
-- **A value others must notice changing makes every change observable:** a `Version` moving only when the value
-  differs, for consumers reading on their own schedule (a frame-driven view polls it); a notification for those run
-  only when told; both for both. Never a `bool Set` that tells only its caller.
+- **A value others must notice changing makes every change observable:** for consumers that poll (a frame-driven view),
+  a `Version` moving only when the value differs; event-driven ones are notified; both where both read it. A `bool Set`
+  informs only its caller.
 - Nothing to return returns nothing (a helper taking `Func<..., Task<T>>` also takes `Func<..., Task>`). No noun-named
   methods (cheap and pure → a property), no `Set*` methods but async or with extra arguments, no mutation verb on a
   copy-returning method. Builders are mutable, one per result. Properties are nouns or `Is*` / `Has*` / `Can*`.
@@ -167,11 +170,12 @@ Build: RL0301 (`Async`), RL0302 (`Find*`), RL0303 (`Get*` returning `T?`), RL030
 
 ## R004: A type must earn its place
 
-Build: RL0401 (vague names); suggestions: RL0403 (public state the type changes itself, not `ref`-bound), RL0404
-(public state only other types write, on a type with methods), RL0405 (the same with no methods, one writer changing
-two or more; conditional: plain values no rule ties, as a root's settings), RL0406 (static functions
-writing one type's members: two, or one whose write keeps state), RL0407 (another type's lock taken, or an event handed
-out as a delegate), RL0408 (a whole's member forwarding a part's), RL0409 (one feature's state loose on a whole).
+Build: RL0401 (vague names); suggestions: RL0403 (public state the type changes itself, not `ref`-bound), RL0404 (public
+state only other types write, on a type with methods), RL0405 (the same with no methods, one writer changing two or
+more; conditional: plain values no rule ties, as a root's settings), RL0406 (static functions writing one type's
+members: two, or one whose write keeps state), RL0407 (another type's lock taken, or an event handed out as a delegate),
+RL0408 (a whole's member forwarding a part's), RL0409 (one feature's state loose on a whole; conditional: state shared
+on purpose, a published member).
 
 | You have | Make |
 |----------|------|
@@ -200,14 +204,15 @@ out as a delegate), RL0408 (a whole's member forwarding a part's), RL0409 (one f
 - **A helper lives where what it knows belongs**: a rule's change on the type keeping the rule, a calculation on its
   concept, even with one caller; only a caller's own policy (its wording) is its private method. It moves with its
   last caller; with none, delete it.
-- **A rule across parts is kept by one type holding every part privately** (a setting it spans, its lock and its
-  event's delegate included), every change its method: exempted ones named for what they are (`Restore`), a step
-  callers take before their I/O (`BeginOpening`) included; never public parts, a second type over them, or another
-  type's functions setting them (a framework's interface is no exception). It hands out only objects none of whose
-  members can break its rule, splitting an object carrying two rules' state; per-object state of what it hands out is
-  a separate object only it holds (not `internal` members, not keyed in it). A whole (app state, a screen) owns no
-  rule: a change across its parts takes them, or the type holding just those a rule ties; one feature's state is in
-  its part, one per place shown, never loose on the whole.
+- **A rule across parts is kept by one type holding every part privately** (a setting it spans, its lock and its event's
+  delegate included), every change its method: exempted ones named for what they are (`Restore`), a step callers take
+  before their I/O (`BeginOpening`) included; never public parts, a second type over them, or another type's functions
+  setting them (a framework's interface is no exception). It hands out only objects none of whose members can break its
+  rule, splitting an object carrying two rules' state; per-object state of what it hands out is a separate object only
+  it holds (not `internal` members, not keyed in it). That type is the smallest holding all the rule constrains, never a
+  container also holding unrelated state (app state, a screen); a change across parts no rule ties takes them. Feature
+  state is in the feature's part, held for its intended owner and lifetime (separate for independent instances, one for
+  places kept in step; per request, session or job in a service), never loose on the whole.
 - **What it covers is read from the domain contract**, not from what a user asked for or which kinds had a shape for
   it; a transition left out is named so. Each is handled alike for every kind, restoration and late results included,
   from values held, without a wait; what it keeps about a place is a value, never the document (what a history records
@@ -325,19 +330,22 @@ nullable exception).
   **A one-line place** says what, how many and why in the space it's drawn in (the renderer's width model), giving
   way to what follows, full details reachable every way the line is, keyboard and assistive technology included, not
   hover alone (never a failure record); its format, and how the details open, are the product's.
-- **Whatever fails stays where it was shown**, failed with why, until retried, dismissed or removed by product
-  policy; never dropped, left pending or shown empty. An unexpected one is also reported once, saying the operation
-  that failed (wherever asked; the step that asked may be named beside its kind), its cause and what the user can do
-  (an operation's kinds are its recoveries, causes recovered from alike sharing one; which reports are one incident is
-  the product's). What presents it never takes the focus or input meant for something else, nor marks it read by
-  appearing; whether it appears by itself, waits on an indicator or interrupts is the product's.
+- **Whatever fails stays where it was shown**, failed with why, until retried, dismissed or removed by product policy;
+  never dropped, left pending or shown empty. An unexpected one is also reported once, saying the operation that failed
+  (wherever asked; the step that asked may be named beside its kind), its cause (structured where clients tell causes
+  apart) and an applicable recovery, one several causes share defined once; kinds, incident identity and presentation
+  grouping are the product's. What presents it never takes the focus or input meant for something else, nor marks it
+  read by appearing; whether it appears by itself, waits on an indicator or interrupts is the product's.
 - **Batches and absence:** independent items keep their own outcomes, the batch failing only for what fails every item;
-  an atomic batch or dependent steps follow the operation's completion contract. "Not there" is the source's own
-  absence answer, asked first where it has one; an exception is not there only where it unambiguously means the object
-  asked for is absent (`KeyNotFoundException`, `FileNotFoundException` naming it; one naming nothing,
+  an atomic batch or dependent steps follow the operation's completion contract. "Not there" is the source's own absence
+  answer, asked first where it has one; an exception is not there only where it unambiguously means the object asked for
+  is absent (`KeyNotFoundException`, `FileNotFoundException` naming it; one naming nothing,
   `DirectoryNotFoundException`, from a read of just that path or when the source asked again says absent), else a
   failure. A check first is a shortcut, not proof the read will succeed. A dependency's failure degrades or fails the
-  operation by its contract, said failed with why, never as not there.
+  operation by its contract, said failed with why, never not there: a degraded result names all it lacks (not found or
+  failed), reporting only failures, and, kept for reuse, keeps its mark and advises a trigger that rereads what failed.
+  A definitive answer only where successful reads establish it, never not there while a failed source could hold it; a
+  partial one where the contract allows, naming what it couldn't read.
 - **Restore and retry:** unreadable restored state is kept as saved; a reload keeps saved references and user intent
   the product promises, failed or not, resolving them again (content derived from sources alone follows its reload
   contract). A failed read is reread only on a trigger the product chose (Retry, reload, a change to what it names, a
@@ -357,24 +365,27 @@ nullable exception).
   or a library object that is data) is caught around the read only, all but requested cancellation, into the
   requested unit's failure case with why, shown where its answer would be, in the project calling it (your core's
   answer carries the case); never list your own code.
-- **Lazy library failures are translated inside each adapter member's read**, every touch of the library's objects
-  inside (a walk's choice of what to touch, a helper taking them), the app's sorting and formatting (helpers too) after
-  the outermost catch, on values read out: it returns values it read (freely enumerable) or its own
-  `IAsyncEnumerable<T>` iterator, never deferred library execution; the iterator catches each item's read, owns its
-  source (`await using`), and is consumed in one loop with no other call to it.
+- **Lazy library failures are translated inside each adapter member's read**: only decoding and lazy reads of the
+  library's objects inside, told by what the code does; the app's decisions and formatting run on facts read out after
+  the outermost catch (even text it sorts by; a choice of what to read next decided outside on facts read under a narrow
+  catch; a helper doing both split). It returns values it read (freely enumerable) or its own `IAsyncEnumerable<T>`
+  iterator, never deferred library execution; the iterator catches each item's read, owns its source (`await using`),
+  and is consumed in one loop, overlapping no other use of a source that forbids it.
 - **A shared read whose outcome is a value** is awaited and matched by the unit needing it before its sync read
   starts; never a sync wait that rethrows, nor a match at each sync caller.
 - **Requested cancellation isn't a failure; a timeout is.** An adapter lets `OperationCanceledException` through when
   its token was cancelled, catching `TaskCanceledException` only `when (!ct.IsCancellationRequested)` (a timeout). The
   edge links a workflow's token to what cancels it on purpose (shutdown, newer work, a closed dialog), ending quietly
   only for those (never a `Failed` holding a cancellation); an app-set deadline is a timeout (an adapter's `TimedOut`
-  case, or the edge's report). Work a change makes stale never commits nor is said as a failure: where cancellation is
-  its protocol, the change cancels first, what ends a generation owning its work's token so no caller can forget;
-  where an answer is (superseded, a refused ticket), the check answers. A canceller appearing partway (a state change
-  returns a ticket newer work cancels) ends the workflow, which returns it (`[MustUse]`) for the edge to start the I/O
-  linked to it, no catch in the workflow; later steps needing the outcome await a port member taking the ticket
-  (`Stopped` if cancelled). **Newest wins by the current ticket:** the state commits a result only while its ticket
-  is current.
+  case, or the edge's report). Work a change makes stale never commits nor is said as a failure: its commit is rejected
+  under the lock that makes the change, and the outcome classified from the owner's own state (a superseded answer, or
+  the generation's own source, which the edge asks beside its own), never from whether a linked token has been reached.
+  What ends a generation owns a source ending its work (or takes that ending as a required argument), so no caller can
+  forget; behind a lock it takes the source with the change and cancels after releasing it. A canceller appearing
+  partway (a state change returns a ticket newer work cancels) ends the workflow, which returns it (`[MustUse]`) for the
+  edge to start the I/O linked to it, no catch in the workflow; later steps needing the outcome await a port member
+  taking the ticket (`Stopped` if cancelled). **Newest wins by the current ticket:** the state commits a result only
+  while its ticket is current.
 - **An effect that can't be undone** (a charge) and what must follow are one transaction, or the work is recorded
   durably first and a worker does the effect under an idempotency key its provider honours, then the rest, replaying
   pending work after an interruption; never the request's token, `CancellationToken.None` or a grace period.
