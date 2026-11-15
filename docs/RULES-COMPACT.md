@@ -101,8 +101,9 @@ disposable result).
     as asked).
   - **A request's parts agree:** a choice made as asked (a file named for the language) runs with what it was made from,
     captured, or rechecked at the run and refused with why if changed. Where capture or current could surprise the
-    caller, say it in caller-facing API documentation or the command, dialog or result; never an implementation comment
-    alone (values kept as asked while the asker can still change them are such a case).
+    caller, say which in caller-facing API documentation or the command, dialog or result ("as shown" says neither where
+    the shown can change); never an implementation comment alone (values kept as asked while the asker can still change
+    them are such a case).
   - **What it needs is rechecked at the run** (R009), whatever was captured: the preconditions its contract states; the
     subject's presence only where the contract needs it (a request that captured all it acts on runs on that).
 - **A library object that reads lazily is I/O by what its reads can reach as made:** decoding bytes already read,
@@ -334,8 +335,9 @@ nullable exception).
   wrong doing it; separate cases where refusal and failure are different outcomes; an optional cause within one failure
   outcome stays nullable. A refusal goes where it was asked, alike from every input, or the action shows unavailable
   with why; with no such place, on the app's channel for unasked news; never recorded as a failure (panels, error-level
-  logs, counts, retries). Channel, retention, lower-level logs and one view marking refusals apart are the product's. An
-  outcome the port's answer lacks (`Closed`) gets a case there, not a made-up exception.
+  logs, counts, retries) nor marked as one or as cancelled. Channel, retention, lower-level logs and one view marking
+  refusals apart are the product's. An outcome the port's answer lacks (`Closed`) gets a case there, not a made-up
+  exception.
 - **A command's inputs read one availability state**, drawn without a wait (unavailable: why, where pressed; not
   offered: its key does nothing); offering one only a lookup can judge, or showing it checking, is the product's. It is
   rechecked at the run against the preconditions its contract states as they stand, never the request's own values:
