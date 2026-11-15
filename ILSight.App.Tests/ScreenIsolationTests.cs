@@ -56,19 +56,49 @@ public sealed class ScreenIsolationTests : IDisposable
         d.Settle();
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
-        var reached = FindScreenObject(d.AppState, d.Layout);
+        var reached = FindScreenObject(d.AppState, FindLayouts(d.Ui.Panels));
 
         Assert.Null(reached);
     }
 
-    private static string? FindScreenObject(AppState appState, MainLayout layout)
+    // The layouts the screen's panels hold and hand the dock widget, found as any reference is: they are of the
+    // framework's type, which the app state may hold copies of, so the screen's own are told by identity.
+    private static List<DockLayout> FindLayouts(Panels panels)
+    {
+        var layouts = new List<DockLayout>();
+        var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
+        var queue = new Queue<(object Value, string Path)>();
+        queue.Enqueue((panels, nameof(Panels)));
+        while (queue.TryDequeue(out var next))
+        {
+            if (next.Value is MainLayout layout)
+            {
+                layouts.Add(layout.Dock);
+            }
+
+            var runtimeType = next.Value.GetType();
+            if (!runtimeType.IsValueType && !seen.Add(next.Value))
+            {
+                continue;
+            }
+
+            foreach (var reference in ListReferences(next.Value, next.Path))
+            {
+                queue.Enqueue(reference);
+            }
+        }
+        Assert.NotEmpty(layouts);
+        return layouts;
+    }
+
+    private static string? FindScreenObject(AppState appState, List<DockLayout> layouts)
     {
         var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
         var queue = new Queue<(object Value, string Path)>();
         queue.Enqueue((appState, nameof(AppState)));
         while (queue.TryDequeue(out var next))
         {
-            if (IsOfScreen(next.Value, layout))
+            if (IsOfScreen(next.Value, layouts))
             {
                 return next.Path;
             }
@@ -87,9 +117,9 @@ public sealed class ScreenIsolationTests : IDisposable
         return null;
     }
 
-    private static bool IsOfScreen(object value, MainLayout layout)
+    private static bool IsOfScreen(object value, List<DockLayout> layouts)
     {
-        if (ReferenceEquals(value, layout.Dock))
+        if (layouts.Exists(l => ReferenceEquals(l, value)))
         {
             return true;
         }

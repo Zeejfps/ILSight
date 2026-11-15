@@ -26,17 +26,16 @@ public sealed class LayoutPersistenceTests : IDisposable
     [Fact]
     public void Views_docked_below_the_documents_are_still_below_them_after_a_restart()
     {
-        var d = AppStateDriver.Opened(_temp.Settings());
-        var screen = d.Ui;
-        screen.Panels.Open(DockView.Analyzer);
-        var analyzer = d.Layout.Dock.GroupOf(DockPanels.Analyzer);
-        Assert.NotNull(analyzer);
-        d.Layout.Dock.Dock(DockPanels.Bookmarks, analyzer, DockEdge.Center);
-        d.NextFrame();
+        var app = new AppDriver(settings: _temp.Settings());
+        var d = app.Driver;
+        d.OpenFixtures();
+        d.Ui.Panels.Open(DockView.Analyzer);
+        app.DockWidget.Dock(DockPanels.Bookmarks, DockPanels.Analyzer, DockEdge.Center);
+        app.Run();
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         var next = new AppStateDriver(_temp.Settings());
-        var layout = next.Layout.Dock;
+        var layout = next.Arrangement;
         var active = next.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
         var documents = layout.GroupOf(next.Ui.Documents.GetPanel(active));
@@ -56,17 +55,15 @@ public sealed class LayoutPersistenceTests : IDisposable
     [Fact]
     public void An_open_search_panel_is_still_open_where_it_was_docked_after_a_restart()
     {
-        var d = new AppStateDriver(_temp.Settings());
-        var screen = d.Ui;
-        screen.Panels.OpenSearch();
-        screen.Panels.Open(DockView.Analyzer);
-        var analyzer = d.Layout.Dock.GroupOf(DockPanels.Analyzer);
-        Assert.NotNull(analyzer);
-        d.Layout.Dock.Dock(DockPanels.Search, analyzer, DockEdge.Center);
-        d.NextFrame();
+        var app = new AppDriver(settings: _temp.Settings());
+        var d = app.Driver;
+        d.Ui.Panels.OpenSearch();
+        d.Ui.Panels.Open(DockView.Analyzer);
+        app.DockWidget.Dock(DockPanels.Search, DockPanels.Analyzer, DockEdge.Center);
+        app.Run();
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
-        var next = new AppStateDriver(_temp.Settings()).Layout.Dock;
+        var next = new AppStateDriver(_temp.Settings()).Arrangement;
 
         Assert.True(next.Contains(DockPanels.Search));
         Assert.Same(next.GroupOf(DockPanels.Analyzer), next.GroupOf(DockPanels.Search));

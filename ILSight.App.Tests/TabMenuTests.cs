@@ -1,4 +1,5 @@
 using ZGF.Gui.Immediate;
+using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 
 namespace ILSight.App.Tests;
@@ -77,16 +78,16 @@ public sealed class TabMenuTests
         var (app, _) = await OpenTabsAsync();
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        var group = app.Layout.Dock.GroupOf(app.Ui.Documents.GetPanel(tab));
+        var group = app.Arrangement.GroupOf(app.Ui.Documents.GetPanel(tab));
         Assert.NotNull(group);
-        group.Panels.Add(DockPanels.Bookmarks);
+        app.DockWidget.Dock(DockPanels.Bookmarks, app.Ui.Documents.GetPanel(tab), DockEdge.Center);
         app.Run(2);
 
         app.Ui.Panels.CloseTabsInGroup(tab);
         app.Settle(2);
 
         Assert.Empty(app.AppState.ListSession.Navigation.OpenTabs);
-        Assert.Same(group, app.Layout.Dock.GroupOf(DockPanels.Bookmarks));
+        Assert.Equal(group.Id, app.Arrangement.GroupOf(DockPanels.Bookmarks)?.Id);
     }
 
     [Fact]

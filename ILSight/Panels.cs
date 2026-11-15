@@ -19,14 +19,16 @@ namespace ILSight;
 public sealed class Panels
 {
     private readonly MainLayout _layout;
+    private readonly IDockWidget _dockWidget;
     private readonly DocumentViews _documents;
     private readonly TabFocus _tabFocus;
     private readonly Search _search;
     private readonly IAppCommandWriter _commands;
 
-    public Panels(MainLayout layout, DocumentViews documents, TabFocus tabFocus, Search search, IAppCommandWriter commands)
+    public Panels(MainLayout layout, IDockWidget dockWidget, DocumentViews documents, TabFocus tabFocus, Search search, IAppCommandWriter commands)
     {
         _layout = layout;
+        _dockWidget = dockWidget;
         _documents = documents;
         _tabFocus = tabFocus;
         _search = search;
@@ -84,11 +86,11 @@ public sealed class Panels
         return Docking.ListDocumentPanels(_layout);
     }
 
-    /// <summary>Draws the framework's dock space over the layout, which docks, floats and closes panels itself on the
-    /// user's drag or a close button; the caller draws each panel it hands out.</summary>
+    /// <summary>Draws the framework's dock space over the layout, through the dock widget the root made, which docks,
+    /// floats and closes panels itself on the user's drag or a close button; the caller draws each panel it hands out.</summary>
     public DockSpace DrawDockSpace<TState>(Ui ui, string id, TState state, Func<TState, string, DockTab> tab, string tabListTooltip)
     {
-        return ui.DockSpace(id, _layout.Dock, state, tab, tabListTooltip: tabListTooltip);
+        return _dockWidget.Draw(ui, id, _layout.Dock, state, tab, tabListTooltip);
     }
 
     /// <summary>Puts the layout back as it starts out: the assemblies left of every open document,

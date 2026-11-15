@@ -325,7 +325,6 @@ internal static class AppRoot
         // A null nuGetRequests uses the app's shared connections.
         var nuGet = new NuGetClient(nuGetRequests);
         var layout = new MainLayout { Dock = DockPanels.Restore(saved.Layout) };
-        hooks?.Layout?.Invoke(layout);
         var documents = new DocumentViews();
         var tabFocus = new TabFocus();
         var search = new Search();
@@ -334,7 +333,7 @@ internal static class AppRoot
             AppCommands = appCommands,
             Documents = documents,
             TabFocus = tabFocus,
-            Panels = new Panels(layout, documents, tabFocus, search, appCommands),
+            Panels = new Panels(layout, MakePort<IDockWidget>(new FrameworkDockWidget(), hooks?.Docking), documents, tabFocus, search, appCommands),
             Tree = new BrowseTree { Session = session },
             DecompilerOptionsPanel = new DecompilerOptionsPanel { Folded = new FoldedGroups { Folded = new HashSet<string>(saved.FoldedOptionGroups ?? []) } },
             Search = search,

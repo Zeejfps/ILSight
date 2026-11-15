@@ -1,5 +1,6 @@
 using System.Threading.Channels;
 using ZGF.Gui.Immediate;
+using ZGF.Gui.Immediate.Widgets;
 using ILSight.App.Tests.Fixtures;
 using ILSight.Core;
 using ILSight.MainArea;
@@ -31,7 +32,6 @@ internal sealed class AppStateDriver
 
     private readonly PostedActions _posted;
     private readonly UiState? _ui;
-    private readonly MainLayout? _layout;
 
     /// <summary>A driver over the app state and screen the root restores (<see cref="AppRoot.RestoreApp"/>) from
     /// <paramref name="settings"/>, with no window, which has started what the app starts as it starts with no
@@ -48,28 +48,17 @@ internal sealed class AppStateDriver
         WaitForTheStart();
     }
 
-    private AppStateDriver(PostedActions posted, (RestoredApp App, MainLayout Layout) restored)
-        : this(posted, restored.App.AppState, restored.App.Screen, restored.Layout)
+    private AppStateDriver(PostedActions posted, RestoredApp restored)
+        : this(posted, restored.AppState, restored.Screen)
     {
         using var turn = _posted.Install();
-        AppStart.Start(AppState, restored.App.Start, Channel.CreateUnbounded<RunArguments>());
+        AppStart.Start(AppState, restored.Start, Channel.CreateUnbounded<RunArguments>());
     }
 
-    // The root restores the app, keeping the layout it hands the screen's panels, as the dock space is handed it.
-    private static (RestoredApp App, MainLayout Layout) Restore(SettingsLoadResult loadResult, HttpMessageHandler? nuGetRequests = null,
+    private static RestoredApp Restore(SettingsLoadResult loadResult, HttpMessageHandler? nuGetRequests = null,
         FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null, AdapterHooks? hooks = null)
     {
-        MainLayout? layout = null;
-        var restored = AppRoot.RestoreApp(loadResult, TestSession.Shared, nuGetRequests, runtimeScan, processes, NoUpdates(),
-            KeepingLayout(hooks, made => layout = made));
-        return (restored, layout ?? throw new InvalidOperationException("The root made no layout."));
-    }
-
-    /// <summary><paramref name="hooks"/> (none when null), with the layout the root makes for the screen's panels handed
-    /// to <paramref name="keep"/> (<see cref="AdapterHooks.Layout"/>).</summary>
-    public static AdapterHooks KeepingLayout(AdapterHooks? hooks, Action<MainLayout> keep)
-    {
-        return (hooks ?? new AdapterHooks()) with { Layout = keep };
+        return AppRoot.RestoreApp(loadResult, TestSession.Shared, nuGetRequests, runtimeScan, processes, NoUpdates(), hooks);
     }
 
     /// <summary>What looks for a newer version in a test host: a copy that can't update itself, as one run from a build
@@ -80,13 +69,12 @@ internal sealed class AppStateDriver
     }
 
     // posted took the test's posts before the root built appState and ui.
-    private AppStateDriver(PostedActions posted, AppState appState, UiState? ui, MainLayout? layout)
+    private AppStateDriver(PostedActions posted, AppState appState, UiState? ui)
     {
         _posted = posted;
         Step = Pump;
         AppState = appState;
         _ui = ui;
-        _layout = layout;
     }
 
     /// <summary>What reading <paramref name="settings"/> gave, with nothing wrong (new settings when null), speaking
@@ -139,9 +127,9 @@ internal sealed class AppStateDriver
     /// <summary>A driver over <paramref name="restored"/>, the app state and screen an <see cref="AppDriver"/> had the
     /// root build with its app, which <paramref name="posted"/> took the test's posts for before. The app driver starts
     /// the app (<see cref="AppStart.Start"/>).</summary>
-    public static AppStateDriver Over(PostedActions posted, RestoredApp restored, MainLayout layout)
+    public static AppStateDriver Over(PostedActions posted, RestoredApp restored)
     {
-        return new AppStateDriver(posted, restored.AppState, restored.Screen, layout);
+        return new AppStateDriver(posted, restored.AppState, restored.Screen);
     }
 
     /// <summary>A driver that has opened the fixture assembly.</summary>
@@ -168,7 +156,7 @@ internal sealed class AppStateDriver
     {
         var posted = PostedActions.OfThisTest();
         var restored = AppRoot.RestoreWithoutScreen(NoProblem(settings), TestSession.Shared, NoUpdates());
-        var driver = new AppStateDriver(posted, restored.AppState, ui: null, layout: null);
+        var driver = new AppStateDriver(posted, restored.AppState, ui: null);
         using (driver.Turn())
         {
             AppStart.Start(restored.AppState, restored.Start, Channel.CreateUnbounded<RunArguments>());
@@ -191,9 +179,9 @@ internal sealed class AppStateDriver
     /// <summary>The screen over <see cref="AppState"/>; a driver made without one has none to give.</summary>
     public UiState Ui => _ui ?? throw new InvalidOperationException("This driver has no screen.");
 
-    /// <summary>The layout the root made for the screen's panels, which they hand the dock space: a test stands in for the
-    /// dock widget through it (a drag docking or floating a panel, a close button) and reads how the panels are arranged.</summary>
-    public MainLayout Layout => _layout ?? throw new InvalidOperationException("This driver has no screen.");
+    /// <summary>How the screen's panels are arranged now: a copy (<see cref="Panels.CopyArrangement"/>), read again at each
+    /// use.</summary>
+    public DockLayout Arrangement => Ui.Panels.CopyArrangement();
 
     /// <summary>The time the driver's autosave goes by.</summary>
     public TimeSpan Now { get; set; }

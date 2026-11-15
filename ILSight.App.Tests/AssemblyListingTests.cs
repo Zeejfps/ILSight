@@ -177,7 +177,7 @@ public sealed class AssemblyListingTests
 
         var empty = Assert.Single(d.AppState.ListSession.Navigation.OpenTabs);
         Assert.Same(empty, d.AppState.ListSession.Navigation.ActiveTab);
-        Assert.True(d.Layout.Dock.Contains(d.Ui.Documents.GetPanel(empty)));
+        Assert.True(d.Arrangement.Contains(d.Ui.Documents.GetPanel(empty)));
         Assert.Null(empty.Location);
     }
 

@@ -264,7 +264,8 @@ public sealed class DisplayOptionsTests
         app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
-        Assert.Same(app.Layout.Dock.GroupOf(DockPanels.DecompilerOptions), app.Layout.Dock.GroupOf(DockPanels.DisplayOptions));
+        var arrangement = app.Arrangement;
+        Assert.Same(arrangement.GroupOf(DockPanels.DecompilerOptions), arrangement.GroupOf(DockPanels.DisplayOptions));
         Assert.True(app.Frames.Drew("Line numbers"));
     }
 

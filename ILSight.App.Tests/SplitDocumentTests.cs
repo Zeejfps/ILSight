@@ -75,7 +75,7 @@ public sealed class SplitDocumentTests
         var d = new AppStateDriver(new AppSettings { Layout = saved });
 
         var panel = d.Ui.Documents.GetPanel(Assert.Single(d.AppState.ListSession.Navigation.OpenTabs));
-        var panels = d.Layout.Dock.AllGroups().SelectMany(g => g.Panels).ToList();
+        var panels = d.Arrangement.AllGroups().SelectMany(g => g.Panels).ToList();
         Assert.Equal([DockPanels.Assemblies, panel], panels);
         Assert.NotEqual("document-7", panel);
         Assert.NotEqual("document-1", panel);
@@ -122,7 +122,8 @@ public sealed class SplitDocumentTests
     public async Task Closing_all_documents_from_the_view_menu_closes_the_tabs_of_every_group()
     {
         var (app, left, right) = await SideBySideAsync();
-        Assert.NotSame(app.Layout.Dock.GroupOf(app.Ui.Documents.GetPanel(left)), app.Layout.Dock.GroupOf(app.Ui.Documents.GetPanel(right)));
+        var arrangement = app.Arrangement;
+        Assert.NotSame(arrangement.GroupOf(app.Ui.Documents.GetPanel(left)), arrangement.GroupOf(app.Ui.Documents.GetPanel(right)));
 
         app.Frames.ClickOn(Selector.WithText("View"));
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Close all documents")).Frame(2);
@@ -135,8 +136,8 @@ public sealed class SplitDocumentTests
     {
         var app = AppDriver.Opened();
         var d = app.Driver;
-        var layout = d.Layout.Dock;
-        layout.Close(DockPanels.Assemblies);
+        app.DockWidget.Close(DockPanels.Assemblies);
+        app.Run();
         d.TurnOffPreviewTabs();
         d.Show(await d.FixtureAsync("Outline"));
         var left = d.AppState.ListSession.Navigation.ActiveTab;
@@ -144,9 +145,7 @@ public sealed class SplitDocumentTests
         d.Show(await d.FixtureAsync("Outline"), inNewTab: true);
         var right = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(right);
-        var leftGroup = layout.GroupOf(app.Ui.Documents.GetPanel(left));
-        Assert.NotNull(leftGroup);
-        layout.Dock(app.Ui.Documents.GetPanel(right), leftGroup, DockEdge.Right, 0.5f);
+        app.DockWidget.Dock(app.Ui.Documents.GetPanel(right), app.Ui.Documents.GetPanel(left), DockEdge.Right, 0.5f);
         app.Run(3);
         return (app, left, right);
     }

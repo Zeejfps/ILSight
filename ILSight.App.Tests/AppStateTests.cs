@@ -156,23 +156,25 @@ public sealed class AppStateTests
     [Fact]
     public async Task A_new_tab_opens_in_the_active_tabs_group()
     {
-        var d = AppStateDriver.Opened();
+        var app = AppDriver.Opened();
+        var d = app.Driver;
         d.Show(await d.FixtureAsync("Greeter"));
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
         var greeter = d.AppState.ListSession.Navigation.OpenTabs[^2];
         var farewell = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(farewell);
         var farewellPanel = d.Ui.Documents.GetPanel(farewell);
-        var documents = d.Layout.Dock;
-        documents.Dock(farewellPanel, documents.Root, DockEdge.Right);
+        app.DockWidget.DockAtRim(farewellPanel, DockEdge.Right);
+        app.Run();
         d.Ui.Panels.ActivateTab(d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup, greeter);
-        d.NextFrame();
+        app.Run();
 
         d.Show(await d.FixtureAsync("Outline"), inNewTab: true);
 
         var outline = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(outline);
         var outlinePanel = d.Ui.Documents.GetPanel(outline);
+        var documents = d.Arrangement;
         Assert.Same(documents.GroupOf(d.Ui.Documents.GetPanel(greeter)), documents.GroupOf(outlinePanel));
         Assert.Equal("Outline", d.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
     }
@@ -180,22 +182,20 @@ public sealed class AppStateTests
     [Fact]
     public async Task Docking_the_only_tab_beside_itself_moves_it_there_and_leaves_a_new_empty_tab_that_shows_what_is_picked_next()
     {
-        var d = AppStateDriver.Opened();
+        var app = AppDriver.Opened();
+        var d = app.Driver;
         d.Show(await d.FixtureAsync("Greeter"));
         var greeter = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(greeter);
         var greeterPanel = d.Ui.Documents.GetPanel(greeter);
-        var documents = d.Layout.Dock;
 
-        var group = documents.GroupOf(greeterPanel);
-        Assert.NotNull(group);
-        documents.Dock(greeterPanel, group, DockEdge.Right);
-        d.Ui.Panels.SyncActiveTab(d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup);
-        d.NextFrame();
+        app.DockWidget.Dock(greeterPanel, greeterPanel, DockEdge.Right);
+        app.Run(2);
 
         Assert.Equal(2, d.AppState.ListSession.Navigation.OpenTabs.Count);
         var empty = d.AppState.ListSession.Navigation.OpenTabs.Single(t => t != greeter);
         Assert.Null(empty.Location);
+        var documents = d.Arrangement;
         Assert.NotSame(documents.GroupOf(greeterPanel), documents.GroupOf(d.Ui.Documents.GetPanel(empty)));
         Assert.Same(empty, d.AppState.ListSession.Navigation.ActiveTab);
 
@@ -221,7 +221,7 @@ public sealed class AppStateTests
         Assert.Same(greeter, d.AppState.ListSession.Navigation.ActiveTab);
         Assert.DoesNotContain(d.AppState.ListSession.Navigation.OpenTabs, t => t.Node?.Text == "Farewell");
         var greeterPanel = d.Ui.Documents.GetPanel(greeter);
-        Assert.Equal([greeterPanel], d.Layout.Dock.GroupOf(greeterPanel)?.Panels);
+        Assert.Equal([greeterPanel], d.Arrangement.GroupOf(greeterPanel)?.Panels);
     }
 
     [Fact]
@@ -577,10 +577,12 @@ public sealed class AppStateTests
     [Fact]
     public void The_search_box_asked_to_take_focus_does_not_once_its_panel_closed_before_it_was_drawn()
     {
-        var d = AppStateDriver.Opened();
+        var app = AppDriver.Opened();
+        var d = app.Driver;
         d.Ui.Panels.OpenSearch();
 
-        d.Layout.Dock.Close(DockPanels.Search);
+        app.DockWidget.Close(DockPanels.Search);
+        app.Run();
 
         Assert.False(d.Ui.Search.TryTakeFocus());
     }

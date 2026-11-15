@@ -381,7 +381,7 @@ public sealed class AutosaveTests : IDisposable
     {
         var app = new AppDriver(settings: _temp.Settings());
         app.Run(2);
-        var root = (DockSplit)app.Layout.Dock.Root;
+        var root = (DockSplit)app.Arrangement.Root;
         var before = root.Ratio;
         var divider = GetDivider(app, root);
 
@@ -391,8 +391,9 @@ public sealed class AutosaveTests : IDisposable
         var layout = _temp.Settings().Layout;
         Assert.NotNull(layout);
         var saved = Assert.IsType<DockSplit>(layout.Root);
-        Assert.NotEqual(before, root.Ratio);
-        Assert.Equal(root.Ratio, saved.Ratio, 3);
+        var dragged = (DockSplit)app.Arrangement.Root;
+        Assert.NotEqual(before, dragged.Ratio);
+        Assert.Equal(dragged.Ratio, saved.Ratio, 3);
     }
 
     private static float GetDivider(AppDriver app, DockSplit root)

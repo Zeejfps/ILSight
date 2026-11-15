@@ -38,7 +38,7 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
         app.Settle(2);
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        app.Layout.Dock.Close(app.Ui.Documents.GetPanel(tab));
+        app.DockWidget.Close(app.Ui.Documents.GetPanel(tab));
         app.Settle(5);
 
         app.Frames.Canvas.Recording = false;
@@ -47,7 +47,7 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
 
         output.WriteLine($"tool panels only: {allocated:N0} B/frame allocated");
         Assert.Empty(app.AppState.ListSession.Navigation.OpenTabs);
-        Assert.True(app.Layout.Dock.Contains(DockPanels.Bookmarks));
+        Assert.True(app.Arrangement.Contains(DockPanels.Bookmarks));
         Assert.Equal(0, allocated);
     }
 

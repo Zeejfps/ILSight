@@ -39,7 +39,7 @@ public sealed class ExportsPanelTests : IDisposable
         d.InTurn(() => ExportCommands.SaveCode(d.AppState, saved, _temp.PathOf("Greeter.cs")));
         d.NextFrame();
 
-        var layout = d.Layout.Dock;
+        var layout = d.Arrangement;
         Assert.True(layout.Contains(DockPanels.Exports));
         Assert.Equal(DockPanels.Exports, layout.GroupOf(DockPanels.Exports)?.Active);
         d.Settle();
@@ -208,7 +208,7 @@ public sealed class ExportsPanelTests : IDisposable
         var withFive = MeasureFrames(app);
 
         Assert.Equal(5, app.AppState.FinishedExports.Count);
-        Assert.True(app.Layout.Dock.Contains(DockPanels.Exports));
+        Assert.True(app.Arrangement.Contains(DockPanels.Exports));
         Assert.True(withFive - withOne < 4 * SmallestAllocation, $"{withOne} B/frame with one row, {withFive} with five");
     }
 
@@ -285,11 +285,11 @@ public sealed class ExportsPanelTests : IDisposable
         var app = AppDriver.Opened();
         var start = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Fixtures"))).Turn);
         app.Run(2);
-        Assert.False(app.Layout.Dock.Contains(DockPanels.Exports));
+        Assert.False(app.Arrangement.Contains(DockPanels.Exports));
 
         app.Frames.ClickOn(Selector.AtPath("export-glance")).Frame(2);
 
-        Assert.True(app.Layout.Dock.Contains(DockPanels.Exports));
+        Assert.True(app.Arrangement.Contains(DockPanels.Exports));
         app.Driver.InTurn(start.EndTurn);
     }
 

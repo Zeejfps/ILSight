@@ -1,5 +1,6 @@
 using System.Threading.Channels;
 using ZGF.Gui.Immediate;
+using ZGF.Gui.Immediate.Widgets;
 using ZGF.Gui.Testing;
 using ILSight.Core;
 using ILSight.MainArea;
@@ -32,10 +33,12 @@ internal sealed class AppDriver
             inbox.Writer.TryWrite(queuedArguments);
         }
 
-        MainLayout? layout = null;
+        DockWidgetDriver? dockWidget = null;
+        var docking = (hooks ?? new AdapterHooks()) with { Docking = made => dockWidget = new DockWidgetDriver(made) };
         var built = AppRoot.BuildApp(AppStateDriver.NoProblem(settings), inbox, TestSession.Shared, nuGetRequests, runtimeScan, processes,
-            updates ?? AppStateDriver.NoUpdates(), AppStateDriver.KeepingLayout(hooks, made => layout = made));
-        Driver = AppStateDriver.Over(posted, built.Restored, layout ?? throw new InvalidOperationException("The root made no layout."));
+            updates ?? AppStateDriver.NoUpdates(), docking);
+        DockWidget = dockWidget ?? throw new InvalidOperationException("The root made no dock widget.");
+        Driver = AppStateDriver.Over(posted, built.Restored);
         App = built.App;
         Frames = UiFrames.Running(App, measurer, width: width, height: height, background: AppState.Work);
         Frames.FrameTime = 1f / 60f;
@@ -74,8 +77,11 @@ internal sealed class AppDriver
     /// <summary>The screen the app draws.</summary>
     public UiState Ui => Driver.Ui;
 
-    /// <summary>The layout the screen's panels hand the dock space (<see cref="AppStateDriver.Layout"/>).</summary>
-    public MainLayout Layout => Driver.Layout;
+    /// <summary>How the screen's panels are arranged now (<see cref="AppStateDriver.Arrangement"/>).</summary>
+    public DockLayout Arrangement => Driver.Arrangement;
+
+    /// <summary>The user at the dock widget: a drag or a close button, done as the next frame draws the layout.</summary>
+    public DockWidgetDriver DockWidget { get; }
     public ILSightApp App { get; }
     public UiFrames Frames { get; }
     public UiTheme Theme => Theming.ResolveTheme(AppState).Ui;
