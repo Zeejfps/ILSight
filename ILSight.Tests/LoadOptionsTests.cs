@@ -85,6 +85,24 @@ public sealed class LoadOptionsTests
         Assert.NotEqual(generation, list.Generation);
     }
 
+    // The instant between the end's change under the list's lock and its cancel after it, which no seam of the list
+    // reaches, built as the state it leaves: the generation ended, its ending not yet cancelled.
+    [Fact]
+    public void An_open_meeting_its_generation_ended_before_the_end_cancelled_its_ending_cancels_it_and_throws_its_cancellation()
+    {
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var work = list.Work;
+        LoadedAssemblies.Release(list.CloseAll());
+        using var ending = new CancellationTokenSource();
+        var endedBeforeItsCancel = new GenerationWork(work.Generation, ending);
+
+        var cancelled = Assert.ThrowsAny<OperationCanceledException>(() => AssemblyListing.Open(list, AssemblyPath.Of(Trees.TestAssemblyPath), endedBeforeItsCancel));
+
+        Assert.Equal(ending.Token, cancelled.CancellationToken);
+        Assert.True(ending.IsCancellationRequested);
+        Assert.Empty(list.Assemblies);
+    }
+
     [Fact]
     public void An_assembly_read_before_the_load_options_changed_is_not_kept()
     {
