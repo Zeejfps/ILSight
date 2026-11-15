@@ -145,7 +145,7 @@ internal static class OmnibarView
             NodeIcons.Draw(ui, appearance, node);
             ui.Text(crumb.Label, new Box { Width = Sizing.Shrink() }, color: CrumbColor(theme, node), overflow: TextOverflow.Ellipsis);
         }
-        ui.Tooltip(i.Id, NodeText.Tooltip(node));
+        ui.Tooltip(i.Id, NodeText.Tooltip(appearance.Strings, node));
         if (i.Clicked)
         {
             Commands.DecompileLater(commands, PickNode(navigation, node, IsCommandHeld(ui), setup));

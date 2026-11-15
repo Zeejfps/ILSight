@@ -199,7 +199,7 @@ internal static class DocumentsView
     public static DockTab Tab(Appearance appearance, BrowseTree tree, Navigation navigation, DocumentTab tab)
     {
         var title = TitleOf(appearance, tree, tab);
-        var tooltip = tab.Tooltip ?? title;
+        var tooltip = tab.TooltipIn(appearance.Strings) ?? title;
         var icon = IconOf(appearance, tab);
         var font = TitleFontOf(navigation, tab);
         return new DockTab(title, Tooltip: tooltip, Current: tab == navigation.ActiveTab, Icon: icon, TitleFont: font);

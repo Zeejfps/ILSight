@@ -353,7 +353,7 @@ internal static class SearchPanelView
             row.TextCell(1, result.Location, theme.TextMuted, overflow: TextOverflow.EllipsisMiddle);
             row.TextCell(2, NodeText.AssemblyLabel(node.Assembly), theme.TextMuted);
         }
-        ui.Tooltip(row.Id, NodeText.Tooltip(node));
+        ui.Tooltip(row.Id, NodeText.Tooltip(appearance.Strings, node));
     }
 
     private static void NameCell(Ui ui, Appearance appearance, TableRow row, SearchResult result)

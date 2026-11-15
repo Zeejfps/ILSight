@@ -31,6 +31,54 @@ public static class NodeText
         return node.Text;
     }
 
+    /// <summary>The node's name as a person reads it in <paramref name="t"/>'s language: a folder the tree makes
+    /// (References, Base Types, Resources, ...) in its words, and the row of a module the library couldn't read as the
+    /// cause's row says it (<c>cause.module_unreadable.row</c>, the module and the why from the core); any other node's
+    /// own name (<see cref="Name"/>), as the metadata names it.</summary>
+    public static string Label(Strings t, BrowseNode node)
+    {
+        return WriteFixedLabel(t, node) ?? Name(node);
+    }
+
+    // The labels the app words for nodes the core names by what they are; null for a node named by what it reads.
+    private static string? WriteFixedLabel(Strings t, BrowseNode node)
+    {
+        return node.Subject.Match<Strings, string?>(t,
+            module: static (_, _) => null,
+            @namespace: static (_, _) => null,
+            failedAssembly: static (_, _) => null,
+            typeDefinition: static (_, _) => null,
+            memberDefinition: static (_, _) => null,
+            references: static (t, _) => t.TreeReferences,
+            assemblyReference: static (_, _) => null,
+            referencedTypes: static (t, _) => t.TreeReferencedTypes,
+            typeReference: static (_, _) => null,
+            memberReference: static (_, _) => null,
+            moduleReference: static (_, _) => null,
+            importedMethod: static (_, _) => null,
+            forwardedType: static (_, _) => null,
+            baseTypes: static (t, _) => t.TreeBaseTypes,
+            baseType: static (_, _) => null,
+            derivedTypes: static (t, _) => t.TreeDerivedTypes,
+            derivedType: static (_, _) => null,
+            unreadableModule: static (t, unreadable) => t.CauseModuleUnreadableRow(unreadable.Value.Module.FilePath.FileName, unreadable.Value.Why.Message),
+            resources: static (t, _) => t.TreeResources,
+            resourceContainer: static (_, _) => null,
+            resourceEntry: static (_, _) => null,
+            metadata: static (_, _) => null,
+            metadataTables: static (t, _) => t.TreeTables,
+            metadataTable: static (_, _) => null,
+            package: static (_, _) => null,
+            packageFile: static (_, _) => null);
+    }
+
+    /// <summary>The node's full name as the status bar shows it, in <paramref name="t"/>'s language for a node whose
+    /// name the app words (<see cref="Label"/>).</summary>
+    public static string FullName(Strings t, BrowseNode node)
+    {
+        return WriteFixedLabel(t, node) ?? node.FullName;
+    }
+
     /// <summary>A namespace's name as its row shows it nested in another: its last segment, e.g.
     /// <c>Generic</c> for <c>System.Collections.Generic</c>.</summary>
     public static string NestedName(BrowseNode node)
@@ -39,10 +87,11 @@ public static class NodeText
     }
 
     /// <summary>The node's full identity: for an assembly its display name, framework and file; for
-    /// an entity its full name and, unless public, its accessibility.</summary>
-    public static string Tooltip(BrowseNode node)
+    /// an entity its full name and, unless public, its accessibility; for a node whose name the app words, that name
+    /// in <paramref name="t"/>'s language (<see cref="Label"/>).</summary>
+    public static string Tooltip(Strings t, BrowseNode node)
     {
-        return Tooltips.GetValue(node, Describe);
+        return WriteFixedLabel(t, node) ?? Tooltips.GetValue(node, Describe);
     }
 
     /// <summary>What a row shows after the node's name in muted text: an assembly's version and

@@ -90,8 +90,12 @@ public sealed class DocumentTab
     /// its diagram's or comparison's own; null for a new tab or a report.</summary>
     public string? Title => _document.Title;
 
-    /// <summary>The full identity of what the tab shows, or null for a new tab.</summary>
-    public string? Tooltip => Node is not null ? NodeText.Tooltip(Node) : Title;
+    /// <summary>The full identity of what the tab shows, as <paramref name="t"/>'s language says what the app words, or
+    /// null for a new tab.</summary>
+    public string? TooltipIn(Strings t)
+    {
+        return Node is not null ? NodeText.Tooltip(t, Node) : Title;
+    }
 
     /// <summary>Changes whenever the tab is pointed somewhere, its load starts again, or it loses its node.</summary>
     public int Version => _document.Version;

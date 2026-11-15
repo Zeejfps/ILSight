@@ -157,6 +157,9 @@ public static class BrowseNodes
             packageFile: static (_, file) => file.Value.File.FullName);
     }
 
+    // The node's text: its identity among its siblings and in the decompiled summaries. For the folders the tree makes
+    // and an unreadable module's row it is English here, and the app words what a person reads from the subject
+    // (NodeText.Label: the folders by kind, the row as the module-unreadable cause's message, from its module and why).
     private static string GetText(NodeSubject subject)
     {
         return subject.Match(

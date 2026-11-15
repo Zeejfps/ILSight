@@ -28,7 +28,7 @@ internal static class TreePaneView
     public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, BrowseTree tree, AnalyzerRows analyzerRows, ScreenDisplay display, Search search, ComparisonPicker comparisonPicker, AssemblyCloser closer, ExportSetup exportSetup, Navigation navigation, AssemblyList assemblies, DecompilerSetup setup)
     {
         var theme = ui.Theme;
-        tree.SetStyle(theme, appearance.NodeIconPalette, appearance.Icons);
+        tree.SetStyle(theme, appearance.NodeIconPalette, appearance.Icons, appearance.Strings);
         tree.ShowTokens(display.Options.TreeTokens);
         tree.ShowEmptyTables(display.Options.ShowEmptyMetadataTables);
         tree.NestNamespaces(display.Options.NestedNamespaces);

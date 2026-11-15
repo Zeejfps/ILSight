@@ -100,13 +100,42 @@ public sealed class PresentationTests
     }
 
     [Fact]
+    public async Task The_folders_the_tree_makes_and_an_unreadable_modules_row_read_in_the_apps_language_their_english_as_before()
+    {
+        using var temp = new TempDir();
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var shapes = Assert.IsType<LoadedModule>(list.Open(WrittenAssemblies.WriteWithBase(temp, "Shapes", "Shape", "Circle")));
+        list.Open(BrokenAssemblies.WriteUnreadableTypeSystem(temp, WrittenAssemblies.WriteDeriving(temp, "Billing", "Shapes", "Shape", "Invoice")));
+        var shape = await shapes.ReadRootAsync().GetChildAsync("Shapes", "Shape");
+        var derived = await shape.GetChildAsync("Derived Types");
+        var unreadable = (await derived.ListChildrenAsync()).Single(static c => c.Subject is NodeSubject.UnreadableModule);
+        var references = await shapes.ReadRootAsync().GetChildAsync("References");
+        var why = Assert.IsType<NodeSubject.UnreadableModule>(unreadable.Subject).Value.Why.Message;
+        var english = new BrowseTree { Session = TestSession.Shared };
+        english.SetStyle(UiTheme.Light, Light.Icons, BuiltInGlyphs.Icons, Strings.For(Locale.En));
+        var japanese = new BrowseTree { Session = TestSession.Shared };
+        var ja = Strings.For(Locale.Ja);
+        japanese.SetStyle(UiTheme.Light, Light.Icons, BuiltInGlyphs.Icons, ja);
+
+        Assert.Equal("Derived Types", english.Row(derived).Label);
+        Assert.Equal("References", english.Row(references).Label);
+        Assert.Equal($"UnreadableTypes.dll: couldn't be read ({why})", english.Row(unreadable).Label);
+        Assert.Equal(ja.TreeDerivedTypes, japanese.Row(derived).Label);
+        Assert.Equal(ja.TreeReferences, japanese.Row(references).Label);
+        Assert.Equal(ja.CauseModuleUnreadableRow("UnreadableTypes.dll", why), japanese.Row(unreadable).Label);
+        Assert.Equal(ja.TreeDerivedTypes, japanese.Row(derived).Tooltip);
+        Assert.Equal(ja.TreeDerivedTypes, NodeText.FullName(ja, derived));
+        Assert.NotEqual("Derived Types", ja.TreeDerivedTypes);
+    }
+
+    [Fact]
     public async Task Non_public_nodes_carry_an_accessibility_overlay_in_the_palette_color_and_dimmed_text()
     {
         var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync();
         var ns = await root.GetChildAsync(AppStateDriver.FixturesNamespace);
         var privateField = (await ns.GetChildAsync("Outline").ListChildrenAsync()).Single(c => c.Icon == NodeIcon.Field && c.Accessibility == NodeAccessibility.Private);
         var tree = new BrowseTree { Session = TestSession.Shared };
-        tree.SetStyle(UiTheme.Light, Light.Icons, BuiltInGlyphs.Icons);
+        tree.SetStyle(UiTheme.Light, Light.Icons, BuiltInGlyphs.Icons, Strings.For(Locale.En));
 
         var field = tree.Row(privateField);
         var hidden = tree.Row(await ns.GetChildAsync("Hidden"));
@@ -207,7 +236,7 @@ public sealed class PresentationTests
         Assert.NotNull(tab);
 
         Assert.Equal(assembly.Name, tab.Title);
-        Assert.Contains(assembly.FullName, tab.Tooltip);
-        Assert.Contains(assembly.FilePath.Text, tab.Tooltip);
+        Assert.Contains(assembly.FullName, tab.TooltipIn(Strings.For(Locale.En)));
+        Assert.Contains(assembly.FilePath.Text, tab.TooltipIn(Strings.For(Locale.En)));
     }
 }

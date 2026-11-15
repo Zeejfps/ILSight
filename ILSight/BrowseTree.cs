@@ -15,7 +15,6 @@ namespace ILSight;
 /// only through its methods, which keep the paths, labels and rows shown in step with them.</summary>
 public sealed class BrowseTree : ITreeModel<BrowseNode>
 {
-    private const string LoadingLabel = "Loading…";
 
     /// <summary>The browse tree whose nodes this shows.</summary>
     public required BrowseSession Session { get; init; }
@@ -33,6 +32,7 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
     private UiTheme _theme = UiTheme.Dark;
     private NodeIconPalette _iconColors = BuiltInThemes.Dark.Icons;
     private AppIcons _icons = BuiltInIconThemes.Reference.Icons;
+    private Strings _strings = Strings.For(Locale.En);
     private TokenFormat _tokens = TokenFormat.Hidden;
     private IReadOnlyCollection<AssemblyPath> _reopening = [];
 
@@ -184,7 +184,7 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
     /// also show their version, or their folder when that is the same too.</summary>
     public string GetLabel(BrowseNode node)
     {
-        return node.Subject is NodeSubject.Module && _rootLabels.TryGetValue(node, out var label) ? label.Title : NodeText.Name(node);
+        return node.Subject is NodeSubject.Module && _rootLabels.TryGetValue(node, out var label) ? label.Title : NodeText.Label(_strings, node);
     }
 
     /// <summary>The node's name as its row shows it, beside <see cref="NodeText.Secondary"/>: an
@@ -197,7 +197,7 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
             return NodeText.NestedName(node);
         }
 
-        return node.Subject is NodeSubject.Module && _rootLabels.TryGetValue(node, out var label) ? label.Row : NodeText.Name(node);
+        return node.Subject is NodeSubject.Module && _rootLabels.TryGetValue(node, out var label) ? label.Row : NodeText.Label(_strings, node);
     }
 
     /// <summary>What tells a row apart from its siblings, for tests to find it by: its label, but an assembly by
@@ -268,11 +268,12 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
         RevealNode(selected);
     }
 
-    public void SetStyle(UiTheme theme, NodeIconPalette iconColors, AppIcons icons)
+    public void SetStyle(UiTheme theme, NodeIconPalette iconColors, AppIcons icons, Strings strings)
     {
         _theme = theme;
         _iconColors = iconColors;
         _icons = icons;
+        _strings = strings;
     }
 
     /// <summary>Writes each type's and member's metadata token after its name as <paramref name="format"/> says.</summary>
@@ -542,12 +543,12 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
 
     private TreeRow CreateLoadingRow()
     {
-        return new TreeRow(LoadingLabel, NodeIcons.Loading(_iconColors, _icons), _theme.TextMuted, Spinning: true);
+        return new TreeRow(_strings.TreeLoading, NodeIcons.Loading(_iconColors, _icons), _theme.TextMuted, Spinning: true);
     }
 
     private TreeRow CreateFailedRow(Exception error)
     {
-        return new TreeRow($"Error: {error.Message}", NodeIcons.Failed(_iconColors, _icons), Tooltip: error.Message);
+        return new TreeRow(_strings.TreeChildrenFailed(error.Message), NodeIcons.Failed(_iconColors, _icons), Tooltip: error.Message);
     }
 
     public TreeRow Row(BrowseNode node)
@@ -557,7 +558,7 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
             GetRowLabel(node),
             NodeIcons.Icon(node, _iconColors, _icons),
             visibility.IsPublicApi ? 0u : _theme.TextMuted,
-            Tooltip: NodeText.Tooltip(node),
+            Tooltip: NodeText.Tooltip(_strings, node),
             Secondary: FindSecondary(node),
             SecondaryBold: NodeText.PickedFramework(node),
             Spinning: IsReopening(node));

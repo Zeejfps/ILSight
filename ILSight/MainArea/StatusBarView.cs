@@ -27,7 +27,8 @@ internal static class StatusBarView
         }))
         {
             var selected = appState.ListSession.Navigation.ActiveTab?.Node;
-            ui.Text(ui.Memo("status-node", selected, static n => n is null ? "" : n.FullName), new Box { Width = Sizing.Grow() }, color: theme.TextMuted,
+            ui.Text(ui.Memo("status-node", (selected, t), static a => a.selected is null ? "" : NodeText.FullName(a.t, a.selected)), new Box { Width = Sizing.Grow() },
+                color: theme.TextMuted,
                 size: size, overflow: TextOverflow.Ellipsis);
 
             // Shrinkable, as the refusal note in it is: in a narrow window the note's why gives up room, so what follows
