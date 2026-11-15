@@ -735,6 +735,7 @@
   "error.recovery_replace_file": "Замените файл или закройте его.",
   "error.recovery_report_bug": "Скопируйте эту ошибку вместе с техническими подробностями и сообщите о ней как об ошибке в программе.",
   "error.recovery_try_again": "Попробуйте ещё раз.",
+  "error.recovery_try_again_or_report": "Попробуйте ещё раз; если ошибка повторится, скопируйте её вместе с техническими подробностями и сообщите о ней как об ошибке в программе.",
   "error.cause_and_recovery": "{cause} {recovery}",
   "error.read_reference": "Не удаётся прочитать {name}, на которую ссылается {assembly}",
   "error.read_reference_degraded": "Код {assembly} показан с чтением {name} только по имени. Перезагрузите {assembly}, когда файл станет доступен для чтения.",

@@ -735,6 +735,7 @@
   "error.recovery_replace_file": "Remplacez le fichier, ou fermez-le.",
   "error.recovery_report_bug": "Copiez cette erreur, avec ses détails techniques, et signalez-la comme un bogue.",
   "error.recovery_try_again": "Réessayez.",
+  "error.recovery_try_again_or_report": "Réessayez. Si l'erreur se reproduit, copiez-la, avec ses détails techniques, et signalez-la comme un bogue.",
   "error.cause_and_recovery": "{cause} {recovery}",
   "error.read_reference": "Impossible de lire {name}, référencé par {assembly}",
   "error.read_reference_degraded": "Le code de {assembly} est affiché en lisant {name} par son seul nom. Rechargez {assembly} une fois le fichier lisible.",

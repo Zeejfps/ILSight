@@ -735,6 +735,7 @@
   "error.recovery_replace_file": "Reemplaza el archivo o ciérralo.",
   "error.recovery_report_bug": "Copia este error, con los detalles técnicos, e infórmalo como un fallo.",
   "error.recovery_try_again": "Inténtalo de nuevo.",
+  "error.recovery_try_again_or_report": "Inténtalo de nuevo; si vuelve a fallar, copia este error, con los detalles técnicos, e infórmalo como un fallo.",
   "error.cause_and_recovery": "{cause} {recovery}",
   "error.read_reference": "No se puede leer {name}, al que hace referencia {assembly}",
   "error.read_reference_degraded": "El código de {assembly} se muestra leyendo {name} solo por su nombre. Vuelva a cargar {assembly} cuando el archivo se pueda leer.",

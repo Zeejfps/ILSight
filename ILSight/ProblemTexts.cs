@@ -32,14 +32,14 @@ public static class ProblemTexts
     private static (string Title, string Details, Exception? Diagnostic) Words(Strings t, AppProblem problem)
     {
         return problem.Match<(string Title, string Details, Exception? Diagnostic)>(
-            openFailed: p => AskAgain(t, t.ErrorOpenAssemblies, p.Error),
+            openFailed: p => AskAgainOrReport(t, t.ErrorOpenAssemblies, p.Error),
             pdbUnusable: p => (t.ErrorSelectPdb(file: Path.GetFileName(p.PdbPath), name: p.Assembly),
                 DescribePdbCheck(t, p.Check, p.Assembly) + Environment.NewLine + p.PdbPath, null),
             assemblyNotReloaded: p => AskAgain(t, t.ErrorReloadAssembly(p.Assembly), p.Error),
-            assembliesNotReloaded: p => AskAgain(t, t.ErrorReloadAssemblies, p.Error),
+            assembliesNotReloaded: p => AskAgainOrReport(t, t.ErrorReloadAssemblies, p.Error),
             analysisFailed: p => Reportable(t, t.ErrorAnalyze(name: p.Subject, analysis: AnalyzerText.Header(t, p.Kind)), p.Error),
             analysesNotRestored: p => Reportable(t, t.ErrorRestoreAnalyses, p.Error),
-            unresolved: p => AskAgain(t, t.ErrorResolve(p.Reference.Name), p.Error),
+            unresolved: p => AskAgainOrReport(t, t.ErrorResolve(p.Reference.Name), p.Error),
             unresolvedFileDenied: p => (t.ErrorResolve(p.Reference.Name), Denied(t, p.File), p.Error),
             unresolvedFileDamaged: p => (t.ErrorResolve(p.Reference.Name), Damaged(t, p.File), p.Error),
             placeLookupFailed: p => (t.ErrorLookUpPlace(p.Place.Label), AfterStep(t, p.Step, ReportIt(t, p.Error.Message)), p.Error),
@@ -118,10 +118,20 @@ public static class ProblemTexts
     }
 
     // A failure whose cause the app knows only by the exception, of an operation that reads what can change between
-    // asks (a file, a folder, a feed, a download): asking again holds whatever the cause.
+    // asks (a file, a folder, a feed, a download) and fails only by what the read expects of it (a file that can't be
+    // read, a feed that can't be reached; the app's own bugs go on to the edge, reported as unexpected): asking again
+    // holds whatever the cause.
     private static (string Title, string Details, Exception? Diagnostic) AskAgain(Strings t, string title, Exception error)
     {
         return (title, t.ErrorCauseAndRecovery(cause: error.Message, recovery: t.ErrorRecoveryTryAgain), error);
+    }
+
+    // A failure whose cause the app knows only by the exception, of an operation whose contract holds both: asking
+    // again is safe and reads what can change (a file, the file system), and the catch takes any failure, the app's
+    // own among them, which ILSight takes reports of: the retry first, then the report if it fails again.
+    private static (string Title, string Details, Exception? Diagnostic) AskAgainOrReport(Strings t, string title, Exception error)
+    {
+        return (title, t.ErrorCauseAndRecovery(cause: error.Message, recovery: t.ErrorRecoveryTryAgainOrReport), error);
     }
 
     // A failure in the app's own code or the decompiler's, or of an operation that fails on input that hasn't changed

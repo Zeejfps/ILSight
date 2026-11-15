@@ -62,6 +62,20 @@ public sealed class ProblemTextTests
 
     [Theory]
     [MemberData(nameof(LocalizationTests.AllLocales), MemberType = typeof(LocalizationTests))]
+    public void Opening_references_failing_by_any_cause_says_to_ask_again_and_to_report_it_if_it_fails_again(Locale locale)
+    {
+        var t = Strings.For(locale);
+        var error = Thrown("Object reference not set to an instance of an object.");
+
+        var text = ProblemTexts.Describe(t, new AppProblem.OpenFailed(error));
+
+        Assert.Equal(t.ErrorOpenAssemblies, text.Title);
+        Assert.Equal(t.ErrorCauseAndRecovery(cause: error.Message, recovery: t.ErrorRecoveryTryAgainOrReport), text.Details);
+        Assert.Equal(error.ToString(), text.TechnicalDetails);
+    }
+
+    [Theory]
+    [MemberData(nameof(LocalizationTests.AllLocales), MemberType = typeof(LocalizationTests))]
     public void A_layout_failing_on_the_same_diagram_says_to_report_it_never_to_try_again(Locale locale)
     {
         var t = Strings.For(locale);
