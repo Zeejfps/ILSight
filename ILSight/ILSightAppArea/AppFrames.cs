@@ -201,8 +201,8 @@ internal static class AppFrames
         Commands.StartSearching(appState, uiState.Search.Results);
         Commands.StartSearching(appState, uiState.Omnibar.Search.Results);
         Commands.StartLookingUpTooltips(appState.Workflows, appState.LookUpTooltipHandler, appState.Tooltips);
-        Commands.StartArrangingGrids(appState.Workflows, uiState.ArrangeMetadataGridHandler, uiState.MetadataGridViews);
-        Commands.StartReadingGridPages(appState.Workflows, uiState.ReadMetadataPageHandler, uiState.MetadataGridPages);
+        Commands.StartArrangingGrids(appState.Workflows, uiState.ArrangeMetadataGridHandler, uiState.Grids.Views);
+        Commands.StartReadingGridPages(appState.Workflows, uiState.ReadMetadataPageHandler, uiState.Grids.Pages);
         Commands.StartScanningPresets(appState.Workflows, uiState.Presets);
     }
 

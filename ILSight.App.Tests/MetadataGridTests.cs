@@ -304,12 +304,12 @@ public sealed class MetadataGridTests
         var state = MetadataGridWidget.CreateState(grid);
         var views = new MetadataGridViews();
         var name = grid.Column("Name");
-        MetadataGridWidget.UpdateView(state, app.Ui.MetadataFilters, views, isClosed: false);
+        MetadataGridWidget.UpdateView(state, app.Ui.Grids.Filters, views, isClosed: false);
         state.SortBy(name);
-        MetadataGridWidget.UpdateView(state, app.Ui.MetadataFilters, views, isClosed: false);
+        MetadataGridWidget.UpdateView(state, app.Ui.Grids.Filters, views, isClosed: false);
         var older = Assert.Single(views.TakeAsked());
         state.SortBy(name);
-        MetadataGridWidget.UpdateView(state, app.Ui.MetadataFilters, views, isClosed: false);
+        MetadataGridWidget.UpdateView(state, app.Ui.Grids.Filters, views, isClosed: false);
         var newer = Assert.Single(views.TakeAsked());
         var handler = new ArrangeMetadataGridHandler(new FakeArrangeMetadataGridHandlerPorts());
 
@@ -411,7 +411,7 @@ public sealed class MetadataGridTests
 
         using var temp = new TempDir();
         var settings = temp.Settings();
-        settings.FlagsFilters = app.Ui.MetadataFilters.ListSaved();
+        settings.FlagsFilters = app.Ui.Grids.Filters.ListSaved();
         Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
         var saved = temp.Settings().FlagsFilters;
         var restored = MetadataFilters.From(saved).GetFilter(grid, attributes);

@@ -21,18 +21,19 @@ internal static class ResourceImageView
         public float Scale;
     }
 
-    public static void Render(Ui<UiState> ui, Navigation navigation, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab, TabContent.Picture shown)
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, DocumentViews documents, Panels panels, ScreenDisplay display,
+        BookmarksPanel bookmarksPanel, Navigation navigation, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab, TabContent.Picture shown)
     {
         var theme = ui.Theme;
-        var view = DocumentPanels.GetView(ui.State.Documents, tab);
+        var view = DocumentPanels.GetView(documents, tab);
         var image = shown.Image;
         var hasSource = shown.Source is not null;
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = theme.PaneBackground });
-        Toolbar(ui, ui.State.Appearance, ui.State.AppCommands, tab, view.Picture, image, hasSource);
+        Toolbar(ui, appearance, commands, tab, view.Picture, image, hasSource);
         ui.Separator();
         if (view.Picture.ShowsSource)
         {
-            DocumentsView.RenderCode(ui, navigation, bookmarks, tooltips, tab);
+            DocumentsView.RenderCode(ui, appearance, commands, documents, panels, display, bookmarksPanel, navigation, bookmarks, tooltips, tab);
             return;
         }
         Picture(ui, view, image);

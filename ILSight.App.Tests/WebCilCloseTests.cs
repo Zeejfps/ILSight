@@ -106,7 +106,7 @@ public sealed class WebCilCloseTests
 
         state.Scroll.Y = 100000f;
         app.Run(2);
-        var scrolled = (Loading: app.Frames.Drew(app.Ui.Appearance.Strings.MetadataLoading), Asked: app.Ui.MetadataGridPages.HasAsked, Read: grid.IsRowRead(last));
+        var scrolled = (Loading: app.Frames.Drew(app.Ui.Appearance.Strings.MetadataLoading), Asked: app.Ui.Grids.Pages.HasAsked, Read: grid.IsRowRead(last));
         var rowsClosed = app.Frames.Drew(app.Ui.Appearance.Strings.MetadataClosed);
         app.Frames.ClickOn(Crumb(app, "Metadata")).Frame(2);
         var clicked = (Node: tab.Node, Busy: tab.Load.IsBusy, Background: app.AppState.Work.Outstanding.Count);

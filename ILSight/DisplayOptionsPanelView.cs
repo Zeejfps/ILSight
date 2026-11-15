@@ -203,10 +203,10 @@ internal static class DisplayOptionsPanelView
             return;
         }
 
-        Commands.Later(ui.State.AppCommands, (screen: ui.State, t), static (a, s) => CustomizeTheme(s.screen, a, s.t));
+        Commands.Later(ui.State.AppCommands, (shell: ui.State.Shell, t), static (a, s) => CustomizeTheme(s.shell, a, s.t));
     }
 
-    private static void CustomizeTheme(UiState screen, AppState appState, Strings t)
+    private static void CustomizeTheme(ShellRequests shell, AppState appState, Strings t)
     {
         var themes = appState.Themes;
         var custom = appState.UserThemes.CreateCustomTheme(appState.ChosenThemes.Theme, parent => t.ThemeCustomName(themes.GetThemeName(parent, t.Culture)));
@@ -216,7 +216,7 @@ internal static class DisplayOptionsPanelView
         }
 
         appState.ChosenThemes.ChooseTheme(custom.Id);
-        screen.Shell.OpenFile(custom.Path);
+        shell.OpenFile(custom.Path);
     }
 
     private static void OpenThemesFolderButton(Ui<UiState> ui)
@@ -227,7 +227,7 @@ internal static class DisplayOptionsPanelView
             return;
         }
 
-        Commands.Later(ui.State.AppCommands, ui.State, static (a, screen) => OpenFolder(screen, a.UserThemes.PrepareFolder()));
+        Commands.Later(ui.State.AppCommands, ui.State.Shell, static (a, shell) => OpenFolder(shell, a.UserThemes.PrepareFolder()));
     }
 
     private static void ReloadThemesButton(Ui ui, Appearance appearance, IAppCommandWriter commands)
@@ -272,10 +272,10 @@ internal static class DisplayOptionsPanelView
             return;
         }
 
-        Commands.Later(ui.State.AppCommands, (screen: ui.State, t), static (a, s) => CustomizeIconTheme(s.screen, a, s.t));
+        Commands.Later(ui.State.AppCommands, (shell: ui.State.Shell, t), static (a, s) => CustomizeIconTheme(s.shell, a, s.t));
     }
 
-    private static void CustomizeIconTheme(UiState screen, AppState appState, Strings t)
+    private static void CustomizeIconTheme(ShellRequests shell, AppState appState, Strings t)
     {
         var themes = appState.IconThemes;
         var custom = appState.UserIconThemes.CreateCustomTheme(appState.ChosenThemes.IconTheme, parent => t.ThemeCustomName(themes.GetThemeName(parent, t.Culture)));
@@ -285,7 +285,7 @@ internal static class DisplayOptionsPanelView
         }
 
         appState.ChosenThemes.ChooseIconTheme(custom.Id);
-        screen.Shell.OpenFile(custom.Path);
+        shell.OpenFile(custom.Path);
     }
 
     private static void OpenIconThemesFolderButton(Ui<UiState> ui)
@@ -296,14 +296,14 @@ internal static class DisplayOptionsPanelView
             return;
         }
 
-        Commands.Later(ui.State.AppCommands, ui.State, static (a, screen) => OpenFolder(screen, a.UserIconThemes.PrepareFolder()));
+        Commands.Later(ui.State.AppCommands, ui.State.Shell, static (a, shell) => OpenFolder(shell, a.UserIconThemes.PrepareFolder()));
     }
 
-    private static void OpenFolder(UiState screen, string? folder)
+    private static void OpenFolder(ShellRequests shell, string? folder)
     {
         if (folder is not null)
         {
-            screen.Shell.OpenFolder(folder);
+            shell.OpenFolder(folder);
         }
     }
 

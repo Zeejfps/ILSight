@@ -125,19 +125,13 @@ public sealed class UiState : IUiState
     /// <summary>The bar over each document: its path, or its search.</summary>
     public required Omnibar Omnibar { get; init; }
 
-    /// <summary>The metadata grids' flags filters.</summary>
-    public required MetadataFilters MetadataFilters { get; init; }
+    /// <summary>The metadata grids' flags filters, and the sorts, filters and pages they asked for while the screen drew.</summary>
+    public required MetadataGridScreenState Grids { get; init; }
 
-    /// <summary>The sorts and filters the metadata grids asked for while the screen drew, for the frame edge to start.</summary>
-    public MetadataGridViews MetadataGridViews { get; } = new();
-
-    /// <summary>Sorts and filters the rows <see cref="MetadataGridViews"/> asks for, off the screen's thread.</summary>
+    /// <summary>Sorts and filters the rows <see cref="MetadataGridScreenState.Views"/> asks for, off the screen's thread.</summary>
     public required ArrangeMetadataGridHandler ArrangeMetadataGridHandler { get; init; }
 
-    /// <summary>The pages of paged grids the views asked for while the screen drew, for the frame edge to start.</summary>
-    public MetadataGridPages MetadataGridPages { get; } = new();
-
-    /// <summary>Reads the pages <see cref="MetadataGridPages"/> asks for, off the screen's thread.</summary>
+    /// <summary>Reads the pages <see cref="MetadataGridScreenState.Pages"/> asks for, off the screen's thread.</summary>
     public required ReadMetadataPageHandler ReadMetadataPageHandler { get; init; }
 
     /// <summary>The exports panel's selection and context menu.</summary>

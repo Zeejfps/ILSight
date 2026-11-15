@@ -358,7 +358,6 @@ internal static class MainMenuView
     private static void PanelsMenu(Ui<UiState> ui)
     {
         var t = ui.State.Appearance.Strings;
-        var screen = ui.State;
         using var panels = ui.SubMenu(t.ViewPanels, id: "panels");
         if (!panels.IsOpen)
         {
@@ -367,37 +366,37 @@ internal static class MainMenuView
 
         if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.PanelAssemblies, DockView.Assemblies))
         {
-            screen.Panels.Open(DockView.Assemblies);
+            ui.State.Panels.Open(DockView.Assemblies);
         }
 
         if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.ViewBookmarks, DockView.Bookmarks))
         {
-            screen.Panels.Open(DockView.Bookmarks);
+            ui.State.Panels.Open(DockView.Bookmarks);
         }
 
         if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.PanelAnalyzer, DockView.Analyzer))
         {
-            screen.Panels.Open(DockView.Analyzer);
+            ui.State.Panels.Open(DockView.Analyzer);
         }
 
         if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.PanelSearch, DockView.Search, Shortcuts.Search))
         {
-            screen.Panels.OpenSearch();
+            ui.State.Panels.OpenSearch();
         }
 
         if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.PanelDecompilerOptions, DockView.DecompilerOptions))
         {
-            screen.Panels.Open(DockView.DecompilerOptions);
+            ui.State.Panels.Open(DockView.DecompilerOptions);
         }
 
         if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.PanelDisplayOptions, DockView.DisplayOptions))
         {
-            screen.Panels.Open(DockView.DisplayOptions);
+            ui.State.Panels.Open(DockView.DisplayOptions);
         }
 
         if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.PanelExports, DockView.Exports))
         {
-            screen.Panels.Open(DockView.Exports);
+            ui.State.Panels.Open(DockView.Exports);
         }
     }
 

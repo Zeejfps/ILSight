@@ -230,7 +230,7 @@ internal static class ToolbarView
             {
                 var entry = entries[i];
                 var text = TextOf(ui.State.Appearance.Strings, entry);
-                var icon = IconOf(ui.State, entry);
+                var icon = IconOf(ui.State.Appearance, entry);
                 if (!navigation.CanShow(entry, assemblies, finished))
                 {
                     ui.MenuItem(SayWhyNotShown(ui.State.Appearance.Strings, entry, text), enabled: false, id: "entry", icon: icon);
@@ -280,12 +280,12 @@ internal static class ToolbarView
         return string.Join(", ", new[] { NameOf(comparison.LeftPath), NameOf(comparison.RightPath) }.Distinct());
     }
 
-    private static UiIcon IconOf(UiState screen, HistoryEntry entry)
+    private static UiIcon IconOf(Appearance appearance, HistoryEntry entry)
     {
-        return entry.Match(screen,
-            static (screen, node) => NodeIcons.Icon(node.Icon, node.Accessibility, screen.Appearance.NodeIconPalette, screen.Appearance.Icons),
-            static (screen, _) => new UiIcon(screen.Appearance.Icons.TabDiagram),
-            static (screen, _) => new UiIcon(screen.Appearance.Icons.TabPage),
-            static (screen, _) => new UiIcon(screen.Appearance.Icons.TabPage));
+        return entry.Match(appearance,
+            static (appearance, node) => NodeIcons.Icon(node.Icon, node.Accessibility, appearance.NodeIconPalette, appearance.Icons),
+            static (appearance, _) => new UiIcon(appearance.Icons.TabDiagram),
+            static (appearance, _) => new UiIcon(appearance.Icons.TabPage),
+            static (appearance, _) => new UiIcon(appearance.Icons.TabPage));
     }
 }

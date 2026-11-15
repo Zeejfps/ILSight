@@ -21,8 +21,8 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
     {
         var grid = await OpenTableAsync("TypeRef");
         var state = MetadataGridWidget.CreateState(grid);
-        var flags = MetadataFilters.From(null);
-        var frames = new UiFrames(Screens.Blank(), width: 1200f, height: 300f, body: ui => Render(ui, grid, state, flags)) { FrameTime = 1f / 60f };
+        var grids = new MetadataGridScreenState { Filters = MetadataFilters.From(null) };
+        var frames = new UiFrames(Screens.Blank(), width: 1200f, height: 300f, body: ui => Render(ui, grid, state, grids)) { FrameTime = 1f / 60f };
         frames.Frame();
         state.RevealRow(1);
         frames.MovePointer(200f, 120f);
@@ -74,10 +74,10 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
         return grid;
     }
 
-    private static void Render(Ui<UiState> ui, MetadataGrid grid, MetadataGridState state, MetadataFilters flags)
+    private static void Render(Ui<UiState> ui, MetadataGrid grid, MetadataGridState state, MetadataGridScreenState grids)
     {
         using var screen = ui.Screen();
-        MetadataGridWidget.RenderMetadataGrid(ui, ui.State.MetadataGridViews, ui.State.MetadataGridPages, ui.State.Appearance, ui.State.Display, ui.State.AppCommands, "grid", state, flags);
+        MetadataGridWidget.RenderMetadataGrid(ui, grids, ui.State.Appearance, ui.State.Display, ui.State.AppCommands, "grid", state);
     }
 
     // Scrolls down and back up in sweeps, so the measured frames show rows the warm-up already showed once and their

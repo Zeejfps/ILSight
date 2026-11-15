@@ -205,7 +205,7 @@ internal static class AssemblyListsDialogView
     {
         if (result == InlineEditResult.Committed)
         {
-            FinishRenaming(ui.State);
+            FinishRenaming(ui.State.ListsDialog, ui.State.AppCommands);
             return;
         }
         ui.State.ListsDialog.StopAsking();
@@ -258,7 +258,7 @@ internal static class AssemblyListsDialogView
         var dialog = ui.State.ListsDialog;
         if (dialog.Mode is ListsDialogMode.Renaming)
         {
-            FinishRenaming(ui.State);
+            FinishRenaming(ui.State.ListsDialog, ui.State.AppCommands);
             return;
         }
         dialog.StopAsking();
@@ -412,15 +412,14 @@ internal static class AssemblyListsDialogView
         dialog.PickToRename(appState.Lists, copy);
     }
 
-    private static void FinishRenaming(UiState screen)
+    private static void FinishRenaming(AssemblyListsDialog dialog, IAppCommandWriter commands)
     {
-        var dialog = screen.ListsDialog;
         if (dialog.Mode is not ListsDialogMode.Renaming renaming)
         {
             return;
         }
 
         dialog.StopAsking();
-        Commands.Later(screen.AppCommands, (list: renaming.List, newName: renaming.NewName), static (a, s) => a.Lists.TryRename(s.list, s.newName));
+        Commands.Later(commands, (list: renaming.List, newName: renaming.NewName), static (a, s) => a.Lists.TryRename(s.list, s.newName));
     }
 }

@@ -30,22 +30,22 @@ internal static class OmnibarView
     /// <paramref name="navigation"/>'s tabs in this frame, in the language and with the options of
     /// <paramref name="setup"/>, in the preview tab while <see cref="Navigation.PreviewTabs"/>; only its decompile is
     /// queued. A comparison's tools compare <paramref name="assemblies"/> as they are open.</summary>
-    public static void Render(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DecompilerSetup setup,
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, DocumentViews documents, BrowseTree tree, ScreenDisplay display, Omnibar omnibar, Navigation navigation, AssemblyList assemblies, DecompilerSetup setup,
         DocumentTab tab)
     {
-        if (!ui.State.Display.Options.ShowOmnibar)
+        if (!display.Options.ShowOmnibar)
         {
             return;
         }
 
-        var panel = DocumentPanels.GetPanel(ui.State.Documents, tab);
-        if (ContinueSearch(ui, ui.State.Omnibar, panel))
+        var panel = DocumentPanels.GetPanel(documents, tab);
+        if (ContinueSearch(ui, omnibar, panel))
         {
-            SearchBar(ui, ui.State.Appearance, ui.State.Omnibar, ui.State.AppCommands, navigation, setup);
+            SearchBar(ui, appearance, omnibar, commands, navigation, setup);
         }
         else
         {
-            PathBar(ui, ui.State.Documents, ui.State.Tree, ui.State.Appearance, ui.State.AppCommands, ui.State.Omnibar, navigation, assemblies, setup, tab, panel);
+            PathBar(ui, documents, tree, appearance, commands, omnibar, navigation, assemblies, setup, tab, panel);
         }
 
         ui.Separator();

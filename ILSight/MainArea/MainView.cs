@@ -135,7 +135,7 @@ public static class MainView
         var tab = screen.Documents.FindTab(panel);
         if (tab is not null)
         {
-            return DocumentsView.Tab(screen, navigation, tab);
+            return DocumentsView.Tab(screen.Appearance, screen.Tree, navigation, tab);
         }
 
         return new DockTab(t.DocumentNewTab);
@@ -190,7 +190,7 @@ public static class MainView
             return;
         }
 
-        DocumentsView.Render(ui, appState.ListSession.Navigation, appState.Session, appState.ListSession.Assemblies, appState.Decompiler.Setup,
+        DocumentsView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.Documents, ui.State.Tree, ui.State.Panels, ui.State.Display, ui.State.BookmarksPanel, ui.State.Omnibar, ui.State.Grids, appState.ListSession.Navigation, appState.Session, appState.ListSession.Assemblies, appState.Decompiler.Setup,
             appState.Bookmarks, appState.Tooltips, tab);
     }
 

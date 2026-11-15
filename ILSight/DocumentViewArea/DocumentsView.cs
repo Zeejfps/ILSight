@@ -22,35 +22,37 @@ internal static class DocumentsView
     /// frame, in <paramref name="setup"/>, in the preview tab while
     /// <see cref="Navigation.PreviewTabs"/>; only its decompile is queued. A comparison it shows compares
     /// <paramref name="assemblies"/> as they are open.</summary>
-    public static void Render(Ui<UiState> ui, Navigation navigation, BrowseSession session, AssemblyList assemblies, DecompilerSetup setup, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, DocumentViews documents, BrowseTree tree, Panels panels, ScreenDisplay display,
+        BookmarksPanel bookmarksPanel, Omnibar omnibar, MetadataGridScreenState grids, Navigation navigation, BrowseSession session, AssemblyList assemblies, DecompilerSetup setup, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
     {
         using var document = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
-        OmnibarView.Render(ui, navigation, assemblies, setup, tab);
-        Content(ui, navigation, session, assemblies, setup, bookmarks, tooltips, tab);
+        OmnibarView.Render(ui, appearance, commands, documents, tree, display, omnibar, navigation, assemblies, setup, tab);
+        Content(ui, appearance, commands, documents, panels, display, bookmarksPanel, grids, navigation, session, assemblies, setup, bookmarks, tooltips, tab);
     }
 
-    private static void Content(Ui<UiState> ui, Navigation navigation, BrowseSession session, AssemblyList assemblies, DecompilerSetup setup, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
+    private static void Content(Ui ui, Appearance appearance, IAppCommandWriter commands, DocumentViews documents, Panels panels, ScreenDisplay display,
+        BookmarksPanel bookmarksPanel, MetadataGridScreenState grids, Navigation navigation, BrowseSession session, AssemblyList assemblies, DecompilerSetup setup, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
     {
         var areaId = ui.GetId("tab-area");
-        ui.State.Documents.RecordTabAreaHeight(ui.TryGetRect(areaId, out var area) ? area.Height : ui.Height);
+        documents.RecordTabAreaHeight(ui.TryGetRect(areaId, out var area) ? area.Height : ui.Height);
         using var content = ui.Column(areaId, new Box { Height = Sizing.Grow(), Gap = 0f });
-        DocumentPanels.GetView(ui.State.Documents, tab).RecordShown(tab);
-        ClosedBanner(ui, ui.State.Appearance, tab.ClosedAssembly);
-        tab.Content.Switch((ui, navigation, session, assemblies, setup, bookmarks, tooltips, tab),
-            empty: static (s, _) => Hint(s.ui, s.ui.State.Appearance.Strings.DocumentsHint),
-            loading: static (s, loading) => RenderLoading(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab, loading),
-            code: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
-            table: static (s, table) => RenderGrid(s.ui, s.navigation, s.session, s.setup, s.tab, table.Grid),
-            picture: static (s, picture) => ResourceImageView.Render(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab, picture),
-            report: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
-            diagram: static (s, diagram) => DiagramView.Render(s.ui, s.ui.State.Documents, s.ui.State.Display, s.ui.State.Appearance, s.ui.State.AppCommands, s.navigation, s.tooltips, s.tab, diagram.Types),
-            comparison: static (s, comparison) => ComparisonView.Render(s.ui, s.ui.State.Documents, s.ui.State.Appearance, s.ui.State.Display, s.ui.State.AppCommands, s.navigation, s.assemblies, s.tab, comparison.Assemblies),
-            failed: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
-            stopped: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
-            reloading: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
-            reopening: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
-            gone: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab),
-            unreadable: static (s, _) => RenderCode(s.ui, s.navigation, s.bookmarks, s.tooltips, s.tab));
+        DocumentPanels.GetView(documents, tab).RecordShown(tab);
+        ClosedBanner(ui, appearance, tab.ClosedAssembly);
+        tab.Content.Switch((ui, appearance, commands, documents, panels, display, bookmarksPanel, grids, navigation, session, assemblies, setup, bookmarks, tooltips, tab),
+            empty: static (s, _) => Hint(s.ui, s.appearance.Strings.DocumentsHint),
+            loading: static (s, loading) => RenderLoading(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab, loading),
+            code: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
+            table: static (s, table) => RenderGrid(s.ui, s.appearance, s.commands, s.documents, s.display, s.grids, s.navigation, s.session, s.setup, s.tab, table.Grid),
+            picture: static (s, picture) => ResourceImageView.Render(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab, picture),
+            report: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
+            diagram: static (s, diagram) => DiagramView.Render(s.ui, s.documents, s.display, s.appearance, s.commands, s.navigation, s.tooltips, s.tab, diagram.Types),
+            comparison: static (s, comparison) => ComparisonView.Render(s.ui, s.documents, s.appearance, s.display, s.commands, s.navigation, s.assemblies, s.tab, comparison.Assemblies),
+            failed: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
+            stopped: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
+            reloading: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
+            reopening: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
+            gone: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
+            unreadable: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab));
     }
 
     private static void ClosedBanner(Ui ui, Appearance appearance, string? assembly)
@@ -81,87 +83,87 @@ internal static class DocumentsView
         return ui.Memo("closed", (closedAssembly, t: appearance.Strings), static a => a.t.DocumentClosed(a.closedAssembly));
     }
 
-    private static void RenderLoading(Ui<UiState> ui, Navigation navigation, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab,
+    private static void RenderLoading(Ui ui, Appearance appearance, IAppCommandWriter commands, DocumentViews documents, Panels panels, ScreenDisplay display, BookmarksPanel bookmarksPanel, Navigation navigation, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab,
         TabContent.Loading loading)
     {
         if (!loading.Node.IsCode)
         {
-            Hint(ui, ui.State.Appearance.Strings.MetadataLoading);
+            Hint(ui, appearance.Strings.MetadataLoading);
             return;
         }
 
-        RenderCode(ui, navigation, bookmarks, tooltips, tab);
+        RenderCode(ui, appearance, commands, documents, panels, display, bookmarksPanel, navigation, bookmarks, tooltips, tab);
     }
 
-    private static void RenderGrid(Ui<UiState> ui, Navigation navigation, BrowseSession session, DecompilerSetup setup,
+    private static void RenderGrid(Ui ui, Appearance appearance, IAppCommandWriter commands, DocumentViews documents, ScreenDisplay display, MetadataGridScreenState grids, Navigation navigation, BrowseSession session, DecompilerSetup setup,
         DocumentTab tab, MetadataGrid grid)
     {
-        var view = DocumentPanels.GetView(ui.State.Documents, tab);
-        var picked = MetadataGridWidget.RenderMetadataGrid(ui, ui.State.MetadataGridViews, ui.State.MetadataGridPages, ui.State.Appearance, ui.State.Display, ui.State.AppCommands, "grid", view.GetGridState(grid), ui.State.MetadataFilters,
+        var view = DocumentPanels.GetView(documents, tab);
+        var picked = MetadataGridWidget.RenderMetadataGrid(ui, grids, appearance, display, commands, "grid", view.GetGridState(grid),
             tab.Load.ClosedAssembly);
         var node = tab.Node;
         if (picked.Target is not null && node is not null)
         {
             var load = navigation.ShowMetadataLink(session, node, picked.Target.Value, picked.InNewTab, setup);
-            Commands.DecompileLater(ui.State.AppCommands, load);
+            Commands.DecompileLater(commands, load);
         }
 
         if (picked.Definition != null)
         {
-            Commands.FollowLater(ui.State.AppCommands, picked.Definition, navigation.BeginResolving(picked.InNewTab));
+            Commands.FollowLater(commands, picked.Definition, navigation.BeginResolving(picked.InNewTab));
         }
     }
 
     /// <summary>The tab's document in the code view, with its bookmarks, or the note saying why it has none. A reference
     /// followed from it begins in <paramref name="navigation"/> in this frame; only its lookup is queued.</summary>
-    public static void RenderCode(Ui<UiState> ui, Navigation navigation, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
+    public static void RenderCode(Ui ui, Appearance appearance, IAppCommandWriter commands, DocumentViews documents, Panels panels, ScreenDisplay display, BookmarksPanel bookmarksPanel, Navigation navigation, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab)
     {
         var lines = !tab.Load.IsBusy && tab.Node is not null && tab.Document.Error is null ? bookmarks.ListMarkedLines(tab.Document, tab.Node) : null;
-        var view = DocumentPanels.GetView(ui.State.Documents, tab);
-        var document = GetDocumentToShow(ui.State.Appearance.Strings, view, tab);
-        var result = CodeViewWidget.RenderCodeView(ui, ui.State.Appearance, ui.State.Display, "code", document, view.Code, lines, tooltips: tooltips, display: ui.State.Display.Options,
+        var view = DocumentPanels.GetView(documents, tab);
+        var document = GetDocumentToShow(appearance.Strings, view, tab);
+        var result = CodeViewWidget.RenderCodeView(ui, appearance, display, "code", document, view.Code, lines, tooltips: tooltips, display: display.Options,
             closedAssembly: tab.Load.ClosedAssembly);
         if (result.Intent is not null)
         {
-            Act(ui, navigation, tab, result.Intent);
+            Act(ui, appearance, commands, panels, bookmarksPanel, navigation, tab, result.Intent);
         }
 
-        Zoom(ui.State, result.Zoom);
+        Zoom(display, appearance, result.Zoom);
     }
 
-    private static void Act(Ui<UiState> ui, Navigation navigation, DocumentTab tab, CodeViewIntent intent)
+    private static void Act(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, BookmarksPanel bookmarksPanel, Navigation navigation, DocumentTab tab, CodeViewIntent intent)
     {
         var closed = tab.Load.ClosedAssembly;
         if (closed is not null && !intent.CanRunWhenClosed)
         {
-            Commands.RefuseLater(ui.State.AppCommands, new Refusal.AssemblyClosed { Assembly = closed });
+            Commands.RefuseLater(commands, new Refusal.AssemblyClosed { Assembly = closed });
             return;
         }
 
-        intent.Switch((ui, navigation, tab),
-            navigate: static (s, navigate) => Commands.FollowLater(s.ui.State.AppCommands, navigate.Target, s.navigation.BeginResolving(navigate.InNewTab)),
-            toggleBookmark: static (s, toggle) => Commands.Later(s.ui.State.AppCommands, (screen: s.ui.State, s.tab, line: toggle.Line, t: s.ui.State.Appearance.Strings),
-                static (a, s) => ToggleLineBookmark(s.screen, a, s.tab, s.line, s.t)),
-            analyze: static (s, analyze) => Commands.AnalyzeLater(s.ui.State.AppCommands, s.ui.State.Panels, analyze.Entity),
-            showInMetadata: static (s, metadata) => Commands.ShowInMetadataLater(s.ui.State.AppCommands, metadata.Target, s.navigation.BeginResolving(inNewTab: false)),
-            showInApiReference: static (s, reference) => Commands.Start(s.ui.State.AppCommands, nameof(ShowInApiReferenceHandler), reference.Entity,
+        intent.Switch((appearance, commands, panels, bookmarksPanel, navigation, tab),
+            navigate: static (s, navigate) => Commands.FollowLater(s.commands, navigate.Target, s.navigation.BeginResolving(navigate.InNewTab)),
+            toggleBookmark: static (s, toggle) => Commands.Later(s.commands, (bookmarksPanel: s.bookmarksPanel, s.tab, line: toggle.Line, t: s.appearance.Strings),
+                static (a, s) => ToggleLineBookmark(s.bookmarksPanel, a, s.tab, s.line, s.t)),
+            analyze: static (s, analyze) => Commands.AnalyzeLater(s.commands, s.panels, analyze.Entity),
+            showInMetadata: static (s, metadata) => Commands.ShowInMetadataLater(s.commands, metadata.Target, s.navigation.BeginResolving(inNewTab: false)),
+            showInApiReference: static (s, reference) => Commands.Start(s.commands, nameof(ShowInApiReferenceHandler), reference.Entity,
                 static (a, entity, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, entity, ct)),
-            showInDiagram: static (s, diagram) => DiagramView.ShowInDiagramLater(s.ui.State.AppCommands, diagram.Type, s.ui.State.Appearance.Strings.DiagramTitle(diagram.Type.Name)),
-            showInNewDiagram: static (s, diagram) => DiagramView.ShowInNewDiagramLater(s.ui.State.AppCommands, diagram.Type, s.ui.State.Appearance.Strings.DiagramTitle(diagram.Type.Name)));
+            showInDiagram: static (s, diagram) => DiagramView.ShowInDiagramLater(s.commands, diagram.Type, s.appearance.Strings.DiagramTitle(diagram.Type.Name)),
+            showInNewDiagram: static (s, diagram) => DiagramView.ShowInNewDiagramLater(s.commands, diagram.Type, s.appearance.Strings.DiagramTitle(diagram.Type.Name)));
     }
 
-    private static void Zoom(UiState uiState, CodeZoom zoom)
+    private static void Zoom(ScreenDisplay display, Appearance appearance, CodeZoom zoom)
     {
         switch (zoom)
         {
             case CodeZoom.In:
-                uiState.Display.ZoomCode(uiState.Appearance.Theme, 1);
+                display.ZoomCode(appearance.Theme, 1);
                 break;
             case CodeZoom.Out:
-                uiState.Display.ZoomCode(uiState.Appearance.Theme, -1);
+                display.ZoomCode(appearance.Theme, -1);
                 break;
             case CodeZoom.Reset:
-                uiState.Display.ResetCodeZoom();
+                display.ResetCodeZoom();
                 break;
         }
     }
@@ -188,17 +190,17 @@ internal static class DocumentsView
             or TabContent.Unreadable;
     }
 
-    private static void ToggleLineBookmark(UiState screen, AppState appState, DocumentTab tab, int line, Strings t)
+    private static void ToggleLineBookmark(BookmarksPanel bookmarksPanel, AppState appState, DocumentTab tab, int line, Strings t)
     {
         var toggle = Bookmarks.ToggleBookmark(appState, tab, line, number => t.BookmarksDefaultName(number));
-        screen.BookmarksPanel.TakeToggle(toggle, appState.Bookmarks.Items);
+        bookmarksPanel.TakeToggle(toggle, appState.Bookmarks.Items);
     }
 
-    public static DockTab Tab(UiState screen, Navigation navigation, DocumentTab tab)
+    public static DockTab Tab(Appearance appearance, BrowseTree tree, Navigation navigation, DocumentTab tab)
     {
-        var title = TitleOf(screen, tab);
+        var title = TitleOf(appearance, tree, tab);
         var tooltip = tab.Tooltip ?? title;
-        var icon = IconOf(screen.Appearance, tab);
+        var icon = IconOf(appearance, tab);
         var font = TitleFontOf(navigation, tab);
         return new DockTab(title, Tooltip: tooltip, Current: tab == navigation.ActiveTab, Icon: icon, TitleFont: font);
     }
@@ -229,20 +231,20 @@ internal static class DocumentsView
         return NodeIcons.Icon(node, appearance.NodeIconPalette, appearance.Icons);
     }
 
-    private static string TitleOf(UiState screen, DocumentTab tab)
+    private static string TitleOf(Appearance appearance, BrowseTree tree, DocumentTab tab)
     {
         if (tab.Content is TabContent.Report)
         {
-            return screen.Appearance.Strings.ExportReportTitle;
+            return appearance.Strings.ExportReportTitle;
         }
 
         var node = tab.Node;
         if (node is null)
         {
-            return tab.Title ?? screen.Appearance.Strings.DocumentNewTab;
+            return tab.Title ?? appearance.Strings.DocumentNewTab;
         }
 
-        return screen.Tree.GetLabel(node);
+        return tree.GetLabel(node);
     }
 
     /// <summary>Muted <paramref name="text"/> centered in a pane or area with nothing to show yet.</summary>
