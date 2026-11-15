@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using ILSight.CommandArea;
+using ILSight.Core;
 
 namespace ILSight.App.Tests;
 
@@ -25,6 +26,39 @@ public sealed class WorkflowRunnerTests
     {
         var entry = Assert.Single(errors.Entries);
         return Assert.IsType<AppProblem.Unexpected>(entry.Problem).Error;
+    }
+
+    [Fact]
+    public async Task Start_OpenMeetingItsGenerationEndedWhileTheEndsCancelIsHeldInACallback_EndsQuietlyListingNothing()
+    {
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var work = new BackgroundWork();
+        var errors = new ErrorLog();
+        var generation = list.Work;
+        var check = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        new WorkflowRunner(work, errors).Start("open", async ct =>
+        {
+            await check.Task;
+            AssemblyListing.Open(list, AssemblyPath.Of(AppStateDriver.FixturePath), generation, ct);
+        }, generation.Ending);
+        // Registered after the open's link, so the end's cancel runs it first and is held there, the link not reached.
+        using var cancelling = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        using var holdUp = generation.Ending.Register(() =>
+        {
+            cancelling.Set();
+            release.Wait(Waits.Patience);
+        });
+
+        var ending = Task.Factory.StartNew(() => LoadedAssemblies.Release(list.CloseAll()), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        Assert.True(cancelling.Wait(Waits.Patience));
+        check.SetResult();
+        await WaitUntilEndedAsync(work);
+        release.Set();
+        await ending.WaitAsync(Waits.Patience);
+
+        Assert.Empty(errors.Entries);
+        Assert.Empty(list.Listed);
     }
 
     [Fact]

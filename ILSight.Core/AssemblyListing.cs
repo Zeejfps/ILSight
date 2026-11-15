@@ -14,21 +14,28 @@ namespace ILSight.Core;
 /// admits, lists or drops it holding its own lock.</summary>
 public static class AssemblyListing
 {
-    /// <summary>Opens the assembly at <paramref name="path"/>, or returns it if already open. Its type
-    /// system starts loading in the background. A file that is missing or not a .NET assembly is listed
-    /// all the same, as a <see cref="FailedAssembly"/>, and the assembly takes its place
-    /// once the file loads. Once <paramref name="cancellationToken"/> is cancelled
-    /// the assembly is no longer listed, so cancelling before <see cref="AssemblyList.CloseAll"/> keeps the opens of
-    /// several files out of the list that follows: every change that ends the list's <see cref="AssemblyList.Generation"/>
-    /// (a clear, new load options) cancels the generation's token first (<see cref="AssemblyList.GenerationEnding"/>),
-    /// which the edge links into each open's token.</summary>
-    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled.</exception>
-    /// <exception cref="InvalidOperationException">The generation ended while the file was read and
-    /// <paramref name="cancellationToken"/> was not cancelled: an open whose token was not linked to the generation's,
-    /// or a change that ended the generation without cancelling its work.</exception>
+    /// <summary>Opens the assembly at <paramref name="path"/>, or returns it if already open, as work of the list's
+    /// generation now (<see cref="AssemblyList.Work"/>): for a caller whose token links no generation's ending.</summary>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled, or the generation
+    /// ended while the file was read.</exception>
     public static LoadedAssembly Open(AssemblyList list, AssemblyPath path, CancellationToken cancellationToken = default)
     {
-        var generation = list.Generation;
+        return Open(list, path, list.Work, cancellationToken);
+    }
+
+    /// <summary>Opens the assembly at <paramref name="path"/>, or returns it if already open, as <paramref name="work"/>
+    /// of the generation it began in. Its type system starts loading in the background. A file that is missing or not
+    /// a .NET assembly is listed all the same, as a <see cref="FailedAssembly"/>, and the assembly takes its place once
+    /// the file loads. Whether the open is stale is decided where it commits, by the list under its lock
+    /// (<see cref="AssemblyList.TryList"/>): once the generation ended (a clear, new load options) nothing it read is
+    /// listed, and it ends as superseded, from the generation itself, never from whether a token linked to it has been
+    /// reached yet: it cancels the generation's ending (<see cref="GenerationWork.Ending"/>, idempotent) and throws that
+    /// ending's cancellation, which the edge asks for beside its own token.</summary>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled, or
+    /// <paramref name="work"/>'s generation ended (of <see cref="GenerationWork.Ending"/>).</exception>
+    public static LoadedAssembly Open(AssemblyList list, AssemblyPath path, GenerationWork work, CancellationToken cancellationToken = default)
+    {
+        var generation = work.Generation;
         while (true)
         {
             var assembly = GetAssemblyOrFailure(list, path, generation);
@@ -40,7 +47,7 @@ public static class AssemblyListing
             cancellationToken.ThrowIfCancellationRequested();
             if (generation != list.Generation)
             {
-                throw new InvalidOperationException($"The list's generation {generation} ended while '{path}' was opened, with its open not cancelled: an open's token links the list's GenerationEnding, which the generation's end cancels first.");
+                throw work.EndSuperseded($"'{path}' was opened");
             }
         }
     }
@@ -60,7 +67,7 @@ public static class AssemblyListing
     /// <summary>Takes from <paramref name="options"/> the toggles that apply as assemblies are read: whether
     /// references load their assemblies, and whether Windows Runtime metadata is projected. Returns true
     /// when they changed, so that the open assemblies must be read again to follow them. A change ends the
-    /// <see cref="AssemblyList.Generation"/>, as a clear does, its work cancelled first (<see cref="AssemblyList.GenerationEnding"/>),
+    /// <see cref="AssemblyList.Generation"/>, as a clear does, its work's ending cancelled after the change (<see cref="AssemblyList.Work"/>),
     /// so that no assembly read with the options before is kept.</summary>
     public static bool TryChangeLoadOptions(AssemblyList list, DecompilerOptions options)
     {
@@ -123,7 +130,16 @@ public static class AssemblyListing
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled.</exception>
     public static Outcome<List<LoadedModule>> ListReferences(AssemblyList list, LoadedModule assembly, CancellationToken cancellationToken = default)
     {
-        var generation = list.Generation;
+        return ListReferences(list, assembly, list.Work, cancellationToken);
+    }
+
+    /// <summary>As <see cref="ListReferences(AssemblyList, LoadedModule, CancellationToken)"/>, as <paramref name="work"/>
+    /// of the generation it began in: once that generation ended, nothing more is listed (the list refuses it where it
+    /// commits).</summary>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled.</exception>
+    public static Outcome<List<LoadedModule>> ListReferences(AssemblyList list, LoadedModule assembly, GenerationWork work, CancellationToken cancellationToken = default)
+    {
+        var generation = work.Generation;
         using var reading = LoadedAssemblies.BeginReading();
         if (!LoadedAssemblies.TryRead(reading, assembly))
         {

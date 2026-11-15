@@ -97,19 +97,20 @@ public sealed class NavigationInfrastructure(ErrorLog errors, RefusalLine refusa
     /// <summary>Opens and looks on the thread pool, and comes back on the UI thread: a lookup the library failed as
     /// <see cref="Outcome{T}.Failed"/>, as the core answers it. The cancellation of <paramref name="ct"/>, which the
     /// edge links to newer opens and a clear of the list, is let through.</summary>
-    public async Task<Outcome<Lookup<BrowseNode>>> OpenAndFindIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct)
+    public async Task<Outcome<Lookup<BrowseNode>>> OpenAndFindIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, GenerationWork work, CancellationToken ct)
     {
-        var found = await Background.Wait(Task.Run(() => OpenAndLookUpIdAsync(paths, idString, ct), ct));
+        var found = await Background.Wait(Task.Run(() => OpenAndLookUpIdAsync(paths, idString, work, ct), ct));
         ct.ThrowIfCancellationRequested();
         return found;
     }
 
-    private async Task<Outcome<Lookup<BrowseNode>>> OpenAndLookUpIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct)
+    private async Task<Outcome<Lookup<BrowseNode>>> OpenAndLookUpIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, GenerationWork work,
+        CancellationToken ct)
     {
         var opened = new List<LoadedAssembly>();
         foreach (var path in paths)
         {
-            opened.Add(AssemblyListing.Open(assemblies, path, ct));
+            opened.Add(AssemblyListing.Open(assemblies, path, work, ct));
         }
 
         var scope = Navigation.ListIdScope(assemblies, opened);

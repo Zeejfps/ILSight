@@ -47,35 +47,35 @@ public sealed class LoadOptionsTests
     }
 
     [Fact]
-    public void Each_end_of_the_lists_generation_cancels_its_work_before_the_generation_changes()
+    public void Each_end_of_the_lists_generation_cancels_its_work_once_the_generation_has_changed()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var unchangedWork = list.GenerationEnding;
+        var unchangedWork = list.Work.Ending;
         AssemblyListing.TryChangeLoadOptions(list, DecompilerOptions.Default);
         Assert.False(unchangedWork.IsCancellationRequested);
         var beforeOptions = list.Generation;
-        var optionsWork = list.GenerationEnding;
+        var optionsWork = list.Work.Ending;
         int? optionsCancelledIn = null;
         using var optionsSeen = optionsWork.Register(() => optionsCancelledIn = list.Generation);
 
         AssemblyListing.TryChangeLoadOptions(list, Off(DecompilerToggle.AutoLoadAssemblyReferences));
         var beforeClear = list.Generation;
-        var clearWork = list.GenerationEnding;
+        var clearWork = list.Work.Ending;
         int? clearCancelledIn = null;
         using var clearSeen = clearWork.Register(() => clearCancelledIn = list.Generation);
         LoadedAssemblies.Release(list.CloseAll());
 
-        Assert.Equal(beforeOptions, optionsCancelledIn);
-        Assert.Equal(beforeClear, clearCancelledIn);
+        Assert.Equal(beforeOptions + 1, optionsCancelledIn);
+        Assert.Equal(beforeClear + 1, clearCancelledIn);
         Assert.NotEqual(beforeClear, list.Generation);
-        Assert.False(list.GenerationEnding.IsCancellationRequested);
+        Assert.False(list.Work.Ending.IsCancellationRequested);
     }
 
     [Fact]
     public void An_open_whose_token_links_a_generation_ended_ends_as_cancelled()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var linked = list.GenerationEnding;
+        var linked = list.Work.Ending;
         var generation = list.Generation;
         LoadedAssemblies.Release(list.CloseAll());
 

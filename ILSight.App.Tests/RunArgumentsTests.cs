@@ -58,7 +58,7 @@ public sealed class RunArgumentsTests
         var d = new AppStateDriver();
 
         var files = CommandLines.Parse(["--navigateto=M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)", AppStateDriver.FixturePath]).Arguments.Files;
-        d.Start((a, ct) => RunArgumentsActions.OpenRequestedFilesAsync(a, files, ct));
+        d.Start((a, ct) => RunArgumentsActions.OpenRequestedFilesAsync(a, files, a.ListSession.Assemblies.Work, ct));
         d.RunUntil(() => d.AppState.ListSession.Navigation.ActiveTab?.Node is not null);
         d.Settle();
 
@@ -72,7 +72,7 @@ public sealed class RunArgumentsTests
         var d = new AppStateDriver();
 
         var files = CommandLines.Parse(["--navigateto=T:Nowhere.Missing", AppStateDriver.FixturePath]).Arguments.Files;
-        d.Start((a, ct) => RunArgumentsActions.OpenRequestedFilesAsync(a, files, ct));
+        d.Start((a, ct) => RunArgumentsActions.OpenRequestedFilesAsync(a, files, a.ListSession.Assemblies.Work, ct));
         d.RunUntil(() => d.AppState.Refusals.Shown is not null);
 
         Assert.Equal(new Refusal.IdNotFound { Id = "T:Nowhere.Missing" }, d.AppState.Refusals.Shown);

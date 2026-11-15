@@ -21,11 +21,11 @@ public sealed class LoadOptionTests
     }
 
     [Fact]
-    public void Changing_a_load_option_cancels_the_opens_under_way_before_it_ends_the_lists_generation()
+    public void Changing_a_load_option_cancels_the_opens_under_way_once_it_has_ended_the_lists_generation()
     {
         var app = AppDriver.Opened();
         app.Settle(2);
-        var opens = app.AppState.ListSession.Assemblies.GenerationEnding;
+        var opens = app.AppState.ListSession.Assemblies.Work.Ending;
         var generation = app.AppState.ListSession.Assemblies.Generation;
         int? cancelledIn = null;
         using var seen = opens.Register(() => cancelledIn = app.AppState.ListSession.Assemblies.Generation);
@@ -33,7 +33,7 @@ public sealed class LoadOptionTests
         Preferences.SetDecompilerToggle(app.AppState, DecompilerToggle.AutoLoadAssemblyReferences, false);
         app.Run(1);
 
-        Assert.Equal(generation, cancelledIn);
+        Assert.Equal(generation + 1, cancelledIn);
         Assert.NotEqual(generation, app.AppState.ListSession.Assemblies.Generation);
     }
 
@@ -42,7 +42,7 @@ public sealed class LoadOptionTests
     {
         var app = AppDriver.Opened();
         app.Settle(2);
-        var opens = app.AppState.ListSession.Assemblies.GenerationEnding;
+        var opens = app.AppState.ListSession.Assemblies.Work.Ending;
 
         Preferences.SetDecompilerToggle(app.AppState, DecompilerToggle.AutoLoadAssemblyReferences, true);
         app.Run(1);

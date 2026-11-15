@@ -156,7 +156,8 @@ public sealed class OpenListSession
         return removed;
     }
 
-    // The clear ends the list's generation, which cancels the opens under way first (AssemblyList.GenerationEnding).
+    // The clear ends the list's generation: the opens under way commit nothing after it, and its work's ending is
+    // cancelled (AssemblyList.Work).
     private RemovedModules TakeAllOff()
     {
         var removed = _assemblies.CloseAll();

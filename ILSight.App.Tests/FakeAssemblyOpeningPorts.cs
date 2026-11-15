@@ -41,13 +41,13 @@ internal sealed class FakeAssemblyOpeningPorts : AssemblyOpening.IPorts
         return Files.Contains(path);
     }
 
-    public Task<BrowseNode?> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken ct)
+    public Task<BrowseNode?> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, GenerationWork work, CancellationToken ct)
     {
         OpenedPaths.Add(paths);
         return AnswerAsync(nameof(OpenFilesAsync), Opened, ct);
     }
 
-    public Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, CancellationToken ct)
+    public Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, GenerationWork work, CancellationToken ct)
     {
         return AnswerAsync(nameof(OpenReferencesAsync), ReferencesOpened, ct);
     }

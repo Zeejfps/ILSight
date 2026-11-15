@@ -34,7 +34,10 @@ public sealed class NavigationInfrastructureTests
         var greet = BrokenAssemblies.GetMethod(AppStateDriver.FixturePath, "Greeter", "Greet");
         var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodName(temp, AppStateDriver.FixturePath, greet));
 
-        var found = await Create().OpenAndFindIdAsync([path], "M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)", CancellationToken.None);
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var navigation = new NavigationInfrastructure(new ErrorLog(), new RefusalLine(), list, new BrowseSession());
+
+        var found = await navigation.OpenAndFindIdAsync([path], "M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)", list.Work, CancellationToken.None);
 
         Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(found).Error);
     }

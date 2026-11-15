@@ -82,8 +82,9 @@ public static class AppStart
         }
 
         var files = arguments.Files;
-        Commands.StartShowingSettled(appState, nameof(RunArgumentsActions.OpenRequestedFilesAsync), ct => RunArgumentsActions.OpenRequestedFilesAsync(appState, files, ct),
-            _ => appState.ListSession.Navigation.FailOpening(), appState.ListSession.Assemblies.GenerationEnding);
+        var work = appState.ListSession.Assemblies.Work;
+        Commands.StartShowingSettled(appState, nameof(RunArgumentsActions.OpenRequestedFilesAsync), ct => RunArgumentsActions.OpenRequestedFilesAsync(appState, files, work, ct),
+            _ => appState.ListSession.Navigation.FailOpening(), work.Ending);
     }
 
     private static void ReportIgnored(AppState appState, RunArguments arguments)

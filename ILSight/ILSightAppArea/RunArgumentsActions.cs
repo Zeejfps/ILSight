@@ -1,3 +1,5 @@
+using ILSight.Core;
+
 namespace ILSight.ILSightAppArea;
 
 /// <summary>Doing what the arguments of a run ask, this run's and those later runs hand the window already open
@@ -18,13 +20,14 @@ public static class RunArgumentsActions
     }
 
     /// <summary>Opens <paramref name="files"/>, then shows the namespace, type or member they
-    /// ask to navigate to, or else the last file opened. Returns the load that started in the tab showing it.</summary>
-    public static Task<DecompileTicket?> OpenRequestedFilesAsync(AppState appState, FilesToOpen files, CancellationToken ct)
+    /// ask to navigate to, or else the last file opened, as <paramref name="work"/> of the list's generation the edge
+    /// started it in. Returns the load that started in the tab showing it.</summary>
+    public static Task<DecompileTicket?> OpenRequestedFilesAsync(AppState appState, FilesToOpen files, GenerationWork work, CancellationToken ct)
     {
         if (files.NavigateTo is null)
         {
-            return appState.AssemblyOpening.OpenAssembliesAsync(appState, files.Paths, ct);
+            return appState.AssemblyOpening.OpenAssembliesAsync(appState, files.Paths, work, ct);
         }
-        return appState.OpenAndShowIdHandler.HandleAsync(appState.ListSession.Navigation, appState.Decompiler, files.Paths, files.NavigateTo, ct);
+        return appState.OpenAndShowIdHandler.HandleAsync(appState.ListSession.Navigation, appState.Decompiler, files.Paths, files.NavigateTo, work, ct);
     }
 }

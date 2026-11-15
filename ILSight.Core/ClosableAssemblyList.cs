@@ -47,7 +47,7 @@ public sealed class ClosableAssemblyList
     }
 
     /// <summary>Takes every assembly off the list, as <see cref="AssemblyList.CloseAll"/> does, the work of its generation
-    /// cancelled first. Returns the modules it took off, for the I/O side to release.</summary>
+    /// committing nothing after it and cancelled once it ended. Returns the modules it took off, for the I/O side to release.</summary>
     public RemovedModules CloseAll()
     {
         return List.CloseAll();

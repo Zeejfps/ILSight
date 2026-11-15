@@ -363,7 +363,7 @@ internal sealed class AppStateDriver
     /// <summary>Opens the fixture assembly and waits until its root shows.</summary>
     public LoadedModule OpenFixtures()
     {
-        Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(FixturePath)], ct));
+        Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(FixturePath)], a.ListSession.Assemblies.Work, ct));
         RunUntil(() => AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Assembly);
         Settle();
         return Assert.IsType<LoadedModule>(AppState.ListSession.Navigation.ActiveTab?.Node?.Assembly);
@@ -481,15 +481,16 @@ internal sealed class AppStateDriver
         Commands.StartShowing(appState, nameof(Start), ct => show(appState, ct));
     }
 
-    /// <summary>Starts opening <paramref name="paths"/> now (<see cref="AssemblyArea.AssemblyOpening.OpenAssembliesAsync(AppState, IEnumerable{AssemblyPath}, CancellationToken)"/>),
+    /// <summary>Starts opening <paramref name="paths"/> now (<see cref="AssemblyArea.AssemblyOpening.OpenAssembliesAsync(AppState, IEnumerable{AssemblyPath}, GenerationWork, CancellationToken)"/>),
     /// then the load of the last one shown, as the app's commands start it: cancelled with the opens under way, by
     /// newer opens and a clear of the list, and no longer opening when its workflow fails.</summary>
     public void Open(IReadOnlyList<AssemblyPath> paths)
     {
         using var turn = _posted.Install();
         var appState = AppState;
-        Commands.StartShowingSettled(appState, nameof(Open), ct => appState.AssemblyOpening.OpenAssembliesAsync(appState, paths, ct),
-            _ => appState.ListSession.Navigation.FailOpening(), appState.ListSession.Assemblies.GenerationEnding);
+        var work = appState.ListSession.Assemblies.Work;
+        Commands.StartShowingSettled(appState, nameof(Open), ct => appState.AssemblyOpening.OpenAssembliesAsync(appState, paths, work, ct),
+            _ => appState.ListSession.Navigation.FailOpening(), work.Ending);
     }
 
     /// <summary>Starts reloading every assembly of the open list now, as the app's commands start it

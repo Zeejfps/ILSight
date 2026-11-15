@@ -19,22 +19,23 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
         bool IsFile(string path);
 
         /// <summary>Lists the files at <paramref name="paths"/> in the open list, in order, those that fail to load
-        /// as failed, and gives the root node of the last one listed, or null for none. Done without holding up the
-        /// screen, and stopped between files once <paramref name="ct"/> fires (the edge links the opens' canceller
-        /// into it), its cancellation let through.</summary>
-        Task<BrowseNode?> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken ct);
+        /// as failed, and gives the root node of the last one listed, or null for none, as <paramref name="work"/> of
+        /// the list's generation it began in: nothing listed once that generation ended, its ending's cancellation
+        /// thrown. Done without holding up the screen, and stopped between files once <paramref name="ct"/> fires (the
+        /// edge links the opens' canceller into it), its cancellation let through.</summary>
+        Task<BrowseNode?> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, GenerationWork work, CancellationToken ct);
 
         /// <summary>Lists the assemblies <paramref name="assembly"/> references that can be found in the open list,
         /// as <see cref="OpenFilesAsync"/> lists files; a reference the library failed to read as
         /// <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, CancellationToken ct);
+        Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, GenerationWork work, CancellationToken ct);
     }
 
     /// <summary>Opens the files, then shows the last one opened, unless something else was asked for
     /// meanwhile. Returns the load that started in the tab, for the edge that started this to start under the tab's
-    /// work; null when none started. The edge links the list's generation's token
-    /// (<see cref="AssemblyList.GenerationEnding"/>) into <paramref name="ct"/>.</summary>
-    public Task<DecompileTicket?> OpenAssembliesAsync(AppState appState, IEnumerable<AssemblyPath> paths, CancellationToken ct)
+    /// work; null when none started. <paramref name="work"/> is the list's generation the edge started it in
+    /// (<see cref="AssemblyList.Work"/>), whose ending the edge links into <paramref name="ct"/>.</summary>
+    public Task<DecompileTicket?> OpenAssembliesAsync(AppState appState, IEnumerable<AssemblyPath> paths, GenerationWork work, CancellationToken ct)
     {
         var opening = appState.ListSession.Navigation.BeginOpening(paths);
         if (opening is null)
@@ -42,15 +43,15 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
             return Task.FromResult<DecompileTicket?>(null);
         }
 
-        return OpenAssembliesAsync(appState, opening, ct);
+        return OpenAssembliesAsync(appState, opening, work, ct);
     }
 
     /// <summary>Opens the files of the request <paramref name="opening"/> began (in the frame it was asked in), then
-    /// shows the last one opened, as <see cref="OpenAssembliesAsync(AppState, IEnumerable{AssemblyPath}, CancellationToken)"/>
+    /// shows the last one opened, as <see cref="OpenAssembliesAsync(AppState, IEnumerable{AssemblyPath}, GenerationWork, CancellationToken)"/>
     /// does.</summary>
-    public async Task<DecompileTicket?> OpenAssembliesAsync(AppState appState, FileOpening opening, CancellationToken ct)
+    public async Task<DecompileTicket?> OpenAssembliesAsync(AppState appState, FileOpening opening, GenerationWork work, CancellationToken ct)
     {
-        var opened = await ports.OpenFilesAsync(opening.Paths, ct);
+        var opened = await ports.OpenFilesAsync(opening.Paths, work, ct);
         appState.ListSession.Navigation.EndOpening(opening.Intent);
         return ShowLastOpened(appState, opened, opening.Intent);
     }
@@ -71,17 +72,17 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
     }
 
     /// <summary>Opens the files among <paramref name="paths"/>, dropped on the window, as
-    /// <see cref="OpenAssembliesAsync(AppState, IEnumerable{AssemblyPath}, CancellationToken)"/> does; folders are left out, and a path that isn't a full one is refused, saying
+    /// <see cref="OpenAssembliesAsync(AppState, IEnumerable{AssemblyPath}, GenerationWork, CancellationToken)"/> does; folders are left out, and a path that isn't a full one is refused, saying
     /// so.</summary>
-    public Task<DecompileTicket?> OpenDroppedFilesAsync(AppState appState, IReadOnlyList<string> paths, CancellationToken ct)
+    public Task<DecompileTicket?> OpenDroppedFilesAsync(AppState appState, IReadOnlyList<string> paths, GenerationWork work, CancellationToken ct)
     {
         var files = paths
             .Where(ports.IsFile)
             .ToList();
-        return OpenFilesAtAsync(appState, files, ct);
+        return OpenFilesAtAsync(appState, files, work, ct);
     }
 
-    private Task<DecompileTicket?> OpenFilesAtAsync(AppState appState, IEnumerable<string> paths, CancellationToken ct)
+    private Task<DecompileTicket?> OpenFilesAtAsync(AppState appState, IEnumerable<string> paths, GenerationWork work, CancellationToken ct)
     {
         var files = new List<AssemblyPath>();
         foreach (var path in paths)
@@ -96,14 +97,15 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
             files.Add(file);
         }
 
-        return OpenAssembliesAsync(appState, files, ct);
+        return OpenAssembliesAsync(appState, files, work, ct);
     }
 
     /// <summary>Opens the assemblies <paramref name="assembly"/> references that can be found, cancelled with the
-    /// opens under way, whose canceller the edge links into <paramref name="ct"/>. Reports why opening failed.</summary>
-    public async Task OpenDependenciesAsync(LoadedModule assembly, CancellationToken ct)
+    /// opens under way, whose canceller the edge links into <paramref name="ct"/>, as <paramref name="work"/> of the
+    /// list's generation the edge started it in. Reports why opening failed.</summary>
+    public async Task OpenDependenciesAsync(LoadedModule assembly, GenerationWork work, CancellationToken ct)
     {
-        var opened = await ports.OpenReferencesAsync(assembly, ct);
+        var opened = await ports.OpenReferencesAsync(assembly, work, ct);
         if (opened is Outcome<List<LoadedModule>>.Failed failed)
         {
             ports.ReportError(new AppProblem.OpenFailed(failed.Error));

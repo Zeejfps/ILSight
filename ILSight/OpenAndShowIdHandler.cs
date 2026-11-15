@@ -19,22 +19,23 @@ public sealed class OpenAndShowIdHandler(OpenAndShowIdHandler.IPorts ports)
         /// <summary>Opens the files at <paramref name="paths"/>, then finds the namespace, type or member
         /// <paramref name="idString"/> names among the assemblies read from them, or among every open one when there
         /// are none; not found when none has it, unreadable when none read has it and one could not be read, and
-        /// what the library threw looking as <see cref="Outcome{T}.Failed"/>. Done without holding up the screen;
-        /// cancelled with the opens, whose canceller the edge links into <paramref name="ct"/>, that cancellation let
-        /// through.</summary>
-        Task<Outcome<Lookup<BrowseNode>>> OpenAndFindIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct);
+        /// what the library threw looking as <see cref="Outcome{T}.Failed"/>. Opens as <paramref name="work"/> of the
+        /// list's generation it began in. Done without holding up the screen; cancelled with the opens, whose canceller
+        /// the edge links into <paramref name="ct"/>, that cancellation let through.</summary>
+        Task<Outcome<Lookup<BrowseNode>>> OpenAndFindIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, GenerationWork work, CancellationToken ct);
     }
 
     /// <summary>Opens the files at <paramref name="paths"/>, then shows the namespace, type or member
     /// <paramref name="idString"/> names, written as XML documentation ids are, looked for in the assemblies read
-    /// from them, or in every open one when there are none. Returns the load that started in the tab, for the edge
+    /// from them, or in every open one when there are none, opening as <paramref name="work"/> of the list's generation
+    /// the edge started it in. Returns the load that started in the tab, for the edge
     /// that started this to start under the tab's work; null when none started. Reports when none has it, unless
     /// something else was asked for meanwhile.</summary>
     public async Task<DecompileTicket?> HandleAsync(Navigation navigation, DecompilerChoice decompiler, IReadOnlyList<AssemblyPath> paths,
-        string idString, CancellationToken ct)
+        string idString, GenerationWork work, CancellationToken ct)
     {
         var ticket = navigation.BeginRequest();
-        var found = await ports.OpenAndFindIdAsync(paths, idString, ct);
+        var found = await ports.OpenAndFindIdAsync(paths, idString, work, ct);
         return ShowFound(navigation, decompiler, idString, found, ticket);
     }
 

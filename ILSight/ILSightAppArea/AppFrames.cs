@@ -160,7 +160,8 @@ internal static class AppFrames
 
     private static void FollowLoadOptions(UiState uiState, AppState appState)
     {
-        // Their change ends the list's generation, as a clear does, which cancels the opens under way first.
+        // Their change ends the list's generation, as a clear does: the opens under way commit nothing after it, and are
+        // cancelled.
         if (!AssemblyListing.TryChangeLoadOptions(appState.ListSession.Assemblies, appState.Decompiler.Setup.Options))
         {
             return;

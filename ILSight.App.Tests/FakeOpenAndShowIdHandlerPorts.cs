@@ -24,7 +24,7 @@ internal sealed class FakeOpenAndShowIdHandlerPorts : OpenAndShowIdHandler.IPort
         Refused.Add(refusal);
     }
 
-    public Task<Outcome<Lookup<BrowseNode>>> OpenAndFindIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, CancellationToken ct)
+    public Task<Outcome<Lookup<BrowseNode>>> OpenAndFindIdAsync(IReadOnlyList<AssemblyPath> paths, string idString, GenerationWork work, CancellationToken ct)
     {
         WhileOpening();
         return Task.FromResult(Found);

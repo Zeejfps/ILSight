@@ -42,7 +42,7 @@ public sealed class AssembliesTests
         using var shutdown = new CancellationTokenSource();
         var path = PathTo("Opened.dll");
 
-        var load = await d.RunAsync(() => new AssemblyOpening(ports).OpenAssembliesAsync(d.AppState, [path], shutdown.Token));
+        var load = await d.RunAsync(() => new AssemblyOpening(ports).OpenAssembliesAsync(d.AppState, [path], d.AppState.ListSession.Assemblies.Work, shutdown.Token));
 
         Assert.Equal(path, Assert.Single(Assert.Single(ports.OpenedPaths)));
         Assert.Equal(shutdown.Token, Assert.Single(ports.Tokens));
@@ -59,10 +59,10 @@ public sealed class AssembliesTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var appState = d.AppState;
         // As the edge starts it, the opens' canceller linked into its token.
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(appState.ListSession.Assemblies.GenerationEnding);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(appState.ListSession.Assemblies.Work.Ending);
         var ports = new FakeAssemblyOpeningPorts { Opened = await BrowseSessions.EnsureRootAsync(appState.Session, FixturesOf(d)), WhileWorking = () => Commands.CloseAllAssemblies(appState) };
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => Assert.Null(await d.RunAsync(() => new AssemblyOpening(ports).OpenAssembliesAsync(appState, [PathTo("Cancelled.dll")], linked.Token))));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => Assert.Null(await d.RunAsync(() => new AssemblyOpening(ports).OpenAssembliesAsync(appState, [PathTo("Cancelled.dll")], d.AppState.ListSession.Assemblies.Work, linked.Token))));
 
         Assert.Empty(ports.Reported);
         Assert.False(appState.ListSession.Navigation.IsOpening);
@@ -78,7 +78,7 @@ public sealed class AssembliesTests
         var appState = d.AppState;
         var ports = new FakeAssemblyOpeningPorts { Opened = await BrowseSessions.EnsureRootAsync(d.AppState.Session, FixturesOf(d)), WhileWorking = () => appState.ListSession.Navigation.BeginRequest() };
 
-        var load = await d.RunAsync(() => new AssemblyOpening(ports).OpenAssembliesAsync(appState, [PathTo("Opened.dll")], CancellationToken.None));
+        var load = await d.RunAsync(() => new AssemblyOpening(ports).OpenAssembliesAsync(appState, [PathTo("Opened.dll")], d.AppState.ListSession.Assemblies.Work, CancellationToken.None));
 
         Assert.Same(shown, appState.ListSession.Navigation.ActiveTab?.Node);
         Assert.Empty(ports.Reported);
@@ -91,7 +91,7 @@ public sealed class AssembliesTests
         var d = AppStateDriver.WithoutScreen();
         var ports = new FakeAssemblyOpeningPorts();
 
-        var load = await d.RunAsync(() => new AssemblyOpening(ports).OpenAssembliesAsync(d.AppState, [], CancellationToken.None));
+        var load = await d.RunAsync(() => new AssemblyOpening(ports).OpenAssembliesAsync(d.AppState, [], d.AppState.ListSession.Assemblies.Work, CancellationToken.None));
 
         Assert.Empty(ports.Asked);
         Assert.Null(load);
@@ -105,7 +105,7 @@ public sealed class AssembliesTests
         var folder = PathTo("Folder");
         var ports = new FakeAssemblyOpeningPorts { Files = [file.Text] };
 
-        var load = await d.RunAsync(() => new AssemblyOpening(ports).OpenDroppedFilesAsync(d.AppState, [folder.Text, file.Text], CancellationToken.None));
+        var load = await d.RunAsync(() => new AssemblyOpening(ports).OpenDroppedFilesAsync(d.AppState, [folder.Text, file.Text], d.AppState.ListSession.Assemblies.Work, CancellationToken.None));
 
         Assert.Equal(file, Assert.Single(Assert.Single(ports.OpenedPaths)));
         Assert.Null(load);
@@ -118,7 +118,7 @@ public sealed class AssembliesTests
         var file = PathTo("Dropped.dll");
         var ports = new FakeAssemblyOpeningPorts { Files = [file.Text, "Relative.dll"] };
 
-        var load = await d.RunAsync(() => new AssemblyOpening(ports).OpenDroppedFilesAsync(d.AppState, ["Relative.dll", file.Text], CancellationToken.None));
+        var load = await d.RunAsync(() => new AssemblyOpening(ports).OpenDroppedFilesAsync(d.AppState, ["Relative.dll", file.Text], d.AppState.ListSession.Assemblies.Work, CancellationToken.None));
 
         Assert.Equal(file, Assert.Single(Assert.Single(ports.OpenedPaths)));
         Assert.Equal(new Refusal.NotFullPath { Path = "Relative.dll" }, Assert.Single(ports.Refused));
@@ -136,8 +136,8 @@ public sealed class AssembliesTests
         // A cancellation nobody asked for, such as the library's timeout, is a failure too.
         var timedOut = new FakeAssemblyOpeningPorts { ReferencesOpened = new Outcome<List<LoadedModule>>.Failed(new TaskCanceledException()) };
 
-        await d.RunAsync(() => new AssemblyOpening(failed).OpenDependenciesAsync(fixtures, CancellationToken.None));
-        await d.RunAsync(() => new AssemblyOpening(timedOut).OpenDependenciesAsync(fixtures, CancellationToken.None));
+        await d.RunAsync(() => new AssemblyOpening(failed).OpenDependenciesAsync(fixtures, d.AppState.ListSession.Assemblies.Work, CancellationToken.None));
+        await d.RunAsync(() => new AssemblyOpening(timedOut).OpenDependenciesAsync(fixtures, d.AppState.ListSession.Assemblies.Work, CancellationToken.None));
 
         Assert.Same(error, Assert.IsType<AppProblem.OpenFailed>(Assert.Single(failed.Reported)).Error);
         Assert.IsType<TaskCanceledException>(Assert.IsType<AppProblem.OpenFailed>(Assert.Single(timedOut.Reported)).Error);

@@ -29,27 +29,28 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
     }
 
     /// <summary>Opens on the thread pool and comes back on the UI thread. A file the library can't read is listed as
-    /// failed (<see cref="AssemblyListing.Open"/>). The cancellation of <paramref name="ct"/>, which the edge links to
+    /// failed (<see cref="AssemblyListing.Open(AssemblyList, AssemblyPath, GenerationWork, CancellationToken)"/>). The cancellation of <paramref name="ct"/>, which the edge links to
     /// newer opens and a clear of the list, and anything else, are let through.</summary>
     public async Task<LoadedAssembly?> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken ct)
     {
-        var last = await Background.Wait(Task.Run(() => ListFiles(paths, ct), ct));
+        var work = assemblies.Work;
+        var last = await Background.Wait(Task.Run(() => ListFiles(paths, work, ct), ct));
         ct.ThrowIfCancellationRequested();
         return last;
     }
 
     /// <summary>Opens as <see cref="OpenFilesAsync"/> does, and gives the root node of the last file listed, which
     /// opening shows.</summary>
-    async Task<BrowseNode?> AssemblyOpening.IPorts.OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken ct)
+    async Task<BrowseNode?> AssemblyOpening.IPorts.OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, GenerationWork work, CancellationToken ct)
     {
-        var root = await Background.Wait(Task.Run(() => OpenFilesAndFindRootAsync(paths, ct), ct));
+        var root = await Background.Wait(Task.Run(() => OpenFilesAndFindRootAsync(paths, work, ct), ct));
         ct.ThrowIfCancellationRequested();
         return root;
     }
 
-    private async Task<BrowseNode?> OpenFilesAndFindRootAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken ct)
+    private async Task<BrowseNode?> OpenFilesAndFindRootAsync(IReadOnlyList<AssemblyPath> paths, GenerationWork work, CancellationToken ct)
     {
-        var last = ListFiles(paths, ct);
+        var last = ListFiles(paths, work, ct);
         if (last is null)
         {
             return null;
@@ -60,9 +61,9 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
 
     /// <summary>Lists them on the thread pool and comes back on the UI thread, a reference the library failed to read
     /// as <see cref="Outcome{T}.Failed"/>, as the core answers it; cancelled as <see cref="OpenFilesAsync"/> is.</summary>
-    public async Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, CancellationToken ct)
+    public async Task<Outcome<List<LoadedModule>>> OpenReferencesAsync(LoadedModule assembly, GenerationWork work, CancellationToken ct)
     {
-        var listed = await Background.Wait(Task.Run(() => AssemblyListing.ListReferences(assemblies, assembly, ct), ct));
+        var listed = await Background.Wait(Task.Run(() => AssemblyListing.ListReferences(assemblies, assembly, work, ct), ct));
         ct.ThrowIfCancellationRequested();
         return listed;
     }
@@ -117,18 +118,19 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
     public async Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded,
         IReadOnlyList<NodePath> places, CancellationToken ct)
     {
-        var reopened = await Background.Wait(Task.Run(() => ReopenAndFindNodesAsync(paths, expanded, places, ct), ct));
+        var work = assemblies.Work;
+        var reopened = await Background.Wait(Task.Run(() => ReopenAndFindNodesAsync(paths, expanded, places, work, ct), ct));
         ct.ThrowIfCancellationRequested();
         return reopened;
     }
 
-    private LoadedAssembly? ListFiles(IEnumerable<AssemblyPath> paths, CancellationToken ct)
+    private LoadedAssembly? ListFiles(IEnumerable<AssemblyPath> paths, GenerationWork work, CancellationToken ct)
     {
         LoadedAssembly? last = null;
         foreach (var path in paths)
         {
             ct.ThrowIfCancellationRequested();
-            last = AssemblyListing.Open(assemblies, path, ct);
+            last = AssemblyListing.Open(assemblies, path, work, ct);
         }
         return last;
     }
@@ -199,9 +201,9 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
 
     // A lookup of an expanded node the library failed fails the reopen, with why; each tab's place is its own.
     private async Task<Outcome<ReloadedNodes>> ReopenAndFindNodesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded,
-        IReadOnlyList<NodePath> places, CancellationToken ct)
+        IReadOnlyList<NodePath> places, GenerationWork work, CancellationToken ct)
     {
-        ListFiles(paths, ct);
+        ListFiles(paths, work, ct);
         var expandedNodes = await GetExpandedNodesAsync(expanded, ct);
         if (expandedNodes is Outcome<List<BrowseNode>>.Failed expandedFailed)
         {

@@ -359,11 +359,12 @@ public static class Commands
     }
 
     // A request the input began opening: when its workflow fails, the app no longer says it is opening its files.
-    // Newer opens and a clear of the list cancel it.
+    // Newer opens and a clear of the list cancel it: it is work of the list's generation now.
     private static void StartOpening(AppState appState, FileOpening opening)
     {
-        StartShowingSettled(appState, nameof(AssemblyOpening.OpenAssembliesAsync), ct => appState.AssemblyOpening.OpenAssembliesAsync(appState, opening, ct),
-            _ => appState.ListSession.Navigation.EndOpening(opening.Intent), appState.ListSession.Assemblies.GenerationEnding);
+        var work = appState.ListSession.Assemblies.Work;
+        StartShowingSettled(appState, nameof(AssemblyOpening.OpenAssembliesAsync), ct => appState.AssemblyOpening.OpenAssembliesAsync(appState, opening, work, ct),
+            _ => appState.ListSession.Navigation.EndOpening(opening.Intent), work.Ending);
     }
 
     /// <summary>Asks for the files among <paramref name="dropped"/> to be opened once the frame is drawn
@@ -371,16 +372,22 @@ public static class Commands
     /// opens under way; when its workflow fails, the app no longer says it is opening them.</summary>
     public static void OpenDroppedLater(IAppCommandWriter commands, IReadOnlyList<string> dropped)
     {
-        commands.Enqueue(appState => StartShowingSettled(appState, nameof(AssemblyOpening.OpenDroppedFilesAsync),
-            ct => appState.AssemblyOpening.OpenDroppedFilesAsync(appState, dropped, ct), _ => appState.ListSession.Navigation.FailOpening(), appState.ListSession.Assemblies.GenerationEnding));
+        commands.Enqueue(appState => StartOpeningDropped(appState, dropped));
+    }
+
+    private static void StartOpeningDropped(AppState appState, IReadOnlyList<string> dropped)
+    {
+        var work = appState.ListSession.Assemblies.Work;
+        StartShowingSettled(appState, nameof(AssemblyOpening.OpenDroppedFilesAsync), ct => appState.AssemblyOpening.OpenDroppedFilesAsync(appState, dropped, work, ct),
+            _ => appState.ListSession.Navigation.FailOpening(), work.Ending);
     }
 
     /// <summary>Asks for the assemblies <paramref name="assembly"/> references to be opened once the frame is drawn
     /// (<see cref="AssemblyOpening.OpenDependenciesAsync"/>), cancelled with the opens under way then.</summary>
     public static void OpenDependenciesLater(IAppCommandWriter commands, LoadedModule assembly)
     {
-        StartLater(commands, nameof(AssemblyOpening.OpenDependenciesAsync), assembly, static (a, _) => a.ListSession.Assemblies,
-            static (a, m, _, ct) => a.AssemblyOpening.OpenDependenciesAsync(m, ct), static list => list.GenerationEnding);
+        StartLater(commands, nameof(AssemblyOpening.OpenDependenciesAsync), assembly, static (a, _) => a.ListSession.Assemblies.Work,
+            static (a, m, work, ct) => a.AssemblyOpening.OpenDependenciesAsync(m, work, ct), static work => work.Ending);
     }
 
     /// <summary>Asks for every assembly of the open list to be reloaded once the frame is drawn

@@ -18,8 +18,9 @@ public sealed class AssemblyList
     // The lock is held only by this type's methods, and never while reading files.
     private readonly Guarded<Dictionary<AssemblyPath, LoadedAssembly>, AssemblyListSnapshot> _state = new(new Dictionary<AssemblyPath, LoadedAssembly>(), AssemblyListSnapshot.Empty);
 
-    // The work of the generation now, cancelled by the generation's own end before the generation changes; replaced,
-    // under the lock, as the generation changes.
+    // The ending of the generation now's work: taken out by the generation's end under the lock, in the same step that
+    // changes the generation and puts the next one's in, and cancelled after the lock is released (what the cancel runs
+    // is not this type's code, and may read the list).
     private CancellationTokenSource _generationWork = new();
 
     /// <summary>The list as of now, all of one moment.</summary>
@@ -47,16 +48,17 @@ public sealed class AssemblyList
     /// that follows.</summary>
     public int Generation => Now.Generation;
 
-    /// <summary>The token of the work of the <see cref="Generation"/> now: cancelled by the change that ends it (a clear,
-    /// new read options) before the generation changes, so work it made stale ends as cancelled. The edge links it into
-    /// each open's token beside its own.</summary>
-    public CancellationToken GenerationEnding
+    /// <summary>Work of the <see cref="Generation"/> now: that generation and its ending, taken together. The change that
+    /// ends the generation (a clear, new read options) cancels the ending after the change; work that meets the
+    /// generation ended before then ends it itself (<see cref="AssemblyListing.Open(AssemblyList, AssemblyPath, GenerationWork, CancellationToken)"/>).
+    /// The edge links its ending into each open's token beside its own, and asks it directly.</summary>
+    public GenerationWork Work
     {
         get
         {
-            using (_state.Enter())
+            using (var held = _state.Enter())
             {
-                return _generationWork.Token;
+                return new GenerationWork(held.Snapshot.Generation, _generationWork);
             }
         }
     }
@@ -329,48 +331,43 @@ public sealed class AssemblyList
     }
 
     /// <summary>Closes every assembly, those read behind the scenes to resolve references included, and ends the
-    /// <see cref="Generation"/>: its work is cancelled first (<see cref="GenerationEnding"/>), so the opens that started
-    /// before end as cancelled, list nothing they read, and nothing is on its way any more (an open meeting the
-    /// generation ended with its token not cancelled is a bug, <see cref="AssemblyListing.Open"/>). Returns the modules it
-    /// forgot, for the I/O side to release once nothing reads them.</summary>
+    /// <see cref="Generation"/>: under the lock, in one step, its work's ending is taken out with the change, so nothing
+    /// begun in it commits after (<see cref="TryList"/> refuses it), and cancelled after the lock is released
+    /// (<see cref="Work"/>). Returns the modules it forgot, for the I/O side to release once nothing reads them.</summary>
     internal RemovedModules CloseAll()
     {
-        while (true)
-        {
-            var generation = CancelGenerationWork();
-            var closed = TryCloseAll(generation);
-            if (closed is not null)
-            {
-                return closed;
-            }
-        }
-    }
-
-    // Null when another change ended the generation since its work was cancelled: that one's work is cancelled next.
-    private RemovedModules? TryCloseAll(int generation)
-    {
-        List<LoadedModule> removed;
+        CancellationTokenSource ended;
+        List<LoadedModule>? removed = null;
         using (var held = _state.Enter())
         {
-            if (held.Snapshot.Generation != generation)
-            {
-                return null;
-            }
-
-            _generationWork = new CancellationTokenSource();
+            ended = TakeGenerationWork();
             var now = held.Snapshot with { Generation = held.Snapshot.Generation + 1, Arriving = [] };
             held.Snapshot = now;
-            if (now.Listed.IsEmpty && held.Value.Count == 0)
+            if (!now.Listed.IsEmpty || held.Value.Count != 0)
             {
-                return RemovedModules.None;
+                removed = held.Value.Values.OfType<LoadedModule>().ToList();
+                held.Value.Clear();
+                held.Snapshot = now with { Listed = [], Loaded = [], Version = now.Version + 1 };
             }
-
-            removed = held.Value.Values.OfType<LoadedModule>().ToList();
-            held.Value.Clear();
-            held.Snapshot = now with { Listed = [], Loaded = [], Version = now.Version + 1 };
         }
+
+        ended.Cancel();
+        if (removed is null)
+        {
+            return RemovedModules.None;
+        }
+
         Changed?.Invoke();
         return new RemovedModules { Modules = removed };
+    }
+
+    // The generation now's work's ending, taken out and the next generation's put in; called holding the lock, with the
+    // change of the generation.
+    private CancellationTokenSource TakeGenerationWork()
+    {
+        var ended = _generationWork;
+        _generationWork = new CancellationTokenSource();
+        return ended;
     }
 
     /// <summary>Orders the open files by name, and those of one name by version; what loaded follows its item.</summary>
@@ -440,65 +437,29 @@ public sealed class AssemblyList
 
     /// <summary>Takes <paramref name="loadsReferences"/> and <paramref name="readerOptions"/> as the toggles assemblies
     /// are read with from now on. True when they changed: that ends the <see cref="Generation"/>, as a clear does, its
-    /// work cancelled first, so that no assembly read with the toggles before is kept.</summary>
+    /// work's ending taken out with the change and cancelled after the lock, so that no assembly read with the toggles
+    /// before is kept.</summary>
     internal bool TryChangeReadOptions(bool loadsReferences, MetadataReaderOptions readerOptions)
     {
-        while (true)
-        {
-            if (IsSame(Now.ReadOptions, loadsReferences, readerOptions))
-            {
-                return false;
-            }
-
-            var generation = CancelGenerationWork();
-            var changed = TryChangeReadOptions(generation, loadsReferences, readerOptions);
-            if (changed is not null)
-            {
-                return changed.Value;
-            }
-        }
-    }
-
-    // Null when another change ended the generation since its work was cancelled, as TryCloseAll.
-    private bool? TryChangeReadOptions(int generation, bool loadsReferences, MetadataReaderOptions readerOptions)
-    {
+        CancellationTokenSource ended;
         using (var held = _state.Enter())
         {
             var now = held.Snapshot;
-            if (now.Generation != generation)
-            {
-                return null;
-            }
-
             if (IsSame(now.ReadOptions, loadsReferences, readerOptions))
             {
                 return false;
             }
 
-            _generationWork = new CancellationTokenSource();
+            ended = TakeGenerationWork();
             held.Snapshot = now with { ReadOptions = new AssemblyLoadOptions
             {
                 LoadsReferences = loadsReferences,
                 ReaderOptions = readerOptions,
             }, Generation = now.Generation + 1 };
         }
+
+        ended.Cancel();
         return true;
-    }
-
-    // Cancels the work of the generation now, outside the lock (what the cancellation runs may read the list), before
-    // the caller changes it; returns that generation, which the caller changes only if no other change came between.
-    private int CancelGenerationWork()
-    {
-        CancellationTokenSource work;
-        int generation;
-        using (var held = _state.Enter())
-        {
-            work = _generationWork;
-            generation = held.Snapshot.Generation;
-        }
-
-        work.Cancel();
-        return generation;
     }
 
     /// <summary>Whether <paramref name="options"/> are the toggles <paramref name="loadsReferences"/> and
