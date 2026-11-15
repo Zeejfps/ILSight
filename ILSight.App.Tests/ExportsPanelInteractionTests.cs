@@ -128,7 +128,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     public async Task A_waiting_export_is_withdrawn_from_the_keyboard_and_the_running_one_stays()
     {
         var app = AppDriver.Opened(height: TallWindow);
-        ScreenLayout.OpenPanel(app.Ui, DockView.Exports);
+        app.Ui.Panels.Open(DockView.Exports);
         var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
         Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Later"))).Turn.IsCompleted);
         app.Run(2);
@@ -148,7 +148,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     public async Task The_remove_from_queue_button_takes_the_export_out_mid_frame_without_breaking_the_list()
     {
         var app = AppDriver.Opened(height: TallWindow);
-        ScreenLayout.OpenPanel(app.Ui, DockView.Exports);
+        app.Ui.Panels.Open(DockView.Exports);
         var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
         Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Second"))).Turn.IsCompleted);
         Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Third"))).Turn.IsCompleted);
@@ -175,7 +175,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     {
         var app = AppDriver.Opened(height: TallWindow);
         var theme = app.Theme;
-        ScreenLayout.OpenPanel(app.Ui, DockView.Exports);
+        app.Ui.Panels.Open(DockView.Exports);
         var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
         running.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.5f });
         app.Run(2);
@@ -202,7 +202,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     public async Task The_running_export_keeps_the_frames_coming_so_its_spinner_turns()
     {
         var app = AppDriver.Opened();
-        ScreenLayout.OpenPanel(app.Ui, DockView.Exports);
+        app.Ui.Panels.Open(DockView.Exports);
         var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
         app.Run(2);
 

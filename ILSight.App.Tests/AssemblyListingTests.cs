@@ -356,7 +356,7 @@ public sealed class AssemblyListingTests
         Assert.NotNull(first);
         app.Show(farewell, 2, inNewTab: true);
 
-        DocumentPanels.ActivateTab(app.Ui, app.AppState.ListSession.Navigation, app.AppState.Decompiler.Setup, first);
+        DocumentPanels.ActivateTab(app.Ui.MainLayout, app.Ui.Documents, app.Ui.AppCommands, app.AppState.ListSession.Navigation, app.AppState.Decompiler.Setup, first);
         app.Run(2);
 
         Assert.Same(first, app.AppState.ListSession.Navigation.ActiveTab);

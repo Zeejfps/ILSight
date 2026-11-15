@@ -219,7 +219,7 @@ public sealed class DisplayOptionsTests
     public void The_panel_scales_the_whole_ui_through_the_window()
     {
         var app = AppDriver.Opened(width: 1600f);
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
         Assert.True(app.Frames.Drew("100%"));
 
@@ -260,8 +260,8 @@ public sealed class DisplayOptionsTests
     {
         var app = AppDriver.Opened(width: 1600f);
 
-        ScreenLayout.OpenPanel(app.Ui, DockView.DecompilerOptions);
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DecompilerOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
         Assert.Same(app.Ui.MainLayout.Dock.GroupOf(DockPanels.DecompilerOptions), app.Ui.MainLayout.Dock.GroupOf(DockPanels.DisplayOptions));
@@ -272,7 +272,7 @@ public sealed class DisplayOptionsTests
     public void The_panel_changes_the_size_and_the_toggles_and_resets_them()
     {
         var app = AppDriver.Opened(width: 1600f, height: TallWindow);
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
         var size = app.Ui.Appearance.Theme.MonoFontSize;
 
@@ -303,7 +303,7 @@ public sealed class DisplayOptionsTests
     public void The_panel_picks_how_the_tree_writes_metadata_tokens()
     {
         var app = AppDriver.Opened(width: 1600f, height: TallWindow);
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
         Assert.False(IsBold(app, "Metadata tokens"));
 
@@ -320,7 +320,7 @@ public sealed class DisplayOptionsTests
         var app = AppDriver.Opened(width: 1600f, height: TallWindow);
         var tables = await app.NodeAsync("Metadata", "Tables");
         var empty = await tables.TableAsync("FieldPtr");
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
         Assert.DoesNotContain(empty, app.Ui.Tree.GetChildren(tables).Nodes);
 
@@ -338,7 +338,7 @@ public sealed class DisplayOptionsTests
         var root = await app.NodeAsync();
         var outermost = await app.NodeAsync("ILSight");
         var fixtures = await app.NodeAsync(AppStateDriver.FixturesNamespace);
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
         Assert.Contains(fixtures, app.Ui.Tree.GetChildren(root).Nodes);
         Assert.DoesNotContain(outermost, app.Ui.Tree.GetChildren(root).Nodes);
@@ -357,7 +357,7 @@ public sealed class DisplayOptionsTests
     {
         var app = AppDriver.Opened(width: 1600f, height: TallWindow);
         var shown = app.AppState.ListSession.Navigation.PreviewTab;
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.WithText("Preview tabs")).Frame(2);
@@ -373,7 +373,7 @@ public sealed class DisplayOptionsTests
     public void The_theme_is_picked_from_the_panel_and_draws_the_window()
     {
         var app = AppDriver.Opened(width: 1600f);
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
         Assert.Equal("dark", app.AppState.ChosenThemes.Theme.Text);
 
@@ -390,7 +390,7 @@ public sealed class DisplayOptionsTests
         using var temp = new TempDir();
         temp.Write("themes/midnight.json", """{ "name": "Midnight", "extends": "dark", "ui": { "background": "#000010" } }""");
         var app = new AppDriver(width: 1600f, settings: temp.Settings());
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.WithText("Dark")).Frame();
@@ -407,7 +407,7 @@ public sealed class DisplayOptionsTests
         temp.Write("themes/twin-a.json", """{ "name": "Twin", "extends": "dark", "ui": { "background": "#00000A" } }""");
         temp.Write("themes/twin-b.json", """{ "name": "Twin", "extends": "dark", "ui": { "background": "#00000B" } }""");
         var app = new AppDriver(width: 1600f, settings: temp.Settings());
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.WithText("Dark")).Frame();
@@ -424,7 +424,7 @@ public sealed class DisplayOptionsTests
     public void The_open_theme_menu_closes_when_the_themes_are_read_again()
     {
         var app = AppDriver.Opened(width: 1600f);
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
         app.Frames.ClickOn(Selector.WithText("Dark")).Frame();
         Assert.True(IsDrawn(app, "Dracula"));
@@ -440,7 +440,7 @@ public sealed class DisplayOptionsTests
     {
         using var temp = new TempDir();
         var app = new AppDriver(width: 1600f, settings: temp.Settings());
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.AtPath("dock/display-options/customize-theme")).Frame();
@@ -454,7 +454,7 @@ public sealed class DisplayOptionsTests
     {
         using var temp = new TempDir();
         var app = new AppDriver(width: 3000f, settings: temp.Settings());
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run(2);
 
         var controls = FilledWith(app, app.Theme.Control);
@@ -498,7 +498,7 @@ public sealed class DisplayOptionsTests
         using var temp = new TempDir();
         var file = temp.Write("long.ttf", EmbeddedAssets.LoadBytes(typeof(ILSightApp).Assembly, "JetBrainsMono-Regular.ttf"));
         var app = AppDriver.Opened(width: 3000f);
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Ui.Display.SetCodeFont(new CodeFont
         {
             Family = "A monospaced font with a name far too long to show whole",
@@ -519,7 +519,7 @@ public sealed class DisplayOptionsTests
         // An icon theme of a long name, so both theme pickers are sized for more than the pane leaves them.
         temp.Write("icon-themes/shapes.json", """{ "name": "Shapes with a long name" }""");
         var app = new AppDriver(width: width, settings: temp.Settings());
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run(2);
         return app;
     }
@@ -589,7 +589,7 @@ public sealed class DisplayOptionsTests
     public void The_ui_language_is_picked_from_the_panel_too()
     {
         var app = AppDriver.Opened(width: 1600f);
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.WithText("English")).Frame();
@@ -603,7 +603,7 @@ public sealed class DisplayOptionsTests
     public void Cancelling_the_reset_question_keeps_the_options()
     {
         var app = AppDriver.Opened(width: 1600f, height: TallWindow);
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
         app.Frames.ClickOn(Selector.WithText("Line numbers")).Frame();
 
@@ -618,7 +618,7 @@ public sealed class DisplayOptionsTests
     public void A_font_size_stepped_back_to_the_themes_is_no_longer_a_choice_of_its_own()
     {
         var app = AppDriver.Opened(width: 1600f);
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.AtPath("dock/display-options/larger")).Frame();
@@ -658,7 +658,7 @@ public sealed class DisplayOptionsTests
     {
         var app = AppDriver.Opened(width: 1600f);
         app.Frames.SystemFonts.Families.AddRange(installed);
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run(2);
         return app;
     }

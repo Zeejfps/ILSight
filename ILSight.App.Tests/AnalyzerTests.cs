@@ -114,7 +114,7 @@ public sealed class AnalyzerTests
 
         app.DoubleClickOn(Selector.WithText(app.Frames.Canvas.Texts.Last(t => t.Inputs.Text.StartsWith("Third()")).Inputs.Text));
         d.Settle();
-        d.InTurn(() => Commands.Analyze(app.AppState, app.Ui, caller.Symbol));
+        d.InTurn(() => Commands.Analyze(app.AppState, app.Ui.Panels, app.Ui.Analyzer, caller.Symbol));
 
         Assert.StartsWith("Third()", d.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
         Assert.Equal(2, analyzer.Roots.Count);
@@ -226,7 +226,7 @@ public sealed class AnalyzerTests
         Assert.NotNull(reference);
         var listedBefore = ListedPaths(d);
 
-        d.InTurn(() => Commands.Analyze(d.AppState, d.Ui, append.Symbol));
+        d.InTurn(() => Commands.Analyze(d.AppState, d.Ui.Panels, d.Ui.Analyzer, append.Symbol));
         var waiting = analyzer.Roots.ToList();
         d.Settle();
         var followed = AppStateDriver.Opened();
@@ -254,7 +254,7 @@ public sealed class AnalyzerTests
             Reference = null, Kinds = [], Accessors = [], File = null, Definition = null,
         };
 
-        d.InTurn(() => Commands.Analyze(d.AppState, d.Ui, nowhere));
+        d.InTurn(() => Commands.Analyze(d.AppState, d.Ui.Panels, d.Ui.Analyzer, nowhere));
         d.Settle();
 
         Assert.Empty(d.AppState.ListSession.Analyzer.Roots);

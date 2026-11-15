@@ -79,7 +79,7 @@ public static class MainView
     private static void SyncAfterDocuments(Ui<UiState> ui, AppState appState)
     {
         QueuedCommands.RunViewCommands(ui.State, appState);
-        DocumentPanels.SyncActiveTab(ui.State, appState.ListSession.Navigation, appState.Decompiler.Setup);
+        DocumentPanels.SyncActiveTab(ui.State.MainLayout, ui.State.Documents, ui.State.TabFocus, ui.State.AppCommands, appState.ListSession.Navigation, appState.Decompiler.Setup);
     }
 
     private static void UpdateSearches(Ui ui, MainLayout mainLayout, Search search, Omnibar omnibar, AssemblyList assemblies)

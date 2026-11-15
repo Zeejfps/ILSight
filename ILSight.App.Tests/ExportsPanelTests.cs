@@ -32,7 +32,7 @@ public sealed class ExportsPanelTests : IDisposable
     public async Task Starting_an_export_brings_the_exports_panel_to_the_front()
     {
         var d = AppStateDriver.Opened();
-        ScreenLayout.OpenPanel(d.Ui, DockView.Bookmarks);
+        d.Ui.Panels.Open(DockView.Bookmarks);
 
         var saved = await d.FixtureAsync("Greeter");
 
@@ -143,7 +143,7 @@ public sealed class ExportsPanelTests : IDisposable
     public async Task A_cancelled_export_says_it_is_cancelling_until_it_stops()
     {
         var app = AppDriver.Opened();
-        ScreenLayout.OpenPanel(app.Ui, DockView.Exports);
+        app.Ui.Panels.Open(DockView.Exports);
         var start = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Fixtures"))).Turn);
         app.Run(2);
 
@@ -242,7 +242,7 @@ public sealed class ExportsPanelTests : IDisposable
     public async Task The_running_export_shows_its_assembly_and_percentage()
     {
         var app = AppDriver.Opened();
-        ScreenLayout.OpenPanel(app.Ui, DockView.Exports);
+        app.Ui.Panels.Open(DockView.Exports);
         var start = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Both"))).Turn);
         start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 2, Parts = 4, Fraction = 0.5f });
         app.Run(2);

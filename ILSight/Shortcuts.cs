@@ -87,18 +87,18 @@ internal static class Shortcuts
 
     private static readonly Binding[] Bindings =
     [
-        new Binding { Keys = Search, Run = static (ui, _) => ScreenLayout.OpenSearch(ui.State), WhileTyping = true },
+        new Binding { Keys = Search, Run = static (ui, _) => ui.State.Panels.OpenSearch(), WhileTyping = true },
         new Binding { Keys = OmnibarSearch, Run = static (ui, _) => SearchInOmnibarUnlessFolding(ui), WhileTyping = true },
         new Binding { Keys = Back, Run = static (ui, appState) => GoBack(ui.State.AppCommands, appState), WhileTyping = true },
         new Binding { Keys = Forward, Run = static (ui, appState) => GoForward(ui.State.AppCommands, appState), WhileTyping = true },
         new Binding { Keys = Open, Run = static (ui, appState) => MainMenuView.OpenFile(ui, ui.State.Appearance, ui.State.AppCommands, appState.ListSession.Navigation) },
-        new Binding { Keys = Settings, Run = static (ui, _) => ScreenLayout.OpenPanel(ui.State, DockView.DisplayOptions), WhileTyping = true },
+        new Binding { Keys = Settings, Run = static (ui, _) => ui.State.Panels.Open(DockView.DisplayOptions), WhileTyping = true },
         new Binding { Keys = SaveCode, Run = static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, ui.State.Appearance, ui.State.AppCommands, appState.ListSession.Navigation, appState.Decompiler.Setup.Language) },
         new Binding { Keys = Export, Run = static (ui, appState) => ui.State.ExportSetup.Open(appState.ListSession.Assemblies.Assemblies, Exports.FindActiveAssembly(appState.ListSession.Navigation)) },
         new Binding { Keys = ReloadAll, Run = static (ui, _) => Commands.ReloadLater(ui.State.AppCommands, ui.State.Tree.ListExpandedPaths()) },
-        new Binding { Keys = CloseTab, Run = static (ui, _) => DocumentPanels.CloseActiveTab(ui.State) },
-        new Binding { Keys = NextTab, Run = static (ui, appState) => DocumentPanels.CycleTab(ui.State, appState.ListSession.Navigation, appState.Decompiler.Setup, 1) },
-        new Binding { Keys = PreviousTab, Run = static (ui, appState) => DocumentPanels.CycleTab(ui.State, appState.ListSession.Navigation, appState.Decompiler.Setup, -1) },
+        new Binding { Keys = CloseTab, Run = static (ui, _) => DocumentPanels.CloseActiveTab(ui.State.MainLayout, ui.State.Documents, ui.State.TabFocus) },
+        new Binding { Keys = NextTab, Run = static (ui, appState) => DocumentPanels.CycleTab(ui.State.MainLayout, ui.State.Documents, ui.State.TabFocus, ui.State.AppCommands, appState.ListSession.Navigation, appState.Decompiler.Setup, 1) },
+        new Binding { Keys = PreviousTab, Run = static (ui, appState) => DocumentPanels.CycleTab(ui.State.MainLayout, ui.State.Documents, ui.State.TabFocus, ui.State.AppCommands, appState.ListSession.Navigation, appState.Decompiler.Setup, -1) },
     ];
 
     private static void GoBack(IAppCommandWriter commands, AppState appState)
@@ -148,7 +148,7 @@ internal static class Shortcuts
             return;
         }
 
-        ScreenLayout.SearchInOmnibar(ui.State);
+        ScreenLayout.SearchInOmnibar(ui.State.Panels, ui.State.Display, ui.State.Omnibar);
     }
 
     /// <summary>Whether any of <paramref name="shortcuts"/> was pressed this frame.</summary>

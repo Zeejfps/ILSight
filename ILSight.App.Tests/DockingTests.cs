@@ -125,7 +125,7 @@ public sealed class DockingTests
         var layout = d.Ui.MainLayout.Dock;
         layout.Dock(DocumentPanels.GetPanel(app.Ui.Documents, farewell), layout.Root, DockEdge.Bottom);
         layout.Float(DockPanels.Assemblies, new UiRect(40f, 40f, 300f, 300f));
-        ScreenLayout.OpenPanel(d.Ui, DockView.Bookmarks);
+        d.Ui.Panels.Open(DockView.Bookmarks);
         app.Run(2);
 
         app.Frames.ClickOn(Selector.WithText("View"));

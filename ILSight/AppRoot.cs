@@ -21,6 +21,7 @@ using ILSight.DiagramArea;
 using ILSight.AssemblyArea;
 using ILSight.SettingArea;
 using ILSight.MetadataArea;
+using ILSight.DocumentViewArea;
 
 namespace ILSight;
 
@@ -322,12 +323,19 @@ internal static class AppRoot
         var appCommands = new AppCommandQueue();
         // A null nuGetRequests uses the app's shared connections.
         var nuGet = new NuGetClient(nuGetRequests);
+        var layout = new MainLayout { Dock = DockPanels.Restore(saved.Layout) };
+        var documents = new DocumentViews();
+        var tabFocus = new TabFocus();
+        var search = new Search();
         var uiState = new UiState
         {
             AppCommands = appCommands,
+            Documents = documents,
+            TabFocus = tabFocus,
+            Panels = new Panels(layout, documents, tabFocus, search),
             Tree = new BrowseTree { Session = session },
             FoldedOptionGroups = new FoldedGroups { Folded = new HashSet<string>(saved.FoldedOptionGroups ?? []) },
-            Search = new Search(),
+            Search = search,
             Omnibar = new Omnibar { Search = new Search() },
             MetadataFilters = MetadataFilters.From(saved.FlagsFilters),
             ArrangeMetadataGridHandler = new ArrangeMetadataGridHandler(new ArrangeMetadataGridHandlerAdapter()),
@@ -343,9 +351,9 @@ internal static class AppRoot
             ProcessPicker = new ProcessPicker { Browser = new ProcessBrowser(processes) },
             Display = new ScreenDisplay { Options = saved.Display ?? DisplayOptions.Default },
             Analyzer = new AnalyzerRows { AppCommands = appCommands },
-            MainLayout = new MainLayout { Dock = DockPanels.Restore(saved.Layout) },
+            MainLayout = layout,
         };
-        ScreenLayout.ConnectLayout(uiState);
+        ScreenLayout.ConnectLayout(layout, documents, search, appCommands);
         return uiState;
     }
 

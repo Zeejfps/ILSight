@@ -20,19 +20,19 @@ internal static class LayoutResetDialogView
                 {
                     if (ui.Button(t.ViewResetLayoutCancel, id: "reset-cancel", variant: ButtonVariant.Ghost))
                     {
-                        ScreenLayout.FinishLayoutReset(screen, false);
+                        ScreenLayout.FinishLayoutReset(screen.LayoutReset, screen.Panels, screen.AppCommands, false);
                     }
 
                     if (ui.Button(t.ViewResetLayoutConfirm, id: "reset-confirm", variant: ButtonVariant.Primary))
                     {
-                        ScreenLayout.FinishLayoutReset(screen, true);
+                        ScreenLayout.FinishLayoutReset(screen.LayoutReset, screen.Panels, screen.AppCommands, true);
                     }
                 }
             }
         }
         if (!open && screen.LayoutReset.IsAsked)
         {
-            ScreenLayout.FinishLayoutReset(screen, false);
+            ScreenLayout.FinishLayoutReset(screen.LayoutReset, screen.Panels, screen.AppCommands, false);
         }
     }
 }

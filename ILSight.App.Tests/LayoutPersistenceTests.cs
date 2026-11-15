@@ -28,7 +28,7 @@ public sealed class LayoutPersistenceTests : IDisposable
     {
         var d = AppStateDriver.Opened(_temp.Settings());
         var screen = d.Ui;
-        ScreenLayout.OpenPanel(screen, DockView.Analyzer);
+        screen.Panels.Open(DockView.Analyzer);
         var analyzer = screen.MainLayout.Dock.GroupOf(DockPanels.Analyzer);
         Assert.NotNull(analyzer);
         screen.MainLayout.Dock.Dock(DockPanels.Bookmarks, analyzer, DockEdge.Center);
@@ -58,8 +58,8 @@ public sealed class LayoutPersistenceTests : IDisposable
     {
         var d = new AppStateDriver(_temp.Settings());
         var screen = d.Ui;
-        ScreenLayout.OpenSearch(screen);
-        ScreenLayout.OpenPanel(screen, DockView.Analyzer);
+        screen.Panels.OpenSearch();
+        screen.Panels.Open(DockView.Analyzer);
         var analyzer = screen.MainLayout.Dock.GroupOf(DockPanels.Analyzer);
         Assert.NotNull(analyzer);
         screen.MainLayout.Dock.Dock(DockPanels.Search, analyzer, DockEdge.Center);

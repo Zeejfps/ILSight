@@ -311,7 +311,7 @@ internal static class TreePaneView
             return;
         }
 
-        Commands.AnalyzeLater(ui.State, analysis);
+        Commands.AnalyzeLater(ui.State.AppCommands, ui.State.Panels, ui.State.Analyzer, analysis);
     }
 
     private static void CloseOnDelete(Ui ui, BrowseTree tree, IAppCommandWriter commands)
@@ -445,7 +445,7 @@ internal static class TreePaneView
         var analysis = node.Analysis;
         if (analysis is not null && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
         {
-            Commands.AnalyzeLater(ui.State, analysis);
+            Commands.AnalyzeLater(ui.State.AppCommands, ui.State.Panels, ui.State.Analyzer, analysis);
         }
 
         var definition = node.Reference;
@@ -477,12 +477,12 @@ internal static class TreePaneView
 
         if (node.Subject is NodeSubject.Module && ui.MenuItem(t.TreeScopeSearchToAssembly, id: "scope-search"))
         {
-            ScreenLayout.ScopeSearch(ui.State, node);
+            ScreenLayout.ScopeSearch(ui.State.Search, ui.State.Panels, node);
         }
 
         if (node.Subject is NodeSubject.Namespace && ui.MenuItem(t.TreeScopeSearchToNamespace, id: "scope-search"))
         {
-            ScreenLayout.ScopeSearch(ui.State, node);
+            ScreenLayout.ScopeSearch(ui.State.Search, ui.State.Panels, node);
         }
 
         if (IsListedRoot(node) && ui.MenuItem(t.TreeOpenContainingFolder, id: "open-containing-folder", icon: new UiIcon(ui.State.Appearance.Icons.AssembliesOpenContainingFolder)))

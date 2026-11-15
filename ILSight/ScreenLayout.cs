@@ -1,99 +1,59 @@
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.CommandArea;
+using ILSight.DocumentViewArea;
+using ILSight.MainArea;
+using ILSight.OmnibarArea;
 using ILSight.SearchArea;
 
 namespace ILSight;
 
-/// <summary>The layout of the screen: restoring it, opening the views in it beside the active tab, and
-/// putting it back as it starts out.</summary>
+/// <summary>The layout of the screen: connecting it to the documents, and the searches that open its views
+/// (<see cref="Panels"/> opens them, and puts the layout back as it starts out).</summary>
 public static class ScreenLayout
 {
-    /// <summary>Has a panel the layout of <paramref name="uiState"/> makes for itself open as a new tab, and
-    /// a closed panel's tab close with it. The layout's callbacks need the screen the layout is part of, so
-    /// these are assigned after the screen is made.</summary>
-    internal static void ConnectLayout(UiState uiState)
+    /// <summary>Has a panel <paramref name="layout"/> makes for itself open as a new tab, and a closed panel's tab
+    /// close with it, the search cleared with its panel. Assigned once the screen's parts are made.</summary>
+    internal static void ConnectLayout(MainLayout layout, DocumentViews documents, Search search, IAppCommandWriter commands)
     {
-        var dock = uiState.MainLayout.Dock;
-        dock.NewPanel = () => DocumentPanels.OpenTabForPanel(uiState);
-        dock.PanelClosed += panel => DocumentPanels.OnPanelClosed(uiState, panel);
-    }
-
-    /// <summary>Docks <paramref name="view"/> if it is not, by the active document where it goes there, and
-    /// brings it to the front; the search panel as <see cref="OpenSearch"/> does.</summary>
-    public static void OpenPanel(UiState uiState, DockView view)
-    {
-        if (view == DockView.Search)
-        {
-            OpenSearch(uiState);
-            return;
-        }
-
-        Docking.Open(uiState.MainLayout, view, DocumentPanels.FindActivePanel(uiState));
-    }
-
-    /// <summary>Docks the search panel under the documents if it is closed, brings it to the front
-    /// and puts the caret in its search box.</summary>
-    public static void OpenSearch(UiState uiState)
-    {
-        Docking.Open(uiState.MainLayout, DockView.Search, DocumentPanels.FindActivePanel(uiState));
-        uiState.Search.AskForFocus();
+        var dock = layout.Dock;
+        dock.NewPanel = () => DocumentPanels.OpenTabForPanel(layout, documents, commands);
+        dock.PanelClosed += panel => DocumentPanels.OnPanelClosed(layout, documents, search, commands, panel);
     }
 
     /// <summary>Opens the search panel with its query kept to <paramref name="node"/>'s assembly, or to
     /// the namespace it is.</summary>
-    public static void ScopeSearch(UiState uiState, BrowseNode node)
+    public static void ScopeSearch(Search search, Panels panels, BrowseNode node)
     {
-        uiState.Search.ScopeTo(node);
-        OpenSearch(uiState);
+        search.ScopeTo(node);
+        panels.OpenSearch();
     }
 
     /// <summary>Has the active document's omnibar search, its box taking focus; opens the search panel
     /// instead while no document is active or the omnibar is hidden.</summary>
-    public static void SearchInOmnibar(UiState uiState)
+    public static void SearchInOmnibar(Panels panels, ScreenDisplay display, Omnibar omnibar)
     {
-        var panel = DocumentPanels.FindActivePanel(uiState);
+        var panel = panels.ActivePanel;
         if (panel is null)
         {
-            OpenSearch(uiState);
+            panels.OpenSearch();
             return;
         }
-        if (!uiState.Display.Options.ShowOmnibar)
+        if (!display.Options.ShowOmnibar)
         {
-            OpenSearch(uiState);
+            panels.OpenSearch();
             return;
         }
-        uiState.Omnibar.StartSearch(panel);
+        omnibar.StartSearch(panel);
     }
 
     /// <summary>Stops asking, resetting the layout when <paramref name="confirmed"/>.</summary>
-    public static void FinishLayoutReset(UiState uiState, bool confirmed)
+    public static void FinishLayoutReset(Confirmation layoutReset, Panels panels, IAppCommandWriter commands, bool confirmed)
     {
-        uiState.LayoutReset.Stop();
+        layoutReset.Stop();
         if (confirmed)
         {
-            ResetLayout(uiState);
+            panels.Reset(commands);
         }
-    }
-
-    /// <summary>Puts the layout back as it starts out: the assemblies left of every open document,
-    /// tabbed together in one group. Floating windows and the other views close; the documents stay open.</summary>
-    public static void ResetLayout(UiState uiState)
-    {
-        var documents = Docking.ListDocumentPanels(uiState.MainLayout);
-        if (documents.Count == 0)
-        {
-            documents.Add(OpenActiveTabPanel(uiState));
-        }
-
-        Docking.ResetLayout(uiState.MainLayout, documents);
-        DocumentPanels.ActivateActivePanel(uiState);
-    }
-
-    private static string OpenActiveTabPanel(UiState uiState)
-    {
-        var panel = uiState.Documents.CreatePanel();
-        Commands.Later(uiState.AppCommands, (uiState, panel), static (a, s) => QueuedCommands.OpenTabIn(s.uiState, a, s.panel, focus: true));
-        return panel;
     }
 }

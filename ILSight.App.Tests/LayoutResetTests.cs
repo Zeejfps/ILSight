@@ -8,7 +8,7 @@ public sealed class LayoutResetTests
     {
         var app = new AppDriver();
         var screen = app.Ui;
-        ScreenLayout.OpenPanel(screen, DockView.Bookmarks);
+        screen.Panels.Open(DockView.Bookmarks);
         app.Run(2);
 
         app.Frames.ClickOn(Selector.WithText("View"));

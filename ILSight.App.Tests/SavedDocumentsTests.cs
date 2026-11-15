@@ -223,7 +223,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
         next.Settle(4);
-        DocumentPanels.ActivateTab(next.Ui, next.AppState.ListSession.Navigation, next.AppState.Decompiler.Setup, TabTitled(next, "Outline"));
+        DocumentPanels.ActivateTab(next.Ui.MainLayout, next.Ui.Documents, next.Ui.AppCommands, next.AppState.ListSession.Navigation, next.AppState.Decompiler.Setup, TabTitled(next, "Outline"));
         next.Run(4);
 
         Assert.Equal(outlinePosition, CodeOf(next, TabTitled(next, "Outline")).Position);
@@ -257,7 +257,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var fields = new CardFold.Own { Card = diagram.Diagram.Cards[0].Anchor, Section = MemberSection.Fields };
         Diagrams.ToggleFold(view, fields);
         Diagrams.ShowHiddenMembers(view, true);
-        DocumentPanels.ActivateTab(app.Ui, app.AppState.ListSession.Navigation, app.AppState.Decompiler.Setup, greeter);
+        DocumentPanels.ActivateTab(app.Ui.MainLayout, app.Ui.Documents, app.Ui.AppCommands, app.AppState.ListSession.Navigation, app.AppState.Decompiler.Setup, greeter);
         app.Run(3);
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
 
@@ -305,7 +305,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
         var next = new AppDriver(height: 360f, settings: _temp.Settings());
         next.Settle(4);
-        DocumentPanels.ActivateTab(next.Ui, next.AppState.ListSession.Navigation, next.AppState.Decompiler.Setup, GridTab(next));
+        DocumentPanels.ActivateTab(next.Ui.MainLayout, next.Ui.Documents, next.Ui.AppCommands, next.AppState.ListSession.Navigation, next.AppState.Decompiler.Setup, GridTab(next));
         next.Run(4);
 
         Assert.Equal(row, GridOf(next, GridTab(next)).Selected);

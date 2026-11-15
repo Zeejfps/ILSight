@@ -525,14 +525,14 @@ internal sealed class AppStateDriver
     public void Analyze(BrowseNode node)
     {
         using var turn = _posted.Install();
-        Commands.Analyze(AppState, Ui, node.Analysis ?? throw new InvalidOperationException($"{node.Text} stands for nothing to analyze."));
+        Commands.Analyze(AppState, Ui.Panels, Ui.Analyzer, node.Analysis ?? throw new InvalidOperationException($"{node.Text} stands for nothing to analyze."));
     }
 
     /// <summary>Analyzes what <paramref name="reference"/> points at as the views do.</summary>
     public void Analyze(CodeReference.Navigable reference)
     {
         using var turn = _posted.Install();
-        Commands.StartAnalyzing(AppState, AnalyzerPanelView.ShowAnalyzing(Ui, AppState.ListSession.Analyzer, reference));
+        Commands.StartAnalyzing(AppState, AnalyzerPanelView.ShowAnalyzing(Ui.Panels, AppState.ListSession.Analyzer, reference));
     }
 
     /// <summary>What the disk says about the folder and key file the export dialog names, once the frame edge has

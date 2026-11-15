@@ -49,9 +49,9 @@ public sealed class ScreenIsolationTests : IDisposable
         var d = AppStateDriver.Opened(_temp.Settings());
         d.Show(await d.FixtureAsync("Greeter"));
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
-        ScreenLayout.OpenPanel(d.Ui, DockView.Bookmarks);
+        d.Ui.Panels.Open(DockView.Bookmarks);
         d.Analyze(await d.FixtureAsync("Greeter"));
-        ScreenLayout.ScopeSearch(d.Ui, await d.NodeAsync(AppStateDriver.FixturesNamespace));
+        ScreenLayout.ScopeSearch(d.Ui.Search, d.Ui.Panels, await d.NodeAsync(AppStateDriver.FixturesNamespace));
         d.Ui.BookmarkColumns.Restore([1f, 1f, 4f, 1f]);
         d.Settle();
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));

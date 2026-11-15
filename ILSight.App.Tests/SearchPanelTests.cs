@@ -27,7 +27,7 @@ public sealed class SearchPanelTests : IDisposable
         var (fixtures, middle, keyboard) = (app.AppState.ListSession.Assemblies.Assemblies[0], app.AppState.ListSession.Assemblies.Assemblies[1],
             app.AppState.ListSession.Assemblies.Assemblies[2]);
         Assert.Equal(broken, middle.FilePath.Text);
-        ScreenLayout.OpenSearch(app.Ui);
+        app.Ui.Panels.OpenSearch();
         app.Run();
 
         app.Frames.Type("t:e").Frame();

@@ -24,7 +24,7 @@ internal static class AppFrames
         uiState.Documents.SkipPanels(appState.Lists.ListDocumentPanels());
         uiState.TabFocus.Follow(appState.ListSession.Navigation.ActiveTab);
         QueuedCommands.RunViewCommands(uiState, appState);
-        DocumentPanels.ShowInRestoredDocuments(uiState, appState.ListSession.Navigation);
+        DocumentPanels.ShowInRestoredDocuments(uiState.MainLayout, uiState.Documents, appState.ListSession.Navigation);
     }
 
     /// <summary>Does what comes before drawing a frame: the screen takes the theme, icons and strings the
@@ -38,14 +38,14 @@ internal static class AppFrames
     {
         uiState.Appearance.ApplyThemeAndLanguage(Theming.ResolveTheme(appState), appState.Locale);
         uiState.Appearance.ApplyIconTheme(IconTheming.ResolveIconTheme(appState));
-        Trees.SyncTrees(uiState, appState.ListSession.Assemblies, appState.ListSession.Analyzer, appState.ApiVisibility, appState.Reopens.Files);
+        Trees.SyncTrees(uiState.Tree, uiState.Analyzer, uiState.Shown, appState.ListSession.Assemblies, appState.ListSession.Analyzer, appState.ApiVisibility, appState.Reopens.Files);
         appState.ListSession.Navigation.UsePreviewTabs(uiState.Display.Options.PreviewTabs);
-        DocumentPanels.FollowTabContent(uiState);
+        uiState.Documents.FollowViewContent();
         uiState.TabFocus.Follow(appState.ListSession.Navigation.ActiveTab);
         QueuedCommands.RunViewCommands(uiState, appState);
-        DocumentPanels.SyncTabViews(uiState, appState.ListSession.Navigation);
+        DocumentPanels.SyncTabViews(uiState.MainLayout, uiState.Documents, appState.ListSession.Navigation);
         ReviveClosedTabs(uiState, appState);
-        DocumentPanels.FocusNextTabIfNone(uiState, appState.ListSession.Navigation, appState.Decompiler.Setup);
+        DocumentPanels.FocusNextTabIfNone(uiState.MainLayout, uiState.Documents, uiState.TabFocus, uiState.AppCommands, appState.ListSession.Navigation, appState.Decompiler.Setup);
         FollowLoadOptions(uiState, appState);
         FollowDecompilation(uiState, appState);
         FollowExportSetup(uiState.ExportSetup, appState);
@@ -184,7 +184,7 @@ internal static class AppFrames
             return;
         }
 
-        foreach (var tab in DocumentPanels.ListFrontTabs(uiState))
+        foreach (var tab in DocumentPanels.ListFrontTabs(uiState.MainLayout, uiState.Documents))
         {
             Commands.StartDecompiling(appState, Decompilation.StartDecompilingAgainIfOutdated(tab, language, appState.Decompiler.Setup.Options));
         }

@@ -273,7 +273,7 @@ public sealed class BookmarkTests : IDisposable
         var app = new AppDriver(height: 500f);
         var (d, tab, line) = await OutlineAtAsync("return First();", app.Driver);
         Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
-        ScreenLayout.OpenPanel(d.Ui, DockView.Bookmarks);
+        d.Ui.Panels.Open(DockView.Bookmarks);
         app.Run(frames);
         return (app, d, tab, line);
     }
@@ -323,7 +323,7 @@ public sealed class BookmarkTests : IDisposable
         Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("foreach").Line, Names.Bookmark));
         Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("needle").Line, Names.Bookmark));
         Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
-        ScreenLayout.OpenPanel(d.Ui, DockView.Bookmarks);
+        d.Ui.Panels.Open(DockView.Bookmarks);
         app.Run(3);
         var bookmarks = d.AppState.Bookmarks;
         var panel = app.Ui.BookmarksPanel;
@@ -346,7 +346,7 @@ public sealed class BookmarkTests : IDisposable
         Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("foreach").Line, Names.Bookmark));
         Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("needle").Line, Names.Bookmark));
         Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
-        ScreenLayout.OpenPanel(d.Ui, DockView.Bookmarks);
+        d.Ui.Panels.Open(DockView.Bookmarks);
         app.Run(3);
         var bookmarks = d.AppState.Bookmarks;
         var panel = app.Ui.BookmarksPanel;

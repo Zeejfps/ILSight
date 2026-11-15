@@ -2,6 +2,7 @@ using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
 using ILSight.CommandArea;
 using ILSight.DocumentViewArea;
+using ILSight.MainArea;
 
 namespace ILSight;
 
@@ -22,9 +23,9 @@ internal static class QueuedCommands
     private static void Run(ViewCommand command, UiState uiState, AppState appState)
     {
         command.Switch((uiState, appState),
-            showTab: static (s, show) => ShowTabIfOpen(s.uiState, s.appState.ListSession.Navigation, show.Tab, show.Beside),
-            showReopened: static (s, show) => ShowReopenedIfOpen(s.uiState, s.appState.ListSession.Navigation, show.Tabs, show.Layout),
-            openPanel: static (s, open) => ScreenLayout.OpenPanel(s.uiState, open.View),
+            showTab: static (s, show) => ShowTabIfOpen(s.uiState.MainLayout, s.uiState.Documents, s.appState.ListSession.Navigation, show.Tab, show.Beside),
+            showReopened: static (s, show) => ShowReopenedIfOpen(s.uiState.MainLayout, s.uiState.Documents, s.uiState.TabFocus, s.appState.ListSession.Navigation, show.Tabs, show.Layout),
+            openPanel: static (s, open) => s.uiState.Panels.Open(open.View),
             restoreView: static (s, restore) => RestoreView(s.uiState.Documents, s.appState.ListSession.Navigation, restore.Tab, restore.Position),
             revealLine: static (s, reveal) => RevealLine(s.uiState.Documents, s.appState.ListSession.Navigation, reveal.Tab, reveal.Line),
             revealRow: static (s, reveal) => RevealRow(s.uiState.Documents, s.appState.ListSession.Navigation, reveal.Tab, reveal.Row),
@@ -37,22 +38,22 @@ internal static class QueuedCommands
             openFile: static (s, open) => s.uiState.Shell.OpenFile(open.Path));
     }
 
-    private static void ShowTabIfOpen(UiState uiState, Navigation navigation, DocumentTab tab, DocumentTab? beside)
+    private static void ShowTabIfOpen(MainLayout layout, DocumentViews documents, Navigation navigation, DocumentTab tab, DocumentTab? beside)
     {
         if (!navigation.IsOpen(tab))
         {
             return;
         }
 
-        DocumentPanels.ShowTab(uiState, tab, beside);
+        DocumentPanels.ShowTab(layout, documents, tab, beside);
     }
 
-    private static void ShowReopenedIfOpen(UiState uiState, Navigation navigation, IReadOnlyList<ReopenedTab> tabs, DockLayout? layout)
+    private static void ShowReopenedIfOpen(MainLayout layout, DocumentViews documents, TabFocus tabFocus, Navigation navigation, IReadOnlyList<ReopenedTab> tabs, DockLayout? saved)
     {
         var open = tabs
             .Where(r => navigation.IsOpen(r.Tab))
             .ToList();
-        DocumentPanels.ShowReopenedTabs(uiState, open, layout);
+        DocumentPanels.ShowReopenedTabs(layout, documents, tabFocus, open, saved);
     }
 
     private static void RevealIfListed(BrowseTree tree, AssemblyList assemblies, BrowseNode node)
@@ -148,23 +149,23 @@ internal static class QueuedCommands
 
     /// <summary>Opens an empty tab shown in <paramref name="panel"/>, unless the panel was closed meanwhile,
     /// and makes it the active tab when asked to or when the layout focuses its panel.</summary>
-    internal static void OpenTabIn(UiState uiState, AppState appState, string panel, bool focus)
+    internal static void OpenTabIn(MainLayout layout, DocumentViews documents, AppState appState, string panel, bool focus)
     {
-        if (!uiState.MainLayout.Dock.Contains(panel))
+        if (!layout.Dock.Contains(panel))
         {
             return;
         }
 
         var tab = appState.ListSession.Navigation.OpenEmptyTab();
-        uiState.Documents.AddView(tab, panel);
-        var becomesActive = focus || uiState.MainLayout.Dock.Focused == panel;
+        documents.AddView(tab, panel);
+        var becomesActive = focus || layout.Dock.Focused == panel;
         if (becomesActive)
         {
             Commands.StartDecompiling(appState, appState.ListSession.Navigation.FocusTab(tab, appState.Decompiler.Setup));
         }
     }
 
-    internal static void CloseTabAndFocusNext(UiState uiState, AppState appState, DocumentTab tab)
+    internal static void CloseTabAndFocusNext(MainLayout layout, DocumentViews documents, IAppCommandWriter commands, AppState appState, DocumentTab tab)
     {
         var closed = appState.ListSession.Navigation.CloseTab(tab);
         if (!closed.WasActive)
@@ -172,6 +173,6 @@ internal static class QueuedCommands
             return;
         }
 
-        DocumentPanels.FocusNextTab(uiState, appState.ListSession.Navigation, appState.Decompiler.Setup);
+        DocumentPanels.FocusNextTab(layout, documents, commands, appState.ListSession.Navigation, appState.Decompiler.Setup);
     }
 }

@@ -133,7 +133,7 @@ internal static class MainMenuView
         ui.MenuSeparator();
         if (ui.MenuItem(t.AppMenuSettings, Shortcuts.Settings, id: "settings"))
         {
-            ScreenLayout.OpenPanel(ui.State, DockView.DisplayOptions);
+            ui.State.Panels.Open(DockView.DisplayOptions);
         }
 
         ui.MenuSeparator();
@@ -234,17 +234,17 @@ internal static class MainMenuView
 
         if (ui.MenuItem(t.FileOpenFromFramework, id: "open-from-framework", icon: new UiIcon(icons.FileOpenFromFramework)))
         {
-            FrameworkPickerView.Open(ui.State);
+            FrameworkPickerView.Open(ui.State.AppCommands, ui.State.Picker);
         }
 
         if (ui.MenuItem(t.FileOpenFromNuget, id: "open-from-nuget", icon: new UiIcon(icons.FileOpenFromNuGet)))
         {
-            NuGetPickerView.Open(ui.State);
+            NuGetPickerView.Open(ui.State.AppCommands, ui.State.NuGetPicker, ui.State.ReadNuGetSetupHandler);
         }
 
         if (ui.MenuItem(t.FileOpenFromProcess, id: "open-from-process", icon: new UiIcon(icons.FileOpenFromProcess)))
         {
-            ProcessPickerView.Open(ui.State);
+            ProcessPickerView.Open(ui.State.AppCommands, ui.State.ProcessPicker);
         }
 
         ui.MenuSeparator();
@@ -293,7 +293,7 @@ internal static class MainMenuView
         PanelsMenu(ui);
         if (ui.MenuItem(t.ViewCloseAllDocuments, enabled: appState.ListSession.Navigation.OpenTabs.Count > 0, id: "close-all-documents"))
         {
-            DocumentPanels.CloseAllTabs(ui.State);
+            DocumentPanels.CloseAllTabs(ui.State.MainLayout, ui.State.Documents);
         }
 
         if (ui.MenuItem(t.ViewResetLayout, id: "reset-layout"))
@@ -367,37 +367,37 @@ internal static class MainMenuView
 
         if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.PanelAssemblies, DockView.Assemblies))
         {
-            ScreenLayout.OpenPanel(screen, DockView.Assemblies);
+            screen.Panels.Open(DockView.Assemblies);
         }
 
         if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.ViewBookmarks, DockView.Bookmarks))
         {
-            ScreenLayout.OpenPanel(screen, DockView.Bookmarks);
+            screen.Panels.Open(DockView.Bookmarks);
         }
 
         if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.PanelAnalyzer, DockView.Analyzer))
         {
-            ScreenLayout.OpenPanel(screen, DockView.Analyzer);
+            screen.Panels.Open(DockView.Analyzer);
         }
 
         if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.PanelSearch, DockView.Search, Shortcuts.Search))
         {
-            ScreenLayout.OpenSearch(screen);
+            screen.Panels.OpenSearch();
         }
 
         if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.PanelDecompilerOptions, DockView.DecompilerOptions))
         {
-            ScreenLayout.OpenPanel(screen, DockView.DecompilerOptions);
+            screen.Panels.Open(DockView.DecompilerOptions);
         }
 
         if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.PanelDisplayOptions, DockView.DisplayOptions))
         {
-            ScreenLayout.OpenPanel(screen, DockView.DisplayOptions);
+            screen.Panels.Open(DockView.DisplayOptions);
         }
 
         if (PanelItem(ui, ui.State.MainLayout, ui.State.Appearance, t.PanelExports, DockView.Exports))
         {
-            ScreenLayout.OpenPanel(screen, DockView.Exports);
+            screen.Panels.Open(DockView.Exports);
         }
     }
 
@@ -425,7 +425,7 @@ internal static class MainMenuView
             var label = DecompilationLanguages.Label(language);
             if (ui.MenuRadioItem(label, current == language))
             {
-                DocumentPanels.ShowInLanguage(ui.State, decompiler, language);
+                DocumentPanels.ShowInLanguage(ui.State.MainLayout, ui.State.Documents, ui.State.AppCommands, decompiler, language);
             }
         }
     }

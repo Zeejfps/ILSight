@@ -7,12 +7,13 @@ using ILSight.DocumentViewArea;
 using ILSight.MetadataGridArea;
 using ILSight.SearchArea;
 using ILSight.DiagramArea;
+using ILSight.MainArea;
 
 namespace ILSight;
 
 /// <summary>The open tabs as panels of the layout: docking them, the reopened ones where they were docked,
 /// bringing them to the front, cycling and closing them, and keeping a view for each open tab. What changes the tabs themselves is asked of the
-/// app state through <see cref="UiState.AppCommands"/>.</summary>
+/// app state through the screen's command writer.</summary>
 public static class DocumentPanels
 {
     /// <summary>How <paramref name="tab"/>, an open tab, is shown.</summary>
@@ -207,40 +208,40 @@ public static class DocumentPanels
 
     /// <summary>Shows the reopened <paramref name="tabs"/> in the panels they were docked as: in place where
     /// the layout still has one no tab is shown in, else, renamed when another tab is shown in one by that
-    /// name, arranged as <paramref name="layout"/>, the documents' saved arrangement, has them, beside the
+    /// name, arranged as <paramref name="saved"/>, the documents' saved arrangement, has them, beside the
     /// documents; returns their diagrams' views to how they were saved, and brings the active tab to the front.</summary>
-    public static void ShowReopenedTabs(UiState uiState, IReadOnlyList<ReopenedTab> tabs, DockLayout? layout)
+    public static void ShowReopenedTabs(MainLayout layout, DocumentViews documents, TabFocus tabFocus, IReadOnlyList<ReopenedTab> tabs, DockLayout? saved)
     {
         var panels = new Dictionary<string, string>();
         foreach (var reopened in tabs)
         {
-            panels[reopened.Record.Panel] = AddReopenedView(uiState, reopened);
+            panels[reopened.Record.Panel] = AddReopenedView(documents, reopened);
         }
 
-        DockUndocked(uiState, panels, layout);
-        ActivateActivePanel(uiState);
+        DockUndocked(layout, panels, saved);
+        ActivateActivePanel(documents, tabFocus, layout);
     }
 
-    private static string AddReopenedView(UiState uiState, ReopenedTab reopened)
+    private static string AddReopenedView(DocumentViews documents, ReopenedTab reopened)
     {
-        var panel = ChooseReopenedPanel(uiState, reopened.Record.Panel);
-        uiState.Documents.AddView(reopened.Tab, panel);
-        RestoreDiagramView(uiState, reopened);
-        RestoreComparisonView(uiState, reopened);
+        var panel = ChooseReopenedPanel(documents, reopened.Record.Panel);
+        documents.AddView(reopened.Tab, panel);
+        RestoreDiagramView(documents, reopened);
+        RestoreComparisonView(documents, reopened);
         return panel;
     }
 
-    private static string ChooseReopenedPanel(UiState uiState, string saved)
+    private static string ChooseReopenedPanel(DocumentViews documents, string saved)
     {
-        if (!IsTabPanel(uiState, saved))
+        if (!IsTabPanel(documents, saved))
         {
             return saved;
         }
 
-        return uiState.Documents.CreatePanel();
+        return documents.CreatePanel();
     }
 
-    private static void RestoreDiagramView(UiState uiState, ReopenedTab reopened)
+    private static void RestoreDiagramView(DocumentViews documents, ReopenedTab reopened)
     {
         if (reopened.Record is not DiagramDocumentRecord diagram)
         {
@@ -253,10 +254,10 @@ public static class DocumentPanels
             return;
         }
 
-        DocumentPanels.RestoreDiagramView(uiState.Documents, reopened.Tab, view);
+        DocumentPanels.RestoreDiagramView(documents, reopened.Tab, view);
     }
 
-    private static void RestoreComparisonView(UiState uiState, ReopenedTab reopened)
+    private static void RestoreComparisonView(DocumentViews documents, ReopenedTab reopened)
     {
         if (reopened.Record is not ComparisonDocumentRecord comparison)
         {
@@ -269,21 +270,21 @@ public static class DocumentPanels
             return;
         }
 
-        DocumentPanels.RestoreComparisonView(uiState.Documents, reopened.Tab, view);
+        DocumentPanels.RestoreComparisonView(documents, reopened.Tab, view);
     }
 
-    private static void DockUndocked(UiState uiState, Dictionary<string, string> panels, DockLayout? layout)
+    private static void DockUndocked(MainLayout layout, Dictionary<string, string> panels, DockLayout? saved)
     {
         var undocked = panels.Values
-            .Where(p => !uiState.MainLayout.Dock.Contains(p))
+            .Where(p => !layout.Dock.Contains(p))
             .ToList();
         if (undocked.Count == 0)
         {
             return;
         }
 
-        var arrangement = ArrangeUndocked(undocked, panels, layout);
-        Docking.DockArranged(uiState.MainLayout, undocked, arrangement);
+        var arrangement = ArrangeUndocked(undocked, panels, saved);
+        Docking.DockArranged(layout, undocked, arrangement);
     }
 
     private static DockLayout ArrangeUndocked(List<string> undocked, Dictionary<string, string> panels, DockLayout? layout)
@@ -306,102 +307,102 @@ public static class DocumentPanels
     }
 
     /// <summary>Brings the active tab's panel to the front and focuses it, when the layout has it.</summary>
-    internal static void ActivateActivePanel(UiState uiState)
+    internal static void ActivateActivePanel(DocumentViews documents, TabFocus tabFocus, MainLayout layout)
     {
-        var panel = FindActivePanel(uiState);
+        var panel = FindActivePanel(documents, tabFocus);
         if (panel is null)
         {
             return;
         }
 
-        if (!uiState.MainLayout.Dock.Contains(panel))
+        if (!layout.Dock.Contains(panel))
         {
             return;
         }
 
-        uiState.MainLayout.Dock.Activate(panel);
+        layout.Dock.Activate(panel);
     }
 
     /// <summary>Shows each open tab no panel was given, such as the one a run starts with when the open
     /// list kept no documents, in the place of the documents the layout was restored with, then takes the
     /// panels of the documents no tab is shown in out of the layout.</summary>
-    public static void ShowInRestoredDocuments(UiState uiState, Navigation navigation)
+    public static void ShowInRestoredDocuments(MainLayout layout, DocumentViews documents, Navigation navigation)
     {
         for (var i = 0; i < navigation.OpenTabs.Count; i++)
         {
-            ShowInRestoredPlace(uiState, navigation.OpenTabs[i]);
+            ShowInRestoredPlace(layout, documents, navigation.OpenTabs[i]);
         }
 
-        uiState.MainLayout.Dock.Retain(p => IsShownPanel(uiState, p));
+        layout.Dock.Retain(p => IsShownPanel(documents, p));
     }
 
-    private static void ShowInRestoredPlace(UiState uiState, DocumentTab tab)
+    private static void ShowInRestoredPlace(MainLayout layout, DocumentViews documents, DocumentTab tab)
     {
-        if (DocumentPanels.HasView(uiState.Documents, tab))
+        if (DocumentPanels.HasView(documents, tab))
         {
             return;
         }
 
-        var panel = uiState.Documents.CreatePanel();
-        uiState.Documents.AddView(tab, panel);
-        if (DockPanels.TryPlaceDocument(uiState.MainLayout.Dock, panel, p => IsTabPanel(uiState, p)))
+        var panel = documents.CreatePanel();
+        documents.AddView(tab, panel);
+        if (DockPanels.TryPlaceDocument(layout.Dock, panel, p => IsTabPanel(documents, p)))
         {
             return;
         }
 
-        Docking.DockDocument(uiState.MainLayout, panel, panel);
+        Docking.DockDocument(layout, panel, panel);
     }
 
-    private static bool IsShownPanel(UiState uiState, string panel)
+    private static bool IsShownPanel(DocumentViews documents, string panel)
     {
         if (DockPanels.IsView(panel))
         {
             return true;
         }
 
-        return IsTabPanel(uiState, panel);
+        return IsTabPanel(documents, panel);
     }
 
     /// <summary>A new panel the layout makes for itself, with an empty tab asked for to be opened in it.</summary>
-    internal static string OpenTabForPanel(UiState uiState)
+    internal static string OpenTabForPanel(MainLayout layout, DocumentViews documents, IAppCommandWriter commands)
     {
-        var panel = uiState.Documents.CreatePanel();
-        Commands.Later(uiState.AppCommands, (uiState, panel), static (a, s) => QueuedCommands.OpenTabIn(s.uiState, a, s.panel, focus: false));
+        var panel = documents.CreatePanel();
+        Commands.Later(commands, (layout, documents, panel), static (a, s) => QueuedCommands.OpenTabIn(s.layout, s.documents, a, s.panel, focus: false));
         return panel;
     }
 
     /// <summary>Called when a panel is closed: clears the search with its panel, and asks for the tab a
     /// closed document was to be closed.</summary>
-    internal static void OnPanelClosed(UiState uiState, string panel)
+    internal static void OnPanelClosed(MainLayout layout, DocumentViews documents, Search search, IAppCommandWriter commands, string panel)
     {
         if (panel == DockPanels.Search)
         {
-            uiState.Search.Clear();
+            search.Clear();
         }
 
-        CloseTabOf(uiState, panel);
+        CloseTabOf(layout, documents, commands, panel);
     }
 
-    private static void CloseTabOf(UiState uiState, string panel)
+    private static void CloseTabOf(MainLayout layout, DocumentViews documents, IAppCommandWriter commands, string panel)
     {
-        var tab = uiState.Documents.FindTab(panel);
+        var tab = documents.FindTab(panel);
         if (tab is null)
         {
             return;
         }
 
-        uiState.Documents.RemoveView(tab);
-        Commands.Later(uiState.AppCommands, (uiState, tab), static (a, s) => QueuedCommands.CloseTabAndFocusNext(s.uiState, a, s.tab));
+        documents.RemoveView(tab);
+        Commands.Later(commands, (layout, documents, commands, tab), static (a, s) => QueuedCommands.CloseTabAndFocusNext(s.layout, s.documents, s.commands, a, s.tab));
     }
 
     /// <summary>Focuses the tab of the panel the layout focuses now, else the first group's front tab, among
     /// <paramref name="navigation"/>'s, as <see cref="FocusTab"/> does.</summary>
-    public static void FocusNextTab(UiState uiState, Navigation navigation, DecompilerSetup setup)
+    public static void FocusNextTab(MainLayout layout, DocumentViews documents, IAppCommandWriter commands, Navigation navigation, DecompilerSetup setup)
     {
-        var next = uiState.Documents.FindTab(uiState.MainLayout.Dock.Focused);
+        var next = documents.FindTab(layout.Dock.Focused);
         if (next is null)
         {
-            next = FindFrontTab(uiState);
+            next = FindFrontTab(layout, documents);
         }
 
         if (next is null)
@@ -409,22 +410,22 @@ public static class DocumentPanels
             return;
         }
 
-        FocusTab(uiState.AppCommands, navigation, setup, next);
+        FocusTab(commands, navigation, setup, next);
     }
 
     // Loops, not LINQ, so it allocates nothing.
-    private static DocumentTab? FindFrontTab(UiState uiState)
+    private static DocumentTab? FindFrontTab(MainLayout layout, DocumentViews documents)
     {
-        var layout = uiState.MainLayout.Dock;
-        var docked = FindFrontTab(uiState, layout.Root);
+        var dock = layout.Dock;
+        var docked = FindFrontTab(documents, dock.Root);
         if (docked is not null)
         {
             return docked;
         }
 
-        foreach (var window in layout.Windows)
+        foreach (var window in dock.Windows)
         {
-            var floating = FindFrontTab(uiState, window.Root);
+            var floating = FindFrontTab(documents, window.Root);
             if (floating is not null)
             {
                 return floating;
@@ -433,11 +434,11 @@ public static class DocumentPanels
         return null;
     }
 
-    private static DocumentTab? FindFrontTab(UiState uiState, DockNode node)
+    private static DocumentTab? FindFrontTab(DocumentViews documents, DockNode node)
     {
         if (node is DockGroup group)
         {
-            return uiState.Documents.FindTab(group.Active);
+            return documents.FindTab(group.Active);
         }
 
         if (node is not DockSplit split)
@@ -445,13 +446,13 @@ public static class DocumentPanels
             return null;
         }
 
-        var first = FindFrontTab(uiState, split.First);
+        var first = FindFrontTab(documents, split.First);
         if (first is not null)
         {
             return first;
         }
 
-        return FindFrontTab(uiState, split.Second);
+        return FindFrontTab(documents, split.Second);
     }
 
     private static void FocusTab(IAppCommandWriter commands, Navigation navigation, DecompilerSetup setup, DocumentTab tab)
@@ -461,57 +462,56 @@ public static class DocumentPanels
 
     /// <summary>Focuses another tab when the active one was closed by a feature, as <see cref="FocusNextTab"/> does,
     /// trying again only once the tabs or the layout changed since the last try found none.</summary>
-    public static void FocusNextTabIfNone(UiState uiState, Navigation navigation, DecompilerSetup setup)
+    public static void FocusNextTabIfNone(MainLayout layout, DocumentViews documents, TabFocus tabFocus, IAppCommandWriter commands, Navigation navigation, DecompilerSetup setup)
     {
         if (navigation.ActiveTab is not null)
         {
             return;
         }
 
-        var attempt = new TabFocusTry { LayoutChanges = uiState.MainLayout.Dock.Changes, TabCount = navigation.OpenTabs.Count };
-        if (!uiState.TabFocus.TryNewAttempt(attempt))
+        var attempt = new TabFocusTry { LayoutChanges = layout.Dock.Changes, TabCount = navigation.OpenTabs.Count };
+        if (!tabFocus.TryNewAttempt(attempt))
         {
             return;
         }
 
-        FocusNextTab(uiState, navigation, setup);
+        FocusNextTab(layout, documents, commands, navigation, setup);
     }
 
     /// <summary>Docks <paramref name="tab"/>, an open tab, beside the tab <paramref name="beside"/> when it
     /// is not docked yet, and brings it to the front.</summary>
-    public static void ShowTab(UiState uiState, DocumentTab tab, DocumentTab? beside)
+    public static void ShowTab(MainLayout layout, DocumentViews documents, DocumentTab tab, DocumentTab? beside)
     {
-        var documents = uiState.Documents;
         documents.AddView(tab);
         var panel = DocumentPanels.GetPanel(documents, tab);
-        if (!uiState.MainLayout.Dock.Contains(panel))
+        if (!layout.Dock.Contains(panel))
         {
-            Docking.DockDocument(uiState.MainLayout, panel, DocumentPanels.FindPanel(documents, beside));
+            Docking.DockDocument(layout, panel, DocumentPanels.FindPanel(documents, beside));
         }
 
-        uiState.MainLayout.Dock.Activate(panel);
+        layout.Dock.Activate(panel);
     }
 
     /// <summary>Brings <paramref name="tab"/>'s panel to the front and makes it <paramref name="navigation"/>'s active
     /// tab, as <see cref="FocusTab"/> does.</summary>
-    public static void ActivateTab(UiState uiState, Navigation navigation, DecompilerSetup setup, DocumentTab tab)
+    public static void ActivateTab(MainLayout layout, DocumentViews documents, IAppCommandWriter commands, Navigation navigation, DecompilerSetup setup, DocumentTab tab)
     {
-        if (!DocumentPanels.HasView(uiState.Documents, tab))
+        if (!DocumentPanels.HasView(documents, tab))
         {
             return;
         }
 
-        uiState.MainLayout.Dock.Activate(DocumentPanels.GetPanel(uiState.Documents, tab));
-        FocusTab(uiState.AppCommands, navigation, setup, tab);
+        layout.Dock.Activate(DocumentPanels.GetPanel(documents, tab));
+        FocusTab(commands, navigation, setup, tab);
     }
 
     /// <summary>Called after the documents are drawn: makes the tab the user last pressed, docked or brought to
     /// front <paramref name="navigation"/>'s active tab, as <see cref="FocusTab"/> does, unless it is.</summary>
-    public static void SyncActiveTab(UiState uiState, Navigation navigation, DecompilerSetup setup)
+    public static void SyncActiveTab(MainLayout layout, DocumentViews documents, TabFocus tabFocus, IAppCommandWriter commands, Navigation navigation, DecompilerSetup setup)
     {
         var active = navigation.ActiveTab;
-        uiState.TabFocus.Follow(active);
-        var tab = uiState.Documents.FindTab(uiState.MainLayout.Dock.Focused);
+        tabFocus.Follow(active);
+        var tab = documents.FindTab(layout.Dock.Focused);
         if (tab is null)
         {
             return;
@@ -522,27 +522,27 @@ public static class DocumentPanels
             return;
         }
 
-        FocusTab(uiState.AppCommands, navigation, setup, tab);
+        FocusTab(commands, navigation, setup, tab);
     }
 
     /// <summary>Brings the next tab of the active tab's group to the front, or the previous one, as
     /// <see cref="ActivateTab"/> does.</summary>
-    public static void CycleTab(UiState uiState, Navigation navigation, DecompilerSetup setup, int by)
+    public static void CycleTab(MainLayout layout, DocumentViews documents, TabFocus tabFocus, IAppCommandWriter commands, Navigation navigation, DecompilerSetup setup, int by)
     {
-        var active = uiState.TabFocus.Active;
+        var active = tabFocus.Active;
         if (active is null)
         {
             return;
         }
 
-        var activePanel = DocumentPanels.GetPanel(uiState.Documents, active);
-        var group = uiState.MainLayout.Dock.GroupOf(activePanel);
+        var activePanel = DocumentPanels.GetPanel(documents, active);
+        var group = layout.Dock.GroupOf(activePanel);
         if (group is null)
         {
             return;
         }
 
-        var panels = group.Panels.FindAll(p => IsTabPanel(uiState, p));
+        var panels = group.Panels.FindAll(p => IsTabPanel(documents, p));
         if (panels.Count < 2)
         {
             return;
@@ -550,18 +550,18 @@ public static class DocumentPanels
 
         var index = panels.IndexOf(activePanel);
         var next = panels[WrapIndex(index + by, panels.Count)];
-        var tab = uiState.Documents.FindTab(next);
+        var tab = documents.FindTab(next);
         if (tab is null)
         {
             return;
         }
 
-        ActivateTab(uiState, navigation, setup, tab);
+        ActivateTab(layout, documents, commands, navigation, setup, tab);
     }
 
-    private static bool IsTabPanel(UiState uiState, string panel)
+    private static bool IsTabPanel(DocumentViews documents, string panel)
     {
-        return uiState.Documents.FindTab(panel) is not null;
+        return documents.FindTab(panel) is not null;
     }
 
     private static int WrapIndex(int index, int count)
@@ -575,94 +575,94 @@ public static class DocumentPanels
         return wrapped;
     }
 
-    public static void CloseActiveTab(UiState uiState)
+    public static void CloseActiveTab(MainLayout layout, DocumentViews documents, TabFocus tabFocus)
     {
-        var tab = uiState.TabFocus.Active;
+        var tab = tabFocus.Active;
         if (tab is null)
         {
             return;
         }
 
-        CloseTab(uiState, tab);
+        CloseTab(layout, documents, tab);
     }
 
     /// <summary>Closes <paramref name="tab"/>'s panel, which asks for the tab to be closed.</summary>
-    public static void CloseTab(UiState uiState, DocumentTab tab)
+    public static void CloseTab(MainLayout layout, DocumentViews documents, DocumentTab tab)
     {
-        uiState.MainLayout.Dock.Close(DocumentPanels.GetPanel(uiState.Documents, tab));
+        layout.Dock.Close(DocumentPanels.GetPanel(documents, tab));
     }
 
     /// <summary>Closes the document tabs of <paramref name="tab"/>'s group but <paramref name="tab"/>.</summary>
-    public static void CloseOtherTabs(UiState uiState, DocumentTab tab)
+    public static void CloseOtherTabs(MainLayout layout, DocumentViews documents, DocumentTab tab)
     {
-        var others = ListTabsInGroup(uiState, tab);
+        var others = ListTabsInGroup(layout, documents, tab);
         others.Remove(tab);
-        CloseTabs(uiState, others);
+        CloseTabs(layout, documents, others);
     }
 
     /// <summary>Closes every document tab of <paramref name="tab"/>'s group.</summary>
-    public static void CloseTabsInGroup(UiState uiState, DocumentTab tab)
+    public static void CloseTabsInGroup(MainLayout layout, DocumentViews documents, DocumentTab tab)
     {
-        var all = ListTabsInGroup(uiState, tab);
-        CloseTabs(uiState, all);
+        var all = ListTabsInGroup(layout, documents, tab);
+        CloseTabs(layout, documents, all);
     }
 
     /// <summary>Closes the document tabs before <paramref name="tab"/> in its group.</summary>
-    public static void CloseTabsLeftOf(UiState uiState, DocumentTab tab)
+    public static void CloseTabsLeftOf(MainLayout layout, DocumentViews documents, DocumentTab tab)
     {
-        var tabs = ListTabsInGroup(uiState, tab);
+        var tabs = ListTabsInGroup(layout, documents, tab);
         var index = tabs.IndexOf(tab);
         var left = tabs.GetRange(0, index);
-        CloseTabs(uiState, left);
+        CloseTabs(layout, documents, left);
     }
 
     /// <summary>Closes the document tabs after <paramref name="tab"/> in its group.</summary>
-    public static void CloseTabsRightOf(UiState uiState, DocumentTab tab)
+    public static void CloseTabsRightOf(MainLayout layout, DocumentViews documents, DocumentTab tab)
     {
-        var tabs = ListTabsInGroup(uiState, tab);
+        var tabs = ListTabsInGroup(layout, documents, tab);
         var after = tabs.IndexOf(tab) + 1;
         var right = tabs.GetRange(after, tabs.Count - after);
-        CloseTabs(uiState, right);
+        CloseTabs(layout, documents, right);
     }
 
     /// <summary>Closes the document tabs of every group, docked or floating.</summary>
-    public static void CloseAllTabs(UiState uiState)
+    public static void CloseAllTabs(MainLayout layout, DocumentViews documents)
     {
         var all = new List<DocumentTab>();
-        foreach (var group in uiState.MainLayout.Dock.AllGroups())
+        foreach (var group in layout.Dock.AllGroups())
         {
-            AddTabsOf(uiState, all, group);
+            AddTabsOf(documents, all, group);
         }
 
-        CloseTabs(uiState, all);
+        CloseTabs(layout, documents, all);
     }
 
     /// <summary>The document tabs of <paramref name="tab"/>'s group, in the order its strip shows
     /// them, leaving out the other panels docked there.</summary>
-    public static List<DocumentTab> ListTabsInGroup(UiState uiState, DocumentTab tab)
+    public static List<DocumentTab> ListTabsInGroup(MainLayout layout, DocumentViews documents, DocumentTab tab)
     {
         var tabs = new List<DocumentTab>();
-        var group = uiState.MainLayout.Dock.GroupOf(DocumentPanels.GetPanel(uiState.Documents, tab));
+        var group = layout.Dock.GroupOf(DocumentPanels.GetPanel(documents, tab));
         if (group is null)
         {
             return tabs;
         }
 
-        AddTabsOf(uiState, tabs, group);
+        AddTabsOf(documents, tabs, group);
         return tabs;
     }
 
-    private static void AddTabsOf(UiState uiState, List<DocumentTab> tabs, DockGroup group)
+    private static void AddTabsOf(DocumentViews documents, List<DocumentTab> tabs, DockGroup group)
     {
         foreach (var panel in group.Panels)
         {
-            AddTabOf(uiState, tabs, panel);
+            AddTabOf(documents, tabs, panel);
         }
     }
 
-    private static void AddTabOf(UiState uiState, List<DocumentTab> tabs, string? panel)
+    private static void AddTabOf(DocumentViews documents, List<DocumentTab> tabs, string? panel)
     {
-        var tab = uiState.Documents.FindTab(panel);
+        var tab = documents.FindTab(panel);
         if (tab is null)
         {
             return;
@@ -671,44 +671,37 @@ public static class DocumentPanels
         tabs.Add(tab);
     }
 
-    private static void CloseTabs(UiState uiState, List<DocumentTab> tabs)
+    private static void CloseTabs(MainLayout layout, DocumentViews documents, List<DocumentTab> tabs)
     {
         foreach (var tab in tabs)
         {
-            CloseTab(uiState, tab);
+            CloseTab(layout, documents, tab);
         }
     }
 
     /// <summary>The panel of the active tab, which the views dock beside, or null.</summary>
-    internal static string? FindActivePanel(UiState uiState)
+    internal static string? FindActivePanel(DocumentViews documents, TabFocus tabFocus)
     {
-        return DocumentPanels.FindPanel(uiState.Documents, uiState.TabFocus.Active);
-    }
-
-    /// <summary>Lets each view follow the grid or picture its tab shows.</summary>
-    public static void FollowTabContent(UiState uiState)
-    {
-        uiState.Documents.FollowViewContent();
+        return DocumentPanels.FindPanel(documents, tabFocus.Active);
     }
 
     /// <summary>Drops the view of each tab closed, keeping its image to free, and closes its panel; and
     /// makes a view for each tab opened that has none yet.</summary>
-    public static void SyncTabViews(UiState uiState, Navigation navigation)
+    public static void SyncTabViews(MainLayout layout, DocumentViews documents, Navigation navigation)
     {
-        DropClosedTabViews(uiState, navigation);
-        AddOpenTabViews(uiState, navigation);
+        DropClosedTabViews(layout, documents, navigation);
+        AddOpenTabViews(documents, navigation);
     }
 
-    private static void DropClosedTabViews(UiState uiState, Navigation navigation)
+    private static void DropClosedTabViews(MainLayout layout, DocumentViews documents, Navigation navigation)
     {
-        var documents = uiState.Documents;
         var closed = documents.ListClosedTabs(navigation);
         for (var i = 0; i < closed.Count; i++)
         {
             var tab = closed[i];
             var panel = DocumentPanels.GetPanel(documents, tab);
             documents.RemoveView(tab);
-            ClosePanel(uiState.MainLayout.Dock, panel);
+            ClosePanel(layout.Dock, panel);
         }
     }
 
@@ -722,11 +715,11 @@ public static class DocumentPanels
         layout.Close(panel);
     }
 
-    private static void AddOpenTabViews(UiState uiState, Navigation navigation)
+    private static void AddOpenTabViews(DocumentViews documents, Navigation navigation)
     {
         for (var i = 0; i < navigation.OpenTabs.Count; i++)
         {
-            uiState.Documents.AddView(navigation.OpenTabs[i]);
+            documents.AddView(navigation.OpenTabs[i]);
         }
     }
 
@@ -734,23 +727,23 @@ public static class DocumentPanels
     /// takes it in this frame, and the tabs in front that showed another start loading again in it, drawn loading from
     /// this frame on, only their decompiling queued. The frame edge's follow finds them current
     /// (<see cref="Decompilation.StartDecompilingAgainIfOutdated"/> starts each once).</summary>
-    public static void ShowInLanguage(UiState uiState, DecompilerChoice decompiler, DecompilationLanguage language)
+    public static void ShowInLanguage(MainLayout layout, DocumentViews documents, IAppCommandWriter commands, DecompilerChoice decompiler, DecompilationLanguage language)
     {
         decompiler.UseLanguage(language);
         var setup = decompiler.Setup;
-        foreach (var tab in ListFrontTabs(uiState))
+        foreach (var tab in ListFrontTabs(layout, documents))
         {
-            Commands.DecompileLater(uiState.AppCommands, Decompilation.StartDecompilingAgainIfOutdated(tab, setup.Language, setup.Options));
+            Commands.DecompileLater(commands, Decompilation.StartDecompilingAgainIfOutdated(tab, setup.Language, setup.Options));
         }
     }
 
     /// <summary>The tab in front of each group that has one.</summary>
-    public static List<DocumentTab> ListFrontTabs(UiState uiState)
+    public static List<DocumentTab> ListFrontTabs(MainLayout layout, DocumentViews documents)
     {
         var tabs = new List<DocumentTab>();
-        foreach (var group in uiState.MainLayout.Dock.AllGroups())
+        foreach (var group in layout.Dock.AllGroups())
         {
-            AddTabOf(uiState, tabs, group.Active);
+            AddTabOf(documents, tabs, group.Active);
         }
 
         return tabs;

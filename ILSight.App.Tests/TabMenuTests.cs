@@ -28,7 +28,7 @@ public sealed class TabMenuTests
     {
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        return DocumentPanels.ListTabsInGroup(app.Ui, tab)
+        return DocumentPanels.ListTabsInGroup(app.Ui.MainLayout, app.Ui.Documents, tab)
             .Select(t =>
             {
                 Assert.NotNull(t.Node);
@@ -82,7 +82,7 @@ public sealed class TabMenuTests
         group.Panels.Add(DockPanels.Bookmarks);
         app.Run(2);
 
-        DocumentPanels.CloseTabsInGroup(app.Ui, tab);
+        DocumentPanels.CloseTabsInGroup(app.Ui.MainLayout, app.Ui.Documents, tab);
         app.Settle(2);
 
         Assert.Empty(app.AppState.ListSession.Navigation.OpenTabs);

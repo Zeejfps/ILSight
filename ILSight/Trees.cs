@@ -10,23 +10,23 @@ public static class Trees
     /// was cleared; rebuilds its roots when the open assemblies changed; and lists the analyzer's rows
     /// again when its roots changed. The roots of the assemblies read from <paramref name="reopening"/>
     /// spin while they are reopened.</summary>
-    public static void SyncTrees(UiState uiState, AssemblyList assemblies, AnalyzerTree analyzer, ApiVisibility visibility,
-        IReadOnlyCollection<AssemblyPath> reopening)
+    internal static void SyncTrees(BrowseTree tree, AnalyzerRows rows, ShownChanges shown, AssemblyList assemblies, AnalyzerTree analyzer,
+        ApiVisibility visibility, IReadOnlyCollection<AssemblyPath> reopening)
     {
-        ForgetClearedList(uiState, assemblies);
-        uiState.Tree.ShowApi(visibility);
-        uiState.Tree.TrySyncRoots(assemblies);
-        uiState.Tree.ShowReopening(reopening);
-        uiState.Analyzer.FollowTree(analyzer);
+        ForgetClearedList(tree, shown, assemblies);
+        tree.ShowApi(visibility);
+        tree.TrySyncRoots(assemblies);
+        tree.ShowReopening(reopening);
+        rows.FollowTree(analyzer);
     }
 
-    private static void ForgetClearedList(UiState uiState, AssemblyList assemblies)
+    private static void ForgetClearedList(BrowseTree tree, ShownChanges shown, AssemblyList assemblies)
     {
-        if (!uiState.Shown.TryTakeListGeneration(assemblies.Generation))
+        if (!shown.TryTakeListGeneration(assemblies.Generation))
         {
             return;
         }
 
-        uiState.Tree.Forget();
+        tree.Forget();
     }
 }

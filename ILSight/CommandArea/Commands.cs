@@ -96,36 +96,28 @@ public static class Commands
     }
 
     /// <summary>Asks for what <paramref name="reference"/> points at to be analyzed once the frame is drawn: the analyzer
-    /// opens with a root that shows as loading (<see cref="AnalyzerPanelView.ShowAnalyzing(UiState, AnalyzerTree, CodeReference.Navigable)"/>),
+    /// opens with a root that shows as loading (<see cref="AnalyzerPanelView.ShowAnalyzing(Panels, AnalyzerTree, CodeReference.Navigable)"/>),
     /// and what the reference points at is found and analyzed then (<see cref="StartAnalyzing"/>).</summary>
-    public static void AnalyzeLater(UiState uiState, CodeReference.Navigable reference)
+    public static void AnalyzeLater(IAppCommandWriter commands, Panels panels, CodeReference.Navigable reference)
     {
-        uiState.AppCommands.Enqueue(CreateAnalyze(uiState, reference));
-    }
-
-    private static AppCommand CreateAnalyze(UiState uiState, CodeReference.Navigable reference)
-    {
-        return appState =>
-        {
-            StartAnalyzing(appState, AnalyzerPanelView.ShowAnalyzing(uiState, appState.ListSession.Analyzer, reference));
-        };
+        Later(commands, (panels, reference), static (a, s) => StartAnalyzing(a, AnalyzerPanelView.ShowAnalyzing(s.panels, a.ListSession.Analyzer, s.reference)));
     }
 
     /// <summary>Asks for <paramref name="symbol"/> to be analyzed once the frame is drawn (<see cref="Analyze"/>).</summary>
-    public static void AnalyzeLater(UiState uiState, AnalysisSymbol symbol)
+    public static void AnalyzeLater(IAppCommandWriter commands, Panels panels, AnalyzerRows rows, AnalysisSymbol symbol)
     {
-        Later(uiState.AppCommands, (screen: uiState, symbol), static (a, s) => Analyze(a, s.screen, s.symbol));
+        Later(commands, (panels, rows, symbol), static (a, s) => Analyze(a, s.panels, s.rows, s.symbol));
     }
 
     /// <summary>Analyzes <paramref name="symbol"/>: the analyzer opens, if it is not, with the root analyzing it
     /// selected (<see cref="AnalyzerPanelView.ShowAnalysis"/>). When the list doesn't hold its assembly, a root shows as
     /// loading while the assembly is listed, as following a reference into it lists it, and the analysis lands then
     /// (<see cref="StartAnalyzing"/>); when nothing names its definition to list it by, the user is told why.</summary>
-    public static void Analyze(AppState appState, UiState screen, AnalysisSymbol symbol)
+    public static void Analyze(AppState appState, Panels panels, AnalyzerRows rows, AnalysisSymbol symbol)
     {
         appState.ListSession.Analyzer.AddRoot(symbol).Switch(
-            analyzing => AnalyzerPanelView.ShowAnalysis(screen, analyzing.Root),
-            listing => StartAnalyzing(appState, AnalyzerPanelView.ShowListing(screen, listing.Pending)),
+            analyzing => AnalyzerPanelView.ShowAnalysis(panels, rows, analyzing.Root),
+            listing => StartAnalyzing(appState, AnalyzerPanelView.ShowListing(panels, listing.Pending)),
             refused => appState.Refusals.Show(refused.Why));
     }
 

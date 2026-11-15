@@ -86,7 +86,7 @@ internal static class AnalyzerPanelView
     {
         if (ui.IsPressed(Shortcuts.Analyze))
         {
-            AnalyzeSelected(ui.State, OfferAnalysis(rows, analyzer));
+            AnalyzeSelected(ui.State.AppCommands, ui.State.Panels, rows, OfferAnalysis(rows, analyzer));
         }
 
         if (ui.IsPressed(Shortcuts.Delete))
@@ -106,11 +106,11 @@ internal static class AnalyzerPanelView
         return Analysis.OfferAnalysis(analyzer, picked.Symbol);
     }
 
-    private static void AnalyzeSelected(UiState screen, CommandOffer<AnalysisSymbol> offer)
+    private static void AnalyzeSelected(IAppCommandWriter commands, Panels panels, AnalyzerRows rows, CommandOffer<AnalysisSymbol> offer)
     {
         offer.Switch(
-            runs => Commands.AnalyzeLater(screen, runs.Target),
-            unavailable => Commands.RefuseLater(screen.AppCommands, unavailable.Why),
+            runs => Commands.AnalyzeLater(commands, panels, rows, runs.Target),
+            unavailable => Commands.RefuseLater(commands, unavailable.Why),
             static _ => { });
     }
 
@@ -182,7 +182,7 @@ internal static class AnalyzerPanelView
             {
                 if (ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
                 {
-                    Commands.AnalyzeLater(ui.State, runs.Target);
+                    Commands.AnalyzeLater(ui.State.AppCommands, ui.State.Panels, ui.State.Analyzer, runs.Target);
                 }
             },
             unavailable => ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, enabled: false, id: "analyze",
@@ -205,26 +205,26 @@ internal static class AnalyzerPanelView
     }
 
     /// <summary>Opens the analyzer if it is not and shows <paramref name="root"/>, expanded and selected.</summary>
-    public static void ShowAnalysis(UiState screen, AnalyzerSymbolNode root)
+    public static void ShowAnalysis(Panels panels, AnalyzerRows rows, AnalyzerSymbolNode root)
     {
-        ScreenLayout.OpenPanel(screen, DockView.Analyzer);
-        screen.Analyzer.ShowRoot(root);
+        panels.Open(DockView.Analyzer);
+        rows.ShowRoot(root);
     }
 
     /// <summary>Opens the analyzer if it is not, where the root of <paramref name="pending"/> shows as loading while
     /// the assembly of the symbol it analyzes is listed. Returns it, for the edge to list and analyze
     /// (<see cref="AnalyzeReferenceHandler"/>).</summary>
-    public static PendingAnalysis ShowListing(UiState screen, PendingAnalysis pending)
+    public static PendingAnalysis ShowListing(Panels panels, PendingAnalysis pending)
     {
-        ScreenLayout.OpenPanel(screen, DockView.Analyzer);
+        panels.Open(DockView.Analyzer);
         return pending;
     }
 
     /// <summary>Opens the analyzer if it is not. The root returned shows as loading until the edge finds and analyzes
     /// what <paramref name="reference"/> points at (<see cref="AnalyzeReferenceHandler"/>).</summary>
-    public static PendingAnalysis ShowAnalyzing(UiState screen, AnalyzerTree analyzer, CodeReference.Navigable reference)
+    public static PendingAnalysis ShowAnalyzing(Panels panels, AnalyzerTree analyzer, CodeReference.Navigable reference)
     {
-        ScreenLayout.OpenPanel(screen, DockView.Analyzer);
+        panels.Open(DockView.Analyzer);
         return Analysis.BeginAnalyzing(analyzer, reference);
     }
 }

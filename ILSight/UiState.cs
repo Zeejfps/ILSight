@@ -44,9 +44,12 @@ public sealed class UiState : IUiState
     public required MainLayout MainLayout { get; init; }
 
     /// <summary>How each open tab is shown, and the panel it is docked as.</summary>
-    public DocumentViews Documents { get; } = new();
+    public required DocumentViews Documents { get; init; }
 
-    public TabFocus TabFocus { get; } = new();
+    public required TabFocus TabFocus { get; init; }
+
+    /// <summary>Opens the views in <see cref="MainLayout"/> beside the active document, and puts the layout back.</summary>
+    public required Panels Panels { get; init; }
 
     /// <summary>Whether to reset the layout, asked of the user.</summary>
     public Confirmation LayoutReset { get; } = new();

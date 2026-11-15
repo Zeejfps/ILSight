@@ -26,10 +26,9 @@ internal static class ProcessPickerView
 
     /// <summary>Opens the dialog, drawn scanning from this frame on, and asks for the processes to be looked for
     /// again once the frame is drawn, as they come and go.</summary>
-    public static void Open(UiState uiState)
+    public static void Open(IAppCommandWriter commands, ProcessPicker picker)
     {
-        var picker = uiState.ProcessPicker;
-        Scan(uiState.AppCommands, picker.Browser, picker.Open());
+        Scan(commands, picker.Browser, picker.Open());
     }
 
     // Runs once the frame is drawn; another scan or closing the dialog cancels it.

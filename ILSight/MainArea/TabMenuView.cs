@@ -72,33 +72,33 @@ internal static class TabMenuView
     {
         var t = ui.State.Appearance.Strings;
         var screen = ui.State;
-        var group = DocumentPanels.ListTabsInGroup(screen, tab);
+        var group = DocumentPanels.ListTabsInGroup(screen.MainLayout, screen.Documents, tab);
         var index = group.IndexOf(tab);
         KeepOpenItem(ui, ui.State.Appearance, ui.State.AppCommands, navigation, tab);
         if (ui.MenuItem(t.TabClose, Shortcuts.CloseTab, id: "close"))
         {
-            DocumentPanels.CloseTab(screen, tab);
+            DocumentPanels.CloseTab(screen.MainLayout, screen.Documents, tab);
         }
 
         if (ui.MenuItem(t.TabCloseOthers, enabled: group.Count > 1, id: "close-others"))
         {
-            DocumentPanels.CloseOtherTabs(screen, tab);
+            DocumentPanels.CloseOtherTabs(screen.MainLayout, screen.Documents, tab);
         }
 
         if (ui.MenuItem(t.TabCloseAll, id: "close-all"))
         {
-            DocumentPanels.CloseTabsInGroup(screen, tab);
+            DocumentPanels.CloseTabsInGroup(screen.MainLayout, screen.Documents, tab);
         }
 
         ui.MenuSeparator();
         if (ui.MenuItem(t.TabCloseLeft, enabled: index > 0, id: "close-left"))
         {
-            DocumentPanels.CloseTabsLeftOf(screen, tab);
+            DocumentPanels.CloseTabsLeftOf(screen.MainLayout, screen.Documents, tab);
         }
 
         if (ui.MenuItem(t.TabCloseRight, enabled: HasTabsRightOf(group, index), id: "close-right"))
         {
-            DocumentPanels.CloseTabsRightOf(screen, tab);
+            DocumentPanels.CloseTabsRightOf(screen.MainLayout, screen.Documents, tab);
         }
     }
 

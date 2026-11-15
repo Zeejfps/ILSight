@@ -52,7 +52,7 @@ internal static class ToolbarView
                 var searchTip = ui.Memo("search-tip", t, static s => s.SearchFieldTooltip(Shortcuts.Search));
                 if (ui.IconButton("search", ui.State.Appearance.Icons.ToolbarSearch, searchTip, variant: ButtonVariant.Neutral))
                 {
-                    ScreenLayout.OpenSearch(ui.State);
+                    ui.State.Panels.OpenSearch();
                 }
             }
 
@@ -67,7 +67,7 @@ internal static class ToolbarView
                 var languages = Languages(t);
                 if (ui.SegmentedControl("language", ref language, languages))
                 {
-                    DocumentPanels.ShowInLanguage(ui.State, decompiler, language);
+                    DocumentPanels.ShowInLanguage(ui.State.MainLayout, ui.State.Documents, ui.State.AppCommands, decompiler, language);
                 }
 
                 if (DecompilationLanguages.ShowsCSharp(language))
@@ -75,7 +75,7 @@ internal static class ToolbarView
                     LanguageVersion(ui, ui.State.Appearance, ui.State.AppCommands, decompiler.Setup.Options);
                     if (ui.IconButton("decompiler-options", ui.State.Appearance.Icons.ToolbarDecompilerOptions, t.PanelDecompilerOptions, variant: ButtonVariant.Neutral))
                     {
-                        ScreenLayout.OpenPanel(ui.State, DockView.DecompilerOptions);
+                        ui.State.Panels.Open(DockView.DecompilerOptions);
                     }
                 }
             }
@@ -86,7 +86,7 @@ internal static class ToolbarView
             var displayOptionsTip = ui.Memo("display-options-tip", t, static s => s.ToolbarDisplayOptions(Shortcuts.Settings));
             if (ui.IconButton("display-options", ui.State.Appearance.Icons.ToolbarDisplayOptions, displayOptionsTip, variant: ButtonVariant.Neutral))
             {
-                ScreenLayout.OpenPanel(ui.State, DockView.DisplayOptions);
+                ui.State.Panels.Open(DockView.DisplayOptions);
             }
         }
     }

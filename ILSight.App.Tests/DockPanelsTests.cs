@@ -59,7 +59,7 @@ public sealed class DockPanelsTests
         var d = new AppStateDriver();
         var appState = d.AppState;
 
-        ScreenLayout.OpenSearch(d.Ui);
+        d.Ui.Panels.OpenSearch();
         d.Ui.Search.Query = "Greeter";
 
         var search = d.Ui.MainLayout.Dock.GroupOf(DockPanels.Search);
@@ -111,7 +111,7 @@ public sealed class DockPanelsTests
         var driver = AppStateDriver.Opened();
         driver.Ui.Search.Query = "inassembly:Old Greet";
 
-        ScreenLayout.ScopeSearch(driver.Ui, await driver.NodeAsync(AppStateDriver.FixturesNamespace));
+        ScreenLayout.ScopeSearch(driver.Ui.Search, driver.Ui.Panels, await driver.NodeAsync(AppStateDriver.FixturesNamespace));
 
         Assert.Equal($"innamespace:{AppStateDriver.FixturesNamespace} inassembly:Old Greet ", driver.Ui.Search.Query);
         Assert.True(driver.Ui.MainLayout.Dock.Contains(DockPanels.Search));

@@ -11,16 +11,15 @@ internal static class FrameworkPickerView
 {
     /// <summary>Opens the picker, drawn from this frame on, and asks for the runtime to be scanned for it once the
     /// frame is drawn, unless it was: the picker draws it scanning from this frame on.</summary>
-    public static void Open(UiState uiState)
+    public static void Open(IAppCommandWriter commands, FrameworkPicker picker)
     {
-        var picker = uiState.Picker;
         var scan = picker.Open();
         if (scan is null)
         {
             return;
         }
 
-        Commands.StartSettling(uiState.AppCommands, nameof(FrameworkBrowser.ScanAsync), (Browser: picker.Browser, Scan: scan), static (_, s, ct) => s.Browser.ScanAsync(s.Scan, ct),
+        Commands.StartSettling(commands, nameof(FrameworkBrowser.ScanAsync), (Browser: picker.Browser, Scan: scan), static (_, s, ct) => s.Browser.ScanAsync(s.Scan, ct),
             static (_, s, error) => s.Browser.FailScan(s.Scan, error));
     }
 

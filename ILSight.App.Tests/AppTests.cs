@@ -17,7 +17,7 @@ public sealed class AppTests
     private static AppDriver Searching(string text, int moreRowsThan, float width = 1000f)
     {
         var app = AppDriver.Opened(width);
-        ScreenLayout.OpenSearch(app.Ui);
+        app.Ui.Panels.OpenSearch();
         app.Run();
         app.Frames.Type(text).Frame();
         app.RunOut();
@@ -407,7 +407,7 @@ public sealed class AppTests
         var app = AppDriver.Opened(width: 1600f);
         Preferences.SetLanguageVersion(app.AppState, CSharpVersion.CSharp7);
         FoldOptionGroupsBut(app, nameof(CSharpVersion.CSharp8));
-        ScreenLayout.OpenPanel(app.Ui, DockView.DecompilerOptions);
+        app.Ui.Panels.Open(DockView.DecompilerOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.WithText("switch expressions")).Frame();
@@ -439,7 +439,7 @@ public sealed class AppTests
     public void The_options_toolbar_collapses_and_expands_every_group()
     {
         var app = AppDriver.Opened(width: 1600f);
-        ScreenLayout.OpenPanel(app.Ui, DockView.DecompilerOptions);
+        app.Ui.Panels.Open(DockView.DecompilerOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.AtPath("dock/decompiler-options/collapse"));
@@ -456,7 +456,7 @@ public sealed class AppTests
     {
         var app = AppDriver.Opened(width: 1600f);
         FoldOptionGroupsBut(app, nameof(CSharpVersion.CSharp8));
-        ScreenLayout.OpenPanel(app.Ui, DockView.DecompilerOptions);
+        app.Ui.Panels.Open(DockView.DecompilerOptions);
         app.Run();
         var csharp8 = DecompilerToggle.All.Where(t => t.Group is DecompilerToggleGroup.Language { IntroducedIn: CSharpVersion.CSharp8 }).ToArray();
 
@@ -508,7 +508,7 @@ public sealed class AppTests
     public void SearchPanel_InvalidRegex_ShowsWhyNothingIsFoundUntilFixed()
     {
         var app = AppDriver.Opened();
-        ScreenLayout.OpenSearch(app.Ui);
+        app.Ui.Panels.OpenSearch();
         app.Run();
         app.Frames.Type("/[a/").Frame();
         app.RunOut();
@@ -595,7 +595,7 @@ public sealed class AppTests
     public void All_kinds_stands_alone_and_comes_back_when_the_last_kind_is_unchecked()
     {
         var app = AppDriver.Opened();
-        ScreenLayout.OpenSearch(app.Ui);
+        app.Ui.Panels.OpenSearch();
         app.Run(2);
 
         app.Frames.ClickOn(Selector.WithText("Types and members")).Frame();
@@ -686,7 +686,7 @@ public sealed class AppTests
         app.Run(2);
         Assert.False(app.Frames.Drew("Search…"));
 
-        ScreenLayout.OpenSearch(app.Ui);
+        app.Ui.Panels.OpenSearch();
         app.Run(2);
 
         var icon = app.LastTextRect(BuiltInGlyphs.Icons.SearchField);

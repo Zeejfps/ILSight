@@ -29,7 +29,7 @@ internal static class ExportStatusView
         var t = ui.State.Appearance.Strings;
         if (Glance(ui, ui.State.Appearance, running, waiting))
         {
-            ScreenLayout.OpenPanel(ui.State, DockView.Exports);
+            ui.State.Panels.Open(DockView.Exports);
         }
 
         if (!running.IsCancelling && IconButton(ui, "cancel-export", ui.State.Appearance.Icons.ExportCancel, t.StatusCancelExport))

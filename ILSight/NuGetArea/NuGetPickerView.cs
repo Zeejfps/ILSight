@@ -27,11 +27,10 @@ internal static class NuGetPickerView
 
     /// <summary>Opens the dialog, drawn from this frame on, and asks for the user's NuGet.Config to be read for
     /// it once the frame is drawn, unless it was.</summary>
-    public static void Open(UiState uiState)
+    public static void Open(IAppCommandWriter commands, NuGetPicker picker, ReadNuGetSetupHandler readSetup)
     {
-        var picker = uiState.NuGetPicker;
         picker.Open();
-        Commands.StartSettling(uiState.AppCommands, nameof(ReadNuGetSetupHandler), (Handler: uiState.ReadNuGetSetupHandler, Picker: picker),
+        Commands.StartSettling(commands, nameof(ReadNuGetSetupHandler), (Handler: readSetup, Picker: picker),
             static (_, s, ct) => s.Handler.HandleAsync(s.Picker, ct), static (_, s, _) => s.Handler.UseDefaultSetup(s.Picker));
     }
 

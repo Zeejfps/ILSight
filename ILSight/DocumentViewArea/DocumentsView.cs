@@ -142,7 +142,7 @@ internal static class DocumentsView
             navigate: static (s, navigate) => Commands.FollowLater(s.ui.State.AppCommands, navigate.Target, s.navigation.BeginResolving(navigate.InNewTab)),
             toggleBookmark: static (s, toggle) => Commands.Later(s.ui.State.AppCommands, (screen: s.ui.State, s.tab, line: toggle.Line, t: s.ui.State.Appearance.Strings),
                 static (a, s) => ToggleLineBookmark(s.screen, a, s.tab, s.line, s.t)),
-            analyze: static (s, analyze) => Commands.AnalyzeLater(s.ui.State, analyze.Entity),
+            analyze: static (s, analyze) => Commands.AnalyzeLater(s.ui.State.AppCommands, s.ui.State.Panels, analyze.Entity),
             showInMetadata: static (s, metadata) => Commands.ShowInMetadataLater(s.ui.State.AppCommands, metadata.Target, s.navigation.BeginResolving(inNewTab: false)),
             showInApiReference: static (s, reference) => Commands.Start(s.ui.State.AppCommands, nameof(ShowInApiReferenceHandler), reference.Entity,
                 static (a, entity, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, entity, ct)),

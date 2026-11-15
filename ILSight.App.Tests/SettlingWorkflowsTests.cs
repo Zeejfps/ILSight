@@ -28,7 +28,7 @@ public sealed class SettlingWorkflowsTests
         var ports = new FakeRunSearchHandlerPorts { Found = [], Throws = new InvalidOperationException("broken") };
         var app = new AppDriver(hooks: new AdapterHooks { Searching = _ => ports });
         app.Driver.OpenFixtures();
-        ScreenLayout.OpenSearch(app.Ui);
+        app.Ui.Panels.OpenSearch();
         app.Run();
 
         app.Frames.Type("Greeter").Frame();

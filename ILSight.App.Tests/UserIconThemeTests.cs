@@ -262,7 +262,7 @@ public sealed class UserIconThemeTests : IDisposable
         _temp.Write(ClassPicture, MemoryIconAssets.Picture);
         WriteIconTheme("shapes", """{ "name": "Shapes", "icons": { "node.class": { "svg": "svg/class.svg" } } }""");
         var app = new AppDriver(width: 1600f, settings: Settings());
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.AtPath("dock/display-options/icon-theme")).Frame();
@@ -277,7 +277,7 @@ public sealed class UserIconThemeTests : IDisposable
     public void Customizing_the_icon_theme_switches_to_a_new_one_and_opens_its_file()
     {
         var app = new AppDriver(width: 1600f, settings: Settings());
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
         app.Frames.ClickOn(Selector.AtPath("dock/display-options/customize-icon-theme")).Frame();
@@ -290,7 +290,7 @@ public sealed class UserIconThemeTests : IDisposable
     public void The_icon_theme_buttons_hide_while_the_settings_live_in_memory()
     {
         var app = new AppDriver(width: 1600f);
-        ScreenLayout.OpenPanel(app.Ui, DockView.DisplayOptions);
+        app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
         Assert.True(app.Frames.Drew("Icon theme"));
