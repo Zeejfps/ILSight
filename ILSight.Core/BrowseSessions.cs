@@ -303,43 +303,56 @@ public static class BrowseSessions
     }
 
     /// <summary>The node of the type or member <paramref name="handle"/> defines in <paramref name="module"/>, whose
-    /// type system read is <paramref name="main"/>'s; null for one the tree does not list.</summary>
+    /// type system read is <paramref name="main"/>'s; null for one the tree does not list, or whose place failed to
+    /// build (<see cref="PlaceNodeAsync"/> tells them apart).</summary>
     internal static async Task<BrowseNode?> FindNodeAsync(BrowseSession session, LoadedModule module, MetadataModule main, EntityHandle handle,
+        CancellationToken ct)
+    {
+        var place = await PlaceNodeAsync(session, module, main, handle, ct);
+        return place.NodeOrNull;
+    }
+
+    /// <summary>Where the type or member <paramref name="handle"/> defines in <paramref name="module"/> sits in the
+    /// tree, whose type system read is <paramref name="main"/>'s: its node, none for one the tree does not list, or the
+    /// failure of the children that would list it. What the library throws reading the metadata on the way is let
+    /// through.</summary>
+    internal static async Task<NodePlace> PlaceNodeAsync(BrowseSession session, LoadedModule module, MetadataModule main, EntityHandle handle,
         CancellationToken ct)
     {
         if (handle.IsNil)
         {
-            return null;
+            return NodePlace.None;
         }
 
         var node = session.FindIndexed(module, handle);
         if (node is not null)
         {
-            return node;
+            return new NodePlace.Listed(node);
         }
 
-        var parent = await FindParentAsync(session, module, main, handle, ct);
-        if (parent is null)
+        var parent = await PlaceParentAsync(session, module, main, handle, ct);
+        if (parent is not NodePlace.Listed listed)
         {
-            return null;
+            return parent;
         }
 
-        var siblings = await GetChildrenAsync(session, parent, ct);
-        if (siblings is ChildrenState.Failed)
+        var siblings = await GetChildrenAsync(session, listed.Node, ct);
+        if (siblings is ChildrenState.Failed failed)
         {
             // The parent's children failed to build: nothing lists the node.
-            return null;
+            return new NodePlace.Failed(failed.Error);
         }
 
-        return session.FindIndexed(module, handle);
+        var found = session.FindIndexed(module, handle);
+        return found is null ? NodePlace.None : new NodePlace.Listed(found);
     }
 
-    private static async Task<BrowseNode?> FindParentAsync(BrowseSession session, LoadedModule module, MetadataModule main, EntityHandle handle,
+    private static async Task<NodePlace> PlaceParentAsync(BrowseSession session, LoadedModule module, MetadataModule main, EntityHandle handle,
         CancellationToken ct)
     {
         if (handle.Kind != HandleKind.TypeDefinition)
         {
-            return await FindOwnerNodeAsync(session, module, main, handle, ct);
+            return await PlaceOwnerAsync(session, module, main, handle, ct);
         }
 
         var metadata = LoadedAssemblies.GetFile(module).Metadata;
@@ -347,10 +360,10 @@ public static class BrowseSessions
         var declaringType = type.GetDeclaringType();
         if (!declaringType.IsNil)
         {
-            return await FindOwnerNodeAsync(session, module, main, handle, ct);
+            return await PlaceOwnerAsync(session, module, main, handle, ct);
         }
 
-        return await FindNamespaceAsync(session, module, metadata.GetString(type.Namespace), ct);
+        return await PlaceNamespaceAsync(session, module, metadata.GetString(type.Namespace), ct);
     }
 
     /// <summary>The node of <paramref name="handle"/>, or of the nearest entity holding it that has one,
@@ -378,28 +391,55 @@ public static class BrowseSessions
         return null;
     }
 
-    private static async Task<BrowseNode?> FindOwnerNodeAsync(BrowseSession session, LoadedModule module, MetadataModule main, EntityHandle handle,
+    /// <summary>Where <paramref name="handle"/> sits in the tree, or the nearest entity holding it that the tree lists,
+    /// as a compiler-generated member is held by the type it is generated in; a failure on the way is the answer, never
+    /// passed over for an ancestor. <paramref name="main"/> is the module's type system as read.</summary>
+    internal static async Task<NodePlace> PlaceOrAncestorAsync(BrowseSession session, LoadedModule module, MetadataModule main, EntityHandle handle,
+        CancellationToken ct)
+    {
+        EntityHandle? current = handle;
+        while (current is not null)
+        {
+            var place = await PlaceNodeAsync(session, module, main, current.Value, ct);
+            if (place is not NodePlace.NotListed)
+            {
+                return place;
+            }
+
+            current = LoadedAssemblies.FindOwner(main, current.Value);
+        }
+        return NodePlace.None;
+    }
+
+    private static async Task<NodePlace> PlaceOwnerAsync(BrowseSession session, LoadedModule module, MetadataModule main, EntityHandle handle,
         CancellationToken ct)
     {
         var owner = LoadedAssemblies.FindOwner(main, handle);
         if (owner is null)
         {
-            return null;
+            return NodePlace.None;
         }
 
-        return await FindNodeAsync(session, module, main, owner.Value, ct);
+        return await PlaceNodeAsync(session, module, main, owner.Value, ct);
     }
 
     private static async Task<BrowseNode?> FindNamespaceAsync(BrowseSession session, LoadedModule module, string name, CancellationToken ct)
     {
+        var place = await PlaceNamespaceAsync(session, module, name, ct);
+        return place.NodeOrNull;
+    }
+
+    private static async Task<NodePlace> PlaceNamespaceAsync(BrowseSession session, LoadedModule module, string name, CancellationToken ct)
+    {
         var namespaces = await GetChildrenAsync(session, await EnsureRootAsync(session, module, ct), ct);
-        if (namespaces is ChildrenState.Failed)
+        if (namespaces is ChildrenState.Failed failed)
         {
             // The module's namespaces failed to build: none is listed.
-            return null;
+            return new NodePlace.Failed(failed.Error);
         }
 
-        return session.FindNamespace(module, name);
+        var found = session.FindNamespace(module, name);
+        return found is null ? NodePlace.None : new NodePlace.Listed(found);
     }
 
     /// <summary>The node of the namespace, type or member <paramref name="idString"/> names in

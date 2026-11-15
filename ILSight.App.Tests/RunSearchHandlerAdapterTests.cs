@@ -1,3 +1,4 @@
+using System.Reflection.Metadata.Ecma335;
 using ILSight.Core;
 using ILSight.SearchArea;
 
@@ -24,5 +25,34 @@ public sealed class RunSearchHandlerAdapterTests
         var unsearched = Assert.IsType<SearchFind.Unsearched>(Assert.Single(found, static f => f is SearchFind.Unsearched));
         Assert.Same(module, unsearched.Assembly);
         Assert.NotEmpty(unsearched.Why);
+    }
+
+    [Fact]
+    public async Task SearchAsync_ModuleReadInPart_FindsTheHitAndSaysWhatItPassedOver()
+    {
+        using var temp = new TempDir();
+        var unreadable = BrokenAssemblies.GetMethod(AppStateDriver.FixturePath, nameof(NumberLoads), nameof(NumberLoads.Unreadable));
+        var unplaced = BrokenAssemblies.GetMethod(AppStateDriver.FixturePath, nameof(Unplaced.UnplacedNumberLoad), nameof(Unplaced.UnplacedNumberLoad.Unplaced));
+        var path = AssemblyPath.Of(BrokenAssemblies.WritePartlyReadable(temp, AppStateDriver.FixturePath, unreadable, unplaced));
+        var module = Assert.IsType<LoadedModule>(AssemblyListing.Open(new AssemblyList { Runtime = TestRuntime.Installed }, path));
+        var adapter = new RunSearchHandlerAdapter(new BrowseSession());
+
+        var found = new List<SearchFind>();
+        await foreach (var batch in adapter.SearchAsync(SearchQueries.ParseQuery("c:7340033"), [module], CancellationToken.None))
+        {
+            found.AddRange(batch);
+        }
+
+        var hit = Assert.IsType<SearchFind.Hit>(Assert.Single(found, static f => f is SearchFind.Hit));
+        Assert.StartsWith(nameof(NumberLoads.Shown), hit.Result.Text, StringComparison.Ordinal);
+        var partly = Assert.IsType<SearchFind.PartlySearched>(Assert.Single(found, static f => f is SearchFind.PartlySearched));
+        Assert.Same(module, partly.Assembly);
+        Assert.Equal(1, partly.Count);
+        Assert.NotEmpty(partly.Why);
+        var notShown = Assert.IsType<SearchFind.NotShown>(Assert.Single(found, static f => f is SearchFind.NotShown));
+        Assert.Same(module, notShown.Assembly);
+        Assert.Equal(MetadataTokens.GetToken(unplaced), notShown.Token);
+        Assert.NotEmpty(notShown.Why);
+        Assert.DoesNotContain(found, static f => f is SearchFind.Unsearched);
     }
 }

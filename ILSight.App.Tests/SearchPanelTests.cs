@@ -42,6 +42,34 @@ public sealed class SearchPanelTests : IDisposable
         Assert.Empty(app.AppState.Errors.Entries);
     }
 
+    [Fact]
+    public void A_search_of_a_module_read_in_part_shows_its_hit_and_says_the_module_partly_searched_and_the_match_not_shown()
+    {
+        var unreadable = BrokenAssemblies.GetMethod(AppStateDriver.FixturePath, nameof(NumberLoads), nameof(NumberLoads.Unreadable));
+        var unplaced = BrokenAssemblies.GetMethod(AppStateDriver.FixturePath, nameof(Unplaced.UnplacedNumberLoad), nameof(Unplaced.UnplacedNumberLoad.Unplaced));
+        var partly = BrokenAssemblies.WritePartlyReadable(_temp, AppStateDriver.FixturePath, unreadable, unplaced);
+        var app = new AppDriver();
+        app.Open([AssemblyPath.Of(partly)]);
+        app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Assemblies.Count == 1, Waits.Patience);
+        app.Ui.Panels.OpenSearch();
+        app.Run();
+
+        app.Frames.Type("c:7340033").Frame();
+        app.RunOut();
+
+        var results = app.Ui.Search.Results;
+        Assert.False(results.IsBusy);
+        Assert.StartsWith(nameof(NumberLoads.Shown), Assert.Single(results.Rows).Text, StringComparison.Ordinal);
+        Assert.Equal(1, Assert.Single(results.PartlySearched).Count);
+        Assert.Single(results.NotShown);
+        Assert.Empty(results.Unsearched);
+        var texts = app.Frames.TextRects();
+        Assert.Contains(texts, t => t.Text.StartsWith("PartlyReadable.dll: partly searched, method bodies not read: 1 (", StringComparison.Ordinal));
+        Assert.Contains(texts, t => t.Text.StartsWith($"0x{MetadataTokens.GetToken(unplaced):X8} in PartlyReadable.dll: found, couldn't be shown (",
+            StringComparison.Ordinal));
+        Assert.Empty(app.AppState.Errors.Entries);
+    }
+
     // The name of the first type after <Module> points past the string heap: the file opens, and reading that name
     // throws.
     private static byte[] WithUnreadableTypeName(byte[] image)

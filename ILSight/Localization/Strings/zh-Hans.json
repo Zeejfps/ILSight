@@ -86,6 +86,8 @@
   "search.column_assembly": "程序集",
   "search.invalid_regex": "无效的正则表达式",
   "search.unsearched": "{name}：无法搜索（{why}）",
+  "search.partly_searched": "{name}：仅部分搜索，未能读取的方法体：{count} 个（{why}）",
+  "search.found_not_shown": "{name} 中的 {what}：已找到，但无法显示（{why}）",
   "search.failed": "搜索失败（{why}）",
 
   "omnibar.search": "转到类型或成员…",

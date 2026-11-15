@@ -35,11 +35,13 @@ internal static class SearchPanelView
             ResultCount(ui, appearance, search.Results);
         }
         ui.Separator();
-        Unsearched(ui, appearance, search.Results);
+        PassedOver(ui, appearance, search.Results);
         Results(ui, appearance, search, panel.Columns, commands, navigation, setup);
     }
 
-    private static void Unsearched(Ui ui, Appearance appearance, SearchResults results)
+    // What the search couldn't read that could have held a hit, a line each: an assembly not searched, one searched in
+    // part, a match found and not shown.
+    private static void PassedOver(Ui ui, Appearance appearance, SearchResults results)
     {
         var t = appearance.Strings;
         var theme = ui.Theme;
@@ -49,6 +51,28 @@ internal static class SearchPanelView
             using (ui.Id(i))
             {
                 var line = ui.Memo("unsearched", (unsearched, t), static a => a.t.SearchUnsearched(a.unsearched.Assembly.FilePath.FileName, a.unsearched.Why));
+                ui.Text(line, color: theme.Warning, size: theme.FontSizeSmall);
+            }
+        }
+
+        for (var i = 0; i < results.PartlySearched.Count; i++)
+        {
+            var partly = results.PartlySearched[i];
+            using (ui.Id(i))
+            {
+                var line = ui.Memo("partly-searched", (partly, t),
+                    static a => a.t.SearchPartlySearched(a.partly.Assembly.FilePath.FileName, a.partly.Count, a.partly.Why));
+                ui.Text(line, color: theme.Warning, size: theme.FontSizeSmall);
+            }
+        }
+
+        for (var i = 0; i < results.NotShown.Count; i++)
+        {
+            var notShown = results.NotShown[i];
+            using (ui.Id(i))
+            {
+                var line = ui.Memo("not-shown", (notShown, t),
+                    static a => a.t.SearchFoundNotShown(a.notShown.Name ?? $"0x{a.notShown.Token:X8}", a.notShown.Assembly.FilePath.FileName, a.notShown.Why));
                 ui.Text(line, color: theme.Warning, size: theme.FontSizeSmall);
             }
         }

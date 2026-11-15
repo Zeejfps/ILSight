@@ -86,6 +86,8 @@
   "search.column_assembly": "어셈블리",
   "search.invalid_regex": "잘못된 정규식",
   "search.unsearched": "{name}: 검색할 수 없습니다 ({why})",
+  "search.partly_searched": "{name}: 일부만 검색했습니다. 읽지 못한 메서드 본문: {count}개 ({why})",
+  "search.found_not_shown": "{name}의 {what}: 찾았지만 표시할 수 없습니다 ({why})",
   "search.failed": "검색에 실패했습니다 ({why})",
 
   "omnibar.search": "형식 또는 멤버로 이동…",

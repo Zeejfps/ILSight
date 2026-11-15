@@ -139,7 +139,7 @@ public static class AssemblySearch
             var typeName = search.Query.FullName ? ReadTypeName(search, reader, typeHandle) : ReadTypeLabel(search, reader, typeHandle);
                 if (types && SearchQueries.IsMatch(search.Query, typeName))
             {
-                await AddResultAsync(search, assembly, main, typeHandle, ct);
+                await AddResultAsync(search, assembly, main, typeHandle, typeName, ct);
             }
 
             if (fields)
@@ -181,7 +181,7 @@ public static class AssemblySearch
         {
             if (SearchQueries.IsMatch(search.Query, search.Query.FullName ? typeName + "." + name : name))
         {
-            await AddResultAsync(search, assembly, main, handle, ct);
+            await AddResultAsync(search, assembly, main, handle, name, ct);
         }
     }
 
@@ -271,18 +271,25 @@ public static class AssemblySearch
             CancellationToken ct)
         {
             var reader = file.Metadata;
+            var unread = new UnreadBodies();
             foreach (var handle in reader.MethodDefinitions)
             {
                 search.CancellationToken.ThrowIfCancellationRequested();
-                var body = FindSearchedBody(search, file, handle);
+                var body = FindSearchedBody(search, file, handle, unread);
                 if (body is not null && HasMatchInBody(search, body.Value, reader, literal))
                 {
                     await AddResultOrAncestorAsync(search, assembly, main, handle, ct);
                 }
             }
+
+            if (unread.Count > 0)
+            {
+                search.Emit(new SearchFind.PartlySearched { Assembly = assembly, Count = unread.Count, Why = unread.FirstWhy ?? "" });
+            }
         }
 
-        private static BlobReader? FindSearchedBody(Search search, MetadataFile file, MethodDefinitionHandle handle)
+        // A body the library can't read is noted in unread, so the module is said partly searched.
+        private static BlobReader? FindSearchedBody(Search search, MetadataFile file, MethodDefinitionHandle handle, UnreadBodies unread)
         {
             var reader = file.Metadata;
             var method = reader.GetMethodDefinition(handle);
@@ -301,8 +308,9 @@ public static class AssemblySearch
             {
                 return file.GetMethodBody(method.RelativeVirtualAddress).GetILReader();
             }
-            catch (BadImageFormatException)
+            catch (BadImageFormatException e)
             {
+                unread.Note(e);
                 return null;
             }
         }
@@ -316,7 +324,7 @@ public static class AssemblySearch
                 var value = FindSearchedConstant(search, reader, handle);
                 if (IsConstantMatch(search, value, literal))
                 {
-                    await AddResultAsync(search, assembly, main, handle, ct);
+                    await AddResultAsync(search, assembly, main, handle, null, ct);
                 }
             }
         }
@@ -581,9 +589,18 @@ public static class AssemblySearch
         return IsInNamespace(search, ns.Value.Name) && SearchQueries.IsMatch(search.Query, node.Text);
         }
 
-        private static async Task AddResultAsync(Search search, LoadedModule assembly, MetadataModule main, EntityHandle handle, CancellationToken ct)
+        // A match whose place the library can't read is said found and not shown, named by name where the scan read it.
+        private static async Task AddResultAsync(Search search, LoadedModule assembly, MetadataModule main, EntityHandle handle, string? name,
+            CancellationToken ct)
         {
-            var node = await FindNodeAsync(search, assembly, main, handle, ct);
+            var place = await PlaceAsync(search, assembly, main, handle, BrowseSessions.PlaceNodeAsync, ct);
+            if (place is NodePlace.Failed failed)
+            {
+                EmitNotShown(search, assembly, handle, name, failed.Error);
+                return;
+            }
+
+            var node = place.NodeOrNull;
             if (node is null)
         {
             return;
@@ -601,22 +618,18 @@ public static class AssemblySearch
         }
     }
 
+        // A compiler-generated match is shown as its source-declared ancestor, on purpose; one whose place the library
+        // can't read is said found and not shown.
         private static async Task AddResultOrAncestorAsync(Search search, LoadedModule assembly, MetadataModule main, EntityHandle handle, CancellationToken ct)
         {
-            BrowseNode? node;
-            try
+            var place = await PlaceAsync(search, assembly, main, handle, BrowseSessions.PlaceOrAncestorAsync, ct);
+            if (place is NodePlace.Failed failed)
             {
-                node = await BrowseSessions.FindOrAncestorAsync(search.Session, assembly, main, handle, search.CancellationToken);
-            }
-            catch (BadImageFormatException)
-            {
+                EmitNotShown(search, assembly, handle, null, failed.Error);
                 return;
             }
-            catch (InvalidOperationException)
-            {
-                return;
-            }
-            node = FindSourceDeclaredAncestor(node);
+
+            var node = FindSourceDeclaredAncestor(place.NodeOrNull);
             if (node is not null && BrowseNodes.IsMember(node.Parent))
         {
             node = node.Parent;
@@ -644,20 +657,27 @@ public static class AssemblySearch
         return node;
         }
 
-        private static async Task<BrowseNode?> FindNodeAsync(Search search, LoadedModule assembly, MetadataModule main, EntityHandle handle, CancellationToken ct)
+        // What the library throws reading the metadata on the way to the place is the place's failure.
+        private static async Task<NodePlace> PlaceAsync(Search search, LoadedModule assembly, MetadataModule main, EntityHandle handle,
+            Func<BrowseSession, LoadedModule, MetadataModule, EntityHandle, CancellationToken, Task<NodePlace>> place, CancellationToken ct)
         {
             try
             {
-                return await BrowseSessions.FindNodeAsync(search.Session, assembly, main, handle, search.CancellationToken);
+                return await place(search.Session, assembly, main, handle, ct);
             }
-            catch (BadImageFormatException)
+            catch (BadImageFormatException e)
             {
-                return null;
+                return new NodePlace.Failed(e);
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException e)
             {
-                return null;
+                return new NodePlace.Failed(e);
             }
+        }
+
+        private static void EmitNotShown(Search search, LoadedModule assembly, EntityHandle handle, string? name, Exception why)
+        {
+            search.Emit(new SearchFind.NotShown { Assembly = assembly, Token = MetadataTokens.GetToken(handle), Name = name, Why = why.Message });
         }
 
         private static void AddResult(Search search, BrowseNode node)

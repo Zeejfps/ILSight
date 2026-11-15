@@ -14,6 +14,8 @@ public sealed class SearchResults
     private readonly List<SearchResult> _rows = new();
     private readonly HashSet<LoadedAssembly> _searchedAssemblies = new(ReferenceEqualityComparer.Instance);
     private readonly List<SearchFind.Unsearched> _unsearched = new();
+    private readonly List<SearchFind.PartlySearched> _partlySearched = new();
+    private readonly List<SearchFind.NotShown> _notShown = new();
 
     private readonly SearchRuns _runs = new();
 
@@ -27,6 +29,14 @@ public sealed class SearchResults
     /// <summary>The assemblies searched the library failed on while they were searched, and why, in the order they came
     /// in.</summary>
     public IReadOnlyList<SearchFind.Unsearched> Unsearched => _unsearched;
+
+    /// <summary>The assemblies searched but for method bodies the library couldn't read, how many and why, in the order
+    /// they came in.</summary>
+    public IReadOnlyList<SearchFind.PartlySearched> PartlySearched => _partlySearched;
+
+    /// <summary>The matches found whose place in the tree the library couldn't read, and why, in the order they came
+    /// in.</summary>
+    public IReadOnlyList<SearchFind.NotShown> NotShown => _notShown;
 
     /// <summary>The query last searched for, or null before the first.</summary>
     public SearchedQuery? LastSearched { get; private set; }
@@ -110,6 +120,8 @@ public sealed class SearchResults
         LastSearched = searched;
         _rows.Clear();
         _unsearched.Clear();
+        _partlySearched.Clear();
+        _notShown.Clear();
         _sorting.NoteRowsEmptied();
         Selection.Clear();
         var listed = assemblies.Assemblies;
@@ -141,6 +153,8 @@ public sealed class SearchResults
 
         _rows.RemoveAll(r => !_searchedAssemblies.Contains(r.Node.Assembly));
         _unsearched.RemoveAll(u => !_searchedAssemblies.Contains(u.Assembly));
+        _partlySearched.RemoveAll(p => !_searchedAssemblies.Contains(p.Assembly));
+        _notShown.RemoveAll(n => !_searchedAssemblies.Contains(n.Assembly));
         _sorting.NoteRowsChanged();
         Selection.DropIfGone(_rows);
     }
@@ -197,8 +211,8 @@ public sealed class SearchResults
     }
 
     /// <summary>Merges the hits of <paramref name="batch"/> that are still wanted into the rows, in their order, and
-    /// notes the assemblies it couldn't search that are still searched, unless a new query replaced
-    /// <paramref name="run"/>, which found them.</summary>
+    /// notes what it couldn't read in the assemblies still searched (an assembly not searched, one searched in part, a
+    /// match not shown), unless a new query replaced <paramref name="run"/>, which found them.</summary>
     public void Deliver(IReadOnlyList<SearchFind> batch, SearchRun run)
     {
         if (!_runs.IsCurrent(run))
@@ -209,7 +223,7 @@ public sealed class SearchResults
         var hits = new List<SearchResult>();
         foreach (var find in batch)
         {
-            find.Switch(hit => hits.Add(hit.Result), NoteUnsearched);
+            find.Switch(hit => hits.Add(hit.Result), NoteUnsearched, NotePartlySearched, NoteNotShown);
         }
 
         var arrived = SortArrived(hits);
@@ -225,6 +239,22 @@ public sealed class SearchResults
         }
 
         _unsearched.Add(unsearched);
+    }
+
+    private void NotePartlySearched(SearchFind.PartlySearched partly)
+    {
+        if (_searchedAssemblies.Contains(partly.Assembly))
+        {
+            _partlySearched.Add(partly);
+        }
+    }
+
+    private void NoteNotShown(SearchFind.NotShown notShown)
+    {
+        if (_searchedAssemblies.Contains(notShown.Assembly))
+        {
+            _notShown.Add(notShown);
+        }
     }
 
     private List<SearchResult> SortArrived(IReadOnlyList<SearchResult> batch)

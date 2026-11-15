@@ -86,6 +86,8 @@
   "search.column_assembly": "Сборка",
   "search.invalid_regex": "Недопустимое регулярное выражение",
   "search.unsearched": "{name}: не удалось выполнить поиск ({why})",
+  "search.partly_searched": "{name}: поиск выполнен частично, не прочитано тел методов: {count} ({why})",
+  "search.found_not_shown": "{what} в {name}: найдено, но не удалось показать ({why})",
   "search.failed": "Поиск не удался ({why})",
 
   "omnibar.search": "Перейти к типу или члену…",

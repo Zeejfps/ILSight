@@ -90,6 +90,8 @@
   "search.column_assembly": "Assembly",
   "search.invalid_regex": "Invalid regular expression",
   "search.unsearched": "{name}: couldn't be searched ({why})",
+  "search.partly_searched": "{name}: partly searched, method bodies not read: {count} ({why})",
+  "search.found_not_shown": "{what} in {name}: found, couldn't be shown ({why})",
   "search.failed": "Search failed ({why})",
 
   "omnibar.search": "Go to type or member…",

@@ -105,6 +105,30 @@ internal static class BrokenAssemblies
         return temp.Write("UnreadableMethodName.dll", image);
     }
 
+    /// <summary>A copy of the assembly at <paramref name="path"/> read only in part: the body of
+    /// <paramref name="unreadableBody"/> lies outside the file, so the library can't read its IL, and the name of
+    /// <paramref name="unreadableName"/> points past the string heap, so its type's members can't be listed.</summary>
+    public static string WritePartlyReadable(TempDir temp, string path, MethodDefinitionHandle unreadableBody, MethodDefinitionHandle unreadableName)
+    {
+        var image = File.ReadAllBytes(path);
+        using (var pe = new PEReader(new MemoryStream(image)))
+        {
+            var reader = pe.GetMetadataReader();
+            var rowSize = reader.GetTableRowSize(TableIndex.MethodDef);
+            var stringHeapSize = reader.GetHeapSize(HeapIndex.String);
+            var stringIndexSize = stringHeapSize < 0x10000 ? 2 : 4;
+            var table = pe.PEHeaders.MetadataStartOffset + reader.GetTableMetadataOffset(TableIndex.MethodDef);
+            const int rvaSize = 4;
+            const int rvaAndFlagsSize = 8;
+            var body = table + rowSize * (MetadataTokens.GetRowNumber(unreadableBody) - 1);
+            image.AsSpan(body, rvaSize).Fill(0x7F);
+            var name = table + rowSize * (MetadataTokens.GetRowNumber(unreadableName) - 1) + rvaAndFlagsSize;
+            image.AsSpan(name, stringIndexSize).Fill(0xFF);
+        }
+
+        return temp.Write("PartlyReadable.dll", image);
+    }
+
     /// <summary>A copy of the assembly at <paramref name="path"/> whose first member reference has a signature that
     /// points past its blob heap: the file opens and lists its references, and reading what kind of member that one
     /// is throws.</summary>

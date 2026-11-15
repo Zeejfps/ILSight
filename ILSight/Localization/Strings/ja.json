@@ -86,6 +86,8 @@
   "search.column_assembly": "アセンブリ",
   "search.invalid_regex": "無効な正規表現",
   "search.unsearched": "{name}: 検索できませんでした ({why})",
+  "search.partly_searched": "{name}: 一部のみ検索しました。読み取れなかったメソッド本体: {count} ({why})",
+  "search.found_not_shown": "{name} の {what}: 見つかりましたが、表示できませんでした ({why})",
   "search.failed": "検索に失敗しました ({why})",
 
   "omnibar.search": "型またはメンバーに移動…",

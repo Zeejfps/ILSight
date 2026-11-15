@@ -86,6 +86,8 @@
   "search.column_assembly": "Assembly",
   "search.invalid_regex": "Ungültiger regulärer Ausdruck",
   "search.unsearched": "{name}: konnte nicht durchsucht werden ({why})",
+  "search.partly_searched": "{name}: teilweise durchsucht, nicht gelesene Methodenrümpfe: {count} ({why})",
+  "search.found_not_shown": "{what} in {name}: gefunden, konnte nicht angezeigt werden ({why})",
   "search.failed": "Die Suche ist fehlgeschlagen ({why})",
 
   "omnibar.search": "Zu Typ oder Member springen…",

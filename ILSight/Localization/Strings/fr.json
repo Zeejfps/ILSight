@@ -86,6 +86,8 @@
   "search.column_assembly": "Assembly",
   "search.invalid_regex": "Expression régulière non valide",
   "search.unsearched": "{name} : la recherche y a échoué ({why})",
+  "search.partly_searched": "{name} : recherche partielle, corps de méthode non lus : {count} ({why})",
+  "search.found_not_shown": "{what} dans {name} : trouvé, mais impossible à afficher ({why})",
   "search.failed": "La recherche a échoué ({why})",
 
   "omnibar.search": "Aller à un type ou un membre…",
