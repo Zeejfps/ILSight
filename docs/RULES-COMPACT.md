@@ -357,9 +357,10 @@ nullable exception).
 - **Whatever fails stays where it was shown**, failed with why, until retried, dismissed or removed by product policy;
   never dropped, left pending or shown empty. An unexpected one is also reported once, saying the operation that failed
   (wherever asked; the step that asked may be named beside its kind), its cause (structured where clients tell causes
-  apart) and an applicable recovery. What presents it never takes the focus or input meant for something else, nor
-  marks it read by appearing; whether it appears by itself, waits on an indicator or interrupts, and kinds, incident
-  identity and grouping, are the product's.
+  apart) and an applicable recovery (for a cause known only by its message, the operation's: asking again where what
+  it reads can change, reporting it where its input is unchanged and reports are taken; none invented). What presents
+  it never takes the focus or input meant for something else, nor marks it read by appearing; whether it appears by
+  itself, waits on an indicator or interrupts, and kinds, incident identity and grouping, are the product's.
 - **Messages:**
   - **Identity, not presentation:** a shared recovery and a shared cause's identity are defined once, every message
     saying either found from it, each presentation its own message, its words localization's; distinct causes may pick
@@ -374,10 +375,12 @@ nullable exception).
     persistence said): live text follows alike, a note with its labels (kept as its cause and found when drawn, or made
     again at the switch); text that left the app (a saved file: its stated contract) keeps its language. Copy and Find
     read what is drawn; a kept place (a bookmark) uses the content's terms, never an offset into drawn text. A format's
-    published documentation (a schema's descriptions) is in the product's documentation languages.
-  - **Diagnostics, not messages:** a stack trace (`ToString()`) never goes where a failure is shown or summarized;
-    only to the log and, where offered (a recovery asking for a report needs it), a labelled diagnostic apart that
-    the user opens or sends.
+    published documentation (a schema's descriptions) is in the product's documentation languages. A value placed in a
+    one-line note stays one line, its line breaks escaped visibly where it names something.
+  - **Diagnostics, not messages:** a stack trace (`ToString()`) never goes where a failure is shown or summarized,
+    nor between a document's messages; only to a record (an unexpected failure's must reach one: the log, or with none
+    its labelled diagnostic where reported) and, where offered (a recovery asking for a report needs it), a labelled
+    diagnostic apart that the user opens or sends.
 - **Batches and absence:** independent items keep their own outcomes, the batch failing only for what fails every item;
   an atomic batch or dependent steps follow the operation's completion contract. "Not there" is the source's own absence
   answer, asked first where it has one; an exception is not there only where it unambiguously means the object asked for
