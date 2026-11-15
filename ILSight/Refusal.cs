@@ -140,28 +140,35 @@ public abstract record Refusal
         };
     }
 
-    /// <summary>What was refused and why, in <paramref name="t"/>'s language.</summary>
+    /// <summary>What was refused and why, in <paramref name="t"/>'s language, a line the status bar shows: each value
+    /// from outside in it (a name, a path, an argument) on its one line (<see cref="OneLineText.Name"/>).</summary>
     public (string What, string Why) Words(Strings t)
     {
         return this switch
         {
-            ResourceNotSaved r => (t.ErrorSaveResource(r.Resource), t.DocumentClosed(r.Assembly)),
-            PdbNotRead r => (t.ErrorSelectPdb(file: r.Pdb, name: r.Assembly), t.DocumentClosed(r.Assembly)),
-            NotFullPath r => (t.ErrorOpenFile(r.Path), t.ErrorNotFullPath),
-            AssemblyClosed r => (t.DocumentClosed(r.Assembly), ""),
-            NotAnalyzable r => (t.ErrorAnalyzeSymbol(r.Symbol), t.ErrorNotOpenable),
-            IdNotFound r => (t.ErrorNavigateTo(r.Id), ""),
-            ArgumentsIgnored r => (t.ErrorArgumentsIgnored(r.Arguments.Count), string.Join(" ", r.Arguments)),
-            NoApiReferencePage r => (t.ErrorNoApiReferencePage(r.Name), t.ErrorNoApiReferencePageDetails),
-            Unresolved r => (t.ErrorResolve(r.Reference.Name), t.ErrorNoDefinition(r.Reference)),
-            HistoryPlaceGone r => (t.ErrorGoBack(r.Place.Label), t.ErrorNoLongerThere(r.Place)),
-            BookmarkGone r => (t.ErrorGoToBookmark(r.Bookmark), t.ErrorNoLongerThere(r.Place)),
-            TypeNotDiagrammed r => (t.ErrorShowInDiagram(r.Type.Name), t.ErrorNoDefinition(r.Type)),
-            PdbUnusable r => (t.ErrorSelectPdb(file: System.IO.Path.GetFileName(r.PdbPath), name: r.Assembly), ProblemTexts.DescribePdbCheck(t, r.Check, r.Assembly)),
-            NotBookmarksFile r => (t.ErrorImportBookmarks(System.IO.Path.GetFileName(r.Path)), t.ErrorNotBookmarksFile),
-            ImportedBookmarksLost r => (t.ErrorBookmarksNotFound(r.File), BookmarkArea.LostBookmark.JoinWords(t, r.Lost)),
+            ResourceNotSaved r => (t.ErrorSaveResource(N(r.Resource)), t.DocumentClosed(N(r.Assembly))),
+            PdbNotRead r => (t.ErrorSelectPdb(file: N(r.Pdb), name: N(r.Assembly)), t.DocumentClosed(N(r.Assembly))),
+            NotFullPath r => (t.ErrorOpenFile(N(r.Path)), t.ErrorNotFullPath),
+            AssemblyClosed r => (t.DocumentClosed(N(r.Assembly)), ""),
+            NotAnalyzable r => (t.ErrorAnalyzeSymbol(N(r.Symbol)), t.ErrorNotOpenable),
+            IdNotFound r => (t.ErrorNavigateTo(N(r.Id)), ""),
+            ArgumentsIgnored r => (t.ErrorArgumentsIgnored(r.Arguments.Count), string.Join(" ", r.Arguments.Select(N))),
+            NoApiReferencePage r => (t.ErrorNoApiReferencePage(N(r.Name)), t.ErrorNoApiReferencePageDetails),
+            Unresolved r => (t.ErrorResolve(N(r.Reference.Name)), t.ErrorNoDefinition(N(r.Reference.ToString()))),
+            HistoryPlaceGone r => (t.ErrorGoBack(N(r.Place.Label)), t.ErrorNoLongerThere(N(r.Place.ToString()))),
+            BookmarkGone r => (t.ErrorGoToBookmark(N(r.Bookmark)), t.ErrorNoLongerThere(N(r.Place.ToString()))),
+            TypeNotDiagrammed r => (t.ErrorShowInDiagram(N(r.Type.Name)), t.ErrorNoDefinition(N(r.Type.ToString()))),
+            PdbUnusable r => (t.ErrorSelectPdb(file: N(System.IO.Path.GetFileName(r.PdbPath)), name: N(r.Assembly)),
+                ProblemTexts.DescribePdbCheck(t, r.Check, N(r.Assembly))),
+            NotBookmarksFile r => (t.ErrorImportBookmarks(N(System.IO.Path.GetFileName(r.Path))), t.ErrorNotBookmarksFile),
+            ImportedBookmarksLost r => (t.ErrorBookmarksNotFound(N(r.File)), BookmarkArea.LostBookmark.JoinWords(t, r.Lost)),
             BookmarksLeftOut r => (t.ErrorDuplicateBookmarks(r.Count), ""),
             _ => throw new UnreachableException($"Refusal.Words does not handle {GetType().Name}."),
         };
+    }
+
+    private static string N(string value)
+    {
+        return OneLineText.Name(value);
     }
 }

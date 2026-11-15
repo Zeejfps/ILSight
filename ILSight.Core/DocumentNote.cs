@@ -10,12 +10,12 @@ public abstract record DocumentNote
     {
     }
 
-    /// <summary><paramref name="text"/>, a value said in a note, on one line, each line break a space: a note runs to
-    /// its line's end, and keeps its line count in every language, so an exception's message, prose, never breaks it;
-    /// a name or path is never joined so, but escaped where every value is (<see cref="Words"/>).</summary>
+    /// <summary><paramref name="text"/>, an exception's message said in a note, on one line
+    /// (<see cref="OneLineText.Message"/>): a note runs to its line's end, and keeps its line count in every language;
+    /// a name or path is never joined so, but written where every value is (<see cref="Words"/>).</summary>
     internal static string OneLine(string text)
     {
-        return text.ReplaceLineEndings(" ");
+        return OneLineText.Message(text);
     }
 
     /// <summary>What goes before the comment marker on the note's line, past what the line held before it.</summary>
@@ -181,7 +181,7 @@ public abstract record DocumentNote
         internal override IReadOnlyList<NoteRun> Runs(IDocumentNotes notes)
         {
             var words = Words(notes);
-            var method = VisibleNoteValues.Visible(Method);
+            var method = OneLineText.Name(Method);
             var at = words.IndexOf(method, StringComparison.Ordinal);
             if (at < 0)
             {

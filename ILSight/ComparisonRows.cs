@@ -1,3 +1,4 @@
+using ILSight.Core;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core.Comparison;
@@ -203,7 +204,7 @@ public sealed class ComparisonRows : ITreeModel<ApiEntry>
     /// member is its signature, so overloads differ.</summary>
     public string KeyOf(ApiEntry entry)
     {
-        return entry.Text;
+        return OneLineText.Name(entry.Text);
     }
 
     public TreeRow Row(ApiEntry entry)
@@ -224,7 +225,7 @@ public sealed class ComparisonRows : ITreeModel<ApiEntry>
         var color = GetColor(entry);
         var tooltip = DescribeDeclarations(entry);
         var change = NameChange(entry.Change);
-        return new TreeRow(entry.Text, icon, color, tooltip, change);
+        return new TreeRow(OneLineText.Name(entry.Text), icon, color, tooltip, change);
     }
 
     private uint GetColor(ApiEntry entry)

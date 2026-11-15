@@ -1,3 +1,5 @@
+using ILSight.Core;
+
 namespace ILSight;
 
 /// <summary>What a diagram's or a comparison's tab is titled: the name it was made for, worded in the interface's
@@ -17,7 +19,7 @@ public abstract record TabTitle
     {
         public override string Words(Strings t)
         {
-            return t.DiagramTitle(Type);
+            return t.DiagramTitle(OneLineText.Name(Type));
         }
     }
 
@@ -26,7 +28,7 @@ public abstract record TabTitle
     {
         public override string Words(Strings t)
         {
-            return t.ComparisonTitle(Assembly);
+            return t.ComparisonTitle(OneLineText.Name(Assembly));
         }
     }
 
@@ -36,7 +38,7 @@ public abstract record TabTitle
     {
         public override string Words(Strings t)
         {
-            return Text;
+            return OneLineText.Name(Text);
         }
     }
 }

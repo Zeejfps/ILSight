@@ -555,7 +555,7 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
 
     private TreeRow CreateFailedRow(Exception error)
     {
-        return new TreeRow(_strings.TreeChildrenFailed(error.Message), NodeIcons.Failed(_iconColors, _icons), Tooltip: error.Message);
+        return new TreeRow(_strings.TreeChildrenFailed(OneLineText.Message(error.Message)), NodeIcons.Failed(_iconColors, _icons), Tooltip: error.Message);
     }
 
     public TreeRow Row(BrowseNode node)
@@ -603,7 +603,8 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
             var nodes = group.ToList();
             if (nodes.Count == 1)
             {
-                labels[nodes[0]] = new RootLabel { Title = nodes[0].Assembly.Name, Row = nodes[0].Assembly.Name };
+                var name = OneLineText.Name(nodes[0].Assembly.Name);
+                labels[nodes[0]] = new RootLabel { Title = name, Row = name };
                 continue;
             }
             var versions = nodes.Select(static n => n.Assembly.Version?.ToString() ?? "").ToArray();
@@ -614,8 +615,8 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
                 {
                     labels[nodes[i]] = new RootLabel
                     {
-                        Title = nodes[i].Assembly.NameAndVersion,
-                        Row = nodes[i].Assembly.Name,
+                        Title = OneLineText.Name(nodes[i].Assembly.NameAndVersion),
+                        Row = OneLineText.Name(nodes[i].Assembly.Name),
                     };
                 }
 
@@ -624,8 +625,8 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
             var hints = ListFolderHints(nodes);
             for (var i = 0; i < nodes.Count; i++)
             {
-                // The language's template: the name, and the folder that tells it apart, as they are.
-                var label = strings.TreeRootInFolder(name: nodes[i].Assembly.Name, folder: hints[i]);
+                // The language's template: the name, and the folder that tells it apart, each on its one line.
+                var label = strings.TreeRootInFolder(name: OneLineText.Name(nodes[i].Assembly.Name), folder: OneLineText.Name(hints[i]));
                 labels[nodes[i]] = new RootLabel { Title = label, Row = label };
             }
         }

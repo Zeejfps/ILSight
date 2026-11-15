@@ -20,15 +20,16 @@ public static class NodeText
     private static readonly ConditionalWeakTable<BrowseNode, string> DecimalTokens = new();
     private static readonly ConditionalWeakTable<LoadedAssembly, string> AssemblyLabels = new();
 
-    /// <summary>The node's own name: an assembly's simple name, any other node's label.</summary>
+    /// <summary>The node's own name: an assembly's simple name, any other node's label, on one line as every name the
+    /// app places in a line of its text (<see cref="OneLineText.Name"/>).</summary>
     public static string Name(BrowseNode node)
     {
         if (node.Subject is NodeSubject.Module module)
         {
-            return module.Value.Name;
+            return OneLineText.Name(module.Value.Name);
         }
 
-        return node.Text;
+        return OneLineText.Name(node.Text);
     }
 
     /// <summary>The node's name as a person reads it in <paramref name="t"/>'s language: a folder the tree makes
@@ -61,7 +62,8 @@ public static class NodeText
             baseType: static (_, _) => null,
             derivedTypes: static (t, _) => t.TreeDerivedTypes,
             derivedType: static (_, _) => null,
-            unreadableModule: static (t, unreadable) => t.CauseModuleUnreadableRow(name: unreadable.Value.Module.FilePath.FileName, why: unreadable.Value.Why.Message),
+            unreadableModule: static (t, unreadable) => t.CauseModuleUnreadableRow(name: OneLineText.Name(unreadable.Value.Module.FilePath.FileName),
+                why: OneLineText.Message(unreadable.Value.Why.Message)),
             resources: static (t, _) => t.TreeResources,
             resourceContainer: static (_, _) => null,
             resourceEntry: static (_, _) => null,
@@ -76,14 +78,14 @@ public static class NodeText
     /// name the app words (<see cref="Label"/>).</summary>
     public static string FullName(Strings t, BrowseNode node)
     {
-        return WriteFixedLabel(t, node) ?? node.FullName;
+        return WriteFixedLabel(t, node) ?? OneLineText.Name(node.FullName);
     }
 
     /// <summary>A namespace's name as its row shows it nested in another: its last segment, e.g.
     /// <c>Generic</c> for <c>System.Collections.Generic</c>.</summary>
     public static string NestedName(BrowseNode node)
     {
-        return NamespaceNames.LastSegment(node.Text);
+        return OneLineText.Name(NamespaceNames.LastSegment(node.Text));
     }
 
     /// <summary>The node's full identity: for an assembly its display name, framework and file; for
@@ -109,12 +111,12 @@ public static class NodeText
 
         if (subject is NodeSubject.TypeReference type)
         {
-            return EmptyToNull(type.Value.Namespace);
+            return EmptyToNull(OneLineText.Name(type.Value.Namespace));
         }
 
         if (subject is NodeSubject.ImportedMethod import)
         {
-            return import.Value.DeclaringTypeName;
+            return OneLineText.Name(import.Value.DeclaringTypeName);
         }
 
         if (subject is NodeSubject.Module)
@@ -132,7 +134,7 @@ public static class NodeText
             throw new UnreachableException();
         }
 
-        return ForwardedToPrefix + forwarded.Value.Destination;
+        return ForwardedToPrefix + OneLineText.Name(forwarded.Value.Destination);
     }
 
     private static string WriteIdentity(BrowseNode node)
@@ -170,7 +172,7 @@ public static class NodeText
             return null;
         }
 
-        return module.Value.FrameworkMoniker;
+        return MonikerOf(module.Value);
     }
 
     /// <summary>An assembly as a column of results names it: its name and version, and for one read out
@@ -228,13 +230,25 @@ public static class NodeText
         return node.Token ?? throw new UnreachableException();
     }
 
+    // The framework the assembly was built for as its row shows it, on its one line; null when it names none.
+    private static string? MonikerOf(LoadedModule assembly)
+    {
+        var moniker = assembly.FrameworkMoniker;
+        if (moniker is null)
+        {
+            return null;
+        }
+
+        return OneLineText.Name(moniker);
+    }
+
     private static string Identity(LoadedModule assembly)
     {
         var version = assembly.Version?.ToString();
         // A picked framework its row shows bold on its own, so then only the version and the separator before it.
         if (!assembly.IsTargetFrameworkPicked)
         {
-            return string.Join(Separator, new[] { version, assembly.FrameworkMoniker }.OfType<string>());
+            return string.Join(Separator, new[] { version, MonikerOf(assembly) }.OfType<string>());
         }
 
         if (version is null)

@@ -99,21 +99,26 @@ public sealed class DocumentNoteTests
 
     [Theory]
     [MemberData(nameof(LocalizationTests.AllLocales), MemberType = typeof(LocalizationTests))]
-    public void A_forwarded_types_destination_holding_a_line_break_is_noted_on_one_comment_line_with_the_break_escaped(Locale locale)
+    public void Three_forwarded_destinations_a_line_break_a_space_and_a_backslash_and_n_are_three_different_one_line_notes(Locale locale)
     {
         var notes = DocumentNoteTexts.For(locale);
         const string Code = "public class Cart { }";
 
-        var drawn = DrawForwarded("Shop\nclass Injected { }", Code, notes);
+        var broken = DrawForwarded("Shop\nclass Injected { }", Code, notes);
         var spaced = DrawForwarded("Shop class Injected { }", Code, notes);
+        var escaped = DrawForwarded(@"Shop\nclass Injected { }", Code, notes);
 
-        Assert.Equal(2, drawn.Lines.Length);
-        var note = drawn.Lines[0].Text;
-        Assert.StartsWith("Cart // ", note);
-        Assert.Contains("Shop\\nclass Injected { }", note);
-        Assert.Equal(Code, drawn.Lines[1].Text);
-        Assert.Equal(2, spaced.Lines.Length);
-        Assert.NotEqual(spaced.Lines[0].Text, note);
+        foreach (var drawn in new[] { broken, spaced, escaped })
+        {
+            Assert.Equal(2, drawn.Lines.Length);
+            Assert.StartsWith("Cart // ", drawn.Lines[0].Text);
+            Assert.Equal(Code, drawn.Lines[1].Text);
+        }
+
+        Assert.Contains(@"""Shop\nclass Injected { }""", broken.Lines[0].Text);
+        Assert.Contains(@"Shop\nclass Injected { }", escaped.Lines[0].Text);
+        Assert.DoesNotContain(@"""Shop\nclass", escaped.Lines[0].Text);
+        Assert.Equal(3, new[] { broken, spaced, escaped }.Select(d => d.Lines[0].Text).Distinct().Count());
         Assert.All(new[] { "\t", "\v", "\r\n" }, value => Assert.DoesNotMatch("[\r\n\t\v]", new DocumentNote.ForwardedTo("Shop" + value + "Cart").Words(notes)));
     }
 

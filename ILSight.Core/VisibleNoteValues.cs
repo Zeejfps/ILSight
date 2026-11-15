@@ -1,77 +1,36 @@
-using System.Text;
-
 namespace ILSight.Core;
 
-/// <summary>The app's words for its notes (<see cref="IDocumentNotes"/>), every value said in them first made visible on
-/// one line: a note runs from its comment marker to its line's end and keeps its line count in every language, so a
-/// value from outside (a name or a path read from metadata or the file system, which an obfuscated assembly can fill
-/// with line breaks) says each line break and other control character it holds as an escape (<c>\n</c>,
-/// <c>\u000B</c>), never as itself and never as a space, and each name stays the one it is. The one place every note's
-/// values pass through (<see cref="DocumentNote.Words"/>).</summary>
+/// <summary>The app's words for its notes (<see cref="IDocumentNotes"/>), every value said in them first made to stay on
+/// one line (<see cref="OneLineText"/>): a note runs from its comment marker to its line's end and keeps its line count
+/// in every language, so a name or path read from metadata or the file system (which an obfuscated assembly can fill
+/// with line breaks) is said as <see cref="OneLineText.Name"/> writes it, and an exception's message as
+/// <see cref="OneLineText.Message"/> does. The one place every note's values pass through
+/// (<see cref="DocumentNote.Words"/>).</summary>
 internal sealed class VisibleNoteValues(IDocumentNotes words) : IDocumentNotes
 {
-    /// <summary><paramref name="value"/> with each line break and other control character it holds escaped visibly;
-    /// the value itself when it holds none.</summary>
-    internal static string Visible(string value)
-    {
-        if (!value.Any(IsEscaped))
-        {
-            return value;
-        }
-
-        var text = new StringBuilder(value.Length + 8);
-        foreach (var c in value)
-        {
-            text.Append(Escape(c));
-        }
-
-        return text.ToString();
-    }
-
-    private const char LineSeparator = (char)0x2028;
-    private const char ParagraphSeparator = (char)0x2029;
-
-    // A control character (line breaks among them), or a line or paragraph separator, which a text view may break at.
-    private static bool IsEscaped(char c)
-    {
-        return char.IsControl(c) || c is LineSeparator or ParagraphSeparator;
-    }
-
-    private static string Escape(char c)
-    {
-        return c switch
-        {
-            '\n' => "\\n",
-            '\r' => "\\r",
-            '\t' => "\\t",
-            _ when IsEscaped(c) => $"\\u{(int)c:X4}",
-            _ => c.ToString(),
-        };
-    }
-
     public string ReferenceUnreadable(string reference, string file, string why, string module)
     {
-        return words.ReferenceUnreadable(Visible(reference), Visible(file), Visible(why), Visible(module));
+        return words.ReferenceUnreadable(OneLineText.Name(reference), OneLineText.Name(file), OneLineText.Message(why), OneLineText.Name(module));
     }
 
     public string ReferenceNotFound(string reference)
     {
-        return words.ReferenceNotFound(Visible(reference));
+        return words.ReferenceNotFound(OneLineText.Name(reference));
     }
 
     public string DecompileFailed(string name)
     {
-        return words.DecompileFailed(Visible(name));
+        return words.DecompileFailed(OneLineText.Name(name));
     }
 
     public string FailureCause(string message)
     {
-        return words.FailureCause(Visible(message));
+        return words.FailureCause(OneLineText.Message(message));
     }
 
     public string AssemblyUnreadable(string file, string? why)
     {
-        return words.AssemblyUnreadable(Visible(file), why is null ? null : Visible(why));
+        return words.AssemblyUnreadable(OneLineText.Name(file), why is null ? null : OneLineText.Message(why));
     }
 
     public string ReferenceAssembly()
@@ -91,7 +50,7 @@ internal sealed class VisibleNoteValues(IDocumentNotes words) : IDocumentNotes
 
     public string Calls(string entryPoint, string module)
     {
-        return words.Calls(Visible(entryPoint), Visible(module));
+        return words.Calls(OneLineText.Name(entryPoint), OneLineText.Name(module));
     }
 
     public string ReferenceNotResolved()
@@ -101,7 +60,7 @@ internal sealed class VisibleNoteValues(IDocumentNotes words) : IDocumentNotes
 
     public string ResolvesTo(string path)
     {
-        return words.ResolvesTo(Visible(path));
+        return words.ResolvesTo(OneLineText.Name(path));
     }
 
     public string Truncated(int bytes)
@@ -116,16 +75,16 @@ internal sealed class VisibleNoteValues(IDocumentNotes words) : IDocumentNotes
 
     public string TargetFramework(string framework)
     {
-        return words.TargetFramework(Visible(framework));
+        return words.TargetFramework(OneLineText.Name(framework));
     }
 
     public string EntryPoint(string method)
     {
-        return words.EntryPoint(Visible(method));
+        return words.EntryPoint(OneLineText.Name(method));
     }
 
     public string ForwardedTo(string destination)
     {
-        return words.ForwardedTo(Visible(destination));
+        return words.ForwardedTo(OneLineText.Name(destination));
     }
 }

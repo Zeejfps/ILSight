@@ -1,3 +1,4 @@
+using ILSight.Core;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using System.Diagnostics;
@@ -220,7 +221,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
     {
         return node switch
         {
-            AnalyzerSymbolNode symbol => symbol.Symbol.Label,
+            AnalyzerSymbolNode symbol => OneLineText.Name(symbol.Symbol.Label),
             AnalyzerKindNode kind => AnalyzerText.Header(_strings, kind.Kind),
             AnalyzerMessageNode message => GetMessageText(message),
             AnalyzerPendingNode => _strings.AnalyzerLoading,
@@ -234,20 +235,21 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
     {
         var icon = NodeIcons.Icon(NodeIcons.Of(symbol.Shape), symbol.Accessibility, _iconColors, _icons);
         var where = Where(_strings, symbol.Location);
-        return new TreeRow(symbol.Label, icon, Tooltip: where, Secondary: where);
+        return new TreeRow(OneLineText.Name(symbol.Label), icon, Tooltip: where, Secondary: where);
     }
 
     /// <summary>Where a symbol is, for a person: its container and its assembly by the language's template, or whichever
     /// of them it has.</summary>
     internal static string Where(Strings t, SymbolLocation location)
     {
-        var assembly = location.Assembly;
-        if (assembly is null)
+        var container = OneLineText.Name(location.Container);
+        if (location.Assembly is null)
         {
-            return location.Container;
+            return container;
         }
 
-        return location.Container.Length == 0 ? assembly : t.AnalyzerLocation(container: location.Container, assembly: assembly);
+        var assembly = OneLineText.Name(location.Assembly);
+        return container.Length == 0 ? assembly : t.AnalyzerLocation(container: container, assembly: assembly);
     }
 
     private TreeRow CreateKindRow(AnalyzerKindNode kind)
@@ -273,14 +275,14 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         if (unreadable is not null)
         {
             var warning = new UiIcon(_icons.StatusError, _theme.Warning);
-            return new TreeRow(_strings.CauseModuleUnreadableRow(name: unreadable.Name, why: unreadable.Why), warning, _theme.Warning);
+            return new TreeRow(_strings.CauseModuleUnreadableRow(name: OneLineText.Name(unreadable.Name), why: OneLineText.Message(unreadable.Why)), warning, _theme.Warning);
         }
 
         var partly = message.PartlyRead;
         if (partly is not null)
         {
             var warning = new UiIcon(_icons.StatusError, _theme.Warning);
-            return new TreeRow(_strings.AnalyzerPartlyRead(name: partly.Name, count: partly.Count, why: partly.Why), warning, _theme.Warning);
+            return new TreeRow(_strings.AnalyzerPartlyRead(name: OneLineText.Name(partly.Name), count: partly.Count, why: OneLineText.Message(partly.Why)), warning, _theme.Warning);
         }
 
         if (message.Error is null)
@@ -289,7 +291,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         }
 
         var icon = new UiIcon(_icons.StatusError, _theme.Danger);
-        return new TreeRow(message.Error, icon, _theme.Danger);
+        return new TreeRow(OneLineText.Message(message.Error), icon, _theme.Danger);
     }
 
     private string GetMessageText(AnalyzerMessageNode message)
@@ -297,16 +299,16 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         var unreadable = message.Unreadable;
         if (unreadable is not null)
         {
-            return _strings.CauseModuleUnreadableRow(name: unreadable.Name, why: unreadable.Why);
+            return _strings.CauseModuleUnreadableRow(name: OneLineText.Name(unreadable.Name), why: OneLineText.Message(unreadable.Why));
         }
 
         var partly = message.PartlyRead;
         if (partly is not null)
         {
-            return _strings.AnalyzerPartlyRead(name: partly.Name, count: partly.Count, why: partly.Why);
+            return _strings.AnalyzerPartlyRead(name: OneLineText.Name(partly.Name), count: partly.Count, why: OneLineText.Message(partly.Why));
         }
 
-        return message.Error ?? _strings.AnalyzerLoading;
+        return message.Error is null ? _strings.AnalyzerLoading : OneLineText.Message(message.Error);
     }
 
     private TreeRow CreateFailedRow(AnalyzerFailedNode failed)
@@ -322,17 +324,17 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
 
     private string GetUnresolvedText(AnalyzerUnresolvedNode unresolved)
     {
-        return _strings.AnalyzerUnreadable(name: unresolved.Name, why: unresolved.Why);
+        return _strings.AnalyzerUnreadable(name: OneLineText.Name(unresolved.Name), why: OneLineText.Message(unresolved.Why));
     }
 
     private string GetFailedText(AnalyzerFailedNode failed)
     {
         var anchor = failed.SavedAs;
         return failed.Failure.Match(
-            unreadable => _strings.CauseModuleUnreadableRow(name: unreadable.Name, why: unreadable.Why),
+            unreadable => _strings.CauseModuleUnreadableRow(name: OneLineText.Name(unreadable.Name), why: OneLineText.Message(unreadable.Why)),
             // The saved place in the language's template: its file and its token in hex (a notation), as they are.
-            _ => _strings.ErrorNoLongerThere(_strings.AnalyzerSavedPlace(file: anchor.FilePath.FileName, token: $"{anchor.Token:X8}")),
-            lookup => _strings.AnalyzerUnreadable(name: anchor.FilePath.FileName, why: lookup.Why));
+            _ => _strings.ErrorNoLongerThere(_strings.AnalyzerSavedPlace(file: OneLineText.Name(anchor.FilePath.FileName), token: $"{anchor.Token:X8}")),
+            lookup => _strings.AnalyzerUnreadable(name: OneLineText.Name(anchor.FilePath.FileName), why: OneLineText.Message(lookup.Why)));
     }
 
     private TreeRow CreateLoadingRow()
