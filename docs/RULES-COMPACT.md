@@ -144,8 +144,8 @@ disposable result).
 Build: RL0201, RL0202, RL0203, RL0204 (tests).
 
 - Copy a field or property into a local, check the local (`is null`, R012), use that local. Null meaning a bug →
-  `?? throw` with a message saying what was expected; a legitimate absence → `T?`; never `?? ""` to silence the
-  compiler. A property that would need `= null!` is nullable, `required`, or has a genuinely correct default.
+  `?? throw` (R009); a legitimate absence → `T?`; never `?? ""` to silence the compiler. A property that would need
+  `= null!` is nullable, `required`, or has a genuinely correct default.
 - Annotate your APIs: `[NotNullWhen(true)] out T?` on `Try*`, `[NotNull]` on guards, `[MemberNotNull]` on init
   helpers. `IsSuccess` + a nullable `Value` is a union (R008), not `[MemberNotNullWhen]`.
 - Recipes: `.Select(x => x.P).OfType<T>()`; `Deserialize<T>(json) ?? throw new JsonException(...)`; EF navigations are
@@ -201,9 +201,8 @@ on purpose, a published member).
 | phases, each with its own data | a union (R008) |
 | state that changes under rules | a class whose methods change its private state |
 | a calculation or decision | a static method on the concept's static class |
-| read → compute → write, no decision between | no class: I/O at the edge |
+| I/O with optional pure computation, no decisions | no class: I/O at the edge |
 | a use case interleaving decisions with I/O | a class, one public method, one port (R001) |
-| a use case with no decisions | no class: the endpoint calls data access |
 | 2+ real implementations chosen at run time | an interface |
 | required by a framework, or state it reaches only public | that type, thin; framework-facing data has no rules |
 | anything else | a private method of its user |
@@ -267,8 +266,8 @@ Build: RL0501 (positional records with 2+ values); suggestion: RL0502 (a generat
 - Exceptions: inbound DTOs nullable, not `required` (R006); generated keys not `required`; EF row types
   `{ get; set; }`; a one-field wrapper may be positional; no `struct` when zero is invalid; options classes need
   `[Required]` + `ValidateDataAnnotations().ValidateOnStart()`; `where T : new()` → take a `Func<T>`.
-- Name arguments to a method generated from a text template (returning its text) where two or more parameters share a
-  type: a reword reorders them. List catalogs other projects generate in `rulelab.template_types`.
+- Name arguments to a text-template catalog's method where two or more parameters share a type: a reword reorders
+  them. List each catalog in `rulelab.template_types`.
 
 ## R006: Parse boundary data into the domain
 
@@ -357,30 +356,31 @@ nullable exception).
 - **Whatever fails stays where it was shown**, failed with why, until retried, dismissed or removed by product policy;
   never dropped, left pending or shown empty. An unexpected one is also reported once, saying the operation that failed
   (wherever asked; the step that asked may be named beside its kind), its cause (structured where clients tell causes
-  apart) and an applicable recovery (for a cause known only by its message, the operation's: asking again where what
-  it reads can change, reporting it where its input is unchanged and reports are taken; none invented). What presents
-  it never takes the focus or input meant for something else, nor marks it read by appearing; whether it appears by
-  itself, waits on an indicator or interrupts, and kinds, incident identity and grouping, are the product's.
+  apart) and an applicable recovery (for a cause known only by its message, what the operation's contract holds: asking
+  again where a retry is safe and could meet other conditions, a report where reports are taken; none invented). What
+  presents it never takes the focus or input meant for something else, nor marks it read by appearing; whether it
+  appears by itself, waits on an indicator or interrupts, and kinds, incident identity and grouping, are the product's.
 - **Messages:**
   - **Identity, not presentation:** a shared recovery and a shared cause's identity are defined once, every message
     saying either found from it, each presentation its own message, its words localization's; distinct causes may pick
     one message by their identity in code, never merged before it.
-  - **Text, not notation or layout:** a language's text owns its spacing, punctuation and order, never
-    code: words read as one text, and the app's own arrangement of values for a person, join by its template; parts
-    drawn apart (items on lines of their own) are layout; a notation is one by what reads it outside the text
-    (`file(line): problem`, a term something outside reads as spelled, such as `AnyCPU`), the same in every language, the
-    app's words about it translated; a display name also seen elsewhere is words.
-  - **Commentary, not content:** content the app shows is as produced; the app's notes inside it are its messages.
-    A language switch keeps the product's stated contract (which text is live, which a record kept as made; a surprising
-    persistence said): live text follows alike, a note with its labels (kept as its cause and found when drawn, or made
-    again at the switch); text that left the app (a saved file: its stated contract) keeps its language. Copy and Find
-    read what is drawn; a kept place (a bookmark) uses the content's terms, never an offset into drawn text. A format's
-    published documentation (a schema's descriptions) is in the product's documentation languages. A value placed in a
-    one-line note stays one line, its line breaks escaped visibly where it names something.
-  - **Diagnostics, not messages:** a stack trace (`ToString()`) never goes where a failure is shown or summarized,
-    nor between a document's messages; only to a record (an unexpected failure's must reach one: the log, or with none
-    its labelled diagnostic where reported) and, where offered (a recovery asking for a report needs it), a labelled
-    diagnostic apart that the user opens or sends.
+  - **Text, not notation or layout:** a language's text owns its spacing, punctuation and order, never code: words read
+    as one text, and the app's own arrangement of values for a person, join by its template; separate complete messages
+    are layout, a sentence localized across line breaks; a notation is one by what reads it outside the text
+    (`file(line): problem`, a term something outside reads as spelled, such as `AnyCPU`), the same in every language,
+    the app's words about it translated; a display name also seen elsewhere is words.
+  - **Commentary, not content:** content the app shows is as produced; the app's notes inside it are its messages. A
+    language switch keeps the product's stated contract (which text is live, which a record kept as made); live text
+    follows alike, a note with its labels (kept as its cause, found when drawn or made again). Text that left the app (a
+    saved file: its stated contract) keeps its language. Copy and Find read what is drawn. A kept place (a bookmark)
+    uses the content's terms, never an offset into drawn text. A format's published documentation (a schema's
+    descriptions) is in the product's documentation languages. A value from outside in a one-line place (a note, a
+    title, a row) has its control characters escaped visibly and unambiguously, the escape character too, where it names
+    something.
+  - **Diagnostics, not messages:** a stack trace (`ToString()`) is never a failure's message or summary; what the user
+    reads suits its audience (an unknown cause's own message only where the product's disclosure contract allows).
+    Diagnostics shown or sent are labelled by the message each is behind, laid out as the product chooses, ordinary
+    Copy taking only what is drawn (a recovery asking for a report needs them).
 - **Batches and absence:** independent items keep their own outcomes, the batch failing only for what fails every item;
   an atomic batch or dependent steps follow the operation's completion contract. "Not there" is the source's own absence
   answer, asked first where it has one; an exception is not there only where it unambiguously means the object asked for
@@ -405,14 +405,14 @@ nullable exception).
   before the first send, resent until answered across restarts, the receiver deduplicating while a repeat can
   arrive); or a stated duplicate. Only resending delivers.
 - **No empty catches or log-and-rethrow.** Decision code propagates; adapters catch only what they translate; edges
-  catch per unit, logging once (around each independent item; one boundary around one
-  unit's dependent steps, stopping at the first failure). A task whose every ending is no news is
-  awaited with
-  `ConfigureAwait(ContinueOnCapturedContext | SuppressThrowing)` (plain `Task` only), else its failure propagates. The
-  one exception: a library in `rulelab.untrusted_libraries` reading the user's data (in an adapter, a conversion step,
-  or a library object that is data) is caught around the read only, all but requested cancellation, into the
-  requested unit's failure case with why, shown where its answer would be, in the project calling it (your core's
-  answer carries the case); never list your own code.
+  catch per unit (around each independent item; one boundary around one unit's dependent steps, stopping at the first
+  failure), recording each unexpected failure once with its diagnostic in the product's record (a log, or with none
+  where it is reported); an expected one said by its cause needs none. A task whose every ending is no news is awaited
+  with `ConfigureAwait(ContinueOnCapturedContext | SuppressThrowing)` (plain `Task` only), else its failure propagates.
+  The one exception: a library in `rulelab.untrusted_libraries` reading the user's data (in an adapter, a conversion
+  step, or a library object that is data) is caught around the read only, all but requested cancellation, into the
+  requested unit's failure case with why, shown where its answer would be, in the project calling it (your core's answer
+  carries the case); never list your own code.
 - **Lazy library failures are translated inside each adapter member's read**, told by what the code does: inside, the
   library's reads and the facts they decode (its own predicates included); after the outermost catch, the app's policy
   (which analyses apply, what to read next, decided on facts read under a narrow catch), ordering (even text it sorts
@@ -440,8 +440,8 @@ nullable exception).
   argument); behind a lock it takes the source with the change and cancels after releasing it.
 - **The work's own end settles what it recorded** (pending state), by its ticket, whatever the outcome (quiet too),
   never left to cancellers; an end with no answer says what ended it (closed, stopped), never what an answer would
-  (gone). The app's own follow-up whose subject is gone drops quietly, unless it is the answer asked for and the user
-  didn't remove the subject (then said).
+  (gone). A presentation-only follow-up for an already-answered request drops quietly when its subject is gone; one that
+  is itself the answer asked for is said, unless the user removed its subject.
 - **An effect that can't be undone** (a charge) and what must follow are one transaction, or the work is recorded
   durably first and a worker does the effect under an idempotency key its provider honours, then the rest, replaying
   pending work after an interruption; never the request's token, `CancellationToken.None` or a grace period.
@@ -465,8 +465,7 @@ Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100
   framework-facing signatures, test methods, or clean-up that must finish whatever stopped the work: `DisposeAsync`
   under `await using`.
 - **Nothing fire-and-forget:** every task is awaited; work that must outlive the request goes on a queue (an outbox) a
-  worker drains; non-edge code returns tasks its callers await. No `async void` but event handlers, which are edges
-  (`try` / `catch`, VSTHRD100 suppressed, why).
+  worker drains. No `async void` but event handlers, which are edges (`try` / `catch`, VSTHRD100 suppressed, why).
 - **A workflow awaits what its completion contract needs:** its later steps' inputs and every effect its caller is
   told is done, a final save included. Only work independent of it is handed back
   to the edge, as a kind of its own (R008) inside the success case. Work handed back partway ends the workflow there:
@@ -516,10 +515,9 @@ Build: RL1301, RL1302, RL1303, RL1305, RL1308, RL1309 (an enum's `using static` 
 RL1307. Generated code doesn't count.
 
 - One top-level type per file, named after it (`Result` and `Result<T>` share one). Related types share a folder and
-  namespace, grouped by cohesive concept in the layout the project or framework already has (an established one kept;
-  a project may adopt a deterministic convention: R013's README). No folder is named like a non-generic type its code
-  meets (in it, around it, or a library type nearby code names: `Process/`); `Outcome/` beside `Outcome<T>` hides
-  nothing.
+  namespace, grouped by cohesive concept in the layout the project or framework already has (an established one kept).
+  No folder is named like a non-generic type its code meets (in it, around it, or a library type nearby code names:
+  `Process/`); `Outcome/` beside `Outcome<T>` hides nothing.
 - **A call names its function's type: no `using static`** (an enum's members aside).
 - **Nest a type's parts, not its collaborators** (users are code naming it or reaching it through members; narrow
   members first). Privately: shapes only that type uses and code on its privates it makes
@@ -542,10 +540,9 @@ suggestions: RL1402 (a summary with no word beyond its declaration), RL1403 (a t
   a doc comment only for what the name and signature can't say (a unit, a result's meaning, a precondition, a thread,
   lifetime or ordering rule, a side effect, the rule a type keeps, a reason), never the name restated or the body's
   steps. A restatement deleted leaves its contract unsaid: say it, the name first.
-- **A unit and "none" in the type:** a duration is a `TimeSpan`, a moment a `DateTimeOffset` or the clock's type (a
+- **Units in types:** a duration is a `TimeSpan`, a moment a `DateTimeOffset` or the clock's type (a
   framework's number converted where it comes in), a helper's too; a number a formula needs as it is names its unit
-  (`deltaSeconds`); durations are divided for a ratio or phase, a remainder that is a duration taken of ticks; none is
-  `T?` or a union case, never a sentinel.
+  (`deltaSeconds`); durations are divided for a ratio or phase, a remainder that is a duration taken of ticks.
 - **`//` says why, never what** (R011).
 
 ## Frame-driven UIs (only if your UI redraws from state every frame)
