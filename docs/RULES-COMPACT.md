@@ -60,8 +60,8 @@ disposable result).
 
 - **One port.** A decision-making class reaches I/O, time, randomness, configuration, logging and shared mutable state
   only through a nested `public interface IPorts` it declares, its only constructor parameter: the codebase's own
-  effectful services too (a job runner, an error log) and I/O code a library declares for other projects' adapters,
-  both listed in `rulelab.ambient_types` (a listed type is I/O only), and any effect handed in as a delegate. Used
+  effectful services (a job runner, an error log) and I/O code a library declares for other projects' adapters, both
+  listed in `rulelab.ambient_types` (listed types are I/O only), and effects handed in as delegates. Used
   directly: language primitives (`Task.Run`, `CancellationToken`), plain data and pure methods of objects passed in, a
   caller's handler for its own policy.
 - **Pure code is called directly**, not injected. Per-kind pure code is `static abstract` on the kind (a type
@@ -72,8 +72,8 @@ disposable result).
   no `DbContext`, `IQueryable`, `HttpClient`, `ILogger`, nor a type holding one. Per-call data is a parameter; calls
   sharing a scope or transaction return a handle (`IAsyncDisposable`). A decision that compared library objects by
   identity compares a value key with that identity's equality (`FeedUrl`).
-- **Another use case is reached through your port** (its adapter calls it), never through its port, its effects or
-  the use case beside yours. **Functions sharing a port are one object** (built once by the root); only a lone
+- **Another use case is reached through your port** (its adapter calls it), never through its port, effects or the
+  use case beside yours. **Functions sharing a port are one object** (built once by the root); only a lone
   function takes its port as a parameter (data, port, token). The port is an interface, never a record of functions.
 - **Take the parts of the state you use.** Only edges and work on every part (saving the session: an edge's step) take
   the whole state; a use case that work must follow ends or hands it back. Narrow callees first; a caller converted
@@ -82,8 +82,9 @@ disposable result).
   never through a forwarder on the whole (one stands only while internal readers move; a published API keeps it
   `[Obsolete]` for outside readers, as its compatibility policy says); a member a framework requires of the whole is
   implemented for it, explicitly. A framework context typed by the whole state (`Ui<TState>`) is the whole: a function
-  reading one part takes the untyped context and the part; one only writing to a part (a command queue) takes that
-  part's writing side.
+  reading one part takes the untyped context and the part, as does a tuple carrying it into a library's `Match`; one
+  only writing to a part (a command queue) takes its writing side. Many parts justify neither it nor a per-call
+  bundle: one feature's state is one part, values passed on together one value, a rule's parts its type.
 - **A library object that reads lazily is I/O by what its reads can reach as made:** decoding bytes already read,
   each read bounded, it is data, readable anywhere, a draw included (failures caught per unit, R009); reaching a file
   or the network, only adapters and their shared I/O code read it (list types whose every instance is I/O). Kept by
@@ -168,9 +169,9 @@ Build: RL0301 (`Async`), RL0302 (`Find*`), RL0303 (`Get*` returning `T?`), RL030
 
 Build: RL0401 (vague names); suggestions: RL0403 (public state the type changes itself, not `ref`-bound), RL0404
 (public state only other types write, on a type with methods), RL0405 (the same with no methods, one writer changing
-two or more members; conditional: plain values no rule ties, a root's settings among them), RL0406 (static functions
+two or more; conditional: plain values no rule ties, as a root's settings), RL0406 (static functions
 writing one type's members: two, or one whose write keeps state), RL0407 (another type's lock taken, or an event handed
-out as a delegate), RL0408 (a whole's member forwarding a part's).
+out as a delegate), RL0408 (a whole's member forwarding a part's), RL0409 (one feature's state loose on a whole).
 
 | You have | Make |
 |----------|------|
@@ -204,7 +205,9 @@ out as a delegate), RL0408 (a whole's member forwarding a part's).
   callers take before their I/O (`BeginOpening`) included; never public parts, a second type over them, or another
   type's functions setting them (a framework's interface is no exception). It hands out only objects none of whose
   members can break its rule, splitting an object carrying two rules' state; per-object state of what it hands out is
-  a separate object only it holds (not `internal` members, not keyed in it).
+  a separate object only it holds (not `internal` members, not keyed in it). A whole (app state, a screen) owns no
+  rule: a change across its parts takes them, or the type holding just those a rule ties; one feature's state is in
+  its part, one per place shown, never loose on the whole.
 - **What it covers is read from the domain contract**, not from what a user asked for or which kinds had a shape for
   it; a transition left out is named so. Each is handled alike for every kind, restoration and late results included,
   from values held, without a wait; what it keeps about a place is a value, never the document (what a history records
@@ -325,15 +328,16 @@ nullable exception).
 - **Whatever fails stays where it was shown**, failed with why, until retried, dismissed or removed by product
   policy; never dropped, left pending or shown empty. An unexpected one is also reported once, saying the operation
   that failed (wherever asked; the step that asked may be named beside its kind), its cause and what the user can do
-  (which reports are one incident is the product's). What presents it never takes the focus or input meant for
-  something else, nor marks it read by appearing; whether it appears by itself, waits on an indicator or interrupts is
-  the product's.
+  (an operation's kinds are its recoveries, causes recovered from alike sharing one; which reports are one incident is
+  the product's). What presents it never takes the focus or input meant for something else, nor marks it read by
+  appearing; whether it appears by itself, waits on an indicator or interrupts is the product's.
 - **Batches and absence:** independent items keep their own outcomes, the batch failing only for what fails every item;
   an atomic batch or dependent steps follow the operation's completion contract. "Not there" is the source's own
   absence answer, asked first where it has one; an exception is not there only where it unambiguously means the object
-  asked for is absent (`KeyNotFoundException`, `FileNotFoundException` / `DirectoryNotFoundException` naming it), else
-  a failure. A check first is a shortcut, not proof the read will succeed. A dependency's failure degrades or fails
-  the operation by its contract, said failed with why, never as not there.
+  asked for is absent (`KeyNotFoundException`, `FileNotFoundException` naming it; one naming nothing,
+  `DirectoryNotFoundException`, from a read of just that path or when the source asked again says absent), else a
+  failure. A check first is a shortcut, not proof the read will succeed. A dependency's failure degrades or fails the
+  operation by its contract, said failed with why, never as not there.
 - **Restore and retry:** unreadable restored state is kept as saved; a reload keeps saved references and user intent
   the product promises, failed or not, resolving them again (content derived from sources alone follows its reload
   contract). A failed read is reread only on a trigger the product chose (Retry, reload, a change to what it names, a
