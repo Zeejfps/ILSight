@@ -337,19 +337,21 @@ nullable exception).
 - **Whatever fails stays where it was shown**, failed with why, until retried, dismissed or removed by product policy;
   never dropped, left pending or shown empty. An unexpected one is also reported once, saying the operation that failed
   (wherever asked; the step that asked may be named beside its kind), its cause (structured where clients tell causes
-  apart) and an applicable recovery, one several causes share defined once; kinds, incident identity and presentation
-  grouping are the product's. What presents it never takes the focus or input meant for something else, nor marks it
-  read by appearing; whether it appears by itself, waits on an indicator or interrupts is the product's.
+  apart) and an applicable recovery; a cause or recovery several reports share is defined once, each language's template
+  joining them where the join is the language's; kinds, incident identity and presentation grouping are the product's.
+  What presents it never takes the focus or input meant for something else, nor marks it read by appearing; whether it
+  appears by itself, waits on an indicator or interrupts is the product's.
 - **Batches and absence:** independent items keep their own outcomes, the batch failing only for what fails every item;
   an atomic batch or dependent steps follow the operation's completion contract. "Not there" is the source's own absence
   answer, asked first where it has one; an exception is not there only where it unambiguously means the object asked for
   is absent (`KeyNotFoundException`, `FileNotFoundException` naming it; one naming nothing,
   `DirectoryNotFoundException`, from a read of just that path or when the source asked again says absent), else a
-  failure. A check first is a shortcut, not proof the read will succeed. A dependency's failure degrades or fails the
-  operation by its contract, said failed with why, never not there: a degraded result names all it lacks (not found or
-  failed), reporting only failures, and, kept for reuse, keeps its mark and advises a trigger that rereads what failed.
-  A definitive answer only where successful reads establish it, never not there while a failed source could hold it; a
-  partial one where the contract allows, naming what it couldn't read.
+  failure. A check first is a shortcut, not proof. A dependency's failure degrades or fails the operation by its
+  contract, said failed with why, never not there: a degraded result names all it lacks (not found or failed), reporting
+  only failures, and, kept for reuse, keeps its mark and advises a trigger that rereads what failed. A definitive answer
+  only where successful reads establish it, never not there while a failed source could hold it; a partial one where the
+  contract allows, naming all it couldn't read that could hold an answer (a source read in part, a match it couldn't
+  show: never dropped).
 - **Restore and retry:** unreadable restored state is kept as saved; a reload keeps saved references and user intent
   the product promises, failed or not, resolving them again (content derived from sources alone follows its reload
   contract). A failed read is reread only on a trigger the product chose (Retry, reload, a change to what it names, a
@@ -371,25 +373,26 @@ nullable exception).
   answer carries the case); never list your own code.
 - **Lazy library failures are translated inside each adapter member's read**: only decoding and lazy reads of the
   library's objects inside, told by what the code does; the app's decisions and formatting run on facts read out after
-  the outermost catch (even text it sorts by; a choice of what to read next decided outside on facts read under a narrow
-  catch; a helper doing both split). It returns values it read (freely enumerable) or its own `IAsyncEnumerable<T>`
-  iterator, never deferred library execution; the iterator catches each item's read, owns its source (`await using`),
-  and is consumed in one loop, overlapping no other use of a source that forbids it.
+  the outermost catch (even text it sorts by; the app's conditions on what to read next decided outside on facts read
+  under a narrow catch, the library's own predicates among those facts; a helper doing both split). It returns values it
+  read (freely enumerable) or its own `IAsyncEnumerable<T>` iterator, never deferred library execution; the iterator
+  catches each item's read, owns its source (`await using`), and is consumed in one loop, overlapping no other use of a
+  source that forbids it.
 - **A shared read whose outcome is a value** is awaited and matched by the unit needing it before its sync read
   starts; never a sync wait that rethrows, nor a match at each sync caller.
 - **Requested cancellation isn't a failure; a timeout is.** An adapter lets `OperationCanceledException` through when
   its token was cancelled, catching `TaskCanceledException` only `when (!ct.IsCancellationRequested)` (a timeout). The
   edge links a workflow's token to what cancels it on purpose (shutdown, newer work, a closed dialog), ending quietly
   only for those (never a `Failed` holding a cancellation); an app-set deadline is a timeout (an adapter's `TimedOut`
-  case, or the edge's report). Work a change makes stale never commits nor is said as a failure: its commit is rejected
-  under the lock that makes the change, and the outcome classified from the owner's own state (a superseded answer, or
-  the generation's own source, which the edge asks beside its own), never from whether a linked token has been reached.
-  What ends a generation owns a source ending its work (or takes that ending as a required argument), so no caller can
-  forget; behind a lock it takes the source with the change and cancels after releasing it. A canceller appearing
-  partway (a state change returns a ticket newer work cancels) ends the workflow, which returns it (`[MustUse]`) for the
-  edge to start the I/O linked to it, no catch in the workflow; later steps needing the outcome await a port member
-  taking the ticket (`Stopped` if cancelled). **Newest wins by the current ticket:** the state commits a result only
-  while its ticket is current.
+  case, or the edge's report). Work a change makes stale never commits nor is said as a failure: it carries the
+  generation it began in, its commit rejected under the lock that makes the change, the outcome classified from what the
+  change does (a superseded answer, or the generation's own ending, carried with work that throws, for the edge to ask),
+  never from a linked token or a source each change must remember to cancel. What ends a generation owns that ending (or
+  takes it as a required argument); behind a lock it takes the source with the change and cancels after releasing it. A
+  canceller appearing partway (a state change returns a ticket newer work cancels) ends the workflow, which returns it
+  (`[MustUse]`) for the edge to start the I/O linked to it, no catch in the workflow; later steps needing the outcome
+  await a port member taking the ticket (`Stopped` if cancelled). **Newest wins by the current ticket:** the state
+  commits a result only while its ticket is current.
 - **An effect that can't be undone** (a charge) and what must follow are one transaction, or the work is recorded
   durably first and a worker does the effect under an idempotency key its provider honours, then the rest, replaying
   pending work after an interruption; never the request's token, `CancellationToken.None` or a grace period.
