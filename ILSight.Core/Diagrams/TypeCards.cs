@@ -296,26 +296,29 @@ public static class TypeCards
         };
     }
 
-    // The library lists base types from object down; read in that order.
+    // The library lists base types from object down, then the type itself, which is no ancestor; read in that order.
+    // Object's are read too: which ancestors' members are shown is the app's rule, decided outside (MakeInherited).
     private static List<ReadAncestor> ReadAncestors(ITypeDefinition type)
     {
         return type.GetNonInterfaceBaseTypes()
-            .Where(t => TypeFacts.IsAncestor(type, t))
+            .Where(t => !t.Equals(type))
             .Select(ReadAncestorOf)
             .ToList();
     }
 
     private static ReadAncestor ReadAncestorOf(IType ancestor)
     {
+        var isObject = TypeFacts.IsObject(ancestor);
         var definition = ancestor.GetDefinition();
         if (definition is null)
         {
-            return new ReadAncestor { From = EntityText.ShortTypeName(ancestor), AssemblyPath = null, Members = [] };
+            return new ReadAncestor { From = EntityText.ShortTypeName(ancestor), IsObject = isObject, AssemblyPath = null, Members = [] };
         }
 
         return new ReadAncestor
         {
             From = EntityText.ShortTypeName(ancestor),
+            IsObject = isObject,
             AssemblyPath = CodeReferences.Find(definition)?.FilePath,
             Members = ReadMembers(definition.Fields.Concat<IMember>(definition.Properties).Concat(definition.Methods).Concat(definition.Events)),
         };
@@ -435,10 +438,11 @@ public static class TypeCards
     }
 
     // Nearest first: the library lists base types from object down. For an interface, they are the interfaces it
-    // extends.
+    // extends. The app's rule: object's members are not shown as inherited.
     private static List<InheritedGroup> MakeInherited(ReadType type)
     {
         return Enumerable.Reverse(type.Ancestors)
+            .Where(static a => !a.IsObject)
             .Select(MakeInheritedFrom)
             .Where(static g => g.Members.Count > 0)
             .ToList();
@@ -751,6 +755,8 @@ public static class TypeCards
     private sealed record ReadAncestor
     {
         public required string From { get; init; }
+
+        public required bool IsObject { get; init; }
 
         public required AssemblyPath? AssemblyPath { get; init; }
 
