@@ -123,6 +123,23 @@ public sealed class ResourceTests
         Assert.Equal(text, ResourceText.IndentOneLine(text, ResourceSyntax.Xml));
     }
 
+    // ILSight's own decoders catch only InvalidDataException: every cut of a picture's bytes must be bad data said as
+    // such, never an index out of range, which would now reach the edge as the app's bug.
+    [Theory]
+    [InlineData("logo.bmp", "BMP")]
+    [InlineData("red.gif", "GIF")]
+    [InlineData("logo.ico", "ICO")]
+    [InlineData("pointer.cur", "CUR")]
+    public void Every_cut_of_a_picture_ILSight_decodes_itself_decodes_or_is_unreadable(string name, string format)
+    {
+        var whole = Fixture(name);
+
+        var reads = Enumerable.Range(6, whole.Length - 6).Select(length => ResourceImages.DecodeImage(whole[..length])).ToList();
+
+        Assert.All(reads, static r => Assert.True(r is ResourceImageRead.Decoded or ResourceImageRead.Unreadable));
+        Assert.Equal($"The {format} is cut short.", Assert.IsType<ResourceImageRead.Unreadable>(reads[0]).Why);
+    }
+
     [Fact]
     public void Anything_else_is_no_picture()
     {

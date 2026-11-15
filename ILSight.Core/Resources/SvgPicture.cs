@@ -25,40 +25,53 @@ internal static class SvgPicture
         return trimmed.Contains(SvgElement, StringComparison.Ordinal);
     }
 
-    public static ResourceImage Rasterize(byte[] data)
+    /// <summary>The markup in <paramref name="data"/> parsed by ZGF.Svg, with its own size as the document gives
+    /// it: the library's read, for the caller's catch.</summary>
+    public static ParsedSvg Parse(byte[] data)
     {
         var document = SvgDocument.Parse(ReadText(data));
-        var (width, height) = OwnSize(document);
-        return Rasterize(document, width, height);
+        return new ParsedSvg { Document = document, Width = document.IntrinsicWidth, Height = document.IntrinsicHeight };
     }
 
     /// <summary><paramref name="document"/> drawn <paramref name="width"/> by
     /// <paramref name="height"/>, shrunk evenly to fit <see cref="MaxSide"/>.</summary>
     public static ResourceImage Rasterize(SvgDocument document, float width, float height)
     {
-        var scale = MathF.Min(1f, MaxSide / MathF.Max(width, height));
-        var widthPx = WholePixels(width * scale);
-        var heightPx = WholePixels(height * scale);
-        var rgba = document.Rasterize(widthPx, heightPx);
-        return new ResourceImage { Width = widthPx, Height = heightPx, Rgba = rgba, Format = Format, Shapes = document };
+        var (widthPx, heightPx) = PixelsFor((width, height));
+        return Picture(document, widthPx, heightPx, document.Rasterize(widthPx, heightPx));
+    }
+
+    /// <summary>The whole pixels a picture of <paramref name="size"/> is drawn at, shrunk evenly to fit
+    /// <see cref="MaxSide"/>.</summary>
+    public static (int Width, int Height) PixelsFor((float Width, float Height) size)
+    {
+        var scale = MathF.Min(1f, MaxSide / MathF.Max(size.Width, size.Height));
+        return (WholePixels(size.Width * scale), WholePixels(size.Height * scale));
+    }
+
+    /// <summary>The picture of <paramref name="document"/> drawn <paramref name="width"/> by <paramref name="height"/>
+    /// into <paramref name="rgba"/>.</summary>
+    public static ResourceImage Picture(SvgDocument document, int width, int height, byte[] rgba)
+    {
+        return new ResourceImage { Width = width, Height = height, Rgba = rgba, Format = Format, Shapes = document };
+    }
+
+    /// <summary>The size <paramref name="parsed"/> is drawn at first: its own, or a square of
+    /// <see cref="FallbackSide"/> when it gives none.</summary>
+    public static (float Width, float Height) OwnSize(ParsedSvg parsed)
+    {
+        if (parsed.Width <= 0f || parsed.Height <= 0f)
+        {
+            return (FallbackSide, FallbackSide);
+        }
+
+        return (parsed.Width, parsed.Height);
     }
 
     private static string ReadText(byte[] data)
     {
         using var reader = new StreamReader(new MemoryStream(data), Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
         return reader.ReadToEnd();
-    }
-
-    private static (float Width, float Height) OwnSize(SvgDocument document)
-    {
-        var width = document.IntrinsicWidth;
-        var height = document.IntrinsicHeight;
-        if (width <= 0f || height <= 0f)
-        {
-            return (FallbackSide, FallbackSide);
-        }
-
-        return (width, height);
     }
 
     private static int WholePixels(float size)

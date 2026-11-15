@@ -1,14 +1,21 @@
-using System.Buffers.Binary;
-
 namespace ILSight.Core.Resources;
 
-/// <summary>The first frame of a GIF, as ILSpy shows it.</summary>
+/// <summary>The first frame of a GIF, as ILSpy shows it. ILSight's own decoder: bad bytes are an
+/// <see cref="InvalidDataException"/>, anything else it throws a bug.</summary>
 internal static class Gif
 {
-    public static ResourceImage Decode(ReadOnlySpan<byte> data)
+    // The widest code size a GIF's LZW data may start from, its table holding 4096 codes.
+    private const int MaxMinimumCodeSize = 11;
+
+    public static ResourceImage Decode(PictureBytes data)
     {
-        var width = BinaryPrimitives.ReadUInt16LittleEndian(data[6..]);
-        var height = BinaryPrimitives.ReadUInt16LittleEndian(data[8..]);
+        var width = data.UInt16(6);
+        var height = data.UInt16(8);
+        if ((long)width * height > int.MaxValue / 4)
+        {
+            throw new InvalidDataException($"A {width}×{height} picture is out of range.");
+        }
+
         var flags = data[10];
         var at = 13;
         ReadOnlySpan<byte> global = default;
@@ -34,10 +41,10 @@ internal static class Gif
                     at = SkipBlocks(data, at);
                     break;
                 case 0x2C:
-                    var left = BinaryPrimitives.ReadUInt16LittleEndian(data[(at + 1)..]);
-                    var top = BinaryPrimitives.ReadUInt16LittleEndian(data[(at + 3)..]);
-                    var frameWidth = BinaryPrimitives.ReadUInt16LittleEndian(data[(at + 5)..]);
-                    var frameHeight = BinaryPrimitives.ReadUInt16LittleEndian(data[(at + 7)..]);
+                    var left = data.UInt16(at + 1);
+                    var top = data.UInt16(at + 3);
+                    var frameWidth = data.UInt16(at + 5);
+                    var frameHeight = data.UInt16(at + 7);
                     var frameFlags = data[at + 9];
                     at += 10;
                     var palette = global;
@@ -48,6 +55,11 @@ internal static class Gif
                         at += size;
                     }
                     var minimumCodeSize = data[at++];
+                    if (minimumCodeSize > MaxMinimumCodeSize)
+                    {
+                        throw new InvalidDataException("The GIF's code size is out of range.");
+                    }
+
                     var compressed = new List<byte>();
                     while (data[at] != 0)
                     {
@@ -85,7 +97,7 @@ internal static class Gif
         throw new InvalidDataException("The GIF has no picture.");
     }
 
-    private static int SkipBlocks(ReadOnlySpan<byte> data, int at)
+    private static int SkipBlocks(PictureBytes data, int at)
     {
         while (data[at] != 0)
         {

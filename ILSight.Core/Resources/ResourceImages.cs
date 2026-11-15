@@ -130,37 +130,16 @@ public static class ResourceImages
 
     /// <summary>The picture in <paramref name="data"/>, recognized by its content rather than its
     /// name; <see cref="ResourceImageRead.Unreadable"/> when it is no picture this can decode, or one the decoders fail
-    /// on.</summary>
+    /// on. A listed decoder (PngSharp, JpegSharp, ZGF.Svg) failing on the bytes, whatever it throws, is the picture's
+    /// failure; ILSight's own decoders (BMP, GIF, ICO and CUR, and what it makes of a listed decoder's pixels) fail on
+    /// bad bytes with an <see cref="InvalidDataException"/> alone, and anything else they throw is a bug, for the
+    /// caller's edge.</summary>
     internal static ResourceImageRead DecodeImage(byte[] data)
     {
-        ResourceImage? image;
-        try
-        {
-            image = DecodeKnown(data);
-        }
-        catch (InvalidDataException e)
-        {
-            return new ResourceImageRead.Unreadable { Why = e.Message };
-        }
-        catch (Exception e) when (e is not OperationCanceledException and not OutOfMemoryException)
-        {
-            return new ResourceImageRead.Unreadable { Why = $"The picture cannot be read: {e.Message}" };
-        }
-
-        if (image is null)
-        {
-            return new ResourceImageRead.Unreadable { Why = "This is no PNG, JPEG, BMP, GIF, ICO, CUR or SVG picture." };
-        }
-
-        return new ResourceImageRead.Decoded { Image = image };
-    }
-
-    private static ResourceImage? DecodeKnown(byte[] data)
-    {
         ReadOnlySpan<byte> span = data;
-        if (span.StartsWith((ReadOnlySpan<byte>)[0x89, (byte)'P', (byte)'N', (byte)'G']))
+        if (span.StartsWith(PngSignature))
         {
-            return DecodePng(data);
+            return DecodePng(data, "PNG");
         }
 
         if (span.StartsWith((ReadOnlySpan<byte>)[0xFF, 0xD8]))
@@ -170,50 +149,107 @@ public static class ResourceImages
 
         if (span.StartsWith("BM"u8))
         {
-            return DecodeBitmap(span, "BMP");
+            return DecodeBitmap(data);
         }
 
         if (span.StartsWith("GIF8"u8))
         {
-            return Gif.Decode(span);
+            return DecodeGif(data);
         }
 
         if (IsIcon(span))
         {
-            return DecodeIcon(span);
+            return DecodeIcon(data);
         }
 
         if (SvgPicture.IsSvg(data))
         {
-            return SvgPicture.Rasterize(data);
+            return DecodeSvg(data);
         }
 
-        return null;
+        return new ResourceImageRead.Unreadable { Why = "This is no PNG, JPEG, BMP, GIF, ICO, CUR or SVG picture." };
     }
 
-    // An icon or a cursor file starts with a reserved zero, then type 1 (icon) or 2 (cursor), with the count after it.
-    private static bool IsIcon(ReadOnlySpan<byte> span)
+    private static ReadOnlySpan<byte> PngSignature => [0x89, (byte)'P', (byte)'N', (byte)'G'];
+
+    // Why a listed decoder failed on the bytes: what it says of bad data as it says it, else what it threw, after
+    // "cannot be read".
+    private static ResourceImageRead.Unreadable CannotBeRead(Exception e)
     {
-        return span.Length >= 6 && span[0] == 0 && span[1] == 0 && span[2] is 1 or 2;
+        if (e is InvalidDataException)
+        {
+            return new ResourceImageRead.Unreadable { Why = e.Message };
+        }
+
+        return new ResourceImageRead.Unreadable { Why = $"The picture cannot be read: {e.Message}" };
     }
 
-    private static ResourceImage DecodePng(byte[] data)
+    // Why one of ILSight's own decoders failed on the bytes.
+    private static ResourceImageRead.Unreadable BadData(InvalidDataException e)
     {
-        var png = PngSharp.Api.Png.DecodeFromByteArray(data);
-        var ihdr = png.Ihdr;
-        int width = (int)ihdr.Width, height = (int)ihdr.Height;
-        var depth = ihdr.BitDepth;
-        var src = png.PixelData;
-        var bytesPerPixel = ihdr.GetBytesPerPixel();
+        return new ResourceImageRead.Unreadable { Why = e.Message };
+    }
+
+    // A PNG's facts read by PngSharp (a listed library) inside its catch; its pixels made into RGBA by ILSight after it.
+    private static ResourceImageRead DecodePng(byte[] data, string format)
+    {
+        PngRead read;
+        try
+        {
+            var png = PngSharp.Api.Png.DecodeFromByteArray(data);
+            var ihdr = png.Ihdr;
+            read = new PngRead
+            {
+                Width = (int)ihdr.Width,
+                Height = (int)ihdr.Height,
+                Depth = ihdr.BitDepth,
+                ColorType = ihdr.ColorType,
+                BytesPerPixel = ihdr.GetBytesPerPixel(),
+                Pixels = png.PixelData,
+                Palette = png.Plte?.Entries,
+                Transparency = png.Trns?.Data,
+            };
+        }
+        catch (Exception e) when (e is not OperationCanceledException and not OutOfMemoryException)
+        {
+            return CannotBeRead(e);
+        }
+
+        try
+        {
+            return new ResourceImageRead.Decoded { Image = MakePng(read, format) };
+        }
+        catch (InvalidDataException e)
+        {
+            return BadData(e);
+        }
+    }
+
+    private static ResourceImage MakePng(PngRead read, string format)
+    {
+        int width = read.Width, height = read.Height;
+        if (width <= 0 || height <= 0 || (long)width * height > int.MaxValue / 4)
+        {
+            throw new InvalidDataException($"A {width}×{height} picture is out of range.");
+        }
+
+        var depth = read.Depth;
+        var src = read.Pixels;
+        var bytesPerPixel = read.BytesPerPixel;
         var wide = depth == 16;
-        var palette = png.Plte?.Entries;
-        var transparency = png.Trns?.Data;
+        var palette = read.Palette;
+        var transparency = read.Transparency;
         var rgba = new byte[width * height * 4];
         for (var i = 0; i < width * height; i++)
         {
             var at = i * bytesPerPixel;
+            if (at + bytesPerPixel > src.Length)
+            {
+                throw new InvalidDataException($"The {format}'s pixels are cut short.");
+            }
+
             byte r, g, b, a = 255;
-            switch (ihdr.ColorType)
+            switch (read.ColorType)
             {
                 case ColorType.Grayscale:
                     r = g = b = Sample(src, at, depth);
@@ -258,14 +294,14 @@ public static class ResourceImages
 
                     break;
                 default:
-                    throw new InvalidDataException($"Unknown PNG color type {ihdr.ColorType}.");
+                    throw new InvalidDataException($"Unknown PNG color type {read.ColorType}.");
             }
             rgba[i * 4] = r;
             rgba[i * 4 + 1] = g;
             rgba[i * 4 + 2] = b;
             rgba[i * 4 + 3] = a;
         }
-        return new ResourceImage { Width = width, Height = height, Rgba = rgba, Format = "PNG" };
+        return new ResourceImage { Width = width, Height = height, Rgba = rgba, Format = format };
 
         // Whether the gray sample at src[at] is the one tRNS makes transparent.
         static bool IsTransparentGray(byte[] src, int at, bool wide, byte[]? transparency)
@@ -311,28 +347,128 @@ public static class ResourceImages
         }
     }
 
-    private static ResourceImage DecodeJpeg(byte[] data)
+    // A JPEG's size and pixels read by JpegSharp (a listed library) inside its catch; laid out as RGBA after it.
+    private static ResourceImageRead DecodeJpeg(byte[] data)
     {
-        var jpeg = JpegSharp.Api.Jpeg.DecodeAnyPrecision(data);
-        var pixels = jpeg.ToRgba8888();
+        int width, height;
+        int[] pixels;
+        try
+        {
+            var jpeg = JpegSharp.Api.Jpeg.DecodeAnyPrecision(data);
+            (width, height, pixels) = (jpeg.Width, jpeg.Height, jpeg.ToRgba8888());
+        }
+        catch (Exception e) when (e is not OperationCanceledException and not OutOfMemoryException)
+        {
+            return CannotBeRead(e);
+        }
+
         var rgba = new byte[pixels.Length * 4];
         for (var i = 0; i < pixels.Length; i++)
         {
             BinaryPrimitives.WriteInt32BigEndian(rgba.AsSpan(i * 4), pixels[i]);
         }
 
-        return new ResourceImage { Width = jpeg.Width, Height = jpeg.Height, Rgba = rgba, Format = "JPEG" };
+        return new ResourceImageRead.Decoded { Image = new ResourceImage { Width = width, Height = height, Rgba = rgba, Format = "JPEG" } };
     }
 
-    private static ResourceImage DecodeIcon(ReadOnlySpan<byte> data)
+    // An SVG parsed and drawn by ZGF.Svg (a listed library), each under its catch; the size it is drawn at is ILSight's,
+    // worked out between them.
+    private static ResourceImageRead DecodeSvg(byte[] data)
+    {
+        ParsedSvg parsed;
+        try
+        {
+            parsed = SvgPicture.Parse(data);
+        }
+        catch (Exception e) when (e is not OperationCanceledException and not OutOfMemoryException)
+        {
+            return CannotBeRead(e);
+        }
+
+        var (width, height) = SvgPicture.PixelsFor(SvgPicture.OwnSize(parsed));
+        byte[] rgba;
+        try
+        {
+            rgba = parsed.Document.Rasterize(width, height);
+        }
+        catch (Exception e) when (e is not OperationCanceledException and not OutOfMemoryException)
+        {
+            return CannotBeRead(e);
+        }
+
+        return new ResourceImageRead.Decoded { Image = SvgPicture.Picture(parsed.Document, width, height, rgba) };
+    }
+
+    private static ResourceImageRead DecodeBitmap(byte[] data)
+    {
+        try
+        {
+            var bytes = new PictureBytes(data, "BMP");
+            var pixels = bytes.Int32(10);
+            return new ResourceImageRead.Decoded { Image = DecodeDib(bytes.From(14), "BMP", isIcon: false, pixelOffset: pixels - 14L) };
+        }
+        catch (InvalidDataException e)
+        {
+            return BadData(e);
+        }
+    }
+
+    private static ResourceImageRead DecodeGif(byte[] data)
+    {
+        try
+        {
+            return new ResourceImageRead.Decoded { Image = Gif.Decode(new PictureBytes(data, "GIF")) };
+        }
+        catch (InvalidDataException e)
+        {
+            return BadData(e);
+        }
+    }
+
+    // An icon or a cursor file starts with a reserved zero, then type 1 (icon) or 2 (cursor), with the count after it.
+    private static bool IsIcon(ReadOnlySpan<byte> span)
+    {
+        return span.Length >= 6 && span[0] == 0 && span[1] == 0 && span[2] is 1 or 2;
+    }
+
+    // The largest of the icon's pictures: a PNG one decoded by PngSharp, as a PNG is; any other ILSight's own.
+    private static ResourceImageRead DecodeIcon(byte[] data)
     {
         var format = data[2] == 2 ? "CUR" : "ICO";
-        var count = BinaryPrimitives.ReadUInt16LittleEndian(data[4..]);
+        byte[] payload;
+        try
+        {
+            payload = ChooseIconPicture(new PictureBytes(data, format), format);
+        }
+        catch (InvalidDataException e)
+        {
+            return BadData(e);
+        }
+
+        ReadOnlySpan<byte> picture = payload;
+        if (picture.StartsWith(PngSignature))
+        {
+            return DecodePng(payload, format);
+        }
+
+        try
+        {
+            return new ResourceImageRead.Decoded { Image = DecodeDib(new PictureBytes(payload, format), format, isIcon: true) };
+        }
+        catch (InvalidDataException e)
+        {
+            return BadData(e);
+        }
+    }
+
+    private static byte[] ChooseIconPicture(PictureBytes data, string format)
+    {
+        var count = data.UInt16(4);
         var best = -1;
         var bestArea = -1;
         for (var i = 0; i < count; i++)
         {
-            var entry = data.Slice(6 + i * 16, 16);
+            var entry = data.Part(6 + i * 16L, 16);
             var area = (entry[0] == 0 ? 256 : entry[0]) * (entry[1] == 0 ? 256 : entry[1]);
             if (area > bestArea)
             {
@@ -344,44 +480,32 @@ public static class ResourceImages
             throw new InvalidDataException($"The {format} holds no pictures.");
         }
 
-        var chosen = data.Slice(6 + best * 16, 16);
-        var size = BinaryPrimitives.ReadInt32LittleEndian(chosen[8..]);
-        var offset = BinaryPrimitives.ReadInt32LittleEndian(chosen[12..]);
-        var payload = data.Slice(offset, size);
-        if (payload.StartsWith((ReadOnlySpan<byte>)[0x89, (byte)'P', (byte)'N', (byte)'G']))
-        {
-            var png = DecodePng(payload.ToArray());
-            return new ResourceImage { Width = png.Width, Height = png.Height, Rgba = png.Rgba, Format = format };
-        }
-        return DecodeDib(payload, format, isIcon: true);
+        var chosen = data.Part(6 + best * 16L, 16);
+        var size = chosen.Int32(8);
+        var offset = chosen.Int32(12);
+        return data.Slice(offset, size).ToArray();
     }
 
-    private static ResourceImage DecodeBitmap(ReadOnlySpan<byte> data, string format)
+    private static ResourceImage DecodeDib(PictureBytes dib, string format, bool isIcon, long pixelOffset = -1)
     {
-        var pixels = BinaryPrimitives.ReadInt32LittleEndian(data[10..]);
-        return DecodeDib(data[14..], format, isIcon: false, pixelOffset: pixels - 14);
-    }
-
-    private static ResourceImage DecodeDib(ReadOnlySpan<byte> dib, string format, bool isIcon, int pixelOffset = -1)
-    {
-        var headerSize = BinaryPrimitives.ReadInt32LittleEndian(dib);
+        var headerSize = dib.Int32(0);
         int width, height, bits, compression = 0, colors = 0;
         if (headerSize == 12)
         {
-            width = BinaryPrimitives.ReadInt16LittleEndian(dib[4..]);
-            height = BinaryPrimitives.ReadInt16LittleEndian(dib[6..]);
-            bits = BinaryPrimitives.ReadUInt16LittleEndian(dib[10..]);
+            width = dib.Int16(4);
+            height = dib.Int16(6);
+            bits = dib.UInt16(10);
         }
         else
         {
-            width = BinaryPrimitives.ReadInt32LittleEndian(dib[4..]);
-            height = BinaryPrimitives.ReadInt32LittleEndian(dib[8..]);
-            bits = BinaryPrimitives.ReadUInt16LittleEndian(dib[14..]);
-            compression = BinaryPrimitives.ReadInt32LittleEndian(dib[16..]);
-            colors = BinaryPrimitives.ReadInt32LittleEndian(dib[32..]);
+            width = dib.Int32(4);
+            height = dib.Int32(8);
+            bits = dib.UInt16(14);
+            compression = dib.Int32(16);
+            colors = dib.Int32(32);
         }
         var topDown = height < 0;
-        height = Math.Abs(height);
+        height = height == int.MinValue ? int.MaxValue : Math.Abs(height);
         // An icon's picture's height counts its AND mask too.
         if (isIcon)
         {
@@ -394,14 +518,14 @@ public static class ResourceImages
         }
 
         uint redMask = 0x00FF0000, greenMask = 0x0000FF00, blueMask = 0x000000FF, alphaMask = bits == 32 && !isIcon ? 0u : 0xFF000000;
-        var tableAt = headerSize;
+        long tableAt = headerSize;
         if (compression == 3 || compression == 6)
         {
-            var masksAt = headerSize >= 52 ? 40 : headerSize;
-            redMask = BinaryPrimitives.ReadUInt32LittleEndian(dib[masksAt..]);
-            greenMask = BinaryPrimitives.ReadUInt32LittleEndian(dib[(masksAt + 4)..]);
-            blueMask = BinaryPrimitives.ReadUInt32LittleEndian(dib[(masksAt + 8)..]);
-            alphaMask = headerSize >= 56 || compression == 6 ? BinaryPrimitives.ReadUInt32LittleEndian(dib[(masksAt + 12)..]) : 0;
+            long masksAt = headerSize >= 52 ? 40 : headerSize;
+            redMask = dib.UInt32(masksAt);
+            greenMask = dib.UInt32(masksAt + 4);
+            blueMask = dib.UInt32(masksAt + 8);
+            alphaMask = headerSize >= 56 || compression == 6 ? dib.UInt32(masksAt + 12) : 0;
             if (headerSize == 40)
             {
                 tableAt += compression == 6 ? 16 : 12;
@@ -413,14 +537,14 @@ public static class ResourceImages
         }
 
         var entrySize = headerSize == 12 ? 3 : 4;
-        var tableLength = bits <= 8 ? (colors > 0 ? colors : 1 << bits) : 0;
+        var tableLength = bits <= 8 ? (colors > 0 ? colors : 1L << bits) : 0L;
         var start = pixelOffset >= 0 ? pixelOffset : tableAt + tableLength * entrySize;
-        var stride = (width * bits + 31) / 32 * 4;
+        var stride = ((long)width * bits + 31) / 32 * 4;
         var rgba = new byte[width * height * 4];
         var anyAlpha = false;
         for (var y = 0; y < height; y++)
         {
-            var row = dib.Slice(start + (topDown ? y : height - 1 - y) * stride, stride);
+            var row = dib.Part(start + (topDown ? y : height - 1 - y) * stride, stride);
             for (var x = 0; x < width; x++)
             {
                 byte r, g, b, a = 255;
@@ -433,14 +557,14 @@ public static class ResourceImages
                             4 => row[x >> 1] >> ((x & 1) == 0 ? 4 : 0) & 0xF,
                             _ => row[x],
                         };
-                        var entry = dib.Slice(tableAt + Math.Min(index, tableLength - 1) * entrySize, 3);
+                        var entry = dib.Part(tableAt + Math.Min(index, tableLength - 1) * entrySize, 3);
                         (b, g, r) = (entry[0], entry[1], entry[2]);
                         break;
                     case 24:
                         (b, g, r) = (row[x * 3], row[x * 3 + 1], row[x * 3 + 2]);
                         break;
                     case 16 or 32:
-                        var value = bits == 16 ? BinaryPrimitives.ReadUInt16LittleEndian(row[(x * 2)..]) : BinaryPrimitives.ReadUInt32LittleEndian(row[(x * 4)..]);
+                        var value = bits == 16 ? row.UInt16(x * 2) : row.UInt32(x * 4);
                         if (bits == 16 && compression == 0)
                         {
                             (redMask, greenMask, blueMask) = (0x7C00, 0x03E0, 0x001F);
@@ -474,13 +598,13 @@ public static class ResourceImages
         }
         if (isIcon && (bits != 32 || !anyAlpha))
         {
-            var maskStride = (width + 31) / 32 * 4;
+            var maskStride = ((long)width + 31) / 32 * 4;
             var maskStart = start + stride * height;
             if (maskStart + maskStride * height <= dib.Length)
             {
                 for (var y = 0; y < height; y++)
                 {
-                    var row = dib.Slice(maskStart + (height - 1 - y) * maskStride, maskStride);
+                    var row = dib.Part(maskStart + (height - 1 - y) * maskStride, maskStride);
                     for (var x = 0; x < width; x++)
                     {
                         if ((row[x >> 3] >> (7 - (x & 7)) & 1) != 0)
@@ -504,5 +628,25 @@ public static class ResourceImages
             var max = mask >> shift;
             return (byte)(((value & mask) >> shift) * 255 / max);
         }
+    }
+
+    // What PngSharp read of a PNG: plain values, which MakePng makes into RGBA.
+    private sealed record PngRead
+    {
+        public required int Width { get; init; }
+
+        public required int Height { get; init; }
+
+        public required int Depth { get; init; }
+
+        public required ColorType ColorType { get; init; }
+
+        public required int BytesPerPixel { get; init; }
+
+        public required byte[] Pixels { get; init; }
+
+        public required byte[]? Palette { get; init; }
+
+        public required byte[]? Transparency { get; init; }
     }
 }
