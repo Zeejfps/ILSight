@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The test suite's own run settings, which every `dotnet test` of the solution reads (RunSettingsFilePath in
+     Directory.Build.props). Rules: docs/RULES.md Scope "The hang guard is per test, wherever the suite runs".
+
+     The hang guard here is a backstop over the run: VSTest's blame collector kills the test host when one test has run
+     for TestTimeout, naming that test in the run's output, and the tests after it are not run. It is sized well past
+     the whole suite (about a minute per test project), so only a hang trips it. xUnit v2 gives no per-test timeout
+     that covers every test (its Timeout is for async tests only), so the condition waits keep their own bound
+     (Waits.Patience) and an await of a call made on the spot is guarded by this alone. -->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="blame" enabled="True">
+        <Configuration>
+          <CollectDumpOnTestSessionHang TestTimeout="10min" HangDumpType="None" />
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

@@ -4,6 +4,8 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <MinVerTagPrefix>v</MinVerTagPrefix>
+        <!-- The suite's run settings, read by every `dotnet test` of the solution: the hang guard over the run. -->
+        <RunSettingsFilePath>$(MSBuildThisFileDirectory)ILSight.runsettings</RunSettingsFilePath>
     </PropertyGroup>
 
     <ItemGroup>
