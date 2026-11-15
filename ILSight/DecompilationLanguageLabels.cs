@@ -19,4 +19,17 @@ public static class DecompilationLanguageLabels
             _ => CSharp,
         };
     }
+
+    /// <summary><paramref name="language"/>'s name on the toolbar's switch in <paramref name="t"/>'s language: IL and
+    /// C# by their names; IL with C# the two joined as the language's template joins them
+    /// (<c>toolbar.il_with_csharp</c>, "IL+C#").</summary>
+    public static string ShortLabel(Strings t, DecompilationLanguage language)
+    {
+        return language switch
+        {
+            DecompilationLanguage.IL => IL,
+            DecompilationLanguage.ILWithCSharp => t.ToolbarIlWithCsharp(il: IL, csharp: CSharp),
+            _ => CSharp,
+        };
+    }
 }

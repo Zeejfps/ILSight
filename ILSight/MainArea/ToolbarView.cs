@@ -11,8 +11,6 @@ namespace ILSight.MainArea;
 internal static class ToolbarView
 {
     private const string ListItemPrefix = "list:";
-    private const string ILWithCSharpLabel = "IL+C#";
-
 
     private static readonly ConditionalWeakTable<Strings, Segment<DecompilationLanguage>[]> LanguageSegments = new();
 
@@ -190,9 +188,10 @@ internal static class ToolbarView
     {
         return LanguageSegments.GetValue(t, static t =>
     [
-        new Segment<DecompilationLanguage>(DecompilationLanguage.CSharp, "C#", t.ToolbarDecompileCsharp),
-        new Segment<DecompilationLanguage>(DecompilationLanguage.IL, "IL", t.ToolbarDisassembleIl),
-        new Segment<DecompilationLanguage>(DecompilationLanguage.ILWithCSharp, ILWithCSharpLabel, t.ToolbarDisassembleIlWithCsharp),
+        new Segment<DecompilationLanguage>(DecompilationLanguage.CSharp, DecompilationLanguageLabels.ShortLabel(t, DecompilationLanguage.CSharp), t.ToolbarDecompileCsharp),
+        new Segment<DecompilationLanguage>(DecompilationLanguage.IL, DecompilationLanguageLabels.ShortLabel(t, DecompilationLanguage.IL), t.ToolbarDisassembleIl),
+        new Segment<DecompilationLanguage>(DecompilationLanguage.ILWithCSharp, DecompilationLanguageLabels.ShortLabel(t, DecompilationLanguage.ILWithCSharp),
+            t.ToolbarDisassembleIlWithCsharp),
     ]);
     }
 

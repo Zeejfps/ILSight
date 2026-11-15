@@ -373,6 +373,21 @@ public sealed class AppTests
         Assert.Equal("C#", DecompilationLanguageLabels.Label(Strings.For(Locale.Ja), DecompilationLanguage.CSharp));
     }
 
+    [Theory]
+    [MemberData(nameof(LocalizationTests.AllLocales), MemberType = typeof(LocalizationTests))]
+    public void The_toolbars_IL_with_CSharp_switch_is_named_by_the_languages_catalog_its_two_names_as_they_are(Locale locale)
+    {
+        var t = Strings.For(locale);
+
+        var label = DecompilationLanguageLabels.ShortLabel(t, DecompilationLanguage.ILWithCSharp);
+
+        Assert.Equal(t.ToolbarIlWithCsharp(il: "IL", csharp: "C#"), label);
+        Assert.Contains("IL", label);
+        Assert.Contains("C#", label);
+        Assert.Equal("IL", DecompilationLanguageLabels.ShortLabel(t, DecompilationLanguage.IL));
+        Assert.Equal("C#", DecompilationLanguageLabels.ShortLabel(t, DecompilationLanguage.CSharp));
+    }
+
     [Fact]
     public void The_language_version_dropdown_decompiles_the_active_tab_again_and_hides_for_IL()
     {

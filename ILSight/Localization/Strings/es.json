@@ -62,6 +62,7 @@
   "toolbar.decompile_csharp": "Descompilar a C#",
   "toolbar.disassemble_il": "Desensamblar a IL",
   "toolbar.disassemble_il_with_csharp": "Desensamblar a IL con el C# sobre cada instrucción",
+  "toolbar.il_with_csharp": "{il}+{csharp}",
   "toolbar.language_version": "Versión del lenguaje C#",
   "search.field": "Buscar…",
   "search.field_tooltip": "Buscar tipos y miembros ({shortcut})",
