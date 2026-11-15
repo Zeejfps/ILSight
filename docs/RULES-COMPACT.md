@@ -352,8 +352,10 @@ nullable exception).
   saying either found from it (each presentation its own message; distinct causes may pick a shared message by their
   identity in code, never merged before it); wording is localization's, a language's text owning its spacing,
   punctuation and order, never code: words read as one text (a label and its count) join by the language's template,
-  parts drawn apart are layout, a notation (`file(line): problem`) is the same in every language; kinds, incident
-  identity and grouping are the product's.
+  parts drawn apart are layout, a notation (`file(line): problem`; one by what reads it, not by lacking translated
+  words) is the same in every language; the app's notes inside content it shows (decompiled code) are its messages,
+  the content as produced (a saved file: its stated contract); kinds, incident identity and grouping are the
+  product's.
   What presents it never takes the focus or input meant for something else, nor marks it read by appearing; whether it
   appears by itself, waits on an indicator or interrupts is the product's.
 - **Batches and absence:** independent items keep their own outcomes, the batch failing only for what fails every item;
@@ -392,7 +394,9 @@ nullable exception).
   library's objects inside, told by what the code does; the app's decisions and formatting run on facts read out after
   the outermost catch (even text it sorts by; the app's conditions on what to read next decided outside on facts read
   under a narrow catch; a helper doing both split). A traversal steered only by the library's own decoded facts (follow
-  a property unless the library hides it) may stay inside; the app's policy goes outside, which analyses apply included.
+  a property unless the library hides it) may stay inside; the app's policy goes outside, which analyses apply included
+  (a parent listing's children too). A bug in it fails the unit the contract makes: the description, at the edge; or,
+  each offer's test its own unit, that test, said unchecked; never an offer left out unsaid.
   It returns values it read (freely enumerable) or its own `IAsyncEnumerable<T>` iterator, never deferred library
   execution; the iterator catches each item's read, owns its source (`await using`), and is consumed in one loop,
   overlapping no other use of a source that forbids it.
@@ -408,7 +412,8 @@ nullable exception).
   generation's own source is cancelled before throwing its cancellation, the edge asking that source, never a linked
   token or a source each change must remember to cancel. What ends a generation owns that ending (or takes it as a
   required argument); behind a lock it takes the source with the change and cancels after releasing it. Pending state
-  the work recorded ends with its own end, any outcome (quiet too), by its ticket, never left to cancellers. A canceller
+  the work recorded ends with its own end, any outcome (quiet too), by its ticket, never left to cancellers; an end
+  with no answer says what ended it (closed, stopped), never what an answer would (gone). A canceller
   appearing partway (a state change returns a ticket newer work cancels) ends the workflow, which returns it
   (`[MustUse]`) for the edge to start the I/O linked to it, no catch in the workflow; later steps needing the outcome
   await a port member taking the ticket (`Stopped` if cancelled).
