@@ -24,10 +24,10 @@ internal static class AssemblyListsDialogView
     /// <summary>The dialog over the named lists. A list activated is switched to in this frame, over
     /// <paramref name="session"/>, the documents of the one left kept docked as <paramref name="view"/> says
     /// (<see cref="AssemblyLists.SwitchAssemblyList"/>); only opening its files is queued.</summary>
-    public static void Render(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, AssemblyListsDialog listsDialog, PresetScan presets, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
     {
-        var t = ui.State.Appearance.Strings;
-        var dialog = ui.State.ListsDialog;
+        var t = appearance.Strings;
+        var dialog = listsDialog;
         if (!dialog.IsOpen)
         {
             return;
@@ -42,11 +42,11 @@ internal static class AssemblyListsDialogView
                 return;
             }
 
-            Toolbar(ui, ui.State.Appearance, ui.State.ListsDialog, ui.State.AppCommands, lists);
-            Rows(ui, lists, session, view);
-            RenameProblem(ui, ui.State.Appearance, ui.State.ListsDialog, lists);
-            ContextMenu(ui, ui.State.ListsDialog, ui.State.Appearance, ui.State.AppCommands, lists, session, view);
-            Footer(ui, ui.State.Appearance, ui.State.ListsDialog, ui.State.Presets, ui.State.AppCommands);
+            Toolbar(ui, appearance, listsDialog, commands, lists);
+            Rows(ui, appearance, commands, listsDialog, lists, session, view);
+            RenameProblem(ui, appearance, listsDialog, lists);
+            ContextMenu(ui, listsDialog, appearance, commands, lists, session, view);
+            Footer(ui, appearance, listsDialog, presets, commands);
         }
         if (!open)
         {
@@ -86,10 +86,10 @@ internal static class AssemblyListsDialogView
         }
     }
 
-    private static void Rows(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
+    private static void Rows(Ui ui, Appearance appearance, IAppCommandWriter commands, AssemblyListsDialog listsDialog, SavedAssemblyLists lists, OpenListSession session, ViewSettings view)
     {
         var theme = ui.Theme;
-        var dialog = ui.State.ListsDialog;
+        var dialog = listsDialog;
         var names = lists.Names;
         var picked = dialog.Selection.Index;
         var rowHeight = theme.ControlHeight + theme.GapTight;
@@ -110,17 +110,17 @@ internal static class AssemblyListsDialogView
             var doubleClicked = false;
             for (var i = list.First; i < list.End; i++)
             {
-                doubleClicked |= Row(ui, lists, session, view, list, listId, i, names[i]);
+                doubleClicked |= Row(ui, appearance, commands, listsDialog, lists, session, view, list, listId, i, names[i]);
             }
 
             if (list.Focused)
             {
-                HandleKeys(ui, ui.State.ListsDialog, lists);
+                HandleKeys(ui, listsDialog, lists);
             }
 
             if (list.Activated)
             {
-                ActOnRow(ui, ui.State.ListsDialog, ui.State.AppCommands, lists, session, view, names[list.Index], doubleClicked);
+                ActOnRow(ui, listsDialog, commands, lists, session, view, names[list.Index], doubleClicked);
             }
 
             if (list.ContextMenuRequested)
@@ -130,24 +130,24 @@ internal static class AssemblyListsDialogView
         }
         if (dialog.Selection.Index != picked)
         {
-            LeavePickedRow(ui);
+            LeavePickedRow(ui, commands, listsDialog);
         }
     }
 
-    private static bool Row(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, ListScope list, int listId, int index,
+    private static bool Row(Ui ui, Appearance appearance, IAppCommandWriter commands, AssemblyListsDialog listsDialog, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, ListScope list, int listId, int index,
         string name)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
-        var dialog = ui.State.ListsDialog;
+        var dialog = listsDialog;
         var active = name == lists.Active;
         using (ui.Id(name))
         using (var row = list.Row(index, ui.GetId("row"), new Box { Gap = theme.Gap, AlignY = Align.Center }))
         {
-            ActiveMark(ui, ui.State.Appearance, active);
+            ActiveMark(ui, appearance, active);
             if (dialog.Mode is ListsDialogMode.Renaming renaming && renaming.List == name)
             {
-                EditName(ui, renaming, listId);
+                EditName(ui, commands, listsDialog, renaming, listId);
             }
             else
             {
@@ -158,7 +158,7 @@ internal static class AssemblyListsDialogView
             ui.Text(t.ListsCount(count), color: theme.TextMuted, size: theme.FontSizeSmall);
             if (ui.Button(t.ListsActivate, enabled: !active, id: "activate", variant: ButtonVariant.Ghost))
             {
-                Switch(ui, ui.State.AppCommands, lists, session, view, name);
+                Switch(ui, commands, lists, session, view, name);
             }
 
             return row.Interaction.DoubleClicked;
@@ -184,7 +184,7 @@ internal static class AssemblyListsDialogView
         ui.Text(name, new Box { Width = Sizing.Grow() }, color: color, overflow: TextOverflow.Ellipsis);
     }
 
-    private static void EditName(Ui<UiState> ui, ListsDialogMode.Renaming renaming, int listId)
+    private static void EditName(Ui ui, IAppCommandWriter commands, AssemblyListsDialog listsDialog, ListsDialogMode.Renaming renaming, int listId)
     {
         var begin = renaming.TryTakeFocus();
         var result = ui.InlineEdit(NameId, ref renaming.NewName, begin, Sizing.Grow());
@@ -194,21 +194,21 @@ internal static class AssemblyListsDialogView
         }
 
         var stillHere = ui.HasFocus(ui.GetId(NameId));
-        FinishEditingName(ui, result);
+        FinishEditingName(ui, commands, listsDialog, result);
         if (stillHere || result == InlineEditResult.Cancelled)
         {
             ui.Focus(listId, takesText: false);
         }
     }
 
-    private static void FinishEditingName(Ui<UiState> ui, InlineEditResult result)
+    private static void FinishEditingName(Ui ui, IAppCommandWriter commands, AssemblyListsDialog listsDialog, InlineEditResult result)
     {
         if (result == InlineEditResult.Committed)
         {
-            FinishRenaming(ui.State.ListsDialog, ui.State.AppCommands);
+            FinishRenaming(listsDialog, commands);
             return;
         }
-        ui.State.ListsDialog.StopAsking();
+        listsDialog.StopAsking();
     }
 
     private static void HandleKeys(Ui ui, AssemblyListsDialog listsDialog, SavedAssemblyLists lists)
@@ -253,12 +253,12 @@ internal static class AssemblyListsDialogView
         ui.RequestUpdate();
     }
 
-    private static void LeavePickedRow(Ui<UiState> ui)
+    private static void LeavePickedRow(Ui ui, IAppCommandWriter commands, AssemblyListsDialog listsDialog)
     {
-        var dialog = ui.State.ListsDialog;
+        var dialog = listsDialog;
         if (dialog.Mode is ListsDialogMode.Renaming)
         {
-            FinishRenaming(ui.State.ListsDialog, ui.State.AppCommands);
+            FinishRenaming(listsDialog, commands);
             return;
         }
         dialog.StopAsking();

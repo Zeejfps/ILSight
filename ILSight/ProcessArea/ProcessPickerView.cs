@@ -42,25 +42,25 @@ internal static class ProcessPickerView
     /// what they change draws and Open is asked: the modules of a process newly selected show loading in that frame,
     /// and Open finds nothing of the process before; then tells what it found whether it is still open, which stops
     /// what it started once it is not, however it was closed.</summary>
-    public static void Render(Ui<UiState> ui, Navigation navigation)
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, TableColumns processColumns, TableColumns processModuleColumns, ProcessPicker processPicker, Navigation navigation)
     {
-        var picker = ui.State.ProcessPicker;
+        var picker = processPicker;
         var browser = picker.Browser;
         var open = false;
         var close = false;
-        using (var dialog = ui.WindowDialog("process-picker", ui.State.Appearance.Strings.ProcessPickerTitle, ref picker.IsOpen,
+        using (var dialog = ui.WindowDialog("process-picker", appearance.Strings.ProcessPickerTitle, ref picker.IsOpen,
             AppLayout.ProcessDialogWidth, AppLayout.ProcessDialogHeight, ref picker.Window.Bounds,
             minWidth: AppLayout.ProcessDialogMinWidth, minHeight: AppLayout.ProcessDialogMinHeight))
         {
             if (dialog.IsOpen)
             {
-                Content(ui, picker, ref open, ref close);
+                Content(ui, appearance, commands, processColumns, processModuleColumns, picker, ref open, ref close);
             }
         }
 
         if (open && browser.CanOpen)
         {
-            Commands.OpenFilesLater(ui.State.AppCommands, navigation.BeginOpening(browser.ListToOpen()));
+            Commands.OpenFilesLater(commands, navigation.BeginOpening(browser.ListToOpen()));
             ui.RequestUpdate();
             close = true;
         }
@@ -73,9 +73,9 @@ internal static class ProcessPickerView
         picker.Window.Settle(ui.Input.IsDown(PointerButton.Left));
     }
 
-    private static void Content(Ui<UiState> ui, ProcessPicker picker, ref bool open, ref bool close)
+    private static void Content(Ui ui, Appearance appearance, IAppCommandWriter commands, TableColumns processColumns, TableColumns processModuleColumns, ProcessPicker picker, ref bool open, ref bool close)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var browser = picker.Browser;
         var processListId = ui.GetId(ProcessListId);
@@ -97,14 +97,14 @@ internal static class ProcessPickerView
         {
             using (Pane(ui, ProcessPaneShare))
             {
-                open |= Processes(ui, browser, processListId);
+                open |= Processes(ui, appearance, processColumns, browser, processListId);
             }
 
-            FollowSelection(ui.State.AppCommands, browser);
+            FollowSelection(commands, browser);
 
             using (Pane(ui, 1f - ProcessPaneShare))
             {
-                open |= Modules(ui, browser);
+                open |= Modules(ui, appearance, processModuleColumns, browser);
             }
         }
 
@@ -116,7 +116,7 @@ internal static class ProcessPickerView
             ui.Spacer();
             if (ui.Button(t.ProcessPickerRefresh, enabled: browser.Scan is not ProcessScan.Scanning, id: "process-refresh"))
             {
-                Scan(ui.State.AppCommands, browser, browser.StartScan());
+                Scan(commands, browser, browser.StartScan());
             }
 
             close |= ui.Button(t.PickerCancel, id: "process-cancel");
@@ -181,36 +181,36 @@ internal static class ProcessPickerView
         ui.Text(text, new Box { Padding = new Spacing(theme.ShellPaddingX, theme.Gap) }, color: theme.TextMuted, wrap: true);
     }
 
-    private static bool Processes(Ui<UiState> ui, ProcessBrowser browser, int listId)
+    private static bool Processes(Ui ui, Appearance appearance, TableColumns processColumns, ProcessBrowser browser, int listId)
     {
-        return browser.Scan.Match((ui, browser, listId),
-            notStarted: static (s, _) => NoteInstead(s.ui, s.ui.State.Appearance.Strings.ProcessPickerScanning),
-            scanning: static (s, _) => NoteInstead(s.ui, s.ui.State.Appearance.Strings.ProcessPickerScanning),
-            scanned: static (s, scanned) => ScannedProcesses(s.ui, s.browser, s.listId, scanned),
-            failed: static (s, failed) => NoteInstead(s.ui, s.ui.State.Appearance.Strings.ProcessPickerScanFailed, failed.Error));
+        return browser.Scan.Match((ui, appearance, processColumns, browser, listId),
+            notStarted: static (s, _) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerScanning),
+            scanning: static (s, _) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerScanning),
+            scanned: static (s, scanned) => ScannedProcesses(s.ui, s.appearance, s.processColumns, s.browser, s.listId, scanned),
+            failed: static (s, failed) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerScanFailed, failed.Error));
     }
 
-    private static bool NoteInstead(Ui<UiState> ui, string text)
+    private static bool NoteInstead(Ui ui, string text)
     {
         Note(ui, text);
         return false;
     }
 
-    private static bool NoteInstead(Ui<UiState> ui, string text, string detail)
+    private static bool NoteInstead(Ui ui, string text, string detail)
     {
         Note(ui, text);
         Note(ui, detail);
         return false;
     }
 
-    private static bool ScannedProcesses(Ui<UiState> ui, ProcessBrowser browser, int listId, ProcessScan.Scanned scanned)
+    private static bool ScannedProcesses(Ui ui, Appearance appearance, TableColumns processColumns, ProcessBrowser browser, int listId, ProcessScan.Scanned scanned)
     {
         if (scanned.Processes.Count == 0)
         {
-            return NoteInstead(ui, ui.State.Appearance.Strings.ProcessPickerNone);
+            return NoteInstead(ui, appearance.Strings.ProcessPickerNone);
         }
 
-        return ProcessRows(ui, ui.State.Appearance, ui.State.ProcessColumns, browser, listId);
+        return ProcessRows(ui, appearance, processColumns, browser, listId);
     }
 
     private static bool ProcessRows(Ui ui, Appearance appearance, TableColumns processColumns, ProcessBrowser browser, int listId)
@@ -241,30 +241,30 @@ internal static class ProcessPickerView
         return body.Activated;
     }
 
-    private static bool Modules(Ui<UiState> ui, ProcessBrowser browser)
+    private static bool Modules(Ui ui, Appearance appearance, TableColumns processModuleColumns, ProcessBrowser browser)
     {
-        return browser.Modules.Match((ui, browser),
-            none: static (s, _) => NoteInstead(s.ui, s.ui.State.Appearance.Strings.ProcessPickerPickProcess),
-            loading: static (s, _) => NoteInstead(s.ui, s.ui.State.Appearance.Strings.ProcessPickerLoading),
-            loaded: static (s, loaded) => ModuleRows(s.ui, s.browser, loaded.Modules),
-            unreachable: static (s, unreachable) => NoteInstead(s.ui, s.ui.State.Appearance.Strings.ProcessPickerUnreachable, unreachable.Detail),
-            unreadable: static (s, unreadable) => NoteInstead(s.ui, s.ui.State.Appearance.Strings.ProcessPickerUnreadable, unreadable.Detail));
+        return browser.Modules.Match((ui, appearance, processModuleColumns, browser),
+            none: static (s, _) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerPickProcess),
+            loading: static (s, _) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerLoading),
+            loaded: static (s, loaded) => ModuleRows(s.ui, s.appearance, s.processModuleColumns, s.browser, loaded.Modules),
+            unreachable: static (s, unreachable) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerUnreachable, unreachable.Detail),
+            unreadable: static (s, unreadable) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerUnreadable, unreadable.Detail));
     }
 
-    private static bool ModuleRows(Ui<UiState> ui, ProcessBrowser browser, IReadOnlyList<RunningModule> modules)
+    private static bool ModuleRows(Ui ui, Appearance appearance, TableColumns processModuleColumns, ProcessBrowser browser, IReadOnlyList<RunningModule> modules)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var headers = ModuleHeaders.GetValue(t, static t => [t.ProcessPickerColumnAssembly, t.ProcessPickerColumnFolder]);
-        var table = ui.Table(ModuleListId, ui.State.ProcessModuleColumns, browser.ModuleSelection);
+        var table = ui.Table(ModuleListId, processModuleColumns, browser.ModuleSelection);
         table.Header(headers);
         using var rows = table.Body(modules);
         for (var i = rows.First; i < rows.End; i++)
         {
             using var row = rows.Row(i);
-            modules[i].Switch((ui, row, theme, t),
-                static (drawn, onDisk) => DrawOnDisk(drawn.ui, drawn.ui.State.Appearance, drawn.row, drawn.theme, onDisk),
-                static (drawn, inMemory) => DrawInMemory(drawn.ui, drawn.ui.State.Appearance, drawn.row, drawn.theme, drawn.t, inMemory));
+            modules[i].Switch((ui, appearance, row, theme, t),
+                static (drawn, onDisk) => DrawOnDisk(drawn.ui, drawn.appearance, drawn.row, drawn.theme, onDisk),
+                static (drawn, inMemory) => DrawInMemory(drawn.ui, drawn.appearance, drawn.row, drawn.theme, drawn.t, inMemory));
         }
         return rows.Activated;
     }

@@ -6,10 +6,10 @@ namespace ILSight.MainArea;
 /// <summary>Asks whether to put every panel back where it started before the layout is reset.</summary>
 internal static class LayoutResetDialogView
 {
-    public static void Render(Ui<UiState> ui)
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, Confirmation layoutReset)
     {
-        var t = ui.State.Appearance.Strings;
-        var open = ui.State.LayoutReset.IsAsked;
+        var t = appearance.Strings;
+        var open = layoutReset.IsAsked;
         using (var dialog = ui.Dialog("layout-reset", t.ViewResetLayout, ref open, closeButton: false))
         {
             if (dialog.IsOpen)
@@ -19,19 +19,19 @@ internal static class LayoutResetDialogView
                 {
                     if (ui.Button(t.ViewResetLayoutCancel, id: "reset-cancel", variant: ButtonVariant.Ghost))
                     {
-                        ScreenLayout.FinishLayoutReset(ui.State.LayoutReset, ui.State.Panels, ui.State.AppCommands, false);
+                        ScreenLayout.FinishLayoutReset(layoutReset, panels, commands, false);
                     }
 
                     if (ui.Button(t.ViewResetLayoutConfirm, id: "reset-confirm", variant: ButtonVariant.Primary))
                     {
-                        ScreenLayout.FinishLayoutReset(ui.State.LayoutReset, ui.State.Panels, ui.State.AppCommands, true);
+                        ScreenLayout.FinishLayoutReset(layoutReset, panels, commands, true);
                     }
                 }
             }
         }
-        if (!open && ui.State.LayoutReset.IsAsked)
+        if (!open && layoutReset.IsAsked)
         {
-            ScreenLayout.FinishLayoutReset(ui.State.LayoutReset, ui.State.Panels, ui.State.AppCommands, false);
+            ScreenLayout.FinishLayoutReset(layoutReset, panels, commands, false);
         }
     }
 }

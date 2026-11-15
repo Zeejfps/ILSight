@@ -38,10 +38,10 @@ internal static class NuGetPickerView
     /// <see cref="AppFrames.FollowNuGetPicker"/>); then tells what it found whether it is still open, which stops
     /// what it started once it is not, however it was closed, freeing the images of the icons it showed. The icons
     /// and details it showed for the first time are fetched from the next frame on, which it asks for.</summary>
-    public static void Render(Ui<UiState> ui)
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, NuGetPicker nuGetPicker, DownloadNuGetPackageHandler downloadNuGetPackageHandler)
     {
-        var picker = ui.State.NuGetPicker;
-        Dialog(ui, picker);
+        var picker = nuGetPicker;
+        Dialog(ui, appearance, commands, downloadNuGetPackageHandler, picker);
         FreeImages(ui, picker.Browser.StopUnlessOpen(picker.IsOpen));
         AskForFetchingFrame(ui, picker.Browser);
         picker.Window.Settle(ui.Input.IsDown(PointerButton.Left));
@@ -86,9 +86,9 @@ internal static class NuGetPickerView
         }
     }
 
-    private static void Dialog(Ui<UiState> ui, NuGetPicker picker)
+    private static void Dialog(Ui ui, Appearance appearance, IAppCommandWriter commands, DownloadNuGetPackageHandler downloadNuGetPackageHandler, NuGetPicker picker)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         using var dialog = ui.WindowDialog("nuget", t.NugetTitle, ref picker.IsOpen, AppLayout.NuGetDialogWidth, AppLayout.NuGetDialogHeight,
             ref picker.Window.Bounds, minWidth: AppLayout.NuGetDialogMinWidth, minHeight: AppLayout.NuGetDialogMinHeight);
@@ -97,18 +97,18 @@ internal static class NuGetPickerView
             return;
         }
 
-        TopRow(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.DownloadNuGetPackageHandler, picker);
+        TopRow(ui, appearance, commands, downloadNuGetPackageHandler, picker);
         var open = false;
         using (ui.Row(new Box { Height = Sizing.Grow(), Gap = theme.Gap, AlignY = Align.Start }))
         {
-            open |= PackagesColumn(ui, ui.State.Appearance, picker);
+            open |= PackagesColumn(ui, appearance, picker);
             picker.Browser.FollowSelection();
-            NuGetDetailsView.Render(ui, picker);
+            NuGetDetailsView.Render(ui, appearance, picker);
         }
-        open |= Footer(ui, ui.State.Appearance, picker);
+        open |= Footer(ui, appearance, picker);
         if (open)
         {
-            Download(ui, ui.State.AppCommands, ui.State.DownloadNuGetPackageHandler, picker.Browser, picker.Browser.StartDownload());
+            Download(ui, commands, downloadNuGetPackageHandler, picker.Browser, picker.Browser.StartDownload());
         }
     }
 

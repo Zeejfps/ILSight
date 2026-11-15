@@ -23,7 +23,7 @@ internal static class NuGetDetailsView
     private const float VersionMaxWidth = 200f;
     private const double Kilobyte = 1024.0;
 
-    public static void Render(Ui<UiState> ui, NuGetPicker picker)
+    public static void Render(Ui ui, Appearance appearance, NuGetPicker picker)
     {
         var theme = ui.Theme;
         var frame = new Box
@@ -41,10 +41,10 @@ internal static class NuGetDetailsView
             var package = picker.Browser.Selection.Item;
             if (package == null)
             {
-                NoSelection(ui, ui.State.Appearance);
+                NoSelection(ui, appearance);
                 return;
             }
-            Details(ui, picker, package);
+            Details(ui, appearance, picker, package);
         }
     }
 
@@ -58,7 +58,7 @@ internal static class NuGetDetailsView
         }
     }
 
-    private static void Details(Ui<UiState> ui, NuGetPicker picker, FeedPackage package)
+    private static void Details(Ui ui, Appearance appearance, NuGetPicker picker, FeedPackage package)
     {
         var theme = ui.Theme;
         // Each package scrolls on its own, so another one starts at its top.
@@ -67,13 +67,13 @@ internal static class NuGetDetailsView
             var details = picker.Browser.Version != null ? picker.Browser.EnsureDetails(package, picker.Browser.Version) : null;
             using (ui.Column(new Box { Width = Sizing.Grow(), Padding = theme.ShellPaddingX, Gap = theme.Gap }))
             {
-                Header(ui, ui.State.Appearance, picker, package);
-                VersionRow(ui, picker, package, details);
+                Header(ui, appearance, picker, package);
+                VersionRow(ui, appearance, picker, package, details);
             }
             ui.Leaf(new Box { Width = Sizing.Grow(), Height = theme.SeparatorWidth, Background = theme.Separator });
             using (ui.Scroll("nuget-details", new Box { Height = Sizing.Grow() }))
             {
-                Body(ui, ui.State.Appearance, picker, package, details);
+                Body(ui, appearance, picker, package, details);
             }
         }
     }
@@ -131,9 +131,9 @@ internal static class NuGetDetailsView
         }
     }
 
-    private static void VersionRow(Ui<UiState> ui, NuGetPicker picker, FeedPackage package, VersionDetails? details)
+    private static void VersionRow(Ui ui, Appearance appearance, NuGetPicker picker, FeedPackage package, VersionDetails? details)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
         {
@@ -141,10 +141,10 @@ internal static class NuGetDetailsView
             var choice = picker.Browser.Choice;
             if (choice is not null)
             {
-                VersionSelect(ui, ui.State.Appearance, picker, choice);
+                VersionSelect(ui, appearance, picker, choice);
             }
 
-            DetailsStatus(ui, picker, package, details);
+            DetailsStatus(ui, appearance, picker, package, details);
         }
     }
 
@@ -166,17 +166,17 @@ internal static class NuGetDetailsView
         return version.Text;
     }
 
-    private static void DetailsStatus(Ui<UiState> ui, NuGetPicker picker, FeedPackage package, VersionDetails? details)
+    private static void DetailsStatus(Ui ui, Appearance appearance, NuGetPicker picker, FeedPackage package, VersionDetails? details)
     {
         if (details is null)
         {
             return;
         }
 
-        details.Switch((ui, picker, package),
-            loading: static (s, _) => LoadingStatus(s.ui, s.ui.State.Appearance),
+        details.Switch((ui, appearance, picker, package),
+            loading: static (s, _) => LoadingStatus(s.ui, s.appearance),
             read: static (_, _) => { },
-            failed: static (s, _) => RetryStatus(s.ui, s.ui.State.Appearance, s.picker, s.package));
+            failed: static (s, _) => RetryStatus(s.ui, s.appearance, s.picker, s.package));
     }
 
     private static void LoadingStatus(Ui ui, Appearance appearance)

@@ -36,15 +36,15 @@ public static class MainView
             ui.Separator();
             StatusBarView.Render(ui, appState);
         }
-        FrameworkPickerView.Render(ui, appState.ListSession.Navigation, appState.ListSession.Assemblies);
+        FrameworkPickerView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.Picker, appState.ListSession.Navigation, appState.ListSession.Assemblies);
         ComparisonPickerView.Render(ui, ui.State.ComparisonPicker, ui.State.Appearance, ui.State.AppCommands, appState.ListSession.Navigation, appState.ListSession.Assemblies);
-        NuGetPickerView.Render(ui);
-        ProcessPickerView.Render(ui, appState.ListSession.Navigation);
+        NuGetPickerView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.NuGetPicker, ui.State.DownloadNuGetPackageHandler);
+        ProcessPickerView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.ProcessColumns, ui.State.ProcessModuleColumns, ui.State.ProcessPicker, appState.ListSession.Navigation);
         CloseAssembliesDialogView.Render(ui, ui.State.Closer, ui.State.Appearance, ui.State.AppCommands, appState.ListSession.Assemblies);
-        AssemblyListsDialogView.Render(ui, appState.Lists, appState.ListSession, appState.KeptScreen.View);
+        AssemblyListsDialogView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.ListsDialog, ui.State.Presets, appState.Lists, appState.ListSession, appState.KeptScreen.View);
         AssemblyListDeleteDialogView.Render(ui, ui.State.Appearance, ui.State.ListsDialog, ui.State.AppCommands, appState.Lists, appState.ListSession, appState.KeptScreen.View);
         BookmarkImportDialogView.Render(ui, ui.State.Appearance, ui.State.AppCommands, appState.Imports);
-        LayoutResetDialogView.Render(ui);
+        LayoutResetDialogView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.Panels, ui.State.LayoutReset);
         DisplayOptionsResetDialogView.Render(ui, ui.State.Appearance, ui.State.Display);
         ExportDialogView.Render(ui, ui.State.ExportSetup, ui.State.Appearance, ui.State.ExportColumns, ui.State.AppCommands, appState.Decompiler.Setup.Options);
         ErrorDialogView.Render(ui, ui.State.Appearance, ui.State.ErrorDialog, ui.State.Display, ui.State.AppCommands, appState.Errors);

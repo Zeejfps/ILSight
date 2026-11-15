@@ -23,10 +23,10 @@ internal static class FrameworkPickerView
             static (_, s, error) => s.Browser.FailScan(s.Scan, error));
     }
 
-    public static void Render(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies)
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, FrameworkPicker frameworkPicker, Navigation navigation, AssemblyList assemblies)
     {
-        var t = ui.State.Appearance.Strings;
-        var picker = ui.State.Picker;
+        var t = appearance.Strings;
+        var picker = frameworkPicker;
         var browser = picker.Browser;
         picker.Update(assemblies);
 
@@ -56,11 +56,11 @@ internal static class FrameworkPickerView
 
             using (ui.Panel(new Box { Height = Sizing.Grow(), Padding = theme.BorderWidth, Background = theme.Field, Clip = true }))
             {
-                open |= browser.Scan.Match((ui, browser, listId),
-                    notStarted: static (s, _) => NoteScanning(s.ui, s.ui.State.Appearance),
-                    scanning: static (s, _) => NoteScanning(s.ui, s.ui.State.Appearance),
-                    scanned: static (s, _) => Rows(s.ui, s.ui.State.Appearance, s.browser, s.listId),
-                    failed: static (s, failed) => NoteScanFailed(s.ui, s.ui.State.Appearance, failed.Error));
+                open |= browser.Scan.Match((ui, appearance, browser, listId),
+                    notStarted: static (s, _) => NoteScanning(s.ui, s.appearance),
+                    scanning: static (s, _) => NoteScanning(s.ui, s.appearance),
+                    scanned: static (s, _) => Rows(s.ui, s.appearance, s.browser, s.listId),
+                    failed: static (s, failed) => NoteScanFailed(s.ui, s.appearance, failed.Error));
             }
 
             using (ui.Row(new Box { Gap = theme.GapTight }))
@@ -76,7 +76,7 @@ internal static class FrameworkPickerView
 
         if (open && browser.HasSelection)
         {
-            Commands.OpenFilesLater(ui.State.AppCommands, navigation.BeginOpening(ListPaths(browser.ListSelected())));
+            Commands.OpenFilesLater(commands, navigation.BeginOpening(ListPaths(browser.ListSelected())));
             ui.RequestUpdate();
             close = true;
         }
