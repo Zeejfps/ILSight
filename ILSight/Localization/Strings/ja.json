@@ -402,6 +402,7 @@
   "export.cancel": "キャンセル",
   "export.summary_finished": "{name} をエクスポートしました",
   "export.summary_cancelled": "{name} のエクスポートをキャンセルしました",
+  "export.summary_assembly_closed": "{name} はエクスポートされませんでした：{assembly} が閉じられました",
   "export.summary_failed": "{name} をエクスポートできませんでした",
   "export.problem_count": {"other": "{count:N0} 件の問題"},
   "export.took": "所要時間 {time}",

@@ -9,8 +9,8 @@ namespace ILSight.ExportArea;
 /// <see cref="CheckExportFilesHandler"/>. An export's work runs on the thread pool and comes back on the UI thread, on a
 /// token its turn's cancellation and the workflow's both cancel: what the library (or the disk it writes to) failed with
 /// comes back as <see cref="ExportOutcome{T}.Failed"/>, as the core answers it, its turn's cancellation as
-/// <see cref="ExportOutcome{T}.Stopped"/>, and the workflow's own cancellation, and anything else, are let
-/// through.</summary>
+/// <see cref="ExportOutcome{T}.Stopped"/>, an assembly the read answers closed as <see cref="ExportOutcome{T}.Closed"/>
+/// (a refusal), and the workflow's own cancellation, and anything else, are let through.</summary>
 public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, BrowseSession session)
     : ExportWriting.IPorts, SaveResourceHandler.IPorts, ExtractPackageFileHandler.IPorts, CheckExportFilesHandler.IPorts
 {
@@ -36,33 +36,35 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
         refusals.Show(refusal);
     }
 
-    /// <remarks>A module the library could not read, for code that reads it, fails the export, saying why.</remarks>
+    /// <remarks>A module the library could not read, for code that reads it, fails the export, saying why; one closed
+    /// before the export read it refuses it, writing nothing.</remarks>
     public Task<ExportOutcome<string>> WriteCodeFileAsync(ExportWork.CodeFile work, ExportTurn.Started start, CancellationToken ct)
     {
         return RunOverTypeSystemAsync(token => CodeFiles.SaveAsync(session, work.Node, work.Language, work.Options, work.Notes, work.File, token), start, ct);
     }
 
-    /// <remarks>An assembly closed before the export began stops it, writing nothing.</remarks>
+    /// <remarks>An assembly closed before the export read it refuses it, writing nothing.</remarks>
     public Task<ExportOutcome<ExportedProject>> WriteProjectAsync(ExportWork.Project work, ExportTurn.Started start, CancellationToken ct)
     {
         return RunOverModulesAsync(token => AssemblyExport.ExportProjectAsync(work.Assembly, work.Options, work.ProjectFile, work.Extras, start.Progress, token),
             start, ct);
     }
 
-    /// <remarks>An assembly closed before the export began stops it, writing nothing.</remarks>
+    /// <remarks>An assembly closed before the export read it refuses it, writing nothing.</remarks>
     public Task<ExportOutcome<List<ExportedProject>>> WriteSolutionAsync(ExportWork.Solution work, ExportTurn.Started start, CancellationToken ct)
     {
         return RunOverModulesAsync(token => AssemblyExport.ExportSolutionAsync(work.Projects, work.Options, work.SolutionFile, work.Extras, start.Progress,
             token), start, ct);
     }
 
-    /// <remarks>An assembly the library could not read fails the export, saying why.</remarks>
+    /// <remarks>An assembly the library could not read fails the export, saying why; one closed before the export read
+    /// it refuses it, writing nothing.</remarks>
     public Task<ExportOutcome<string>> WritePdbAsync(ExportWork.Pdb work, ExportTurn.Started start, CancellationToken ct)
     {
         return RunOverTypeSystemAsync(token => AssemblyExport.GeneratePdbAsync(work.Assembly, work.Options, work.File, start.Progress, token), start, ct);
     }
 
-    /// <remarks>An assembly closed before the export began stops it, writing nothing; each assembly the library failed
+    /// <remarks>An assembly closed before the export read it refuses it, writing nothing; each assembly the library failed
     /// on is a failure of the list it answers.</remarks>
     public Task<ExportOutcome<List<PdbFailure>>> WritePdbsAsync(ExportWork.Pdbs work, ExportTurn.Started start, CancellationToken ct)
     {
@@ -70,7 +72,8 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
             await AssemblyExport.GeneratePdbsAsync(work.Assemblies, work.Options, work.Folder, start.Progress, token)), start, ct);
     }
 
-    /// <remarks>An assembly the library could not read fails the export, saying why.</remarks>
+    /// <remarks>An assembly the library could not read fails the export, saying why; one closed before the export read
+    /// it refuses it, writing nothing.</remarks>
     public Task<ExportOutcome<string>> WriteDiagramAsync(ExportWork.Diagram work, ExportTurn.Started start, CancellationToken ct)
     {
         return RunOverTypeSystemAsync(token => ClassDiagrams.WriteAsync(work.Assembly, work.Folder, start.Progress, token), start, ct);
@@ -124,8 +127,9 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
             static done => done.Value.Match<ExportOutcome<T>>(
                 static d => new ExportOutcome<T>.Done(d.Value),
                 static u => new ExportOutcome<T>.Failed(u.Module.Why),
-                static _ => new ExportOutcome<T>.Stopped()),
+                static closed => new ExportOutcome<T>.Closed(closed.Module.FilePath.FileName)),
             static stopped => new ExportOutcome<T>.Stopped(),
+            static closed => new ExportOutcome<T>.Closed(closed.Assembly),
             static failed => new ExportOutcome<T>.Failed(failed.Error));
     }
 
@@ -134,8 +138,10 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
     {
         var outcome = await RunAsync(work, start, ct);
         return outcome.Match(
-            static done => done.Value.Match<ExportOutcome<T>>(static read => new ExportOutcome<T>.Done(read.Value), static _ => new ExportOutcome<T>.Stopped()),
+            static done => done.Value.Match<ExportOutcome<T>>(static read => new ExportOutcome<T>.Done(read.Value),
+                static closed => new ExportOutcome<T>.Closed(closed.Module.FilePath.FileName)),
             static stopped => new ExportOutcome<T>.Stopped(),
+            static closed => new ExportOutcome<T>.Closed(closed.Assembly),
             static failed => new ExportOutcome<T>.Failed(failed.Error));
     }
 

@@ -198,6 +198,27 @@ public sealed class ExportTests : IDisposable
     }
 
     [Fact]
+    public async Task Code_asked_for_whose_assembly_is_closed_while_the_file_picker_is_open_is_refused_saying_it_was_closed()
+    {
+        var app = AppDriver.Opened();
+        app.Show(await app.FixtureAsync("Greeter"), frames: 2);
+        var path = _temp.PathOf("Greeter.cs");
+        app.Frames.FilePicker.OnOpen = () => CommandArea.Commands.CloseAllAssemblies(app.AppState);
+        app.Frames.FilePicker.Answer = path;
+
+        app.Frames.Key(Shortcuts.SaveCode).Frame(2);
+        app.Settle();
+
+        var report = Assert.Single(app.AppState.FinishedExports);
+        var closed = Assert.IsType<ExportEnd.AssemblyClosed>(report.End);
+        Assert.Equal("ILSight.App.Tests.dll", closed.Assembly);
+        Assert.Equal("Greeter wasn't exported: ILSight.App.Tests.dll was closed", ExportReportText.DescribeOutcome(Strings.En, report));
+        Assert.StartsWith("Greeter wasn't exported: ILSight.App.Tests.dll was closed", Documents.GetText(ExportReportText.Write(Strings.En, [report])));
+        Assert.False(File.Exists(path));
+        Assert.Empty(app.AppState.Errors.Entries);
+    }
+
+    [Fact]
     public async Task Ctrl_S_on_baml_offers_to_save_it_as_xaml()
     {
         var app = AppDriver.Opened();

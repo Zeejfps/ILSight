@@ -402,6 +402,7 @@
   "export.cancel": "Abbrechen",
   "export.summary_finished": "{name} exportiert",
   "export.summary_cancelled": "Export von {name} abgebrochen",
+  "export.summary_assembly_closed": "{name} wurde nicht exportiert: {assembly} wurde geschlossen",
   "export.summary_failed": "{name} konnte nicht exportiert werden",
   "export.problem_count": {"one": "{count:N0} Problem", "other": "{count:N0} Probleme"},
   "export.took": "Dauer: {time}",

@@ -402,6 +402,7 @@
   "export.cancel": "Отмена",
   "export.summary_finished": "{name} экспортирован",
   "export.summary_cancelled": "Экспорт {name} отменён",
+  "export.summary_assembly_closed": "{name} не экспортирован: {assembly} был закрыт",
   "export.summary_failed": "Не удалось экспортировать {name}",
   "export.problem_count": {"one": "{count:N0} проблема", "few": "{count:N0} проблемы", "many": "{count:N0} проблем", "other": "{count:N0} проблемы"},
   "export.took": "Заняло {time}",

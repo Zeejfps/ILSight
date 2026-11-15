@@ -402,6 +402,7 @@
   "export.cancel": "取消",
   "export.summary_finished": "已导出 {name}",
   "export.summary_cancelled": "已取消导出 {name}",
+  "export.summary_assembly_closed": "未导出 {name}：{assembly} 已关闭",
   "export.summary_failed": "无法导出 {name}",
   "export.problem_count": {"other": "{count:N0} 个问题"},
   "export.took": "耗时 {time}",

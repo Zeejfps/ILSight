@@ -402,6 +402,7 @@
   "export.cancel": "취소",
   "export.summary_finished": "{name} 내보내기 완료",
   "export.summary_cancelled": "{name} 내보내기 취소됨",
+  "export.summary_assembly_closed": "{name}을(를) 내보내지 않았습니다: {assembly}이(가) 닫혔습니다",
   "export.summary_failed": "{name}을(를) 내보낼 수 없음",
   "export.problem_count": {"other": "문제 {count:N0}개"},
   "export.took": "소요 시간 {time}",

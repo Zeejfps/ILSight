@@ -411,6 +411,7 @@
   "export.cancel": "Cancel",
   "export.summary_finished": "Exported {name}",
   "export.summary_cancelled": "Cancelled exporting {name}",
+  "export.summary_assembly_closed": "{name} wasn't exported: {assembly} was closed",
   "export.summary_failed": "Could not export {name}",
   "export.problem_count": {"one": "{count:N0} problem", "other": "{count:N0} problems"},
   "export.took": "Took {time}",

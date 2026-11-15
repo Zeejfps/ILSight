@@ -590,7 +590,7 @@ internal static class ExportsPanelView
 
     private static bool OpensFolderFirst(ExportReport report)
     {
-        var isClean = report.End.Match(static finished => !finished.HasProblems, static _ => false, static _ => false);
+        var isClean = report.End.Match(static finished => !finished.HasProblems, static _ => false, static _ => false, static _ => false);
         if (!isClean)
         {
             return false;
@@ -603,6 +603,9 @@ internal static class ExportsPanelView
     {
         return report.End.Match(icons,
             static (i, finished) => FinishedIcon(i, finished),
+            static (i, _) => i.ExportCancelled,
+            // Refused, its assembly closed: nothing written, as a cancel's mark, in the warning's color and its own words,
+            // so it reads neither as a cancel the user asked for nor as a failure.
             static (i, _) => i.ExportCancelled,
             static (i, _) => i.ExportProblems);
     }
@@ -622,6 +625,7 @@ internal static class ExportsPanelView
         return report.End.Match(theme,
             static (th, finished) => FinishedColor(th, finished, clean: th.Success),
             static (th, _) => th.TextMuted,
+            static (th, _) => th.Warning,
             static (th, _) => th.Danger);
     }
 
@@ -631,6 +635,7 @@ internal static class ExportsPanelView
         return report.End.Match(theme,
             static (th, finished) => FinishedColor(th, finished, clean: th.TextMuted),
             static (th, _) => th.TextMuted,
+            static (th, _) => th.Warning,
             static (th, _) => th.Danger);
     }
 

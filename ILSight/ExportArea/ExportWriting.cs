@@ -4,7 +4,8 @@ namespace ILSight.ExportArea;
 
 /// <summary>Runs an export the exports panel queued (<see cref="Exports.Enter"/>) once its turn comes: writes it
 /// through <see cref="IPorts"/> without holding up the screen, ends its turn, and adds the report of how it ended to the
-/// finished exports: what it wrote and what went wrong, that it was cancelled, or why it failed. One taken out of the
+/// finished exports: what it wrote and what went wrong, that it was cancelled, that it was refused because its assembly
+/// was closed, or why it failed. One taken out of the
 /// queue before its turn leaves nothing behind.</summary>
 public sealed class ExportWriting(ExportWriting.IPorts ports)
 {
@@ -20,8 +21,9 @@ public sealed class ExportWriting(ExportWriting.IPorts ports)
 
         /// <summary>Writes the code <paramref name="work"/> asks for; answers the path written. Each of these writes
         /// without holding up the screen, reporting how far it has got to <paramref name="start"/>; answers
-        /// <see cref="ExportOutcome{T}.Stopped"/> once <paramref name="start"/>'s turn is cancelled, and what the work
-        /// failed with as <see cref="ExportOutcome{T}.Failed"/>; the cancellation of <paramref name="ct"/> is let
+        /// <see cref="ExportOutcome{T}.Stopped"/> once <paramref name="start"/>'s turn is cancelled,
+        /// <see cref="ExportOutcome{T}.Closed"/> when the assembly it reads was closed before it read it, and what the
+        /// work failed with as <see cref="ExportOutcome{T}.Failed"/>; the cancellation of <paramref name="ct"/> is let
         /// through.</summary>
         Task<ExportOutcome<string>> WriteCodeFileAsync(ExportWork.CodeFile work, ExportTurn.Started start, CancellationToken ct);
 
@@ -44,7 +46,8 @@ public sealed class ExportWriting(ExportWriting.IPorts ports)
     /// <summary>Waits for the turn of the export <paramref name="ticket"/> queued, then writes <paramref name="work"/>
     /// and adds its report to <paramref name="finished"/>; a diagram that was written is opened through
     /// <paramref name="viewCommands"/>. Nothing when it was withdrawn. <paramref name="ct"/> is the workflow's token;
-    /// cancelling the export's turn stops its work and is reported as cancelled.</summary>
+    /// cancelling the export's turn stops its work and is reported as cancelled; an assembly closed before the work read
+    /// it is reported as refused, saying so, never as cancelled nor as an error.</summary>
     public async Task HandleAsync(List<ExportReport> finished, Queue<ViewCommand> viewCommands, ExportWork work, ExportTicket ticket,
         CancellationToken ct)
     {
@@ -97,6 +100,14 @@ public sealed class ExportWriting(ExportWriting.IPorts ports)
                 Run = run,
                 Job = job,
                 End = new ExportEnd.Cancelled(),
+                Elapsed = elapsed,
+                FolderExists = folderExists,
+            },
+            closed => new ExportReport
+            {
+                Run = run,
+                Job = job,
+                End = new ExportEnd.AssemblyClosed { Assembly = closed.Assembly },
                 Elapsed = elapsed,
                 FolderExists = folderExists,
             },

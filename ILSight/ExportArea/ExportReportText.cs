@@ -28,12 +28,13 @@ internal static class ExportReportText
     }
 
     /// <summary>How <paramref name="report"/>'s export ended, in a few words: whether it finished,
-    /// with how many problems, and how long it took.</summary>
+    /// with how many problems, and how long it took; or that it was refused, and why.</summary>
     public static string DescribeOutcome(Strings t, ExportReport report)
     {
-        return report.End.Match((t, report.Elapsed),
+        return report.End.Match((t, report.Elapsed, report.Job.Name),
             static (s, finished) => DescribeFinished(s.t, finished, s.Elapsed),
             static (s, _) => s.t.ExportsCancelled,
+            static (s, closed) => s.t.ExportSummaryAssemblyClosed(name: s.Name, assembly: closed.Assembly),
             static (s, _) => s.t.ExportsFailed);
     }
 
@@ -71,6 +72,7 @@ internal static class ExportReportText
         return report.End.Match((t, report.Job.Name),
             static (s, finished) => SummarizeFinished(s.t, s.Name, finished),
             static (s, _) => s.t.ExportSummaryCancelled(s.Name),
+            static (s, closed) => s.t.ExportSummaryAssemblyClosed(name: s.Name, assembly: closed.Assembly),
             static (s, _) => s.t.ExportSummaryFailed(s.Name));
     }
 
@@ -107,6 +109,9 @@ internal static class ExportReportText
         text.AppendLine();
         report.End.Switch((text, t, kind: report.Job.Kind),
             static (s, finished) => WriteFinished(s.text, s.t, s.kind, finished),
+            static (_, _) =>
+            {
+            },
             static (_, _) =>
             {
             },
