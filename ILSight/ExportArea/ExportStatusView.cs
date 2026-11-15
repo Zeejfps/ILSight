@@ -12,7 +12,7 @@ internal static class ExportStatusView
     private const float BarWidth = 72f;
 
     /// <summary>Draws the running export; returns whether one runs.</summary>
-    public static bool Render(Ui<UiState> ui, ExportQueue export)
+    public static bool Render(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, ExportQueue export)
     {
         var running = export.Running;
         if (running is null)
@@ -20,21 +20,21 @@ internal static class ExportStatusView
             return false;
         }
 
-        Running(ui, running, export.WaitingCount);
+        Running(ui, appearance, commands, panels, running, export.WaitingCount);
         return true;
     }
 
-    private static void Running(Ui<UiState> ui, RunningExport running, int waiting)
+    private static void Running(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, RunningExport running, int waiting)
     {
-        var t = ui.State.Appearance.Strings;
-        if (Glance(ui, ui.State.Appearance, running, waiting))
+        var t = appearance.Strings;
+        if (Glance(ui, appearance, running, waiting))
         {
-            ui.State.Panels.Open(DockView.Exports);
+            panels.Open(DockView.Exports);
         }
 
-        if (!running.IsCancelling && IconButton(ui, "cancel-export", ui.State.Appearance.Icons.ExportCancel, t.StatusCancelExport))
+        if (!running.IsCancelling && IconButton(ui, "cancel-export", appearance.Icons.ExportCancel, t.StatusCancelExport))
         {
-            Commands.Later(ui.State.AppCommands, static a => a.Export.CancelRunning());
+            Commands.Later(commands, static a => a.Export.CancelRunning());
         }
     }
 

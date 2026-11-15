@@ -9,6 +9,7 @@ using ILSight.ExportArea;
 using ILSight.CommandArea;
 using ILSight.DiagramArea;
 using ILSight.AssemblyArea;
+using ILSight.SearchArea;
 
 namespace ILSight.MainArea;
 
@@ -24,27 +25,26 @@ internal static class TreePaneView
     /// <summary>The tree and its toolbar. A node picked or opened shows in <paramref name="navigation"/>'s tabs in this
     /// frame, in <paramref name="setup"/>, in the preview tab while
     /// <see cref="Navigation.PreviewTabs"/>; only its decompile is queued.</summary>
-    public static void Render(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DecompilerSetup setup)
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, BrowseTree tree, AnalyzerRows analyzerRows, ScreenDisplay display, Search search, ComparisonPicker comparisonPicker, AssemblyCloser closer, ExportSetup exportSetup, Navigation navigation, AssemblyList assemblies, DecompilerSetup setup)
     {
         var theme = ui.Theme;
-        var tree = ui.State.Tree;
-        tree.SetStyle(theme, ui.State.Appearance.NodeIconPalette, ui.State.Appearance.Icons);
-        tree.ShowTokens(ui.State.Display.Options.TreeTokens);
-        tree.ShowEmptyTables(ui.State.Display.Options.ShowEmptyMetadataTables);
-        tree.NestNamespaces(ui.State.Display.Options.NestedNamespaces);
+        tree.SetStyle(theme, appearance.NodeIconPalette, appearance.Icons);
+        tree.ShowTokens(display.Options.TreeTokens);
+        tree.ShowEmptyTables(display.Options.ShowEmptyMetadataTables);
+        tree.NestNamespaces(display.Options.NestedNamespaces);
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
-        Toolbar(ui, ui.State.Appearance, ui.State.Tree, ui.State.AppCommands, ui.State.Closer, navigation, assemblies);
+        Toolbar(ui, appearance, tree, commands, closer, navigation, assemblies);
         ui.Separator();
         if (tree.Roots.Count == 0)
         {
-            EmptyHint(ui, ui.State.Appearance);
+            EmptyHint(ui, appearance);
         }
 
         var result = ui.TreeView(TreeId, tree.Roots, tree, tree.View, new Box { Padding = new Spacing(0f, theme.GapTight) });
-        AnalyzeOnShortcut(ui);
-        CloseOnDelete(ui, ui.State.Tree, ui.State.AppCommands);
-        Respond(ui, ui.State.AppCommands, ui.State.Tree, navigation, setup, result);
-        ContextMenu(ui, navigation, assemblies, setup);
+        AnalyzeOnShortcut(ui, commands, panels, tree, analyzerRows);
+        CloseOnDelete(ui, tree, commands);
+        Respond(ui, commands, tree, navigation, setup, result);
+        ContextMenu(ui, appearance, commands, panels, tree, analyzerRows, search, comparisonPicker, exportSetup, navigation, assemblies, setup);
     }
 
     private static void Toolbar(Ui ui, Appearance appearance, BrowseTree tree, IAppCommandWriter commands, AssemblyCloser closer, Navigation navigation, AssemblyList assemblies)
@@ -286,7 +286,7 @@ internal static class TreePaneView
         ui.Text(text, new Box { Width = Sizing.Grow(), Padding = new Spacing(theme.PanelPadding, theme.Gap) }, color: theme.TextMuted, wrap: true);
     }
 
-    private static void AnalyzeOnShortcut(Ui<UiState> ui)
+    private static void AnalyzeOnShortcut(Ui ui, IAppCommandWriter commands, Panels panels, BrowseTree tree, AnalyzerRows analyzerRows)
     {
         var treeId = ui.GetId(TreeId);
         if (!ui.HasFocus(treeId))
@@ -299,7 +299,7 @@ internal static class TreePaneView
             return;
         }
 
-        var picked = ui.State.Tree.View.Selected;
+        var picked = tree.View.Selected;
         if (picked is null)
         {
             return;
@@ -311,7 +311,7 @@ internal static class TreePaneView
             return;
         }
 
-        Commands.AnalyzeLater(ui.State.AppCommands, ui.State.Panels, ui.State.Analyzer, analysis);
+        Commands.AnalyzeLater(commands, panels, analyzerRows, analysis);
     }
 
     private static void CloseOnDelete(Ui ui, BrowseTree tree, IAppCommandWriter commands)
@@ -398,7 +398,7 @@ internal static class TreePaneView
         ui.OpenContextMenu(MenuId, at);
     }
 
-    private static void ContextMenu(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DecompilerSetup setup)
+    private static void ContextMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, BrowseTree tree, AnalyzerRows analyzerRows, Search search, ComparisonPicker comparisonPicker, ExportSetup exportSetup, Navigation navigation, AssemblyList assemblies, DecompilerSetup setup)
     {
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
@@ -406,34 +406,34 @@ internal static class TreePaneView
             return;
         }
 
-        var node = ui.State.Tree.MenuTarget;
+        var node = tree.MenuTarget;
         if (node is null)
         {
             return;
         }
 
-        NodeMenu(ui, navigation, assemblies, setup, node);
+        NodeMenu(ui, appearance, commands, panels, analyzerRows, search, comparisonPicker, exportSetup, navigation, assemblies, setup, node);
     }
 
-    private static void NodeMenu(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, DecompilerSetup setup,
+    private static void NodeMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, AnalyzerRows analyzerRows, Search search, ComparisonPicker comparisonPicker, ExportSetup exportSetup, Navigation navigation, AssemblyList assemblies, DecompilerSetup setup,
         BrowseNode node)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var jump = node.Activation as Activation.Navigate;
         var openKey = jump != null ? null : Shortcuts.Enter;
         if (ui.MenuItem(t.TreeOpen, openKey, id: "open"))
         {
-            Commands.DecompileLater(ui.State.AppCommands, navigation.OpenNode(node, setup));
+            Commands.DecompileLater(commands, navigation.OpenNode(node, setup));
         }
 
         if (ui.MenuItem(t.TreeOpenInNewTab, id: "open-in-new-tab"))
         {
-            Commands.DecompileLater(ui.State.AppCommands, navigation.ShowNode(node, setup, inNewTab: true));
+            Commands.DecompileLater(commands, navigation.ShowNode(node, setup, inNewTab: true));
         }
 
         if (jump != null && ui.MenuItem(t.TreeGoToTarget, Shortcuts.Enter, id: "go-to-target"))
         {
-            Commands.FollowLater(ui.State.AppCommands, jump.Target, navigation.BeginResolving(inNewTab: false));
+            Commands.FollowLater(commands, jump.Target, navigation.BeginResolving(inNewTab: false));
         }
 
         if (ui.MenuItem(t.TreeCopyFullName, id: "copy-full-name"))
@@ -441,51 +441,51 @@ internal static class TreePaneView
             ui.ClipboardText = node.FullName;
         }
 
-        DocsItem(ui, ui.State.Appearance, node);
+        DocsItem(ui, appearance, node);
         var analysis = node.Analysis;
         if (analysis is not null && ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
         {
-            Commands.AnalyzeLater(ui.State.AppCommands, ui.State.Panels, ui.State.Analyzer, analysis);
+            Commands.AnalyzeLater(commands, panels, analyzerRows, analysis);
         }
 
         var definition = node.Reference;
         if (definition != null && ui.MenuItem(t.TreeShowInMetadata, id: "show-in-metadata"))
         {
-            Commands.ShowInMetadataLater(ui.State.AppCommands, definition, navigation.BeginResolving(inNewTab: false));
+            Commands.ShowInMetadataLater(commands, definition, navigation.BeginResolving(inNewTab: false));
         }
 
         if (node.Subject is NodeSubject.TypeDefinition type)
         {
-            DiagramItems(ui, ui.State.Appearance, ui.State.AppCommands, type.Definition.Reference);
+            DiagramItems(ui, appearance, commands, type.Definition.Reference);
         }
 
-        if (node.HasResource && ui.MenuItem(t.ResourceExport, id: "export-resource", icon: new UiIcon(ui.State.Appearance.Icons.ResourceExport)))
+        if (node.HasResource && ui.MenuItem(t.ResourceExport, id: "export-resource", icon: new UiIcon(appearance.Icons.ResourceExport)))
         {
-            ResourceImageView.PickExport(ui, ui.State.Appearance, ui.State.AppCommands, node);
+            ResourceImageView.PickExport(ui, appearance, commands, node);
         }
 
-        ExtractItems(ui, ui.State.Appearance, ui.State.AppCommands, node);
-        if (OffersSaveCode(node) && ui.MenuItem(t.FileSaveCode, Shortcuts.SaveCode, id: "save-code", icon: new UiIcon(ui.State.Appearance.Icons.FileSaveCode)))
+        ExtractItems(ui, appearance, commands, node);
+        if (OffersSaveCode(node) && ui.MenuItem(t.FileSaveCode, Shortcuts.SaveCode, id: "save-code", icon: new UiIcon(appearance.Icons.FileSaveCode)))
         {
-            SaveDialogs.PickCodeFile(ui, ui.State.Appearance, ui.State.AppCommands, setup.Language, node);
+            SaveDialogs.PickCodeFile(ui, appearance, commands, setup.Language, node);
         }
 
         if (node.Subject is NodeSubject.Module module)
         {
-            AssemblyItems(ui, ui.State.Appearance, ui.State.ExportSetup, ui.State.AppCommands, ui.State.ComparisonPicker, assemblies, module.Value);
+            AssemblyItems(ui, appearance, exportSetup, commands, comparisonPicker, assemblies, module.Value);
         }
 
         if (node.Subject is NodeSubject.Module && ui.MenuItem(t.TreeScopeSearchToAssembly, id: "scope-search"))
         {
-            ScreenLayout.ScopeSearch(ui.State.Search, ui.State.Panels, node);
+            ScreenLayout.ScopeSearch(search, panels, node);
         }
 
         if (node.Subject is NodeSubject.Namespace && ui.MenuItem(t.TreeScopeSearchToNamespace, id: "scope-search"))
         {
-            ScreenLayout.ScopeSearch(ui.State.Search, ui.State.Panels, node);
+            ScreenLayout.ScopeSearch(search, panels, node);
         }
 
-        if (IsListedRoot(node) && ui.MenuItem(t.TreeOpenContainingFolder, id: "open-containing-folder", icon: new UiIcon(ui.State.Appearance.Icons.AssembliesOpenContainingFolder)))
+        if (IsListedRoot(node) && ui.MenuItem(t.TreeOpenContainingFolder, id: "open-containing-folder", icon: new UiIcon(appearance.Icons.AssembliesOpenContainingFolder)))
         {
             ui.RevealFile(node.Assembly.FilePath.Text);
         }
@@ -495,7 +495,7 @@ internal static class TreePaneView
             ui.MenuSeparator();
             if (ui.MenuItem(t.TreeCloseAssembly, id: "close-assembly"))
             {
-                Commands.Later(ui.State.AppCommands, node.Assembly, static (a, assembly) => Commands.CloseAssemblies(a, [assembly]));
+                Commands.Later(commands, node.Assembly, static (a, assembly) => Commands.CloseAssemblies(a, [assembly]));
             }
         }
     }

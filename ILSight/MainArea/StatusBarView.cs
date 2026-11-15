@@ -12,9 +12,9 @@ internal static class StatusBarView
 {
     private const int RefusalDetailsSalt = 0x52454644;
 
-    public static void Render(Ui<UiState> ui, AppState appState)
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, BrowseTree tree, ErrorDialog errorDialog, RefusalDetails refusalDetails, AppState appState)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         var size = theme.FontSizeSmall;
         using (ui.Row(new Box
@@ -34,7 +34,7 @@ internal static class StatusBarView
             // it, the error indicator among them, stays on the bar.
             using (ui.Row(new Box { Width = Sizing.Shrink(), Height = Sizing.Grow(), Gap = theme.GapTight, AlignY = Align.Center }))
             {
-                if (ExportStatusView.Render(ui, appState.Export))
+                if (ExportStatusView.Render(ui, appearance, commands, panels, appState.Export))
                 {
                     Dot(ui);
                 }
@@ -42,13 +42,13 @@ internal static class StatusBarView
                 var refusal = appState.Refusals.Shown;
                 if (refusal is not null)
                 {
-                    RefusalNote(ui, ui.State.Appearance, ui.State.RefusalDetails, ui.State.AppCommands, refusal);
+                    RefusalNote(ui, appearance, refusalDetails, commands, refusal);
                     Dot(ui);
                 }
 
                 if (appState.Updates.Status is UpdateStatus.Ready)
                 {
-                    RestartToUpdateButton(ui, ui.State.Appearance, ui.State.AppCommands, appState.Updates);
+                    RestartToUpdateButton(ui, appearance, commands, appState.Updates);
                     Dot(ui);
                 }
                 var activity = DescribeActivity(appState, t);
@@ -59,12 +59,12 @@ internal static class StatusBarView
                 }
                 if (appState.Errors.Entries.Count > 0)
                 {
-                    ErrorIndicator(ui, ui.State.Appearance, ui.State.ErrorDialog, appState.Errors);
+                    ErrorIndicator(ui, appearance, errorDialog, appState.Errors);
                     Dot(ui);
                 }
                 ui.Text(DecompilationLanguages.Label(appState.Decompiler.Setup.Language), color: theme.TextMuted, size: size);
                 Dot(ui);
-                ui.Text(ui.Memo("status-count", (ui.State.Tree.Roots.Count, t), static a => a.t.StatusAssemblies(a.Count)), color: theme.TextMuted, size: size);
+                ui.Text(ui.Memo("status-count", (tree.Roots.Count, t), static a => a.t.StatusAssemblies(a.Count)), color: theme.TextMuted, size: size);
             }
         }
     }

@@ -12,21 +12,21 @@ internal static class AnalyzerPanelView
     private const string TreeId = "analyzer";
     private const string MenuId = "analyzer-menu";
 
-    public static void Render(Ui<UiState> ui, Navigation navigation, AnalyzerTree analyzer)
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, AnalyzerRows analyzerRows, Navigation navigation, AnalyzerTree analyzer)
     {
-        var t = ui.State.Appearance.Strings;
-        var rows = ui.State.Analyzer;
-        rows.SetStyle(ui.Theme, ui.State.Appearance.NodeIconPalette, ui.State.Appearance.Icons, t);
+        var t = appearance.Strings;
+        var rows = analyzerRows;
+        rows.SetStyle(ui.Theme, appearance.NodeIconPalette, appearance.Icons, t);
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
-        Toolbar(ui, ui.State.Appearance, ui.State.AppCommands, analyzer, rows);
+        Toolbar(ui, appearance, commands, analyzer, rows);
         ui.Separator();
         if (rows.Roots.Count == 0)
         {
             DocumentsView.Hint(ui, t.AnalyzerHint(Shortcuts.Analyze.Label));
             return;
         }
-        Tree(ui, navigation, analyzer);
-        ContextMenu(ui, navigation, analyzer);
+        Tree(ui, commands, panels, analyzerRows, navigation, analyzer);
+        ContextMenu(ui, appearance, commands, panels, analyzerRows, navigation, analyzer);
     }
 
     private static void Toolbar(Ui ui, Appearance appearance, IAppCommandWriter commands, AnalyzerTree analyzer, AnalyzerRows rows)
@@ -60,20 +60,20 @@ internal static class AnalyzerPanelView
         }
     }
 
-    private static void Tree(Ui<UiState> ui, Navigation navigation, AnalyzerTree analyzer)
+    private static void Tree(Ui ui, IAppCommandWriter commands, Panels panels, AnalyzerRows analyzerRows, Navigation navigation, AnalyzerTree analyzer)
     {
-        var rows = ui.State.Analyzer;
+        var rows = analyzerRows;
         var box = new Box { Padding = new Spacing(0f, ui.Theme.GapTight) };
         var result = ui.TreeView(TreeId, rows.Roots, rows, rows.View, box, toggleOnActivate: false);
         var treeId = ui.GetId(TreeId);
         if (ui.HasFocus(treeId))
         {
-            HandleKeys(ui, rows, analyzer);
+            HandleKeys(ui, commands, panels, rows, analyzer);
         }
 
         if (result.Activated)
         {
-            GoTo(ui.State.AppCommands, navigation, result.Node);
+            GoTo(commands, navigation, result.Node);
         }
 
         if (result.ContextMenuRequested && result.Node is AnalyzerSymbolNode)
@@ -82,16 +82,16 @@ internal static class AnalyzerPanelView
         }
     }
 
-    private static void HandleKeys(Ui<UiState> ui, AnalyzerRows rows, AnalyzerTree analyzer)
+    private static void HandleKeys(Ui ui, IAppCommandWriter commands, Panels panels, AnalyzerRows rows, AnalyzerTree analyzer)
     {
         if (ui.IsPressed(Shortcuts.Analyze))
         {
-            AnalyzeSelected(ui.State.AppCommands, ui.State.Panels, rows, OfferAnalysis(rows, analyzer));
+            AnalyzeSelected(commands, panels, rows, OfferAnalysis(rows, analyzer));
         }
 
         if (ui.IsPressed(Shortcuts.Delete))
         {
-            RemoveSelectedAnalysis(ui.State.AppCommands, rows);
+            RemoveSelectedAnalysis(commands, rows);
         }
     }
 
@@ -139,10 +139,10 @@ internal static class AnalyzerPanelView
         Commands.FollowLater(commands, reference, navigation.BeginResolving(inNewTab: false));
     }
 
-    private static void ContextMenu(Ui<UiState> ui, Navigation navigation, AnalyzerTree analyzer)
+    private static void ContextMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, AnalyzerRows analyzerRows, Navigation navigation, AnalyzerTree analyzer)
     {
-        var t = ui.State.Appearance.Strings;
-        var rows = ui.State.Analyzer;
+        var t = appearance.Strings;
+        var rows = analyzerRows;
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
         {
@@ -158,31 +158,31 @@ internal static class AnalyzerPanelView
         var target = node.Symbol.Reference;
         if (target != null)
         {
-            GoToItems(ui, ui.State.Appearance, ui.State.AppCommands, navigation, target);
+            GoToItems(ui, appearance, commands, navigation, target);
         }
 
-        AnalyzeItem(ui, OfferAnalysis(rows, analyzer));
+        AnalyzeItem(ui, appearance, commands, panels, analyzerRows, OfferAnalysis(rows, analyzer));
         ui.MenuSeparator();
         if (isRoot && ui.MenuItem(t.AnalyzerRemove, id: "remove"))
         {
-            Commands.Later(ui.State.AppCommands, node, static (a, n) => a.ListSession.Analyzer.RemoveRoot(n));
+            Commands.Later(commands, node, static (a, n) => a.ListSession.Analyzer.RemoveRoot(n));
         }
 
         if (ui.MenuItem(t.AnalyzerClear, id: "clear"))
         {
-            Commands.Later(ui.State.AppCommands, static a => a.ListSession.Analyzer.ClearRoots());
+            Commands.Later(commands, static a => a.ListSession.Analyzer.ClearRoots());
         }
     }
 
-    private static void AnalyzeItem(Ui<UiState> ui, CommandOffer<AnalysisSymbol> offer)
+    private static void AnalyzeItem(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, AnalyzerRows analyzerRows, CommandOffer<AnalysisSymbol> offer)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         offer.Switch(
             runs =>
             {
                 if (ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
                 {
-                    Commands.AnalyzeLater(ui.State.AppCommands, ui.State.Panels, ui.State.Analyzer, runs.Target);
+                    Commands.AnalyzeLater(commands, panels, analyzerRows, runs.Target);
                 }
             },
             unavailable => ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, enabled: false, id: "analyze",

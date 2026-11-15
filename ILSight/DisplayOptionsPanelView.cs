@@ -31,17 +31,17 @@ internal static class DisplayOptionsPanelView
     private static readonly TokenFormat[] TokenFormats = Enum.GetValues<TokenFormat>();
     private static readonly string[] LocaleLabels = ListLocaleLabels();
 
-    public static void Render(Ui<UiState> ui, AppState appState)
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, ShellRequests shell, DisplayOptionsPanel displayOptionsPanel, ScreenDisplay display, CodeFontChoices codeFonts, AppState appState)
     {
         var theme = ui.Theme;
         using var panel = ui.Column(new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Gap = 0f });
         using (ui.PaneToolbar())
         {
-            OptionSearch.Field(ui, ui.State.Appearance, ref ui.State.DisplayOptionsPanel.Query);
+            OptionSearch.Field(ui, appearance, ref displayOptionsPanel.Query);
         }
 
         ui.Separator();
-        var words = OptionSearch.SplitWords(ui.State.DisplayOptionsPanel.Query);
+        var words = OptionSearch.SplitWords(displayOptionsPanel.Query);
         using var pane = ui.Scroll(PaneId, new Box { Width = Sizing.Grow(), Height = Sizing.Grow(), Gap = 0f });
         using var form = ui.Column(new Box
         {
@@ -49,17 +49,17 @@ internal static class DisplayOptionsPanelView
             Gap = theme.GroupGap,
             Padding = theme.PanelPadding,
         });
-        ListInstalledFontsOnce(ui, ui.State.CodeFonts);
-        var shown = InterfaceSection(ui, appState, words);
-        shown |= CodeSection(ui, words);
-        shown |= TreeSection(ui, words);
+        ListInstalledFontsOnce(ui, codeFonts);
+        var shown = InterfaceSection(ui, appearance, commands, shell, displayOptionsPanel, display, appState, words);
+        shown |= CodeSection(ui, appearance, displayOptionsPanel, display, codeFonts, words);
+        shown |= TreeSection(ui, appearance, displayOptionsPanel, display, words);
         if (words.Length == 0)
         {
-            ResetRow(ui, ui.State.Appearance, ui.State.Display);
+            ResetRow(ui, appearance, display);
         }
         else if (!shown)
         {
-            OptionSearch.NoMatch(ui, ui.State.Appearance, ref ui.State.DisplayOptionsPanel.Query);
+            OptionSearch.NoMatch(ui, appearance, ref displayOptionsPanel.Query);
         }
     }
 
@@ -100,9 +100,9 @@ internal static class DisplayOptionsPanelView
     }
 
     // Only the scale and the title bar are options a reset puts back, so only their names turn bold.
-    private static bool InterfaceSection(Ui<UiState> ui, AppState appState, string[] words)
+    private static bool InterfaceSection(Ui ui, Appearance appearance, IAppCommandWriter commands, ShellRequests shell, DisplayOptionsPanel displayOptionsPanel, ScreenDisplay display, AppState appState, string[] words)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var heading = t.DisplayOptionsInterface;
         var theme = Shows(t, words, heading, t.DisplayOptionsTheme);
         var iconTheme = Shows(t, words, heading, t.DisplayOptionsIconTheme);
@@ -120,90 +120,90 @@ internal static class DisplayOptionsPanelView
         if (theme)
         {
             NextRow(ui, ref rows);
-            using (OptionRow(ui, t.DisplayOptionsTheme, null, false))
+            using (OptionRow(ui, appearance, displayOptionsPanel, t.DisplayOptionsTheme, null, false))
             {
-                ThemePicker(ui, appState.Themes, appState.ChosenThemes.Theme, appState.SettingsPlace);
+                ThemePicker(ui, appearance, commands, shell, appState.Themes, appState.ChosenThemes.Theme, appState.SettingsPlace);
             }
         }
         if (iconTheme)
         {
             NextRow(ui, ref rows);
-            using (OptionRow(ui, t.DisplayOptionsIconTheme, null, false))
+            using (OptionRow(ui, appearance, displayOptionsPanel, t.DisplayOptionsIconTheme, null, false))
             {
-                IconThemePicker(ui, appState.IconThemes, appState.ChosenThemes.IconTheme, appState.SettingsPlace);
+                IconThemePicker(ui, appearance, commands, shell, appState.IconThemes, appState.ChosenThemes.IconTheme, appState.SettingsPlace);
             }
         }
         if (scale)
         {
             NextRow(ui, ref rows);
-            var changed = ui.State.Display.Options.UiScale != DisplayOptions.Default.UiScale;
-            using (OptionRow(ui, t.DisplayOptionsUiScale, t.DisplayOptionsUiScaleDescription, changed))
+            var changed = display.Options.UiScale != DisplayOptions.Default.UiScale;
+            using (OptionRow(ui, appearance, displayOptionsPanel, t.DisplayOptionsUiScale, t.DisplayOptionsUiScaleDescription, changed))
             {
-                UiScalePicker(ui);
+                UiScalePicker(ui, appearance, display);
             }
         }
         if (language)
         {
             NextRow(ui, ref rows);
-            using (OptionRow(ui, t.DisplayOptionsLanguage, null, false))
+            using (OptionRow(ui, appearance, displayOptionsPanel, t.DisplayOptionsLanguage, null, false))
             {
-                LanguagePicker(ui, appState.Locale);
+                LanguagePicker(ui, commands, appState.Locale);
             }
         }
         if (titleBar)
         {
             NextRow(ui, ref rows);
-            SystemTitleBarRow(ui);
+            SystemTitleBarRow(ui, appearance, displayOptionsPanel, display);
         }
         return true;
     }
 
-    private static void SystemTitleBarRow(Ui<UiState> ui)
+    private static void SystemTitleBarRow(Ui ui, Appearance appearance, DisplayOptionsPanel displayOptionsPanel, ScreenDisplay screenDisplay)
     {
-        var t = ui.State.Appearance.Strings;
-        var display = ui.State.Display.Options;
+        var t = appearance.Strings;
+        var display = screenDisplay.Options;
         var system = display.SystemTitleBar;
         var changed = system != DisplayOptions.Default.SystemTitleBar;
-        if (SwitchRow(ui, t.DisplayOptionsSystemTitleBar, ref system, "system-title-bar", changed))
+        if (SwitchRow(ui, appearance, displayOptionsPanel, t.DisplayOptionsSystemTitleBar, ref system, "system-title-bar", changed))
         {
-            ui.State.Display.Set(display with { SystemTitleBar = system });
+            screenDisplay.Set(display with { SystemTitleBar = system });
         }
     }
 
-    private static void ThemePicker(Ui<UiState> ui, ThemeCatalog<ThemeFile, ThemeContents, AppTheme> themes, ThemeId<ThemeFile> chosen, SettingsPlace settingsPlace)
+    private static void ThemePicker(Ui ui, Appearance appearance, IAppCommandWriter commands, ShellRequests shell, ThemeCatalog<ThemeFile, ThemeContents, AppTheme> themes, ThemeId<ThemeFile> chosen, SettingsPlace settingsPlace)
     {
         using var controls = ui.Row(new Box { Width = ControlWidth(0f, 0f), Gap = ui.Theme.GapTight, AlignY = Align.Center });
-        PickTheme(ui, themes, chosen);
+        PickTheme(ui, appearance, commands, themes, chosen);
         if (settingsPlace.ThemesFolder is null)
         {
             return;
         }
 
-        CustomizeThemeButton(ui);
-        OpenThemesFolderButton(ui);
-        ReloadThemesButton(ui, ui.State.Appearance, ui.State.AppCommands);
+        CustomizeThemeButton(ui, appearance, commands, shell);
+        OpenThemesFolderButton(ui, appearance, commands, shell);
+        ReloadThemesButton(ui, appearance, commands);
     }
 
-    private static void PickTheme(Ui<UiState> ui, ThemeCatalog<ThemeFile, ThemeContents, AppTheme> themes, ThemeId<ThemeFile> chosen)
+    private static void PickTheme(Ui ui, Appearance appearance, IAppCommandWriter commands, ThemeCatalog<ThemeFile, ThemeContents, AppTheme> themes, ThemeId<ThemeFile> chosen)
     {
-        var labels = themes.ListNames(ui.State.Appearance.Strings.Culture);
+        var labels = themes.ListNames(appearance.Strings.Culture);
         var current = themes.FindThemeIndex(chosen);
         var picked = PickFrom(ui, "theme", labels, current, themes.Ids, themes.Revision);
         if (picked is not null)
         {
-            Commands.Later(ui.State.AppCommands, themes.Ids[picked.Value], static (a, theme) => a.ChosenThemes.ChooseTheme(theme));
+            Commands.Later(commands, themes.Ids[picked.Value], static (a, theme) => a.ChosenThemes.ChooseTheme(theme));
         }
     }
 
-    private static void CustomizeThemeButton(Ui<UiState> ui)
+    private static void CustomizeThemeButton(Ui ui, Appearance appearance, IAppCommandWriter commands, ShellRequests shell)
     {
-        var t = ui.State.Appearance.Strings;
-        if (!ui.IconButton("customize-theme", ui.State.Appearance.Icons.OptionsCustomizeTheme, t.DisplayOptionsCustomizeTheme, variant: ButtonVariant.Neutral))
+        var t = appearance.Strings;
+        if (!ui.IconButton("customize-theme", appearance.Icons.OptionsCustomizeTheme, t.DisplayOptionsCustomizeTheme, variant: ButtonVariant.Neutral))
         {
             return;
         }
 
-        Commands.Later(ui.State.AppCommands, (shell: ui.State.Shell, t), static (a, s) => CustomizeTheme(s.shell, a, s.t));
+        Commands.Later(commands, (shell, t), static (a, s) => CustomizeTheme(s.shell, a, s.t));
     }
 
     private static void CustomizeTheme(ShellRequests shell, AppState appState, Strings t)
@@ -219,15 +219,15 @@ internal static class DisplayOptionsPanelView
         shell.OpenFile(custom.Path);
     }
 
-    private static void OpenThemesFolderButton(Ui<UiState> ui)
+    private static void OpenThemesFolderButton(Ui ui, Appearance appearance, IAppCommandWriter commands, ShellRequests shell)
     {
-        var t = ui.State.Appearance.Strings;
-        if (!ui.IconButton("themes-folder", ui.State.Appearance.Icons.OptionsOpenThemesFolder, t.DisplayOptionsOpenThemesFolder, variant: ButtonVariant.Neutral))
+        var t = appearance.Strings;
+        if (!ui.IconButton("themes-folder", appearance.Icons.OptionsOpenThemesFolder, t.DisplayOptionsOpenThemesFolder, variant: ButtonVariant.Neutral))
         {
             return;
         }
 
-        Commands.Later(ui.State.AppCommands, ui.State.Shell, static (a, shell) => OpenFolder(shell, a.UserThemes.PrepareFolder()));
+        Commands.Later(commands, shell, static (a, shell) => OpenFolder(shell, a.UserThemes.PrepareFolder()));
     }
 
     private static void ReloadThemesButton(Ui ui, Appearance appearance, IAppCommandWriter commands)
@@ -239,40 +239,40 @@ internal static class DisplayOptionsPanelView
         }
     }
 
-    private static void IconThemePicker(Ui<UiState> ui, ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> themes, ThemeId<IconThemeFile> chosen, SettingsPlace settingsPlace)
+    private static void IconThemePicker(Ui ui, Appearance appearance, IAppCommandWriter commands, ShellRequests shell, ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> themes, ThemeId<IconThemeFile> chosen, SettingsPlace settingsPlace)
     {
         using var controls = ui.Row(new Box { Width = ControlWidth(0f, 0f), Gap = ui.Theme.GapTight, AlignY = Align.Center });
-        PickIconTheme(ui, themes, chosen);
+        PickIconTheme(ui, appearance, commands, themes, chosen);
         if (settingsPlace.IconThemesFolder is null)
         {
             return;
         }
 
-        CustomizeIconThemeButton(ui);
-        OpenIconThemesFolderButton(ui);
-        ReloadIconThemesButton(ui, ui.State.Appearance, ui.State.AppCommands);
+        CustomizeIconThemeButton(ui, appearance, commands, shell);
+        OpenIconThemesFolderButton(ui, appearance, commands, shell);
+        ReloadIconThemesButton(ui, appearance, commands);
     }
 
-    private static void PickIconTheme(Ui<UiState> ui, ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> themes, ThemeId<IconThemeFile> chosen)
+    private static void PickIconTheme(Ui ui, Appearance appearance, IAppCommandWriter commands, ThemeCatalog<IconThemeFile, IconThemeContents, IconTheme> themes, ThemeId<IconThemeFile> chosen)
     {
-        var labels = themes.ListNames(ui.State.Appearance.Strings.Culture);
+        var labels = themes.ListNames(appearance.Strings.Culture);
         var current = themes.FindThemeIndex(chosen);
         var picked = PickFrom(ui, "icon-theme", labels, current, themes.Ids, themes.Revision);
         if (picked is not null)
         {
-            Commands.Later(ui.State.AppCommands, themes.Ids[picked.Value], static (a, theme) => a.ChosenThemes.ChooseIconTheme(theme));
+            Commands.Later(commands, themes.Ids[picked.Value], static (a, theme) => a.ChosenThemes.ChooseIconTheme(theme));
         }
     }
 
-    private static void CustomizeIconThemeButton(Ui<UiState> ui)
+    private static void CustomizeIconThemeButton(Ui ui, Appearance appearance, IAppCommandWriter commands, ShellRequests shell)
     {
-        var t = ui.State.Appearance.Strings;
-        if (!ui.IconButton("customize-icon-theme", ui.State.Appearance.Icons.OptionsCustomizeIconTheme, t.DisplayOptionsCustomizeIconTheme, variant: ButtonVariant.Neutral))
+        var t = appearance.Strings;
+        if (!ui.IconButton("customize-icon-theme", appearance.Icons.OptionsCustomizeIconTheme, t.DisplayOptionsCustomizeIconTheme, variant: ButtonVariant.Neutral))
         {
             return;
         }
 
-        Commands.Later(ui.State.AppCommands, (shell: ui.State.Shell, t), static (a, s) => CustomizeIconTheme(s.shell, a, s.t));
+        Commands.Later(commands, (shell, t), static (a, s) => CustomizeIconTheme(s.shell, a, s.t));
     }
 
     private static void CustomizeIconTheme(ShellRequests shell, AppState appState, Strings t)
@@ -288,15 +288,15 @@ internal static class DisplayOptionsPanelView
         shell.OpenFile(custom.Path);
     }
 
-    private static void OpenIconThemesFolderButton(Ui<UiState> ui)
+    private static void OpenIconThemesFolderButton(Ui ui, Appearance appearance, IAppCommandWriter commands, ShellRequests shell)
     {
-        var t = ui.State.Appearance.Strings;
-        if (!ui.IconButton("icon-themes-folder", ui.State.Appearance.Icons.OptionsOpenIconThemesFolder, t.DisplayOptionsOpenIconThemesFolder, variant: ButtonVariant.Neutral))
+        var t = appearance.Strings;
+        if (!ui.IconButton("icon-themes-folder", appearance.Icons.OptionsOpenIconThemesFolder, t.DisplayOptionsOpenIconThemesFolder, variant: ButtonVariant.Neutral))
         {
             return;
         }
 
-        Commands.Later(ui.State.AppCommands, ui.State.Shell, static (a, shell) => OpenFolder(shell, a.UserIconThemes.PrepareFolder()));
+        Commands.Later(commands, shell, static (a, shell) => OpenFolder(shell, a.UserIconThemes.PrepareFolder()));
     }
 
     private static void OpenFolder(ShellRequests shell, string? folder)
@@ -316,15 +316,15 @@ internal static class DisplayOptionsPanelView
         }
     }
 
-    private static void UiScalePicker(Ui<UiState> ui)
+    private static void UiScalePicker(Ui ui, Appearance appearance, ScreenDisplay display)
     {
-        var labels = UiScaleLabels.GetValue(ui.State.Appearance.Strings, ListUiScaleLabels);
+        var labels = UiScaleLabels.GetValue(appearance.Strings, ListUiScaleLabels);
         var scales = DisplayOptions.UiScales;
-        var current = FindScaleIndex(scales, ui.State.Display.Options.UiScale);
+        var current = FindScaleIndex(scales, display.Options.UiScale);
         var picked = PickFrom(ui, "ui-scale", labels, current);
         if (picked is not null)
         {
-            ui.State.Display.SetUiScale(scales[picked.Value]);
+            display.SetUiScale(scales[picked.Value]);
         }
     }
 
@@ -353,12 +353,12 @@ internal static class DisplayOptionsPanelView
         return t.DisplayOptionsUiScalePercent(percent);
     }
 
-    private static void LanguagePicker(Ui<UiState> ui, Locale chosen)
+    private static void LanguagePicker(Ui ui, IAppCommandWriter commands, Locale chosen)
     {
         var picked = PickFrom(ui, "language", LocaleLabels, Locales.FindIndex(chosen));
         if (picked is not null)
         {
-            Commands.Later(ui.State.AppCommands, Locales.All[picked.Value].Locale, static (a, locale) => a.Locale = locale);
+            Commands.Later(commands, Locales.All[picked.Value].Locale, static (a, locale) => a.Locale = locale);
         }
     }
 
@@ -369,12 +369,12 @@ internal static class DisplayOptionsPanelView
             .ToArray();
     }
 
-    private static int? PickFrom(Ui<UiState> ui, string id, string[] labels, int? current)
+    private static int? PickFrom(Ui ui, string id, string[] labels, int? current)
     {
         return PickFrom<string>(ui, id, labels, current, null, 0);
     }
 
-    private static int? PickFrom<TItem>(Ui<UiState> ui, string id, string[] labels, int? current, IReadOnlyList<TItem>? itemIds,
+    private static int? PickFrom<TItem>(Ui ui, string id, string[] labels, int? current, IReadOnlyList<TItem>? itemIds,
         int revision)
         where TItem : notnull
     {
@@ -409,10 +409,10 @@ internal static class DisplayOptionsPanelView
         return itemIds[index].ToString();
     }
 
-    private static bool CodeSection(Ui<UiState> ui, string[] words)
+    private static bool CodeSection(Ui ui, Appearance appearance, DisplayOptionsPanel displayOptionsPanel, ScreenDisplay screenDisplay, CodeFontChoices codeFonts, string[] words)
     {
-        var t = ui.State.Appearance.Strings;
-        var display = ui.State.Display.Options;
+        var t = appearance.Strings;
+        var display = screenDisplay.Options;
         var defaults = DisplayOptions.Default;
         var heading = t.DisplayOptionsCode;
         var hint = ui.Memo("zoom-hint", t, static s => s.DisplayOptionsZoomHint(Shortcuts.ZoomReset.Label));
@@ -434,67 +434,67 @@ internal static class DisplayOptionsPanelView
         if (font)
         {
             NextRow(ui, ref rows);
-            using (OptionRow(ui, t.DisplayOptionsFont, null, display.Font is not null))
+            using (OptionRow(ui, appearance, displayOptionsPanel, t.DisplayOptionsFont, null, display.Font is not null))
             {
-                FontPicker(ui, ui.State.Appearance, ui.State.CodeFonts, ui.State.Display);
+                FontPicker(ui, appearance, codeFonts, screenDisplay);
             }
         }
         if (fontSize)
         {
             NextRow(ui, ref rows);
-            using (OptionRow(ui, t.DisplayOptionsFontSize, hint, display.FontSize is not null))
+            using (OptionRow(ui, appearance, displayOptionsPanel, t.DisplayOptionsFontSize, hint, display.FontSize is not null))
             {
-                FontSizeStepper(ui, ui.State.Appearance, ui.State.Display);
+                FontSizeStepper(ui, appearance, screenDisplay);
             }
         }
         if (font || fontSize)
         {
-            FontPreview(ui, ui.State.Display, ui.State.Appearance);
+            FontPreview(ui, screenDisplay, appearance);
         }
 
         if (lineNumbers)
         {
             NextRow(ui, ref rows);
             var on = display.ShowLineNumbers;
-            if (SwitchRow(ui, t.DisplayOptionsLineNumbers, ref on, "line-numbers", on != defaults.ShowLineNumbers))
+            if (SwitchRow(ui, appearance, displayOptionsPanel, t.DisplayOptionsLineNumbers, ref on, "line-numbers", on != defaults.ShowLineNumbers))
             {
-                ui.State.Display.Set(display with { ShowLineNumbers = on });
+                screenDisplay.Set(display with { ShowLineNumbers = on });
             }
         }
         if (currentLine)
         {
             NextRow(ui, ref rows);
             var on = display.HighlightCurrentLine;
-            if (SwitchRow(ui, t.DisplayOptionsCurrentLine, ref on, "current-line", on != defaults.HighlightCurrentLine))
+            if (SwitchRow(ui, appearance, displayOptionsPanel, t.DisplayOptionsCurrentLine, ref on, "current-line", on != defaults.HighlightCurrentLine))
             {
-                ui.State.Display.Set(display with { HighlightCurrentLine = on });
+                screenDisplay.Set(display with { HighlightCurrentLine = on });
             }
         }
         if (brackets)
         {
             NextRow(ui, ref rows);
             var on = display.HighlightMatchingBrackets;
-            if (SwitchRow(ui, t.DisplayOptionsMatchingBrackets, ref on, "matching-brackets", on != defaults.HighlightMatchingBrackets))
+            if (SwitchRow(ui, appearance, displayOptionsPanel, t.DisplayOptionsMatchingBrackets, ref on, "matching-brackets", on != defaults.HighlightMatchingBrackets))
             {
-                ui.State.Display.Set(display with { HighlightMatchingBrackets = on });
+                screenDisplay.Set(display with { HighlightMatchingBrackets = on });
             }
         }
         if (usages)
         {
             NextRow(ui, ref rows);
             var on = display.HighlightUsagesAtCaret;
-            if (SwitchRow(ui, t.DisplayOptionsUsagesAtCaret, ref on, "usages-at-caret", on != defaults.HighlightUsagesAtCaret))
+            if (SwitchRow(ui, appearance, displayOptionsPanel, t.DisplayOptionsUsagesAtCaret, ref on, "usages-at-caret", on != defaults.HighlightUsagesAtCaret))
             {
-                ui.State.Display.Set(display with { HighlightUsagesAtCaret = on });
+                screenDisplay.Set(display with { HighlightUsagesAtCaret = on });
             }
         }
         if (omnibar)
         {
             NextRow(ui, ref rows);
             var on = display.ShowOmnibar;
-            if (SwitchRow(ui, t.DisplayOptionsOmnibar, ref on, "omnibar", on != defaults.ShowOmnibar))
+            if (SwitchRow(ui, appearance, displayOptionsPanel, t.DisplayOptionsOmnibar, ref on, "omnibar", on != defaults.ShowOmnibar))
             {
-                ui.State.Display.Set(display with { ShowOmnibar = on });
+                screenDisplay.Set(display with { ShowOmnibar = on });
             }
         }
         return true;
@@ -592,10 +592,10 @@ internal static class DisplayOptionsPanelView
         return MathF.Ceiling(width) + ui.Theme.Gap * 2;
     }
 
-    private static bool TreeSection(Ui<UiState> ui, string[] words)
+    private static bool TreeSection(Ui ui, Appearance appearance, DisplayOptionsPanel displayOptionsPanel, ScreenDisplay screenDisplay, string[] words)
     {
-        var t = ui.State.Appearance.Strings;
-        var display = ui.State.Display.Options;
+        var t = appearance.Strings;
+        var display = screenDisplay.Options;
         var defaults = DisplayOptions.Default;
         var heading = t.DisplayOptionsTree;
         var tokens = Shows(t, words, heading, t.DisplayOptionsTokens, t.DisplayOptionsTokensDescription);
@@ -613,50 +613,50 @@ internal static class DisplayOptionsPanelView
         if (tokens)
         {
             NextRow(ui, ref rows);
-            using (OptionRow(ui, t.DisplayOptionsTokens, t.DisplayOptionsTokensDescription, display.TreeTokens != defaults.TreeTokens))
+            using (OptionRow(ui, appearance, displayOptionsPanel, t.DisplayOptionsTokens, t.DisplayOptionsTokensDescription, display.TreeTokens != defaults.TreeTokens))
             {
-                TokenFormatPicker(ui);
+                TokenFormatPicker(ui, appearance, screenDisplay);
             }
         }
         if (emptyTables)
         {
             NextRow(ui, ref rows);
             var on = display.ShowEmptyMetadataTables;
-            if (SwitchRow(ui, t.DisplayOptionsEmptyTables, ref on, "empty-tables", on != defaults.ShowEmptyMetadataTables))
+            if (SwitchRow(ui, appearance, displayOptionsPanel, t.DisplayOptionsEmptyTables, ref on, "empty-tables", on != defaults.ShowEmptyMetadataTables))
             {
-                ui.State.Display.Set(display with { ShowEmptyMetadataTables = on });
+                screenDisplay.Set(display with { ShowEmptyMetadataTables = on });
             }
         }
         if (nested)
         {
             NextRow(ui, ref rows);
             var on = display.NestedNamespaces;
-            if (SwitchRow(ui, t.DisplayOptionsNestedNamespaces, ref on, "nested-namespaces", on != defaults.NestedNamespaces))
+            if (SwitchRow(ui, appearance, displayOptionsPanel, t.DisplayOptionsNestedNamespaces, ref on, "nested-namespaces", on != defaults.NestedNamespaces))
             {
-                ui.State.Display.Set(display with { NestedNamespaces = on });
+                screenDisplay.Set(display with { NestedNamespaces = on });
             }
         }
         if (previewTabs)
         {
             NextRow(ui, ref rows);
             var on = display.PreviewTabs;
-            if (SwitchRow(ui, t.DisplayOptionsPreviewTabs, ref on, "preview-tabs", on != defaults.PreviewTabs))
+            if (SwitchRow(ui, appearance, displayOptionsPanel, t.DisplayOptionsPreviewTabs, ref on, "preview-tabs", on != defaults.PreviewTabs))
             {
-                ui.State.Display.Set(display with { PreviewTabs = on });
+                screenDisplay.Set(display with { PreviewTabs = on });
             }
         }
         return true;
     }
 
-    private static void TokenFormatPicker(Ui<UiState> ui)
+    private static void TokenFormatPicker(Ui ui, Appearance appearance, ScreenDisplay display)
     {
-        var labels = TokenFormatLabels.GetValue(ui.State.Appearance.Strings, ListTokenFormatLabels);
-        var index = Array.IndexOf(TokenFormats, ui.State.Display.Options.TreeTokens);
+        var labels = TokenFormatLabels.GetValue(appearance.Strings, ListTokenFormatLabels);
+        var index = Array.IndexOf(TokenFormats, display.Options.TreeTokens);
         int? current = index >= 0 ? index : null;
         var picked = PickFrom(ui, "tokens", labels, current);
         if (picked is not null)
         {
-            ui.State.Display.SetTreeTokens(TokenFormats[picked.Value]);
+            display.SetTreeTokens(TokenFormats[picked.Value]);
         }
     }
 
@@ -677,7 +677,7 @@ internal static class DisplayOptionsPanelView
         };
     }
 
-    private static bool SwitchRow(Ui<UiState> ui, string title, ref bool value, string id, bool changed)
+    private static bool SwitchRow(Ui ui, Appearance appearance, DisplayOptionsPanel displayOptionsPanel, string title, ref bool value, string id, bool changed)
     {
         var press = ui.Interact(id + RowSuffix);
         if (press.Hovered)
@@ -686,7 +686,7 @@ internal static class DisplayOptionsPanelView
         }
 
         bool flipped;
-        using (OptionRow(ui, press.Id, title, null, changed))
+        using (OptionRow(ui, appearance, displayOptionsPanel, press.Id, title, null, changed))
         {
             flipped = ui.Switch(id, ref value);
         }
@@ -746,12 +746,12 @@ internal static class DisplayOptionsPanelView
         });
     }
 
-    private static Ui.Scope OptionRow(Ui<UiState> ui, string title, string? description, bool changed)
+    private static Ui.Scope OptionRow(Ui ui, Appearance appearance, DisplayOptionsPanel displayOptionsPanel, string title, string? description, bool changed)
     {
-        return OptionRow(ui, 0, title, description, changed);
+        return OptionRow(ui, appearance, displayOptionsPanel, 0, title, description, changed);
     }
 
-    private static Ui.Scope OptionRow(Ui<UiState> ui, int id, string title, string? description, bool changed)
+    private static Ui.Scope OptionRow(Ui ui, Appearance appearance, DisplayOptionsPanel displayOptionsPanel, int id, string title, string? description, bool changed)
     {
         var theme = ui.Theme;
         var row = ui.Row(id, new Box
@@ -764,9 +764,9 @@ internal static class DisplayOptionsPanelView
         });
         using (ui.Column(new Box { Width = TitleWidth(ui, title, changed), Gap = theme.GapTight }))
         {
-            var query = ui.State.DisplayOptionsPanel.Query;
-            var mark = OptionSearch.GetMarkBackground(ui, ui.State.Appearance);
-            var titleRuns = OptionSearch.EnsureMarkedRuns(ui, ui.State.Appearance, query, title, ui.StyleText(bold: changed));
+            var query = displayOptionsPanel.Query;
+            var mark = OptionSearch.GetMarkBackground(ui, appearance);
+            var titleRuns = OptionSearch.EnsureMarkedRuns(ui, appearance, query, title, ui.StyleText(bold: changed));
             if (titleRuns is not null)
             {
                 using (ui.Box(new Box { Width = Sizing.Grow(), Clip = true }))
@@ -780,7 +780,7 @@ internal static class DisplayOptionsPanelView
             }
             if (description is not null)
             {
-                Description(ui, ui.State.Appearance, description, query, mark);
+                Description(ui, appearance, description, query, mark);
             }
         }
         return row;
