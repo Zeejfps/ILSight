@@ -299,14 +299,14 @@ public static class AssemblyListing
     public static async Task<Outcome<Lookup<string>>> FindApiReferencePageAsync(AssemblyList list, CodeReference.Entity reference, CancellationToken ct)
     {
         using var reading = LoadedAssemblies.BeginReading();
-        Lookup<string> page;
+        Lookup<ApiPageName> name;
         try
         {
             var resolved = await ResolveEntityAsync(list, reading, reference, ct);
-            page = resolved.Match(
-                static found => Lookup.FromNullable(MicrosoftDocs.FindPage(found.Value.Entity)),
-                static _ => new Lookup<string>.NotFound(),
-                static unreadable => new Lookup<string>.Unreadable { Module = unreadable.Module });
+            name = resolved.Match(
+                static found => Lookup.FromNullable(MicrosoftDocs.ReadPageName(found.Value.Entity)),
+                static _ => new Lookup<ApiPageName>.NotFound(),
+                static unreadable => new Lookup<ApiPageName>.Unreadable { Module = unreadable.Module });
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -317,7 +317,8 @@ public static class AssemblyListing
             return new Outcome<Lookup<string>>.Failed(e);
         }
 
-        return new Outcome<Lookup<string>>.Ok(page);
+        // The page made of the name read, outside the catch: a bug of the app's naming it is not the library's failure.
+        return new Outcome<Lookup<string>>.Ok(name.Select(MicrosoftDocs.PageAt));
     }
 
     /// <summary>The definition of the type <paramref name="reference"/> points at, loading the assembly

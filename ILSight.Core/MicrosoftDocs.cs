@@ -30,18 +30,56 @@ public static class MicrosoftDocs
     /// assembly. Null for any other entity.</summary>
     internal static string? FindPage(IEntity entity)
     {
-        if (!EntityText.IsPublicApi(entity))
-        {
-            return null;
-        }
-
-        var name = FindPageName(entity);
+        var name = ReadPageName(entity);
         if (name is null)
         {
             return null;
         }
 
         return PageAt(name);
+    }
+
+    /// <summary>What names the reference page of <paramref name="entity"/>, read from the library's objects: the
+    /// reflection name of the type, or of the member's declaring type, and the member's name. Null for an entity not
+    /// visible outside its assembly, or a member no type declares. <see cref="PageAt(ApiPageName)"/> makes the page of
+    /// it, apart from the read.</summary>
+    internal static ApiPageName? ReadPageName(IEntity entity)
+    {
+        if (!EntityText.IsPublicApi(entity))
+        {
+            return null;
+        }
+
+        if (entity is ITypeDefinition type)
+        {
+            return new ApiPageName { Type = type.ReflectionName, Member = null };
+        }
+
+        if (entity is IMember member)
+        {
+            var declaring = member.DeclaringTypeDefinition;
+            if (declaring is null)
+            {
+                return null;
+            }
+
+            return new ApiPageName { Type = declaring.ReflectionName, Member = member.Name };
+        }
+
+        return null;
+    }
+
+    /// <summary>The page <paramref name="name"/> names, as the reference names its pages.</summary>
+    internal static string PageAt(ApiPageName name)
+    {
+        var type = TypePageName(name.Type);
+        if (name.Member is null)
+        {
+            return PageAt(type);
+        }
+
+        // The docs name a constructor's page -ctor.
+        return PageAt(type + "." + name.Member.Replace('.', '-'));
     }
 
     private static string? FindNamespacePage(NamespaceInfo ns)
@@ -64,39 +102,11 @@ public static class MicrosoftDocs
         return ApiReference + name.ToLowerInvariant();
     }
 
-    private static string? FindPageName(IEntity entity)
-    {
-        if (entity is ITypeDefinition type)
-        {
-            return TypePageName(type);
-        }
-
-        if (entity is IMember member)
-        {
-            return MemberPageName(member);
-        }
-
-        return null;
-    }
-
     // The docs name a generic nested type's page Outer-1.Inner.
-    private static string TypePageName(ITypeDefinition type)
+    private static string TypePageName(string reflectionName)
     {
-        return type.ReflectionName
+        return reflectionName
             .Replace('`', '-')
             .Replace('+', '.');
-    }
-
-    private static string? MemberPageName(IMember member)
-    {
-        var declaring = member.DeclaringTypeDefinition;
-        if (declaring is null)
-        {
-            return null;
-        }
-
-        // The docs name a constructor's page -ctor.
-        var name = member.Name.Replace('.', '-');
-        return TypePageName(declaring) + "." + name;
     }
 }
