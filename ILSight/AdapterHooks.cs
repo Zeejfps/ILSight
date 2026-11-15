@@ -15,6 +15,9 @@ public sealed record AdapterHooks
     /// <summary>The port the reopening of a list lists its files through.</summary>
     public Func<OpenAssembliesAsReloadHandler.IPorts, OpenAssembliesAsReloadHandler.IPorts>? Reopening { get; init; }
 
+    /// <summary>The port a reload and a reopen of one assembly read the files again through.</summary>
+    public Func<AssemblyReloading.IPorts, AssemblyReloading.IPorts>? Reloading { get; init; }
+
     /// <summary>The port a search's runs search the open assemblies through.</summary>
     public Func<RunSearchHandler.IPorts, RunSearchHandler.IPorts>? Searching { get; init; }
 

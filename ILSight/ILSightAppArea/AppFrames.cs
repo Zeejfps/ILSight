@@ -450,7 +450,7 @@ internal static class AppFrames
     /// app is running. Returns the loads that started in the tabs reopened from the list's saved documents.</summary>
     internal static Task<TabLoads> OpenStartupAssembliesAsync(AppState appState, ListReopening reopening, CancellationToken ct)
     {
-        return appState.OpenAssembliesAsReloadHandler.HandleAsync(appState.ListSession, reopening.Paths, reopening.Reload, ct);
+        return appState.OpenAssembliesAsReloadHandler.HandleAsync(appState.ListSession, reopening.Paths, reopening.Reload, reopening.Work, ct);
     }
 
     private static void SaveChangedSettings(Ui ui, AppState appState)

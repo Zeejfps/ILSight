@@ -1,0 +1,44 @@
+using ILSight.AssemblyArea;
+using ILSight.Core;
+
+namespace ILSight.App.Tests;
+
+/// <summary>The port the root hands the reload (<see cref="AdapterHooks.Reloading"/>): the real adapter, but the reopen
+/// first runs <see cref="End"/> on the thread that owns the list, as a change that ends the list's generation and stops
+/// no reload would, between the reload's clear and the reopen's check.</summary>
+internal sealed class EndingTheGenerationBeforeReopening(AssemblyReloading.IPorts real) : AssemblyReloading.IPorts
+{
+    public Action End { get; set; } = static () => { };
+
+    public void ReportError(AppProblem problem)
+    {
+        real.ReportError(problem);
+    }
+
+    public void ShowRefusal(Refusal refusal)
+    {
+        real.ShowRefusal(refusal);
+    }
+
+    public Task<PdbChecking> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct)
+    {
+        return real.CheckPdbAsync(assembly, pdbPath, ct);
+    }
+
+    public Task<Outcome<ReopenedFile>> ReadAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
+    {
+        return real.ReadAgainAsync(item, places, ct);
+    }
+
+    public Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded, IReadOnlyList<NodePath> places,
+        GenerationWork work, CancellationToken ct)
+    {
+        End();
+        return real.ReopenFilesAsync(paths, expanded, places, work, ct);
+    }
+
+    public void ReleaseModules(RemovedModules removed)
+    {
+        real.ReleaseModules(removed);
+    }
+}

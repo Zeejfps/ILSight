@@ -28,12 +28,14 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         return File.Exists(path);
     }
 
-    /// <summary>Opens on the thread pool and comes back on the UI thread. A file the library can't read is listed as
-    /// failed (<see cref="AssemblyListing.Open(AssemblyList, AssemblyPath, GenerationWork, CancellationToken)"/>). The cancellation of <paramref name="ct"/>, which the edge links to
-    /// newer opens and a clear of the list, and anything else, are let through.</summary>
-    public async Task<LoadedAssembly?> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken ct)
+    /// <summary>Opens on the thread pool, as work of <paramref name="work"/>'s generation, and comes back on the UI
+    /// thread. A file the library can't read is listed as failed
+    /// (<see cref="AssemblyListing.Open(AssemblyList, AssemblyPath, GenerationWork, CancellationToken)"/>); one met once
+    /// the generation ended throws the cancellation of its ending. The cancellation of <paramref name="ct"/>, which the
+    /// edge links to a newer reload, a clear of the list and the generation's ending, and anything else, are let
+    /// through.</summary>
+    public async Task<LoadedAssembly?> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, GenerationWork work, CancellationToken ct)
     {
-        var work = assemblies.Work;
         var last = await Background.Wait(Task.Run(() => ListFiles(paths, work, ct), ct));
         ct.ThrowIfCancellationRequested();
         return last;
@@ -112,13 +114,12 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         }
     }
 
-    /// <summary>Opens as <see cref="OpenFilesAsync"/> does, then finds the nodes; a lookup the library failed fails the
-    /// reopen, as the core answers it. Cancelled as <see cref="OpenFilesAsync"/> is, the edge linking the reload's
-    /// canceller.</summary>
+    /// <summary>Opens as <see cref="OpenFilesAsync"/> does, as work of <paramref name="work"/>'s generation, then finds the
+    /// nodes; a lookup the library failed fails the reopen, as the core answers it. Cancelled as
+    /// <see cref="OpenFilesAsync"/> is, the edge linking the reload's canceller and the generation's ending.</summary>
     public async Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded,
-        IReadOnlyList<NodePath> places, CancellationToken ct)
+        IReadOnlyList<NodePath> places, GenerationWork work, CancellationToken ct)
     {
-        var work = assemblies.Work;
         var reopened = await Background.Wait(Task.Run(() => ReopenAndFindNodesAsync(paths, expanded, places, work, ct), ct));
         ct.ThrowIfCancellationRequested();
         return reopened;

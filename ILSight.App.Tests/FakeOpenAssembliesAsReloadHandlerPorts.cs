@@ -14,7 +14,7 @@ internal sealed class FakeOpenAssembliesAsReloadHandlerPorts : OpenAssembliesAsR
 
     public List<CancellationToken> Tokens { get; } = [];
 
-    public Task<LoadedAssembly?> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, CancellationToken ct)
+    public Task<LoadedAssembly?> OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, GenerationWork work, CancellationToken ct)
     {
         Tokens.Add(ct);
         WhileWorking();

@@ -397,17 +397,39 @@ public static class Commands
         Later(commands, expanded, static (a, e) => StartReloading(a, e));
     }
 
-    /// <summary>Starts reloading every assembly of the open list now (<see cref="AssemblyReloading.RefreshAssembliesAsync(SavedAssemblyLists, OpenListSession, Queue{ViewCommand}, DecompilerChoice, IReadOnlyList{NodePath}, ReloadTicket, CancellationToken)"/>),
-    /// then the loads it started, cancelled by a newer reload or a clear of the list; when its workflow fails, the
-    /// reload ends and the tabs it left reloading say why (<see cref="AssemblyReloading.FailReload"/>).</summary>
+    /// <summary>Starts reloading every assembly of the open list now: its clear (<see cref="AssemblyReloading.BeginReload"/>),
+    /// which begins the generation the files are read again in, then the reopen under that generation's work
+    /// (<see cref="AssemblyReloading.RefreshAssembliesAsync"/>), cancelled by a newer reload or a clear of the list
+    /// through the reload's ticket and by any end of that generation through its ending, then the loads it started.
+    /// When either workflow fails, the reload ends and the tabs it left reloading say why
+    /// (<see cref="AssemblyReloading.FailReload"/>).</summary>
     public static void StartReloading(AppState appState, IReadOnlyList<NodePath> expanded)
     {
         var session = appState.ListSession;
         var ticket = session.Reload.Start();
-        appState.Workflows.StartSettling(nameof(AssemblyReloading.RefreshAssembliesAsync),
-            async ct => StartLoads(appState, await appState.AssemblyReloading.RefreshAssembliesAsync(appState.Lists, session, appState.ViewCommands,
-                appState.Decompiler, expanded, ticket, ct)),
+        appState.Workflows.StartSettling(nameof(AssemblyReloading.BeginReload),
+            _ =>
+            {
+                BeginReload(appState, expanded, ticket);
+                return Task.CompletedTask;
+            },
             error => StartLoads(appState, AssemblyReloading.FailReload(session, ticket, error)), ticket.Token);
+    }
+
+    // The clear ends there, handing back the generation it began; the reopen is started under its work.
+    private static void BeginReload(AppState appState, IReadOnlyList<NodePath> expanded, ReloadTicket ticket)
+    {
+        var begun = appState.AssemblyReloading.BeginReload(appState.Lists, appState.ListSession, appState.Decompiler);
+        StartReopeningReloaded(appState, expanded, ticket, begun);
+    }
+
+    private static void StartReopeningReloaded(AppState appState, IReadOnlyList<NodePath> expanded, ReloadTicket ticket, ReloadBegun begun)
+    {
+        var session = appState.ListSession;
+        appState.Workflows.StartSettling(nameof(AssemblyReloading.RefreshAssembliesAsync),
+            async ct => StartLoads(appState, await appState.AssemblyReloading.RefreshAssembliesAsync(session, appState.ViewCommands, appState.Decompiler,
+                expanded, ticket, begun, ct)),
+            error => StartLoads(appState, AssemblyReloading.FailReload(session, ticket, error)), ticket.Token, begun.Work.Ending);
     }
 
     /// <summary>As <see cref="Start{T}(IAppCommandWriter, string, T, Func{AppState, T, CancellationToken, Task{List{DecompileTicket}}})"/>,
@@ -463,17 +485,20 @@ public static class Commands
     {
         var session = appState.ListSession;
         var handler = appState.OpenAssembliesAsReloadHandler;
-        StartOpeningAsReload(appState, nameof(OpenAssembliesAsReloadHandler), reopening, ct => handler.HandleAsync(session, reopening.Paths, reopening.Reload, ct));
+        StartOpeningAsReload(appState, nameof(OpenAssembliesAsReloadHandler), reopening,
+            ct => handler.HandleAsync(session, reopening.Paths, reopening.Reload, reopening.Work, ct));
     }
 
     /// <summary>Starts <paramref name="open"/>, the reopening of a list's assemblies as <paramref name="reopening"/>
-    /// began it, now, then the loads it started, cancelled by a newer reload or a clear of the list; when its workflow
+    /// began it, now, then the loads it started, cancelled by a newer reload or a clear of the list through its ticket,
+    /// and by any end of the generation it opens in through that generation's ending, each asked; when its workflow
     /// fails, the reopening ends as one that failed does (<see cref="OpenAssembliesAsReloadHandler.FailOpeningAsReload"/>).</summary>
     public static void StartOpeningAsReload(AppState appState, string name, ListReopening reopening, Func<CancellationToken, Task<TabLoads>> open)
     {
         var session = appState.ListSession;
         appState.Workflows.StartSettling(name, async ct => StartLoads(appState, await open(ct)),
-            _ => StartLoads(appState, OpenAssembliesAsReloadHandler.FailOpeningAsReload(session, reopening.Reload)), reopening.Reload.Token);
+            _ => StartLoads(appState, OpenAssembliesAsReloadHandler.FailOpeningAsReload(session, reopening.Reload)), reopening.Reload.Token,
+            reopening.Work.Ending);
     }
 
     /// <summary>Asks for what going to a history entry left, <paramref name="move"/>, to be started once the frame is

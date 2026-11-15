@@ -56,7 +56,7 @@ public sealed class OpenListSession
         var reload = Reload.Start();
         _assemblies.BeginArriving(paths);
         _reopening = paths;
-        return new ListReopening { Paths = paths, Reload = reload };
+        return new ListReopening { Paths = paths, Reload = reload, Work = Assemblies.Work };
     }
 
     /// <summary>Ends the reopening <paramref name="ticket"/> was given for (<see cref="BeginReopening"/>): what it

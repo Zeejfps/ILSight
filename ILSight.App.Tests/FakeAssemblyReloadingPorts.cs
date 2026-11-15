@@ -60,7 +60,7 @@ internal sealed class FakeAssemblyReloadingPorts : AssemblyReloading.IPorts
     }
 
     public Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded, IReadOnlyList<NodePath> places,
-        CancellationToken ct)
+        GenerationWork work, CancellationToken ct)
     {
         OpenedPaths.Add(paths);
         return AnswerAsync(nameof(ReopenFilesAsync), Reopen(places), ct);

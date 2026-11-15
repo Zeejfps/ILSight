@@ -263,7 +263,7 @@ internal static class AppRoot
             RestoreAnalysesHandler = new RestoreAnalysesHandler(analysis),
             GoToHistoryEntryHandler = new GoToHistoryEntryHandler(navigation),
             AssemblyOpening = new AssemblyOpening(assemblyList),
-            AssemblyReloading = new AssemblyReloading(assemblyList),
+            AssemblyReloading = new AssemblyReloading(MakePort<AssemblyReloading.IPorts>(assemblyList, hooks?.Reloading)),
             OpenAssembliesAsReloadHandler = new OpenAssembliesAsReloadHandler(MakePort<OpenAssembliesAsReloadHandler.IPorts>(assemblyList, hooks?.Reopening)),
             Session = session,
             SettingsPlace = settingsPlace,
