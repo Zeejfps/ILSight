@@ -183,6 +183,29 @@ public sealed class ExportsPanelTests : IDisposable
         Assert.True(app.Frames.Drew("C# file · Failed"));
     }
 
+    [Fact]
+    public async Task A_refused_export_has_a_mark_of_its_own_never_the_cancels_or_the_failures_nor_an_error_counted()
+    {
+        var app = AppDriver.Opened(height: TallWindow);
+        app.Show(await app.FixtureAsync("Greeter"), frames: 2);
+        app.Frames.FilePicker.OnOpen = () => CommandArea.Commands.CloseAllAssemblies(app.AppState);
+        app.Frames.FilePicker.Answer = _temp.PathOf("Greeter.cs");
+
+        app.Frames.Key(Shortcuts.SaveCode).Frame(2);
+        app.Settle(2);
+
+        Assert.IsType<ExportEnd.AssemblyClosed>(Assert.Single(app.AppState.FinishedExports).End);
+        Assert.True(app.Frames.Drew("C# file · Greeter wasn't exported: ILSight.App.Tests.dll was closed"));
+        var mark = app.LastTextRect(BuiltInGlyphs.Icons.ExportRefused);
+        // The cancel's glyph is the row's remove button's too: drawn on the row only after the mark, as that button.
+        var cancelGlyph = BuiltInGlyphs.Text(BuiltInGlyphs.Icons.ExportCancelled);
+        var onTheRow = app.Frames.TextRects().Where(t => t.Text == cancelGlyph && Math.Abs(t.Rect.Y - mark.Y) < 0.5f).ToList();
+        Assert.All(onTheRow, t => Assert.True(t.Rect.X > mark.X));
+        Assert.Single(onTheRow);
+        Assert.False(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.ExportProblems)));
+        Assert.Empty(app.AppState.Errors.Entries);
+    }
+
     // The least any object takes on a 64-bit runtime: a row that allocated anything each frame would add at least this
     // to what a frame allocates.
     private const long SmallestAllocation = 24;

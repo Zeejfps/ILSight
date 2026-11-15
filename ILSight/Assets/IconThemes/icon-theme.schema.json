@@ -663,6 +663,10 @@
           "description": "An export that was cancelled.",
           "$ref": "#/definitions/icon"
         },
+        "export.refused": {
+          "description": "An export that was refused, nothing written: its assembly was closed before its work read it.",
+          "$ref": "#/definitions/icon"
+        },
         "export.done": {
           "description": "An export that finished.",
           "$ref": "#/definitions/icon"

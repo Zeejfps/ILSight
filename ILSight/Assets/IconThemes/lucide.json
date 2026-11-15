@@ -371,6 +371,8 @@
     "export.problems": { "font": "lucide", "glyph": "E077" },
     // An export that was cancelled.
     "export.cancelled": { "font": "lucide", "glyph": "E1B2" },
+    // An export that was refused, nothing written: its assembly was closed before its work read it.
+    "export.refused": { "font": "lucide", "glyph": "E051" },
     // An export that finished.
     "export.done": { "font": "lucide", "glyph": "E06C" },
 

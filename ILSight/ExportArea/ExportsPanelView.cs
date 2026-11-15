@@ -604,9 +604,10 @@ internal static class ExportsPanelView
         return report.End.Match(icons,
             static (i, finished) => FinishedIcon(i, finished),
             static (i, _) => i.ExportCancelled,
-            // Refused, its assembly closed: nothing written, as a cancel's mark, in the warning's color and its own words,
-            // so it reads neither as a cancel the user asked for nor as a failure.
-            static (i, _) => i.ExportCancelled,
+            // Refused, its assembly closed: nothing written. A mark of its own, never the cancel's or the failure's, which
+            // someone scanning the marks would read as what they cancelled or what to retry; the warning's color, as
+            // nothing was written that the user didn't call off, and its own words saying what and why.
+            static (i, _) => i.ExportRefused,
             static (i, _) => i.ExportProblems);
     }
 
