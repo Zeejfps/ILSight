@@ -59,7 +59,7 @@ internal static class CodeTooltipView
     {
         using (ui.Column(new Box { Padding = new Spacing(PaddingX, SignaturePaddingY), Gap = 0f }))
         {
-            var text = appearance.Strings.CodeTooltipUnreadable(unreadable.Module.FilePath.FileName, unreadable.Why.Message);
+            var text = appearance.Strings.ModuleUnreadableWhy(unreadable.Module.FilePath.FileName, unreadable.Why.Message);
             ui.Text(text, color: ui.Theme.Warning, wrap: true);
         }
         return default;

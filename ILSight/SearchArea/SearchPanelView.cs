@@ -137,11 +137,12 @@ internal static class SearchPanelView
     {
         if (kinds == SearchKinds.All)
         {
-            return $"{t.SearchMode}: {t.SearchKindsAll}";
+            return t.SearchKindsTip(t.SearchKindsAll);
         }
 
+        // A kind a line: the lines are layout, the words around them each language's template.
         var labels = ListPicked(kinds).Select(k => KindLabel(t, k));
-        return $"{t.SearchMode}:\n{string.Join("\n", labels)}";
+        return t.SearchKindsTipList(string.Join("\n", labels));
     }
 
     private static void KindsMenu(Ui ui, Search search, Appearance appearance)

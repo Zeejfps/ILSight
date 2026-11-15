@@ -36,7 +36,7 @@ public static class TabPlaceholders
 
         if (content is TabContent.Unreadable unreadable)
         {
-            return t.DocumentUnreadable(unreadable.Module, unreadable.Why);
+            return t.ModuleUnreadableWhy(unreadable.Module, unreadable.Why);
         }
 
         throw new UnreachableException($"A tab showing {content.GetType().Name} has no placeholder note.");
