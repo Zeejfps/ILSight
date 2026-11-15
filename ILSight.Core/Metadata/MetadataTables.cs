@@ -748,12 +748,12 @@ internal static class MetadataTables
     }
 
     /// <summary>The grid shown, made the first time it is asked for with at least <paramref name="firstRows"/> rows
-    /// read (<see cref="LazyGrid"/>); null for a part shown as text.</summary>
-    internal static MetadataGrid? EnsureGrid(MetadataTableInfo table, int firstRows)
+    /// read (<see cref="LazyGrid"/>), or what the library threw reading it; null for a part shown as text.</summary>
+    internal static Outcome<MetadataGrid>? EnsureGrid(MetadataTableInfo table, int firstRows, CancellationToken ct = default)
     {
-        return table.Part.Match<int, MetadataGrid?>(firstRows,
-            static (rows, grid) => grid.View.Ensure(rows),
-            static (rows, directory) => directory.View.Ensure(rows),
+        return table.Part.Match<(int Rows, CancellationToken Ct), Outcome<MetadataGrid>?>((firstRows, ct),
+            static (s, grid) => grid.View.Ensure(s.Rows, s.Ct),
+            static (s, directory) => directory.View.Ensure(s.Rows, s.Ct),
             static (_, _) => null,
             static (_, _) => null,
             static (_, _) => null);

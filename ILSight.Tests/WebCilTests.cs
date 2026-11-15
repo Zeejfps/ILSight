@@ -1,3 +1,4 @@
+using System.Reflection.Metadata.Ecma335;
 using ILSight.Core;
 using ILSight.Core.Metadata;
 
@@ -112,6 +113,27 @@ public sealed class WebCilTests
         Assert.NotNull(MetadataGrids.FindTooltip(grid, counter, grid.Column("Attributes")));
         Assert.NotNull(MetadataGrids.FindLink(grid, counter, grid.Column("BaseType")));
         Assert.NotNull(MetadataGrids.FindDefinition(grid, counter));
+    }
+
+    [Fact]
+    public void A_webcil_grid_the_app_fails_to_build_of_what_was_read_is_the_apps_failure_and_one_whose_rows_cannot_be_read_the_grids()
+    {
+        var module = Assert.IsType<LoadedModule>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath));
+        var file = LoadedAssemblies.GetFile(module);
+        var table = Assert.IsAssignableFrom<GridSchema>(MetadataTables.Create(TableIndex.TypeDef, file));
+        var columns = table.Columns.Select(static c => c.Column.Name == "Name"
+            ? c with { FormatValue = static _ => throw new InvalidOperationException("The app's bug.") }
+            : c).ToList();
+        GridSchema SchemaReading(Func<IReadOnlyList<object>> rows)
+        {
+            return new GridSchema<object> { Key = table.Key, Table = table.Table, File = file, ReadRows = rows, Columns = columns };
+        }
+
+        var bug = Assert.Throws<InvalidOperationException>(() => MetadataGrids.CreateGrid("TypeDef", module, file, SchemaReading(table.ReadRows), 1, default));
+        var unreadable = MetadataGrids.CreateGrid("TypeDef", module, file, SchemaReading(static () => throw new BadImageFormatException("Cut short.")), 1, default);
+
+        Assert.Equal("The app's bug.", bug.Message);
+        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<MetadataGrid>.Failed>(unreadable).Error);
     }
 
     private static Task<NodeContent> ReadFirstPageAsync(BrowseNode node)

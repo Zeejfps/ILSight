@@ -125,10 +125,10 @@ internal static class ResourceNodes
     /// <summary>The grid of a <c>.resources</c> file's entries, made the first time it is asked for with at least
     /// <paramref name="firstRows"/> rows read (<see cref="Metadata.LazyGrid"/>); null for an asset container, which has
     /// none.</summary>
-    internal static Metadata.MetadataGrid? EnsureGrid(ResourceContainerInfo container, int firstRows)
+    internal static Outcome<Metadata.MetadataGrid>? EnsureGrid(ResourceContainerInfo container, int firstRows, CancellationToken ct = default)
     {
-        return container.Contents.Match<int, Metadata.MetadataGrid?>(firstRows,
-            static (rows, file) => file.Grid.Ensure(rows),
+        return container.Contents.Match<(int Rows, CancellationToken Ct), Outcome<Metadata.MetadataGrid>?>((firstRows, ct),
+            static (s, file) => file.Grid.Ensure(s.Rows, s.Ct),
             static (_, _) => null);
     }
 

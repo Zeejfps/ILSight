@@ -4,8 +4,8 @@ namespace ILSight.Core.Metadata;
 
 /// <summary>A grid made the first time it is asked for, with the rows its first show needs read
 /// (<see cref="MetadataGrids.CreateGrid"/>), then kept: every later ask gets the same grid, whatever rows it names.
-/// Safe to ask from several threads at once: the first ask makes it while the others wait for it. One whose making
-/// threw is made again by the next ask.</summary>
+/// Safe to ask from several threads at once: the first ask makes it while the others wait for it. One whose read
+/// failed is made again by the next ask.</summary>
 public sealed class LazyGrid
 {
     private readonly Lock _gate = new();
@@ -20,17 +20,22 @@ public sealed class LazyGrid
 
     public required GridSchema Schema { private get; init; }
 
-    /// <summary>The grid, made now with at least <paramref name="firstRows"/> rows read when it wasn't made before.
+    /// <summary>The grid, made now with at least <paramref name="firstRows"/> rows read when it wasn't made before;
+    /// what the library throws reading it, its <see cref="Outcome{T}.Failed"/> (<see cref="MetadataGrids.CreateGrid"/>).
     /// I/O for a grid over a file the library maps: call it off the screen's thread, as the node's content is made.</summary>
-    public MetadataGrid Ensure(int firstRows)
+    public Outcome<MetadataGrid> Ensure(int firstRows, CancellationToken ct = default)
     {
         lock (_gate)
         {
-            var made = _made;
-            if (made is null)
+            if (_made is not null)
             {
-                made = MetadataGrids.CreateGrid(Title, Module, File, Schema, firstRows);
-                _made = made;
+                return new Outcome<MetadataGrid>.Ok(_made);
+            }
+
+            var made = MetadataGrids.CreateGrid(Title, Module, File, Schema, firstRows, ct);
+            if (made is Outcome<MetadataGrid>.Ok ok)
+            {
+                _made = ok.Value;
             }
 
             return made;

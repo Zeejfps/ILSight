@@ -101,40 +101,25 @@ public static class NodeContentLoader
         return new Outcome<DecompiledDocument>.Ok(await NodeDecompiler.DecompileAsync(reading, request, language, options, notes, cancellationToken, note));
     }
 
+    // The node's grid, null for a node shown otherwise. Its reads are caught where the grid is made
+    // (MetadataGrids.CreateGrid), what the library throws the content's failure; the grid is built after them.
     private static Outcome<NodeContent>? FindGridContent(BrowseNode node, int firstRows, CancellationToken ct)
     {
-        MetadataGrid? grid;
-        try
-        {
-            grid = GridOf(node, firstRows);
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception e)
-        {
-            return new Outcome<NodeContent>.Failed(e);
-        }
-
-        if (grid is null)
-        {
-            return null;
-        }
-
-        return new Outcome<NodeContent>.Ok(new NodeContent.Table(grid));
+        return GridOf(node, firstRows, ct)?.Match<Outcome<NodeContent>>(
+            static ok => new Outcome<NodeContent>.Ok(new NodeContent.Table(ok.Value)),
+            static failed => new Outcome<NodeContent>.Failed(failed.Error));
     }
 
-    private static MetadataGrid? GridOf(BrowseNode node, int firstRows)
+    private static Outcome<MetadataGrid>? GridOf(BrowseNode node, int firstRows, CancellationToken ct)
     {
         if (node.Subject is NodeSubject.MetadataTable table)
         {
-            return MetadataTables.EnsureGrid(table.Value, firstRows);
+            return MetadataTables.EnsureGrid(table.Value, firstRows, ct);
         }
 
         if (node.Subject is NodeSubject.ResourceContainer container)
         {
-            return ResourceNodes.EnsureGrid(container.Value, firstRows);
+            return ResourceNodes.EnsureGrid(container.Value, firstRows, ct);
         }
 
         return null;
@@ -229,16 +214,19 @@ public static class NodeContentLoader
     private static async Task<DocumentRequest> RequestOfAsync(BrowseSession session, BrowseNode node, CancellationToken ct)
     {
         var children = await ListSummarizedChildrenAsync(session, node, ct);
-        return RequestOf(node, children);
+        return RequestOf(node, children, ReadFacts(node, children));
     }
 
-    // The request is read from the library's objects as it is made (the symbols, references and resources it names).
+    // What the request needs of the library's objects is read inside the catch (ReadFacts: the targets the summary links
+    // to, a used member's kind, a metadata part's lines); the request is built of it after, so a bug of the app's in
+    // building it reaches the edge.
     private static async Task<Outcome<DocumentRequest>> ReadRequestAsync(BrowseSession session, BrowseNode node, CancellationToken ct)
     {
         var children = await ListSummarizedChildrenAsync(session, node, ct);
+        RequestFacts facts;
         try
         {
-            return new Outcome<DocumentRequest>.Ok(RequestOf(node, children));
+            facts = ReadFacts(node, children);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -248,6 +236,74 @@ public static class NodeContentLoader
         {
             return new Outcome<DocumentRequest>.Failed(e);
         }
+
+        return new Outcome<DocumentRequest>.Ok(RequestOf(node, children, facts));
+    }
+
+    // What building the request reads of the library's objects, for the node and the children its summary lists.
+    private static RequestFacts ReadFacts(BrowseNode node, SummarizedChildren children)
+    {
+        var targets = new Dictionary<BrowseNode, CodeReference.Navigable?>(ReferenceEqualityComparer.Instance);
+        var kinds = new Dictionary<BrowseNode, SpanKind>(ReferenceEqualityComparer.Instance);
+        ReadNodeFacts(node, targets, kinds);
+        ReadChildrenFacts(children, targets, kinds);
+        return new RequestFacts { Targets = targets, MemberKinds = kinds, Lines = ReadLines(node.Subject) };
+    }
+
+    private static void ReadChildrenFacts(SummarizedChildren children, Dictionary<BrowseNode, CodeReference.Navigable?> targets,
+        Dictionary<BrowseNode, SpanKind> kinds)
+    {
+        foreach (var child in children.Children)
+        {
+            ReadNodeFacts(child, targets, kinds);
+            if (children.Nested.TryGetValue(child, out var nested))
+            {
+                ReadChildrenFacts(nested, targets, kinds);
+            }
+        }
+    }
+
+    private static void ReadNodeFacts(BrowseNode node, Dictionary<BrowseNode, CodeReference.Navigable?> targets, Dictionary<BrowseNode, SpanKind> kinds)
+    {
+        targets[node] = NodeDefinitions.FindTarget(node.Subject);
+        if (node.Subject is NodeSubject.MemberReference member)
+        {
+            kinds[node] = UsedMemberSpan(NodeDefinitions.GetDeclared(member.Value));
+        }
+    }
+
+    // A metadata folder's, its tables' or a part's comment lines, read through its file; null for any other node.
+    private static List<string>? ReadLines(NodeSubject subject)
+    {
+        if (subject is NodeSubject.Metadata metadata)
+        {
+            return MetadataTables.ListFolderLines(metadata.Value).ToList();
+        }
+
+        if (subject is NodeSubject.MetadataTables tables)
+        {
+            return MetadataTables.ListTablesLines(tables.Folder).ToList();
+        }
+
+        if (subject is NodeSubject.MetadataTable table)
+        {
+            return MetadataTables.ListPartLines(table.Value).ToList();
+        }
+
+        // Every other node's request is built without lines.
+        return null;
+    }
+
+    // What the request is built of from the library's objects, read before it is built.
+    private sealed class RequestFacts
+    {
+        public required IReadOnlyDictionary<BrowseNode, CodeReference.Navigable?> Targets { get; init; }
+
+        public required IReadOnlyDictionary<BrowseNode, SpanKind> MemberKinds { get; init; }
+
+        public required IReadOnlyList<string>? Lines { get; init; }
+
+        public IReadOnlyList<string> LinesRead => Lines ?? throw new UnreachableException("A metadata node's lines are read with its facts.");
     }
 
     private static async Task<SummarizedChildren> ListSummarizedChildrenAsync(BrowseSession session, BrowseNode node, CancellationToken ct)
@@ -294,9 +350,9 @@ public static class NodeContentLoader
         public required IReadOnlyDictionary<BrowseNode, SummarizedChildren> Nested { get; init; }
     }
 
-    private static DocumentRequest RequestOf(BrowseNode node, SummarizedChildren children)
+    private static DocumentRequest RequestOf(BrowseNode node, SummarizedChildren children, RequestFacts facts)
     {
-        return node.Subject.Match<(BrowseNode Node, SummarizedChildren Children), DocumentRequest>((node, children),
+        return node.Subject.Match<(BrowseNode Node, SummarizedChildren Children, RequestFacts Facts), DocumentRequest>((node, children, facts),
             module: static (s, module) => new DocumentRequest.ModulePreview
             {
                 Module = module.Value,
@@ -306,7 +362,7 @@ public static class NodeContentLoader
             @namespace: static (s, _) => SummaryRequest(s.Node, new SummaryInfo.Namespace
             {
                 Name = s.Node.Text,
-                Entries = ListNamespaceEntries(s.Children),
+                Entries = ListNamespaceEntries(s.Children, s.Facts),
             }),
             failedAssembly: static (s, failed) => new DocumentRequest.Failure
             {
@@ -326,18 +382,18 @@ public static class NodeContentLoader
                 Title = s.Node.Text,
                 FullName = s.Node.FullName,
             },
-            references: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children)),
-            assemblyReference: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children)),
-            referencedTypes: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children)),
-            typeReference: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children)),
-            memberReference: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children)),
-            moduleReference: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children)),
-            importedMethod: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children)),
-            forwardedType: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children)),
-            baseTypes: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children)),
-            baseType: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children)),
-            derivedTypes: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children)),
-            derivedType: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children)),
+            references: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            assemblyReference: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            referencedTypes: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            typeReference: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            memberReference: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            moduleReference: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            importedMethod: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            forwardedType: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            baseTypes: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            baseType: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            derivedTypes: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            derivedType: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
             unreadableModule: static (s, _) => new DocumentRequest.Summary
             {
                 Info = new SummaryInfo.Comments([s.Node.Text]),
@@ -348,9 +404,9 @@ public static class NodeContentLoader
             resources: static (s, _) => SummaryRequest(s.Node, DescribeResources(s.Children)),
             resourceContainer: static (s, container) => ContainerRequest(s.Node, s.Children, container.Value),
             resourceEntry: static (s, entry) => EntryRequest(s.Node, entry.Value),
-            metadata: static (s, metadata) => SummaryRequest(s.Node, new SummaryInfo.Comments(MetadataTables.ListFolderLines(metadata.Value))),
-            metadataTables: static (s, tables) => SummaryRequest(s.Node, new SummaryInfo.Comments(MetadataTables.ListTablesLines(tables.Folder))),
-            metadataTable: static (s, table) => SummaryRequest(s.Node, new SummaryInfo.Comments(MetadataTables.ListPartLines(table.Value))),
+            metadata: static (s, _) => SummaryRequest(s.Node, new SummaryInfo.Comments(s.Facts.LinesRead)),
+            metadataTables: static (s, _) => SummaryRequest(s.Node, new SummaryInfo.Comments(s.Facts.LinesRead)),
+            metadataTable: static (s, _) => SummaryRequest(s.Node, new SummaryInfo.Comments(s.Facts.LinesRead)),
             package: static (s, _) => new DocumentRequest.Summary
             {
                 Info = new SummaryInfo.Comments(s.Children.Children.Select(DescribePackageChild).ToList()),
@@ -411,9 +467,9 @@ public static class NodeContentLoader
         return new SummaryInfo.Comments(children.Children.Select(static c => BrowseNodes.FindResourceData(c.Subject)).OfType<ResourceData>().Select(static r => r.Description).ToList());
     }
 
-    private static SummaryInfo SummaryOf(BrowseNode node, SummarizedChildren children)
+    private static SummaryInfo SummaryOf(BrowseNode node, SummarizedChildren children, RequestFacts facts)
     {
-        return node.Subject.Match<(BrowseNode Node, SummarizedChildren Children), SummaryInfo>((node, children),
+        return node.Subject.Match<(BrowseNode Node, SummarizedChildren Children, RequestFacts Facts), SummaryInfo>((node, children, facts),
             module: static (_, _) => throw new UnreachableException(),
             @namespace: static (_, _) => throw new UnreachableException(),
             failedAssembly: static (_, _) => throw new UnreachableException(),
@@ -421,10 +477,10 @@ public static class NodeContentLoader
             memberDefinition: static (_, _) => throw new UnreachableException(),
             references: static (s, _) => new SummaryInfo.References
             {
-                Assemblies = ChildrenAbout<NodeSubject.AssemblyReference>(s.Children).Select(static r => new SummaryLink
+                Assemblies = ChildrenAbout<NodeSubject.AssemblyReference>(s.Children).Select(r => new SummaryLink
                 {
                     Text = r.FullName,
-                    Target = NodeDefinitions.FindTarget(r.Subject),
+                    Target = s.Facts.Targets[r],
                 }).ToList(),
                 Modules = ChildrenAbout<NodeSubject.ModuleReference>(s.Children).Select(static m => m.Text).ToList(),
             },
@@ -433,17 +489,17 @@ public static class NodeContentLoader
                 Module = reference.Value.Module,
                 Reference = reference.Value.Reference,
             },
-            referencedTypes: static (s, _) => new SummaryInfo.Used(ListUsed(s.Children)),
-            typeReference: static (s, _) => new SummaryInfo.Used([UsedOf(s.Node, s.Children)]),
-            memberReference: static (s, _) => new SummaryInfo.Used([UsedOf(s.Node, s.Children)]),
+            referencedTypes: static (s, _) => new SummaryInfo.Used(ListUsed(s.Children, s.Facts)),
+            typeReference: static (s, _) => new SummaryInfo.Used([UsedOf(s.Node, s.Children, s.Facts)]),
+            memberReference: static (s, _) => new SummaryInfo.Used([UsedOf(s.Node, s.Children, s.Facts)]),
             moduleReference: static (s, module) => new SummaryInfo.ModuleReference
             {
                 Name = module.Value.Name,
                 ContainsMetadata = module.Value.ContainsMetadata,
-                Imports = ChildrenAbout<NodeSubject.ImportedMethod>(s.Children).Select(static i => new SummaryLink
+                Imports = ChildrenAbout<NodeSubject.ImportedMethod>(s.Children).Select(i => new SummaryLink
                 {
                     Text = i.FullName,
-                    Target = NodeDefinitions.FindTarget(i.Subject),
+                    Target = s.Facts.Targets[i],
                 }).ToList(),
             },
             importedMethod: static (s, import) => new SummaryInfo.ImportedMethod
@@ -451,7 +507,7 @@ public static class NodeContentLoader
                 Method = new SummaryLink
                 {
                     Text = s.Node.FullName,
-                    Target = NodeDefinitions.FindTarget(s.Node.Subject),
+                    Target = s.Facts.Targets[s.Node],
                 },
                 EntryPoint = import.Value.EntryPoint,
                 ModuleName = import.Value.ModuleName,
@@ -459,20 +515,20 @@ public static class NodeContentLoader
             forwardedType: static (s, forwarded) => new SummaryInfo.ForwardedType
             {
                 FullName = forwarded.Value.FullName,
-                Target = NodeDefinitions.FindTarget(s.Node.Subject),
+                Target = s.Facts.Targets[s.Node],
                 Destination = forwarded.Value.Destination,
             },
-            baseTypes: static (s, _) => TypesOf(s.Children),
+            baseTypes: static (s, _) => TypesOf(s.Children, s.Facts),
             baseType: static (s, _) => new SummaryInfo.Types([new SummaryLink
             {
                 Text = s.Node.Text,
-                Target = NodeDefinitions.FindTarget(s.Node.Subject),
+                Target = s.Facts.Targets[s.Node],
             }]),
-            derivedTypes: static (s, _) => TypesOf(s.Children),
+            derivedTypes: static (s, _) => TypesOf(s.Children, s.Facts),
             derivedType: static (s, _) => new SummaryInfo.Types([new SummaryLink
             {
                 Text = s.Node.Text,
-                Target = NodeDefinitions.FindTarget(s.Node.Subject),
+                Target = s.Facts.Targets[s.Node],
             }]),
             unreadableModule: static (_, _) => throw new UnreachableException(),
             resources: static (_, _) => throw new UnreachableException(),
@@ -485,12 +541,12 @@ public static class NodeContentLoader
             packageFile: static (_, _) => throw new UnreachableException());
     }
 
-    private static SummaryInfo.Types TypesOf(SummarizedChildren children)
+    private static SummaryInfo.Types TypesOf(SummarizedChildren children, RequestFacts facts)
     {
-        return new SummaryInfo.Types(children.Children.Select(static c => new SummaryLink
+        return new SummaryInfo.Types(children.Children.Select(c => new SummaryLink
         {
             Text = c.Text,
-            Target = NodeDefinitions.FindTarget(c.Subject),
+            Target = facts.Targets[c],
         }).ToList());
     }
 
@@ -515,7 +571,7 @@ public static class NodeContentLoader
         return child.Text;
     }
 
-    private static List<NamespaceEntry> ListNamespaceEntries(SummarizedChildren children)
+    private static List<NamespaceEntry> ListNamespaceEntries(SummarizedChildren children, RequestFacts facts)
     {
         var entries = new List<NamespaceEntry>();
         foreach (var child in children.Children)
@@ -538,24 +594,24 @@ public static class NodeContentLoader
 
             if (child.Subject is NodeSubject.ForwardedType forwarded)
             {
-                entries.Add(new NamespaceEntry.Forwarded(ForwardedLineOf(child, forwarded)));
+                entries.Add(new NamespaceEntry.Forwarded(ForwardedLineOf(child, forwarded, facts)));
             }
         }
         return entries;
     }
 
-    private static List<UsedEntry> ListUsed(SummarizedChildren children)
+    private static List<UsedEntry> ListUsed(SummarizedChildren children, RequestFacts facts)
     {
         return children.Children
-            .Select(c => UsedOf(c, children.Nested.GetValueOrDefault(c) ?? SummarizedChildren.None))
+            .Select(c => UsedOf(c, children.Nested.GetValueOrDefault(c) ?? SummarizedChildren.None, facts))
             .ToList();
     }
 
-    private static UsedEntry UsedOf(BrowseNode node, SummarizedChildren children)
+    private static UsedEntry UsedOf(BrowseNode node, SummarizedChildren children, RequestFacts facts)
     {
         if (node.Subject is NodeSubject.ForwardedType forwarded)
         {
-            return new UsedEntry.Forwarded(ForwardedLineOf(node, forwarded));
+            return new UsedEntry.Forwarded(ForwardedLineOf(node, forwarded, facts));
         }
 
         if (node.Subject is NodeSubject.TypeReference type)
@@ -563,30 +619,30 @@ public static class NodeContentLoader
             return new UsedEntry.Type
             {
                 FullName = type.Value.FullName,
-                Target = NodeDefinitions.FindTarget(node.Subject),
-                Used = ListUsed(children),
+                Target = facts.Targets[node],
+                Used = ListUsed(children, facts),
             };
         }
 
-        if (node.Subject is NodeSubject.MemberReference member)
+        if (node.Subject is NodeSubject.MemberReference)
         {
             return new UsedEntry.Member
             {
                 Label = node.Text,
-                Kind = UsedMemberSpan(NodeDefinitions.GetDeclared(member.Value)),
-                Target = NodeDefinitions.FindTarget(node.Subject),
+                Kind = facts.MemberKinds[node],
+                Target = facts.Targets[node],
             };
         }
 
         throw new UnreachableException();
     }
 
-    private static ForwardedLine ForwardedLineOf(BrowseNode node, NodeSubject.ForwardedType forwarded)
+    private static ForwardedLine ForwardedLineOf(BrowseNode node, NodeSubject.ForwardedType forwarded, RequestFacts facts)
     {
         return new ForwardedLine
         {
             Label = forwarded.Value.Label,
-            Target = NodeDefinitions.FindTarget(node.Subject),
+            Target = facts.Targets[node],
             Destination = forwarded.Value.Destination,
         };
     }

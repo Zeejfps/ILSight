@@ -19,16 +19,34 @@ public static class MetadataGrids
     /// whose image is in memory, each cell is read when it is needed; for one whose file the library maps, the grid is
     /// paged (<see cref="MetadataGrid.Paged"/>), and the pages of its first <paramref name="firstRows"/> rows are read
     /// now: what its first show needs, which the app names (the window its view opens to, and the rows it measures its
-    /// columns over), so that it never shows those rows loading. Call it off the screen's thread, as the node's content
+    /// columns over), so that it never shows those rows loading. What the library throws reading the rows or those
+    /// pages is the grid's <see cref="Outcome{T}.Failed"/>; the grid is built of what was read after each read's catch,
+    /// so a bug of the app's in building it reaches the caller. Call it off the screen's thread, as the node's content
     /// is made.</summary>
-    public static MetadataGrid CreateGrid(string title, LoadedModule module, MetadataFile file, GridSchema schema, int firstRows)
+    public static Outcome<MetadataGrid> CreateGrid(string title, LoadedModule module, MetadataFile file, GridSchema schema, int firstRows,
+        CancellationToken ct)
     {
+        IReadOnlyList<object> rows;
+#pragma warning disable RL0902 // The schema's rows delegate reads ICSharpCode.Decompiler's metadata (a listed untrusted library): its failure is the grid's.
+        try
+        {
+            rows = schema.ReadRows();
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<MetadataGrid>.Failed(e);
+        }
+#pragma warning restore RL0902
+
         var columns = schema.Columns;
-        var rows = schema.ReadRows();
         var shown = columns.Select(static c => c.Column).ToArray();
         if (module.IsImageInMemory)
         {
-            return new MetadataGrid.InMemory
+            return new Outcome<MetadataGrid>.Ok(new MetadataGrid.InMemory
             {
                 Title = title,
                 Module = module,
@@ -37,7 +55,7 @@ public static class MetadataGrids
                 Rows = rows,
                 GridColumns = columns,
                 Columns = shown,
-            };
+            });
         }
 
         var grid = new MetadataGrid.Paged
@@ -51,12 +69,30 @@ public static class MetadataGrids
             Columns = shown,
         };
         var pages = MetadataGrid.Paged.CountPages(Math.Min(firstRows, rows.Count));
-        for (var page = 0; page < pages; page++)
+        var read = new List<ReadGridPage>(pages);
+        try
         {
-            grid.AddPage(page, MakePage(grid, ReadPageUnderReading(grid, page)));
+            for (var page = 0; page < pages; page++)
+            {
+                read.Add(ReadPageUnderReading(grid, page));
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<MetadataGrid>.Failed(e);
         }
 
-        return grid;
+        // The app's formatting of what was read, after the read's catch.
+        for (var page = 0; page < read.Count; page++)
+        {
+            grid.AddPage(page, MakePage(grid, read[page]));
+        }
+
+        return new Outcome<MetadataGrid>.Ok(grid);
     }
 
     /// <summary>The rows of <paramref name="grid"/> on the page at <paramref name="page"/>, read through its mapped
