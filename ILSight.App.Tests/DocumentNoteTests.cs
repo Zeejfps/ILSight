@@ -97,6 +97,38 @@ public sealed class DocumentNoteTests
         Assert.All(all, note => Assert.DoesNotMatch("[\r\n\u0085\u2028\u2029]", note.Words(notes)));
     }
 
+    [Theory]
+    [MemberData(nameof(LocalizationTests.AllLocales), MemberType = typeof(LocalizationTests))]
+    public void A_forwarded_types_destination_holding_a_line_break_is_noted_on_one_comment_line_with_the_break_escaped(Locale locale)
+    {
+        var notes = DocumentNoteTexts.For(locale);
+        const string Code = "public class Cart { }";
+
+        var drawn = DrawForwarded("Shop\nclass Injected { }", Code, notes);
+        var spaced = DrawForwarded("Shop class Injected { }", Code, notes);
+
+        Assert.Equal(2, drawn.Lines.Length);
+        var note = drawn.Lines[0].Text;
+        Assert.StartsWith("Cart // ", note);
+        Assert.Contains("Shop\\nclass Injected { }", note);
+        Assert.Equal(Code, drawn.Lines[1].Text);
+        Assert.Equal(2, spaced.Lines.Length);
+        Assert.NotEqual(spaced.Lines[0].Text, note);
+        Assert.All(new[] { "\t", "\v", "\r\n" }, value => Assert.DoesNotMatch("[\r\n\t\v]", new DocumentNote.ForwardedTo("Shop" + value + "Cart").Words(notes)));
+    }
+
+    // A forwarded type's line, its note saying where it went, then a line of code under it.
+    private static DecompiledDocument DrawForwarded(string destination, string code, IDocumentNotes notes)
+    {
+        var builder = new DocumentBuilder { Language = DecompilationLanguage.CSharp };
+        builder.Write("Cart", SpanKind.Type, null);
+        builder.WriteNote(new DocumentNote.ForwardedTo(destination), notes);
+        builder.WriteLine();
+        builder.Write(code);
+        builder.WriteLine();
+        return builder.BuildDocument("Shop");
+    }
+
     [Fact]
     public async Task A_bookmark_on_a_line_under_a_note_stays_on_the_same_code_after_a_language_switch()
     {

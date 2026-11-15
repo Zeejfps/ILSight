@@ -11,8 +11,8 @@ public abstract record DocumentNote
     }
 
     /// <summary><paramref name="text"/>, a value said in a note, on one line, each line break a space: a note runs to
-    /// its line's end, and keeps its line count in every language, so a value from outside (an exception's message)
-    /// never breaks it.</summary>
+    /// its line's end, and keeps its line count in every language, so an exception's message, prose, never breaks it;
+    /// a name or path is never joined so, but escaped where every value is (<see cref="Words"/>).</summary>
     internal static string OneLine(string text)
     {
         return text.ReplaceLineEndings(" ");
@@ -21,8 +21,16 @@ public abstract record DocumentNote
     /// <summary>What goes before the comment marker on the note's line, past what the line held before it.</summary>
     internal virtual string Lead => "";
 
-    /// <summary>The note's words in <paramref name="notes"/>' language, without the comment marker.</summary>
-    public abstract string Words(IDocumentNotes notes);
+    /// <summary>The note's words in <paramref name="notes"/>' language, without the comment marker, every value it says
+    /// on the note's one line, its line breaks and other control characters escaped visibly
+    /// (<see cref="VisibleNoteValues"/>).</summary>
+    public string Words(IDocumentNotes notes)
+    {
+        return Say(new VisibleNoteValues(notes));
+    }
+
+    /// <summary>The note's words in <paramref name="notes"/>' language, given the values it says.</summary>
+    private protected abstract string Say(IDocumentNotes notes);
 
     /// <summary>The runs the note is written as in <paramref name="notes"/>' language, from its lead to the end of its
     /// line: the comment marker and the words, as a comment.</summary>
@@ -42,7 +50,7 @@ public abstract record DocumentNote
 
         public required string Module { get; init; }
 
-        public override string Words(IDocumentNotes notes)
+        private protected override string Say(IDocumentNotes notes)
         {
             return notes.ReferenceUnreadable(Reference, File, Why, Module);
         }
@@ -51,7 +59,7 @@ public abstract record DocumentNote
     /// <summary>That the code was read with <see cref="Reference"/> by name only, as it was not found.</summary>
     public sealed record ReferenceNotFound(string Reference) : DocumentNote
     {
-        public override string Words(IDocumentNotes notes)
+        private protected override string Say(IDocumentNotes notes)
         {
             return notes.ReferenceNotFound(Reference);
         }
@@ -60,7 +68,7 @@ public abstract record DocumentNote
     /// <summary>The heading of a document saying why <see cref="Name"/> could not be decompiled.</summary>
     public sealed record DecompileFailed(string Name) : DocumentNote
     {
-        public override string Words(IDocumentNotes notes)
+        private protected override string Say(IDocumentNotes notes)
         {
             return notes.DecompileFailed(Name);
         }
@@ -70,7 +78,7 @@ public abstract record DocumentNote
     /// stack trace stay on the document's <see cref="DecompiledDocument.Error"/>, never in its text.</summary>
     public sealed record FailureCause(string Message) : DocumentNote
     {
-        public override string Words(IDocumentNotes notes)
+        private protected override string Say(IDocumentNotes notes)
         {
             return notes.FailureCause(Message);
         }
@@ -84,7 +92,7 @@ public abstract record DocumentNote
 
         public required string? Why { get; init; }
 
-        public override string Words(IDocumentNotes notes)
+        private protected override string Say(IDocumentNotes notes)
         {
             return notes.AssemblyUnreadable(File, Why);
         }
@@ -93,7 +101,7 @@ public abstract record DocumentNote
     /// <summary>That the assembly holds metadata and no code.</summary>
     public sealed record ReferenceAssembly : DocumentNote
     {
-        public override string Words(IDocumentNotes notes)
+        private protected override string Say(IDocumentNotes notes)
         {
             return notes.ReferenceAssembly();
         }
@@ -102,7 +110,7 @@ public abstract record DocumentNote
     /// <summary>What a module of the assembly is: one holding metadata, or a native library.</summary>
     public sealed record ModuleKind(bool ContainsMetadata) : DocumentNote
     {
-        public override string Words(IDocumentNotes notes)
+        private protected override string Say(IDocumentNotes notes)
         {
             return ContainsMetadata ? notes.ModuleWithMetadata() : notes.ModuleWithoutMetadata();
         }
@@ -115,7 +123,7 @@ public abstract record DocumentNote
 
         public required string ModuleName { get; init; }
 
-        public override string Words(IDocumentNotes notes)
+        private protected override string Say(IDocumentNotes notes)
         {
             return notes.Calls(Entry, ModuleName);
         }
@@ -124,7 +132,7 @@ public abstract record DocumentNote
     /// <summary>Where a reference's file is: <see cref="Path"/>, or not found when null.</summary>
     public sealed record Resolution(string? Path) : DocumentNote
     {
-        public override string Words(IDocumentNotes notes)
+        private protected override string Say(IDocumentNotes notes)
         {
             return Path is null ? notes.ReferenceNotResolved() : notes.ResolvesTo(Path);
         }
@@ -133,7 +141,7 @@ public abstract record DocumentNote
     /// <summary>That a resource's bytes are shown up to <see cref="Bytes"/>.</summary>
     public sealed record Truncated(int Bytes) : DocumentNote
     {
-        public override string Words(IDocumentNotes notes)
+        private protected override string Say(IDocumentNotes notes)
         {
             return notes.Truncated(Bytes);
         }
@@ -142,7 +150,7 @@ public abstract record DocumentNote
     /// <summary>The assembly's architecture, <see cref="Architecture"/>.</summary>
     public sealed record ArchitectureOf(ModuleArchitecture Architecture) : DocumentNote
     {
-        public override string Words(IDocumentNotes notes)
+        private protected override string Say(IDocumentNotes notes)
         {
             return notes.Architecture(Architecture);
         }
@@ -151,7 +159,7 @@ public abstract record DocumentNote
     /// <summary>The framework the assembly was built for.</summary>
     public sealed record TargetFramework(string Framework) : DocumentNote
     {
-        public override string Words(IDocumentNotes notes)
+        private protected override string Say(IDocumentNotes notes)
         {
             return notes.TargetFramework(Framework);
         }
@@ -165,7 +173,7 @@ public abstract record DocumentNote
 
         public required CodeReference Target { get; init; }
 
-        public override string Words(IDocumentNotes notes)
+        private protected override string Say(IDocumentNotes notes)
         {
             return notes.EntryPoint(Method);
         }
@@ -173,7 +181,8 @@ public abstract record DocumentNote
         internal override IReadOnlyList<NoteRun> Runs(IDocumentNotes notes)
         {
             var words = Words(notes);
-            var at = words.IndexOf(Method, StringComparison.Ordinal);
+            var method = VisibleNoteValues.Visible(Method);
+            var at = words.IndexOf(method, StringComparison.Ordinal);
             if (at < 0)
             {
                 return base.Runs(notes);
@@ -182,9 +191,9 @@ public abstract record DocumentNote
             var runs = new List<NoteRun>(3)
             {
                 new NoteRun { Text = DocumentBuilder.CommentMarker + words[..at], Kind = SpanKind.Comment },
-                new NoteRun { Text = Method, Kind = SpanKind.Method, Reference = Target },
+                new NoteRun { Text = method, Kind = SpanKind.Method, Reference = Target },
             };
-            var rest = words[(at + Method.Length)..];
+            var rest = words[(at + method.Length)..];
             if (rest.Length > 0)
             {
                 runs.Add(new NoteRun { Text = rest, Kind = SpanKind.Comment });
@@ -199,7 +208,7 @@ public abstract record DocumentNote
     {
         internal override string Lead => " ";
 
-        public override string Words(IDocumentNotes notes)
+        private protected override string Say(IDocumentNotes notes)
         {
             return notes.ForwardedTo(Destination);
         }
