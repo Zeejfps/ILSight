@@ -514,13 +514,51 @@ public sealed class ExportTests : IDisposable
         Assert.StartsWith("            System.IO.DirectoryNotFoundException", lines[headline + 3]);
         Assert.DoesNotContain(lines.Take(headline + 2), l => l.Contains("Exception") || l.Contains("   at "));
 
-        // A problem of a finished export: its headline says it by its message, the stack trace under the label.
+        // A problem of a finished export: its headline says it by its message; the stack trace is in the labelled
+        // section after the problems, under the headline again.
         var problem = new ExportProblem.FileNotWritten { Path = "Greeter.cs", Error = new ExportError { Message = failed.Error.Message, Details = failed.Error.ToString() } };
         var finished = report with { End = new ExportEnd.Finished { Written = [], Problems = [problem] } };
         var problemLines = ExportReportText.Write(Strings.En, [finished]).Lines.Select(static l => l.Text).ToList();
         var problemLine = problemLines.IndexOf($"    Greeter.cs: {failed.Error.Message}");
-        Assert.Equal("        Technical details", problemLines[problemLine + 1]);
-        Assert.StartsWith("            System.IO.DirectoryNotFoundException", problemLines[problemLine + 2]);
+        Assert.Equal("", problemLines[problemLine + 1]);
+        Assert.Equal("Technical details", problemLines[problemLine + 2]);
+        Assert.Equal($"    Greeter.cs: {failed.Error.Message}", problemLines[problemLine + 3]);
+        Assert.StartsWith("        System.IO.DirectoryNotFoundException", problemLines[problemLine + 4]);
+    }
+
+    [Fact]
+    public void An_export_report_holds_no_stack_trace_between_its_problems_and_each_trace_follows_its_problem_in_the_copy()
+    {
+        var problems = new[] { "A.cs", "B.cs", "C.cs" }
+            .Select(static file => (ExportProblem)new ExportProblem.FileNotWritten { Path = file, Error = ExportErrorOf(new IOException($"{file} is locked.")) })
+            .ToList();
+        var job = new ExportJob { Kind = ExportKind.Project, Name = "Shop", Folder = "C:/out" };
+        var report = new ExportReport { Run = new ExportRun(1), Job = job, FolderExists = true, Elapsed = TimeSpan.FromSeconds(1), End = new ExportEnd.Finished { Written = [], Problems = problems } };
+
+        var copy = string.Join(Environment.NewLine, ExportReportText.Write(Strings.En, [report]).Lines.Select(static l => l.Text));
+
+        var first = copy.IndexOf("    A.cs: A.cs is locked.", StringComparison.Ordinal);
+        var last = copy.IndexOf("    C.cs: C.cs is locked.", StringComparison.Ordinal);
+        Assert.InRange(first, 0, last);
+        Assert.DoesNotContain("   at ", copy[first..last]);
+        foreach (var file in new[] { "A.cs", "B.cs", "C.cs" })
+        {
+            var headline = $"    {file}: {file} is locked.{Environment.NewLine}        System.IO.IOException: {file} is locked.";
+            Assert.Contains(headline, copy[last..]);
+        }
+    }
+
+    // An export error as an export makes one of what it caught, with a stack trace.
+    private static ExportError ExportErrorOf(Exception thrown)
+    {
+        try
+        {
+            throw thrown;
+        }
+        catch (Exception e)
+        {
+            return new ExportError { Message = e.Message, Details = e.ToString() };
+        }
     }
 
     [Fact]

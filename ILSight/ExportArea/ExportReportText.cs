@@ -148,6 +148,8 @@ internal static class ExportReportText
         text.AppendLine();
     }
 
+    // Every problem's headline, one a line, then the technical details of those with an exception in a labelled section
+    // after them, each under its problem's headline again: no stack trace stands between one problem and the next.
     private static void WriteProblems(StringBuilder text, Strings t, ExportKind kind, IReadOnlyList<ExportProblem> problems)
     {
         if (problems.Count == 0)
@@ -158,20 +160,29 @@ internal static class ExportReportText
         text.AppendLine(t.ExportProblemsHeading);
         foreach (var problem in problems)
         {
-            WriteProblem(text, t, kind, problem);
-        }
-    }
-
-    private static void WriteProblem(StringBuilder text, Strings t, ExportKind kind, ExportProblem problem)
-    {
-        text.Append(Indent).AppendLine(Headline(t, kind, problem));
-        var details = TechnicalDetailsOf(problem);
-        if (details is not null)
-        {
-            WriteTechnicalDetails(text, t, details);
+            text.Append(Indent).AppendLine(Headline(t, kind, problem));
         }
 
         text.AppendLine();
+        var labelled = false;
+        foreach (var problem in problems)
+        {
+            var details = TechnicalDetailsOf(problem);
+            if (details is null)
+            {
+                continue;
+            }
+
+            if (!labelled)
+            {
+                text.AppendLine(t.ErrorsTechnicalDetails);
+                labelled = true;
+            }
+
+            text.Append(Indent).AppendLine(Headline(t, kind, problem));
+            WriteTrace(text, details, Indent + Indent);
+            text.AppendLine();
+        }
     }
 
     /// <summary><paramref name="problem"/> of an export of <paramref name="kind"/> in a line.</summary>
@@ -185,8 +196,9 @@ internal static class ExportReportText
             fileNotWritten: static file => $"{file.Path}: {file.Error.Message}");
     }
 
-    /// <summary>The exception behind <paramref name="problem"/> as the runtime wrote it (its type and stack trace),
-    /// under its headline's technical details label, when there is one; the headline says it by its message.</summary>
+    /// <summary>The exception behind <paramref name="problem"/> as the runtime wrote it (its type and stack trace), when
+    /// there is one, under its headline in the technical details after every problem; the headline says it by its
+    /// message.</summary>
     public static string? TechnicalDetailsOf(ExportProblem problem)
     {
         return problem.Match<string?>(
@@ -235,10 +247,14 @@ internal static class ExportReportText
     private static void WriteTechnicalDetails(StringBuilder text, Strings t, string details)
     {
         text.Append(Indent).Append(Indent).AppendLine(t.ErrorsTechnicalDetails);
-        var lines = details.Split('\n');
-        foreach (var line in lines)
+        WriteTrace(text, details, Indent + Indent + Indent);
+    }
+
+    private static void WriteTrace(StringBuilder text, string details, string indent)
+    {
+        foreach (var line in details.Split('\n'))
         {
-            text.Append(Indent).Append(Indent).Append(Indent).AppendLine(line.TrimEnd('\r'));
+            text.Append(indent).AppendLine(line.TrimEnd('\r'));
         }
     }
 }
