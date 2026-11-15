@@ -89,10 +89,10 @@ internal static class AppFrames
     /// be opened, closing it; and while it is open, starts the search what was typed asks for, so that the dialog
     /// draws it searching, or asks for a frame once what is being typed will have settled; and starts fetching the
     /// icons and details the last frame showed for the first time.</summary>
-    internal static void FollowNuGetPicker(Ui<UiState> ui, AppState appState)
+    internal static void FollowNuGetPicker(Ui ui, IAppCommandWriter commands, NuGetPicker picker, SearchNuGetFeedHandler searchNuGetFeedHandler,
+        FetchNuGetIconHandler fetchNuGetIconHandler, ReadNuGetDetailsHandler readNuGetDetailsHandler, AppState appState)
     {
-        var picker = ui.State.NuGetPicker;
-        NuGetPickerView.OpenDownloaded(ui, ui.State.AppCommands, appState.ListSession.Navigation, picker);
+        NuGetPickerView.OpenDownloaded(ui, commands, appState.ListSession.Navigation, picker);
         if (!picker.IsOpen)
         {
             return;
@@ -102,10 +102,10 @@ internal static class AppFrames
         var search = picker.Update(now);
         if (search is not null)
         {
-            StartSearching(appState, ui.State.SearchNuGetFeedHandler, picker.Browser, search);
+            StartSearching(appState, searchNuGetFeedHandler, picker.Browser, search);
         }
 
-        StartFetching(appState.Workflows, ui.State.FetchNuGetIconHandler, ui.State.ReadNuGetDetailsHandler, picker.Browser);
+        StartFetching(appState.Workflows, fetchNuGetIconHandler, readNuGetDetailsHandler, picker.Browser);
 
         if (picker.Browser.IsSettling)
         {
@@ -279,19 +279,19 @@ internal static class AppFrames
     {
         KeepScreenChanges(ui.State, appState);
         StartAskedWork(ui.State, appState);
-        RunAppCommandsAndRedraw(ui, appState);
+        RunAppCommandsAndRedraw(ui, ui.State.AppCommands, appState);
         RequestUpdateIfViewCommandsPending(ui, appState);
         SaveChangedSettings(ui, appState);
-        DrawAtChosenScale(ui);
-        DrawCodeInChosenFont(ui, codeFonts);
-        FollowIconTheme(ui);
-        OpenAskedWebPages(ui);
-        OpenAskedFiles(ui);
-        OpenAskedFolders(ui);
+        DrawAtChosenScale(ui, ui.State.Display);
+        DrawCodeInChosenFont(ui, ui.State.Display, ui.State.Shown, codeFonts);
+        FollowIconTheme(ui, ui.State.Appearance, ui.State.Shown);
+        OpenAskedWebPages(ui, ui.State.Shell);
+        OpenAskedFiles(ui, ui.State.Shell);
+        OpenAskedFolders(ui, ui.State.Shell);
         BringToFrontIfAsked(ui, appState, windowFront);
     }
 
-    private static void BringToFrontIfAsked(Ui<UiState> ui, AppState appState, IWindowFront windowFront)
+    private static void BringToFrontIfAsked(Ui ui, AppState appState, IWindowFront windowFront)
     {
         if (!appState.FrontAsked)
         {
@@ -302,47 +302,44 @@ internal static class AppFrames
         windowFront.BringToFront(ui);
     }
 
-    private static void OpenAskedWebPages(Ui<UiState> ui)
+    private static void OpenAskedWebPages(Ui ui, ShellRequests shell)
     {
-        var shell = ui.State.Shell;
         while (shell.TryTakeWebPage(out var url))
         {
             ui.OpenUrl(url);
         }
     }
 
-    private static void OpenAskedFolders(Ui<UiState> ui)
+    private static void OpenAskedFolders(Ui ui, ShellRequests shell)
     {
-        var shell = ui.State.Shell;
         while (shell.TryTakeFolder(out var path))
         {
             ui.OpenFolder(path);
         }
     }
 
-    private static void OpenAskedFiles(Ui<UiState> ui)
+    private static void OpenAskedFiles(Ui ui, ShellRequests shell)
     {
-        var shell = ui.State.Shell;
         while (shell.TryTakeFile(out var path))
         {
             ui.OpenFile(path);
         }
     }
 
-    private static void FollowIconTheme(Ui<UiState> ui)
+    private static void FollowIconTheme(Ui ui, Appearance appearance, ShownChanges shown)
     {
-        var before = ui.State.Shown.IconFonts;
-        if (!ui.State.Shown.TryTakeIcons(ui.State.Appearance.Icons, ui.State.Appearance.IconFonts))
+        var before = shown.IconFonts;
+        if (!shown.TryTakeIcons(appearance.Icons, appearance.IconFonts))
         {
             return;
         }
 
-        foreach (var family in ShownChanges.ListDroppedFamilies(before, ui.State.Appearance.IconFonts))
+        foreach (var family in ShownChanges.ListDroppedFamilies(before, appearance.IconFonts))
         {
             ui.UnregisterFont(family);
         }
 
-        foreach (var font in ui.State.Appearance.IconFonts)
+        foreach (var font in appearance.IconFonts)
         {
             ui.RegisterFont(font);
         }
@@ -350,14 +347,14 @@ internal static class AppFrames
         ui.ReleaseUndrawnIconImages();
     }
 
-    private static void DrawAtChosenScale(Ui<UiState> ui)
+    private static void DrawAtChosenScale(Ui ui, ScreenDisplay display)
     {
-        ui.Scale = ui.State.Display.Options.UiScale;
+        ui.Scale = display.Options.UiScale;
     }
 
-    private static void DrawCodeInChosenFont(Ui<UiState> ui, CodeFontFaces codeFonts)
+    private static void DrawCodeInChosenFont(Ui ui, ScreenDisplay display, ShownChanges shown, CodeFontFaces codeFonts)
     {
-        var face = TakeCodeFontFace(ui.State, codeFonts);
+        var face = TakeCodeFontFace(display, shown, codeFonts);
         if (face == null)
         {
             return;
@@ -368,10 +365,10 @@ internal static class AppFrames
 
     /// <summary>The face to draw code with when the chosen font changed since code was last drawn, else
     /// null. A chosen font whose file cannot be read is given up for the bundled one.</summary>
-    internal static FontFace? TakeCodeFontFace(UiState uiState, CodeFontFaces codeFonts)
+    internal static FontFace? TakeCodeFontFace(ScreenDisplay display, ShownChanges shown, CodeFontFaces codeFonts)
     {
-        var chosen = uiState.Display.Options.Font;
-        if (!uiState.Shown.TryTakeCodeFont(chosen))
+        var chosen = display.Options.Font;
+        if (!shown.TryTakeCodeFont(chosen))
         {
             return null;
         }
@@ -382,8 +379,8 @@ internal static class AppFrames
             return face;
         }
 
-        uiState.Display.SetCodeFont(null);
-        uiState.Shown.TryTakeCodeFont(null);
+        display.SetCodeFont(null);
+        shown.TryTakeCodeFont(null);
         return codeFonts.Bundled;
     }
 
@@ -426,18 +423,18 @@ internal static class AppFrames
         }
     }
 
-    private static void RunAppCommandsAndRedraw(Ui<UiState> ui, AppState appState)
+    private static void RunAppCommandsAndRedraw(Ui ui, AppCommandQueue commands, AppState appState)
     {
-        if (ui.State.AppCommands.IsEmpty)
+        if (commands.IsEmpty)
         {
             return;
         }
 
-        QueuedCommands.RunAppCommands(ui.State.AppCommands, appState);
+        QueuedCommands.RunAppCommands(commands, appState);
         ui.RequestUpdate();
     }
 
-    private static void RequestUpdateIfViewCommandsPending(Ui<UiState> ui, AppState appState)
+    private static void RequestUpdateIfViewCommandsPending(Ui ui, AppState appState)
     {
         if (appState.ViewCommands.Count == 0)
         {
@@ -455,7 +452,7 @@ internal static class AppFrames
         return appState.OpenAssembliesAsReloadHandler.HandleAsync(appState.ListSession, reopening.Paths, reopening.Reload, ct);
     }
 
-    private static void SaveChangedSettings(Ui<UiState> ui, AppState appState)
+    private static void SaveChangedSettings(Ui ui, AppState appState)
     {
         var saving = appState.SettingsSaving.SaveIfChanged(appState, TimeSpan.FromSeconds(ui.RealTime));
         var retryIn = saving.Match<TimeSpan?>(

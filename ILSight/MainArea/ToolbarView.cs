@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
+using ILSight.DocumentViewArea;
 using ILSight.Core;
 using ILSight.CommandArea;
 using ILSight.AssemblyListArea;
@@ -18,10 +19,10 @@ internal static class ToolbarView
     /// <summary>The toolbar, over the parts its controls read and change: the saved lists and the open list's session
     /// (the list picker, history), how the screen is laid out (switching lists keeps it), the exports finished (history
     /// shows their reports again) and the decompiler's choice (the language, its version, the history's loads).</summary>
-    public static void Render(Ui<UiState> ui, SavedAssemblyLists lists, OpenListSession session, ViewSettings view,
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, MainLayout mainLayout, DocumentViews documents, Panels panels, AssemblyListsDialog listsDialog, SavedAssemblyLists lists, OpenListSession session, ViewSettings view,
         IReadOnlyList<ExportArea.ExportReport> finishedExports, DecompilerChoice decompiler)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var theme = ui.Theme;
         using (ui.Row(new Box
         {
@@ -34,31 +35,31 @@ internal static class ToolbarView
         {
             using (Group(ui))
             {
-                ListPicker(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.ListsDialog, lists, session, view);
-                if (ui.IconButton("manage-lists", ui.State.Appearance.Icons.ToolbarManageLists, t.ListsManage, variant: ButtonVariant.Neutral))
+                ListPicker(ui, appearance, commands, listsDialog, lists, session, view);
+                if (ui.IconButton("manage-lists", appearance.Icons.ToolbarManageLists, t.ListsManage, variant: ButtonVariant.Neutral))
                 {
-                    Commands.Later(ui.State.AppCommands, ui.State.ListsDialog, static (a, dialog) => AssemblyListsDialogView.Open(dialog, a));
+                    Commands.Later(commands, listsDialog, static (a, dialog) => AssemblyListsDialogView.Open(dialog, a));
                 }
             }
 
             using (Group(ui))
             {
                 var openTip = ui.Memo("open-tip", t, static s => s.ToolbarOpen(Shortcuts.Open));
-                if (ui.IconButton("open", ui.State.Appearance.Icons.ToolbarOpen, openTip, variant: ButtonVariant.Neutral))
+                if (ui.IconButton("open", appearance.Icons.ToolbarOpen, openTip, variant: ButtonVariant.Neutral))
                 {
-                    MainMenuView.OpenFile(ui, ui.State.Appearance, ui.State.AppCommands, session.Navigation);
+                    MainMenuView.OpenFile(ui, appearance, commands, session.Navigation);
                 }
 
                 var searchTip = ui.Memo("search-tip", t, static s => s.SearchFieldTooltip(Shortcuts.Search));
-                if (ui.IconButton("search", ui.State.Appearance.Icons.ToolbarSearch, searchTip, variant: ButtonVariant.Neutral))
+                if (ui.IconButton("search", appearance.Icons.ToolbarSearch, searchTip, variant: ButtonVariant.Neutral))
                 {
-                    ui.State.Panels.OpenSearch();
+                    panels.OpenSearch();
                 }
             }
 
             using (Group(ui))
             {
-                HistoryButtons(ui, session, finishedExports, decompiler.Setup);
+                HistoryButtons(ui, appearance, commands, session, finishedExports, decompiler.Setup);
             }
 
             using (Group(ui))
@@ -67,15 +68,15 @@ internal static class ToolbarView
                 var languages = Languages(t);
                 if (ui.SegmentedControl("language", ref language, languages))
                 {
-                    DocumentPanels.ShowInLanguage(ui.State.MainLayout, ui.State.Documents, ui.State.AppCommands, decompiler, language);
+                    DocumentPanels.ShowInLanguage(mainLayout, documents, commands, decompiler, language);
                 }
 
                 if (DecompilationLanguages.ShowsCSharp(language))
                 {
-                    LanguageVersion(ui, ui.State.Appearance, ui.State.AppCommands, decompiler.Setup.Options);
-                    if (ui.IconButton("decompiler-options", ui.State.Appearance.Icons.ToolbarDecompilerOptions, t.PanelDecompilerOptions, variant: ButtonVariant.Neutral))
+                    LanguageVersion(ui, appearance, commands, decompiler.Setup.Options);
+                    if (ui.IconButton("decompiler-options", appearance.Icons.ToolbarDecompilerOptions, t.PanelDecompilerOptions, variant: ButtonVariant.Neutral))
                     {
-                        ui.State.Panels.Open(DockView.DecompilerOptions);
+                        panels.Open(DockView.DecompilerOptions);
                     }
                 }
             }
@@ -84,42 +85,42 @@ internal static class ToolbarView
             // language: display options apply to IL too.
             ui.Leaf(new Box { Width = Sizing.Grow(), Height = 0f });
             var displayOptionsTip = ui.Memo("display-options-tip", t, static s => s.ToolbarDisplayOptions(Shortcuts.Settings));
-            if (ui.IconButton("display-options", ui.State.Appearance.Icons.ToolbarDisplayOptions, displayOptionsTip, variant: ButtonVariant.Neutral))
+            if (ui.IconButton("display-options", appearance.Icons.ToolbarDisplayOptions, displayOptionsTip, variant: ButtonVariant.Neutral))
             {
-                ui.State.Panels.Open(DockView.DisplayOptions);
+                panels.Open(DockView.DisplayOptions);
             }
         }
     }
 
-    private static void HistoryButtons(Ui<UiState> ui, OpenListSession session, IReadOnlyList<ExportArea.ExportReport> finishedExports, DecompilerSetup setup)
+    private static void HistoryButtons(Ui ui, Appearance appearance, IAppCommandWriter commands, OpenListSession session, IReadOnlyList<ExportArea.ExportReport> finishedExports, DecompilerSetup setup)
     {
-        var t = ui.State.Appearance.Strings;
+        var t = appearance.Strings;
         var navigation = session.Navigation;
-        using (var back = ui.SplitIconButton("back", ui.State.Appearance.Icons.ToolbarBack,
+        using (var back = ui.SplitIconButton("back", appearance.Icons.ToolbarBack,
                    ui.Memo("back-tip", t, static s => s.ToolbarBack(Shortcuts.Back)), t.ToolbarBackHistory, navigation.CanGoBack, navigation.HistoryRevision))
         {
             if (back.Clicked)
             {
-                Commands.MoveLater(ui.State.AppCommands, navigation.GoBack(session.Assemblies, finishedExports, setup));
+                Commands.MoveLater(commands, navigation.GoBack(session.Assemblies, finishedExports, setup));
             }
 
             if (back.IsOpen)
             {
-                HistoryItems(ui, navigation, session.Assemblies, finishedExports, setup, -1);
+                HistoryItems(ui, appearance, commands, navigation, session.Assemblies, finishedExports, setup, -1);
             }
         }
-        using (var forward = ui.SplitIconButton("forward", ui.State.Appearance.Icons.ToolbarForward,
+        using (var forward = ui.SplitIconButton("forward", appearance.Icons.ToolbarForward,
                    ui.Memo("forward-tip", t, static s => s.ToolbarForward(Shortcuts.Forward)), t.ToolbarForwardHistory, navigation.CanGoForward,
                    navigation.HistoryRevision))
         {
             if (forward.Clicked)
             {
-                Commands.MoveLater(ui.State.AppCommands, navigation.GoForward(session.Assemblies, finishedExports, setup));
+                Commands.MoveLater(commands, navigation.GoForward(session.Assemblies, finishedExports, setup));
             }
 
             if (forward.IsOpen)
             {
-                HistoryItems(ui, navigation, session.Assemblies, finishedExports, setup, 1);
+                HistoryItems(ui, appearance, commands, navigation, session.Assemblies, finishedExports, setup, 1);
             }
         }
     }
@@ -220,7 +221,7 @@ internal static class ToolbarView
         return ui.Row(new Box { Width = Sizing.Fit(), Gap = ui.Theme.Gap, AlignY = Align.Center });
     }
 
-    private static void HistoryItems(Ui<UiState> ui, Navigation navigation, AssemblyList assemblies, IReadOnlyList<ExportArea.ExportReport> finished, DecompilerSetup setup,
+    private static void HistoryItems(Ui ui, Appearance appearance, IAppCommandWriter commands, Navigation navigation, AssemblyList assemblies, IReadOnlyList<ExportArea.ExportReport> finished, DecompilerSetup setup,
         int direction)
     {
         var entries = navigation.HistoryEntries;
@@ -229,17 +230,17 @@ internal static class ToolbarView
             using (ui.Id(i))
             {
                 var entry = entries[i];
-                var text = TextOf(ui.State.Appearance.Strings, entry);
-                var icon = IconOf(ui.State.Appearance, entry);
+                var text = TextOf(appearance.Strings, entry);
+                var icon = IconOf(appearance, entry);
                 if (!navigation.CanShow(entry, assemblies, finished))
                 {
-                    ui.MenuItem(SayWhyNotShown(ui.State.Appearance.Strings, entry, text), enabled: false, id: "entry", icon: icon);
+                    ui.MenuItem(SayWhyNotShown(appearance.Strings, entry, text), enabled: false, id: "entry", icon: icon);
                     continue;
                 }
 
                 if (ui.MenuItem(text, id: "entry", icon: icon))
                 {
-                    Commands.MoveLater(ui.State.AppCommands, navigation.GoToEntry(i, assemblies, finished, setup));
+                    Commands.MoveLater(commands, navigation.GoToEntry(i, assemblies, finished, setup));
                     return;
                 }
             }

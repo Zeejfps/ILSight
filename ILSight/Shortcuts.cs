@@ -5,12 +5,14 @@ using ILSight.ExportArea;
 using ILSight.CommandArea;
 using ILSight.MainArea;
 using ILSight.AssemblyArea;
+using ILSight.DocumentViewArea;
+using ILSight.OmnibarArea;
 using static ZGF.Desktop.ShortcutModifiers;
 
 namespace ILSight;
 
 /// <summary>Every key that does something in the app, matched and labelled from here: the app-wide
-/// ones in <see cref="Bindings"/>, which <see cref="Handle"/> runs, and those the focused view handles
+/// ones <see cref="Handle"/> runs, and those the focused view handles
 /// itself. Command is Ctrl, but ⌘ on macOS.</summary>
 internal static class Shortcuts
 {
@@ -76,31 +78,6 @@ internal static class Shortcuts
     public static readonly Shortcut Quit = Shortcut.Command(KeyboardKey.Q);
     public static readonly Shortcut Minimize = Shortcut.Command(KeyboardKey.M);
 
-    private readonly record struct Binding
-    {
-        public required Shortcut Keys { get; init; }
-
-        public required Action<Ui<UiState>, AppState> Run { get; init; }
-
-        public bool WhileTyping { get; init; }
-    }
-
-    private static readonly Binding[] Bindings =
-    [
-        new Binding { Keys = Search, Run = static (ui, _) => ui.State.Panels.OpenSearch(), WhileTyping = true },
-        new Binding { Keys = OmnibarSearch, Run = static (ui, _) => SearchInOmnibarUnlessFolding(ui), WhileTyping = true },
-        new Binding { Keys = Back, Run = static (ui, appState) => GoBack(ui.State.AppCommands, appState), WhileTyping = true },
-        new Binding { Keys = Forward, Run = static (ui, appState) => GoForward(ui.State.AppCommands, appState), WhileTyping = true },
-        new Binding { Keys = Open, Run = static (ui, appState) => MainMenuView.OpenFile(ui, ui.State.Appearance, ui.State.AppCommands, appState.ListSession.Navigation) },
-        new Binding { Keys = Settings, Run = static (ui, _) => ui.State.Panels.Open(DockView.DisplayOptions), WhileTyping = true },
-        new Binding { Keys = SaveCode, Run = static (ui, appState) => SaveDialogs.PickActiveCodeFile(ui, ui.State.Appearance, ui.State.AppCommands, appState.ListSession.Navigation, appState.Decompiler.Setup.Language) },
-        new Binding { Keys = Export, Run = static (ui, appState) => ui.State.ExportSetup.Open(appState.ListSession.Assemblies.Assemblies, Exports.FindActiveAssembly(appState.ListSession.Navigation)) },
-        new Binding { Keys = ReloadAll, Run = static (ui, _) => Commands.ReloadLater(ui.State.AppCommands, ui.State.Tree.ListExpandedPaths()) },
-        new Binding { Keys = CloseTab, Run = static (ui, _) => DocumentPanels.CloseActiveTab(ui.State.MainLayout, ui.State.Documents, ui.State.TabFocus) },
-        new Binding { Keys = NextTab, Run = static (ui, appState) => DocumentPanels.CycleTab(ui.State.MainLayout, ui.State.Documents, ui.State.TabFocus, ui.State.AppCommands, appState.ListSession.Navigation, appState.Decompiler.Setup, 1) },
-        new Binding { Keys = PreviousTab, Run = static (ui, appState) => DocumentPanels.CycleTab(ui.State.MainLayout, ui.State.Documents, ui.State.TabFocus, ui.State.AppCommands, appState.ListSession.Navigation, appState.Decompiler.Setup, -1) },
-    ];
-
     private static void GoBack(IAppCommandWriter commands, AppState appState)
     {
         Commands.MoveLater(commands, appState.ListSession.Navigation.GoBack(appState.ListSession.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
@@ -111,36 +88,86 @@ internal static class Shortcuts
         Commands.MoveLater(commands, appState.ListSession.Navigation.GoForward(appState.ListSession.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
     }
 
-    /// <summary>Runs the app-wide shortcuts pressed this frame, and goes back and forward with the
-    /// pointer's side buttons.</summary>
-    public static void Handle(Ui<UiState> ui, AppState appState)
+    /// <summary>Runs the app-wide shortcuts pressed this frame, in this order, those that act on a view's selection
+    /// or a document not while a text box takes the keys; and goes back and forward with the pointer's side buttons.</summary>
+    public static void Handle(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, ScreenDisplay display, Omnibar omnibar,
+        BrowseTree tree, MainLayout layout, DocumentViews documents, TabFocus tabFocus, ExportSetup exportSetup, AppState appState)
     {
         var input = ui.Input;
         if (input.WasPressed(PointerButton.Back))
         {
-            GoBack(ui.State.AppCommands, appState);
+            GoBack(commands, appState);
         }
 
         if (input.WasPressed(PointerButton.Forward))
         {
-            GoForward(ui.State.AppCommands, appState);
+            GoForward(commands, appState);
         }
 
-        foreach (var binding in Bindings)
+        var navigation = appState.ListSession.Navigation;
+        var setup = appState.Decompiler.Setup;
+        if (ui.IsPressed(Search))
         {
-            if (ui.WantsTextInput && !binding.WhileTyping)
-            {
-                continue;
-            }
+            panels.OpenSearch();
+        }
 
-            if (ui.IsPressed(binding.Keys))
-            {
-                binding.Run(ui, appState);
-            }
+        if (ui.IsPressed(OmnibarSearch))
+        {
+            SearchInOmnibarUnlessFolding(ui, panels, display, omnibar);
+        }
+
+        if (ui.IsPressed(Back))
+        {
+            GoBack(commands, appState);
+        }
+
+        if (ui.IsPressed(Forward))
+        {
+            GoForward(commands, appState);
+        }
+
+        if (!ui.WantsTextInput && ui.IsPressed(Open))
+        {
+            MainMenuView.OpenFile(ui, appearance, commands, navigation);
+        }
+
+        if (ui.IsPressed(Settings))
+        {
+            panels.Open(DockView.DisplayOptions);
+        }
+
+        if (!ui.WantsTextInput && ui.IsPressed(SaveCode))
+        {
+            SaveDialogs.PickActiveCodeFile(ui, appearance, commands, navigation, setup.Language);
+        }
+
+        if (!ui.WantsTextInput && ui.IsPressed(Export))
+        {
+            exportSetup.Open(appState.ListSession.Assemblies.Assemblies, Exports.FindActiveAssembly(navigation));
+        }
+
+        if (!ui.WantsTextInput && ui.IsPressed(ReloadAll))
+        {
+            Commands.ReloadLater(commands, tree.ListExpandedPaths());
+        }
+
+        if (!ui.WantsTextInput && ui.IsPressed(CloseTab))
+        {
+            DocumentPanels.CloseActiveTab(layout, documents, tabFocus);
+        }
+
+        if (!ui.WantsTextInput && ui.IsPressed(NextTab))
+        {
+            DocumentPanels.CycleTab(layout, documents, tabFocus, commands, navigation, setup, 1);
+        }
+
+        if (!ui.WantsTextInput && ui.IsPressed(PreviousTab))
+        {
+            DocumentPanels.CycleTab(layout, documents, tabFocus, commands, navigation, setup, -1);
         }
     }
 
-    private static void SearchInOmnibarUnlessFolding(Ui<UiState> ui)
+    private static void SearchInOmnibarUnlessFolding(Ui ui, Panels panels, ScreenDisplay display, Omnibar omnibar)
     {
         // The key also ends Ctrl+M, Ctrl+L, which folds the code instead.
         if (ui.IsPressed(ToggleAllFolds))
@@ -148,7 +175,7 @@ internal static class Shortcuts
             return;
         }
 
-        ScreenLayout.SearchInOmnibar(ui.State.Panels, ui.State.Display, ui.State.Omnibar);
+        ScreenLayout.SearchInOmnibar(panels, display, omnibar);
     }
 
     /// <summary>Whether any of <paramref name="shortcuts"/> was pressed this frame.</summary>

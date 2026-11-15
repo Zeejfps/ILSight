@@ -24,13 +24,14 @@ public static class MainView
     public static void Render(Ui<UiState> ui, AppState appState)
     {
         using var screen = ui.Screen();
-        Shortcuts.Handle(ui, appState);
+        Shortcuts.Handle(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.Panels, ui.State.Display, ui.State.Omnibar, ui.State.Tree, ui.State.MainLayout,
+            ui.State.Documents, ui.State.TabFocus, ui.State.ExportSetup, appState);
         OpenDropped(ui, ui.State.AppCommands);
         using (ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f }))
         {
-            MainMenuView.Render(ui, appState);
+            MainMenuView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.MainLayout, ui.State.Documents, ui.State.Panels, ui.State.LayoutReset, ui.State.About, ui.State.Tree, ui.State.Display, ui.State.ErrorDialog, ui.State.Picker, ui.State.NuGetPicker, ui.State.ReadNuGetSetupHandler, ui.State.ProcessPicker, ui.State.ExportSetup, appState);
             ui.Separator();
-            ToolbarView.Render(ui, appState.Lists, appState.ListSession, appState.KeptScreen.View, appState.FinishedExports, appState.Decompiler);
+            ToolbarView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.MainLayout, ui.State.Documents, ui.State.Panels, ui.State.ListsDialog, appState.Lists, appState.ListSession, appState.KeptScreen.View, appState.FinishedExports, appState.Decompiler);
             ui.Separator();
             Panels(ui, appState);
             ui.Separator();
@@ -108,7 +109,8 @@ public static class MainView
         var t = ui.State.Appearance.Strings;
         DockTabMenu? tabMenu;
         string? doubleClicked;
-        using (var dock = ui.DockSpace("dock", ui.State.MainLayout.Dock, (ui.State, appState.ListSession.Navigation, t), static (s, panel) => Tab(s.State, s.Navigation, s.t, panel),
+        using (var dock = ui.DockSpace("dock", ui.State.MainLayout.Dock, (ui.State.Appearance, ui.State.Documents, ui.State.Tree, appState.ListSession.Navigation),
+                   static (s, panel) => Tab(s.Appearance, s.Documents, s.Tree, s.Navigation, panel),
                    tabListTooltip: t.DockAllTabs))
         {
             while (dock.Next(out var panel))
@@ -120,22 +122,23 @@ public static class MainView
             doubleClicked = dock.TabDoubleClicked;
         }
         TabMenuView.OpenOnRightClick(ui, ui.State.Documents, ui.State.TabMenu, tabMenu);
-        TabMenuView.Render(ui, ui.State.TabMenu, appState.ListSession.Navigation);
+        TabMenuView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.MainLayout, ui.State.Documents, ui.State.TabMenu, appState.ListSession.Navigation);
         TabMenuView.KeepOpenOnDoubleClick(ui, ui.State.Documents, ui.State.AppCommands, doubleClicked);
     }
 
-    private static DockTab Tab(UiState screen, Navigation navigation, Strings t, string panel)
+    private static DockTab Tab(Appearance appearance, DocumentViews documents, BrowseTree tree, Navigation navigation, string panel)
     {
+        var t = appearance.Strings;
         var view = DockPanels.ViewOf(panel);
         if (view is not null)
         {
-            return DockPanels.Tab(t, screen.Appearance.Icons, view.Value);
+            return DockPanels.Tab(t, appearance.Icons, view.Value);
         }
 
-        var tab = screen.Documents.FindTab(panel);
+        var tab = documents.FindTab(panel);
         if (tab is not null)
         {
-            return DocumentsView.Tab(screen.Appearance, screen.Tree, navigation, tab);
+            return DocumentsView.Tab(appearance, tree, navigation, tab);
         }
 
         return new DockTab(t.DocumentNewTab);

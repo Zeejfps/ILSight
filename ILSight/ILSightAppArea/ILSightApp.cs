@@ -63,17 +63,17 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     internal void RunFrame(Ui<UiState> ui, Action<Ui<UiState>, AppState> draw)
     {
         AppFrames.StartFrame(ui.State, _appState);
-        AppFrames.FollowNuGetPicker(ui, _appState);
+        AppFrames.FollowNuGetPicker(ui, ui.State.AppCommands, ui.State.NuGetPicker, ui.State.SearchNuGetFeedHandler, ui.State.FetchNuGetIconHandler, ui.State.ReadNuGetDetailsHandler, _appState);
         Draw(ui, draw);
         AppFrames.FinishFrame(ui, _appState, _codeFonts, _windowFront);
-        QuitIfAsked(ui);
+        QuitIfAsked(ui, ui.State.Shell);
     }
 
     // The app asks to quit to restart into an update; as with a request to close the window, a refusal leaves it open,
     // and the next frame shows why.
-    private void QuitIfAsked(Ui<UiState> ui)
+    private void QuitIfAsked(Ui ui, ShellRequests shell)
     {
-        if (!ui.State.Shell.TryTakeQuit())
+        if (!shell.TryTakeQuit())
         {
             return;
         }
@@ -154,7 +154,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     // Before the first frame, so code never shows in the bundled font first.
     private void RegisterChosenCodeFont(ImmediateGuiAppHost<UiState> host)
     {
-        var face = AppFrames.TakeCodeFontFace(UiState, _codeFonts);
+        var face = AppFrames.TakeCodeFontFace(UiState.Display, UiState.Shown, _codeFonts);
         if (face == null)
         {
             return;

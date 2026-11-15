@@ -46,7 +46,7 @@ internal static class TabMenuView
         Commands.Later(commands, tab, static (a, kept) => a.ListSession.Navigation.KeepTabOpen(kept));
     }
 
-    public static void Render(Ui<UiState> ui, TabMenu tabMenu, Navigation navigation)
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, MainLayout mainLayout, DocumentViews documents, TabMenu tabMenu, Navigation navigation)
     {
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
@@ -60,44 +60,44 @@ internal static class TabMenuView
             return;
         }
 
-        if (!DocumentPanels.HasView(ui.State.Documents, tab))
+        if (!DocumentPanels.HasView(documents, tab))
         {
             return;
         }
 
-        TabMenu(ui, navigation, tab);
+        TabMenu(ui, appearance, commands, mainLayout, documents, navigation, tab);
     }
 
-    private static void TabMenu(Ui<UiState> ui, Navigation navigation, DocumentTab tab)
+    private static void TabMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, MainLayout mainLayout, DocumentViews documents, Navigation navigation, DocumentTab tab)
     {
-        var t = ui.State.Appearance.Strings;
-        var group = DocumentPanels.ListTabsInGroup(ui.State.MainLayout, ui.State.Documents, tab);
+        var t = appearance.Strings;
+        var group = DocumentPanels.ListTabsInGroup(mainLayout, documents, tab);
         var index = group.IndexOf(tab);
-        KeepOpenItem(ui, ui.State.Appearance, ui.State.AppCommands, navigation, tab);
+        KeepOpenItem(ui, appearance, commands, navigation, tab);
         if (ui.MenuItem(t.TabClose, Shortcuts.CloseTab, id: "close"))
         {
-            DocumentPanels.CloseTab(ui.State.MainLayout, ui.State.Documents, tab);
+            DocumentPanels.CloseTab(mainLayout, documents, tab);
         }
 
         if (ui.MenuItem(t.TabCloseOthers, enabled: group.Count > 1, id: "close-others"))
         {
-            DocumentPanels.CloseOtherTabs(ui.State.MainLayout, ui.State.Documents, tab);
+            DocumentPanels.CloseOtherTabs(mainLayout, documents, tab);
         }
 
         if (ui.MenuItem(t.TabCloseAll, id: "close-all"))
         {
-            DocumentPanels.CloseTabsInGroup(ui.State.MainLayout, ui.State.Documents, tab);
+            DocumentPanels.CloseTabsInGroup(mainLayout, documents, tab);
         }
 
         ui.MenuSeparator();
         if (ui.MenuItem(t.TabCloseLeft, enabled: index > 0, id: "close-left"))
         {
-            DocumentPanels.CloseTabsLeftOf(ui.State.MainLayout, ui.State.Documents, tab);
+            DocumentPanels.CloseTabsLeftOf(mainLayout, documents, tab);
         }
 
         if (ui.MenuItem(t.TabCloseRight, enabled: HasTabsRightOf(group, index), id: "close-right"))
         {
-            DocumentPanels.CloseTabsRightOf(ui.State.MainLayout, ui.State.Documents, tab);
+            DocumentPanels.CloseTabsRightOf(mainLayout, documents, tab);
         }
     }
 
