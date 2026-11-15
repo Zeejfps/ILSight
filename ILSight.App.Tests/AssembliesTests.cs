@@ -59,7 +59,7 @@ public sealed class AssembliesTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var appState = d.AppState;
         // As the edge starts it, the opens' canceller linked into its token.
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(appState.ListSession.Opens.Token);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(appState.ListSession.Assemblies.GenerationEnding);
         var ports = new FakeAssemblyOpeningPorts { Opened = await BrowseSessions.EnsureRootAsync(appState.Session, FixturesOf(d)), WhileWorking = () => Commands.CloseAllAssemblies(appState) };
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => Assert.Null(await d.RunAsync(() => new AssemblyOpening(ports).OpenAssembliesAsync(appState, [PathTo("Cancelled.dll")], linked.Token))));

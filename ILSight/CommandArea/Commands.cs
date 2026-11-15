@@ -371,7 +371,7 @@ public static class Commands
     private static void StartOpening(AppState appState, FileOpening opening)
     {
         StartShowingSettled(appState, nameof(AssemblyOpening.OpenAssembliesAsync), ct => appState.AssemblyOpening.OpenAssembliesAsync(appState, opening, ct),
-            _ => appState.ListSession.Navigation.EndOpening(opening.Intent), appState.ListSession.Opens.Token);
+            _ => appState.ListSession.Navigation.EndOpening(opening.Intent), appState.ListSession.Assemblies.GenerationEnding);
     }
 
     /// <summary>Asks for the files among <paramref name="dropped"/> to be opened once the frame is drawn
@@ -380,15 +380,15 @@ public static class Commands
     public static void OpenDroppedLater(IAppCommandWriter commands, IReadOnlyList<string> dropped)
     {
         commands.Enqueue(appState => StartShowingSettled(appState, nameof(AssemblyOpening.OpenDroppedFilesAsync),
-            ct => appState.AssemblyOpening.OpenDroppedFilesAsync(appState, dropped, ct), _ => appState.ListSession.Navigation.FailOpening(), appState.ListSession.Opens.Token));
+            ct => appState.AssemblyOpening.OpenDroppedFilesAsync(appState, dropped, ct), _ => appState.ListSession.Navigation.FailOpening(), appState.ListSession.Assemblies.GenerationEnding));
     }
 
     /// <summary>Asks for the assemblies <paramref name="assembly"/> references to be opened once the frame is drawn
     /// (<see cref="AssemblyOpening.OpenDependenciesAsync"/>), cancelled with the opens under way then.</summary>
     public static void OpenDependenciesLater(IAppCommandWriter commands, LoadedModule assembly)
     {
-        StartLater(commands, nameof(AssemblyOpening.OpenDependenciesAsync), assembly, static (a, _) => a.ListSession.Opens,
-            static (a, m, _, ct) => a.AssemblyOpening.OpenDependenciesAsync(m, ct), static opens => opens.Token);
+        StartLater(commands, nameof(AssemblyOpening.OpenDependenciesAsync), assembly, static (a, _) => a.ListSession.Assemblies,
+            static (a, m, _, ct) => a.AssemblyOpening.OpenDependenciesAsync(m, ct), static list => list.GenerationEnding);
     }
 
     /// <summary>Asks for every assembly of the open list to be reloaded once the frame is drawn

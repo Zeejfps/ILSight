@@ -25,7 +25,7 @@ public sealed class LoadOptionTests
     {
         var app = AppDriver.Opened();
         app.Settle(2);
-        var opens = app.AppState.ListSession.Opens.Token;
+        var opens = app.AppState.ListSession.Assemblies.GenerationEnding;
         var generation = app.AppState.ListSession.Assemblies.Generation;
         int? cancelledIn = null;
         using var seen = opens.Register(() => cancelledIn = app.AppState.ListSession.Assemblies.Generation);
@@ -42,7 +42,7 @@ public sealed class LoadOptionTests
     {
         var app = AppDriver.Opened();
         app.Settle(2);
-        var opens = app.AppState.ListSession.Opens.Token;
+        var opens = app.AppState.ListSession.Assemblies.GenerationEnding;
 
         Preferences.SetDecompilerToggle(app.AppState, DecompilerToggle.AutoLoadAssemblyReferences, true);
         app.Run(1);

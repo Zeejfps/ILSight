@@ -212,7 +212,6 @@ internal static class AppRoot
         var errors = new ErrorLog();
         var refusals = new RefusalLine();
         var work = new BackgroundWork();
-        var opens = new OpenRequests();
         var settingsPlace = new SettingsPlace { FilePath = settings.FilePath, CanSaveOverFile = settings.CanSaveOverFile };
         var themes = Theming.CreateCatalog(BuiltInThemes.Files);
         var iconThemes = IconTheming.CreateCatalog(BuiltInIconThemes.Files);
@@ -233,7 +232,6 @@ internal static class AppRoot
                 Navigation = new Navigation { ViewCommands = viewCommands, PreviewTabs = (settings.Display ?? DisplayOptions.Default).PreviewTabs },
                 Reopened = new ReopenedTabs(),
                 Reload = new Reload(),
-                Opens = opens,
             },
             Work = work,
             Workflows = new WorkflowRunner(work, errors),

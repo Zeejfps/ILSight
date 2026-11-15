@@ -47,6 +47,45 @@ public sealed class LoadOptionsTests
     }
 
     [Fact]
+    public void Each_end_of_the_lists_generation_cancels_its_work_before_the_generation_changes()
+    {
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var unchangedWork = list.GenerationEnding;
+        AssemblyListing.TryChangeLoadOptions(list, DecompilerOptions.Default);
+        Assert.False(unchangedWork.IsCancellationRequested);
+        var beforeOptions = list.Generation;
+        var optionsWork = list.GenerationEnding;
+        int? optionsCancelledIn = null;
+        using var optionsSeen = optionsWork.Register(() => optionsCancelledIn = list.Generation);
+
+        AssemblyListing.TryChangeLoadOptions(list, Off(DecompilerToggle.AutoLoadAssemblyReferences));
+        var beforeClear = list.Generation;
+        var clearWork = list.GenerationEnding;
+        int? clearCancelledIn = null;
+        using var clearSeen = clearWork.Register(() => clearCancelledIn = list.Generation);
+        LoadedAssemblies.Release(list.CloseAll());
+
+        Assert.Equal(beforeOptions, optionsCancelledIn);
+        Assert.Equal(beforeClear, clearCancelledIn);
+        Assert.NotEqual(beforeClear, list.Generation);
+        Assert.False(list.GenerationEnding.IsCancellationRequested);
+    }
+
+    [Fact]
+    public void An_open_whose_token_links_a_generation_ended_ends_as_cancelled()
+    {
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var linked = list.GenerationEnding;
+        var generation = list.Generation;
+        LoadedAssemblies.Release(list.CloseAll());
+
+        var cancelled = Assert.ThrowsAny<OperationCanceledException>(() => AssemblyListing.Open(list, AssemblyPath.Of(Trees.TestAssemblyPath), linked));
+
+        Assert.Equal(linked, cancelled.CancellationToken);
+        Assert.NotEqual(generation, list.Generation);
+    }
+
+    [Fact]
     public void An_assembly_read_before_the_load_options_changed_is_not_kept()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };

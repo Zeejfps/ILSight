@@ -42,8 +42,6 @@ public sealed class OpenListSession
 
     public required Reload Reload { get; init; }
 
-    public required OpenRequests Opens { get; init; }
-
     /// <summary>Uses what the open list of <paramref name="lists"/> picked for its assemblies and begins reopening them
     /// as a reload, the app saying it is reloading, its files on their way (<see cref="AssemblyList.Arriving"/>) and
     /// those of the reopening it stops no longer, with the analyses of them. Returns the files to open and the reload,
@@ -153,13 +151,12 @@ public sealed class OpenListSession
     /// Returns the modules taken off, for the edge to have the I/O side release them.</summary>
     public RemovedModules ClearAssemblies()
     {
-        Opens.Cancel();
         var removed = TakeAllOff();
         _analyzer.ClearAnalyses();
         return removed;
     }
 
-    // Every caller cancels the opens under way first: the clear ends the list's generation, which they check.
+    // The clear ends the list's generation, which cancels the opens under way first (AssemblyList.GenerationEnding).
     private RemovedModules TakeAllOff()
     {
         var removed = _assemblies.CloseAll();
@@ -174,7 +171,6 @@ public sealed class OpenListSession
     public ListClosing CloseAllAssemblies()
     {
         Navigation.BeginRequest();
-        Opens.Cancel();
         Reload.Stop();
         foreach (var item in Assemblies.Listed)
         {

@@ -18,6 +18,10 @@ public sealed class AssemblyList
     // The lock is held only by this type's methods, and never while reading files.
     private readonly Guarded<Dictionary<AssemblyPath, LoadedAssembly>, AssemblyListSnapshot> _state = new(new Dictionary<AssemblyPath, LoadedAssembly>(), AssemblyListSnapshot.Empty);
 
+    // The work of the generation now, cancelled by the generation's own end before the generation changes; replaced,
+    // under the lock, as the generation changes.
+    private CancellationTokenSource _generationWork = new();
+
     /// <summary>The list as of now, all of one moment.</summary>
     internal AssemblyListSnapshot Now => _state.Snapshot;
 
@@ -42,6 +46,20 @@ public sealed class AssemblyList
     /// keeps the assemblies it loads after it, so that what it finds late never lands in the list
     /// that follows.</summary>
     public int Generation => Now.Generation;
+
+    /// <summary>The token of the work of the <see cref="Generation"/> now: cancelled by the change that ends it (a clear,
+    /// new read options) before the generation changes, so work it made stale ends as cancelled. The edge links it into
+    /// each open's token beside its own.</summary>
+    public CancellationToken GenerationEnding
+    {
+        get
+        {
+            using (_state.Enter())
+            {
+                return _generationWork.Token;
+            }
+        }
+    }
 
     /// <summary>What this machine has installed, which references that nothing else answers fall back on.</summary>
     public required InstalledRuntime Runtime { get; init; }
@@ -311,15 +329,35 @@ public sealed class AssemblyList
     }
 
     /// <summary>Closes every assembly, those read behind the scenes to resolve references included, and ends the
-    /// <see cref="Generation"/>: the opens that started before no longer list what they read, and nothing is on its way
-    /// any more. The caller cancels those opens through their token first, so they end as asked (an open meeting the
+    /// <see cref="Generation"/>: its work is cancelled first (<see cref="GenerationEnding"/>), so the opens that started
+    /// before end as cancelled, list nothing they read, and nothing is on its way any more (an open meeting the
     /// generation ended with its token not cancelled is a bug, <see cref="AssemblyListing.Open"/>). Returns the modules it
     /// forgot, for the I/O side to release once nothing reads them.</summary>
     internal RemovedModules CloseAll()
     {
+        while (true)
+        {
+            var generation = CancelGenerationWork();
+            var closed = TryCloseAll(generation);
+            if (closed is not null)
+            {
+                return closed;
+            }
+        }
+    }
+
+    // Null when another change ended the generation since its work was cancelled: that one's work is cancelled next.
+    private RemovedModules? TryCloseAll(int generation)
+    {
         List<LoadedModule> removed;
         using (var held = _state.Enter())
         {
+            if (held.Snapshot.Generation != generation)
+            {
+                return null;
+            }
+
+            _generationWork = new CancellationTokenSource();
             var now = held.Snapshot with { Generation = held.Snapshot.Generation + 1, Arriving = [] };
             held.Snapshot = now;
             if (now.Listed.IsEmpty && held.Value.Count == 0)
@@ -401,18 +439,43 @@ public sealed class AssemblyList
     }
 
     /// <summary>Takes <paramref name="loadsReferences"/> and <paramref name="readerOptions"/> as the toggles assemblies
-    /// are read with from now on. True when they changed: that ends the <see cref="Generation"/>, as a clear does, so
-    /// that no assembly read with the toggles before is kept.</summary>
+    /// are read with from now on. True when they changed: that ends the <see cref="Generation"/>, as a clear does, its
+    /// work cancelled first, so that no assembly read with the toggles before is kept.</summary>
     internal bool TryChangeReadOptions(bool loadsReferences, MetadataReaderOptions readerOptions)
+    {
+        while (true)
+        {
+            if (IsSame(Now.ReadOptions, loadsReferences, readerOptions))
+            {
+                return false;
+            }
+
+            var generation = CancelGenerationWork();
+            var changed = TryChangeReadOptions(generation, loadsReferences, readerOptions);
+            if (changed is not null)
+            {
+                return changed.Value;
+            }
+        }
+    }
+
+    // Null when another change ended the generation since its work was cancelled, as TryCloseAll.
+    private bool? TryChangeReadOptions(int generation, bool loadsReferences, MetadataReaderOptions readerOptions)
     {
         using (var held = _state.Enter())
         {
             var now = held.Snapshot;
+            if (now.Generation != generation)
+            {
+                return null;
+            }
+
             if (IsSame(now.ReadOptions, loadsReferences, readerOptions))
             {
                 return false;
             }
 
+            _generationWork = new CancellationTokenSource();
             held.Snapshot = now with { ReadOptions = new AssemblyLoadOptions
             {
                 LoadsReferences = loadsReferences,
@@ -420,6 +483,22 @@ public sealed class AssemblyList
             }, Generation = now.Generation + 1 };
         }
         return true;
+    }
+
+    // Cancels the work of the generation now, outside the lock (what the cancellation runs may read the list), before
+    // the caller changes it; returns that generation, which the caller changes only if no other change came between.
+    private int CancelGenerationWork()
+    {
+        CancellationTokenSource work;
+        int generation;
+        using (var held = _state.Enter())
+        {
+            work = _generationWork;
+            generation = held.Snapshot.Generation;
+        }
+
+        work.Cancel();
+        return generation;
     }
 
     /// <summary>Whether <paramref name="options"/> are the toggles <paramref name="loadsReferences"/> and

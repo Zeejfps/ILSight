@@ -32,8 +32,8 @@ public sealed class AssemblyOpening(AssemblyOpening.IPorts ports)
 
     /// <summary>Opens the files, then shows the last one opened, unless something else was asked for
     /// meanwhile. Returns the load that started in the tab, for the edge that started this to start under the tab's
-    /// work; null when none started. The edge links the opens' canceller (<see cref="OpenRequests"/>) into
-    /// <paramref name="ct"/>.</summary>
+    /// work; null when none started. The edge links the list's generation's token
+    /// (<see cref="AssemblyList.GenerationEnding"/>) into <paramref name="ct"/>.</summary>
     public Task<DecompileTicket?> OpenAssembliesAsync(AppState appState, IEnumerable<AssemblyPath> paths, CancellationToken ct)
     {
         var opening = appState.ListSession.Navigation.BeginOpening(paths);

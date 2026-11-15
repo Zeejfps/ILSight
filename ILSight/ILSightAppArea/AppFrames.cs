@@ -160,17 +160,8 @@ internal static class AppFrames
 
     private static void FollowLoadOptions(UiState uiState, AppState appState)
     {
-        var assemblies = appState.ListSession.Assemblies;
-        var options = appState.Decompiler.Setup.Options;
-        if (!AssemblyListing.ChangesLoadOptions(assemblies, options))
-        {
-            return;
-        }
-
-        // Their change ends the list's generation, as a clear does: the opens under way are cancelled first, so they
-        // end as asked rather than meet a generation gone.
-        appState.ListSession.Opens.Cancel();
-        if (!AssemblyListing.TryChangeLoadOptions(assemblies, options))
+        // Their change ends the list's generation, as a clear does, which cancels the opens under way first.
+        if (!AssemblyListing.TryChangeLoadOptions(appState.ListSession.Assemblies, appState.Decompiler.Setup.Options))
         {
             return;
         }

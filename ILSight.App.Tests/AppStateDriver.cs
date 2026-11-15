@@ -489,7 +489,7 @@ internal sealed class AppStateDriver
         using var turn = _posted.Install();
         var appState = AppState;
         Commands.StartShowingSettled(appState, nameof(Open), ct => appState.AssemblyOpening.OpenAssembliesAsync(appState, paths, ct),
-            _ => appState.ListSession.Navigation.FailOpening(), appState.ListSession.Opens.Token);
+            _ => appState.ListSession.Navigation.FailOpening(), appState.ListSession.Assemblies.GenerationEnding);
     }
 
     /// <summary>Starts reloading every assembly of the open list now, as the app's commands start it

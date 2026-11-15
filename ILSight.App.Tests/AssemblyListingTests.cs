@@ -219,12 +219,12 @@ public sealed class AssemblyListingTests
     {
         var d = AppStateDriver.Opened();
         d.AppState.Lists.Add(Other);
-        var opening = d.AppState.ListSession.Opens.Token;
+        var opening = d.AppState.ListSession.Assemblies.GenerationEnding;
 
         d.SwitchList(Other);
 
         Assert.True(opening.IsCancellationRequested);
-        Assert.False(d.AppState.ListSession.Opens.Token.IsCancellationRequested);
+        Assert.False(d.AppState.ListSession.Assemblies.GenerationEnding.IsCancellationRequested);
     }
 
     [Fact]
