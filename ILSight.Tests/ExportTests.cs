@@ -23,7 +23,7 @@ public sealed class ExportTests : IDisposable
         var calculator = await Trees.TestAssembly.CalculatorAsync();
         var path = _temp.PathOf("Calculator.cs");
 
-        Assert.IsType<TypeSystemWork<string>.Done>((await CodeFiles.SaveAsync(TestSession.Shared, calculator, DecompilationLanguage.CSharp, DecompilerOptions.Default, path)).GetValue());
+        Assert.IsType<TypeSystemWork<string>.Done>((await CodeFiles.SaveAsync(TestSession.Shared, calculator, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, path)).GetValue());
 
         var shown = Documents.GetText(await Trees.CalculatorDocumentAsync(DecompilationLanguage.CSharp));
         Assert.Equal(shown, await File.ReadAllTextAsync(path));
@@ -35,7 +35,7 @@ public sealed class ExportTests : IDisposable
         var fixtures = await Trees.TestAssembly.FixturesAsync();
         var path = _temp.PathOf("Fixtures.cs");
 
-        Assert.IsType<TypeSystemWork<string>.Done>((await CodeFiles.SaveAsync(TestSession.Shared, fixtures, DecompilationLanguage.CSharp, DecompilerOptions.Default, path)).GetValue());
+        Assert.IsType<TypeSystemWork<string>.Done>((await CodeFiles.SaveAsync(TestSession.Shared, fixtures, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, path)).GetValue());
 
         var code = await File.ReadAllTextAsync(path);
         Assert.Contains("public class Calculator<T>", code);
@@ -47,7 +47,7 @@ public sealed class ExportTests : IDisposable
     {
         var path = _temp.PathOf("Fixtures.il");
 
-        Assert.IsType<TypeSystemWork<string>.Done>((await CodeFiles.SaveAsync(TestSession.Shared, await Trees.TestAssembly.FixturesAsync(), DecompilationLanguage.ILWithCSharp, DecompilerOptions.Default, path)).GetValue());
+        Assert.IsType<TypeSystemWork<string>.Done>((await CodeFiles.SaveAsync(TestSession.Shared, await Trees.TestAssembly.FixturesAsync(), DecompilationLanguage.ILWithCSharp, DecompilerOptions.Default, EnglishNotes.Instance, path)).GetValue());
 
         var code = await File.ReadAllTextAsync(path);
         Assert.Contains("// double grown = Radius;", code);
@@ -59,7 +59,7 @@ public sealed class ExportTests : IDisposable
     {
         var path = _temp.PathOf("Tests.il");
 
-        Assert.IsType<TypeSystemWork<string>.Done>((await CodeFiles.SaveAsync(TestSession.Shared, await Trees.TestAssembly.ReadRootAsync(), DecompilationLanguage.IL, DecompilerOptions.Default, path)).GetValue());
+        Assert.IsType<TypeSystemWork<string>.Done>((await CodeFiles.SaveAsync(TestSession.Shared, await Trees.TestAssembly.ReadRootAsync(), DecompilationLanguage.IL, DecompilerOptions.Default, EnglishNotes.Instance, path)).GetValue());
 
         var code = await File.ReadAllTextAsync(path);
         Assert.Contains(".assembly ILSight.Tests", code);
@@ -72,7 +72,7 @@ public sealed class ExportTests : IDisposable
         var root = await Trees.TestAssembly.ReadRootAsync();
         var path = _temp.PathOf("Tests.cs");
 
-        Assert.IsType<TypeSystemWork<string>.Done>((await CodeFiles.SaveAsync(TestSession.Shared, root, DecompilationLanguage.CSharp, DecompilerOptions.Default, path)).GetValue());
+        Assert.IsType<TypeSystemWork<string>.Done>((await CodeFiles.SaveAsync(TestSession.Shared, root, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, path)).GetValue());
 
         var shown = Documents.GetText(await root.DecompileAsync(DecompilationLanguage.CSharp));
         var saved = await File.ReadAllTextAsync(path);
@@ -88,7 +88,7 @@ public sealed class ExportTests : IDisposable
         var fixtures = await Trees.TestAssembly.FixturesAsync();
         var path = _temp.PathOf("Fixtures.cs");
 
-        Assert.IsType<TypeSystemWork<string>.Done>((await CodeFiles.SaveAsync(TestSession.Shared, fixtures, DecompilationLanguage.CSharp, DecompilerOptions.Default, path)).GetValue());
+        Assert.IsType<TypeSystemWork<string>.Done>((await CodeFiles.SaveAsync(TestSession.Shared, fixtures, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, path)).GetValue());
 
         var shown = Documents.GetText(await fixtures.DecompileAsync(DecompilationLanguage.CSharp));
         var saved = await File.ReadAllTextAsync(path);
@@ -250,7 +250,7 @@ public sealed class ExportTests : IDisposable
         await cancel.CancelAsync();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            CodeFiles.SaveAsync(TestSession.Shared, root, DecompilationLanguage.CSharp, DecompilerOptions.Default, path, cancel.Token));
+            CodeFiles.SaveAsync(TestSession.Shared, root, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, path, cancel.Token));
 
         Assert.Empty(Directory.EnumerateFileSystemEntries(_temp.Path));
     }

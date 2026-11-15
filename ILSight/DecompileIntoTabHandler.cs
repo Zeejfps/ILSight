@@ -12,13 +12,13 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
         /// <summary>Tells the user what a tab was to show could not be shown.</summary>
         void ReportError(AppProblem problem);
 
-        /// <summary>What <paramref name="node"/> shows in <paramref name="language"/> with <paramref name="options"/>:
-        /// its code, grid or picture (a grid made with at least <paramref name="firstGridRows"/> rows read), made
+        /// <summary>What <paramref name="node"/> shows in <paramref name="language"/> with <paramref name="options"/>,
+        /// the app's notes beside its code in <paramref name="notes"/>' words: its code, grid or picture (a grid made with at least <paramref name="firstGridRows"/> rows read), made
         /// without holding up the screen, or that its module was closed before it began, and nothing was read. What
         /// making it threw, such as a corrupt file, comes back as <see cref="Outcome{T}.Failed"/>; the cancellation of
         /// <paramref name="ct"/> is let through.</summary>
         Task<Outcome<ModuleRead<NodeContent>>> DecompileAsync(BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
-            int firstGridRows, CancellationToken ct);
+            IDocumentNotes notes, int firstGridRows, CancellationToken ct);
     }
 
     /// <summary>Brings in what <paramref name="ticket"/> started loading in its tab and shows it there, or that it
@@ -30,10 +30,11 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
     /// closed, as closing it does.
     /// A grid it brings has its first <paramref name="firstGridRows"/> rows read, what the screen's first show of it
     /// needs. <paramref name="ct"/> is the workflow's token, which the edge that starts it links to the ticket's
-    /// work.</summary>
-    public async Task HandleAsync(Queue<ViewCommand> viewCommands, DecompileTicket ticket, int firstGridRows, CancellationToken ct)
+    /// work. The notes the app writes beside the code are in <paramref name="notes"/>' words, the app's language as the
+    /// load starts.</summary>
+    public async Task HandleAsync(Queue<ViewCommand> viewCommands, DecompileTicket ticket, IDocumentNotes notes, int firstGridRows, CancellationToken ct)
     {
-        var read = await ports.DecompileAsync(ticket.Node, ticket.Language, ticket.Options, firstGridRows, ct);
+        var read = await ports.DecompileAsync(ticket.Node, ticket.Language, ticket.Options, notes, firstGridRows, ct);
         var load = ticket.Load;
         var loaded = ShowClosedOrFindLoaded(load, ticket.Work, read);
         if (loaded is null || !TryShowLoaded(load, ticket.Work, loaded))

@@ -12,9 +12,9 @@ public static class CodeFiles
     /// read, with nothing written. What the library throws decompiling, or the disk writing, is
     /// <see cref="Outcome{T}.Failed"/>; the cancellation of <paramref name="cancellationToken"/> is let through. The file
     /// is replaced only once the code is whole. A unit reading the node's module: closed, writing nothing, when it was
-    /// released (closed) before.</summary>
+    /// released (closed) before. The notes the app writes beside the code are in <paramref name="notes"/>' words.</summary>
     public static async Task<Outcome<TypeSystemWork<string>>> SaveAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language,
-        DecompilerOptions options, string path, CancellationToken cancellationToken = default)
+        DecompilerOptions options, IDocumentNotes notes, string path, CancellationToken cancellationToken = default)
     {
         using var reading = LoadedAssemblies.BeginReading();
         if (node.Assembly is LoadedModule own && !LoadedAssemblies.TryRead(reading, own))
@@ -25,7 +25,7 @@ public static class CodeFiles
         TypeSystemWork<string> written;
         try
         {
-            written = await SaveUnderReadingAsync(session, reading, node, language, options, path, cancellationToken);
+            written = await SaveUnderReadingAsync(session, reading, node, language, options, notes, path, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -40,37 +40,37 @@ public static class CodeFiles
     }
 
     private static async Task<TypeSystemWork<string>> SaveUnderReadingAsync(BrowseSession session, ModuleReading reading, BrowseNode node,
-        DecompilationLanguage language, DecompilerOptions options, string path, CancellationToken cancellationToken)
+        DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, string path, CancellationToken cancellationToken)
     {
         var export = await NodeContentLoader.ToCodeExportAsync(session, node, cancellationToken);
         var module = FindModule(export);
         if (module is null)
         {
-            return Save(reading, export, null, language, options, path, cancellationToken);
+            return Save(reading, export, null, language, options, notes, path, cancellationToken);
         }
 
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, module, cancellationToken);
         return read.Match(
-            r => Save(reading, export, r.TypeSystem, language, options, path, cancellationToken),
-            u => SaveUnreadable(reading, export, module, u, language, options, path, cancellationToken),
+            r => Save(reading, export, r.TypeSystem, language, options, notes, path, cancellationToken),
+            u => SaveUnreadable(reading, export, module, u, language, options, notes, path, cancellationToken),
             static c => new TypeSystemWork<string>.Closed { Module = c.Module });
     }
 
     private static TypeSystemWork<string> SaveUnreadable(ModuleReading reading, CodeExport export, LoadedModule module, TypeSystemRead.Unreadable unreadable,
-        DecompilationLanguage language, DecompilerOptions options, string path, CancellationToken cancellationToken)
+        DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, string path, CancellationToken cancellationToken)
     {
         if (export is CodeExport.Document document && !NodeDecompiler.IsReadThroughTypeSystem(document.Request))
         {
-            return Save(reading, export, null, language, options, path, cancellationToken);
+            return Save(reading, export, null, language, options, notes, path, cancellationToken);
         }
 
         return new TypeSystemWork<string>.Unreadable { Module = new UnreadableModule { Module = module, Why = unreadable.Thrown.SourceException } };
     }
 
     private static TypeSystemWork<string> Save(ModuleReading reading, CodeExport export, DecompilerTypeSystem? typeSystem, DecompilationLanguage language, DecompilerOptions options,
-        string path, CancellationToken cancellationToken)
+        IDocumentNotes notes, string path, CancellationToken cancellationToken)
     {
-        AtomicFile.Write(path, stream => NodeDecompiler.WriteCode(reading, export, typeSystem, language, options, stream, cancellationToken));
+        AtomicFile.Write(path, stream => NodeDecompiler.WriteCode(reading, export, typeSystem, language, options, notes, stream, cancellationToken));
         return new TypeSystemWork<string>.Done { Value = path };
     }
 

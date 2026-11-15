@@ -21,20 +21,22 @@ public static class NodeContentLoader
     /// else the node decompiled with <paramref name="options"/>, which only C# reads. A unit reading the node's module:
     /// closed, reading nothing, when it was released (closed) before. What the library throws reading the grid, or what
     /// the document is made from, is the node's <see cref="Outcome{T}.Failed"/>; what the decompiler throws writing the
-    /// document becomes a document describing it.</summary>
+    /// document becomes a document describing it. The notes the app writes beside the code are in
+    /// <paramref name="notes"/>' words.</summary>
     public static Task<Outcome<ModuleRead<NodeContent>>> ReadContentAsync(BrowseSession session, BrowseNode node, DecompilationLanguage language,
-        DecompilerOptions options, int firstGridRows, CancellationToken cancellationToken = default)
+        DecompilerOptions options, IDocumentNotes notes, int firstGridRows, CancellationToken cancellationToken = default)
     {
-        return Task.Run(() => ReadContentUnderReadingAsync(session, node, language, options, firstGridRows, cancellationToken), cancellationToken);
+        return Task.Run(() => ReadContentUnderReadingAsync(session, node, language, options, notes, firstGridRows, cancellationToken), cancellationToken);
     }
 
     /// <summary>Decompiles <paramref name="node"/> with <paramref name="options"/>, which only C# reads, once the read
     /// of its module's type system ended. Throws <see cref="OperationCanceledException"/> when cancelled; what the
     /// library throws reading what the document is made from is the node's <see cref="Outcome{T}.Failed"/>, and what the
     /// decompiler throws writing it becomes a document describing it. A unit reading the node's module, as
-    /// <see cref="ReadContentAsync(BrowseSession, BrowseNode, DecompilationLanguage, DecompilerOptions, int, CancellationToken)"/> is.</summary>
+    /// <see cref="ReadContentAsync(BrowseSession, BrowseNode, DecompilationLanguage, DecompilerOptions, IDocumentNotes, int, CancellationToken)"/> is,
+    /// its notes in <paramref name="notes"/>' words.</summary>
     public static async Task<Outcome<ModuleRead<DecompiledDocument>>> DecompileAsync(BrowseSession session, BrowseNode node,
-        DecompilationLanguage language, DecompilerOptions options, CancellationToken cancellationToken = default)
+        DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, CancellationToken cancellationToken = default)
     {
         using var reading = LoadedAssemblies.BeginReading();
         if (!TryReadModuleOf(reading, node, out var closed))
@@ -42,7 +44,7 @@ public static class NodeContentLoader
             return new Outcome<ModuleRead<DecompiledDocument>>.Ok(new ModuleRead<DecompiledDocument>.Closed { Module = closed });
         }
 
-        var decompiled = await DecompileAsync(session, reading, node, language, options, null, cancellationToken);
+        var decompiled = await DecompileAsync(session, reading, node, language, options, notes, null, cancellationToken);
         return ToModuleRead(decompiled);
     }
 
@@ -72,7 +74,7 @@ public static class NodeContentLoader
     }
 
     private static async Task<Outcome<ModuleRead<NodeContent>>> ReadContentUnderReadingAsync(BrowseSession session, BrowseNode node,
-        DecompilationLanguage language, DecompilerOptions options, int firstGridRows, CancellationToken cancellationToken)
+        DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, int firstGridRows, CancellationToken cancellationToken)
     {
         using var reading = LoadedAssemblies.BeginReading();
         if (!TryReadModuleOf(reading, node, out var closed))
@@ -80,23 +82,23 @@ public static class NodeContentLoader
             return new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Closed { Module = closed });
         }
 
-        var content = await ReadContentAsync(session, reading, node, language, options, firstGridRows, cancellationToken);
+        var content = await ReadContentAsync(session, reading, node, language, options, notes, firstGridRows, cancellationToken);
         return ToModuleRead(content);
     }
 
     private static async Task<Outcome<DecompiledDocument>> DecompileAsync(BrowseSession session, ModuleReading reading, BrowseNode node,
-        DecompilationLanguage language, DecompilerOptions options, string? note, CancellationToken cancellationToken)
+        DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, string? note, CancellationToken cancellationToken)
     {
         var request = await ReadRequestAsync(session, node, cancellationToken);
         return await request.Match(
-            ok => DecompileRequestAsync(reading, ok.Value, language, options, note, cancellationToken),
+            ok => DecompileRequestAsync(reading, ok.Value, language, options, notes, note, cancellationToken),
             static failed => Task.FromResult<Outcome<DecompiledDocument>>(new Outcome<DecompiledDocument>.Failed(failed.Error)));
     }
 
     private static async Task<Outcome<DecompiledDocument>> DecompileRequestAsync(ModuleReading reading, DocumentRequest request,
-        DecompilationLanguage language, DecompilerOptions options, string? note, CancellationToken cancellationToken)
+        DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, string? note, CancellationToken cancellationToken)
     {
-        return new Outcome<DecompiledDocument>.Ok(await NodeDecompiler.DecompileAsync(reading, request, language, options, cancellationToken, note));
+        return new Outcome<DecompiledDocument>.Ok(await NodeDecompiler.DecompileAsync(reading, request, language, options, notes, cancellationToken, note));
     }
 
     private static Outcome<NodeContent>? FindGridContent(BrowseNode node, int firstRows, CancellationToken ct)
@@ -139,7 +141,7 @@ public static class NodeContentLoader
     }
 
     private static async Task<Outcome<NodeContent>> ReadContentAsync(BrowseSession session, ModuleReading reading, BrowseNode node,
-        DecompilationLanguage language, DecompilerOptions options, int firstGridRows, CancellationToken cancellationToken)
+        DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, int firstGridRows, CancellationToken cancellationToken)
     {
         var grid = FindGridContent(node, firstGridRows, cancellationToken);
         if (grid is not null)
@@ -149,19 +151,19 @@ public static class NodeContentLoader
 
         if (!BrowseNodes.IsImage(node.Subject))
         {
-            return ToCode(await DecompileAsync(session, reading, node, language, options, null, cancellationToken));
+            return ToCode(await DecompileAsync(session, reading, node, language, options, notes, null, cancellationToken));
         }
 
         var read = ReadImage(node, cancellationToken);
         return await read.Match(
-            decoded => GetPictureAsync(session, reading, node, decoded.Image, language, options, cancellationToken),
-            unreadable => DecompileWithNoteAsync(session, reading, node, language, options, unreadable.Why, cancellationToken));
+            decoded => GetPictureAsync(session, reading, node, decoded.Image, language, options, notes, cancellationToken),
+            unreadable => DecompileWithNoteAsync(session, reading, node, language, options, notes, unreadable.Why, cancellationToken));
     }
 
     private static async Task<Outcome<NodeContent>> DecompileWithNoteAsync(BrowseSession session, ModuleReading reading, BrowseNode node,
-        DecompilationLanguage language, DecompilerOptions options, string note, CancellationToken cancellationToken)
+        DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, string note, CancellationToken cancellationToken)
     {
-        return ToCode(await DecompileAsync(session, reading, node, language, options, note, cancellationToken));
+        return ToCode(await DecompileAsync(session, reading, node, language, options, notes, note, cancellationToken));
     }
 
     private static Outcome<NodeContent> ToCode(Outcome<DecompiledDocument> decompiled)
@@ -189,14 +191,14 @@ public static class NodeContentLoader
     }
 
     private static async Task<Outcome<NodeContent>> GetPictureAsync(BrowseSession session, ModuleReading reading, BrowseNode node, ResourceImage image,
-        DecompilationLanguage language, DecompilerOptions options, CancellationToken cancellationToken)
+        DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, CancellationToken cancellationToken)
     {
         if (!image.IsVector)
         {
             return new Outcome<NodeContent>.Ok(new NodeContent.Picture { Image = image });
         }
 
-        var source = await DecompileAsync(session, reading, node, language, options, null, cancellationToken);
+        var source = await DecompileAsync(session, reading, node, language, options, notes, null, cancellationToken);
         return source.Match<Outcome<NodeContent>>(
             ok => new Outcome<NodeContent>.Ok(new NodeContent.Picture { Image = image, Source = ok.Value }),
             static failed => new Outcome<NodeContent>.Failed(failed.Error));

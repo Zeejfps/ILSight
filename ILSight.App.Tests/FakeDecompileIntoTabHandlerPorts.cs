@@ -16,7 +16,7 @@ internal sealed class FakeDecompileIntoTabHandlerPorts : DecompileIntoTabHandler
     }
 
     public Task<Outcome<ModuleRead<NodeContent>>> DecompileAsync(BrowseNode node, DecompilationLanguage language, DecompilerOptions options,
-        int firstGridRows, CancellationToken ct)
+        IDocumentNotes notes, int firstGridRows, CancellationToken ct)
     {
         var answer = new TaskCompletionSource<Outcome<ModuleRead<NodeContent>>>();
         ct.Register(() => answer.TrySetCanceled(ct));

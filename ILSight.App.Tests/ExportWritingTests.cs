@@ -14,6 +14,7 @@ public sealed class ExportWritingTests
             Node = await d.FixtureAsync("Greeter"),
             Language = DecompilationLanguage.CSharp,
             Options = DecompilerOptions.Default,
+            Notes = DocumentNoteTexts.For(Locale.En),
             File = Path.Combine(Folder, "Greeter.cs"),
         };
     }

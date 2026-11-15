@@ -65,7 +65,7 @@ public sealed class DecompileIntoTabHandlerTests
         {
             var load = navigation.Restore(tab, greeter, In(language), AtLineTen);
             Assert.NotNull(load);
-            var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None));
+            var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, DocumentNoteTexts.For(Locale.En), NodeQueries.FirstGridRows, CancellationToken.None));
             ports.Requests[^1].Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Read { Value = CodeReading("Greeter", unread) }));
             await d.EndAsync(handling);
             Assert.IsType<TabContent.Code>(tab.Content);
@@ -92,7 +92,7 @@ public sealed class DecompileIntoTabHandlerTests
         var load = navigation.Restore(tab, greeter, In(DecompilationLanguage.IL), AtLineTen);
         Assert.NotNull(load);
 
-        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None));
+        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, DocumentNoteTexts.For(Locale.En), NodeQueries.FirstGridRows, CancellationToken.None));
         Assert.Single(ports.Requests).Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Closed { Module = module }));
         await d.EndAsync(handling);
 
@@ -115,7 +115,7 @@ public sealed class DecompileIntoTabHandlerTests
         Assert.NotNull(load);
         var code = CodeOf("Greeter");
 
-        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None));
+        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, DocumentNoteTexts.For(Locale.En), NodeQueries.FirstGridRows, CancellationToken.None));
         var request = Assert.Single(ports.Requests);
         Assert.IsType<TabContent.Loading>(tab.Content);
         request.Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Read { Value = code }));
@@ -142,7 +142,7 @@ public sealed class DecompileIntoTabHandlerTests
         Assert.NotNull(load);
         var corrupt = new BadImageFormatException("Bad IL range.");
 
-        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None));
+        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, DocumentNoteTexts.For(Locale.En), NodeQueries.FirstGridRows, CancellationToken.None));
         Assert.Single(ports.Requests).Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Failed(corrupt));
         await d.EndAsync(handling);
 
@@ -165,7 +165,7 @@ public sealed class DecompileIntoTabHandlerTests
         Assert.NotNull(load);
         var bug = new InvalidOperationException("A bug in the core's own code on what it read.");
 
-        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None));
+        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, DocumentNoteTexts.For(Locale.En), NodeQueries.FirstGridRows, CancellationToken.None));
         Assert.Single(ports.Requests).Answer.SetException(bug);
 
         Assert.Same(bug, await Assert.ThrowsAsync<InvalidOperationException>(() => d.EndAsync(handling)));
@@ -184,10 +184,10 @@ public sealed class DecompileIntoTabHandlerTests
         var handler = new DecompileIntoTabHandler(ports);
         var older = navigation.Restore(tab, greeter, In(DecompilationLanguage.CSharp), position: null);
         Assert.NotNull(older);
-        var olderHandling = d.BeginAsync(() => handler.HandleAsync(viewCommands, older, NodeQueries.FirstGridRows, CancellationToken.None));
+        var olderHandling = d.BeginAsync(() => handler.HandleAsync(viewCommands, older, DocumentNoteTexts.For(Locale.En), NodeQueries.FirstGridRows, CancellationToken.None));
         var newer = navigation.Restore(tab, farewell, In(DecompilationLanguage.CSharp), position: null);
         Assert.NotNull(newer);
-        var newerHandling = d.BeginAsync(() => handler.HandleAsync(viewCommands, newer, NodeQueries.FirstGridRows, CancellationToken.None));
+        var newerHandling = d.BeginAsync(() => handler.HandleAsync(viewCommands, newer, DocumentNoteTexts.For(Locale.En), NodeQueries.FirstGridRows, CancellationToken.None));
         var farewellCode = CodeOf("Farewell");
 
         ports.Requests[0].Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Read { Value = CodeOf("Greeter") }));
@@ -214,7 +214,7 @@ public sealed class DecompileIntoTabHandlerTests
         Assert.NotNull(load);
         viewCommands.Clear();
 
-        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, CancellationToken.None));
+        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, DocumentNoteTexts.For(Locale.En), NodeQueries.FirstGridRows, CancellationToken.None));
         navigation.CloseTab(tab);
         Assert.Single(ports.Requests).Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Failed(new BadImageFormatException("Bad IL range.")));
         await d.EndAsync(handling);
@@ -238,7 +238,7 @@ public sealed class DecompileIntoTabHandlerTests
         viewCommands.Clear();
         using var shutdown = new CancellationTokenSource();
 
-        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, NodeQueries.FirstGridRows, shutdown.Token));
+        var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, DocumentNoteTexts.For(Locale.En), NodeQueries.FirstGridRows, shutdown.Token));
         ShutDown(shutdown);
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => d.EndAsync(handling));

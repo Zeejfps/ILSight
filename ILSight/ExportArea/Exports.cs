@@ -33,15 +33,16 @@ public static class Exports
     }
 
     /// <summary>What saving <paramref name="node"/> to the file at <paramref name="path"/> writes: a resource's bytes as
-    /// they are, else its code in <paramref name="setup"/>'s language, as one file.</summary>
-    public static CodeSave ToCodeSave(BrowseNode node, DecompilerSetup setup, string path)
+    /// they are, else its code in <paramref name="setup"/>'s language, as one file, the app's notes beside the code in
+    /// <paramref name="notes"/>' words.</summary>
+    public static CodeSave ToCodeSave(BrowseNode node, DecompilerSetup setup, IDocumentNotes notes, string path)
     {
         if (node.HasResource)
         {
             return new CodeSave.ResourceBytes { Node = node, File = path };
         }
 
-        var work = new ExportWork.CodeFile { Node = node, Language = setup.Language, Options = setup.Options, File = path };
+        var work = new ExportWork.CodeFile { Node = node, Language = setup.Language, Options = setup.Options, Notes = notes, File = path };
         return new CodeSave.Code { Work = work };
     }
 

@@ -39,7 +39,7 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
     /// <remarks>A module the library could not read, for code that reads it, fails the export, saying why.</remarks>
     public Task<ExportOutcome<string>> WriteCodeFileAsync(ExportWork.CodeFile work, ExportTurn.Started start, CancellationToken ct)
     {
-        return RunOverTypeSystemAsync(token => CodeFiles.SaveAsync(session, work.Node, work.Language, work.Options, work.File, token), start, ct);
+        return RunOverTypeSystemAsync(token => CodeFiles.SaveAsync(session, work.Node, work.Language, work.Options, work.Notes, work.File, token), start, ct);
     }
 
     /// <remarks>An assembly closed before the export began stops it, writing nothing.</remarks>

@@ -40,7 +40,7 @@ public sealed class WebCilTests
         Assert.Null(decompiled.Error);
         Assert.Contains("public int Add159(int left, int right)", Documents.GetText(decompiled));
         Assert.IsType<ModuleRead<NodeContent>.Closed>((await NodeContentLoader.ReadContentAsync(TestSession.Shared, part, DecompilationLanguage.CSharp,
-            DecompilerOptions.Default, NodeQueries.FirstGridRows)).GetValue());
+            DecompilerOptions.Default, EnglishNotes.Instance, NodeQueries.FirstGridRows)).GetValue());
         Assert.Empty(await SearchAsync(module, query));
     }
 
@@ -116,7 +116,7 @@ public sealed class WebCilTests
 
     private static Task<NodeContent> ReadFirstPageAsync(BrowseNode node)
     {
-        return NodeContentLoader.ReadContentAsync(TestSession.Shared, node, DecompilationLanguage.CSharp, DecompilerOptions.Default,
+        return NodeContentLoader.ReadContentAsync(TestSession.Shared, node, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance,
             MetadataGrid.Paged.RowsPerPage).GetValueAsync();
     }
 
@@ -147,7 +147,7 @@ public sealed class WebCilTests
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilLargePath);
         var methods = await (await assembly.ReadRootAsync().GetChildAsync("Metadata", "Tables")).TableAsync("MethodDef");
 
-        var content = await NodeContentLoader.ReadContentAsync(TestSession.Shared, methods, DecompilationLanguage.CSharp, DecompilerOptions.Default, 150)
+        var content = await NodeContentLoader.ReadContentAsync(TestSession.Shared, methods, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, 150)
             .GetValueAsync();
 
         var grid = Assert.IsType<MetadataGrid.Paged>(Assert.IsType<NodeContent.Table>(content).Grid);

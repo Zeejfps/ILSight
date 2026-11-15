@@ -687,8 +687,10 @@ public static class Commands
     private static void StartBringingIn(AppState appState, DecompileTicket load)
     {
         var firstGridRows = appState.FirstGridRows;
+        var notes = DocumentNoteTexts.For(appState.Locale);
         // A load that fails unexpectedly shows failed in its tab, rather than loading for good.
-        appState.Workflows.StartSettling(nameof(DecompileIntoTabHandler), ct => appState.DecompileIntoTabHandler.HandleAsync(appState.ViewCommands, load, firstGridRows, ct),
+        appState.Workflows.StartSettling(nameof(DecompileIntoTabHandler),
+            ct => appState.DecompileIntoTabHandler.HandleAsync(appState.ViewCommands, load, notes, firstGridRows, ct),
             error => load.Load.TryShowFailed(load.Work, error.Message), load.Work.Token);
     }
 

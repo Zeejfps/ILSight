@@ -92,7 +92,7 @@ public sealed class ExportTests : IDisposable
         var path = _temp.PathOf("data.json");
         var setup = new DecompilerSetup { Language = DecompilationLanguage.CSharp, Options = DecompilerOptions.Default };
 
-        var save = Exports.ToCodeSave(node, setup, path);
+        var save = Exports.ToCodeSave(node, setup, DocumentNoteTexts.For(Locale.En), path);
 
         var bytes = Assert.IsType<CodeSave.ResourceBytes>(save);
         Assert.Same(node, bytes.Node);
@@ -107,7 +107,7 @@ public sealed class ExportTests : IDisposable
         var path = _temp.PathOf("Greeter.il");
         var setup = new DecompilerSetup { Language = DecompilationLanguage.IL, Options = DecompilerOptions.Default };
 
-        var save = Exports.ToCodeSave(node, setup, path);
+        var save = Exports.ToCodeSave(node, setup, DocumentNoteTexts.For(Locale.En), path);
 
         var work = Assert.IsType<CodeSave.Code>(save).Work;
         Assert.Same(node, work.Node);

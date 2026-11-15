@@ -19,7 +19,7 @@ public abstract record ExportWork
     public abstract string Subject { get; }
 
     /// <summary>The code of <see cref="Node"/> in <see cref="Language"/>, as one file at <see cref="File"/>, which a
-    /// save dialog gave.</summary>
+    /// save dialog gave, the app's notes beside the code in <see cref="Notes"/>' words.</summary>
     public sealed record CodeFile : ExportWork
     {
         public required BrowseNode Node { get; init; }
@@ -27,6 +27,8 @@ public abstract record ExportWork
         public required DecompilationLanguage Language { get; init; }
 
         public required DecompilerOptions Options { get; init; }
+
+        public required IDocumentNotes Notes { get; init; }
 
         public required string File { get; init; }
 

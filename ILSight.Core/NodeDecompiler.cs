@@ -23,15 +23,14 @@ internal static class NodeDecompiler
     private const int MaxResourceBytes = 64 * 1024;
     private const string UsedIndent = "    ";
     private const string ReferenceAssemblyAttribute = "System.Runtime.CompilerServices.ReferenceAssemblyAttribute";
-    private const string ReferenceAssemblyWarning =
-        "This assembly is marked as 'reference assembly', which means that it only contains metadata and no executable code.";
 
     /// <summary>Writes the document <paramref name="request"/> asks for, after <paramref name="note"/>
-    /// as a comment when given, once the read of its module's type system ended. Throws
+    /// as a comment when given, once the read of its module's type system ended, the app's notes beside the code in
+    /// <paramref name="notes"/>' words. Throws
     /// <see cref="OperationCanceledException"/> when cancelled; a module the library could not read, for code that
     /// reads it, and whatever the decompiler throws while it writes become a document describing it.</summary>
     public static async Task<DecompiledDocument> DecompileAsync(ModuleReading reading, DocumentRequest request, DecompilationLanguage language,
-        DecompilerOptions options, CancellationToken cancellationToken, string? note = null)
+        DecompilerOptions options, IDocumentNotes notes, CancellationToken cancellationToken, string? note = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (request is DocumentRequest.Failure failure)
@@ -42,25 +41,25 @@ internal static class NodeDecompiler
         var module = ModuleOf(request);
         if (module is null)
         {
-            return Decompile(reading, request, null, language, options, cancellationToken, note);
+            return Decompile(reading, request, null, language, options, notes, cancellationToken, note);
         }
 
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, module, cancellationToken);
         return read.Match(
-            r => Decompile(reading, request, r.TypeSystem, language, options, cancellationToken, note),
-            u => DecompileUnreadable(reading, request, u.Thrown.SourceException, language, options, cancellationToken, note),
+            r => Decompile(reading, request, r.TypeSystem, language, options, notes, cancellationToken, note),
+            u => DecompileUnreadable(reading, request, u.Thrown.SourceException, language, options, notes, cancellationToken, note),
             static c => throw new InvalidOperationException($"'{c.Module.FilePath}' was decompiled after its release: the unit holds a reading of the node's module, which the request's is."));
     }
 
     private static DecompiledDocument DecompileUnreadable(ModuleReading reading, DocumentRequest request, Exception why, DecompilationLanguage language, DecompilerOptions options,
-        CancellationToken cancellationToken, string? note)
+        IDocumentNotes notes, CancellationToken cancellationToken, string? note)
     {
         if (IsReadThroughTypeSystem(request))
         {
-            return DescribeFailure(request, language, why);
+            return DescribeFailure(request, language, notes, why);
         }
 
-        return Decompile(reading, request, null, language, options, cancellationToken, note);
+        return Decompile(reading, request, null, language, options, notes, cancellationToken, note);
     }
 
     /// <summary>Whether writing <paramref name="request"/> reads its module's type system: a module's preview, a type's
@@ -71,7 +70,7 @@ internal static class NodeDecompiler
     }
 
     private static DecompiledDocument Decompile(ModuleReading reading, DocumentRequest request, DecompilerTypeSystem? typeSystem, DecompilationLanguage language,
-        DecompilerOptions options, CancellationToken cancellationToken, string? note)
+        DecompilerOptions options, IDocumentNotes notes, CancellationToken cancellationToken, string? note)
     {
         var builder = new DocumentBuilder { Language = language, Assembly = ModuleOf(request), TypeSystem = typeSystem };
         if (note is not null)
@@ -79,13 +78,13 @@ internal static class NodeDecompiler
             WriteComment(builder, note);
         }
 
-        WriteUnreadReferences(builder, request, typeSystem);
+        WriteUnreadReferences(builder, request, typeSystem, notes);
 
         var settings = Settings.Create(options);
-        var thrown = TryWrite(reading, request, builder, language, settings, cancellationToken);
+        var thrown = TryWrite(reading, request, builder, language, settings, notes, cancellationToken);
         if (thrown is not null)
         {
-            return DescribeFailure(request, language, thrown);
+            return DescribeFailure(request, language, notes, thrown);
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -93,11 +92,11 @@ internal static class NodeDecompiler
     }
 
     private static Exception? TryWrite(ModuleReading reading, DocumentRequest request, DocumentBuilder builder, DecompilationLanguage language,
-        DecompilerSettings settings, CancellationToken cancellationToken)
+        DecompilerSettings settings, IDocumentNotes notes, CancellationToken cancellationToken)
     {
         try
         {
-            Write(reading, request, builder, language, settings, cancellationToken);
+            Write(reading, request, builder, language, settings, notes, cancellationToken);
             return null;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -111,7 +110,7 @@ internal static class NodeDecompiler
     }
 
     private static DecompiledDocument DecompileOrThrow(ModuleReading reading, DocumentRequest request, DecompilerTypeSystem? typeSystem, DecompilationLanguage language,
-        DecompilerOptions options, CancellationToken cancellationToken)
+        DecompilerOptions options, IDocumentNotes notes, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (request is DocumentRequest.Failure failure)
@@ -120,29 +119,29 @@ internal static class NodeDecompiler
         }
 
         var builder = new DocumentBuilder { Language = language, Assembly = ModuleOf(request), TypeSystem = typeSystem };
-        WriteUnreadReferences(builder, request, typeSystem);
-        Write(reading, request, builder, language, Settings.Create(options), cancellationToken);
+        WriteUnreadReferences(builder, request, typeSystem, notes);
+        Write(reading, request, builder, language, Settings.Create(options), notes, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         return builder.BuildDocument(request.Title);
     }
 
     private static void Write(ModuleReading reading, DocumentRequest request, DocumentBuilder builder, DecompilationLanguage language, DecompilerSettings settings,
-        CancellationToken cancellationToken)
+        IDocumentNotes notes, CancellationToken cancellationToken)
     {
         if (language == DecompilationLanguage.CSharp)
         {
-            WriteCSharp(reading, request, builder, settings, cancellationToken);
+            WriteCSharp(reading, request, builder, settings, notes, cancellationToken);
         }
         else
         {
-            WriteIL(reading, request, builder, language, settings, cancellationToken);
+            WriteIL(reading, request, builder, language, settings, notes, cancellationToken);
         }
     }
 
-    private static DecompiledDocument DescribeFailure(DocumentRequest request, DecompilationLanguage language, Exception thrown)
+    private static DecompiledDocument DescribeFailure(DocumentRequest request, DecompilationLanguage language, IDocumentNotes notes, Exception thrown)
     {
         var error = new DocumentBuilder { Language = language };
-        error.Write($"// Error decompiling {request.FullName}", SpanKind.Comment);
+        error.Write(DocumentBuilder.CommentMarker + notes.DecompileFailed(request.FullName), SpanKind.Comment);
         error.WriteLine();
         error.Write(thrown.ToString(), SpanKind.Comment);
         return error.BuildFailure(request.Title, thrown);
@@ -162,7 +161,7 @@ internal static class NodeDecompiler
     }
 
     // Code read through a type system that read a reference by name only, not found or its file unreadable, says so first.
-    private static void WriteUnreadReferences(DocumentBuilder builder, DocumentRequest request, DecompilerTypeSystem? typeSystem)
+    private static void WriteUnreadReferences(DocumentBuilder builder, DocumentRequest request, DecompilerTypeSystem? typeSystem, IDocumentNotes notes)
     {
         var module = builder.Assembly;
         if (module is null || typeSystem is null || !IsReadThroughTypeSystem(request))
@@ -170,7 +169,7 @@ internal static class NodeDecompiler
             return;
         }
 
-        builder.WriteUnreadReferences(LoadedAssemblies.ListUnreadReferences(module), LoadedAssemblies.ListMissingReferences(module));
+        builder.WriteUnreadReferences(LoadedAssemblies.ListUnreadReferences(module), LoadedAssemblies.ListMissingReferences(module), notes);
     }
 
     /// <summary>The module the document of <paramref name="request"/> is read from; null for a package's.</summary>
@@ -186,18 +185,18 @@ internal static class NodeDecompiler
             static _ => null);
     }
 
-    /// <summary>Writes the code <paramref name="export"/> names to <paramref name="stream"/>. Throws when decompiling
-    /// fails.</summary>
+    /// <summary>Writes the code <paramref name="export"/> names to <paramref name="stream"/>, the app's notes beside a
+    /// document's code in <paramref name="notes"/>' words. Throws when decompiling fails.</summary>
     internal static void WriteCode(ModuleReading reading, CodeExport export, DecompilerTypeSystem? typeSystem, DecompilationLanguage language,
-        DecompilerOptions options, Stream stream, CancellationToken cancellationToken)
+        DecompilerOptions options, IDocumentNotes notes, Stream stream, CancellationToken cancellationToken)
     {
         using var writer = new StreamWriter(stream);
-        export.Switch((reading, typeSystem, language, options, writer, cancellationToken),
+        export.Switch((reading, typeSystem, language, options, notes, writer, cancellationToken),
             static (s, whole) => WriteWholeCode(s.reading, whole, RequireTypeSystem(s.typeSystem), s.language, s.options, s.writer, s.cancellationToken),
             static (s, ns) => WriteWholeCode(s.reading, ns, RequireTypeSystem(s.typeSystem), s.language, s.options, s.writer, s.cancellationToken),
             static (s, document) =>
             {
-                var written = DecompileOrThrow(s.reading, document.Request, s.typeSystem, s.language, s.options, s.cancellationToken);
+                var written = DecompileOrThrow(s.reading, document.Request, s.typeSystem, s.language, s.options, s.notes, s.cancellationToken);
                 s.writer.Write(Documents.GetText(written));
             });
     }
@@ -281,28 +280,29 @@ internal static class NodeDecompiler
     }
 
     private static void WriteCSharp(ModuleReading reading, DocumentRequest request, DocumentBuilder output, DecompilerSettings settings,
-        CancellationToken cancellationToken)
+        IDocumentNotes notes, CancellationToken cancellationToken)
     {
-        request.Switch((reading, output, settings, cancellationToken),
+        request.Switch((reading, output, settings, notes, cancellationToken),
             static (s, preview) =>
             {
-                WriteAssemblySummary(preview.Module, s.output);
+                WriteAssemblySummary(preview.Module, s.output, s.notes);
                 WriteSyntaxTree(s.reading, preview.Module, s.output, s.settings, d => d.DecompileModuleAndAssemblyAttributes(), s.cancellationToken);
             },
             static (s, type) =>
             {
                 var definition = type.Definition;
-                WriteHeader(definition.Module, s.output, NodeDefinitions.GetSymbol(definition), ConversionFlags.UseFullyQualifiedTypeNames | ConversionFlags.UseFullyQualifiedEntityNames);
+                WriteHeader(definition.Module, s.output, s.notes, NodeDefinitions.GetSymbol(definition), ConversionFlags.UseFullyQualifiedTypeNames | ConversionFlags.UseFullyQualifiedEntityNames);
                 WriteSyntaxTree(s.reading, definition.Module, s.output, s.settings, d => d.Decompile(definition.Handle), s.cancellationToken);
             },
-            static (s, member) => WriteMember(s.reading, member, s.output, s.settings, s.cancellationToken),
-            static (s, summary) => WriteSummary(summary.Info, s.output, s.cancellationToken),
-            static (s, resource) => WriteResource(resource, s.output),
+            static (s, member) => WriteMember(s.reading, member, s.output, s.settings, s.notes, s.cancellationToken),
+            static (s, summary) => WriteSummary(summary.Info, s.output, s.notes, s.cancellationToken),
+            static (s, resource) => WriteResource(resource, s.output, s.notes),
             static (s, baml) => WriteXaml(s.reading, baml, s.output, s.cancellationToken),
             static (_, _) => throw new UnreachableException());
     }
 
-    private static void WriteMember(ModuleReading reading, DocumentRequest.Member request, DocumentBuilder output, DecompilerSettings settings, CancellationToken cancellationToken)
+    private static void WriteMember(ModuleReading reading, DocumentRequest.Member request, DocumentBuilder output, DecompilerSettings settings, IDocumentNotes notes,
+        CancellationToken cancellationToken)
     {
         var module = request.Definition.Module;
         var member = NodeDefinitions.GetSymbol(request.Definition);
@@ -312,19 +312,19 @@ internal static class NodeDecompiler
             WriteSyntaxTree(reading, module, output, settings, d => d.Decompile(request.Definition.Reference.Handle), cancellationToken);
             return;
         }
-        WriteHeader(module, output, member.DeclaringType, ConversionFlags.UseFullyQualifiedEntityNames | ConversionFlags.UseFullyQualifiedTypeNames);
+        WriteHeader(module, output, notes, member.DeclaringType, ConversionFlags.UseFullyQualifiedEntityNames | ConversionFlags.UseFullyQualifiedTypeNames);
         WriteSyntaxTree(reading, module, output, settings, d => DecompileMember(d, member, declaring), cancellationToken);
     }
 
     private static void WriteIL(ModuleReading reading, DocumentRequest request, DocumentBuilder output, DecompilationLanguage language,
-        DecompilerSettings settings, CancellationToken cancellationToken)
+        DecompilerSettings settings, IDocumentNotes notes, CancellationToken cancellationToken)
     {
-        request.Switch((reading, output, language, settings, cancellationToken),
+        request.Switch((reading, output, language, settings, notes, cancellationToken),
             static (s, preview) =>
             {
                 var file = LoadedAssemblies.GetFile(preview.Module);
                 var disassembler = CreateDisassembler(s.reading, preview.Module, RequireTypeSystem(s.output.TypeSystem), s.output, s.language, s.settings, s.cancellationToken);
-                WriteAssemblySummary(preview.Module, s.output);
+                WriteAssemblySummary(preview.Module, s.output, s.notes);
                 s.output.WriteLine();
                 disassembler.WriteAssemblyReferences(file.Metadata);
                 if (file.Metadata.IsAssembly)
@@ -343,8 +343,8 @@ internal static class NodeDecompiler
                     s.cancellationToken);
                 DisassembleMember(memberDisassembler, LoadedAssemblies.GetFile(member.Definition.Module), member.Definition.Reference.Handle);
             },
-            static (s, summary) => WriteSummary(summary.Info, s.output, s.cancellationToken),
-            static (s, resource) => WriteResource(resource, s.output),
+            static (s, summary) => WriteSummary(summary.Info, s.output, s.notes, s.cancellationToken),
+            static (s, resource) => WriteResource(resource, s.output, s.notes),
             static (s, baml) => WriteXaml(s.reading, baml, s.output, s.cancellationToken),
             static (_, _) => throw new UnreachableException());
     }
@@ -395,12 +395,12 @@ internal static class NodeDecompiler
     }
 
     // ILSpy opens a type or member with these comments.
-    private static void WriteHeader(LoadedModule assembly, DocumentBuilder output, IType type, ConversionFlags flags)
+    private static void WriteHeader(LoadedModule assembly, DocumentBuilder output, IDocumentNotes notes, IType type, ConversionFlags flags)
     {
         var attributes = RequireTypeSystem(output.TypeSystem).MainModule.GetAssemblyAttributes();
         if (IsReferenceAssembly(attributes))
         {
-            WriteComment(output, ReferenceAssemblyWarning);
+            WriteComment(output, notes.ReferenceAssembly());
         }
 
         WriteComment(output, assembly.FullName);
@@ -497,7 +497,7 @@ internal static class NodeDecompiler
         return LoadedAssemblies.EnsureDebugSymbols(assembly);
     }
 
-    private static void WriteAssemblySummary(LoadedModule assembly, DocumentBuilder output)
+    private static void WriteAssemblySummary(LoadedModule assembly, DocumentBuilder output, IDocumentNotes notes)
     {
         var file = LoadedAssemblies.GetFile(assembly);
         WriteComment(output, assembly.FilePath.Text);
@@ -508,24 +508,25 @@ internal static class NodeDecompiler
             var entryPoint = corHeader.EntryPointTokenOrRelativeVirtualAddress;
             if (entryPoint != 0 && (corHeader.Flags & CorFlags.NativeEntryPoint) == 0)
             {
-                WriteEntryPoint(assembly, MetadataTokens.EntityHandle(entryPoint), output);
+                WriteEntryPoint(MetadataTokens.EntityHandle(entryPoint), output, notes);
             }
         }
         var pe = LoadedAssemblies.FindPEFile(assembly);
         if (pe is not null)
         {
-            WriteComment(output, $"Architecture: {ArchitectureOf(pe.Reader.PEHeaders)}");
+            WriteComment(output, notes.Architecture(ArchitectureOf(pe.Reader.PEHeaders)));
         }
 
         if (assembly.TargetFramework is not null)
         {
-            WriteComment(output, $"Target framework: {assembly.TargetFramework.Text}");
+            WriteComment(output, notes.TargetFramework(assembly.TargetFramework.Text));
         }
 
         output.WriteLine();
     }
 
-    private static void WriteEntryPoint(LoadedModule assembly, EntityHandle handle, DocumentBuilder output)
+    // The note's words around the method, which is written as a link where the language's template puts it.
+    private static void WriteEntryPoint(EntityHandle handle, DocumentBuilder output, IDocumentNotes notes)
     {
         if (handle.Kind != HandleKind.MethodDefinition)
         {
@@ -544,9 +545,30 @@ internal static class NodeDecompiler
             return;
         }
 
-        output.Write("// Entry point: ", SpanKind.Comment);
-        output.Write(EntityText.FullName(method), SpanKind.Method, reference);
+        var name = EntityText.FullName(method);
+        var note = notes.EntryPoint(name);
+        var at = note.IndexOf(name, StringComparison.Ordinal);
+        if (at < 0)
+        {
+            WriteComment(output, note);
+            return;
+        }
+
+        output.Write(DocumentBuilder.CommentMarker + note[..at], SpanKind.Comment);
+        output.Write(name, SpanKind.Method, reference);
+        WriteCommentRest(output, note[(at + name.Length)..]);
         output.WriteLine();
+    }
+
+    // What a note says after a link in it, if anything.
+    private static void WriteCommentRest(DocumentBuilder output, string rest)
+    {
+        if (rest.Length == 0)
+        {
+            return;
+        }
+
+        output.Write(rest, SpanKind.Comment);
     }
 
     private static string ArchitectureOf(PEHeaders headers)
@@ -566,9 +588,9 @@ internal static class NodeDecompiler
         return (flags & CorFlags.Prefers32Bit) != 0 ? "AnyCPU (32-bit preferred)" : "x86";
     }
 
-    private static void WriteSummary(SummaryInfo summary, DocumentBuilder output, CancellationToken cancellationToken)
+    private static void WriteSummary(SummaryInfo summary, DocumentBuilder output, IDocumentNotes notes, CancellationToken cancellationToken)
     {
-        summary.Switch((output, cancellationToken),
+        summary.Switch((output, notes, cancellationToken),
             static (s, comments) =>
             {
                 foreach (var line in comments.Lines)
@@ -594,12 +616,12 @@ internal static class NodeDecompiler
                 foreach (var entry in ns.Entries)
                 {
                     s.cancellationToken.ThrowIfCancellationRequested();
-                    WriteNamespaceEntry(s.output, entry);
+                    WriteNamespaceEntry(s.output, s.notes, entry);
                 }
             },
             static (s, forwarded) =>
             {
-                WriteComment(s.output, ForwardedToText(forwarded.Destination));
+                WriteComment(s.output, ForwardedToText(s.notes, forwarded.Destination));
                 s.output.Write(forwarded.FullName, SpanKind.Type, forwarded.Target);
                 s.output.WriteLine();
             },
@@ -618,21 +640,21 @@ internal static class NodeDecompiler
             static (s, module) =>
             {
                 WriteComment(s.output, module.Name);
-                WriteComment(s.output, DescribeModule(module.ContainsMetadata));
+                WriteComment(s.output, DescribeModule(s.notes, module.ContainsMetadata));
                 WriteImports(s.output, module.Imports);
             },
             static (s, import) =>
             {
                 WriteLink(s.output, import.Method, SpanKind.Method);
-                WriteComment(s.output, $"Calls {import.EntryPoint} in {import.ModuleName}");
+                WriteComment(s.output, s.notes.Calls(import.EntryPoint, import.ModuleName));
             },
             static (s, reference) =>
             {
                 WriteComment(s.output, reference.Reference.FullName);
                 var path = LoadedAssemblies.GetResolver(reference.Module).FindAssemblyFile(reference.Reference);
-                WriteComment(s.output, path is null ? "Not found" : $"Resolves to {path}");
+                WriteComment(s.output, path is null ? s.notes.ReferenceNotResolved() : s.notes.ResolvesTo($"{path}"));
             },
-            static (s, used) => WriteUsed(s.output, used.Entries, "", s.cancellationToken),
+            static (s, used) => WriteUsed(s.output, s.notes, used.Entries, "", s.cancellationToken),
             static (s, types) =>
             {
                 foreach (var type in types.Entries)
@@ -649,45 +671,45 @@ internal static class NodeDecompiler
             });
     }
 
-    private static void WriteNamespaceEntry(DocumentBuilder output, NamespaceEntry entry)
+    private static void WriteNamespaceEntry(DocumentBuilder output, IDocumentNotes notes, NamespaceEntry entry)
     {
-        entry.Switch(output,
-            static (o, declared) => WriteTypeDeclaration(o, declared),
-            static (o, forwarded) => WriteForwardedType(o, forwarded.Line));
+        entry.Switch((output, notes),
+            static (s, declared) => WriteTypeDeclaration(s.output, declared),
+            static (s, forwarded) => WriteForwardedType(s.output, s.notes, forwarded.Line));
     }
 
-    private static void WriteUsed(DocumentBuilder output, IReadOnlyList<UsedEntry> entries, string indent, CancellationToken cancellationToken)
+    private static void WriteUsed(DocumentBuilder output, IDocumentNotes notes, IReadOnlyList<UsedEntry> entries, string indent, CancellationToken cancellationToken)
     {
         foreach (var entry in entries)
         {
             cancellationToken.ThrowIfCancellationRequested();
             output.Write(indent);
-            entry.Switch((output, indent, cancellationToken),
+            entry.Switch((output, notes, indent, cancellationToken),
                 static (s, type) =>
                 {
                     s.output.Write(type.FullName, SpanKind.Type, type.Target);
                     s.output.WriteLine();
-                    WriteUsed(s.output, type.Used, s.indent + UsedIndent, s.cancellationToken);
+                    WriteUsed(s.output, s.notes, type.Used, s.indent + UsedIndent, s.cancellationToken);
                 },
                 static (s, member) =>
                 {
                     s.output.Write(member.Label, member.Kind, member.Target);
                     s.output.WriteLine();
                 },
-                static (s, forwarded) => WriteForwardedType(s.output, forwarded.Line));
+                static (s, forwarded) => WriteForwardedType(s.output, s.notes, forwarded.Line));
         }
     }
 
-    private static void WriteForwardedType(DocumentBuilder output, ForwardedLine line)
+    private static void WriteForwardedType(DocumentBuilder output, IDocumentNotes notes, ForwardedLine line)
     {
         output.Write(line.Label, SpanKind.Type, line.Target);
-        output.Write(" // " + ForwardedToText(line.Destination), SpanKind.Comment);
+        output.Write(" " + DocumentBuilder.CommentMarker + ForwardedToText(notes, line.Destination), SpanKind.Comment);
         output.WriteLine();
     }
 
-    private static string ForwardedToText(string? destination)
+    private static string ForwardedToText(IDocumentNotes notes, string? destination)
     {
-        return $"Forwarded to {destination}";
+        return notes.ForwardedTo(destination ?? "");
     }
 
     private static void WriteTypeDeclaration(DocumentBuilder output, NamespaceEntry.Declared type)
@@ -715,7 +737,7 @@ internal static class NodeDecompiler
         output.WriteLine();
     }
 
-    private static void WriteResource(DocumentRequest.Resource resource, DocumentBuilder output)
+    private static void WriteResource(DocumentRequest.Resource resource, DocumentBuilder output, IDocumentNotes notes)
     {
         var data = resource.Read();
         // Colored as XML or JSON when it is that, as ILSpy shows it.
@@ -733,7 +755,7 @@ internal static class NodeDecompiler
         WriteHexDump(data.AsSpan(0, Math.Min(data.Length, MaxResourceBytes)), output);
         if (data.Length > MaxResourceBytes)
         {
-            WriteComment(output, $"Truncated after {MaxResourceBytes} bytes.");
+            WriteComment(output, notes.Truncated(MaxResourceBytes));
         }
     }
 
@@ -770,14 +792,14 @@ internal static class NodeDecompiler
         output.WriteLine();
     }
 
-    private static string DescribeModule(bool containsMetadata)
+    private static string DescribeModule(IDocumentNotes notes, bool containsMetadata)
     {
         if (containsMetadata)
         {
-            return "A module of this assembly, holding metadata";
+            return notes.ModuleWithMetadata();
         }
 
-        return "A native library, or a module holding no metadata";
+        return notes.ModuleWithoutMetadata();
     }
 
     private static void WriteImports(DocumentBuilder output, IReadOnlyList<SummaryLink> imports)
@@ -802,7 +824,7 @@ internal static class NodeDecompiler
 
     private static void WriteComment(DocumentBuilder output, string text)
     {
-        output.Write($"// {text}", SpanKind.Comment);
+        output.Write(DocumentBuilder.CommentMarker + text, SpanKind.Comment);
         output.WriteLine();
     }
 

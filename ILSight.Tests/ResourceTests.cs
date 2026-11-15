@@ -19,7 +19,7 @@ public sealed class ResourceTests
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(BrokenAssemblies.WriteUnreadableResourcesFile(temp));
         var container = Assert.Single(await (await ResourcesAsync(assembly)).ListChildrenAsync());
 
-        var content = await NodeContentLoader.ReadContentAsync(TestSession.Shared, container, DecompilationLanguage.CSharp, DecompilerOptions.Default,
+        var content = await NodeContentLoader.ReadContentAsync(TestSession.Shared, container, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance,
             NodeQueries.FirstGridRows);
 
         Assert.NotEmpty(Assert.IsType<Outcome<ModuleRead<NodeContent>>.Failed>(content).Error.Message);

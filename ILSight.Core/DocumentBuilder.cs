@@ -23,6 +23,9 @@ internal sealed class DocumentBuilder : ITextOutput
     private const string DefaultFoldText = "...";
     private const string SourceLinePrefix = "// ";
 
+    /// <summary>The comment marker the app's notes are written under, the code's syntax in either language.</summary>
+    internal const string CommentMarker = "// ";
+
     public required DecompilationLanguage Language { get; init; }
     private readonly StringBuilder _line = new();
     private readonly List<DocumentSpan> _spans = new();
@@ -43,23 +46,24 @@ internal sealed class DocumentBuilder : ITextOutput
     /// by name only; the document carries them.</summary>
     public IReadOnlyList<UnreadReference> UnreadReferences { get; private set; } = [];
 
-    /// <summary>Says, as comments, every reference the code was read without, as what each is: each of
-    /// <paramref name="unread"/> found but unreadable, why, and the step that reads it again (the module's code is kept,
-    /// so decompiling again would not), then each of <paramref name="missing"/> not found; keeps the
-    /// unread for the document, whose failures they are.</summary>
-    public void WriteUnreadReferences(IReadOnlyList<UnreadReference> unread, IReadOnlyList<string> missing)
+    /// <summary>Says, as comments in <paramref name="notes"/>' words, every reference the code was read without, as
+    /// what each is: each of <paramref name="unread"/> found but unreadable (its cause's note), why, and the step that
+    /// reads it again (the module's code is kept, so decompiling again would not), then each of
+    /// <paramref name="missing"/> not found (its own); keeps the unread for the document, whose failures they
+    /// are.</summary>
+    public void WriteUnreadReferences(IReadOnlyList<UnreadReference> unread, IReadOnlyList<string> missing, IDocumentNotes notes)
     {
         UnreadReferences = unread;
         foreach (var reference in unread)
         {
             var why = reference.Error.InnerException?.Message ?? reference.Error.Message;
-            Write($"// Warning: the reference {reference.Name} was read by name only: {reference.Error.FilePath} could not be read. {why} Reload {reference.Module} once it can be read.", SpanKind.Comment);
+            Write(CommentMarker + notes.ReferenceUnreadable(reference.Name, $"{reference.Error.FilePath}", why, reference.Module), SpanKind.Comment);
             WriteLine();
         }
 
         foreach (var name in missing)
         {
-            Write($"// Warning: the reference {name} was read by name only: it was not found.", SpanKind.Comment);
+            Write(CommentMarker + notes.ReferenceNotFound(name), SpanKind.Comment);
             WriteLine();
         }
     }
