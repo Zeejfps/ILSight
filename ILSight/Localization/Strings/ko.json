@@ -392,7 +392,7 @@
   "metadata.filter_any_value": "<모두>",
   "resource.export": "내보내기",
   "resource.export_title": "리소스 내보내기",
-  "export.save_code_as_shown_title": "{language} 코드를 표시된 대로 저장",
+  "export.save_code_as_shown_title": "{language} 코드를 요청한 시점에 표시된 대로 저장",
   "export.pdb_title": "이식 가능한 PDB 생성",
   "export.pdbs_title": "PDB를 저장할 폴더 선택",
   "export.diagram_title": "클래스 다이어그램을 저장할 폴더 선택",

@@ -392,7 +392,7 @@
   "metadata.filter_any_value": "<Cualquiera>",
   "resource.export": "Exportar",
   "resource.export_title": "Exportar recurso",
-  "export.save_code_as_shown_title": "Guardar el código {language} tal como se muestra",
+  "export.save_code_as_shown_title": "Guardar el código {language} tal como se mostraba al pedirlo",
   "export.pdb_title": "Generar PDB portable",
   "export.pdbs_title": "Elige la carpeta para los PDB",
   "export.diagram_title": "Elige la carpeta para el diagrama",

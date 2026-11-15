@@ -32,8 +32,9 @@ internal static class SaveDialogs
     /// <summary>Asks where to save the code of <paramref name="node"/> as one file, in <paramref name="setup"/>'s
     /// language and with its options: the file is named, and its filters chosen, for that language, and the save the
     /// answer queues carries the same setup, so a language or option changed while the dialog is open (it doesn't
-    /// block) reaches neither the name nor the code. The dialog's title says so to the user: it saves the code in that
-    /// language as shown ("Save C# code as shown").</summary>
+    /// block) reaches neither the name nor the code. The dialog's title says so to the user, naming the instant, since what
+    /// is shown can change before the file is picked: it saves the code as shown when they asked ("Save C# code as shown
+    /// when you asked").</summary>
     public static void PickCodeFile(Ui ui, Appearance appearance, IAppCommandWriter commands, DecompilerSetup setup, BrowseNode node)
     {
         var t = appearance.Strings;

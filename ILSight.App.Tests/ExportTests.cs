@@ -162,7 +162,7 @@ public sealed class ExportTests : IDisposable
         app.Frames.Key(Shortcuts.SaveCode).Frame(2);
         app.Settle();
 
-        Assert.Equal(["Save C# code as shown"], app.Frames.FilePicker.Titles);
+        Assert.Equal(["Save C# code as shown when you asked"], app.Frames.FilePicker.Titles);
         Assert.Contains("public class Greeter", await File.ReadAllTextAsync(path));
     }
 
@@ -188,7 +188,7 @@ public sealed class ExportTests : IDisposable
         app.Settle();
 
         // Told to the user where they asked: the code in the language shown, as shown, whatever changes while it's open.
-        Assert.Equal(["Save C# code as shown"], app.Frames.FilePicker.Titles);
+        Assert.Equal(["Save C# code as shown when you asked"], app.Frames.FilePicker.Titles);
         Assert.Equal("Greeter.cs", app.Frames.FilePicker.LastSave.FileName);
         Assert.Equal(DecompilationLanguage.IL, app.AppState.Decompiler.Setup.Language);
         Assert.False(DecompilerToggles.IsOn(app.AppState.Decompiler.Setup.Options, stringConcat));
@@ -215,7 +215,7 @@ public sealed class ExportTests : IDisposable
         app.Frames.Key(Shortcuts.SaveCode).Frame(2);
         app.Settle();
 
-        Assert.Equal(["Save C# code as shown"], app.Frames.FilePicker.Titles);
+        Assert.Equal(["Save C# code as shown when you asked"], app.Frames.FilePicker.Titles);
         Assert.False(DecompilerToggles.IsOn(app.AppState.Decompiler.Setup.Options, stringConcat));
         var code = await File.ReadAllTextAsync(path);
         Assert.Contains("public class Greeter", code);

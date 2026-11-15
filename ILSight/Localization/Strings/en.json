@@ -401,7 +401,7 @@
   "metadata.filter_any_value": "<Any>",
   "resource.export": "Export",
   "resource.export_title": "Export resource",
-  "export.save_code_as_shown_title": "Save {language} code as shown",
+  "export.save_code_as_shown_title": "Save {language} code as shown when you asked",
   "export.pdb_title": "Generate portable PDB",
   "export.pdbs_title": "Choose the folder for the PDBs",
   "export.diagram_title": "Choose the folder for the diagram",

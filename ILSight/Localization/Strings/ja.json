@@ -392,7 +392,7 @@
   "metadata.filter_any_value": "<すべて>",
   "resource.export": "エクスポート",
   "resource.export_title": "リソースをエクスポート",
-  "export.save_code_as_shown_title": "{language} のコードを表示どおりに保存",
+  "export.save_code_as_shown_title": "{language} のコードを依頼した時点の表示どおりに保存",
   "export.pdb_title": "ポータブル PDB を生成",
   "export.pdbs_title": "PDB の保存先フォルダーを選択",
   "export.diagram_title": "クラス図の保存先フォルダーを選択",
