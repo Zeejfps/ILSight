@@ -364,11 +364,16 @@ nullable exception).
     one message by their identity in code, never merged before it.
   - **Text, not notation or layout:** a language's text owns its spacing, punctuation and order, never
     code: words read as one text, and the app's own arrangement of values for a person, join by its template; parts
-    drawn apart are layout; a notation is one by what reads it outside the text (`file(line): problem`, a tool's term
-    such as `AnyCPU`), the same in every language, the app's words about it translated.
+    drawn apart (items on lines of their own) are layout; a notation is one by what reads it outside the text
+    (`file(line): problem`, a tool's term such as `AnyCPU`), the same in every language, the app's words about it
+    translated.
   - **Commentary, not content:** content the app shows is as produced; the app's notes inside it
     are its messages, following a language switch its labels follow (kept as their cause, found when drawn); text that
-    left the app (a saved file: its stated contract) keeps the language it was written in.
+    left the app (a saved file: its stated contract) keeps the language it was written in. Copy and Find read what is
+    drawn; a kept place (a bookmark) uses the content's terms, never an offset into drawn text.
+  - **Diagnostics, not messages:** a stack trace (`ToString()`) never goes where a failure is shown or summarized;
+    only to the log and, where offered (a recovery asking for a report needs it), a labelled diagnostic apart that
+    the user opens or sends.
 - **Batches and absence:** independent items keep their own outcomes, the batch failing only for what fails every item;
   an atomic batch or dependent steps follow the operation's completion contract. "Not there" is the source's own absence
   answer, asked first where it has one; an exception is not there only where it unambiguously means the object asked for
@@ -428,7 +433,8 @@ nullable exception).
   argument); behind a lock it takes the source with the change and cancels after releasing it.
 - **The work's own end settles what it recorded** (pending state), by its ticket, whatever the outcome (quiet too),
   never left to cancellers; an end with no answer says what ended it (closed, stopped), never what an answer would
-  (gone).
+  (gone). The app's own follow-up whose subject is gone drops quietly, unless it is the answer asked for and the user
+  didn't remove the subject (then said).
 - **An effect that can't be undone** (a charge) and what must follow are one transaction, or the work is recorded
   durably first and a worker does the effect under an idempotency key its provider honours, then the rest, replaying
   pending work after an interruption; never the request's token, `CancellationToken.None` or a grace period.
