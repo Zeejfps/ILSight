@@ -431,7 +431,7 @@ public sealed class Navigation
     /// <summary>Shows <paramref name="diagram"/>, titled <paramref name="title"/>, in the active tab while it shows
     /// nothing, else in a new tab, kept open and made the tab the user works in: a new intent, and the diagram a place
     /// in the history. Returns the tab.</summary>
-    public DocumentTab OpenDiagram(TypeDiagram diagram, string title)
+    public DocumentTab OpenDiagram(TypeDiagram diagram, TabTitle title)
     {
         _intent.Begin();
         LeaveActiveTab();
@@ -447,7 +447,7 @@ public sealed class Navigation
     /// <summary>Shows <paramref name="diagram"/>, read back from the saved documents, in <paramref name="tab"/>, which
     /// waited for it: no place in the history and no new intent; taken as the diagram the user works in when the tab
     /// is the active one.</summary>
-    public void RestoreDiagram(DocumentTab tab, TypeDiagram diagram, string title)
+    public void RestoreDiagram(DocumentTab tab, TypeDiagram diagram, TabTitle title)
     {
         _tabs.GetDocument(tab).ShowDiagram(diagram, title, ++_lastDocumentId);
         if (tab != _tabs.Active)
@@ -460,7 +460,7 @@ public sealed class Navigation
 
     /// <summary>Shows <paramref name="comparison"/>, titled <paramref name="title"/>, its saved one compared again, in
     /// <paramref name="tab"/>, which waited for it: no place in the history and no new intent.</summary>
-    public void RestoreComparison(DocumentTab tab, AssemblyComparison comparison, string title)
+    public void RestoreComparison(DocumentTab tab, AssemblyComparison comparison, TabTitle title)
     {
         _tabs.GetDocument(tab).ShowComparison(comparison, title, ++_lastDocumentId);
     }
@@ -468,7 +468,7 @@ public sealed class Navigation
     /// <summary>Shows <paramref name="comparison"/>, titled <paramref name="title"/>, in the active tab while it shows
     /// nothing, else in a new tab, kept open and made the tab the user works in: a new intent, and the comparison a
     /// place in the history. Returns the tab.</summary>
-    public DocumentTab OpenComparison(AssemblyComparison comparison, string title)
+    public DocumentTab OpenComparison(AssemblyComparison comparison, TabTitle title)
     {
         _intent.Begin();
         LeaveActiveTab();
@@ -524,7 +524,7 @@ public sealed class Navigation
     /// <summary>Has <paramref name="tab"/>, reopened from the saved documents, wait, titled <paramref name="title"/>,
     /// for the diagram it showed when they were saved to be read once the assemblies are listed: no place in the
     /// history and no new intent.</summary>
-    public void WaitForDiagram(DocumentTab tab, string? title)
+    public void WaitForDiagram(DocumentTab tab, TabTitle? title)
     {
         _tabs.GetDocument(tab).WaitForDocument(title);
     }
@@ -542,7 +542,7 @@ public sealed class Navigation
     /// <summary>Has <paramref name="tab"/>, reopened from the saved documents, wait, titled <paramref name="title"/>,
     /// for the assemblies the comparison it showed when they were saved compared to be listed: no place in the history
     /// and no new intent.</summary>
-    public void WaitForComparison(DocumentTab tab, string? title)
+    public void WaitForComparison(DocumentTab tab, TabTitle? title)
     {
         _tabs.GetDocument(tab).WaitForDocument(title);
     }

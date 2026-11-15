@@ -234,7 +234,7 @@ public static class SavedDocuments
         return new NodeDocumentRecord
         {
             Panel = panel.Panel,
-            Title = tab.Title,
+            Title = tab.Load.Title,
             Location = location,
             Language = tab.Load.Language,
             View = tab.Load.PositionToReopen,
@@ -249,7 +249,7 @@ public static class SavedDocuments
         return new DiagramDocumentRecord
         {
             Panel = panel.Panel,
-            Title = tab.Title,
+            Title = tab.DocumentTitle,
             Types = types,
             HomeAssemblies = homes,
             View = view?.View,
@@ -262,7 +262,7 @@ public static class SavedDocuments
         return new ComparisonDocumentRecord
         {
             Panel = panel.Panel,
-            Title = tab.Title,
+            Title = tab.DocumentTitle,
             LeftPath = comparison.LeftPath,
             RightPath = comparison.RightPath,
             Scope = comparison.Scope,

@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Globalization;
 using System.Text;
 using ILSight.Core;
 
@@ -56,7 +55,7 @@ internal static class ExportReportText
     {
         if (elapsed.TotalMinutes < 1)
         {
-            return t.DurationSeconds(elapsed.TotalSeconds.ToString("F1", CultureInfo.CurrentCulture));
+            return t.DurationSeconds(elapsed.TotalSeconds.ToString("F1", t.Culture));
         }
 
         if (elapsed.TotalHours < 1)

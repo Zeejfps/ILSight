@@ -78,7 +78,7 @@ public sealed class SavedComparisonTests : IDisposable
         var restored = next.AppState.ListSession.Navigation.OpenTabs.Single(t => t.Comparison is not null);
         var reopened = restored.Comparison;
         Assert.NotNull(reopened);
-        Assert.Equal("ApiDiffSample API diff", restored.Title);
+        Assert.Equal("ApiDiffSample API diff", restored.TitleIn(Strings.En));
         Assert.Equal(panel, next.Ui.Documents.GetPanel(restored));
         Assert.Equal(RightPath, reopened.LeftPath.Text);
         Assert.Equal(LeftPath, reopened.RightPath.Text);

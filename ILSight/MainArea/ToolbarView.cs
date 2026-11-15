@@ -251,8 +251,8 @@ internal static class ToolbarView
     {
         return entry.Match(strings,
             static (_, node) => node.Place.Label,
-            static (_, diagram) => diagram.Title,
-            static (_, comparison) => comparison.Title,
+            static (strings, diagram) => diagram.Title.Words(strings),
+            static (strings, comparison) => comparison.Title.Words(strings),
             static (strings, _) => strings.ExportReportTitle);
     }
 

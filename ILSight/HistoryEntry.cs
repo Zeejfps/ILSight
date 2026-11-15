@@ -42,7 +42,7 @@ public abstract record HistoryEntry
     {
         public required int Id { get; init; }
 
-        public required string Title { get; init; }
+        public required TabTitle Title { get; init; }
 
         public required IReadOnlyList<TypeAnchor> Types { get; init; }
 
@@ -56,7 +56,7 @@ public abstract record HistoryEntry
     {
         public required int Id { get; init; }
 
-        public required string Title { get; init; }
+        public required TabTitle Title { get; init; }
 
         public required AssemblyPath LeftPath { get; init; }
 

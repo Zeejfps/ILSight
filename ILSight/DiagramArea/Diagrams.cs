@@ -70,7 +70,7 @@ public static class Diagrams
     /// directly related to, on the diagram the user last worked in, brought to the front; on a new one
     /// when none is open, titled <paramref name="newTitle"/>. Returns the read of their cards it started, for the
     /// edge to start (<see cref="DiagramGrowing.AddWithNeighboursAsync"/>) on a token closing the diagram cancels.</summary>
-    public static NeighboursRead ShowInDiagram(Navigation navigation, CodeReference.Entity type, string newTitle)
+    public static NeighboursRead ShowInDiagram(Navigation navigation, CodeReference.Entity type, TabTitle newTitle)
     {
         var tab = navigation.DiagramTab;
         if (tab is null || tab.Content is not TabContent.Diagram shown)
@@ -84,7 +84,7 @@ public static class Diagrams
     /// <summary>Shows the type <paramref name="type"/> points at, with the types of its assembly it is
     /// directly related to, on a new diagram: in the active tab while it shows nothing, else in a new tab. Returns
     /// the read of their cards it started, as <see cref="ShowInDiagram"/> does.</summary>
-    public static NeighboursRead ShowInNewDiagram(Navigation navigation, CodeReference.Entity type, string title)
+    public static NeighboursRead ShowInNewDiagram(Navigation navigation, CodeReference.Entity type, TabTitle title)
     {
         var diagram = new TypeDiagram();
         var tab = navigation.OpenDiagram(diagram, title);
@@ -170,7 +170,7 @@ public static class Diagrams
         var diagram = new TypeDiagram();
         diagram.TakeHomes(saved.HomeAssemblies);
         diagram.Keep(saved.Types);
-        navigation.RestoreDiagram(tab, diagram, saved.Title ?? string.Empty);
+        navigation.RestoreDiagram(tab, diagram, saved.Title ?? new TabTitle.Saved(string.Empty));
         return diagram;
     }
 }

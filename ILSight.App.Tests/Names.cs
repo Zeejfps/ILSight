@@ -10,13 +10,25 @@ internal static class Names
         return Strings.En.BookmarksDefaultName(number);
     }
 
-    public static string Comparison(LoadedAssembly left)
+    public static TabTitle Comparison(LoadedAssembly left)
     {
-        return Strings.En.ComparisonTitle(left.Name);
+        return new TabTitle.Comparison(left.Name);
     }
 
-    public static string Diagram(CodeReference type)
+    public static TabTitle Diagram(CodeReference type)
     {
-        return Strings.En.DiagramTitle(type.Name);
+        return new TabTitle.Diagram(type.Name);
+    }
+
+    /// <summary>The title <paramref name="saved"/> was kept under, in English.</summary>
+    public static string? SavedTitle(DocumentRecord saved)
+    {
+        return saved switch
+        {
+            NodeDocumentRecord node => node.Title,
+            DiagramArea.DiagramDocumentRecord diagram => diagram.Title?.Words(Strings.En),
+            ComparisonDocumentRecord comparison => comparison.Title?.Words(Strings.En),
+            _ => null,
+        };
     }
 }

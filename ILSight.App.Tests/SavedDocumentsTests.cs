@@ -69,7 +69,7 @@ public sealed class SavedDocumentsTests : IDisposable
 
     private static DocumentTab TabTitled(AppDriver app, string title)
     {
-        return app.AppState.ListSession.Navigation.OpenTabs.Single(t => t.Title == title);
+        return app.AppState.ListSession.Navigation.OpenTabs.Single(t => t.TitleIn(Strings.En) == title);
     }
 
     private static CodeViewPosition ScrollTo(AppDriver app, DocumentTab tab, int topLine, TextPosition anchor, TextPosition caret)
@@ -118,7 +118,7 @@ public sealed class SavedDocumentsTests : IDisposable
     private static List<(string? Title, string Panel)> ListTabPanels(AppDriver app)
     {
         return app.AppState.ListSession.Navigation
-            .OpenTabs.Select(t => (t.Title, app.Ui.Documents.GetPanel(t)))
+            .OpenTabs.Select(t => (t.TitleIn(Strings.En), app.Ui.Documents.GetPanel(t)))
             .ToList();
     }
 
@@ -263,11 +263,11 @@ public sealed class SavedDocumentsTests : IDisposable
 
         Assert.Equal(ListTabPanels(app), ListTabPanels(next));
         Assert.Equal(ListGroups(app), ListGroups(next));
-        Assert.Equal("Greeter", next.AppState.ListSession.Navigation.ActiveTab?.Title);
-        Assert.Equal("Farewell", next.AppState.ListSession.Navigation.PreviewTab?.Title);
+        Assert.Equal("Greeter", next.AppState.ListSession.Navigation.ActiveTab?.TitleIn(Strings.En));
+        Assert.Equal("Farewell", next.AppState.ListSession.Navigation.PreviewTab?.TitleIn(Strings.En));
         Assert.Equal("Farewell", TabTitled(next, "Farewell").Node?.Text);
         Assert.Equal(outlinePosition, CodeOf(next, TabTitled(next, "Outline")).Position);
-        var diagramTitle = diagram.Title;
+        var diagramTitle = diagram.TitleIn(Strings.En);
         Assert.NotNull(diagramTitle);
         var restored = TabTitled(next, diagramTitle);
         var restoredView = DiagramOf(next, restored);
@@ -408,7 +408,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var saved = new DiagramDocumentRecord
         {
             Panel = DiagramPanel,
-            Title = "Vehicle diagram",
+            Title = new TabTitle.Diagram("Vehicle"),
             Types = [vehicle, FixtureType("Missing")],
             HomeAssemblies = [TestPaths.PathOf(AppStateDriver.FixturePath)],
             View = null,
@@ -424,7 +424,7 @@ public sealed class SavedDocumentsTests : IDisposable
         d.Settle();
 
         var tab = Assert.Single(d.AppState.ListSession.Navigation.OpenTabs);
-        Assert.Equal("Vehicle diagram", tab.Title);
+        Assert.Equal("Vehicle diagram", tab.TitleIn(Strings.En));
         Assert.Equal([vehicle], ListTypes(tab));
         var diagram = tab.Diagram;
         Assert.NotNull(diagram);
@@ -484,7 +484,7 @@ public sealed class SavedDocumentsTests : IDisposable
         d.Settle();
 
         var tabs = d.AppState.ListSession.Navigation.OpenTabs.ToList();
-        Assert.Equal(["Greeter", "Farewell"], tabs.Select(static t => t.Title));
+        Assert.Equal(["Greeter", "Farewell"], tabs.Select(static t => t.TitleIn(Strings.En)));
         var layout = d.Arrangement;
         var left = layout.GroupOf(d.Ui.Documents.GetPanel(tabs[0]));
         Assert.NotNull(left);
@@ -495,7 +495,7 @@ public sealed class SavedDocumentsTests : IDisposable
         Assert.Equal(Direction.Horizontal, split.Direction);
         Assert.Same(left, split.First);
         Assert.Same(right, split.Second);
-        Assert.Equal("Farewell", d.AppState.ListSession.Navigation.ActiveTab?.Title);
+        Assert.Equal("Farewell", d.AppState.ListSession.Navigation.ActiveTab?.TitleIn(Strings.En));
     }
 
     private static DockSplit? ParentOf(DockNode node, DockNode target)
@@ -531,7 +531,7 @@ public sealed class SavedDocumentsTests : IDisposable
         Assert.NotNull(documents);
         var kept = documents.Tabs;
 
-        Assert.Equal(["First"], kept.Select(static t => t.Title));
+        Assert.Equal(["First"], kept.Select(Names.SavedTitle));
     }
 
     private static NodeDocumentRecord HandTab(string panel, string title)
@@ -583,6 +583,6 @@ public sealed class SavedDocumentsTests : IDisposable
 
         var documents = Assert.Single(_temp.Settings().AssemblyLists).Documents;
         Assert.NotNull(documents);
-        Assert.Contains(documents.Tabs, static t => t.Title == "Greeter");
+        Assert.Contains(documents.Tabs, static t => Names.SavedTitle(t) == "Greeter");
     }
 }

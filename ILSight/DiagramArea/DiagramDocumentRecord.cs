@@ -6,6 +6,9 @@ namespace ILSight.DiagramArea;
 /// <see cref="HomeAssemblies"/> its own, and how it was viewed.</summary>
 public sealed record DiagramDocumentRecord : DocumentRecord
 {
+    /// <summary>What its tab was titled, worded again when drawn; null where the settings held none.</summary>
+    public required TabTitle? Title { get; init; }
+
     public required List<TypeAnchor> Types { get; init; }
 
     public required List<AssemblyPath>? HomeAssemblies { get; init; }

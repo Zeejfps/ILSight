@@ -87,14 +87,22 @@ public sealed class DocumentTab
     public int Changes => _document.Changes;
 
     /// <summary>The name of what the tab shows: its node's, kept by what it shows while the node is away, or
-    /// its diagram's or comparison's own; null for a new tab or a report.</summary>
-    public string? Title => _document.Title;
+    /// its diagram's or comparison's own, worded in <paramref name="t"/>'s language; null for a new tab or a
+    /// report.</summary>
+    public string? TitleIn(Strings t)
+    {
+        return _document.TitleIn(t);
+    }
+
+    /// <summary>The title of the diagram or comparison the tab shows or waits for, as the saved documents keep it;
+    /// null while it is pointed at a node, shows a report or nothing.</summary>
+    public TabTitle? DocumentTitle => _document.DocumentTitle;
 
     /// <summary>The full identity of what the tab shows, as <paramref name="t"/>'s language says what the app words, or
     /// null for a new tab.</summary>
     public string? TooltipIn(Strings t)
     {
-        return Node is not null ? NodeText.Tooltip(t, Node) : Title;
+        return Node is not null ? NodeText.Tooltip(t, Node) : TitleIn(t);
     }
 
     /// <summary>Changes whenever the tab is pointed somewhere, its load starts again, or it loses its node.</summary>

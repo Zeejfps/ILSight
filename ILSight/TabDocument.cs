@@ -17,7 +17,10 @@ public sealed class TabDocument
     // Null while the tab is pointed at a node, which _load shows.
     private TabContent? _shown = new TabContent.Empty();
 
-    private string? _title;
+    private TabTitle? _title;
+
+    // The title last worded, for the language and the title it was worded for: a tab is titled every frame.
+    private Memo<(ByReference<Strings>, ByReference<TabTitle>), string> _titleWords;
 
     private TabLoad _load;
 
@@ -42,8 +45,33 @@ public sealed class TabDocument
     public TabContent Content => _shown ?? _load.Content;
 
     /// <summary>The name of what the tab shows: its node's, kept while the node is away, or its diagram's or
-    /// comparison's own; null for a new tab or a report.</summary>
-    public string? Title => _shown is null ? _load.Title : _title;
+    /// comparison's own, worded in <paramref name="t"/>'s language; null for a new tab or a report.</summary>
+    public string? TitleIn(Strings t)
+    {
+        if (_shown is null)
+        {
+            return _load.Title;
+        }
+
+        if (_title is null)
+        {
+            return null;
+        }
+
+        var key = (new ByReference<Strings>(t), new ByReference<TabTitle>(_title));
+        if (_titleWords.TryGet(key, out var words))
+        {
+            return words;
+        }
+
+        words = _title.Words(t);
+        _titleWords = new Memo<(ByReference<Strings>, ByReference<TabTitle>), string>(key, words);
+        return words;
+    }
+
+    /// <summary>The title of the diagram or comparison shown, or of the one the tab waits for; null while the tab is
+    /// pointed at a node (<see cref="TabLoad.Title"/> names it), shows a report or nothing.</summary>
+    public TabTitle? DocumentTitle => _shown is null ? null : _title;
 
     /// <summary>The file name of the closed assembly what the tab shows was read from: its node's
     /// (<see cref="TabLoad.ShowClosed"/>), or one its diagram or comparison reads (<see cref="ShowClosed"/>); null
@@ -142,14 +170,14 @@ public sealed class TabDocument
 
     /// <summary>Shows <paramref name="diagram"/>, titled <paramref name="title"/> and given <paramref name="id"/>,
     /// cancelling what was in flight.</summary>
-    public void ShowDiagram(TypeDiagram diagram, string title, int id)
+    public void ShowDiagram(TypeDiagram diagram, TabTitle title, int id)
     {
         Show(new TabContent.Diagram { Types = diagram, Title = title, Id = id }, title);
     }
 
     /// <summary>Shows <paramref name="comparison"/>, titled <paramref name="title"/> and given <paramref name="id"/>,
     /// cancelling what was in flight.</summary>
-    public void ShowComparison(AssemblyComparison comparison, string title, int id)
+    public void ShowComparison(AssemblyComparison comparison, TabTitle title, int id)
     {
         Show(new TabContent.Comparison { Assemblies = comparison, Title = title, Id = id }, title);
     }
@@ -162,7 +190,7 @@ public sealed class TabDocument
 
     /// <summary>Shows the tab, titled <paramref name="title"/>, waiting for the diagram or comparison it showed when the
     /// documents were saved to be read again once the assemblies are listed.</summary>
-    public void WaitForDocument(string? title)
+    public void WaitForDocument(TabTitle? title)
     {
         Show(new TabContent.Reopening(title), title);
     }
@@ -177,7 +205,7 @@ public sealed class TabDocument
         _load = new TabLoad(_work, location, title, language);
     }
 
-    private void Show(TabContent shown, string? title)
+    private void Show(TabContent shown, TabTitle? title)
     {
         PointElsewhere();
         _shown = shown;

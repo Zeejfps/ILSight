@@ -56,7 +56,7 @@ public abstract record TabContent
     {
         public required TypeDiagram Types { get; init; }
 
-        public required string Title { get; init; }
+        public required TabTitle Title { get; init; }
 
         public required int Id { get; init; }
     }
@@ -67,7 +67,7 @@ public abstract record TabContent
     {
         public required AssemblyComparison Assemblies { get; init; }
 
-        public required string Title { get; init; }
+        public required TabTitle Title { get; init; }
 
         public required int Id { get; init; }
     }
@@ -96,7 +96,7 @@ public abstract record TabContent
 
     /// <summary>The saved diagram or comparison waits for the assemblies to be listed to be read again,
     /// under the title it was saved with, if any.</summary>
-    public sealed record Reopening(string? Title) : TabContent;
+    public sealed record Reopening(TabTitle? Title) : TabContent;
 
     /// <summary>The reloaded assemblies hold nothing at <see cref="Location"/> any more; <see cref="Title"/>
     /// is the node's name as it was last known, if it was.</summary>

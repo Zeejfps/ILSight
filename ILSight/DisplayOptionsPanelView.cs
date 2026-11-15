@@ -547,8 +547,9 @@ internal static class DisplayOptionsPanelView
         }
 
         var size = CodeDisplay.GetFontSize(display, theme);
-        var text = ui.Memo("size", size, static s => FormatFontSize(s));
-        ui.Text(text, new Box { Width = Sizing.Fixed(MeasureFontSizeSlot(ui)) }, align: Align.Center);
+        // In the chosen language's numbers, as every text the switch reaches.
+        var text = ui.Memo("size", (size, t.Culture), static a => FormatFontSize(a.size, a.Culture));
+        ui.Text(text, new Box { Width = Sizing.Fixed(MeasureFontSizeSlot(ui, t.Culture)) }, align: Align.Center);
         var larger = ui.Memo("larger", t, static s => s.DisplayOptionsLarger(Shortcuts.ZoomIn.Label));
         if (ui.IconButton("larger", appearance.Icons.OptionsFontLarger, larger, CodeDisplay.CanZoomIn(display, theme), ButtonVariant.Neutral))
         {
@@ -579,15 +580,15 @@ internal static class DisplayOptionsPanelView
         ui.Text(PreviewText, new Box { Width = Sizing.Grow() }, color: color, size: size, family: MonoFonts.Code, wrap: true);
     }
 
-    private static string FormatFontSize(float size)
+    private static string FormatFontSize(float size, CultureInfo culture)
     {
-        return size.ToString(FontSizeFormat, CultureInfo.CurrentCulture);
+        return size.ToString(FontSizeFormat, culture);
     }
 
     // The largest size's width, so the buttons beside it stay put as the size changes.
-    private static float MeasureFontSizeSlot(Ui ui)
+    private static float MeasureFontSizeSlot(Ui ui, CultureInfo culture)
     {
-        var widest = FormatFontSize(CodeFontSize.Max);
+        var widest = FormatFontSize(CodeFontSize.Max, culture);
         var width = ui.MeasureText(widest);
         return MathF.Ceiling(width) + ui.Theme.Gap * 2;
     }

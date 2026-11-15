@@ -13,7 +13,7 @@ public sealed class ReopenDiagramHandlerTests
         var saved = new DiagramDocumentRecord
         {
             Panel = "document-1",
-            Title = "Vehicle diagram",
+            Title = new TabTitle.Diagram("Vehicle"),
             Types = [vehicle.Anchor],
             HomeAssemblies = null,
             View = null,
@@ -55,7 +55,7 @@ public sealed class ReopenDiagramHandlerTests
         var ports = new FakeReopenDiagramHandlerPorts();
 
         var reading = d.BeginAsync(() => new ReopenDiagramHandler(ports).HandleAsync(d.AppState.ListSession.Reopened, read, CancellationToken.None));
-        d.AppState.ListSession.Navigation.RestoreDiagram(read.Reopened.Tab, new TypeDiagram(), "Other diagram");
+        d.AppState.ListSession.Navigation.RestoreDiagram(read.Reopened.Tab, new TypeDiagram(), new TabTitle.Diagram("Other"));
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<TypeCard>>>.Failed(new InvalidOperationException("Gone.")));
         await d.EndAsync(reading);
 
@@ -76,7 +76,7 @@ public sealed class ReopenDiagramHandlerTests
         await d.EndAsync(reading);
 
         var problem = Assert.IsType<AppProblem.DiagramNotReopened>(Assert.Single(ports.Reported));
-        Assert.Equal("Vehicle diagram", problem.Diagram);
+        Assert.Equal(new TabTitle.Diagram("Vehicle"), problem.Diagram);
         Assert.Same(error, problem.Error);
         Assert.Empty(read.Diagram.Cards);
     }

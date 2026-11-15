@@ -36,7 +36,7 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
             return;
         }
 
-        TakeCards(read.Diagram, read.Saved.Title ?? string.Empty, read.Saved.Types, cards);
+        TakeCards(read.Diagram, read.Saved.Title ?? new TabTitle.Saved(string.Empty), read.Saved.Types, cards);
     }
 
     /// <summary>Brings in the cards <paramref name="read"/> started reading and adds them to its diagram, unless the
@@ -49,7 +49,7 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
         TakeCards(read.Diagram, read.Title, read.Types, cards);
     }
 
-    private void TakeCards(TypeDiagram diagram, string title, IReadOnlyList<TypeAnchor> types, Outcome<List<Lookup<TypeCard>>> cards)
+    private void TakeCards(TypeDiagram diagram, TabTitle title, IReadOnlyList<TypeAnchor> types, Outcome<List<Lookup<TypeCard>>> cards)
     {
         if (diagram.IsClosed)
         {

@@ -15,7 +15,7 @@ public static class Comparisons
     /// in <paramref name="navigation"/>'s active tab while it shows nothing, else in a new tab, titled
     /// <paramref name="title"/>, kept open and made active. Returns the comparison it started, for the edge to run;
     /// null when it shows why it can't run.</summary>
-    public static ComparisonRun? CompareAssemblies(Navigation navigation, AssemblyList assemblies, LoadedModule left, LoadedModule right, string title)
+    public static ComparisonRun? CompareAssemblies(Navigation navigation, AssemblyList assemblies, LoadedModule left, LoadedModule right, TabTitle title)
     {
         var comparison = new AssemblyComparison { LeftPath = left.FilePath, RightPath = right.FilePath };
         navigation.OpenComparison(comparison, title);
@@ -35,7 +35,7 @@ public static class Comparisons
 
         var comparison = new AssemblyComparison { LeftPath = saved.LeftPath, RightPath = saved.RightPath };
         comparison.TakeInScope(saved.Scope);
-        var title = saved.Title ?? string.Empty;
+        var title = saved.Title ?? new TabTitle.Saved(string.Empty);
         navigation.RestoreComparison(reopened.Tab, comparison, title);
         return StartComparing(assemblies, comparison);
     }

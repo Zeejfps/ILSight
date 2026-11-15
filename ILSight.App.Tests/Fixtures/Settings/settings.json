@@ -84,6 +84,7 @@
           },
           {
             "kind": "diagram",
+            "TitleName": "Calculator",
             "Types": [
               {
                 "AssemblyPath": "C:\\Fixture\\A.dll",
@@ -122,10 +123,11 @@
               "ShowsHiddenMembers": true
             },
             "Panel": "document-3",
-            "Title": "Diagram"
+            "Title": null
           },
           {
             "kind": "comparison",
+            "TitleName": "A",
             "LeftPath": "C:\\Fixture\\A.dll",
             "RightPath": "C:\\Fixture\\B.dll",
             "Scope": "AllDeclared",
@@ -133,7 +135,7 @@
               "OnlyDifferences": true
             },
             "Panel": "document-4",
-            "Title": "Comparison"
+            "Title": null
           }
         ],
         "Active": "document-3",

@@ -723,7 +723,7 @@ public sealed class AppStateTests
 
         var tab = Assert.Single(d.AppState.ListSession.Navigation.OpenTabs);
         Assert.Null(tab.Node);
-        Assert.Equal("Greeter", tab.Title);
+        Assert.Equal("Greeter", tab.TitleIn(Strings.En));
         Assert.NotNull(tab.Location);
         Assert.Equal(new TabContent.Gone { Location = tab.Location, Title = "Greeter" }, tab.Content);
         Assert.Contains("gone", TabPlaceholders.Write(d.Ui.Appearance.Strings, tab.Content));

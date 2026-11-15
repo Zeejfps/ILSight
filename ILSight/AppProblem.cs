@@ -207,7 +207,7 @@ public abstract record AppProblem
 
     public sealed record DiagramNotReopened : AppProblem
     {
-        public required string Diagram { get; init; }
+        public required TabTitle Diagram { get; init; }
 
         public required Exception Error { get; init; }
     }

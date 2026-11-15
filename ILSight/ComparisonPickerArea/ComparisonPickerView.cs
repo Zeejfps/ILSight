@@ -170,7 +170,7 @@ internal static class ComparisonPickerView
             return false;
         }
 
-        Commands.CompareLater(commands, Comparisons.CompareAssemblies(navigation, assemblies, compared, other, t.ComparisonTitle(compared.Name)));
+        Commands.CompareLater(commands, Comparisons.CompareAssemblies(navigation, assemblies, compared, other, new TabTitle.Comparison(compared.Name)));
         return true;
     }
 }

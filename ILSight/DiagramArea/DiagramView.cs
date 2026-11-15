@@ -715,7 +715,7 @@ internal static class DiagramView
     /// in once the frame is drawn, on a new one titled <paramref name="newTitle"/> when none is open
     /// (<see cref="Diagrams.ShowInDiagram"/>), and for its card and those of its neighbours to be read then, on a
     /// token closing the diagram cancels.</summary>
-    internal static void ShowInDiagramLater(IAppCommandWriter commands, CodeReference.Entity type, string newTitle)
+    internal static void ShowInDiagramLater(IAppCommandWriter commands, CodeReference.Entity type, TabTitle newTitle)
     {
         Commands.StartSettlingLater(commands, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, newTitle), static (a, s) => Diagrams.ShowInDiagram(a.ListSession.Navigation, s.type, s.newTitle),
             static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token,
@@ -724,7 +724,7 @@ internal static class DiagramView
 
     /// <summary>As <see cref="ShowInDiagramLater"/>, on a new diagram titled <paramref name="title"/>
     /// (<see cref="Diagrams.ShowInNewDiagram"/>).</summary>
-    internal static void ShowInNewDiagramLater(IAppCommandWriter commands, CodeReference.Entity type, string title)
+    internal static void ShowInNewDiagramLater(IAppCommandWriter commands, CodeReference.Entity type, TabTitle title)
     {
         Commands.StartSettlingLater(commands, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, title), static (a, s) => Diagrams.ShowInNewDiagram(a.ListSession.Navigation, s.type, s.title),
             static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token,

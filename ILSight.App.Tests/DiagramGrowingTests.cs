@@ -33,7 +33,7 @@ public sealed class DiagramGrowingTests
         var navigation = d.AppState.ListSession.Navigation;
         var lookup = navigation.BeginResolving(inNewTab: false);
 
-        var read = Diagrams.ShowInNewDiagram(d.AppState.ListSession.Navigation, await TypeOfAsync(d, "Vehicle"), "Vehicle diagram");
+        var read = Diagrams.ShowInNewDiagram(d.AppState.ListSession.Navigation, await TypeOfAsync(d, "Vehicle"), new TabTitle.Diagram("Vehicle"));
 
         Assert.Same(read.Tab, navigation.ActiveTab);
         Assert.True(navigation.IsStale(lookup.Intent));
@@ -45,10 +45,10 @@ public sealed class DiagramGrowingTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var navigation = d.AppState.ListSession.Navigation;
-        var first = Diagrams.ShowInNewDiagram(d.AppState.ListSession.Navigation, await TypeOfAsync(d, "Vehicle"), "Vehicle diagram");
+        var first = Diagrams.ShowInNewDiagram(d.AppState.ListSession.Navigation, await TypeOfAsync(d, "Vehicle"), new TabTitle.Diagram("Vehicle"));
         var lookup = navigation.BeginResolving(inNewTab: false);
 
-        var read = Diagrams.ShowInDiagram(d.AppState.ListSession.Navigation, await TypeOfAsync(d, "Greeter"), "Greeter diagram");
+        var read = Diagrams.ShowInDiagram(d.AppState.ListSession.Navigation, await TypeOfAsync(d, "Greeter"), new TabTitle.Diagram("Greeter"));
 
         Assert.Same(first.Tab, read.Tab);
         Assert.Same(read.Tab, navigation.ActiveTab);
@@ -61,7 +61,7 @@ public sealed class DiagramGrowingTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var vehicle = await TypeOfAsync(d, "Vehicle");
-        var read = Diagrams.ShowInNewDiagram(d.AppState.ListSession.Navigation, vehicle, "Vehicle diagram");
+        var read = Diagrams.ShowInNewDiagram(d.AppState.ListSession.Navigation, vehicle, new TabTitle.Diagram("Vehicle"));
         var viewCommands = new Queue<ViewCommand>();
         var ports = new FakeDiagramGrowingPorts();
         Assert.True(read.Diagram.IsBusy);
@@ -85,7 +85,7 @@ public sealed class DiagramGrowingTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var member = (await d.FixtureAsync("Greeter").GetChildAsync("Twice() : int")).Definition;
-        var read = Diagrams.ShowInNewDiagram(d.AppState.ListSession.Navigation, member, "Twice diagram");
+        var read = Diagrams.ShowInNewDiagram(d.AppState.ListSession.Navigation, member, new TabTitle.Diagram("Twice"));
         var viewCommands = new Queue<ViewCommand>();
         var ports = new FakeDiagramGrowingPorts();
 
@@ -104,7 +104,7 @@ public sealed class DiagramGrowingTests
     public async Task AddWithNeighboursAsync_DiagramClosedMeanwhile_DropsWhatArrives()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var read = Diagrams.ShowInNewDiagram(d.AppState.ListSession.Navigation, await TypeOfAsync(d, "Vehicle"), "Vehicle diagram");
+        var read = Diagrams.ShowInNewDiagram(d.AppState.ListSession.Navigation, await TypeOfAsync(d, "Vehicle"), new TabTitle.Diagram("Vehicle"));
         var viewCommands = new Queue<ViewCommand>();
         var ports = new FakeDiagramGrowingPorts();
 

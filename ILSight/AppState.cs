@@ -189,7 +189,12 @@ public sealed class AppState
 
     public ApiVisibility ApiVisibility;
 
-    /// <summary>The interface language.</summary>
+    /// <summary>The interface language. ILSight's contract for a switch: it reaches at once every text the app shows,
+    /// each worded when drawn and none kept as made (labels, tab titles, a diagram's and a comparison's among them,
+    /// the notes in shown code, errors, export reports, the numbers in them). Kept in the words they were made in are
+    /// only records: names the app gave that are the user's to rename (a bookmark's default name, a custom theme's);
+    /// what has left the app (files written, text copied, a system dialog already open, titled as when it was asked
+    /// for); and a diagram's or a comparison's title an earlier version saved worded, until its tab is closed.</summary>
     public Locale Locale;
 
     /// <summary>The language code is shown in and how C# is decompiled, and the setup the views read and pass on.</summary>

@@ -67,7 +67,7 @@ public sealed class ComparisonTests
 
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        Assert.Equal("ApiDiffSample API diff", tab.Title);
+        Assert.Equal("ApiDiffSample API diff", tab.TitleIn(Strings.En));
         Assert.NotSame(tab, d.AppState.ListSession.Navigation.PreviewTab);
         var diff = DiffOf(comparison);
         Assert.Equal(LeftName, diff.LeftName);

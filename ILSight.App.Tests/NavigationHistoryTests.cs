@@ -11,10 +11,10 @@ public sealed class NavigationHistoryTests
         var diagram = new TypeDiagram();
         var history = new NavigationHistory();
 
-        history.RecordDiagram(1, diagram, "diagram");
-        history.RecordDiagram(1, diagram, "diagram");
+        history.RecordDiagram(1, diagram, new TabTitle.Diagram("Vehicle"));
+        history.RecordDiagram(1, diagram, new TabTitle.Diagram("Vehicle"));
 
-        Assert.Equal("diagram", Assert.IsType<HistoryEntry.Diagram>(Assert.Single(history.Entries)).Title);
+        Assert.Equal(new TabTitle.Diagram("Vehicle"), Assert.IsType<HistoryEntry.Diagram>(Assert.Single(history.Entries)).Title);
     }
 
     [Fact]

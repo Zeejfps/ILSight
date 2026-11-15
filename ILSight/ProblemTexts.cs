@@ -59,7 +59,7 @@ public static class ProblemTexts
             comparisonFailed: p => Thrown(t.ErrorCompare(left: p.Left, right: p.Right), p.Error),
             decompilationFailed: p => Reportable(t, t.ErrorDecompile(p.Node), p.Error),
             typeNotDiagrammed: p => Thrown(t.ErrorShowInDiagram(p.Type.Name), p.Error),
-            diagramNotReopened: p => Thrown(t.ErrorShowInDiagram(p.Diagram), p.Error),
+            diagramNotReopened: p => Thrown(t.ErrorShowInDiagram(p.Diagram.Words(t)), p.Error),
             diagramNotLaidOut: p => Thrown(t.ErrorLayOutDiagram, p.Error),
             resourceNotSaved: p => (t.ErrorSaveResource(p.Resource), p.Reason, null),
             packageFileNotExtracted: p => (t.ErrorExtractFile(p.File), p.Reason, null),

@@ -96,7 +96,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
         var showing = d.BeginAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState.ListSession.Reopened, d.AppState.ListSession.Navigation, d.AppState.Decompiler, d.AppState.ViewCommands, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None));
-        d.AppState.ListSession.Navigation.RestoreDiagram(waiting.Reopened.Tab, new TypeDiagram(), "Other diagram");
+        d.AppState.ListSession.Navigation.RestoreDiagram(waiting.Reopened.Tab, new TypeDiagram(), new TabTitle.Diagram("Other"));
         Assert.Single(ports.Answers).SetResult([new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Found { Value = await d.FixtureAsync("Greeter") })]);
         var loads = await d.EndAsync(showing);
 

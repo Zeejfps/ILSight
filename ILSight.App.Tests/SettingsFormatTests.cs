@@ -112,6 +112,25 @@ public sealed class SettingsFormatTests : IDisposable
     }
 
     [Fact]
+    public void A_diagram_title_saved_worded_by_an_earlier_version_is_kept_as_it_was_saved()
+    {
+        var earlier = System.Text.RegularExpressions.Regex.Replace(
+            Fixture(SettingsFixture).Replace("\"TitleName\": \"Calculator\",", ""),
+            @"""Panel"": ""document-3"",\s*""Title"": null",
+            "\"Panel\": \"document-3\", \"Title\": \"Diagramm von Calculator\"");
+        var path = _temp.Write(SettingsFixture, earlier);
+
+        var loaded = AppRoot.ReadSettingsFile(FullFilePath.Of(path)).Settings;
+        var diagram = loaded.AssemblyLists.SelectMany(static l => l.Documents?.Tabs ?? []).OfType<DiagramDocumentRecord>().Single();
+        Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(loaded));
+        var saved = JsonNode.Parse(File.ReadAllText(path))?.ToJsonString();
+
+        Assert.Equal(new TabTitle.Saved("Diagramm von Calculator"), diagram.Title);
+        Assert.Equal("Diagramm von Calculator", diagram.Title?.Words(Strings.For(Locale.Ja)));
+        Assert.Contains("\"Title\":\"Diagramm von Calculator\"", saved);
+    }
+
+    [Fact]
     public void Bookmarks_with_every_field_set_are_written_as_the_fixture()
     {
         var path = _temp.PathOf(BookmarksFixture);
@@ -287,7 +306,7 @@ public sealed class SettingsFormatTests : IDisposable
             new DiagramDocumentRecord
             {
                 Panel = "document-3",
-                Title = "Diagram",
+                Title = new TabTitle.Diagram("Calculator"),
                 Types = [Calculator, new TypeAnchor { AssemblyPath = B, FullName = "Ns.Other" }],
                 HomeAssemblies = [A],
                 View = view,
@@ -295,7 +314,7 @@ public sealed class SettingsFormatTests : IDisposable
             new ComparisonDocumentRecord
             {
                 Panel = "document-4",
-                Title = "Comparison",
+                Title = new TabTitle.Comparison("A"),
                 LeftPath = A,
                 RightPath = B,
                 Scope = ApiScope.AllDeclared,

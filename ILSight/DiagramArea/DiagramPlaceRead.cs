@@ -15,5 +15,5 @@ public sealed class DiagramPlaceRead
 
     public required IReadOnlyList<TypeAnchor> Types { get; init; }
 
-    public required string Title { get; init; }
+    public required TabTitle Title { get; init; }
 }

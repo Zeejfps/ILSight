@@ -1,6 +1,7 @@
 using ILSight.Core;
 using ILSight.Core.Diagrams;
 using ILSight.DiagramArea;
+using ILSight.DocumentViewArea;
 
 namespace ILSight.App.Tests;
 
@@ -44,6 +45,29 @@ public sealed class DiagramTests
     }
 
     [Fact]
+    public async Task A_diagrams_tab_is_titled_in_the_language_chosen_after_it_opened_as_is_its_problem()
+    {
+        var app = AppDriver.Opened();
+        var vehicle = (await app.FixtureAsync("Vehicle")).Definition;
+        DiagramView.ShowInNewDiagramLater(app.Ui.AppCommands, vehicle, Names.Diagram(vehicle));
+        app.Settle(2);
+
+        app.AppState.Locale = Locale.Ja;
+        app.Run(2);
+
+        var japanese = Strings.For(Locale.Ja);
+        var tab = app.AppState.ListSession.Navigation.ActiveTab;
+        Assert.NotNull(tab);
+        Assert.NotNull(tab.Diagram);
+        var shown = DocumentsView.Tab(app.Ui.Appearance, app.Ui.Tree, app.AppState.ListSession.Navigation, tab);
+        Assert.Equal(japanese.DiagramTitle("Vehicle"), shown.Title);
+        Assert.Equal(japanese.DiagramTitle("Vehicle"), shown.Tooltip);
+        Assert.NotEqual(Strings.En.DiagramTitle("Vehicle"), shown.Title);
+        var problem = new AppProblem.DiagramNotReopened { Diagram = Names.Diagram(vehicle), Error = new IOException("gone") };
+        Assert.Equal(japanese.ErrorShowInDiagram(japanese.DiagramTitle("Vehicle")), ProblemTexts.Describe(japanese, problem).Title);
+    }
+
+    [Fact]
     public async Task Show_in_diagram_opens_a_tab_with_the_type_and_the_types_of_its_assembly_it_is_related_to()
     {
         var d = AppStateDriver.Opened();
@@ -52,7 +76,7 @@ public sealed class DiagramTests
 
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        Assert.Equal("Vehicle diagram", tab.Title);
+        Assert.Equal("Vehicle diagram", tab.TitleIn(Strings.En));
         Assert.NotNull(tab.Diagram);
         Assert.Equal("Vehicle", tab.Diagram.Cards[0].Name);
         Assert.Equal(["Bike", "Car", "Garage", "Vehicle"], CardNames(tab.Diagram));

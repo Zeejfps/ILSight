@@ -369,7 +369,8 @@ internal static class SettingsJson
         return new DiagramDocumentJson
         {
             Panel = diagram.Panel,
-            Title = diagram.Title,
+            Title = SavedTextOf(diagram.Title),
+            TitleName = (diagram.Title as TabTitle.Diagram)?.Type,
             Types = diagram.Types.Select(static TypeAnchorJson? (t) => Write(t)).ToList(),
             HomeAssemblies = diagram.HomeAssemblies is null ? null : WritePaths(diagram.HomeAssemblies),
             View = diagram.View is null ? null : Write(diagram.View),
@@ -388,7 +389,7 @@ internal static class SettingsJson
         return new DiagramDocumentRecord
         {
             Panel = json.Panel,
-            Title = json.Title,
+            Title = json.TitleName is null ? ParseSavedTitle(json.Title) : new TabTitle.Diagram(json.TitleName),
             Types = types,
             HomeAssemblies = homes,
             View = json.View is null ? null : Parse(json.View),
@@ -400,12 +401,24 @@ internal static class SettingsJson
         return new ComparisonDocumentJson
         {
             Panel = comparison.Panel,
-            Title = comparison.Title,
+            Title = SavedTextOf(comparison.Title),
+            TitleName = (comparison.Title as TabTitle.Comparison)?.Assembly,
             LeftPath = comparison.LeftPath.Text,
             RightPath = comparison.RightPath.Text,
             Scope = comparison.Scope,
             View = comparison.View is null ? null : new ComparisonViewJson(comparison.View.OnlyDifferences),
         };
+    }
+
+    // A title the settings held worded, kept as it was saved; the rest are saved by the name they are worded around.
+    private static string? SavedTextOf(TabTitle? title)
+    {
+        return (title as TabTitle.Saved)?.Text;
+    }
+
+    private static TabTitle? ParseSavedTitle(string? text)
+    {
+        return text is null ? null : new TabTitle.Saved(text);
     }
 
     private static DocumentRecord? Parse(ComparisonDocumentJson json)
@@ -425,7 +438,7 @@ internal static class SettingsJson
         return new ComparisonDocumentRecord
         {
             Panel = json.Panel,
-            Title = json.Title,
+            Title = json.TitleName is null ? ParseSavedTitle(json.Title) : new TabTitle.Comparison(json.TitleName),
             LeftPath = left,
             RightPath = right,
             Scope = json.Scope,

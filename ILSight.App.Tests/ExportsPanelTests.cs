@@ -287,6 +287,14 @@ public sealed class ExportsPanelTests : IDisposable
     }
 
     [Fact]
+    public void A_duration_is_written_in_the_chosen_languages_numbers_whatever_the_systems()
+    {
+        var german = ILSight.Strings.For(ILSight.Locale.De);
+
+        Assert.Equal(german.DurationSeconds("8,4"), ExportReportText.FormatDuration(german, TimeSpan.FromSeconds(8.42)));
+    }
+
+    [Fact]
     public async Task A_finished_export_keeps_the_run_it_had_in_the_queue()
     {
         var d = AppStateDriver.Opened();

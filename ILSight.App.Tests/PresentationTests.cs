@@ -235,7 +235,7 @@ public sealed class PresentationTests
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
-        Assert.Equal(assembly.Name, tab.Title);
+        Assert.Equal(assembly.Name, tab.TitleIn(Strings.En));
         Assert.Contains(assembly.FullName, tab.TooltipIn(Strings.For(Locale.En)));
         Assert.Contains(assembly.FilePath.Text, tab.TooltipIn(Strings.For(Locale.En)));
     }

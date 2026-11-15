@@ -149,8 +149,8 @@ internal static class DocumentsView
             showInMetadata: static (s, metadata) => Commands.ShowInMetadataLater(s.commands, metadata.Target, s.navigation.BeginResolving(inNewTab: false)),
             showInApiReference: static (s, reference) => Commands.Start(s.commands, nameof(ShowInApiReferenceHandler), reference.Entity,
                 static (a, entity, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, entity, ct)),
-            showInDiagram: static (s, diagram) => DiagramView.ShowInDiagramLater(s.commands, diagram.Type, s.appearance.Strings.DiagramTitle(diagram.Type.Name)),
-            showInNewDiagram: static (s, diagram) => DiagramView.ShowInNewDiagramLater(s.commands, diagram.Type, s.appearance.Strings.DiagramTitle(diagram.Type.Name)));
+            showInDiagram: static (s, diagram) => DiagramView.ShowInDiagramLater(s.commands, diagram.Type, new TabTitle.Diagram(diagram.Type.Name)),
+            showInNewDiagram: static (s, diagram) => DiagramView.ShowInNewDiagramLater(s.commands, diagram.Type, new TabTitle.Diagram(diagram.Type.Name)));
     }
 
     private static void Zoom(ScreenDisplay display, Appearance appearance, CodeZoom zoom)
@@ -242,7 +242,7 @@ internal static class DocumentsView
         var node = tab.Node;
         if (node is null)
         {
-            return tab.Title ?? appearance.Strings.DocumentNewTab;
+            return tab.TitleIn(appearance.Strings) ?? appearance.Strings.DocumentNewTab;
         }
 
         return tree.GetLabel(node);

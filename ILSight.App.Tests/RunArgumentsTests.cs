@@ -393,7 +393,7 @@ public sealed class RunArgumentsTests
         var assemblies = string.Join(",", appState.ListSession.Assemblies.ListFilePaths().Select(static p => p.Text));
         var analyses = string.Join(",", appState.ListSession.Analyzer.ListSavedAnalyses());
         var errors = string.Join(",", appState.Errors.Entries.Select(static e => e.Words().Title));
-        var tabs = string.Join(",", appState.ListSession.Navigation.OpenTabs.Select(static t => t.Title));
+        var tabs = string.Join(",", appState.ListSession.Navigation.OpenTabs.Select(static t => t.TitleIn(Strings.En)));
         return $"{appState.Lists.Active}: [{assemblies}] analyses [{analyses}] errors [{errors}] tabs [{tabs}]";
     }
 

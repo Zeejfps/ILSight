@@ -225,7 +225,7 @@ public sealed class CloseAssembliesTests
 
     private static DocumentTab TabShowing(AppDriver app, string title)
     {
-        return app.AppState.ListSession.Navigation.OpenTabs.Single(t => t.Title == title);
+        return app.AppState.ListSession.Navigation.OpenTabs.Single(t => t.TitleIn(Strings.En) == title);
     }
 
     private static void CloseKeyboardFromTheDialog(AppDriver app)
@@ -455,7 +455,7 @@ public sealed class CloseAssembliesTests
         app.Show(await app.FixtureAsync("Greeter"), 2);
         app.Show(await KeyboardKeyOfAsync(app), 2, inNewTab: true);
         app.Driver.Pump();
-        var savedOpen = (temp.Settings().AssemblyLists.Single().Documents?.Tabs ?? []).Select(static t => t.Title).ToList();
+        var savedOpen = (temp.Settings().AssemblyLists.Single().Documents?.Tabs ?? []).Select(Names.SavedTitle).ToList();
 
         CloseKeyboardFromTheDialog(app);
         app.Driver.Pump();
@@ -464,10 +464,10 @@ public sealed class CloseAssembliesTests
         restarted.Settle();
 
         Assert.Equal(["Greeter", "KeyboardKey"], savedOpen);
-        Assert.Equal("KeyboardKey", TabShowing(app, "KeyboardKey").Title);
-        Assert.Equal(["Greeter"], saved.Select(static t => t.Title));
-        Assert.DoesNotContain(restarted.AppState.ListSession.Navigation.OpenTabs, static t => t.Title == "KeyboardKey");
-        Assert.Contains(restarted.AppState.ListSession.Navigation.OpenTabs, static t => t.Title == "Greeter");
+        Assert.Equal("KeyboardKey", TabShowing(app, "KeyboardKey").TitleIn(Strings.En));
+        Assert.Equal(["Greeter"], saved.Select(Names.SavedTitle));
+        Assert.DoesNotContain(restarted.AppState.ListSession.Navigation.OpenTabs, static t => t.TitleIn(Strings.En) == "KeyboardKey");
+        Assert.Contains(restarted.AppState.ListSession.Navigation.OpenTabs, static t => t.TitleIn(Strings.En) == "Greeter");
     }
 
     private static AppDriver OpenedWithKeyboard(TempDir temp)
@@ -482,7 +482,7 @@ public sealed class CloseAssembliesTests
 
     private static List<string?> SavedTitles(TempDir temp)
     {
-        return (temp.Settings().AssemblyLists.Single().Documents?.Tabs ?? []).Select(static t => t.Title).ToList();
+        return (temp.Settings().AssemblyLists.Single().Documents?.Tabs ?? []).Select(Names.SavedTitle).ToList();
     }
 
     private static void OpenKeyboardAgain(AppDriver app)
@@ -497,7 +497,7 @@ public sealed class CloseAssembliesTests
     {
         using var temp = new TempDir();
         var app = OpenedWithKeyboard(temp);
-        DiagramView.ShowInNewDiagramLater(app.Ui.AppCommands, (await KeyboardKeyOfAsync(app)).Definition, "Keys");
+        DiagramView.ShowInNewDiagramLater(app.Ui.AppCommands, (await KeyboardKeyOfAsync(app)).Definition, new TabTitle.Saved("Keys"));
         app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Diagram?.Cards.Count > 0, Waits.Patience);
         app.Settle(2);
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
@@ -535,7 +535,7 @@ public sealed class CloseAssembliesTests
         using var temp = new TempDir();
         var app = OpenedWithKeyboard(temp);
         var fixture = Assert.IsType<LoadedModule>(app.AppState.ListSession.Assemblies.Listed.Single(static a => a.FilePath.Text != KeyboardPath));
-        app.StartComparing(Comparisons.CompareAssemblies(app.AppState.ListSession.Navigation, app.AppState.ListSession.Assemblies, fixture, KeyboardOf(app), "Compared"));
+        app.StartComparing(Comparisons.CompareAssemblies(app.AppState.ListSession.Navigation, app.AppState.ListSession.Assemblies, fixture, KeyboardOf(app), new TabTitle.Saved("Compared")));
         app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Comparison?.Result is ComparisonResult.Compared, Waits.Patience);
         app.Settle(2);
         var tab = app.AppState.ListSession.Navigation.ActiveTab;

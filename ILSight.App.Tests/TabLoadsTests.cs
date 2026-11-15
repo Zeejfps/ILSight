@@ -54,7 +54,7 @@ public sealed class TabLoadsTests
         var record = new ComparisonDocumentRecord
         {
             Panel = "document-9",
-            Title = "Fixtures API diff",
+            Title = new TabTitle.Comparison("Fixtures"),
             LeftPath = path,
             RightPath = path,
             Scope = ApiScope.AllDeclared,

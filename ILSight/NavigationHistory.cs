@@ -62,7 +62,7 @@ public sealed class NavigationHistory
     /// <summary>Records <paramref name="diagram"/>, given <paramref name="id"/> and titled <paramref name="title"/>, as
     /// worked in now, as it stands, dropping what was forward of the current entry; as it stands now in place of how
     /// it stood when it is the current entry already.</summary>
-    public void RecordDiagram(int id, TypeDiagram diagram, string title)
+    public void RecordDiagram(int id, TypeDiagram diagram, TabTitle title)
     {
         var place = new HistoryEntry.Diagram
         {
@@ -82,7 +82,7 @@ public sealed class NavigationHistory
 
     /// <summary>Records <paramref name="comparison"/>, given <paramref name="id"/> and titled <paramref name="title"/>,
     /// as worked in now, as <see cref="RecordDiagram"/> records a diagram.</summary>
-    public void RecordComparison(int id, AssemblyComparison comparison, string title)
+    public void RecordComparison(int id, AssemblyComparison comparison, TabTitle title)
     {
         var place = new HistoryEntry.Comparison
         {

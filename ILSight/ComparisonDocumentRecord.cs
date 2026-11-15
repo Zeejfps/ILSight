@@ -7,6 +7,9 @@ namespace ILSight;
 /// <see cref="RightPath"/>, taking in what <see cref="Scope"/> says, and how it was viewed.</summary>
 public sealed record ComparisonDocumentRecord : DocumentRecord
 {
+    /// <summary>What its tab was titled, worded again when drawn; null where the settings held none.</summary>
+    public required TabTitle? Title { get; init; }
+
     public required AssemblyPath LeftPath { get; init; }
 
     public required AssemblyPath RightPath { get; init; }
