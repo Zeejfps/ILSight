@@ -98,9 +98,10 @@ disposable result).
   whole. A parameter object (nested scopes: their items' targets), assembled or copied, holds only inputs meant for this
   call; the operation's contract, never how long it is held, decides owners or values (above; an export queued as
   asked). A request's parts agree: a choice made as asked (a file named for the language) runs with what it was made
-  from, captured or rechecked at the run (refused with why if changed); availability is rechecked at the run. A
-  dispatch's guard (a table or direct checks) is stated once, applying by default to new entries; exceptions are
-  explicit, never by position alone.
+  from, captured or rechecked at the run (refused with why if changed); availability is rechecked at the run (R009).
+  Values kept as asked while the asker can change them are said where they ask or by the result, never a code comment
+  alone. A dispatch's guard (a table or direct checks) is stated once, applying by default to new entries;
+  exceptions are explicit, never by position alone.
 - **A library object that reads lazily is I/O by what its reads can reach as made:** decoding bytes already read,
   each read bounded, it is data, readable anywhere, a draw included (failures caught per unit, R009); reaching a file
   or the network, only adapters and their shared I/O code read it (list types whose every instance is I/O). Kept by
@@ -335,6 +336,8 @@ nullable exception).
   never recorded as a failure (panels, error-level logs, counts, retries). Channel, retention, lower-level logs and one
   view marking refusals apart are the product's. An outcome the port's answer lacks (`Closed`) gets a case there, not a
   made-up exception. A command's inputs read one availability state, drawn without a wait, rechecked at the run
+  against what it acts on (its subject still there, the read's own answer where a check could be overtaken; not the
+  request's own values), a subject gone refused with why (closed), never said cancelled
   (unavailable: why, where pressed; not offered: its key does nothing); offering one only a lookup can judge, or showing
   it checking, is the product's.
 - **A run with no window of its own reports as invoked:** in a response; on standard error with an exit status apart
