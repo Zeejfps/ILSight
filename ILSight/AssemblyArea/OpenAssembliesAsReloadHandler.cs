@@ -35,9 +35,10 @@ public sealed class OpenAssembliesAsReloadHandler(OpenAssembliesAsReloadHandler.
     }
 
     /// <summary>Ends the reopening <paramref name="ticket"/> was given for when its workflow failed (the edge's settle,
-    /// which reports why), unless another reload started since, as a reopening that failed ends. Returns the loads the
+    /// which reports why) or ended quietly, cancelled on purpose (the end of the generation it opens in), unless another
+    /// reload started or a stop came since: what it asked for that never landed stops arriving. Returns the loads the
     /// tabs reopened from the open list's saved documents started.</summary>
-    public static TabLoads FailOpeningAsReload(OpenListSession session, ReloadTicket ticket)
+    public static TabLoads EndUnfinished(OpenListSession session, ReloadTicket ticket)
     {
         if (!session.TryFinishReopening(ticket))
         {

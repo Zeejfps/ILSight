@@ -84,7 +84,7 @@ public static class AppStart
         var files = arguments.Files;
         var work = appState.ListSession.Assemblies.Work;
         Commands.StartShowingSettled(appState, nameof(RunArgumentsActions.OpenRequestedFilesAsync), ct => RunArgumentsActions.OpenRequestedFilesAsync(appState, files, work, ct),
-            _ => appState.ListSession.Navigation.FailOpening(), work.Ending);
+            () => appState.ListSession.Navigation.FailOpening(), work.Ending);
     }
 
     private static void ReportIgnored(AppState appState, RunArguments arguments)

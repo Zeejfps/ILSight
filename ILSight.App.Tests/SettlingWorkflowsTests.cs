@@ -164,7 +164,7 @@ public sealed class SettlingWorkflowsTests
         var session = d.AppState.ListSession;
         var reopening = session.BeginReopening(d.AppState.Lists);
 
-        var loads = OpenAssembliesAsReloadHandler.FailOpeningAsReload(session, reopening.Reload);
+        var loads = OpenAssembliesAsReloadHandler.EndUnfinished(session, reopening.Reload);
 
         Assert.False(session.Reload.IsRunning);
         Commands.StartLoads(d.AppState, loads);

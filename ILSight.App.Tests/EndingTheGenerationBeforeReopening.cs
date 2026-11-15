@@ -8,7 +8,13 @@ namespace ILSight.App.Tests;
 /// no reload would, between the reload's clear and the reopen's check.</summary>
 internal sealed class EndingTheGenerationBeforeReopening(AssemblyReloading.IPorts real) : AssemblyReloading.IPorts
 {
+    private int _reopens;
+
+    /// <summary>Run as the first reopen begins, before it reads anything.</summary>
     public Action End { get; set; } = static () => { };
+
+    /// <summary>What each reopen after the first waits for before it reads, when set.</summary>
+    public Task? LaterReopensWaitFor { get; set; }
 
     public void ReportError(AppProblem problem)
     {
@@ -30,11 +36,20 @@ internal sealed class EndingTheGenerationBeforeReopening(AssemblyReloading.IPort
         return real.ReadAgainAsync(item, places, ct);
     }
 
-    public Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded, IReadOnlyList<NodePath> places,
-        GenerationWork work, CancellationToken ct)
+    public async Task<Outcome<ReloadedNodes>> ReopenFilesAsync(IReadOnlyList<AssemblyPath> paths, IReadOnlyList<NodePath> expanded,
+        IReadOnlyList<NodePath> places, GenerationWork work, CancellationToken ct)
     {
-        End();
-        return real.ReopenFilesAsync(paths, expanded, places, work, ct);
+        _reopens++;
+        if (_reopens == 1)
+        {
+            End();
+        }
+        else if (LaterReopensWaitFor is not null)
+        {
+            await LaterReopensWaitFor;
+        }
+
+        return await real.ReopenFilesAsync(paths, expanded, places, work, ct);
     }
 
     public void ReleaseModules(RemovedModules removed)

@@ -495,14 +495,14 @@ internal sealed class AppStateDriver
 
     /// <summary>Starts opening <paramref name="paths"/> now (<see cref="AssemblyArea.AssemblyOpening.OpenAssembliesAsync(AppState, IEnumerable{AssemblyPath}, GenerationWork, CancellationToken)"/>),
     /// then the load of the last one shown, as the app's commands start it: cancelled with the opens under way, by
-    /// newer opens and a clear of the list, and no longer opening when its workflow fails.</summary>
+    /// newer opens and a clear of the list, and no longer opening when its workflow fails or ends quietly.</summary>
     public void Open(IReadOnlyList<AssemblyPath> paths)
     {
         using var turn = _posted.Install();
         var appState = AppState;
         var work = appState.ListSession.Assemblies.Work;
         Commands.StartShowingSettled(appState, nameof(Open), ct => appState.AssemblyOpening.OpenAssembliesAsync(appState, paths, work, ct),
-            _ => appState.ListSession.Navigation.FailOpening(), work.Ending);
+            () => appState.ListSession.Navigation.FailOpening(), work.Ending);
     }
 
     /// <summary>Starts reloading every assembly of the open list now, as the app's commands start it

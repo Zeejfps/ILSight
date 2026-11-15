@@ -28,7 +28,7 @@ public sealed class WorkflowRunner(BackgroundWork work, ErrorLog errors)
     public void Start(string name, Func<CancellationToken, Task> workflow, params ReadOnlySpan<CancellationToken> cancelledOnPurposeBy)
     {
         var link = Link(cancelledOnPurposeBy);
-        work.Track(name, RunAsync(workflow, null, link, [.. cancelledOnPurposeBy], link.Token));
+        work.Track(name, RunAsync(workflow, null, null, link, [.. cancelledOnPurposeBy], link.Token));
     }
 
     /// <summary>As <see cref="Start"/>, for a workflow whose start recorded a pending state on the app state (a tab
@@ -38,7 +38,19 @@ public sealed class WorkflowRunner(BackgroundWork work, ErrorLog errors)
         params ReadOnlySpan<CancellationToken> cancelledOnPurposeBy)
     {
         var link = Link(cancelledOnPurposeBy);
-        work.Track(name, RunAsync(workflow, settle, link, [.. cancelledOnPurposeBy], link.Token));
+        work.Track(name, RunAsync(workflow, settle, null, link, [.. cancelledOnPurposeBy], link.Token));
+    }
+
+    /// <summary>As <see cref="StartSettling"/>,
+    /// for a workflow one of <paramref name="cancelledOnPurposeBy"/> may end without ending the pending state its start
+    /// recorded (the end of the list's generation, which a change other than the work's own canceller may bring): one
+    /// that ends cancelled on purpose has <paramref name="endedQuietly"/> end that state, through what identifies the
+    /// work, so that it ends with the work whichever way the work ends.</summary>
+    public void StartSettlingEveryEnd(string name, Func<CancellationToken, Task> workflow, Action<Exception> settle, Action endedQuietly,
+        params ReadOnlySpan<CancellationToken> cancelledOnPurposeBy)
+    {
+        var link = Link(cancelledOnPurposeBy);
+        work.Track(name, RunAsync(workflow, settle, endedQuietly, link, [.. cancelledOnPurposeBy], link.Token));
     }
 
     /// <summary>As <see cref="Start"/>, for a workflow that runs until the app shuts down, such as watching a
@@ -48,7 +60,7 @@ public sealed class WorkflowRunner(BackgroundWork work, ErrorLog errors)
     {
         _untilShutdown.RemoveAll(static running => running.IsCompleted);
         var link = Link([]);
-        _untilShutdown.Add(RunAsync(workflow, null, link, [], link.Token));
+        _untilShutdown.Add(RunAsync(workflow, null, null, link, [], link.Token));
     }
 
     /// <summary>Cancels the workflows running, and any started later, as the app shuts down. Their ending
@@ -83,7 +95,7 @@ public sealed class WorkflowRunner(BackgroundWork work, ErrorLog errors)
         return CancellationTokenSource.CreateLinkedTokenSource([_shutdown.Token, .. cancelledOnPurposeBy]);
     }
 
-    private async Task RunAsync(Func<CancellationToken, Task> workflow, Action<Exception>? settle, IDisposable link,
+    private async Task RunAsync(Func<CancellationToken, Task> workflow, Action<Exception>? settle, Action? endedQuietly, IDisposable link,
         CancellationToken[] cancelledOnPurposeBy, CancellationToken ct)
     {
         using (link)
@@ -95,6 +107,7 @@ public sealed class WorkflowRunner(BackgroundWork work, ErrorLog errors)
             catch (OperationCanceledException) when (IsAskedFor(ct, cancelledOnPurposeBy))
             {
                 // Shut down, superseded or closed: someone asked for it.
+                endedQuietly?.Invoke();
                 return;
             }
             catch (Exception ex)
