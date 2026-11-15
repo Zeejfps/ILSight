@@ -6,9 +6,11 @@ namespace ILSight.Core.Diagrams;
 /// they are related to, or as the types deriving from a type. Each read loads the assemblies it needs
 /// without listing them: call them off the UI thread. What the library throws as a read resolves the type or reads
 /// its cards is that read's <see cref="Outcome{T}.Failed"/>; the cancellation of the token it was given is let
-/// through. Inside a read's catch is only what touches the library's objects: the types walked to and what each card
-/// is made of (<see cref="ReadType"/>); the app's rules over those values, the members' natural order, the hidden
-/// members left out and the shapes, run after it, so a bug of the app's is never said as an unreadable type.</summary>
+/// through. Inside a read's catch is only what touches the library's objects: the facts a walk's choice needs, the
+/// types chosen and what each card is made of (<see cref="ReadType"/>); the app's rules over those values, which of the
+/// types walked to are shown, which relations are links, the members' natural order, the hidden members left out and
+/// the shapes, run after it, so a bug of the app's is never said as an unreadable type. A walk reads the facts its
+/// choice needs under one catch, applies the app's rule outside, then reads what it chose under another.</summary>
 public static class TypeCards
 {
     /// <summary>The card of the type <paramref name="type"/> points at; not found when it points at no type,
@@ -43,14 +45,14 @@ public static class TypeCards
         CancellationToken cancellationToken)
     {
         using var reading = LoadedAssemblies.BeginReading();
-        TypeSystemWork<List<ReadType>> read;
+        Lookup<Walk> walked;
         try
         {
             var definition = await AssemblyListing.FindTypeDefinitionAsync(list, reading, type, cancellationToken);
-            read = definition.Match<TypeSystemWork<List<ReadType>>>(
-                found => new TypeSystemWork<List<ReadType>>.Done { Value = ReadWithNeighbours(found.Value, cancellationToken) },
-                static _ => new TypeSystemWork<List<ReadType>>.Done { Value = [] },
-                static unreadable => new TypeSystemWork<List<ReadType>>.Unreadable { Module = unreadable.Module });
+            walked = definition.Match(
+                static found => Lookup.FromNullable(WalkFrom(found.Value)),
+                static _ => new Lookup<Walk>.NotFound(),
+                static unreadable => new Lookup<Walk>.Unreadable { Module = unreadable.Module });
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -61,33 +63,61 @@ public static class TypeCards
             return new Outcome<TypeSystemWork<List<TypeCard>>>.Failed(e);
         }
 
-        var cards = read.Match<TypeSystemWork<List<TypeCard>>>(
-            static done => new TypeSystemWork<List<TypeCard>>.Done { Value = done.Value.Select(Make).ToList() },
-            static unreadable => new TypeSystemWork<List<TypeCard>>.Unreadable { Module = unreadable.Module },
-            static closed => new TypeSystemWork<List<TypeCard>>.Closed { Module = closed.Module });
-        return new Outcome<TypeSystemWork<List<TypeCard>>>.Ok(cards);
+        return walked.Match(
+            found => ReadNeighbours(found.Value, cancellationToken),
+            static _ => new Outcome<TypeSystemWork<List<TypeCard>>>.Ok(new TypeSystemWork<List<TypeCard>>.Done { Value = [] }),
+            static unreadable => new Outcome<TypeSystemWork<List<TypeCard>>>.Ok(new TypeSystemWork<List<TypeCard>>.Unreadable { Module = unreadable.Module }));
     }
 
-    // The type first, then its neighbours; none when the type itself has no card.
-    private static List<ReadType> ReadWithNeighbours(ITypeDefinition definition, CancellationToken cancellationToken)
+    // The type's card read and the types it could be shown with, each with the facts the app's rule asks of it; null when
+    // the type itself has no card.
+    private static Walk? WalkFrom(ITypeDefinition definition)
     {
         var read = Read(definition);
         if (read is null)
         {
-            return [];
+            return null;
         }
 
-        var reads = new List<ReadType> { read };
-        foreach (var neighbour in ListNeighbours(definition))
+        return new Walk { Type = read, Neighbours = ListNeighbours(definition) };
+    }
+
+    // The app's rule over the facts walked, outside the read's catch, then the cards of the types it chose, read under
+    // their own: the type first, then its neighbours.
+    private static Outcome<TypeSystemWork<List<TypeCard>>> ReadNeighbours(Walk walk, CancellationToken cancellationToken)
+    {
+        var shown = walk.Neighbours.Where(IsShownNeighbour).ToList();
+        var reads = new List<ReadType> { walk.Type };
+        try
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var neighbourRead = Read(neighbour);
-            if (neighbourRead is not null)
+            foreach (var neighbour in shown)
             {
-                reads.Add(neighbourRead);
+                cancellationToken.ThrowIfCancellationRequested();
+                var read = Read(neighbour.Type);
+                if (read is not null)
+                {
+                    reads.Add(read);
+                }
             }
         }
-        return reads;
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<TypeSystemWork<List<TypeCard>>>.Failed(e);
+        }
+
+        return new Outcome<TypeSystemWork<List<TypeCard>>>.Ok(new TypeSystemWork<List<TypeCard>>.Done { Value = reads.Select(Make).ToList() });
+    }
+
+    // The app's rule: a neighbour is shown when it is linked to the type or derives from it, is of the type's own module,
+    // is not the type itself, and is not hidden.
+    private static bool IsShownNeighbour(Neighbour neighbour)
+    {
+        var related = neighbour.IsDerived || (neighbour.IsBase && IsLink(true, neighbour.Code)) || (neighbour.IsHeld && IsLink(false, neighbour.Code));
+        return related && neighbour.IsInOwnModule && !neighbour.IsSelf && !neighbour.IsHidden;
     }
 
     /// <summary>The card of the type <paramref name="anchor"/> names; not found when its assembly cannot be
@@ -165,15 +195,27 @@ public static class TypeCards
         var module = AssemblyListing.GetLoadedFrom(list, DecompilerFacts.GetMetadataFile(definition));
         var reachable = await DerivedTypes.ReadReachableAsync(reading, module, cancellationToken);
         ScopeSearch<ITypeDefinition> search;
-        List<ReadType> reads;
+        List<(ITypeDefinition Type, bool IsHidden)> found;
         try
         {
             search = DerivedTypes.Search(list, reachable, definition, cancellationToken);
-            reads = search.Found
-                .Where(IsShown)
-                .Select(Read)
-                .OfType<ReadType>()
-                .ToList();
+            found = search.Found.Select(static t => (t, Members.IsHidden(t))).ToList();
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<ScopeSearch<TypeCard>>.Failed(e);
+        }
+
+        // The app's rule, outside the read's catch: a hidden type has no card. Then the cards of those shown.
+        var shown = found.Where(static t => !t.IsHidden).Select(static t => t.Type).ToList();
+        List<ReadType> reads;
+        try
+        {
+            reads = shown.Select(Read).OfType<ReadType>().ToList();
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -282,7 +324,7 @@ public static class TypeCards
     private static List<ReadRelation> ReadRelations(ITypeDefinition type)
     {
         return ListRelations(type)
-            .Select(static r => new ReadRelation { To = CodeReferences.Find(r.Target), ToLink = r.ToLink })
+            .Select(static r => new ReadRelation { To = CodeReferences.Find(r.Target), ToLink = r.ToLink, IsBase = r.IsBase, TargetCode = r.Target.KnownTypeCode })
             .ToList();
     }
 
@@ -451,6 +493,7 @@ public static class TypeCards
     private static List<TypeLink> MakeLinks(ReadType type)
     {
         return type.Relations
+            .Where(static r => IsLink(r.IsBase, r.TargetCode))
             .Select(r => LinkOf(type.Reference, r))
             .OfType<TypeLink>()
             .Distinct()
@@ -486,18 +529,20 @@ public static class TypeCards
                 continue;
             }
 
-            if (IsImplicitBase(definition))
-            {
-                continue;
-            }
-
-            relations.Add(new Relation { Target = definition, ToLink = BaseLinkOf(type, definition) });
+            relations.Add(new Relation { Target = definition, ToLink = BaseLinkOf(type, definition), IsBase = true });
         }
     }
 
-    private static bool IsImplicitBase(ITypeDefinition definition)
+    // The app's rule over a relation's facts: a base every type of its kind has is no link, nor is holding a type the
+    // runtime knows (a string, a number).
+    private static bool IsLink(bool isBase, KnownTypeCode target)
     {
-        return definition.KnownTypeCode is KnownTypeCode.Object or KnownTypeCode.ValueType or KnownTypeCode.Enum;
+        if (isBase)
+        {
+            return target is not (KnownTypeCode.Object or KnownTypeCode.ValueType or KnownTypeCode.Enum);
+        }
+
+        return target == KnownTypeCode.None;
     }
 
     private static Func<CodeReference.Entity, CodeReference.Entity, TypeLink> BaseLinkOf(ITypeDefinition type, ITypeDefinition baseType)
@@ -556,34 +601,42 @@ public static class TypeCards
             return null;
         }
 
-        if (definition.KnownTypeCode != KnownTypeCode.None)
-        {
-            return null;
-        }
-
-        return new Relation { Target = definition, ToLink = toLink };
+        return new Relation { Target = definition, ToLink = toLink, IsBase = false };
     }
 
-    private static List<ITypeDefinition> ListNeighbours(ITypeDefinition type)
+    // The types the type is linked to and those deriving from it in its own module, each once, with the facts the app's
+    // rule asks of them (IsShownNeighbour).
+    private static List<Neighbour> ListNeighbours(ITypeDefinition type)
     {
-        var linked = ListRelations(type)
-            .Select(static r => r.Target);
+        var relations = ListRelations(type);
+        var derived = DerivedTypes.FindDirectInOwnModule(type).ToList();
         var module = type.ParentModule;
-        return linked
-            .Concat(DerivedTypes.FindDirectInOwnModule(type))
-            .Where(t => t.ParentModule == module)
-            .Where(t => !t.Equals(type))
-            .Where(IsShown)
+        return relations
+            .Select(static r => r.Target)
+            .Concat(derived)
             .Distinct()
+            .Select(t => new Neighbour
+            {
+                Type = t,
+                Code = t.KnownTypeCode,
+                IsBase = relations.Exists(r => r.IsBase && r.Target.Equals(t)),
+                IsHeld = relations.Exists(r => !r.IsBase && r.Target.Equals(t)),
+                IsDerived = derived.Contains(t),
+                IsInOwnModule = t.ParentModule == module,
+                IsSelf = t.Equals(type),
+                IsHidden = Members.IsHidden(t),
+            })
             .ToList();
     }
 
-    // ToLink is a function as the link is made only once both types' references are found.
+    // ToLink is a function as the link is made only once both types' references are found. A base, else a type held.
     private readonly record struct Relation
     {
         public required ITypeDefinition Target { get; init; }
 
         public required Func<CodeReference.Entity, CodeReference.Entity, TypeLink> ToLink { get; init; }
+
+        public required bool IsBase { get; init; }
     }
 
     // A relation walked, its target's reference read: null when it has none to be referenced by.
@@ -592,6 +645,40 @@ public static class TypeCards
         public required CodeReference.Entity? To { get; init; }
 
         public required Func<CodeReference.Entity, CodeReference.Entity, TypeLink> ToLink { get; init; }
+
+        public required bool IsBase { get; init; }
+
+        public required KnownTypeCode TargetCode { get; init; }
+    }
+
+    // A type and the types it could be shown with, read.
+    private sealed record Walk
+    {
+        public required ReadType Type { get; init; }
+
+        public required List<Neighbour> Neighbours { get; init; }
+    }
+
+    // A type a walk could show beside the one it began from, with the facts the app's rule asks of it, read from the
+    // library.
+    private sealed record Neighbour
+    {
+        public required ITypeDefinition Type { get; init; }
+
+        public required KnownTypeCode Code { get; init; }
+
+        // How the type is related: one of its bases, held by one of its properties, deriving from it.
+        public required bool IsBase { get; init; }
+
+        public required bool IsHeld { get; init; }
+
+        public required bool IsDerived { get; init; }
+
+        public required bool IsInOwnModule { get; init; }
+
+        public required bool IsSelf { get; init; }
+
+        public required bool IsHidden { get; init; }
     }
 
     // What a card is made of, read from the library's type: plain values, the type's objects left behind.
