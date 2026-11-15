@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using ILSight.OmnibarArea;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
@@ -64,13 +63,12 @@ public static class MainView
 
     private static void Panels(Ui<UiState> ui, AppState appState)
     {
-        var t = ui.State.Appearance.Strings;
-        UpdateSearches(ui, ui.State.Panels, ui.State.Search, ui.State.Omnibar, appState.ListSession.Assemblies);
-        if (!ui.State.Panels.HasPanels)
+        ScreenSearches.Update(ui, ui.State.Panels, ui.State.Search, ui.State.Omnibar, appState.ListSession.Assemblies);
+        if (EmptyLayoutView.Render(ui, ui.State.Appearance, ui.State.Panels))
         {
-            DocumentsView.Hint(ui, t.ViewEmptyHint);
             return;
         }
+
         DockSpace(ui, appState);
         SyncAfterDocuments(ui, appState);
         RemoveReleasedImages(ui, ui.State.Documents);
@@ -80,22 +78,6 @@ public static class MainView
     {
         QueuedCommands.RunViewCommands(ui.State, appState);
         ui.State.Panels.SyncActiveTab(appState.ListSession.Navigation, appState.Decompiler.Setup);
-    }
-
-    private static void UpdateSearches(Ui ui, Panels panels, Search search, Omnibar omnibar, AssemblyList assemblies)
-    {
-        var shown = panels.IsOpen(DockPanels.Search);
-        UpdateSearch(ui, search, assemblies, shown);
-        UpdateSearch(ui, omnibar.Search, assemblies, omnibar.IsSearching);
-    }
-
-    private static void UpdateSearch(Ui ui, Search search, AssemblyList assemblies, bool shown)
-    {
-        var wait = search.Update(assemblies, TimeSpan.FromSeconds(ui.RealTime), shown);
-        if (wait > TimeSpan.Zero)
-        {
-            ui.RequestUpdateIn(wait.TotalSeconds);
-        }
     }
 
     private static void DockSpace(Ui<UiState> ui, AppState appState)
