@@ -26,7 +26,7 @@ public static class ScreenSettings
         uiState.ExportSetup.Window.Restore(saved.ExportWindow);
         uiState.ProcessPicker.Window.Restore(saved.ProcessWindow);
         uiState.Closer.Window.Restore(saved.CloseWindow);
-        uiState.Documents.SkipPanels(Docking.ListDocumentPanels(uiState.MainLayout));
+        uiState.Documents.SkipPanels(uiState.Panels.ListDocumentPanels());
         uiState.KeptView.Keep(CaptureViewSources(uiState));
     }
 
@@ -60,7 +60,7 @@ public static class ScreenSettings
             SearchKinds = uiState.Search.Kinds,
             FlagsFilters = uiState.Grids.Filters.Revision,
             ExportWindow = uiState.ExportSetup.Window.Rest.Changes,
-            Layout = uiState.MainLayout.Dock.Changes,
+            Layout = uiState.Panels.LayoutChanges,
             Display = uiState.Display.Options,
             NuGetSearch = uiState.NuGetPicker.Browser.SearchChanges,
             NuGetWindow = uiState.NuGetPicker.Window.Rest.Changes,
@@ -83,7 +83,7 @@ public static class ScreenSettings
             SearchKinds = uiState.Search.Kinds,
             FlagsFilters = uiState.Grids.Filters.ListSaved(),
             ExportWindow = uiState.ExportSetup.Window.Bounds,
-            Layout = uiState.MainLayout.Dock.CopyArrangement(),
+            Layout = uiState.Panels.CopyArrangement(),
             Display = uiState.Display.Options,
             NuGet = uiState.NuGetPicker.Browser.KeptSearch,
             NuGetWindow = uiState.NuGetPicker.Window.Bounds,

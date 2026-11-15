@@ -19,19 +19,19 @@ internal static class MainMenuView
 
     /// <summary>The menus: in the system's menu bar where there is one, else in the window's title bar
     /// where the platform allows, unless the system's title bar was chosen, and else in a bar of their own.</summary>
-    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, MainLayout mainLayout, DocumentViews documents, Panels panels, Confirmation layoutReset, AboutDialog about, BrowseTree tree, ScreenDisplay display, ErrorDialog errorDialog, FrameworkPicker frameworkPicker, NuGetPicker nuGetPicker, ReadNuGetSetupHandler readNuGetSetupHandler, ProcessPicker processPicker, ExportSetup exportSetup, AppState appState)
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, Confirmation layoutReset, AboutDialog about, BrowseTree tree, ScreenDisplay display, ErrorDialog errorDialog, FrameworkPicker frameworkPicker, NuGetPicker nuGetPicker, ReadNuGetSetupHandler readNuGetSetupHandler, ProcessPicker processPicker, ExportSetup exportSetup, AppState appState)
     {
         if (ui.SystemMenus is not null)
         {
-            RenderSystemMenuBar(ui, appearance, commands, mainLayout, documents, panels, layoutReset, about, tree, errorDialog, frameworkPicker, nuGetPicker, readNuGetSetupHandler, processPicker, exportSetup, appState);
+            RenderSystemMenuBar(ui, appearance, commands, panels, layoutReset, about, tree, errorDialog, frameworkPicker, nuGetPicker, readNuGetSetupHandler, processPicker, exportSetup, appState);
         }
         else if (IsInTitleBar(ui, display))
         {
-            RenderInTitleBar(ui, appearance, commands, mainLayout, documents, panels, layoutReset, about, tree, errorDialog, frameworkPicker, nuGetPicker, readNuGetSetupHandler, processPicker, exportSetup, appState);
+            RenderInTitleBar(ui, appearance, commands, panels, layoutReset, about, tree, errorDialog, frameworkPicker, nuGetPicker, readNuGetSetupHandler, processPicker, exportSetup, appState);
         }
         else
         {
-            RenderMenuBar(ui, appearance, commands, mainLayout, documents, panels, layoutReset, about, tree, errorDialog, frameworkPicker, nuGetPicker, readNuGetSetupHandler, processPicker, exportSetup, appState);
+            RenderMenuBar(ui, appearance, commands, panels, layoutReset, about, tree, errorDialog, frameworkPicker, nuGetPicker, readNuGetSetupHandler, processPicker, exportSetup, appState);
         }
     }
 
@@ -45,7 +45,7 @@ internal static class MainMenuView
         return ui.CanDrawTitleBar;
     }
 
-    private static void RenderInTitleBar(Ui ui, Appearance appearance, IAppCommandWriter commands, MainLayout mainLayout, DocumentViews documents, Panels panels, Confirmation layoutReset, AboutDialog about, BrowseTree tree, ErrorDialog errorDialog, FrameworkPicker frameworkPicker, NuGetPicker nuGetPicker, ReadNuGetSetupHandler readNuGetSetupHandler, ProcessPicker processPicker, ExportSetup exportSetup, AppState appState)
+    private static void RenderInTitleBar(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, Confirmation layoutReset, AboutDialog about, BrowseTree tree, ErrorDialog errorDialog, FrameworkPicker frameworkPicker, NuGetPicker nuGetPicker, ReadNuGetSetupHandler readNuGetSetupHandler, ProcessPicker processPicker, ExportSetup exportSetup, AppState appState)
     {
         var theme = ui.Theme;
         var bar = new Box { Background = theme.Background, Gap = 0f, Padding = new Spacing(theme.Gap, 0f, 0f, 0f) };
@@ -61,7 +61,7 @@ internal static class MainMenuView
             using (ui.MenuBar("menu", menus))
             {
                 WindowMenu(ui, appearance);
-                Menus(ui, appearance, commands, mainLayout, documents, panels, layoutReset, about, tree, errorDialog, frameworkPicker, nuGetPicker, readNuGetSetupHandler, processPicker, exportSetup, appState);
+                Menus(ui, appearance, commands, panels, layoutReset, about, tree, errorDialog, frameworkPicker, nuGetPicker, readNuGetSetupHandler, processPicker, exportSetup, appState);
             }
             ui.TitleBarDragArea("title-bar-drag");
         }
@@ -100,7 +100,7 @@ internal static class MainMenuView
         }
     }
 
-    private static void RenderSystemMenuBar(Ui ui, Appearance appearance, IAppCommandWriter commands, MainLayout mainLayout, DocumentViews documents, Panels panels, Confirmation layoutReset, AboutDialog about, BrowseTree tree, ErrorDialog errorDialog, FrameworkPicker frameworkPicker, NuGetPicker nuGetPicker, ReadNuGetSetupHandler readNuGetSetupHandler, ProcessPicker processPicker, ExportSetup exportSetup, AppState appState)
+    private static void RenderSystemMenuBar(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, Confirmation layoutReset, AboutDialog about, BrowseTree tree, ErrorDialog errorDialog, FrameworkPicker frameworkPicker, NuGetPicker nuGetPicker, ReadNuGetSetupHandler readNuGetSetupHandler, ProcessPicker processPicker, ExportSetup exportSetup, AppState appState)
     {
         var t = appearance.Strings;
         using (ui.MenuBar("menu"))
@@ -110,7 +110,7 @@ internal static class MainMenuView
                 AppMenu(ui, appearance, panels, about);
             }
 
-            FileAndViewMenus(ui, appearance, commands, mainLayout, documents, panels, layoutReset, tree, errorDialog, frameworkPicker, nuGetPicker, readNuGetSetupHandler, processPicker, exportSetup, appState);
+            FileAndViewMenus(ui, appearance, commands, panels, layoutReset, tree, errorDialog, frameworkPicker, nuGetPicker, readNuGetSetupHandler, processPicker, exportSetup, appState);
             using (ui.Menu(t.MenuWindow, id: "window", role: AppMenuRole.Window))
             {
                 SystemWindowMenu(ui, appearance);
@@ -160,18 +160,18 @@ internal static class MainMenuView
         ui.SystemMenuItem(t.WindowBringAllToFront, AppMenuSystemAction.BringAllToFront);
     }
 
-    private static void RenderMenuBar(Ui ui, Appearance appearance, IAppCommandWriter commands, MainLayout mainLayout, DocumentViews documents, Panels panels, Confirmation layoutReset, AboutDialog about, BrowseTree tree, ErrorDialog errorDialog, FrameworkPicker frameworkPicker, NuGetPicker nuGetPicker, ReadNuGetSetupHandler readNuGetSetupHandler, ProcessPicker processPicker, ExportSetup exportSetup, AppState appState)
+    private static void RenderMenuBar(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, Confirmation layoutReset, AboutDialog about, BrowseTree tree, ErrorDialog errorDialog, FrameworkPicker frameworkPicker, NuGetPicker nuGetPicker, ReadNuGetSetupHandler readNuGetSetupHandler, ProcessPicker processPicker, ExportSetup exportSetup, AppState appState)
     {
         using (ui.MenuBar("menu", new Box { Background = ui.Theme.Background }))
         {
-            Menus(ui, appearance, commands, mainLayout, documents, panels, layoutReset, about, tree, errorDialog, frameworkPicker, nuGetPicker, readNuGetSetupHandler, processPicker, exportSetup, appState);
+            Menus(ui, appearance, commands, panels, layoutReset, about, tree, errorDialog, frameworkPicker, nuGetPicker, readNuGetSetupHandler, processPicker, exportSetup, appState);
         }
     }
 
-    private static void Menus(Ui ui, Appearance appearance, IAppCommandWriter commands, MainLayout mainLayout, DocumentViews documents, Panels panels, Confirmation layoutReset, AboutDialog about, BrowseTree tree, ErrorDialog errorDialog, FrameworkPicker frameworkPicker, NuGetPicker nuGetPicker, ReadNuGetSetupHandler readNuGetSetupHandler, ProcessPicker processPicker, ExportSetup exportSetup, AppState appState)
+    private static void Menus(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, Confirmation layoutReset, AboutDialog about, BrowseTree tree, ErrorDialog errorDialog, FrameworkPicker frameworkPicker, NuGetPicker nuGetPicker, ReadNuGetSetupHandler readNuGetSetupHandler, ProcessPicker processPicker, ExportSetup exportSetup, AppState appState)
     {
         var t = appearance.Strings;
-        FileAndViewMenus(ui, appearance, commands, mainLayout, documents, panels, layoutReset, tree, errorDialog, frameworkPicker, nuGetPicker, readNuGetSetupHandler, processPicker, exportSetup, appState);
+        FileAndViewMenus(ui, appearance, commands, panels, layoutReset, tree, errorDialog, frameworkPicker, nuGetPicker, readNuGetSetupHandler, processPicker, exportSetup, appState);
         using (var help = ui.Menu(t.MenuHelp, id: "help"))
         {
             if (help.IsOpen)
@@ -181,7 +181,7 @@ internal static class MainMenuView
         }
     }
 
-    private static void FileAndViewMenus(Ui ui, Appearance appearance, IAppCommandWriter commands, MainLayout mainLayout, DocumentViews documents, Panels panels, Confirmation layoutReset, BrowseTree tree, ErrorDialog errorDialog, FrameworkPicker frameworkPicker, NuGetPicker nuGetPicker, ReadNuGetSetupHandler readNuGetSetupHandler, ProcessPicker processPicker, ExportSetup exportSetup, AppState appState)
+    private static void FileAndViewMenus(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, Confirmation layoutReset, BrowseTree tree, ErrorDialog errorDialog, FrameworkPicker frameworkPicker, NuGetPicker nuGetPicker, ReadNuGetSetupHandler readNuGetSetupHandler, ProcessPicker processPicker, ExportSetup exportSetup, AppState appState)
     {
         var t = appearance.Strings;
         using (var file = ui.Menu(t.MenuFile, id: "file"))
@@ -195,7 +195,7 @@ internal static class MainMenuView
         {
             if (view.IsOpen)
             {
-                ViewMenu(ui, appearance, commands, mainLayout, documents, panels, layoutReset, errorDialog, appState);
+                ViewMenu(ui, appearance, commands, panels, layoutReset, errorDialog, appState);
             }
         }
     }
@@ -273,7 +273,7 @@ internal static class MainMenuView
         }
     }
 
-    private static void ViewMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, MainLayout mainLayout, DocumentViews documents, Panels panels, Confirmation layoutReset, ErrorDialog errorDialog, AppState appState)
+    private static void ViewMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, Confirmation layoutReset, ErrorDialog errorDialog, AppState appState)
     {
         var t = appearance.Strings;
         if (ui.MenuItem(t.ViewBack, Shortcuts.Back, enabled: appState.ListSession.Navigation.CanGoBack, id: "back"))
@@ -287,14 +287,14 @@ internal static class MainMenuView
         }
 
         ui.MenuSeparator();
-        DecompilerMenu(ui, appearance, commands, mainLayout, documents, appState.Decompiler);
+        DecompilerMenu(ui, appearance, panels, appState.Decompiler);
         ui.MenuSeparator();
         ApiVisibilityMenu(ui, appearance, commands, appState.ApiVisibility);
         ui.MenuSeparator();
-        PanelsMenu(ui, appearance, mainLayout, panels);
+        PanelsMenu(ui, appearance, panels);
         if (ui.MenuItem(t.ViewCloseAllDocuments, enabled: appState.ListSession.Navigation.OpenTabs.Count > 0, id: "close-all-documents"))
         {
-            DocumentPanels.CloseAllTabs(mainLayout, documents);
+            panels.CloseAllTabs();
         }
 
         if (ui.MenuItem(t.ViewResetLayout, id: "reset-layout"))
@@ -356,7 +356,7 @@ internal static class MainMenuView
         }
     }
 
-    private static void PanelsMenu(Ui ui, Appearance appearance, MainLayout mainLayout, Panels panels)
+    private static void PanelsMenu(Ui ui, Appearance appearance, Panels panels)
     {
         var t = appearance.Strings;
         using var menu = ui.SubMenu(t.ViewPanels, id: "panels");
@@ -365,50 +365,50 @@ internal static class MainMenuView
             return;
         }
 
-        if (PanelItem(ui, mainLayout, appearance, t.PanelAssemblies, DockView.Assemblies))
+        if (PanelItem(ui, panels, appearance, t.PanelAssemblies, DockView.Assemblies))
         {
             panels.Open(DockView.Assemblies);
         }
 
-        if (PanelItem(ui, mainLayout, appearance, t.ViewBookmarks, DockView.Bookmarks))
+        if (PanelItem(ui, panels, appearance, t.ViewBookmarks, DockView.Bookmarks))
         {
             panels.Open(DockView.Bookmarks);
         }
 
-        if (PanelItem(ui, mainLayout, appearance, t.PanelAnalyzer, DockView.Analyzer))
+        if (PanelItem(ui, panels, appearance, t.PanelAnalyzer, DockView.Analyzer))
         {
             panels.Open(DockView.Analyzer);
         }
 
-        if (PanelItem(ui, mainLayout, appearance, t.PanelSearch, DockView.Search, Shortcuts.Search))
+        if (PanelItem(ui, panels, appearance, t.PanelSearch, DockView.Search, Shortcuts.Search))
         {
             panels.OpenSearch();
         }
 
-        if (PanelItem(ui, mainLayout, appearance, t.PanelDecompilerOptions, DockView.DecompilerOptions))
+        if (PanelItem(ui, panels, appearance, t.PanelDecompilerOptions, DockView.DecompilerOptions))
         {
             panels.Open(DockView.DecompilerOptions);
         }
 
-        if (PanelItem(ui, mainLayout, appearance, t.PanelDisplayOptions, DockView.DisplayOptions))
+        if (PanelItem(ui, panels, appearance, t.PanelDisplayOptions, DockView.DisplayOptions))
         {
             panels.Open(DockView.DisplayOptions);
         }
 
-        if (PanelItem(ui, mainLayout, appearance, t.PanelExports, DockView.Exports))
+        if (PanelItem(ui, panels, appearance, t.PanelExports, DockView.Exports))
         {
             panels.Open(DockView.Exports);
         }
     }
 
-    private static bool PanelItem(Ui ui, MainLayout mainLayout, Appearance appearance, string label, DockView view, Shortcut? shortcut = null)
+    private static bool PanelItem(Ui ui, Panels panels, Appearance appearance, string label, DockView view, Shortcut? shortcut = null)
     {
         var panel = DockPanels.NameOf(view);
-        var open = mainLayout.Dock.Contains(panel);
+        var open = panels.IsOpen(panel);
         return ui.MenuItem(label, shortcut, check: open, id: panel, icon: DockPanels.Icon(appearance.Icons, view));
     }
 
-    private static void DecompilerMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, MainLayout mainLayout, DocumentViews documents, DecompilerChoice decompiler)
+    private static void DecompilerMenu(Ui ui, Appearance appearance, Panels panels, DecompilerChoice decompiler)
     {
         var current = decompiler.Setup.Language;
         var t = appearance.Strings;
@@ -425,7 +425,7 @@ internal static class MainMenuView
             var label = DecompilationLanguages.Label(language);
             if (ui.MenuRadioItem(label, current == language))
             {
-                DocumentPanels.ShowInLanguage(mainLayout, documents, commands, decompiler, language);
+                panels.ShowInLanguage(decompiler, language);
             }
         }
     }

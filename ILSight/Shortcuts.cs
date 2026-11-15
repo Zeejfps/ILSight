@@ -91,7 +91,7 @@ internal static class Shortcuts
     /// <summary>Runs the app-wide shortcuts pressed this frame, in this order, those that act on a view's selection
     /// or a document not while a text box takes the keys; and goes back and forward with the pointer's side buttons.</summary>
     public static void Handle(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, ScreenDisplay display, Omnibar omnibar,
-        BrowseTree tree, MainLayout layout, DocumentViews documents, TabFocus tabFocus, ExportSetup exportSetup, AppState appState)
+        BrowseTree tree, ExportSetup exportSetup, AppState appState)
     {
         var input = ui.Input;
         if (input.WasPressed(PointerButton.Back))
@@ -153,17 +153,17 @@ internal static class Shortcuts
 
         if (!ui.WantsTextInput && ui.IsPressed(CloseTab))
         {
-            DocumentPanels.CloseActiveTab(layout, documents, tabFocus);
+            panels.CloseActiveTab();
         }
 
         if (!ui.WantsTextInput && ui.IsPressed(NextTab))
         {
-            DocumentPanels.CycleTab(layout, documents, tabFocus, commands, navigation, setup, 1);
+            panels.CycleTab(navigation, setup, 1);
         }
 
         if (!ui.WantsTextInput && ui.IsPressed(PreviousTab))
         {
-            DocumentPanels.CycleTab(layout, documents, tabFocus, commands, navigation, setup, -1);
+            panels.CycleTab(navigation, setup, -1);
         }
     }
 

@@ -24,14 +24,13 @@ public static class MainView
     public static void Render(Ui<UiState> ui, AppState appState)
     {
         using var screen = ui.Screen();
-        Shortcuts.Handle(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.Panels, ui.State.Display, ui.State.Omnibar, ui.State.Tree, ui.State.MainLayout,
-            ui.State.Documents, ui.State.TabFocus, ui.State.ExportSetup, appState);
+        Shortcuts.Handle(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.Panels, ui.State.Display, ui.State.Omnibar, ui.State.Tree, ui.State.ExportSetup, appState);
         OpenDropped(ui, ui.State.AppCommands);
         using (ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f }))
         {
-            MainMenuView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.MainLayout, ui.State.Documents, ui.State.Panels, ui.State.LayoutReset, ui.State.About, ui.State.Tree, ui.State.Display, ui.State.ErrorDialog, ui.State.Picker, ui.State.NuGetPicker, ui.State.ReadNuGetSetupHandler, ui.State.ProcessPicker, ui.State.ExportSetup, appState);
+            MainMenuView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.Panels, ui.State.LayoutReset, ui.State.About, ui.State.Tree, ui.State.Display, ui.State.ErrorDialog, ui.State.Picker, ui.State.NuGetPicker, ui.State.ReadNuGetSetupHandler, ui.State.ProcessPicker, ui.State.ExportSetup, appState);
             ui.Separator();
-            ToolbarView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.MainLayout, ui.State.Documents, ui.State.Panels, ui.State.ListsDialog, appState.Lists, appState.ListSession, appState.KeptScreen.View, appState.FinishedExports, appState.Decompiler);
+            ToolbarView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.Panels, ui.State.ListsDialog, appState.Lists, appState.ListSession, appState.KeptScreen.View, appState.FinishedExports, appState.Decompiler);
             ui.Separator();
             Panels(ui, appState);
             ui.Separator();
@@ -45,7 +44,7 @@ public static class MainView
         AssemblyListsDialogView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.ListsDialog, ui.State.Presets, appState.Lists, appState.ListSession, appState.KeptScreen.View);
         AssemblyListDeleteDialogView.Render(ui, ui.State.Appearance, ui.State.ListsDialog, ui.State.AppCommands, appState.Lists, appState.ListSession, appState.KeptScreen.View);
         BookmarkImportDialogView.Render(ui, ui.State.Appearance, ui.State.AppCommands, appState.Imports);
-        LayoutResetDialogView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.Panels, ui.State.LayoutReset);
+        LayoutResetDialogView.Render(ui, ui.State.Appearance, ui.State.Panels, ui.State.LayoutReset);
         DisplayOptionsResetDialogView.Render(ui, ui.State.Appearance, ui.State.Display);
         ExportDialogView.Render(ui, ui.State.ExportSetup, ui.State.Appearance, ui.State.ExportColumns, ui.State.AppCommands, appState.Decompiler.Setup.Options);
         ErrorDialogView.Render(ui, ui.State.Appearance, ui.State.ErrorDialog, ui.State.Display, ui.State.AppCommands, appState.Errors);
@@ -66,8 +65,8 @@ public static class MainView
     private static void Panels(Ui<UiState> ui, AppState appState)
     {
         var t = ui.State.Appearance.Strings;
-        UpdateSearches(ui, ui.State.MainLayout, ui.State.Search, ui.State.Omnibar, appState.ListSession.Assemblies);
-        if (IsLayoutEmpty(ui.State.MainLayout.Dock))
+        UpdateSearches(ui, ui.State.Panels, ui.State.Search, ui.State.Omnibar, appState.ListSession.Assemblies);
+        if (!ui.State.Panels.HasPanels)
         {
             DocumentsView.Hint(ui, t.ViewEmptyHint);
             return;
@@ -80,12 +79,12 @@ public static class MainView
     private static void SyncAfterDocuments(Ui<UiState> ui, AppState appState)
     {
         QueuedCommands.RunViewCommands(ui.State, appState);
-        DocumentPanels.SyncActiveTab(ui.State.MainLayout, ui.State.Documents, ui.State.TabFocus, ui.State.AppCommands, appState.ListSession.Navigation, appState.Decompiler.Setup);
+        ui.State.Panels.SyncActiveTab(appState.ListSession.Navigation, appState.Decompiler.Setup);
     }
 
-    private static void UpdateSearches(Ui ui, MainLayout mainLayout, Search search, Omnibar omnibar, AssemblyList assemblies)
+    private static void UpdateSearches(Ui ui, Panels panels, Search search, Omnibar omnibar, AssemblyList assemblies)
     {
-        var shown = mainLayout.Dock.Contains(DockPanels.Search);
+        var shown = panels.IsOpen(DockPanels.Search);
         UpdateSearch(ui, search, assemblies, shown);
         UpdateSearch(ui, omnibar.Search, assemblies, omnibar.IsSearching);
     }
@@ -99,17 +98,12 @@ public static class MainView
         }
     }
 
-    private static bool IsLayoutEmpty(DockLayout layout)
-    {
-        return !layout.HasPanels();
-    }
-
     private static void DockSpace(Ui<UiState> ui, AppState appState)
     {
         var t = ui.State.Appearance.Strings;
         DockTabMenu? tabMenu;
         string? doubleClicked;
-        using (var dock = ui.DockSpace("dock", ui.State.MainLayout.Dock, (ui.State.Appearance, ui.State.Documents, ui.State.Tree, appState.ListSession.Navigation),
+        using (var dock = ui.State.Panels.DrawDockSpace(ui, "dock", (ui.State.Appearance, ui.State.Documents, ui.State.Tree, appState.ListSession.Navigation),
                    static (s, panel) => Tab(s.Appearance, s.Documents, s.Tree, s.Navigation, panel),
                    tabListTooltip: t.DockAllTabs))
         {
@@ -122,7 +116,7 @@ public static class MainView
             doubleClicked = dock.TabDoubleClicked;
         }
         TabMenuView.OpenOnRightClick(ui, ui.State.Documents, ui.State.TabMenu, tabMenu);
-        TabMenuView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.MainLayout, ui.State.Documents, ui.State.TabMenu, appState.ListSession.Navigation);
+        TabMenuView.Render(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.Panels, ui.State.Documents, ui.State.TabMenu, appState.ListSession.Navigation);
         TabMenuView.KeepOpenOnDoubleClick(ui, ui.State.Documents, ui.State.AppCommands, doubleClicked);
     }
 

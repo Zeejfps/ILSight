@@ -75,7 +75,7 @@ public sealed class SplitDocumentTests
         var d = new AppStateDriver(new AppSettings { Layout = saved });
 
         var panel = DocumentPanels.GetPanel(d.Ui.Documents, Assert.Single(d.AppState.ListSession.Navigation.OpenTabs));
-        var panels = d.Ui.MainLayout.Dock.AllGroups().SelectMany(g => g.Panels).ToList();
+        var panels = d.Layout.Dock.AllGroups().SelectMany(g => g.Panels).ToList();
         Assert.Equal([DockPanels.Assemblies, panel], panels);
         Assert.NotEqual("document-7", panel);
         Assert.NotEqual("document-1", panel);
@@ -122,7 +122,7 @@ public sealed class SplitDocumentTests
     public async Task Closing_all_documents_from_the_view_menu_closes_the_tabs_of_every_group()
     {
         var (app, left, right) = await SideBySideAsync();
-        Assert.NotSame(app.Ui.MainLayout.Dock.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, left)), app.Ui.MainLayout.Dock.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, right)));
+        Assert.NotSame(app.Layout.Dock.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, left)), app.Layout.Dock.GroupOf(DocumentPanels.GetPanel(app.Ui.Documents, right)));
 
         app.Frames.ClickOn(Selector.WithText("View"));
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Close all documents")).Frame(2);
@@ -135,7 +135,7 @@ public sealed class SplitDocumentTests
     {
         var app = AppDriver.Opened();
         var d = app.Driver;
-        var layout = d.Ui.MainLayout.Dock;
+        var layout = d.Layout.Dock;
         layout.Close(DockPanels.Assemblies);
         d.TurnOffPreviewTabs();
         d.Show(await d.FixtureAsync("Outline"));

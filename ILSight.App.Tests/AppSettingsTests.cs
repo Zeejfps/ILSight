@@ -537,8 +537,8 @@ public sealed class AppSettingsTests : IDisposable
         Assert.IsType<SettingsProblem.LayoutPartsMissing>(problem);
         Assert.Equal("light", loaded.Theme.Text);
         var fresh = new AppStateDriver(new AppSettings());
-        Assert.Equal(DockLayout.PanelsIn(fresh.Ui.MainLayout.Dock.Root), DockLayout.PanelsIn(d.Ui.MainLayout.Dock.Root));
-        Assert.Empty(d.Ui.MainLayout.Dock.Windows);
+        Assert.Equal(DockLayout.PanelsIn(fresh.Layout.Dock.Root), DockLayout.PanelsIn(d.Layout.Dock.Root));
+        Assert.Empty(d.Layout.Dock.Windows);
         Assert.Contains(d.AppState.Errors.Entries, e => e.Words().Details.Contains(SettingsFile));
     }
 

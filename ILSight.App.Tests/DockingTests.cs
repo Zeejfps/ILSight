@@ -26,7 +26,7 @@ public sealed class DockingTests
         var greeter = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(greeter);
         var greeterPanel = DocumentPanels.GetPanel(app.Ui.Documents, greeter);
-        var layout = app.Ui.MainLayout.Dock;
+        var layout = app.Layout.Dock;
 
         var group = layout.GroupOf(greeterPanel);
         Assert.NotNull(group);
@@ -43,7 +43,7 @@ public sealed class DockingTests
     public void The_assemblies_view_closes_like_a_tab_and_comes_back_on_the_left_from_the_View_menu()
     {
         var app = AppDriver.Opened();
-        var layout = app.Ui.MainLayout.Dock;
+        var layout = app.Layout.Dock;
         app.Run(2);
 
         layout.Close(DockPanels.Assemblies);
@@ -63,7 +63,7 @@ public sealed class DockingTests
     public void View_opens_the_search_panel_and_holds_back_and_forward_with_no_navigate_menu()
     {
         var app = new AppDriver();
-        var layout = app.Ui.MainLayout.Dock;
+        var layout = app.Layout.Dock;
         app.Run(2);
         Assert.False(app.Frames.Drew("Navigate"));
 
@@ -81,7 +81,7 @@ public sealed class DockingTests
     public async Task Closing_the_last_document_frees_its_area_and_the_next_one_opens_right_of_the_views()
     {
         var d = AppStateDriver.Opened();
-        var layout = d.Ui.MainLayout.Dock;
+        var layout = d.Layout.Dock;
 
         var active = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
@@ -103,7 +103,7 @@ public sealed class DockingTests
     {
         var app = new AppDriver();
         var appState = app.AppState;
-        app.Ui.MainLayout.Dock.Close(DockPanels.Assemblies);
+        app.Layout.Dock.Close(DockPanels.Assemblies);
         var active = appState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
         appState.ListSession.Navigation.CloseTab(active);
@@ -122,7 +122,7 @@ public sealed class DockingTests
         d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
         var farewell = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(farewell);
-        var layout = d.Ui.MainLayout.Dock;
+        var layout = d.Layout.Dock;
         layout.Dock(DocumentPanels.GetPanel(app.Ui.Documents, farewell), layout.Root, DockEdge.Bottom);
         layout.Float(DockPanels.Assemblies, new UiRect(40f, 40f, 300f, 300f));
         d.Ui.Panels.Open(DockView.Bookmarks);

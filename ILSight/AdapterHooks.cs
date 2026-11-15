@@ -3,6 +3,7 @@ using ILSight.BookmarkArea;
 using ILSight.DiagramArea;
 using ILSight.ExportArea;
 using ILSight.ILSightAppArea;
+using ILSight.MainArea;
 using ILSight.SearchArea;
 
 namespace ILSight;
@@ -31,4 +32,9 @@ public sealed record AdapterHooks
 
     /// <summary>The port the window is brought to the front through.</summary>
     public Func<IWindowFront, IWindowFront>? BringingToFront { get; init; }
+
+    /// <summary>Handed the layout the root makes for <see cref="Panels"/>, which hands it to the framework's dock space:
+    /// not an adapter, but what the dock widget writes itself (a drag docking or floating a panel, a close button), so
+    /// a test host keeps it to stand in for the widget's own writes, as the dock space is handed it.</summary>
+    public Action<MainLayout>? Layout { get; init; }
 }

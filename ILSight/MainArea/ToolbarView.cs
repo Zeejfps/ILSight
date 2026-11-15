@@ -19,7 +19,7 @@ internal static class ToolbarView
     /// <summary>The toolbar, over the parts its controls read and change: the saved lists and the open list's session
     /// (the list picker, history), how the screen is laid out (switching lists keeps it), the exports finished (history
     /// shows their reports again) and the decompiler's choice (the language, its version, the history's loads).</summary>
-    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, MainLayout mainLayout, DocumentViews documents, Panels panels, AssemblyListsDialog listsDialog, SavedAssemblyLists lists, OpenListSession session, ViewSettings view,
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, AssemblyListsDialog listsDialog, SavedAssemblyLists lists, OpenListSession session, ViewSettings view,
         IReadOnlyList<ExportArea.ExportReport> finishedExports, DecompilerChoice decompiler)
     {
         var t = appearance.Strings;
@@ -68,7 +68,7 @@ internal static class ToolbarView
                 var languages = Languages(t);
                 if (ui.SegmentedControl("language", ref language, languages))
                 {
-                    DocumentPanels.ShowInLanguage(mainLayout, documents, commands, decompiler, language);
+                    panels.ShowInLanguage(decompiler, language);
                 }
 
                 if (DecompilationLanguages.ShowsCSharp(language))

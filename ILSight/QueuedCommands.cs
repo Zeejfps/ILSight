@@ -23,8 +23,8 @@ internal static class QueuedCommands
     private static void Run(ViewCommand command, UiState uiState, AppState appState)
     {
         command.Switch((uiState, appState),
-            showTab: static (s, show) => ShowTabIfOpen(s.uiState.MainLayout, s.uiState.Documents, s.appState.ListSession.Navigation, show.Tab, show.Beside),
-            showReopened: static (s, show) => ShowReopenedIfOpen(s.uiState.MainLayout, s.uiState.Documents, s.uiState.TabFocus, s.appState.ListSession.Navigation, show.Tabs, show.Layout),
+            showTab: static (s, show) => ShowTabIfOpen(s.uiState.Panels, s.appState.ListSession.Navigation, show.Tab, show.Beside),
+            showReopened: static (s, show) => ShowReopenedIfOpen(s.uiState.Panels, s.appState.ListSession.Navigation, show.Tabs, show.Layout),
             openPanel: static (s, open) => s.uiState.Panels.Open(open.View),
             restoreView: static (s, restore) => RestoreView(s.uiState.Documents, s.appState.ListSession.Navigation, restore.Tab, restore.Position),
             revealLine: static (s, reveal) => RevealLine(s.uiState.Documents, s.appState.ListSession.Navigation, reveal.Tab, reveal.Line),
@@ -38,22 +38,22 @@ internal static class QueuedCommands
             openFile: static (s, open) => s.uiState.Shell.OpenFile(open.Path));
     }
 
-    private static void ShowTabIfOpen(MainLayout layout, DocumentViews documents, Navigation navigation, DocumentTab tab, DocumentTab? beside)
+    private static void ShowTabIfOpen(Panels panels, Navigation navigation, DocumentTab tab, DocumentTab? beside)
     {
         if (!navigation.IsOpen(tab))
         {
             return;
         }
 
-        DocumentPanels.ShowTab(layout, documents, tab, beside);
+        panels.ShowTab(tab, beside);
     }
 
-    private static void ShowReopenedIfOpen(MainLayout layout, DocumentViews documents, TabFocus tabFocus, Navigation navigation, IReadOnlyList<ReopenedTab> tabs, DockLayout? saved)
+    private static void ShowReopenedIfOpen(Panels panels, Navigation navigation, IReadOnlyList<ReopenedTab> tabs, DockLayout? saved)
     {
         var open = tabs
             .Where(r => navigation.IsOpen(r.Tab))
             .ToList();
-        DocumentPanels.ShowReopenedTabs(layout, documents, tabFocus, open, saved);
+        panels.ShowReopenedTabs(open, saved);
     }
 
     private static void RevealIfListed(BrowseTree tree, AssemblyList assemblies, BrowseNode node)

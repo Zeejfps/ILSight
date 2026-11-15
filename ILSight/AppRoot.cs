@@ -112,7 +112,7 @@ internal static class AppRoot
         AppUpdates.IPorts? updates = null, AdapterHooks? hooks = null)
     {
         var appState = RestoreStartingState(loadResult, session, updates, hooks);
-        var screen = CreateScreen(appState, nuGetRequests, runtimeScan, processes);
+        var screen = CreateScreen(appState, nuGetRequests, runtimeScan, processes, hooks);
         var start = RecordStart(appState);
         return new RestoredApp { AppState = appState, Screen = screen, Start = start };
     }
@@ -304,12 +304,13 @@ internal static class AppRoot
     /// <param name="nuGetRequests">Sends the "open from NuGet" dialog's requests; the app's shared connections when null.</param>
     /// <param name="runtimeScan">Scans the runtime for the "open from framework" dialog; the installed runtime's when null.</param>
     /// <param name="processes">Lists the running processes for the "open from process" dialog; this machine's when null.</param>
+    /// <param name="hooks">What a test host makes of some of the parts the root builds; the real ones when null.</param>
     internal static UiState CreateScreen(AppState appState, HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null,
-        ProcessBrowser.IPorts? processes = null)
+        ProcessBrowser.IPorts? processes = null, AdapterHooks? hooks = null)
     {
         var reportError = (AppProblem problem) => Errors.Report(appState, problem);
         var uiState = CreateUiState(appState.KeptScreen.View, appState.Work, reportError, appState.Session, nuGetRequests,
-            runtimeScan ?? new FrameworkPickerAdapter(reportError, appState.ListSession.Assemblies.Runtime), processes ?? new ProcessBrowserAdapter(reportError));
+            runtimeScan ?? new FrameworkPickerAdapter(reportError, appState.ListSession.Assemblies.Runtime), processes ?? new ProcessBrowserAdapter(reportError), hooks);
         ScreenSettings.RestoreScreen(uiState, appState.KeptScreen.View);
         AppFrames.FollowRestoredAppState(uiState, appState);
         return uiState;
@@ -318,12 +319,13 @@ internal static class AppRoot
     // Restores, of what the settings kept of the screen, only its layout, display options, folded groups and filters;
     // the rest is restored after.
     private static UiState CreateUiState(ViewSettings saved, BackgroundWork work, Action<AppProblem> reportError, BrowseSession session,
-        HttpMessageHandler? nuGetRequests, FrameworkBrowser.IPorts runtimeScan, ProcessBrowser.IPorts processes)
+        HttpMessageHandler? nuGetRequests, FrameworkBrowser.IPorts runtimeScan, ProcessBrowser.IPorts processes, AdapterHooks? hooks)
     {
         var appCommands = new AppCommandQueue();
         // A null nuGetRequests uses the app's shared connections.
         var nuGet = new NuGetClient(nuGetRequests);
         var layout = new MainLayout { Dock = DockPanels.Restore(saved.Layout) };
+        hooks?.Layout?.Invoke(layout);
         var documents = new DocumentViews();
         var tabFocus = new TabFocus();
         var search = new Search();
@@ -332,7 +334,7 @@ internal static class AppRoot
             AppCommands = appCommands,
             Documents = documents,
             TabFocus = tabFocus,
-            Panels = new Panels(layout, documents, tabFocus, search),
+            Panels = new Panels(layout, documents, tabFocus, search, appCommands),
             Tree = new BrowseTree { Session = session },
             FoldedOptionGroups = new FoldedGroups { Folded = new HashSet<string>(saved.FoldedOptionGroups ?? []) },
             Search = search,
@@ -351,9 +353,7 @@ internal static class AppRoot
             ProcessPicker = new ProcessPicker { Browser = new ProcessBrowser(processes) },
             Display = new ScreenDisplay { Options = saved.Display ?? DisplayOptions.Default },
             Analyzer = new AnalyzerRows { AppCommands = appCommands },
-            MainLayout = layout,
         };
-        ScreenLayout.ConnectLayout(layout, documents, search, appCommands);
         return uiState;
     }
 

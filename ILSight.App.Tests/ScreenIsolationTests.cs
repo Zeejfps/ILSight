@@ -56,19 +56,19 @@ public sealed class ScreenIsolationTests : IDisposable
         d.Settle();
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
-        var reached = FindScreenObject(d.AppState, d.Ui);
+        var reached = FindScreenObject(d.AppState, d.Layout);
 
         Assert.Null(reached);
     }
 
-    private static string? FindScreenObject(AppState appState, UiState screen)
+    private static string? FindScreenObject(AppState appState, MainLayout layout)
     {
         var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
         var queue = new Queue<(object Value, string Path)>();
         queue.Enqueue((appState, nameof(AppState)));
         while (queue.TryDequeue(out var next))
         {
-            if (IsOfScreen(next.Value, screen))
+            if (IsOfScreen(next.Value, layout))
             {
                 return next.Path;
             }
@@ -87,9 +87,9 @@ public sealed class ScreenIsolationTests : IDisposable
         return null;
     }
 
-    private static bool IsOfScreen(object value, UiState screen)
+    private static bool IsOfScreen(object value, MainLayout layout)
     {
-        if (ReferenceEquals(value, screen.MainLayout.Dock))
+        if (ReferenceEquals(value, layout.Dock))
         {
             return true;
         }

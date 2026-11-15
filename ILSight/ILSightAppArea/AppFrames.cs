@@ -24,7 +24,7 @@ internal static class AppFrames
         uiState.Documents.SkipPanels(appState.Lists.ListDocumentPanels());
         uiState.TabFocus.Follow(appState.ListSession.Navigation.ActiveTab);
         QueuedCommands.RunViewCommands(uiState, appState);
-        DocumentPanels.ShowInRestoredDocuments(uiState.MainLayout, uiState.Documents, appState.ListSession.Navigation);
+        uiState.Panels.ShowInRestoredDocuments(appState.ListSession.Navigation);
     }
 
     /// <summary>Does what comes before drawing a frame: the screen takes the theme, icons and strings the
@@ -43,9 +43,9 @@ internal static class AppFrames
         uiState.Documents.FollowViewContent();
         uiState.TabFocus.Follow(appState.ListSession.Navigation.ActiveTab);
         QueuedCommands.RunViewCommands(uiState, appState);
-        DocumentPanels.SyncTabViews(uiState.MainLayout, uiState.Documents, appState.ListSession.Navigation);
+        uiState.Panels.SyncTabViews(appState.ListSession.Navigation);
         ReviveClosedTabs(uiState, appState);
-        DocumentPanels.FocusNextTabIfNone(uiState.MainLayout, uiState.Documents, uiState.TabFocus, uiState.AppCommands, appState.ListSession.Navigation, appState.Decompiler.Setup);
+        uiState.Panels.FocusNextTabIfNone(appState.ListSession.Navigation, appState.Decompiler.Setup);
         FollowLoadOptions(uiState, appState);
         FollowDecompilation(uiState, appState);
         FollowExportSetup(uiState.ExportSetup, appState);
@@ -185,7 +185,7 @@ internal static class AppFrames
             return;
         }
 
-        foreach (var tab in DocumentPanels.ListFrontTabs(uiState.MainLayout, uiState.Documents))
+        foreach (var tab in uiState.Panels.ListFrontTabs())
         {
             Commands.StartDecompiling(appState, Decompilation.StartDecompilingAgainIfOutdated(tab, language, appState.Decompiler.Setup.Options));
         }

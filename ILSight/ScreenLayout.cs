@@ -8,19 +8,10 @@ using ILSight.SearchArea;
 
 namespace ILSight;
 
-/// <summary>The layout of the screen: connecting it to the documents, and the searches that open its views
+/// <summary>The searches that open the layout's views, and the layout's reset once the user confirms it
 /// (<see cref="Panels"/> opens them, and puts the layout back as it starts out).</summary>
 public static class ScreenLayout
 {
-    /// <summary>Has a panel <paramref name="layout"/> makes for itself open as a new tab, and a closed panel's tab
-    /// close with it, the search cleared with its panel. Assigned once the screen's parts are made.</summary>
-    internal static void ConnectLayout(MainLayout layout, DocumentViews documents, Search search, IAppCommandWriter commands)
-    {
-        var dock = layout.Dock;
-        dock.NewPanel = () => DocumentPanels.OpenTabForPanel(layout, documents, commands);
-        dock.PanelClosed += panel => DocumentPanels.OnPanelClosed(layout, documents, search, commands, panel);
-    }
-
     /// <summary>Opens the search panel with its query kept to <paramref name="node"/>'s assembly, or to
     /// the namespace it is.</summary>
     public static void ScopeSearch(Search search, Panels panels, BrowseNode node)
@@ -48,12 +39,12 @@ public static class ScreenLayout
     }
 
     /// <summary>Stops asking, resetting the layout when <paramref name="confirmed"/>.</summary>
-    public static void FinishLayoutReset(Confirmation layoutReset, Panels panels, IAppCommandWriter commands, bool confirmed)
+    public static void FinishLayoutReset(Confirmation layoutReset, Panels panels, bool confirmed)
     {
         layoutReset.Stop();
         if (confirmed)
         {
-            panels.Reset(commands);
+            panels.Reset();
         }
     }
 }

@@ -29,14 +29,14 @@ public sealed class LayoutPersistenceTests : IDisposable
         var d = AppStateDriver.Opened(_temp.Settings());
         var screen = d.Ui;
         screen.Panels.Open(DockView.Analyzer);
-        var analyzer = screen.MainLayout.Dock.GroupOf(DockPanels.Analyzer);
+        var analyzer = d.Layout.Dock.GroupOf(DockPanels.Analyzer);
         Assert.NotNull(analyzer);
-        screen.MainLayout.Dock.Dock(DockPanels.Bookmarks, analyzer, DockEdge.Center);
+        d.Layout.Dock.Dock(DockPanels.Bookmarks, analyzer, DockEdge.Center);
         d.NextFrame();
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
         var next = new AppStateDriver(_temp.Settings());
-        var layout = next.Ui.MainLayout.Dock;
+        var layout = next.Layout.Dock;
         var active = next.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
         var documents = layout.GroupOf(DocumentPanels.GetPanel(next.Ui.Documents, active));
@@ -60,16 +60,16 @@ public sealed class LayoutPersistenceTests : IDisposable
         var screen = d.Ui;
         screen.Panels.OpenSearch();
         screen.Panels.Open(DockView.Analyzer);
-        var analyzer = screen.MainLayout.Dock.GroupOf(DockPanels.Analyzer);
+        var analyzer = d.Layout.Dock.GroupOf(DockPanels.Analyzer);
         Assert.NotNull(analyzer);
-        screen.MainLayout.Dock.Dock(DockPanels.Search, analyzer, DockEdge.Center);
+        d.Layout.Dock.Dock(DockPanels.Search, analyzer, DockEdge.Center);
         d.NextFrame();
         Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
 
-        var next = new AppStateDriver(_temp.Settings()).Ui;
+        var next = new AppStateDriver(_temp.Settings()).Layout.Dock;
 
-        Assert.True(next.MainLayout.Dock.Contains(DockPanels.Search));
-        Assert.Same(next.MainLayout.Dock.GroupOf(DockPanels.Analyzer), next.MainLayout.Dock.GroupOf(DockPanels.Search));
+        Assert.True(next.Contains(DockPanels.Search));
+        Assert.Same(next.GroupOf(DockPanels.Analyzer), next.GroupOf(DockPanels.Search));
     }
 
     [Fact]

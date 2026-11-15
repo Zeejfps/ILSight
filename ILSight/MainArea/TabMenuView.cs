@@ -46,7 +46,7 @@ internal static class TabMenuView
         Commands.Later(commands, tab, static (a, kept) => a.ListSession.Navigation.KeepTabOpen(kept));
     }
 
-    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, MainLayout mainLayout, DocumentViews documents, TabMenu tabMenu, Navigation navigation)
+    public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, DocumentViews documents, TabMenu tabMenu, Navigation navigation)
     {
         using var menu = ui.ContextMenu(MenuId);
         if (!menu.IsOpen)
@@ -65,39 +65,39 @@ internal static class TabMenuView
             return;
         }
 
-        TabMenu(ui, appearance, commands, mainLayout, documents, navigation, tab);
+        TabMenu(ui, appearance, commands, panels, navigation, tab);
     }
 
-    private static void TabMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, MainLayout mainLayout, DocumentViews documents, Navigation navigation, DocumentTab tab)
+    private static void TabMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, Navigation navigation, DocumentTab tab)
     {
         var t = appearance.Strings;
-        var group = DocumentPanels.ListTabsInGroup(mainLayout, documents, tab);
+        var group = panels.ListTabsInGroup(tab);
         var index = group.IndexOf(tab);
         KeepOpenItem(ui, appearance, commands, navigation, tab);
         if (ui.MenuItem(t.TabClose, Shortcuts.CloseTab, id: "close"))
         {
-            DocumentPanels.CloseTab(mainLayout, documents, tab);
+            panels.CloseTab(tab);
         }
 
         if (ui.MenuItem(t.TabCloseOthers, enabled: group.Count > 1, id: "close-others"))
         {
-            DocumentPanels.CloseOtherTabs(mainLayout, documents, tab);
+            panels.CloseOtherTabs(tab);
         }
 
         if (ui.MenuItem(t.TabCloseAll, id: "close-all"))
         {
-            DocumentPanels.CloseTabsInGroup(mainLayout, documents, tab);
+            panels.CloseTabsInGroup(tab);
         }
 
         ui.MenuSeparator();
         if (ui.MenuItem(t.TabCloseLeft, enabled: index > 0, id: "close-left"))
         {
-            DocumentPanels.CloseTabsLeftOf(mainLayout, documents, tab);
+            panels.CloseTabsLeftOf(tab);
         }
 
         if (ui.MenuItem(t.TabCloseRight, enabled: HasTabsRightOf(group, index), id: "close-right"))
         {
-            DocumentPanels.CloseTabsRightOf(mainLayout, documents, tab);
+            panels.CloseTabsRightOf(tab);
         }
     }
 

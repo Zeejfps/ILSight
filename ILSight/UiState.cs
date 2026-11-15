@@ -39,16 +39,14 @@ public sealed class UiState : IUiState
     /// <summary>What the screen asked of the app state while it drew, for the app to run once the frame is drawn.</summary>
     public required AppCommandQueue AppCommands { get; init; }
 
-    /// <summary>Where the views and the open documents are docked, all as tabs: side by side,
-    /// stacked or in floating windows.</summary>
-    public required MainLayout MainLayout { get; init; }
-
     /// <summary>How each open tab is shown, and the panel it is docked as.</summary>
     public required DocumentViews Documents { get; init; }
 
     public required TabFocus TabFocus { get; init; }
 
-    /// <summary>Opens the views in <see cref="MainLayout"/> beside the active document, and puts the layout back.</summary>
+    /// <summary>The layout, where the views and the open documents are docked, all as tabs: side by side, stacked or in
+    /// floating windows; it opens the views beside the active document, docks, brings to the front and closes the
+    /// tabs' panels, and puts the layout back.</summary>
     public required Panels Panels { get; init; }
 
     /// <summary>Whether to reset the layout, asked of the user.</summary>

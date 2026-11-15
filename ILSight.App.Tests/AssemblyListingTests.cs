@@ -177,7 +177,7 @@ public sealed class AssemblyListingTests
 
         var empty = Assert.Single(d.AppState.ListSession.Navigation.OpenTabs);
         Assert.Same(empty, d.AppState.ListSession.Navigation.ActiveTab);
-        Assert.True(d.Ui.MainLayout.Dock.Contains(DocumentPanels.GetPanel(d.Ui.Documents, empty)));
+        Assert.True(d.Layout.Dock.Contains(DocumentPanels.GetPanel(d.Ui.Documents, empty)));
         Assert.Null(empty.Location);
     }
 
@@ -356,7 +356,7 @@ public sealed class AssemblyListingTests
         Assert.NotNull(first);
         app.Show(farewell, 2, inNewTab: true);
 
-        DocumentPanels.ActivateTab(app.Ui.MainLayout, app.Ui.Documents, app.Ui.AppCommands, app.AppState.ListSession.Navigation, app.AppState.Decompiler.Setup, first);
+        DocumentPanels.ActivateTab(app.Layout, app.Ui.Documents, app.Ui.AppCommands, app.AppState.ListSession.Navigation, app.AppState.Decompiler.Setup, first);
         app.Run(2);
 
         Assert.Same(first, app.AppState.ListSession.Navigation.ActiveTab);

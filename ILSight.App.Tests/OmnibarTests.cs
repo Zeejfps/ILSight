@@ -238,7 +238,7 @@ public sealed class OmnibarTests
 
         Assert.Equal(1, searchButtons);
         Assert.False(app.Ui.Omnibar.IsSearching);
-        Assert.True(app.Ui.MainLayout.Dock.Contains(DockPanels.Search));
+        Assert.True(app.Layout.Dock.Contains(DockPanels.Search));
     }
 
     [Fact]
