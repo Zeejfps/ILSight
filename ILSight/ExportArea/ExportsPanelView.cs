@@ -334,7 +334,7 @@ internal static class ExportsPanelView
 
         if (parts > 1)
         {
-            return $"{kindText} · {t.ExportsAssemblyPart(part, parts, name)}";
+            return $"{kindText} · {t.ExportsAssemblyPart(part: part, parts: parts, name: name)}";
         }
 
         if (preparing)

@@ -61,10 +61,10 @@ internal static class ExportReportText
 
         if (elapsed.TotalHours < 1)
         {
-            return t.DurationMinutes((int)elapsed.TotalMinutes, elapsed.Seconds);
+            return t.DurationMinutes(minutes: (int)elapsed.TotalMinutes, seconds: elapsed.Seconds);
         }
 
-        return t.DurationHours((int)elapsed.TotalHours, elapsed.Minutes);
+        return t.DurationHours(hours: (int)elapsed.TotalHours, minutes: elapsed.Minutes);
     }
 
     private static string Summarize(Strings t, ExportReport report)

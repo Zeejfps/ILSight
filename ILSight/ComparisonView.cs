@@ -166,7 +166,7 @@ internal static class ComparisonView
     {
         return failure.Match(t,
             static (t, closed) => t.ComparisonAssemblyClosed(closed.File),
-            static (t, failed) => t.ErrorCompare(failed.Left, failed.Right));
+            static (t, failed) => t.ErrorCompare(left: failed.Left, right: failed.Right));
     }
 
     private static void Tree(Ui ui, IAppCommandWriter commands, Navigation navigation, ComparisonRows rows)

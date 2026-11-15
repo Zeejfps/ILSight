@@ -121,7 +121,7 @@ internal static class TooltipLayouts
             return [];
         }
 
-        var pattern = t.CodeTooltipContainer(KindMark, NameMark);
+        var pattern = t.CodeTooltipContainer(kind: KindMark, name: NameMark);
         var nameKind = container.IsNamespace ? SpanKind.Namespace : SpanKind.Type;
         var runs = new List<RichTextRun>();
         var start = 0;

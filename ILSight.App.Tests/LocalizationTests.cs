@@ -93,10 +93,10 @@ public sealed class LocalizationTests
         var english = ProblemTexts.Describe(en, problem);
         var japanese = ProblemTexts.Describe(ja, problem);
 
-        Assert.Equal("Used By (3)", en.AnalyzerHeaderCount("Used By", 3));
-        Assert.Equal("Fields (2)", en.DiagramFoldCount("Fields", 2));
+        Assert.Equal("Used By (3)", en.AnalyzerHeaderCount(header: "Used By", count: 3));
+        Assert.Equal("Fields (2)", en.DiagramFoldCount(title: "Fields", count: 2));
         Assert.StartsWith($"{en.ErrorUnexpected} — ", english.Summary, StringComparison.Ordinal);
-        Assert.Equal("使用元（3）", ja.AnalyzerHeaderCount("使用元", 3));
+        Assert.Equal("使用元（3）", ja.AnalyzerHeaderCount(header: "使用元", count: 3));
         Assert.StartsWith($"{ja.ErrorUnexpected}：", japanese.Summary, StringComparison.Ordinal);
     }
 }

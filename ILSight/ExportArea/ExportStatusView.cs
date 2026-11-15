@@ -71,7 +71,7 @@ internal static class ExportStatusView
 
         if (parts > 1)
         {
-            return t.StatusExportingPart(part, parts, name);
+            return t.StatusExportingPart(part: part, parts: parts, name: name);
         }
 
         return t.StatusExportingName(name);

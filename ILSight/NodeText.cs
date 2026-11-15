@@ -61,7 +61,7 @@ public static class NodeText
             baseType: static (_, _) => null,
             derivedTypes: static (t, _) => t.TreeDerivedTypes,
             derivedType: static (_, _) => null,
-            unreadableModule: static (t, unreadable) => t.CauseModuleUnreadableRow(unreadable.Value.Module.FilePath.FileName, unreadable.Value.Why.Message),
+            unreadableModule: static (t, unreadable) => t.CauseModuleUnreadableRow(name: unreadable.Value.Module.FilePath.FileName, why: unreadable.Value.Why.Message),
             resources: static (t, _) => t.TreeResources,
             resourceContainer: static (_, _) => null,
             resourceEntry: static (_, _) => null,

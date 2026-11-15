@@ -50,7 +50,7 @@ internal static class SearchPanelView
             var unsearched = results.Unsearched[i];
             using (ui.Id(i))
             {
-                var line = ui.Memo("unsearched", (unsearched, t), static a => a.t.SearchUnsearched(a.unsearched.Assembly.FilePath.FileName, a.unsearched.Why));
+                var line = ui.Memo("unsearched", (unsearched, t), static a => a.t.SearchUnsearched(name: a.unsearched.Assembly.FilePath.FileName, why: a.unsearched.Why));
                 ui.Text(line, color: theme.Warning, size: theme.FontSizeSmall);
             }
         }
@@ -61,7 +61,7 @@ internal static class SearchPanelView
             using (ui.Id(i))
             {
                 var line = ui.Memo("partly-searched", (partly, t),
-                    static a => a.t.SearchPartlySearched(a.partly.Assembly.FilePath.FileName, a.partly.Count, a.partly.Why));
+                    static a => a.t.SearchPartlySearched(name: a.partly.Assembly.FilePath.FileName, count: a.partly.Count, why: a.partly.Why));
                 ui.Text(line, color: theme.Warning, size: theme.FontSizeSmall);
             }
         }

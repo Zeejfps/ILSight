@@ -1149,7 +1149,7 @@ public static class CodeViewWidget
             var count = state.Find.Index.Matches.Count;
             var label = state.Query.Length == 0 ? ""
                 : count == 0 ? t.FindNoResults
-                : ui.Memo("count", (state.Find.CurrentMatch, count, t), static a => a.CurrentMatch is not null ? a.t.FindPosition(a.CurrentMatch.Value + 1, a.count) : a.t.FindMatches(a.count));
+                : ui.Memo("count", (state.Find.CurrentMatch, count, t), static a => a.CurrentMatch is not null ? a.t.FindPosition(current: a.CurrentMatch.Value + 1, total: a.count) : a.t.FindMatches(a.count));
             ui.Text(label, new Box { Width = Sizing.Grow() }, color: count == 0 && state.Query.Length > 0 ? theme.Warning : theme.TextMuted,
                 size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
             var previousTip = ui.Memo("previous-tip", t, static s => s.FindPrevious("Shift+F3"));

@@ -16,7 +16,7 @@ public static class ProblemTexts
     {
         var end = details.AsSpan().IndexOfAny('\r', '\n');
         var first = (end < 0 ? details : details[..end]).Trim();
-        var summary = first.Length == 0 ? title : t.ErrorSummary(title, first);
+        var summary = first.Length == 0 ? title : t.ErrorSummary(title: title, details: first);
         return summary.Length > SummaryLength ? summary[..SummaryLength] + "…" : summary;
     }
 
@@ -53,7 +53,7 @@ public static class ProblemTexts
             bookmarksNotImported: p => (t.ErrorImportBookmarks(p.File), p.Reason),
             importedBookmarksUnreadable: p => (t.ErrorBookmarksUnreadable(p.File), DescribeEntryProblems(t, p.Problems)),
             importedBookmarksNotPlaced: p => (t.ErrorBookmarkPlacesFailed(p.File), DescribePlaceFailures(t, p.Failed)),
-            comparisonFailed: p => (t.ErrorCompare(p.Left, p.Right), p.Error.ToString()),
+            comparisonFailed: p => (t.ErrorCompare(left: p.Left, right: p.Right), p.Error.ToString()),
             decompilationFailed: p => (t.ErrorDecompile(p.Node), p.Error.ToString()),
             typeNotDiagrammed: p => (t.ErrorShowInDiagram(p.Type.Name), p.Error.ToString()),
             diagramNotReopened: p => (t.ErrorShowInDiagram(p.Diagram), p.Error.ToString()),
@@ -90,13 +90,13 @@ public static class ProblemTexts
     // cause it is.
     private static string Denied(Strings t, AssemblyPath file)
     {
-        return t.ErrorCauseAndRecovery(t.ErrorFileDenied(file.FileName), t.ErrorRecoveryMakeReadable);
+        return t.ErrorCauseAndRecovery(cause: t.ErrorFileDenied(file.FileName), recovery: t.ErrorRecoveryMakeReadable);
     }
 
     // A file that isn't one that can be read, as the cause of a lookup, as Denied.
     private static string Damaged(Strings t, AssemblyPath file)
     {
-        return t.ErrorCauseAndRecovery(t.ErrorFileDamaged(file.FileName), t.ErrorRecoveryReplaceFile);
+        return t.ErrorCauseAndRecovery(cause: t.ErrorFileDamaged(file.FileName), recovery: t.ErrorRecoveryReplaceFile);
     }
 
     // What the code shows without the reference and the step that reads it again, the cause, then the error as it came.
@@ -212,22 +212,22 @@ public static class ProblemTexts
             ThemeProblem.DuplicateLanguage => t.ThemeErrorDuplicateLanguage(error.Subject),
             ThemeProblem.UnknownKey => t.ThemeErrorUnknownKey(error.Subject),
             ThemeProblem.UnknownType => t.ThemeErrorUnknownType(error.Subject),
-            ThemeProblem.NotAColor => t.ThemeErrorNotAColor(error.Subject, error.Detail),
+            ThemeProblem.NotAColor => t.ThemeErrorNotAColor(key: error.Subject, value: error.Detail),
             ThemeProblem.TransparentBlack => t.ThemeErrorTransparentBlack(error.Subject),
-            ThemeProblem.UnknownPaletteName => t.ThemeErrorUnknownPaletteName(error.Subject, error.Detail),
+            ThemeProblem.UnknownPaletteName => t.ThemeErrorUnknownPaletteName(key: error.Subject, name: error.Detail),
             ThemeProblem.NoType => t.ThemeErrorNoType,
             ThemeProblem.UnknownParent => t.ThemeErrorUnknownParent(error.Subject),
             ThemeProblem.ExtendsCycle => t.ThemeErrorExtendsCycle(error.Detail),
             ThemeProblem.MissingColors => t.ThemeErrorMissingColors(error.Detail),
             ThemeProblem.IdTaken => t.ThemeErrorIdTaken(error.Subject),
-            ThemeProblem.NotACodepoint => t.ThemeErrorNotACodepoint(error.Subject, error.Detail),
+            ThemeProblem.NotACodepoint => t.ThemeErrorNotACodepoint(key: error.Subject, glyph: error.Detail),
             ThemeProblem.InvalidIcon => t.ThemeErrorInvalidIcon(error.Subject),
-            ThemeProblem.UnknownFont => t.ThemeErrorUnknownFont(error.Subject, error.Detail),
-            ThemeProblem.AssetOutsideFolder => t.ThemeErrorAssetOutsideFolder(error.Subject, error.Detail),
-            ThemeProblem.AssetUnreadable => t.ThemeErrorAssetUnreadable(error.Subject, error.Detail),
-            ThemeProblem.NotAFont => t.ThemeErrorNotAFont(error.Subject, error.Detail),
-            ThemeProblem.InvalidSvg => t.ThemeErrorInvalidSvg(error.Subject, error.Detail),
-            ThemeProblem.MissingGlyph => t.ThemeErrorMissingGlyph(error.Subject, error.Detail),
+            ThemeProblem.UnknownFont => t.ThemeErrorUnknownFont(key: error.Subject, font: error.Detail),
+            ThemeProblem.AssetOutsideFolder => t.ThemeErrorAssetOutsideFolder(key: error.Subject, path: error.Detail),
+            ThemeProblem.AssetUnreadable => t.ThemeErrorAssetUnreadable(key: error.Subject, file: error.Detail),
+            ThemeProblem.NotAFont => t.ThemeErrorNotAFont(key: error.Subject, path: error.Detail),
+            ThemeProblem.InvalidSvg => t.ThemeErrorInvalidSvg(key: error.Subject, reason: error.Detail),
+            ThemeProblem.MissingGlyph => t.ThemeErrorMissingGlyph(key: error.Subject, glyph: error.Detail),
             _ => throw new ArgumentOutOfRangeException(nameof(error), error.Problem, null),
         };
     }

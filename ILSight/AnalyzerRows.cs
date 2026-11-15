@@ -250,7 +250,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
             return header;
         }
 
-        return _strings.AnalyzerHeaderCount(header, kind.Found.Count);
+        return _strings.AnalyzerHeaderCount(header: header, count: kind.Found.Count);
     }
 
     private TreeRow CreateMessageRow(AnalyzerMessageNode message)
@@ -259,14 +259,14 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         if (unreadable is not null)
         {
             var warning = new UiIcon(_icons.StatusError, _theme.Warning);
-            return new TreeRow(_strings.CauseModuleUnreadableRow(unreadable.Name, unreadable.Why), warning, _theme.Warning);
+            return new TreeRow(_strings.CauseModuleUnreadableRow(name: unreadable.Name, why: unreadable.Why), warning, _theme.Warning);
         }
 
         var partly = message.PartlyRead;
         if (partly is not null)
         {
             var warning = new UiIcon(_icons.StatusError, _theme.Warning);
-            return new TreeRow(_strings.AnalyzerPartlyRead(partly.Name, partly.Count, partly.Why), warning, _theme.Warning);
+            return new TreeRow(_strings.AnalyzerPartlyRead(name: partly.Name, count: partly.Count, why: partly.Why), warning, _theme.Warning);
         }
 
         if (message.Error is null)
@@ -283,13 +283,13 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         var unreadable = message.Unreadable;
         if (unreadable is not null)
         {
-            return _strings.CauseModuleUnreadableRow(unreadable.Name, unreadable.Why);
+            return _strings.CauseModuleUnreadableRow(name: unreadable.Name, why: unreadable.Why);
         }
 
         var partly = message.PartlyRead;
         if (partly is not null)
         {
-            return _strings.AnalyzerPartlyRead(partly.Name, partly.Count, partly.Why);
+            return _strings.AnalyzerPartlyRead(name: partly.Name, count: partly.Count, why: partly.Why);
         }
 
         return message.Error ?? _strings.AnalyzerLoading;
@@ -308,17 +308,17 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
 
     private string GetUnresolvedText(AnalyzerUnresolvedNode unresolved)
     {
-        return _strings.AnalyzerUnreadable(unresolved.Name, unresolved.Why);
+        return _strings.AnalyzerUnreadable(name: unresolved.Name, why: unresolved.Why);
     }
 
     private string GetFailedText(AnalyzerFailedNode failed)
     {
         var anchor = failed.SavedAs;
         return failed.Failure.Match(
-            unreadable => _strings.CauseModuleUnreadableRow(unreadable.Name, unreadable.Why),
+            unreadable => _strings.CauseModuleUnreadableRow(name: unreadable.Name, why: unreadable.Why),
             // The saved place in the language's template: its file and its token in hex (a notation), as they are.
             _ => _strings.ErrorNoLongerThere(_strings.AnalyzerSavedPlace(file: anchor.FilePath.FileName, token: $"{anchor.Token:X8}")),
-            lookup => _strings.AnalyzerUnreadable(anchor.FilePath.FileName, lookup.Why));
+            lookup => _strings.AnalyzerUnreadable(name: anchor.FilePath.FileName, why: lookup.Why));
     }
 
     private TreeRow CreateLoadingRow()

@@ -332,7 +332,7 @@ internal static class ExportDialogView
     private static void SelectedCount(Ui ui, Appearance appearance, ExportSetup setup)
     {
         var t = appearance.Strings;
-        Caption(ui, t.ExportSelectedCount(setup.IncludedCount, setup.Assemblies.Choices.Count));
+        Caption(ui, t.ExportSelectedCount(selected: setup.IncludedCount, total: setup.Assemblies.Choices.Count));
     }
 
     private static void Destination(Ui ui, Appearance appearance, ExportSetup setup)

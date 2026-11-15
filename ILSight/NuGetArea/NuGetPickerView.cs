@@ -511,7 +511,7 @@ internal static class NuGetPickerView
             return t.NugetLoadingPage(requested + 1);
         }
 
-        return t.NugetPage(page + 1, count);
+        return t.NugetPage(page: page + 1, pages: count);
     }
 
     // As wide as the widest label the pager shows, so the buttons beside it never move.
@@ -519,7 +519,7 @@ internal static class NuGetPickerView
     {
         var t = appearance.Strings;
         var size = ui.Theme.FontSizeSmall;
-        var shown = ui.Memo("nuget-page-widest", (pageCount, t), static a => a.t.NugetPage(a.pageCount, a.pageCount));
+        var shown = ui.Memo("nuget-page-widest", (pageCount, t), static a => a.t.NugetPage(page: a.pageCount, pages: a.pageCount));
         var loading = ui.Memo("nuget-loading-widest", (pageCount, t), static a => a.t.NugetLoadingPage(a.pageCount));
         return MathF.Max(ui.MeasureText(shown, size), ui.MeasureText(loading, size));
     }

@@ -122,7 +122,7 @@ public sealed class PresentationTests
         Assert.Equal($"UnreadableTypes.dll: couldn't be read ({why})", english.Row(unreadable).Label);
         Assert.Equal(ja.TreeDerivedTypes, japanese.Row(derived).Label);
         Assert.Equal(ja.TreeReferences, japanese.Row(references).Label);
-        Assert.Equal(ja.CauseModuleUnreadableRow("UnreadableTypes.dll", why), japanese.Row(unreadable).Label);
+        Assert.Equal(ja.CauseModuleUnreadableRow(name: "UnreadableTypes.dll", why: why), japanese.Row(unreadable).Label);
         Assert.Equal(ja.TreeDerivedTypes, japanese.Row(derived).Tooltip);
         Assert.Equal(ja.TreeDerivedTypes, NodeText.FullName(ja, derived));
         Assert.NotEqual("Derived Types", ja.TreeDerivedTypes);
