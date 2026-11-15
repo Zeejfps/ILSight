@@ -88,11 +88,22 @@ internal static class Shortcuts
         Commands.MoveLater(commands, appState.ListSession.Navigation.GoForward(appState.ListSession.Assemblies, appState.FinishedExports, appState.Decompiler.Setup));
     }
 
-    /// <summary>Runs the app-wide shortcuts pressed this frame, in this order, those that act on a view's selection
-    /// or a document last and not while a text box takes the keys; and goes back and forward with the pointer's side
-    /// buttons.</summary>
+    /// <summary>Runs the app-wide shortcuts pressed this frame: those that run while a text box takes the keys first
+    /// (<see cref="HandleWhileTyping"/>), then, unless a text box takes them, those that act on a view's selection or a
+    /// document (<see cref="HandleOutsideTextBoxes"/>).</summary>
     public static void Handle(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, ScreenDisplay display, Omnibar omnibar,
         BrowseTree tree, ExportSetup exportSetup, AppState appState)
+    {
+        HandleWhileTyping(ui, commands, panels, display, omnibar, appState);
+        if (!ui.WantsTextInput)
+        {
+            HandleOutsideTextBoxes(ui, appearance, commands, panels, tree, exportSetup, appState);
+        }
+    }
+
+    // The shortcuts that run while a text box takes the keys, which they don't edit text with: the pointer's side
+    // buttons going back and forward, and the keys that open a search or a panel or move in the history.
+    private static void HandleWhileTyping(Ui ui, IAppCommandWriter commands, Panels panels, ScreenDisplay display, Omnibar omnibar, AppState appState)
     {
         var input = ui.Input;
         if (input.WasPressed(PointerButton.Back))
@@ -105,8 +116,6 @@ internal static class Shortcuts
             GoForward(commands, appState);
         }
 
-        var navigation = appState.ListSession.Navigation;
-        var setup = appState.Decompiler.Setup;
         if (ui.IsPressed(Search))
         {
             panels.OpenSearch();
@@ -131,14 +140,15 @@ internal static class Shortcuts
         {
             panels.Open(DockView.DisplayOptions);
         }
+    }
 
-        // Those below act on a view's selection or a document, so none runs while a text box takes the keys, where the
-        // same keys edit the text; one written below is kept from it too, and one meant to run while typing goes above.
-        if (ui.WantsTextInput)
-        {
-            return;
-        }
-
+    // The shortcuts that act on a view's selection or a document, run only while no text box takes the keys, where the
+    // same keys edit the text.
+    private static void HandleOutsideTextBoxes(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, BrowseTree tree,
+        ExportSetup exportSetup, AppState appState)
+    {
+        var navigation = appState.ListSession.Navigation;
+        var setup = appState.Decompiler.Setup;
         if (ui.IsPressed(Open))
         {
             MainMenuView.OpenFile(ui, appearance, commands, navigation);
