@@ -1,3 +1,4 @@
+using System.Globalization;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.BuiltInArea;
@@ -170,6 +171,38 @@ public sealed class PresentationTests
         Assert.Equal(identity, tree.Row(await assembly.ReadRootAsync()).Secondary);
         tree.ShowTokens(TokenFormat.Decimal);
         Assert.Equal($"@{greeter.Token}", tree.Row(greeter).Secondary);
+    }
+
+    [Theory]
+    [MemberData(nameof(LocalizationTests.AllLocales), MemberType = typeof(LocalizationTests))]
+    public async Task Tokens_versions_and_IL_offsets_keep_their_notation_in_every_language_and_under_its_culture(Locale locale)
+    {
+        var t = Strings.For(locale);
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var assembly = list.Open(AppStateDriver.FixturePath);
+        var root = await assembly.ReadRootAsync();
+        var greeter = await root.GetChildAsync(AppStateDriver.FixturesNamespace, "Greeter");
+        var invariantIL = Documents.GetText(await greeter.DecompileAsync(DecompilationLanguage.IL));
+        var token = Assert.NotNull(greeter.Token);
+        var version = Assert.IsType<Version>(root.Assembly.Version);
+        var tree = new BrowseTree { Session = TestSession.Shared };
+        tree.TrySyncRoots(list);
+        var system = CultureInfo.CurrentCulture;
+        CultureInfo.CurrentCulture = t.Culture;
+        try
+        {
+            tree.ShowTokens(TokenFormat.Hex);
+            Assert.Equal("@" + token.ToString("X8", CultureInfo.InvariantCulture), tree.Row(greeter).Secondary);
+            tree.ShowTokens(TokenFormat.Decimal);
+            Assert.Equal("@" + token.ToString(CultureInfo.InvariantCulture), tree.Row(greeter).Secondary);
+            Assert.StartsWith(version.ToString(), tree.Row(root).Secondary);
+            Assert.Equal(invariantIL, Documents.GetText(await greeter.DecompileAsync(DecompilationLanguage.IL)));
+            Assert.Matches(@"IL_[0-9a-f]{4}:", invariantIL);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = system;
+        }
     }
 
     [Fact]
