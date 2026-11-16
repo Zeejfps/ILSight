@@ -25,9 +25,12 @@ public sealed class DebugSymbolsTests
     {
         var symbols = LoadedAssemblies.EnsureDebugSymbols(Trees.TestAssembly);
         Assert.NotNull(symbols);
+        var callbacks = new CallbackFailure();
+        var reader = new DebugSymbolsReader(symbols, callbacks);
 
-        Assert.True(symbols.TryGetExtraTypeInfo(CircleMethod(nameof(Circle.Spread)), 0, out var tuple));
-        Assert.True(symbols.TryGetExtraTypeInfo(CircleMethod(nameof(Circle.Echo)), 0, out var dynamic));
+        Assert.True(reader.TryGetExtraTypeInfo(CircleMethod(nameof(Circle.Spread)), 0, out var tuple));
+        Assert.True(reader.TryGetExtraTypeInfo(CircleMethod(nameof(Circle.Echo)), 0, out var dynamic));
+        Assert.False(callbacks.Failed);
 
         Assert.Equal(["Low", "High"], tuple.TupleElementNames);
         Assert.Null(tuple.DynamicFlags);
@@ -40,10 +43,21 @@ public sealed class DebugSymbolsTests
     {
         var symbols = LoadedAssemblies.EnsureDebugSymbols(Trees.TestAssembly);
         Assert.NotNull(symbols);
+        var reader = new DebugSymbolsReader(symbols, new CallbackFailure());
 
-        Assert.False(symbols.TryGetExtraTypeInfo(CircleMethod(nameof(Circle.Grow)), 0, out _));
-        Assert.True(symbols.TryGetName(CircleMethod(nameof(Circle.Grow)), 1, out var name));
+        Assert.False(reader.TryGetExtraTypeInfo(CircleMethod(nameof(Circle.Grow)), 0, out _));
+        Assert.True(reader.TryGetName(CircleMethod(nameof(Circle.Grow)), 1, out var name));
         Assert.Equal("step", name);
+    }
+
+    // The reader's own decoding of a tuple names blob says bad data as a value, which the reader throws as
+    // InvalidDataException outside its count (CJ11, CF4).
+    [Fact]
+    public void A_tuple_names_blob_is_decoded_name_by_name_and_one_whose_last_name_has_no_terminator_is_bad_data()
+    {
+        Assert.Equal(["Low", null, "High"], DebugSymbolsReader.DecodeTupleElementNames("Low\0\0High\0"u8.ToArray()));
+        Assert.Empty(DebugSymbolsReader.DecodeTupleElementNames([]) ?? ["missing"]);
+        Assert.Null(DebugSymbolsReader.DecodeTupleElementNames("Low\0High"u8.ToArray()));
     }
 
     [Fact]
@@ -81,7 +95,8 @@ public sealed class DebugSymbolsTests
         var symbols = LoadedAssemblies.EnsureDebugSymbols(after);
         Assert.NotNull(symbols);
         Assert.Equal(TestPdbPath, symbols.SourceFileName);
-        Assert.True(symbols.TryGetName(CircleMethod(nameof(Circle.Grow)), 1, out var name));
+        var reader = new DebugSymbolsReader(symbols, new CallbackFailure());
+        Assert.True(reader.TryGetName(CircleMethod(nameof(Circle.Grow)), 1, out var name));
         Assert.Equal("step", name);
         Assert.Contains(await after.ReadRootAsync().ListChildrenAsync(), c => c.Text == "Debug Metadata (From portable PDB)");
     }

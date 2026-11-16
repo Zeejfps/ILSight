@@ -11,9 +11,14 @@ using ILSight.Core.Resources;
 namespace ILSight.Core;
 
 /// <summary>Decompiles an assembly into a project as ILSpy does, writing its BAML back as XAML
-/// pages beside the code-behind, whose generated members stay out of the C# files.</summary>
+/// pages beside the code-behind, whose generated members stay out of the C# files. Its override is the app's code the
+/// library calls back (CD4, CJ11): its own work (whether an entry is BAML, the XAML's name and item type, the file
+/// written) runs through the read's <paramref name="callbacks"/>; the library's calls (the base writer, the BAML
+/// decompiled, the code-behind looked up, the generated part made) and what it reads of their objects run between,
+/// outside the count.</summary>
 internal sealed class BamlProjectDecompiler(
-    LoadedModule assembly, IAssemblyResolver resolver, DecompilerSettings settings, IDebugInfoProvider? symbols, CancellationToken cancellationToken)
+    LoadedModule assembly, IAssemblyResolver resolver, DecompilerSettings settings, IDebugInfoProvider? symbols, CallbackFailure callbacks,
+    CancellationToken cancellationToken)
     : WholeProjectDecompiler(settings, resolver, null, null, symbols)
 {
     private const string PageItem = "Page";
@@ -21,12 +26,14 @@ internal sealed class BamlProjectDecompiler(
 
     protected override IEnumerable<ProjectItemInfo> WriteResourceToFile(string fileName, string resourceName, Stream entryStream)
     {
-        if (!Baml.IsBamlName(fileName))
+        var isBaml = callbacks.Run(fileName, static name => Baml.IsBamlName(name));
+        if (!isBaml)
         {
             return base.WriteResourceToFile(fileName, resourceName, entryStream);
         }
 
-        return [WriteXaml(fileName, entryStream)];
+        var xaml = WriteXaml(fileName, entryStream);
+        return [xaml];
     }
 
     private ProjectItemInfo WriteXaml(string fileName, Stream baml)
@@ -36,12 +43,18 @@ internal sealed class BamlProjectDecompiler(
         var codeBehind = FindCodeBehind(typeSystem, result);
         if (codeBehind is null)
         {
-            return SaveXaml(result, Baml.XamlName(fileName), PageItem);
+            return callbacks.Run((Decompiler: this, result, fileName),
+                static s => s.Decompiler.SaveXaml(s.result.Xaml, Baml.XamlName(s.fileName), PageItem));
         }
 
-        var xamlName = CleanUpPath(codeBehind.ReflectionName) + Baml.XamlExtension;
-        var item = SaveXaml(result, xamlName, ItemTypeOf(codeBehind));
-        item.PartialTypes = [GeneratedPart(codeBehind, result)];
+        // Read of the library's objects before the count: the code-behind's name, cleaned up as the base names files,
+        // and whether it defines the application.
+        var cleanName = CleanUpPath(codeBehind.ReflectionName);
+        var isApplication = IsApplicationDefinition(codeBehind, LoadedAssemblies.GetFile(assembly));
+        var item = callbacks.Run((Decompiler: this, result, cleanName, isApplication),
+            static s => s.Decompiler.SaveXaml(s.result.Xaml, s.cleanName + Baml.XamlExtension, ItemTypeOf(s.isApplication)));
+        var generated = GeneratedPart(codeBehind, result);
+        item.PartialTypes = [generated];
         return item;
     }
 
@@ -55,18 +68,17 @@ internal sealed class BamlProjectDecompiler(
         return typeSystem.MainModule.GetTypeDefinition(result.TypeName.Value.TopLevelTypeName);
     }
 
-    private ProjectItemInfo SaveXaml(BamlDecompilationResult result, string xamlName, string itemType)
+    private ProjectItemInfo SaveXaml(System.Xml.Linq.XDocument xaml, string xamlName, string itemType)
     {
         var path = FullFilePath.Of(Path.Combine(TargetDirectory, xamlName));
         Directory.CreateDirectory(path.Folder);
-        result.Xaml.Save(path.Text);
+        xaml.Save(path.Text);
         return new ProjectItemInfo(itemType, xamlName);
     }
 
-    private string ItemTypeOf(ITypeDefinition codeBehind)
+    private static string ItemTypeOf(bool isApplication)
     {
-        var file = LoadedAssemblies.GetFile(assembly);
-        if (IsApplicationDefinition(codeBehind, file))
+        if (isApplication)
         {
             return ApplicationDefinitionItem;
         }

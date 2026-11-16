@@ -90,7 +90,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     {
         try
         {
-            var decompiler = NodeDecompiler.CreateCSharpDecompiler(_assembly, _chosenTypeSystem, _settings, _cancellationToken);
+            var decompiler = NodeDecompiler.CreateCSharpDecompiler(_assembly, _chosenTypeSystem, _settings, _callbacks, _cancellationToken);
             var syntaxTree = decompiler.Decompile(handle);
             NodeDecompiler.WriteLocatedSyntaxTree(syntaxTree, builder, _settings);
             var points = decompiler.CreateSequencePoints(syntaxTree);
