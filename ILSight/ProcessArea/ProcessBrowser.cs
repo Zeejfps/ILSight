@@ -220,14 +220,15 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
         return _filtered[index];
     }
 
-    /// <summary>Follows the process selected, once it is another than the one whose modules are shown: the modules
+    /// <summary>Starts listing the modules of the process selected, once it is another than the one whose modules are
+    /// shown: the modules
     /// shown go at once, and those of the process selected start listing, in place of the listing running, which is
     /// stopped and its result dropped, so that the dialog draws them loading and Open finds nothing of the process
     /// before. Returns what <see cref="ListModulesAsync"/> needs to list them, whose work picking another process or
     /// closing the dialog cancels; null when nothing is to be listed. A selection cleared stops the listing and shows
     /// no modules. The list calls it in the frame it takes the selection, before the modules draw and Open is
     /// asked.</summary>
-    public ModuleListingTicket? FollowSelection()
+    public ModuleListingTicket? StartListingSelectedModules()
     {
         var selected = FindSelectedProcess();
         if (ShowsSelectedProcess())

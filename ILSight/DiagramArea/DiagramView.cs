@@ -166,7 +166,7 @@ internal static class DiagramView
         var i = ui.Interact(id);
         var hasRect = ui.TryGetRect(id, out var rect);
         var selectedBefore = FindSelectedPlace(view);
-        FollowLayout(ui, view, diagram);
+        AnimateTowardLayout(ui, view, diagram);
         HoldSelectedCard(view, selectedBefore);
         if (hasRect)
         {
@@ -203,9 +203,9 @@ internal static class DiagramView
         return view.Transition.FindCardPlace(selected);
     }
 
-    private static void FollowLayout(Ui ui, DiagramViewState view, TypeDiagram diagram)
+    private static void AnimateTowardLayout(Ui ui, DiagramViewState view, TypeDiagram diagram)
     {
-        view.FollowLayout(diagram.Layout);
+        view.MoveTowardNewerLayout(diagram.Layout);
         view.Transition.Advance(ui.DeltaTime);
         if (view.Transition.IsMoving)
         {
@@ -392,7 +392,7 @@ internal static class DiagramView
             return;
         }
 
-        Commands.FollowLater(commands, target, navigation.BeginResolvingFromDiagram(diagram, inNewTab));
+        Commands.GoToReferenceLater(commands, target, navigation.BeginResolvingFromDiagram(diagram, inNewTab));
     }
 
     private static void Pan(Ui ui, DiagramViewState view, Interaction i)
@@ -659,7 +659,7 @@ internal static class DiagramView
         }
 
         var click = CodeTooltipView.Render(ui, appearance, shown);
-        FollowLink(ui, commands, navigation, diagram, click);
+        NavigateToClickedLink(ui, commands, navigation, diagram, click);
     }
 
     private static Lookup<CodeTooltip>? FindTooltip(CodeTooltips tooltips, bool isPanning, DiagramHit hit)
@@ -699,7 +699,7 @@ internal static class DiagramView
         return HashCode.Combine(row.Face.Card.Type, row.Index) | 1;
     }
 
-    private static void FollowLink(Ui ui, IAppCommandWriter commands, Navigation navigation, TypeDiagram diagram, RichTextClick click)
+    private static void NavigateToClickedLink(Ui ui, IAppCommandWriter commands, Navigation navigation, TypeDiagram diagram, RichTextClick click)
     {
         if (click.Link is not CodeReference.Entity reference)
         {
@@ -708,7 +708,7 @@ internal static class DiagramView
 
         ui.HideTooltip();
         var inNewTab = click.Button == PointerButton.Middle || IsCommandHeld(ui.Input.Modifiers);
-        Commands.FollowLater(commands, reference, navigation.BeginResolvingFromDiagram(diagram, inNewTab));
+        Commands.GoToReferenceLater(commands, reference, navigation.BeginResolvingFromDiagram(diagram, inNewTab));
     }
 
     /// <summary>Asks for the type <paramref name="type"/> points at to be shown on the diagram the user last worked
@@ -767,12 +767,12 @@ internal static class DiagramView
         var t = appearance.Strings;
         if (ui.MenuItem(t.TreeOpen, id: "open"))
         {
-            Commands.FollowLater(commands, card.Type, navigation.BeginResolvingFromDiagram(diagram, inNewTab: false));
+            Commands.GoToReferenceLater(commands, card.Type, navigation.BeginResolvingFromDiagram(diagram, inNewTab: false));
         }
 
         if (ui.MenuItem(t.TreeOpenInNewTab, id: "open-in-new-tab"))
         {
-            Commands.FollowLater(commands, card.Type, navigation.BeginResolvingFromDiagram(diagram, inNewTab: true));
+            Commands.GoToReferenceLater(commands, card.Type, navigation.BeginResolvingFromDiagram(diagram, inNewTab: true));
         }
 
         ui.MenuSeparator();

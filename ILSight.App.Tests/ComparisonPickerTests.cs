@@ -27,7 +27,7 @@ public sealed class ComparisonPickerTests
     {
         var picker = new ComparisonPicker();
         picker.Open(Opened(d, path));
-        picker.Update(d.AppState.ListSession.Assemblies);
+        picker.RelistAndFilter(d.AppState.ListSession.Assemblies);
         return picker;
     }
 
@@ -56,15 +56,15 @@ public sealed class ComparisonPickerTests
         var picker = OpenPicker(d, OlderPath);
 
         picker.Filter = "2.0";
-        picker.Update(d.AppState.ListSession.Assemblies);
+        picker.RelistAndFilter(d.AppState.ListSession.Assemblies);
         Assert.Equal([NewerPath], ShownPaths(picker));
 
         picker.Filter = "Newer";
-        picker.Update(d.AppState.ListSession.Assemblies);
+        picker.RelistAndFilter(d.AppState.ListSession.Assemblies);
         Assert.Equal([NewerPath], ShownPaths(picker));
 
         picker.Filter = "nothing like it";
-        picker.Update(d.AppState.ListSession.Assemblies);
+        picker.RelistAndFilter(d.AppState.ListSession.Assemblies);
         Assert.Empty(picker.Choice.Filtered);
         Assert.Null(picker.Choice.Selection.Item);
     }
@@ -77,7 +77,7 @@ public sealed class ComparisonPickerTests
         picker.Choice.Selection.Select(picker.Choice.Filtered[1], picker.Choice.Filtered);
 
         picker.Filter = "Tests";
-        picker.Update(d.AppState.ListSession.Assemblies);
+        picker.RelistAndFilter(d.AppState.ListSession.Assemblies);
 
         Assert.Equal(AppStateDriver.FixturePath, picker.Choice.Selection.Item?.FilePath.Text);
     }
@@ -103,7 +103,7 @@ public sealed class ComparisonPickerTests
         var picker = OpenPicker(d, OlderPath);
 
         d.InTurn(() => Commands.CloseAssemblies(d.AppState, [Opened(d, OlderPath)]));
-        picker.Update(d.AppState.ListSession.Assemblies);
+        picker.RelistAndFilter(d.AppState.ListSession.Assemblies);
 
         Assert.False(picker.Choice.IsOpen);
         Assert.Null(picker.Choice.Compared);

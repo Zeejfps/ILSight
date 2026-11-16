@@ -102,7 +102,7 @@ internal static class NuGetPickerView
         using (ui.Row(new Box { Height = Sizing.Grow(), Gap = theme.Gap, AlignY = Align.Start }))
         {
             open |= PackagesColumn(ui, appearance, picker);
-            picker.Browser.FollowSelection();
+            picker.Browser.OfferVersionsOfSelectedPackage();
             NuGetDetailsView.Render(ui, appearance, picker);
         }
         open |= Footer(ui, appearance, picker);

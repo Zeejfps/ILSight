@@ -22,7 +22,7 @@ internal static class ComparisonPickerView
     {
         var picker = comparisonPicker;
         var choice = picker.Choice;
-        picker.Update(assemblies);
+        picker.RelistAndFilter(assemblies);
 
         var compared = choice.Compared;
         if (compared is null)

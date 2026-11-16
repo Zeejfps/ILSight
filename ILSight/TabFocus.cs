@@ -1,6 +1,6 @@
 namespace ILSight;
 
-/// <summary>How the screen follows the app state's active tab: the tab it last followed, which the views open beside,
+/// <summary>The app state's active tab as the screen last recorded it, which the views open beside,
 /// and its last try at focusing another tab while none was active.</summary>
 public sealed class TabFocus
 {
@@ -8,7 +8,7 @@ public sealed class TabFocus
 
     public DocumentTab? Active { get; private set; }
 
-    public void Follow(DocumentTab? active)
+    public void RecordActiveTab(DocumentTab? active)
     {
         Active = active;
     }

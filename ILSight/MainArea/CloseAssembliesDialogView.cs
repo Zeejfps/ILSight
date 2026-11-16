@@ -17,7 +17,7 @@ internal static class CloseAssembliesDialogView
     {
         if (closer.IsOpen)
         {
-            closer.Rows.Update(assemblies);
+            closer.Rows.RelistWhenAssembliesChange(assemblies);
         }
 
         var t = appearance.Strings;

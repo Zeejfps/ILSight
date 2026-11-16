@@ -68,7 +68,7 @@ internal static class AnalyzerPanelView
         var treeId = ui.GetId(TreeId);
         if (ui.HasFocus(treeId))
         {
-            HandleKeys(ui, commands, panels, rows, analyzer);
+            RunAnalyzerShortcuts(ui, commands, panels, rows, analyzer);
         }
 
         if (result.Activated)
@@ -82,7 +82,7 @@ internal static class AnalyzerPanelView
         }
     }
 
-    private static void HandleKeys(Ui ui, IAppCommandWriter commands, Panels panels, AnalyzerRows rows, AnalyzerTree analyzer)
+    private static void RunAnalyzerShortcuts(Ui ui, IAppCommandWriter commands, Panels panels, AnalyzerRows rows, AnalyzerTree analyzer)
     {
         if (ui.IsPressed(Shortcuts.Analyze))
         {
@@ -136,7 +136,7 @@ internal static class AnalyzerPanelView
             return;
         }
 
-        Commands.FollowLater(commands, reference, navigation.BeginResolving(inNewTab: false));
+        Commands.GoToReferenceLater(commands, reference, navigation.BeginResolving(inNewTab: false));
     }
 
     private static void ContextMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, AnalyzerRows analyzerRows, Navigation navigation, AnalyzerTree analyzer)
@@ -195,12 +195,12 @@ internal static class AnalyzerPanelView
         var t = appearance.Strings;
         if (ui.MenuItem(t.AnalyzerGoTo, Shortcuts.Enter, id: "go-to"))
         {
-            Commands.FollowLater(commands, target, navigation.BeginResolving(inNewTab: false));
+            Commands.GoToReferenceLater(commands, target, navigation.BeginResolving(inNewTab: false));
         }
 
         if (ui.MenuItem(t.CodeOpenInNewTab, id: "open-in-new-tab"))
         {
-            Commands.FollowLater(commands, target, navigation.BeginResolving(inNewTab: true));
+            Commands.GoToReferenceLater(commands, target, navigation.BeginResolving(inNewTab: true));
         }
     }
 

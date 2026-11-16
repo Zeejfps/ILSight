@@ -2,7 +2,7 @@ using ILSight.Core;
 
 namespace ILSight;
 
-/// <summary>The browse tree following the open assemblies, as does the analyzer's rows following the analyses
+/// <summary>The browse tree rebuilt from the open assemblies, and the analyzer's rows from the analyses
 /// (<see cref="BrowseTree"/> keeps what the tree's rows show and how they expand).</summary>
 public static class Trees
 {
@@ -10,14 +10,14 @@ public static class Trees
     /// was cleared; rebuilds its roots when the open assemblies changed; and lists the analyzer's rows
     /// again when its roots changed. The roots of the assemblies read from <paramref name="reopening"/>
     /// spin while they are reopened.</summary>
-    internal static void SyncTrees(BrowseTree tree, AnalyzerRows rows, ShownChanges shown, AssemblyList assemblies, AnalyzerTree analyzer,
+    internal static void RebuildTreesWhenAssembliesChange(BrowseTree tree, AnalyzerRows rows, ShownChanges shown, AssemblyList assemblies, AnalyzerTree analyzer,
         ApiVisibility visibility, IReadOnlyCollection<AssemblyPath> reopening)
     {
         ForgetClearedList(tree, shown, assemblies);
         tree.ShowApi(visibility);
         tree.TrySyncRoots(assemblies);
         tree.ShowReopening(reopening);
-        rows.FollowTree(analyzer);
+        rows.ShowAnalyzerRoots(analyzer);
     }
 
     private static void ForgetClearedList(BrowseTree tree, ShownChanges shown, AssemblyList assemblies)

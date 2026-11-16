@@ -26,7 +26,7 @@ public sealed class CloserRows
         _anchor = null;
         _order.Clear();
         _listedVersion = -1;
-        Update(assemblies);
+        RelistWhenAssembliesChange(assemblies);
         if (picked is null)
         {
             return;
@@ -64,7 +64,7 @@ public sealed class CloserRows
 
     /// <summary>Lists the items again once the list changed, as a reload or an open does while the dialog
     /// is up, keeping the ticks of the files still listed.</summary>
-    public void Update(AssemblyList assemblies)
+    public void RelistWhenAssembliesChange(AssemblyList assemblies)
     {
         if (assemblies.Version == _listedVersion)
         {
@@ -92,7 +92,7 @@ public sealed class CloserRows
         }
     }
 
-    /// <summary>Follows a click that set <paramref name="clicked"/>'s tick: with <paramref name="extend"/>
+    /// <summary>Applies a click that set <paramref name="clicked"/>'s tick: with <paramref name="extend"/>
     /// (Shift held), every row in <paramref name="shown"/> from the anchor to it takes the same tick; rows
     /// outside the range keep theirs. Without an anchor among <paramref name="shown"/>, only
     /// <paramref name="clicked"/> changes. Either way it becomes the anchor. <paramref name="shown"/> is the

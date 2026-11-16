@@ -28,7 +28,7 @@ internal static class FrameworkPickerView
         var t = appearance.Strings;
         var picker = frameworkPicker;
         var browser = picker.Browser;
-        picker.Update(assemblies);
+        picker.RelistAndFilterWhileOpen(assemblies);
 
         var theme = ui.Theme;
         var open = false;

@@ -333,7 +333,7 @@ internal static class AppRoot
     private static void OpenRestoredTabs(UiState uiState, AppState appState)
     {
         uiState.Documents.SkipPanels(appState.Lists.ListDocumentPanels());
-        uiState.TabFocus.Follow(appState.ListSession.Navigation.ActiveTab);
+        uiState.TabFocus.RecordActiveTab(appState.ListSession.Navigation.ActiveTab);
         QueuedCommands.RunViewCommands(uiState, appState);
         uiState.Panels.ShowInRestoredDocuments(appState.ListSession.Navigation);
     }

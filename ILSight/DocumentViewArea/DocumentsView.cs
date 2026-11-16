@@ -111,7 +111,7 @@ internal static class DocumentsView
 
         if (picked.Definition != null)
         {
-            Commands.FollowLater(commands, picked.Definition, navigation.BeginResolving(picked.InNewTab));
+            Commands.GoToReferenceLater(commands, picked.Definition, navigation.BeginResolving(picked.InNewTab));
         }
     }
 
@@ -142,7 +142,7 @@ internal static class DocumentsView
         }
 
         intent.Switch((appearance, commands, panels, bookmarksPanel, navigation, tab),
-            navigate: static (s, navigate) => Commands.FollowLater(s.commands, navigate.Target, s.navigation.BeginResolving(navigate.InNewTab)),
+            navigate: static (s, navigate) => Commands.GoToReferenceLater(s.commands, navigate.Target, s.navigation.BeginResolving(navigate.InNewTab)),
             toggleBookmark: static (s, toggle) => Commands.Later(s.commands, (bookmarksPanel: s.bookmarksPanel, s.tab, line: toggle.Line, t: s.appearance.Strings),
                 static (a, s) => ToggleLineBookmark(s.bookmarksPanel, a, s.tab, s.line, s.t)),
             analyze: static (s, analyze) => Commands.AnalyzeLater(s.commands, s.panels, analyze.Entity),

@@ -59,12 +59,12 @@ public sealed class DocumentViews
         return null;
     }
 
-    /// <summary>Lets each view follow the grid or picture its tab shows.</summary>
-    public void FollowViewContent()
+    /// <summary>Has each view's picture take the image its tab shows, reset when that image changed.</summary>
+    public void ResetPicturesWhenImageChanges()
     {
         foreach (var (tab, view) in _views)
         {
-            view.Picture.Follow(tab.Image);
+            view.Picture.ResetWhenImageChanges(tab.Image);
         }
     }
 
@@ -114,7 +114,7 @@ public sealed class DocumentViews
     }
 
     /// <summary>Shows <paramref name="tab"/> in <paramref name="panel"/>, unless it is shown already, its view
-    /// following what the tab shows from the start, so what is asked of the view before it is next drawn,
+    /// taking what the tab shows from the start, so what is asked of the view before it is next drawn,
     /// such as a row to reveal, is not undone when it first takes the tab's content.</summary>
     public void AddView(DocumentTab tab, string panel)
     {
@@ -124,7 +124,7 @@ public sealed class DocumentViews
         }
 
         var view = new TabView { Panel = panel, ImageId = $"{panel}-image" };
-        view.Picture.Follow(tab.Image);
+        view.Picture.ResetWhenImageChanges(tab.Image);
         _views.Add(tab, view);
         _ownChanges++;
     }

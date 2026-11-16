@@ -263,7 +263,7 @@ public sealed class OmnibarTests
     private static async Task<IReadOnlyList<Crumb>> CrumbsToAsync(AppStateDriver d, string type)
     {
         var breadcrumb = new Breadcrumb();
-        breadcrumb.Follow(await d.FixtureAsync(type), d.Ui.Tree);
+        breadcrumb.ListCrumbsWhenNodeChanges(await d.FixtureAsync(type), d.Ui.Tree);
         return breadcrumb.Crumbs;
     }
 
@@ -415,9 +415,9 @@ public sealed class OmnibarTests
         var d = AppStateDriver.Opened();
         var breadcrumb = new Breadcrumb();
 
-        breadcrumb.Follow(await d.FixtureAsync("Greeter"), d.Ui.Tree);
+        breadcrumb.ListCrumbsWhenNodeChanges(await d.FixtureAsync("Greeter"), d.Ui.Tree);
         var first = breadcrumb.Crumbs;
-        breadcrumb.Follow(await d.FixtureAsync("Greeter"), d.Ui.Tree);
+        breadcrumb.ListCrumbsWhenNodeChanges(await d.FixtureAsync("Greeter"), d.Ui.Tree);
 
         Assert.Same(first, breadcrumb.Crumbs);
         Assert.Equal(["ILSight.App.Tests", AppStateDriver.FixturesNamespace, "Greeter"], first.Select(static c => c.Label));
@@ -429,7 +429,7 @@ public sealed class OmnibarTests
         var d = AppStateDriver.Opened();
         var breadcrumb = new Breadcrumb();
 
-        breadcrumb.Follow(null, d.Ui.Tree);
+        breadcrumb.ListCrumbsWhenNodeChanges(null, d.Ui.Tree);
 
         Assert.Empty(breadcrumb.Crumbs);
     }

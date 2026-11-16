@@ -90,9 +90,9 @@ public sealed class NuGetPicker
     }
 
     /// <summary>Takes in the query, the feed and whether prereleases count as they are at
-    /// <paramref name="now"/>; returns the search to start now, or null. See <see cref="NuGetBrowser.Update"/>.</summary>
-    public FeedSearch? Update(TimeSpan now)
+    /// <paramref name="now"/>; returns the search to start now, or null. See <see cref="NuGetBrowser.FindSearchToStart"/>.</summary>
+    public FeedSearch? FindSearchToStart(TimeSpan now)
     {
-        return Browser.Update(Query, FeedUrl, IncludePrerelease, now);
+        return Browser.FindSearchToStart(Query, FeedUrl, IncludePrerelease, now);
     }
 }

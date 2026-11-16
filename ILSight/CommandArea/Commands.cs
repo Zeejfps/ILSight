@@ -63,7 +63,7 @@ public static class Commands
     /// started there: the draw began the request in the frame of its input (the app says it is resolving), and only
     /// the lookup, which takes longer than a frame, waits for the edge. Nothing when <paramref name="lookup"/> is
     /// null.</summary>
-    public static void FollowLater(IAppCommandWriter commands, CodeReference.Navigable reference, ResolveTicket? lookup)
+    public static void GoToReferenceLater(IAppCommandWriter commands, CodeReference.Navigable reference, ResolveTicket? lookup)
     {
         if (lookup is null)
         {
@@ -87,7 +87,7 @@ public static class Commands
         appState.Workflows.StartSettling(name, async ct => StartDecompiling(appState, await show(ct)), _ => appState.ListSession.Navigation.FailResolving(lookup));
     }
 
-    /// <summary>As <see cref="FollowLater"/>, showing the metadata table row that defines what
+    /// <summary>As <see cref="GoToReferenceLater"/>, showing the metadata table row that defines what
     /// <paramref name="reference"/> points at (<see cref="ShowInMetadataHandler"/>).</summary>
     public static void ShowInMetadataLater(IAppCommandWriter commands, CodeReference.Navigable reference, ResolveTicket lookup)
     {

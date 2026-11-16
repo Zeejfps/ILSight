@@ -75,12 +75,12 @@ public sealed class AppLoop
         var navigation = appState.ListSession.Navigation;
         screen.Appearance.ApplyThemeAndLanguage(Theming.ResolveTheme(appState), appState.Locale);
         screen.Appearance.ApplyIconTheme(IconTheming.ResolveIconTheme(appState));
-        Trees.SyncTrees(screen.Tree, screen.Analyzer, screen.Shown, appState.ListSession.Assemblies, appState.ListSession.Analyzer, appState.ApiVisibility, appState.Reopens.Files);
+        Trees.RebuildTreesWhenAssembliesChange(screen.Tree, screen.Analyzer, screen.Shown, appState.ListSession.Assemblies, appState.ListSession.Analyzer, appState.ApiVisibility, appState.Reopens.Files);
         navigation.UsePreviewTabs(screen.Display.Options.PreviewTabs);
-        screen.Documents.FollowViewContent();
-        screen.TabFocus.Follow(navigation.ActiveTab);
+        screen.Documents.ResetPicturesWhenImageChanges();
+        screen.TabFocus.RecordActiveTab(navigation.ActiveTab);
         QueuedCommands.RunViewCommands(screen, appState);
-        screen.Panels.SyncTabViews(navigation);
+        screen.Panels.AddAndDropTabViews(navigation);
         _listLoader.ReviveClosedTabsListedAgain(screen.Documents);
         screen.Panels.FocusNextTabIfNone(navigation, appState.Decompiler.Setup);
         _listLoader.ReloadListWhenLoadOptionsChange(screen.Tree);

@@ -42,15 +42,15 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
 
     /// <summary>Shows the roots of <paramref name="analyzer"/>, listing the rows again when the roots changed,
     /// dropping a selection whose root is gone, or when an analysis found more.</summary>
-    public void FollowTree(AnalyzerTree analyzer)
+    public void ShowAnalyzerRoots(AnalyzerTree analyzer)
     {
         _roots = analyzer.Roots;
         _asked.Clear();
-        FollowRoots(analyzer);
-        FollowFindings(analyzer);
+        RelistWhenRootsChange(analyzer);
+        RelistWhenFindingsChange(analyzer);
     }
 
-    private void FollowRoots(AnalyzerTree analyzer)
+    private void RelistWhenRootsChange(AnalyzerTree analyzer)
     {
         if (analyzer.Changes == _seenChanges)
         {
@@ -77,7 +77,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
         View.ClearSelection();
     }
 
-    private void FollowFindings(AnalyzerTree analyzer)
+    private void RelistWhenFindingsChange(AnalyzerTree analyzer)
     {
         if (analyzer.Findings == _seenFindings)
         {

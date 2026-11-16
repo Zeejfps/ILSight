@@ -87,16 +87,16 @@ public sealed class NuGetPickerTests : IDisposable
         picker.UseSetup(Setup());
         picker.Open();
         picker.Browser.StopUnlessOpen(picker.IsOpen);
-        Update(picker, now: TimeSpan.FromSeconds(10));
+        StartTypedSearch(picker, now: TimeSpan.FromSeconds(10));
         Poll.Until(() => !picker.Browser.IsSearching, posted.Run);
-        picker.Browser.FollowSelection();
+        picker.Browser.OfferVersionsOfSelectedPackage();
         return picker;
     }
 
-    private TimeSpan Update(NuGetPicker picker, TimeSpan now)
+    private TimeSpan StartTypedSearch(NuGetPicker picker, TimeSpan now)
     {
         using var turn = PostedActions.OfThisTest().Install();
-        var wanted = picker.Update(now);
+        var wanted = picker.FindSearchToStart(now);
         if (wanted is not null)
         {
             var search = picker.Browser.StartSearch(wanted);
@@ -186,7 +186,7 @@ public sealed class NuGetPickerTests : IDisposable
         var picker = OpenPicker(posted);
 
         picker.Browser.Selection.Clear();
-        picker.Browser.FollowSelection();
+        picker.Browser.OfferVersionsOfSelectedPackage();
 
         Assert.Null(picker.Browser.Choice);
         Assert.Null(picker.Browser.Version);
@@ -200,9 +200,9 @@ public sealed class NuGetPickerTests : IDisposable
         var picker = OpenPicker(posted);
 
         picker.Query = "fix";
-        var wait = Update(picker, now: TimeSpan.FromSeconds(20));
+        var wait = StartTypedSearch(picker, now: TimeSpan.FromSeconds(20));
         var searchedWhileTyping = SearchCount();
-        Update(picker, now: TimeSpan.FromSeconds(21));
+        StartTypedSearch(picker, now: TimeSpan.FromSeconds(21));
         Poll.Until(() => !picker.Browser.IsSearching, posted.Run);
 
         Assert.True(wait > TimeSpan.Zero);
@@ -218,7 +218,7 @@ public sealed class NuGetPickerTests : IDisposable
         var picker = OpenPicker(posted);
 
         picker.IncludePrerelease = true;
-        var wait = Update(picker, now: TimeSpan.FromSeconds(10));
+        var wait = StartTypedSearch(picker, now: TimeSpan.FromSeconds(10));
         Poll.Until(() => !picker.Browser.IsSearching, posted.Run);
 
         Assert.Equal(TimeSpan.Zero, wait);
@@ -233,12 +233,12 @@ public sealed class NuGetPickerTests : IDisposable
         var picker = OpenPicker(posted);
 
         picker.Browser.ShowNextPage();
-        var wait = Update(picker, now: TimeSpan.FromSeconds(10));
+        var wait = StartTypedSearch(picker, now: TimeSpan.FromSeconds(10));
         Poll.Until(() => !picker.Browser.IsSearching, posted.Run);
         var nextPage = _fake.Requested.Last();
         picker.Query = "fix";
-        Update(picker, now: TimeSpan.FromSeconds(20));
-        Update(picker, now: TimeSpan.FromSeconds(21));
+        StartTypedSearch(picker, now: TimeSpan.FromSeconds(20));
+        StartTypedSearch(picker, now: TimeSpan.FromSeconds(21));
         Poll.Until(() => !picker.Browser.IsSearching, posted.Run);
 
         Assert.Equal(TimeSpan.Zero, wait);
@@ -256,8 +256,8 @@ public sealed class NuGetPickerTests : IDisposable
         var picker = OpenPicker(posted);
 
         picker.FeedUrl = OtherIndexUrl;
-        var wait = Update(picker, now: TimeSpan.FromSeconds(20));
-        Update(picker, now: TimeSpan.FromSeconds(21));
+        var wait = StartTypedSearch(picker, now: TimeSpan.FromSeconds(20));
+        StartTypedSearch(picker, now: TimeSpan.FromSeconds(21));
         Poll.Until(() => !picker.Browser.IsSearching, posted.Run);
 
         Assert.True(wait > TimeSpan.Zero);
@@ -277,8 +277,8 @@ public sealed class NuGetPickerTests : IDisposable
         var requests = _fake.Requested.Count;
 
         picker.FeedUrl = "api.nuget";
-        Update(picker, now: TimeSpan.FromSeconds(20));
-        Update(picker, now: TimeSpan.FromSeconds(21));
+        StartTypedSearch(picker, now: TimeSpan.FromSeconds(20));
+        StartTypedSearch(picker, now: TimeSpan.FromSeconds(21));
 
         Assert.False(picker.IsFeedUrlValid);
         Assert.Empty(picker.Browser.Results);
@@ -306,9 +306,9 @@ public sealed class NuGetPickerTests : IDisposable
         var picker = OpenPicker(posted);
 
         picker.Query = "fix";
-        Update(picker, now: TimeSpan.FromSeconds(20));
+        StartTypedSearch(picker, now: TimeSpan.FromSeconds(20));
         var download = picker.Browser.Submit();
-        var wait = Update(picker, now: TimeSpan.FromSeconds(20.01));
+        var wait = StartTypedSearch(picker, now: TimeSpan.FromSeconds(20.01));
         Poll.Until(() => !picker.Browser.IsSearching, posted.Run);
 
         Assert.Null(download);
@@ -325,9 +325,9 @@ public sealed class NuGetPickerTests : IDisposable
         _fake.Holds = true;
 
         picker.Query = "fix";
-        Update(picker, now: TimeSpan.FromSeconds(20));
+        StartTypedSearch(picker, now: TimeSpan.FromSeconds(20));
         var whileSettling = picker.Browser.CanOpen;
-        Update(picker, now: TimeSpan.FromSeconds(21));
+        StartTypedSearch(picker, now: TimeSpan.FromSeconds(21));
         var whileSearching = picker.Browser.CanOpen;
         Close(picker);
 
@@ -384,12 +384,12 @@ public sealed class NuGetPickerTests : IDisposable
 
         _fake.AnswerSearches("not json");
         picker.Browser.ShowNextPage();
-        Update(picker, now: TimeSpan.FromSeconds(20));
+        StartTypedSearch(picker, now: TimeSpan.FromSeconds(20));
         Poll.Until(() => !picker.Browser.IsSearching, posted.Run);
         var shownAfterFailure = (picker.Browser.Page, picker.Browser.Results.Count, picker.Browser.SearchError is not null);
         _fake.AnswerSearches(ThreePagesOfPackages);
         picker.Browser.RetrySearch();
-        Update(picker, now: TimeSpan.FromSeconds(21));
+        StartTypedSearch(picker, now: TimeSpan.FromSeconds(21));
         Poll.Until(() => !picker.Browser.IsSearching, posted.Run);
 
         Assert.Equal((0, 1, true), shownAfterFailure);
@@ -405,8 +405,8 @@ public sealed class NuGetPickerTests : IDisposable
 
         _fake.AnswerSearches("not json");
         picker.Query = "other";
-        Update(picker, now: TimeSpan.FromSeconds(20));
-        Update(picker, now: TimeSpan.FromSeconds(21));
+        StartTypedSearch(picker, now: TimeSpan.FromSeconds(20));
+        StartTypedSearch(picker, now: TimeSpan.FromSeconds(21));
         Poll.Until(() => !picker.Browser.IsSearching, posted.Run);
 
         Assert.Empty(picker.Browser.Results);

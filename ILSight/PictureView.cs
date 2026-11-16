@@ -15,7 +15,7 @@ public sealed class PictureView
 
     /// <summary>Starts over when <paramref name="image"/>, the picture the tab shows or null, is
     /// another than the last, and lets go of one the tab no longer shows.</summary>
-    public void Follow(ResourceImage? image)
+    public void ResetWhenImageChanges(ResourceImage? image)
     {
         if (ReferenceEquals(image, _shown))
         {

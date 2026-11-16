@@ -24,7 +24,7 @@ internal static class ComparisonView
     {
         var rows = documents.GetView(tab).Comparison;
         rows.SetStyle(ui.Theme, appearance.NodeIconPalette, appearance.Icons, appearance.Strings);
-        rows.FollowDiff(FindDiff(comparison));
+        rows.ShowDiff(FindDiff(comparison));
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground });
         if (!display.Options.ShowOmnibar)
         {
@@ -197,7 +197,7 @@ internal static class ComparisonView
             return;
         }
 
-        Commands.FollowLater(commands, side.Reference, navigation.BeginResolving(inNewTab));
+        Commands.GoToReferenceLater(commands, side.Reference, navigation.BeginResolving(inNewTab));
     }
 
     private static ApiSide? LeftOf(ApiEntry entry)
@@ -245,12 +245,12 @@ internal static class ComparisonView
         var right = RightOf(entry);
         if (ui.MenuItem(t.ComparisonOpenLeft, enabled: left != null, id: "open-left") && left != null)
         {
-            Commands.FollowLater(commands, left.Reference, navigation.BeginResolving(inNewTab: false));
+            Commands.GoToReferenceLater(commands, left.Reference, navigation.BeginResolving(inNewTab: false));
         }
 
         if (ui.MenuItem(t.ComparisonOpenRight, enabled: right != null, id: "open-right") && right != null)
         {
-            Commands.FollowLater(commands, right.Reference, navigation.BeginResolving(inNewTab: false));
+            Commands.GoToReferenceLater(commands, right.Reference, navigation.BeginResolving(inNewTab: false));
         }
     }
 }

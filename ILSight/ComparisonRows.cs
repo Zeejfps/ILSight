@@ -60,7 +60,7 @@ public sealed class ComparisonRows : ITreeModel<ApiEntry>
     }
 
     /// <summary>Shows <paramref name="diff"/>, listing the rows anew when it is not the one shown.</summary>
-    public void FollowDiff(ApiDiff? diff)
+    public void ShowDiff(ApiDiff? diff)
     {
         if (diff == _shownDiff)
         {

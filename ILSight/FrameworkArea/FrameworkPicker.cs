@@ -23,14 +23,14 @@ public sealed class FrameworkPicker
     }
 
     /// <summary>While open, takes in the filter typed and the assemblies open; see
-    /// <see cref="FrameworkBrowser.Update"/>.</summary>
-    public void Update(AssemblyList assemblies)
+    /// <see cref="FrameworkBrowser.RelistAndFilter"/>.</summary>
+    public void RelistAndFilterWhileOpen(AssemblyList assemblies)
     {
         if (!IsOpen)
         {
             return;
         }
 
-        Browser.Update(assemblies, Filter);
+        Browser.RelistAndFilter(assemblies, Filter);
     }
 }

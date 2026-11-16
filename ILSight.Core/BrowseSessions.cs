@@ -236,10 +236,10 @@ public static class BrowseSessions
             return new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound());
         }
 
-        return await FollowStepsAsync(session, await EnsureRootAsync(session, item, ct), path.Steps, ct);
+        return await WalkStepsAsync(session, await EnsureRootAsync(session, item, ct), path.Steps, ct);
     }
 
-    private static async Task<Outcome<Lookup<BrowseNode>>> FollowStepsAsync(BrowseSession session, BrowseNode root,
+    private static async Task<Outcome<Lookup<BrowseNode>>> WalkStepsAsync(BrowseSession session, BrowseNode root,
         ImmutableArray<NodePathStep> steps, CancellationToken ct)
     {
         Outcome<Lookup<BrowseNode>> reached = new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Found { Value = root });

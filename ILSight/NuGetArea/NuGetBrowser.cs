@@ -384,7 +384,7 @@ public sealed class NuGetBrowser
     /// starts on its first page. Null when nothing is to be searched yet, or what is asked is searched already;
     /// while what was typed settles, <see cref="IsSettling"/> says so and <see cref="CalculateTimeToSettle"/>
     /// how long it has left.</summary>
-    public FeedSearch? Update(string query, string feedUrl, bool includePrerelease, TimeSpan now)
+    public FeedSearch? FindSearchToStart(string query, string feedUrl, bool includePrerelease, TimeSpan now)
     {
         _typedQuery.Note(query, now);
         _typedUrl.Note(feedUrl, now);
@@ -578,7 +578,7 @@ public sealed class NuGetBrowser
     }
 
     /// <summary>Offers the versions of the package selected, picking its latest, once another is selected.</summary>
-    public void FollowSelection()
+    public void OfferVersionsOfSelectedPackage()
     {
         var package = Selection.Item;
         var offered = Choice?.Package;

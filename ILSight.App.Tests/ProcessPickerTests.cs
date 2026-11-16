@@ -109,14 +109,14 @@ public sealed class ProcessPickerTests
     {
         var picker = new ProcessPicker { Browser = new ProcessBrowser(ports) };
         await ScanAsync(picker.Browser, picker.Open());
-        Assert.Null(Follow(picker));
+        Assert.Null(ListSelectedProcessModules(picker));
         return picker;
     }
 
-    private static ModuleListingTicket? Follow(ProcessPicker picker)
+    private static ModuleListingTicket? ListSelectedProcessModules(ProcessPicker picker)
     {
         picker.Browser.TakeFilter(picker.Filter);
-        return picker.Browser.FollowSelection();
+        return picker.Browser.StartListingSelectedModules();
     }
 
     private static void Close(ProcessPicker picker)
@@ -136,7 +136,7 @@ public sealed class ProcessPickerTests
     {
         var filtered = picker.Browser.Filtered;
         picker.Browser.ProcessSelection.Select(filtered.ToList().IndexOf(process), filtered.Count);
-        var listing = Follow(picker);
+        var listing = ListSelectedProcessModules(picker);
         Assert.NotNull(listing);
         Assert.Equal(process, listing.Process);
         return listing;
@@ -178,7 +178,7 @@ public sealed class ProcessPickerTests
         Assert.Equal([CoreLib, Generated, WebDll], loaded.Modules);
         Assert.Equal([TestPaths.FakePath("Web.Api.dll")], picker.Browser.ListToOpen());
         Assert.Equal(shutdown.Token, Assert.Single(ports.ListingTokens));
-        Assert.Null(Follow(picker));
+        Assert.Null(ListSelectedProcessModules(picker));
     }
 
     [Fact]
@@ -363,7 +363,7 @@ public sealed class ProcessPickerTests
         ports.Running.RemoveAt(0);
         await ScanAsync(picker.Browser, picker.Browser.StartScan());
 
-        Assert.Null(Follow(picker));
+        Assert.Null(ListSelectedProcessModules(picker));
         Assert.Equal([Worker], picker.Browser.Filtered);
         Assert.Equal(Worker, picker.Browser.FindSelectedProcess());
         Assert.IsType<ModuleScan.Loaded>(picker.Browser.Modules);

@@ -97,7 +97,7 @@ public sealed class FrameworkBrowser(FrameworkBrowser.IPorts ports)
     }
 
     /// <summary>Re-filters when the assembly list or <paramref name="filter"/> changed since the last frame.</summary>
-    public void Update(AssemblyList assemblies, string filter)
+    public void RelistAndFilter(AssemblyList assemblies, string filter)
     {
         RefreshListed(assemblies);
         ApplyFilter(filter);

@@ -40,7 +40,7 @@ public sealed class NuGetPickerFetcher
         }
 
         var now = frame.Now;
-        var search = _picker.Update(now);
+        var search = _picker.FindSearchToStart(now);
         if (search is not null)
         {
             StartSearching(search);

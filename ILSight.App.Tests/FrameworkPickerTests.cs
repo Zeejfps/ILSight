@@ -112,11 +112,11 @@ public sealed class FrameworkPickerTests
         var picker = CreatePicker(new FakeFrameworkBrowserPorts { Assemblies = assemblies });
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         await OpenAsync(picker);
-        picker.Update(list);
+        picker.RelistAndFilterWhileOpen(list);
 
         picker.Browser.Selection.SelectAll(picker.Browser.Filtered);
         picker.Filter = "Net";
-        picker.Update(list);
+        picker.RelistAndFilterWhileOpen(list);
 
         Assert.Equal([assemblies[0], assemblies[1]], picker.Browser.ListSelected());
     }
@@ -139,11 +139,11 @@ public sealed class FrameworkPickerTests
         var picker = CreatePicker(new FakeFrameworkBrowserPorts { Assemblies = [open, other] });
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         await OpenAsync(picker);
-        picker.Update(list);
+        picker.RelistAndFilterWhileOpen(list);
         Assert.Equal([open, other], picker.Browser.Filtered);
 
         list.Open(AppStateDriver.FixturePath);
-        picker.Update(list);
+        picker.RelistAndFilterWhileOpen(list);
 
         Assert.Equal([other], picker.Browser.Filtered);
     }

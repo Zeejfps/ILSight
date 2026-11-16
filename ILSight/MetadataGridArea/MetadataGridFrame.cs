@@ -76,13 +76,13 @@ internal ref struct MetadataGridFrame
         }
 
         State.TakeRowHeight(Ui.Theme.RowHeight);
-        MetadataGridWidget.UpdateView(State, Flags, Views, ClosedAssembly is not null);
+        MetadataGridWidget.ArrangeRowsWhenViewChanges(State, Flags, Views, ClosedAssembly is not null);
 
         using var pane = Ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f, Background = Ui.Theme.PaneBackground });
         var table = Ui.Table(ListId, columns, State.Cell, State.Scroll);
         Header(table);
         FlagsFlyout();
-        MetadataGridWidget.UpdateView(State, Flags, Views, ClosedAssembly is not null);
+        MetadataGridWidget.ArrangeRowsWhenViewChanges(State, Flags, Views, ClosedAssembly is not null);
 
         _focused = table.Focused;
         table.TakeKeys(State.RowCount);

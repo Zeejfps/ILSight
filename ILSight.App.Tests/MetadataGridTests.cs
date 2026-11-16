@@ -304,12 +304,12 @@ public sealed class MetadataGridTests
         var state = MetadataGridWidget.CreateState(grid);
         var views = new MetadataGridViews();
         var name = grid.Column("Name");
-        MetadataGridWidget.UpdateView(state, app.Ui.Grids.Filters, views, isClosed: false);
+        MetadataGridWidget.ArrangeRowsWhenViewChanges(state, app.Ui.Grids.Filters, views, isClosed: false);
         state.SortBy(name);
-        MetadataGridWidget.UpdateView(state, app.Ui.Grids.Filters, views, isClosed: false);
+        MetadataGridWidget.ArrangeRowsWhenViewChanges(state, app.Ui.Grids.Filters, views, isClosed: false);
         var older = Assert.Single(views.TakeAsked());
         state.SortBy(name);
-        MetadataGridWidget.UpdateView(state, app.Ui.Grids.Filters, views, isClosed: false);
+        MetadataGridWidget.ArrangeRowsWhenViewChanges(state, app.Ui.Grids.Filters, views, isClosed: false);
         var newer = Assert.Single(views.TakeAsked());
         var handler = new ArrangeMetadataGridHandler(new FakeArrangeMetadataGridHandlerPorts());
 

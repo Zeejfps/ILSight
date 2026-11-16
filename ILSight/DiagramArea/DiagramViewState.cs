@@ -114,7 +114,7 @@ public sealed class DiagramViewState
 
     /// <summary>Moves toward <paramref name="layout"/> when it is a newer one, taken as a layout of the diagram as
     /// it was last measured.</summary>
-    public void FollowLayout(TypeLayout? layout)
+    public void MoveTowardNewerLayout(TypeLayout? layout)
     {
         if (!Transition.TryFollowLayout(layout))
         {

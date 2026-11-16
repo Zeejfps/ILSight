@@ -77,7 +77,7 @@ internal static class OmnibarView
         DocumentTab tab, string panel)
     {
         var view = documents.GetView(tab);
-        view.Breadcrumb.Follow(tab.Node, tree);
+        view.Breadcrumb.ListCrumbsWhenNodeChanges(tab.Node, tree);
         var crumbs = view.Breadcrumb.Crumbs;
         var closed = tab.Load.ClosedAssembly;
         var menuOwner = 0;

@@ -120,7 +120,7 @@ public static class CodeViewWidget
         }
 
         var now = TimeSpan.FromSeconds(ui.RealTime);
-        state.Blink.Follow(state.Selection.Caret, now);
+        state.Blink.RestartBlinkWhenCaretMoves(state.Selection.Caret, now);
         // How many times the caret has shown or hidden since it moved, and how far into the current one it is.
         var blinks = (now - state.Blink.From) / CaretBlink;
         var fraction = blinks % 1;
@@ -186,7 +186,7 @@ public static class CodeViewWidget
 
         if (focused || findFocused)
         {
-            HandleKeys(ui, screenDisplay, state, document, focusId, focused, advance);
+            RunCodeViewShortcuts(ui, screenDisplay, state, document, focusId, focused, advance);
             if (focused && ui.IsPressed(Shortcuts.Analyze))
             {
                 var analyzed = AnalyzableAt(document, state.Selection.Caret);
@@ -573,7 +573,7 @@ public static class CodeViewWidget
         }
 
         var click = CodeTooltipView.Render(ui, appearance, shown);
-        return FollowLink(ui, click);
+        return NavigateToClickedLink(ui, click);
     }
 
     private static void ClosedTooltip(Ui ui, Appearance appearance, CodeViewState state, DecompiledDocument document, int codeId, HoveredSpan hovered,
@@ -597,7 +597,7 @@ public static class CodeViewWidget
         CodeTooltipView.RenderClosed(ui, appearance, closedAssembly);
     }
 
-    private static CodeViewIntent? FollowLink(Ui ui, RichTextClick click)
+    private static CodeViewIntent? NavigateToClickedLink(Ui ui, RichTextClick click)
     {
         if (click.Link is not CodeReference.Navigable reference)
         {
@@ -901,7 +901,7 @@ public static class CodeViewWidget
         return null;
     }
 
-    private static void HandleKeys(Ui ui, ScreenDisplay display, CodeViewState state, DecompiledDocument document, int focusId, bool focused, float advance)
+    private static void RunCodeViewShortcuts(Ui ui, ScreenDisplay display, CodeViewState state, DecompiledDocument document, int focusId, bool focused, float advance)
     {
         var keys = ui.Input.Keys;
         for (var k = 0; k < keys.Count; k++)

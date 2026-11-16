@@ -66,7 +66,7 @@ public static class AssemblyListing
 
     /// <summary>Takes from <paramref name="options"/> the toggles that apply as assemblies are read: whether
     /// references load their assemblies, and whether Windows Runtime metadata is projected. Returns true
-    /// when they changed, so that the open assemblies must be read again to follow them. A change ends the
+    /// when they changed, so that the open assemblies must be read again under them. A change ends the
     /// <see cref="AssemblyList.Generation"/>, as a clear does, its work's ending cancelled after the change (<see cref="AssemblyList.Work"/>),
     /// so that no assembly read with the options before is kept.</summary>
     public static bool TryChangeLoadOptions(AssemblyList list, DecompilerOptions options)

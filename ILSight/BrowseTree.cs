@@ -9,7 +9,7 @@ using ILSight.UserArea;
 namespace ILSight;
 
 /// <summary>The browse tree over the open assemblies, as the tree view reads it (ZGF's ITreeModel): its roots, which
-/// follow the open assemblies, what its rows show and how they expand, and the view's expansion and selection.
+/// are rebuilt from the open assemblies, what its rows show and how they expand, and the view's expansion and selection.
 /// Children not built yet show a loading row and are asked to be built, which the edge starts in the background, and
 /// children that failed to build a row saying why. Its roots and their labels, what it shows and in which style change
 /// only through its methods, which keep the paths, labels and rows shown in step with them.</summary>
@@ -65,14 +65,14 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
             roots[i] = Session.EnsureRoot(listed[i]);
         }
 
-        FollowGoneRoots(roots);
+        ReplaceGoneRoots(roots);
         _roots = roots;
         _rootLabels = ListRootLabels(roots, _strings);
         _revision++;
         return true;
     }
 
-    private void FollowGoneRoots(BrowseNode[] roots)
+    private void ReplaceGoneRoots(BrowseNode[] roots)
     {
         if (_roots.Length == 0)
         {
@@ -88,8 +88,8 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
             }
 
             var replacement = FindRootOfFile(roots, root.Assembly.FilePath);
-            FollowSelection(root, replacement);
-            FollowExpansion(root, replacement);
+            MoveSelectionToReplacement(root, replacement);
+            MoveExpansionToCounterpart(root, replacement);
         }
     }
 
@@ -105,7 +105,7 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
         return null;
     }
 
-    private void FollowSelection(BrowseNode gone, BrowseNode? replacement)
+    private void MoveSelectionToReplacement(BrowseNode gone, BrowseNode? replacement)
     {
         if (replacement is null)
         {
@@ -145,7 +145,7 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
         return Session.FindLoadedChildLike(parent, node);
     }
 
-    private void FollowExpansion(BrowseNode node, BrowseNode? counterpart)
+    private void MoveExpansionToCounterpart(BrowseNode node, BrowseNode? counterpart)
     {
         if (!View.IsExpanded(node))
         {
@@ -166,7 +166,7 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
 
         foreach (var child in loaded.Children)
         {
-            FollowExpansion(child, FindChildLike(counterpart, child));
+            MoveExpansionToCounterpart(child, FindChildLike(counterpart, child));
         }
     }
 

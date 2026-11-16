@@ -51,7 +51,7 @@ internal static class ExportsPanelView
         }
         var listId = ui.GetId(ListKey);
         var rows = new Rows { ListId = listId, MenuId = ui.GetId(MenuId), Narrow = IsNarrow(ui, listId) };
-        HandleKeys(ui, exportsPanel, commands, queue, finished, rows);
+        RunExportShortcuts(ui, exportsPanel, commands, queue, finished, rows);
         using (ui.Scroll(rows.ListId, new Box { Height = Sizing.Grow(), Gap = 0f, Background = ui.Theme.PaneBackground }))
         {
             Running(ui, appearance, exportsPanel, commands, queue, rows);
@@ -122,7 +122,7 @@ internal static class ExportsPanelView
         return string.Join(" · ", parts);
     }
 
-    private static void HandleKeys(Ui ui, ExportsPanel exportsPanel, IAppCommandWriter commands, ExportQueue queue, List<ExportReport> finished, Rows rows)
+    private static void RunExportShortcuts(Ui ui, ExportsPanel exportsPanel, IAppCommandWriter commands, ExportQueue queue, List<ExportReport> finished, Rows rows)
     {
         if (!ui.HasFocus(rows.ListId))
         {
@@ -133,11 +133,11 @@ internal static class ExportsPanelView
         var keys = ui.Input.Keys;
         for (var i = 0; i < keys.Count; i++)
         {
-            HandleKey(ui, exportsPanel, commands, queue, finished, rows, runs, i);
+            RunExportShortcut(ui, exportsPanel, commands, queue, finished, rows, runs, i);
         }
     }
 
-    private static void HandleKey(Ui ui, ExportsPanel exportsPanel, IAppCommandWriter commands, ExportQueue queue, List<ExportReport> finished, Rows rows, List<ExportRun> runs, int index)
+    private static void RunExportShortcut(Ui ui, ExportsPanel exportsPanel, IAppCommandWriter commands, ExportQueue queue, List<ExportReport> finished, Rows rows, List<ExportRun> runs, int index)
     {
         var stroke = ui.Input.Keys[index];
         var selected = exportsPanel.Selected;

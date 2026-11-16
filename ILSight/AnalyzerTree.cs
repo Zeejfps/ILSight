@@ -70,7 +70,7 @@ public sealed class AnalyzerTree
 
         var root = new AnalyzerSymbolNode { Symbol = symbol };
         _roots.Add(root);
-        FollowSavedAnalyses();
+        BumpRevisionWhenSavedAnalysesChange();
         return new AnalyzerAdd.Analyzing { Root = root };
     }
 
@@ -116,7 +116,7 @@ public sealed class AnalyzerTree
     {
         var root = new AnalyzerPendingNode { SavedAs = savedAs };
         _roots.Add(root);
-        FollowSavedAnalyses();
+        BumpRevisionWhenSavedAnalysesChange();
         return root;
     }
 
@@ -178,7 +178,7 @@ public sealed class AnalyzerTree
         }
         var root = new AnalyzerSymbolNode { Symbol = symbol };
         _roots[index] = root;
-        FollowSavedAnalyses();
+        BumpRevisionWhenSavedAnalysesChange();
         return root;
     }
 
@@ -194,7 +194,7 @@ public sealed class AnalyzerTree
         }
 
         _roots[index] = new AnalyzerUnresolvedNode { Name = name, Why = why };
-        FollowSavedAnalyses();
+        BumpRevisionWhenSavedAnalysesChange();
     }
 
     /// <summary>Keeps the waiting <paramref name="pending"/>, restored from the saved analyses, as saved, in its place,
@@ -214,7 +214,7 @@ public sealed class AnalyzerTree
         }
 
         _roots[index] = new AnalyzerFailedNode { SavedAs = savedAs.Value, Failure = failure };
-        FollowSavedAnalyses();
+        BumpRevisionWhenSavedAnalysesChange();
     }
 
     /// <summary>Has each restored root that failed wait for its symbol again, in its place, as it did when it was
@@ -229,7 +229,7 @@ public sealed class AnalyzerTree
             }
         }
 
-        FollowSavedAnalyses();
+        BumpRevisionWhenSavedAnalysesChange();
     }
 
     public bool HasRoot(AnalyzerNode root)
@@ -245,7 +245,7 @@ public sealed class AnalyzerTree
             return;
         }
 
-        FollowSavedAnalyses();
+        BumpRevisionWhenSavedAnalysesChange();
         Analysis.CancelNode(root);
     }
 
@@ -327,7 +327,7 @@ public sealed class AnalyzerTree
         }
 
         _roots.Clear();
-        FollowSavedAnalyses();
+        BumpRevisionWhenSavedAnalysesChange();
     }
 
     /// <summary>The analyses the roots save as, in their order.</summary>
@@ -357,7 +357,7 @@ public sealed class AnalyzerTree
         };
     }
 
-    private void FollowSavedAnalyses()
+    private void BumpRevisionWhenSavedAnalysesChange()
     {
         var saved = ListSavedAnalyses();
         if (saved.SequenceEqual(_saved))

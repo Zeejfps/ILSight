@@ -69,7 +69,7 @@ public sealed class SearchResults
     /// <summary>Starts a search for <paramref name="query"/>, looking for <paramref name="kinds"/>, when the query
     /// settled, or searches assemblies opened since. Does nothing unless the results are <paramref name="shown"/>.
     /// Returns the time left before a typed query settles, or zero. Runs every frame, so no lambda belongs in it.</summary>
-    public TimeSpan Update(string query, SearchKinds kinds, AssemblyList assemblies, TimeSpan now, bool shown)
+    public TimeSpan RunSearch(string query, SearchKinds kinds, AssemblyList assemblies, TimeSpan now, bool shown)
     {
         _typed.Note(query, now);
         if (!shown)

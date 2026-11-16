@@ -165,7 +165,7 @@ public sealed class NuGetBrowserTests
 
     private static FeedSearch AskSearch(NuGetPicker picker, TimeSpan now)
     {
-        var search = picker.Update(now);
+        var search = picker.FindSearchToStart(now);
         Assert.NotNull(search);
         return search;
     }
@@ -210,7 +210,7 @@ public sealed class NuGetBrowserTests
         Assert.Equal("Fixtures", picker.Browser.Selection.Item?.Id.Text);
         Assert.False(picker.Browser.IsSearching);
         Assert.Equal(new SavedNuGetSearch { FeedUrl = FeedUrl, IncludePrerelease = false }, picker.Browser.KeptSearch);
-        Assert.Null(picker.Update(TimeSpan.FromSeconds(11)));
+        Assert.Null(picker.FindSearchToStart(TimeSpan.FromSeconds(11)));
         Assert.Empty(ports.Reported);
     }
 
@@ -301,10 +301,10 @@ public sealed class NuGetBrowserTests
         var searching = SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
 
         picker.Query = "fix";
-        var whileTyping = picker.Update(TimeSpan.FromSeconds(20));
+        var whileTyping = picker.FindSearchToStart(TimeSpan.FromSeconds(20));
         var settling = picker.Browser.IsSettling;
         var wait = picker.Browser.CalculateTimeToSettle(TimeSpan.FromSeconds(20));
-        var settled = picker.Update(TimeSpan.FromSeconds(21));
+        var settled = picker.FindSearchToStart(TimeSpan.FromSeconds(21));
 
         Assert.True(searching.IsCompletedSuccessfully);
         Assert.Null(whileTyping);
@@ -586,7 +586,7 @@ public sealed class NuGetBrowserTests
         var ports = new FakePorts { Package = new Outcome<string>.Ok("fixtures.2.0.0.nupkg") };
         var picker = CreatePicker();
         await SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
-        picker.Browser.FollowSelection();
+        picker.Browser.OfferVersionsOfSelectedPackage();
         using var shutdown = new CancellationTokenSource();
 
         var download = picker.Browser.StartDownload();
@@ -605,7 +605,7 @@ public sealed class NuGetBrowserTests
         var ports = new FakePorts { Package = new Outcome<string>.Ok("fixtures.2.0.0.nupkg") };
         var picker = CreatePicker();
         await SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
-        picker.Browser.FollowSelection();
+        picker.Browser.OfferVersionsOfSelectedPackage();
 
         var download = picker.Browser.Submit();
         var downloading = picker.Browser.IsDownloading;
@@ -628,12 +628,12 @@ public sealed class NuGetBrowserTests
         var ports = new FakePorts { Package = new Outcome<string>.Ok("fixtures.2.0.0.nupkg") };
         var picker = CreatePicker();
         await SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
-        picker.Browser.FollowSelection();
+        picker.Browser.OfferVersionsOfSelectedPackage();
 
         picker.Query = "fix";
-        picker.Update(TimeSpan.FromSeconds(20));
+        picker.FindSearchToStart(TimeSpan.FromSeconds(20));
         var download = picker.Browser.Submit();
-        var search = picker.Update(TimeSpan.FromSeconds(20.01));
+        var search = picker.FindSearchToStart(TimeSpan.FromSeconds(20.01));
 
         Assert.Null(download);
         Assert.Equal("fix", search?.Query);

@@ -22,7 +22,7 @@ public sealed class PickerRows
         _anchor = null;
     }
 
-    /// <summary>Follows a click that set <paramref name="clicked"/>'s tick: with <paramref name="extend"/>
+    /// <summary>Applies a click that set <paramref name="clicked"/>'s tick: with <paramref name="extend"/>
     /// (Shift held), every row in <paramref name="shown"/> from the anchor to it takes the same tick, as
     /// in a list of checkboxes elsewhere; rows outside the range keep theirs. Without an anchor among
     /// <paramref name="shown"/>, only <paramref name="clicked"/> changes. Either way it becomes the

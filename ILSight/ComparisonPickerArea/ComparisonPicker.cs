@@ -18,9 +18,9 @@ public sealed class ComparisonPicker
         Choice.Open(compared);
     }
 
-    /// <summary>Takes in the filter typed and the assemblies open; see <see cref="ComparisonChoice.Update"/>.</summary>
-    public void Update(AssemblyList assemblies)
+    /// <summary>Takes in the filter typed and the assemblies open; see <see cref="ComparisonChoice.RelistAndFilterWhileOpen"/>.</summary>
+    public void RelistAndFilter(AssemblyList assemblies)
     {
-        Choice.Update(assemblies, Filter);
+        Choice.RelistAndFilterWhileOpen(assemblies, Filter);
     }
 }

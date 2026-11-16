@@ -10,10 +10,11 @@ public sealed class Breadcrumb
 
     public IReadOnlyList<Crumb> Crumbs => _path.Last ?? [];
 
-    /// <summary>Follows <paramref name="node"/> as <paramref name="tree"/> shows it; none when it is null.
+    /// <summary>Lists the crumbs of <paramref name="node"/> as <paramref name="tree"/> shows it, again only when the node
+    /// or the tree changed; none when it is null.
     /// Runs each frame, so listing the crumbs is a function of its own: a lambda here would allocate its
     /// closure on the way to returning what is already known.</summary>
-    public void Follow(BrowseNode? node, BrowseTree tree)
+    public void ListCrumbsWhenNodeChanges(BrowseNode? node, BrowseTree tree)
     {
         if (_path.TryGet((new ByReference<BrowseNode>(node), tree.Revision), out _))
         {

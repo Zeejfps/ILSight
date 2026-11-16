@@ -46,7 +46,7 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
     {
         var grid = await OpenTableAsync("TypeRef");
         var state = MetadataGridWidget.CreateState(grid);
-        MetadataGridWidget.UpdateView(state, MetadataFilters.From(null), new MetadataGridViews(), isClosed: false);
+        MetadataGridWidget.ArrangeRowsWhenViewChanges(state, MetadataFilters.From(null), new MetadataGridViews(), isClosed: false);
         state.OpenCell(2, 1, 3);
         state.OpenCell(1, 1, 2);
         state.OpenCell(1, 2, 4);

@@ -12,7 +12,7 @@ using static ZGF.Desktop.ShortcutModifiers;
 namespace ILSight;
 
 /// <summary>Every key that does something in the app, matched and labelled from here: the app-wide
-/// ones <see cref="Handle"/> runs, and those the focused view handles
+/// ones <see cref="RunAppShortcuts"/> runs, and those the focused view handles
 /// itself. Command is Ctrl, but ⌘ on macOS.</summary>
 internal static class Shortcuts
 {
@@ -89,21 +89,21 @@ internal static class Shortcuts
     }
 
     /// <summary>Runs the app-wide shortcuts pressed this frame: those that run while a text box takes the keys first
-    /// (<see cref="HandleWhileTyping"/>), then, unless a text box takes them, those that act on a view's selection or a
-    /// document (<see cref="HandleOutsideTextBoxes"/>).</summary>
-    public static void Handle(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, ScreenDisplay display, Omnibar omnibar,
+    /// (<see cref="RunShortcutsWhileTyping"/>), then, unless a text box takes them, those that act on a view's selection or a
+    /// document (<see cref="RunShortcutsOutsideTextBoxes"/>).</summary>
+    public static void RunAppShortcuts(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, ScreenDisplay display, Omnibar omnibar,
         BrowseTree tree, ExportSetup exportSetup, AppState appState)
     {
-        HandleWhileTyping(ui, commands, panels, display, omnibar, appState);
+        RunShortcutsWhileTyping(ui, commands, panels, display, omnibar, appState);
         if (!ui.WantsTextInput)
         {
-            HandleOutsideTextBoxes(ui, appearance, commands, panels, tree, exportSetup, appState);
+            RunShortcutsOutsideTextBoxes(ui, appearance, commands, panels, tree, exportSetup, appState);
         }
     }
 
     // The shortcuts that run while a text box takes the keys, which they don't edit text with: the pointer's side
     // buttons going back and forward, and the keys that open a search or a panel or move in the history.
-    private static void HandleWhileTyping(Ui ui, IAppCommandWriter commands, Panels panels, ScreenDisplay display, Omnibar omnibar, AppState appState)
+    private static void RunShortcutsWhileTyping(Ui ui, IAppCommandWriter commands, Panels panels, ScreenDisplay display, Omnibar omnibar, AppState appState)
     {
         var input = ui.Input;
         if (input.WasPressed(PointerButton.Back))
@@ -144,7 +144,7 @@ internal static class Shortcuts
 
     // The shortcuts that act on a view's selection or a document, run only while no text box takes the keys, where the
     // same keys edit the text.
-    private static void HandleOutsideTextBoxes(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, BrowseTree tree,
+    private static void RunShortcutsOutsideTextBoxes(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, BrowseTree tree,
         ExportSetup exportSetup, AppState appState)
     {
         var navigation = appState.ListSession.Navigation;

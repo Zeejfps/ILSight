@@ -386,7 +386,7 @@ internal static class TreePaneView
         var activation = node.Activation;
         if (activation is Activation.Navigate jump)
         {
-            Commands.FollowLater(commands, jump.Target, navigation.BeginResolving(inNewTab: false));
+            Commands.GoToReferenceLater(commands, jump.Target, navigation.BeginResolving(inNewTab: false));
             return;
         }
         Commands.DecompileLater(commands, navigation.OpenNode(node, setup));
@@ -433,7 +433,7 @@ internal static class TreePaneView
 
         if (jump != null && ui.MenuItem(t.TreeGoToTarget, Shortcuts.Enter, id: "go-to-target"))
         {
-            Commands.FollowLater(commands, jump.Target, navigation.BeginResolving(inNewTab: false));
+            Commands.GoToReferenceLater(commands, jump.Target, navigation.BeginResolving(inNewTab: false));
         }
 
         if (ui.MenuItem(t.TreeCopyFullName, id: "copy-full-name"))

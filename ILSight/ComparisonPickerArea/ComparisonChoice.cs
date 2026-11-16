@@ -73,7 +73,7 @@ public sealed class ComparisonChoice
 
     /// <summary>While open, lists the assemblies again when the open ones or <paramref name="filter"/> changed
     /// since the last frame; closes the dialog when the assembly to compare is no longer open.</summary>
-    public void Update(AssemblyList assemblies, string filter)
+    public void RelistAndFilterWhileOpen(AssemblyList assemblies, string filter)
     {
         if (Dialog is not ComparisonDialog.Open open)
         {

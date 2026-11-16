@@ -386,10 +386,10 @@ public sealed class Panels
 
     /// <summary>Called after the documents are drawn: makes the tab the user last pressed, docked or brought to
     /// front <paramref name="navigation"/>'s active tab, as <see cref="FocusTab"/> does, unless it is.</summary>
-    public void SyncActiveTab(Navigation navigation, DecompilerSetup setup)
+    public void ActivateFocusedTab(Navigation navigation, DecompilerSetup setup)
     {
         var active = navigation.ActiveTab;
-        _tabFocus.Follow(active);
+        _tabFocus.RecordActiveTab(active);
         var tab = _documents.FindTab(_layout.Dock.Focused);
         if (tab is null)
         {
@@ -552,7 +552,7 @@ public sealed class Panels
 
     /// <summary>Drops the view of each tab closed, keeping its image to free, and closes its panel; and
     /// makes a view for each tab opened that has none yet.</summary>
-    public void SyncTabViews(Navigation navigation)
+    public void AddAndDropTabViews(Navigation navigation)
     {
         DropClosedTabViews(navigation);
         AddOpenTabViews(navigation);
@@ -590,7 +590,7 @@ public sealed class Panels
 
     /// <summary>Shows code in <paramref name="language"/> from now on, as the user picked it: <paramref name="decompiler"/>
     /// takes it in this frame, and the tabs in front that showed another start loading again in it, drawn loading from
-    /// this frame on, only their decompiling queued. The frame edge's follow finds them current
+    /// this frame on, only their decompiling queued. The app loop's redo of the decompilation finds them current
     /// (<see cref="Decompilation.StartDecompilingAgainIfOutdated"/> starts each once).</summary>
     public void ShowInLanguage(DecompilerChoice decompiler, DecompilationLanguage language)
     {

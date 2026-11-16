@@ -4,7 +4,7 @@ using ZGF.Gui.Immediate.Widgets;
 namespace ILSight.MainArea;
 
 /// <summary>The framework's dock widget, which <see cref="Panels"/> draws its layout through: as it draws, the widget
-/// writes the layout itself (a drag docking or floating a panel, a close button), and the panels follow its writes
+/// writes the layout itself (a drag docking or floating a panel, a close button), and the panels take its writes
 /// there.</summary>
 public interface IDockWidget
 {

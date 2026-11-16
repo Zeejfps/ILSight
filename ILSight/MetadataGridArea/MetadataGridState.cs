@@ -167,7 +167,7 @@ public sealed class MetadataGridState
     }
 
     /// <summary>Asks to sort by <paramref name="column"/>, the other way when it already sorts by it, and to scroll
-    /// the selected row back into view once sorted (<see cref="MetadataGridWidget.UpdateView"/> asks for the
+    /// the selected row back into view once sorted (<see cref="MetadataGridWidget.ArrangeRowsWhenViewChanges"/> asks for the
     /// rows).</summary>
     internal void SortBy(int column)
     {

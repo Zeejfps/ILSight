@@ -26,10 +26,10 @@ public sealed class Search
     public bool ShowsQuery => Results.LastSearched?.Query == Query;
 
     /// <summary>Starts a search when the query settled, or searches assemblies opened since, as
-    /// <see cref="SearchResults.Update"/> does. Runs every frame.</summary>
-    public TimeSpan Update(AssemblyList assemblies, TimeSpan now, bool shown)
+    /// <see cref="SearchResults.RunSearch"/> does. Runs every frame.</summary>
+    public TimeSpan RunSearch(AssemblyList assemblies, TimeSpan now, bool shown)
     {
-        return Results.Update(Query, Kinds, assemblies, now, shown);
+        return Results.RunSearch(Query, Kinds, assemblies, now, shown);
     }
 
     /// <summary>Has the query look for <paramref name="kinds"/> from now on.</summary>

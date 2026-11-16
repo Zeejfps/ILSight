@@ -102,7 +102,7 @@ public static class MetadataGridWidget
     /// they land (<see cref="MetadataGridState.ShowArranged"/>). The table's own rows, unsorted and unfiltered, read no cell, and show
     /// at once. The grid of a closed assembly (<paramref name="isClosed"/>) asks for nothing: a sort or filter stays
     /// unavailable, the view saying why.</summary>
-    internal static void UpdateView(MetadataGridState state, MetadataFilters flags, MetadataGridViews views, bool isClosed)
+    internal static void ArrangeRowsWhenViewChanges(MetadataGridState state, MetadataFilters flags, MetadataGridViews views, bool isClosed)
     {
         var key = ComputeViewKey(state, flags);
         if (!state.TryAskView(key))

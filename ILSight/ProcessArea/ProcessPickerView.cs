@@ -101,7 +101,7 @@ internal static class ProcessPickerView
                 open |= Processes(ui, appearance, processColumns, browser, processListId);
             }
 
-            FollowSelection(commands, browser);
+            ListSelectedModulesLater(commands, browser);
 
             using (Pane(ui, 1f - ProcessPaneShare))
             {
@@ -125,9 +125,9 @@ internal static class ProcessPickerView
         }
     }
 
-    private static void FollowSelection(IAppCommandWriter commands, ProcessBrowser browser)
+    private static void ListSelectedModulesLater(IAppCommandWriter commands, ProcessBrowser browser)
     {
-        var listing = browser.FollowSelection();
+        var listing = browser.StartListingSelectedModules();
         if (listing is not null)
         {
             ListLater(commands, browser, listing);

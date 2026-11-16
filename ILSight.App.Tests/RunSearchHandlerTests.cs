@@ -9,9 +9,9 @@ public sealed class RunSearchHandlerTests
 
     private static SearchRun AskRun(SearchResults results, string query = "Greet", TimeSpan typedAt = default)
     {
-        results.Update(query, SearchKinds.TypesAndMembers, NoAssemblies, typedAt, shown: true);
+        results.RunSearch(query, SearchKinds.TypesAndMembers, NoAssemblies, typedAt, shown: true);
         // A second later, what was typed has settled.
-        results.Update(query, SearchKinds.TypesAndMembers, NoAssemblies, typedAt + TimeSpan.FromSeconds(1), shown: true);
+        results.RunSearch(query, SearchKinds.TypesAndMembers, NoAssemblies, typedAt + TimeSpan.FromSeconds(1), shown: true);
         return Assert.Single(results.TakeAskedRuns());
     }
 

@@ -95,7 +95,7 @@ public sealed class GenerationEndTests
             !DecompilerToggles.IsOn(appState.Decompiler.Setup.Options, DecompilerToggle.AutoLoadAssemblyReferences));
         ports.End = () =>
         {
-            // As the app follows new load options: their change ends the generation, then a new reload starts.
+            // As the app reloads on new load options: their change ends the generation, then a new reload starts.
             appState.Decompiler.UseOptions(options);
             Assert.True(AssemblyListing.TryChangeLoadOptions(session.Assemblies, options));
             Commands.StartReloading(appState, []);

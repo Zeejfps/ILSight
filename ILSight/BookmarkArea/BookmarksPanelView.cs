@@ -30,7 +30,7 @@ internal static class BookmarksPanelView
     {
         var t = appearance.Strings;
         var panel = bookmarksPanel;
-        panel.Renaming.FollowList(bookmarks.Items);
+        panel.Renaming.ForgetRenameOfRemovedBookmark(bookmarks.Items);
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         Toolbar(ui, appearance, bookmarksPanel, commands, bookmarks);
         ui.Separator();
@@ -68,7 +68,7 @@ internal static class BookmarksPanelView
         panel.Selection.TakeFrom(bookmarks.Items);
         if (body.Focused && !renaming)
         {
-            removed = HandleKeys(ui, commands, panel);
+            removed = RunBookmarkShortcuts(ui, commands, panel);
         }
 
         for (var i = body.First; i < body.End; i++)
@@ -398,7 +398,7 @@ internal static class BookmarksPanelView
         return cells.Copied(OneLineText.Name(value), value);
     }
 
-    private static Bookmark? HandleKeys(Ui ui, IAppCommandWriter commands, BookmarksPanel panel)
+    private static Bookmark? RunBookmarkShortcuts(Ui ui, IAppCommandWriter commands, BookmarksPanel panel)
     {
         Bookmark? removed = null;
         foreach (var stroke in ui.Input.Keys)

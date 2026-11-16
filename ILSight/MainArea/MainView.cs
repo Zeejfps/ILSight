@@ -23,7 +23,7 @@ public static class MainView
     public static void Render(Ui<UiState> ui, AppState appState)
     {
         using var screen = ui.Screen();
-        Shortcuts.Handle(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.Panels, ui.State.Display, ui.State.Omnibar, ui.State.Tree, ui.State.ExportSetup, appState);
+        Shortcuts.RunAppShortcuts(ui, ui.State.Appearance, ui.State.AppCommands, ui.State.Panels, ui.State.Display, ui.State.Omnibar, ui.State.Tree, ui.State.ExportSetup, appState);
         OpenDropped(ui, ui.State.AppCommands);
         using (ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f }))
         {
@@ -63,21 +63,21 @@ public static class MainView
 
     private static void Panels(Ui<UiState> ui, AppState appState)
     {
-        ScreenSearches.Update(ui, ui.State.Panels, ui.State.Search, ui.State.Omnibar, appState.ListSession.Assemblies);
+        ScreenSearches.RunShownSearches(ui, ui.State.Panels, ui.State.Search, ui.State.Omnibar, appState.ListSession.Assemblies);
         if (EmptyLayoutView.Render(ui, ui.State.Appearance, ui.State.Panels))
         {
             return;
         }
 
         DockSpace(ui, appState);
-        SyncAfterDocuments(ui, appState);
+        RunViewCommandsAndFocusActiveTab(ui, appState);
         RemoveReleasedImages(ui, ui.State.Documents);
     }
 
-    private static void SyncAfterDocuments(Ui<UiState> ui, AppState appState)
+    private static void RunViewCommandsAndFocusActiveTab(Ui<UiState> ui, AppState appState)
     {
         QueuedCommands.RunViewCommands(ui.State, appState);
-        ui.State.Panels.SyncActiveTab(appState.ListSession.Navigation, appState.Decompiler.Setup);
+        ui.State.Panels.ActivateFocusedTab(appState.ListSession.Navigation, appState.Decompiler.Setup);
     }
 
     private static void DockSpace(Ui<UiState> ui, AppState appState)

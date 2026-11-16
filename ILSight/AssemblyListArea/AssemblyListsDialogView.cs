@@ -115,7 +115,7 @@ internal static class AssemblyListsDialogView
 
             if (list.Focused)
             {
-                HandleKeys(ui, listsDialog, lists);
+                RunListShortcuts(ui, listsDialog, lists);
             }
 
             if (list.Activated)
@@ -211,7 +211,7 @@ internal static class AssemblyListsDialogView
         listsDialog.StopAsking();
     }
 
-    private static void HandleKeys(Ui ui, AssemblyListsDialog listsDialog, SavedAssemblyLists lists)
+    private static void RunListShortcuts(Ui ui, AssemblyListsDialog listsDialog, SavedAssemblyLists lists)
     {
         var dialog = listsDialog;
         if (dialog.IsAsking)

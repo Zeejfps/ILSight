@@ -155,7 +155,7 @@ public sealed class CloseAssembliesTests
 
         d.Open([AssemblyPath.Of(CorePath)]);
         d.RunUntil(() => d.AppState.ListSession.Assemblies.Listed.Count == 3);
-        closer.Rows.Update(d.AppState.ListSession.Assemblies);
+        closer.Rows.RelistWhenAssembliesChange(d.AppState.ListSession.Assemblies);
 
         Assert.Equal(ListedPaths(d), closer.Rows.Order.Select(static c => c.Assembly.FilePath.Text));
         Assert.Equal([KeyboardPath], closer.Rows.ListToClose().Select(static a => a.FilePath.Text));

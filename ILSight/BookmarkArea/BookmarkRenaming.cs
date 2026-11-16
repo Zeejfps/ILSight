@@ -37,7 +37,7 @@ public sealed class BookmarkRenaming
 
     /// <summary>Forgets the rename of a bookmark that is gone from <paramref name="bookmarks"/>, as importing in its
     /// place drops it.</summary>
-    public void FollowList(IReadOnlyList<Bookmark> bookmarks)
+    public void ForgetRenameOfRemovedBookmark(IReadOnlyList<Bookmark> bookmarks)
     {
         var renaming = Bookmark;
         if (renaming is null)
