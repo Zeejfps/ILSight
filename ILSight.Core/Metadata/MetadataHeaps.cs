@@ -57,7 +57,7 @@ internal static class MetadataHeaps
         {
             GridSchemas.AddValue(columns, "Offset", h => m.GetHeapOffset(h), "X8");
             GridSchemas.AddValue(columns, "Length", h => m.GetBlobReader(h).Length);
-            GridSchemas.AddValue(columns, "Value", h => m.GetBlobReader(h).ToHexString());
+            GridSchemas.AddValue(columns, "Value", h => m.GetBlobBytes(h), GridSchemas.FormatBlobBytes);
         }));
     }
 

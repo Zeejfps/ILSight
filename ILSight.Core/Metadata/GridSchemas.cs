@@ -116,6 +116,14 @@ public static class GridSchemas
         return new MetadataTooltip { Text = read.ToString() ?? "", Groups = [] };
     }
 
+    /// <summary>A blob's bytes, read out in the cell's read, as the grids show a blob's value: each byte in two
+    /// upper-case hex digits, joined by dashes, as the library's <c>BlobReader.ToHexString</c> writes them; empty for
+    /// none. The format half, after the read's catch: it reads no metadata.</summary>
+    public static string FormatBlobBytes(byte[] bytes)
+    {
+        return BitConverter.ToString(bytes);
+    }
+
     /// <summary>The tooltip of a blob read as its bytes (an <see cref="ImmutableArray{T}"/> of bytes): the bytes in
     /// hex.</summary>
     public static MetadataTooltip ExplainBytes(object read)

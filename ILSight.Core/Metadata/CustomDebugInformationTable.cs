@@ -39,10 +39,29 @@ internal static class CustomDebugInformationTable
         GridSchemas.AddValue(table, "KindGUID", r => m.GetGuid(r.Kind), "D");
         GridSchemas.AddValue(table, "KindString", r => KindString(m, r.Kind));
         GridSchemas.AddValue(table, "Info", r => FindInfo(m, r));
-        GridSchemas.AddBlob(table, "Value", r => r.Value, r => r.Value.IsNil ? "<nil>" : m.GetBlobReader(r.Value).ToHexString());
+        GridSchemas.AddBlob(table, "Value", r => r.Value, r => r.Value.IsNil ? NilValue : m.GetBlobBytes(r.Value), ExplainValue);
         GridSchemas.AddValue(table, "ValueLength", r => m.GetBlobReader(r.Value).Length, "X8");
         GridSchemas.SetDetails(table, r => ReadDetails(m, r), MakeDetails);
         return table.ToSchema();
+    }
+
+    private const string NilValue = "<nil>";
+
+    // The Value tooltip, made after the cell's read of the blob's bytes: the bytes in hex, "<nil>" for a row with no
+    // blob, none for an empty one.
+    private static MetadataTooltip? ExplainValue(object read)
+    {
+        if (read is not byte[] bytes)
+        {
+            return new MetadataTooltip { Text = NilValue, Groups = [] };
+        }
+
+        if (bytes.Length == 0)
+        {
+            return null;
+        }
+
+        return new MetadataTooltip { Text = GridSchemas.FormatBlobBytes(bytes), Groups = [] };
     }
 
     private static string? FindInfo(MetadataReader metadata, CustomDebugInformation row)

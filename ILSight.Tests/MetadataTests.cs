@@ -592,6 +592,40 @@ public sealed class MetadataTests
         Assert.Contains(table.Rows, r => r[0] == "language" && r[1] == "C#");
     }
 
+    [Fact]
+    public async Task The_blob_heaps_values_and_the_debug_informations_value_tooltips_read_each_blobs_bytes_in_hex_as_the_library_writes_them()
+    {
+        var assembly = Trees.TestAssembly;
+        var heap = (await MetadataAsync(assembly).ListChildrenAsync()).Single(static c => c.Text.StartsWith("Blob Heap (", StringComparison.Ordinal));
+        var blobs = await GridAsync(heap);
+        var pdb = await assembly.ReadRootAsync().GetChildAsync("Debug Metadata (From portable PDB)").GetChildAsync("Tables");
+        var debugInformation = await GridAsync(await pdb.TableAsync("CustomDebugInformation"));
+        using var stream = File.OpenRead(Trees.TestAssemblyPath);
+        using var pe = new PEReader(stream);
+        var metadata = pe.GetMetadataReader();
+        using var pdbStream = File.OpenRead(Path.ChangeExtension(Trees.TestAssemblyPath, ".pdb"));
+        using var pdbProvider = MetadataReaderProvider.FromPortablePdbStream(pdbStream);
+        var pdbMetadata = pdbProvider.GetMetadataReader();
+
+        // The bytes are read in the cell's read and made into hex after its catch, the text as the library's
+        // BlobReader.ToHexString wrote it when it ran inside the read.
+        Assert.True(blobs.RowCount > 1);
+        for (var row = 0; row < blobs.RowCount; row++)
+        {
+            var blob = metadata.GetBlobReader(MetadataTokens.BlobHandle(Hex(blobs, row, "Offset")));
+            Assert.Equal(blob.ToHexString(), MetadataGrids.GetText(blobs, row, blobs.Column("Value")));
+        }
+
+        Assert.True(debugInformation.RowCount > 0);
+        for (var row = 0; row < debugInformation.RowCount; row++)
+        {
+            var value = pdbMetadata.GetCustomDebugInformation(MetadataTokens.CustomDebugInformationHandle(row + 1)).Value;
+            var expected = value.IsNil ? "<nil>" : pdbMetadata.GetBlobReader(value).ToHexString();
+            var tooltip = MetadataGrids.FindTooltip(debugInformation, row, debugInformation.Column("Value"))?.Text;
+            Assert.Equal(expected.Length == 0 ? null : expected, tooltip);
+        }
+    }
+
     private static async Task<(int, int)[]> CellsAsync(BrowseNode table, string first, string second)
     {
         var grid = await GridAsync(table);
