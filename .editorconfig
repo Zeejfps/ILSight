@@ -15,6 +15,12 @@ rulelab.widget_context_types = ZGF.Gui.Immediate.Ui
 rulelab.template_types = ILSight.Strings
 # R009: libraries that read the user's data (the assemblies opened, the pictures in them). Whatever their read throws,
 # cancellation asked for excepted, is that data's failure, caught around the read alone into the unit's failure case.
+# ILSight's policy (CD5): it takes every failure of these libraries on the user's data as that data's, an expected
+# outcome needing no record: the failure is said in place (the node's, the picture's, the module's) by its message, a
+# decompilation's exception kept on its document as technical details, and the rest goes on; it reaches the error list
+# only when the app's own code threw (its callbacks into the read: CallbackFailure) or outside the read. Reading
+# damaged, obfuscated or unusual files is what ILSight is for, and their failures are what the user came to see, not
+# ILSight's bugs to report.
 rulelab.untrusted_libraries = ICSharpCode.Decompiler, ICSharpCode.BamlDecompiler, PngSharp, JpegSharp, ZGF.Svg
 
 # R007: braces and block bodies; one-liners only for getters, accessors and lambdas.
