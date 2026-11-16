@@ -20,9 +20,9 @@ The complete C# rules for agents, with the IDs of `RULES.md` (rationale and evid
 - **Edges stay thin:** they translate, start work and catch. A branch on what the world or the state answered (one a
   second edge for the same input would repeat) is a use case over a port (the edge's I/O its adapter) or pure code.
   Ordinary code may hand an edge work, never take an answer from one (RL0106); an adapter's I/O may go through an edge.
-  Hosts running the whole app (startup, tests) build it through one root entry point and start it through one start
-  function (a window's startup hook calls it after its own setup; building starts nothing); other edges receive what
-  they call.
+  Hosts running the whole app (startup, tests) build it through one root entry point and run one app loop the root
+  builds (its start, and its calls before and after each draw; a window's hooks call them; building starts nothing);
+  other edges receive what they call.
 - **Tests** follow R002, R003, R005, R007, R008, R010 (test methods needn't take a token), R012, R013, R014 and R009's
   ban on empty catches; not R001, R004 or R011 (fakes implementing a port are expected).
   - The codebase's naming convention (a new one: `Method_Scenario_Expected`); own assertion helpers carry
@@ -40,7 +40,7 @@ The complete C# rules for agents, with the IDs of `RULES.md` (rationale and evid
     from values alone; never the root's parts.
   - **A test playing a framework** reaches state only where the framework does (its simulated input, or its call through
     a port the root builds), never by a hook handing it an owner's private state. Its write lands inside a framework
-    call only where a follow-up compares the state around that call; else either route.
+    call only where the owner's check compares the state around that call; else either route.
   - **An instant between another method's steps** is tested by building the state it leaves and driving the code that
     meets it; no test-only hook, nor reading alone where that state can be built.
   - **Assert only on what reached the test by an order it fixes:** app code it calls runs in the driver's turn (R010),
@@ -84,7 +84,7 @@ disposable result).
   any other has its own class and port; only a lone function takes its port as a parameter (data, port, token). The
   port is an interface, never a record of functions.
 - **Take the parts of the state you use.** Only edges and work on every part (saving the session: an edge's step) take
-  the whole state; a use case that work must follow ends or hands it back. Narrow callees first; a caller converted
+  the whole state; a use case whose work requires it ends or hands it back. Narrow callees first; a caller converted
   first passes the state on, never through a port member. Group state by ownership and invariants (R004); a parameter
   count never justifies the whole.
   - **Nothing carries the whole by another road** (a context typed by it, `Ui<TState>`; a dispatch's tuple; a parameter
@@ -156,7 +156,7 @@ Build: RL0201, RL0202, RL0203, RL0204 (tests).
 
 Build: RL0301 (`Async`), RL0302 (`Find*`), RL0303 (`Get*` returning `T?`), RL0304 (`Is*` not `bool`), RL0305 (no
 `Load*`/`Fetch*`: the verb says what a miss returns); suggestions: RL0306 (a `bool` method named as an action), RL0307
-(a method returning -1, a `char`'s `'\0'` or a struct's `default` for none).
+(a method returning -1, a `char`'s `'\0'` or a struct's `default` for none), RL0308 (a verb that only says it reacts).
 
 | Name | Promise |
 |------|---------|
@@ -169,8 +169,10 @@ Build: RL0301 (`Async`), RL0302 (`Find*`), RL0303 (`Get*` returning `T?`), RL030
 | `Where*` `Select*` `OrderBy*` | LINQ-style: only what that operator does |
 | `Calculate*` `Build*` / `Read*` | computes, no I/O / reads raw content from a source the caller names |
 | `Save*` `Send*` `Publish*` `Delete*` / `Add*` `Remove*` `Clear*` | I/O side effects / mutates this object or its store, never a copy |
-| `Match` `Switch` / `Handle*` / `Log*` / `ThrowIf*` / `*Async` | union dispatch / responds to an arrival / records / guards / awaitable, always |
+| `Match` `Switch` / `HandleAsync` / `Log*` / `ThrowIf*` / `*Async` | union dispatch / a use case's entry, its class named for the effect / records / guards / awaitable, always |
 
+- **Named for the effect**, never a verb that only says it reacts (`Follow`, `Handle`, `Process`, `Manage`, `Update`,
+  `Sync`, `React`); a conditional effect says both (`ReloadListWhenLoadOptionsChange`). Event handlers too.
 - **A `bool` method is a question or a `Try<Verb>`**, its first word saying which; a use case returns a result union
   (R009); an action reporting a fact about what it did returns a value naming it (`tabs.Close(tab).WasActive`).
 - **No sentinels:** missing is `T?`, a union case when the miss carries data (`Missing { InsertAt }`), or
@@ -192,7 +194,7 @@ state only other types write, on a type with methods), RL0405 (the same with no 
 more; conditional: plain values no rule ties, as a root's settings), RL0406 (static functions writing one type's
 members: two, or one whose write keeps state), RL0407 (another type's lock taken, or an event handed out as a delegate),
 RL0408 (a whole's member forwarding a part's), RL0409 (one feature's state loose on a whole; conditional: state shared
-on purpose, a published member).
+on purpose, a published member), RL0410 (a static class named for a moment).
 
 | You have | Make |
 |----------|------|
@@ -237,13 +239,17 @@ on purpose, a published member).
   holder holds the part. A part still arriving is pending, completed or removed, the change rechecked on arrival and
   when that changes; the domain decides which states permit it (shipping needs a captured payment; a stock hold may
   proceed on a pending one).
+- **Grouped by what the code works on, never by when it runs:** functions that keep taking the same collaborators (a
+  runner, a feature's part and handlers) are one object the root builds. A class named for a moment (`AppStart`,
+  `AppFrames`) is split into its features; the app loop (Scope) keeps the calls, ordered where it matters. Queued
+  hot-path work: a `static` lambda handed target and subject.
 - **Static is for code no object owns** (pure functions and parses, I/O over values, extension methods on a type you
   don't own or over sequences, a kind's `static abstract` members, statics a framework or generator requires,
-  P/Invoke, constants, `Main`) and for orchestration through objects' own public operations (a lone workflow, a draw,
-  an edge). A function that writes an object's members itself is its method (an extension method reaches only public
-  members: no fix), or a method of the part it changes where the object holds many (the app's whole state), a lone one
-  too where its write keeps state (a clamp, a memo, a flag taken once, two members); one only storing a value no rule
-  covers is no step. A static class's own nested shape is its own.
+  P/Invoke, constants, `Main`) and for orchestration holding nothing (a lone workflow, a draw). A function that writes
+  an object's members itself is its method (an extension method reaches only public members: no fix), or a method of
+  the part it changes where the object holds many (the app's whole state), a lone one too where its write keeps state
+  (a clamp, a memo, a flag taken once, two members); one only storing a value no rule covers is no step. A static
+  class's own nested shape is its own.
 - **State the framework requires public** (`ref` fields, bound properties) is data, separate from a held rule-owning
   type (`picker.Choice`); EF entities filled through private fields retain their rules. Convenience methods may set
   bound fields (they don't make it a rule owner); framework writes bypass them, so every write reaches the rule owner
@@ -370,13 +376,13 @@ RL0906 (an edge loop with no per-item catch), RL0907 (a case's nullable exceptio
     the app's words about it translated; a display name also seen elsewhere is words.
   - **Commentary, not content:** content the app shows is as produced; the app's notes inside it are its messages. A
     language switch keeps the product's stated contract (which text is live, which a record kept as made); live text
-    follows alike, a note with its labels (kept as its cause, found when drawn or made again). Text that left the app (a
-    saved file: its stated contract) keeps its language. Ordinary Copy and Find read what is drawn; a command named for
-    diagnostics carries what it promises. A kept place (a bookmark) uses the content's terms, never an offset into drawn
-    text. A format's published documentation (a schema's descriptions) is in the product's documentation languages. A
-    value from outside drawn on one line (a note, title, row) keeps it: line breaks, control and direction characters
-    shown escaped, unambiguously, with every format character where spelling matters (a name) and the escape character;
-    prose may join lines with spaces.
+    changes language alike, a note with its labels (kept as its cause, found when drawn or made again). Text that left
+    the app (a saved file: its stated contract) keeps its language. Ordinary Copy and Find read what is drawn; a command
+    named for diagnostics carries what it promises. A kept place (a bookmark) uses the content's terms, never an offset
+    into drawn text. A format's published documentation (a schema's descriptions) is in the product's documentation
+    languages. A value from outside drawn on one line (a note, title, row) keeps it: line breaks, control and direction
+    characters shown escaped, unambiguously, with every format character where spelling matters (a name) and the escape
+    character; prose may join lines with spaces.
   - **Diagnostics, not messages:** a stack trace (`ToString()`) is never a failure's message or summary; what the user
     reads suits its audience (an unknown cause's own message only where the product's disclosure contract allows, else
     the operation and its diagnostic's identifier). Diagnostics shown or sent are labelled by the message each is
@@ -395,12 +401,12 @@ RL0906 (an edge loop with no per-item catch), RL0907 (a case's nullable exceptio
   of one target whose place fails fails with why, or is degraded by contract, saying what stands in or is missing,
   with why (an ancestor said to stand in); never not there, nor a substitute unsaid.
 - **Restore and retry:** unreadable restored state is kept as saved; a reload keeps saved references and user intent
-  the product promises, failed or not, resolving them again (content derived from sources alone follows its reload
+  the product promises, failed or not, resolving them again (content derived from sources alone keeps its reload
   contract). A failed read is reread only on a trigger the product chose (Retry, reload, a change to what it names, a
   bounded schedule), one reaching a source back unchanged; never the draw. The same failure isn't reported again; an
   explicit retry still answers where asked.
 - **A hand-over whose acknowledgement can be lost** answers taken, not taken or unknown (never a `bool`), the receiver
-  acknowledging what it took. Unknown follows the product's delivery contract, in one branch: at most once (said); a
+  acknowledging what it took. Unknown keeps the product's delivery contract, in one branch: at most once (said); a
   bounded retry with an id the receiver takes once (said if still unknown); at least once (kept durably with the id
   before the first send, resent until answered across restarts, the receiver deduplicating while a repeat can
   arrive); or a stated duplicate. Only resending delivers.
@@ -419,10 +425,10 @@ RL0906 (an edge loop with no per-item catch), RL0907 (a case's nullable exceptio
   library's reads and the facts they decode (its own predicates included); after the outermost catch, the app's policy
   (which analyses apply, what to read next, decided on facts read under a narrow catch), ordering (even text it sorts
   by) and formatting. A helper doing both is split, at every level (a parent listing's children too); a walk steered
-  only by the library's own decoded facts (follow a property unless the library hides it) may stay inside. A bug in the
-  app's policy fails the unit the contract makes (the description, at the edge; or, where each offer's test is its own
-  unit, that test, said unchecked), never said as the library's failure nor an offer left out unsaid. An adapter member
-  returns values it read (freely enumerable) or its own `IAsyncEnumerable<T>` iterator, never deferred library
+  only by the library's own decoded facts (read into a property unless the library hides it) may stay inside. A bug in
+  the app's policy fails the unit the contract makes (the description, at the edge; or, where each offer's test is its
+  own unit, that test, said unchecked), never said as the library's failure nor an offer left out unsaid. An adapter
+  member returns values it read (freely enumerable) or its own `IAsyncEnumerable<T>` iterator, never deferred library
   execution; the iterator catches each item's read, owns its source (`await using`), and is consumed in one loop,
   overlapping no other use of a source that forbids it.
 - **A shared read whose outcome is a value** is awaited and matched by the unit needing it before its sync read
@@ -442,13 +448,13 @@ RL0906 (an edge loop with no per-item catch), RL0907 (a case's nullable exceptio
   argument); behind a lock it takes the source with the change and cancels after releasing it.
 - **The work's own end settles what it recorded** (pending state), by its ticket, whatever the outcome (quiet too),
   never left to cancellers; an end with no answer says what ended it (closed, stopped), never what an answer would
-  (gone). A presentation-only follow-up for an already-answered request drops quietly when its subject is gone; one that
-  is itself the answer asked for is said, unless the user removed its subject.
-- **An effect that can't be undone** (a charge) and what must follow are one transaction, or the work is recorded
+  (gone). A presentation-only step the app queued for an already-answered request drops quietly when its subject is
+  gone; one that is itself the answer asked for is said, unless the user removed its subject.
+- **An effect that can't be undone** (a charge) and the work after it are one transaction, or the work is recorded
   durably first and a worker does the effect under an idempotency key its provider honours, then the rest, replaying
   pending work after an interruption; never the request's token, `CancellationToken.None` or a grace period.
 - **A consequential failure is reported while a usable channel remains** (saving at exit runs at the close request,
-  its result matched); what follows (keep open, ask, retry, discard) is product policy, chosen on purpose.
+  its result matched); what is done after it (keep open, ask, retry, discard) is product policy, chosen on purpose.
 
 ## R010: Async all the way, with a cancellation token, nothing fire-and-forget
 
@@ -472,7 +478,7 @@ Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100
   is done, a final save included. Only work independent of it goes back to the edge, a kind of its own (R008) in the
   success case; handing work back partway ends the workflow, the edge starting it and the rest.
 - **Work a state's own change implies**, whichever workflow makes it, is recorded by the change as pending, once per
-  item, and dispatched by an owning edge's step that follows every change. **A warm-up** is one shared read task,
+  item, and dispatched by an owning edge's step that runs after every change. **A warm-up** is one shared read task,
   awaited by its later use, its failure a value.
 - One operation at a time per `DbContext`. No `ConfigureAwait(false)` in application code (shared libraries excepted).
 
@@ -570,9 +576,9 @@ starts commands the draw queued) or in those commands. A **hot path** is code a 
   the version it drew on the view; the read-back stores it on the owner while it shows that version, else on what kept
   that content (a history entry), else nowhere. Where several owners' content meets, the key is the owner's
   never-reused id with its version, or one shared stamp.
-- **A field a widget writes by `ref`** runs none of your code: what must follow from it is the rule owner's, told the
-  field's value each frame after the widgets (`picker.Scan.CancelUnlessOpen(picker.IsOpen)`), comparing with what it
+- **A field a widget writes by `ref`** runs none of your code: what a write must bring about is the rule owner's, which
+  reads the field each frame after the widgets (`picker.Scan.CancelUnlessOpen(picker.IsOpen)`), comparing with what it
   last saw itself, never a before and after around one widget (a write elsewhere is missed).
 - **A widget learns of its input when drawn**: state drawn above it is a frame late, so draw it after the widget or ask
-  for another frame. A UI that draws on demand asks for one wherever drawn state changes with no frame to follow: the
+  for another frame. A UI that draws on demand asks for one wherever drawn state changes with no frame drawn for it: the
   draw (`ui.RequestFrame()`), and the edge when a workflow it started ends.
