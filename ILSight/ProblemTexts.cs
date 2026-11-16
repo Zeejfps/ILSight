@@ -125,7 +125,7 @@ public static class ProblemTexts
     // holds whatever the cause.
     private static (string Title, string Details, Exception? Diagnostic) AskAgain(Strings t, string title, Exception error)
     {
-        return (title, t.ErrorCauseAndRecovery(cause: error.Message, recovery: t.ErrorRecoveryTryAgain), error);
+        return (title, t.ErrorCauseAndRecovery(cause: FailureTexts.DescribeCause(t, error), recovery: t.ErrorRecoveryTryAgain), error);
     }
 
     // The user's NuGet.Config failing to read unexpectedly: the setup is read once a session and kept, so asking again

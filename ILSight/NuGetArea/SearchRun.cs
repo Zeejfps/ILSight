@@ -20,7 +20,8 @@ internal abstract record SearchRun
     {
         public required FeedSearch Search { get; init; }
 
-        public required string Error { get; init; }
+        /// <summary>What failed, said from its cause (<see cref="FailureTexts"/>).</summary>
+        public required Exception Error { get; init; }
     }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>

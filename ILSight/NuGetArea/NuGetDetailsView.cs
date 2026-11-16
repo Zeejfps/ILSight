@@ -218,11 +218,11 @@ internal static class NuGetDetailsView
         }
     }
 
-    private static void DetailsFailed(Ui ui, Appearance appearance, string error)
+    private static void DetailsFailed(Ui ui, Appearance appearance, Exception error)
     {
         var theme = ui.Theme;
         NuGetPlaceholderView.Warning(ui, appearance, appearance.Strings.NugetDetailsFailed);
-        ui.Text(error, color: theme.TextMuted, size: theme.FontSizeSmall, wrap: true);
+        ui.Text(FailureTexts.DescribeCause(appearance.Strings, error), color: theme.TextMuted, size: theme.FontSizeSmall, wrap: true);
     }
 
     private static void Deprecation(Ui ui, Appearance appearance, PackageDeprecation deprecation)

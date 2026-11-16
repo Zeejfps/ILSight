@@ -137,6 +137,20 @@ public sealed class ProblemTextTests
         Assert.Contains("バンドルがファイル lib/Shop.dll をバンドルの外に配置しています。", japanese.Details);
     }
 
+    [Fact]
+    public void A_feed_answer_ILSight_cannot_use_is_said_from_its_cause_in_the_apps_language()
+    {
+        var error = new FeedFaultException(new FeedFault.ResourceMissing("SearchQueryService"), "The service index of https://example.test/v3/index.json names no SearchQueryService.");
+        var problem = new AppProblem.NuGetSearchFailed { Feed = "example", Error = error };
+
+        var english = ProblemTexts.Describe(Strings.En, problem);
+        var japanese = ProblemTexts.Describe(Strings.For(Locale.Ja), problem);
+
+        Assert.StartsWith("The feed's service index names no SearchQueryService.", english.Details);
+        Assert.Contains("フィードのサービス インデックスに SearchQueryService がありません。", japanese.Details);
+        Assert.DoesNotContain("example.test", english.Details);
+    }
+
     // An exception as thrown, with its stack trace and an inner exception.
     private static InvalidOperationException Thrown(string message)
     {

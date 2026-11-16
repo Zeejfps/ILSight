@@ -18,13 +18,13 @@ internal static partial class FeedJson
 
     /// <summary>The page of packages <paramref name="root"/> holds, without those that cannot be read, and where each
     /// package or version left out was.</summary>
-    /// <exception cref="InvalidDataException">It is no page of a search.</exception>
+    /// <exception cref="FeedFaultException">It is no page of a search.</exception>
     public static FeedPage ReadPage(JsonElement root)
     {
         var page = Read(root, FeedJsonContext.Default.SearchPageJson, "a page of a search");
         if (page.Data is null)
         {
-            throw new InvalidDataException("A page of a search holds no list named data.");
+            throw new FeedFaultException(new FeedFault.Malformed(), "A page of a search holds no list named data.");
         }
 
         var packages = new List<FeedPackage>();
@@ -42,7 +42,7 @@ internal static partial class FeedJson
         return new FeedPage { Packages = packages, TotalHits = Math.Max(total, packages.Count), LeftOut = leftOut };
     }
 
-    /// <exception cref="InvalidDataException">It is no registration of a version.</exception>
+    /// <exception cref="FeedFaultException">It is no registration of a version.</exception>
     public static FeedRegistration ReadRegistration(JsonElement root)
     {
         var registration = Read(root, FeedJsonContext.Default.RegistrationJson, "a registration");
@@ -55,7 +55,7 @@ internal static partial class FeedJson
 
     /// <summary>The details in a version's catalog entry, published when <paramref name="listedAt"/>
     /// says unless the entry itself says.</summary>
-    /// <exception cref="InvalidDataException">It is no catalog entry.</exception>
+    /// <exception cref="FeedFaultException">It is no catalog entry.</exception>
     public static PackageVersionDetails ReadDetails(JsonElement entry, DateTimeOffset? listedAt)
     {
         return Parse(Read(entry, FeedJsonContext.Default.CatalogEntryJson, "a catalog entry"), listedAt);
@@ -63,13 +63,13 @@ internal static partial class FeedJson
 
     /// <summary>The resources the service index <paramref name="root"/> lists, without those that cannot be read, and
     /// where each of those was.</summary>
-    /// <exception cref="InvalidDataException">It is no service index.</exception>
+    /// <exception cref="FeedFaultException">It is no service index.</exception>
     public static Lenient<List<FeedResource>> ReadResources(JsonElement root)
     {
         var index = Read(root, FeedJsonContext.Default.ServiceIndexJson, "a service index");
         if (index.Resources is null)
         {
-            throw new InvalidDataException("A service index holds no list named resources.");
+            throw new FeedFaultException(new FeedFault.Malformed(), "A service index holds no list named resources.");
         }
 
         var resources = new List<FeedResource>();
@@ -109,11 +109,11 @@ internal static partial class FeedJson
     {
         try
         {
-            return element.Deserialize(type) ?? throw new InvalidDataException($"Expected {what}, found null.");
+            return element.Deserialize(type) ?? throw new FeedFaultException(new FeedFault.Malformed(), $"Expected {what}, found null.");
         }
         catch (JsonException e)
         {
-            throw new InvalidDataException($"Expected {what}: {e.Message}", e);
+            throw new FeedFaultException(new FeedFault.Malformed(), $"Expected {what}: {e.Message}", e);
         }
     }
 

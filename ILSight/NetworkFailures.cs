@@ -4,7 +4,8 @@ namespace ILSight;
 
 /// <summary>The failures an adapter fetching over the network expects, translated where it awaits the fetch: the
 /// request failed (<see cref="HttpRequestException"/>, <see cref="IOException"/>), timed out (a cancellation its own
-/// token didn't ask for), or the answer wasn't what the protocol says (<see cref="InvalidDataException"/>). Anything
+/// token didn't ask for), or the answer wasn't what the protocol says (<see cref="InvalidDataException"/>, a feed's
+/// <see cref="FeedFaultException"/>). Anything
 /// else is a bug and goes on to the workflow's edge, as does the cancellation of the fetch's token.</summary>
 public static class NetworkFailures
 {
@@ -34,6 +35,10 @@ public static class NetworkFailures
         {
             return new Outcome<T>.Failed(e);
         }
+        catch (FeedFaultException e)
+        {
+            return new Outcome<T>.Failed(e);
+        }
     }
 
     /// <summary>What <paramref name="fetch"/>, which gives nothing back, came to, as
@@ -59,6 +64,10 @@ public static class NetworkFailures
             return new Outcome.Failed(e);
         }
         catch (InvalidDataException e)
+        {
+            return new Outcome.Failed(e);
+        }
+        catch (FeedFaultException e)
         {
             return new Outcome.Failed(e);
         }

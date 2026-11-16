@@ -169,7 +169,7 @@ public sealed class NuGetBrowser
     public bool IsSearching => _run is SearchRun.Running;
 
     /// <summary>Why the last search failed, or null.</summary>
-    public string? SearchError
+    public Exception? SearchError
     {
         get
         {
@@ -701,7 +701,7 @@ public sealed class NuGetBrowser
             return;
         }
 
-        _details[fetch.Key] = read.Match<VersionDetails>(static ok => new VersionDetails.Read(ok.Value), static failed => new VersionDetails.Failed(failed.Error.Message));
+        _details[fetch.Key] = read.Match<VersionDetails>(static ok => new VersionDetails.Read(ok.Value), static failed => new VersionDetails.Failed(failed.Error));
     }
 
     internal static FeedVersion? FindVersion(FeedPackage package, PackageVersion version)
@@ -879,7 +879,7 @@ public sealed class NuGetBrowser
             ClearShown();
         }
 
-        return new SearchRun.Failed { Search = searched, Error = error.Message };
+        return new SearchRun.Failed { Search = searched, Error = error };
     }
 
     private sealed record ShownPage

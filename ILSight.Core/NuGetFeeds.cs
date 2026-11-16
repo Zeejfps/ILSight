@@ -55,7 +55,7 @@ public static class NuGetFeeds
     /// <summary>Page <paramref name="page"/>, from 0, of the packages matching <paramref name="query"/>;
     /// of every package when the query is empty.</summary>
     /// <exception cref="HttpRequestException">The feed could not be reached or refused the request.</exception>
-    /// <exception cref="InvalidDataException">The feed answered with something that is no search result.</exception>
+    /// <exception cref="FeedFaultException">The feed answered with something that is no search result.</exception>
     public static async Task<FeedPage> SearchAsync(NuGetFeed feed, string query, bool includePrerelease, int page = 0, CancellationToken cancellationToken = default)
     {
         var index = await EnsureIndexAsync(feed, cancellationToken).ConfigureAwait(false);
@@ -76,7 +76,7 @@ public static class NuGetFeeds
     /// <summary>What the feed's catalog says of <paramref name="version"/> of the package <paramref name="id"/>:
     /// read from where the search said the feed describes it, else from the feed's registrations.</summary>
     /// <exception cref="HttpRequestException">The feed could not be reached, or has no such version.</exception>
-    /// <exception cref="InvalidDataException">The feed describes no versions, or answered with something else.</exception>
+    /// <exception cref="FeedFaultException">The feed describes no versions, or answered with something else.</exception>
     public static async Task<PackageVersionDetails> ReadDetailsAsync(NuGetFeed feed, PackageId id, FeedVersion version, CancellationToken cancellationToken = default)
     {
         var url = await GetDetailsUrlAsync(feed, id, version, cancellationToken).ConfigureAwait(false);
@@ -84,7 +84,7 @@ public static class NuGetFeeds
         var registration = FeedJson.ReadRegistration(leaf.RootElement);
         if (registration.CatalogEntry is null)
         {
-            throw new InvalidDataException($"{url} names no catalog entry.");
+            throw new FeedFaultException(new FeedFault.Malformed(), $"{url} names no catalog entry.");
         }
 
         return await ReadCatalogEntryAsync(feed, registration.CatalogEntry.Value, registration.Published, cancellationToken).ConfigureAwait(false);
@@ -100,7 +100,7 @@ public static class NuGetFeeds
         var index = await EnsureIndexAsync(feed, cancellationToken).ConfigureAwait(false);
         if (index.Registrations is null)
         {
-            throw new InvalidDataException($"The service index of {feed.Source.Url} names no {RegistrationsType}.");
+            throw new FeedFaultException(new FeedFault.ResourceMissing(RegistrationsType), $"The service index of {feed.Source.Url} names no {RegistrationsType}.");
         }
 
         return ParseDerivedUrl($"{index.Registrations.Text.TrimEnd('/')}/{id.Lower}/{version.Version.Filed}.json");
@@ -117,7 +117,7 @@ public static class NuGetFeeds
         var url = entry.ValueKind == JsonValueKind.String ? WebUrl.Parse(entry.GetString()) : null;
         if (url is null)
         {
-            throw new InvalidDataException("A catalog entry is neither inline nor a web URL.");
+            throw new FeedFaultException(new FeedFault.Malformed(), "A catalog entry is neither inline nor a web URL.");
         }
 
         using var catalog = await ReadJsonAsync(feed, url, cancellationToken).ConfigureAwait(false);
@@ -149,7 +149,7 @@ public static class NuGetFeeds
 
     private static WebUrl ParseDerivedUrl(string text)
     {
-        return WebUrl.Parse(text) ?? throw new InvalidDataException($"{text} is no web URL.");
+        return WebUrl.Parse(text) ?? throw new FeedFaultException(new FeedFault.Malformed(), $"{text} is no web URL.");
     }
 
     private static void CreateFolderOf(string path)
@@ -203,7 +203,7 @@ public static class NuGetFeeds
         if (url is null)
         {
             // The resources that couldn't be read may have been it.
-            throw new InvalidDataException($"The service index of {feed.Source.Url} names no {type}{DescribeLeftOut(resources.LeftOut)}.");
+            throw new FeedFaultException(new FeedFault.ResourceMissing(type), $"The service index of {feed.Source.Url} names no {type}{DescribeLeftOut(resources.LeftOut)}.");
         }
 
         return url;
@@ -242,7 +242,7 @@ public static class NuGetFeeds
         }
         catch (JsonException e)
         {
-            throw new InvalidDataException($"{url} answered with something that is not JSON: {e.Message}", e);
+            throw new FeedFaultException(new FeedFault.NotJson(), $"{url} answered with something that is not JSON: {e.Message}", e);
         }
     }
 

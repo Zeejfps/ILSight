@@ -55,12 +55,12 @@ internal static class NuGetPlaceholderView
         ui.Text(text, color: ui.Theme.TextMuted, wrap: true);
     }
 
-    private static void SearchFailed(Ui ui, Appearance appearance, NuGetPicker picker, string error)
+    private static void SearchFailed(Ui ui, Appearance appearance, NuGetPicker picker, Exception error)
     {
         var t = appearance.Strings;
         var theme = ui.Theme;
         Warning(ui, appearance, t.NugetSearchFailed);
-        ui.Text(error, color: theme.TextMuted, size: theme.FontSizeSmall, wrap: true);
+        ui.Text(FailureTexts.DescribeCause(t, error), color: theme.TextMuted, size: theme.FontSizeSmall, wrap: true);
         if (ui.Button(t.NugetRetry, id: "nuget-retry"))
         {
             picker.Browser.RetrySearch();

@@ -14,7 +14,7 @@ public abstract record VersionDetails
 
     public sealed record Read(PackageVersionDetails Details) : VersionDetails;
 
-    public sealed record Failed(string Error) : VersionDetails;
+    public sealed record Failed(Exception Error) : VersionDetails;
 
     /// <summary>Does what the handler of whichever case this is does with it and <paramref name="state"/>, which it
     /// is handed, so that a handler that needs the caller's values can be static and allocate nothing.</summary>

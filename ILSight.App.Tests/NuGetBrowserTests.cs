@@ -248,7 +248,7 @@ public sealed class NuGetBrowserTests
 
         await SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
 
-        Assert.Equal("The feed is down.", picker.Browser.SearchError);
+        Assert.Equal("The feed is down.", picker.Browser.SearchError?.Message);
         Assert.Empty(picker.Browser.Results);
         var reported = Assert.IsType<AppProblem.NuGetSearchFailed>(Assert.Single(ports.Reported));
         Assert.Equal("test", reported.Feed);
@@ -467,7 +467,7 @@ public sealed class NuGetBrowserTests
         picker.Browser.RetryDetails(package, Version("2.0.0"));
         var retried = picker.Browser.EnsureDetails(package, Version("2.0.0"));
 
-        Assert.Equal("No catalog.", Assert.IsType<VersionDetails.Failed>(failed).Error);
+        Assert.Equal("No catalog.", Assert.IsType<VersionDetails.Failed>(failed).Error.Message);
         Assert.IsType<VersionDetails.Loading>(retried);
         Assert.True(picker.Browser.HasDownloadsToStart);
         Assert.Empty(ports.Reported);
