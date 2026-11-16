@@ -8,9 +8,10 @@ using ILSight.SettingArea;
 namespace ILSight.ILSightAppArea;
 
 /// <summary>A class because ZGF's ImmediateGuiApp, its base class, calls it for each step of the app's life. The
-/// app: keeps the app state and the screen in step around each frame, through <see cref="AppFrames"/>, and
-/// carries the commands each queues for the other. Neither state sees the other; only the app and the views
-/// see both.</summary>
+/// window: runs the app's loop (<see cref="AppLoop"/>), which keeps the app state and the screen in step around each
+/// frame and carries the commands each queues for the other, and does what only the window can: the scale, the fonts,
+/// the shell's requests, coming to the front and quitting. Neither state sees the other; only the loop, the window and
+/// the views see both.</summary>
 [Edge]
 public sealed class ILSightApp : ImmediateGuiApp<UiState>
 {
@@ -19,25 +20,26 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     private const string AppIconFile = "app_icon.rgba";
 
     private readonly AppState _appState;
-    private readonly ListStart _start;
+    private readonly AppLoop _loop;
+    private readonly WindowFrameHost _frame = new();
     private readonly Channel<RunArguments> _inbox;
     private readonly IWindowFront _windowFront;
     private readonly CodeFontFaces _codeFonts = new() { Bundled = ReadFont(MonoFonts.Code, MonoFontFile) };
 
     /// <param name="appState">The app state, its start recorded on it.</param>
     /// <param name="uiState">The screen over it.</param>
-    /// <param name="start">The start the root recorded on <paramref name="appState"/>, for this app to start.</param>
+    /// <param name="loop">The app's loop the root built over <paramref name="appState"/>, for this window to run.</param>
     /// <param name="inbox">Where the arguments of this run, put there first, and of the runs handed to it arrive.</param>
     /// <param name="windowFront">The port the window is brought to the front through.</param>
     internal ILSightApp(
         AppState appState,
         UiState uiState,
-        ListStart start,
+        AppLoop loop,
         Channel<RunArguments> inbox,
         IWindowFront windowFront) : base(uiState)
     {
         _appState = appState;
-        _start = start;
+        _loop = loop;
         _inbox = inbox;
         _windowFront = windowFront;
     }
@@ -49,7 +51,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
         RegisterChosenCodeFont(host);
         RegisterChosenIconFonts(host);
         StartRedrawingOnAssemblyChanges(host);
-        AppStart.Start(_appState, _start, _inbox);
+        _loop.Start();
     }
 
     protected override void OnUpdate(Ui<UiState> ui)
@@ -57,15 +59,25 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
         RunFrame(ui, MainView.Render);
     }
 
-    /// <summary>One frame: the frame edge before <paramref name="draw"/>, the draw, and the frame edge after it,
-    /// which runs even when the draw fails, so every command the draw queued before failing starts: the state the
-    /// draw changed already says it has.</summary>
+    /// <summary>One frame: the loop's calls before <paramref name="draw"/>, the draw, and the loop's calls after it,
+    /// which run even when the draw fails, so every command the draw queued before failing starts: the state the
+    /// draw changed already says it has. Then the window's own: it comes back to try the autosave again when a write
+    /// waits or failed, draws at the chosen scale, code in the chosen font
+    /// and icons in their fonts from the next frame, opens the web pages, files and folders asked for, comes to the
+    /// front when a later run asked for it, and quits when asked to.</summary>
     internal void RunFrame(Ui<UiState> ui, Action<Ui<UiState>, AppState> draw)
     {
-        AppFrames.StartFrame(ui.State, _appState);
-        AppFrames.FollowNuGetPicker(ui, ui.State.AppCommands, ui.State.NuGetPicker, ui.State.SearchNuGetFeedHandler, ui.State.FetchNuGetIconHandler, ui.State.ReadNuGetDetailsHandler, _appState);
+        _frame.Enter(ui);
+        _loop.BeforeDraw(ui.State, _frame);
         Draw(ui, draw);
-        AppFrames.FinishFrame(ui, _appState, _codeFonts, _windowFront);
+        RetrySaveWhenAsked(ui, _loop.AfterDraw(ui.State, _frame));
+        DrawAtChosenScale(ui, ui.State.Display);
+        DrawCodeInChosenFont(ui, ui.State.Display, ui.State.Shown);
+        SwapIconFontsWhenThemeChanges(ui, ui.State.Appearance, ui.State.Shown);
+        OpenAskedWebPages(ui, ui.State.Shell);
+        OpenAskedFiles(ui, ui.State.Shell);
+        OpenAskedFolders(ui, ui.State.Shell);
+        BringToFrontIfAsked(ui);
         QuitIfAsked(ui, ui.State.Shell);
     }
 
@@ -100,6 +112,154 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
         }
     }
 
+    private static void RetrySaveWhenAsked(Ui ui, Saving autosave)
+    {
+        var retryIn = autosave.Match<TimeSpan?>(
+            static _ => null,
+            static _ => null,
+            static waiting => waiting.RetryIn,
+            static failed => failed.RetryIn);
+        if (retryIn is null)
+        {
+            return;
+        }
+
+        ui.RequestUpdateIn(retryIn.Value.TotalSeconds);
+    }
+
+    private void BringToFrontIfAsked(Ui ui)
+    {
+        if (!_appState.FrontAsked)
+        {
+            return;
+        }
+
+        _appState.FrontAsked = false;
+        _windowFront.BringToFront(ui);
+    }
+
+    private static void OpenAskedWebPages(Ui ui, ShellRequests shell)
+    {
+        while (shell.TryTakeWebPage(out var url))
+        {
+            ui.OpenUrl(url);
+        }
+    }
+
+    private static void OpenAskedFolders(Ui ui, ShellRequests shell)
+    {
+        while (shell.TryTakeFolder(out var path))
+        {
+            ui.OpenFolder(path);
+        }
+    }
+
+    private static void OpenAskedFiles(Ui ui, ShellRequests shell)
+    {
+        while (shell.TryTakeFile(out var path))
+        {
+            ui.OpenFile(path);
+        }
+    }
+
+    // When the icon theme changed: unregisters the fonts it dropped, registers the ones it uses.
+    private static void SwapIconFontsWhenThemeChanges(Ui ui, Appearance appearance, ShownChanges shown)
+    {
+        var before = shown.IconFonts;
+        if (!shown.TryTakeIcons(appearance.Icons, appearance.IconFonts))
+        {
+            return;
+        }
+
+        foreach (var family in ShownChanges.ListDroppedFamilies(before, appearance.IconFonts))
+        {
+            ui.UnregisterFont(family);
+        }
+
+        foreach (var font in appearance.IconFonts)
+        {
+            ui.RegisterFont(font);
+        }
+
+        ui.ReleaseUndrawnIconImages();
+    }
+
+    private static void DrawAtChosenScale(Ui ui, ScreenDisplay display)
+    {
+        ui.Scale = display.Options.UiScale;
+    }
+
+    private void DrawCodeInChosenFont(Ui ui, ScreenDisplay display, ShownChanges shown)
+    {
+        var face = TakeCodeFontFace(display, shown);
+        if (face == null)
+        {
+            return;
+        }
+
+        ui.RegisterFont(face);
+    }
+
+    // The face to draw code with when the chosen font changed since code was last drawn, else null. A chosen font whose
+    // file cannot be read is given up for the bundled one.
+    private FontFace? TakeCodeFontFace(ScreenDisplay display, ShownChanges shown)
+    {
+        var chosen = display.Options.Font;
+        if (!shown.TryTakeCodeFont(chosen))
+        {
+            return null;
+        }
+
+        var face = EnsureFace(_codeFonts, chosen);
+        if (face != null)
+        {
+            return face;
+        }
+
+        display.SetCodeFont(null);
+        shown.TryTakeCodeFont(null);
+        return _codeFonts.Bundled;
+    }
+
+    private static FontFace? EnsureFace(CodeFontFaces faces, CodeFont? font)
+    {
+        if (font is null)
+        {
+            return faces.Bundled;
+        }
+
+        if (faces.ReadFaces.TryGetValue(font, out var face))
+        {
+            return face;
+        }
+
+        var data = ReadFontFile(font.Path);
+        if (data is null)
+        {
+            return null;
+        }
+
+        face = new FontFace(MonoFonts.Code, data, FaceIndex: font.FaceIndex);
+        faces.ReadFaces[font] = face;
+        return face;
+    }
+
+    private static byte[]? ReadFontFile(string path)
+    {
+        try
+        {
+            return File.ReadAllBytes(path);
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
     /// <summary>Asks <see cref="TryClose"/> whether the window may close; when it may not, the next frame shows
     /// why.</summary>
     protected override bool OnCloseRequested(ImmediateGuiAppHost<UiState> host)
@@ -116,7 +276,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     /// <summary>Saves the settings, with the window at <paramref name="window"/>, as the user asks to close it, while it
     /// can still show a failure; true when it may close, as <see cref="WindowClosing"/> answers from the save (a failed
     /// one keeps it open once, the error panel showing why in the next frame). Arguments are refused once it closes,
-    /// while a run sending one can still be told to open its own: no frame runs after this to follow it.</summary>
+    /// while a run sending one can still be told to open its own: no frame runs after this to take it.</summary>
     internal bool TryClose(WindowBounds window)
     {
         var write = SaveOnExit(window);
@@ -154,7 +314,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     // Before the first frame, so code never shows in the bundled font first.
     private void RegisterChosenCodeFont(ImmediateGuiAppHost<UiState> host)
     {
-        var face = AppFrames.TakeCodeFontFace(UiState.Display, UiState.Shown, _codeFonts);
+        var face = TakeCodeFontFace(UiState.Display, UiState.Shown);
         if (face == null)
         {
             return;
@@ -199,5 +359,14 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
         _appState.KeptScreen.KeepWindow(window);
         _appState.KeptScreen.KeepView(ScreenSettings.TakeViewSettings(UiState));
         return _appState.SettingsSaving.Save(_appState);
+    }
+
+    // The faces code is drawn with, as MonoFonts.Code: the bundled one, and each installed font chosen this session, read
+    // from its file once.
+    private sealed class CodeFontFaces
+    {
+        public readonly Dictionary<CodeFont, FontFace> ReadFaces = new();
+
+        public required FontFace Bundled { get; init; }
     }
 }

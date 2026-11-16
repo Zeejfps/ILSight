@@ -1,4 +1,3 @@
-using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ILSight.Core.Processes;
 using ILSight.ExportArea;
@@ -89,16 +88,16 @@ internal static class AppFrames
     /// be opened, closing it; and while it is open, starts the search what was typed asks for, so that the dialog
     /// draws it searching, or asks for a frame once what is being typed will have settled; and starts fetching the
     /// icons and details the last frame showed for the first time.</summary>
-    internal static void FollowNuGetPicker(Ui ui, IAppCommandWriter commands, NuGetPicker picker, SearchNuGetFeedHandler searchNuGetFeedHandler,
+    internal static void FollowNuGetPicker(IFrameHost frame, IAppCommandWriter commands, NuGetPicker picker, SearchNuGetFeedHandler searchNuGetFeedHandler,
         FetchNuGetIconHandler fetchNuGetIconHandler, ReadNuGetDetailsHandler readNuGetDetailsHandler, AppState appState)
     {
-        NuGetPickerView.OpenDownloaded(ui, commands, appState.ListSession.Navigation, picker);
+        NuGetPickerView.OpenDownloaded(commands, appState.ListSession.Navigation, picker);
         if (!picker.IsOpen)
         {
             return;
         }
 
-        var now = TimeSpan.FromSeconds(ui.RealTime);
+        var now = frame.Now;
         var search = picker.Update(now);
         if (search is not null)
         {
@@ -109,7 +108,7 @@ internal static class AppFrames
 
         if (picker.Browser.IsSettling)
         {
-            ui.RequestUpdateIn(picker.Browser.CalculateTimeToSettle(now).TotalSeconds);
+            frame.RequestFrameIn(picker.Browser.CalculateTimeToSettle(now));
         }
     }
 
@@ -271,160 +270,8 @@ internal static class AppFrames
         kept.KeepView(view);
     }
 
-    /// <summary>Does what comes after drawing a frame: keeps what the screen changed, runs what it asked of
-    /// the app state, asks for another frame when there is more to show, saves the changed settings, has
-    /// the window draw at the chosen scale, code in the chosen font and icons in their fonts from the next
-    /// frame, opens the web pages and files asked for, and brings the window to the front through
-    /// <paramref name="windowFront"/> when a later run asked for it.</summary>
-    internal static void FinishFrame(Ui<UiState> ui, AppState appState, CodeFontFaces codeFonts, IWindowFront windowFront)
-    {
-        KeepScreenChanges(ui.State, appState);
-        StartAskedWork(ui.State, appState);
-        RunAppCommandsAndRedraw(ui, ui.State.AppCommands, appState);
-        RequestUpdateIfViewCommandsPending(ui, appState);
-        SaveChangedSettings(ui, appState);
-        DrawAtChosenScale(ui, ui.State.Display);
-        DrawCodeInChosenFont(ui, ui.State.Display, ui.State.Shown, codeFonts);
-        FollowIconTheme(ui, ui.State.Appearance, ui.State.Shown);
-        OpenAskedWebPages(ui, ui.State.Shell);
-        OpenAskedFiles(ui, ui.State.Shell);
-        OpenAskedFolders(ui, ui.State.Shell);
-        BringToFrontIfAsked(ui, appState, windowFront);
-    }
-
-    private static void BringToFrontIfAsked(Ui ui, AppState appState, IWindowFront windowFront)
-    {
-        if (!appState.FrontAsked)
-        {
-            return;
-        }
-
-        appState.FrontAsked = false;
-        windowFront.BringToFront(ui);
-    }
-
-    private static void OpenAskedWebPages(Ui ui, ShellRequests shell)
-    {
-        while (shell.TryTakeWebPage(out var url))
-        {
-            ui.OpenUrl(url);
-        }
-    }
-
-    private static void OpenAskedFolders(Ui ui, ShellRequests shell)
-    {
-        while (shell.TryTakeFolder(out var path))
-        {
-            ui.OpenFolder(path);
-        }
-    }
-
-    private static void OpenAskedFiles(Ui ui, ShellRequests shell)
-    {
-        while (shell.TryTakeFile(out var path))
-        {
-            ui.OpenFile(path);
-        }
-    }
-
-    private static void FollowIconTheme(Ui ui, Appearance appearance, ShownChanges shown)
-    {
-        var before = shown.IconFonts;
-        if (!shown.TryTakeIcons(appearance.Icons, appearance.IconFonts))
-        {
-            return;
-        }
-
-        foreach (var family in ShownChanges.ListDroppedFamilies(before, appearance.IconFonts))
-        {
-            ui.UnregisterFont(family);
-        }
-
-        foreach (var font in appearance.IconFonts)
-        {
-            ui.RegisterFont(font);
-        }
-
-        ui.ReleaseUndrawnIconImages();
-    }
-
-    private static void DrawAtChosenScale(Ui ui, ScreenDisplay display)
-    {
-        ui.Scale = display.Options.UiScale;
-    }
-
-    private static void DrawCodeInChosenFont(Ui ui, ScreenDisplay display, ShownChanges shown, CodeFontFaces codeFonts)
-    {
-        var face = TakeCodeFontFace(display, shown, codeFonts);
-        if (face == null)
-        {
-            return;
-        }
-
-        ui.RegisterFont(face);
-    }
-
-    /// <summary>The face to draw code with when the chosen font changed since code was last drawn, else
-    /// null. A chosen font whose file cannot be read is given up for the bundled one.</summary>
-    internal static FontFace? TakeCodeFontFace(ScreenDisplay display, ShownChanges shown, CodeFontFaces codeFonts)
-    {
-        var chosen = display.Options.Font;
-        if (!shown.TryTakeCodeFont(chosen))
-        {
-            return null;
-        }
-
-        var face = EnsureFace(codeFonts, chosen);
-        if (face != null)
-        {
-            return face;
-        }
-
-        display.SetCodeFont(null);
-        shown.TryTakeCodeFont(null);
-        return codeFonts.Bundled;
-    }
-
-    private static FontFace? EnsureFace(CodeFontFaces faces, CodeFont? font)
-    {
-        if (font is null)
-        {
-            return faces.Bundled;
-        }
-
-        if (faces.ReadFaces.TryGetValue(font, out var face))
-        {
-            return face;
-        }
-
-        var data = ReadFontFile(font.Path);
-        if (data is null)
-        {
-            return null;
-        }
-
-        face = new FontFace(MonoFonts.Code, data, FaceIndex: font.FaceIndex);
-        faces.ReadFaces[font] = face;
-        return face;
-    }
-
-    private static byte[]? ReadFontFile(string path)
-    {
-        try
-        {
-            return File.ReadAllBytes(path);
-        }
-        catch (IOException)
-        {
-            return null;
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return null;
-        }
-    }
-
-    private static void RunAppCommandsAndRedraw(Ui ui, AppCommandQueue commands, AppState appState)
+    /// <summary>Runs what the screen asked of the app state, and asks for another frame to show what it changed.</summary>
+    internal static void RunAppCommandsAndRedraw(IFrameHost frame, AppCommandQueue commands, AppState appState)
     {
         if (commands.IsEmpty)
         {
@@ -432,17 +279,18 @@ internal static class AppFrames
         }
 
         QueuedCommands.RunAppCommands(commands, appState);
-        ui.RequestUpdate();
+        frame.RequestFrame();
     }
 
-    private static void RequestUpdateIfViewCommandsPending(Ui ui, AppState appState)
+    /// <summary>Asks for another frame while commands the features queued for the screen wait.</summary>
+    internal static void RequestUpdateIfViewCommandsPending(IFrameHost frame, AppState appState)
     {
         if (appState.ViewCommands.Count == 0)
         {
             return;
         }
 
-        ui.RequestUpdate();
+        frame.RequestFrame();
     }
 
     /// <summary>Opens the active list's assemblies <paramref name="reopening"/> began reopening as a reload, so that the
@@ -453,17 +301,9 @@ internal static class AppFrames
         return appState.OpenAssembliesAsReloadHandler.HandleAsync(appState.ListSession, reopening.Paths, reopening.Reload, reopening.Work, ct);
     }
 
-    private static void SaveChangedSettings(Ui ui, AppState appState)
+    /// <summary>Saves the settings when they changed; returns what it came to.</summary>
+    internal static Saving SaveChangedSettings(IFrameHost frame, AppState appState)
     {
-        var saving = appState.SettingsSaving.SaveIfChanged(appState, TimeSpan.FromSeconds(ui.RealTime));
-        var retryIn = saving.Match<TimeSpan?>(
-            static _ => null,
-            static _ => null,
-            static waiting => waiting.RetryIn,
-            static failed => failed.RetryIn);
-        if (retryIn is not null)
-        {
-            ui.RequestUpdateIn(retryIn.Value.TotalSeconds);
-        }
+        return appState.SettingsSaving.SaveIfChanged(appState, frame.Now);
     }
 }

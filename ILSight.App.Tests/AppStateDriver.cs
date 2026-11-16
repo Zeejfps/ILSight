@@ -20,7 +20,7 @@ namespace ILSight.App.Tests;
 /// results land. A frame's steps around drawing run only when the test pumps or asks for
 /// <see cref="NextFrame"/>; reading the driver changes nothing. It speaks English unless its settings
 /// name a locale.</summary>
-internal sealed class AppStateDriver
+internal sealed class AppStateDriver : IFrameHost
 {
     public const string FixturesAssembly = "ILSight.App.Tests";
 
@@ -32,6 +32,7 @@ internal sealed class AppStateDriver
 
     private readonly PostedActions _posted;
     private readonly UiState? _ui;
+    private readonly AppLoop _loop;
 
     /// <summary>A driver over the app state and screen the root restores (<see cref="AppRoot.RestoreApp"/>) from
     /// <paramref name="settings"/>, with no window, which has started what the app starts as it starts with no
@@ -49,10 +50,10 @@ internal sealed class AppStateDriver
     }
 
     private AppStateDriver(PostedActions posted, RestoredApp restored)
-        : this(posted, restored.AppState, restored.Screen)
+        : this(posted, restored.AppState, restored.Screen, AppRoot.BuildLoop(restored.AppState, restored.Start, Channel.CreateUnbounded<RunArguments>()))
     {
         using var turn = _posted.Install();
-        AppStart.Start(AppState, restored.Start, Channel.CreateUnbounded<RunArguments>());
+        _loop.Start();
     }
 
     private static RestoredApp Restore(SettingsLoadResult loadResult, HttpMessageHandler? nuGetRequests = null,
@@ -68,13 +69,14 @@ internal sealed class AppStateDriver
         return new FakeAppUpdatesPorts(null) { IsInstalledCopy = false };
     }
 
-    // posted took the test's posts before the root built appState and ui.
-    private AppStateDriver(PostedActions posted, AppState appState, UiState? ui)
+    // posted took the test's posts before the root built appState, ui and loop.
+    private AppStateDriver(PostedActions posted, AppState appState, UiState? ui, AppLoop loop)
     {
         _posted = posted;
         Step = Pump;
         AppState = appState;
         _ui = ui;
+        _loop = loop;
     }
 
     /// <summary>What reading <paramref name="settings"/> gave, with nothing wrong (new settings when null), speaking
@@ -125,11 +127,11 @@ internal sealed class AppStateDriver
     }
 
     /// <summary>A driver over <paramref name="restored"/>, the app state and screen an <see cref="AppDriver"/> had the
-    /// root build with its app, which <paramref name="posted"/> took the test's posts for before. The app driver starts
-    /// the app (<see cref="AppStart.Start"/>).</summary>
-    public static AppStateDriver Over(PostedActions posted, RestoredApp restored)
+    /// root build with its app and <paramref name="loop"/>, which <paramref name="posted"/> took the test's posts for
+    /// before. The app driver starts the app (<see cref="AppLoop.Start"/>).</summary>
+    public static AppStateDriver Over(PostedActions posted, RestoredApp restored, AppLoop loop)
     {
-        return new AppStateDriver(posted, restored.AppState, restored.Screen);
+        return new AppStateDriver(posted, restored.AppState, restored.Screen, loop);
     }
 
     /// <summary>A driver that has opened the fixture assembly.</summary>
@@ -150,16 +152,17 @@ internal sealed class AppStateDriver
     }
 
     /// <summary>A driver with an app state and no screen, which shows that the features need none, started as an app
-    /// with no window starts (<see cref="AppStart.Start"/>, with no arguments waiting), once the list it starts with is
-    /// open (<see cref="WaitForTheStart"/>).</summary>
+    /// with no window starts (its loop's <see cref="AppLoop.Start"/>, with no arguments waiting), once the list it starts
+    /// with is open (<see cref="WaitForTheStart"/>).</summary>
     public static AppStateDriver WithoutScreen(AppSettings? settings = null)
     {
         var posted = PostedActions.OfThisTest();
         var restored = AppRoot.RestoreWithoutScreen(NoProblem(settings), TestSession.Shared, NoUpdates());
-        var driver = new AppStateDriver(posted, restored.AppState, ui: null);
+        var loop = AppRoot.BuildLoop(restored.AppState, restored.Start, Channel.CreateUnbounded<RunArguments>());
+        var driver = new AppStateDriver(posted, restored.AppState, ui: null, loop);
         using (driver.Turn())
         {
-            AppStart.Start(restored.AppState, restored.Start, Channel.CreateUnbounded<RunArguments>());
+            loop.Start();
         }
 
         driver.WaitForTheStart();
@@ -186,8 +189,8 @@ internal sealed class AppStateDriver
     /// <summary>The time the driver's autosave goes by.</summary>
     public TimeSpan Now { get; set; }
 
-    /// <summary>What the last <see cref="Pump"/>'s autosave came to. A frame asks to come back when a write waits or
-    /// failed; the driver's time moves only when the test moves it, so the test reads it here.</summary>
+    /// <summary>What the last autosave, a frame's or a <see cref="Pump"/>'s, came to. A frame asks to come back when a
+    /// write waits or failed; the driver's time moves only when the test moves it, so the test reads it here.</summary>
     public Saving Autosaved { get; private set; } = new Saving.Unchanged();
 
     public static string FixturePath => typeof(Greeter).Assembly.Location;
@@ -275,8 +278,9 @@ internal sealed class AppStateDriver
         _posted.WakeOnPost(wake);
     }
 
-    /// <summary>Runs what was posted, then what a frame does around drawing when there is a screen,
-    /// then the autosave, keeping what it came to (<see cref="Autosaved"/>).</summary>
+    /// <summary>Runs what was posted, then, when there is a screen, a frame with no draw (<see cref="NextFrame"/>), which
+    /// autosaves; with none, the autosave alone, as a frame would: a driver with no screen runs no frame. Keeps what the
+    /// autosave came to (<see cref="Autosaved"/>).</summary>
     public void Pump()
     {
         using var turn = _posted.Install();
@@ -284,22 +288,29 @@ internal sealed class AppStateDriver
         if (_ui is not null)
         {
             NextFrame();
+            return;
         }
 
         Autosaved = AppState.SettingsSaving.SaveIfChanged(AppState, Now);
     }
 
-    /// <summary>Does what a frame does before and after it draws: the screen follows the trees and the
-    /// tabs and runs the commands the features queued for it, then tells the tabs where their views stand and
-    /// hands over what the settings keep of it, the work it asked for while drawing starts, and the app runs what
-    /// the screen asked of the app state.</summary>
+    /// <summary>Runs a frame of the app's loop as the window does, with no draw between: the loop's calls before a draw
+    /// (<see cref="AppLoop.BeforeDraw"/>), then after it (<see cref="AppLoop.AfterDraw"/>), at the driver's time, keeping
+    /// what its autosave came to (<see cref="Autosaved"/>).</summary>
     public void NextFrame()
     {
         using var turn = _posted.Install();
-        AppFrames.StartFrame(Ui, AppState);
-        AppFrames.KeepScreenChanges(Ui, AppState);
-        AppFrames.StartAskedWork(Ui, AppState);
-        QueuedCommands.RunAppCommands(Ui.AppCommands, AppState);
+        _loop.BeforeDraw(Ui, this);
+        Autosaved = _loop.AfterDraw(Ui, this);
+    }
+
+    // The driver's frames run when the test pumps or steps: a frame asked for is the test's to run.
+    void IFrameHost.RequestFrame()
+    {
+    }
+
+    void IFrameHost.RequestFrameIn(TimeSpan wait)
+    {
     }
 
     /// <summary>What a step of waiting does: a pump, or for a driver under an <see cref="AppDriver"/>, frames, which

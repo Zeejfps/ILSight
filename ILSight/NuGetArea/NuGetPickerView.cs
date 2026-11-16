@@ -49,7 +49,7 @@ internal static class NuGetPickerView
 
     /// <summary>Begins a request in <paramref name="navigation"/> to open the package the dialog downloaded, asks for it to
     /// be opened once the frame is drawn, and closes the dialog; nothing until a download is in.</summary>
-    internal static void OpenDownloaded(Ui ui, IAppCommandWriter commands, Navigation navigation, NuGetPicker picker)
+    internal static void OpenDownloaded(IAppCommandWriter commands, Navigation navigation, NuGetPicker picker)
     {
         var path = picker.Browser.TakeDownloaded();
         if (path is null)

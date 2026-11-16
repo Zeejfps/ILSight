@@ -93,8 +93,17 @@ internal static class AppRoot
         AppUpdates.IPorts? updates = null, AdapterHooks? hooks = null)
     {
         var restored = RestoreApp(loadResult, session, nuGetRequests, runtimeScan, processes, updates, hooks);
-        var app = new ILSightApp(restored.AppState, restored.Screen, restored.Start, inbox, MakePort<IWindowFront>(new WindowFrontAdapter(), hooks?.BringingToFront));
-        return new BuiltApp { Restored = restored, App = app };
+        var loop = BuildLoop(restored.AppState, restored.Start, inbox);
+        var app = new ILSightApp(restored.AppState, restored.Screen, loop, inbox, MakePort<IWindowFront>(new WindowFrontAdapter(), hooks?.BringingToFront));
+        return new BuiltApp { Restored = restored, Loop = loop, App = app };
+    }
+
+    /// <summary>The app's loop over <paramref name="appState"/>, which every host that runs the whole app runs: the
+    /// window, and the test hosts with or without a screen. It starts the reading recorded as <paramref name="start"/>
+    /// once it has taken the arguments waiting in <paramref name="inbox"/>. Building it starts nothing.</summary>
+    internal static AppLoop BuildLoop(AppState appState, ListStart start, Channel<RunArguments> inbox)
+    {
+        return new AppLoop(appState, start, inbox);
     }
 
     /// <summary>The app state restored from <paramref name="loadResult"/> over <paramref name="session"/>
