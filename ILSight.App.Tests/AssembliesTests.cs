@@ -366,7 +366,7 @@ public sealed class AssembliesTests
         Assert.Equal(location, reported.Place);
         Assert.IsType<PlaceLookupStep.ReloadingTab>(reported.Step);
         var failed = Assert.IsType<TabContent.Unreadable>(tab.Content);
-        Assert.Equal("Unreadable.", failed.Why);
+        Assert.Same(error, failed.Why);
         Assert.Equal(location, failed.Location);
         Assert.False(appState.ListSession.Reload.IsRunning);
         Assert.Empty(ListDecompiles(loads));

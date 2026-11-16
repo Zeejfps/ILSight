@@ -139,7 +139,7 @@ public sealed class SettlingWorkflowsTests
 
         Assert.False(session.Reload.IsRunning);
         var failed = Assert.IsType<TabContent.Unreadable>(tab.Content);
-        Assert.Equal("broken", failed.Why);
+        Assert.Equal("broken", failed.Why.Message);
         Assert.Equal(location, failed.Location);
         Commands.StartLoads(d.AppState, loads);
     }

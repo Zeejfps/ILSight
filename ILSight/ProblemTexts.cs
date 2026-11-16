@@ -44,7 +44,7 @@ public static class ProblemTexts
             unresolved: p => AskAgainOrReport(t, t.ErrorResolve(OneLineText.Name(p.Reference.Name)), p.Error),
             unresolvedFileDenied: p => (t.ErrorResolve(OneLineText.Name(p.Reference.Name)), Denied(t, p.File), p.Error),
             unresolvedFileDamaged: p => (t.ErrorResolve(OneLineText.Name(p.Reference.Name)), Damaged(t, p.File), p.Error),
-            placeLookupFailed: p => (t.ErrorLookUpPlace(OneLineText.Name(p.Place.Label)), AfterStep(t, p.Step, BuildCauseAskingForReport(t, p.Error.Message)), p.Error),
+            placeLookupFailed: p => (t.ErrorLookUpPlace(OneLineText.Name(p.Place.Label)), AfterStep(t, p.Step, BuildCauseAskingForReport(t, FailureTexts.DescribeCause(t, p.Error))), p.Error),
             placeLookupFileDenied: p => (t.ErrorLookUpPlace(OneLineText.Name(p.Place.Label)),
                 AfterStep(t, p.Step, Denied(t, p.File)), p.Error),
             placeLookupFileDamaged: p => (t.ErrorLookUpPlace(OneLineText.Name(p.Place.Label)),
@@ -53,7 +53,7 @@ public static class ProblemTexts
                 Degraded(t, p.Unread, t.ErrorFileDenied(p.Unread.Error.FilePath.FileName)), p.Unread.Error),
             referenceFileDamaged: p => (t.ErrorReadReference(name: OneLineText.Name(p.Unread.Name), assembly: OneLineText.Name(p.Unread.Module)),
                 Degraded(t, p.Unread, t.ErrorFileDamaged(p.Unread.Error.FilePath.FileName)), p.Unread.Error),
-            moduleUnreadable: p => Thrown(t.CauseModuleUnreadableTitle(OneLineText.Name(p.Module)), p.Why),
+            moduleUnreadable: p => Thrown(t, t.CauseModuleUnreadableTitle(OneLineText.Name(p.Module)), p.Why),
             bookmarksNotExported: p => (t.ErrorExportBookmarks, p.Reason, null),
             bookmarksNotImported: p => (t.ErrorImportBookmarks(OneLineText.Name(p.File)), p.Reason, null),
             importedBookmarksUnreadable: p => (t.ErrorBookmarksUnreadable(OneLineText.Name(p.File)), DescribeEntryProblems(t, p.Problems), null),
@@ -114,9 +114,9 @@ public static class ProblemTexts
     // A failure whose cause the app knows only by the exception, of an operation with no recovery that holds whatever
     // the cause (what it reads isn't read again when asked, and it isn't the app's to report): the cause said by its
     // message as written, the exception itself the technical details, and no step invented.
-    private static (string Title, string Details, Exception? Diagnostic) Thrown(string title, Exception error)
+    private static (string Title, string Details, Exception? Diagnostic) Thrown(Strings t, string title, Exception error)
     {
-        return (title, error.Message, error);
+        return (title, FailureTexts.DescribeCause(t, error), error);
     }
 
     // A failure whose cause the app knows only by the exception, of an operation that reads what can change between
@@ -134,7 +134,7 @@ public static class ProblemTexts
     private static (string Title, string Details, Exception? Diagnostic) FixNuGetConfigOrReport(Strings t, Exception error)
     {
         return (t.CauseNugetConfigUnreadableTitle,
-            t.ErrorCauseAndRecovery(cause: error.Message, recovery: t.ErrorRecoveryFixNugetConfigOrReport), error);
+            t.ErrorCauseAndRecovery(cause: FailureTexts.DescribeCause(t, error), recovery: t.ErrorRecoveryFixNugetConfigOrReport), error);
     }
 
     // A failure whose cause the app knows only by the exception, of an operation whose contract holds both: asking
@@ -142,7 +142,7 @@ public static class ProblemTexts
     // own among them, which ILSight takes reports of: the retry first, then the report if it fails again.
     private static (string Title, string Details, Exception? Diagnostic) AskAgainOrReport(Strings t, string title, Exception error)
     {
-        return (title, t.ErrorCauseAndRecovery(cause: error.Message, recovery: t.ErrorRecoveryTryAgainOrReport), error);
+        return (title, t.ErrorCauseAndRecovery(cause: FailureTexts.DescribeCause(t, error), recovery: t.ErrorRecoveryTryAgainOrReport), error);
     }
 
     // A failure in the app's own code or the decompiler's, or of an operation that fails on input that hasn't changed
@@ -150,7 +150,7 @@ public static class ProblemTexts
     // which the copied error's technical details make.
     private static (string Title, string Details, Exception? Diagnostic) Reportable(Strings t, string title, Exception error)
     {
-        return (title, BuildCauseAskingForReport(t, error.Message), error);
+        return (title, BuildCauseAskingForReport(t, FailureTexts.DescribeCause(t, error)), error);
     }
 
     // The cause, then the recovery that asks for a report: defined once for every failure that is the app's to report.
@@ -168,7 +168,7 @@ public static class ProblemTexts
     // Each bookmark and why its lookup failed, by its cause's message; the exception stays on the problem logged.
     private static string DescribePlaceFailures(Strings t, IReadOnlyList<(LostBookmark Bookmark, Exception Error)> failed)
     {
-        return string.Join(Environment.NewLine, failed.Select(f => t.BookmarkPlaceFailed(bookmark: f.Bookmark.Words(t), error: f.Error.Message)));
+        return string.Join(Environment.NewLine, failed.Select(f => t.BookmarkPlaceFailed(bookmark: f.Bookmark.Words(t), error: FailureTexts.DescribeCause(t, f.Error))));
     }
 
     private static string DescribeEntryProblem(Strings t, BookmarkEntryProblem problem)

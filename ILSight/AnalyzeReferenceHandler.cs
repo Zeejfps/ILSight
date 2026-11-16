@@ -40,7 +40,7 @@ public sealed class AnalyzeReferenceHandler(AnalyzeReferenceHandler.IPorts ports
             ok => Analyze(analyzer, viewCommands, pending, ok.Value),
             failed =>
             {
-                analyzer.FailUnresolved(pending.Root, pending.Reference.Name, failed.Error.Message);
+                analyzer.FailUnresolved(pending.Root, pending.Reference.Name, failed.Error);
                 ports.ReportError(LookupFailures.OfReference(pending.Reference, failed.Error));
             });
     }
@@ -56,7 +56,7 @@ public sealed class AnalyzeReferenceHandler(AnalyzeReferenceHandler.IPorts ports
             },
             unreadable =>
             {
-                analyzer.FailUnresolved(pending.Root, unreadable.Module.Module.FilePath.FileName, unreadable.Module.Why.Message);
+                analyzer.FailUnresolved(pending.Root, unreadable.Module.Module.FilePath.FileName, unreadable.Module.Why);
                 ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module));
             });
     }

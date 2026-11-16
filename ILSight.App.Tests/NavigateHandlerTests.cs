@@ -89,7 +89,7 @@ public sealed class NavigateHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var reference = (await d.FixtureAsync("Farewell")).Definition;
         var file = AssemblyPath.Of(Path.Combine(Path.GetTempPath(), "Damaged", "Damaged.dll"));
-        var error = new AssemblyLoadException(file, $"'{file}' is not a .NET assembly.");
+        var error = new AssemblyLoadException(file, new AssemblyLoadFault.NotAssembly(), $"'{file}' is not a .NET assembly.");
         var failed = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(error) };
 
         var load = await d.RunAsync(() =>

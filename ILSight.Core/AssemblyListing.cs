@@ -857,7 +857,8 @@ public static class AssemblyListing
         var container = GetAssembly(list, inPackage.Value.Package, generation);
         if (container is not LoadedPackage package)
         {
-            throw new AssemblyLoadException(path, $"'{container.FilePath}' is not a package.");
+            throw new AssemblyLoadException(path, new AssemblyLoadFault.NotPackage { Container = container.FilePath },
+                $"'{container.FilePath}' is not a package.");
         }
 
         return ReadOutOfPackage(list, package, path, inPackage.Value.FullName);
@@ -945,7 +946,9 @@ public static class AssemblyListing
         var file = AssemblyPackages.FindFile(package, fullName);
         if (file is null)
         {
-            throw new AssemblyLoadException(path, $"'{container.FilePath}' holds no '{fullName}'.", new FileNotFoundException($"'{container.FilePath}' holds no '{fullName}'.", path.Text));
+            var diagnostic = $"'{container.FilePath}' holds no '{fullName}'.";
+            var fault = new AssemblyLoadFault.NotInPackage { Package = container.FilePath, FullName = fullName };
+            throw new AssemblyLoadException(path, fault, diagnostic, new FileNotFoundException(diagnostic, path.Text));
         }
 
         var image = ReadPackageFile(list, package, file);
@@ -1007,7 +1010,7 @@ public static class AssemblyListing
             var file = new PEFile(path.Text, stream, PEStreamOptions.PrefetchEntireImage, list.Now.ReadOptions.ReaderOptions);
             if (!file.Reader.HasMetadata)
             {
-                throw new AssemblyLoadException(path, $"'{path}' is not a .NET assembly.");
+                throw new AssemblyLoadException(path, new AssemblyLoadFault.NotAssembly(), $"'{path}' is not a .NET assembly.");
             }
 
             return file;
@@ -1028,6 +1031,6 @@ public static class AssemblyListing
 
     private static AssemblyLoadException CannotOpen(AssemblyPath path, Exception e)
     {
-        return new AssemblyLoadException(path, $"Cannot open '{path}': {e.Message}", e);
+        return new AssemblyLoadException(path, new AssemblyLoadFault.CannotOpen(), $"Cannot open '{path}': {e.Message}", e);
     }
 }

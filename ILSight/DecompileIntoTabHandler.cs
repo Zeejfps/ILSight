@@ -75,7 +75,7 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
     {
         return loaded.Match(
             ok => load.TryShowLoaded(work, ok.Value),
-            failed => load.TryShowFailed(work, failed.Error.Message));
+            failed => load.TryShowFailed(work, failed.Error));
     }
 
     private static Exception? FindFailure(TabLoad load, Outcome<NodeContent> loaded)

@@ -60,7 +60,7 @@ public sealed class RestoreAnalysesHandlerTests
         await d.RunAsync(() => new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.ListSession.Analyzer, d.AppState.ListSession.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None));
 
         Assert.Same(error, Assert.IsType<AppProblem.AnalysesNotRestored>(Assert.Single(ports.Reported)).Error);
-        Assert.Equal("unreadable", Assert.IsType<RestoreFailure.Failed>(Assert.IsType<AnalyzerFailedNode>(d.AppState.ListSession.Analyzer.Roots[0]).Failure).Why);
+        Assert.Same(error, Assert.IsType<RestoreFailure.Failed>(Assert.IsType<AnalyzerFailedNode>(d.AppState.ListSession.Analyzer.Roots[0]).Failure).Error);
         Assert.Equal(farewell, Assert.Single(d.AppState.ListSession.Analyzer.Found()).Symbol);
         Assert.Equal(saved, d.AppState.ListSession.Analyzer.ListSavedAnalyses());
     }

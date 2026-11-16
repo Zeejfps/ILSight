@@ -57,7 +57,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var loads = await d.EndAsync(showing);
 
         var failed = Assert.IsType<TabContent.Unreadable>(waiting.Reopened.Tab.Content);
-        Assert.Equal("Unreadable.", failed.Why);
+        Assert.Same(error, failed.Why);
         Assert.Equal(waiting.Record.Location, failed.Location);
         var reported = Assert.IsType<AppProblem.PlaceLookupFailed>(Assert.Single(ports.Reported));
         Assert.Same(error, reported.Error);
@@ -83,7 +83,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var content = Assert.IsType<TabContent.Unreadable>(waiting.Reopened.Tab.Content);
         Assert.Equal(waiting.Place, content.Location);
         Assert.Equal(module.FilePath.FileName, content.Module);
-        Assert.Equal("Bad namespace.", content.Why);
+        Assert.Equal("Bad namespace.", content.Why.Message);
         Assert.Equal($"{module.FilePath.FileName} couldn't be read (Bad namespace.).", TabPlaceholders.Describe(Strings.For(Locale.En), content));
         Assert.Equal(waiting.Place, waiting.Reopened.Tab.Location);
     }

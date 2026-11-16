@@ -148,15 +148,15 @@ public static class Analysis
             var root = restoring[i];
             found[i].Switch(
                 ok => AnalyzeAgain(analyzer, viewCommands, root, ok.Value),
-                failed => analyzer.FailRoot(root, new RestoreFailure.Failed { Why = failed.Error.Message }));
+                failed => analyzer.FailRoot(root, new RestoreFailure.Failed { Error = failed.Error }));
         }
     }
 
     /// <summary>Keeps each of <paramref name="restoring"/> as saved, failed: looking them up failed with
-    /// <paramref name="why"/>.</summary>
-    public static void FailRoots(AnalyzerTree analyzer, IReadOnlyList<AnalyzerPendingNode> restoring, string why)
+    /// <paramref name="error"/>.</summary>
+    public static void FailRoots(AnalyzerTree analyzer, IReadOnlyList<AnalyzerPendingNode> restoring, Exception error)
     {
-        var failure = new RestoreFailure.Failed { Why = why };
+        var failure = new RestoreFailure.Failed { Error = error };
         foreach (var root in restoring)
         {
             analyzer.FailRoot(root, failure);

@@ -90,9 +90,15 @@ public static class NodeText
 
     /// <summary>The node's full identity: for an assembly its display name, framework and file; for
     /// an entity its full name and, unless public, its accessibility; for a node whose name the app words, that name
-    /// in <paramref name="t"/>'s language (<see cref="Label"/>).</summary>
+    /// in <paramref name="t"/>'s language (<see cref="Label"/>); for an assembly that couldn't be opened, why, in
+    /// <paramref name="t"/>'s language.</summary>
     public static string Tooltip(Strings t, BrowseNode node)
     {
+        if (node.Subject is NodeSubject.FailedAssembly failed)
+        {
+            return FailureTexts.DescribeCause(t, failed.Value.Error);
+        }
+
         return WriteFixedLabel(t, node) ?? Tooltips.GetValue(node, Describe);
     }
 
@@ -267,11 +273,6 @@ public static class NodeText
             var assembly = module.Value;
             return string.Join("\n", new[] { assembly.FullName, assembly.FrameworkName, assembly.FilePath.Text }.OfType<string>());
         }
-        if (node.Subject is NodeSubject.FailedAssembly failed)
-        {
-            return failed.Value.Error.Message;
-        }
-
         var name = node.FullName;
         var accessibility = Accessibility(node.Visibility.Accessibility);
         return accessibility is not null ? $"{name}\n{accessibility}" : name;

@@ -58,7 +58,7 @@ public sealed class DecompileIntoTabHandlerTests
         var file = AssemblyPath.Of(Path.Combine(Path.GetTempPath(), "Locked", "Locked.dll"));
         var unread = new UnreadReference
         {
-            Name = "Locked", Module = "Greeter.dll", Error = new AssemblyLoadException(file, "Cannot open.", new IOException("In use.")),
+            Name = "Locked", Module = "Greeter.dll", Error = new AssemblyLoadException(file, new AssemblyLoadFault.CannotOpen(), "Cannot open.", new IOException("In use.")),
         };
 
         foreach (var language in new[] { DecompilationLanguage.IL, DecompilationLanguage.CSharp })
@@ -177,7 +177,7 @@ public sealed class DecompileIntoTabHandlerTests
         await d.EndAsync(handling);
 
         var failed = Assert.IsType<TabContent.Failed>(tab.Content);
-        Assert.Equal("Bad IL range.", failed.Message);
+        Assert.Same(corrupt, failed.Error);
         Assert.False(tab.Load.IsBusy);
         Assert.Same(corrupt, Assert.IsType<AppProblem.DecompilationFailed>(Assert.Single(ports.Reported)).Error);
         Assert.DoesNotContain(new ViewCommand.RestoreView { Tab = tab, Position = AtLineTen }, viewCommands);

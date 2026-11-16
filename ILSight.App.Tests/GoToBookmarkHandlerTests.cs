@@ -94,8 +94,8 @@ public sealed class GoToBookmarkHandlerTests
     {
         var (d, bookmark) = await BookmarkedAsync();
         var file = AssemblyPath.Of(Path.Combine(Path.GetTempPath(), "Locked", "Locked.dll"));
-        var denied = new AssemblyLoadException(file, "Cannot open.", new UnauthorizedAccessException("Access denied."));
-        var damaged = new AssemblyLoadException(file, "Cannot open.", new BadImageFormatException("Bad image."));
+        var denied = new AssemblyLoadException(file, new AssemblyLoadFault.CannotOpen(), "Cannot open.", new UnauthorizedAccessException("Access denied."));
+        var damaged = new AssemblyLoadException(file, new AssemblyLoadFault.CannotOpen(), "Cannot open.", new BadImageFormatException("Bad image."));
 
         var deniedReport = await ReportedAsync(d, bookmark, denied);
         var damagedReport = await ReportedAsync(d, bookmark, damaged);

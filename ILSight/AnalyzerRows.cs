@@ -333,7 +333,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
 
     private string GetUnresolvedText(AnalyzerUnresolvedNode unresolved)
     {
-        return _strings.AnalyzerUnreadable(name: OneLineText.Name(unresolved.Name), why: OneLineText.Message(unresolved.Why));
+        return _strings.AnalyzerUnreadable(name: OneLineText.Name(unresolved.Name), why: OneLineText.Message(FailureTexts.DescribeCause(_strings, unresolved.Error)));
     }
 
     private string GetFailedText(AnalyzerFailedNode failed)
@@ -343,7 +343,7 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
             unreadable => _strings.CauseModuleUnreadableRow(name: OneLineText.Name(unreadable.Name), why: OneLineText.Message(unreadable.Why)),
             // The saved place in the language's template: its file and its token in hex (a notation), as they are.
             _ => _strings.ErrorNoLongerThere(_strings.AnalyzerSavedPlace(file: OneLineText.Name(anchor.FilePath.FileName), token: $"{anchor.Token:X8}")),
-            lookup => _strings.AnalyzerUnreadable(name: OneLineText.Name(anchor.FilePath.FileName), why: OneLineText.Message(lookup.Why)));
+            lookup => _strings.AnalyzerUnreadable(name: OneLineText.Name(anchor.FilePath.FileName), why: OneLineText.Message(FailureTexts.DescribeCause(_strings, lookup.Error))));
     }
 
     private TreeRow CreateLoadingRow()

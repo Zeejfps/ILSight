@@ -556,23 +556,10 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
 
     private TreeRow CreateFailedRow(Exception error)
     {
-        var why = DescribeFailure(error);
+        // Why the children failed: a cause of ILSight's own in the app's language; else the message of what the
+        // library or the app threw, as written.
+        var why = FailureTexts.DescribeCause(_strings, error);
         return new TreeRow(_strings.TreeChildrenFailed(OneLineText.Message(why)), NodeIcons.Failed(_iconColors, _icons), Tooltip: why);
-    }
-
-    // Why the children failed: a cause ILSight's own reader found, in the app's language; else the message of what the
-    // library or the app threw, as written.
-    private string DescribeFailure(Exception error)
-    {
-        if (error is not AvaloniaContainerException container)
-        {
-            return error.Message;
-        }
-
-        return container.Fault.Match(
-            v => _strings.CauseAvaloniaIndexVersionUnknownSentence(container: AvaloniaContainerFault.ContainerName, version: v.Version),
-            i => _strings.CauseAvaloniaIndexEntryIncompleteSentence(container: AvaloniaContainerFault.ContainerName, field: i.Field),
-            o => _strings.CauseAvaloniaEntryOutsideSentence(path: OneLineText.Name(o.Path), container: AvaloniaContainerFault.ContainerName));
     }
 
     public TreeRow Row(BrowseNode node)

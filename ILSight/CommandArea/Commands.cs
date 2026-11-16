@@ -144,7 +144,7 @@ public static class Commands
     {
         appState.Workflows.StartSettling(nameof(AnalyzeReferenceHandler),
             ct => appState.AnalyzeReferenceHandler.HandleAsync(appState.ListSession.Analyzer, appState.ViewCommands, pending, ct),
-            error => appState.ListSession.Analyzer.FailUnresolved(pending.Root, pending.Reference.Name, error.Message));
+            error => appState.ListSession.Analyzer.FailUnresolved(pending.Root, pending.Reference.Name, error));
     }
 
     /// <summary>Starts running the analysis <paramref name="run"/> is for (<see cref="RunAnalysisHandler"/>) now,
@@ -185,7 +185,7 @@ public static class Commands
     {
         appState.Workflows.StartSettling(nameof(RestoreAnalysesHandler),
             ct => appState.RestoreAnalysesHandler.HandleAsync(appState.ListSession.Analyzer, appState.ListSession.Assemblies, appState.ViewCommands, restore, ct),
-            error => Analysis.FailRoots(appState.ListSession.Analyzer, restore.Roots, error.Message));
+            error => Analysis.FailRoots(appState.ListSession.Analyzer, restore.Roots, error));
     }
 
     /// <summary>Asks for the namespaces of each assembly <paramref name="expansion"/> expanded in <paramref name="tree"/>
@@ -700,7 +700,7 @@ public static class Commands
         // A load that fails unexpectedly shows failed in its tab, rather than loading for good.
         appState.Workflows.StartSettling(nameof(DecompileIntoTabHandler),
             ct => appState.DecompileIntoTabHandler.HandleAsync(appState.ViewCommands, load, notes, firstGridRows, ct),
-            error => load.Load.TryShowFailed(load.Work, error.Message), load.Work.Token);
+            error => load.Load.TryShowFailed(load.Work, error), load.Work.Token);
     }
 
     /// <summary>Starts bringing in each of <paramref name="loads"/>, as <see cref="StartDecompiling(AppState, DecompileTicket?)"/>

@@ -22,10 +22,10 @@ public abstract record RestoreFailure
     /// <summary>The symbol is not in its file as it was read.</summary>
     public sealed record NotFound : RestoreFailure;
 
-    /// <summary>Looking the saved analyses up failed.</summary>
+    /// <summary>Looking the saved analyses up failed, with <see cref="Error"/>.</summary>
     public sealed record Failed : RestoreFailure
     {
-        public required string Why { get; init; }
+        public required Exception Error { get; init; }
     }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>

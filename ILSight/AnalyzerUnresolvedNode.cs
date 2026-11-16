@@ -8,5 +8,5 @@ public sealed class AnalyzerUnresolvedNode : AnalyzerNode
     /// <summary>What could not be read: the module the reference leads into, or the reference itself.</summary>
     public required string Name { get; init; }
 
-    public required string Why { get; init; }
+    public required Exception Error { get; init; }
 }

@@ -183,9 +183,9 @@ public sealed class AnalyzerTree
     }
 
     /// <summary>Shows <paramref name="pending"/>, a root asked for from a code reference, failed in its place: looking
-    /// for its symbol failed reading <paramref name="name"/>, with <paramref name="why"/>; nothing once it was
+    /// for its symbol failed reading <paramref name="name"/>, with <paramref name="error"/>; nothing once it was
     /// removed.</summary>
-    public void FailUnresolved(AnalyzerPendingNode pending, string name, string why)
+    public void FailUnresolved(AnalyzerPendingNode pending, string name, Exception error)
     {
         var index = _roots.IndexOf(pending);
         if (index < 0)
@@ -193,7 +193,7 @@ public sealed class AnalyzerTree
             return;
         }
 
-        _roots[index] = new AnalyzerUnresolvedNode { Name = name, Why = why };
+        _roots[index] = new AnalyzerUnresolvedNode { Name = name, Error = error };
         BumpRevisionWhenSavedAnalysesChange();
     }
 

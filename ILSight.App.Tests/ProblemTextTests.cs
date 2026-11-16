@@ -151,6 +151,40 @@ public sealed class ProblemTextTests
         Assert.DoesNotContain("example.test", english.Details);
     }
 
+    [Fact]
+    public void A_request_that_timed_out_is_said_from_its_cause_in_the_apps_language()
+    {
+        var error = new TimeoutException("The request timed out.", new TaskCanceledException());
+        var problem = new AppProblem.NuGetSearchFailed { Feed = "example", Error = error };
+
+        var english = ProblemTexts.Describe(Strings.En, problem);
+        var japanese = ProblemTexts.Describe(Strings.For(Locale.Ja), problem);
+
+        Assert.StartsWith("The server didn't answer in time.", english.Details);
+        Assert.Contains("サーバーが時間内に応答しませんでした。", japanese.Details);
+    }
+
+    [Fact]
+    public void A_file_that_cannot_be_opened_is_said_from_its_cause_and_a_bundles_why_in_the_apps_language()
+    {
+        var file = AssemblyPath.Of(Path.Combine(Path.GetTempPath(), "Shop", "Shop.dll"));
+        var bundle = AssemblyPath.Of(Path.Combine(Path.GetTempPath(), "Shop", "Shop.exe"));
+        var inner = new BundleEntryException(new BundleEntryFault.Outside { Entry = "Shop.dll" }, "The bundle's entry 'Shop.dll' cannot be read: it starts at -1.");
+        var cannotOpen = new AssemblyLoadException(file, new AssemblyLoadFault.CannotOpen(), $"Cannot open '{file}': {inner.Message}", inner);
+        var bySystem = new AssemblyLoadException(file, new AssemblyLoadFault.CannotOpen(), $"Cannot open '{file}': In use.", new IOException("In use."));
+        var notAssembly = new AssemblyLoadException(file, new AssemblyLoadFault.NotAssembly(), $"'{file}' is not a .NET assembly.");
+        var notPackage = new AssemblyLoadException(file, new AssemblyLoadFault.NotPackage { Container = bundle }, $"'{bundle}' is not a package.");
+        var notInPackage = new AssemblyLoadException(file, new AssemblyLoadFault.NotInPackage { Package = bundle, FullName = "Shop.dll" }, $"'{bundle}' holds no 'Shop.dll'.");
+        var japanese = Strings.For(Locale.Ja);
+
+        Assert.Equal($"{file.Text} couldn't be opened: The bundle places its file Shop.dll outside the bundle.", FailureTexts.DescribeCause(Strings.En, cannotOpen));
+        Assert.Equal($"{file.Text} を開けませんでした: バンドルがファイル Shop.dll をバンドルの外に配置しています。", FailureTexts.DescribeCause(japanese, cannotOpen));
+        Assert.Equal($"{file.Text} couldn't be opened: In use.", FailureTexts.DescribeCause(Strings.En, bySystem));
+        Assert.Equal($"{file.Text} は .NET アセンブリではありません。", FailureTexts.DescribeCause(japanese, notAssembly));
+        Assert.Equal($"{bundle.Text} isn't a package.", FailureTexts.DescribeCause(Strings.En, notPackage));
+        Assert.Equal($"{bundle.Text} holds no file Shop.dll.", FailureTexts.DescribeCause(Strings.En, notInPackage));
+    }
+
     // An exception as thrown, with its stack trace and an inner exception.
     private static InvalidOperationException Thrown(string message)
     {

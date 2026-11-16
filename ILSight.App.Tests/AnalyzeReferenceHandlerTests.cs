@@ -46,7 +46,7 @@ public sealed class AnalyzeReferenceHandlerTests
         });
 
         var unresolved = Assert.IsType<AnalyzerUnresolvedNode>(Assert.Single(analyzer.Roots));
-        Assert.Equal((reference.Name, "unreadable"), (unresolved.Name, unresolved.Why));
+        Assert.Equal((reference.Name, "unreadable"), (unresolved.Name, unresolved.Error.Message));
         Assert.Empty(analyzer.ListSavedAnalyses());
         Assert.Equal([new Refusal.Unresolved { Reference = reference }], missing.Refused);
         Assert.Empty(missing.Reported);
@@ -61,11 +61,12 @@ public sealed class AnalyzeReferenceHandlerTests
         var analyzer = d.AppState.ListSession.Analyzer;
         var pending = Analysis.BeginAnalyzing(analyzer, (await d.FixtureAsync("Greeter")).Definition);
 
-        analyzer.FailUnresolved(pending.Root, "Greeter", "broken");
+        var broken = new InvalidOperationException("broken");
+        analyzer.FailUnresolved(pending.Root, "Greeter", broken);
         var failed = Assert.IsType<AnalyzerUnresolvedNode>(Assert.Single(analyzer.Roots));
         analyzer.RemoveRoot(failed);
 
-        Assert.Equal("broken", failed.Why);
+        Assert.Same(broken, failed.Error);
         Assert.Empty(analyzer.Roots);
     }
 

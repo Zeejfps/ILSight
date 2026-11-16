@@ -224,10 +224,10 @@ public sealed class TabLoad
         return true;
     }
 
-    /// <summary>Shows that the load <paramref name="ticket"/> was given for failed with <paramref name="message"/>,
+    /// <summary>Shows that the load <paramref name="ticket"/> was given for failed with <paramref name="error"/>,
     /// unless a newer load started since, the tab closed, or the node's assembly closed. Returns whether it
     /// landed.</summary>
-    public bool TryShowFailed(WorkTicket ticket, string message)
+    public bool TryShowFailed(WorkTicket ticket, Exception error)
     {
         if (_closedAssembly is not null)
         {
@@ -239,7 +239,7 @@ public sealed class TabLoad
             return false;
         }
 
-        _content = new TabContent.Failed { Node = GetLoadingNode(), Message = message };
+        _content = new TabContent.Failed { Node = GetLoadingNode(), Error = error };
         return true;
     }
 
@@ -300,7 +300,7 @@ public sealed class TabLoad
             Location = location,
             Title = Title,
             Module = unreadable.Module.FilePath.FileName,
-            Why = unreadable.Why.Message,
+            Why = unreadable.Why,
         });
     }
 
@@ -314,7 +314,7 @@ public sealed class TabLoad
             Location = location,
             Title = Title,
             Module = location.FilePath.FileName,
-            Why = error.Message,
+            Why = error,
         });
     }
 

@@ -72,12 +72,12 @@ public abstract record TabContent
         public required int Id { get; init; }
     }
 
-    /// <summary>Decompiling <see cref="Node"/> failed with <see cref="Message"/>.</summary>
+    /// <summary>Decompiling <see cref="Node"/> failed with <see cref="Error"/>.</summary>
     public sealed record Failed : TabContent
     {
         public required BrowseNode Node { get; init; }
 
-        public required string Message { get; init; }
+        public required Exception Error { get; init; }
     }
 
     /// <summary>Nothing of <see cref="Node"/>: its assembly was closed while it decompiled or its grid or picture was
@@ -131,7 +131,7 @@ public abstract record TabContent
         /// <summary>The module's file name.</summary>
         public required string Module { get; init; }
 
-        public required string Why { get; init; }
+        public required Exception Why { get; init; }
     }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>
