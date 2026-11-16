@@ -156,7 +156,8 @@ Build: RL0201, RL0202, RL0203, RL0204 (tests).
 
 Build: RL0301 (`Async`), RL0302 (`Find*`), RL0303 (`Get*` returning `T?`), RL0304 (`Is*` not `bool`), RL0305 (no
 `Load*`/`Fetch*`: the verb says what a miss returns); suggestions: RL0306 (a `bool` method named as an action), RL0307
-(a method returning -1, a `char`'s `'\0'` or a struct's `default` for none), RL0308 (a verb that only says it reacts).
+(a method returning -1, a `char`'s `'\0'` or a struct's `default` for none), RL0308 (a verb that only says it reacts),
+RL0309 (an action call inside an argument).
 
 | Name | Promise |
 |------|---------|
@@ -173,6 +174,10 @@ Build: RL0301 (`Async`), RL0302 (`Find*`), RL0303 (`Get*` returning `T?`), RL030
 
 - **Named for the effect**, never a verb that only says it reacts (`Follow`, `Handle`, `Process`, `Manage`, `Update`,
   `Sync`, `React`); a conditional effect says both (`ReloadListWhenLoadOptionsChange`). Event handlers too.
+- **A call made for its effect is its own statement**, its result a local named for what it is, passed on
+  (`var save = loop.AfterDraw(state); RetrySave(ui, save);`); only queries, pure functions and value constructors sit
+  in arguments. `Task.WhenAll(StartX(), StartY())` and a builder's chain are fine; a pure function named as an action
+  is renamed.
 - **A `bool` method is a question or a `Try<Verb>`**, its first word saying which; a use case returns a result union
   (R009); an action reporting a fact about what it did returns a value naming it (`tabs.Close(tab).WasActive`).
 - **No sentinels:** missing is `T?`, a union case when the miss carries data (`Missing { InsertAt }`), or
@@ -194,7 +199,7 @@ state only other types write, on a type with methods), RL0405 (the same with no 
 more; conditional: plain values no rule ties, as a root's settings), RL0406 (static functions writing one type's
 members: two, or one whose write keeps state), RL0407 (another type's lock taken, or an event handed out as a delegate),
 RL0408 (a whole's member forwarding a part's), RL0409 (one feature's state loose on a whole; conditional: state shared
-on purpose, a published member), RL0410 (a static class named for a moment).
+on purpose, a published member), RL0410 (a static class named for a moment), RL0411 (a type named with `-ing`).
 
 | You have | Make |
 |----------|------|
@@ -210,7 +215,9 @@ on purpose, a published member), RL0410 (a static class named for a moment).
 | anything else | a private method of its user |
 
 - **Checks:** delete a type that only forwards (adapters excepted). No `Manager` / `Helper` / `Utils` / `Processor` /
-  `<Noun>Service` / `Rules` / `Logic` / `Common` / `Core`. No methods callers must call in a set order. No interface
+  `<Noun>Service` / `Rules` / `Logic` / `Common` / `Core`. **A type is a noun:** what keeps doing a job an agent noun
+  (`AssemblyReloader`), one run the activity's noun (`Reload`), never a gerund (`AssemblyReloading`); union cases named
+  for a state, values like `ClockReading` and static classes aside. No methods callers must call in a set order. No interface
   without two real implementations (ports excepted). No public setter, mutable field or collection that skips the rule;
   a collection handed in only to write into (an outbox) is held privately (`{ private get; init; }`), readers asking its
   owner.
@@ -241,7 +248,8 @@ on purpose, a published member), RL0410 (a static class named for a moment).
   proceed on a pending one).
 - **Grouped by what the code works on, never by when it runs:** functions that keep taking the same collaborators (a
   runner, a feature's part and handlers) are one object the root builds. A class named for a moment (`AppStart`,
-  `AppFrames`) is split into its features; the app loop (Scope) keeps the calls, ordered where it matters. Queued
+  `AppFrames`) is split into its features; the app loop (Scope) keeps the calls, ordered where it matters, taking no
+  screen, returning a step's outcome for the host to pass on. An object holding a runner is an `[Edge]`. Queued
   hot-path work: a `static` lambda handed target and subject.
 - **Static is for code no object owns** (pure functions and parses, I/O over values, extension methods on a type you
   don't own or over sequences, a kind's `static abstract` members, statics a framework or generator requires,
