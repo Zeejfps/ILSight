@@ -40,7 +40,7 @@ public static class OneLineText
                     text.Append("\\\"");
                     break;
                 default:
-                    AppendEscaped(text, c);
+                    AppendEscaped(text, c, IsEscaped(c));
                     break;
             }
         }
@@ -50,12 +50,14 @@ public static class OneLineText
     }
 
     /// <summary><paramref name="message"/>, prose (an exception's message), on one line: each line break a space, as a
-    /// sentence runs on, and any other control character and every format character escaped (<c>\t</c>, <c>\u000B</c>,
-    /// <c>\u202E</c>); its backslashes and
-    /// quotes as they are, as prose names nothing by its spelling.</summary>
+    /// sentence runs on, and any other control character and every direction control (the marks and embeddings,
+    /// overrides and isolates that reorder what follows: U+200E, U+200F, U+061C, U+202A to U+202E, U+2066 to U+2069)
+    /// escaped (<c>\t</c>, <c>\u000B</c>, <c>\u202E</c>); its backslashes and quotes as they are, and every other
+    /// format character (a joiner in an emoji, a soft hyphen) drawn as text, as prose names nothing by its spelling
+    /// (CF5).</summary>
     public static string Message(string message)
     {
-        if (!HoldsEscaped(message))
+        if (!HoldsEscapedInProse(message))
         {
             return message;
         }
@@ -63,8 +65,9 @@ public static class OneLineText
         var text = new StringBuilder(message.Length + 8);
         foreach (var c in message.ReplaceLineEndings(" "))
         {
-            AppendEscaped(text, c);
+            AppendEscaped(text, c, IsEscapedInProse(c));
         }
+
 
         return text.ToString();
     }
@@ -96,6 +99,33 @@ public static class OneLineText
         return char.IsControl(c) || c is LineSeparator or ParagraphSeparator || IsFormat(c);
     }
 
+    private static bool HoldsEscapedInProse(string text)
+    {
+        foreach (var c in text)
+        {
+            if (IsEscapedInProse(c))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // In prose only what breaks the line or reorders it is escaped: a control character, a line or paragraph separator,
+    // a direction control. A joiner or a soft hyphen draws as the text means it.
+    private static bool IsEscapedInProse(char c)
+    {
+        return char.IsControl(c) || c is LineSeparator or ParagraphSeparator || IsDirectionControl(c);
+    }
+
+    // The left-to-right and right-to-left marks, the Arabic letter mark, the embeddings and overrides (U+202A to U+202E)
+    // and the isolates (U+2066 to U+2069).
+    private static bool IsDirectionControl(char c)
+    {
+        return c is '\u200E' or '\u200F' or '\u061C' or (>= '\u202A' and <= '\u202E') or (>= '\u2066' and <= '\u2069');
+    }
+
     // No format character comes before the soft hyphen (U+00AD), so an ASCII name, nearly every one, is read without
     // asking each character's category.
     private static bool IsFormat(char c)
@@ -103,7 +133,7 @@ public static class OneLineText
         return c >= SoftHyphen && char.GetUnicodeCategory(c) == UnicodeCategory.Format;
     }
 
-    private static void AppendEscaped(StringBuilder text, char c)
+    private static void AppendEscaped(StringBuilder text, char c, bool escaped)
     {
         switch (c)
         {
@@ -117,7 +147,7 @@ public static class OneLineText
                 text.Append(@"\t");
                 break;
             default:
-                if (IsEscaped(c))
+                if (escaped)
                 {
                     text.Append(@"\u").Append(((int)c).ToString("X4", CultureInfo.InvariantCulture));
                 }

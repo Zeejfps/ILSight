@@ -49,6 +49,19 @@ public sealed class OneLineTextTests
         Assert.DoesNotContain('\u2028', name + message);
     }
 
+    // A name is an identifier, so every format character is escaped; a message is prose, so only what reorders the line
+    // is (CF5): a joiner in an emoji draws as the emoji.
+    [Fact]
+    public void A_message_escapes_each_direction_control_and_draws_a_joiner_where_a_name_escapes_both()
+    {
+        var family = "\U0001F468\u200D\U0001F469";
+
+        Assert.Equal($"Shared by {family}.", OneLineText.Message($"Shared by {family}."));
+        Assert.Equal("Shop\u00ADping", OneLineText.Message("Shop\u00ADping"));
+        Assert.Equal(@"\u200E \u200F \u061C \u202A \u202D \u2066 \u2069", OneLineText.Message("\u200E \u200F \u061C \u202A \u202D \u2066 \u2069"));
+        Assert.Equal(@"""Shop\u200DCart""", OneLineText.Name("Shop\u200DCart"));
+    }
+
     [Fact]
     public void A_message_runs_on_one_line_its_backslashes_as_they_are()
     {
