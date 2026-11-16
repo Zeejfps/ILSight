@@ -63,6 +63,10 @@ internal static class DebugSymbolFiles
         {
             return null;
         }
+        catch (BundleEntryException)
+        {
+            return null;
+        }
     }
 
     /// <summary>The symbols in the portable PDB at <paramref name="pdbPath"/>, picked for the assembly;

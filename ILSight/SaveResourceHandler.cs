@@ -30,6 +30,6 @@ public sealed class SaveResourceHandler(SaveResourceHandler.IPorts ports)
         saved.Switch(
             static _ => { },
             closed => ports.ShowRefusal(new Refusal.ResourceNotSaved { Resource = node.Text, Assembly = closed.Assembly }),
-            failed => ports.ReportError(new AppProblem.ResourceNotSaved { Resource = node.Text, Reason = failed.Error.Message }));
+            failed => ports.ReportError(new AppProblem.ResourceNotSaved { Resource = node.Text, Error = failed.Error }));
     }
 }

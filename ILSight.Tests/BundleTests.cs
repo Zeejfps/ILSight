@@ -78,7 +78,8 @@ public sealed class BundleTests
         var broken = await bundle.ReadRootAsync().GetChildAsync("Broken.dll");
 
         Assert.IsType<NodeSubject.PackageFile>(broken.Subject);
-        Assert.Throws<InvalidDataException>(() => BrowseNodes.ReadResource(broken));
+        var thrown = Assert.Throws<BundleEntryException>(() => BrowseNodes.ReadResource(broken));
+        Assert.Equal(new BundleEntryFault.Outside { Entry = "Broken.dll" }, thrown.Fault);
     }
 
     [Fact]

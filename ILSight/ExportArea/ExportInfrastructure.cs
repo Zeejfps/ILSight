@@ -175,6 +175,10 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
         {
             return new ResourceSave.Failed { Error = e };
         }
+        catch (BundleEntryException e)
+        {
+            return new ResourceSave.Failed { Error = e };
+        }
     }
 
     /// <remarks>The file is read out of the package (decompressed) on the thread pool and written asynchronously, so
@@ -196,6 +200,10 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
             return new Outcome.Failed(e);
         }
         catch (InvalidDataException e)
+        {
+            return new Outcome.Failed(e);
+        }
+        catch (BundleEntryException e)
         {
             return new Outcome.Failed(e);
         }

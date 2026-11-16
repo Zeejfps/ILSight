@@ -50,7 +50,7 @@ internal static class BundleContents
     }
 
     /// <summary>The bytes of <paramref name="entry"/>, inflated when the bundle stores it compressed.</summary>
-    /// <exception cref="InvalidDataException">The manifest places or sizes the entry where it cannot be.</exception>
+    /// <exception cref="BundleEntryException">The manifest places or sizes the entry where it cannot be.</exception>
     public static byte[] Read(string path, SingleFileBundle.Entry entry)
     {
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
@@ -88,12 +88,12 @@ internal static class BundleContents
     {
         if (size < 0)
         {
-            throw Corrupt(entry, $"its size {size} is negative");
+            throw Corrupt(new BundleEntryFault.SizeOutOfRange { Entry = entry.RelativePath }, $"its size {size} is negative");
         }
 
         if (size > int.MaxValue)
         {
-            throw Corrupt(entry, $"its size {size} is too large");
+            throw Corrupt(new BundleEntryFault.SizeOutOfRange { Entry = entry.RelativePath }, $"its size {size} is too large");
         }
     }
 
@@ -101,12 +101,12 @@ internal static class BundleContents
     {
         if (entry.Offset < 0)
         {
-            throw Corrupt(entry, $"it starts at {entry.Offset}");
+            throw Corrupt(new BundleEntryFault.Outside { Entry = entry.RelativePath }, $"it starts at {entry.Offset}");
         }
 
         if (entry.Offset + stored > stream.Length)
         {
-            throw Corrupt(entry, $"it runs past the end of the file, at {entry.Offset + stored}");
+            throw Corrupt(new BundleEntryFault.Outside { Entry = entry.RelativePath }, $"it runs past the end of the file, at {entry.Offset + stored}");
         }
     }
 
@@ -131,14 +131,15 @@ internal static class BundleContents
         }
         if (inflated.Length != entry.Size)
         {
-            throw Corrupt(entry, $"it inflates to {inflated.Length} bytes, not the {entry.Size} declared");
+            throw Corrupt(new BundleEntryFault.InflatesWrong { Entry = entry.RelativePath }, $"it inflates to {inflated.Length} bytes, not the {entry.Size} declared");
         }
 
         return inflated.ToArray();
     }
 
-    private static InvalidDataException Corrupt(SingleFileBundle.Entry entry, string why)
+    // The entry's cause, and its English diagnostic saying which offset or size is wrong.
+    private static BundleEntryException Corrupt(BundleEntryFault fault, string why)
     {
-        return new InvalidDataException($"The bundle's entry '{entry.RelativePath}' cannot be read: {why}.");
+        return new BundleEntryException(fault, $"The bundle's entry '{fault.Entry}' cannot be read: {why}.");
     }
 }

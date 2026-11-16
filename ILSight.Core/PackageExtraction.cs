@@ -63,6 +63,10 @@ public static class PackageExtraction
         {
             return NotWritten(file, e);
         }
+        catch (BundleEntryException e)
+        {
+            return NotWritten(file, e);
+        }
         catch (ArgumentException e)
         {
             return NotWritten(file, e);

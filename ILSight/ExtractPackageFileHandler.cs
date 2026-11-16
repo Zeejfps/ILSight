@@ -28,7 +28,7 @@ public sealed class ExtractPackageFileHandler(ExtractPackageFileHandler.IPorts p
             ports.ReportError(new AppProblem.PackageFileNotExtracted
             {
                 File = place.File.Name,
-                Reason = failed.Error.Message,
+                Error = failed.Error,
             });
         }
     }

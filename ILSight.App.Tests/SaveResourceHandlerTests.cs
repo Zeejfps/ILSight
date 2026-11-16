@@ -25,7 +25,7 @@ public sealed class SaveResourceHandlerTests
 
         var problem = Assert.IsType<AppProblem.ResourceNotSaved>(Assert.Single(ports.Reported));
         Assert.Equal("data.json", problem.Resource);
-        Assert.Equal("Disk full.", problem.Reason);
+        Assert.Equal("Disk full.", problem.Error.Message);
         Assert.Empty(ports.Refused);
     }
 

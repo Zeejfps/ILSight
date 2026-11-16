@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using ILSight.Core;
 
 namespace ILSight.App.Tests;
 
@@ -117,10 +118,23 @@ public sealed class ProblemTextTests
     [Fact]
     public void A_problem_with_no_exception_has_no_technical_details_and_copies_as_before()
     {
-        var text = ProblemTexts.Describe(Strings.En, new AppProblem.ResourceNotSaved { Resource = "a.png", Reason = "The disk is full." });
+        var text = ProblemTexts.Describe(Strings.En, new AppProblem.ResourceNotSaved { Resource = "a.png", Error = new IOException("The disk is full.") });
 
         Assert.Equal("", text.TechnicalDetails);
         Assert.Equal($"Cannot save a.png{Environment.NewLine}{Environment.NewLine}The disk is full.", text.FullText);
+    }
+
+    [Fact]
+    public void A_bundle_file_that_cannot_be_read_is_said_from_its_cause_in_the_apps_language()
+    {
+        var error = new BundleEntryException(new BundleEntryFault.Outside { Entry = "lib/Shop.dll" }, "The bundle's entry 'lib/Shop.dll' cannot be read: it starts at -1.");
+        var problem = new AppProblem.PackageFileNotExtracted { File = "Shop.dll", Error = error };
+
+        var english = ProblemTexts.Describe(Strings.En, problem);
+        var japanese = ProblemTexts.Describe(Strings.For(Locale.Ja), problem);
+
+        Assert.Equal("The bundle places its file lib/Shop.dll outside the bundle.", english.Details);
+        Assert.Contains("バンドルがファイル lib/Shop.dll をバンドルの外に配置しています。", japanese.Details);
     }
 
     // An exception as thrown, with its stack trace and an inner exception.

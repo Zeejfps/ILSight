@@ -48,7 +48,7 @@ public sealed class AppTests
             ErrorDialogView.AddError(errors, new AppProblem.ResourceNotSaved
             {
                 Resource = $"{i}.dll",
-                Reason = "details",
+                Error = new IOException("details"),
             }, first.AddSeconds(i));
         }
 
@@ -107,7 +107,7 @@ public sealed class AppTests
         Errors.Report(app.AppState, new AppProblem.ResourceNotSaved
         {
             Resource = new string('x', 4000),
-            Reason = string.Join('\n', Enumerable.Range(0, 500).Select(i => $"at line {i}")),
+            Error = new IOException(string.Join('\n', Enumerable.Range(0, 500).Select(i => $"at line {i}"))),
         });
 
         app.Run(2);
@@ -125,7 +125,7 @@ public sealed class AppTests
         app.Run(2);
         var count = app.StatusText("1 assembly");
 
-        Errors.Report(app.AppState, new AppProblem.ResourceNotSaved { Resource = "broken.dll", Reason = "details" });
+        Errors.Report(app.AppState, new AppProblem.ResourceNotSaved { Resource = "broken.dll", Error = new IOException("details") });
         app.Run(2);
         var errors = app.StatusText("1 error");
         var language = app.StatusText("C#");
@@ -144,7 +144,7 @@ public sealed class AppTests
         Errors.Report(app.AppState, new AppProblem.ResourceNotSaved
         {
             Resource = "broken.dll",
-            Reason = "first\nsecond\nthird\nfourth",
+            Error = new IOException("first\nsecond\nthird\nfourth"),
         });
         app.Run(2);
 
@@ -193,11 +193,11 @@ public sealed class AppTests
     public void Reported_errors_open_when_asked_on_the_newest_to_copy_and_close()
     {
         var app = new AppDriver();
-        Errors.Report(app.AppState, new AppProblem.ResourceNotSaved { Resource = "first.dll", Reason = "details one" });
+        Errors.Report(app.AppState, new AppProblem.ResourceNotSaved { Resource = "first.dll", Error = new IOException("details one") });
         Errors.Report(app.AppState, new AppProblem.ResourceNotSaved
         {
             Resource = "broken.dll",
-            Reason = "System.BadImageFormatException: bad\n   at Somewhere()",
+            Error = new IOException("System.BadImageFormatException: bad\n   at Somewhere()"),
         });
         app.Run(2);
         Assert.False(app.Ui.ErrorDialog.IsOpen);
@@ -258,8 +258,8 @@ public sealed class AppTests
     public void The_view_menu_opens_the_errors_on_the_newest()
     {
         var app = new AppDriver();
-        Errors.Report(app.AppState, new AppProblem.ResourceNotSaved { Resource = "first.dll", Reason = "details one" });
-        Errors.Report(app.AppState, new AppProblem.ResourceNotSaved { Resource = "second.dll", Reason = "details two" });
+        Errors.Report(app.AppState, new AppProblem.ResourceNotSaved { Resource = "first.dll", Error = new IOException("details one") });
+        Errors.Report(app.AppState, new AppProblem.ResourceNotSaved { Resource = "second.dll", Error = new IOException("details two") });
         app.Run(2);
 
         app.Frames.ClickOn(Selector.WithText("View"));
@@ -273,7 +273,7 @@ public sealed class AppTests
     public void An_error_shown_is_told_again_in_the_language_chosen_after_it()
     {
         var app = new AppDriver();
-        Errors.Report(app.AppState, new AppProblem.ResourceNotSaved { Resource = "broken.dll", Reason = "details" });
+        Errors.Report(app.AppState, new AppProblem.ResourceNotSaved { Resource = "broken.dll", Error = new IOException("details") });
         app.Run(2);
         app.Frames.ClickOn(Selector.WithText("1 error")).Frame();
 
@@ -288,7 +288,7 @@ public sealed class AppTests
     public void The_error_indicator_opens_the_errors_and_a_new_error_is_counted_on_it_not_opened()
     {
         var app = new AppDriver();
-        Errors.Report(app.AppState, new AppProblem.ResourceNotSaved { Resource = "first.dll", Reason = "details one" });
+        Errors.Report(app.AppState, new AppProblem.ResourceNotSaved { Resource = "first.dll", Error = new IOException("details one") });
         app.Run(2);
         Assert.False(app.Ui.ErrorDialog.IsOpen);
 
@@ -300,7 +300,7 @@ public sealed class AppTests
         Errors.Report(app.AppState, new AppProblem.ResourceNotSaved
         {
             Resource = "second.dll",
-            Reason = "details two",
+            Error = new IOException("details two"),
         });
         app.Run(2);
 

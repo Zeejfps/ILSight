@@ -973,6 +973,10 @@ public static class AssemblyListing
         {
             throw CannotOpen(path, e);
         }
+        catch (BundleEntryException e)
+        {
+            throw CannotOpen(path, e);
+        }
         catch (UnauthorizedAccessException e)
         {
             throw CannotOpen(path, e);

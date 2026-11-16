@@ -193,7 +193,7 @@ internal static class ExportReportText
             noPdbEntry: pdb => t.ErrorNoPdbEntry(OneLineText.Name(pdb.Assembly)),
             pdbNotWritten: static pdb => $"{OneLineText.Name(pdb.Assembly)}: {OneLineText.Message(pdb.Error.Message)}",
             outsideFolder: outside => t.ExportOutsideFolder(OneLineText.Name(outside.Path)),
-            fileNotWritten: static file => $"{OneLineText.Name(file.Path)}: {OneLineText.Message(file.Error.Message)}");
+            fileNotWritten: file => $"{OneLineText.Name(file.Path)}: {OneLineText.Message(FailureTexts.DescribeCause(t, file.Error.Error))}");
     }
 
     /// <summary>The exception behind <paramref name="problem"/> as the runtime wrote it (its type and stack trace), when

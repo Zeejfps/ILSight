@@ -265,6 +265,7 @@ public static class AssemblyPackages
     /// <summary>The bytes of <paramref name="file"/>, read out of the package.</summary>
     /// <exception cref="IOException">The package or the file in it cannot be read.</exception>
     /// <exception cref="InvalidDataException">The package says something about the file that cannot be true.</exception>
+    /// <exception cref="BundleEntryException">A bundle's manifest says something about the file that cannot be true.</exception>
     public static byte[] ReadFile(AssemblyPackage package, PackageFile file)
     {
         return package.Read(file);

@@ -218,14 +218,16 @@ public abstract record AppProblem
     {
         public required string Resource { get; init; }
 
-        public required string Reason { get; init; }
+        /// <summary>What failed, said from its cause (<see cref="FailureTexts"/>).</summary>
+        public required Exception Error { get; init; }
     }
 
     public sealed record PackageFileNotExtracted : AppProblem
     {
         public required string File { get; init; }
 
-        public required string Reason { get; init; }
+        /// <summary>What failed, said from its cause (<see cref="FailureTexts"/>).</summary>
+        public required Exception Error { get; init; }
     }
 
     /// <summary>The settings file at <see cref="Path"/> was read as <see cref="Problem"/> tells.</summary>
