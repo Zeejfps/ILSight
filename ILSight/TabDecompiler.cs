@@ -27,7 +27,8 @@ internal sealed class TabDecompiler
 
         foreach (var tab in panels.ListFrontTabs())
         {
-            Commands.StartDecompiling(_appState, Decompilation.StartDecompilingAgainIfOutdated(tab, language, setup.Options));
+            var decompileAgain = Decompilation.StartDecompilingAgainIfOutdated(tab, language, setup.Options);
+            Commands.StartDecompiling(_appState, decompileAgain);
         }
     }
 }

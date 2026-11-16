@@ -52,7 +52,8 @@ public sealed class AssemblyListLoader
             return;
         }
 
-        Commands.StartLoads(_appState, SavedDocuments.ReviveClosedTabs(_appState.ListSession, documents));
+        var revivedLoads = SavedDocuments.ReviveClosedTabs(_appState.ListSession, documents);
+        Commands.StartLoads(_appState, revivedLoads);
     }
 
     // As a reload, so that the list is saved whole until they are all open (files that are gone or fail to load stay

@@ -70,7 +70,8 @@ public sealed class RunArgumentsInbox
 
         if (arguments.AssemblyList is not null)
         {
-            Commands.StartOpeningList(appState, AssemblyLists.SwitchToListNamed(appState.Lists, appState.ListSession, appState.KeptScreen.View, arguments.AssemblyList));
+            var listOpening = AssemblyLists.SwitchToListNamed(appState.Lists, appState.ListSession, appState.KeptScreen.View, arguments.AssemblyList);
+            Commands.StartOpeningList(appState, listOpening);
         }
 
         if (arguments.ClearList)

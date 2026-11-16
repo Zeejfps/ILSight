@@ -96,9 +96,9 @@ public sealed class AppLoop
     /// since the last frame (the type systems of the modules listed, the children of the tree's nodes shown loading, the
     /// searches of the queries typed, the tooltips of the references hovered in code, the sorts, filters and pages of
     /// the metadata grids, the presets the lists dialog's menu opened to); the app runs what the screen asked of it,
-    /// asking for another frame while there is more to show; and the changed settings are saved. Returns what the
-    /// autosave came to, for a host with frames to come back when a write waits or failed.</summary>
-    public Saving AfterDraw(UiState screen, IFrameHost frame)
+    /// asking for another frame while there is more to show. The host saves the changed settings next
+    /// (<see cref="SaveSettingsIfChanged"/>).</summary>
+    public void AfterDraw(UiState screen, IFrameHost frame)
     {
         var appState = _appState;
         var workflows = appState.Workflows;
@@ -115,6 +115,13 @@ public sealed class AppLoop
         Commands.StartScanningPresets(workflows, screen.Presets);
         QueuedCommands.RunAppCommandsAndRedraw(frame, screen.AppCommands, appState);
         QueuedCommands.RequestFrameWhileViewCommandsWait(frame, appState.ViewCommands);
-        return appState.SettingsSaving.SaveIfChanged(appState, frame.Now);
+    }
+
+    /// <summary>The frame's last call, after <see cref="AfterDraw"/>: saves the settings when they changed, at
+    /// <paramref name="frame"/>'s time; returns what the save came to, for a host with frames to come back when a write
+    /// waits or failed.</summary>
+    public Saving SaveSettingsIfChanged(IFrameHost frame)
+    {
+        return _appState.SettingsSaving.SaveIfChanged(_appState, frame.Now);
     }
 }
