@@ -15,7 +15,9 @@ namespace ILSight.Core;
 /// statement's lines before the instruction it starts at, as comments. Written to a
 /// <see cref="DocumentBuilder"/>, the statement keeps C#'s colors and the rest of its lines are dimmed.
 /// A method whose C# cannot be decompiled says so above its first instruction, and its exception goes to the
-/// document's part failures when the output is a document.
+/// document's part failures when the output is a document. The app's code the disassembler calls back (CD4): its own
+/// work, the C# document's builder among it, marks the output's <see cref="CallbackFailure"/> when it throws, which the
+/// catch around the method's C# and the one around the whole write both read.
 /// </summary>
 internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
 {
@@ -28,6 +30,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     private readonly DecompilerSettings _settings;
     private readonly CancellationToken _cancellationToken;
     private readonly DocumentBuilder? _document;
+    private readonly CallbackFailure _callbacks;
     private List<SequencePoint> _points = [];
     private DecompiledDocument? _csharp;
     private string? _failure;
@@ -45,6 +48,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         _settings = settings;
         _cancellationToken = cancellationToken;
         _document = output as DocumentBuilder;
+        _callbacks = NodeDecompiler.CallbacksOf(output);
     }
 
     public override void Disassemble(MetadataFile module, MethodDefinitionHandle handle)
@@ -62,13 +66,18 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
 
     private void DecompileToCSharp(MethodDefinitionHandle handle)
     {
-        var builder = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = _assembly, TypeSystem = _typeSystem };
+        var builder = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = _assembly, TypeSystem = _typeSystem, Callbacks = _callbacks };
         var points = TryWriteCSharp(handle, builder);
         if (points is null)
         {
             return;
         }
 
+        _callbacks.Run((Body: this, builder, points, handle), static s => s.Body.Keep(s.builder, s.points, s.handle));
+    }
+
+    private void Keep(DocumentBuilder builder, Dictionary<ILFunction, List<SequencePoint>> points, MethodDefinitionHandle handle)
+    {
         _csharp = builder.BuildDocument("");
         _points = FindPoints(points, handle);
     }
@@ -82,9 +91,9 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
             NodeDecompiler.WriteLocatedSyntaxTree(syntaxTree, builder, _settings);
             return decompiler.CreateSequencePoints(syntaxTree);
         }
-        catch (Exception e) when (e is not OperationCanceledException)
+        catch (Exception e) when (e is not OperationCanceledException && !builder.Failed)
         {
-            _failure = $"(C# could not be decompiled: {e.Message})";
+            _failure = $"(C# could not be decompiled: {OneLineText.Message(e.Message)})";
             _document?.NotePartFailure(e);
             return null;
         }
@@ -115,7 +124,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     protected override void WriteInstruction(ITextOutput output, MetadataFile metadataFile, MethodDefinitionHandle methodHandle, ref BlobReader blob,
         int methodRva)
     {
-        WriteCSharpAt(output, blob.Offset);
+        _callbacks.Run((Body: this, output, blob.Offset), static s => s.Body.WriteCSharpAt(s.output, s.Offset));
         base.WriteInstruction(output, metadataFile, methodHandle, ref blob, methodRva);
     }
 

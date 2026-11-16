@@ -7,7 +7,9 @@ namespace ILSight.Core;
 /// not found. A type system's build also records what it was handed (<see cref="TypeSystemBuild{T}"/>), as values: it
 /// holds nothing past the unit. A reference whose file is there but can't be read is read by name only, the failure
 /// noted on the module (<see cref="ModuleLibrary.NoteUnreadReference"/>); one not found is read by name only and noted
-/// as not found (<see cref="ModuleLibrary.NoteMissingReference"/>).</summary>
+/// as not found (<see cref="ModuleLibrary.NoteMissingReference"/>). The app's code the library calls back while it
+/// reads: its work (the app's lookup of the file, handing it out, noting what it couldn't) marks
+/// <see cref="Callbacks"/> when it throws, so the read's catch lets it through (CD4).</summary>
 internal sealed class ReadingResolver : IAssemblyResolver
 {
     private readonly ModuleLibrary _resolving;
@@ -20,6 +22,9 @@ internal sealed class ReadingResolver : IAssemblyResolver
         _reading = reading;
     }
 
+    /// <summary>What the resolver's work marks when it throws: the read's, which the catch around it reads.</summary>
+    public CallbackFailure Callbacks { get; init; } = new();
+
     /// <summary>The modules handed out so far, each once.</summary>
     public IReadOnlyList<ModuleLibrary> ListHandedOut()
     {
@@ -30,6 +35,11 @@ internal sealed class ReadingResolver : IAssemblyResolver
     }
 
     public MetadataFile? Resolve(IAssemblyReference reference)
+    {
+        return Callbacks.Run((Resolver: this, reference), static s => s.Resolver.ResolveAssembly(s.reference));
+    }
+
+    private MetadataFile? ResolveAssembly(IAssemblyReference reference)
     {
         LoadedModule? found;
         try
@@ -45,6 +55,11 @@ internal sealed class ReadingResolver : IAssemblyResolver
     }
 
     public MetadataFile? ResolveModule(MetadataFile mainModule, string moduleName)
+    {
+        return Callbacks.Run((Resolver: this, mainModule, moduleName), static s => s.Resolver.FindModule(s.mainModule, s.moduleName));
+    }
+
+    private MetadataFile? FindModule(MetadataFile mainModule, string moduleName)
     {
         LoadedModule? found;
         try

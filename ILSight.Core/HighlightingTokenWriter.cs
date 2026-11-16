@@ -7,6 +7,10 @@ using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core;
 
+/// <summary>Colors what the decompiler's output visitor writes, writing into a <see cref="DocumentBuilder"/>: the app's
+/// code the library calls back, so its own work (the node stack, the statements it marks, how it classifies a token)
+/// runs through the builder's <see cref="DocumentBuilder.Callbacks"/> (CD4); what it hands on to the library's writer
+/// (<c>base</c>) is the library's.</summary>
 internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
 {
     private readonly DocumentBuilder _builder;
@@ -19,8 +23,13 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
 
     public override void StartNode(AstNode node)
     {
-        _nodes.Push(node);
+        _builder.Callbacks.Run((Writer: this, node), static s => s.Writer._nodes.Push(s.node));
         base.StartNode(node);
+        _builder.Callbacks.Run((Writer: this, node), static s => s.Writer.MarkStatements(s.node));
+    }
+
+    private void MarkStatements(AstNode node)
+    {
         foreach (var instruction in node.Annotations.OfType<ILInstruction>())
         {
             if (instruction.ILRangeIsEmpty || instruction.Parent is null || instruction is BlockContainer or Block)
@@ -39,7 +48,7 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
     public override void EndNode(AstNode node)
     {
         base.EndNode(node);
-        _nodes.Pop();
+        _builder.Callbacks.Run(_nodes, static nodes => nodes.Pop());
     }
 
     public override void WriteKeyword(string keyword)
@@ -78,7 +87,7 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
 
     public override void WriteToken(string token)
     {
-        using var span = StartSpan(KindOfToken(token));
+        using var span = StartSpan(_builder.Callbacks.Run((Writer: this, token), static s => s.Writer.KindOfToken(s.token)));
         base.WriteToken(token);
     }
 
@@ -101,7 +110,7 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
 
     public override void WriteIdentifier(Identifier identifier)
     {
-        using var span = StartSpan(Classify(identifier));
+        using var span = StartSpan(_builder.Callbacks.Run((Writer: this, identifier), static s => s.Writer.Classify(s.identifier)));
         base.WriteIdentifier(identifier);
     }
 

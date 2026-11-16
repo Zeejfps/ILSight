@@ -445,12 +445,13 @@ internal static class Documentation
     /// <summary>What hovering <paramref name="entity"/> of <paramref name="assembly"/>, whose type system is
     /// <paramref name="typeSystem"/> as read, explains, as read of the library: its declaration, written by the
     /// library's formatter, what contains it, and its documentation's elements. Call it inside the catch around the
-    /// library; <see cref="FormatTooltip"/> makes the tooltip of it outside.</summary>
-    public static TooltipFacts ReadTooltip(IEntity entity, LoadedModule assembly, DecompilerTypeSystem typeSystem)
+    /// library; <see cref="FormatTooltip"/> makes the tooltip of it outside. The declaration is written by the library
+    /// into the app's builder, whose failure marks <paramref name="callbacks"/>, for that catch to let through (CD4).</summary>
+    public static TooltipFacts ReadTooltip(IEntity entity, LoadedModule assembly, DecompilerTypeSystem typeSystem, CallbackFailure callbacks)
     {
         return new TooltipFacts
         {
-            Signature = WriteSignature(entity, assembly, typeSystem),
+            Signature = WriteSignature(entity, assembly, typeSystem, callbacks),
             Container = FindContainer(entity),
             Documentation = ReadDocumentation(entity),
         };
@@ -463,10 +464,10 @@ internal static class Documentation
         return new CodeTooltip { Signature = read.Signature, Container = read.Container, Sections = sections };
     }
 
-    private static CodeSignature WriteSignature(IEntity entity, LoadedModule assembly, DecompilerTypeSystem typeSystem)
+    private static CodeSignature WriteSignature(IEntity entity, LoadedModule assembly, DecompilerTypeSystem typeSystem, CallbackFailure callbacks)
     {
         var settings = Settings.Create();
-        var output = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = assembly, TypeSystem = typeSystem };
+        var output = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = assembly, TypeSystem = typeSystem, Callbacks = callbacks };
         TokenWriter writer = new TextTokenWriter(output, settings);
         writer = TokenWriter.InsertRequiredSpaces(writer);
         writer = new HighlightingTokenWriter(writer, output);
@@ -474,11 +475,12 @@ internal static class Documentation
         var ambience = new CSharpAmbience { ConversionFlags = SignatureFlags };
         ambience.ConvertSymbol(entity, parameters, settings.CSharpFormattingOptions);
         var line = output.BuildDocument(entity.Name).Lines[0];
-        var constraints = WriteConstraints(entity, assembly, typeSystem, settings);
+        var constraints = WriteConstraints(entity, assembly, typeSystem, settings, callbacks);
         return new CodeSignature { Line = line, ParameterStarts = parameters.Starts, Constraints = constraints };
     }
 
-    private static IReadOnlyList<DocumentLine> WriteConstraints(IEntity entity, LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerSettings settings)
+    private static IReadOnlyList<DocumentLine> WriteConstraints(IEntity entity, LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerSettings settings,
+        CallbackFailure callbacks)
     {
         var builder = new TypeSystemAstBuilder
         {
@@ -493,7 +495,7 @@ internal static class Documentation
             return [];
         }
 
-        var output = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = assembly, TypeSystem = typeSystem };
+        var output = new DocumentBuilder { Language = DecompilationLanguage.CSharp, Assembly = assembly, TypeSystem = typeSystem, Callbacks = callbacks };
         TokenWriter writer = new TextTokenWriter(output, settings);
         writer = TokenWriter.InsertRequiredSpaces(writer);
         writer = new HighlightingTokenWriter(writer, output);

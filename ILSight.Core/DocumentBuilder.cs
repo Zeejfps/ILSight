@@ -16,7 +16,10 @@ namespace ILSight.Core;
 /// <summary>Writing a <see cref="DecompiledDocument"/> a token at a time: what the decompiler writes to, through the
 /// ITextOutput its methods implement. The line being written (its text, its spans, where they start, whether it is
 /// indented, classified), the indentation, the span kind a token writer asked for and the method being written are
-/// its own, changed only by its methods, which keep them in step with the lines and spans written so far.</summary>
+/// its own, changed only by its methods, which keep them in step with the lines and spans written so far. It is the
+/// app's code the decompiler calls back while it reads (CD4): each member that does more than set a field does its work
+/// through <see cref="Callbacks"/>, so a bug in it marks <see cref="Failed"/> and the catch around the read lets it
+/// through to the edge instead of taking it as the decompiler's failure on the method.</summary>
 internal sealed class DocumentBuilder : ITextOutput
 {
     private const int MaxSignatureLines = 8;
@@ -27,6 +30,13 @@ internal sealed class DocumentBuilder : ITextOutput
     internal const string CommentMarker = "// ";
 
     public required DecompilationLanguage Language { get; init; }
+
+    /// <summary>Whether the app's code the library called back in this read threw: this builder's, its token writers',
+    /// or another builder's of the same read sharing it (a method's C# above its IL).</summary>
+    internal CallbackFailure Callbacks { get; init; } = new();
+
+    /// <summary>Whether the app's code the library called back in this read threw (<see cref="Callbacks"/>).</summary>
+    public bool Failed => Callbacks.Failed;
     private readonly StringBuilder _line = new();
     private readonly List<DocumentSpan> _spans = new();
     private readonly List<(string Text, int First, int Count)> _lines = new();
@@ -63,6 +73,11 @@ internal sealed class DocumentBuilder : ITextOutput
     /// are.</summary>
     public void WriteUnreadReferences(IReadOnlyList<UnreadReference> unread, IReadOnlyList<string> missing, IDocumentNotes notes)
     {
+        Callbacks.Run((Builder: this, unread, missing, notes), static s => s.Builder.WriteUnread(s.unread, s.missing, s.notes));
+    }
+
+    private void WriteUnread(IReadOnlyList<UnreadReference> unread, IReadOnlyList<string> missing, IDocumentNotes notes)
+    {
         UnreadReferences = unread;
         foreach (var reference in unread)
         {
@@ -82,6 +97,11 @@ internal sealed class DocumentBuilder : ITextOutput
     /// which the caller ends next, and keeps it as its cause and place, for the document to be shown in another
     /// language without being written again (<see cref="Documents.Reword"/>).</summary>
     public void WriteNote(DocumentNote note, IDocumentNotes notes)
+    {
+        Callbacks.Run((Builder: this, note, notes), static s => s.Builder.PlaceNote(s.note, s.notes));
+    }
+
+    private void PlaceNote(DocumentNote note, IDocumentNotes notes)
     {
         _notes.Add(new PlacedNote { Line = _lines.Count, Column = Location.Column - 1, Note = note });
         foreach (var run in note.Runs(notes))
@@ -255,6 +275,11 @@ internal sealed class DocumentBuilder : ITextOutput
 
     public void Write(string text, SpanKind kind, CodeReference? reference = null, bool isDefinition = false)
     {
+        Callbacks.Run((Builder: this, text, kind, reference, isDefinition), static s => s.Builder.WriteLines(s.text, s.kind, s.reference, s.isDefinition));
+    }
+
+    private void WriteLines(string text, SpanKind kind, CodeReference? reference, bool isDefinition)
+    {
         var start = 0;
         while (true)
         {
@@ -284,6 +309,11 @@ internal sealed class DocumentBuilder : ITextOutput
 
     public void Write(char ch)
     {
+        Callbacks.Run((Builder: this, ch), static s => s.Builder.WriteChar(s.ch));
+    }
+
+    private void WriteChar(char ch)
+    {
         if (ch == '\n')
         {
             WriteLine();
@@ -300,6 +330,11 @@ internal sealed class DocumentBuilder : ITextOutput
     }
 
     public void WriteLine()
+    {
+        Callbacks.Run(this, static b => b.EndLine());
+    }
+
+    private void EndLine()
     {
         if (IsUnlexedIL())
         {
@@ -328,6 +363,11 @@ internal sealed class DocumentBuilder : ITextOutput
     /// rest dimmed as a comment. Names of types and members stay links; locals do not, as they are the
     /// C# document's.</summary>
     internal void WriteSourceLine(DocumentLine line, int from, int start, int end)
+    {
+        Callbacks.Run((Builder: this, line, from, start, end), static s => s.Builder.AppendSourceLine(s.line, s.from, s.start, s.end));
+    }
+
+    private void AppendSourceLine(DocumentLine line, int from, int start, int end)
     {
         Append(SourceLinePrefix, SpanKind.Comment, null, false);
         foreach (var span in line.Spans)
@@ -370,6 +410,11 @@ internal sealed class DocumentBuilder : ITextOutput
 
     public void WriteReference(OpCodeInfo opCode, bool omitSuffix = false)
     {
+        Callbacks.Run((Builder: this, opCode, omitSuffix), static s => s.Builder.WriteOpCode(s.opCode, s.omitSuffix));
+    }
+
+    private void WriteOpCode(OpCodeInfo opCode, bool omitSuffix)
+    {
         var name = opCode.Name;
         if (omitSuffix)
         {
@@ -384,12 +429,22 @@ internal sealed class DocumentBuilder : ITextOutput
 
     public void WriteReference(MetadataFile metadata, Handle handle, string text, string protocol = "decompile", bool isDefinition = false)
     {
+        Callbacks.Run((Builder: this, metadata, handle, text, isDefinition), static s => s.Builder.WriteHandle(s.metadata, s.handle, s.text, s.isDefinition));
+    }
+
+    private void WriteHandle(MetadataFile metadata, Handle handle, string text, bool isDefinition)
+    {
         var reference = FindReference(metadata, handle, text);
         var kind = _kind ?? (reference is null ? SpanKind.Plain : isDefinition && text.StartsWith('.') ? SpanKind.Keyword : GetSpanKind(reference));
         WriteReferenceSpan(text, kind, reference, isDefinition);
     }
 
     public void WriteReference(IType type, string text, bool isDefinition = false)
+    {
+        Callbacks.Run((Builder: this, type, text, isDefinition), static s => s.Builder.WriteType(s.type, s.text, s.isDefinition));
+    }
+
+    private void WriteType(IType type, string text, bool isDefinition)
     {
         var definition = type.GetDefinition();
         var reference = definition is not null ? CodeReferences.Find(definition, text) : null;
@@ -398,12 +453,22 @@ internal sealed class DocumentBuilder : ITextOutput
 
     public void WriteReference(IMember member, string text, bool isDefinition = false)
     {
+        Callbacks.Run((Builder: this, member, text, isDefinition), static s => s.Builder.WriteMember(s.member, s.text, s.isDefinition));
+    }
+
+    private void WriteMember(IMember member, string text, bool isDefinition)
+    {
         var definition = member.MemberDefinition ?? member;
         var kind = _kind ?? GetSpanKind(CodeReferences.GetKind(definition.SymbolKind));
         WriteReferenceSpan(text, kind, CodeReferences.Find(definition, text), isDefinition);
     }
 
     public void WriteLocalReference(string text, object reference, bool isDefinition = false, bool isHoverOnly = false)
+    {
+        Callbacks.Run((Builder: this, text, reference, isDefinition), static s => s.Builder.WriteLocal(s.text, s.reference, s.isDefinition));
+    }
+
+    private void WriteLocal(string text, object reference, bool isDefinition)
     {
         var spanKind = reference switch
         {
@@ -431,6 +496,11 @@ internal sealed class DocumentBuilder : ITextOutput
     /// <summary>Marks the line being written as where the statement at <paramref name="ilOffset"/> of
     /// <paramref name="method"/> starts. A line keeps the first method marked on it and its lowest offset.</summary>
     public void MarkStatement(IMethod method, int ilOffset)
+    {
+        Callbacks.Run((Builder: this, method, ilOffset), static s => s.Builder.MarkMethodStatement(s.method, s.ilOffset));
+    }
+
+    private void MarkMethodStatement(IMethod method, int ilOffset)
     {
         var reference = CodeReferences.Find(method);
         if (reference != null)
@@ -473,6 +543,11 @@ internal sealed class DocumentBuilder : ITextOutput
 
     public void MarkFoldStart(string collapsedText = DefaultFoldText, bool defaultCollapsed = false, bool isDefinition = false)
     {
+        Callbacks.Run((Builder: this, collapsedText, defaultCollapsed, isDefinition), static s => s.Builder.PushFold(s.collapsedText, s.defaultCollapsed, s.isDefinition));
+    }
+
+    private void PushFold(string collapsedText, bool defaultCollapsed, bool isDefinition)
+    {
         _openFolds.Push(new OpenFold
         {
             Line = _lines.Count,
@@ -484,6 +559,11 @@ internal sealed class DocumentBuilder : ITextOutput
     }
 
     public void MarkFoldEnd()
+    {
+        Callbacks.Run(this, static b => b.CloseFold());
+    }
+
+    private void CloseFold()
     {
         if (_openFolds.TryPop(out var start))
         {

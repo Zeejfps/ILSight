@@ -13,9 +13,12 @@ internal sealed class FieldSelection : IAstTransform
 {
     public required IField Kept { get; init; }
 
+    /// <summary>What the transform marks when it throws: the app's code the decompiler calls back (CD4).</summary>
+    public required CallbackFailure Callbacks { get; init; }
+
     public void Run(AstNode rootNode, TransformContext context)
     {
-        KeepField(Kept, rootNode);
+        Callbacks.Run((Kept, rootNode), static s => KeepField(s.Kept, s.rootNode));
     }
 
     private static void KeepField(IField field, AstNode rootNode)

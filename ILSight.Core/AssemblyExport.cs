@@ -96,7 +96,8 @@ public static class AssemblyExport
     {
         var settings = Settings.Create(options);
         var symbols = NodeDecompiler.DebugSymbolsFor(assembly, settings);
-        return new BamlProjectDecompiler(assembly, LoadedAssemblies.CreateResolver(reading, assembly), settings, symbols, cancellationToken);
+        // The export's catch reads no mark of the app's callbacks yet: what they throw is the export's failure, reported.
+        return new BamlProjectDecompiler(assembly, LoadedAssemblies.CreateResolver(reading, assembly, new CallbackFailure()), settings, symbols, cancellationToken);
     }
 
     private static async Task<ExportedProject> WithPdbAsync(ModuleReading reading, ExportedProject project, DecompilerOptions options, string folder,

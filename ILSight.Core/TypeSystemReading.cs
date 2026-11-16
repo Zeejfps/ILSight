@@ -74,7 +74,8 @@ internal sealed class TypeSystemReading(ModuleLibrary library)
         {
             throw;
         }
-        catch (Exception e)
+        // The resolver's own work threw: the app's bug, not the library's failure on the module (CD4).
+        catch (Exception e) when (!resolver.Callbacks.Failed)
         {
             return new TypeSystemRead.Unreadable { Thrown = ExceptionDispatchInfo.Capture(e) };
         }

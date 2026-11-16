@@ -110,11 +110,11 @@ internal static class ResourceNodes
     }
 
     // Read in the unit reading the resource, which holds module; what the BAML's types resolve to is read under this
-    // conversion's own reading.
+    // conversion's own reading. No catch here reads the resolver's mark: the save's own catch takes what it throws.
     private static string DecompileBaml(LoadedModule module, byte[] data)
     {
         using var reading = LoadedAssemblies.BeginReading();
-        return Resources.Baml.DecompileToText(reading, module, data, CancellationToken.None);
+        return Resources.Baml.DecompileToText(reading, module, data, new CallbackFailure(), CancellationToken.None);
     }
 
     internal static byte[] ReadData(ResourceContainerInfo container)

@@ -103,7 +103,9 @@ internal static class NodeDecompiler
         {
             throw;
         }
-        catch (Exception e)
+        // The app's code the decompiler called back (the builder, its writers, a method's C#, a transform, the resolver)
+        // threw: a bug, which goes on to the edge rather than reading as the decompiler's failure on the node (CD4).
+        catch (Exception e) when (!builder.Failed)
         {
             return e;
         }
@@ -312,7 +314,7 @@ internal static class NodeDecompiler
             return;
         }
         WriteHeader(module, output, notes, member.DeclaringType, ConversionFlags.UseFullyQualifiedEntityNames | ConversionFlags.UseFullyQualifiedTypeNames);
-        WriteSyntaxTree(reading, module, output, settings, d => DecompileMember(d, member, declaring), cancellationToken);
+        WriteSyntaxTree(reading, module, output, settings, d => DecompileMember(d, member, declaring, output.Callbacks), cancellationToken);
     }
 
     private static void WriteIL(ModuleReading reading, DocumentRequest request, DocumentBuilder output, DecompilationLanguage language,
@@ -377,9 +379,17 @@ internal static class NodeDecompiler
         {
             DetectControlStructure = true,
             ExpandMemberDefinitions = true,
-            AssemblyResolver = LoadedAssemblies.CreateResolver(reading, assembly),
+            AssemblyResolver = LoadedAssemblies.CreateResolver(reading, assembly, CallbacksOf(output)),
             DebugInfo = DebugSymbolsFor(assembly, settings),
         };
+    }
+
+    /// <summary>What the app's code the library calls back while writing to <paramref name="output"/> marks when it
+    /// throws: the builder's, which the catch around the write reads; a fresh one for a plain text output (a saved
+    /// file), whose catch reads none.</summary>
+    internal static CallbackFailure CallbacksOf(ITextOutput output)
+    {
+        return output is DocumentBuilder builder ? builder.Callbacks : new CallbackFailure();
     }
 
     private static MethodBodyDisassembler CreateMethodBodyDisassembler(ModuleReading reading, LoadedModule assembly, DecompilerTypeSystem typeSystem,
@@ -414,7 +424,7 @@ internal static class NodeDecompiler
 
     // As ILSpy shows a member on its own: a constructor of a class, or a field that is not constant, with the members
     // whose initializers it shares.
-    private static SyntaxTree DecompileMember(CSharpDecompiler decompiler, IMember member, ITypeDefinition declaring)
+    private static SyntaxTree DecompileMember(CSharpDecompiler decompiler, IMember member, ITypeDefinition declaring, CallbackFailure callbacks)
     {
         var module = decompiler.TypeSystem.MainModule;
         member = DecompilerFacts.ResolveMember(module, member.MetadataToken);
@@ -422,10 +432,10 @@ internal static class NodeDecompiler
         switch (member)
         {
             case IMethod { IsConstructor: true } ctor when ctor.DeclaringType.IsReferenceType != false:
-                decompiler.AstTransforms.Add(new ConstructorSelection { Kept = ctor });
+                decompiler.AstTransforms.Add(new ConstructorSelection { Kept = ctor, Callbacks = callbacks });
                 return decompiler.Decompile(MemberSelection.FieldsAndConstructors(declaring, ctor.IsStatic));
             case IField { IsConst: false } field:
-                decompiler.AstTransforms.Add(new FieldSelection { Kept = field });
+                decompiler.AstTransforms.Add(new FieldSelection { Kept = field, Callbacks = callbacks });
                 return decompiler.Decompile(MemberSelection.FieldsAndConstructors(declaring, field.IsStatic));
             default:
                 return decompiler.Decompile(member.MetadataToken);
@@ -703,7 +713,7 @@ internal static class NodeDecompiler
 
     private static void WriteXaml(ModuleReading reading, DocumentRequest.Baml baml, DocumentBuilder output, CancellationToken cancellationToken)
     {
-        var xaml = Baml.DecompileToText(reading, baml.Module, baml.Data, cancellationToken);
+        var xaml = Baml.DecompileToText(reading, baml.Module, baml.Data, output.Callbacks, cancellationToken);
         ResourceText.Write(output, xaml, ResourceSyntax.Xml);
         output.WriteLine();
     }
@@ -797,10 +807,10 @@ internal static class NodeDecompiler
     }
 
     // Tells the decompiler where in the DocumentBuilder each token lands, so that it can record where each node of the
-    // syntax tree was written.
+    // syntax tree was written: the app's code the library calls back (CD4).
     private sealed class LocatingTokenWriter(TokenWriter decorated, DocumentBuilder builder) : DecoratingTokenWriter(decorated), ILocatable
     {
-        public TextLocation Location => builder.Location;
+        public TextLocation Location => builder.Callbacks.Run(builder, static b => b.Location);
 
         public int Length => 0;
     }

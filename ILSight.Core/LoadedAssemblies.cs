@@ -123,10 +123,11 @@ public static class LoadedAssemblies
     }
 
     /// <summary>The resolver of what <paramref name="module"/> references, for the library to ask within the unit of
-    /// <paramref name="reading"/>: what it hands out is added to that reading.</summary>
-    internal static IAssemblyResolver CreateResolver(ModuleReading reading, LoadedModule module)
+    /// <paramref name="reading"/>: what it hands out is added to that reading. A failure of its own work marks
+    /// <paramref name="callbacks"/>, the read's (CD4).</summary>
+    internal static IAssemblyResolver CreateResolver(ModuleReading reading, LoadedModule module, CallbackFailure callbacks)
     {
-        return new ReadingResolver(GetLibrary(module), reading);
+        return new ReadingResolver(GetLibrary(module), reading) { Callbacks = callbacks };
     }
 
     /// <summary>The references of <paramref name="module"/> whose file was found but could not be read, which its type

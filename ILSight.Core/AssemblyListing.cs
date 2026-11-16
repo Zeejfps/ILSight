@@ -270,17 +270,19 @@ public static class AssemblyListing
         CancellationToken ct)
     {
         using var reading = LoadedAssemblies.BeginReading();
+        var callbacks = new CallbackFailure();
         Lookup<TooltipFacts> read;
         try
         {
             var resolved = await ResolveEntityAsync(list, reading, reference, ct);
-            read = resolved.Select(static r => Documentation.ReadTooltip(r.Entity, r.Assembly, r.TypeSystem));
+            read = resolved.Select(r => Documentation.ReadTooltip(r.Entity, r.Assembly, r.TypeSystem, callbacks));
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             throw;
         }
-        catch (Exception e)
+        // The app's builder the library wrote the declaration into threw: a bug, which goes on to the edge (CD4).
+        catch (Exception e) when (!callbacks.Failed)
         {
             return new Outcome<Lookup<CodeTooltip>>.Failed(e);
         }

@@ -14,9 +14,12 @@ internal sealed class ConstructorSelection : IAstTransform
 {
     public required IMethod Kept { get; init; }
 
+    /// <summary>What the transform marks when it throws: the app's code the decompiler calls back (CD4).</summary>
+    public required CallbackFailure Callbacks { get; init; }
+
     public void Run(AstNode rootNode, TransformContext context)
     {
-        KeepConstructor(Kept, rootNode);
+        Callbacks.Run((Kept, rootNode), static s => KeepConstructor(s.Kept, s.rootNode));
     }
 
     private static void KeepConstructor(IMethod ctor, AstNode rootNode)
