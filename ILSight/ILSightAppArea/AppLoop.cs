@@ -11,8 +11,10 @@ namespace ILSight.ILSightAppArea;
 /// and after each frame draws. The composition root builds it (<see cref="AppRoot.BuildLoop"/>); the window
 /// (<see cref="ILSightApp"/>) owns one, its startup hook calling <see cref="Start"/> after its own setup and each
 /// frame calling <see cref="BeforeDraw"/>, the draw, <see cref="AfterDraw"/> (which saves the changed settings and returns
-/// what the save came to), then its own chores; the test hosts build
-/// one and run the same. Building starts nothing.</summary>
+/// what the save came to), then its own chores; the test hosts build one and run the same. Its frame calls take what
+/// every host that runs frames has, the screen's state (<see cref="UiState"/>) and the frame's input
+/// (<see cref="IFrameHost"/>), never the window that draws it, so a host with no window calls the same ones and no
+/// second loop is written for it. Building starts nothing.</summary>
 [Edge]
 public sealed class AppLoop
 {
