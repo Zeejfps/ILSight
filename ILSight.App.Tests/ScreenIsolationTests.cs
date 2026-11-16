@@ -61,6 +61,18 @@ public sealed class ScreenIsolationTests : IDisposable
         Assert.Null(reached);
     }
 
+    [Fact]
+    public void A_walk_from_a_timer_the_app_holds_reaches_no_other_timers_target_through_the_processs_timer_queue()
+    {
+        var screen = new TableColumns(new TableColumn());
+        using var others = new Timer(static s => GC.KeepAlive(s), screen, TimeSpan.FromHours(1), Timeout.InfiniteTimeSpan);
+        using var held = new Timer(static _ => { }, null, TimeSpan.FromHours(1), Timeout.InfiniteTimeSpan);
+
+        var reached = FindScreenObject(Tuple.Create(held), []);
+
+        Assert.Null(reached);
+    }
+
     // The layouts the screen's panels hold and hand the dock widget, found as any reference is: they are of the
     // framework's type, which the app state may hold copies of, so the screen's own are told by identity.
     private static List<DockLayout> FindLayouts(Panels panels)
@@ -91,11 +103,11 @@ public sealed class ScreenIsolationTests : IDisposable
         return layouts;
     }
 
-    private static string? FindScreenObject(AppState appState, List<DockLayout> layouts)
+    private static string? FindScreenObject(object root, List<DockLayout> layouts)
     {
         var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
         var queue = new Queue<(object Value, string Path)>();
-        queue.Enqueue((appState, nameof(AppState)));
+        queue.Enqueue((root, root.GetType().Name));
         while (queue.TryDequeue(out var next))
         {
             if (IsOfScreen(next.Value, layouts))
@@ -165,12 +177,35 @@ public sealed class ScreenIsolationTests : IDisposable
                 }
 
                 var held = field.GetValue(value);
-                if (held is not null)
+                if (held is not null && !IsProcessWide(value, held))
                 {
                     yield return (held, $"{path}.{field.Name}");
                 }
             }
         }
+    }
+
+    // A link the runtime keeps from what the app holds into what the whole process shares, which isn't the app's state:
+    // a timer's queue, and its neighbours in that queue, the timers of everything else running (another test's screen
+    // among them, while its timer is due). Followed, a walk from the user themes' quiet timer reached whatever another
+    // test had waiting at that moment, so the test failed only now and then.
+    private static bool IsProcessWide(object holder, object held)
+    {
+        if (IsRuntimeType(held, TimerQueueType))
+        {
+            return true;
+        }
+
+        return IsRuntimeType(holder, TimerQueueTimerType) && IsRuntimeType(held, TimerQueueTimerType);
+    }
+
+    private const string TimerQueueType = "System.Threading.TimerQueue";
+    private const string TimerQueueTimerType = "System.Threading.TimerQueueTimer";
+
+    private static bool IsRuntimeType(object value, string fullName)
+    {
+        var type = value.GetType();
+        return type.Assembly == typeof(object).Assembly && type.FullName == fullName;
     }
 
     private static IEnumerable<(object Value, string Path)> ListElements(Array array, string path)
