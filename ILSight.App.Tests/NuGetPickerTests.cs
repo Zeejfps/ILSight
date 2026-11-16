@@ -365,8 +365,8 @@ public sealed class NuGetPickerTests : IDisposable
         var work = new BackgroundWork();
         using (posted.Install())
         {
-            AppFrames.StartFetching(new WorkflowRunner(work, new ErrorLog()), new FetchNuGetIconHandler(new FetchNuGetIconHandlerAdapter(_client)),
-                new ReadNuGetDetailsHandler(new ReadNuGetDetailsHandlerAdapter(_client)), picker.Browser);
+            new NuGetPickerFetcher(new WorkflowRunner(work, new ErrorLog()), picker, CreateSearchFeed(), new FetchNuGetIconHandler(new FetchNuGetIconHandlerAdapter(_client)),
+                new ReadNuGetDetailsHandler(new ReadNuGetDetailsHandlerAdapter(_client))).StartFetching();
         }
 
         Poll.Until(() => work.Outstanding.Count == 0, posted.Run);

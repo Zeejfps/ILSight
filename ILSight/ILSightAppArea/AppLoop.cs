@@ -1,4 +1,6 @@
 using ILSight.AssemblyArea;
+using ILSight.ExportArea;
+using ILSight.NuGetArea;
 using ILSight.UserArea;
 
 namespace ILSight.ILSightAppArea;
@@ -13,27 +15,33 @@ public sealed class AppLoop
 {
     private readonly AppState _appState;
     private readonly ListStart _start;
-    private readonly RunArgumentsTaking _runArguments;
-    private readonly AssemblyListLoading _listLoading;
-    private readonly UserThemeWatching _themeWatching;
-    private readonly UpdateChecking _updateChecking;
+    private readonly RunArgumentsInbox _runArgumentsInbox;
+    private readonly AssemblyListLoader _listLoader;
+    private readonly UserThemeWatcher _themeWatcher;
+    private readonly UpdateChecker _updateChecker;
+    private readonly TabDecompiler _tabDecompiler;
+    private readonly ExportFileChecker _exportFileChecker;
 
     /// <param name="appState">The app state the root built, its start recorded on it.</param>
     /// <param name="start">The start the root recorded on <paramref name="appState"/>: the active list's reopening
     /// begun, nothing read.</param>
-    /// <param name="runArguments">Takes the arguments of this run and of later ones.</param>
-    /// <param name="listLoading">Loads the open list's assemblies.</param>
-    /// <param name="themeWatching">Watches the user's theme folders.</param>
-    /// <param name="updateChecking">Looks for a newer version as the app starts.</param>
-    internal AppLoop(AppState appState, ListStart start, RunArgumentsTaking runArguments, AssemblyListLoading listLoading,
-        UserThemeWatching themeWatching, UpdateChecking updateChecking)
+    /// <param name="runArgumentsInbox">Holds the arguments of this run and of later ones.</param>
+    /// <param name="listLoader">Loads the open list's assemblies and the tabs showing them.</param>
+    /// <param name="themeWatcher">Watches the user's theme folders.</param>
+    /// <param name="updateChecker">Looks for a newer version as the app starts.</param>
+    /// <param name="tabDecompiler">Decompiles the open tabs again when the language or the options change.</param>
+    /// <param name="exportFileChecker">Looks at the disk for the export dialog's folder and key file.</param>
+    internal AppLoop(AppState appState, ListStart start, RunArgumentsInbox runArgumentsInbox, AssemblyListLoader listLoader,
+        UserThemeWatcher themeWatcher, UpdateChecker updateChecker, TabDecompiler tabDecompiler, ExportFileChecker exportFileChecker)
     {
         _appState = appState;
         _start = start;
-        _runArguments = runArguments;
-        _listLoading = listLoading;
-        _themeWatching = themeWatching;
-        _updateChecking = updateChecking;
+        _runArgumentsInbox = runArgumentsInbox;
+        _listLoader = listLoader;
+        _themeWatcher = themeWatcher;
+        _updateChecker = updateChecker;
+        _tabDecompiler = tabDecompiler;
+        _exportFileChecker = exportFileChecker;
     }
 
     /// <summary>Starts what the app runs from its start until it shuts down: takes the run arguments already waiting,
@@ -44,19 +52,40 @@ public sealed class AppLoop
         // The arguments before the list's reading: they decide from the list as on its way (a switch remembers it, a
         // clear drops its files on their way), so their prerequisite is the start recorded, the reopening begun and
         // nothing read; taken first, a switch or a clear stops that reading before it reads a file of the list it leaves.
-        _runArguments.TakeWaiting();
-        _listLoading.StartOpeningStartupList(_start);
-        _runArguments.StartTakingLaterRuns();
-        _themeWatching.StartWatching();
-        _updateChecking.CheckIfAutomatic(_appState.IsUpdateCheckAutomatic);
+        _runArgumentsInbox.ApplyWaiting();
+        _listLoader.StartOpeningStartupList(_start);
+        _runArgumentsInbox.StartApplyingLaterRuns();
+        _themeWatcher.StartWatching();
+        _updateChecker.CheckIfAutomatic(_appState.IsUpdateCheckAutomatic);
     }
 
-    /// <summary>What comes before <paramref name="screen"/> draws a frame in <paramref name="frame"/>.</summary>
+    /// <summary>What comes before <paramref name="screen"/> draws a frame in <paramref name="frame"/>: the screen takes
+    /// the theme, icons and strings the preferences pick, rebuilds the trees when the open assemblies or analyses
+    /// changed, takes what the open tabs show and the active tab; the commands the features queued for the screen run,
+    /// it adds and drops the views of the tabs opened and closed, revives the tabs listed again, and focuses another tab
+    /// when none is active; then the open assemblies are read again when the options that apply as they are read
+    /// changed, the tabs in front decompile again when the language or the options changed, the disk is looked at for
+    /// the export dialog's folder and key file when they changed, and the "open from NuGet" dialog hands the package it
+    /// downloaded over to be opened and starts what it asks for.</summary>
     public void BeforeDraw(UiState screen, IFrameHost frame)
     {
-        AppFrames.StartFrame(screen, _appState);
-        AppFrames.FollowNuGetPicker(frame, screen.AppCommands, screen.NuGetPicker, screen.SearchNuGetFeedHandler, screen.FetchNuGetIconHandler,
-            screen.ReadNuGetDetailsHandler, _appState);
+        var appState = _appState;
+        var navigation = appState.ListSession.Navigation;
+        screen.Appearance.ApplyThemeAndLanguage(Theming.ResolveTheme(appState), appState.Locale);
+        screen.Appearance.ApplyIconTheme(IconTheming.ResolveIconTheme(appState));
+        Trees.SyncTrees(screen.Tree, screen.Analyzer, screen.Shown, appState.ListSession.Assemblies, appState.ListSession.Analyzer, appState.ApiVisibility, appState.Reopens.Files);
+        navigation.UsePreviewTabs(screen.Display.Options.PreviewTabs);
+        screen.Documents.FollowViewContent();
+        screen.TabFocus.Follow(navigation.ActiveTab);
+        QueuedCommands.RunViewCommands(screen, appState);
+        screen.Panels.SyncTabViews(navigation);
+        _listLoader.ReviveClosedTabsListedAgain(screen.Documents);
+        screen.Panels.FocusNextTabIfNone(navigation, appState.Decompiler.Setup);
+        _listLoader.ReloadListWhenLoadOptionsChange(screen.Tree);
+        _tabDecompiler.DecompileOpenTabsAgainWhenSettingsChange(screen.Shown, screen.Panels);
+        _exportFileChecker.CheckExportFilesWhenFolderChanges(screen.ExportSetup);
+        NuGetPickerView.OpenDownloaded(screen.AppCommands, navigation, screen.NuGetPicker);
+        screen.NuGetFetcher.StartAskedNuGetWork(frame);
     }
 
     /// <summary>What comes after <paramref name="screen"/> drew a frame in <paramref name="frame"/>, the draw failing

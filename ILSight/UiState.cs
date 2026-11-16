@@ -133,17 +133,12 @@ public sealed class UiState : IUiState
     /// <summary>Reads the user's NuGet.Config for <see cref="NuGetPicker"/> the first time it opens.</summary>
     public required ReadNuGetSetupHandler ReadNuGetSetupHandler { get; init; }
 
-    /// <summary>Searches the feed for the page <see cref="NuGetPicker"/> asks.</summary>
-    public required SearchNuGetFeedHandler SearchNuGetFeedHandler { get; init; }
 
     /// <summary>Fetches the package <see cref="NuGetPicker"/> opens into the package cache.</summary>
     public required DownloadNuGetPackageHandler DownloadNuGetPackageHandler { get; init; }
 
-    /// <summary>Fetches the icons <see cref="NuGetPicker"/> shows.</summary>
-    public required FetchNuGetIconHandler FetchNuGetIconHandler { get; init; }
-
-    /// <summary>Reads the details of the package versions <see cref="NuGetPicker"/> shows.</summary>
-    public required ReadNuGetDetailsHandler ReadNuGetDetailsHandler { get; init; }
+    /// <summary>Starts the work <see cref="NuGetPicker"/> asks for: its searches, and the icons and details it shows.</summary>
+    public required NuGetPickerFetcher NuGetFetcher { get; init; }
 
     /// <summary>The "close assemblies" dialog.</summary>
     public AssemblyCloser Closer { get; } = new();

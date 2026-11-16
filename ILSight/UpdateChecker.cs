@@ -3,14 +3,14 @@ namespace ILSight;
 /// <summary>Looks for a newer version of the app in the background (<see cref="AppUpdates"/>) without the user
 /// asking, as the app starts.</summary>
 [Edge]
-public sealed class UpdateChecking
+public sealed class UpdateChecker
 {
     private readonly WorkflowRunner _workflows;
     private readonly AppUpdates _updates;
 
     /// <param name="workflows">Runs the check.</param>
     /// <param name="updates">What the app knows of its updates.</param>
-    internal UpdateChecking(WorkflowRunner workflows, AppUpdates updates)
+    internal UpdateChecker(WorkflowRunner workflows, AppUpdates updates)
     {
         _workflows = workflows;
         _updates = updates;

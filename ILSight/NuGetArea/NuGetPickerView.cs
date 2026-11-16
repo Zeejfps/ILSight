@@ -35,7 +35,7 @@ internal static class NuGetPickerView
     }
 
     /// <summary>Draws the dialog, over the search for what was typed, which starts before it draws (see
-    /// <see cref="AppFrames.FollowNuGetPicker"/>); then tells what it found whether it is still open, which stops
+    /// <see cref="NuGetPickerFetcher.StartAskedNuGetWork"/>); then tells what it found whether it is still open, which stops
     /// what it started once it is not, however it was closed, freeing the images of the icons it showed. The icons
     /// and details it showed for the first time are fetched from the next frame on, which it asks for.</summary>
     public static void Render(Ui ui, Appearance appearance, IAppCommandWriter commands, NuGetPicker nuGetPicker, DownloadNuGetPackageHandler downloadNuGetPackageHandler)
@@ -66,7 +66,7 @@ internal static class NuGetPickerView
         picker.IsOpen = false;
     }
 
-    // The frame edge starts fetching the icons and details shown for the first time (AppFrames.StartFetching).
+    // The frame edge starts fetching the icons and details shown for the first time (NuGetPickerFetcher.StartFetching).
     private static void AskForFetchingFrame(Ui ui, NuGetBrowser browser)
     {
         if (!browser.HasDownloadsToStart)

@@ -103,9 +103,10 @@ internal static class AppRoot
     /// once it has taken the arguments waiting in <paramref name="inbox"/>. Building it starts nothing.</summary>
     internal static AppLoop BuildLoop(AppState appState, ListStart start, Channel<RunArguments> inbox)
     {
-        return new AppLoop(appState, start, new RunArgumentsTaking(appState, inbox), new AssemblyListLoading(appState),
-            new UserThemeWatching(appState.Workflows, appState.UserThemes, appState.UserIconThemes),
-            new UpdateChecking(appState.Workflows, appState.Updates));
+        return new AppLoop(appState, start, new RunArgumentsInbox(appState, inbox), new AssemblyListLoader(appState),
+            new UserThemeWatcher(appState.Workflows, appState.UserThemes, appState.UserIconThemes),
+            new UpdateChecker(appState.Workflows, appState.Updates), new TabDecompiler(appState),
+            new ExportFileChecker(appState.Workflows, appState.CheckExportFilesHandler));
     }
 
     /// <summary>The app state restored from <paramref name="loadResult"/> over <paramref name="session"/>
@@ -320,7 +321,7 @@ internal static class AppRoot
         ProcessBrowser.IPorts? processes = null, AdapterHooks? hooks = null)
     {
         var reportError = (AppProblem problem) => Errors.Report(appState, problem);
-        var uiState = CreateUiState(appState.KeptScreen.View, appState.Work, reportError, appState.Session, nuGetRequests,
+        var uiState = CreateUiState(appState.KeptScreen.View, appState.Workflows, reportError, appState.Session, nuGetRequests,
             runtimeScan ?? new FrameworkPickerAdapter(reportError, appState.ListSession.Assemblies.Runtime), processes ?? new ProcessBrowserAdapter(reportError), hooks);
         ScreenSettings.RestoreScreen(uiState, appState.KeptScreen.View);
         AppFrames.FollowRestoredAppState(uiState, appState);
@@ -329,7 +330,7 @@ internal static class AppRoot
 
     // Restores, of what the settings kept of the screen, only its layout, display options, folded groups and filters;
     // the rest is restored after.
-    private static UiState CreateUiState(ViewSettings saved, BackgroundWork work, Action<AppProblem> reportError, BrowseSession session,
+    private static UiState CreateUiState(ViewSettings saved, WorkflowRunner workflows, Action<AppProblem> reportError, BrowseSession session,
         HttpMessageHandler? nuGetRequests, FrameworkBrowser.IPorts runtimeScan, ProcessBrowser.IPorts processes, AdapterHooks? hooks)
     {
         var appCommands = new AppCommandQueue();
@@ -339,6 +340,7 @@ internal static class AppRoot
         var documents = new DocumentViews();
         var tabFocus = new TabFocus();
         var search = new Search();
+        var nuGetPicker = new NuGetPicker { Browser = new NuGetBrowser() };
         var uiState = new UiState
         {
             AppCommands = appCommands,
@@ -354,12 +356,11 @@ internal static class AppRoot
             ReadMetadataPageHandler = new ReadMetadataPageHandler(new ReadMetadataPageHandlerAdapter()),
             ShippedLicenses = FindShippedLicenses(),
             Picker = new FrameworkPicker { Browser = new FrameworkBrowser(runtimeScan) },
-            NuGetPicker = new NuGetPicker { Browser = new NuGetBrowser() },
+            NuGetPicker = nuGetPicker,
             ReadNuGetSetupHandler = new ReadNuGetSetupHandler(new ReadNuGetSetupHandlerAdapter(reportError)),
-            SearchNuGetFeedHandler = new SearchNuGetFeedHandler(new SearchNuGetFeedHandlerAdapter(reportError, nuGet)),
             DownloadNuGetPackageHandler = new DownloadNuGetPackageHandler(new DownloadNuGetPackageHandlerAdapter(reportError, nuGet)),
-            FetchNuGetIconHandler = new FetchNuGetIconHandler(new FetchNuGetIconHandlerAdapter(nuGet)),
-            ReadNuGetDetailsHandler = new ReadNuGetDetailsHandler(new ReadNuGetDetailsHandlerAdapter(nuGet)),
+            NuGetFetcher = new NuGetPickerFetcher(workflows, nuGetPicker, new SearchNuGetFeedHandler(new SearchNuGetFeedHandlerAdapter(reportError, nuGet)),
+                new FetchNuGetIconHandler(new FetchNuGetIconHandlerAdapter(nuGet)), new ReadNuGetDetailsHandler(new ReadNuGetDetailsHandlerAdapter(nuGet))),
             ProcessPicker = new ProcessPicker { Browser = new ProcessBrowser(processes) },
             Display = new ScreenDisplay { Options = saved.Display ?? DisplayOptions.Default },
             Analyzer = new AnalyzerRows { AppCommands = appCommands },

@@ -188,7 +188,9 @@ public sealed class NuGetBrowserTests
     {
         var work = new BackgroundWork();
         var errors = new ErrorLog();
-        AppFrames.StartFetching(new WorkflowRunner(work, errors), new FetchNuGetIconHandler(ports), new ReadNuGetDetailsHandler(ports), browser);
+        var picker = new NuGetPicker { Browser = browser };
+        new NuGetPickerFetcher(new WorkflowRunner(work, errors), picker, new SearchNuGetFeedHandler(ports), new FetchNuGetIconHandler(ports),
+            new ReadNuGetDetailsHandler(ports)).StartFetching();
         await WorkflowRunnerTests.WaitUntilEndedAsync(work);
         return errors;
     }
