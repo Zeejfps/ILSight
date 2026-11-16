@@ -59,8 +59,8 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
         RunFrame(ui, MainView.Render);
     }
 
-    /// <summary>One frame: the loop's calls before <paramref name="draw"/>, the draw, and the loop's calls after it and
-    /// its save of the changed settings, which run even when the draw fails, so every command the draw queued before
+    /// <summary>One frame: the loop's calls before <paramref name="draw"/>, the draw, and the loop's calls after it,
+    /// ending in the loop's save of the changed settings, which run even when the draw fails, so every command the draw queued before
     /// failing starts: the state the draw changed already says it has. Then the window's own: it comes back to try the
     /// save again when a write waits or failed, draws at the chosen scale, code in the chosen font
     /// and icons in their fonts from the next frame, opens the web pages, files and folders asked for, comes to the
@@ -70,8 +70,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
         _frame.Enter(ui);
         _loop.BeforeDraw(ui.State, _frame);
         Draw(ui, draw);
-        _loop.AfterDraw(ui.State, _frame);
-        var settingsSave = _loop.SaveSettingsIfChanged(_frame);
+        var settingsSave = _loop.AfterDraw(ui.State, _frame);
         RetrySaveWhenAsked(ui, settingsSave);
         DrawAtChosenScale(ui, ui.State.Display);
         DrawCodeInChosenFont(ui, ui.State.Display, ui.State.Shown);

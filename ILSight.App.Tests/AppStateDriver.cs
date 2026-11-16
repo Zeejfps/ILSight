@@ -295,15 +295,13 @@ internal sealed class AppStateDriver : IFrameHost
     }
 
     /// <summary>Runs a frame of the app's loop as the window does, with no draw between: the loop's calls before a draw
-    /// (<see cref="AppLoop.BeforeDraw"/>), then after it (<see cref="AppLoop.AfterDraw"/>) and its save
-    /// (<see cref="AppLoop.SaveSettingsIfChanged"/>), at the driver's time, keeping what the save came to
-    /// (<see cref="Autosaved"/>).</summary>
+    /// (<see cref="AppLoop.BeforeDraw"/>), then after it (<see cref="AppLoop.AfterDraw"/>), whose last step saves the
+    /// changed settings at the driver's time, keeping what the save came to (<see cref="Autosaved"/>).</summary>
     public void NextFrame()
     {
         using var turn = _posted.Install();
         _loop.BeforeDraw(Ui, this);
-        _loop.AfterDraw(Ui, this);
-        Autosaved = _loop.SaveSettingsIfChanged(this);
+        Autosaved = _loop.AfterDraw(Ui, this);
     }
 
     // The driver's frames run when the test pumps or steps: a frame asked for is the test's to run.

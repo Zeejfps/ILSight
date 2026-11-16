@@ -10,7 +10,8 @@ namespace ILSight.ILSightAppArea;
 /// <summary>The app's loop, the one sequence every host that runs the whole app runs: its start, and the calls before
 /// and after each frame draws. The composition root builds it (<see cref="AppRoot.BuildLoop"/>); the window
 /// (<see cref="ILSightApp"/>) owns one, its startup hook calling <see cref="Start"/> after its own setup and each
-/// frame calling <see cref="BeforeDraw"/>, the draw, <see cref="AfterDraw"/>, then its own chores; the test hosts build
+/// frame calling <see cref="BeforeDraw"/>, the draw, <see cref="AfterDraw"/> (which saves the changed settings and returns
+/// what the save came to), then its own chores; the test hosts build
 /// one and run the same. Building starts nothing.</summary>
 [Edge]
 public sealed class AppLoop
@@ -96,9 +97,10 @@ public sealed class AppLoop
     /// since the last frame (the type systems of the modules listed, the children of the tree's nodes shown loading, the
     /// searches of the queries typed, the tooltips of the references hovered in code, the sorts, filters and pages of
     /// the metadata grids, the presets the lists dialog's menu opened to); the app runs what the screen asked of it,
-    /// asking for another frame while there is more to show. The host saves the changed settings next
-    /// (<see cref="SaveSettingsIfChanged"/>).</summary>
-    public void AfterDraw(UiState screen, IFrameHost frame)
+    /// asking for another frame while there is more to show; last, the settings are saved when they changed, at
+    /// <paramref name="frame"/>'s time. Returns what that save came to, for a host with frames to come back when a
+    /// write waits or failed: the save is the loop's step, so every host that runs a frame saves.</summary>
+    public Saving AfterDraw(UiState screen, IFrameHost frame)
     {
         var appState = _appState;
         var workflows = appState.Workflows;
@@ -115,13 +117,6 @@ public sealed class AppLoop
         Commands.StartScanningPresets(workflows, screen.Presets);
         QueuedCommands.RunAppCommandsAndRedraw(frame, screen.AppCommands, appState);
         QueuedCommands.RequestFrameWhileViewCommandsWait(frame, appState.ViewCommands);
-    }
-
-    /// <summary>The frame's last call, after <see cref="AfterDraw"/>: saves the settings when they changed, at
-    /// <paramref name="frame"/>'s time; returns what the save came to, for a host with frames to come back when a write
-    /// waits or failed.</summary>
-    public Saving SaveSettingsIfChanged(IFrameHost frame)
-    {
-        return _appState.SettingsSaving.SaveIfChanged(_appState, frame.Now);
+        return appState.SettingsSaving.SaveIfChanged(appState, frame.Now);
     }
 }
