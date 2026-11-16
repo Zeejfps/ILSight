@@ -61,6 +61,23 @@ public sealed class AnalysisTests
     }
 
     [Fact]
+    public async Task A_saved_symbol_the_library_cannot_read_says_its_module_unreadable_with_why()
+    {
+        using var temp = new TempDir();
+        var grow = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Circle", "Grow");
+        var unreadablePath = BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, grow);
+        var path = AssemblyPath.Of(unreadablePath);
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var anchor = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = path, Token = MetadataTokens.GetToken(grow) };
+
+        var found = await Analyzers.FindAsync(list, anchor, CancellationToken.None);
+
+        var unreadable = Assert.IsType<Lookup<AnalysisSymbol>.Unreadable>(found.GetValue());
+        Assert.Equal(path, unreadable.Module.Module.FilePath);
+        Assert.IsType<BadImageFormatException>(unreadable.Module.Why);
+    }
+
+    [Fact]
     public async Task An_analysis_reaching_a_member_the_library_cannot_read_names_its_module_partly_read_saying_why()
     {
         using var temp = new TempDir();

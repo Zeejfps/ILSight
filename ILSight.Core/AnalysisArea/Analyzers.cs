@@ -180,8 +180,9 @@ public static class Analyzers
 
     /// <summary>The type or member <paramref name="definition"/> names, loading its assembly's file
     /// without listing it, once the read of its type system ended; not found when the file is gone or its module has
-    /// no such row, unreadable when the library could not read the module; a file there that can't be read, and what
-    /// else the library throws resolving or describing it, <see cref="Outcome{T}.Failed"/>.</summary>
+    /// no such row; unreadable, with why, when the library could not read the module, or throws checking the saved
+    /// token, resolving it or describing what it names (the decompiler's every failure on the data is the data's, as
+    /// ILSight states); a file there that can't be opened, <see cref="Outcome{T}.Failed"/>.</summary>
     public static Task<Outcome<Lookup<AnalysisSymbol>>> FindAsync(AssemblyList list, CodeAnchor definition, CancellationToken ct)
     {
         return FindAsync(list, definition, Kinds, ct);
@@ -215,9 +216,9 @@ public static class Analyzers
             static _ => new Outcome<Lookup<AnalysisSymbol>>.Ok(new Lookup<AnalysisSymbol>.NotFound()));
     }
 
-    // Whether the saved token still names a row is asked of the module first; what the library throws resolving one
-    // that does is a failure: the module's own as unreadable, the rest with why. The analyses offered are the app's
-    // decision, made after the catch.
+    // Whether the saved token still names a row is asked of the module first; what the library throws checking it,
+    // resolving one that does or reading its facts is the module unreadable, with why. The analyses offered are the
+    // app's decision, made after the catch.
     private static Outcome<Lookup<AnalysisSymbol>> Find(LoadedModule assembly, MetadataModule main, CodeAnchor definition,
         IReadOnlyList<AnalysisKind> table, CancellationToken ct)
     {
@@ -232,17 +233,13 @@ public static class Analyzers
             var entity = main.ResolveEntity(MetadataTokens.EntityHandle(definition.Token));
             facts = entity is not null ? ReadFacts(entity) : null;
         }
-        catch (BadImageFormatException e)
-        {
-            return new Outcome<Lookup<AnalysisSymbol>>.Ok(new Lookup<AnalysisSymbol>.Unreadable { Module = new UnreadableModule { Module = assembly, Why = e } });
-        }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             throw;
         }
         catch (Exception e)
         {
-            return new Outcome<Lookup<AnalysisSymbol>>.Failed(e);
+            return new Outcome<Lookup<AnalysisSymbol>>.Ok(new Lookup<AnalysisSymbol>.Unreadable { Module = new UnreadableModule { Module = assembly, Why = e } });
         }
 
         return new Outcome<Lookup<AnalysisSymbol>>.Ok(Lookup.FromNullable(facts is not null ? Compose(facts, table) : null));
