@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using ICSharpCode.Decompiler.IL;
 using ICSharpCode.Decompiler.Output;
@@ -95,31 +96,21 @@ public static class ILSpyTree
     /// when its file is gone or has neither (a token past the end of its table names nothing); unreadable when the
     /// library could not read the module either is looked for in, and the other found nothing; a file there that can't
     /// be read, children on the way that failed to build (never not found, nor an ancestor, for what they could hold),
-    /// and what else the library throws looking, <see cref="Outcome{T}.Failed"/>. The cancellation of <paramref name="ct"/> is let through.</summary>
+    /// and what else the library throws reading the entity the token names, <see cref="Outcome{T}.Failed"/>. Each read
+    /// of the library on the way is under its own catch, the next step chosen after it, so a bug of the app's on the
+    /// way goes on to the edge. The cancellation of <paramref name="ct"/> is let through.</summary>
     public static async Task<Outcome<Lookup<BrowseNode>>> LocateAsync(AssemblyList list, BrowseSession session, AssemblyPath filePath,
         IReadOnlyList<string>? treePath, uint token, string memberName, CancellationToken ct)
     {
         var byPath = NotFound;
-        Outcome<Lookup<BrowseNode>> byToken;
-        try
+        if (treePath is not null && treePath.Count > 0)
         {
-            if (treePath is not null && treePath.Count > 0)
-            {
-                byPath = await FindAsync(list, session, treePath, ct);
-            }
+            byPath = await FindAsync(list, session, treePath, ct);
+        }
 
-            byToken = byPath is Outcome<Lookup<BrowseNode>>.Ok { Value: Lookup<BrowseNode>.Found }
-                ? byPath
-                : await FindEntityAsync(list, session, filePath, token, memberName, ct);
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception e)
-        {
-            return new Outcome<Lookup<BrowseNode>>.Failed(e);
-        }
+        var byToken = byPath is Outcome<Lookup<BrowseNode>>.Ok { Value: Lookup<BrowseNode>.Found }
+            ? byPath
+            : await FindEntityAsync(list, session, filePath, token, memberName, ct);
 
         // What the token finds wins; when it finds nothing, what the path came to.
         return byToken is Outcome<Lookup<BrowseNode>>.Ok { Value: Lookup<BrowseNode>.NotFound } ? byPath : byToken;
@@ -136,13 +127,18 @@ public static class ILSpyTree
             return NotFound;
         }
 
-        var assembly = FindModule(list, filePath);
-        if (assembly is null)
+        var loaded = FindModule(list, filePath);
+        if (loaded is Outcome<Lookup<LoadedModule>>.Failed failed)
+        {
+            return new Outcome<Lookup<BrowseNode>>.Failed(failed.Error);
+        }
+
+        if (loaded is not Outcome<Lookup<LoadedModule>>.Ok { Value: Lookup<LoadedModule>.Found assembly })
         {
             return NotFound;
         }
 
-        var root = await BrowseSessions.EnsureRootAsync(session, assembly, ct);
+        var root = await BrowseSessions.EnsureRootAsync(session, assembly.Value, ct);
         Outcome<Lookup<BrowseNode>> reached = new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Found { Value = root });
         for (var i = 1; i < path.Count; i++)
         {
@@ -165,12 +161,18 @@ public static class ILSpyTree
             return NotFound;
         }
 
-        var assembly = FindModule(list, filePath);
-        if (assembly is null)
+        var loaded = FindModule(list, filePath);
+        if (loaded is Outcome<Lookup<LoadedModule>>.Failed failed)
+        {
+            return new Outcome<Lookup<BrowseNode>>.Failed(failed.Error);
+        }
+
+        if (loaded is not Outcome<Lookup<LoadedModule>>.Ok { Value: Lookup<LoadedModule>.Found found })
         {
             return NotFound;
         }
 
+        var assembly = found.Value;
         using var reading = LoadedAssemblies.BeginReading();
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
         return await read.Match(
@@ -182,49 +184,96 @@ public static class ILSpyTree
     private static async Task<Outcome<Lookup<BrowseNode>>> FindEntityAsync(BrowseSession session, LoadedModule assembly, MetadataModule main,
         uint token, string memberName, CancellationToken ct)
     {
-        var resolved = Resolve(assembly, main, (int)token);
-        if (resolved is Lookup<IEntity>.Unreadable unreadable)
+        var resolved = ResolveEntity(assembly, main, (int)token);
+        if (resolved is Outcome<Lookup<IEntity>>.Failed failed)
+        {
+            return new Outcome<Lookup<BrowseNode>>.Failed(failed.Error);
+        }
+
+        if (resolved is Outcome<Lookup<IEntity>>.Ok { Value: Lookup<IEntity>.Unreadable unreadable })
         {
             return new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Unreadable { Module = unreadable.Module });
         }
 
-        if (resolved is not Lookup<IEntity>.Found found)
+        if (resolved is not Outcome<Lookup<IEntity>>.Ok { Value: Lookup<IEntity>.Found found })
         {
             return NotFound;
         }
 
-        // After a rebuild the token can name another entity.
-        var entity = found.Value;
-        if (entity.FullName != memberName)
+        var read = ReadSavedEntity(found.Value);
+        if (read is not Outcome<SavedEntity>.Ok saved)
+        {
+            return new Outcome<Lookup<BrowseNode>>.Failed(((Outcome<SavedEntity>.Failed)read).Error);
+        }
+
+        // After a rebuild the token can name another entity: the app's check, on the name read.
+        if (saved.Value.FullName != memberName)
         {
             return NotFound;
         }
 
-        return await BrowseSessions.FindOrAncestorAsync(session, assembly, main, entity.MetadataToken, ct);
+        return await BrowseSessions.FindOrAncestorAsync(session, assembly, main, saved.Value.Handle, ct);
     }
 
-    // Whether the saved token still names a row is asked of the module first; the library failing to read the module
-    // resolving one that does is the module's, unreadable, and what else it throws, a failure, goes to the caller.
-    private static Lookup<IEntity> Resolve(LoadedModule assembly, MetadataModule main, int token)
+    // What the bookmark's token names, read out of the module: its full name and handle.
+    private sealed record SavedEntity
     {
-        if (!SavedTokens.IsInModule(main, token))
-        {
-            return new Lookup<IEntity>.NotFound();
-        }
+        public required string FullName { get; init; }
 
+        public required EntityHandle Handle { get; init; }
+    }
+
+    // The library's resolving of token, under its own catch: none when it names no row of the module or the row
+    // resolves to nothing; the module unreadable, with why, when the library failed reading it with
+    // BadImageFormatException; what else it throws, the lookup's failure, with why.
+    private static Outcome<Lookup<IEntity>> ResolveEntity(LoadedModule assembly, MetadataModule main, int token)
+    {
         try
         {
-            return Lookup.FromNullable(main.ResolveEntity(MetadataTokens.EntityHandle(token)));
+            if (!SavedTokens.IsInModule(main, token))
+            {
+                return new Outcome<Lookup<IEntity>>.Ok(new Lookup<IEntity>.NotFound());
+            }
+
+            var entity = main.ResolveEntity(MetadataTokens.EntityHandle(token));
+            return new Outcome<Lookup<IEntity>>.Ok(Lookup.FromNullable(entity));
         }
         catch (BadImageFormatException e)
         {
-            return new Lookup<IEntity>.Unreadable { Module = new UnreadableModule { Module = assembly, Why = e } };
+            return new Outcome<Lookup<IEntity>>.Ok(new Lookup<IEntity>.Unreadable { Module = new UnreadableModule { Module = assembly, Why = e } });
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new Outcome<Lookup<IEntity>>.Failed(e);
         }
     }
 
-    // A file that is gone has no node; one there that can't be read throws, a failure.
-    private static LoadedModule? FindModule(AssemblyList list, AssemblyPath filePath)
+    // The library's read of the resolved entity's full name and handle, under its own catch: what it throws (a name it
+    // decodes on first use), the lookup's failure, with why.
+    private static Outcome<SavedEntity> ReadSavedEntity(IEntity entity)
     {
-        return AssemblyListing.FindAssemblyToLookIn(list, filePath);
+        try
+        {
+            return new Outcome<SavedEntity>.Ok(new SavedEntity { FullName = entity.FullName, Handle = entity.MetadataToken });
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new Outcome<SavedEntity>.Failed(e);
+        }
+    }
+
+    // The file at filePath loaded without listing it, under its own catch: the module; not found when no file is there or it is a
+    // package; a file there that can't be read, the lookup's failure with why.
+    private static Outcome<Lookup<LoadedModule>> FindModule(AssemblyList list, AssemblyPath filePath)
+    {
+        try
+        {
+            var module = AssemblyListing.FindAssemblyToLookIn(list, filePath);
+            return new Outcome<Lookup<LoadedModule>>.Ok(Lookup.FromNullable(module));
+        }
+        catch (AssemblyLoadException e)
+        {
+            return new Outcome<Lookup<LoadedModule>>.Failed(e);
+        }
     }
 }

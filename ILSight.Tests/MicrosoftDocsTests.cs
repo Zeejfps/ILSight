@@ -50,4 +50,18 @@ public sealed class MicrosoftDocsTests
         Assert.Null(MicrosoftDocs.FindPage(await assembly.ReadRootAsync()));
         Assert.Null(MicrosoftDocs.FindPage(await assembly.ReadRootAsync().GetChildAsync("References")));
     }
+
+    [Fact]
+    public async Task A_member_whose_name_the_library_cannot_read_has_no_page_and_says_why_as_its_failure()
+    {
+        using var temp = new TempDir();
+        var add = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Calculator`1", "Add");
+        var unreadablePath = BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, add);
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var reference = new CodeReference.Entity { Name = "Add", Kind = EntityKind.Method, FilePath = AssemblyPath.Of(unreadablePath), Target = add };
+
+        var page = await AssemblyListing.FindApiReferencePageAsync(list, reference, CancellationToken.None);
+
+        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<Lookup<string>>.Failed>(page).Error);
+    }
 }

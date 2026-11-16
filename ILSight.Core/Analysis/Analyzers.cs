@@ -327,6 +327,9 @@ public static class Analyzers
 
     // The analysis reads the library's symbols as it is enumerated, and reading each one's facts reads it again; the
     // description is composed from the facts outside the catch, so that a bug of the app's is not the library's.
+    // Left inside the catch: the analyzers' own walk (ILSpy's analyzers, adapted), whose every test of a candidate reads
+    // the type system as it decodes the metadata (a type's bases, a member's overrides, a body's tokens resolved), so
+    // its reads can't be taken out ahead of it without a copy of the type system.
     private static Outcome ReadEach(AnalysisRun run, AnalyzerContext context, Action<AnalysisSymbol> take, CancellationToken ct)
     {
         IEnumerator<ISymbol>? each = null;

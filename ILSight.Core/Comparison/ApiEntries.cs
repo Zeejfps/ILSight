@@ -4,28 +4,28 @@ using ICSharpCode.Decompiler.TypeSystem;
 namespace ILSight.Core.Comparison;
 
 /// <summary>The entries of a comparison, built by matching each side's namespaces, types and members by
-/// <see cref="ApiKeys"/> and telling them apart by <see cref="ApiDeclarations"/>.</summary>
+/// <see cref="ApiKeys"/> and telling them apart by <see cref="ApiDeclarations"/>. Each side's API is read out of the
+/// library's objects first, under its own catch (<c>ReadApi</c>); the matching, ordering and counting are done after,
+/// on what was read.</summary>
 public static class ApiEntries
 {
     private const string GlobalNamespaceText = "-";
     private const string ModuleTypeName = "<Module>";
 
-    private static readonly Dictionary<string, Compared> None = new();
+    private static readonly Dictionary<string, ApiFacts> None = new();
 
-    /// <summary>The namespaces either module puts types in that <paramref name="scope"/> takes in, sorted by name.</summary>
-    public static List<ApiEntry> CompareNamespaces(MetadataModule left, MetadataModule right, ApiScope scope, CancellationToken cancellationToken)
+    // The namespaces either module's API puts types in, sorted by name: the app's matching, on what each read took out.
+    private static List<ApiEntry> CompareNamespaces(ModuleApi left, ModuleApi right, CancellationToken cancellationToken)
     {
-        var leftTypes = ListTypesByNamespace(left, scope);
-        var rightTypes = ListTypesByNamespace(right, scope);
-        var names = ListPresence(leftTypes.Keys, rightTypes.Keys)
+        var names = ListPresence(left.TypesByNamespace.Keys, right.TypesByNamespace.Keys)
             .OrderBy(static n => n.Name, NaturalStringComparer.Instance)
             .ToList();
         var entries = new List<ApiEntry>();
         foreach (var (name, presence) in names)
         {
-            var leftOnes = leftTypes.GetValueOrDefault(name) ?? None;
-            var rightOnes = rightTypes.GetValueOrDefault(name) ?? None;
-            var children = CompareAll(leftOnes, rightOnes, scope, cancellationToken);
+            var leftOnes = KeyOf(left.TypesByNamespace.GetValueOrDefault(name));
+            var rightOnes = KeyOf(right.TypesByNamespace.GetValueOrDefault(name));
+            var children = CompareAll(leftOnes, rightOnes, cancellationToken);
             entries.Add(CreateNamespace(NamespaceText(name), presence, children));
         }
         return entries;
@@ -51,11 +51,33 @@ public static class ApiEntries
         return names;
     }
 
-    private static Dictionary<string, Dictionary<string, Compared>> ListTypesByNamespace(MetadataModule module, ApiScope scope)
+    // The library's read of one module's API, under its own catch: the types scope takes in, by namespace, each with
+    // what is shown of it and the members it holds, read out into the app's values; what the library throws reading
+    // them, the comparison's failure. Nothing is matched, ordered or counted here: that is the comparison's, after it.
+    private static Outcome<ModuleApi> ReadApi(MetadataModule module, ApiScope scope, CancellationToken cancellationToken)
     {
-        var byNamespace = new Dictionary<string, Dictionary<string, Compared>>(StringComparer.Ordinal);
-        foreach (var type in module.TopLevelTypeDefinitions)
+        try
         {
+            var types = ReadTypesByNamespace(module.TopLevelTypeDefinitions, scope, cancellationToken);
+            return new Outcome<ModuleApi>.Ok(new ModuleApi { TypesByNamespace = types });
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            return new Outcome<ModuleApi>.Failed(e);
+        }
+    }
+
+    private static Dictionary<string, List<ApiFacts>> ReadTypesByNamespace(IEnumerable<ITypeDefinition> types, ApiScope scope,
+        CancellationToken cancellationToken)
+    {
+        var byNamespace = new Dictionary<string, List<ApiFacts>>(StringComparer.Ordinal);
+        foreach (var type in types)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
             if (IsModuleType(type))
             {
                 continue;
@@ -66,31 +88,86 @@ public static class ApiEntries
                 continue;
             }
 
-            var types = FindOrAddNamespace(byNamespace, type.Namespace);
-            AddByKey(types, type);
+            var facts = ReadFacts(type, scope, cancellationToken);
+            if (facts is null)
+            {
+                continue;
+            }
+
+            var namespaceTypes = FindOrAddNamespace(byNamespace, type.Namespace);
+            namespaceTypes.Add(facts);
         }
         return byNamespace;
     }
 
-    // Numbered when others took the key before it, so none is dropped; those that share a key are matched in the order
-    // the metadata lists them.
-    private static void AddByKey(Dictionary<string, Compared> entities, IEntity entity)
+    // What the comparison needs of entity, read whole; null for one no reference can point at, which isn't compared.
+    private static ApiFacts? ReadFacts(IEntity entity, ApiScope scope, CancellationToken cancellationToken)
     {
         var reference = CodeReferences.Find(entity);
         if (reference == null)
         {
-            return;
+            return null;
         }
 
-        var compared = new Compared { Entity = entity, Reference = reference };
-        AddUnderFreeKey(entities, ApiKeys.Of(entity), compared);
+        return new ApiFacts
+        {
+            Key = ApiKeys.Of(entity),
+            Reference = reference,
+            Declaration = ApiDeclarations.Of(entity),
+            Shape = EntityText.SymbolShapeOf(entity),
+            Text = EntityText.Label(entity),
+            Accessibility = entity.Accessibility,
+            Children = ReadChildren(entity, scope, cancellationToken),
+        };
     }
 
-    private static void AddUnderFreeKey(Dictionary<string, Compared> entities, string key, Compared compared)
+    private static List<ApiFacts> ReadChildren(IEntity entity, ApiScope scope, CancellationToken cancellationToken)
+    {
+        var children = new List<ApiFacts>();
+        if (entity is not ITypeDefinition type)
+        {
+            return children;
+        }
+
+        foreach (var member in ListMembers(type))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!IsTakenIn(member, scope))
+            {
+                continue;
+            }
+
+            var facts = ReadFacts(member, scope, cancellationToken);
+            if (facts is not null)
+            {
+                children.Add(facts);
+            }
+        }
+        return children;
+    }
+
+    // Keyed for matching, numbered when others took the key before it, so none is dropped; those that share a key are
+    // matched in the order the metadata lists them.
+    private static Dictionary<string, ApiFacts> KeyOf(List<ApiFacts>? read)
+    {
+        if (read is null)
+        {
+            return None;
+        }
+
+        var keyed = new Dictionary<string, ApiFacts>(StringComparer.Ordinal);
+        foreach (var facts in read)
+        {
+            AddUnderFreeKey(keyed, facts.Key, facts);
+        }
+        return keyed;
+    }
+
+    private static void AddUnderFreeKey(Dictionary<string, ApiFacts> entities, string key, ApiFacts facts)
     {
         var candidate = key;
         var number = 2;
-        while (!entities.TryAdd(candidate, compared))
+        while (!entities.TryAdd(candidate, facts))
         {
             candidate = $"{key}#{number}";
             number++;
@@ -123,14 +200,14 @@ public static class ApiEntries
         return EntityText.IsPublicApi(entity);
     }
 
-    private static Dictionary<string, Compared> FindOrAddNamespace(Dictionary<string, Dictionary<string, Compared>> byNamespace, string name)
+    private static List<ApiFacts> FindOrAddNamespace(Dictionary<string, List<ApiFacts>> byNamespace, string name)
     {
         if (byNamespace.TryGetValue(name, out var types))
         {
             return types;
         }
 
-        types = new Dictionary<string, Compared>(StringComparer.Ordinal);
+        types = [];
         byNamespace.Add(name, types);
         return types;
     }
@@ -145,8 +222,7 @@ public static class ApiEntries
         return name;
     }
 
-    private static List<ApiEntry> CompareAll(Dictionary<string, Compared> left, Dictionary<string, Compared> right, ApiScope scope,
-        CancellationToken cancellationToken)
+    private static List<ApiEntry> CompareAll(Dictionary<string, ApiFacts> left, Dictionary<string, ApiFacts> right, CancellationToken cancellationToken)
     {
         var entries = new List<ApiEntry>(left.Count + right.Count);
         foreach (var (key, leftOne) in left)
@@ -154,11 +230,11 @@ public static class ApiEntries
             cancellationToken.ThrowIfCancellationRequested();
             if (right.TryGetValue(key, out var rightOne))
             {
-                entries.Add(CompareBoth(leftOne, rightOne, scope, cancellationToken));
+                entries.Add(CompareBoth(leftOne, rightOne, cancellationToken));
             }
             else
             {
-                entries.Add(Removed(leftOne, scope, cancellationToken));
+                entries.Add(Removed(leftOne, cancellationToken));
             }
         }
         foreach (var (key, rightOne) in right)
@@ -166,7 +242,7 @@ public static class ApiEntries
             cancellationToken.ThrowIfCancellationRequested();
             if (!left.ContainsKey(key))
             {
-                entries.Add(Added(rightOne, scope, cancellationToken));
+                entries.Add(Added(rightOne, cancellationToken));
             }
         }
         // Sorted as the tree sorts them.
@@ -176,34 +252,31 @@ public static class ApiEntries
             .ToList();
     }
 
-    private static ApiEntry Removed(Compared left, ApiScope scope, CancellationToken cancellationToken)
+    private static ApiEntry Removed(ApiFacts left, CancellationToken cancellationToken)
     {
-        var children = CompareAll(ListChildren(left, scope), None, scope, cancellationToken);
+        var children = CompareAll(KeyOf(left.Children), None, cancellationToken);
         return EntryOf(left, new ApiSides.LeftOnly(SideOf(left)), children);
     }
 
-    private static ApiEntry Added(Compared right, ApiScope scope, CancellationToken cancellationToken)
+    private static ApiEntry Added(ApiFacts right, CancellationToken cancellationToken)
     {
-        var children = CompareAll(None, ListChildren(right, scope), scope, cancellationToken);
+        var children = CompareAll(None, KeyOf(right.Children), cancellationToken);
         return EntryOf(right, new ApiSides.RightOnly(SideOf(right)), children);
     }
 
-    private static ApiEntry CompareBoth(Compared left, Compared right, ApiScope scope, CancellationToken cancellationToken)
+    private static ApiEntry CompareBoth(ApiFacts left, ApiFacts right, CancellationToken cancellationToken)
     {
-        var children = CompareAll(ListChildren(left, scope), ListChildren(right, scope), scope, cancellationToken);
+        var children = CompareAll(KeyOf(left.Children), KeyOf(right.Children), cancellationToken);
         return EntryOf(right, new ApiSides.Both { Left = SideOf(left), Right = SideOf(right) }, children);
     }
 
-    private static ApiEntry EntryOf(Compared compared, ApiSides sides, List<ApiEntry> children)
+    private static ApiEntry EntryOf(ApiFacts facts, ApiSides sides, List<ApiEntry> children)
     {
-        var shown = compared.Entity;
-        var shape = EntityText.SymbolShapeOf(shown);
-        var accessibility = EntityText.Map(shown.Accessibility);
         return new ApiEntry.Entity
         {
-            Shape = shape,
-            Text = EntityText.Label(shown),
-            Accessibility = accessibility,
+            Shape = facts.Shape,
+            Text = facts.Text,
+            Accessibility = EntityText.Map(facts.Accessibility),
             Children = children,
             Sides = sides,
         };
@@ -225,7 +298,8 @@ public static class ApiEntries
     /// what <paramref name="scope"/> says, once the reads of both assemblies' type systems ended; the first the library
     /// could not read, when it could not, with nothing compared. Reads both assemblies' types: call it off the UI
     /// thread. A unit reading both: the first released (closed) before, when one was, with nothing compared. What the
-    /// library throws reading their APIs is <see cref="Outcome{T}.Failed"/>; the cancellation of
+    /// library throws reading their APIs is <see cref="Outcome{T}.Failed"/>, each side's read under its own catch; the
+    /// comparison of what was read runs after both, so a bug of the app's goes on to the edge. The cancellation of
     /// <paramref name="cancellationToken"/> is let through.</summary>
     public static async Task<Outcome<TypeSystemWork<ApiDiff>>> CompareAsync(LoadedModule left, LoadedModule right, ApiScope scope,
         CancellationToken cancellationToken)
@@ -243,21 +317,21 @@ public static class ApiEntries
             return new Outcome<TypeSystemWork<ApiDiff>>.Ok(new TypeSystemWork<ApiDiff>.Unreadable { Module = reads.Unreadable[0] });
         }
 
-        List<ApiEntry> namespaces;
-        try
+        var leftApi = ReadApi(reads.Read[LoadedAssemblies.GetFile(left)].MainModule, scope, cancellationToken);
+        if (leftApi is Outcome<ModuleApi>.Failed leftFailed)
         {
-            namespaces = CompareNamespaces(reads.Read[LoadedAssemblies.GetFile(left)].MainModule, reads.Read[LoadedAssemblies.GetFile(right)].MainModule, scope,
-                cancellationToken);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception e)
-        {
-            return new Outcome<TypeSystemWork<ApiDiff>>.Failed(e);
+            return new Outcome<TypeSystemWork<ApiDiff>>.Failed(leftFailed.Error);
         }
 
+        var rightApi = ReadApi(reads.Read[LoadedAssemblies.GetFile(right)].MainModule, scope, cancellationToken);
+        if (rightApi is Outcome<ModuleApi>.Failed rightFailed)
+        {
+            return new Outcome<TypeSystemWork<ApiDiff>>.Failed(rightFailed.Error);
+        }
+
+        // Matched, ordered and counted after both reads, outside their catches: a bug of the app's comparison goes on
+        // to the edge, never said as the library's failure on either assembly.
+        var namespaces = CompareNamespaces(((Outcome<ModuleApi>.Ok)leftApi).Value, ((Outcome<ModuleApi>.Ok)rightApi).Value, cancellationToken);
         return new Outcome<TypeSystemWork<ApiDiff>>.Ok(new TypeSystemWork<ApiDiff>.Done { Value = Compare(left, right, scope, namespaces) });
     }
 
@@ -275,27 +349,9 @@ public static class ApiEntries
         };
     }
 
-    private static ApiSide SideOf(Compared compared)
+    private static ApiSide SideOf(ApiFacts facts)
     {
-        return new ApiSide { Reference = compared.Reference, Declaration = ApiDeclarations.Of(compared.Entity) };
-    }
-
-    private static Dictionary<string, Compared> ListChildren(Compared compared, ApiScope scope)
-    {
-        if (compared.Entity is not ITypeDefinition type)
-        {
-            return None;
-        }
-
-        var children = new Dictionary<string, Compared>(StringComparer.Ordinal);
-        foreach (var member in ListMembers(type))
-        {
-            if (IsTakenIn(member, scope))
-            {
-                AddByKey(children, member);
-            }
-        }
-        return children;
+        return new ApiSide { Reference = facts.Reference, Declaration = facts.Declaration };
     }
 
     private static IEnumerable<IEntity> ListMembers(ITypeDefinition type)
@@ -365,10 +421,29 @@ public static class ApiEntries
         return own + Count(entry.Children, change);
     }
 
-    private readonly record struct Compared
+    // One module's API as its read took it out (ReadApi): the types taken in, by namespace, in the order the metadata
+    // lists them.
+    private sealed class ModuleApi
     {
-        public required IEntity Entity { get; init; }
+        public required Dictionary<string, List<ApiFacts>> TypesByNamespace { get; init; }
+    }
+
+    // What the comparison needs of a type or member, read out of the library's objects: the key it is matched by, what
+    // is shown of it, how it is declared, and the members it holds that the scope takes in.
+    private sealed class ApiFacts
+    {
+        public required string Key { get; init; }
 
         public required CodeReference.Entity Reference { get; init; }
+
+        public required string Declaration { get; init; }
+
+        public required SymbolShape Shape { get; init; }
+
+        public required string Text { get; init; }
+
+        public required Accessibility Accessibility { get; init; }
+
+        public required List<ApiFacts> Children { get; init; }
     }
 }

@@ -30,16 +30,72 @@ public static partial class ClassDiagrams
     /// <summary>Writes the diagrammer of <paramref name="assembly"/> into <paramref name="folder"/>,
     /// creating it, and returns the path of its page.</summary>
     /// <remarks>Once the read of the assembly's type system ended: for an assembly the library could not read, says so
-    /// and writes nothing. What the library throws reading it, or the disk writing it, is
-    /// <see cref="Outcome{T}.Failed"/>; the cancellation of <paramref name="cancellationToken"/> is let through.</remarks>
+    /// and writes nothing. The diagram's model is read out of the library's type system under its own catch: what the
+    /// library throws reading it is <see cref="Outcome{T}.Failed"/>. The page is made of that model and written after
+    /// the catch: what the disk throws writing it (<see cref="IOException"/>, <see cref="UnauthorizedAccessException"/>)
+    /// is <see cref="Outcome{T}.Failed"/> too, and a bug of the app's making it goes on to the edge. The cancellation of
+    /// <paramref name="cancellationToken"/> is let through.</remarks>
     public static async Task<Outcome<TypeSystemWork<string>>> WriteAsync(LoadedModule assembly, string folder, IProgress<ExportProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        TypeSystemWork<string> written;
+        var work = await LoadedAssemblies.WithTypeSystemAsync(assembly, (_, typeSystem) => ReadDiagram(assembly, typeSystem.MainModule, progress,
+            cancellationToken), cancellationToken);
+        if (work is TypeSystemWork<Outcome<DiagramRead>>.Unreadable unreadable)
+        {
+            return new Outcome<TypeSystemWork<string>>.Ok(new TypeSystemWork<string>.Unreadable { Module = unreadable.Module });
+        }
+
+        if (work is TypeSystemWork<Outcome<DiagramRead>>.Closed closed)
+        {
+            return new Outcome<TypeSystemWork<string>>.Ok(new TypeSystemWork<string>.Closed { Module = closed.Module });
+        }
+
+        var read = ((TypeSystemWork<Outcome<DiagramRead>>.Done)work).Value;
+        if (read is Outcome<DiagramRead>.Failed failed)
+        {
+            return new Outcome<TypeSystemWork<string>>.Failed(failed.Error);
+        }
+
+        var diagram = ((Outcome<DiagramRead>.Ok)read).Value;
+        var page = BuildPage(diagram);
+        var assets = ReadAssets();
+        string written;
         try
         {
-            written = await LoadedAssemblies.WithTypeSystemAsync(assembly, (_, typeSystem) => Write(assembly, typeSystem.MainModule, folder, progress,
-                cancellationToken), cancellationToken);
+            written = Write(folder, page, assets);
+        }
+        catch (IOException e)
+        {
+            return new Outcome<TypeSystemWork<string>>.Failed(e);
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            return new Outcome<TypeSystemWork<string>>.Failed(e);
+        }
+
+        return new Outcome<TypeSystemWork<string>>.Ok(new TypeSystemWork<string>.Done { Value = written });
+    }
+
+    // What the page is made of, read out of the library's type system: the model and the assembly's name and version.
+    private sealed class DiagramRead
+    {
+        public required DiagramModel Model { get; init; }
+
+        public required string AssemblyName { get; init; }
+
+        public required string AssemblyVersion { get; init; }
+    }
+
+    // The library's read of the diagram, under its own catch: the model of the assembly's types, read out of its type
+    // system (which decodes the metadata as it is asked, so the read lasts until the model is whole), and its name and
+    // version; what the library throws reading them, the export's failure.
+    private static Outcome<DiagramRead> ReadDiagram(LoadedModule assembly, MetadataModule main, IProgress<ExportProgress>? progress,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var model = BuildModel(assembly, main, progress, cancellationToken);
+            return new Outcome<DiagramRead>.Ok(new DiagramRead { Model = model, AssemblyName = main.AssemblyName, AssemblyVersion = main.AssemblyVersion.ToString() });
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -47,25 +103,37 @@ public static partial class ClassDiagrams
         }
         catch (Exception e)
         {
-            return new Outcome<TypeSystemWork<string>>.Failed(e);
+            return new Outcome<DiagramRead>.Failed(e);
         }
-
-        return new Outcome<TypeSystemWork<string>>.Ok(written);
     }
 
-    private static string Write(LoadedModule assembly, MetadataModule main, string folder, IProgress<ExportProgress>? progress,
-        CancellationToken cancellationToken)
+    // The page and its assets written into folder, creating it: the page's path.
+    private static string Write(string folder, string page, IReadOnlyList<(string Name, byte[] Bytes)> assets)
     {
-        var model = BuildModel(assembly, main, progress, cancellationToken);
         Directory.CreateDirectory(folder);
-        var page = Path.Combine(folder, PageFileName);
-        File.WriteAllText(page, BuildPage(main, model));
-        foreach (var asset in Assets)
+        var pagePath = Path.Combine(folder, PageFileName);
+        File.WriteAllText(pagePath, page);
+        foreach (var (name, bytes) in assets)
         {
-            CopyAsset(asset, folder);
+            File.WriteAllBytes(Path.Combine(folder, name), bytes);
         }
 
-        return page;
+        return pagePath;
+    }
+
+    // The page's assets, read out of the app's own resources before the disk is written, so a missing one is the app's
+    // bug, never said as the disk's failure.
+    private static List<(string Name, byte[] Bytes)> ReadAssets()
+    {
+        var assets = new List<(string Name, byte[] Bytes)>();
+        foreach (var name in Assets)
+        {
+            using var asset = OpenAsset(name);
+            using var bytes = new MemoryStream();
+            asset.CopyTo(bytes);
+            assets.Add((name, bytes.ToArray()));
+        }
+        return assets;
     }
 
     /// <summary>The model of every type of <paramref name="assembly"/> but compiler-generated ones and
@@ -104,12 +172,12 @@ public static partial class ClassDiagrams
         return byId;
     }
 
-    private static string BuildPage(MetadataModule module, DiagramModel model)
+    private static string BuildPage(DiagramRead diagram)
     {
-        var json = JsonSerializer.Serialize(model, DiagramJson.Default.DiagramModel);
+        var json = JsonSerializer.Serialize(diagram.Model, DiagramJson.Default.DiagramModel);
         return ReadAsset(TemplateName)
-            .Replace("{{SourceAssemblyName}}", WebUtility.HtmlEncode(module.AssemblyName))
-            .Replace("{{SourceAssemblyVersion}}", WebUtility.HtmlEncode(module.AssemblyVersion.ToString()))
+            .Replace("{{SourceAssemblyName}}", WebUtility.HtmlEncode(diagram.AssemblyName))
+            .Replace("{{SourceAssemblyVersion}}", WebUtility.HtmlEncode(diagram.AssemblyVersion))
             .Replace("{{BuilderVersion}}", DecompilerVersionInfo.FullVersionWithCommitHash)
             .Replace("{{RepoUrl}}", RepoUrl)
             .Replace("{{Model}}", json);
@@ -120,13 +188,6 @@ public static partial class ClassDiagrams
         var asset = OpenAsset(name);
         using var reader = new StreamReader(asset);
         return reader.ReadToEnd();
-    }
-
-    private static void CopyAsset(string name, string folder)
-    {
-        using var asset = OpenAsset(name);
-        using var file = File.Create(Path.Combine(folder, name));
-        asset.CopyTo(file);
     }
 
     private static Stream OpenAsset(string name)

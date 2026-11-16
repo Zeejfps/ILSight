@@ -54,6 +54,16 @@ public sealed class DiagramTests : IDisposable
     }
 
     [Fact]
+    public async Task A_diagrammer_written_where_a_file_stands_is_its_failure_saying_why()
+    {
+        var folder = _temp.Write("a file", "");
+
+        var written = await ClassDiagrams.WriteAsync(Trees.TestAssembly, folder);
+
+        Assert.IsAssignableFrom<IOException>(Assert.IsType<Outcome<TypeSystemWork<string>>.Failed>(written).Error);
+    }
+
+    [Fact]
     public async Task The_diagrammer_is_written_as_a_page_with_its_script_styles_and_icon()
     {
         var folder = _temp.PathOf("diagram");

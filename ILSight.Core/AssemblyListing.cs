@@ -317,21 +317,50 @@ public static class AssemblyListing
     /// <summary>
     /// The page of the .NET API reference about the type or member <paramref name="reference"/>
     /// points at, as <see cref="MicrosoftDocs.FindPage(BrowseNode)"/> names it. Not found for what is not
-    /// visible outside its assembly, or when it cannot be resolved; unreadable as
-    /// <see cref="DescribeReferenceAsync"/> says; what the library throws resolving it or naming its page,
-    /// <see cref="Outcome{T}.Failed"/>. Loads the files it needs without listing them: call it off the UI thread.
+    /// visible outside its assembly, or when it cannot be resolved; unreadable when the library could not read the type
+    /// system of an assembly resolving it reads, or failed reading the module resolving it; a file it needs that can't
+    /// be read, and what the library throws naming its page, <see cref="Outcome{T}.Failed"/>. Each read under its own
+    /// catch, the page made of the name read after them, so a bug of the app's goes on to the edge. Loads the files it
+    /// needs without listing them: call it off the UI thread.
     /// </summary>
     public static async Task<Outcome<Lookup<string>>> FindApiReferencePageAsync(AssemblyList list, CodeReference.Entity reference, CancellationToken ct)
     {
         using var reading = LoadedAssemblies.BeginReading();
-        Lookup<ApiPageName> name;
+        Lookup<ResolvedEntity> resolved;
         try
         {
-            var resolved = await ResolveEntityAsync(list, reading, reference, ct);
-            name = resolved.Match(
-                static found => Lookup.FromNullable(MicrosoftDocs.ReadPageName(found.Value.Entity)),
-                static _ => new Lookup<ApiPageName>.NotFound(),
-                static unreadable => new Lookup<ApiPageName>.Unreadable { Module = unreadable.Module });
+            resolved = await ResolveEntityAsync(list, reading, reference, ct);
+        }
+        catch (AssemblyLoadException e)
+        {
+            return new Outcome<Lookup<string>>.Failed(e);
+        }
+        catch (DefinitionUnreadException e)
+        {
+            return new Outcome<Lookup<string>>.Failed(e);
+        }
+
+        if (resolved is not Lookup<ResolvedEntity>.Found found)
+        {
+            return new Outcome<Lookup<string>>.Ok(resolved is Lookup<ResolvedEntity>.Unreadable unreadable
+                ? new Lookup<string>.Unreadable { Module = unreadable.Module }
+                : new Lookup<string>.NotFound());
+        }
+
+        var name = ReadPageName(found.Value.Entity, ct);
+        // The page made of the name read, outside the catch: a bug of the app's naming it is not the library's failure.
+        return name.Match<Outcome<Lookup<string>>>(
+            static read => new Outcome<Lookup<string>>.Ok(Lookup.FromNullable(read.Value).Select(MicrosoftDocs.PageAt)),
+            static failed => new Outcome<Lookup<string>>.Failed(failed.Error));
+    }
+
+    // The library's read of what names entity's page, under its own catch: the name, null for an entity with no page;
+    // what the library throws reading it, the lookup's failure.
+    private static Outcome<ApiPageName?> ReadPageName(IEntity entity, CancellationToken ct)
+    {
+        try
+        {
+            return new Outcome<ApiPageName?>.Ok(MicrosoftDocs.ReadPageName(entity));
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -339,11 +368,8 @@ public static class AssemblyListing
         }
         catch (Exception e)
         {
-            return new Outcome<Lookup<string>>.Failed(e);
+            return new Outcome<ApiPageName?>.Failed(e);
         }
-
-        // The page made of the name read, outside the catch: a bug of the app's naming it is not the library's failure.
-        return new Outcome<Lookup<string>>.Ok(name.Select(MicrosoftDocs.PageAt));
     }
 
     /// <summary>The definition of the type <paramref name="reference"/> points at, loading the assembly
@@ -406,7 +432,7 @@ public static class AssemblyListing
     {
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
         return read.Match(
-            r => Lookup.FromNullable(Resolve(r.TypeSystem, assembly, handle)),
+            r => ReadEntity(r.TypeSystem, assembly, handle),
             u => Lookup.FromUnreadable<ResolvedEntity>(assembly, u),
             static _ => new Lookup<ResolvedEntity>.NotFound());
     }
@@ -420,15 +446,22 @@ public static class AssemblyListing
         public required DecompilerTypeSystem TypeSystem { get; init; }
     }
 
-    private static ResolvedEntity? Resolve(DecompilerTypeSystem typeSystem, LoadedModule assembly, EntityHandle handle)
+    // The library's resolving of handle in the module's type system, under its own catch: the entity, none when it
+    // resolves to nothing; the module unreadable, with why, when the library failed reading it (the user's data, said
+    // as the module's).
+    private static Lookup<ResolvedEntity> ReadEntity(DecompilerTypeSystem typeSystem, LoadedModule assembly, EntityHandle handle)
     {
-        var resolved = typeSystem.MainModule.ResolveEntity(handle);
-        if (resolved is null)
+        try
         {
-            return null;
+            var resolved = typeSystem.MainModule.ResolveEntity(handle);
+            return resolved is null
+                ? new Lookup<ResolvedEntity>.NotFound()
+                : new Lookup<ResolvedEntity>.Found { Value = new ResolvedEntity { Entity = resolved, Assembly = assembly, TypeSystem = typeSystem } };
         }
-
-        return new ResolvedEntity { Entity = resolved, Assembly = assembly, TypeSystem = typeSystem };
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new Lookup<ResolvedEntity>.Unreadable { Module = new UnreadableModule { Module = assembly, Why = e } };
+        }
     }
 
     /// <summary>The listed item <paramref name="path"/> names: its assembly, opened and listed if it is not
