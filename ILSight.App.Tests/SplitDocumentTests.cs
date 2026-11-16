@@ -72,7 +72,7 @@ public sealed class SplitDocumentTests
                 DockLayout.Split(Direction.Horizontal, 0.5f, DockLayout.Group("document-7"), DockLayout.Group("document-1"))),
         };
 
-        var d = new AppStateDriver(new AppSettings { Layout = saved });
+        var d = AppStateDriver.Started(new AppSettings { Layout = saved });
 
         var panel = d.Ui.Documents.GetPanel(Assert.Single(d.AppState.ListSession.Navigation.OpenTabs));
         var panels = d.Arrangement.AllGroups().SelectMany(g => g.Panels).ToList();

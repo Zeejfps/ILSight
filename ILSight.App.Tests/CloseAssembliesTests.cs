@@ -460,7 +460,7 @@ public sealed class CloseAssembliesTests
         CloseKeyboardFromTheDialog(app);
         app.Driver.Pump();
         var saved = temp.Settings().AssemblyLists.Single().Documents?.Tabs ?? [];
-        var restarted = new AppStateDriver(temp.Settings());
+        var restarted = AppStateDriver.Started(temp.Settings());
         restarted.Settle();
 
         Assert.Equal(["Greeter", "KeyboardKey"], savedOpen);

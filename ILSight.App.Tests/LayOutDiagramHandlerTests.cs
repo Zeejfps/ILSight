@@ -71,6 +71,7 @@ public sealed class LayOutDiagramHandlerTests
         var diagram = new TypeDiagram();
         diagram.Close();
 
-        Assert.Null(diagram.StartLayout());
+        var layoutTicket = diagram.StartLayout();
+        Assert.Null(layoutTicket);
     }
 }

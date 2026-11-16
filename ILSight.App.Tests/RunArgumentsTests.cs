@@ -55,7 +55,7 @@ public sealed class RunArgumentsTests
     [Fact]
     public void A_command_line_naming_a_member_opens_its_files_and_shows_the_member()
     {
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
 
         var files = CommandLines.Parse(["--navigateto=M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)", AppStateDriver.FixturePath]).Arguments.Files;
         d.Start((a, ct) => RunArgumentsActions.OpenRequestedFilesAsync(a, files, a.ListSession.Assemblies.Work, ct));
@@ -69,7 +69,7 @@ public sealed class RunArgumentsTests
     [Fact]
     public void A_command_line_naming_what_its_files_lack_reports_it()
     {
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
 
         var files = CommandLines.Parse(["--navigateto=T:Nowhere.Missing", AppStateDriver.FixturePath]).Arguments.Files;
         d.Start((a, ct) => RunArgumentsActions.OpenRequestedFilesAsync(a, files, a.ListSession.Assemblies.Work, ct));
@@ -284,7 +284,8 @@ public sealed class RunArgumentsTests
             new AssemblyListRecord { Name = Other, Assemblies = [TestPaths.PathOf(AppStateDriver.FixturePath)] });
 
         var d = Start(settings, "--list=other", OtherAssembly);
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
         AssemblyPath[] opened = [TestPaths.PathOf(AppStateDriver.FixturePath), TestPaths.PathOf(OtherAssembly)];
         Assert.Equal(Other, d.AppState.Lists.Active);
@@ -301,7 +302,8 @@ public sealed class RunArgumentsTests
             Name = SavedAssemblyLists.DefaultName,
             Assemblies = [TestPaths.PathOf(AppStateDriver.FixturePath)],
         }), "--clear-list", OtherAssembly);
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
         Assert.Equal([OtherAssembly], d.AppState.ListSession.Assemblies.ListFilePaths().Select(static p => p.Text));
         Assert.Equal([OtherAssembly], Assert.Single(temp.Settings().AssemblyLists).Assemblies.Select(static p => p.Text));
@@ -399,7 +401,8 @@ public sealed class RunArgumentsTests
 
     private static List<string> DescribeSaved(AppDriver app, TempDir temp)
     {
-        Assert.IsType<SettingsWriteResult.Written>(app.AppState.SettingsSaver.Save(app.AppState));
+        var write = app.AppState.SettingsSaver.Save(app.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
         return temp.Settings().AssemblyLists
             .Select(static l => $"{l.Name}: [{string.Join(",", l.Assemblies.Select(static p => p.Text))}] analyses [{string.Join(",", l.Analyzed ?? [])}]")
             .ToList();

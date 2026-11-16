@@ -10,7 +10,7 @@ public sealed class BrowseTreeTests
     [Fact]
     public async Task A_node_whose_children_are_not_built_shows_a_loading_row_until_they_are()
     {
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
         var tree = new BrowseTree { Session = TestSession.Shared };
         var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync();
 
@@ -51,9 +51,10 @@ public sealed class BrowseTreeTests
     public async Task Children_that_fail_to_build_show_a_row_saying_why()
     {
         using var temp = new TempDir();
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
         var tree = new BrowseTree { Session = TestSession.Shared };
-        var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(BrokenAssemblies.WriteUnreadableAvaloniaContainer(temp)).ReadRootAsync();
+        var unreadablePath = BrokenAssemblies.WriteUnreadableAvaloniaContainer(temp);
+        var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(unreadablePath).ReadRootAsync();
         var container = await root.GetChildAsync("Resources", BrokenAssemblies.AvaloniaContainer);
 
         tree.GetChildren(container);
@@ -111,7 +112,7 @@ public sealed class BrowseTreeTests
     [Fact]
     public async Task Revealing_a_hidden_non_public_node_selects_its_nearest_shown_ancestor()
     {
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
         var tree = new BrowseTree { Session = TestSession.Shared };
         var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync();
         var ns = await root.GetChildAsync(AppStateDriver.FixturesNamespace);
@@ -167,7 +168,8 @@ public sealed class BrowseTreeTests
         var root = await assembly.ReadRootAsync();
         _ = await root.ListChildrenAsync();
         Assert.NotEmpty(tree.GetChildren(root).Nodes);
-        LoadedAssemblies.Release(list.Close(assembly));
+        var removed = list.Close(assembly);
+        LoadedAssemblies.Release(removed);
         return new WeakReference(assembly);
     }
 }

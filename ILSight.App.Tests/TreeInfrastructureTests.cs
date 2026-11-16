@@ -9,7 +9,8 @@ public sealed class TreeInfrastructureTests
     public async Task BuildAssemblyChildrenAsync_ModuleTheLibraryCannotRead_AnswersItsFailureWithWhy()
     {
         using var temp = new TempDir();
-        var module = new AssemblyList { Runtime = TestRuntime.Installed }.Open(BrokenAssemblies.WriteUnreadableTypeSystem(temp, AppStateDriver.FixturePath));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableTypeSystem(temp, AppStateDriver.FixturePath);
+        var module = new AssemblyList { Runtime = TestRuntime.Installed }.Open(unreadablePath);
         var root = await Assert.IsType<LoadedModule>(module).ReadRootAsync();
 
         var built = await new TreeInfrastructure(TestSession.Shared).BuildAssemblyChildrenAsync(root, CancellationToken.None);

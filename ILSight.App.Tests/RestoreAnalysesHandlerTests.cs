@@ -9,8 +9,10 @@ public sealed class RestoreAnalysesHandlerTests
     private static async Task<AnalysesRestore> WaitForGreeterAndFarewellAsync(AppStateDriver d)
     {
         var analyzer = d.AppState.ListSession.Analyzer;
-        var greeter = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(await SymbolOfAsync(d, "Greeter"))).Root;
-        var farewell = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(await SymbolOfAsync(d, "Farewell"))).Root;
+        var greeterAdd = analyzer.AddRoot(await SymbolOfAsync(d, "Greeter"));
+        var greeter = Assert.IsType<AnalyzerAdd.Analyzing>(greeterAdd).Root;
+        var farewellAdd = analyzer.AddRoot(await SymbolOfAsync(d, "Farewell"));
+        var farewell = Assert.IsType<AnalyzerAdd.Analyzing>(farewellAdd).Root;
         Assert.Equal<AnalyzerNode>([greeter, farewell], analyzer.Roots);
         var saved = analyzer.ListSavedAnalyses();
         analyzer.ClearRoots();
@@ -71,7 +73,11 @@ public sealed class RestoreAnalysesHandlerTests
         var ports = new FakeRestoreAnalysesHandlerPorts
         {
             Found = [new Outcome<Lookup<AnalysisSymbol>>.Failed(new IOException("unreadable")), new Outcome<Lookup<AnalysisSymbol>>.Failed(new IOException("unreadable"))],
-            WhileLooking = () => LoadedAssemblies.Release(d.AppState.ListSession.Assemblies.CloseAll()),
+            WhileLooking = () =>
+            {
+                var removed = d.AppState.ListSession.Assemblies.CloseAll();
+                LoadedAssemblies.Release(removed);
+            },
         };
 
         await d.RunAsync(() => new RestoreAnalysesHandler(ports).HandleAsync(d.AppState.ListSession.Analyzer, d.AppState.ListSession.Assemblies, d.AppState.ViewCommands, restore, CancellationToken.None));

@@ -42,11 +42,15 @@ internal sealed class AppStateDriver : IFrameHost
     /// <param name="nuGetRequests">Sends the "open from NuGet" dialog's requests; the app's shared connections when null.</param>
     /// <param name="runtimeScan">Scans the runtime for the "open from framework" dialog; the installed runtime's when null.</param>
     /// <param name="processes">Lists the running processes for the "open from process" dialog; this machine's when null.</param>
-    public AppStateDriver(AppSettings? settings = null, HttpMessageHandler? nuGetRequests = null, FrameworkBrowser.IPorts? runtimeScan = null,
-        ProcessBrowser.IPorts? processes = null)
-        : this(PostedActions.OfThisTest(), Restore(NoProblem(settings), nuGetRequests, runtimeScan, processes))
+    public static AppStateDriver Started(AppSettings? settings = null, HttpMessageHandler? nuGetRequests = null,
+        FrameworkBrowser.IPorts? runtimeScan = null, ProcessBrowser.IPorts? processes = null)
     {
-        WaitForTheStart();
+        // The test's posts taken before the root builds the app, as every driver takes them.
+        var posted = PostedActions.OfThisTest();
+        var restored = Restore(NoProblem(settings), nuGetRequests, runtimeScan, processes);
+        var driver = new AppStateDriver(posted, restored);
+        driver.WaitForTheStart();
+        return driver;
     }
 
     private AppStateDriver(PostedActions posted, RestoredApp restored)
@@ -99,23 +103,26 @@ internal sealed class AppStateDriver : IFrameHost
 
     /// <summary>A driver over the app state and screen the app starts with from <paramref name="loadResult"/>, which
     /// has started what the app starts as it starts with no arguments and waited for the list to open, as
-    /// <see cref="AppStateDriver(AppSettings?, HttpMessageHandler?, FrameworkBrowser.IPorts?, ProcessBrowser.IPorts?)"/>
+    /// <see cref="Started(AppSettings?, HttpMessageHandler?, FrameworkBrowser.IPorts?, ProcessBrowser.IPorts?)"/>
     /// does.</summary>
     public static AppStateDriver Started(SettingsLoadResult loadResult)
     {
         var posted = PostedActions.OfThisTest();
         SpeakEnglishUnlessNamed(loadResult);
-        var driver = new AppStateDriver(posted, Restore(loadResult));
+        var restored = Restore(loadResult);
+        var driver = new AppStateDriver(posted, restored);
         driver.WaitForTheStart();
         return driver;
     }
 
-    /// <summary>A driver as <see cref="AppStateDriver(AppSettings?, HttpMessageHandler?, FrameworkBrowser.IPorts?,
+    /// <summary>A driver as <see cref="Started(AppSettings?, HttpMessageHandler?, FrameworkBrowser.IPorts?,
     /// ProcessBrowser.IPorts?)"/> makes it, returned while the list it starts with is still opening, for a test of
     /// what happens meanwhile.</summary>
     public static AppStateDriver Starting(AppSettings? settings = null)
     {
-        return new AppStateDriver(PostedActions.OfThisTest(), Restore(NoProblem(settings)));
+        var posted = PostedActions.OfThisTest();
+        var restored = Restore(NoProblem(settings));
+        return new AppStateDriver(posted, restored);
     }
 
     /// <summary>Runs what was posted, and nothing else a frame does, until the reload the app's start began (or the
@@ -137,7 +144,7 @@ internal sealed class AppStateDriver : IFrameHost
     /// <summary>A driver that has opened the fixture assembly.</summary>
     public static AppStateDriver Opened(AppSettings? settings = null)
     {
-        var driver = new AppStateDriver(settings);
+        var driver = Started(settings);
         driver.OpenFixtures();
         return driver;
     }
@@ -145,7 +152,9 @@ internal sealed class AppStateDriver : IFrameHost
     /// <summary>As <see cref="Opened"/>, with the adapters the root builds made as <paramref name="hooks"/> says.</summary>
     public static AppStateDriver OpenedWith(AdapterHooks hooks)
     {
-        var driver = new AppStateDriver(PostedActions.OfThisTest(), Restore(NoProblem(null), hooks: hooks));
+        var posted = PostedActions.OfThisTest();
+        var restored = Restore(NoProblem(null), hooks: hooks);
+        var driver = new AppStateDriver(posted, restored);
         driver.WaitForTheStart();
         driver.OpenFixtures();
         return driver;
@@ -223,13 +232,15 @@ internal sealed class AppStateDriver : IFrameHost
     /// runs until the work ends, and nothing else a frame does; answers what it came to.</summary>
     public async Task<T> RunAsync<T>(Func<Task<T>> work)
     {
-        return await EndAsync(BeginAsync(work));
+        var running = BeginAsync(work);
+        return await EndAsync(running);
     }
 
     /// <summary>As <see cref="RunAsync{T}(Func{Task{T}})"/>, for work that answers nothing.</summary>
     public async Task RunAsync(Func<Task> work)
     {
-        await EndAsync(BeginAsync(work));
+        var running = BeginAsync(work);
+        await EndAsync(running);
     }
 
     /// <summary>Begins <paramref name="work"/> in a turn of the driver's loop and answers it under way, for a test that
@@ -415,7 +426,8 @@ internal sealed class AppStateDriver : IFrameHost
     public void StartShowing(BrowseNode node, bool inNewTab = false)
     {
         using var turn = _posted.Install();
-        Commands.StartDecompiling(AppState, AppState.ListSession.Navigation.ShowNode(node, AppState.Decompiler.Setup, inNewTab));
+        var decompileTicket = AppState.ListSession.Navigation.ShowNode(node, AppState.Decompiler.Setup, inNewTab);
+        Commands.StartDecompiling(AppState, decompileTicket);
     }
 
     /// <summary>Switches to the list named <paramref name="name"/> as the lists dialog and the toolbar's list menu do: in
@@ -432,7 +444,8 @@ internal sealed class AppStateDriver : IFrameHost
     public void DeleteList(string name)
     {
         using var turn = _posted.Install();
-        Commands.OpenListLater(Ui.AppCommands, AssemblyLists.DeleteAssemblyList(AppState.Lists, AppState.ListSession, AppState.KeptScreen.View, name));
+        var listSwitch = AssemblyLists.DeleteAssemblyList(AppState.Lists, AppState.ListSession, AppState.KeptScreen.View, name);
+        Commands.OpenListLater(Ui.AppCommands, listSwitch);
         NextFrame();
     }
 
@@ -556,7 +569,8 @@ internal sealed class AppStateDriver : IFrameHost
     public void Analyze(CodeReference.Navigable reference)
     {
         using var turn = _posted.Install();
-        Commands.StartAnalyzing(AppState, AnalyzerPanelView.ShowAnalyzing(Ui.Panels, AppState.ListSession.Analyzer, reference));
+        var pendingAnalysis = AnalyzerPanelView.ShowAnalyzing(Ui.Panels, AppState.ListSession.Analyzer, reference);
+        Commands.StartAnalyzing(AppState, pendingAnalysis);
     }
 
     /// <summary>What the disk says about the folder and key file the export dialog names, once the frame edge has

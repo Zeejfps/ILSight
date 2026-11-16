@@ -222,7 +222,8 @@ public sealed class SettlingWorkflowsTests
         d.Show(await d.FixtureAsync("Outline"));
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark));
+        var toggle = Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);
+        Assert.IsType<BookmarkToggle.Added>(toggle);
         var bookmark = Assert.Single(d.AppState.Bookmarks.Items);
 
         d.InTurn(() => Commands.StartGoingToBookmark(d.AppState, bookmark));

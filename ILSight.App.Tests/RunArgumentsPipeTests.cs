@@ -41,7 +41,8 @@ public sealed class RunArgumentsPipeTests
         var handedOver = await RunPipes.TrySendAsync(address, Arguments("--navigateto=T:Some.Type", "relative.dll"));
 
         Assert.True(handedOver);
-        var handed = Assert.Single(await TakeArrivedAsync(receiver.Inbox, 1));
+        var arrived = await TakeArrivedAsync(receiver.Inbox, 1);
+        var handed = Assert.Single(arrived);
         Assert.Equal("T:Some.Type", handed.Files.NavigateTo);
         Assert.Equal([Path.GetFullPath("relative.dll")], handed.Files.Paths.Select(static p => p.Text));
     }

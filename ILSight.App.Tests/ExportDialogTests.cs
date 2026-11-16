@@ -38,7 +38,7 @@ public sealed class ExportDialogTests : IDisposable
 
     private static AppStateDriver OpenedSample()
     {
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
         d.Open([AssemblyPath.Of(SampleAppPath)]);
         d.RunUntil(() => d.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)));
         d.Settle();

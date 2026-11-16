@@ -62,7 +62,8 @@ public sealed class UserIconThemeTests : IDisposable
         Assert.Equal(BuiltInIconThemes.Reference.Icons.NodeClass, IconTheming.ResolveIconTheme(appState).Icons.NodeClass);
 
         appState.ChosenThemes.ChooseIconTheme(Id("mine"));
-        Assert.IsType<SettingsSave.Saved>(appState.SettingsSaver.SaveIfChanged(appState, TimeSpan.FromSeconds(0)));
+        var settingsSave = appState.SettingsSaver.SaveIfChanged(appState, TimeSpan.FromSeconds(0));
+        Assert.IsType<SettingsSave.Saved>(settingsSave);
 
         Assert.Equal("mine", Settings().IconTheme.Text);
     }
@@ -83,7 +84,8 @@ public sealed class UserIconThemeTests : IDisposable
         var appState = AppRoot.RestoreAppState(settings, TestSession.Shared);
 
         Assert.Same(appState.IconThemes.GetTheme(Id("lucide")), IconTheming.ResolveIconTheme(appState));
-        Assert.IsType<SettingsWriteResult.Written>(appState.SettingsSaver.Save(appState));
+        var write = appState.SettingsSaver.Save(appState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
         Assert.Equal("gone", Settings().IconTheme.Text);
     }
 
@@ -204,7 +206,7 @@ public sealed class UserIconThemeTests : IDisposable
         WriteIconTheme("live", """{ "icons": { "node.class": { "svg": "svg/class.svg" } } }""");
         var settings = Settings();
         settings.IconTheme = Id("live");
-        var d = new AppStateDriver(settings);
+        var d = AppStateDriver.Started(settings);
         var before = IconTheming.ResolveIconTheme(d.AppState).Icons.NodeClass.Svg;
 
         _temp.Write(ClassPicture, MemoryIconAssets.Picture.Replace("currentColor", "#FF0000"));

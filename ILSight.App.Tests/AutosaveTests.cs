@@ -152,7 +152,8 @@ public sealed class AutosaveTests : IDisposable
     public void A_close_whose_settings_cannot_be_saved_is_refused_once_showing_why_and_the_next_closes()
     {
         var settings = _temp.Settings();
-        Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
+        var write = TempSettings.Save(settings);
+        Assert.IsType<SettingsWriteResult.Written>(write);
         var app = new AppDriver(settings: settings);
         app.Run(2);
         var window = new WindowBounds(10, 20, 1000, 700, false);
@@ -210,7 +211,8 @@ public sealed class AutosaveTests : IDisposable
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
 
         d.Analyze(reference);
-        Assert.IsType<SettingsSave.Unchanged>(d.AppState.SettingsSaver.SaveIfChanged(d.AppState, d.Now));
+        var settingsSave = d.AppState.SettingsSaver.SaveIfChanged(d.AppState, d.Now);
+        Assert.IsType<SettingsSave.Unchanged>(settingsSave);
         var savedWhileFinding = _temp.Settings().AssemblyLists.Single().Analyzed?.Count ?? 0;
         d.Settle();
         d.Pump();
@@ -232,9 +234,10 @@ public sealed class AutosaveTests : IDisposable
         Assert.NotNull(list.Analyzed);
         var anchor = list.Analyzed.Single();
         settings.AssemblyLists[0] = list with { Analyzed = [anchor with { Token = anchor.Token + 0xFFFF }] };
-        Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
+        var write = TempSettings.Save(settings);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
-        var next = new AppStateDriver(_temp.Settings());
+        var next = AppStateDriver.Started(_temp.Settings());
         next.Settle();
         next.Pump();
 
@@ -248,7 +251,7 @@ public sealed class AutosaveTests : IDisposable
     public async Task An_analysis_of_an_assembly_held_at_the_start_shows_failed_is_saved_as_it_was_and_resolves_once_the_list_is_reloaded()
     {
         var copy = _temp.Write("Held.dll", await File.ReadAllBytesAsync(AppStateDriver.FixturePath));
-        var first = new AppStateDriver(_temp.Settings());
+        var first = AppStateDriver.Started(_temp.Settings());
         first.Open([AssemblyPath.Of(copy)]);
         first.Settle();
         var held = first.AppState.ListSession.Assemblies.Assemblies.Single();
@@ -262,7 +265,7 @@ public sealed class AutosaveTests : IDisposable
         AnalyzerNode failed;
         using (new FileStream(copy, FileMode.Open, FileAccess.Read, FileShare.None))
         {
-            next = new AppStateDriver(_temp.Settings());
+            next = AppStateDriver.Started(_temp.Settings());
             next.Settle();
             next.Pump();
             failed = Assert.Single(next.AppState.ListSession.Analyzer.Roots);
@@ -292,8 +295,9 @@ public sealed class AutosaveTests : IDisposable
     [Fact]
     public void Saving_tells_whether_it_wrote_failed_or_waits_to_try_again()
     {
-        var d = new AppStateDriver(_temp.Settings());
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var d = AppStateDriver.Started(_temp.Settings());
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
         var unchanged = d.AppState.SettingsSaver.SaveIfChanged(d.AppState, d.Now);
         var blocker = BlockSettingsWrites();
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
@@ -312,8 +316,9 @@ public sealed class AutosaveTests : IDisposable
     [Fact]
     public void A_failed_write_is_retried_after_a_wait_and_reported_once_until_one_succeeds()
     {
-        var d = new AppStateDriver(_temp.Settings());
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var d = AppStateDriver.Started(_temp.Settings());
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
         var blocker = BlockSettingsWrites();
 
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
@@ -365,13 +370,14 @@ public sealed class AutosaveTests : IDisposable
     [Fact]
     public void Saving_outright_as_shutting_down_does_writes_even_while_a_retry_waits()
     {
-        var d = new AppStateDriver(_temp.Settings());
+        var d = AppStateDriver.Started(_temp.Settings());
         var blocker = BlockSettingsWrites();
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         d.Pump();
         Directory.Delete(blocker);
 
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
         Assert.Equal(DecompilationLanguage.IL, _temp.Settings().Language);
     }

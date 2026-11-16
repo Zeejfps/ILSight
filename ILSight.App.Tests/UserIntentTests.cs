@@ -48,8 +48,10 @@ public sealed class UserIntentTests
     {
         var intent = new UserIntent();
 
-        var found = intent.EndResolving<int>(intent.BeginResolving(), new Outcome<Lookup<int>>.Ok(Lookup.FromNullable<int>(7)));
-        var missing = intent.EndResolving<int>(intent.BeginResolving(), new Outcome<Lookup<int>>.Ok(Lookup.FromNullable<int>(null)));
+        var foundTicket = intent.BeginResolving();
+        var found = intent.EndResolving<int>(foundTicket, new Outcome<Lookup<int>>.Ok(Lookup.FromNullable<int>(7)));
+        var missingTicket = intent.BeginResolving();
+        var missing = intent.EndResolving<int>(missingTicket, new Outcome<Lookup<int>>.Ok(Lookup.FromNullable<int>(null)));
 
         Assert.Equal(7, Assert.IsType<Resolution<int>.Found>(found).Value);
         Assert.IsType<Resolution<int>.Missing>(missing);

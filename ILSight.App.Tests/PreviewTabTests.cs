@@ -123,7 +123,11 @@ public sealed class PreviewTabTests
         app.AppState.ListSession.Navigation.KeepTabOpen(kept);
 
         var farewell = (await app.FixtureAsync("Farewell")).Definition;
-        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, farewell, a.ListSession.Navigation.BeginResolving(inNewTab: false), ct));
+        app.Start((a, ct) =>
+        {
+            var resolveTicket = a.ListSession.Navigation.BeginResolving(inNewTab: false);
+            return a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, farewell, resolveTicket, ct);
+        });
         app.Settle(2);
 
         Assert.Same(greeter, kept.Node);
@@ -167,7 +171,8 @@ public sealed class PreviewTabTests
         Assert.NotNull(before);
 
         var empty = app.AppState.ListSession.Navigation.OpenEmptyTab();
-        Assert.Null(app.AppState.ListSession.Navigation.FocusTab(empty, app.AppState.Decompiler.Setup));
+        var decompileTicket = app.AppState.ListSession.Navigation.FocusTab(empty, app.AppState.Decompiler.Setup);
+        Assert.Null(decompileTicket);
         app.AppState.ViewCommands.Enqueue(new ViewCommand.ShowTab { Tab = empty, Beside = before });
         app.Run(2);
         Pick(app, "Farewell");

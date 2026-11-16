@@ -14,7 +14,8 @@ public sealed class ShowInApiReferenceHandlerTests
         var greeter = (await d.FixtureAsync("Greeter")).Definition;
         await d.RunAsync(() => new ShowInApiReferenceHandler(reference).HandleAsync(d.AppState.ViewCommands, greeter, CancellationToken.None));
 
-        var opened = Assert.IsType<ViewCommand.OpenWebPage>(Assert.Single(d.TakeViewCommands()));
+        var viewCommands = d.TakeViewCommands();
+        var opened = Assert.IsType<ViewCommand.OpenWebPage>(Assert.Single(viewCommands));
         Assert.Equal("https://learn.microsoft.com/dotnet/api/greeter", opened.Url);
         Assert.Empty(reference.Reported);
     }
@@ -35,6 +36,7 @@ public sealed class ShowInApiReferenceHandlerTests
         Assert.Empty(failed.Refused);
         Assert.Empty(none.Reported);
         Assert.Equal("unreadable", Assert.IsType<AppProblem.Unresolved>(Assert.Single(failed.Reported)).Error.Message);
-        Assert.Empty(d.TakeViewCommands());
+        var viewCommands = d.TakeViewCommands();
+        Assert.Empty(viewCommands);
     }
 }

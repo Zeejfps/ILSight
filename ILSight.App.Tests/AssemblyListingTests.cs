@@ -17,7 +17,8 @@ public sealed class AssemblyListingTests
     {
         using var temp = new TempDir();
         var d = AppStateDriver.Opened(temp.Settings());
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
         var loaded = temp.Settings();
 
@@ -38,7 +39,8 @@ public sealed class AssemblyListingTests
         }];
         var d = AppStateDriver.Starting(settings);
 
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
         Assert.Equal([AppStateDriver.FixturePath, other], Assert.Single(temp.Settings().AssemblyLists).Assemblies.Select(static p => p.Text));
         d.Settle();
@@ -56,10 +58,11 @@ public sealed class AssemblyListingTests
             Name = SavedAssemblyLists.DefaultName,
             Assemblies = [TestPaths.PathOf(gone), TestPaths.PathOf(AppStateDriver.FixturePath)],
         }];
-        var d = new AppStateDriver(settings);
+        var d = AppStateDriver.Started(settings);
 
         d.Settle();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
         var roots = d.Ui.Tree.Roots;
         Assert.Equal([NodeIcon.FailedAssembly, NodeIcon.Assembly], roots.Select(r => r.Icon));
@@ -91,13 +94,15 @@ public sealed class AssemblyListingTests
         using var temp = new TempDir();
         var first = AppStateDriver.Opened(temp.Settings());
         first.Analyze(await first.FixtureAsync("Greeter"));
-        Assert.IsType<SettingsWriteResult.Written>(first.AppState.SettingsSaver.Save(first.AppState));
-        var d = new AppStateDriver(temp.Settings());
+        var firstWrite = first.AppState.SettingsSaver.Save(first.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(firstWrite);
+        var d = AppStateDriver.Started(temp.Settings());
         d.AppState.Lists.Add(Other);
 
         d.SwitchList(Other);
         d.Settle();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var secondWrite = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(secondWrite);
 
         var lists = temp.Settings().AssemblyLists;
         Assert.Empty(d.AppState.ListSession.Analyzer.Roots);
@@ -264,7 +269,11 @@ public sealed class AssemblyListingTests
         var root = tree.Roots[0];
         tree.CollapseAll();
 
-        d.InTurn(() => Commands.StartExpandingNamespaces(d.AppState, tree, tree.ExpandNamespaces()));
+        d.InTurn(() =>
+        {
+            var expansion = tree.ExpandNamespaces();
+            Commands.StartExpandingNamespaces(d.AppState, tree, expansion);
+        });
         var ns = await d.NodeAsync(AppStateDriver.FixturesNamespace);
         d.RunUntil(() => tree.View.IsExpanded(ns));
 

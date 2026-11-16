@@ -12,7 +12,8 @@ public sealed class ExportBookmarksHandlerTests
         d.Show(await d.FixtureAsync("Outline"));
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark));
+        var toggle = Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);
+        Assert.IsType<BookmarkToggle.Added>(toggle);
         return d.AppState.Bookmarks;
     }
 

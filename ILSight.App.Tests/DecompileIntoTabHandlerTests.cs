@@ -294,6 +294,7 @@ public sealed class DecompileIntoTabHandlerTests
         Assert.Null(load);
         Assert.False(tab.Load.IsBusy);
         Assert.Equal(changes, tab.Changes);
-        Assert.Equal([new ViewCommand.RestoreView { Tab = tab, Position = AtLineTen }], d.TakeViewCommands());
+        var viewCommands = d.TakeViewCommands();
+        Assert.Equal([new ViewCommand.RestoreView { Tab = tab, Position = AtLineTen }], viewCommands);
     }
 }

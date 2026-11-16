@@ -62,7 +62,11 @@ public sealed class AssembliesTests
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(appState.ListSession.Assemblies.Work.Ending);
         var ports = new FakeAssemblyOpenerPorts { Opened = await BrowseSessions.EnsureRootAsync(appState.Session, FixturesOf(d)), WhileWorking = () => Commands.CloseAllAssemblies(appState) };
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => Assert.Null(await d.RunAsync(() => new AssemblyOpener(ports).OpenAssembliesAsync(appState, [PathTo("Cancelled.dll")], d.AppState.ListSession.Assemblies.Work, linked.Token))));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            var opened = await d.RunAsync(() => new AssemblyOpener(ports).OpenAssembliesAsync(appState, [PathTo("Cancelled.dll")], d.AppState.ListSession.Assemblies.Work, linked.Token));
+            Assert.Null(opened);
+        });
 
         Assert.Empty(ports.Reported);
         Assert.False(appState.ListSession.Navigation.IsOpening);
@@ -324,7 +328,11 @@ public sealed class AssembliesTests
         var ports = new FakeAssemblyReloaderPorts { Reopen = static places => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = [], Places = places.Select(static _ => (Outcome<Lookup<BrowseNode>>)new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound())).ToArray() }) };
         using var shutdown = new CancellationTokenSource();
 
-        var loads = await d.RunAsync(() => ReloadAsync(new AssemblyReloader(ports), appState, appState.ListSession.Reload.Start(), shutdown.Token));
+        var loads = await d.RunAsync(() =>
+        {
+            var reloadTicket = appState.ListSession.Reload.Start();
+            return ReloadAsync(new AssemblyReloader(ports), appState, reloadTicket, shutdown.Token);
+        });
 
         Assert.Equal(AppStateDriver.FixturePath, Assert.Single(Assert.Single(ports.OpenedPaths)).Text);
         Assert.Equal(shutdown.Token, Assert.Single(ports.Tokens));
@@ -347,7 +355,11 @@ public sealed class AssembliesTests
         var error = new InvalidOperationException("Unreadable.");
         var ports = new FakeAssemblyReloaderPorts { Reopen = places => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = [], Places = places.Select(_ => (Outcome<Lookup<BrowseNode>>)new Outcome<Lookup<BrowseNode>>.Failed(error)).ToArray() }) };
 
-        var loads = await d.RunAsync(() => ReloadAsync(new AssemblyReloader(ports), appState, appState.ListSession.Reload.Start(), CancellationToken.None));
+        var loads = await d.RunAsync(() =>
+        {
+            var reloadTicket = appState.ListSession.Reload.Start();
+            return ReloadAsync(new AssemblyReloader(ports), appState, reloadTicket, CancellationToken.None);
+        });
 
         var reported = Assert.IsType<AppProblem.PlaceLookupFailed>(Assert.Single(ports.Reported));
         Assert.Same(error, reported.Error);
@@ -365,15 +377,21 @@ public sealed class AssembliesTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var appState = d.AppState;
-        Assert.IsType<SettingsWriteResult.Written>(appState.SettingsSaver.Save(appState));
+        var write = appState.SettingsSaver.Save(appState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
         var ports = new FakeAssemblyReloaderPorts { Reopen = static places => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = [], Places = places.Select(static _ => (Outcome<Lookup<BrowseNode>>)new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound())).ToArray() }) };
 
-        var loads = await d.RunAsync(() => ReloadAsync(new AssemblyReloader(ports), appState, appState.ListSession.Reload.Start(), CancellationToken.None));
+        var loads = await d.RunAsync(() =>
+        {
+            var reloadTicket = appState.ListSession.Reload.Start();
+            return ReloadAsync(new AssemblyReloader(ports), appState, reloadTicket, CancellationToken.None);
+        });
 
         Assert.Empty(ListDecompiles(loads));
         Assert.False(appState.ListSession.Reload.IsRunning);
         Assert.NotEqual(SettingArea.Settings.CaptureSavedSources(appState), appState.LastSave.Sources);
-        Assert.IsType<SettingsSave.Saved>(appState.SettingsSaver.SaveIfChanged(appState, d.Now));
+        var settingsSave = appState.SettingsSaver.SaveIfChanged(appState, d.Now);
+        Assert.IsType<SettingsSave.Saved>(settingsSave);
     }
 
     [Fact]
@@ -383,7 +401,11 @@ public sealed class AssembliesTests
         var error = new IOException("unreadable");
         var ports = new FakeAssemblyReloaderPorts { Reopen = _ => new Outcome<ReloadedNodes>.Failed(error) };
 
-        var loads = await d.RunAsync(() => ReloadAsync(new AssemblyReloader(ports), d.AppState, d.AppState.ListSession.Reload.Start(), CancellationToken.None));
+        var loads = await d.RunAsync(() =>
+        {
+            var reloadTicket = d.AppState.ListSession.Reload.Start();
+            return ReloadAsync(new AssemblyReloader(ports), d.AppState, reloadTicket, CancellationToken.None);
+        });
 
         Assert.Same(error, Assert.IsType<AppProblem.AssembliesNotReloaded>(Assert.Single(ports.Reported)).Error);
         Assert.False(d.AppState.ListSession.Reload.IsRunning);
@@ -400,7 +422,11 @@ public sealed class AssembliesTests
         // As the edge starts it, the reload's canceller linked into its token.
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ticket.Token);
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => Assert.Empty(ListDecompiles(await d.RunAsync(() => ReloadAsync(new AssemblyReloader(ports), appState, ticket, linked.Token)))));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            var reloadLoads = await d.RunAsync(() => ReloadAsync(new AssemblyReloader(ports), appState, ticket, linked.Token));
+            Assert.Empty(ListDecompiles(reloadLoads));
+        });
 
         Assert.Empty(ports.Reported);
         Assert.False(appState.ListSession.Reload.IsRunning);
@@ -411,16 +437,22 @@ public sealed class AssembliesTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var appState = d.AppState;
-        Assert.IsType<SettingsWriteResult.Written>(appState.SettingsSaver.Save(appState));
+        var write = appState.SettingsSaver.Save(appState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
         appState.Locale = Locale.De;
         var ports = new FakeOpenAssembliesAsReloadHandlerPorts { Opened = FixturesOf(d) };
 
-        var loads = await d.RunAsync(() => new OpenAssembliesAsReloadHandler(ports).HandleAsync(appState.ListSession, [PathTo("Listed.dll")], appState.ListSession.Reload.Start(), appState.ListSession.Assemblies.Work, CancellationToken.None));
+        var loads = await d.RunAsync(() =>
+        {
+            var reloadTicket = appState.ListSession.Reload.Start();
+            return new OpenAssembliesAsReloadHandler(ports).HandleAsync(appState.ListSession, [PathTo("Listed.dll")], reloadTicket, appState.ListSession.Assemblies.Work, CancellationToken.None);
+        });
 
         Assert.Empty(ListDecompiles(loads));
         Assert.False(appState.ListSession.Reload.IsRunning);
         Assert.NotEqual(SettingArea.Settings.CaptureSavedSources(appState), appState.LastSave.Sources);
-        Assert.IsType<SettingsSave.Saved>(appState.SettingsSaver.SaveIfChanged(appState, d.Now));
+        var settingsSave = appState.SettingsSaver.SaveIfChanged(appState, d.Now);
+        Assert.IsType<SettingsSave.Saved>(settingsSave);
     }
 
     [Fact]
@@ -441,7 +473,11 @@ public sealed class AssembliesTests
         var reopened = SavedDocuments.WaitFor(d.AppState.ListSession.Reopened, tab, record);
         var ports = new FakeOpenAssembliesAsReloadHandlerPorts();
 
-        var loads = await d.RunAsync(() => new OpenAssembliesAsReloadHandler(ports).HandleAsync(d.AppState.ListSession, [PathTo("Listed.dll")], d.AppState.ListSession.Reload.Start(), d.AppState.ListSession.Assemblies.Work, CancellationToken.None));
+        var loads = await d.RunAsync(() =>
+        {
+            var reloadTicket = d.AppState.ListSession.Reload.Start();
+            return new OpenAssembliesAsReloadHandler(ports).HandleAsync(d.AppState.ListSession, [PathTo("Listed.dll")], reloadTicket, d.AppState.ListSession.Assemblies.Work, CancellationToken.None);
+        });
 
         var waiting = Assert.Single(Assert.Single(ListLookups(loads)).Nodes);
         Assert.Same(reopened, waiting.Reopened);
@@ -465,7 +501,11 @@ public sealed class AssembliesTests
         // As the edge starts it, the reload's canceller linked into its token.
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ticket.Token);
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => Assert.Empty(ListDecompiles(await d.RunAsync(() => new OpenAssembliesAsReloadHandler(ports).HandleAsync(appState.ListSession, [PathTo("Listed.dll")], ticket, appState.ListSession.Assemblies.Work, linked.Token)))));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            var reopenLoads = await d.RunAsync(() => new OpenAssembliesAsReloadHandler(ports).HandleAsync(appState.ListSession, [PathTo("Listed.dll")], ticket, appState.ListSession.Assemblies.Work, linked.Token));
+            Assert.Empty(ListDecompiles(reopenLoads));
+        });
 
         Assert.True(Assert.Single(ports.Tokens).IsCancellationRequested);
     }

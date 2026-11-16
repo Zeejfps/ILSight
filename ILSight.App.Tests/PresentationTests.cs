@@ -105,8 +105,12 @@ public sealed class PresentationTests
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var shapes = Assert.IsType<LoadedModule>(list.Open(WrittenAssemblies.WriteWithBase(temp, "Shapes", "Shape", "Circle")));
-        list.Open(BrokenAssemblies.WriteUnreadableTypeSystem(temp, WrittenAssemblies.WriteDeriving(temp, "Billing", "Shapes", "Shape", "Invoice")));
+        var withBasePath = WrittenAssemblies.WriteWithBase(temp, "Shapes", "Shape", "Circle");
+        var opened = list.Open(withBasePath);
+        var shapes = Assert.IsType<LoadedModule>(opened);
+        var derivingPath = WrittenAssemblies.WriteDeriving(temp, "Billing", "Shapes", "Shape", "Invoice");
+        var unreadablePath = BrokenAssemblies.WriteUnreadableTypeSystem(temp, derivingPath);
+        list.Open(unreadablePath);
         var shape = await shapes.ReadRootAsync().GetChildAsync("Shapes", "Shape");
         var derived = await shape.GetChildAsync("Derived Types");
         var unreadable = (await derived.ListChildrenAsync()).Single(static c => c.Subject is NodeSubject.UnreadableModule);
@@ -262,7 +266,7 @@ public sealed class PresentationTests
     [Fact]
     public void An_assembly_tab_is_titled_by_the_assembly_name_with_its_identity_in_the_tooltip()
     {
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
         var assembly = d.OpenFixtures();
 
         var tab = d.AppState.ListSession.Navigation.ActiveTab;

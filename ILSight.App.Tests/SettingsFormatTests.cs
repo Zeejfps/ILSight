@@ -44,7 +44,8 @@ public sealed class SettingsFormatTests : IDisposable
         var path = _temp.PathOf(SettingsFixture);
         var settings = ExpectedSettings() with { FilePath = FullFilePath.Of(path) };
 
-        Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
+        var write = TempSettings.Save(settings);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
         AssertSameJson(Fixture(SettingsFixture), File.ReadAllText(path));
     }
@@ -106,7 +107,8 @@ public sealed class SettingsFormatTests : IDisposable
         var loaded = read.Settings;
         var problem = read.Problem;
         Assert.IsType<SettingsProblem.None>(problem);
-        Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(loaded));
+        var write = TempSettings.Save(loaded);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
         AssertSameJson(Fixture(SettingsFixture), File.ReadAllText(path));
     }
@@ -122,7 +124,8 @@ public sealed class SettingsFormatTests : IDisposable
 
         var loaded = AppRoot.ReadSettingsFile(FullFilePath.Of(path)).Settings;
         var diagram = loaded.AssemblyLists.SelectMany(static l => l.Documents?.Tabs ?? []).OfType<DiagramDocumentRecord>().Single();
-        Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(loaded));
+        var write = TempSettings.Save(loaded);
+        Assert.IsType<SettingsWriteResult.Written>(write);
         var saved = JsonNode.Parse(File.ReadAllText(path))?.ToJsonString();
 
         Assert.Equal(new TabTitle.Saved("Diagramm von Calculator"), diagram.Title);
@@ -136,7 +139,8 @@ public sealed class SettingsFormatTests : IDisposable
         var path = _temp.PathOf(BookmarksFixture);
         Directory.CreateDirectory(_temp.Path);
 
-        Assert.IsType<BookmarksWriteResult.Written>(BookmarkFile.Write(path, ExpectedBookmarks()));
+        var write = BookmarkFile.Write(path, ExpectedBookmarks());
+        Assert.IsType<BookmarksWriteResult.Written>(write);
 
         AssertSameJson(Fixture(BookmarksFixture), File.ReadAllText(path));
     }
@@ -148,7 +152,8 @@ public sealed class SettingsFormatTests : IDisposable
 
         var read = Assert.IsType<BookmarksRead.Read>(BookmarkFile.Read(path));
         Assert.Empty(read.Problems);
-        Assert.IsType<BookmarksWriteResult.Written>(BookmarkFile.Write(path, read.Bookmarks));
+        var write = BookmarkFile.Write(path, read.Bookmarks);
+        Assert.IsType<BookmarksWriteResult.Written>(write);
 
         AssertSameJson(Fixture(BookmarksFixture), File.ReadAllText(path));
     }

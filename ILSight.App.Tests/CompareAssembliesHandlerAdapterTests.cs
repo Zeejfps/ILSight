@@ -13,9 +13,11 @@ public sealed class CompareAssembliesHandlerAdapterTests
         using var temp = new TempDir();
         var greet = BrokenAssemblies.GetMethod(AppStateDriver.FixturePath, "Greeter", "Greet");
         var assemblies = new AssemblyList { Runtime = TestRuntime.Installed };
-        var left = Assert.IsType<LoadedModule>(AssemblyListing.Open(assemblies, AssemblyPath.Of(AppStateDriver.FixturePath)));
-        var right = Assert.IsType<LoadedModule>(AssemblyListing.Open(assemblies,
-            AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodName(temp, AppStateDriver.FixturePath, greet))));
+        var leftOpened = AssemblyListing.Open(assemblies, AssemblyPath.Of(AppStateDriver.FixturePath));
+        var left = Assert.IsType<LoadedModule>(leftOpened);
+        var unreadablePath = BrokenAssemblies.WriteUnreadableMethodName(temp, AppStateDriver.FixturePath, greet);
+        var rightOpened = AssemblyListing.Open(assemblies, AssemblyPath.Of(unreadablePath));
+        var right = Assert.IsType<LoadedModule>(rightOpened);
 
         var compared = await new CompareAssembliesHandlerAdapter(new ErrorLog()).CompareAsync(left, right, ApiScope.PublicApi, CancellationToken.None);
 

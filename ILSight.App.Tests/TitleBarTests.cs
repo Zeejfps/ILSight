@@ -130,12 +130,13 @@ public sealed class TitleBarTests : IDisposable
     [Fact]
     public void The_system_title_bar_is_still_kept_after_a_restart()
     {
-        var d = new AppStateDriver(_temp.Settings());
+        var d = AppStateDriver.Started(_temp.Settings());
         d.Ui.Display.Set(d.Ui.Display.Options with { SystemTitleBar = true });
         d.NextFrame();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
-        var next = new AppStateDriver(_temp.Settings());
+        var next = AppStateDriver.Started(_temp.Settings());
 
         Assert.True(next.Ui.Display.Options.SystemTitleBar);
     }

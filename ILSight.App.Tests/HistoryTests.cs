@@ -111,7 +111,11 @@ public sealed class HistoryTests
         var before = ScrollTo(app, 25,
             new TextPosition { Line = line, Column = column }, new TextPosition { Line = line, Column = column + 6 });
 
-        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, reference, a.ListSession.Navigation.BeginResolving(inNewTab: false), ct));
+        app.Start((a, ct) =>
+        {
+            var resolveTicket = a.ListSession.Navigation.BeginResolving(inNewTab: false);
+            return a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, reference, resolveTicket, ct);
+        });
         app.Settle(4);
         Assert.NotNull(tab.Node);
         var followed = tab.Node.Text;

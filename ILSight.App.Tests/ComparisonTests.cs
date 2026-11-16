@@ -18,7 +18,7 @@ public sealed class ComparisonTests
 
     private static AppStateDriver OpenBoth()
     {
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
         d.Open([TestPaths.PathOf(LeftPath), TestPaths.PathOf(RightPath)]);
         d.RunUntil(() => d.AppState.ListSession.Assemblies.Assemblies.Count == 2);
         d.Settle();
@@ -127,7 +127,11 @@ public sealed class ComparisonTests
         d.Settle();
         var account = Entry(DiffOf(comparison), "ApiDiffSample", "Account");
         var sides = Assert.IsType<ApiSides.Both>(Assert.IsType<ApiEntry.Entity>(account).Sides);
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, sides.Right.Reference, a.ListSession.Navigation.BeginResolving(inNewTab: false), ct));
+        d.Start((a, ct) =>
+        {
+            var resolveTicket = a.ListSession.Navigation.BeginResolving(inNewTab: false);
+            return a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, sides.Right.Reference, resolveTicket, ct);
+        });
         d.Settle();
 
         d.GoBack();
@@ -158,7 +162,8 @@ public sealed class ComparisonTests
     {
         var d = OpenWithFixtures();
         var compared = Compare(d, LeftPath, RightPath);
-        d.StartComparing(Comparisons.SwapComparedAssemblies(d.AppState.ListSession.Assemblies, compared));
+        var swappedRun = Comparisons.SwapComparedAssemblies(d.AppState.ListSession.Assemblies, compared);
+        d.StartComparing(swappedRun);
         d.Settle();
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -215,7 +220,8 @@ public sealed class ComparisonTests
         var added = DiffOf(comparison).Added;
         var removed = DiffOf(comparison).Removed;
 
-        d.StartComparing(Comparisons.SwapComparedAssemblies(d.AppState.ListSession.Assemblies, comparison));
+        var swappedRun = Comparisons.SwapComparedAssemblies(d.AppState.ListSession.Assemblies, comparison);
+        d.StartComparing(swappedRun);
         d.Settle();
 
         var swapped = DiffOf(comparison);
@@ -249,7 +255,11 @@ public sealed class ComparisonTests
         var account = Entry(DiffOf(comparison), "ApiDiffSample", "Account");
 
         var sides = Assert.IsType<ApiSides.Both>(Assert.IsType<ApiEntry.Entity>(account).Sides);
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, sides.Right.Reference, a.ListSession.Navigation.BeginResolving(inNewTab: false), ct));
+        d.Start((a, ct) =>
+        {
+            var resolveTicket = a.ListSession.Navigation.BeginResolving(inNewTab: false);
+            return a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, sides.Right.Reference, resolveTicket, ct);
+        });
         d.Settle();
 
         var shown = d.AppState.ListSession.Navigation.ActiveTab;
@@ -268,7 +278,8 @@ public sealed class ComparisonTests
         var comparison = Compare(d, LeftPath, RightPath);
 
         d.InTurn(() => Commands.CloseAssemblies(d.AppState, [Opened(d, RightPath)]));
-        d.StartComparing(Comparisons.SwapComparedAssemblies(d.AppState.ListSession.Assemblies, comparison));
+        var swappedRun = Comparisons.SwapComparedAssemblies(d.AppState.ListSession.Assemblies, comparison);
+        d.StartComparing(swappedRun);
         d.Settle();
 
         var failed = Assert.IsType<ComparisonResult.Failed>(comparison.Result);

@@ -358,7 +358,7 @@ public sealed class SavedDocumentsTests : IDisposable
             Language = DecompilationLanguage.CSharp,
             View = null,
         };
-        var d = new AppStateDriver(SettingsWith(new DocumentsRecord
+        var d = AppStateDriver.Started(SettingsWith(new DocumentsRecord
         {
             Tabs = [missing],
             Active = MissingPanel,
@@ -413,7 +413,7 @@ public sealed class SavedDocumentsTests : IDisposable
             HomeAssemblies = [TestPaths.PathOf(AppStateDriver.FixturePath)],
             View = null,
         };
-        var d = new AppStateDriver(SettingsWith(new DocumentsRecord
+        var d = AppStateDriver.Started(SettingsWith(new DocumentsRecord
         {
             Tabs = [saved],
             Active = DiagramPanel,
@@ -525,7 +525,8 @@ public sealed class SavedDocumentsTests : IDisposable
                 Layout = null,
             },
         });
-        Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
+        var write = TempSettings.Save(settings);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
         var documents = _temp.Settings().AssemblyLists.Single(static l => l.Name == "Hand").Documents;
         Assert.NotNull(documents);
@@ -559,12 +560,13 @@ public sealed class SavedDocumentsTests : IDisposable
     [Fact]
     public void Tabs_showing_nothing_are_not_kept_and_the_next_run_starts_with_one_empty_tab_as_ever()
     {
-        var d = new AppStateDriver(_temp.Settings());
+        var d = AppStateDriver.Started(_temp.Settings());
         d.NextFrame();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
         var saved = _temp.Settings();
-        var next = new AppStateDriver(saved);
+        var next = AppStateDriver.Started(saved);
 
         Assert.Null(Assert.Single(saved.AssemblyLists).Documents);
         var tab = Assert.Single(next.AppState.ListSession.Navigation.OpenTabs);

@@ -32,7 +32,8 @@ public sealed class NavigationInfrastructureTests
     {
         using var temp = new TempDir();
         var greet = BrokenAssemblies.GetMethod(AppStateDriver.FixturePath, "Greeter", "Greet");
-        var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodName(temp, AppStateDriver.FixturePath, greet));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableMethodName(temp, AppStateDriver.FixturePath, greet);
+        var path = AssemblyPath.Of(unreadablePath);
 
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var navigation = new NavigationInfrastructure(new ErrorLog(), new RefusalLine(), list, new BrowseSession());
@@ -49,7 +50,8 @@ public sealed class NavigationInfrastructureTests
     {
         using var temp = new TempDir();
         var greet = BrokenAssemblies.GetMethod(AppStateDriver.FixturePath, "Greeter", "Greet");
-        var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodName(temp, AppStateDriver.FixturePath, greet));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableMethodName(temp, AppStateDriver.FixturePath, greet);
+        var path = AssemblyPath.Of(unreadablePath);
         var d = AppStateDriver.WithoutScreen();
         var errors = new ErrorLog();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
@@ -76,7 +78,8 @@ public sealed class NavigationInfrastructureTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var session = new BrowseSession();
         var navigation = new NavigationInfrastructure(errors, new RefusalLine(), list, session);
-        var root = session.EnsureRoot(AssemblyListing.Open(list, place.FilePath));
+        var opened = AssemblyListing.Open(list, place.FilePath);
+        var root = session.EnsureRoot(opened);
         BrokenListing.Settle(session, root);
 
         var work = new BackgroundWork();

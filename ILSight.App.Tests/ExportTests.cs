@@ -25,7 +25,7 @@ public sealed class ExportTests : IDisposable
     // For what works through a whole assembly, which would take long on the fixtures, the whole test assembly.
     private static AppStateDriver OpenedSample()
     {
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
         d.Open([AssemblyPath.Of(SampleAppPath)]);
         d.RunUntil(() => d.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)));
         d.Settle();
@@ -283,7 +283,7 @@ public sealed class ExportTests : IDisposable
     [Fact]
     public async Task An_export_asked_for_while_another_runs_waits_its_turn()
     {
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
         var first = d.InTurn(() => queue.Enter(TestJobs.Named("First"))).Turn;
         var second = d.InTurn(() => queue.Enter(TestJobs.Named("Second"))).Turn;
@@ -303,7 +303,7 @@ public sealed class ExportTests : IDisposable
     [Fact]
     public async Task Only_the_running_export_can_end_its_turn()
     {
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
         var first = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("First"))).Turn);
         d.InTurn(first.EndTurn);
@@ -319,7 +319,7 @@ public sealed class ExportTests : IDisposable
     [Fact]
     public async Task A_waiting_export_taken_out_of_the_queue_is_withdrawn_without_starting()
     {
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
         var first = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("First"))).Turn);
         var second = d.InTurn(() => queue.Enter(TestJobs.Named("Second"))).Turn;
@@ -334,7 +334,7 @@ public sealed class ExportTests : IDisposable
     [Fact]
     public async Task CancelRunning_with_an_export_waiting_cancels_only_the_running_one()
     {
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
         var first = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("First"))).Turn);
         var second = d.InTurn(() => queue.Enter(TestJobs.Named("Second"))).Turn;
@@ -352,7 +352,7 @@ public sealed class ExportTests : IDisposable
     [Fact]
     public async Task Progress_that_arrives_after_its_turn_ended_is_dropped()
     {
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
         var first = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("First"))).Turn);
         first.Progress.Report(new ExportProgress { Name = "First", Part = 1, Parts = 1, Fraction = 0.5f });
@@ -373,7 +373,7 @@ public sealed class ExportTests : IDisposable
     [Fact]
     public async Task Progress_of_the_running_export_arrives_on_the_ui_thread()
     {
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
         var start = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("Fixtures"))).Turn);
 
@@ -389,7 +389,7 @@ public sealed class ExportTests : IDisposable
     [Fact]
     public async Task Progress_that_arrives_out_of_order_never_steps_the_bar_back()
     {
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
         var start = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("Fixtures"))).Turn);
 

@@ -144,7 +144,7 @@ public sealed class AppStateTests
     [Fact]
     public void Opening_happens_in_the_background_and_shows_the_assembly()
     {
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
 
         d.Open([AssemblyPath.Of(AppStateDriver.FixturePath)]);
 
@@ -227,7 +227,7 @@ public sealed class AppStateTests
     [Fact]
     public async Task A_file_that_cannot_be_opened_is_listed_as_failed_and_its_tab_says_why()
     {
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
         var missing = Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}.dll");
 
         d.Open([AssemblyPath.Of(missing)]);
@@ -321,8 +321,9 @@ public sealed class AppStateTests
         using var temp = new TempDir();
         var sample = Path.Combine(AppContext.BaseDirectory, "Fixtures", "SampleApp", "SampleApp.dll");
         var path = temp.Copy(sample, "Sample.dll");
-        var unreadable = await File.ReadAllBytesAsync(BrokenAssemblies.WriteUnreadableTypeSystem(temp, sample));
-        var d = new AppStateDriver();
+        var unreadablePath = BrokenAssemblies.WriteUnreadableTypeSystem(temp, sample);
+        var unreadable = await File.ReadAllBytesAsync(unreadablePath);
+        var d = AppStateDriver.Started();
         d.Open([AssemblyPath.Of(path)]);
         d.RunUntil(() => d.AppState.ListSession.Assemblies.Assemblies.Count == 1);
         d.Settle();
@@ -448,9 +449,17 @@ public sealed class AppStateTests
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference);
         var farewell = await d.FixtureAsync("Farewell");
 
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, reference, a.ListSession.Navigation.BeginResolving(inNewTab: false), ct));
+        d.Start((a, ct) =>
+        {
+            var resolveTicket = a.ListSession.Navigation.BeginResolving(inNewTab: false);
+            return a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, reference, resolveTicket, ct);
+        });
         d.StartShowing(farewell);
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, reference, a.ListSession.Navigation.BeginResolving(inNewTab: true), ct));
+        d.Start((a, ct) =>
+        {
+            var resolveTicket = a.ListSession.Navigation.BeginResolving(inNewTab: true);
+            return a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, reference, resolveTicket, ct);
+        });
         d.Ui.Panels.ActivateTab(d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup, d.AppState.ListSession.Navigation.OpenTabs[0]);
         d.NextFrame();
         d.Settle();
@@ -471,7 +480,11 @@ public sealed class AppStateTests
         var (line, column) = document.GetPosition("Name;");
 
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference);
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, reference, a.ListSession.Navigation.BeginResolving(inNewTab: false), ct));
+        d.Start((a, ct) =>
+        {
+            var resolveTicket = a.ListSession.Navigation.BeginResolving(inNewTab: false);
+            return a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, reference, resolveTicket, ct);
+        });
         d.Settle();
 
         var tab = Assert.Single(d.AppState.ListSession.Navigation.OpenTabs);
@@ -522,7 +535,11 @@ public sealed class AppStateTests
         var document = active.Document;
         var (line, column) = document.GetPosition("Length");
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference);
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, reference, a.ListSession.Navigation.BeginResolving(inNewTab: true), ct));
+        d.Start((a, ct) =>
+        {
+            var resolveTicket = a.ListSession.Navigation.BeginResolving(inNewTab: true);
+            return a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, reference, resolveTicket, ct);
+        });
         d.Settle();
         Assert.Equal(2, d.AppState.ListSession.Assemblies.Assemblies.Count);
         search.RunSearch(d.AppState.ListSession.Assemblies, TimeSpan.FromSeconds(2), true);
@@ -706,7 +723,7 @@ public sealed class AppStateTests
     [Fact]
     public async Task A_tab_whose_place_is_gone_after_a_reload_says_so_in_the_tab()
     {
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
         using var temp = new TempDir();
         var copy = temp.Copy(AppStateDriver.FixturePath, "fixture.dll");
         d.Open([AssemblyPath.Of(copy)]);

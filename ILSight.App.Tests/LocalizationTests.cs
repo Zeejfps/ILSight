@@ -76,7 +76,7 @@ public sealed class LocalizationTests
     public void The_chosen_language_is_restored_with_the_settings()
     {
         using var temp = new TempDir();
-        var d = new AppStateDriver(temp.Settings());
+        var d = AppStateDriver.Started(temp.Settings());
         d.AppState.Locale = Locale.Ja;
         d.Pump();
 

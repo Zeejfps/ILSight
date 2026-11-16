@@ -34,7 +34,8 @@ public sealed class TargetFrameworkTests
         app.Settle(2);
 
         PickFramework(app, "net48");
-        Assert.IsType<SettingsWriteResult.Written>(app.AppState.SettingsSaver.Save(app.AppState));
+        var write = app.AppState.SettingsSaver.Save(app.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
         var assembly = FixturesOf(app.AppState.ListSession.Assemblies);
         Assert.True(assembly.IsTargetFrameworkPicked);
@@ -114,7 +115,8 @@ public sealed class TargetFrameworkTests
     {
         using var temp = new TempDir();
         var app = new AppDriver();
-        app.Open([AssemblyPath.Of(WritePackage(temp))]);
+        var packagePath = WritePackage(temp);
+        app.Open([AssemblyPath.Of(packagePath)]);
         app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, Waits.Patience);
         app.Settle(2);
         var package = await app.AppState.ListSession.Assemblies.Listed[0].ReadRootAsync();
@@ -160,7 +162,7 @@ public sealed class TargetFrameworkTests
                 Frameworks = new Dictionary<AssemblyPath, string> { [TestPaths.PathOf(AppStateDriver.FixturePath)] = Net48.Text },
             },
         ];
-        var d = new AppStateDriver(settings);
+        var d = AppStateDriver.Started(settings);
 
         d.Settle();
 
@@ -181,7 +183,7 @@ public sealed class TargetFrameworkTests
                 Frameworks = new Dictionary<AssemblyPath, string> { [TestPaths.PathOf(AppStateDriver.FixturePath)] = @"C:\symbols\Fixtures.pdb" },
             },
         ];
-        var d = new AppStateDriver(settings);
+        var d = AppStateDriver.Started(settings);
 
         d.Settle();
 

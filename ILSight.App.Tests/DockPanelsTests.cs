@@ -16,9 +16,10 @@ public sealed class DockPanelsTests
         var d = app.Driver;
         app.DockWidget.Float(DockPanels.Assemblies, new UiRect(40f, 50f, 300f, 400f));
         app.Run();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
-        var next = new AppStateDriver(temp.Settings());
+        var next = AppStateDriver.Started(temp.Settings());
         var restored = next.Arrangement;
 
         Assert.Same(next.AppState.ListSession.Navigation.ActiveTab, next.Ui.Documents.FindTab(Assert.Single(Assert.IsType<DockGroup>(restored.Root).Panels)));
@@ -34,7 +35,7 @@ public sealed class DockPanelsTests
     {
         var saved = new DockLayout { Root = DockLayout.Group("document-7", DockPanels.Search, "gone", DockPanels.Bookmarks) };
 
-        var d = new AppStateDriver(new AppSettings { Layout = saved });
+        var d = AppStateDriver.Started(new AppSettings { Layout = saved });
         var fresh = DockPanels.Restore(null);
 
         var panel = d.Ui.Documents.GetPanel(Assert.Single(d.AppState.ListSession.Navigation.OpenTabs));
@@ -80,13 +81,14 @@ public sealed class DockPanelsTests
     public void The_search_mode_is_saved_and_restored()
     {
         using var temp = new TempDir();
-        var d = new AppStateDriver(temp.Settings());
+        var d = AppStateDriver.Started(temp.Settings());
 
         d.Ui.Search.LookFor(SearchKinds.Literals);
         d.NextFrame();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
-        Assert.Equal(SearchKinds.Literals, new AppStateDriver(temp.Settings()).Ui.Search.Kinds);
+        Assert.Equal(SearchKinds.Literals, AppStateDriver.Started(temp.Settings()).Ui.Search.Kinds);
     }
 
     [Fact]
@@ -94,12 +96,13 @@ public sealed class DockPanelsTests
     {
         using var temp = new TempDir();
         var settings = temp.Settings();
-        var d = new AppStateDriver(settings);
+        var d = AppStateDriver.Started(settings);
 
         d.Ui.Search.LookFor(SearchKinds.Literals);
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         d.NextFrame();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
         Assert.Equal(SearchKinds.TypesAndMembers, settings.SearchKinds);
         Assert.Equal(DecompilationLanguage.CSharp, settings.Language);

@@ -27,15 +27,16 @@ public sealed class CheckExportFilesHandlerTests
     public async Task HandleAsync_FolderCannotBeListed_FailsTheLookSayingWhyAndAsksNothingMoreUntilRetried()
     {
         var checks = new ExportFileChecks();
-        var check = checks.StartCheck(Folder, KeyFile);
-        Assert.NotNull(check);
+        var firstCheck = checks.StartCheck(Folder, KeyFile);
+        Assert.NotNull(firstCheck);
         var ports = new FakeCheckExportFilesHandlerPorts { Unlistable = { [Folder] = new UnauthorizedAccessException("Access is denied.") } };
 
-        await new CheckExportFilesHandler(ports).HandleAsync(checks, check, CancellationToken.None);
+        await new CheckExportFilesHandler(ports).HandleAsync(checks, firstCheck, CancellationToken.None);
 
         Assert.Equal("Access is denied.", Assert.IsType<ExportFileLook.Failed>(checks.FindLook(Folder, KeyFile)).Why);
         Assert.Null(checks.FindFacts(Folder, KeyFile));
-        Assert.Null(checks.StartCheck(Folder, KeyFile));
+        var secondCheck = checks.StartCheck(Folder, KeyFile);
+        Assert.Null(secondCheck);
     }
 
     [Fact]
@@ -55,7 +56,8 @@ public sealed class CheckExportFilesHandlerTests
         Assert.True(retried.IsOf(Folder, ""));
         Assert.IsType<ExportFileLook.Checking>(lookWhileRetried);
         Assert.Equal(new ExportFileFacts { FolderHoldsFiles = true, IsKeyFileMissing = false }, checks.FindFacts(Folder, ""));
-        Assert.Null(checks.Retry());
+        var check = checks.Retry();
+        Assert.Null(check);
     }
 
     [Fact]

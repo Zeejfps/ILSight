@@ -100,7 +100,8 @@ public sealed class NuGetPickerTests : IDisposable
         if (wanted is not null)
         {
             var search = picker.Browser.StartSearch(wanted);
-            _started.Add(CreateSearchFeed().HandleAsync(picker.Browser, search, search.Work.Token));
+            var searching = CreateSearchFeed().HandleAsync(picker.Browser, search, search.Work.Token);
+            _started.Add(searching);
         }
 
         if (!picker.Browser.IsSettling)
@@ -121,7 +122,8 @@ public sealed class NuGetPickerTests : IDisposable
         using var turn = PostedActions.OfThisTest().Install();
         var download = picker.Browser.StartDownload();
         Assert.NotNull(download);
-        Start(CreateDownloadPackage().HandleAsync(picker.Browser, download, download.Work.Token));
+        var downloading = CreateDownloadPackage().HandleAsync(picker.Browser, download, download.Work.Token);
+        Start(downloading);
     }
 
     private static void Close(NuGetPicker picker)
@@ -468,9 +470,10 @@ public sealed class NuGetPickerTests : IDisposable
         StartDownload(picker);
         Poll.Until(() => !picker.Browser.IsDownloading, posted.Run);
 
-        var downloaded = picker.Browser.TakeDownloaded();
-        Assert.Equal(_temp.PathOf(Path.Combine("downloads", "fixtures", "1.0.0", "fixtures.1.0.0.nupkg")), downloaded);
-        Assert.Null(picker.Browser.TakeDownloaded());
+        var firstDownloaded = picker.Browser.TakeDownloaded();
+        Assert.Equal(_temp.PathOf(Path.Combine("downloads", "fixtures", "1.0.0", "fixtures.1.0.0.nupkg")), firstDownloaded);
+        var secondDownloaded = picker.Browser.TakeDownloaded();
+        Assert.Null(secondDownloaded);
     }
 
     [Fact]
@@ -482,7 +485,8 @@ public sealed class NuGetPickerTests : IDisposable
         StartDownload(picker);
         Poll.Until(() => !picker.Browser.IsDownloading, posted.Run);
 
-        Assert.Null(picker.Browser.TakeDownloaded());
+        var downloaded = picker.Browser.TakeDownloaded();
+        Assert.Null(downloaded);
         Assert.Equal(["Cannot download Fixtures 2.0.0"], _reported);
     }
 
@@ -499,7 +503,8 @@ public sealed class NuGetPickerTests : IDisposable
         Poll.Until(() => _fake.Cancelled > 0, posted.Run);
 
         Assert.False(picker.Browser.IsDownloading);
-        Assert.Null(picker.Browser.TakeDownloaded());
+        var downloaded = picker.Browser.TakeDownloaded();
+        Assert.Null(downloaded);
         Assert.Empty(_reported);
     }
 
@@ -507,7 +512,8 @@ public sealed class NuGetPickerTests : IDisposable
     public void Enter_in_the_dialog_opens_the_package_and_closes_it()
     {
         var app = new AppDriver(nuGetRequests: _fake);
-        _fake.Answer(FakeFeed.PackagesUrl + "fixtures/2.0.0/fixtures.2.0.0.nupkg", File.ReadAllBytes(WritePackage()));
+        var packagePath = WritePackage();
+        _fake.Answer(FakeFeed.PackagesUrl + "fixtures/2.0.0/fixtures.2.0.0.nupkg", File.ReadAllBytes(packagePath));
         var picker = app.Ui.NuGetPicker;
         picker.UseSetup(Setup());
 
@@ -569,7 +575,8 @@ public sealed class NuGetPickerTests : IDisposable
     public void The_details_offer_the_selected_package_s_versions_and_Open_downloads_the_one_picked()
     {
         var app = new AppDriver(nuGetRequests: _fake);
-        _fake.Answer(FakeFeed.PackagesUrl + "fixtures/1.0.0/fixtures.1.0.0.nupkg", File.ReadAllBytes(WritePackage()));
+        var packagePath = WritePackage();
+        _fake.Answer(FakeFeed.PackagesUrl + "fixtures/1.0.0/fixtures.1.0.0.nupkg", File.ReadAllBytes(packagePath));
         var picker = app.Ui.NuGetPicker;
         picker.UseSetup(Setup());
 

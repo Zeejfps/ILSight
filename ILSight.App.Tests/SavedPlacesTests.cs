@@ -34,10 +34,11 @@ public sealed class SavedPlacesTests : IDisposable
 
     private (AppStateDriver, SettingsProblem) RestoredWith(string json)
     {
-        var read = AppRoot.ReadSettingsFile(FullFilePath.Of(_temp.Write("settings.json", json)));
+        var path = _temp.Write("settings.json", json);
+        var read = AppRoot.ReadSettingsFile(FullFilePath.Of(path));
         var settings = read.Settings;
         var problem = read.Problem;
-        var d = new AppStateDriver(settings);
+        var d = AppStateDriver.Started(settings);
         d.Settle();
         return (d, problem);
     }
@@ -64,7 +65,8 @@ public sealed class SavedPlacesTests : IDisposable
 
     private JsonElement Saved(AppStateDriver d)
     {
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
         using var json = JsonDocument.Parse(File.ReadAllText(_temp.PathOf("settings.json")));
         return json.RootElement.Clone();
     }

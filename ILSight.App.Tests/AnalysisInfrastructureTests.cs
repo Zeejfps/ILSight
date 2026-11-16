@@ -13,7 +13,8 @@ public sealed class AnalysisInfrastructureTests
         using var temp = new TempDir();
         var greet = BrokenAssemblies.GetMethod(AppStateDriver.FixturePath, "Greeter", "Greet");
         var twice = BrokenAssemblies.GetMethod(AppStateDriver.FixturePath, "Greeter", "Twice");
-        var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodName(temp, AppStateDriver.FixturePath, twice));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableMethodName(temp, AppStateDriver.FixturePath, twice);
+        var path = AssemblyPath.Of(unreadablePath);
         var assemblies = new AssemblyList { Runtime = TestRuntime.Installed };
         AssemblyListing.Open(assemblies, path);
         var analysis = new AnalysisInfrastructure(new ErrorLog(), assemblies);

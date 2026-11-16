@@ -61,7 +61,11 @@ public sealed class AnalyzerTests
         Assert.NotNull(symbol);
         var kind = new AnalyzerKindNode { Subject = symbol, Kind = symbol.Kinds.Single(k => Core.Analysis.Analyzers.GetHeader(k) == "Used By") };
 
-        d.InTurn(() => Commands.StartAnalysis(d.AppState, kind.StartRun()));
+        d.InTurn(() =>
+        {
+            var run = kind.StartRun();
+            Commands.StartAnalysis(d.AppState, run);
+        });
         d.RunUntil(() => kind.IsDone);
 
         var message = Assert.IsType<AnalyzerMessageNode>(Assert.Single(kind.Found));
@@ -210,7 +214,8 @@ public sealed class AnalyzerTests
 
         Assert.Equal(greeter, Assert.IsType<CommandOffer<AnalysisSymbol>.Runs>(offered).Target);
         var why = Assert.IsType<Refusal.NotAnalyzable>(Assert.IsType<CommandOffer<AnalysisSymbol>.Unavailable>(unavailable).Why);
-        Assert.Equal(why, Assert.IsType<AnalyzerAdd.Refused>(analyzer.AddRoot(unlisted)).Why);
+        var rootAdd = analyzer.AddRoot(unlisted);
+        Assert.Equal(why, Assert.IsType<AnalyzerAdd.Refused>(rootAdd).Why);
         Assert.Empty(analyzer.Roots);
     }
 
@@ -232,7 +237,11 @@ public sealed class AnalyzerTests
         var waiting = analyzer.Roots.ToList();
         d.Settle();
         var followed = AppStateDriver.Opened();
-        followed.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, reference, a.ListSession.Navigation.BeginResolving(inNewTab: false), ct));
+        followed.Start((a, ct) =>
+        {
+            var resolveTicket = a.ListSession.Navigation.BeginResolving(inNewTab: false);
+            return a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, reference, resolveTicket, ct);
+        });
         followed.Settle();
 
         Assert.Equal([AppStateDriver.FixturePath], listedBefore);
@@ -291,12 +300,17 @@ public sealed class AnalyzerTests
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
         d.TakeViewCommands();
 
-        d.InTurn(() => Commands.StartAnalyzing(d.AppState, Analysis.BeginAnalyzing(d.AppState.ListSession.Analyzer, reference)));
+        d.InTurn(() =>
+        {
+            var pendingAnalysis = Analysis.BeginAnalyzing(d.AppState.ListSession.Analyzer, reference);
+            Commands.StartAnalyzing(d.AppState, pendingAnalysis);
+        });
         d.Settle();
 
         var root = Assert.Single(d.AppState.ListSession.Analyzer.Found());
         Assert.StartsWith("First()", root.Symbol.Label);
-        Assert.Equal([new ViewCommand.ShowAnalysis(root)], d.TakeViewCommands());
+        var viewCommands = d.TakeViewCommands();
+        Assert.Equal([new ViewCommand.ShowAnalysis(root)], viewCommands);
     }
 
     private static async Task<CodeReference.Entity> ReferenceToAsync(AppStateDriver d, string type, string text, int offset = 0)
@@ -357,15 +371,22 @@ public sealed class AnalyzerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var reference = await ReferenceToFirstAsync(d);
         var analyzer = d.AppState.ListSession.Analyzer;
-        var first = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(SymbolOf(await FirstAsync(d)))).Root;
-        var greeter = Assert.IsType<AnalyzerAdd.Analyzing>(analyzer.AddRoot(SymbolOf(await d.FixtureAsync("Greeter")))).Root;
+        var firstAdd = analyzer.AddRoot(SymbolOf(await FirstAsync(d)));
+        var first = Assert.IsType<AnalyzerAdd.Analyzing>(firstAdd).Root;
+        var greeterAdd = analyzer.AddRoot(SymbolOf(await d.FixtureAsync("Greeter")));
+        var greeter = Assert.IsType<AnalyzerAdd.Analyzing>(greeterAdd).Root;
         d.TakeViewCommands();
 
-        d.InTurn(() => Commands.StartAnalyzing(d.AppState, Analysis.BeginAnalyzing(analyzer, reference)));
+        d.InTurn(() =>
+        {
+            var pendingAnalysis = Analysis.BeginAnalyzing(analyzer, reference);
+            Commands.StartAnalyzing(d.AppState, pendingAnalysis);
+        });
         d.Settle();
 
         Assert.Equal<AnalyzerNode>([first, greeter], analyzer.Roots);
-        Assert.Equal([new ViewCommand.ShowAnalysis(first)], d.TakeViewCommands());
+        var viewCommands = d.TakeViewCommands();
+        Assert.Equal([new ViewCommand.ShowAnalysis(first)], viewCommands);
     }
 
     [Fact]
@@ -387,7 +408,7 @@ public sealed class AnalyzerTests
     {
         using var temp = new TempDir();
         var copy = temp.Write("Copy.dll", await File.ReadAllBytesAsync(AppStateDriver.FixturePath));
-        var d = new AppStateDriver();
+        var d = AppStateDriver.Started();
         d.Open([AssemblyPath.Of(copy)]);
         d.RunUntil(() => d.AppState.ListSession.Assemblies.Assemblies.Count == 1);
         d.Settle();

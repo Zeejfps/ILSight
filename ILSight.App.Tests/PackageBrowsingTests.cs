@@ -17,7 +17,8 @@ public sealed class PackageBrowsingTests
         using var temp = new TempDir();
         var app = new AppDriver();
 
-        app.Open([AssemblyPath.Of(WritePackage(temp))]);
+        var packagePath = WritePackage(temp);
+        app.Open([AssemblyPath.Of(packagePath)]);
         app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, Waits.Patience);
         app.Settle(2);
 
@@ -35,7 +36,11 @@ public sealed class PackageBrowsingTests
         var app = OpenedPackage(temp);
         var greeter = await GreeterAsync(app);
 
-        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, greeter.Definition, a.ListSession.Navigation.BeginResolving(inNewTab: false), ct));
+        app.Start((a, ct) =>
+        {
+            var resolveTicket = a.ListSession.Navigation.BeginResolving(inNewTab: false);
+            return a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, greeter.Definition, resolveTicket, ct);
+        });
         app.Settle(2);
 
         Assert.Same(greeter, app.AppState.ListSession.Navigation.ActiveTab?.Node);
@@ -145,7 +150,8 @@ public sealed class PackageBrowsingTests
     private static AppDriver OpenedPackage(TempDir temp)
     {
         var app = new AppDriver();
-        app.Open([AssemblyPath.Of(WritePackage(temp))]);
+        var packagePath = WritePackage(temp);
+        app.Open([AssemblyPath.Of(packagePath)]);
         app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Package, Waits.Patience);
         app.Settle(2);
         return app;

@@ -135,7 +135,8 @@ public sealed class DiagramTests
     {
         var d = AppStateDriver.Opened();
         var empty = d.AppState.ListSession.Navigation.OpenEmptyTab();
-        Assert.Null(d.AppState.ListSession.Navigation.FocusTab(empty, d.AppState.Decompiler.Setup));
+        var decompileTicket = d.AppState.ListSession.Navigation.FocusTab(empty, d.AppState.Decompiler.Setup);
+        Assert.Null(decompileTicket);
         var tabs = d.AppState.ListSession.Navigation.OpenTabs.Count;
 
         await ShowInNewAsync(d, "Greeter");
@@ -153,9 +154,17 @@ public sealed class DiagramTests
         var vehicleType = await TypeOfAsync(d, "Vehicle");
         var vehicle = diagram.Cards.Single(c => c.Type == vehicleType);
 
-        d.Start((a, ct) => a.DiagramGrower.ExpandHeldAsync(ExpansionRead.Start(diagram, vehicle), ct));
+        d.Start((a, ct) =>
+        {
+            var expansion = ExpansionRead.Start(diagram, vehicle);
+            return a.DiagramGrower.ExpandHeldAsync(expansion, ct);
+        });
         d.Settle();
-        d.Start((a, ct) => a.DiagramGrower.ExpandDerivedAsync(ExpansionRead.Start(diagram, vehicle), ct));
+        d.Start((a, ct) =>
+        {
+            var expansion = ExpansionRead.Start(diagram, vehicle);
+            return a.DiagramGrower.ExpandDerivedAsync(expansion, ct);
+        });
         d.Settle();
 
         Assert.Equal(["Bike", "Car", "Garage", "IDriven", "Vehicle"], CardNames(diagram));
@@ -172,7 +181,11 @@ public sealed class DiagramTests
         var breakdown = diagram.Cards[0];
         Assert.True(Diagrams.HasMissingBases(diagram, breakdown));
 
-        d.Start((a, ct) => a.DiagramGrower.ExpandBasesAsync(ExpansionRead.Start(diagram, breakdown), ct));
+        d.Start((a, ct) =>
+        {
+            var expansion = ExpansionRead.Start(diagram, breakdown);
+            return a.DiagramGrower.ExpandBasesAsync(expansion, ct);
+        });
         d.Settle();
 
         Assert.Equal(["Breakdown", "Exception"], CardNames(diagram));
@@ -189,7 +202,11 @@ public sealed class DiagramTests
         var diagram = await ShowInNewAsync(d, "IDriven");
 
         var idriven = diagram.Cards[0];
-        d.Start((a, ct) => a.DiagramGrower.ExpandDerivedAsync(ExpansionRead.Start(diagram, idriven), ct));
+        d.Start((a, ct) =>
+        {
+            var expansion = ExpansionRead.Start(diagram, idriven);
+            return a.DiagramGrower.ExpandDerivedAsync(expansion, ct);
+        });
         d.Settle();
 
         Assert.Equal(["Car", "IDriven"], CardNames(diagram));
@@ -261,7 +278,11 @@ public sealed class DiagramTests
         Assert.NotNull(tab);
 
         var greeter = await TypeOfAsync(d, "Greeter");
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, greeter, a.ListSession.Navigation.BeginResolving(inNewTab: false), ct));
+        d.Start((a, ct) =>
+        {
+            var resolveTicket = a.ListSession.Navigation.BeginResolving(inNewTab: false);
+            return a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, greeter, resolveTicket, ct);
+        });
         d.Settle();
 
         Assert.NotSame(tab, d.AppState.ListSession.Navigation.ActiveTab);

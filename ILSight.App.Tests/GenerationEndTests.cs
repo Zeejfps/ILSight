@@ -23,7 +23,11 @@ public sealed class GenerationEndTests
         var session = d.AppState.ListSession;
         var tab = session.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        ports.End = () => LoadedAssemblies.Release(session.ClearAssemblies());
+        ports.End = () =>
+        {
+            var removed = session.ClearAssemblies();
+            LoadedAssemblies.Release(removed);
+        };
 
         d.InTurn(() => Commands.StartReloading(d.AppState, []));
         d.RunUntil(() => d.AppState.Work.Outstanding.Count == 0);
@@ -142,7 +146,11 @@ public sealed class GenerationEndTests
         var appState = d.AppState;
         var session = appState.ListSession;
         appState.Lists.Add("Other", [TestPaths.PathOf(AppStateDriver.FixturePath)]);
-        ports.End = () => LoadedAssemblies.Release(session.ClearAssemblies());
+        ports.End = () =>
+        {
+            var removed = session.ClearAssemblies();
+            LoadedAssemblies.Release(removed);
+        };
 
         d.InTurn(() => Commands.StartOpeningList(appState, AssemblyLists.SwitchAssemblyList(appState.Lists, session, appState.KeptScreen.View, "Other")));
         d.RunUntil(() => d.AppState.Work.Outstanding.Count == 0);

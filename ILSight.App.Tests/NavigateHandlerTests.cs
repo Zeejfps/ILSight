@@ -34,7 +34,11 @@ public sealed class NavigateHandlerTests
         var resolvingWhileLooking = false;
         var lookup = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(farewell)), WhileLooking = () => resolvingWhileLooking = appState.ListSession.Navigation.IsResolving };
 
-        var load = await d.RunAsync(() => new NavigateHandler(lookup).HandleAsync(appState.ListSession.Navigation, appState.Decompiler, reference, appState.ListSession.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        var load = await d.RunAsync(() =>
+        {
+            var resolveTicket = appState.ListSession.Navigation.BeginResolving(inNewTab: false);
+            return new NavigateHandler(lookup).HandleAsync(appState.ListSession.Navigation, appState.Decompiler, reference, resolveTicket, CancellationToken.None);
+        });
 
         Assert.Same(reference, Assert.Single(lookup.LookedUp));
         Assert.Same(farewell, appState.ListSession.Navigation.ActiveTab?.Node);
@@ -58,8 +62,16 @@ public sealed class NavigateHandlerTests
         var missing = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)) };
         var failed = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(error) };
 
-        var missingLoad = await d.RunAsync(() => new NavigateHandler(missing).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, reference, d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
-        var failedLoad = await d.RunAsync(() => new NavigateHandler(failed).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, reference, d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        var missingLoad = await d.RunAsync(() =>
+        {
+            var resolveTicket = d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false);
+            return new NavigateHandler(missing).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, reference, resolveTicket, CancellationToken.None);
+        });
+        var failedLoad = await d.RunAsync(() =>
+        {
+            var resolveTicket = d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false);
+            return new NavigateHandler(failed).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, reference, resolveTicket, CancellationToken.None);
+        });
 
         var notThere = Assert.IsType<Refusal.Unresolved>(Assert.Single(missing.Refused));
         Assert.Same(reference, notThere.Reference);
@@ -80,7 +92,11 @@ public sealed class NavigateHandlerTests
         var error = new AssemblyLoadException(file, $"'{file}' is not a .NET assembly.");
         var failed = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(error) };
 
-        var load = await d.RunAsync(() => new NavigateHandler(failed).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, reference, d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        var load = await d.RunAsync(() =>
+        {
+            var resolveTicket = d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false);
+            return new NavigateHandler(failed).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, reference, resolveTicket, CancellationToken.None);
+        });
 
         Assert.Null(load);
         var reported = Assert.IsType<AppProblem.UnresolvedFileDamaged>(Assert.Single(failed.Reported));
@@ -101,8 +117,16 @@ public sealed class NavigateHandlerTests
         var found = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(farewell)), WhileLooking = () => appState.ListSession.Navigation.BeginRequest() };
         var missing = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)), WhileLooking = () => appState.ListSession.Navigation.BeginRequest() };
 
-        var foundLoad = await d.RunAsync(() => new NavigateHandler(found).HandleAsync(appState.ListSession.Navigation, appState.Decompiler, farewell.Definition, appState.ListSession.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
-        var missingLoad = await d.RunAsync(() => new NavigateHandler(missing).HandleAsync(appState.ListSession.Navigation, appState.Decompiler, farewell.Definition, appState.ListSession.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        var foundLoad = await d.RunAsync(() =>
+        {
+            var resolveTicket = appState.ListSession.Navigation.BeginResolving(inNewTab: false);
+            return new NavigateHandler(found).HandleAsync(appState.ListSession.Navigation, appState.Decompiler, farewell.Definition, resolveTicket, CancellationToken.None);
+        });
+        var missingLoad = await d.RunAsync(() =>
+        {
+            var resolveTicket = appState.ListSession.Navigation.BeginResolving(inNewTab: false);
+            return new NavigateHandler(missing).HandleAsync(appState.ListSession.Navigation, appState.Decompiler, farewell.Definition, resolveTicket, CancellationToken.None);
+        });
 
         Assert.Same(shown, appState.ListSession.Navigation.ActiveTab?.Node);
         Assert.Null(foundLoad);
@@ -121,7 +145,11 @@ public sealed class NavigateHandlerTests
         Assert.NotNull(shown);
         var reference = CodeReferences.CreateEntity(EntityKind.Type, "Greeter", AssemblyPath.Of(path), MetadataTokens.TypeDefinitionHandle(2));
 
-        d.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, reference, a.ListSession.Navigation.BeginResolving(inNewTab: false), ct));
+        d.Start((a, ct) =>
+        {
+            var resolveTicket = a.ListSession.Navigation.BeginResolving(inNewTab: false);
+            return a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, reference, resolveTicket, ct);
+        });
         d.Settle();
 
         var reported = Assert.Single(d.AppState.Errors.Entries);
@@ -143,7 +171,11 @@ public sealed class NavigateHandlerTests
         var unreadable = new Lookup<BrowseNode>.Unreadable { Module = new UnreadableModule { Module = module, Why = why } };
         var lookup = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(unreadable) };
 
-        var load = await d.RunAsync(() => new NavigateHandler(lookup).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, greeter.Definition, d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false), CancellationToken.None));
+        var load = await d.RunAsync(() =>
+        {
+            var resolveTicket = d.AppState.ListSession.Navigation.BeginResolving(inNewTab: false);
+            return new NavigateHandler(lookup).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, greeter.Definition, resolveTicket, CancellationToken.None);
+        });
 
         var problem = Assert.IsType<AppProblem.ModuleUnreadable>(Assert.Single(lookup.Reported));
         Assert.Equal(module.FilePath.FileName, problem.Module);

@@ -58,7 +58,8 @@ public sealed class RunArgumentsReceiverTests
         var address = RunArgumentsRouting.GetAddress(FullFilePath.Of(temp.PathOf("settings.json")));
         var first = await RunPipes.ClaimAsync(address);
         Assert.NotNull(first);
-        Assert.Null(await RunPipes.ClaimAsync(address));
+        var receiver = await RunPipes.ClaimAsync(address);
+        Assert.Null(receiver);
         first.Dispose();
 
         using var next = await RunPipes.ClaimAsync(address);

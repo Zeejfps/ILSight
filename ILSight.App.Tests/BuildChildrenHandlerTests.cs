@@ -10,15 +10,16 @@ public sealed class BuildChildrenHandlerTests
         var tree = new BrowseTree { Session = TestSession.Shared };
         var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync();
         tree.Builds.Ask(root);
-        var asked = tree.Builds.TakeAsked();
+        var firstAsked = tree.Builds.TakeAsked();
         var ports = new FakeBuildChildrenHandlerPorts();
 
         await new BuildChildrenHandler(ports).HandleAsync(tree, root, CancellationToken.None);
         tree.Builds.Ask(root);
 
-        Assert.Equal([root], asked);
+        Assert.Equal([root], firstAsked);
         Assert.Equal([root], ports.Asked);
-        Assert.Equal([root], tree.Builds.TakeAsked());
+        var secondAsked = tree.Builds.TakeAsked();
+        Assert.Equal([root], secondAsked);
     }
 
     [Fact]

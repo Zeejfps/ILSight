@@ -172,7 +172,8 @@ public sealed class NuGetBrowserTests
 
     private static Task SearchAsync(FakePorts ports, NuGetPicker picker, TimeSpan now)
     {
-        var search = picker.Browser.StartSearch(AskSearch(picker, now));
+        var asked = AskSearch(picker, now);
+        var search = picker.Browser.StartSearch(asked);
         // As the edge does, on the token of the work it was started as, which a newer search or closing the dialog
         // cancels.
         return new SearchNuGetFeedHandler(ports).HandleAsync(picker.Browser, search, search.Work.Token);
@@ -203,7 +204,8 @@ public sealed class NuGetBrowserTests
         using var shutdown = new CancellationTokenSource();
         var search = AskSearch(picker, now: TimeSpan.FromSeconds(10));
 
-        await new SearchNuGetFeedHandler(ports).HandleAsync(picker.Browser, picker.Browser.StartSearch(search), shutdown.Token);
+        var searchTicket = picker.Browser.StartSearch(search);
+        await new SearchNuGetFeedHandler(ports).HandleAsync(picker.Browser, searchTicket, shutdown.Token);
 
         Assert.Same(search, Assert.Single(ports.Searched));
         Assert.Equal("Fixtures", Assert.Single(picker.Browser.Results).Id.Text);
@@ -221,7 +223,9 @@ public sealed class NuGetBrowserTests
         var ports = new FakePorts { Search = _ => answer.Task };
         var picker = CreatePicker();
         using var shutdown = new CancellationTokenSource();
-        var searching = new SearchNuGetFeedHandler(ports).HandleAsync(picker.Browser, picker.Browser.StartSearch(AskSearch(picker, now: TimeSpan.FromSeconds(10))), shutdown.Token);
+        var search = AskSearch(picker, now: TimeSpan.FromSeconds(10));
+        var searchTicket = picker.Browser.StartSearch(search);
+        var searching = new SearchNuGetFeedHandler(ports).HandleAsync(picker.Browser, searchTicket, shutdown.Token);
         var token = Assert.Single(ports.Tokens);
         var stoppedBefore = token.IsCancellationRequested;
 
@@ -593,8 +597,10 @@ public sealed class NuGetBrowserTests
         Assert.NotNull(download);
         await new DownloadNuGetPackageHandler(ports).HandleAsync(picker.Browser, download, shutdown.Token);
 
-        Assert.Equal("fixtures.2.0.0.nupkg", picker.Browser.TakeDownloaded());
-        Assert.Null(picker.Browser.TakeDownloaded());
+        var firstDownloaded = picker.Browser.TakeDownloaded();
+        Assert.Equal("fixtures.2.0.0.nupkg", firstDownloaded);
+        var secondDownloaded = picker.Browser.TakeDownloaded();
+        Assert.Null(secondDownloaded);
         Assert.False(picker.Browser.IsDownloading);
         Assert.Empty(ports.Reported);
     }
@@ -619,7 +625,8 @@ public sealed class NuGetBrowserTests
         Assert.Equal("Fixtures 2.0.0", name);
         Assert.False(canOpenAgain);
         Assert.False(askedBeforeTheEdgeRan);
-        Assert.Equal("fixtures.2.0.0.nupkg", picker.Browser.TakeDownloaded());
+        var downloaded = picker.Browser.TakeDownloaded();
+        Assert.Equal("fixtures.2.0.0.nupkg", downloaded);
     }
 
     [Fact]
@@ -638,6 +645,7 @@ public sealed class NuGetBrowserTests
         Assert.Null(download);
         Assert.Equal("fix", search?.Query);
         Assert.DoesNotContain(nameof(FakePorts.DownloadPackageAsync), ports.Asked);
-        Assert.Null(picker.Browser.TakeDownloaded());
+        var downloaded = picker.Browser.TakeDownloaded();
+        Assert.Null(downloaded);
     }
 }

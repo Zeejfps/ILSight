@@ -32,9 +32,10 @@ public sealed class LayoutPersistenceTests : IDisposable
         d.Ui.Panels.Open(DockView.Analyzer);
         app.DockWidget.Dock(DockPanels.Bookmarks, DockPanels.Analyzer, DockEdge.Center);
         app.Run();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
-        var next = new AppStateDriver(_temp.Settings());
+        var next = AppStateDriver.Started(_temp.Settings());
         var layout = next.Arrangement;
         var active = next.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
@@ -61,9 +62,10 @@ public sealed class LayoutPersistenceTests : IDisposable
         d.Ui.Panels.Open(DockView.Analyzer);
         app.DockWidget.Dock(DockPanels.Search, DockPanels.Analyzer, DockEdge.Center);
         app.Run();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
-        var next = new AppStateDriver(_temp.Settings()).Arrangement;
+        var next = AppStateDriver.Started(_temp.Settings()).Arrangement;
 
         Assert.True(next.Contains(DockPanels.Search));
         Assert.Same(next.GroupOf(DockPanels.Analyzer), next.GroupOf(DockPanels.Search));
@@ -77,7 +79,7 @@ public sealed class LayoutPersistenceTests : IDisposable
         first.Analyze(await first.FixtureAsync("Greeter"));
         first.Pump();
 
-        var next = new AppStateDriver(_temp.Settings());
+        var next = AppStateDriver.Started(_temp.Settings());
         next.Settle();
 
         Assert.Equal(["First() : int", "Greeter"], next.AppState.ListSession.Analyzer.Found().Select(r => r.Symbol.Label));

@@ -67,7 +67,8 @@ public sealed class SavedComparisonTests : IDisposable
         Assert.NotNull(tab);
         var comparison = tab.Comparison;
         Assert.NotNull(comparison);
-        app.StartComparing(Comparisons.SwapComparedAssemblies(app.AppState.ListSession.Assemblies, comparison));
+        var swapped = Comparisons.SwapComparedAssemblies(app.AppState.ListSession.Assemblies, comparison);
+        app.StartComparing(swapped);
         app.StartComparing(Comparisons.ChangeComparedScope(app.AppState.ListSession.Assemblies, comparison, ApiScope.AllDeclared));
         app.Ui.Documents.GetView(tab).Comparison.ShowOnlyDifferences(false);
         app.Settle(2);
@@ -98,7 +99,8 @@ public sealed class SavedComparisonTests : IDisposable
 
         var comparison = tab.Comparison;
         Assert.NotNull(comparison);
-        app.StartComparing(Comparisons.SwapComparedAssemblies(app.AppState.ListSession.Assemblies, comparison));
+        var swapped = Comparisons.SwapComparedAssemblies(app.AppState.ListSession.Assemblies, comparison);
+        app.StartComparing(swapped);
         app.Settle(2);
         Assert.Equal(RightPath, ReadSavedComparison().LeftPath.Text);
 

@@ -249,9 +249,10 @@ public sealed class DisplayOptionsTests
 
         app.Ui.Display.Set(options);
         app.Run();
-        Assert.IsType<SettingsWriteResult.Written>(app.AppState.SettingsSaver.Save(app.AppState));
+        var write = app.AppState.SettingsSaver.Save(app.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
-        var restored = new AppStateDriver(temp.Settings());
+        var restored = AppStateDriver.Started(temp.Settings());
         Assert.Equal(options, restored.Ui.Display.Options);
     }
 

@@ -64,7 +64,11 @@ public sealed class NestedNamespaceTests
         var ilsight = await app.NodeAsync("ILSight");
         var fixtures = await app.NodeAsync(AppStateDriver.FixturesNamespace);
 
-        app.Driver.InTurn(() => Commands.StartExpandingNamespaces(app.AppState, tree, tree.ExpandNamespaces()));
+        app.Driver.InTurn(() =>
+        {
+            var expansion = tree.ExpandNamespaces();
+            Commands.StartExpandingNamespaces(app.AppState, tree, expansion);
+        });
         app.Frames.WaitUntil(() => tree.View.IsExpanded(fixtures), Waits.Patience);
 
         foreach (var name in EnclosingNamespaces)
@@ -126,7 +130,11 @@ public sealed class NestedNamespaceTests
         var farewell = await app.FixtureAsync("Farewell");
         app.Ui.Tree.CollapseAll();
 
-        app.Start((a, ct) => a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, farewell.Definition, a.ListSession.Navigation.BeginResolving(inNewTab: false), ct));
+        app.Start((a, ct) =>
+        {
+            var resolveTicket = a.ListSession.Navigation.BeginResolving(inNewTab: false);
+            return a.NavigateHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, farewell.Definition, resolveTicket, ct);
+        });
         app.Settle(1);
 
         Assert.Same(farewell, app.AppState.ListSession.Navigation.ActiveTab?.Node);
@@ -160,7 +168,8 @@ public sealed class NestedNamespaceTests
         app.Show(outline, 2);
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(app.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark));
+        var toggle = Bookmarks.ToggleBookmark(app.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);
+        Assert.IsType<BookmarkToggle.Added>(toggle);
         var bookmark = Assert.Single(app.AppState.Bookmarks.Items);
         app.Show(await app.FixtureAsync("Greeter"), 2);
         Nest(app, false);

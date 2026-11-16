@@ -12,7 +12,8 @@ public sealed class RunSearchHandlerTests
         results.RunSearch(query, SearchKinds.TypesAndMembers, NoAssemblies, typedAt, shown: true);
         // A second later, what was typed has settled.
         results.RunSearch(query, SearchKinds.TypesAndMembers, NoAssemblies, typedAt + TimeSpan.FromSeconds(1), shown: true);
-        return Assert.Single(results.TakeAskedRuns());
+        var askedRuns = results.TakeAskedRuns();
+        return Assert.Single(askedRuns);
     }
 
     [Fact]

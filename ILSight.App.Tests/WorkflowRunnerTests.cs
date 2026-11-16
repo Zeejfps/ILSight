@@ -50,7 +50,11 @@ public sealed class WorkflowRunnerTests
             release.Wait(Waits.Patience);
         });
 
-        var ending = Task.Factory.StartNew(() => LoadedAssemblies.Release(list.CloseAll()), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        var ending = Task.Factory.StartNew(() =>
+        {
+            var removed = list.CloseAll();
+            LoadedAssemblies.Release(removed);
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         Assert.True(cancelling.Wait(Waits.Patience));
         check.SetResult();
         await WaitUntilEndedAsync(work);
@@ -317,7 +321,7 @@ public sealed class WorkflowRunnerTests
     [Fact]
     public void Start_QueuedAmongCommands_StartsInTheOrderAskedWithTheAppsShutdownToken()
     {
-        var driver = new AppStateDriver();
+        var driver = AppStateDriver.Started();
         var seen = new SeenWorkflow();
 
         Commands.Later(driver.Ui.AppCommands, seen, static (_, s) => s.Steps.Add("command before"));

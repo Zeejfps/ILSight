@@ -99,7 +99,8 @@ public sealed class UserThemeTests : IDisposable
         var appState = AppRoot.RestoreAppState(settings, TestSession.Shared);
 
         Assert.Same(appState.Themes.GetTheme(Id("dark")), Theming.ResolveTheme(appState));
-        Assert.IsType<SettingsWriteResult.Written>(appState.SettingsSaver.Save(appState));
+        var write = appState.SettingsSaver.Save(appState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
         Assert.Equal("gone", _temp.Settings().Theme.Text);
     }
 
@@ -257,7 +258,7 @@ public sealed class UserThemeTests : IDisposable
     {
         _temp.Write("themes", "not a folder");
 
-        var d = new AppStateDriver(Settings());
+        var d = AppStateDriver.Started(Settings());
 
         var error = Assert.Single(d.AppState.Errors.Entries);
         Assert.Equal("Cannot make the themes folder", error.Words().Title);
@@ -268,7 +269,7 @@ public sealed class UserThemeTests : IDisposable
     {
         var settings = Settings();
         settings.Theme = Id("back");
-        var d = new AppStateDriver(settings);
+        var d = AppStateDriver.Started(settings);
         var folder = _temp.PathOf("themes");
 
         Directory.Delete(folder, recursive: true);
@@ -285,7 +286,7 @@ public sealed class UserThemeTests : IDisposable
     {
         var settings = Settings();
         settings.Theme = Id("live");
-        var d = new AppStateDriver(settings);
+        var d = AppStateDriver.Started(settings);
         Assert.Same(d.AppState.Themes.GetTheme(Id("dark")), Theming.ResolveTheme(d.AppState));
 
         WriteTheme("live", """{ "extends": "dark", "ui": { "accent": "#FF00FF" } }""");

@@ -13,8 +13,10 @@ public sealed class BookmarkImporterTests
         d.Show(await d.FixtureAsync("Outline"));
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark));
-        Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("foreach").Line, Names.Bookmark));
+        var firstToggle = Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);
+        Assert.IsType<BookmarkToggle.Added>(firstToggle);
+        var secondToggle = Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("foreach").Line, Names.Bookmark);
+        Assert.IsType<BookmarkToggle.Added>(secondToggle);
         return d.AppState.Bookmarks.Items.ToList();
     }
 

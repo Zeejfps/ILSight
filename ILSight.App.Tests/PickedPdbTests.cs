@@ -38,8 +38,9 @@ public sealed class PickedPdbTests
         var d = OpenedCopy(temp, copy);
 
         Pick(d, FixturePdb);
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
-        var next = new AppStateDriver(temp.Settings());
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
+        var next = AppStateDriver.Started(temp.Settings());
         next.Settle();
 
         Assert.Equal(FixturePdb, Assert.Single(temp.Settings().AssemblyLists).Pdbs?[TestPaths.PathOf(copy)]);
@@ -70,7 +71,8 @@ public sealed class PickedPdbTests
 
         d.InTurn(() => Commands.CloseAllAssemblies(d.AppState));
         AssemblyLists.RememberOpenAssemblies(d.AppState.Lists, d.AppState.ListSession);
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
         Assert.Empty(d.AppState.ListSession.Assemblies.Pdbs.All);
         Assert.Null(Assert.Single(temp.Settings().AssemblyLists).Pdbs);
@@ -83,7 +85,7 @@ public sealed class PickedPdbTests
 
     private static AppStateDriver OpenedCopy(TempDir temp, string copy)
     {
-        var d = new AppStateDriver(temp.Settings());
+        var d = AppStateDriver.Started(temp.Settings());
         d.Open([AssemblyPath.Of(copy)]);
         d.RunUntil(() => d.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(copy)));
         d.Settle();

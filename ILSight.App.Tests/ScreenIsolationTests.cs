@@ -54,7 +54,8 @@ public sealed class ScreenIsolationTests : IDisposable
         ScreenLayout.ScopeSearch(d.Ui.Search, d.Ui.Panels, await d.NodeAsync(AppStateDriver.FixturesNamespace));
         d.Ui.BookmarksPanel.Columns.Restore([1f, 1f, 4f, 1f]);
         d.Settle();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var write = d.AppState.SettingsSaver.Save(d.AppState);
+        Assert.IsType<SettingsWriteResult.Written>(write);
 
         var reached = FindScreenObject(d.AppState, FindLayouts(d.Ui.Panels));
 

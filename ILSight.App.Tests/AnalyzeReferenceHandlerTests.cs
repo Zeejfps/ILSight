@@ -19,7 +19,8 @@ public sealed class AnalyzeReferenceHandlerTests
 
         var root = Assert.Single(analyzer.Found());
         Assert.Equal("Greeter", root.Symbol.Label);
-        Assert.Equal([new ViewCommand.ShowAnalysis(root)], d.TakeViewCommands());
+        var viewCommands = d.TakeViewCommands();
+        Assert.Equal([new ViewCommand.ShowAnalysis(root)], viewCommands);
         Assert.Empty(ports.Reported);
     }
 
@@ -33,8 +34,16 @@ public sealed class AnalyzeReferenceHandlerTests
         var missing = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)) };
         var failed = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(error) };
 
-        await d.RunAsync(() => new AnalyzeReferenceHandler(missing).HandleAsync(analyzer, d.AppState.ViewCommands, Analysis.BeginAnalyzing(analyzer, reference), CancellationToken.None));
-        await d.RunAsync(() => new AnalyzeReferenceHandler(failed).HandleAsync(analyzer, d.AppState.ViewCommands, Analysis.BeginAnalyzing(analyzer, reference), CancellationToken.None));
+        await d.RunAsync(() =>
+        {
+            var pendingAnalysis = Analysis.BeginAnalyzing(analyzer, reference);
+            return new AnalyzeReferenceHandler(missing).HandleAsync(analyzer, d.AppState.ViewCommands, pendingAnalysis, CancellationToken.None);
+        });
+        await d.RunAsync(() =>
+        {
+            var pendingAnalysis = Analysis.BeginAnalyzing(analyzer, reference);
+            return new AnalyzeReferenceHandler(failed).HandleAsync(analyzer, d.AppState.ViewCommands, pendingAnalysis, CancellationToken.None);
+        });
 
         var unresolved = Assert.IsType<AnalyzerUnresolvedNode>(Assert.Single(analyzer.Roots));
         Assert.Equal((reference.Name, "unreadable"), (unresolved.Name, unresolved.Why));
@@ -94,7 +103,8 @@ public sealed class AnalyzeReferenceHandlerTests
 
         Assert.Empty(analyzer.Roots);
         Assert.Empty(analyzer.ListSavedAnalyses());
-        Assert.Empty(d.TakeViewCommands());
+        var viewCommands = d.TakeViewCommands();
+        Assert.Empty(viewCommands);
         Assert.Empty(ports.Reported);
     }
 }

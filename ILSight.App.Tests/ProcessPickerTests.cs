@@ -108,7 +108,8 @@ public sealed class ProcessPickerTests
     private static async Task<ProcessPicker> OpenAsync(FakePorts ports)
     {
         var picker = new ProcessPicker { Browser = new ProcessBrowser(ports) };
-        await ScanAsync(picker.Browser, picker.Open());
+        var opened = picker.Open();
+        await ScanAsync(picker.Browser, opened);
         Assert.Null(ListSelectedProcessModules(picker));
         return picker;
     }
@@ -361,7 +362,8 @@ public sealed class ProcessPickerTests
         await SelectAndListAsync(picker, Worker);
 
         ports.Running.RemoveAt(0);
-        await ScanAsync(picker.Browser, picker.Browser.StartScan());
+        var scanTicket = picker.Browser.StartScan();
+        await ScanAsync(picker.Browser, scanTicket);
 
         Assert.Null(ListSelectedProcessModules(picker));
         Assert.Equal([Worker], picker.Browser.Filtered);
@@ -377,7 +379,8 @@ public sealed class ProcessPickerTests
         var ports = new FakePorts { Scan = _ => ++scans == 1 ? FoundAsync(Web) : refreshed.Task };
         var picker = await OpenAsync(ports);
 
-        var refreshing = ScanAsync(picker.Browser, picker.Browser.StartScan());
+        var scanTicket = picker.Browser.StartScan();
+        var refreshing = ScanAsync(picker.Browser, scanTicket);
         Assert.Equal([Web], Assert.IsType<ProcessScan.Scanned>(picker.Browser.Scan).Processes);
         refreshed.SetResult(new Outcome<IReadOnlyList<RunningProcess>>.Ok([Worker]));
         await refreshing.WithinPatienceAsync();
@@ -397,7 +400,8 @@ public sealed class ProcessPickerTests
         var olderScan = ScanAsync(picker.Browser, olderTicket);
         Assert.IsType<ProcessScan.Scanning>(picker.Browser.Scan);
 
-        await ScanAsync(picker.Browser, picker.Browser.StartScan());
+        var scanTicket = picker.Browser.StartScan();
+        await ScanAsync(picker.Browser, scanTicket);
         older.SetResult(new Outcome<IReadOnlyList<RunningProcess>>.Ok([Web]));
         await olderScan.WithinPatienceAsync();
         picker.Browser.TakeFilter(picker.Filter);
@@ -433,7 +437,8 @@ public sealed class ProcessPickerTests
         };
         var picker = new ProcessPicker { Browser = new ProcessBrowser(ports) };
 
-        await ScanAsync(picker.Browser, picker.Browser.StartScan());
+        var scanTicket = picker.Browser.StartScan();
+        await ScanAsync(picker.Browser, scanTicket);
 
         Assert.Equal("broken", Assert.IsType<ProcessScan.Failed>(picker.Browser.Scan).Error);
         Assert.IsType<AppProblem.Unexpected>(Assert.Single(ports.Reported));
@@ -470,7 +475,8 @@ public sealed class ProcessPickerTests
                 : again.Task,
         };
         var picker = new ProcessPicker { Browser = new ProcessBrowser(ports) };
-        await ScanAsync(picker.Browser, picker.Open());
+        var opened = picker.Open();
+        await ScanAsync(picker.Browser, opened);
         Close(picker);
         var failedBefore = picker.Browser.Scan;
 
@@ -493,7 +499,11 @@ public sealed class ProcessPickerTests
         using var shutdown = new CancellationTokenSource();
         await shutdown.CancelAsync();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => picker.Browser.ScanAsync(picker.Browser.StartScan(), shutdown.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+        {
+            var scanTicket = picker.Browser.StartScan();
+            return picker.Browser.ScanAsync(scanTicket, shutdown.Token);
+        });
 
         Assert.Equal(shutdown.Token, Assert.Single(ports.ScanTokens));
         Assert.IsNotType<ProcessScan.Failed>(picker.Browser.Scan);
@@ -516,7 +526,8 @@ public sealed class ProcessPickerTests
     {
         var adapter = new ProcessBrowserAdapter(static problem => throw new InvalidOperationException(problem.ToString()));
         var picker = new ProcessPicker { Browser = new ProcessBrowser(adapter) };
-        await ScanAsync(picker.Browser, picker.Open());
+        var opened = picker.Open();
+        await ScanAsync(picker.Browser, opened);
         picker.Browser.TakeFilter(picker.Filter);
         var self = Assert.Single(picker.Browser.Filtered, p => p.Id.Value == Environment.ProcessId);
 

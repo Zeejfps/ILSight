@@ -12,7 +12,8 @@ public sealed class DiagramInfrastructureTests
     {
         using var temp = new TempDir();
         var greet = BrokenAssemblies.GetMethod(AppStateDriver.FixturePath, "Greeter", "Greet");
-        var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodName(temp, AppStateDriver.FixturePath, greet));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableMethodName(temp, AppStateDriver.FixturePath, greet);
+        var path = AssemblyPath.Of(unreadablePath);
         var greeter = new TypeAnchor { AssemblyPath = path, FullName = "ILSight.App.Tests.Fixtures.Greeter" };
         var diagram = new DiagramInfrastructure(new ErrorLog(), new RefusalLine(), new AssemblyList { Runtime = TestRuntime.Installed });
 

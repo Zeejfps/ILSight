@@ -12,8 +12,10 @@ public sealed class RunSearchHandlerAdapterTests
     {
         using var temp = new TempDir();
         var greet = BrokenAssemblies.GetMethod(AppStateDriver.FixturePath, "Greeter", "Greet");
-        var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodName(temp, AppStateDriver.FixturePath, greet));
-        var module = Assert.IsType<LoadedModule>(AssemblyListing.Open(new AssemblyList { Runtime = TestRuntime.Installed }, path));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableMethodName(temp, AppStateDriver.FixturePath, greet);
+        var path = AssemblyPath.Of(unreadablePath);
+        var opened = AssemblyListing.Open(new AssemblyList { Runtime = TestRuntime.Installed }, path);
+        var module = Assert.IsType<LoadedModule>(opened);
         var adapter = new RunSearchHandlerAdapter(new BrowseSession());
 
         var found = new List<SearchFind>();
@@ -34,8 +36,10 @@ public sealed class RunSearchHandlerAdapterTests
         using var temp = new TempDir();
         var unreadable = BrokenAssemblies.GetMethod(AppStateDriver.FixturePath, nameof(NumberLoads), nameof(NumberLoads.Unreadable));
         var unplaced = BrokenAssemblies.GetMethod(AppStateDriver.FixturePath, nameof(Unplaced.UnplacedNumberLoad), nameof(Unplaced.UnplacedNumberLoad.Unplaced));
-        var path = AssemblyPath.Of(BrokenAssemblies.WritePartlyReadable(temp, AppStateDriver.FixturePath, unreadable, unplaced));
-        var module = Assert.IsType<LoadedModule>(AssemblyListing.Open(new AssemblyList { Runtime = TestRuntime.Installed }, path));
+        var partlyReadablePath = BrokenAssemblies.WritePartlyReadable(temp, AppStateDriver.FixturePath, unreadable, unplaced);
+        var path = AssemblyPath.Of(partlyReadablePath);
+        var opened = AssemblyListing.Open(new AssemblyList { Runtime = TestRuntime.Installed }, path);
+        var module = Assert.IsType<LoadedModule>(opened);
         var adapter = new RunSearchHandlerAdapter(new BrowseSession());
 
         var found = new List<SearchFind>();

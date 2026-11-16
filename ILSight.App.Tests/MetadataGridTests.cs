@@ -307,10 +307,12 @@ public sealed class MetadataGridTests
         MetadataGridWidget.ArrangeRowsWhenViewChanges(state, app.Ui.Grids.Filters, views, isClosed: false);
         state.SortBy(name);
         MetadataGridWidget.ArrangeRowsWhenViewChanges(state, app.Ui.Grids.Filters, views, isClosed: false);
-        var older = Assert.Single(views.TakeAsked());
+        var firstAsked = views.TakeAsked();
+        var older = Assert.Single(firstAsked);
         state.SortBy(name);
         MetadataGridWidget.ArrangeRowsWhenViewChanges(state, app.Ui.Grids.Filters, views, isClosed: false);
-        var newer = Assert.Single(views.TakeAsked());
+        var secondAsked = views.TakeAsked();
+        var newer = Assert.Single(secondAsked);
         var handler = new ArrangeMetadataGridHandler(new FakeArrangeMetadataGridHandlerPorts());
 
         await app.Driver.RunAsync(() => handler.HandleAsync(newer, CancellationToken.None));
@@ -412,7 +414,8 @@ public sealed class MetadataGridTests
         using var temp = new TempDir();
         var settings = temp.Settings();
         settings.FlagsFilters = app.Ui.Grids.Filters.ListSaved();
-        Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
+        var write = TempSettings.Save(settings);
+        Assert.IsType<SettingsWriteResult.Written>(write);
         var saved = temp.Settings().FlagsFilters;
         var restored = MetadataFilters.From(saved).GetFilter(grid, attributes);
         Assert.Equal("Visibility = Public", FilterStatePresenter.Describe(restored));

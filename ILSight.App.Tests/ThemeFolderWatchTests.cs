@@ -15,7 +15,14 @@ public sealed class ThemeFolderWatchTests : IDisposable
         _temp.Dispose();
     }
 
-    private string Folder => Path.GetDirectoryName(_temp.Write("themes/.keep", "")) ?? throw new InvalidOperationException("A file written to the temp folder is in a folder.");
+    private string Folder
+    {
+        get
+        {
+            var keepPath = _temp.Write("themes/.keep", "");
+            return Path.GetDirectoryName(keepPath) ?? throw new InvalidOperationException("A file written to the temp folder is in a folder.");
+        }
+    }
 
     [Fact]
     public async Task A_change_that_settles_while_no_one_waits_is_kept_for_the_next_wait()
