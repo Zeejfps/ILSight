@@ -60,7 +60,7 @@ public sealed class AnalysisTests
     }
 
     [Fact]
-    public async Task An_analysis_reaching_a_member_the_library_cannot_read_ends_failed_saying_why()
+    public async Task An_analysis_reaching_a_member_the_library_cannot_read_names_its_module_partly_read_saying_why()
     {
         using var temp = new TempDir();
         var add = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Calculator`1", "Add");
@@ -79,7 +79,12 @@ public sealed class AnalysisTests
             batches.Add(batch);
         }
 
-        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<IReadOnlyList<AnalysisFind>>.Failed>(batches[^1]).Error);
+        var found = batches.SelectMany(static b => b.GetValue()).ToList();
+        Assert.DoesNotContain(found, static f => f is AnalysisFind.Found { Symbol.Label: var label } && label.StartsWith("operator +", StringComparison.Ordinal));
+        var partly = Assert.IsType<AnalysisFind.PartlyRead>(Assert.Single(found, static f => f is AnalysisFind.PartlyRead));
+        Assert.Equal("UnreadableMethodName.dll", partly.Name);
+        Assert.IsType<BadImageFormatException>(partly.Error);
+        Assert.Equal(partly.Why, partly.Error.Message);
     }
 
     [Fact]

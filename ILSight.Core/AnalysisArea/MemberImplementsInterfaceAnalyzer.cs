@@ -12,7 +12,7 @@ internal static class MemberImplementsInterfaceAnalyzer
             return null;
         }
 
-        return _ => Analyze(member);
+        return context => Analyze(member, context);
     }
 
     /// <summary>An instance event, indexer, method or property of a class or struct.</summary>
@@ -23,9 +23,30 @@ internal static class MemberImplementsInterfaceAnalyzer
             && facts.DeclaringDefinitionKind is TypeKind.Class or TypeKind.Struct;
     }
 
-    private static IEnumerable<ISymbol> Analyze(IMember member)
+    // The base members read with the kind of the type declaring each, under the read's catch; those an interface
+    // declares chosen outside it.
+    private static IEnumerable<ISymbol> Analyze(IMember member, AnalyzerContext context)
     {
-        return InheritanceHelper.GetBaseMembers(member, includeImplementedInterfaces: true)
-            .Where(m => m.DeclaringTypeDefinition?.Kind == TypeKind.Interface);
+        var baseMembers = ReadBaseMembers(member, context);
+        return (baseMembers ?? [])
+            .Where(static m => m.DeclaringKind == TypeKind.Interface)
+            .Select(static m => m.Member);
+    }
+
+    // The members the member overrides or implements, by the library's walk, each with the kind of the type declaring
+    // it; null when the library fails reading them, noted.
+    private static (IMember Member, TypeKind? DeclaringKind)[]? ReadBaseMembers(IMember member, AnalyzerContext context)
+    {
+        try
+        {
+            return InheritanceHelper.GetBaseMembers(member, includeImplementedInterfaces: true)
+                .Select(static m => (m, m.DeclaringTypeDefinition?.Kind))
+                .ToArray();
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            context.PassedOver.Note(context.AnalyzedFile, e);
+            return null;
+        }
     }
 }

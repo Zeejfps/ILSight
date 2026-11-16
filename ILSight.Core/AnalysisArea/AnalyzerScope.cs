@@ -5,6 +5,7 @@ using System.Reflection.Metadata;
 using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.Util;
+using AssemblyReference = ICSharpCode.Decompiler.Metadata.AssemblyReference;
 
 namespace ILSight.Core.AnalysisArea;
 
@@ -13,6 +14,11 @@ namespace ILSight.Core.AnalysisArea;
 /// private, its assembly and the friends it shows internals to when it is internal, and otherwise
 /// every open assembly that references its type.
 /// </summary>
+/// <remarks>The scan reads the library's objects a step at a time, each read under a catch of its own, and decides
+/// outside it which module or type to read next. For the analyzers a part the library fails reading (a module's
+/// references, a type's nested types or members) is noted in <see cref="PassedOver"/> and passed over; where no
+/// <see cref="PassedOver"/> is given (the search for derived types, whose caller's catch takes the library's failure)
+/// the catch lets the failure go on to that caller.</remarks>
 internal sealed class AnalyzerScope
 {
     private const GetMemberOptions MemberDefinitions = GetMemberOptions.IgnoreInheritedMembers | GetMemberOptions.ReturnMemberDefinitions;
@@ -30,12 +36,29 @@ internal sealed class AnalyzerScope
     /// to name beside what the others gave.</summary>
     public required ConcurrentDictionary<LoadedModule, UnreadableModule> Unreadable { private get; init; }
 
+    /// <summary>Where a part the library fails reading is noted as passed over; null to let the failure go on to the
+    /// caller.</summary>
+    public required PassedOver? PassedOver { get; init; }
+
     public required Accessibility EffectiveAccessibility { get; init; }
 
     /// <summary>Whether the analyzed symbol is reachable only from inside <see cref="TypeScope"/>.</summary>
     public required bool IsLocal { get; init; }
 
     public required ITypeDefinition TypeScope { get; init; }
+
+    /// <summary>The file <see cref="TypeScope"/> was read from.</summary>
+    public required MetadataFile ScopeFile { get; init; }
+
+    /// <summary>The metadata name of <see cref="TypeScope"/>, its arity after a backtick for a generic one: what a
+    /// reference to it from another module names.</summary>
+    public required string ScopeName { get; init; }
+
+    /// <summary>The name of <see cref="TypeScope"/> as the library gives it, which the search of its friends looks for,
+    /// as ILSpy's does.</summary>
+    public required string ScopeTypeName { get; init; }
+
+    public required string ScopeNamespace { get; init; }
 
     /// <summary>The reads of the type systems of every module a scope over <paramref name="list"/> can reach, each
     /// awaited: the listed modules', and <paramref name="own"/>'s, the module the analyzed symbol is in; each added to
@@ -46,19 +69,38 @@ internal sealed class AnalyzerScope
     }
 
     /// <summary>Where the symbols related to <paramref name="entity"/>, of the assemblies of the context's list, can be,
-    /// scanning the type systems the context read.</summary>
-    public static AnalyzerScope Create(AnalyzerContext context, IEntity entity)
+    /// scanning the type systems the context read and noting in the context what the library fails reading; null when
+    /// it fails reading where <paramref name="entity"/> can be seen from, noted as a part of the analyzed module.</summary>
+    public static AnalyzerScope? Create(AnalyzerContext context, IEntity entity)
     {
-        return Create(context.AssemblyList, context.TypeSystems, context.Unreadable, entity);
+        ScopeFacts facts;
+        try
+        {
+            facts = ReadScopeFacts(entity);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            context.PassedOver.Note(context.AnalyzedFile, e);
+            return null;
+        }
+
+        return Make(context.AssemblyList, context.TypeSystems, context.Unreadable, context.PassedOver, facts);
     }
 
     /// <summary>Where the symbols related to <paramref name="entity"/>, of the assemblies of <paramref name="list"/>, can be,
     /// scanning <paramref name="typeSystems"/>, and noting in <paramref name="unreadable"/> the modules it reaches that the
-    /// library could not read.</summary>
+    /// library could not read; what the library throws reading goes on to the caller.</summary>
     public static AnalyzerScope Create(AssemblyList list, ModuleTypeSystems typeSystems, ConcurrentDictionary<LoadedModule, UnreadableModule> unreadable,
         IEntity entity)
     {
-        DetermineEffectiveAccessibility(entity, out var typeScope, out var accessibility);
+        var facts = ReadScopeFacts(entity);
+        return Make(list, typeSystems, unreadable, passedOver: null, facts);
+    }
+
+    private static AnalyzerScope Make(AssemblyList list, ModuleTypeSystems typeSystems, ConcurrentDictionary<LoadedModule, UnreadableModule> unreadable,
+        PassedOver? passedOver, ScopeFacts facts)
+    {
+        var scopeName = facts.TypeParameterCount > 0 ? facts.Name + "`" + facts.TypeParameterCount : facts.Name;
         return new AnalyzerScope
         {
             List = list,
@@ -66,25 +108,52 @@ internal sealed class AnalyzerScope
             Assemblies = typeSystems.Modules,
             TypeSystems = typeSystems,
             Unreadable = unreadable,
-            EffectiveAccessibility = accessibility,
-            TypeScope = typeScope,
-            IsLocal = accessibility.LessThanOrEqual(Accessibility.Private),
+            PassedOver = passedOver,
+            EffectiveAccessibility = facts.Accessibility,
+            TypeScope = facts.TypeScope,
+            ScopeFile = facts.File,
+            ScopeName = scopeName,
+            ScopeTypeName = facts.Name,
+            ScopeNamespace = facts.Namespace,
+            IsLocal = facts.Accessibility.LessThanOrEqual(Accessibility.Private),
         };
+    }
+
+    // What the scope is made from, read out of the entity: how far it can be seen, by the library's walk out through the
+    // types declaring it, and the type that bounds it, with its file and names.
+    private static ScopeFacts ReadScopeFacts(IEntity entity)
+    {
+        DetermineEffectiveAccessibility(entity, out var typeScope, out var accessibility);
+        return new ScopeFacts
+        {
+            Accessibility = accessibility, TypeScope = typeScope, File = DecompilerFacts.GetMetadataFile(typeScope), Name = typeScope.Name,
+            TypeParameterCount = typeScope.TypeParameterCount, Namespace = typeScope.Namespace,
+        };
+    }
+
+    private sealed class ScopeFacts
+    {
+        public required Accessibility Accessibility { get; init; }
+        public required ITypeDefinition TypeScope { get; init; }
+        public required MetadataFile File { get; init; }
+        public required string Name { get; init; }
+        public required int TypeParameterCount { get; init; }
+        public required string Namespace { get; init; }
     }
 
     public IEnumerable<MetadataFile> GetModules(CancellationToken ct)
     {
         if (IsLocal)
         {
-            return [DecompilerFacts.GetMetadataFile(TypeScope)];
+            return [ScopeFile];
         }
 
         if (EffectiveAccessibility.LessThanOrEqual(Accessibility.Internal))
         {
-            return GetModuleAndAnyFriends(TypeScope, ct);
+            return GetModuleAndAnyFriends(ct);
         }
 
-        return GetReferencingModules(DecompilerFacts.GetMetadataFile(TypeScope), ct);
+        return GetReferencingModules(ct);
     }
 
     /// <summary>The type system of <paramref name="module"/> as read; null for one the library could not read, which is
@@ -119,63 +188,312 @@ internal sealed class AnalyzerScope
     /// <see cref="GetModules"/>; those it could not are noted in <see cref="Unreadable"/>.</summary>
     public IEnumerable<DecompilerTypeSystem> ListTypeSystems(CancellationToken ct)
     {
+        return ListScanned(ct).Select(static s => s.TypeSystem);
+    }
+
+    /// <summary>As <see cref="ListTypeSystems"/>, each with the file it was read from.</summary>
+    public IEnumerable<(MetadataFile File, DecompilerTypeSystem TypeSystem)> ListScanned(CancellationToken ct)
+    {
         foreach (var module in GetModules(ct))
         {
             var typeSystem = FindTypeSystem(module);
             if (typeSystem is not null)
             {
-                yield return typeSystem;
+                yield return (module, typeSystem);
             }
         }
     }
 
     public IEnumerable<ITypeDefinition> GetTypes(CancellationToken ct)
     {
+        return ListTypes(ct).Select(static t => t.Type);
+    }
+
+    /// <summary>The types in scope, each with the file it was read from: the scope's type and those nested in it when
+    /// the scope is local, else every type of each module scanned.</summary>
+    public IEnumerable<(MetadataFile File, ITypeDefinition Type)> ListTypes(CancellationToken ct)
+    {
         if (IsLocal)
         {
-            foreach (var type in TreeTraversal.PreOrder(TypeScope, static t => t.NestedTypes))
+            var nested = ReadNested(TypeScope, ScopeFile);
+            foreach (var type in nested ?? [])
             {
-                yield return type;
+                yield return (ScopeFile, type);
             }
+
+            yield break;
         }
-        else
+
+        foreach (var (file, typeSystem) in ListScanned(ct))
         {
-            foreach (var typeSystem in ListTypeSystems(ct))
+            var types = ReadTypes(typeSystem, file);
+            foreach (var type in types ?? [])
             {
-                foreach (var type in typeSystem.MainModule.TypeDefinitions)
-                {
-                    yield return type;
-                }
+                yield return (file, type);
             }
         }
     }
 
-    /// <summary>The members in scope with code <paramref name="matches"/> accepts, type by type:
-    /// each such method, then each property and event with such an accessor.</summary>
+    // The type and those nested in it, by the library's walk; null when it fails, noted.
+    private ITypeDefinition[]? ReadNested(ITypeDefinition type, MetadataFile file)
+    {
+        try
+        {
+            return TreeTraversal.PreOrder(type, static t => t.NestedTypes).ToArray();
+        }
+        catch (Exception e) when (e is not OperationCanceledException && PassedOver is not null)
+        {
+            PassedOver.Note(file, e);
+            return null;
+        }
+    }
+
+    // The types of the module; null when the library fails listing them, noted.
+    private ITypeDefinition[]? ReadTypes(DecompilerTypeSystem typeSystem, MetadataFile file)
+    {
+        try
+        {
+            return typeSystem.MainModule.TypeDefinitions.ToArray();
+        }
+        catch (Exception e) when (e is not OperationCanceledException && PassedOver is not null)
+        {
+            PassedOver.Note(file, e);
+            return null;
+        }
+    }
+
+    /// <summary>The members in scope with code <paramref name="matches"/> accepts, type by type: each such method, then
+    /// each property and event with such an accessor. A type's members are read under a catch of their own;
+    /// <paramref name="matches"/>, the analysis's test, runs outside it.</summary>
     public IEnumerable<IEntity> FindMembersWithCode(Func<IMethod, bool> matches, CancellationToken ct)
     {
-        foreach (var type in GetTypes(ct))
+        foreach (var (file, type) in ListTypes(ct))
         {
-            if (type.ParentModule?.MetadataFile is null)
+            var members = ReadMembersWithCode(type, file);
+            if (members is null)
             {
                 continue;
             }
 
-            foreach (var method in type.GetMembers(static m => m is IMethod, MemberDefinitions).OfType<IMethod>())
+            foreach (var method in members.Methods)
             {
                 if (matches(method))
                 {
                     yield return method;
                 }
             }
-            foreach (var member in type.Properties.Concat<IMember>(type.Events))
+            foreach (var (member, accessors) in members.Accessed)
             {
-                var accessors = Members.Accessors(member);
                 if (accessors.Any(matches))
                 {
                     yield return member;
                 }
             }
+        }
+    }
+
+    // The methods the type declares, then its properties and events with their accessors; none for a type of no file,
+    // null when the library fails reading them, noted.
+    private MembersWithCode? ReadMembersWithCode(ITypeDefinition type, MetadataFile file)
+    {
+        try
+        {
+            if (type.ParentModule?.MetadataFile is null)
+            {
+                return new MembersWithCode { Methods = [], Accessed = [] };
+            }
+
+            return new MembersWithCode
+            {
+                Methods = type.GetMembers(static m => m is IMethod, MemberDefinitions).OfType<IMethod>().ToArray(),
+                Accessed = type.Properties.Concat<IMember>(type.Events).Select(static m => (m, Members.Accessors(m).ToArray())).ToArray(),
+            };
+        }
+        catch (Exception e) when (e is not OperationCanceledException && PassedOver is not null)
+        {
+            PassedOver.Note(file, e);
+            return null;
+        }
+    }
+
+    private sealed class MembersWithCode
+    {
+        public required IMethod[] Methods { get; init; }
+
+        public required (IMember Member, IMethod[] Accessors)[] Accessed { get; init; }
+    }
+
+    // The scope's own module, then each module that references the module the walk is at, by the app's resolution of
+    // its references, and names the scope's type; on through each that forwards it. A module's references and its use
+    // of the type are read under catches of their own, and the walk decides outside them.
+    private IEnumerable<MetadataFile> GetReferencingModules(CancellationToken ct)
+    {
+        yield return ScopeFile;
+        var toWalk = new Stack<MetadataFile>();
+        var checkedFiles = new HashSet<MetadataFile> { ScopeFile };
+        toWalk.Push(ScopeFile);
+        do
+        {
+            var current = toWalk.Pop();
+            foreach (var assembly in Assemblies)
+            {
+                ct.ThrowIfCancellationRequested();
+                var module = LoadedAssemblies.GetFile(assembly);
+                if (checkedFiles.Contains(module))
+                {
+                    continue;
+                }
+
+                var references = ReadAssemblyReferences(module);
+                if (references is null || !references.Any(r => IsKnownAs(r, current)) || !checkedFiles.Add(module))
+                {
+                    continue;
+                }
+
+                var use = ReadScopeTypeUse(module);
+                if (use is null)
+                {
+                    continue;
+                }
+
+                if (use.Value.References)
+                {
+                    yield return module;
+                }
+
+                if (use.Value.Forwards)
+                {
+                    toWalk.Push(module);
+                }
+            }
+        } while (toWalk.Count > 0);
+    }
+
+    // Whether the app resolves reference to the module read from file.
+    private bool IsKnownAs(AssemblyReference reference, MetadataFile file)
+    {
+        var known = List.FindKnown(reference, exactOrNewer: true, listedOnly: false);
+        var knownFile = known is null ? null : LoadedAssemblies.GetFile(known);
+        return knownFile == file;
+    }
+
+    // The assemblies an assembly references; null for a module that is no assembly, or when the library fails reading
+    // them, noted.
+    private AssemblyReference[]? ReadAssemblyReferences(MetadataFile module)
+    {
+        try
+        {
+            return module.IsAssembly ? module.AssemblyReferences.ToArray() : null;
+        }
+        catch (Exception e) when (e is not OperationCanceledException && PassedOver is not null)
+        {
+            PassedOver.Note(module, e);
+            return null;
+        }
+    }
+
+    // Whether the module references the scope's type, and whether it forwards it; null when the library fails reading
+    // its tables, noted.
+    private (bool References, bool Forwards)? ReadScopeTypeUse(MetadataFile module)
+    {
+        try
+        {
+            return (ReferencesScopeType(module.Metadata, ScopeName, ScopeNamespace), ForwardsScopeType(module.Metadata, ScopeName, ScopeNamespace));
+        }
+        catch (Exception e) when (e is not OperationCanceledException && PassedOver is not null)
+        {
+            PassedOver.Note(module, e);
+            return null;
+        }
+    }
+
+    // The scope's own module, then each of the list's modules it shows its internals to that references the scope's type.
+    private IEnumerable<MetadataFile> GetModuleAndAnyFriends(CancellationToken ct)
+    {
+        yield return ScopeFile;
+        var values = ReadFriendValues(ScopeFile);
+        if (values is null)
+        {
+            yield break;
+        }
+
+        var friends = ListFriendNames(values);
+        if (friends.Count == 0)
+        {
+            yield break;
+        }
+
+        foreach (var assembly in Assemblies)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (!friends.Contains(assembly.Name))
+            {
+                continue;
+            }
+
+            var file = LoadedAssemblies.GetFile(assembly);
+            var references = ReadFriendUse(file);
+            if (references == true)
+            {
+                yield return file;
+            }
+        }
+    }
+
+    // The value of each InternalsVisibleTo attribute of the module that is a string; null when the library fails reading
+    // them, noted.
+    private List<string>? ReadFriendValues(MetadataFile module)
+    {
+        try
+        {
+            var metadata = module.Metadata;
+            var provider = MetadataExtensions.MinimalAttributeTypeProvider;
+            var values = new List<string>();
+            foreach (var handle in metadata.CustomAttributes)
+            {
+                var attribute = metadata.GetCustomAttribute(handle);
+                if (!IsInternalsVisibleTo(metadata, attribute))
+                {
+                    continue;
+                }
+
+                var value = attribute.DecodeValue(provider);
+                if (value.FixedArguments[0].Value is string name)
+                {
+                    values.Add(name);
+                }
+            }
+            return values;
+        }
+        catch (Exception e) when (e is not OperationCanceledException && PassedOver is not null)
+        {
+            PassedOver.Note(module, e);
+            return null;
+        }
+    }
+
+    // The friends' names: each value up to its first comma, where its public key starts.
+    private static HashSet<string> ListFriendNames(List<string> values)
+    {
+        var friends = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var value in values)
+        {
+            friends.Add(value.Split(',')[0]);
+        }
+        return friends;
+    }
+
+    // Whether a friend with metadata references the scope's type; null when the library fails reading it, noted.
+    private bool? ReadFriendUse(MetadataFile file)
+    {
+        try
+        {
+            return !file.IsMetadataOnly && ReferencesScopeType(file.Metadata, ScopeTypeName, ScopeNamespace);
+        }
+        catch (Exception e) when (e is not OperationCanceledException && PassedOver is not null)
+        {
+            PassedOver.Note(file, e);
+            return null;
         }
     }
 
@@ -202,107 +520,6 @@ internal sealed class AnalyzerScope
         }
         typeScope = current ?? previous;
     }
-
-    private IEnumerable<MetadataFile> GetReferencingModules(MetadataFile self, CancellationToken ct)
-    {
-        yield return self;
-        var scopeName = TypeScope.Name;
-        if (TypeScope.TypeParameterCount > 0)
-        {
-            scopeName += "`" + TypeScope.TypeParameterCount;
-        }
-
-        var toWalk = new Stack<MetadataFile>();
-        var checkedFiles = new HashSet<MetadataFile> { self };
-        toWalk.Push(self);
-        do
-        {
-            var current = toWalk.Pop();
-            foreach (var assembly in Assemblies)
-            {
-                ct.ThrowIfCancellationRequested();
-                var module = LoadedAssemblies.GetFile(assembly);
-                if (!module.IsAssembly || checkedFiles.Contains(module))
-                {
-                    continue;
-                }
-
-                var found = false;
-                foreach (var reference in module.AssemblyReferences)
-                {
-                    var known = List.FindKnown(reference, exactOrNewer: true, listedOnly: false);
-                    var knownFile = known is null ? null : LoadedAssemblies.GetFile(known);
-                    if (knownFile == current)
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found || !checkedFiles.Add(module))
-                {
-                    continue;
-                }
-
-                if (ReferencesScopeType(module.Metadata, scopeName, TypeScope.Namespace))
-                {
-                    yield return module;
-                }
-
-                if (ForwardsScopeType(module.Metadata, scopeName, TypeScope.Namespace))
-                {
-                    toWalk.Push(module);
-                }
-            }
-        } while (toWalk.Count > 0);
-    }
-
-    private IEnumerable<MetadataFile> GetModuleAndAnyFriends(ITypeDefinition typeScope, CancellationToken ct)
-    {
-        var self = DecompilerFacts.GetMetadataFile(typeScope);
-        yield return self;
-        var friends = ListFriendNames(self.Metadata);
-        if (friends.Count == 0)
-        {
-            yield break;
-        }
-
-        foreach (var assembly in Assemblies)
-        {
-            ct.ThrowIfCancellationRequested();
-            var file = LoadedAssemblies.GetFile(assembly);
-            if (!friends.Contains(assembly.Name) || file.IsMetadataOnly)
-            {
-                continue;
-            }
-
-            if (ReferencesScopeType(file.Metadata, typeScope.Name, typeScope.Namespace))
-            {
-                yield return file;
-            }
-        }
-    }
-
-    private static HashSet<string> ListFriendNames(MetadataReader metadata)
-    {
-        var provider = MetadataExtensions.MinimalAttributeTypeProvider;
-        var friends = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var handle in metadata.CustomAttributes)
-        {
-            var attribute = metadata.GetCustomAttribute(handle);
-            if (!IsInternalsVisibleTo(metadata, attribute))
-            {
-                continue;
-            }
-
-            var value = attribute.DecodeValue(provider);
-            if (value.FixedArguments[0].Value is string name)
-            {
-                friends.Add(name.Split(',')[0]);
-            }
-        }
-        return friends;
-    }
-
     private static bool IsInternalsVisibleTo(MetadataReader metadata, CustomAttribute attribute)
     {
         var type = attribute.Constructor.Kind switch

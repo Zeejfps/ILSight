@@ -1,9 +1,13 @@
+using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core.AnalysisArea;
 
 /// <summary>Shows the members of kind <typeparamref name="T"/> that implement an interface member,
 /// or with <c>overrides</c> those that override a class member.</summary>
+/// <remarks>Each step reads the facts its test needs under a catch of its own (the analyzed member's, then each type's
+/// bases, then each of its members' bases), noting a part the library fails reading as passed over; the tests run
+/// outside them.</remarks>
 internal static class InheritorsAnalyzer<T> where T : class, IMember
 {
     public static AnalysisRun? Prepare(bool overrides, ISymbol? symbol)
@@ -32,33 +36,116 @@ internal static class InheritorsAnalyzer<T> where T : class, IMember
 
     private static IEnumerable<ISymbol> Analyze(bool overrides, T analyzed, AnalyzerContext context)
     {
-        var declaring = analyzed.DeclaringTypeDefinition;
-        if (declaring is null || declaring.ParentModule?.MetadataFile is null)
+        var facts = ReadAnalyzed(analyzed, context);
+        if (facts is null || !facts.HasDeclaringFile)
         {
             yield break;
         }
 
-        foreach (var type in AnalyzerScope.Create(context, analyzed).GetTypes(context.CancellationToken))
+        var scope = AnalyzerScope.Create(context, analyzed);
+        if (scope is null)
         {
-            var baseTypes = type.GetAllBaseTypeDefinitions();
-            if (!baseTypes.Any(t => Members.IsSame(t, declaring)))
+            yield break;
+        }
+
+        foreach (var (file, type) in scope.ListTypes(context.CancellationToken))
+        {
+            var bases = ReadBaseDefinitions(type, file, context.PassedOver);
+            if (bases is null || !bases.Any(b => b.Is(facts.Declaring)))
             {
                 continue;
             }
 
-            foreach (var member in type.Members.OfType<T>())
+            var members = ReadMembers(type, file, context.PassedOver);
+            foreach (var member in members ?? [])
             {
                 if (overrides && !member.IsOverride)
                 {
                     continue;
                 }
 
-                var baseMembers = InheritanceHelper.GetBaseMembers(member, !overrides);
-                if (baseMembers.Any(m => Members.IsSame(m, analyzed)))
+                var baseMembers = ReadBaseMembers(member.Member, overrides, file, context.PassedOver);
+                if (baseMembers is not null && baseMembers.Any(m => m.Is(facts.Key)))
                 {
-                    yield return member;
+                    yield return member.Member;
                 }
             }
+        }
+    }
+
+    // The analyzed member's definition and the type declaring it, and whether that type was read from a file; null when
+    // the library fails reading them, or no type declares the member.
+    private static AnalyzedFacts? ReadAnalyzed(T analyzed, AnalyzerContext context)
+    {
+        try
+        {
+            var declaring = analyzed.DeclaringTypeDefinition;
+            if (declaring is null)
+            {
+                return null;
+            }
+
+            return new AnalyzedFacts
+            {
+                Key = DefinitionKey.Of(analyzed), Declaring = DefinitionKey.Of(declaring), HasDeclaringFile = declaring.ParentModule?.MetadataFile is not null,
+            };
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            context.PassedOver.Note(context.AnalyzedFile, e);
+            return null;
+        }
+    }
+
+    private sealed class AnalyzedFacts
+    {
+        public required DefinitionKey Key { get; init; }
+
+        public required DefinitionKey Declaring { get; init; }
+
+        public required bool HasDeclaringFile { get; init; }
+    }
+
+    // Every type the type derives from or implements, by the library's walk; null when it fails, noted.
+    private static DefinitionKey[]? ReadBaseDefinitions(ITypeDefinition type, MetadataFile file, PassedOver passedOver)
+    {
+        try
+        {
+            return type.GetAllBaseTypeDefinitions().Select(DefinitionKey.Of).ToArray();
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            passedOver.Note(file, e);
+            return null;
+        }
+    }
+
+    // The type's members of kind T, each with whether it overrides; null when the library fails reading them, noted.
+    private static (T Member, bool IsOverride)[]? ReadMembers(ITypeDefinition type, MetadataFile file, PassedOver passedOver)
+    {
+        try
+        {
+            return type.Members.OfType<T>().Select(static m => (m, m.IsOverride)).ToArray();
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            passedOver.Note(file, e);
+            return null;
+        }
+    }
+
+    // The members the member overrides, and with implementations the interface members it implements, by the library's
+    // walk; null when it fails, noted.
+    private static DefinitionKey[]? ReadBaseMembers(T member, bool overrides, MetadataFile file, PassedOver passedOver)
+    {
+        try
+        {
+            return InheritanceHelper.GetBaseMembers(member, !overrides).Select(DefinitionKey.Of).ToArray();
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            passedOver.Note(file, e);
+            return null;
         }
     }
 }

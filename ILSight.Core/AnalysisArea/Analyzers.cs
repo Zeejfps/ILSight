@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
+using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core.AnalysisArea;
@@ -267,7 +268,8 @@ public static class Analyzers
         return Batches.StreamOutcomesAsync<AnalysisFind>(async (emit, token) =>
         {
             var entity = GetSymbol(symbol);
-            var own = OwnModuleOf(list, entity);
+            var file = FileOf(entity);
+            var own = AssemblyListing.GetLoadedFrom(list, file);
             using var reading = LoadedAssemblies.BeginReading();
             if (!LoadedAssemblies.TryRead(reading, own))
             {
@@ -281,7 +283,7 @@ public static class Analyzers
             }
 
             var reads = await AnalyzerScope.ReadReachableAsync(reading, list, own, token);
-            var context = new AnalyzerContext { AssemblyList = list, TypeSystems = reads, CancellationToken = token };
+            var context = new AnalyzerContext { AssemblyList = list, TypeSystems = reads, AnalyzedFile = file, CancellationToken = token };
             var found = EmitFound(run, context, kind.SortsResults, emit, token);
             if (found is Outcome.Failed)
             {
@@ -370,7 +372,8 @@ public static class Analyzers
         }
     }
 
-    private static LoadedModule OwnModuleOf(AssemblyList list, ISymbol symbol)
+    // The file of the module the symbol is in.
+    private static MetadataFile FileOf(ISymbol symbol)
     {
         var file = symbol switch
         {
@@ -383,7 +386,7 @@ public static class Analyzers
             throw new InvalidOperationException($"{symbol.Name} is in no module to analyze.");
         }
 
-        return AssemblyListing.GetLoadedFrom(list, file);
+        return file;
     }
 
     // Every touch of the library's objects describing a symbol: its properties, the library's own formatter and the

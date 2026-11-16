@@ -2,9 +2,8 @@
 
 using System.Collections.Concurrent;
 using System.Reflection.Metadata;
-using ICSharpCode.Decompiler.CSharp;
+using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.Metadata;
-using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core.AnalysisArea;
 
@@ -20,6 +19,10 @@ public sealed class AnalyzerContext
     /// (<see cref="AnalyzerScope.ReadReachableAsync"/>).</summary>
     public required ModuleTypeSystems TypeSystems { get; init; }
 
+    /// <summary>The file of the module the analyzed symbol is in, where a part of the symbol the library fails reading is
+    /// noted as passed over.</summary>
+    public required MetadataFile AnalyzedFile { get; init; }
+
     /// <summary>The modules the analysis reached that the library could not read, to name beside its results.</summary>
     internal ConcurrentDictionary<LoadedModule, UnreadableModule> Unreadable { get; } = new();
 
@@ -31,15 +34,35 @@ public sealed class AnalyzerContext
 
     /// <summary>How C# maps the compiler-generated code around <paramref name="entity"/> to the
     /// methods it came from; the last one asked for is kept.</summary>
-    internal CodeMappingInfo EnsureMapping(IEntity entity)
+    internal CodeMappingInfo EnsureMapping(ICSharpCode.Decompiler.TypeSystem.IEntity entity)
     {
         var file = DecompilerFacts.GetMetadataFile(entity);
         var mapping = _mapping;
         if (mapping is null || mapping.Value.File != file || mapping.Value.Handle != entity.MetadataToken)
         {
-            mapping = (file, entity.MetadataToken, CSharpDecompiler.GetCodeMappingInfo(file, entity.MetadataToken));
+            mapping = (file, entity.MetadataToken, ICSharpCode.Decompiler.CSharp.CSharpDecompiler.GetCodeMappingInfo(file, entity.MetadataToken));
             _mapping = mapping;
         }
         return mapping.Value.Mapping;
+    }
+
+    /// <summary>The mapping of the compiler-generated code around the entity <paramref name="handle"/> names in
+    /// <paramref name="file"/>, when it is the one kept (<see cref="KeepMapping"/>); null when another is.</summary>
+    internal CodeMappingInfo? FindMapping(MetadataFile file, EntityHandle handle)
+    {
+        var mapping = _mapping;
+        if (mapping is null || mapping.Value.File != file || mapping.Value.Handle != handle)
+        {
+            return null;
+        }
+
+        return mapping.Value.Mapping;
+    }
+
+    /// <summary>Keeps <paramref name="mapping"/>, read for the entity <paramref name="handle"/> names in
+    /// <paramref name="file"/>, as the last one asked for, in place of the one kept before.</summary>
+    internal void KeepMapping(MetadataFile file, EntityHandle handle, CodeMappingInfo mapping)
+    {
+        _mapping = (file, handle, mapping);
     }
 }

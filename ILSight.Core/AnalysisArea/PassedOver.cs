@@ -3,10 +3,11 @@ using ICSharpCode.Decompiler.Metadata;
 
 namespace ILSight.Core.AnalysisArea;
 
-/// <summary>The parts of the modules an analysis read that the library couldn't read (a method body, an instruction, a
-/// token an instruction names, a method's locals, an attribute's value), so the analysis couldn't look in them: how
-/// many in each module, and why the first couldn't be read. Thread-safe: an analysis may read modules in
-/// parallel.</summary>
+/// <summary>The parts of the modules an analysis read that the library couldn't read (a type, a member, a module's
+/// references, a method body, an instruction, a token an instruction names, a method's locals, an attribute's value, a
+/// symbol found), so the analysis couldn't look in them: how many in each module, and why the first couldn't be read.
+/// Each step of an analysis reads its part under a catch of its own and notes here what the library threw, then the
+/// analysis goes on with the next. Thread-safe: an analysis may read modules in parallel.</summary>
 internal sealed class PassedOver
 {
     private readonly ConcurrentDictionary<MetadataFile, (int Count, Exception First)> _modules = new();
