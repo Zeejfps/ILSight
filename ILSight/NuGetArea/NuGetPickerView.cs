@@ -181,7 +181,8 @@ internal static class NuGetPickerView
         {
             var source = sources[sourceIndex];
             var current = source.Url.Text == picker.FeedUrl;
-            if (ui.MenuRadioItem(source.Name, current, id: source.Url.Text))
+            var name = OneLineText.Name(source.Name);
+            if (ui.MenuRadioItem(name, current, id: source.Url.Text))
             {
                 picker.PickFeed(source);
             }
@@ -287,7 +288,8 @@ internal static class NuGetPickerView
         }
 
         var theme = ui.Theme;
-        var note = ui.Memo("nuget-left-out", (leftOut, t: appearance.Strings), static a => a.t.NugetLeftOut(string.Join(", ", a.leftOut)));
+        var note = ui.Memo("nuget-left-out", (leftOut, t: appearance.Strings),
+            static a => a.t.NugetLeftOut(string.Join(", ", a.leftOut.Select(OneLineText.Name))));
         ui.Text(note, new Box { Width = Sizing.Grow(), Padding = new Spacing(theme.Gap, theme.GapTight) }, color: theme.TextMuted,
             size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
     }
@@ -418,14 +420,14 @@ internal static class NuGetPickerView
         var nameColor = selected ? theme.SelectionText : theme.Text;
         using (ui.Row(new Box { Gap = theme.GapTight, AlignY = Align.Center }))
         {
-            ui.Text(package.Id.Text, color: nameColor, bold: true, overflow: TextOverflow.Ellipsis);
+            ui.Text(OneLineText.Name(package.Id.Text), color: nameColor, bold: true, overflow: TextOverflow.Ellipsis);
             if (package.Verified)
             {
                 ui.Icon(new UiIcon(appearance.Icons.NugetVerified, theme.AccentText));
             }
 
             Authors(ui, appearance, package);
-            ui.Text(package.Version.Text, color: theme.TextMuted, size: theme.FontSizeSmall);
+            ui.Text(OneLineText.Name(package.Version.Text), color: theme.TextMuted, size: theme.FontSizeSmall);
         }
     }
 
@@ -438,7 +440,7 @@ internal static class NuGetPickerView
             ui.Leaf(box);
             return;
         }
-        var authors = ui.Memo("authors", (package.Authors, appearance.Strings), static a => a.Strings.NugetAuthors(a.Authors));
+        var authors = ui.Memo("authors", (package.Authors, appearance.Strings), static a => a.Strings.NugetAuthors(OneLineText.Name(a.Authors)));
         ui.Text(authors, box, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
     }
 
@@ -548,7 +550,7 @@ internal static class NuGetPickerView
     private static void Downloading(Ui ui, Appearance appearance, NuGetBrowser browser)
     {
         var theme = ui.Theme;
-        var text = ui.Memo("nuget-downloading", (browser.DownloadingName, appearance.Strings), static a => a.Strings.NugetDownloading(a.DownloadingName));
+        var text = ui.Memo("nuget-downloading", (browser.DownloadingName, appearance.Strings), static a => a.Strings.NugetDownloading(OneLineText.Name(a.DownloadingName)));
         ui.Text(text, color: theme.AccentText, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
     }
 }

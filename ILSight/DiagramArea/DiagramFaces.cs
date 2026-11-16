@@ -113,7 +113,7 @@ internal static class DiagramFaces
             },
             Height = stack.RowHeight + NameRowExtra,
             Indent = Padding,
-            Text = card.Name,
+            Text = OneLineText.Name(card.Name),
         });
         var stereotype = StereotypeOf(card.Stereotype);
         if (stereotype is null)
@@ -165,7 +165,7 @@ internal static class DiagramFaces
     private static void AddInherited(RowStack stack, DiagramViewState view, TypeDiagram diagram, TypeCard card, InheritedGroup group)
     {
         var members = ListShown(view, diagram, group.AssemblyPath, group.Members);
-        var title = stack.Strings.DiagramInheritedFrom(group.From);
+        var title = stack.Strings.DiagramInheritedFrom(OneLineText.Name(group.From));
         AddFold(stack, view, new CardFold.Inherited { Card = card.Anchor, From = group.From }, title, members);
     }
 
@@ -229,7 +229,7 @@ internal static class DiagramFaces
             },
             Height = stack.RowHeight,
             Indent = Padding + ChevronWidth,
-            Text = member.Text,
+            Text = OneLineText.Name(member.Text),
         };
     }
 
@@ -271,8 +271,8 @@ internal static class DiagramFaces
         return link.Match<string?>(
             inherits: static _ => null,
             implements: static _ => null,
-            holdsOne: static one => one.Property,
-            holdsMany: static many => many.Property + ManyMark);
+            holdsOne: static one => OneLineText.Name(one.Property),
+            holdsMany: static many => OneLineText.Name(many.Property) + ManyMark);
     }
 
     private static void AddRow(RowStack stack, CardRow row)

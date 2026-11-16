@@ -30,10 +30,10 @@ internal static class ExportReportText
     /// with how many problems, and how long it took; or that it was refused, and why.</summary>
     public static string DescribeOutcome(Strings t, ExportReport report)
     {
-        return report.End.Match((t, report.Elapsed, report.Job.Name),
+        return report.End.Match((t, report.Elapsed, Name: OneLineText.Name(report.Job.Name)),
             static (s, finished) => DescribeFinished(s.t, finished, s.Elapsed),
             static (s, _) => s.t.ExportsCancelled,
-            static (s, closed) => s.t.ExportSummaryAssemblyClosed(name: s.Name, assembly: closed.Assembly),
+            static (s, closed) => s.t.ExportSummaryAssemblyClosed(name: s.Name, assembly: OneLineText.Name(closed.Assembly)),
             static (s, _) => s.t.ExportsFailed);
     }
 
@@ -68,10 +68,10 @@ internal static class ExportReportText
 
     private static string Summarize(Strings t, ExportReport report)
     {
-        return report.End.Match((t, report.Job.Name),
+        return report.End.Match((t, Name: OneLineText.Name(report.Job.Name)),
             static (s, finished) => SummarizeFinished(s.t, s.Name, finished),
             static (s, _) => s.t.ExportSummaryCancelled(s.Name),
-            static (s, closed) => s.t.ExportSummaryAssemblyClosed(name: s.Name, assembly: closed.Assembly),
+            static (s, closed) => s.t.ExportSummaryAssemblyClosed(name: s.Name, assembly: OneLineText.Name(closed.Assembly)),
             static (s, _) => s.t.ExportSummaryFailed(s.Name));
     }
 
@@ -103,7 +103,7 @@ internal static class ExportReportText
     {
         text.AppendLine(Summarize(t, report));
         text.AppendLine(KindOf(t, report.Job.Kind));
-        text.AppendLine(report.Job.Folder);
+        text.AppendLine(OneLineText.Name(report.Job.Folder));
         text.AppendLine(t.ExportTook(FormatDuration(t, report.Elapsed)));
         text.AppendLine();
         report.End.Switch((text, t, kind: report.Job.Kind),
@@ -142,7 +142,7 @@ internal static class ExportReportText
         text.AppendLine(t.ExportWritten);
         foreach (var path in written)
         {
-            text.Append(Indent).AppendLine(path);
+            text.Append(Indent).AppendLine(OneLineText.Name(path));
         }
 
         text.AppendLine();
@@ -189,11 +189,11 @@ internal static class ExportReportText
     public static string Headline(Strings t, ExportKind kind, ExportProblem problem)
     {
         return problem.Match(
-            notDecompiled: static part => part.Error.Message,
-            noPdbEntry: pdb => t.ErrorNoPdbEntry(pdb.Assembly),
-            pdbNotWritten: static pdb => $"{pdb.Assembly}: {pdb.Error.Message}",
-            outsideFolder: outside => t.ExportOutsideFolder(outside.Path),
-            fileNotWritten: static file => $"{file.Path}: {file.Error.Message}");
+            notDecompiled: static part => OneLineText.Message(part.Error.Message),
+            noPdbEntry: pdb => t.ErrorNoPdbEntry(OneLineText.Name(pdb.Assembly)),
+            pdbNotWritten: static pdb => $"{OneLineText.Name(pdb.Assembly)}: {OneLineText.Message(pdb.Error.Message)}",
+            outsideFolder: outside => t.ExportOutsideFolder(OneLineText.Name(outside.Path)),
+            fileNotWritten: static file => $"{OneLineText.Name(file.Path)}: {OneLineText.Message(file.Error.Message)}");
     }
 
     /// <summary>The exception behind <paramref name="problem"/> as the runtime wrote it (its type and stack trace), when
@@ -218,7 +218,7 @@ internal static class ExportReportText
     /// <summary>What made <paramref name="failed"/> fail, by its exception's message, under its headline.</summary>
     public static string CauseOf(ExportEnd.Failed failed)
     {
-        return failed.Error.Message;
+        return OneLineText.Message(failed.Error.Message);
     }
 
     /// <summary>The exception behind <paramref name="failed"/> as the runtime wrote it (its type and stack trace),
@@ -228,8 +228,9 @@ internal static class ExportReportText
         return failed.Error.ToString();
     }
 
-    private static string FailureOf(Strings t, ExportKind kind, string subject)
+    private static string FailureOf(Strings t, ExportKind kind, string named)
     {
+        var subject = OneLineText.Name(named);
         return kind switch
         {
             ExportKind.CSharpFile or ExportKind.ILFile => t.ErrorSaveCode(subject),

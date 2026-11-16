@@ -118,7 +118,7 @@ internal static class MetadataDetailsView
     private static void Failed(Ui ui, MetadataRowDetails.Failed failed)
     {
         var theme = ui.Theme;
-        ui.Text(failed.Reason, new Box { Height = theme.RowHeight }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
+        ui.Text(OneLineText.Message(failed.Reason), new Box { Height = theme.RowHeight }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
     }
 
     private static void Table(Ui ui, MetadataRowDetails.Table table)
@@ -153,7 +153,7 @@ internal static class MetadataDetailsView
             for (var cellIndex = 0; cellIndex < cells.Count; cellIndex++)
             {
                 var cell = cells[cellIndex];
-                ui.Text(cell, new Box { Width = Sizing.Percent(share) }, overflow: TextOverflow.Ellipsis);
+                ui.Text(OneLineText.Name(cell), new Box { Width = Sizing.Percent(share) }, overflow: TextOverflow.Ellipsis);
             }
         }
     }

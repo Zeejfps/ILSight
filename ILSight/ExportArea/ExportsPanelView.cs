@@ -334,7 +334,7 @@ internal static class ExportsPanelView
 
         if (parts > 1)
         {
-            return $"{kindText} · {t.ExportsAssemblyPart(part: part, parts: parts, name: name)}";
+            return $"{kindText} · {t.ExportsAssemblyPart(part: part, parts: parts, name: OneLineText.Name(name))}";
         }
 
         if (preparing)
@@ -752,7 +752,7 @@ internal static class ExportsPanelView
     private static void Name(Ui ui, string name)
     {
         var theme = ui.Theme;
-        ui.Text(name, new Box { Width = Sizing.Grow() }, color: theme.Text, overflow: TextOverflow.Ellipsis);
+        ui.Text(OneLineText.Name(name), new Box { Width = Sizing.Grow() }, color: theme.Text, overflow: TextOverflow.Ellipsis);
     }
 
     private static void Detail(Ui ui, string text, uint? color = null)
@@ -766,7 +766,7 @@ internal static class ExportsPanelView
     {
         var theme = ui.Theme;
         // Cut in the middle so its last folder stays; the row's tooltip holds it whole.
-        ui.Text(folder, new Box { Width = Sizing.Grow(), Padding = Indent(theme) }, color: theme.TextMuted, size: theme.FontSizeSmall,
+        ui.Text(OneLineText.Name(folder), new Box { Width = Sizing.Grow(), Padding = Indent(theme) }, color: theme.TextMuted, size: theme.FontSizeSmall,
             overflow: TextOverflow.EllipsisMiddle);
     }
 

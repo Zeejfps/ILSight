@@ -127,7 +127,7 @@ internal static class ToolbarView
     {
         var t = appearance.Strings;
         var width = ListPickerWidth(ui, lists);
-        using var menu = ui.SelectButton("list", lists.Active, width, t.ListsPick, revision: lists.Count);
+        using var menu = ui.SelectButton("list", OneLineText.Name(lists.Active), width, t.ListsPick, revision: lists.Count);
         if (!menu.IsOpen)
         {
             return;
@@ -158,7 +158,7 @@ internal static class ToolbarView
 
         measured.Revision = lists.Revision;
         measured.Theme = ui.Theme;
-        var names = lists.Names.ToArray();
+        var names = lists.Names.Select(OneLineText.Name).ToArray();
         var widest = ui.SelectButtonWidth(names);
         measured.Width = Math.Clamp(widest, AppLayout.ListPickerMinWidth, AppLayout.ListPickerMaxWidth);
         return measured.Width;
@@ -174,7 +174,8 @@ internal static class ToolbarView
     private static void ListItem(Ui ui, IAppCommandWriter commands, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
         var active = name == lists.Active;
-        if (!ui.MenuRadioItem(name, active, id: ListItemPrefix + name))
+        var shown = OneLineText.Name(name);
+        if (!ui.MenuRadioItem(shown, active, id: ListItemPrefix + name))
         {
             return;
         }
@@ -249,7 +250,7 @@ internal static class ToolbarView
     private static string TextOf(Strings strings, HistoryEntry entry)
     {
         return entry.Match(strings,
-            static (_, node) => node.Place.Label,
+            static (_, node) => OneLineText.Name(node.Place.Label),
             static (strings, diagram) => diagram.Title.Words(strings),
             static (strings, comparison) => comparison.Title.Words(strings),
             static (strings, _) => strings.ExportReportTitle);
@@ -266,7 +267,7 @@ internal static class ToolbarView
 
     private static string NameOf(AssemblyPath path)
     {
-        return Path.GetFileNameWithoutExtension(path.FileName);
+        return OneLineText.Name(Path.GetFileNameWithoutExtension(path.FileName));
     }
 
     private static string NameDiagramAssemblies(HistoryEntry.Diagram diagram)

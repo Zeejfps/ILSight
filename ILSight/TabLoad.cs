@@ -52,11 +52,13 @@ public sealed class TabLoad
 
     /// <summary>A load waiting for the node at <paramref name="location"/>, titled <paramref name="title"/>, which it
     /// showed in <paramref name="language"/> when the documents were saved, to be found once the assemblies are
-    /// listed.</summary>
+    /// listed. The title is kept on its one line as the words it was saved as (<see cref="OneLineText.Message"/>): a
+    /// title saved by this version is already escaped, so only one an earlier version saved, or an edited file holds,
+    /// changes; quoting it as a name would quote an escaped one twice.</summary>
     public TabLoad(LatestWork work, NodePath location, string? title, DecompilationLanguage language)
     {
         _work = work;
-        _content = new TabContent.Reloading { Location = location, Title = title };
+        _content = new TabContent.Reloading { Location = location, Title = title is null ? null : OneLineText.Message(title) };
         _language = language;
     }
 

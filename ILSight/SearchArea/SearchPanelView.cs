@@ -50,7 +50,7 @@ internal static class SearchPanelView
             var unsearched = results.Unsearched[i];
             using (ui.Id(i))
             {
-                var line = ui.Memo("unsearched", (unsearched, t), static a => a.t.SearchUnsearched(name: a.unsearched.Assembly.FilePath.FileName, why: a.unsearched.Why));
+                var line = ui.Memo("unsearched", (unsearched, t), static a => a.t.SearchUnsearched(name: OneLineText.Name(a.unsearched.Assembly.FilePath.FileName), why: OneLineText.Message(a.unsearched.Why)));
                 ui.Text(line, color: theme.Warning, size: theme.FontSizeSmall);
             }
         }
@@ -61,7 +61,8 @@ internal static class SearchPanelView
             using (ui.Id(i))
             {
                 var line = ui.Memo("partly-searched", (partly, t),
-                    static a => a.t.SearchPartlySearched(name: a.partly.Assembly.FilePath.FileName, count: a.partly.Count, why: a.partly.Why));
+                    static a => a.t.SearchPartlySearched(name: OneLineText.Name(a.partly.Assembly.FilePath.FileName), count: a.partly.Count,
+                        why: OneLineText.Message(a.partly.Why)));
                 ui.Text(line, color: theme.Warning, size: theme.FontSizeSmall);
             }
         }
@@ -72,7 +73,8 @@ internal static class SearchPanelView
             using (ui.Id(i))
             {
                 var line = ui.Memo("not-shown", (notShown, t),
-                    static a => a.t.SearchFoundNotShown(what: a.notShown.Name ?? $"0x{a.notShown.Token:X8}", name: a.notShown.Assembly.FilePath.FileName, why: a.notShown.Why));
+                    static a => a.t.SearchFoundNotShown(what: a.notShown.Name is null ? $"0x{a.notShown.Token:X8}" : OneLineText.Name(a.notShown.Name),
+                        name: OneLineText.Name(a.notShown.Assembly.FilePath.FileName), why: OneLineText.Message(a.notShown.Why)));
                 ui.Text(line, color: theme.Warning, size: theme.FontSizeSmall);
             }
         }
@@ -240,7 +242,7 @@ internal static class SearchPanelView
         var failure = results.RunFailure;
         if (failure is not null)
         {
-            var failed = ui.Memo("search-failed", (failure, t), static a => a.t.SearchFailed(a.failure));
+            var failed = ui.Memo("search-failed", (failure, t), static a => a.t.SearchFailed(OneLineText.Message(a.failure)));
             ui.Text(failed, color: theme.Warning, size: theme.FontSizeSmall);
             return;
         }
@@ -350,7 +352,7 @@ internal static class SearchPanelView
             }
 
             NameCell(ui, appearance, row, result);
-            row.TextCell(1, result.Location, theme.TextMuted, overflow: TextOverflow.EllipsisMiddle);
+            row.TextCell(1, OneLineText.Name(result.Location), theme.TextMuted, overflow: TextOverflow.EllipsisMiddle);
             row.TextCell(2, NodeText.AssemblyLabel(node.Assembly), theme.TextMuted);
         }
         ui.Tooltip(row.Id, NodeText.Tooltip(appearance.Strings, node));
@@ -364,7 +366,7 @@ internal static class SearchPanelView
         using (row.Cell(0))
         {
             NodeIcons.Draw(ui, appearance, node);
-            ui.Text(result.Text, new Box { Width = Sizing.Grow() }, color: color, overflow: TextOverflow.Ellipsis);
+            ui.Text(OneLineText.Name(result.Text), new Box { Width = Sizing.Grow() }, color: color, overflow: TextOverflow.Ellipsis);
         }
     }
 

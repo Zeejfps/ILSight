@@ -36,7 +36,7 @@ internal static class ComparisonPickerView
         var close = false;
         var card = new Box { Width = Sizing.Grow(0f, AppLayout.PickerWidth), Height = Sizing.Percent(AppLayout.PickerHeight) };
         var isOpen = choice.IsOpen;
-        using (var dialog = ui.Dialog(DialogId, t.ComparePickerTitle(compared.NameAndVersion), ref isOpen, card))
+        using (var dialog = ui.Dialog(DialogId, t.ComparePickerTitle(OneLineText.Name(compared.NameAndVersion)), ref isOpen, card))
         {
             if (!isOpen)
             {
@@ -143,10 +143,10 @@ internal static class ComparisonPickerView
         {
             var nameColor = row.Selected ? theme.SelectionText : theme.Text;
             NodeIcons.Draw(ui, appearance, NodeIcon.Assembly);
-            ui.Text(assembly.NameAndVersion, color: nameColor);
+            ui.Text(OneLineText.Name(assembly.NameAndVersion), color: nameColor);
             FrameworkText(ui, assembly);
             // Shortened in the middle so that its folder and name stay.
-            ui.Text(assembly.FilePath.Text, new Box { Width = Sizing.Grow() }, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.EllipsisMiddle);
+            ui.Text(OneLineText.Name(assembly.FilePath.Text), new Box { Width = Sizing.Grow() }, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.EllipsisMiddle);
         }
     }
 
@@ -158,7 +158,7 @@ internal static class ComparisonPickerView
             return;
         }
 
-        ui.Text(moniker, color: ui.Theme.TextMuted, size: ui.Theme.FontSizeSmall);
+        ui.Text(OneLineText.Name(moniker), color: ui.Theme.TextMuted, size: ui.Theme.FontSizeSmall);
     }
 
     private static bool TryCompareWithSelected(IAppCommandWriter commands, Navigation navigation, AssemblyList assemblies, ComparisonChoice choice, LoadedModule compared,

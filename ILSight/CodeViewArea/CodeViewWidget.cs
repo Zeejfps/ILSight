@@ -1339,7 +1339,7 @@ public static class CodeViewWidget
             return null;
         }
 
-        return ui.Memo("closed", (closedAssembly, t: appearance.Strings), static a => a.t.DocumentClosed(a.closedAssembly));
+        return ui.Memo("closed", (closedAssembly, t: appearance.Strings), static a => a.t.DocumentClosed(OneLineText.Name(a.closedAssembly)));
     }
 
     private static void PaintRow(UiPainter p, (CodeViewFrame Frame, CodeRow Row) shown)

@@ -174,6 +174,8 @@ internal static class BookmarksPanelView
         ui.PickFile(t.BookmarksImportTitle, null, Filters(t), path => Commands.Start(commands, nameof(BookmarkImporting.ImportAsync), path, static (a, p, ct) => a.BookmarkImporting.ImportAsync(a.Bookmarks, a.Imports, p, ct)));
     }
 
+    // The cell's value as the bookmark holds it, which copying the whole cell takes; it is drawn on the row's one line
+    // (OneLineText.Name), which a part selected is of.
     private static string Shown(Bookmark bookmark, int column)
     {
         return column switch
@@ -255,7 +257,7 @@ internal static class BookmarksPanelView
             color = ui.Theme.TextMuted;
         }
 
-        var followed = row.TextCell(LocationColumn, bookmark.Location, color, link: new UiIcon(appearance.Icons.LinkBookmark), linkTooltip: t.BookmarksGoTo);
+        var followed = row.TextCell(LocationColumn, OneLineText.Name(bookmark.Location), color, link: new UiIcon(appearance.Icons.LinkBookmark), linkTooltip: t.BookmarksGoTo);
         if (followed)
         {
             Commands.GoToBookmarkLater(commands, bookmark);
@@ -273,7 +275,7 @@ internal static class BookmarksPanelView
         }
 
         var overflow = module ? TextOverflow.EllipsisMiddle : TextOverflow.Ellipsis;
-        row.TextCell(column, Shown(bookmark, column), color, overflow: overflow);
+        row.TextCell(column, OneLineText.Name(Shown(bookmark, column)), color, overflow: overflow);
     }
 
     private static void LocationTooltip(Ui ui, Appearance appearance, int cellId, Bookmark bookmark, bool listed)
@@ -392,8 +394,8 @@ internal static class BookmarksPanelView
 
     private static string Copied(Bookmark bookmark, TableCellSelection cells)
     {
-        var shown = Shown(bookmark, cells.Column);
-        return cells.Copied(shown, shown);
+        var value = Shown(bookmark, cells.Column);
+        return cells.Copied(OneLineText.Name(value), value);
     }
 
     private static Bookmark? HandleKeys(Ui ui, IAppCommandWriter commands, BookmarksPanel panel)

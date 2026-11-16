@@ -1,6 +1,7 @@
 using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
+using ILSight.Core;
 using ILSight.Core.Metadata;
 using ZGF.KeyboardModule;
 using ILSight.MetadataArea;
@@ -109,7 +110,7 @@ internal ref struct MetadataGridFrame
 
             if (failure is not null)
             {
-                Ui.Text(Strings.MetadataArrangeFailed(failure.Message), color: theme.TextMuted, size: theme.FontSizeSmall);
+                Ui.Text(Strings.MetadataArrangeFailed(OneLineText.Message(failure.Message)), color: theme.TextMuted, size: theme.FontSizeSmall);
                 return;
             }
 
@@ -356,7 +357,7 @@ internal ref struct MetadataGridFrame
     // Worded as the tab's bar says it.
     private string ClosedText(string closed)
     {
-        return Ui.Memo("closed", (closed, t: Strings), static a => a.t.DocumentClosed(a.closed));
+        return Ui.Memo("closed", (closed, t: Strings), static a => a.t.DocumentClosed(OneLineText.Name(a.closed)));
     }
 
     private void ExpandOnPress(Interaction cell, int row, int column)

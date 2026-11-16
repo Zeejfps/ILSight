@@ -25,6 +25,31 @@ public sealed class OneLineTextTests
     }
 
     [Fact]
+    public void A_name_holding_a_bidi_override_is_quoted_with_it_escaped_and_a_message_shows_it_escaped_so_nothing_after_it_reads_reversed()
+    {
+        var name = OneLineText.Name("Shop\u202Etxt.exe");
+        var message = OneLineText.Message("Cannot read Shop\u202Etxt.exe.");
+
+        Assert.Equal(@"""Shop\u202Etxt.exe""", name);
+        Assert.Equal(@"Cannot read Shop\u202Etxt.exe.", message);
+        Assert.DoesNotContain('\u202E', name + message);
+        Assert.Equal(@"""a\u200Bb""", OneLineText.Name("a\u200Bb"));
+        Assert.Equal("Shop.Cart", OneLineText.Name("Shop.Cart"));
+        Assert.Equal("Café Straße", OneLineText.Name("Café Straße"));
+    }
+
+    [Fact]
+    public void A_name_holding_a_line_separator_is_quoted_with_it_escaped_and_a_message_runs_on_past_it()
+    {
+        var name = OneLineText.Name("Shop\u2028Cart");
+        var message = OneLineText.Message("Cannot read\u2028Shop.dll.");
+
+        Assert.Equal(@"""Shop\u2028Cart""", name);
+        Assert.Equal("Cannot read Shop.dll.", message);
+        Assert.DoesNotContain('\u2028', name + message);
+    }
+
+    [Fact]
     public void A_message_runs_on_one_line_its_backslashes_as_they_are()
     {
         Assert.Equal(@"Cannot read C:\temp\Shop.dll: the file ends early. \u000B", OneLineText.Message("Cannot read C:\\temp\\Shop.dll:\r\nthe file ends early. \v"));

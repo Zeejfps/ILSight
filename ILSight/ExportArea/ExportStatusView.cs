@@ -71,10 +71,10 @@ internal static class ExportStatusView
 
         if (parts > 1)
         {
-            return t.StatusExportingPart(part: part, parts: parts, name: name);
+            return t.StatusExportingPart(part: part, parts: parts, name: OneLineText.Name(name));
         }
 
-        return t.StatusExportingName(name);
+        return t.StatusExportingName(OneLineText.Name(name));
     }
 
     private static void Queued(Ui ui, Appearance appearance, int waiting)

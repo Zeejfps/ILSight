@@ -175,7 +175,7 @@ internal static class OmnibarView
             NodeIcons.Draw(ui, appearance, crumb.Node);
             ui.Text(crumb.Label, new Box { Width = Sizing.Shrink() }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
         }
-        ui.Tooltip(i.Id, ui.Memo("closed-crumb", (closed, t: appearance.Strings), static a => a.t.DocumentClosed(a.closed)));
+        ui.Tooltip(i.Id, ui.Memo("closed-crumb", (closed, t: appearance.Strings), static a => a.t.DocumentClosed(OneLineText.Name(a.closed))));
     }
 
     // By the crumb's depth, not its label: two crumbs can read the same, such as an assembly and its namespace of one
@@ -569,8 +569,8 @@ internal static class OmnibarView
         {
             DescribeSuggestion(ui, i.Id, match.Text, selected);
             NodeIcons.Draw(ui, appearance, node);
-            ui.Text(match.Text, new Box { Width = Sizing.Grow() with { Priority = 1 } }, color: nameColor, overflow: TextOverflow.Ellipsis);
-            ui.Text(match.Location, new Box { Width = Sizing.Shrink() }, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.EllipsisMiddle);
+            ui.Text(OneLineText.Name(match.Text), new Box { Width = Sizing.Grow() with { Priority = 1 } }, color: nameColor, overflow: TextOverflow.Ellipsis);
+            ui.Text(OneLineText.Name(match.Location), new Box { Width = Sizing.Shrink() }, color: theme.TextMuted, size: theme.FontSizeSmall, overflow: TextOverflow.EllipsisMiddle);
         }
         if (i.Clicked)
         {

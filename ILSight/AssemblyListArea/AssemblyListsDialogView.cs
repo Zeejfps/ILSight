@@ -181,7 +181,7 @@ internal static class AssemblyListsDialogView
     {
         var theme = ui.Theme;
         var color = selected ? theme.SelectionText : theme.Text;
-        ui.Text(name, new Box { Width = Sizing.Grow() }, color: color, overflow: TextOverflow.Ellipsis);
+        ui.Text(OneLineText.Name(name), new Box { Width = Sizing.Grow() }, color: color, overflow: TextOverflow.Ellipsis);
     }
 
     private static void EditName(Ui ui, IAppCommandWriter commands, AssemblyListsDialog listsDialog, ListsDialogMode.Renaming renaming, int listId)
@@ -380,7 +380,8 @@ internal static class AssemblyListsDialogView
         {
             var preset = presets[presetIndex];
             var count = t.ListsCount(preset.Paths.Count);
-            if (ui.MenuItem(preset.Name, detail: count))
+            var name = OneLineText.Name(preset.Name);
+            if (ui.MenuItem(name, detail: count))
             {
                 Commands.Later(commands, (dialog: listsDialog, preset), static (a, s) => AddPreset(s.dialog, a, s.preset));
             }

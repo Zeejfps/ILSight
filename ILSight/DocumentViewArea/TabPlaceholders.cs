@@ -16,7 +16,7 @@ public static class TabPlaceholders
 
         if (content is TabContent.Failed failed)
         {
-            return t.DocumentDecompilationFailed(failed.Message);
+            return t.DocumentDecompilationFailed(OneLineText.Message(failed.Message));
         }
 
         if (content is TabContent.Reloading)
@@ -31,19 +31,19 @@ public static class TabPlaceholders
 
         if (content is TabContent.Gone gone)
         {
-            return t.DocumentGone(gone.Location.Label);
+            return t.DocumentGone(OneLineText.Name(gone.Location.Label));
         }
 
         if (content is TabContent.NotReloaded notReloaded)
         {
             return notReloaded.End == ReloadEnd.AssemblyClosed
-                ? t.DocumentClosed(notReloaded.Location.FilePath.FileName)
-                : t.DocumentNotReloaded(notReloaded.Location.Label);
+                ? t.DocumentClosed(OneLineText.Name(notReloaded.Location.FilePath.FileName))
+                : t.DocumentNotReloaded(OneLineText.Name(notReloaded.Location.Label));
         }
 
         if (content is TabContent.Unreadable unreadable)
         {
-            return t.CauseModuleUnreadableSentence(name: unreadable.Module, why: unreadable.Why);
+            return t.CauseModuleUnreadableSentence(name: OneLineText.Name(unreadable.Module), why: OneLineText.Message(unreadable.Why));
         }
 
         throw new UnreachableException($"A tab showing {content.GetType().Name} has no placeholder note.");

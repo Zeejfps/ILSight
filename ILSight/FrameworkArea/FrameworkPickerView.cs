@@ -141,8 +141,8 @@ internal static class FrameworkPickerView
                 NodeIcons.Draw(ui, appearance, NodeIcon.Assembly);
                 using (ui.Row(new Box { Gap = theme.Gap, AlignY = Align.Center }))
                 {
-                    ui.Text(assembly.Name, new Box { Width = Sizing.Grow() }, color: nameColor, overflow: TextOverflow.Ellipsis);
-                    ui.Text(assembly.Framework, color: theme.TextMuted, size: theme.FontSizeSmall);
+                    ui.Text(OneLineText.Name(assembly.Name), new Box { Width = Sizing.Grow() }, color: nameColor, overflow: TextOverflow.Ellipsis);
+                    ui.Text(OneLineText.Name(assembly.Framework), color: theme.TextMuted, size: theme.FontSizeSmall);
                 }
             }
         }

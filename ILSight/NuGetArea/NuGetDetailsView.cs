@@ -163,7 +163,7 @@ internal static class NuGetDetailsView
 
     private static string VersionLabel(PackageVersion version)
     {
-        return version.Text;
+        return OneLineText.Name(version.Text);
     }
 
     private static void DetailsStatus(Ui ui, Appearance appearance, NuGetPicker picker, FeedPackage package, VersionDetails? details)
@@ -450,7 +450,7 @@ internal static class NuGetDetailsView
     {
         var t = appearance.Strings;
         var theme = ui.Theme;
-        var framework = group.TargetFramework.Length > 0 ? group.TargetFramework : t.NugetAnyFramework;
+        var framework = group.TargetFramework.Length > 0 ? OneLineText.Name(group.TargetFramework) : t.NugetAnyFramework;
         using (ui.Id(index))
         using (ui.Column(new Box { Width = Sizing.Grow(), Gap = 0f }))
         {
@@ -474,8 +474,8 @@ internal static class NuGetDetailsView
         var theme = ui.Theme;
         using (ui.Row(new Box { Gap = theme.GapTight, AlignY = Align.Center, Padding = new Spacing(theme.Gap, 0f, 0f, 0f) }))
         {
-            ui.Text(dependency.Id, size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
-            var range = ui.Memo(dependency.Id, dependency.Range, static r => VersionRange.Describe(r));
+            ui.Text(OneLineText.Name(dependency.Id), size: theme.FontSizeSmall, overflow: TextOverflow.Ellipsis);
+            var range = ui.Memo(dependency.Id, dependency.Range, static r => OneLineText.Name(VersionRange.Describe(r)));
             ui.Text(range, color: theme.TextMuted, size: theme.FontSizeSmall);
         }
     }

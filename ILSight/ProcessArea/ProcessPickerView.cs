@@ -3,6 +3,7 @@ using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ZGF.KeyboardModule;
+using ILSight.Core;
 using ILSight.Core.Processes;
 using ILSight.CommandArea;
 using ILSight.UserArea;
@@ -227,7 +228,7 @@ internal static class ProcessPickerView
             var process = browser.Filtered[i];
             using var row = body.Row(i, process.Id.Value);
             var nameColor = row.Selected ? theme.SelectionText : theme.Text;
-            row.TextCell(0, process.Name, nameColor);
+            row.TextCell(0, OneLineText.Name(process.Name), nameColor);
             row.TextCell(1, process.Id.ToString(), theme.TextMuted);
             if (process.Info == null)
             {
@@ -235,8 +236,8 @@ internal static class ProcessPickerView
                 row.TextCell(3, t.ProcessPickerNoAnswer, theme.TextMuted);
                 continue;
             }
-            row.TextCell(2, process.Info.EntryAssemblyName ?? "", theme.TextMuted);
-            row.TextCell(3, process.Info.RuntimeVersion ?? "", theme.TextMuted);
+            row.TextCell(2, OneLineText.Name(process.Info.EntryAssemblyName ?? ""), theme.TextMuted);
+            row.TextCell(3, OneLineText.Name(process.Info.RuntimeVersion ?? ""), theme.TextMuted);
         }
         return body.Activated;
     }
@@ -274,10 +275,10 @@ internal static class ProcessPickerView
         using (row.Cell(0))
         {
             NodeIcons.Draw(ui, appearance, NodeIcon.Assembly);
-            ui.Text(onDisk.Name, new Box { Width = Sizing.Grow() }, color: row.Selected ? theme.SelectionText : theme.Text,
+            ui.Text(OneLineText.Name(onDisk.Name), new Box { Width = Sizing.Grow() }, color: row.Selected ? theme.SelectionText : theme.Text,
                 overflow: TextOverflow.Ellipsis);
         }
-        row.TextCell(1, Path.GetDirectoryName(onDisk.Path.Text) ?? "", theme.TextMuted, overflow: TextOverflow.EllipsisMiddle);
+        row.TextCell(1, OneLineText.Name(Path.GetDirectoryName(onDisk.Path.Text) ?? ""), theme.TextMuted, overflow: TextOverflow.EllipsisMiddle);
     }
 
     private static void DrawInMemory(Ui ui, Appearance appearance, TableRow row, UiTheme theme, Strings t, RunningModule.InMemory inMemory)
@@ -285,7 +286,7 @@ internal static class ProcessPickerView
         using (row.Cell(0))
         {
             NodeIcons.Draw(ui, appearance, NodeIcon.Assembly);
-            ui.Text(inMemory.Name, new Box { Width = Sizing.Grow() }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
+            ui.Text(OneLineText.Name(inMemory.Name), new Box { Width = Sizing.Grow() }, color: theme.TextMuted, overflow: TextOverflow.Ellipsis);
         }
         row.TextCell(1, t.ProcessPickerInMemory, theme.TextMuted);
     }

@@ -176,7 +176,8 @@ public static class NodeText
     }
 
     /// <summary>An assembly as a column of results names it: its name and version, and for one read out
-    /// of a package, the folder holding it there, e.g. <c>Newtonsoft.Json (13.0.0.0) · lib/net6.0</c>.</summary>
+    /// of a package, the folder holding it there, e.g. <c>Newtonsoft.Json (13.0.0.0) · lib/net6.0</c>, each on the column's
+    /// one line (<see cref="OneLineText.Name"/>).</summary>
     public static string AssemblyLabel(LoadedAssembly assembly)
     {
         return AssemblyLabels.GetValue(assembly, WriteAssemblyLabel);
@@ -186,10 +187,10 @@ public static class NodeText
     {
         if (assembly is not LoadedModule module || module.Place == null)
         {
-            return assembly.NameAndVersion;
+            return OneLineText.Name(assembly.NameAndVersion);
         }
 
-        return $"{assembly.NameAndVersion}{Separator}{module.Place.File.Folder}";
+        return $"{OneLineText.Name(assembly.NameAndVersion)}{Separator}{OneLineText.Name(module.Place.File.Folder)}";
     }
 
     /// <summary>The node's metadata token as <paramref name="format"/> writes it, e.g. <c>@06000001</c>

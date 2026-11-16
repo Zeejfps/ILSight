@@ -127,7 +127,7 @@ internal static class ComparisonView
         var theme = ui.Theme;
         using (ui.Row(new Box { Padding = new Spacing(theme.Gap, theme.GapTight), Gap = theme.Gap }))
         {
-            ui.Text(diff.LeftName + Arrow + diff.RightName);
+            ui.Text(OneLineText.Name(diff.LeftName) + Arrow + OneLineText.Name(diff.RightName));
             ui.Text(t.ComparisonAddedCount(diff.Added), color: theme.Success);
             ui.Text(t.ComparisonRemovedCount(diff.Removed), color: theme.Danger);
             ui.Text(t.ComparisonChangedCount(diff.Changed), color: theme.Warning);

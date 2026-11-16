@@ -71,7 +71,7 @@ internal static class CodeTooltipView
     {
         using (ui.Column(new Box { Padding = new Spacing(PaddingX, SignaturePaddingY), Gap = 0f }))
         {
-            var text = ui.Memo("closed", (assembly, t: appearance.Strings), static a => a.t.DocumentClosed(a.assembly));
+            var text = ui.Memo("closed", (assembly, t: appearance.Strings), static a => a.t.DocumentClosed(OneLineText.Name(a.assembly)));
             ui.Text(text, color: ui.Theme.Warning, wrap: true);
         }
     }

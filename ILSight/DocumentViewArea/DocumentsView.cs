@@ -64,7 +64,7 @@ internal static class DocumentsView
         }
 
         var theme = ui.Theme;
-        var text = ui.Memo("closed-banner", (assembly, t: appearance.Strings), static a => a.t.DocumentClosed(a.assembly));
+        var text = ui.Memo("closed-banner", (assembly, t: appearance.Strings), static a => a.t.DocumentClosed(OneLineText.Name(a.assembly)));
         using (ui.Row(new Box { Padding = new Spacing(theme.Gap, theme.GapTight), Gap = theme.Gap, Background = theme.PaneBackground }))
         {
             ui.Text(text, color: theme.Warning);
@@ -81,7 +81,7 @@ internal static class DocumentsView
             return null;
         }
 
-        return ui.Memo("closed", (closedAssembly, t: appearance.Strings), static a => a.t.DocumentClosed(a.closedAssembly));
+        return ui.Memo("closed", (closedAssembly, t: appearance.Strings), static a => a.t.DocumentClosed(OneLineText.Name(a.closedAssembly)));
     }
 
     private static void RenderLoading(Ui ui, Appearance appearance, IAppCommandWriter commands, DocumentViews documents, Panels panels, ScreenDisplay display, BookmarksPanel bookmarksPanel, Navigation navigation, BookmarkList bookmarks, CodeTooltips tooltips, DocumentTab tab,

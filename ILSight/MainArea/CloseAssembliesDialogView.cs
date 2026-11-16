@@ -147,7 +147,8 @@ internal static class CloseAssembliesDialogView
         using (ui.Row(new Box { Gap = theme.Gap, Padding = new Spacing(theme.Gap, 0f) }))
         {
             var width = Sizing.Grow();
-            if (ui.Checkbox(assembly.Name, ref choice.Included, id: "include", width: width, compact: true))
+            var name = OneLineText.Name(assembly.Name);
+            if (ui.Checkbox(name, ref choice.Included, id: "include", width: width, compact: true))
             {
                 closer.Rows.TickClicked(shown, choice, (ui.Input.Modifiers & KeyModifiers.Shift) != 0);
             }
