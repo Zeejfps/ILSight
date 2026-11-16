@@ -1,4 +1,4 @@
-using ILSight.Core.Resources;
+using ILSight.Core.ResourceArea;
 using System.Text.Json;
 
 namespace ILSight.Core;

@@ -3,7 +3,7 @@ using ZGF.Gui.Testing;
 using ZGF.Geometry;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
-using ILSight.Core.Diagrams;
+using ILSight.Core.DiagramArea;
 using ILSight.DiagramArea;
 using ILSight.CommandArea;
 

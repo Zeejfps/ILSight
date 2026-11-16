@@ -2,7 +2,7 @@ using ZGF.Desktop;
 using ZGF.Geometry;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
-using ILSight.Core.Metadata;
+using ILSight.Core.MetadataArea;
 using ZGF.KeyboardModule;
 using ILSight.MetadataGridArea;
 using ILSight.CommandArea;

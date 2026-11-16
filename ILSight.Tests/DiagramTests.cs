@@ -1,7 +1,7 @@
 using ICSharpCode.Decompiler.TypeSystem;
 using ILSight.Core;
 using System.Text.RegularExpressions;
-using ILSight.Core.Diagrams;
+using ILSight.Core.DiagramArea;
 
 namespace ILSight.Tests;
 

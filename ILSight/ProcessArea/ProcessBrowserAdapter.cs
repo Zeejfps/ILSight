@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using ILSight.Core;
-using ILSight.Core.Processes;
+using ILSight.Core.ProcessArea;
 
 namespace ILSight.ProcessArea;
 

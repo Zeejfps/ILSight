@@ -1,6 +1,6 @@
 using System.Reflection.Metadata.Ecma335;
 using ILSight.Core;
-using ILSight.Core.Analysis;
+using ILSight.Core.AnalysisArea;
 
 namespace ILSight.App.Tests;
 

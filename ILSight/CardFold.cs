@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using ILSight.Core;
-using ILSight.Core.Diagrams;
+using ILSight.Core.DiagramArea;
 using ILSight.DiagramArea;
 
 namespace ILSight;

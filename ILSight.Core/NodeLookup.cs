@@ -1,6 +1,6 @@
 using ICSharpCode.Decompiler.TypeSystem;
 using System.Reflection.Metadata;
-using ILSight.Core.Metadata;
+using ILSight.Core.MetadataArea;
 
 namespace ILSight.Core;
 

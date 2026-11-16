@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using ILSight.Core;
-using ILSight.Core.Metadata;
-using ILSight.Core.Resources;
+using ILSight.Core.MetadataArea;
+using ILSight.Core.ResourceArea;
 using ILSight.ExportArea;
 using ILSight.AssemblyArea;
 

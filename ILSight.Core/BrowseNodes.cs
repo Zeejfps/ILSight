@@ -1,6 +1,6 @@
 using ICSharpCode.Decompiler.TypeSystem;
-using ILSight.Core.Metadata;
-using ILSight.Core.Resources;
+using ILSight.Core.MetadataArea;
+using ILSight.Core.ResourceArea;
 
 namespace ILSight.Core;
 
@@ -320,7 +320,7 @@ public static class BrowseNodes
             Visibility = NodeDefinitions.GetVisibility(subject),
             Reference = NodeDefinitions.ReferenceOf(subject),
             Activation = NodeDefinitions.GetActivation(subject),
-            AnalysisFacts = Analysis.Analyzers.Of(subject),
+            AnalysisFacts = AnalysisArea.Analyzers.Of(subject),
             CanHaveChildren = CanHaveChildren(subject),
             Name = GetName(subject, assembly, text),
             IsCode = IsCode(subject),

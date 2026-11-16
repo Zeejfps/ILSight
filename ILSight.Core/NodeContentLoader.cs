@@ -2,8 +2,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ICSharpCode.Decompiler.CSharp.ProjectDecompiler;
 using ICSharpCode.Decompiler.TypeSystem;
-using ILSight.Core.Metadata;
-using ILSight.Core.Resources;
+using ILSight.Core.MetadataArea;
+using ILSight.Core.ResourceArea;
 
 namespace ILSight.Core;
 

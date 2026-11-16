@@ -69,12 +69,12 @@ public sealed class BrowseNode
     /// <summary>The facts of what analyses run on for the node: the type or member it stands for, or for a base or
     /// derived type entry the type it names; null for any other node. Read when the node was made; the analyses offered
     /// are decided from them when first asked for, never as the node is made.</summary>
-    public required Analysis.AnalysisFacts? AnalysisFacts { get; init; }
+    public required AnalysisArea.AnalysisFacts? AnalysisFacts { get; init; }
 
     /// <summary>What analyses run on for the node, with the analyses the app's table offers for it (<see
-    /// cref="Analysis.AnalysisFacts.Symbol"/>), composed when first asked for; null for a node with nothing to analyze.
+    /// cref="AnalysisArea.AnalysisFacts.Symbol"/>), composed when first asked for; null for a node with nothing to analyze.
     /// Throws what a bug in the table throws, to the one asking.</summary>
-    public Analysis.AnalysisSymbol? Analysis => AnalysisFacts?.Symbol;
+    public AnalysisArea.AnalysisSymbol? Analysis => AnalysisFacts?.Symbol;
 
     /// <summary>Whether the node may have children, guessed when it was made without building them.</summary>
     public required bool CanHaveChildren { get; init; }

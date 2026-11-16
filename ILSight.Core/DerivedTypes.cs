@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 using ICSharpCode.Decompiler.TypeSystem;
-using ILSight.Core.Analysis;
+using ILSight.Core.AnalysisArea;
 
 namespace ILSight.Core;
 

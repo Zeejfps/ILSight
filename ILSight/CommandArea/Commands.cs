@@ -1,6 +1,6 @@
 using ILSight.Core;
 using ILSight.BookmarkArea;
-using ILSight.Core.Analysis;
+using ILSight.Core.AnalysisArea;
 using ILSight.CodeTooltipArea;
 using ILSight.AssemblyListArea;
 using ILSight.SearchArea;

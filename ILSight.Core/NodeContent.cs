@@ -1,6 +1,6 @@
 using System.Diagnostics;
-using ILSight.Core.Metadata;
-using ILSight.Core.Resources;
+using ILSight.Core.MetadataArea;
+using ILSight.Core.ResourceArea;
 
 namespace ILSight.Core;
 

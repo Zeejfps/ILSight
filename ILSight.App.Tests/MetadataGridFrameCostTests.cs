@@ -2,7 +2,7 @@ using Xunit.Abstractions;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ZGF.Gui.Immediate.Testing;
-using ILSight.Core.Metadata;
+using ILSight.Core.MetadataArea;
 using ILSight.MetadataGridArea;
 using ILSight.MetadataArea;
 

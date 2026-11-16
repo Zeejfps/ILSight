@@ -4,7 +4,7 @@ using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ZGF.KeyboardModule;
 using ILSight.Core;
-using ILSight.Core.Processes;
+using ILSight.Core.ProcessArea;
 using ILSight.CommandArea;
 using ILSight.UserArea;
 using ILSight.ILSightAppArea;

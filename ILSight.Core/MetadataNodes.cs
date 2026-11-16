@@ -2,7 +2,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using ICSharpCode.Decompiler.Metadata;
-using ILSight.Core.Metadata;
+using ILSight.Core.MetadataArea;
 
 namespace ILSight.Core;
 

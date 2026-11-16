@@ -6,7 +6,7 @@ using ICSharpCode.Decompiler.CSharp.ProjectDecompiler;
 using ICSharpCode.Decompiler.DebugInfo;
 using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
-using ILSight.Core.Resources;
+using ILSight.Core.ResourceArea;
 
 namespace ILSight.Core;
 

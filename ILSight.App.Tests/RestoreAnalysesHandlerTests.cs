@@ -1,5 +1,5 @@
 using ILSight.Core;
-using ILSight.Core.Analysis;
+using ILSight.Core.AnalysisArea;
 using ILSight.CommandArea;
 
 namespace ILSight.App.Tests;

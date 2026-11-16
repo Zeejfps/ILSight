@@ -1,7 +1,7 @@
 using System.Reflection.Metadata.Ecma335;
 using ILSight.Core;
-using ILSight.Core.Diagrams;
-using ILSight.Core.Metadata;
+using ILSight.Core.DiagramArea;
+using ILSight.Core.MetadataArea;
 
 namespace ILSight.Tests;
 

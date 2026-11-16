@@ -1,6 +1,6 @@
 using System.Runtime.CompilerServices;
 using ILSight.Core;
-using ILSight.Core.Analysis;
+using ILSight.Core.AnalysisArea;
 
 namespace ILSight;
 

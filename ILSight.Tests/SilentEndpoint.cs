@@ -1,6 +1,6 @@
 using System.IO.Pipes;
 using System.Net.Sockets;
-using ILSight.Core.Processes;
+using ILSight.Core.ProcessArea;
 
 namespace ILSight.Tests;
 

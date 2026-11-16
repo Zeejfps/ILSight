@@ -1,4 +1,4 @@
-using ILSight.Core.Processes;
+using ILSight.Core.ProcessArea;
 
 namespace ILSight.Tests;
 

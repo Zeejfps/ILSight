@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.Core.Resources;
+using ILSight.Core.ResourceArea;
 using ILSight.BuiltInArea;
 using ILSight.UserArea;
 

@@ -1,7 +1,7 @@
 using ZGF.Geometry;
 using ZGF.Gui.Immediate;
 using ILSight.Core;
-using ILSight.Core.Diagrams;
+using ILSight.Core.DiagramArea;
 
 namespace ILSight.DiagramArea;
 

@@ -39,9 +39,9 @@ public sealed class PackageIconsTests
             255, 0, 0, 255, 0, 0, 255, 255, 0, 255, 0, 0, 0, 255, 0, 0,
             255, 0, 0, 255, 0, 0, 255, 255, 0, 255, 0, 0, 0, 255, 0, 0,
         ];
-        var image = new ILSight.Core.Resources.ResourceImage { Width = 4, Height = 2, Rgba = rgba, Format = "PNG" };
+        var image = new ILSight.Core.ResourceArea.ResourceImage { Width = 4, Height = 2, Rgba = rgba, Format = "PNG" };
 
-        var shrunk = ILSight.Core.Resources.ResourceImages.FitInto(image, 2);
+        var shrunk = ILSight.Core.ResourceArea.ResourceImages.FitInto(image, 2);
 
         Assert.Equal(2, shrunk.Width);
         Assert.Equal(1, shrunk.Height);

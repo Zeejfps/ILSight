@@ -5,7 +5,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using ICSharpCode.Decompiler.Documentation;
 using ICSharpCode.Decompiler.TypeSystem;
-using ILSight.Core.Resources;
+using ILSight.Core.ResourceArea;
 
 namespace ILSight.Core;
 

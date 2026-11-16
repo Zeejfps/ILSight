@@ -2,7 +2,7 @@ using System.Net.Sockets;
 using System.Runtime.Loader;
 using System.Text;
 using ILSight.Core;
-using ILSight.Core.Processes;
+using ILSight.Core.ProcessArea;
 
 namespace ILSight.Tests;
 

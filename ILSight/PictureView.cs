@@ -1,4 +1,4 @@
-using ILSight.Core.Resources;
+using ILSight.Core.ResourceArea;
 
 namespace ILSight;
 

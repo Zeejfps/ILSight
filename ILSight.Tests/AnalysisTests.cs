@@ -2,7 +2,7 @@ using ICSharpCode.Decompiler.TypeSystem;
 using System.Collections.Concurrent;
 using System.Reflection.Metadata.Ecma335;
 using ILSight.Core;
-using ILSight.Core.Analysis;
+using ILSight.Core.AnalysisArea;
 
 namespace ILSight.Tests;
 

@@ -14,7 +14,7 @@ using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.Output;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.Util;
-using ILSight.Core.Resources;
+using ILSight.Core.ResourceArea;
 
 namespace ILSight.Core;
 

@@ -3,7 +3,7 @@ using ZGF.Geometry;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.Core.Diagrams;
+using ILSight.Core.DiagramArea;
 using ZGF.KeyboardModule;
 using ILSight.CodeTooltipArea;
 using ILSight.DiagramCameraArea;

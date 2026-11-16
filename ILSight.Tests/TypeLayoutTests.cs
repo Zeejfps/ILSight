@@ -1,6 +1,6 @@
 using ZGF.Geometry;
 using ILSight.Core;
-using ILSight.Core.Diagrams;
+using ILSight.Core.DiagramArea;
 
 namespace ILSight.Tests;
 

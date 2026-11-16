@@ -2,7 +2,7 @@ using ILSight.Core;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using System.Diagnostics;
-using ILSight.Core.Analysis;
+using ILSight.Core.AnalysisArea;
 using ILSight.CommandArea;
 using ILSight.BuiltInArea;
 

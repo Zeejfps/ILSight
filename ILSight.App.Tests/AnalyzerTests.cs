@@ -2,7 +2,7 @@ using ZGF.Desktop;
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Testing;
 using ILSight.Core;
-using ILSight.Core.Analysis;
+using ILSight.Core.AnalysisArea;
 using ZGF.KeyboardModule;
 using ILSight.CodeViewArea;
 using ILSight.CommandArea;
@@ -19,7 +19,7 @@ public sealed class AnalyzerTests
     private static AnalyzerKindNode Expand(AppStateDriver d, AnalyzerSymbolNode symbol, string header)
     {
         var rows = d.Ui.Analyzer;
-        var kind = rows.ListChildren(symbol).OfType<AnalyzerKindNode>().Single(k => Core.Analysis.Analyzers.GetHeader(k.Kind) == header);
+        var kind = rows.ListChildren(symbol).OfType<AnalyzerKindNode>().Single(k => Core.AnalysisArea.Analyzers.GetHeader(k.Kind) == header);
         rows.View.SetExpanded(kind, true);
         rows.GetChildren(kind);
         d.RunUntil(() => kind.IsDone);
@@ -59,7 +59,7 @@ public sealed class AnalyzerTests
         var elsewhere = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync().GetChildAsync(AppStateDriver.FixturesNamespace, "Outline");
         var symbol = elsewhere.Analysis;
         Assert.NotNull(symbol);
-        var kind = new AnalyzerKindNode { Subject = symbol, Kind = symbol.Kinds.Single(k => Core.Analysis.Analyzers.GetHeader(k) == "Used By") };
+        var kind = new AnalyzerKindNode { Subject = symbol, Kind = symbol.Kinds.Single(k => Core.AnalysisArea.Analyzers.GetHeader(k) == "Used By") };
 
         d.InTurn(() =>
         {

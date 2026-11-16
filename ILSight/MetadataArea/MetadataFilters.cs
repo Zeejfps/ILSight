@@ -1,4 +1,4 @@
-using ILSight.Core.Metadata;
+using ILSight.Core.MetadataArea;
 
 namespace ILSight.MetadataArea;
 

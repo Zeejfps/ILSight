@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using ILSight.Core.Processes;
+using ILSight.Core.ProcessArea;
 
 namespace ILSight.ProcessArea;
 

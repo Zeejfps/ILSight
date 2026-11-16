@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using ILSight.Core;
-using ILSight.Core.Comparison;
+using ILSight.Core.ComparisonArea;
 using ILSight.AssemblyArea;
 using ILSight.ExportArea;
 

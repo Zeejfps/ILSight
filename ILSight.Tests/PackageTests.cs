@@ -3,7 +3,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using ICSharpCode.Decompiler.TypeSystem;
 using ILSight.Core;
-using ILSight.Core.Analysis;
+using ILSight.Core.AnalysisArea;
 
 namespace ILSight.Tests;
 

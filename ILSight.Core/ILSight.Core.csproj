@@ -18,7 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <EmbeddedResource Include="Diagrams\html\template.html;Diagrams\html\script.js;Diagrams\html\styles.css;Diagrams\html\ILSpy.ico">
+      <EmbeddedResource Include="DiagramArea\html\template.html;DiagramArea\html\script.js;DiagramArea\html\styles.css;DiagramArea\html\ILSpy.ico">
         <LogicalName>diagram/%(Filename)%(Extension)</LogicalName>
       </EmbeddedResource>
     </ItemGroup>

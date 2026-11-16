@@ -1,6 +1,6 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
-using ILSight.Core.Metadata;
+using ILSight.Core.MetadataArea;
 using ILSight.MetadataArea;
 
 namespace ILSight.MetadataGridArea;

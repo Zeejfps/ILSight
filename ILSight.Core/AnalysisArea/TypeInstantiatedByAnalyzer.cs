@@ -1,0 +1,61 @@
+// Derived from ILSpy (MIT): see LICENSE-ILSpy.txt
+
+using System.Reflection.Metadata;
+using ICSharpCode.Decompiler.TypeSystem;
+
+namespace ILSight.Core.AnalysisArea;
+
+/// <summary>Shows the members whose code instantiates a type.</summary>
+internal static class TypeInstantiatedByAnalyzer
+{
+    public static AnalysisRun? Prepare(ISymbol? symbol)
+    {
+        if (symbol is not ITypeDefinition type)
+        {
+            return null;
+        }
+
+        return context => Analyze(type, context);
+    }
+
+    /// <summary>A type neither abstract nor static.</summary>
+    public static bool Applies(OfferFacts facts)
+    {
+        return facts.Sort == AnalyzedSort.Type && !facts.IsAbstract && !facts.IsStatic;
+    }
+
+    private static IEnumerable<ISymbol> Analyze(ITypeDefinition type, AnalyzerContext context)
+    {
+        return AnalyzerScope.Create(context, type).FindMembersWithCode(
+            method => method.ParentModule is MetadataModule module
+                && MethodBodies.HasToken(method, context.PassedOver, (opCode, token) => Instantiates(module, opCode, token, type)),
+            context.CancellationToken);
+    }
+
+    private static bool Instantiates(MetadataModule module, ILOpCode opCode, EntityHandle token, ITypeDefinition type)
+    {
+        if (opCode is not (ILOpCode.Newobj or ILOpCode.Initobj) && !(opCode == ILOpCode.Call && type.Kind == TypeKind.Struct))
+        {
+            return false;
+        }
+
+        var found = token.Kind switch
+        {
+            HandleKind.MethodDefinition or HandleKind.MemberReference => FindConstructedType(module, token),
+            HandleKind.TypeDefinition or HandleKind.TypeReference => module.ResolveType(token, default)?.GetDefinition(),
+            _ => null,
+        };
+        return found?.ParentModule is not null && Members.IsSame(found, type);
+    }
+
+    private static ITypeDefinition? FindConstructedType(MetadataModule module, EntityHandle token)
+    {
+        var method = module.ResolveMethod(token, default);
+        if (method is null || !method.IsConstructor)
+        {
+            return null;
+        }
+
+        return method.DeclaringTypeDefinition;
+    }
+}

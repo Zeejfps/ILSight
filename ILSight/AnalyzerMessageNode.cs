@@ -1,4 +1,4 @@
-using ILSight.Core.Analysis;
+using ILSight.Core.AnalysisArea;
 
 namespace ILSight;
 

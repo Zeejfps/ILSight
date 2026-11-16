@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using ILSight.Core;
-using ILSight.Core.Metadata;
+using ILSight.Core.MetadataArea;
 
 namespace ILSight.SettingArea;
 

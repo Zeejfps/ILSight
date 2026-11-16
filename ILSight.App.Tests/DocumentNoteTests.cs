@@ -1,7 +1,7 @@
 using ILSight.BookmarkArea;
 using ILSight.CommandArea;
 using ILSight.Core;
-using ILSight.Core.Resources;
+using ILSight.Core.ResourceArea;
 
 namespace ILSight.App.Tests;
 

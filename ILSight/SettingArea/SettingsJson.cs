@@ -4,7 +4,7 @@ using System.Text.Json.Serialization.Metadata;
 using ZGF.Desktop;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.Core.Metadata;
+using ILSight.Core.MetadataArea;
 using ILSight.CodeViewArea;
 using ILSight.BookmarkArea;
 using ILSight.AppSettingArea;

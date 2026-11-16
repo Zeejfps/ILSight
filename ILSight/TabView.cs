@@ -1,4 +1,4 @@
-using ILSight.Core.Metadata;
+using ILSight.Core.MetadataArea;
 using ILSight.CodeViewArea;
 using ILSight.MetadataGridArea;
 using ILSight.DiagramArea;

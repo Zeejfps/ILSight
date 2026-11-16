@@ -1,7 +1,7 @@
 using ZGF.Gui.Immediate;
 using ILSight.Core;
 using ZGF.KeyboardModule;
-using ILSight.Core.Comparison;
+using ILSight.Core.ComparisonArea;
 using ILSight.AssemblyArea;
 using ILSight.CommandArea;
 

@@ -1,5 +1,5 @@
 using System.Reflection.Metadata.Ecma335;
-using ILSight.Core.Metadata;
+using ILSight.Core.MetadataArea;
 
 namespace ILSight.Core;
 

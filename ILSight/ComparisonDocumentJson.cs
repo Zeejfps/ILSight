@@ -1,4 +1,4 @@
-using ILSight.Core.Comparison;
+using ILSight.Core.ComparisonArea;
 
 namespace ILSight;
 

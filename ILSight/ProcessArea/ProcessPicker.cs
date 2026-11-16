@@ -1,5 +1,5 @@
 using ZGF.Gui.Immediate.Widgets;
-using ILSight.Core.Processes;
+using ILSight.Core.ProcessArea;
 
 namespace ILSight.ProcessArea;
 

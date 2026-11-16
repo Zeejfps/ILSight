@@ -1,5 +1,5 @@
 using ZGF.Gui.Immediate;
-using ILSight.Core.Metadata;
+using ILSight.Core.MetadataArea;
 using ILSight.MetadataArea;
 
 namespace ILSight.MetadataGridArea;

@@ -1,6 +1,6 @@
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.Core.Metadata;
+using ILSight.Core.MetadataArea;
 using ILSight.AssemblyArea;
 using ILSight.BookmarkArea;
 using ILSight.ExportArea;

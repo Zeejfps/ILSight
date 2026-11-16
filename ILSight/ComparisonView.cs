@@ -1,7 +1,7 @@
 using ZGF.Gui.Immediate;
 using ZGF.Gui.Immediate.Widgets;
 using ILSight.Core;
-using ILSight.Core.Comparison;
+using ILSight.Core.ComparisonArea;
 using ILSight.CommandArea;
 using ILSight.DocumentViewArea;
 using ILSight.AssemblyArea;

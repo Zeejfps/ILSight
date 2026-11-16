@@ -8,7 +8,7 @@ using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 using System.Reflection.PortableExecutable;
 using ICSharpCode.Decompiler.DebugInfo;
-using ILSight.Core.Metadata;
+using ILSight.Core.MetadataArea;
 
 namespace ILSight.Core;
 

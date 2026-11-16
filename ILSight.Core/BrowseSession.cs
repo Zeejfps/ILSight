@@ -1,5 +1,5 @@
 using System.Reflection.Metadata.Ecma335;
-using ILSight.Core.Metadata;
+using ILSight.Core.MetadataArea;
 using System.Collections.Concurrent;
 using System.Reflection.Metadata;
 using System.Diagnostics;
