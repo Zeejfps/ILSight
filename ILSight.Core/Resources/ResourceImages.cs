@@ -210,7 +210,7 @@ public static class ResourceImages
                 Transparency = png.Trns?.Data,
             };
         }
-        catch (Exception e) when (e is not OperationCanceledException && e is not OutOfMemoryException)
+        catch (Exception e) when (e is not OperationCanceledException)
         {
             return CannotBeRead(e);
         }
@@ -376,7 +376,7 @@ public static class ResourceImages
             var jpeg = JpegSharp.Api.Jpeg.DecodeAnyPrecision(data);
             (width, height, pixels) = (jpeg.Width, jpeg.Height, jpeg.ToRgba8888());
         }
-        catch (Exception e) when (e is not OperationCanceledException && e is not OutOfMemoryException)
+        catch (Exception e) when (e is not OperationCanceledException)
         {
             return CannotBeRead(e);
         }
@@ -410,7 +410,7 @@ public static class ResourceImages
         {
             parsed = SvgPicture.Parse(data);
         }
-        catch (Exception e) when (e is not OperationCanceledException && e is not OutOfMemoryException)
+        catch (Exception e) when (e is not OperationCanceledException)
         {
             return CannotBeRead(e);
         }
@@ -421,7 +421,7 @@ public static class ResourceImages
         {
             rgba = parsed.Document.Rasterize(width, height);
         }
-        catch (Exception e) when (e is not OperationCanceledException && e is not OutOfMemoryException)
+        catch (Exception e) when (e is not OperationCanceledException)
         {
             return CannotBeRead(e);
         }

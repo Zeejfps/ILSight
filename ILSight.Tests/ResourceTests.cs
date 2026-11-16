@@ -184,6 +184,23 @@ public sealed class ResourceTests
         Assert.Equal([5, 5, 5, 255], image.Rgba);
     }
 
+    // A size the data claims that no array holds throws out-of-memory before anything is allocated: that picture's
+    // failure, said in its place, and the next picture still decodes (RULE-ISSUES CF6).
+    [Fact]
+    public void A_PNG_claiming_a_chunk_no_array_holds_is_unreadable_in_its_place_and_the_next_picture_decodes()
+    {
+        var whole = Fixture("logo.png");
+        const int afterHeader = 8 + 4 + 4 + 13 + 4;
+        byte[] claim = [0x7F, 0xFF, 0xFF, 0xFF, (byte)'t', (byte)'E', (byte)'X', (byte)'t'];
+        var png = whole[..afterHeader].Concat(claim).Concat(whole[afterHeader..]).ToArray();
+
+        var read = ResourceImages.DecodeImage(png);
+        var next = ResourceImages.DecodeImage(whole);
+
+        Assert.StartsWith("The picture cannot be read: ", Assert.IsType<ResourceImageRead.Unreadable>(read).Why);
+        Assert.IsType<ResourceImageRead.Decoded>(next);
+    }
+
     [Fact]
     public void Anything_else_is_no_picture()
     {
