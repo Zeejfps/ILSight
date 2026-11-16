@@ -12,20 +12,21 @@ internal sealed class ParameterStarts(TokenWriter decorated, DocumentBuilder out
 
     public IReadOnlyList<int> Starts => _starts;
 
+    // Whether the node is a declaration's parameter is read of the decompiler's AST before the count (CF9, CJ9); noting
+    // where it starts is the counted work.
     public override void StartNode(AstNode node)
-    {
-        output.Callbacks.Run((Starts: this, node), static s => s.Starts.Note(s.node));
-        base.StartNode(node);
-    }
-
-    // The node and its parent are the decompiler's AST, in memory: nothing of the user's data is read in the count
-    // (CF9).
-    private void Note(AstNode node)
     {
         if (IsDeclaredParameter(node))
         {
-            _starts.Add(output.Column);
+            output.Callbacks.Run(this, static starts => starts.NoteStart());
         }
+
+        base.StartNode(node);
+    }
+
+    private void NoteStart()
+    {
+        _starts.Add(output.Column);
     }
 
     private static bool IsDeclaredParameter(AstNode node)

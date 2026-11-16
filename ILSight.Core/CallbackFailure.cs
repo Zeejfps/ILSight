@@ -15,8 +15,8 @@ namespace ILSight.Core;
 /// <para>Only the app's own work is counted (CF9): what a callback reads of the library's objects (a type's definition,
 /// a member's token, a reference row's name) and what it hands back to the library's code (a <c>base</c> writer, the
 /// library's own resolver) is the read's, done before <c>Run</c> or between two, so a lazy decode that throws there is
-/// the data's failure. Where a callback reads only what the library already holds in memory (an AST's nodes and
-/// annotations), it says so and reads it in the count.</para></summary>
+/// the data's failure, whatever the library is believed to hold (CJ9). A reference compared by identity, or an object
+/// tested for its type, reads nothing of it.</para></summary>
 internal sealed class CallbackFailure
 {
     private int _unreturned;

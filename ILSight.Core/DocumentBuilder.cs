@@ -415,15 +415,17 @@ internal sealed class DocumentBuilder : ITextOutput
         return reference;
     }
 
-    // An opcode's name is the disassembler's own table, in memory: nothing of the user's data is read in the count.
+    // The opcode's name is read of the disassembler's object before the count (CF9, CJ9); the span made of it is the
+    // counted work.
     public void WriteReference(OpCodeInfo opCode, bool omitSuffix = false)
     {
-        Callbacks.Run((Builder: this, opCode, omitSuffix), static s => s.Builder.WriteOpCode(s.opCode, s.omitSuffix));
+        var opCodeName = opCode.Name;
+        Callbacks.Run((Builder: this, opCodeName, omitSuffix), static s => s.Builder.WriteOpCode(s.opCodeName, s.omitSuffix));
     }
 
-    private void WriteOpCode(OpCodeInfo opCode, bool omitSuffix)
+    private void WriteOpCode(string opCodeName, bool omitSuffix)
     {
-        var name = opCode.Name;
+        var name = opCodeName;
         if (omitSuffix)
         {
             var lastDot = name.LastIndexOf('.');
@@ -477,21 +479,23 @@ internal sealed class DocumentBuilder : ITextOutput
         WriteReferenceSpan(text, _kind ?? GetSpanKind(entityKind), reference, isDefinition);
     }
 
-    // A local's kind is a type test and a field of the decompiler's IL variable, which it holds in memory: nothing of the
-    // user's data is read in the count.
+    // Whether the local is a parameter is read of the decompiler's IL variable before the count (CF9, CJ9); the span,
+    // its key and its scope are the counted work, the reference itself kept and compared by identity, which reads
+    // nothing.
     public void WriteLocalReference(string text, object reference, bool isDefinition = false, bool isHoverOnly = false)
     {
-        Callbacks.Run((Builder: this, text, reference, isDefinition), static s => s.Builder.WriteLocal(s.text, s.reference, s.isDefinition));
+        var isParameter = reference is ILVariable { Kind: VariableKind.Parameter } or IParameter;
+        Callbacks.Run((Builder: this, text, reference, isParameter, isDefinition),
+            static s => s.Builder.WriteLocal(s.text, s.reference, s.isParameter, s.isDefinition));
     }
 
-    private void WriteLocal(string text, object reference, bool isDefinition)
+    private void WriteLocal(string text, object reference, bool isParameter, bool isDefinition)
     {
         var spanKind = reference switch
         {
             int => SpanKind.ILLabel,
             string s when s.StartsWith("param_", StringComparison.Ordinal) => SpanKind.Parameter,
-            ILVariable { Kind: VariableKind.Parameter } => SpanKind.Parameter,
-            IParameter => SpanKind.Parameter,
+            _ when isParameter => SpanKind.Parameter,
             _ => SpanKind.Local,
         };
         if (isDefinition && reference is int offset && _scope != null && _scope.Kind == EntityKind.Method)

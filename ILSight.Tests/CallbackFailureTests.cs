@@ -68,6 +68,25 @@ public sealed class CallbackFailureTests
         Assert.False(builder.Failed);
     }
 
+    // What the token writer reads of an identifier's symbol is read outside its count (CJ9): a symbol that fails decoding
+    // is the read's failure, the builder left unmarked.
+    [Fact]
+    public void An_identifier_whose_symbol_the_library_fails_reading_while_it_is_colored_is_the_reads_failure_leaving_the_builder_unmarked()
+    {
+        var builder = new DocumentBuilder { Language = DecompilationLanguage.CSharp };
+        var settings = Settings.Create();
+        var writer = new HighlightingTokenWriter(new TextTokenWriter(builder, settings), builder);
+        var node = new ICSharpCode.Decompiler.CSharp.Syntax.IdentifierExpression("Add");
+        var method = KindUnreadableMethod.Create<ICSharpCode.Decompiler.TypeSystem.IMethod>();
+        var returnType = KindUnreadableMethod.Create<ICSharpCode.Decompiler.TypeSystem.IType>();
+        node.AddAnnotation(new ICSharpCode.Decompiler.Semantics.MemberResolveResult(null, method, returnType));
+        writer.StartNode(node);
+
+        Assert.Throws<BadImageFormatException>(() => writer.WriteIdentifier(node.IdentifierToken));
+
+        Assert.False(builder.Failed);
+    }
+
     [Fact]
     public void A_reference_row_the_library_fails_reading_when_it_asks_the_resolver_is_the_reads_failure_leaving_the_resolver_unmarked()
     {

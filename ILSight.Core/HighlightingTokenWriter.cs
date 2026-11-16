@@ -8,11 +8,11 @@ using ICSharpCode.Decompiler.TypeSystem;
 namespace ILSight.Core;
 
 /// <summary>Colors what the decompiler's output visitor writes, writing into a <see cref="DocumentBuilder"/>: the app's
-/// code the library calls back, so its own work (the node stack, the statements it marks, how it classifies a token)
-/// runs through the builder's <see cref="DocumentBuilder.Callbacks"/> (CD4); what it hands on to the library's writer
-/// (<c>base</c>) is the library's, and so is what it reads of the library's objects (CF9): the nodes, their annotations
-/// and symbols are the decompiler's, held in memory, so reading them in the count reads nothing of the user's data;
-/// a method's reference, which is read of the type system, the builder reads before its count.</summary>
+/// code the library calls back, so its own work (the node stack, how it classifies a token) runs through the builder's
+/// <see cref="DocumentBuilder.Callbacks"/> (CD4); what it hands on to the library's writer (<c>base</c>) is the
+/// library's, and so is what it reads of the library's objects (CF9, CJ9): the statements a node's annotations list, an
+/// identifier's parent, symbol and resolve result, read before the count or outside it; a node compared by identity or
+/// tested for its type reads nothing of it.</summary>
 internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
 {
     private readonly DocumentBuilder _builder;
@@ -27,22 +27,24 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
     {
         _builder.Callbacks.Run((Writer: this, node), static s => s.Writer._nodes.Push(s.node));
         base.StartNode(node);
-        _builder.Callbacks.Run((Writer: this, node), static s => s.Writer.ListStatements(s.node));
-        // Marked outside this writer's count: the builder reads each method's reference of the library before its own
-        // count (CF9).
-        foreach (var (method, offset) in _statements)
+        // Read of the node's annotations and the IL tree outside the count, and marked by the builder, which reads each
+        // method's reference of the library before its own count (CF9, CJ9).
+        var statements = ReadStatements(node);
+        if (statements is null)
+        {
+            return;
+        }
+
+        foreach (var (method, offset) in statements)
         {
             _builder.MarkStatement(method, offset);
         }
     }
 
-    private readonly List<(IMethod Method, int Offset)> _statements = [];
-
-    // The node's annotations and the IL tree are the decompiler's, built and held in memory: nothing of the user's data
-    // is read here.
-    private void ListStatements(AstNode node)
+    // The statements the node's annotations begin: each top-level method and the IL offset; null for none.
+    private static List<(IMethod Method, int Offset)>? ReadStatements(AstNode node)
     {
-        _statements.Clear();
+        List<(IMethod Method, int Offset)>? statements = null;
         foreach (var instruction in node.Annotations.OfType<ILInstruction>())
         {
             if (instruction.ILRangeIsEmpty || instruction.Parent is null || instruction is BlockContainer or Block)
@@ -53,9 +55,11 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
             var function = instruction.Parent.Ancestors.OfType<ILFunction>().FirstOrDefault();
             if (function is not null && function.Kind == ILFunctionKind.TopLevelFunction && function.Method is not null)
             {
-                _statements.Add((function.Method, instruction.StartILOffset));
+                statements ??= [];
+                statements.Add((function.Method, instruction.StartILOffset));
             }
         }
+        return statements;
     }
 
     public override void EndNode(AstNode node)
@@ -105,6 +109,7 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
         base.WriteToken(token);
     }
 
+    // The node on top of the writer's stack is tested for its type, which reads nothing of it.
     private SpanKind KindOfToken(string token)
     {
         return IsStringDelimiter(token) ? SpanKind.String : SpanKind.Plain;
@@ -122,9 +127,12 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
         base.WritePreProcessorDirective(type, argument);
     }
 
+    // The node on top of the writer's stack is taken in the count; what it names (its parent, symbol and resolve
+    // result) is read of the decompiler's AST outside it (CF9, CJ9).
     public override void WriteIdentifier(Identifier identifier)
     {
-        var kind = _builder.Callbacks.Run((Writer: this, identifier), static s => s.Writer.Classify(s.identifier));
+        var node = _builder.Callbacks.Run(_nodes, static nodes => nodes.TryPeek(out var top) ? top : null);
+        var kind = node is null ? null : ReadKind(node);
         using var span = StartSpan(kind);
         base.WriteIdentifier(identifier);
     }
@@ -139,15 +147,9 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
         return token.StartsWith('$') || (token == "\"" && _nodes.TryPeek(out var node) && node is InterpolatedStringExpression);
     }
 
-    // Reads the node stack (the writer's), the AST and its annotations (a symbol, a resolve result), all in memory: a
-    // symbol's kind (a constructor, a destructor) is set when the type system makes it.
-    private SpanKind? Classify(Identifier identifier)
+    // What the identifier written under node names, read of the AST and its annotations (a symbol, a resolve result).
+    private static SpanKind? ReadKind(AstNode? node)
     {
-        if (!_nodes.TryPeek(out var node))
-        {
-            return null;
-        }
-
         if (node is Identifier)
         {
             node = node.Parent;

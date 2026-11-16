@@ -34,13 +34,14 @@ public sealed class AssemblyResolver
         };
     }
 
-    /// <summary>The module <paramref name="moduleName"/> names, a file beside <paramref name="mainModule"/>'s, read;
+    /// <summary>The module <paramref name="moduleName"/> names, a file beside the main module's at
+    /// <paramref name="mainModuleFileName"/>, read;
     /// null when there is none (unresolved only for not there); a file there that can't be read throws its
     /// <see cref="AssemblyLoadException"/>, with why: the library's resolver reads that reference by name only and
     /// notes the failure (<see cref="ReadingResolver"/>).</summary>
-    internal LoadedModule? FindModule(MetadataFile mainModule, string moduleName)
+    internal LoadedModule? FindModule(string mainModuleFileName, string moduleName)
     {
-        var directory = Path.GetDirectoryName(mainModule.FileName);
+        var directory = Path.GetDirectoryName(mainModuleFileName);
         if (directory is null)
         {
             return null;

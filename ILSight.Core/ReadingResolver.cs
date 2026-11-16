@@ -81,18 +81,20 @@ internal sealed class ReadingResolver : IAssemblyResolver
         return HandOut(found, reference.Name);
     }
 
-    // The main module's file name is the library's, held in memory: nothing of the user's data is read in the count.
+    // The main module's file name is read of the library's object before the count (CF9, CJ9); the app's search for
+    // the module beside it is the counted work.
     public MetadataFile? ResolveModule(MetadataFile mainModule, string moduleName)
     {
-        return Callbacks.Run((Resolver: this, mainModule, moduleName), static s => s.Resolver.FindModule(s.mainModule, s.moduleName));
+        var mainModuleFileName = mainModule.FileName;
+        return Callbacks.Run((Resolver: this, mainModuleFileName, moduleName), static s => s.Resolver.FindModule(s.mainModuleFileName, s.moduleName));
     }
 
-    private MetadataFile? FindModule(MetadataFile mainModule, string moduleName)
+    private MetadataFile? FindModule(string mainModuleFileName, string moduleName)
     {
         LoadedModule? found;
         try
         {
-            found = _resolving.Resolver.FindModule(mainModule, moduleName);
+            found = _resolving.Resolver.FindModule(mainModuleFileName, moduleName);
         }
         catch (AssemblyLoadException e)
         {

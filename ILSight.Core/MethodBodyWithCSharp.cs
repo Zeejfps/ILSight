@@ -76,23 +76,25 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
             return;
         }
 
-        _callbacks.Run((Body: this, builder, points, handle), static s => s.Body.Keep(s.builder, s.points, s.handle));
+        _callbacks.Run((Body: this, builder, points), static s => s.Body.Keep(s.builder, s.points));
     }
 
-    private void Keep(DocumentBuilder builder, Dictionary<ILFunction, List<SequencePoint>> points, MethodDefinitionHandle handle)
+    private void Keep(DocumentBuilder builder, List<SequencePoint> points)
     {
         _csharp = builder.BuildDocument("");
-        _points = FindPoints(points, handle);
+        _points = points;
     }
 
-    private Dictionary<ILFunction, List<SequencePoint>>? TryWriteCSharp(MethodDefinitionHandle handle, DocumentBuilder builder)
+    // The method's points are picked out of the decompiler's in its read, before the count (CF9, CJ9).
+    private List<SequencePoint>? TryWriteCSharp(MethodDefinitionHandle handle, DocumentBuilder builder)
     {
         try
         {
             var decompiler = NodeDecompiler.CreateCSharpDecompiler(_assembly, _chosenTypeSystem, _settings, _cancellationToken);
             var syntaxTree = decompiler.Decompile(handle);
             NodeDecompiler.WriteLocatedSyntaxTree(syntaxTree, builder, _settings);
-            return decompiler.CreateSequencePoints(syntaxTree);
+            var points = decompiler.CreateSequencePoints(syntaxTree);
+            return FindPoints(points, handle);
         }
         catch (Exception e) when (e is not OperationCanceledException && !builder.Failed)
         {
@@ -102,8 +104,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         }
     }
 
-    // The IL functions and their methods' tokens are the decompiler's, in memory: nothing of the user's data is read in
-    // the count (CF9).
+    // Reads the IL functions and their methods' tokens of the decompiler's objects.
     private static List<SequencePoint> FindPoints(Dictionary<ILFunction, List<SequencePoint>> points, MethodDefinitionHandle handle)
     {
         foreach (var (function, list) in points)
