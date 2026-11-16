@@ -36,7 +36,8 @@ internal static class BundleContents
     {
         try
         {
-            return SingleFileBundle.ReadManifest(view, headerOffset).Entries;
+            var manifest = SingleFileBundle.ReadManifest(view, headerOffset);
+            return manifest.Entries;
         }
         catch (InvalidDataException)
         {

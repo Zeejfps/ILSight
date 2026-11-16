@@ -142,13 +142,18 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
 
     public bool HasChildren(AnalyzerNode node)
     {
-        return node switch
+        switch (node)
         {
-            AnalyzerSymbolNode symbol => symbol.EnsureChildren().Count > 0,
-            AnalyzerKindNode kind => !kind.IsDone || kind.Found.Count > 0,
-            AnalyzerMessageNode or AnalyzerPendingNode or AnalyzerFailedNode or AnalyzerUnresolvedNode => false,
-            _ => throw new UnreachableException(),
-        };
+            case AnalyzerSymbolNode symbol:
+                var children = symbol.EnsureChildren();
+                return children.Count > 0;
+            case AnalyzerKindNode kind:
+                return !kind.IsDone || kind.Found.Count > 0;
+            case AnalyzerMessageNode or AnalyzerPendingNode or AnalyzerFailedNode or AnalyzerUnresolvedNode:
+                return false;
+            default:
+                throw new UnreachableException();
+        }
     }
 
     public TreeChildren<AnalyzerNode> GetChildren(AnalyzerNode node)

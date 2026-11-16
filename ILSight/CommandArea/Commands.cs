@@ -127,7 +127,8 @@ public static class Commands
     /// (<see cref="StartAnalyzing"/>); when nothing names its definition to list it by, the user is told why.</summary>
     public static void Analyze(AppState appState, Panels panels, AnalyzerRows rows, AnalysisSymbol symbol)
     {
-        appState.ListSession.Analyzer.AddRoot(symbol).Switch(
+        var added = appState.ListSession.Analyzer.AddRoot(symbol);
+        added.Switch(
             analyzing => AnalyzerPanelView.ShowAnalysis(panels, rows, analyzing.Root),
             listing =>
             {

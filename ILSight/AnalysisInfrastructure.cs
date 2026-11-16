@@ -20,7 +20,8 @@ public sealed class AnalysisInfrastructure(ErrorLog errors, AssemblyList assembl
     public async IAsyncEnumerable<Outcome<IReadOnlyList<AnalysisFind>>> RunAsync(AnalysisSymbol subject, AnalysisKind kind,
         [EnumeratorCancellation] CancellationToken ct)
     {
-        await using var batches = Analyzers.RunAsync(assemblies, subject, kind, ct).GetAsyncEnumerator(ct);
+        var run = Analyzers.RunAsync(assemblies, subject, kind, ct);
+        await using var batches = run.GetAsyncEnumerator(ct);
         while (true)
         {
             var next = await ReadNextAsync(batches, ct);

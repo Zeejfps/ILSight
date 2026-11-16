@@ -176,7 +176,8 @@ public static class AssemblyPackages
         }
 
         var file = new PackageFile { Name = name, FullName = fullName, Length = length };
-        AddFolder(tree, folderName).Files.Add(file);
+        var folder = AddFolder(tree, folderName);
+        folder.Files.Add(file);
         tree.Files.TryAdd(fullName, file);
     }
 

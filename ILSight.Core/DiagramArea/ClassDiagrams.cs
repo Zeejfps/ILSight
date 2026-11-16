@@ -175,7 +175,8 @@ public static partial class ClassDiagrams
     private static string BuildPage(DiagramRead diagram)
     {
         var json = JsonSerializer.Serialize(diagram.Model, DiagramJson.Default.DiagramModel);
-        return ReadAsset(TemplateName)
+        var template = ReadAsset(TemplateName);
+        return template
             .Replace("{{SourceAssemblyName}}", WebUtility.HtmlEncode(diagram.AssemblyName))
             .Replace("{{SourceAssemblyVersion}}", WebUtility.HtmlEncode(diagram.AssemblyVersion))
             .Replace("{{BuilderVersion}}", DecompilerVersionInfo.FullVersionWithCommitHash)

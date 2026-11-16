@@ -141,7 +141,8 @@ public static class Theming
     {
         foreach (var (key, value) in added)
         {
-            EnsureLayers(merged, key).Add(value);
+            var layers = EnsureLayers(merged, key);
+            layers.Add(value);
         }
     }
 
@@ -255,7 +256,8 @@ public static class Theming
         AddFonts(merged, contents);
         foreach (var (key, value) in contents.Icons)
         {
-            EnsureLayers(merged, key).Add(value);
+            var layers = EnsureLayers(merged, key);
+            layers.Add(value);
         }
     }
 

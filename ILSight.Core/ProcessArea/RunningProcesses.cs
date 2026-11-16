@@ -124,7 +124,8 @@ public static class RunningProcesses
     {
         using (trace)
         {
-            return NettraceRundown.Read(trace).Match<ModuleListing>(
+            var read = NettraceRundown.Read(trace);
+            return read.Match<ModuleListing>(
                 static read => new ModuleListing.Listed(ResolveModules(read.Modules, IsFile)),
                 static corrupt => new ModuleListing.Unreadable { Fault = corrupt.Fault, Error = corrupt.Error });
         }

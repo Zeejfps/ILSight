@@ -35,7 +35,8 @@ internal static class MethodUsesAnalyzer
         var file = method.ParentModule.MetadataFile;
         var module = (context.TypeSystems.Read.GetValueOrDefault(file)
             ?? throw new InvalidOperationException($"The type system of {file.FileName}, the analyzed method's, was not read before the analysis.")).MainModule;
-        return context.EnsureMapping(method).GetMethodParts(DecompilerFacts.GetMethodHandle(method))
+        var mapping = context.EnsureMapping(method);
+        return mapping.GetMethodParts(DecompilerFacts.GetMethodHandle(method))
             .SelectMany(part => ScanMethod(module, part, context.PassedOver)).Distinct();
     }
 

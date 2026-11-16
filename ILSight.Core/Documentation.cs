@@ -99,7 +99,8 @@ internal static class Documentation
 
         try
         {
-            return XmlDocLoader.LoadDocumentation(file)?.GetDocumentation(entity);
+            var documentation = XmlDocLoader.LoadDocumentation(file);
+            return documentation?.GetDocumentation(entity);
         }
         catch (XmlException)
         {

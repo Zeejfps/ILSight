@@ -63,7 +63,8 @@ internal static class AppRoot
     /// they choose none or can't be read.</summary>
     internal static Strings ReadRunStrings(FullFilePath settingsPath)
     {
-        return Strings.For(ChooseLocale(ReadSettingsFile(settingsPath).Settings));
+        var settingsFile = ReadSettingsFile(settingsPath);
+        return Strings.For(ChooseLocale(settingsFile.Settings));
     }
 
     /// <summary>The whole app the launcher opens a window on: the settings at <paramref name="settingsPath"/> read, and

@@ -44,7 +44,8 @@ public sealed class SettingsSaver(SettingsSaver.IPorts ports)
             return new SettingsSave.Waiting(wait);
         }
 
-        return Save(appState).Match<(AppState appState, TimeSpan now), SettingsSave>((appState, now),
+        var write = Save(appState);
+        return write.Match<(AppState appState, TimeSpan now), SettingsSave>((appState, now),
             static (_, _) => new SettingsSave.Saved(),
             static (s, failed) => new SettingsSave.Failed
             {

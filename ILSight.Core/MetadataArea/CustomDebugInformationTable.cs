@@ -165,7 +165,9 @@ internal static class CustomDebugInformationTable
             var rows = new List<IReadOnlyList<string>>();
             while (reader.RemainingBytes > 0)
             {
-                rows.Add([reader.ReadUInt32().ToString(), reader.ReadUInt32().ToString()]);
+                var first = reader.ReadUInt32();
+                var second = reader.ReadUInt32();
+                rows.Add([first.ToString(), second.ToString()]);
             }
 
             return new MetadataRowDetails.Table { Headers = ["Start Offset", "Length"], Rows = rows };

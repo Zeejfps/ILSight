@@ -193,10 +193,15 @@ internal static class ResourceNodes
                 })
                 .OfType<BrowseNode>()
                 .ToArray(),
-            static (s, _) => AvaloniaResources.ReadEntries(ResourceNodes.ReadData(s.container))
-                .OrderBy(e => e.Path, NaturalStringComparer.Instance)
-                .Select(e => BrowseNodes.Create(s.parent, new NodeSubject.ResourceEntry { Value = new ResourceEntryInfo { Module = s.container.Module, Name = e.Path, Source = new ResourceSource.Entry(e.Data) } }))
-                .ToArray());
+            static (s, _) =>
+            {
+                var data = ResourceNodes.ReadData(s.container);
+                var entries = AvaloniaResources.ReadEntries(data);
+                return entries
+                    .OrderBy(e => e.Path, NaturalStringComparer.Instance)
+                    .Select(e => BrowseNodes.Create(s.parent, new NodeSubject.ResourceEntry { Value = new ResourceEntryInfo { Module = s.container.Module, Name = e.Path, Source = new ResourceSource.Entry(e.Data) } }))
+                    .ToArray();
+            });
     }
 
     private static BrowseNode CreateEntry(BrowseNode parent, LoadedModule module, string name, byte[] data)

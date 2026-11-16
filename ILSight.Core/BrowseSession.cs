@@ -73,12 +73,14 @@ public sealed class BrowseSession
     {
         if (node.Subject is NodeSubject.TypeDefinition type)
         {
-            EnsureIndex(type.Definition.Module).TryAdd(type.Definition.Handle, node);
+            var index = EnsureIndex(type.Definition.Module);
+            index.TryAdd(type.Definition.Handle, node);
         }
 
         if (node.Subject is NodeSubject.MemberDefinition member)
         {
-            EnsureIndex(member.Definition.Module).TryAdd(member.Definition.Reference.Handle, node);
+            var index = EnsureIndex(member.Definition.Module);
+            index.TryAdd(member.Definition.Reference.Handle, node);
         }
 
         if (node.Subject is NodeSubject.Module module)
@@ -88,7 +90,8 @@ public sealed class BrowseSession
 
         if (node.Subject is NodeSubject.Namespace ns)
         {
-            EnsureNamespaces(ns.Value.Module).TryAdd(ns.Value.Name, node);
+            var namespaces = EnsureNamespaces(ns.Value.Module);
+            namespaces.TryAdd(ns.Value.Name, node);
         }
     }
 
@@ -96,14 +99,16 @@ public sealed class BrowseSession
     /// when none was built yet.</summary>
     internal BrowseNode? FindIndexed(LoadedModule module, EntityHandle handle)
     {
-        return EnsureIndex(module).GetValueOrDefault(handle);
+        var index = EnsureIndex(module);
+        return index.GetValueOrDefault(handle);
     }
 
     /// <summary>The node kept for the namespace <paramref name="name"/> of <paramref name="module"/>; null when none
     /// was built yet.</summary>
     internal BrowseNode? FindNamespace(LoadedModule module, string name)
     {
-        return EnsureNamespaces(module).GetValueOrDefault(name);
+        var namespaces = EnsureNamespaces(module);
+        return namespaces.GetValueOrDefault(name);
     }
 
     private ConcurrentDictionary<EntityHandle, BrowseNode> EnsureIndex(LoadedModule module)

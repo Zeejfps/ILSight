@@ -60,8 +60,8 @@ internal static class MethodUsedByAnalyzer
 
         IMethod ParentOf(IMethod method)
         {
-            return DecompilerFacts.GetMetadataModule(method).GetDefinition(
-                context.EnsureMapping(DecompilerFacts.GetDeclaringTypeDefinition(method)).GetParentMethod(DecompilerFacts.GetMethodHandle(method)));
+            var mapping = context.EnsureMapping(DecompilerFacts.GetDeclaringTypeDefinition(method));
+            return DecompilerFacts.GetMetadataModule(method).GetDefinition(mapping.GetParentMethod(DecompilerFacts.GetMethodHandle(method)));
         }
 
         bool References(MetadataModule module, ILOpCode opCode, EntityHandle token)
