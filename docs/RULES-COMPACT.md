@@ -46,12 +46,12 @@ The complete C# rules for agents, with the IDs of `RULES.md` (rationale and evid
   - **Assert only on what reached the test by an order it fixes:** app code it calls runs in the driver's turn (R010),
     so its callbacks (a `Progress<T>`) post there; a task it holds is awaited; work elsewhere by design (real I/O, a
     server) is awaited by its condition, bounded, never by a fixed count of frames or pumps or a delay; frames are
-    counted only for what the app promises in frames. A bound guards a hang (sized for a full run; never none), never
-    speed: a per-test timeout, the test's own or in the suite's checked-in runner settings (not a command-line flag),
-    guards the whole test; a wait by condition also keeps its own bound, naming what never came; a run-ending hang
-    timeout is a backstop, its dump the team's choice. Work started together is ordered by the test, or only what every
-    order gives is asserted, unless that order is the contract under test. Wait for what lasts (the effect at its port,
-    a count), never a state held a frame or a turn.
+    counted only for what the app promises in frames. A checked-in per-test timeout (the test's own or the runner
+    settings', never a command-line flag) bounds the whole test, and each condition wait has a bound naming what never
+    came: sized for full runs, never asserting speed; a run-ending hang timeout is a backstop, its dump the team's
+    choice. Work started together is ordered by the test, or only what every order gives is asserted, unless that order
+    is the contract under test. Wait for what lasts (the effect at its port, a count), never a state held a frame or a
+    turn.
   - **Seams:** use cases through their public methods with a fake port; domain code directly; adapters and queries
     against a real or local database. Never private methods; no interface only to fake.
 - **Test input** (fixtures a test compiles and reads back) is data, exempt from every rule: its folder is marked
@@ -154,9 +154,9 @@ Build: RL0201, RL0202, RL0203, RL0204 (tests).
 
 ## R003: The name is the contract
 
-Build: RL0301 (`Async`), RL0302 (`Find*`), RL0303 (`Get*` returning `T?`), RL0304 (`Is*` not `bool`), RL0305
-(`Load*` / `Fetch*`); suggestions: RL0306 (a `bool` method named as an action), RL0307 (a method returning -1, a
-`char`'s `'\0'` or a struct's `default` for none).
+Build: RL0301 (`Async`), RL0302 (`Find*`), RL0303 (`Get*` returning `T?`), RL0304 (`Is*` not `bool`), RL0305 (no
+`Load*`/`Fetch*`: the verb says what a miss returns); suggestions: RL0306 (a `bool` method named as an action), RL0307
+(a method returning -1, a `char`'s `'\0'` or a struct's `default` for none).
 
 | Name | Promise |
 |------|---------|
@@ -249,9 +249,8 @@ on purpose, a published member).
   bound fields (they don't make it a rule owner); framework writes bypass them, so every write reaches the rule owner
   through the framework's mechanism (its bound setter or change notification, where it calls one); a field written by
   `ref` runs no code: the frame section.
-- **A framework's protocol** isn't your set order: expose exactly its members, the second taking what the first
-  returns, or reading it from the object both
-  are handed when they run in different places.
+- **A framework's protocol** may impose order: expose exactly its members, later calls taking earlier results or reading
+  them from their shared object.
 
 ## R005: Data goes in through `required init` properties
 
@@ -323,14 +322,14 @@ the like skipped), RL0806 (a case added from outside); suggestion: RL0807 (a dro
 ## R009: Exceptions are for bugs; expected failures are results; catch only at the edge
 
 Build: RL0901 (empty catch), RL0902 (catch-all outside an edge), RL0804, CA2200, CA2201, CA2261, RL0905 (an awaiter
-turning cancellation into a value); suggestions: RL0903 (an adapter turning cancellation into a result), RL0904 (an
-adapter's sequence neither read nor its iterator), RL0906 (an edge loop with no per-item catch), RL0907 (a case's
-nullable exception).
+turning cancellation into a value); suggestions: RL0903 (an adapter turning cancellation into a result; it reads fixed
+forms: write one, or suppress a sound other with how), RL0904 (an adapter's sequence neither read nor its iterator),
+RL0906 (an edge loop with no per-item catch), RL0907 (a case's nullable exception).
 
-- Throw only for bugs (bad argument, wrong state, impossible case, corrupt data): a built-in type, a message saying
+- Throw only for bugs (bad argument, wrong state, impossible case, corrupt state): a built-in type, a message saying
   what was expected (a custom type only if caught); never `throw ex` or `Exception`. Expected failures are returned (a
-  union per operation, `Result<T>`, `Find*`, `Try*`; no library result types), never discarded; infrastructure
-  failures propagate.
+  union per operation, `Result<T>`, `Find*`, `Try*`; no library result types), never discarded; infrastructure failures
+  propagate. Bad data in the app's own decoder is its specific exception, caught by type into the unit's failure.
 - **What the user asked for ends in something they see.** A refusal answers the request; a failure is something going
   wrong doing it; separate cases where refusal and failure are different outcomes; an optional cause within one failure
   outcome stays nullable. A refusal goes where it was asked, alike from every input, or the action shows unavailable
@@ -375,12 +374,13 @@ nullable exception).
     saved file: its stated contract) keeps its language. Ordinary Copy and Find read what is drawn; a command named for
     diagnostics carries what it promises. A kept place (a bookmark) uses the content's terms, never an offset into drawn
     text. A format's published documentation (a schema's descriptions) is in the product's documentation languages. A
-    value from outside drawn on one line (a note, title, row) keeps it: line breaks, control and format characters shown
-    escaped, unambiguously where it names something, the escape character too.
+    value from outside drawn on one line (a note, title, row) keeps it: line breaks, control and direction characters
+    shown escaped, unambiguously, with every format character where spelling matters (a name) and the escape character;
+    prose may join lines with spaces.
   - **Diagnostics, not messages:** a stack trace (`ToString()`) is never a failure's message or summary; what the user
     reads suits its audience (an unknown cause's own message only where the product's disclosure contract allows, else
-    the operation and an identifier finding its diagnostic). Diagnostics shown or sent are labelled by the message each
-    is behind, laid out as the product chooses (a recovery asking for a report needs them).
+    the operation and its diagnostic's identifier). Diagnostics shown or sent are labelled by the message each is
+    behind, laid out as the product chooses (a recovery asking for a report needs them).
 - **Batches and absence:** independent items keep their own outcomes, the batch failing only for what fails every item;
   an atomic batch or dependent steps follow the operation's completion contract. "Not there" is the source's own absence
   answer, asked first where it has one; an exception is not there only where it unambiguously means the object asked for
@@ -406,14 +406,15 @@ nullable exception).
   arrive); or a stated duplicate. Only resending delivers.
 - **No empty catches or log-and-rethrow.** Decision code propagates; adapters catch only what they translate; edges
   catch per unit (around each independent item; one boundary around one unit's dependent steps, stopping at the first
-  failure), recording each unexpected failure once with its diagnostic in the product's failure record; one a contract
-  names expected (the operation's, a library's, the product's) needs none. A task whose every ending is no news is
-  awaited with `ConfigureAwait(ContinueOnCapturedContext | SuppressThrowing)` (plain `Task` only), else its failure
-  propagates. The one exception: a library in `rulelab.untrusted_libraries` reading the user's data (in an adapter, a
-  conversion step, or a library object that is data) is caught around the read only (an app callback it calls only
-  collects, or keeps its own failure apart), all but requested cancellation, into the requested unit's failure case with
-  why, shown where its answer would be, in the project calling it (your core's answer carries the case); never list your
-  own code.
+  failure), recording each unexpected failure once with its diagnostic in the product's failure record, returned ones
+  too, carrying the exception; one a contract names expected (the operation's, a library's, the product's) needs none. A
+  task whose every ending is no news is awaited with `ConfigureAwait(ContinueOnCapturedContext | SuppressThrowing)`
+  (plain `Task` only), else its failure propagates. The one exception: a library in `rulelab.untrusted_libraries`
+  reading the user's data (in an adapter, a conversion step, or a library object that is data) is caught around the read
+  only (an app callback only collects, or raises a mark before its work, lowered on return, that the filter lets
+  through; a `finally` is too late), all but requested cancellation, into the requested unit's failure case with why,
+  shown where its answer would be, in the project calling it (your core's answer carries the case); never list your own
+  code.
 - **Lazy library failures are translated inside each adapter member's read**, told by what the code does: inside, the
   library's reads and the facts they decode (its own predicates included); after the outermost catch, the app's policy
   (which analyses apply, what to read next, decided on facts read under a narrow catch), ordering (even text it sorts
@@ -471,8 +472,8 @@ Build: RL1001 (no token), RL1002 (`_ =` a task), CA2016, CA1849, VSTHRD002 / 100
   is done, a final save included. Only work independent of it goes back to the edge, a kind of its own (R008) in the
   success case; handing work back partway ends the workflow, the edge starting it and the rest.
 - **Work a state's own change implies**, whichever workflow makes it, is recorded by the change as pending, once per
-  item, and dispatched by an owning edge's step that follows every change. **A read started early** (a warm-up) is
-  that read: one task the later use awaits, its failure a value, started by an edge.
+  item, and dispatched by an owning edge's step that follows every change. **A warm-up** is one shared read task,
+  awaited by its later use, its failure a value.
 - One operation at a time per `DbContext`. No `ConfigureAwait(false)` in application code (shared libraries excepted).
 
 ## R011: One level of abstraction per method; calls only go down

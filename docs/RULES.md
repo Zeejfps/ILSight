@@ -3128,18 +3128,20 @@ var message = account.Withdraw(amount).Match(
   switch; kept as a line and column of the content (ILSight's), it stood on `Sum` in both languages.
   **A value placed in a line of the app's text keeps the line.** A note that runs from its comment marker to its line's
   end, and anything else the app draws on one line (a title, a row, a list item, a status line), holds each value it
-  says on that line: a line break (U+2028 and U+2029 too), a control character or a format character (a bidi override)
+  says on that line: a line break (U+2028 and U+2029 too), a control character or a direction control (a bidi override)
   in a value from outside (a name from metadata an obfuscator filled, a path, an exception's message) is shown escaped,
-  unambiguously where the value names something, the escape character itself included, so the note keeps its marker and
-  its line count and each name reads as the one it is; never placed as it is, nor made a space (a message's prose may
-  join its lines with one). Which escape, and whether only unusual values are quoted, is the product's (RULE-ISSUES CA3,
-  CB4, CD6). In testing (S45, forwarded types an obfuscator named `Shop`, a line break, then `class Injected { }`; the
-  same with a space; and with a backslash and an `n`, each said in a note above the code), placed as it is (ILSight's),
-  the note's second line left the comment and drew `class Injected { }` as code; made a space, two names read the same;
-  escaping the line break alone, the line break and the backslash read the same; escaping the backslash too, each name
-  read as its own. A fourth name with a line separator (U+2028) and a fifth with a right-to-left override (U+202E),
-  escaped for control characters only, broke the note and drew reversed; escaped for line breaks and format characters
-  too, all five read as five.
+  and where its exact spelling matters (a name) every other format character too (a joiner), unambiguously, the escape
+  character itself included, so the note keeps its marker and its line count and each name reads as the one it is; never
+  placed as it is, nor made a space (a message's prose may join its lines with one). Which escape, and whether only
+  unusual values are quoted, is the product's (RULE-ISSUES CA3, CB4, CD6). In testing (S45, forwarded types an
+  obfuscator named `Shop`, a line break, then `class Injected { }`; the same with a space; and with a backslash and an
+  `n`, each said in a note above the code), placed as it is (ILSight's), the note's second line left the comment and
+  drew `class Injected { }` as code; made a space, two names read the same; escaping the line break alone, the line
+  break and the backslash read the same; escaping the backslash too, each name read as its own. A fourth name with a
+  line separator (U+2028) and a fifth with a right-to-left override (U+202E), escaped for control characters only, broke
+  the note and drew reversed; escaped for line breaks and format characters too, all five read as five. A zero-width
+  joiner (U+200D, S45 g) left as text made `Shop` and a `Shop` holding one read alike; escaped in a person's name it
+  drew its code inside their emoji, so text whose spelling doesn't matter draws it (RULE-ISSUES CF5).
   **A join is a notation by what reads it, not by what it holds:** one read as a form outside the text (parsed by a
   program, typed or searched by users, defined by a standard) is the same in every language; the app's own arrangement
   of values for a person (an item and its error, a name and its container in parentheses) is the language's text though
@@ -3269,10 +3271,12 @@ messages, the second failing: one boundary lost the third, a catch around each h
 its meaning, which no check reads: RL0906 suggests the catch, and a loop of one unit's steps is suppressed with that
 reason.
 
-- **Decision code catches nothing**: handlers, domain types, calculations. The one catch-all allowed outside an edge
-  is around a read by a listed library of data the user brought, into the failure case of the unit the user asked for
+- **Decision code catches nothing**: handlers, domain types, calculations. The one catch-all allowed outside an edge is
+  around a read by a listed library of data the user brought, into the failure case of the unit the user asked for
   (below): in an adapter, in R006's conversion step, or where a library object that is data is read (R001 point 2: a
-  draw's cell).
+  draw's cell). The app's own decoder or parser of outside data (R006's conversion step) says bad data by its own
+  specific exception, or a result: that exception is caught by its type into the unit's failure, and anything else it
+  throws is its bug, at the edge (RULE-ISSUES CE3, CE4, CF4).
 - **Adapters translate** infrastructure outcomes into the port's contract (R001). Check a status where the API offers
   one (HTTP 404 → `null` from `Find*`); otherwise catch the one specific exception that means it (a unique-key
   violation → "already exists"), or, around a listed library's read of the user's data, everything the read throws
@@ -3297,18 +3301,19 @@ reason.
   suggests where an adapter's catch can turn the caller's cancellation into a result. It proves nothing; it reads three
   exact forms, each sound by itself, `ct` being a `CancellationToken` parameter of the method, lambda or local function
   the catch is in, never assigned there: a filter that is, or joins by `&&`, `!ct.IsCancellationRequested` or `ex is not
-  OperationCanceledException` (a filter that throws is false); a block ending in `throw;` with nothing before it that
-  returns, jumps or throws (a clean-up call that throws there replaces the cancellation with its own failure, never a
-  result), or starting with `ct.ThrowIfCancellationRequested();`; an earlier `catch (OperationCanceledException)`,
-  unfiltered or `when (ct.IsCancellationRequested)`, passing it on so. Every other form is reported, though many are
-  sound: write one of these, or suppress with how. Quiet means one of them is there; what holds is this rule, not the
-  check. A token kept in a field, an outer function's or a reassigned one, a linked token's identity, or an exception's
-  shape (an inner `TimeoutException`, which a cancellation can carry too) proves nothing (RULE-ISSUES BX5, BZ1, CB2,
-  CD10); one done without a catch, in the code that runs once a task has ended (an awaiter's `GetResult`, a
-  `ContinueWith` continuation that turns a cancelled task into `Failed`, as ILSight's `Background.Wait` does), is
-  RL0905's: such code throws for a cancelled task (`throw new TaskCanceledException(task)` keeps its token). A
-  continuation that hands back the task it was given (`t => { Record(t.Status); return t; }`, then `Unwrap`) keeps that
-  task's cancellation, and isn't one.
+  OperationCanceledException`, `ex` the caught exception, not written in the filter (a filter that throws is false; one
+  that assigns `ex`, or passes it by `ref` or `out`, can test another in its place: RULE-ISSUES CF2); a block ending in
+  `throw;` with nothing before it that returns, jumps or throws (a clean-up call that throws there replaces the
+  cancellation with its own failure, never a result), or starting with `ct.ThrowIfCancellationRequested();`; an earlier
+  `catch (OperationCanceledException)`, unfiltered or `when (ct.IsCancellationRequested)`, passing it on so. Every other
+  form is reported, though many are sound: write one of these, or suppress with how. Quiet means one of them is there;
+  what holds is this rule, not the check. A token kept in a field, an outer function's or a reassigned one, a linked
+  token's identity, or an exception's shape (an inner `TimeoutException`, which a cancellation can carry too) proves
+  nothing (RULE-ISSUES BX5, BZ1, CB2, CD10); one done without a catch, in the code that runs once a task has ended (an
+  awaiter's `GetResult`, a `ContinueWith` continuation that turns a cancelled task into `Failed`, as ILSight's
+  `Background.Wait` does), is RL0905's: such code throws for a cancelled task (`throw new TaskCanceledException(task)`
+  keeps its token). A continuation that hands back the task it was given (`t => { Record(t.Status); return t; }`, then
+  `Unwrap`) keeps that task's cancellation, and isn't one.
 - **A library that throws lazily is translated where it's read.** Some libraries throw from property reads, when they
   decode the data under them (ICSharpCode's decompiler throws `BadImageFormatException` from almost any property of a
   corrupt file). Translating that is still adapter work, not an edge's: each adapter member reads everything its answer
@@ -3347,18 +3352,27 @@ reason.
   which input failed while the rest goes on, so both are the unit's failure (R006: data you don't control fails as a
   result, never as a crash). Which need a record is a contract's: one the library documents for bad input is expected,
   any other recorded too, unless the product states it takes that library's every failure as the data's (RULE-ISSUES
-  CD5). List the library in `rulelab.untrusted_libraries` (`.editorconfig`: a namespace, which covers the ones inside
-  it, or a type by its full name). The code that reads with it (an adapter's member, R006's one conversion step, or code
-  reading a library object that is data, R001 point 2: a draw's cell) catches everything the read throws, cancellation
-  someone asked for excepted, into the failure case of the unit the user asked for (one member's code, one module's
-  search, one node's children, one picture, one cell), carrying why, and that case is shown where the unit's answer
-  would be. Only the read is inside the catch, the library's code and the platform's (a `StringBuilder` it fills). Code
-  of the app's it calls back (a converter, a writer, a visitor) is the app's, its failure a bug wherever it runs: it
-  only collects what it is handed, the app's own work on it running after the catch, or it keeps its own failure apart
-  (it marks that it threw, `finally` with no catch, and the catch's filter lets that through), so the app's bugs reach
-  the edge (RULE-ISSUES CD4). A read of memory the library already released is not the data's failure: it may be no
-  exception at all (an access violation ends the process, past every catch), so it is prevented where the object is
-  released (R001 point 2: a lease per read), never caught.
+  CD5); a failure returned as a value carries its exception, so its record has the diagnostic (CF3). List the library in
+  `rulelab.untrusted_libraries` (`.editorconfig`: a namespace, which covers the ones inside it, or a type by its full
+  name). The code that reads with it (an adapter's member, R006's one conversion step, or code reading a library object
+  that is data, R001 point 2: a draw's cell) catches everything the read throws (an out-of-memory from a size the data
+  claims too), cancellation someone asked for excepted, into the failure case of the unit the user asked for (one
+  member's code, one module's search, one node's children, one picture, one cell), carrying why, and that case is shown
+  where the unit's answer would be. Only the read is inside the catch, the library's code and the platform's (a
+  `StringBuilder` it fills). Code of the app's it calls back (a converter, a writer, a visitor) is the app's, its
+  failure a bug wherever it runs: it only collects what it is handed, the app's own work on it running after the catch,
+  or it keeps its own failure apart: it raises a mark before its work and lowers it only when the work returns (a count,
+  where calls nest), and every catch around the read that says its failure as the data's (unrecorded, or shown as the
+  input's) lets a raised mark through by its filter, while one that records each failure it takes, with its exception,
+  as unexpected need not, so the app's bugs reach the edge (RULE-ISSUES CD4, CF1). A filter runs before any `finally` on
+  the way, so a mark set in one comes too late. What the callback reads of the library's objects, and what it hands back
+  to the library's own code (a `base` writer), is the read's, outside the mark. In testing (S47, a decompiler stand-in
+  writing a member into the app's writer, which has a bug on a generic name), marked in a `finally` the filter ran first
+  and read the mark unset: the bug was said as the decompiler's failure on the member, never recorded; raised before the
+  work, the bug reached the edge, recorded once, a corrupt member and the library's own bug still the member's failure.
+  A read of memory the library already released is not the data's failure: it may be no exception at all (an access
+  violation ends the process, past every catch), so it is prevented where the object is released (R001 point 2: a lease
+  per read), never caught.
   ```csharp
   try
   {
@@ -3370,7 +3384,7 @@ reason.
   }
   catch (Exception ex)
   {
-      return new CodeRead.Failed { Why = ex.GetType().Name };  // the tab shows "// Error decompiling ..."
+      return new CodeRead.Failed { Error = ex };   // the tab says why; recorded unless the library documents it for bad input
   }
   ```
   Not narrowed to what the library documents, not an edge per unit (`[Edge]` lifts R001's checks from the whole type),
@@ -3383,10 +3397,15 @@ reason.
   failure and every module was searched, the failing one saying so. Where it hurts: the app's own code inside the catch
   is shown as the library's failure and never reaches the error log (ILSight's catch around its formatting, S13), so
   only the read goes inside; outside, the app's own bug reaches the edge, which settles the affected unit as failed
-  where it was shown and reports it once ("Whatever fails stays where it was shown", above). S06's adapter, which let the library's bug through, now translates it the same way. RL0902 accepts such a
-  catch-all: its try reads a listed library (itself, or through the compilation's own methods it calls; a delegate
-  handed in isn't followed, nor another project's code), the catch uses the exception and throws nothing, and
-  cancellation goes through by one of RL0903's forms.
+  where it was shown and reports it once ("Whatever fails stays where it was shown", above). S06's adapter, which let
+  the library's bug through, now translates it the same way. In testing (S48, a gallery read by a decoder stand-in), a
+  failure value carrying its type's name recorded the decoder's bug as a bare name, no message or stack; carrying the
+  exception, recorded once with both, the decoder's documented failure on a cut-short picture unrecorded; excluding
+  out-of-memory with cancellation, a picture whose header claimed a size no array holds ended the gallery at the edge
+  (RULE-ISSUES CF6). RL0902 accepts such a catch-all: its try reads a listed library (itself, or through the
+  compilation's own methods it calls; a delegate handed in only where its type is one the compilation declares, a read
+  half typed as such, followed to each lambda and method converted to it there; never another project's code), the
+  catch uses the exception and throws nothing, and cancellation goes through by one of RL0903's forms.
   **The catch is where the library is called, whichever project that is.** A listed library called by the app's own
   core project (shared I/O code its adapters hold: R001 "This holds across projects") is caught in the core, around
   the library's read only, and the core's answer carries the unit's failure case, to every caller; the adapter that
