@@ -24,7 +24,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     private readonly WindowFrameHost _frame = new();
     private readonly Channel<RunArguments> _inbox;
     private readonly IWindowFront _windowFront;
-    private readonly CodeFontFaces _codeFonts = new() { Bundled = ReadFont(MonoFonts.Code, MonoFontFile) };
+    private readonly CodeFontReader _codeFontReader;
 
     /// <param name="appState">The app state, its start recorded on it.</param>
     /// <param name="uiState">The screen over it.</param>
@@ -42,6 +42,8 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
         _loop = loop;
         _inbox = inbox;
         _windowFront = windowFront;
+        var bundledCodeFace = ReadFont(MonoFonts.Code, MonoFontFile);
+        _codeFontReader = new CodeFontReader(bundledCodeFace);
     }
 
     protected override void OnStartup(ImmediateGuiAppHost<UiState> host)
@@ -192,73 +194,13 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
 
     private void DrawCodeInChosenFont(Ui ui, ScreenDisplay display, ShownChanges shown)
     {
-        var face = TakeCodeFontFace(display, shown);
+        var face = _codeFontReader.TakeFace(display, shown);
         if (face == null)
         {
             return;
         }
 
         ui.RegisterFont(face);
-    }
-
-    // The face to draw code with when the chosen font changed since code was last drawn, else null. A chosen font whose
-    // file cannot be read is given up for the bundled one.
-    private FontFace? TakeCodeFontFace(ScreenDisplay display, ShownChanges shown)
-    {
-        var chosen = display.Options.Font;
-        if (!shown.TryTakeCodeFont(chosen))
-        {
-            return null;
-        }
-
-        var face = EnsureFace(_codeFonts, chosen);
-        if (face != null)
-        {
-            return face;
-        }
-
-        display.SetCodeFont(null);
-        shown.TryTakeCodeFont(null);
-        return _codeFonts.Bundled;
-    }
-
-    private static FontFace? EnsureFace(CodeFontFaces faces, CodeFont? font)
-    {
-        if (font is null)
-        {
-            return faces.Bundled;
-        }
-
-        if (faces.ReadFaces.TryGetValue(font, out var face))
-        {
-            return face;
-        }
-
-        var data = ReadFontFile(font.Path);
-        if (data is null)
-        {
-            return null;
-        }
-
-        face = new FontFace(MonoFonts.Code, data, FaceIndex: font.FaceIndex);
-        faces.ReadFaces[font] = face;
-        return face;
-    }
-
-    private static byte[]? ReadFontFile(string path)
-    {
-        try
-        {
-            return File.ReadAllBytes(path);
-        }
-        catch (IOException)
-        {
-            return null;
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return null;
-        }
     }
 
     /// <summary>Asks <see cref="TryClose"/> whether the window may close; when it may not, the next frame shows
@@ -308,14 +250,14 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
 
     private void RegisterFonts(ImmediateGuiAppHost<UiState> host)
     {
-        host.RegisterFont(_codeFonts.Bundled);
+        host.RegisterFont(_codeFontReader.Bundled);
         host.RegisterFont(ReadFont(TextFonts.Italic, ItalicFontFile));
     }
 
     // Before the first frame, so code never shows in the bundled font first.
     private void RegisterChosenCodeFont(ImmediateGuiAppHost<UiState> host)
     {
-        var face = TakeCodeFontFace(UiState.Display, UiState.Shown);
+        var face = _codeFontReader.TakeFace(UiState.Display, UiState.Shown);
         if (face == null)
         {
             return;
@@ -360,14 +302,5 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
         _appState.KeptScreen.KeepWindow(window);
         _appState.KeptScreen.KeepView(ScreenSettings.TakeViewSettings(UiState));
         return _appState.SettingsSaving.Save(_appState);
-    }
-
-    // The faces code is drawn with, as MonoFonts.Code: the bundled one, and each installed font chosen this session, read
-    // from its file once.
-    private sealed class CodeFontFaces
-    {
-        public readonly Dictionary<CodeFont, FontFace> ReadFaces = new();
-
-        public required FontFace Bundled { get; init; }
     }
 }
