@@ -293,13 +293,6 @@ internal static class AppFrames
         frame.RequestFrame();
     }
 
-    /// <summary>Opens the active list's assemblies <paramref name="reopening"/> began reopening as a reload, so that the
-    /// list is saved whole until they are all open (files that are gone or fail to load stay listed as failed), once the
-    /// app is running. Returns the loads that started in the tabs reopened from the list's saved documents.</summary>
-    internal static Task<TabLoads> OpenStartupAssembliesAsync(AppState appState, ListReopening reopening, CancellationToken ct)
-    {
-        return appState.OpenAssembliesAsReloadHandler.HandleAsync(appState.ListSession, reopening.Paths, reopening.Reload, reopening.Work, ct);
-    }
 
     /// <summary>Saves the settings when they changed; returns what it came to.</summary>
     internal static Saving SaveChangedSettings(IFrameHost frame, AppState appState)

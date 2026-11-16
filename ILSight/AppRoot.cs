@@ -28,8 +28,8 @@ namespace ILSight;
 /// <summary>The composition root: builds the app state and the screen over it, the use cases on them and the
 /// adapters those reach the world through, choosing the desktop app's adapters. The launcher routes a run and builds the
 /// app through <see cref="RouteRunAsync"/> and <see cref="BuildLaunchedApp"/>, and the tests that run the whole app
-/// build it through <see cref="BuildApp"/>; building starts nothing, every host starting it through
-/// <see cref="AppStart.Start"/>.</summary>
+/// build it through <see cref="BuildApp"/>; building starts nothing, every host starting it through its loop's
+/// <see cref="AppLoop.Start"/>.</summary>
 [Edge]
 internal static class AppRoot
 {
@@ -103,7 +103,9 @@ internal static class AppRoot
     /// once it has taken the arguments waiting in <paramref name="inbox"/>. Building it starts nothing.</summary>
     internal static AppLoop BuildLoop(AppState appState, ListStart start, Channel<RunArguments> inbox)
     {
-        return new AppLoop(appState, start, inbox);
+        return new AppLoop(appState, start, new RunArgumentsTaking(appState, inbox), new AssemblyListLoading(appState),
+            new UserThemeWatching(appState.Workflows, appState.UserThemes, appState.UserIconThemes),
+            new UpdateChecking(appState.Workflows, appState.Updates));
     }
 
     /// <summary>The app state restored from <paramref name="loadResult"/> over <paramref name="session"/>
@@ -128,7 +130,7 @@ internal static class AppRoot
 
     /// <summary>The app state restored from <paramref name="loadResult"/> over <paramref name="session"/>
     /// (<see cref="RestoreStartingState"/>) and its start recorded on it, with no screen: what a host that runs the app
-    /// with no window starts (<see cref="AppStart.Start"/>).</summary>
+    /// with no window starts (<see cref="AppLoop.Start"/>).</summary>
     /// <param name="loadResult">What reading the settings file gave.</param>
     /// <param name="session">The browse tree the app's trees and searches show nodes of.</param>
     /// <param name="updates">Looks for a newer version of the app; the release feed's when null.</param>
