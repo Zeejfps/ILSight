@@ -3,6 +3,7 @@ using ILSight.Core;
 using ILSight.CommandArea;
 using ILSight.DocumentViewArea;
 using ILSight.MainArea;
+using ILSight.ILSightAppArea;
 
 namespace ILSight;
 
@@ -127,6 +128,31 @@ internal static class QueuedCommands
     /// <summary>Runs the commands <paramref name="commands"/> holds for the app state, in the order queued, each a unit
     /// of work of its own: one that throws is reported, and the rest still run, as the draw that queued them already
     /// says their work has started.</summary>
+    /// <summary>Runs what the screen asked of the app state (<see cref="RunAppCommands"/>), and asks
+    /// <paramref name="frame"/> for another frame to show what it changed; nothing while none was asked.</summary>
+    internal static void RunAppCommandsAndRedraw(IFrameHost frame, AppCommandQueue commands, AppState appState)
+    {
+        if (commands.IsEmpty)
+        {
+            return;
+        }
+
+        RunAppCommands(commands, appState);
+        frame.RequestFrame();
+    }
+
+    /// <summary>Asks <paramref name="frame"/> for another frame while commands the features queued for the screen
+    /// wait in <paramref name="viewCommands"/>.</summary>
+    internal static void RequestFrameWhileViewCommandsWait(IFrameHost frame, Queue<ViewCommand> viewCommands)
+    {
+        if (viewCommands.Count == 0)
+        {
+            return;
+        }
+
+        frame.RequestFrame();
+    }
+
     internal static void RunAppCommands(AppCommandQueue commands, AppState appState)
     {
         while (commands.TryTake(out var command))

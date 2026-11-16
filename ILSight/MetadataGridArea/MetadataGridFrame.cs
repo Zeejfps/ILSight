@@ -54,6 +54,18 @@ internal ref struct MetadataGridFrame
         return Math.Max(SampleRows, (int)MathF.Ceiling(windowHeight / rowHeight));
     }
 
+    /// <summary>As <see cref="CalculateFirstReadRows(float, float)"/> for the documents' tab area,
+    /// <paramref name="tabAreaHeight"/> tall; <paramref name="whileUnmeasured"/> while no tab area was measured.</summary>
+    public static int CalculateFirstReadRowsInTabArea(float? tabAreaHeight, float rowHeight, int whileUnmeasured)
+    {
+        if (tabAreaHeight is null)
+        {
+            return whileUnmeasured;
+        }
+
+        return CalculateFirstReadRows(tabAreaHeight.Value, rowHeight);
+    }
+
     public MetadataGridResult Render()
     {
         var columns = State.Columns;

@@ -1,4 +1,6 @@
 using ILSight.AssemblyArea;
+using ILSight.CommandArea;
+using ILSight.MetadataGridArea;
 using ILSight.ExportArea;
 using ILSight.NuGetArea;
 using ILSight.UserArea;
@@ -89,14 +91,30 @@ public sealed class AppLoop
     }
 
     /// <summary>What comes after <paramref name="screen"/> drew a frame in <paramref name="frame"/>, the draw failing
-    /// or not; returns what the autosave came to, for a host with frames to come back when a write waits or
-    /// failed.</summary>
+    /// or not: the tabs keep where their views stand, the settings what changed of the screen, and the metadata grids
+    /// how many rows they read first; the work the screen asked for while it drew starts, and that listing asked for
+    /// since the last frame (the type systems of the modules listed, the children of the tree's nodes shown loading, the
+    /// searches of the queries typed, the tooltips of the references hovered in code, the sorts, filters and pages of
+    /// the metadata grids, the presets the lists dialog's menu opened to); the app runs what the screen asked of it,
+    /// asking for another frame while there is more to show; and the changed settings are saved. Returns what the
+    /// autosave came to, for a host with frames to come back when a write waits or failed.</summary>
     public Saving AfterDraw(UiState screen, IFrameHost frame)
     {
-        AppFrames.KeepScreenChanges(screen, _appState);
-        AppFrames.StartAskedWork(screen, _appState);
-        AppFrames.RunAppCommandsAndRedraw(frame, screen.AppCommands, _appState);
-        AppFrames.RequestUpdateIfViewCommandsPending(frame, _appState);
-        return AppFrames.SaveChangedSettings(frame, _appState);
+        var appState = _appState;
+        var workflows = appState.Workflows;
+        screen.Documents.KeepTabPositions(appState.ListSession.Navigation);
+        ScreenSettings.KeepChangedViewSettings(screen, appState.KeptScreen);
+        appState.FirstGridRows = MetadataGridFrame.CalculateFirstReadRowsInTabArea(screen.Documents.TabAreaHeight, screen.Appearance.Theme.RowHeight, appState.FirstGridRows);
+        Commands.StartReadingTypeSystems(workflows, appState.ListSession.Assemblies);
+        Commands.StartBuildingChildren(appState, screen.Tree);
+        Commands.StartSearching(appState, screen.Search.Results);
+        Commands.StartSearching(appState, screen.Omnibar.Search.Results);
+        Commands.StartLookingUpTooltips(workflows, appState.LookUpTooltipHandler, appState.Tooltips);
+        Commands.StartArrangingGrids(workflows, screen.ArrangeMetadataGridHandler, screen.Grids.Views);
+        Commands.StartReadingGridPages(workflows, screen.ReadMetadataPageHandler, screen.Grids.Pages);
+        Commands.StartScanningPresets(workflows, screen.Presets);
+        QueuedCommands.RunAppCommandsAndRedraw(frame, screen.AppCommands, appState);
+        QueuedCommands.RequestFrameWhileViewCommandsWait(frame, appState.ViewCommands);
+        return appState.SettingsSaving.SaveIfChanged(appState, frame.Now);
     }
 }

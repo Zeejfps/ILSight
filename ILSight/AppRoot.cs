@@ -324,8 +324,18 @@ internal static class AppRoot
         var uiState = CreateUiState(appState.KeptScreen.View, appState.Workflows, reportError, appState.Session, nuGetRequests,
             runtimeScan ?? new FrameworkPickerAdapter(reportError, appState.ListSession.Assemblies.Runtime), processes ?? new ProcessBrowserAdapter(reportError), hooks);
         ScreenSettings.RestoreScreen(uiState, appState.KeptScreen.View);
-        AppFrames.FollowRestoredAppState(uiState, appState);
+        OpenRestoredTabs(uiState, appState);
         return uiState;
+    }
+
+    // The tabs reopened from the open list's documents docked where they were, any other tab in the place of the
+    // documents, and the active tab the screen starts with.
+    private static void OpenRestoredTabs(UiState uiState, AppState appState)
+    {
+        uiState.Documents.SkipPanels(appState.Lists.ListDocumentPanels());
+        uiState.TabFocus.Follow(appState.ListSession.Navigation.ActiveTab);
+        QueuedCommands.RunViewCommands(uiState, appState);
+        uiState.Panels.ShowInRestoredDocuments(appState.ListSession.Navigation);
     }
 
     // Restores, of what the settings kept of the screen, only its layout, display options, folded groups and filters;

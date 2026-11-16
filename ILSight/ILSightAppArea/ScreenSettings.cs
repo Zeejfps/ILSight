@@ -1,3 +1,4 @@
+using ILSight.SettingArea;
 using ZGF.Gui.Immediate;
 using ILSight.ExportArea;
 using ILSight.MetadataGridArea;
@@ -40,6 +41,19 @@ public static class ScreenSettings
         }
 
         return TakeViewSettings(uiState);
+    }
+
+    /// <summary>Hands <paramref name="kept"/> what the settings keep of the screen, when that changed since it was last
+    /// taken.</summary>
+    public static void KeepChangedViewSettings(UiState uiState, KeptScreen kept)
+    {
+        var view = TakeChangedViewSettings(uiState);
+        if (view is null)
+        {
+            return;
+        }
+
+        kept.KeepView(view);
     }
 
     /// <summary>What the settings keep of the screen as it is now, changed or not, as before the last save.</summary>

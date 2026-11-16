@@ -214,6 +214,40 @@ public sealed class DocumentViews
         return _views.GetValueOrDefault(tab);
     }
 
+    /// <summary>Has each tab open in <paramref name="navigation"/> keep where its view stands, as the frame drew it.</summary>
+    public void KeepTabPositions(Navigation navigation)
+    {
+        var open = navigation.OpenTabs;
+        for (var i = 0; i < open.Count; i++)
+        {
+            KeepTabPosition(navigation, open[i]);
+        }
+    }
+
+    private void KeepTabPosition(Navigation navigation, DocumentTab tab)
+    {
+        var view = FindView(tab);
+        if (view is null)
+        {
+            return;
+        }
+
+        var shown = view.Shown;
+        if (shown is null)
+        {
+            return;
+        }
+
+        if (shown.IsShownBy(tab))
+        {
+            tab.Load.KeepPosition(view.GetPosition(tab));
+            return;
+        }
+
+        // The tab moved on while the frame was drawn: the history entry left from it keeps the position.
+        navigation.KeepPositionLeft(shown, view.GetShownPosition());
+    }
+
     /// <summary>The panel <paramref name="tab"/> is docked as, and how its diagram or comparison is viewed, as the
     /// settings keep it (<see cref="SavePanels"/>); null when it has no view.</summary>
     public TabPanel? FindTabPanel(DocumentTab tab)

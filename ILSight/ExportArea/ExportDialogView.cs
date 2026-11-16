@@ -687,7 +687,7 @@ internal static class ExportDialogView
         var look = setup.Files.FindLook(setup.Folder, setup.StrongNameKeyFile);
         if (look is null)
         {
-            // The frame edge starts the look (AppFrames), so a frame is asked for.
+            // The app loop starts the look (ExportFileChecker), so a frame is asked for.
             ui.RequestUpdate();
         }
 

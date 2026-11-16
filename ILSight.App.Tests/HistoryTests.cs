@@ -150,7 +150,7 @@ public sealed class HistoryTests
         CodeViewWidget.RestorePosition(CodeOf(app, tab), scrolled);
 
         app.Driver.Show(await app.FixtureAsync("Greeter"));
-        app.Driver.InTurn(() => AppFrames.KeepScreenChanges(app.Ui, app.AppState));
+        app.Driver.InTurn(() => app.Ui.Documents.KeepTabPositions(app.AppState.ListSession.Navigation));
         app.Settle(4);
         app.GoBack();
         app.Settle(4);
