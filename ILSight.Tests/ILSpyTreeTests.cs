@@ -60,7 +60,7 @@ public sealed class ILSpyTreeTests
     }
 
     [Fact]
-    public async Task A_bookmark_whose_member_the_library_cannot_read_is_its_failure_saying_why()
+    public async Task A_bookmark_whose_member_the_library_cannot_read_says_its_module_unreadable_with_why()
     {
         using var temp = new TempDir();
         var grow = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Circle", "Grow");
@@ -71,7 +71,9 @@ public sealed class ILSpyTreeTests
 
         var located = await ILSpyTree.LocateAsync(list, TestSession.Shared, path, null, token, Trees.FixturesNamespace + ".Circle.Grow", CancellationToken.None);
 
-        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(located).Error);
+        var unreadable = Assert.IsType<Lookup<BrowseNode>.Unreadable>(located.GetValue());
+        Assert.Equal(path, unreadable.Module.Module.FilePath);
+        Assert.IsType<BadImageFormatException>(unreadable.Module.Why);
     }
 
     [Fact]

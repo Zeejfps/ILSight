@@ -94,9 +94,9 @@ public static class ILSpyTree
     /// node of the entity with metadata <paramref name="token"/>, when its full name is
     /// <paramref name="memberName"/>, or its nearest ancestor. Loads the assembly without listing it; not found
     /// when its file is gone or has neither (a token past the end of its table names nothing); unreadable when the
-    /// library could not read the module either is looked for in, and the other found nothing; a file there that can't
-    /// be read, children on the way that failed to build (never not found, nor an ancestor, for what they could hold),
-    /// and what else the library throws reading the entity the token names, <see cref="Outcome{T}.Failed"/>. Each read
+    /// library could not read the module either is looked for in, or failed resolving or naming the entity the token
+    /// names, and the other found nothing; a file there that can't be read, and children on the way that failed to
+    /// build (never not found, nor an ancestor, for what they could hold), <see cref="Outcome{T}.Failed"/>. Each read
     /// of the library on the way is under its own catch, the next step chosen after it, so a bug of the app's on the
     /// way goes on to the edge. The cancellation of <paramref name="ct"/> is let through.</summary>
     public static async Task<Outcome<Lookup<BrowseNode>>> LocateAsync(AssemblyList list, BrowseSession session, AssemblyPath filePath,
@@ -185,26 +185,23 @@ public static class ILSpyTree
         uint token, string memberName, CancellationToken ct)
     {
         var resolved = ResolveEntity(assembly, main, (int)token);
-        if (resolved is Outcome<Lookup<IEntity>>.Failed failed)
-        {
-            return new Outcome<Lookup<BrowseNode>>.Failed(failed.Error);
-        }
-
-        if (resolved is Outcome<Lookup<IEntity>>.Ok { Value: Lookup<IEntity>.Unreadable unreadable })
+        if (resolved is Lookup<IEntity>.Unreadable unreadable)
         {
             return new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Unreadable { Module = unreadable.Module });
         }
 
-        if (resolved is not Outcome<Lookup<IEntity>>.Ok { Value: Lookup<IEntity>.Found found })
+        if (resolved is not Lookup<IEntity>.Found found)
         {
             return NotFound;
         }
 
-        var read = ReadSavedEntity(found.Value);
-        if (read is not Outcome<SavedEntity>.Ok saved)
+        var read = ReadSavedEntity(assembly, found.Value);
+        if (read is Lookup<SavedEntity>.Unreadable unreadableName)
         {
-            return new Outcome<Lookup<BrowseNode>>.Failed(((Outcome<SavedEntity>.Failed)read).Error);
+            return new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Unreadable { Module = unreadableName.Module });
         }
+
+        var saved = (Lookup<SavedEntity>.Found)read;
 
         // After a rebuild the token can name another entity: the app's check, on the name read.
         if (saved.Value.FullName != memberName)
@@ -224,41 +221,37 @@ public static class ILSpyTree
     }
 
     // The library's resolving of token, under its own catch: none when it names no row of the module or the row
-    // resolves to nothing; the module unreadable, with why, when the library failed reading it with
-    // BadImageFormatException; what else it throws, the lookup's failure, with why.
-    private static Outcome<Lookup<IEntity>> ResolveEntity(LoadedModule assembly, MetadataModule main, int token)
+    // resolves to nothing; the module unreadable, with why, when the library fails reading it, whatever it throws (the
+    // decompiler's every failure on the data is the data's, as ILSight states).
+    private static Lookup<IEntity> ResolveEntity(LoadedModule assembly, MetadataModule main, int token)
     {
         try
         {
             if (!SavedTokens.IsInModule(main, token))
             {
-                return new Outcome<Lookup<IEntity>>.Ok(new Lookup<IEntity>.NotFound());
+                return new Lookup<IEntity>.NotFound();
             }
 
             var entity = main.ResolveEntity(MetadataTokens.EntityHandle(token));
-            return new Outcome<Lookup<IEntity>>.Ok(Lookup.FromNullable(entity));
-        }
-        catch (BadImageFormatException e)
-        {
-            return new Outcome<Lookup<IEntity>>.Ok(new Lookup<IEntity>.Unreadable { Module = new UnreadableModule { Module = assembly, Why = e } });
+            return Lookup.FromNullable(entity);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
-            return new Outcome<Lookup<IEntity>>.Failed(e);
+            return new Lookup<IEntity>.Unreadable { Module = new UnreadableModule { Module = assembly, Why = e } };
         }
     }
 
     // The library's read of the resolved entity's full name and handle, under its own catch: what it throws (a name it
-    // decodes on first use), the lookup's failure, with why.
-    private static Outcome<SavedEntity> ReadSavedEntity(IEntity entity)
+    // decodes on first use), the module unreadable, with why.
+    private static Lookup<SavedEntity> ReadSavedEntity(LoadedModule assembly, IEntity entity)
     {
         try
         {
-            return new Outcome<SavedEntity>.Ok(new SavedEntity { FullName = entity.FullName, Handle = entity.MetadataToken });
+            return new Lookup<SavedEntity>.Found { Value = new SavedEntity { FullName = entity.FullName, Handle = entity.MetadataToken } };
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
-            return new Outcome<SavedEntity>.Failed(e);
+            return new Lookup<SavedEntity>.Unreadable { Module = new UnreadableModule { Module = assembly, Why = e } };
         }
     }
 
