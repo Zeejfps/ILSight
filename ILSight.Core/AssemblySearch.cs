@@ -596,9 +596,10 @@ public static class AssemblySearch
             CancellationToken ct)
         {
             var place = await PlaceAsync(search, assembly, main, handle, BrowseSessions.PlaceNodeAsync, ct);
-            if (place is NodePlace.Failed failed)
+            var notPlaced = WhyNotPlaced(place);
+            if (notPlaced is not null)
             {
-                EmitNotShown(search, assembly, handle, name, failed.Error);
+                EmitNotShown(search, assembly, handle, name, notPlaced);
                 return;
             }
 
@@ -625,9 +626,10 @@ public static class AssemblySearch
         private static async Task AddResultOrAncestorAsync(Search search, LoadedModule assembly, MetadataModule main, EntityHandle handle, CancellationToken ct)
         {
             var place = await PlaceAsync(search, assembly, main, handle, BrowseSessions.PlaceOrAncestorAsync, ct);
-            if (place is NodePlace.Failed failed)
+            var notPlaced = WhyNotPlaced(place);
+            if (notPlaced is not null)
             {
-                EmitNotShown(search, assembly, handle, null, failed.Error);
+                EmitNotShown(search, assembly, handle, null, notPlaced);
                 return;
             }
 
@@ -675,6 +677,24 @@ public static class AssemblySearch
             {
                 return new NodePlace.Failed(e);
             }
+        }
+
+        // Why the place couldn't be found: the children that would list it failed, or the library failed reading the
+        // module on the way; null for a place found or not listed.
+        private static Exception? WhyNotPlaced(NodePlace place)
+        {
+            if (place is NodePlace.Failed failed)
+            {
+                return failed.Error;
+            }
+
+            if (place is NodePlace.Unreadable unreadable)
+            {
+                return unreadable.Module.Why;
+            }
+
+            // Listed or not listed: no failure.
+            return null;
         }
 
         private static void EmitNotShown(Search search, LoadedModule assembly, EntityHandle handle, string? name, Exception why)

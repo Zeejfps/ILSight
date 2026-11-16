@@ -198,9 +198,11 @@ public static class AssemblyListing
     }
     /// <summary>The listed assembly that defines what <paramref name="reference"/> points at, and the
     /// handle of its definition there: the assembly's own handle for an assembly. Not found when it cannot be resolved
-    /// or listed; unreadable when resolving it reads the type system of a module the library could not read. Each module
-    /// it reads is added to <paramref name="reading"/>, the unit's: one released meanwhile is passed over, as one no
-    /// longer listed.</summary>
+    /// or listed; unreadable when resolving it reads the type system of a module the library could not read, or the
+    /// library failed reading the module resolving it (each read under its own catch, the app's resolving after it).
+    /// A file it needs that can't be read throws its <see cref="AssemblyLoadException"/>, or the
+    /// <see cref="DefinitionUnreadException"/> holding it. Each module it reads is added to <paramref name="reading"/>,
+    /// the unit's: one released meanwhile is passed over, as one no longer listed.</summary>
     internal static async Task<Lookup<(LoadedModule Assembly, EntityHandle Handle)>> ResolveListedAsync(AssemblyList list, ModuleReading reading,
         CodeReference.Navigable reference, CancellationToken ct)
     {
@@ -242,7 +244,14 @@ public static class AssemblyListing
                     return Found(owner, EntityHandle.AssemblyDefinition);
                 }
 
-                var target = LoadedAssemblies.GetResolver(owner).ResolveAssembly(new AssemblyReference(LoadedAssemblies.GetFile(owner), assembly.Referenced.Value));
+                var referenced = ReadAssemblyReference(owner, assembly.Referenced.Value);
+                if (referenced is not Lookup<AssemblyReferenceFacts>.Found named)
+                {
+                    return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.Unreadable { Module = ((Lookup<AssemblyReferenceFacts>.Unreadable)referenced).Module };
+                }
+
+                // Resolved after the read, of what it read: the resolver is the app's.
+                var target = LoadedAssemblies.GetResolver(owner).ResolveAssembly(named.Value);
                 if (target is null)
                 {
                     return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound();
@@ -251,6 +260,20 @@ public static class AssemblyListing
                 return Found(target, EntityHandle.AssemblyDefinition);
             default:
                 throw new UnreachableException();
+        }
+    }
+
+    // The library's read of the reference row, under its own catch: its facts; the owner unreadable, with why, when the
+    // library failed reading it (the user's data, said as the module's).
+    private static Lookup<AssemblyReferenceFacts> ReadAssemblyReference(LoadedModule owner, AssemblyReferenceHandle handle)
+    {
+        try
+        {
+            return new Lookup<AssemblyReferenceFacts>.Found { Value = AssemblyReferenceFacts.Read(LoadedAssemblies.GetFile(owner), handle) };
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new Lookup<AssemblyReferenceFacts>.Unreadable { Module = new UnreadableModule { Module = owner, Why = e } };
         }
     }
 
@@ -665,43 +688,98 @@ public static class AssemblyListing
     private static Lookup<(LoadedModule Assembly, EntityHandle Handle)> ResolveDefinition(AssemblyList list, LoadedModule owner, MetadataModule main,
         EntityHandle handle, int generation)
     {
-        var definition = Definitions.Resolve(main, handle);
-        if (definition is null)
+        var definition = ReadDefinition(owner, main, handle);
+        if (definition is Lookup<DefinitionPlace>.Unreadable unreadable)
         {
-            ThrowIfInUnreadReference(owner, main.MetadataFile.Metadata, handle);
-            return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound();
+            return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.Unreadable { Module = unreadable.Module };
         }
 
-        var assembly = FindAssemblyToLookIn(list, AssemblyPath.Of(DecompilerFacts.GetMetadataFile(definition).FileName), generation);
+        // The app's choice, after the read, of what it read.
+        if (definition is not Lookup<DefinitionPlace>.Found found)
+        {
+            return ResolveUnfound(owner, main, handle);
+        }
+
+        var assembly = FindAssemblyToLookIn(list, AssemblyPath.Of(found.Value.FileName), generation);
         if (assembly is null)
         {
             return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound();
         }
 
-        return Found(assembly, definition.MetadataToken);
+        return Found(assembly, found.Value.Token);
+    }
+
+    // Where a definition is: the file that defines it and its handle there.
+    private sealed record DefinitionPlace
+    {
+        public required string FileName { get; init; }
+
+        public required EntityHandle Token { get; init; }
+    }
+
+    // The library's resolving of handle to its definition, under its own catch: where it is, none when it resolves to
+    // nothing; the owner unreadable, with why, when the library failed reading it.
+    private static Lookup<DefinitionPlace> ReadDefinition(LoadedModule owner, MetadataModule main, EntityHandle handle)
+    {
+        try
+        {
+            var definition = Definitions.Resolve(main, handle);
+            return definition is null
+                ? new Lookup<DefinitionPlace>.NotFound()
+                : new Lookup<DefinitionPlace>.Found
+                {
+                    Value = new DefinitionPlace { FileName = DecompilerFacts.GetMetadataFile(definition).FileName, Token = definition.MetadataToken },
+                };
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new Lookup<DefinitionPlace>.Unreadable { Module = new UnreadableModule { Module = owner, Why = e } };
+        }
     }
 
     private const string OwnModule = "";
 
     // A definition not found may be in a reference the type system read by name only, its file there but unreadable:
     // the lookup needs that file, so it fails with why rather than saying not there. A handle whose reference can't be
-    // named (a member of a constructed type) fails with the first of them when any was unread.
-    private static void ThrowIfInUnreadReference(LoadedModule owner, MetadataReader metadata, EntityHandle handle)
+    // named (a member of a constructed type) fails with the first of them when any was unread. The reference's name is
+    // read under its own catch, only when some reference was unread; the match is made after it.
+    private static Lookup<(LoadedModule Assembly, EntityHandle Handle)> ResolveUnfound(LoadedModule owner, MetadataModule main, EntityHandle handle)
     {
         var unread = LoadedAssemblies.ListUnreadReferences(owner);
         if (unread.Count == 0)
         {
-            return;
+            return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound();
         }
 
-        var scope = FindReferenceName(metadata, handle);
-        var needed = scope is null ? unread[0] : unread.FirstOrDefault(u => string.Equals(u.Name, scope, StringComparison.OrdinalIgnoreCase));
+        var scope = ReadReferenceName(owner, main, handle);
+        if (scope is Lookup<string>.Unreadable unreadable)
+        {
+            return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.Unreadable { Module = unreadable.Module };
+        }
+
+        var needed = scope is Lookup<string>.Found named
+            ? unread.FirstOrDefault(u => string.Equals(u.Name, named.Value, StringComparison.OrdinalIgnoreCase))
+            : unread[0];
         if (needed is null)
         {
-            return;
+            return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound();
         }
 
-        throw new InvalidOperationException($"The definition is in {needed.Name}, whose file {needed.Error.FilePath} could not be read.", needed.Error);
+        throw new DefinitionUnreadException($"The definition is in {needed.Name}, whose file {needed.Error.FilePath} could not be read.", needed.Error);
+    }
+
+    // The library's read of the name of the assembly or module handle points into, under its own catch: none when the
+    // handle names none directly; the owner unreadable, with why, when the library failed reading it.
+    private static Lookup<string> ReadReferenceName(LoadedModule owner, MetadataModule main, EntityHandle handle)
+    {
+        try
+        {
+            return Lookup.FromNullable(FindReferenceName(main.MetadataFile.Metadata, handle));
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new Lookup<string>.Unreadable { Module = new UnreadableModule { Module = owner, Why = e } };
+        }
     }
 
     // The assembly or module a reference handle points into, by the name the module references it by: OwnModule for the

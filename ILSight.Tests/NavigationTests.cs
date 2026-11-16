@@ -237,7 +237,7 @@ public sealed class NavigationTests
     }
 
     [Fact]
-    public async Task A_documentation_id_among_members_the_library_cannot_read_is_the_lookups_failure_saying_why()
+    public async Task A_documentation_id_among_members_the_library_cannot_read_names_the_module_unreadable_saying_why()
     {
         using var temp = new TempDir();
         var grow = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Circle", "Grow");
@@ -248,7 +248,25 @@ public sealed class NavigationTests
         var byId = await NodeLookup.FindByIdAsync(TestSession.Shared, "M:ILSight.Tests.Fixtures.Circle.Grow(System.Double,System.Int32)", [module],
             CancellationToken.None);
 
-        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(byId).Error);
+        // The library's failure on the user's module, read under the step's own catch: the module's, said as unreadable.
+        var unreadable = Assert.IsType<Lookup<BrowseNode>.Unreadable>(byId.GetValue());
+        Assert.Same(module, unreadable.Module.Module);
+        Assert.IsType<BadImageFormatException>(unreadable.Module.Why);
+    }
+
+    [Fact]
+    public async Task A_bug_in_the_apps_work_on_a_paths_way_goes_on_to_the_caller_never_the_lookups_failure()
+    {
+        var (list, assembly) = Trees.OpenTestAssembly();
+        var place = (await assembly.FixturesAsync()).Path;
+        var session = new BrowseSession();
+        var root = await BrowseSessions.EnsureRootAsync(session, assembly);
+        BrokenListing.Settle(session, root);
+
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() => NodeLookup.FindAsync(list, session, place, CancellationToken.None));
+        Assert.Equal(BrokenListing.Message, thrown.Message);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => NodeLookup.FindListedAsync(list, session, place, CancellationToken.None));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => NodeLookup.FindToExpandAsync(list, session, place, CancellationToken.None));
     }
 
     [Fact]

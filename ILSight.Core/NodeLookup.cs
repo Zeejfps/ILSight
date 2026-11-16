@@ -6,15 +6,19 @@ namespace ILSight.Core;
 
 /// <summary>The nodes of a <see cref="BrowseSession"/> that paths, references and documentation ids
 /// name, found through the files of an <see cref="AssemblyList"/>. May load files and build children:
-/// call it off the UI thread. Each answers unreadable for a module whose type system the library could not read where
-/// the lookup reads it, and what the library throws reading the modules as the lookup's
-/// <see cref="Outcome{T}.Failed"/>; the cancellation of the token it was given is let through.</summary>
+/// call it off the UI thread. Each walks one level at a time: each level's read of the library under its own catch
+/// (a file's load, a listing's children, a module's type system, the metadata a step reads), the node made and the next
+/// step chosen after it, on what was read. Each answers unreadable for a module the library failed reading on the way,
+/// the user's data's failure, said as the module's; a file on the way that can't be read as the lookup's
+/// <see cref="Outcome{T}.Failed"/> with its <see cref="AssemblyLoadException"/>, and children on the way that failed to
+/// build as that failure. No catch holds the app's own work on the way: what it throws goes on to the edge, a bug. The
+/// cancellation of the token it was given is let through.</summary>
 public static class NodeLookup
 {
     /// <summary>The node <paramref name="path"/> names, opening and listing its assembly if it is not
-    /// open and its file still exists, or the root of a file listed as failed. Not found if the file cannot be opened
-    /// or no longer has that node; the failure, with why, of children on the way that failed to build, never not found
-    /// for what they could hold.</summary>
+    /// open and its file still exists, or the root of a file listed as failed. Not found if the file no longer has that
+    /// node; the failure, with why, of a file there that can't be opened, or of children on the way that failed to
+    /// build, never not found for what they could hold.</summary>
     public static Task<Outcome<Lookup<BrowseNode>>> FindAsync(AssemblyList list, BrowseSession session, NodePath path, CancellationToken ct)
     {
         return FindOpeningAsync(list, session, path, static failed => failed, ct);
@@ -29,27 +33,27 @@ public static class NodeLookup
         return FindOpeningAsync(list, session, path, static _ => new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound()), ct);
     }
 
-    // placeFailed answers for children on the way that failed to build; what the library throws is the lookup's failure.
+    // placeFailed answers for children on the way that failed to build; a file that can't be opened is the lookup's
+    // failure.
     private static async Task<Outcome<Lookup<BrowseNode>>> FindOpeningAsync(AssemblyList list, BrowseSession session, NodePath path,
         Func<Outcome<Lookup<BrowseNode>>.Failed, Outcome<Lookup<BrowseNode>>> placeFailed, CancellationToken ct)
     {
-        Outcome<Lookup<BrowseNode>> found;
+        LoadedAssembly? item;
         try
         {
-            var item = AssemblyListing.OpenListed(list, path.FilePath);
-            found = item is null
-                ? new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound())
-                : await BrowseSessions.FindNodeAsync(session, item, path, ct);
+            item = AssemblyListing.OpenListed(list, path.FilePath);
         }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception e)
+        catch (AssemblyLoadException e)
         {
             return new Outcome<Lookup<BrowseNode>>.Failed(e);
         }
 
+        if (item is null)
+        {
+            return new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound());
+        }
+
+        var found = await BrowseSessions.FindNodeAsync(session, item, path, ct);
         return found is Outcome<Lookup<BrowseNode>>.Failed failed ? placeFailed(failed) : found;
     }
 
@@ -65,47 +69,41 @@ public static class NodeLookup
             return new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound());
         }
 
-        Outcome<Lookup<BrowseNode>> found;
-        try
-        {
-            found = await BrowseSessions.FindNodeAsync(session, item, path, ct);
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception e)
-        {
-            return new Outcome<Lookup<BrowseNode>>.Failed(e);
-        }
-
-        return found;
+        return await BrowseSessions.FindNodeAsync(session, item, path, ct);
     }
 
     /// <summary>The node <paramref name="reference"/> points at, opening and listing the assembly that
     /// defines it if it is not open yet and its file can be found. For an entity hidden from the tree,
     /// such as a compiler-generated one, the nearest visible ancestor. Not found if the reference cannot be
-    /// resolved; the failure, with why, of the children that would list it, never its ancestor nor not found.</summary>
+    /// resolved; the failure, with why, of a file resolving it needs that can't be read, or of the children that would
+    /// list it, never its ancestor nor not found.</summary>
     public static async Task<Outcome<Lookup<BrowseNode>>> FindAsync(AssemblyList list, BrowseSession session, CodeReference.Navigable reference,
         CancellationToken ct)
     {
         using var reading = LoadedAssemblies.BeginReading();
-        Outcome<Lookup<BrowseNode>> found;
+        var resolved = await ResolveAsync(list, reading, reference, ct);
+        return await resolved.Match(
+            ok => ok.Value.ThenTryFindAsync((target, c) => FindTargetAsync(session, reading, target.Assembly, target.Handle, c), ct),
+            static failed => Task.FromResult<Outcome<Lookup<BrowseNode>>>(new Outcome<Lookup<BrowseNode>>.Failed(failed.Error)));
+    }
+
+    // The listed assembly defining what reference points at, and its handle there; a file resolving it needs that
+    // can't be read, the lookup's failure. Each library read on the way is under its own catch (ResolveListedAsync).
+    private static async Task<Outcome<Lookup<(LoadedModule Assembly, EntityHandle Handle)>>> ResolveAsync(AssemblyList list, ModuleReading reading,
+        CodeReference.Navigable reference, CancellationToken ct)
+    {
         try
         {
-            var resolved = await AssemblyListing.ResolveListedAsync(list, reading, reference, ct);
-            found = await resolved.ThenTryFindAsync((target, c) => FindTargetAsync(session, reading, target.Assembly, target.Handle, c), ct);
+            return new Outcome<Lookup<(LoadedModule Assembly, EntityHandle Handle)>>.Ok(await AssemblyListing.ResolveListedAsync(list, reading, reference, ct));
         }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        catch (AssemblyLoadException e)
         {
-            throw;
+            return new Outcome<Lookup<(LoadedModule Assembly, EntityHandle Handle)>>.Failed(e);
         }
-        catch (Exception e)
+        catch (DefinitionUnreadException e)
         {
-            return new Outcome<Lookup<BrowseNode>>.Failed(e);
+            return new Outcome<Lookup<(LoadedModule Assembly, EntityHandle Handle)>>.Failed(e);
         }
-
-        return found;
     }
 
     private static async Task<Outcome<Lookup<BrowseNode>>> FindTargetAsync(BrowseSession session, ModuleReading reading, LoadedModule assembly,
@@ -126,35 +124,23 @@ public static class NodeLookup
     /// <summary>The metadata table row that defines what <paramref name="reference"/> points at: the row
     /// of a type or member, or an assembly's own row, opening and listing the assembly that defines it
     /// as <see cref="FindAsync(AssemblyList, BrowseSession, CodeReference.Navigable, CancellationToken)"/> does. Not
-    /// found if the reference cannot be resolved; the failure, with why, of the folders or tables that would list the
-    /// row.</summary>
+    /// found if the reference cannot be resolved; the failure, with why, of a file resolving it needs that can't be
+    /// read, or of the folders or tables that would list the row.</summary>
     public static async Task<Outcome<Lookup<MetadataTarget>>> FindMetadataRowAsync(AssemblyList list, BrowseSession session,
         CodeReference.Navigable reference, CancellationToken ct)
     {
         using var reading = LoadedAssemblies.BeginReading();
-        Outcome<Lookup<MetadataTarget>> found;
-        try
-        {
-            var resolved = await AssemblyListing.ResolveListedAsync(list, reading, reference, ct);
-            found = await resolved.ThenTryFindAsync((target, c) => BrowseSessions.FindMetadataRowAsync(session, reading, target.Assembly, target.Handle, c), ct);
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception e)
-        {
-            return new Outcome<Lookup<MetadataTarget>>.Failed(e);
-        }
-
-        return found;
+        var resolved = await ResolveAsync(list, reading, reference, ct);
+        return await resolved.Match(
+            ok => ok.Value.ThenTryFindAsync((target, c) => BrowseSessions.FindMetadataRowAsync(session, reading, target.Assembly, target.Handle, c), ct),
+            static failed => Task.FromResult<Outcome<Lookup<MetadataTarget>>>(new Outcome<Lookup<MetadataTarget>>.Failed(failed.Error)));
     }
 
     /// <summary>The node of the namespace, type or member <paramref name="idString"/> names, written as
     /// XML documentation ids are, such as <c>T:System.String</c>, in the first of <paramref name="assemblies"/>
     /// that defines it; not found when none does. When none of those read defines it and the library could not read
-    /// one of them, that one, the first, which may define it: unreadable, or <see cref="Outcome{T}.Failed"/> when the
-    /// library failed looking in it, or the children that would list it failed to build. One released (closed)
+    /// one of them, that one, the first, which may define it: unreadable, also when the library failed looking in it,
+    /// or <see cref="Outcome{T}.Failed"/> when the children that would list it failed to build. One released (closed)
     /// meanwhile is passed over.</summary>
     public static async Task<Outcome<Lookup<BrowseNode>>> FindByIdAsync(BrowseSession session, string idString, IEnumerable<LoadedModule> assemblies,
         CancellationToken ct)
@@ -165,7 +151,7 @@ public static class NodeLookup
         {
             var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
             var found = await read.Match(
-                r => FindByIdAsync(session, idString, assembly, r.TypeSystem.MainModule, ct),
+                r => BrowseSessions.FindByIdAsync(session, assembly, r.TypeSystem.MainModule, idString, ct),
                 u => Task.FromResult<Outcome<Lookup<BrowseNode>>>(new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromUnreadable<BrowseNode>(assembly, u))),
                 static _ => Task.FromResult<Outcome<Lookup<BrowseNode>>>(new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound())));
             if (found is Outcome<Lookup<BrowseNode>>.Ok { Value: Lookup<BrowseNode>.Found })
@@ -179,22 +165,5 @@ public static class NodeLookup
             }
         }
         return answer;
-    }
-
-    private static async Task<Outcome<Lookup<BrowseNode>>> FindByIdAsync(BrowseSession session, string idString, LoadedModule assembly,
-        MetadataModule main, CancellationToken ct)
-    {
-        try
-        {
-            return await BrowseSessions.FindByIdAsync(session, assembly, main, idString, ct);
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception e)
-        {
-            return new Outcome<Lookup<BrowseNode>>.Failed(e);
-        }
     }
 }

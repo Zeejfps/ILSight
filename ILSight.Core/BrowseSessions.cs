@@ -360,8 +360,8 @@ public static class BrowseSessions
 
     /// <summary>Where the type or member <paramref name="handle"/> defines in <paramref name="module"/> sits in the
     /// tree, whose type system read is <paramref name="main"/>'s: its node, none for one the tree does not list, or the
-    /// failure of the children that would list it. What the library throws reading the metadata on the way is let
-    /// through.</summary>
+    /// failure of the children that would list it; the module unreadable, with why, when the library failed reading its
+    /// metadata on the way (each read under its own catch, the next step chosen after it).</summary>
     internal static async Task<NodePlace> PlaceNodeAsync(BrowseSession session, LoadedModule module, MetadataModule main, EntityHandle handle,
         CancellationToken ct)
     {
@@ -401,22 +401,65 @@ public static class BrowseSessions
             return await PlaceOwnerAsync(session, module, main, handle, ct);
         }
 
-        var metadata = LoadedAssemblies.GetFile(module).Metadata;
-        var type = metadata.GetTypeDefinition((TypeDefinitionHandle)handle);
-        var declaringType = type.GetDeclaringType();
-        if (!declaringType.IsNil)
+        var parent = ReadTypeParent(module, (TypeDefinitionHandle)handle);
+        if (parent is not Lookup<TypeParent>.Found read)
+        {
+            return parent is Lookup<TypeParent>.Unreadable unreadable ? new NodePlace.Unreadable(unreadable.Module) : NodePlace.None;
+        }
+
+        // Chosen after the read, on what it read: a nested type sits under its owner, any other under its namespace.
+        if (read.Value.Namespace is null)
         {
             return await PlaceOwnerAsync(session, module, main, handle, ct);
         }
 
-        return await PlaceNamespaceAsync(session, module, metadata.GetString(type.Namespace), ct);
+        return await PlaceNamespaceAsync(session, module, read.Value.Namespace, ct);
+    }
+
+    // The library's read of the type's row, under its own catch: the namespace of a type nested in none, null for a
+    // nested one; the module unreadable, with why, when the library failed reading it (the user's data, said as the
+    // module's).
+    private static Lookup<TypeParent> ReadTypeParent(LoadedModule module, TypeDefinitionHandle handle)
+    {
+        try
+        {
+            var metadata = LoadedAssemblies.GetFile(module).Metadata;
+            var type = metadata.GetTypeDefinition(handle);
+            var declaringType = type.GetDeclaringType();
+            var ns = declaringType.IsNil ? metadata.GetString(type.Namespace) : null;
+            return new Lookup<TypeParent>.Found { Value = new TypeParent(ns) };
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new Lookup<TypeParent>.Unreadable { Module = new UnreadableModule { Module = module, Why = e } };
+        }
+    }
+
+    // What holds a type: its namespace, or null for a type nested in another.
+    private sealed record TypeParent(string? Namespace);
+
+    // The library's read of the entity holding handle (an accessor's property or event, a member's or nested type's
+    // type), under its own catch: none when nothing holds it; the module unreadable, with why, when the library failed
+    // reading it.
+    private static Lookup<EntityHandle> ReadOwner(LoadedModule module, MetadataModule main, EntityHandle handle)
+    {
+        try
+        {
+            var owner = LoadedAssemblies.FindOwner(main, handle);
+            return owner is null ? new Lookup<EntityHandle>.NotFound() : new Lookup<EntityHandle>.Found { Value = owner.Value };
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new Lookup<EntityHandle>.Unreadable { Module = new UnreadableModule { Module = module, Why = e } };
+        }
     }
 
     /// <summary>What a lookup of the one target <paramref name="handle"/> answers: its node, or the node of the nearest
     /// entity holding it that the tree lists, as a compiler-generated member is held by the type it is generated in
     /// (an ancestor stands in unsaid only for what the tree doesn't list by design); the failure, with why, of the
-    /// children that would list it or an entity on the way, never passed over for an ancestor nor not found; not found
-    /// when nothing on the way is listed. <paramref name="main"/> is the module's type system as read.</summary>
+    /// children that would list it or an entity on the way, never passed over for an ancestor nor not found; the module
+    /// unreadable, with why, when the library failed reading its metadata on the way; not found when nothing on the way
+    /// is listed. <paramref name="main"/> is the module's type system as read.</summary>
     internal static async Task<Outcome<Lookup<BrowseNode>>> FindOrAncestorAsync(BrowseSession session, LoadedModule module, MetadataModule main,
         EntityHandle handle, CancellationToken ct)
     {
@@ -430,30 +473,35 @@ public static class BrowseSessions
     internal static async Task<NodePlace> PlaceOrAncestorAsync(BrowseSession session, LoadedModule module, MetadataModule main, EntityHandle handle,
         CancellationToken ct)
     {
-        EntityHandle? current = handle;
-        while (current is not null)
+        var current = handle;
+        while (true)
         {
-            var place = await PlaceNodeAsync(session, module, main, current.Value, ct);
+            var place = await PlaceNodeAsync(session, module, main, current, ct);
             if (place is not NodePlace.NotListed)
             {
                 return place;
             }
 
-            current = LoadedAssemblies.FindOwner(main, current.Value);
+            var owner = ReadOwner(module, main, current);
+            if (owner is not Lookup<EntityHandle>.Found found)
+            {
+                return owner is Lookup<EntityHandle>.Unreadable unreadable ? new NodePlace.Unreadable(unreadable.Module) : NodePlace.None;
+            }
+
+            current = found.Value;
         }
-        return NodePlace.None;
     }
 
     private static async Task<NodePlace> PlaceOwnerAsync(BrowseSession session, LoadedModule module, MetadataModule main, EntityHandle handle,
         CancellationToken ct)
     {
-        var owner = LoadedAssemblies.FindOwner(main, handle);
-        if (owner is null)
+        var owner = ReadOwner(module, main, handle);
+        if (owner is not Lookup<EntityHandle>.Found found)
         {
-            return NodePlace.None;
+            return owner is Lookup<EntityHandle>.Unreadable unreadable ? new NodePlace.Unreadable(unreadable.Module) : NodePlace.None;
         }
 
-        return await PlaceNodeAsync(session, module, main, owner.Value, ct);
+        return await PlaceNodeAsync(session, module, main, found.Value, ct);
     }
 
     private static async Task<NodePlace> PlaceNamespaceAsync(BrowseSession session, LoadedModule module, string name, CancellationToken ct)
@@ -473,7 +521,8 @@ public static class BrowseSessions
     /// <paramref name="module"/>, whose type system read is <paramref name="main"/>'s, written as XML documentation ids
     /// are (<c>N:</c>, <c>T:</c>, <c>M:</c>, <c>P:</c>, <c>F:</c> or <c>E:</c> and the full name); not found when it
     /// defines none such, or the id cannot be read; the failure, with why, of the children that would list it, as
-    /// <see cref="FindOrAncestorAsync"/> answers it.</summary>
+    /// <see cref="FindOrAncestorAsync"/> answers it; the module unreadable, with why, when the library failed reading
+    /// it looking for the id.</summary>
     internal static async Task<Outcome<Lookup<BrowseNode>>> FindByIdAsync(BrowseSession session, LoadedModule module, MetadataModule main,
         string idString, CancellationToken ct)
     {
@@ -483,13 +532,31 @@ public static class BrowseSessions
             return place.ToLookup();
         }
 
-        var entity = LoadedAssemblies.FindDefinedEntity(main, idString);
-        if (entity is null)
+        var entity = ReadDefinedEntity(module, main, idString);
+        if (entity is not Lookup<EntityHandle>.Found found)
         {
-            return new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound());
+            return new Outcome<Lookup<BrowseNode>>.Ok(entity is Lookup<EntityHandle>.Unreadable unreadable
+                ? new Lookup<BrowseNode>.Unreadable { Module = unreadable.Module }
+                : new Lookup<BrowseNode>.NotFound());
         }
 
-        return await FindOrAncestorAsync(session, module, main, entity.MetadataToken, ct);
+        return await FindOrAncestorAsync(session, module, main, found.Value, ct);
+    }
+
+    // The library's read of the entity idString names that the module defines, under its own catch: its handle, none
+    // when it defines none such; the module unreadable, with why, when the library failed reading it (a member's name
+    // it can't read among those it compares).
+    private static Lookup<EntityHandle> ReadDefinedEntity(LoadedModule module, MetadataModule main, string idString)
+    {
+        try
+        {
+            var entity = LoadedAssemblies.FindDefinedEntity(main, idString);
+            return entity is null ? new Lookup<EntityHandle>.NotFound() : new Lookup<EntityHandle>.Found { Value = entity.MetadataToken };
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new Lookup<EntityHandle>.Unreadable { Module = new UnreadableModule { Module = module, Why = e } };
+        }
     }
 
     /// <summary>The row <paramref name="handle"/> names in <paramref name="module"/>'s own metadata
