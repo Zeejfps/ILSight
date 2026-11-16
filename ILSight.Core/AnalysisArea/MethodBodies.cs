@@ -130,27 +130,6 @@ internal static class MethodBodies
         }
     }
 
-    /// <summary>Whether <paramref name="match"/> accepts a token operand of <paramref name="body"/>, of
-    /// <paramref name="module"/>; a token it cannot resolve is not a match, and is noted in
-    /// <paramref name="passedOver"/>.</summary>
-    public static bool HasToken(MetadataFile module, MethodBodyBlock body, PassedOver passedOver, Func<ILOpCode, EntityHandle, bool> match)
-    {
-        return ListTokens(module, body, passedOver).Any(t => Matches(module, passedOver, match, t.OpCode, t.Token));
-    }
-
-    private static bool Matches(MetadataFile module, PassedOver passedOver, Func<ILOpCode, EntityHandle, bool> match, ILOpCode opCode, EntityHandle token)
-    {
-        try
-        {
-            return match(opCode, token);
-        }
-        catch (BadImageFormatException e)
-        {
-            passedOver.Note(module, e);
-            return false;
-        }
-    }
-
     private static BlobReader? ReadIL(MetadataFile module, MethodBodyBlock body, PassedOver passedOver)
     {
         try

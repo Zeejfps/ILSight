@@ -1,5 +1,6 @@
 using ICSharpCode.Decompiler.TypeSystem;
 using System.Collections.Concurrent;
+using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using ILSight.Core;
 using ILSight.Core.AnalysisArea;
@@ -257,5 +258,23 @@ public sealed class AnalysisTests
         Assert.Contains(listed, static c => c.Text == "Describe() : string");
         Assert.Same(add.Analysis, add.Analysis);
         Assert.NotEmpty(Assert.IsType<AnalysisSymbol>(add.Analysis).Kinds);
+    }
+
+    [Fact]
+    public async Task An_enum_in_an_attribute_whose_underlying_type_is_unknown_is_bad_data_said_outside_the_decoders_count()
+    {
+        var read = await LoadedAssemblies.ReadTypeSystemAheadAsync(Trees.TestAssembly, CancellationToken.None);
+        var main = Assert.IsType<TypeSystemRead.Read>(read).TypeSystem.MainModule;
+        var file = main.MetadataFile;
+        var callbacks = new CallbackFailure();
+        var decoder = new FindTypeInAttributeDecoder
+        {
+            DeclaringModule = file, DeclaringMetadata = file.Metadata, CurrentModule = main, CurrentFile = file, Handle = default, PrimitiveType = 0,
+            PassedOver = new PassedOver(), Callbacks = callbacks,
+        };
+
+        Assert.Throws<ICSharpCode.Decompiler.Metadata.EnumUnderlyingTypeResolveException>(() => decoder.GetUnderlyingEnumType(TokenSearchResult.NoResult));
+        Assert.False(callbacks.Failed);
+        Assert.Equal(PrimitiveTypeCode.Int32, decoder.GetUnderlyingEnumType((TokenSearchResult)PrimitiveTypeCode.Int32));
     }
 }
