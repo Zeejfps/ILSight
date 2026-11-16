@@ -30,7 +30,7 @@ namespace ILSight.Core.Metadata
             return Header("Optional Header", module, () => OptionalEntries(module));
         }
 
-        static GridSchema<Entry> Header(string key, PEFile module, Func<IEnumerable<Entry>> rows)
+        static GridSchema<Entry> Header(string key, PEFile module, RowsRead<Entry> rows)
 		{
 		    return GridSchemas.AddColumns(GridSchemas.CreateGrid<Entry>(key, module, rows), columns =>
 			{

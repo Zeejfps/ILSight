@@ -128,7 +128,7 @@ public sealed class WebCilTests
         var columns = table.Columns.Select(static c => c.Column.Name == "Name"
             ? c with { FormatValue = static _ => throw new InvalidOperationException("The app's bug.") }
             : c).ToList();
-        GridSchema SchemaReading(Func<IReadOnlyList<object>> rows)
+        GridSchema SchemaReading(GridRowsRead rows)
         {
             return new GridSchema<object> { Key = table.Key, Table = table.Table, File = file, ReadRows = rows, Columns = columns };
         }

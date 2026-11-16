@@ -15,7 +15,7 @@ public class GridSchema
     public required TableIndex? Table { get; init; }
 
     /// <summary>Reads every row, in order.</summary>
-    public required Func<IReadOnlyList<object>> ReadRows { get; init; }
+    public required GridRowsRead ReadRows { get; init; }
 
     public required IReadOnlyList<GridColumn> Columns { get; init; }
 
@@ -24,7 +24,7 @@ public class GridSchema
 
     /// <summary>The read half of what is shown under a selected row, for a grid that shows something: what it reads of
     /// the row through the library, its facts, inside the row's catch; null when the row has nothing to show.</summary>
-    internal Func<object, object?>? Details { get; init; }
+    internal GridDetailsRead? Details { get; init; }
 
     /// <summary>The format half of what is shown under a selected row: the facts <see cref="Details"/> read made into
     /// it by the app's rules, after the read's outermost catch, so a bug in it is no unreadable row.</summary>

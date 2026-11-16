@@ -27,7 +27,6 @@ public static class MetadataGrids
         CancellationToken ct)
     {
         IReadOnlyList<object> rows;
-#pragma warning disable RL0902 // The schema's rows delegate (unseen by RL0902) reads the user's tables, headers and directories through System.Reflection.Metadata's MetadataReader and PEReader and ICSharpCode.Decompiler's MetadataFile (all listed): its failure is the grid's.
         try
         {
             rows = schema.ReadRows();
@@ -40,7 +39,6 @@ public static class MetadataGrids
         {
             return new Outcome<MetadataGrid>.Failed(e);
         }
-#pragma warning restore RL0902
 
         var columns = schema.Columns;
         var shown = columns.Select(static c => c.Column).ToArray();
@@ -309,7 +307,6 @@ public static class MetadataGrids
             return null;
         }
 
-#pragma warning disable RL0902 // The schema's read half (unseen by RL0902) reads the row's blob through System.Reflection.Metadata's MetadataReader and BlobReader (listed): its failure is the row's.
         try
         {
             return details(grid.Rows[row]);
@@ -318,7 +315,6 @@ public static class MetadataGrids
         {
             return new MetadataRowDetails.Failed { Reason = e.Message, Error = e };
         }
-#pragma warning restore RL0902
     }
 
     /// <summary>The app's rules over what a row's details read (<see cref="ReadDetails"/>), after the read's outermost
@@ -419,7 +415,6 @@ public static class MetadataGrids
             return null;
         }
 
-#pragma warning disable RL0902 // The column's tooltip delegate (unseen by RL0902) reads the cell's heaps and blobs through System.Reflection.Metadata (listed), and decodes signatures with ICSharpCode.Decompiler's (listed): its failure is the cell's.
         try
         {
             return info.Tooltip(grid.Rows[row], row + 1);
@@ -428,7 +423,6 @@ public static class MetadataGrids
         {
             return new MetadataCellFailure { Reason = e.Message, Error = e };
         }
-#pragma warning restore RL0902
     }
 
     // The app's rules over what the cell's tooltip read, after the read's outermost catch: a read that failed says why,
@@ -686,7 +680,6 @@ public static class MetadataGrids
     private static object? ReadCell(MetadataGrid grid, int row, int column)
     {
         var info = grid.GridColumns[column];
-#pragma warning disable RL0902 // The column's delegate (unseen by RL0902) reads the cell through System.Reflection.Metadata's MetadataReader, its heaps and PEReader's headers (listed): its failure is the cell's.
         try
         {
             return info.Value(grid.Rows[row], row + 1);
@@ -695,7 +688,6 @@ public static class MetadataGrids
         {
             return new MetadataCellFailure { Reason = e.Message, Error = e };
         }
-#pragma warning restore RL0902
     }
 
     // The format half of a cell's value, after the read's outermost catch (a paged grid's page's included): what was

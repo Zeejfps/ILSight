@@ -9,7 +9,7 @@ public sealed class GridSchemaBuilder<TRow>
 {
     private readonly List<GridColumn> _columns = [];
     private int _nameColumn = -1;
-    private Func<object, object?>? _details;
+    private GridDetailsRead? _details;
     private Func<object, MetadataRowDetails?>? _formatDetails;
 
     /// <summary>What names the kind of rows, the same for a table in any assembly.</summary>
@@ -21,7 +21,7 @@ public sealed class GridSchemaBuilder<TRow>
     public required MetadataFile File { get; init; }
 
     /// <summary>Reads every row, in order.</summary>
-    public required Func<IReadOnlyList<object>> ReadRows { get; init; }
+    public required GridRowsRead ReadRows { get; init; }
 
     public void AddColumn(GridColumn column)
     {
@@ -36,7 +36,7 @@ public sealed class GridSchemaBuilder<TRow>
 
     /// <summary>Takes what <paramref name="read"/> reads of a row, made by <paramref name="format"/> after the read's
     /// catch, as what is shown under a selected row.</summary>
-    public void KeepDetails(Func<object, object?> read, Func<object, MetadataRowDetails?> format)
+    public void KeepDetails(GridDetailsRead read, Func<object, MetadataRowDetails?> format)
     {
         _details = read;
         _formatDetails = format;

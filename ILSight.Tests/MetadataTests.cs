@@ -137,7 +137,7 @@ public sealed class MetadataTests
 
     // The test assembly's MemberRef table, paged, its columns as given and its rows' details read and made as given.
     private static MetadataGrid.Paged MemberRefGrid(Func<IReadOnlyList<GridColumn>, IReadOnlyList<GridColumn>> columnsOf,
-        Func<object, object?>? readDetails, Func<object, MetadataRowDetails?>? makeDetails)
+        GridDetailsRead? readDetails, Func<object, MetadataRowDetails?>? makeDetails)
     {
         var opened = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath);
         var module = Assert.IsType<LoadedModule>(opened);
@@ -158,7 +158,7 @@ public sealed class MetadataTests
     }
 
     // The test assembly's MemberRef table, paged, its Name column's tooltip read and made as given.
-    private static MetadataGrid.Paged MemberRefGridWithNameTooltip(Func<object, int, object?> read, Func<object, MetadataTooltip?>? make)
+    private static MetadataGrid.Paged MemberRefGridWithNameTooltip(GridCellRead read, Func<object, MetadataTooltip?>? make)
     {
         var opened = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath);
         var module = Assert.IsType<LoadedModule>(opened);
