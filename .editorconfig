@@ -21,7 +21,12 @@ rulelab.template_types = ILSight.Strings
 # only when the app's own code threw (its callbacks into the read: CallbackFailure) or outside the read. Reading
 # damaged, obfuscated or unusual files is what ILSight is for, and their failures are what the user came to see, not
 # ILSight's bugs to report.
-rulelab.untrusted_libraries = ICSharpCode.Decompiler, ICSharpCode.BamlDecompiler, PngSharp, JpegSharp, ZGF.Svg
+# System.Reflection.Metadata and System.Reflection.PortableExecutable are listed by what they do with the user's data
+# (CE3), not by the package named: ILSight reads the user's metadata with them directly (MetadataReader's tables and
+# heaps, GetBlobReader, PEReader's headers). Its own decoders walking a blob over BlobReader's primitives
+# (CustomDebugInformationTable, MethodBodies.TryReadToken, ForwardedTypes) are the app's: the blob located inside the
+# read, the format walked after it, catching only what the primitives and the decoder throw on bad data.
+rulelab.untrusted_libraries = ICSharpCode.Decompiler, ICSharpCode.BamlDecompiler, PngSharp, JpegSharp, ZGF.Svg, System.Reflection.Metadata, System.Reflection.PortableExecutable
 
 # R007: braces and block bodies; one-liners only for getters, accessors and lambdas.
 csharp_prefer_braces = true:error

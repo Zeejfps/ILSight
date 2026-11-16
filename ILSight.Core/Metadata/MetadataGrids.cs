@@ -27,7 +27,7 @@ public static class MetadataGrids
         CancellationToken ct)
     {
         IReadOnlyList<object> rows;
-#pragma warning disable RL0902 // The schema's rows delegate reads ICSharpCode.Decompiler's metadata (a listed untrusted library): its failure is the grid's.
+#pragma warning disable RL0902 // The schema's rows delegate (unseen by RL0902) reads the user's tables, headers and directories through System.Reflection.Metadata's MetadataReader and PEReader and ICSharpCode.Decompiler's MetadataFile (all listed): its failure is the grid's.
         try
         {
             rows = schema.ReadRows();
@@ -309,7 +309,7 @@ public static class MetadataGrids
             return null;
         }
 
-#pragma warning disable RL0902 // The schema's read half reads ICSharpCode.Decompiler's metadata (a listed untrusted library): its failure is the row's.
+#pragma warning disable RL0902 // The schema's read half (unseen by RL0902) reads the row's blob through System.Reflection.Metadata's MetadataReader and BlobReader (listed): its failure is the row's.
         try
         {
             return details(grid.Rows[row]);
@@ -419,7 +419,7 @@ public static class MetadataGrids
             return null;
         }
 
-#pragma warning disable RL0902 // The column's tooltip delegate reads ICSharpCode.Decompiler's metadata (a listed untrusted library): its failure is the cell's.
+#pragma warning disable RL0902 // The column's tooltip delegate (unseen by RL0902) reads the cell's heaps and blobs through System.Reflection.Metadata (listed), and decodes signatures with ICSharpCode.Decompiler's (listed): its failure is the cell's.
         try
         {
             return info.Tooltip(grid.Rows[row], row + 1);
@@ -686,7 +686,7 @@ public static class MetadataGrids
     private static object? ReadCell(MetadataGrid grid, int row, int column)
     {
         var info = grid.GridColumns[column];
-#pragma warning disable RL0902 // The column's delegate reads ICSharpCode.Decompiler's metadata (a listed untrusted library): its failure is the cell's.
+#pragma warning disable RL0902 // The column's delegate (unseen by RL0902) reads the cell through System.Reflection.Metadata's MetadataReader, its heaps and PEReader's headers (listed): its failure is the cell's.
         try
         {
             return info.Value(grid.Rows[row], row + 1);
