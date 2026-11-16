@@ -240,23 +240,28 @@ settings, builds a session, calls three of the root's functions) is a second com
 copies (Scope: tests drive what the app runs; R004 S20). Other edges don't build the app: they receive what they call
 from the root (an endpoint its handler, a command the use cases on the state it is handed; R001 "Lifetime decides who
 builds"), and focused tests keep their seams (a use case with a fake port, domain code directly: R004 "Testing at the
-seams"). **Starting is an entry point too.** The work the app starts as it runs (the inputs waiting for it, the reads
-its start recorded, the loop that takes later inputs) is the start of one app loop the root builds, an instance whose
-calls before and after each draw are the frame's (R004 "grouped by what"): a window's startup hook calls its start after
-its window-only setup (fonts, an icon), the window's frame its frame calls, and every host that runs the whole app
-without a window calls the same. Not a copy of the start's steps in a test host (a step added later is missing there,
-and an order broken in the app passes the copy's test), and not started by the root as it builds: building starts
-nothing, so a focused test has the state without its work, and the start runs once the host's context is in place (work
-started before a window's loop installs its context continues off it). In testing (S39, an app whose start takes the
-waiting inputs, then starts the saved list's reads and the input loop), a test host copying the start (ILSight's) missed
-a step added later (its test failed while the app was right) and passed a broken order while the app read the saved
-list's 2 files for nothing; one start entry point kept the test host's 3 tests seeing what the app does through both
-changes, the break failing its test; the root starting as it builds gave a focused test 2 workflows and 2 reads it
-didn't ask for, and ran 0 of 2 of the window's continuations in its UI context. In testing (R001 S34, a new run deciding
-where its arguments go: take the role, stand by for a new window, hand them over, stand by when the running app doesn't
-answer), the decision in the edge, and in ordinary code taking each answer from the edge (ILSight's), was reached only
-through real I/O: its 4 cases needed 3 OS objects and 318 ms, the hand-over timeout included; as a use case over a port,
-the 4 cases and what each sent were checked with a fake in about a millisecond, and the adapter once against the OS.
+seams"). **Starting is an entry point too.** Where the app has a lifecycle of its own (a start, frames, a stop), the
+work it starts as it runs (the inputs waiting for it, the reads its start recorded, the loop that takes later inputs) is
+the start of one lifecycle owner the root builds, an instance every host running that lifecycle calls: hosts running the
+same lifecycle call the same production orchestration, feature work stays with its feature (R004 "grouped by what"), and
+setup only one host needs stays in that host. In a frame-driven app the owner is the app loop, whose calls before and
+after each draw are the frame's: a window's startup hook calls its start after its window-only setup (fonts, an icon),
+the window's frame its frame calls, and every host that runs the whole app without a window calls the same. A service's
+owner has its start and stop, a command-line tool's its one run; a library, or an app whose framework owns each request
+and nothing more, has none, and each edge receives what it calls. Not a copy of the start's steps in a test host (a step
+added later is missing there, and an order broken in the app passes the copy's test), and not started by the root as it
+builds: building starts nothing, so a focused test has the state without its work, and the start runs once the host's
+context is in place (work started before a window's loop installs its context continues off it). In testing (S39, an app
+whose start takes the waiting inputs, then starts the saved list's reads and the input loop), a test host copying the
+start (ILSight's) missed a step added later (its test failed while the app was right) and passed a broken order while
+the app read the saved list's 2 files for nothing; one start entry point kept the test host's 3 tests seeing what the
+app does through both changes, the break failing its test; the root starting as it builds gave a focused test 2
+workflows and 2 reads it didn't ask for, and ran 0 of 2 of the window's continuations in its UI context. In testing
+(R001 S34, a new run deciding where its arguments go: take the role, stand by for a new window, hand them over, stand by
+when the running app doesn't answer), the decision in the edge, and in ordinary code taking each answer from the edge
+(ILSight's), was reached only through real I/O: its 4 cases needed 3 OS objects and 318 ms, the hand-over timeout
+included; as a use case over a port, the 4 cases and what each sent were checked with a fake in about a millisecond, and
+the adapter once against the OS.
 
 The framework also meets the app through **state it reads or writes directly**: fields a widget binds by `ref`,
 properties a serializer or binder sets, members it calls in its own order. That state is shaped as the framework
@@ -272,7 +277,7 @@ The build checks what can be checked mechanically (`analyzers/`, wired in throug
 | R003 | missing `Async` (RL0301), `Find*` not `T?` or a union with a not-found case, itself or one level in (`Outcome<Lookup<T>>`) (RL0302), `Get*` returning `T?` (RL0303), `Is*`... not `bool` (RL0304), `Load*` / `Fetch*` (RL0305); suggestions while measured: a `bool` method named as an action (RL0306: also `bool CloseTab`, `bool Set`), a method returning -1 (not beside a sequence's count or a literal 1), a `char`'s `'\0'` or `default` of a struct that names or asks for its empty value, comparisons and `Get*OrDefault` aside (RL0307), a method whose name starts with a verb that only says it reacts (`Follow`, `Handle`, `Process`, `Manage`, `Update`, `Sync`, `React`), a use case's one `HandleAsync` and a word the method's own types name aside (RL0308), a call of the codebase's own written as an argument or an interpolated hole whose name starts with an action verb or only a moment (`AfterDraw`), receivers and `Task.WhenAll`'s tasks aside (RL0309) | whether a name is a verb; a call made for its effect under a verb RL0309 doesn't list, or a library's (`Task.Run`, `Queue.Dequeue`), in an argument; whether a name says the method's effect (a verb not on RL0308's list: `Refresh`, `Apply`);  choosing the right pattern; sentinels that come from elsewhere (`Array.IndexOf`, `FirstOrDefault`) or travel through the codebase's own parameters and fields (-1 for "no row"); a `TrySet` that should count changes; a placeholder returned to fill a generic `T` |
 | R007 | braces and block bodies (`.editorconfig`), target-typed `new()` (RL0701), two statements on one line (RL0702), `var` for locals (IDE0007) | – |
 | R008 | `switch` on a union (RL0801; the union's own code, and a `Match` / `Switch` extension method of it, written once for a union the code can't change, excepted), discarded `To*`/`With*` results (RL0802), `if` / `else if` chain over union cases (RL0803), discarded result union (RL0804), a `Status` / `State` / `Kind` enum next to nullable properties (RL0805; rows, saved forms and wire shapes named for their role are skipped: `*Row`, `*Record`, `*Dto`, `*Json`, `*Request`, `*Response`), a case added from outside a union (RL0806); each of them for a union another project declares too (seen through its reference assembly, which keeps no private constructor); suggestion while measured: a dropped value of a type marked `[MustUse]`, a `Task<T>` of one taken as a plain `Task` included (RL0807) | whether nullable fields really depend on the status; whether a question every case answers or only some (and whether a default is harmless for a future case); whether a union with no `Match` really can't be changed (else its `Match` goes on it); which types leave state stuck when dropped (the marker is put by hand); a value passed to code that ignores it; whether a value carrying several kinds of work makes its consumer handle each (a handler per kind); RL0807 at error (`dotnet_diagnostic.RL0807.severity = error`) where a drop must fail the build |
-| R004 | vague type names (RL0401); suggestions while measured: a public field or collection the type changes in its own methods (a collection it was handed to write into included), unless a widget binds it by `ref` (RL0403); a public field or auto-property only other types' code writes, on a type with instance methods of its own (RL0404); a type with no methods of its own whose exposed mutable members one other type changes, two or more of them, what the writer holds privately, edges and rows aside, conditional: suppressed with the reason where no rule ties the values, as a root's plain settings (RL0405); a static class whose functions write members of a type of the compilation themselves, through a parameter: two or more of them, a function changing it through another of the class's that writes it, or a lone one that reads what it writes or sets two members (fields and auto-properties: a setter with a body is the type's method; a call to the type's own methods is orchestration), extension methods included, draws, edges, structs, rows named for their role, fields a framework binds by `ref` and the class's own nested shapes skipped (RL0406); a lock that is a member of another type in source taken (`lock`, `Monitor`, `Lock`, `SemaphoreSlim`, `ReaderWriterLockSlim`), or a type's event handed out as its delegate by a member others can call (RL0407); a get-only member whose body only reads a member of a part the same type hands out, explicit interface implementations, overrides and `[Obsolete]` ones aside (RL0408); a settable field or auto-property of a type holding parts, used (read, written or bound by `ref`) by one other type alone, the whole's own code, its view (a type using another loose value of it), its maker and a feature's own state type (no other type using a member of it the one type doesn't, a save's reads included) aside, conditional: suppressed with the reason for state shared on purpose or a published member (RL0409); a static class whose name's last word is a moment of the app's life (`Start`, `Startup`, `Shutdown`, `Frame(s)`, `Exit`, `Teardown`, `Boot`, `Init`) and whose functions take two or more of the compilation's own types, tests aside (RL0410); a type whose name's last word is a verb's -ing form not on the list of nouns, union cases, static classes and tests aside (RL0411) | whether a type is an agent or one run (which noun), and an -ing word RL0411's list misjudges; whether a class is grouped by what its code works on or by when it runs where its name doesn't say a moment (a `Chores`, a `Loop` holding the chores themselves), and whether functions keep taking the same collaborators;  classification; a project's own lock wrapper handed out (RL0407 sees only the framework's locks); one-implementation interfaces (an analyzer can't see across projects); framework-facing data mixed with rules kept elsewhere; something depending on a framework-facing method having run; whether use cases share a step (one class) or not (a class each); where a helper with no port lives (the compiler keeps a rule's type private once it's there: CS0122); whether a rule's type holds every part the rule spans, a setting included, and names the changes it exempts; which changes its rule covers (read from the domain contract, every kind it covers included, not from whether a user asked for the transition), and whether each covered transition is handled alike for every kind, restoration and late results included; where its parts end (what a caller could break the rule through, in what it hands out, a change landing late included, checked again against the prerequisite's pending, completed or removed state, which the domain rule reads); whether per-object state is held where only the holder reaches it; whether what the rule keeps about a place is a value; duplicate execution paths only tests use, and internal members confirmed dead (another project's calls; external contracts stay); a root's test hook that hands out its parts for the test to build an adapter, instead of handing the test the adapter it built; whether an input that arrives at more than one moment has one handler, its first copy fed through it once the handler's prerequisites are in place and before anything accepting later copies opens; a rule kept by another type's functions through a setter with a body or a method it calls; whether static code is owned by nothing (a pure function, a parse, a type the code doesn't own, a static a framework requires, P/Invoke) or orchestration through objects' own public operations, or writes an object's state itself where RL0406 doesn't count it (a collection reached through the object, its `Add`; a lone plain store a rule covers); a forwarder on a whole for a part's member, and the readers it keeps on the whole; whether a rule ties the parts a change spans (the smallest type holding all it constrains, or orchestration over them), and whether anything but the type reaches that state (a framework's widget handed it by the type); state one feature owns together left as separate parts, or a bundle carrying what the caller didn't mean to pass; a rule's code in another type's functions the owner forwards its parts to; a test reaching a rule's state where the framework it plays never does (where the owner's check compares the state around the framework's call), and a hook only tests call between an owner's steps where the state it leaves could be built; feature state's intended owner and lifetime, and whether it sits on a value other features share, and whether one user is its owner (RL0409 sees one user in the compilation) |
+| R004 | vague type names (RL0401); suggestions while measured: a public field or collection the type changes in its own methods (a collection it was handed to write into included), unless a widget binds it by `ref` (RL0403); a public field or auto-property only other types' code writes, on a type with instance methods of its own (RL0404); a type with no methods of its own whose exposed mutable members one other type changes, two or more of them, what the writer holds privately, edges and rows aside, conditional: suppressed with the reason where no rule ties the values, as a root's plain settings (RL0405); a static class whose functions write members of a type of the compilation themselves, through a parameter: two or more of them, a function changing it through another of the class's that writes it, or a lone one that reads what it writes or sets two members (fields and auto-properties: a setter with a body is the type's method; a call to the type's own methods is orchestration), extension methods included, draws, edges, structs, rows named for their role, fields a framework binds by `ref` and the class's own nested shapes skipped (RL0406); a lock that is a member of another type in source taken (`lock`, `Monitor`, `Lock`, `SemaphoreSlim`, `ReaderWriterLockSlim`), or a type's event handed out as its delegate by a member others can call (RL0407); a get-only member whose body only reads a member of a part the same type hands out, explicit interface implementations, overrides and `[Obsolete]` ones aside (RL0408); a settable field or auto-property of a type holding parts, used (read, written or bound by `ref`) by one other type alone, the whole's own code, its view (a type using another loose value of it), its maker and a feature's own state type (no other type using a member of it the one type doesn't, a save's reads included) aside, conditional: suppressed with the reason for state shared on purpose or a published member (RL0409); a static class whose name's last word is a moment of the app's life (`Start`, `Startup`, `Shutdown`, `Frame(s)`, `Exit`, `Teardown`, `Boot`, `Init`) and whose functions take two or more of the compilation's own objects (classes, interfaces), tests aside: a sign, a cohesive calculation suppressed with the reason (RL0410); a type whose name's last word is a verb's -ing form not on the list of nouns (a word also a noun read as the activity on a class or interface: a genuine noun suppressed with the reason), union cases, static classes and tests aside (RL0411) | whether a type is an agent or one run (which noun), and an -ing word RL0411's list misjudges; whether a class is grouped by what its code works on or by when it runs where its name doesn't say a moment (a `Chores`, a `Loop` holding the chores themselves), and whether functions keep taking the same collaborators;  classification; a project's own lock wrapper handed out (RL0407 sees only the framework's locks); one-implementation interfaces (an analyzer can't see across projects); framework-facing data mixed with rules kept elsewhere; something depending on a framework-facing method having run; whether use cases share a step (one class) or not (a class each); where a helper with no port lives (the compiler keeps a rule's type private once it's there: CS0122); whether a rule's type holds every part the rule spans, a setting included, and names the changes it exempts; which changes its rule covers (read from the domain contract, every kind it covers included, not from whether a user asked for the transition), and whether each covered transition is handled alike for every kind, restoration and late results included; where its parts end (what a caller could break the rule through, in what it hands out, a change landing late included, checked again against the prerequisite's pending, completed or removed state, which the domain rule reads); whether per-object state is held where only the holder reaches it; whether what the rule keeps about a place is a value; duplicate execution paths only tests use, and internal members confirmed dead (another project's calls; external contracts stay); a root's test hook that hands out its parts for the test to build an adapter, instead of handing the test the adapter it built; whether an input that arrives at more than one moment has one handler, its first copy fed through it once the handler's prerequisites are in place and before anything accepting later copies opens; a rule kept by another type's functions through a setter with a body or a method it calls; whether static code is owned by nothing (a pure function, a parse, a type the code doesn't own, a static a framework requires, P/Invoke) or orchestration through objects' own public operations, or writes an object's state itself where RL0406 doesn't count it (a collection reached through the object, its `Add`; a lone plain store a rule covers); a forwarder on a whole for a part's member, and the readers it keeps on the whole; whether a rule ties the parts a change spans (the smallest type holding all it constrains, or orchestration over them), and whether anything but the type reaches that state (a framework's widget handed it by the type); state one feature owns together left as separate parts, or a bundle carrying what the caller didn't mean to pass; a rule's code in another type's functions the owner forwards its parts to; a test reaching a rule's state where the framework it plays never does (where the owner's check compares the state around the framework's call), and a hook only tests call between an owner's steps where the state it leaves could be built; feature state's intended owner and lifetime, and whether it sits on a value other features share, and whether one user is its owner (RL0409 sees one user in the compilation) |
 | R005 | positional records with 2+ values (RL0501); suggestion while measured: a value passed by position to a method generated from a text template with two or more parameters of one type (RL0502; on a type listed in `rulelab.template_types`) | rules spanning several values; which hand-written signatures' order callers can swap |
 | R001 | direct time / randomness / I/O, and the codebase's own services listed in `rulelab.ambient_types` (static, or reached through an object passed in), outside adapters (and types only adapters or listed services use: I/O code they share), the composition root, tests and edge code (`[Edge]` types, `rulelab.infrastructure` folders) (RL0101); a static class whose functions take the same port (RL0103); a port member whose signature is, or holds, infrastructure or a listed service, through a union's cases too (RL0105); suggestions while measured: a use case or adapter constructed outside the composition root (RL0102), another use case reached around the port: its port taken as a parameter or extended, or a constructor taking code or state beside its port, configured values set once aside (RL0104), ordinary code taking an answer from a member of an `[Edge]` type: a call's value, a property, indexer or field read; adapters and listed services aside (RL0106), a `WaitAsync` cutting short a wait on a task whose result is disposable, made by a call or held by a local (RL0107; a task a field or property holds is an object's, whose release is review's) | an effect reached through an unlisted method of an object passed in; another feature's use case called as a static function over the state; a decision inside I/O code adapters share; pure code that differs per kind injected or passed per call instead of on the kind (a closed set; an open one chosen at run time, such as plugins, is a strategy interface); whether a library object kept against a handle holds a resource its owner must release when the handle goes, and whether that release waits for every read of it (a lease per read, new reads refused once it is closed, a cache that keeps another item's object leasing it at each use; an object holding only memory never disposed), is done once on the thread its API requires, and is awaited by a close whose completion contract needs the resource free; whether a table a view shows a window of, whose reads reach a file, is paged whatever its size (its first window read with its content, sized by the window the screen last laid out, else the tallest it can show, with any sample the first show measures), not read whole under a threshold; whether a view of a closed item still asks for reads; whether a record of functions is standing in for a port; whether a function takes the whole state (and narrowing it bottom-up); a settings pass setting values on live objects; what lives per document or request; a decision that relied on an object's identity once the port passes values (a key's hand-written `Equals` without `GetHashCode` is CS8851); ports, adapters, what counts as a decision (would a second adapter of the port repeat the branch?); a caller converted before its callee (passes the state on, no port member carrying it); whole-state work called outside an edge; which of a library's types are I/O code another project's adapters use, or read past memory as the app makes them (listed by hand: one compilation sees no other project's uses, no library says which of its members read, and a type made both ways, as an image in memory and a mapped file, can't be listed); whether a value read after a wait is read from its owner; whether the content decides what else to read (the kind says what it names); a function that takes the state only to reach a use case; a context typed by the whole state outside the root view (steps that only hand parts) and the edge, a parameter object's inputs and whether it holds owners or values (the operation's contract; whether a request's parts agree with what its choices were made from as asked, and whether a contract the one asking could take otherwise is said to them), and a dispatch's guard written on each entry or its exceptions set apart by position alone; a decision inside an edge (R001's checks are off there; a second edge for the same input would repeat the branch), work an edge's void member does for ordinary code, an edge that assembles the root's steps itself, and a host that copies the app's start or a root that starts work as it builds; whether what a read made is released on every way it ends before a receiver takes it (a cancellation seen after it finished, a stale answer), a result holding a resource in a field included, and whether a wait cut short leaves the read to an owner that tracks it |
 | R006 | suggestion while measured: a parse's failures dropped by `OfType<T>()`: a union's failure cases left out, or the nulls of a parse (`Parse*`, `Decode*`, `Deserialize*`, `TryRead*`, ...) a `Select` ran (RL0601) | all, including whether an input is read all-or-nothing or leniently; whether configuration's outcomes (missing, read, unreadable) are kept apart and what a missing (optional or required) or unreadable one means is a policy chosen in one place; a parse's failure dropped by other means (`Where(x => x is not null)`, a `continue`) |
@@ -1060,7 +1065,7 @@ outside the composition root.
 - [ ] Effects reached through an object passed in (a method that reads the disk, runs work, reports an error) are on the port; plain data and pure methods on it are used directly.
 - [ ] Another use case is reached through a member of this one's port, and the adapter calls it; never its port, its effects, or the use case itself beside the port.
 - [ ] Only the composition root, an edge (`[Edge]`), constructs use cases and adapters; a test that builds the application builds it through it.
-- [ ] Edges stay thin: they translate, start work and catch; a branch on what the world or the state answered is a use case over a port (the edge's I/O its adapter) or pure code; ordinary code hands an edge work but takes no answer from one (a call's value, a property, indexer or field read). Startup and the test hosts that run the whole app build it through one entry point of the root's and run it through one app loop the root builds (its start, and its calls before and after each draw: a window's hooks call them after its own setup; building starts nothing); other edges receive what they call; focused tests keep their seams. An adapter's I/O may go through an edge.
+- [ ] Edges stay thin: they translate, start work and catch; a branch on what the world or the state answered is a use case over a port (the edge's I/O its adapter) or pure code; ordinary code hands an edge work but takes no answer from one (a call's value, a property, indexer or field read). Startup and the test hosts that run the whole app build it through one entry point of the root's and, where the app has a lifecycle, call one lifecycle owner the root builds (in a frame-driven app the app loop: its start, and its calls before and after each draw, a window's hooks calling them after its own setup), host-only setup kept in its host; building starts nothing; other edges receive what they call; focused tests keep their seams. An adapter's I/O may go through an edge.
 - [ ] Only edges and functions that work on the whole state take it, a context typed by it included (the root view, its private steps that only hand views their parts, and the edge, its dispatch's tuple too); nested scopes pass parts, or one parameter object of exactly their items' targets, owners or values as the operation's contract says (a snapshot where it runs as requested), however long it is held, and a request's parts agree (a choice made as asked, a file named for the language, runs with what it was made from: captured then, or read again at the run and refused where it changed; the preconditions its contract states rechecked at the run, its subject still there only where the contract needs it, a request that captured all it acts on running on that; where the caller could take the contract otherwise (values kept as asked while the user can change them), it is said where they ask: an API's documentation, or the command, its dialog or result, never an implementation comment alone); a parameter object, assembled or copied, carries only inputs right for this call; an edge's dispatch keeps the edge's context, table or `Switch`, any other shares only its entries' parts; a dispatch's guard is stated once and applies by default, each exception said where its entry is (never by position alone). Callees were narrowed first, then their callers (a caller converted first passes the state on as before, never through a port member). Whole-state work (saving the session) is called by edges only: a use case whose change requires it ends, and the edge's step runs it (an autosave), or the use case hands it back.
 - [ ] I/O code a library declares for another project's adapters is listed in `rulelab.ambient_types`, and holds nothing else (members others call for what they know live on their concept).
 - [ ] A library object that reads lazily is read only on the I/O side; the state keeps a handle (the values read when it was read), the library's object kept against it by I/O code (a `ConditionalWeakTable` for one that holds only memory; one holding a resource is released when the owner of closing drops the handle, on every way of closing), and the library's types whose reads reach past memory are listed.
@@ -1215,19 +1220,22 @@ port members. Framework-facing code keeps the framework's own naming instead (se
 `Manage`, `Update`, `Sync`, `React`). Such a verb names the thing watched, not what is done, so one name carries
 different effects in different types, and a caller who learned it in one place applies it in another. Where the effect
 is conditional, the name says both: `ReloadListWhenLoadOptionsChange`, `CheckExportFilesWhenFolderChanges`. Two
-exceptions, both because something else says the effect: a use case's one entry, `HandleAsync`, whose class is named
-for it (`CancelOrderHandler.HandleAsync`; "Events" below), and a name a framework requires or documents (an override, a
-member of the framework's interface, a game loop's `Update`). An event handler's name is not one: the framework fixes
-its signature, not its name, so it says its effect too (`SaveDraftWhenTextChanges`). In testing (S20, ILSight's
-`FollowSelection`, which scrolls in the tree and requests a package's details in the NuGet browser; keyboard navigation
-for the package list written later, as the tree's key handler beside it does it), five Down presses in one frame
-requested details for the four rows passed over and left the selected row out of view; named for their effects
-(`ScrollToSelection`, `RequestDetailsWhenSelectionChanges`), the same feature scrolled and requested one. RL0308
-suggests a method whose name starts with one of those verbs, a use case's one `HandleAsync` (on a `*Handler` type, or
-its type's one public method) and framework-facing methods aside; where the word is the domain's noun (a type the method
-returns, takes or sits in is named with it: `UpdateRow(..., AppUpdates updates)` draws the update's row), it is
-skipped. On ILSight at 6bd7afcb, 56, every one a name that says it reacts (30 `Follow*`, 13 `Update*`, 9 `Handle*`, 4
-`Sync*`); 6 words that were the domain's nouns and one use case's `HandleAsync` skipped (RULE-ISSUES CH5).
+exceptions, both because something else says the effect: a use case's one entry, `HandleAsync` (`Handle` where the use
+case is synchronous), whose class is named for it (`CancelOrderHandler.HandleAsync`; "Events" below), and a name a
+framework requires or documents (an override, a member of the framework's interface, a game loop's `Update`). An event
+handler's name is not one: the framework fixes its signature, not its name, so it says its effect too
+(`SaveDraftWhenTextChanges`). In testing (S20, ILSight's `FollowSelection`, which scrolls in the tree and requests a
+package's details in the NuGet browser; keyboard navigation for the package list written later, as the tree's key
+handler beside it does it), five Down presses in one frame requested details for the four rows passed over and left the
+selected row out of view; named for their effects (`ScrollToSelection`, `RequestDetailsWhenSelectionChanges`), the same
+feature scrolled and requested one. RL0308 suggests a method whose name starts with one of those verbs. Its skips are
+mechanical, each leaving the rule to review: `Handle` / `HandleAsync` on a `*Handler` type (however many public methods
+it has) or as its type's one public method, whether or not the type is one use case named for its effect;
+framework-facing methods; and a word that is the domain's noun there (a type the method returns, takes or sits in is
+named with it: `UpdateRow(..., AppUpdates updates)` draws the update's row), which doesn't make a noun-named method
+right (point 2) (RULE-ISSUES CK7). On ILSight at 6bd7afcb, 56, every one a name that says it reacts (30 `Follow*`, 13
+`Update*`, 9 `Handle*`, 4 `Sync*`); 6 words that were the domain's nouns and one use case's `HandleAsync` skipped
+(RULE-ISSUES CH5).
 
 ### Lookups: the verb states what happens when it's missing
 
@@ -1236,7 +1244,7 @@ skipped. On ILSight at 6bd7afcb, 56, every one a name that says it reacts (30 `F
 | `Get*` | Must exist; throws with a message if not, never returns a sentinel. On a collection: none found is an empty collection. | `T` | `GetCustomer(id)`, `GetCustomerAsync(id, ct)`, `GetAllCustomersAsync(ct)` |
 | `Find*` | Absence is normal | `T?`, or a result union with a not-found case | `FindCustomer(id)`, `FindOrderAsync(id, ct)`, `FindApiReferencePageAsync(type, ct)` → `PageLookup` (`Found` / `NotFound` / `Failed`) |
 | `Get*OrDefault` | Absence returns a documented default (BCL: `GetValueOrDefault`) | `T` | `GetTaxRateOrDefault(country)` |
-| `Try*` | May fail; never throws for it | `bool` + `[NotNullWhen(true)] out T?` | `TryGetSession(token, out var session)` |
+| `Try*` (a lookup) | May fail; never throws for it. An action's `Try<Verb>` returns only whether it happened (Questions) | `bool` + `[NotNullWhen(true)] out T?` | `TryGetSession(token, out var session)` |
 
 The verb answers one question: what happens when the thing is missing. It doesn't say whether the lookup does I/O;
 `Async` and the `ports.` call already show that. So there is no separate I/O verb: don't use `Load*` or `Fetch*` (RL0305).
@@ -1417,7 +1425,7 @@ foreach (var line in lines)
 | Pattern | Meaning | Example |
 |---------|---------|---------|
 | `Raise*` | Raises an event | `RaiseOrderPlaced(order)` |
-| `HandleAsync` | The one public method of a class with one use case (R004), the class named for its effect; a class of use cases that share a step names each method after its workflow (`UsePdbAsync`). It returns nothing, a value, or a result union (R009), never a bare `bool` (see Questions). A method that responds to an event or a message is named for what it does (above), not `Handle<Event>`. | `CancelOrderHandler.HandleAsync(orderId, ct)`, `ReserveStockWhenOrderPlaced(sender, e)` |
+| `HandleAsync` | The one public method of a class with one use case (R004), the class named for its effect (`Handle` where the use case is synchronous); a class of use cases that share a step names each method after its workflow (`UsePdbAsync`). It returns nothing, a value, or a result union (R009), never a bare `bool` (see Questions). A method that responds to an event or a message is named for what it does (above), not `Handle<Event>`. | `CancelOrderHandler.HandleAsync(orderId, ct)`, `ReserveStockWhenOrderPlaced(sender, e)` |
 | `Log*` | Records that something happened (logging / metrics port members) | `LogOrderConfirmed(orderId)` |
 | `ThrowIf*` | Throws when the condition holds | `ThrowIfNull(value)`, `ThrowIfNegative(amount)` |
 | `Assert*` | Test code: throws unless the condition holds | `Check.Assert(account.Balance >= 0, "...")` |
@@ -1433,7 +1441,7 @@ foreach (var line in lines)
 
 1. **The name is a promise.** `Get` never returns null or a sentinel, `Find` never throws for absence, `Is*` has no
    side effects, a `bool` method is a question or a `Try*`, `To*` never mutates, `With*`'s return value is always
-   used, `Add*`/`Remove*` never return a copy.
+   used (a value's `With*` returns a copy, a builder's itself, changed), `Add*`/`Remove*` never return a copy.
 2. **No noun-named methods.** Cheap, pure and parameterless → make it a property. Anything else → a verb from above.
    ```csharp
    // ❌ cart.Total()   Paths.DataDirectory()   Key(city)      Expired(trial, now)
@@ -1444,29 +1452,38 @@ foreach (var line in lines)
    compiles, and does nothing (the same trap as `ImmutableList<T>.Add`). Copies use `With*`.
 5. **Never drop `Async`.** An un-awaited `Task` inside a non-async method compiles with no warning; the suffix is the only
    thing that makes `store.SaveOrderAsync(order, ct);` look wrong.
-6. **A call made for its effect is its own statement.** Where it also returns something, the result goes into a local
-   named for what it is, and that local is passed on: `var save = loop.AfterDraw(state); RetrySaveWhenAsked(ui, save);`,
-   never `RetrySaveWhenAsked(ui, loop.AfterDraw(state))`. Only calls with no effect sit inside another call's arguments
-   or an interpolated string: queries, pure functions, value constructors (`Get*`, `Find*`, `Is*`, `To*`, `With*`,
-   `Calculate*`, `Build*`, `Create*`, LINQ, `nameof`). Inside an argument an effect hides in an expression read for its
-   value: a condition put on the line later takes the effect with it, and a second reader of the result, having no name
-   to use, writes the call again. Decided cases: a fluent builder's chain is a receiver, not an argument (`With*`
-   returns what to keep using); `await` of a query sits in an argument (`Show(await FindAsync(id, ct))`), of an effect
-   doesn't; the tasks handed to `Task.WhenAll` / `WhenAny` start in its arguments (`Task.WhenAll(StartX(), StartY())`),
-   its own job being to run them together; a lambda's body is its own (LINQ's deferred calls are R011's). A test's act
-   is its own line too (`var toggle = bookmarks.Toggle(...); Assert.IsType<Added>(toggle);`). Split, the calls keep the
-   order they ran in (C# runs arguments left to right): an argument to the effect's left that reads what it changes is
-   named first. A pure function named with an action verb (`SetToggle(options, ...)` returning a copy,
-   `WritePage(model)` returning text) breaks point 4 or the Actions table: it is renamed (`WithToggle`, `BuildPage`),
-   not split. In testing (S21, ILSight's window frame running the loop's after-draw chores inside the retry's argument;
-   the retry put later under `if (window.IsShown)`, and a status bar reading the save's outcome written later), ten
-   minimized frames ran no queued command and saved nothing, and the status bar's reader called `AfterDraw` again, two
-   writes a frame; the call its own statement and its outcome a named local, every frame ran its commands and saved
-   once; split with the after-draw pulled ahead of `loop.Queued` to its left, a log said no command was queued in any
-   frame (S21 c). RL0309 suggests a call of the codebase's own written as an argument or an interpolated hole whose name
-   starts with an action verb (R003's, the reacting verbs included) or with no verb, only a moment (`After`, `Before`,
-   `On`, `When`); receivers, `Task.WhenAll`'s tasks, a text catalog's methods, a delegate's `Invoke` and a lookup's noun
-   phrase (`PlaceOf`) aside (RULE-ISSUES CI4-CI6, CJ3).
+6. **A call made for its effect is its own statement.** Where the code uses what it returns, the result goes into a
+   local named for what it is, and that local is passed on: `var save = loop.AfterDraw(state); RetrySaveWhenAsked(ui,
+   save);`, never `RetrySaveWhenAsked(ui, loop.AfterDraw(state))`; a result nobody uses needs no local (a `[MustUse]`
+   one is never dropped: R008). Only calls with no effect sit inside another call's arguments, an interpolated string,
+   or as the receiver of another call: queries, pure functions, value constructors (`Get*`, `Find*`, `Is*`, `To*`, a
+   value's `With*` copy, `Calculate*`, `Build*`, `Create*`, LINQ, `nameof`). Inside an expression an effect hides in
+   what is read for its value: a condition put on the line later takes the effect with it, and a second reader of the
+   result, having no name to use, writes the call again. Decided cases: a `Try<Verb>` or an immediate-mode widget's call
+   as the condition asking whether it happened (`if (!reload.TryFinish(ticket))`, `if (ui.Button("Save"))`) is its own
+   statement, the branch its use; a fluent builder's own chain (`new ReportBuilder().WithTitle("Q3").Build()`) is
+   construction, its `With*` changing only the builder it returns, no licence to chain off any effect
+   (`jobs.Start().Twice()` is split); what only shapes the await of an effect
+   (`.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing)`, R009) is part of it; `await` of a query sits in an
+   argument (`Show(await FindAsync(id, ct))`), of an effect doesn't; the tasks handed to `Task.WhenAll` / `WhenAny`
+   start in its arguments (`Task.WhenAll(StartX(), StartY())`), its own job being to run them together; a lambda's body
+   is its own, deferred, the rule applying inside it (an act inside `Assert.Throws(() => ...)` or a queued callback
+   stays there; LINQ's deferred calls are R011's). A test's act is its own line too (`var toggle =
+   bookmarks.Toggle(...); Assert.IsType<Added>(toggle);`). Split, the call keeps what it ran under: its order (C# runs
+   arguments left to right: an argument to the effect's left that reads what it changes is named first), its guard (one
+   behind `?.`, `&&` or `?:` moves under the `if` that says the same), and its deferral (one inside a lambda stays
+   inside). A pure function named with an action verb (`SetToggle(options, ...)` returning a copy, `WritePage(model)`
+   returning text) breaks point 4 or the Actions table: it is renamed (`WithToggle`, `BuildPage`), not split. In testing
+   (S21, ILSight's window frame running the loop's after-draw chores inside the retry's argument; the retry put later
+   under `if (window.IsShown)`, and a status bar reading the save's outcome written later), ten minimized frames ran no
+   queued command and saved nothing, and the status bar's reader called `AfterDraw` again, two writes a frame; the call
+   its own statement and its outcome a named local, every frame ran its commands and saved once; split with the
+   after-draw pulled ahead of `loop.Queued` to its left, a log said no command was queued in any frame (S21 c). RL0309
+   suggests a call of the codebase's own written as an argument or an interpolated hole whose name starts with an action
+   verb (R003's, the reacting verbs included) or with no verb, only a moment (`After`, `Before`, `On`, `When`), offering
+   both fixes: an effect split, a pure call renamed; `Task.WhenAll`'s tasks, a text catalog's methods, a delegate's
+   `Invoke` and a lookup's noun phrase (`PlaceOf`) aside. It reads arguments and holes only: an effect used as a
+   receiver is review's (RULE-ISSUES CI4-CI6, CJ3, CK4, CK5).
 
 ### Properties
 
@@ -1528,9 +1545,9 @@ Work top to bottom and take the first match.
 | State with distinct phases, each with its own data (status + fields that must agree) | a union: one type per state (R008) | `Order.Pending` → `pending.ToCancelled(now)` → `Order.Cancelled` |
 | State that changes under rules | a class: `required init` for the initial state, a private field that only its methods change (R005) | `account.Withdraw(amount)` |
 | A calculation or decision over data | a static method on a static class named for the concept | `Shipping.CalculateCost(order)`, `Csv.ReadRecords(reader)` |
-| Read → compute → write, with no decision between I/O calls | **no class**: do the I/O at the edge (endpoint, `Program`) and call pure code in between | `File.WriteAllText(output, PeopleCsv.ConvertToJson(File.ReadAllText(input)))` |
+| Read → compute → write, with no decision between I/O calls | **no use-case class**: do the I/O at the edge (endpoint, `Program`) and call pure code in between; where that I/O keeps taking the same collaborators or holds a resource or a lifetime (a watcher, a window-only chore's font file), it is an `[Edge]` object holding them, built by the root (step 3) | `File.WriteAllText(output, PeopleCsv.ConvertToJson(File.ReadAllText(input)))` |
 | A use case whose decisions interleave with I/O | one class per use case, one public method, one port (R001); use cases that share a step: one class, a public method each (step 3); a lone function may take its port as a parameter (R001 point 8) | `CancelOrderHandler.HandleAsync(orderId, ct)` |
-| A use case with no decisions (plain read or write) | **no class**: the endpoint calls data access directly | `await queries.FindSummaryAsync(id, ct)` |
+| A use case with no decisions (plain read or write) | **no use-case class**: the endpoint calls data access directly (an `[Edge]` object where it keeps taking the same collaborators, as above) | `await queries.FindSummaryAsync(id, ct)` |
 | Two or more real implementations chosen at runtime | an interface + one class per implementation | `IPaymentProvider` → `StripeProvider`, `PayPalProvider` |
 | State a framework can only reach public and settable (fields a widget binds by `ref`, properties a binder sets) | framework-facing data: public as the framework requires, no rules; state with rules is a type it holds (see Framework-facing state). An entity EF maps through its private fields is not this: it keeps its rules | `picker.Filter`, `picker.IsOpen` + `picker.Choice` |
 | Required by a framework | that type, kept thin; it calls one of the above | controller, middleware, Blazor component |
@@ -1541,31 +1558,34 @@ Work top to bottom and take the first match.
 | Test | Ask | If it fails |
 |------|-----|-------------|
 | Deletion | If I deleted this type and inlined it, would complexity reappear in its callers, or just disappear? | It only forwards: delete it. (Adapters are exempt; they are the seam.) |
-| Name | Is its name a noun (an agent noun for what keeps doing a job, the activity's noun for one run; never a gerund, below)? Can I name it after what it knows or does, without `Manager`, `Helper`, `Utils`, `Processor`, or `<Noun>Service`? Does the name say *what* it knows? `Rules`, `Logic`, `Common` and `Core` pass the suffix check but say nothing (`EmailFormat`, not `Rules`). | It doesn't know what it is. Move each member to the concept it's about. Generic helpers become extension methods grouped by the type they extend (`StringExtensions`). |
-| Order | Must callers call its methods in a set order (`Open` → `ReadHeader` → `ReadRows`)? | The steps are leaking. Expose the whole job as one call. (A framework's protocol is not your order: see Framework-facing state.) |
+| Name | Is its name a noun (an agent noun for what keeps doing a job, the activity's noun for one run, a word naming the thing in its own right; never a gerund, below)? Can I name it after what it knows or does, without `Manager`, `Helper`, `Utils`, `Processor`, or `<Noun>Service`? Does the name say *what* it knows? `Rules`, `Logic`, `Common` and `Core` pass the suffix check but say nothing (`EmailFormat`, not `Rules`). | It doesn't know what it is. Move each member to the concept it's about. Generic helpers become extension methods grouped by the type they extend (`StringExtensions`). |
+| Order | Must callers call its methods in a set order (`Open` → `ReadHeader` → `ReadRows`)? | The steps are leaking. Expose the whole job as one call. (A framework's protocol, a host's lifecycle calls included, is not your order: see Framework-facing state.) |
 | Seam | Does this interface have two implementations that exist for a reason other than the interface itself? | Remove the interface. A test fake only counts when the decision can't be separated from the I/O (an R001 port). |
 | Rules | Can a caller put this type into an invalid state (a public setter that skips the rule, a public mutable field or collection, `with`, an unchecked constructor)? A setter whose body keeps the rule is one of the type's methods (R003 Mutation: a value whose changes others must notice). | Move the rule inside the type. If a framework needs those members public, the rule goes into its own type (Framework-facing state). |
 
-**A type is named as a noun, never a verb's -ing form.** The name says what an instance is. An object that keeps doing
-a job, run after run, is an agent noun (`-er` / `-or`: `AssemblyReloader`, `ExportWriter`, `UserThemeWatcher`); an
-object that is one run of an activity, holding that run's progress or outcome, takes the activity's noun (`Reload`,
-`Export`, `Search`), or, where the activity has none (opening, closing), a noun for what the run holds
-(`OpenRequest`). Read what the type holds to choose: state for the app's life is the agent's, state for one run the
-run's. A gerund (`AssemblyReloading`, `ExportWriting`) says only the activity, so a reader can't tell which an
-instance is: a run's state goes into the long-lived object, or a new object is built where the app's one was meant.
-The empty agent nouns stay banned (`Manager`, `Processor`, `Helper`, `<Noun>Service`: the Name test): they say "does
-stuff" without saying what. Not gerunds: a word that is only a noun (`String`, `Nothing`); one that is also the
-activity, where the type is the value it names (a record or struct: `ClockReading`, a value read; `ModuleListing`,
-what was listed; a class so named is the activity's object); a union's case named for a state, an adjective as
-`Pending` is (`TabContent.Loading`, `UpdateStatus.Checking`, R008); an `-ing` word before the noun (`RunningProcess`).
-A static class has no instance to be a doer or a run: it is named for its concept (step 1: `Shipping.CalculateCost`).
-In testing (S42, ILSight's `AssemblyReloading` and `ExportWriting`, each built once by the root; progress for a reload
-written later into it, as if it were one reload, two reloads overlapping; a re-export written later building its own,
-as if it were one export), the list's progress bar read 3 of 1 once a tab's reload reset it, and the re-export ran
-beside an export of the same file, two writes of it overlapping. Named `AssemblyReloader` handing out a `Reload`, and
+**A type is named as a noun, never a verb's -ing form.** The name says what an instance is. An object that keeps doing a
+job, run after run for as long as its owner keeps it (the app, a session, a request), is an agent noun (`-er` / `-or`:
+`AssemblyReloader`, `ExportWriter`, `UserThemeWatcher`); an object that is one run of an activity, holding that run's
+progress or outcome, takes the activity's noun (`Reload`, `Export`, `Search`), or, where the activity has none (opening,
+closing), a noun for what the run holds (`OpenRequest`). Read what the type holds to choose: state kept across runs is
+the agent's, state for one run the run's. A gerund (`AssemblyReloading`, `ExportWriting`) says only the activity, so a
+reader can't tell which an instance is: a run's state goes into the long-lived object, or a new object is built where
+the app's one was meant. The empty agent nouns stay banned (`Manager`, `Processor`, `Helper`, `<Noun>Service`: the Name
+test): they say "does stuff" without saying what. Not gerunds, whatever the declaration: a word that names a thing in
+its own right, not the doing (`String`, `Nothing`; `Booking`, what was booked, a class keeping its rules;
+`ClockReading`, a value read; `ModuleListing`, what was listed; `Setting`, a value chosen): the test is what the word
+means for this type, never whether it is a class or a record; a union's case named for a state, an adjective as
+`Pending` is (`TabContent.Loading`, `UpdateStatus.Checking`, R008); an `-ing` word before the noun (`RunningProcess`). A
+static class has no instance to be a doer or a run: it is named for its concept (step 1: `Shipping.CalculateCost`). In
+testing (S42, ILSight's `AssemblyReloading` and `ExportWriting`, each built once by the root; progress for a reload
+written later into it, as if it were one reload, two reloads overlapping; a re-export written later building its own, as
+if it were one export), the list's progress bar read 3 of 1 once a tab's reload reset it, and the re-export ran beside
+an export of the same file, two writes of it overlapping. Named `AssemblyReloader` handing out a `Reload`, and
 `ExportWriter` taken from the root, each reload kept its own progress (3 of 3, 1 of 1) and the app's writer held the
-re-export back. RL0411 suggests a type whose name's last word ends in `-ing` and isn't on its list of nouns (a word
-that is also the activity only on a class), union cases, static classes and tests aside (RULE-ISSUES CI1-CI3).
+re-export back. RL0411 suggests a type whose name's last word ends in `-ing` and isn't on its list of nouns, union
+cases, static classes and tests aside; for a word that is both a noun and the activity (`Reading`, `Booking`), it reads
+the declaration as a sign, the noun on a record, struct or enum, the activity on a class or interface, so a class named
+by a genuine noun is suppressed with that reason (RULE-ISSUES CI1-CI3, CK2).
 
 ### Step 3: granularity
 
@@ -1699,31 +1719,36 @@ that is also the activity only on a class), union cases, static classes and test
   (`AppStart`, `AppFrames`, `*Shutdown`) is the usual sign of grouping by time: it holds chores of every feature that
   runs then, takes the app's fields to reach them, and a feature written later puts its chore in whichever of the
   moment's functions it finds. Its pieces go to the features they serve; the lifecycle's owner keeps only the calls, in
-  order where order matters, said where it does (R004 "One kind of input, one path"). That owner is an instance (an app
-  loop with `Start`, before-draw and after-draw), which the window class owns and a headless test driver builds too,
-  so both run one sequence. Holding collaborators costs a frame nothing: a method of the object is called directly, and
-  work it queues on a hot path is a `static` lambda handed its target and subject (`runner.Start(name, handler, (imports,
-  file), static (h, s) => h.Handle(s.imports, s.file))`), so a frame that asks for nothing allocates nothing (R011).
-  An object holding a runner starts work, so it is the feature's edge (`[Edge]`; R001: a part never takes the runner,
-  which would put I/O among its decisions); a chore that only changes a part is that part's method. The loop's calls
-  take what every host has (the app's state, the frame's input), never the window: a host with no window calls the
-  same ones, and no second loop type is written for it (two sequences again). A window-only chore that does I/O (the
-  code font's file) is an `[Edge]` object of its own, top-level, its logic with its state, held by the window class;
-  not a data class with its logic left in the window. A step every host runs stays inside the loop's call that runs it,
-  which returns its outcome (`AfterDraw` saving and returning the save), never a step each host calls after it: the
-  host names the outcome and passes it on (R003 "A call made for its effect is its own statement").
-  Pure helpers (formatting, parsing, a calculation) stay static, as below. A whole holding the app's collaborators
-  (ILSight's `AppState`) is no fault in itself; the functions that take it to reach one feature's are. In testing (S41,
-  ILSight's `AppStart` and `AppFrames`, the window class composing a frame from them and the headless driver composing
-  its own from the functions that need no window; bookmark imports written later, restored at the start and started
-  after the draw), the import's chore written into `FinishFrame` ran in the window and never under the driver; written
-  into `StartAskedWork`, under both: which hosts run a chore hung on which of the moment's functions it went into.
-  Grouped by feature, each an object built by the root, with one loop both hosts build, it ran under both; a test of the
-  export's chore built 3 collaborators instead of the app's state (8 members), and 1,000 idle frames allocated 0 bytes.
-  RL0410 suggests a static class whose name's last word is a moment (`Start`, `Startup`, `Shutdown`, `Frame(s)`,
-  `Exit`, `Teardown`, `Boot`, `Init`) and whose functions take two or more of the compilation's own types: on ILSight at
-  6bd7afcb, `AppStart` and `AppFrames`, nothing else. A class grouped by time under another name (`Chores`), and
-  functions that keep taking one bundle without such a class, are review's (RULE-ISSUES CH1-CH3).
+  order where order matters, said where it does (R004 "One kind of input, one path"). That owner is an instance the root
+  builds, which every host running that lifecycle calls (Edges "Starting is an entry point too"; in a frame-driven app
+  the app loop with `Start`, before-draw and after-draw, which the window class owns and a headless test driver builds
+  too), so all run one sequence. Its calls follow the host's lifecycle, a protocol as a framework's is ("A framework's
+  protocol is not a set order of yours"): each host calls each from its hook for that moment. Holding collaborators
+  costs a frame nothing: a method of the object is called directly, and work it queues on a hot path is a `static`
+  lambda handed its target and subject (`runner.Start(name, handler, (imports, file), static (h, s) =>
+  h.Handle(s.imports, s.file))`), so a frame that asks for nothing allocates nothing (R011). An object holding a runner
+  starts work, so it is the feature's edge (`[Edge]`; R001: a part never takes the runner, which would put I/O among its
+  decisions); a chore that only changes a part is that part's method. The owner's calls take what every host has (the
+  app's state, a frame's input), never what one host alone has (the window): a host without it calls the same ones, and
+  no second owner type is written for it (two sequences again). A window-only chore that does I/O (the code font's file)
+  is an `[Edge]` object of its own, top-level, its logic with its state, held by the window class; not a data class with
+  its logic left in the window. A step every host runs stays inside the owner's call that runs it, which returns its
+  outcome (`AfterDraw` saving and returning the save), never a step each host calls after it: the host names the outcome
+  and passes it on (R003 "A call made for its effect is its own statement"). Pure helpers (formatting, parsing, a
+  calculation) stay static, as below. A whole holding the app's collaborators (ILSight's `AppState`) is no fault in
+  itself; the functions that take it to reach one feature's are. In testing (S41, ILSight's `AppStart` and `AppFrames`,
+  the window class composing a frame from them and the headless driver composing its own from the functions that need no
+  window; bookmark imports written later, restored at the start and started after the draw), the import's chore written
+  into `FinishFrame` ran in the window and never under the driver; written into `StartAskedWork`, under both: which
+  hosts run a chore hung on which of the moment's functions it went into. Grouped by feature, each an object built by
+  the root, with one loop both hosts build, it ran under both; a test of the export's chore built 3 collaborators
+  instead of the app's state (8 members), and 1,000 idle frames allocated 0 bytes. RL0410 suggests a static class whose
+  name's last word is a moment (`Start`, `Startup`, `Shutdown`, `Frame(s)`, `Exit`, `Teardown`, `Boot`, `Init`) and
+  whose functions take two or more of the compilation's own objects (classes and interfaces; its records, structs and
+  enums aside): on ILSight at 6bd7afcb, `AppStart` and `AppFrames`, nothing else. It reads a sign, not proof: a cohesive
+  calculation it reports stands, suppressed with that reason, and the static paragraph below decides (RULE-ISSUES CK6).
+  A class grouped by time under another name (`Chores`), and functions that keep taking one bundle without such a class,
+  are review's (RULE-ISSUES CH1-CH3).
 - **Static is for code no object owns.** A static function is right where no object holds the state it works on: a
   pure function, a calculation or decision over values (`Pricing.CalculateTotal(lines, customer)`, step 1), a parse or
   a factory (`Email.Parse`), I/O code adapters share over values (R001), an extension method (on a type the code
@@ -2013,7 +2038,9 @@ public sealed class AssemblyChoice                     // owns its rule: Selecte
   different places (the draw, and the edge after it), the first leaves what it returns on the framework-facing object
   both are handed, which carries it to the second: a view records the version of the content it drew, and the
   read-back acts on that version only (R010 "State the edge reads back"); on a view nothing was drawn in, it does
-  nothing.
+  nothing. A lifecycle owner's calls (step 3: a start, the calls before and after each frame, a stop) are such a
+  protocol: their order is the host's, each called from the host's hook for that moment, and what a later one needs of
+  an earlier one is the owner's own state.
   ```csharp
   var shown = choice.ShowIn(rows);                     // returns the row it gave the widget
   using (var list = ui.SelectableList(listId, choice.Offered.Count, rows)) { ... }
@@ -2037,7 +2064,7 @@ public sealed class AssemblyChoice                     // owns its rule: Selecte
 - [ ] Use cases share a class only when they share a step; one that shares none has its own class and port.
 - [ ] An input that can arrive at more than one moment (at startup and while running) has one handler, the first copy included, handed it once what the handler decides from is in place (the start recorded, for one deciding from what is under way; the restore finished, for one deciding from restored contents), the edge ordering the start around it, and in the path before anything that accepts later copies opens.
 - [ ] No other type's functions keep a rule over a type's public members (a static class setting its fields), nor over private parts the type forwards to them; they are its methods, the members private, a framework's interface no exception.
-- [ ] A class is grouped by what its code works on, never by when it runs: functions that keep taking the same collaborators or part are one object holding them, built by the root; no class named for a moment holds chores of many features (RL0410); the lifecycle's owner, an instance the app and the test hosts build, keeps only the calls, in order where order matters.
+- [ ] A class is grouped by what its code works on, never by when it runs: functions that keep taking the same collaborators or part are one object holding them, built by the root; no class named for a moment holds chores of many features (RL0410); the lifecycle's owner, where the app has a lifecycle, an instance every host running it calls (the app and the test hosts), keeps only the calls, in order where order matters.
 - [ ] Static code is owned by nothing (a pure function, a parse, I/O over values, an extension method on a type the code doesn't own, a kind's static abstract members, a static a framework or generator requires, P/Invoke, constants, `Main`) or orchestrates objects through their own public operations while holding nothing (a lone workflow, a draw); a function that writes an object's members itself is its method (extension methods are no fix), or a method of the part it changes where the object holds many, a lone one too where its write keeps something about the state (a clamp, a memo, a flag taken once, two members together, others changing the state through it); a function that only stores a value no rule covers is no step.
 - [ ] A helper that reaches no port lives on the type whose rule it keeps (or the concept it computes), even with one caller; only its one caller's own policy (its wording, its choices) is a private method of that caller.
 - [ ] A type that keeps a rule across parts holds them all privately, a setting the rule spans included, its lock and its event's delegate too (RL0407); every change to them is its method, the ones the rule exempts named for what they are (`Restore`), and a step callers take before their I/O (beginning a request) is one of them.
@@ -2050,9 +2077,9 @@ public sealed class AssemblyChoice                     // owns its rule: Selecte
 - [ ] No duplicate execution path only tests use, and no internal member confirmed dead; tests drive what the app runs, and external contracts stay (Scope). A property that something doesn't happen is tested through a test adapter of the port its effect would cross (the app built through the root with it where an edge's order decides it), never a counter kept in production code. The root's hook for it takes a function it hands the real adapter it built (a decorator wraps it, a fake ignores it), never the root's parts for the test to build its own. A test standing in for a framework's writes reaches the state only where the framework does (its simulated input on the real widget, or the framework's call through a port the root builds), never through a hook handing it the owner's private state; where its write lands (in the widget's draw or between frames) matters where the owner's check compares the state around a framework call (the widget's draw), not where it acts on the framework's events or compares against what it last observed. An instant between another method's steps is tested by the state it leaves, handed to the code that meets it, never through a hook only tests call.
 - [ ] No type only forwards calls (adapters excepted).
 - [ ] No `Manager` / `Helper` / `Utils` / `Processor` / `<Noun>Service` names.
-- [ ] Every type is named as a noun: an agent noun for an object that keeps doing a job, the activity's noun (or a noun for what it holds) for one run; never a verb's -ing form (RL0411); words that are nouns in their own right, values named so, union cases named for a state and static classes aside.
+- [ ] Every type is named as a noun: an agent noun for an object that keeps doing a job, the activity's noun (or a noun for what it holds) for one run; never a verb's -ing form (RL0411); words that name a thing in their own right (`Booking`, `ClockReading`), whatever the declaration, union cases named for a state and static classes aside.
 - [ ] No interface with a single implementation, except R001 ports.
-- [ ] No methods that must be called in a set order. A framework's protocol: exactly its members, the second taking what the first returns.
+- [ ] No methods that must be called in a set order. A framework's protocol: exactly its members, the second taking what the first returns; a lifecycle owner's calls follow the host's lifecycle.
 - [ ] No public setters that skip the rule (a setter that keeps it is one of its methods), public mutable fields or collections, or unchecked `init` accessors on types with rules; a collection the type was handed only to write into is held privately (its owner keeps its rule; readers ask the owner).
 - [ ] State a framework can only bind or set when public is public as it requires, on a type with no rules; the part with rules is a type it holds. A mapped entity whose private fields EF fills keeps its rules.
 - [ ] A framework-facing method that sets its own fields for one action is a convenience (methods that only set its bound fields don't make it a rule owner); whatever a write to a member the framework writes must bring about is kept by the rule owner, reached by every write through the framework's mechanism (a bound setter or change notification), or, for a field written by `ref`, reading its value where every write comes before (each frame in a frame-driven UI), never a before and after around one widget.

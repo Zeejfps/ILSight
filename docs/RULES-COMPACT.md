@@ -20,9 +20,9 @@ The complete C# rules for agents, with the IDs of `RULES.md` (rationale and evid
 - **Edges stay thin:** they translate, start work and catch. A branch on what the world or the state answered (one a
   second edge for the same input would repeat) is a use case over a port (the edge's I/O its adapter) or pure code.
   Ordinary code may hand an edge work, never take an answer from one (RL0106); an adapter's I/O may go through an edge.
-  Hosts running the whole app (startup, tests) build it through one root entry point and run one app loop the root
-  builds (its start, and its calls before and after each draw; a window's hooks call them; building starts nothing);
-  other edges receive what they call.
+  Hosts running the whole app (startup, tests) build it through one root entry point and call the lifecycle owner it
+  builds, if the app has one, keeping host-only setup in the host; building starts nothing. Other edges receive what
+  they call.
 - **Tests** follow R002, R003, R005, R007, R008, R010 (test methods needn't take a token), R012, R013, R014 and R009's
   ban on empty catches; not R001, R004 or R011 (fakes implementing a port are expected).
   - The codebase's naming convention (a new one: `Method_Scenario_Expected`); own assertion helpers carry
@@ -59,10 +59,9 @@ The complete C# rules for agents, with the IDs of `RULES.md` (rationale and evid
 
 ## R001: A decision-making class reaches the outside world through one port
 
-Build: RL0101 (an effect outside adapters, the root, tests and edges), RL0103 (static functions sharing a port),
-RL0105 (infrastructure in a port signature); suggestions: RL0102 (a use case or adapter built outside the root), RL0104
-(another use case reached around the port), RL0106 (an answer from an `[Edge]` type), RL0107 (a wait cut short on a
-disposable result).
+Build: RL0101 (an effect outside adapters, the root, tests, edges), RL0103 (static functions sharing a port),
+RL0105 (infrastructure in a port signature); suggestions: RL0102 (built outside the root), RL0104 (another use case
+reached around the port), RL0106 (an answer from an `[Edge]` type), RL0107 (a wait cut short on a disposable result).
 
 - **One port.** A decision-making class reaches I/O, time, randomness, configuration, logging and shared mutable state
   only through a nested `public interface IPorts` it declares, its only dependency (configured values may come beside it,
@@ -156,36 +155,36 @@ Build: RL0201, RL0202, RL0203, RL0204 (tests).
 
 Build: RL0301 (`Async`), RL0302 (`Find*`), RL0303 (`Get*` returning `T?`), RL0304 (`Is*` not `bool`), RL0305 (no
 `Load*`/`Fetch*`: the verb says what a miss returns); suggestions: RL0306 (a `bool` method named as an action), RL0307
-(a method returning -1, a `char`'s `'\0'` or a struct's `default` for none), RL0308 (a verb that only says it reacts),
+(a sentinel for none), RL0308 (a verb that only says it reacts),
 RL0309 (an action call inside an argument).
 
 | Name | Promise |
 |------|---------|
 | `Get*` | exists; throws with a message if not, never a sentinel (a collection: empty when none) |
 | `Find*` | may be missing: `T?`, or a result union with a not-found case, itself or one level in (`Outcome<Lookup<T>>`) |
-| `Get*OrDefault` / `Try*` | a documented default / `bool` + `[NotNullWhen(true)] out T?` |
+| `Get*OrDefault` / lookup `Try*` | a documented default / `bool` + `[NotNullWhen(true)] out T?` |
 | `Is*` `Has*` `Can*` `Should*`, a fact verb (`Contains`, `Exists`) | `bool`, no side effects (an async one may read, never write) |
 | `To*` / `As*` / `From*` | converts / views the same data / factory on the type it creates; never mutates |
 | `With*` | returns what to keep using (a copy, or the same mutable builder); always use it |
 | `Where*` `Select*` `OrderBy*` | LINQ-style: only what that operator does |
-| `Calculate*` `Build*` / `Read*` | computes, no I/O / reads raw content from a source the caller names |
+| `Calculate*` `Build*` / `Create*` / `Read*` | computes, no I/O / constructs something new / reads raw content from a source the caller names |
 | `Save*` `Send*` `Publish*` `Delete*` / `Add*` `Remove*` `Clear*` | I/O side effects / mutates this object or its store, never a copy |
-| `Match` `Switch` / `HandleAsync` / `Log*` / `ThrowIf*` / `*Async` | union dispatch / a use case's entry, its class named for the effect / records / guards / awaitable, always |
+| `Match` `Switch` / `Handle(Async)` / `Log*` / `ThrowIf*` / `*Async` | union dispatch / a use case's entry, its class named for the effect / records / guards / awaitable, always |
 
 - **Named for the effect**, never a verb that only says it reacts (`Follow`, `Handle`, `Process`, `Manage`, `Update`,
   `Sync`, `React`); a conditional effect says both (`ReloadListWhenLoadOptionsChange`). Event handlers too.
-- **A call made for its effect is its own statement**, its result a local named for what it is, passed on
-  (`var save = loop.AfterDraw(state); RetrySave(ui, save);`); only queries, pure functions and value constructors sit
-  in arguments. Split in the arguments' order: one to its left reading what it changes is named first.
-  `Task.WhenAll(StartX(), StartY())` and a builder's chain are fine; a pure function named as an action is renamed.
+- **A call made for its effect is its own statement**, a result it uses a local named for what it is, passed on
+  (`var receipt = mail.Send(order); Record(receipt);`); only queries, pure functions and value constructors sit in
+  arguments, interpolations or receivers. Fine: a `Try<Verb>` or widget call as its condition, `Task.WhenAll` /
+  `WhenAny`'s tasks, a builder's own chain, a lambda's body (its own). Split, it keeps its guard, deferral and order
+  (one to its left reading what it changes named first); a pure function named as an action is renamed.
 - **A `bool` method is a question or a `Try<Verb>`**, its first word saying which; a use case returns a result union
-  (R009); an action reporting a fact about what it did returns a value naming it (`tabs.Close(tab).WasActive`).
+  (R009); an action reporting a fact about what it did returns a value naming it (`Closed { WasActive }`).
 - **No sentinels:** missing is `T?`, a union case when the miss carries data (`Missing { InsertAt }`), or
   `Get*OrDefault`; -1 before the first row (beside the count after it) and a struct's zero naming no empty value are
   values. "No current item" is `int?` in your code; -1 only where a framework API needs it.
-- **A value others must notice changing makes every change observable:** for consumers that poll,
-  a `Version` moving only when the value differs; event-driven ones are notified; both where both read it. A `bool Set`
-  informs only its caller.
+- **A value others must notice changing tells every consumer:** pollers by a `Version` moving only when it differs,
+  subscribers by a notification; a returned `bool` reaches only the caller.
 - Nothing to return returns nothing (a helper taking `Func<..., Task<T>>` also takes `Func<..., Task>`). No noun-named
   methods (cheap and pure → a property), no `Set*` methods but async or with extra arguments, no mutation verb on a
   copy-returning method. Builders are mutable, one per result. Properties are nouns or `Is*` / `Has*` / `Can*`.
@@ -194,12 +193,12 @@ RL0309 (an action call inside an argument).
 
 ## R004: A type must earn its place
 
-Build: RL0401 (vague names); suggestions: RL0403 (public state the type changes itself, not `ref`-bound), RL0404 (public
-state only other types write, on a type with methods), RL0405 (the same with no methods, one writer changing two or
-more; conditional: plain values no rule ties, as a root's settings), RL0406 (static functions writing one type's
-members: two, or one whose write keeps state), RL0407 (another type's lock taken, or an event handed out as a delegate),
-RL0408 (a whole's member forwarding a part's), RL0409 (one feature's state loose on a whole; conditional: state shared
-on purpose, a published member), RL0410 (a static class named for a moment), RL0411 (a type named with `-ing`).
+Build: RL0401 (vague names); suggestions: RL0403 (public state the type changes itself), RL0404 (public state only
+others write, on a type with methods), RL0405 (the same with no methods; conditional: plain values no rule ties, as a
+root's settings), RL0406 (static functions writing one type's members), RL0407 (another type's lock, or an event
+handed out), RL0408 (a whole's member forwarding a part's), RL0409 (one feature's state loose on a whole;
+conditional: state shared on purpose, a published member), RL0410 (a static class named for a moment), RL0411 (a type
+named with `-ing`).
 
 | You have | Make |
 |----------|------|
@@ -208,16 +207,16 @@ on purpose, a published member), RL0410 (a static class named for a moment), RL0
 | phases, each with its own data | a union (R008) |
 | state that changes under rules | a class whose methods change its private state |
 | a calculation or decision | a static method on the concept's static class |
-| I/O with optional pure computation, no decisions | no class: I/O at the edge |
+| I/O with optional pure computation, no decisions | no use case: I/O at the edge (an `[Edge]` object holding collaborators it keeps taking) |
 | a use case interleaving decisions with I/O | a class, one public method, one port (R001) |
 | 2+ real implementations chosen at run time | an interface |
 | required by a framework, or state it reaches only public | that type, thin; framework-facing data has no rules |
 | anything else | a private method of its user |
 
 - **Checks:** delete a type that only forwards (adapters excepted). No `Manager` / `Helper` / `Utils` / `Processor` /
-  `<Noun>Service` / `Rules` / `Logic` / `Common` / `Core`. **A type is a noun:** what keeps doing a job an agent noun
-  (`AssemblyReloader`), one run the activity's noun (`Reload`), never a gerund (`AssemblyReloading`); union cases named
-  for a state, values like `ClockReading` and static classes aside. No methods callers must call in a set order. No interface
+  `<Noun>Service` / `Rules` / `Logic` / `Common` / `Core`. **A type is a noun, never a gerund:** `ExportWriter` for what
+  keeps doing a job, `Export` for one run; genuine nouns (`Booking`, `ClockReading`), state cases and static classes
+  aside. No methods callers must call in a set order. No interface
   without two real implementations (ports excepted). No public setter, mutable field or collection that skips the rule;
   a collection handed in only to write into (an outbox) is held privately (`{ private get; init; }`), readers asking its
   owner.
@@ -237,7 +236,7 @@ on purpose, a published member), RL0410 (a static class named for a moment), RL0
   across parts no rule ties takes them. Feature state is in the part of the feature using it, held for its intended
   owner and lifetime (separate for independent instances, one for places kept in step; per request, session or job in a
   service), never loose on the whole or on a value other features share; a save reads it there.
-- **What it covers is read from the domain contract**, not from what a user asked for or which kinds had a shape for
+- **An invariant's scope comes from the domain contract**, not from what a user asked for or which kinds had a shape for
   it; a transition left out is named so. Each is handled alike for every kind, restoration and late results included,
   from values held, without a wait; what it keeps about a place is a value, never the document (what a history records
   and what Back does are the product's).
@@ -248,9 +247,8 @@ on purpose, a published member), RL0410 (a static class named for a moment), RL0
   proceed on a pending one).
 - **Grouped by what the code works on, never by when it runs:** functions that keep taking the same collaborators (a
   runner, a feature's part and handlers) are one object the root builds. A class named for a moment (`AppStart`,
-  `AppFrames`) is split into its features; the app loop (Scope) keeps the calls, ordered where it matters, taking no
-  window, returning a step's outcome for the host to pass on. An object holding a runner is an `[Edge]`. Queued
-  hot-path work: a `static` lambda handed target and subject.
+  `AppFrames`) is split into its features; the lifecycle owner (Scope) keeps the calls, ordered where it matters,
+  taking what every host has, returning a step's outcome for the host. An object holding a runner is an `[Edge]`.
 - **Static is for code no object owns** (pure functions and parses, I/O over values, extension methods on a type you
   don't own or over sequences, a kind's `static abstract` members, statics a framework or generator requires,
   P/Invoke, constants, `Main`) and for orchestration holding nothing (a lone workflow, a draw). A function that writes
@@ -263,7 +261,8 @@ on purpose, a published member), RL0410 (a static class named for a moment), RL0
   bound fields (they don't make it a rule owner); framework writes bypass them, so every write reaches the rule owner
   through the framework's mechanism (its bound setter or change notification, where it calls one); a field written by
   `ref` runs no code: the frame section.
-- **A framework's protocol** may impose order: expose exactly its members, later calls taking earlier results or reading
+- **A framework's protocol** (a host's lifecycle calls too) may impose order: expose exactly its members, later calls
+  taking earlier results or reading
   them from their shared object.
 
 ## R005: Data goes in through `required init` properties
@@ -312,8 +311,8 @@ Build: everything (`.editorconfig`: `csharp_prefer_braces = true`, not `when_mul
 ## R008: Make invalid states unrepresentable with unions
 
 Build, other projects' unions included: RL0801 (`switch` on a union), RL0802 (discarded `To*` / `With*`), RL0803
-(`if` chain over cases), RL0804 (discarded result union), RL0805 (status enum beside nullables; `*Row`, `*Dto` and
-the like skipped), RL0806 (a case added from outside); suggestion: RL0807 (a dropped `[MustUse]` value).
+(`if` chain over cases), RL0804 (discarded result union), RL0805 (status enum beside nullables), RL0806 (a case
+added from outside); suggestion: RL0807 (a dropped `[MustUse]` value).
 
 - Use a union when which data exists depends on a state or kind; independent optional fields stay nullable. Shape: an
   abstract record or class with a private constructor and sealed nested cases, shared data on the base, all `required
@@ -563,7 +562,9 @@ suggestions: RL1402 (a summary with no word beyond its declaration), RL1403 (a t
 ## Frame-driven UIs (only if your UI redraws from state every frame)
 
 The draw is not an edge: work starts at the **frame edge** (before the draw, and right after it, where the loop
-starts commands the draw queued) or in those commands. A **hot path** is code a frame runs.
+starts commands the draw queued) or in those commands. A **hot path** is code a frame runs. The **app loop** is Scope's
+lifecycle owner: a start and calls before and after each draw, which a window's hooks and a windowless host call
+alike; it never takes the window.
 
 - **The input's frame shows the input taken, and nothing it made untrue as current.** Split each workflow at its first
   wait: what it changes before waiting changes in the input's frame; what it can't know yet shows as under way where
