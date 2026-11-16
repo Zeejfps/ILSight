@@ -36,9 +36,11 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     private string? _failure;
     private int _next;
 
+    /// <param name="callbacks">What the app's code the disassembler calls back marks when it throws: the read's, which
+    /// the catch around the whole write reads (the builder's, or a saved file's own).</param>
     /// <param name="reading">The reading of the unit writing.</param>
     /// <param name="typeSystem">The type system of <paramref name="assembly"/>, as the unit writing read it.</param>
-    public MethodBodyWithCSharp(ITextOutput output, ModuleReading reading, LoadedModule assembly, DecompilerTypeSystem typeSystem,
+    public MethodBodyWithCSharp(ITextOutput output, CallbackFailure callbacks, ModuleReading reading, LoadedModule assembly, DecompilerTypeSystem typeSystem,
         DecompilerSettings settings, CancellationToken cancellationToken)
         : base(output, cancellationToken)
     {
@@ -48,7 +50,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         _settings = settings;
         _cancellationToken = cancellationToken;
         _document = output as DocumentBuilder;
-        _callbacks = NodeDecompiler.CallbacksOf(output);
+        _callbacks = callbacks;
     }
 
     public override void Disassemble(MetadataFile module, MethodDefinitionHandle handle)
@@ -86,7 +88,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     {
         try
         {
-            var decompiler = NodeDecompiler.CreateCSharpDecompiler(_reading, _assembly, _typeSystem, _settings, _cancellationToken);
+            var decompiler = NodeDecompiler.CreateCSharpDecompiler(_reading, _assembly, _typeSystem, _settings, _callbacks, _cancellationToken);
             var syntaxTree = decompiler.Decompile(handle);
             NodeDecompiler.WriteLocatedSyntaxTree(syntaxTree, builder, _settings);
             return decompiler.CreateSequencePoints(syntaxTree);

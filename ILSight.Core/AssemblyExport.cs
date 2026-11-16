@@ -17,7 +17,7 @@ public static class AssemblyExport
     /// writes what <paramref name="extras"/> asks for besides. A unit reading the assembly: closed, writing nothing,
     /// when it was released (closed) before. What the library throws decompiling or writing it, the disk's failures
     /// among them, is <see cref="Outcome{T}.Failed"/>; the cancellation of <paramref name="cancellationToken"/> is let
-    /// through.</summary>
+    /// through, and so is a bug of the app's code the library calls back (its resolver: <see cref="CallbackFailure"/>).</summary>
     /// <exception cref="ArgumentException"><paramref name="projectPath"/> is no absolute path of a file.</exception>
     public static async Task<Outcome<ModuleRead<ExportedProject>>> ExportProjectAsync(LoadedModule assembly, DecompilerOptions options,
         string projectPath, ProjectExtras? extras = null, IProgress<ExportProgress>? progress = null, CancellationToken cancellationToken = default)
@@ -29,17 +29,20 @@ public static class AssemblyExport
             return new Outcome<ModuleRead<ExportedProject>>.Ok(new ModuleRead<ExportedProject>.Closed { Module = assembly });
         }
 
+        // What the app's code the library calls back throws (the resolver) marks this: a bug, which goes on to the edge
+        // rather than reading as the library's failure on the assembly, which the export says without a record (CF10).
+        var callbacks = new CallbackFailure();
         var part = BeginPart(progress, assembly, 0, WholeExport);
         ExportedProject project;
         try
         {
-            project = await ExportProjectAsync(reading, assembly, options, path, extras ?? ProjectExtras.None, part, cancellationToken);
+            project = await ExportProjectAsync(reading, assembly, options, path, extras ?? ProjectExtras.None, part, callbacks, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw;
         }
-        catch (Exception e)
+        catch (Exception e) when (!callbacks.Failed)
         {
             return new Outcome<ModuleRead<ExportedProject>>.Failed(e);
         }
@@ -48,16 +51,16 @@ public static class AssemblyExport
     }
 
     private static async Task<ExportedProject> ExportProjectAsync(ModuleReading reading, LoadedModule assembly, DecompilerOptions options,
-        FullFilePath projectPath, ProjectExtras extras, PartProgress? part, CancellationToken cancellationToken)
+        FullFilePath projectPath, ProjectExtras extras, PartProgress? part, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         var (projectPart, pdbPart) = SplitForPdb(part, extras.Pdb);
-        var project = WriteProject(reading, assembly, options, projectPath, extras.StrongNameKeyFile, projectPart, cancellationToken);
+        var project = WriteProject(reading, assembly, options, projectPath, extras.StrongNameKeyFile, projectPart, callbacks, cancellationToken);
         if (!extras.Pdb)
         {
             return project;
         }
 
-        return await WithPdbAsync(reading, project, options, projectPath.Folder, extras.EmbedSourcesInPdb, pdbPart, cancellationToken);
+        return await WithPdbAsync(reading, project, options, projectPath.Folder, extras.EmbedSourcesInPdb, pdbPart, callbacks, cancellationToken);
     }
 
     private static (PartProgress? Project, PartProgress? Pdb) SplitForPdb(PartProgress? part, bool pdb)
@@ -76,11 +79,11 @@ public static class AssemblyExport
     }
 
     private static ExportedProject WriteProject(ModuleReading reading, LoadedModule assembly, DecompilerOptions options, FullFilePath projectPath, string? strongNameKeyFile,
-        IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
+        IProgress<DecompilationProgress>? progress, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         var folder = projectPath.Folder;
         Directory.CreateDirectory(folder);
-        var decompiler = CreateProjectDecompiler(reading, assembly, options, cancellationToken);
+        var decompiler = CreateProjectDecompiler(reading, assembly, options, callbacks, cancellationToken);
         decompiler.ProgressIndicator = progress;
         decompiler.StrongNameKeyFile = strongNameKeyFile;
         using var projectFile = new StreamWriter(projectPath.Text);
@@ -92,18 +95,17 @@ public static class AssemblyExport
     }
 
     private static WholeProjectDecompiler CreateProjectDecompiler(ModuleReading reading, LoadedModule assembly, DecompilerOptions options,
-        CancellationToken cancellationToken)
+        CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         var settings = Settings.Create(options);
         var symbols = NodeDecompiler.DebugSymbolsFor(assembly, settings);
-        // The export's catch reads no mark of the app's callbacks yet: what they throw is the export's failure, reported.
-        return new BamlProjectDecompiler(assembly, LoadedAssemblies.CreateResolver(reading, assembly, new CallbackFailure()), settings, symbols, cancellationToken);
+        return new BamlProjectDecompiler(assembly, LoadedAssemblies.CreateResolver(reading, assembly, callbacks), settings, symbols, cancellationToken);
     }
 
     private static async Task<ExportedProject> WithPdbAsync(ModuleReading reading, ExportedProject project, DecompilerOptions options, string folder,
-        bool embedSources, IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
+        bool embedSources, IProgress<DecompilationProgress>? progress, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
-        var failure = await TryGeneratePdbAsync(reading, project.Assembly, options, folder, embedSources, progress, cancellationToken);
+        var failure = await TryGeneratePdbAsync(reading, project.Assembly, options, folder, embedSources, progress, callbacks, cancellationToken);
         if (failure is not null)
         {
             return project with { Pdb = new ProjectPdb.Failed(failure) };
@@ -132,17 +134,19 @@ public static class AssemblyExport
             return new Outcome<ModuleRead<List<ExportedProject>>>.Ok(new ModuleRead<List<ExportedProject>>.Closed { Module = closed });
         }
 
+        // The app's callbacks' failures go on to the edge, as for one project (CF10).
+        var callbacks = new CallbackFailure();
         List<ExportedProject> exported;
         try
         {
             exported = await ExportSolutionAsync(reading, projects, assemblies, options, folder, solutionPath, extras ?? ProjectExtras.None, progress,
-                cancellationToken);
+                callbacks, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw;
         }
-        catch (Exception e)
+        catch (Exception e) when (!callbacks.Failed)
         {
             return new Outcome<ModuleRead<List<ExportedProject>>>.Failed(e);
         }
@@ -167,7 +171,7 @@ public static class AssemblyExport
 
     private static async Task<List<ExportedProject>> ExportSolutionAsync(ModuleReading reading, IReadOnlyList<SolutionProject> projects,
         IReadOnlyList<LoadedModule> assemblies, DecompilerOptions options, string folder, string solutionPath, ProjectExtras withExtras,
-        IProgress<ExportProgress>? progress, CancellationToken cancellationToken)
+        IProgress<ExportProgress>? progress, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         var bounds = PartBounds(assemblies);
         var exported = new List<ExportedProject>();
@@ -177,7 +181,7 @@ public static class AssemblyExport
             var project = projects[i];
             var projectPath = FullFilePath.Of(ExportNames.ProjectPathIn(folder, project.Name));
             var part = BeginPart(progress, project.Assembly, i, bounds);
-            exported.Add(await ExportProjectAsync(reading, project.Assembly, options, projectPath, withExtras, part, cancellationToken));
+            exported.Add(await ExportProjectAsync(reading, project.Assembly, options, projectPath, withExtras, part, callbacks, cancellationToken));
         }
         var items = exported.ConvertAll(ToSolutionItem);
         SolutionCreator.WriteSolutionFile(solutionPath, items);
@@ -199,17 +203,19 @@ public static class AssemblyExport
     public static async Task<Outcome<TypeSystemWork<string>>> GeneratePdbAsync(LoadedModule assembly, DecompilerOptions options, string path,
         IProgress<ExportProgress>? progress = null, CancellationToken cancellationToken = default)
     {
+        // The app's callbacks' failures go on to the edge (CF10).
+        var callbacks = new CallbackFailure();
         TypeSystemWork<string> written;
         try
         {
             written = await LoadedAssemblies.WithTypeSystemAsync(assembly, (reading, typeSystem) => GeneratePdb(reading, assembly, typeSystem, options, path,
-                embedSources: true, BeginPart(progress, assembly, 0, WholeExport), cancellationToken), cancellationToken);
+                embedSources: true, BeginPart(progress, assembly, 0, WholeExport), callbacks, cancellationToken), cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw;
         }
-        catch (Exception e)
+        catch (Exception e) when (!callbacks.Failed)
         {
             return new Outcome<TypeSystemWork<string>>.Failed(e);
         }
@@ -218,10 +224,10 @@ public static class AssemblyExport
     }
 
     private static string GeneratePdb(ModuleReading reading, LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerOptions options, string path,
-        bool embedSources, IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
+        bool embedSources, IProgress<DecompilationProgress>? progress, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         var settings = Settings.Create(options);
-        var decompiler = NodeDecompiler.CreateCSharpDecompiler(reading, assembly, typeSystem, settings, cancellationToken);
+        var decompiler = NodeDecompiler.CreateCSharpDecompiler(reading, assembly, typeSystem, settings, callbacks, cancellationToken);
         var writer = new PortablePdbWriter { Progress = progress, EmbedSourceFiles = embedSources };
         AtomicFile.Write(path, stream => writer.WritePdb(PortableExecutableOf(assembly), decompiler, settings, stream));
         return path;
@@ -250,12 +256,13 @@ public static class AssemblyExport
             return new ModuleRead<List<PdbFailure>>.Closed { Module = closed };
         }
 
-        var failures = await GeneratePdbsAsync(reading, assemblies, options, folder, progress, cancellationToken);
+        // The app's callbacks' failures go on to the edge rather than reading as an assembly's PDB not written (CF10).
+        var failures = await GeneratePdbsAsync(reading, assemblies, options, folder, progress, new CallbackFailure(), cancellationToken);
         return new ModuleRead<List<PdbFailure>>.Read { Value = failures };
     }
 
     private static async Task<List<PdbFailure>> GeneratePdbsAsync(ModuleReading reading, IReadOnlyList<LoadedModule> assemblies, DecompilerOptions options,
-        string folder, IProgress<ExportProgress>? progress, CancellationToken cancellationToken)
+        string folder, IProgress<ExportProgress>? progress, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         var bounds = PartBounds(assemblies);
         var failures = new List<PdbFailure>();
@@ -264,7 +271,7 @@ public static class AssemblyExport
             cancellationToken.ThrowIfCancellationRequested();
             var assembly = assemblies[i];
             var part = BeginPart(progress, assembly, i, bounds);
-            var failure = await TryGeneratePdbAsync(reading, assembly, options, folder, embedSources: true, part, cancellationToken);
+            var failure = await TryGeneratePdbAsync(reading, assembly, options, folder, embedSources: true, part, callbacks, cancellationToken);
             if (failure is not null)
             {
                 failures.Add(failure);
@@ -274,7 +281,7 @@ public static class AssemblyExport
     }
 
     private static async Task<PdbFailure?> TryGeneratePdbAsync(ModuleReading reading, LoadedModule assembly, DecompilerOptions options, string folder,
-        bool embedSources, IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
+        bool embedSources, IProgress<DecompilationProgress>? progress, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         if (!assembly.CanGeneratePdb)
         {
@@ -283,7 +290,7 @@ public static class AssemblyExport
 
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, cancellationToken);
         return read.Match(
-            r => TryGeneratePdb(reading, assembly, r.TypeSystem, options, folder, embedSources, progress, cancellationToken),
+            r => TryGeneratePdb(reading, assembly, r.TypeSystem, options, folder, embedSources, progress, callbacks, cancellationToken),
             u => new PdbFailure.NotWritten
             {
                 Assembly = assembly,
@@ -297,15 +304,15 @@ public static class AssemblyExport
     }
 
     private static PdbFailure? TryGeneratePdb(ModuleReading reading, LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerOptions options,
-        string folder, bool embedSources, IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
+        string folder, bool embedSources, IProgress<DecompilationProgress>? progress, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         var path = Path.Combine(folder, assembly.PdbFileName);
         try
         {
-            GeneratePdb(reading, assembly, typeSystem, options, path, embedSources, progress, cancellationToken);
+            GeneratePdb(reading, assembly, typeSystem, options, path, embedSources, progress, callbacks, cancellationToken);
             return null;
         }
-        catch (Exception e) when (e is not OperationCanceledException)
+        catch (Exception e) when (e is not OperationCanceledException && !callbacks.Failed)
         {
             return new PdbFailure.NotWritten
             {

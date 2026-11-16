@@ -371,7 +371,7 @@ public static class LoadedAssemblies
     /// them, made the first time on this thread, inside the caller's read. Every module it was handed is added to
     /// <paramref name="reading"/>, the unit's: with one closed since, it is made again, resolving without it.</summary>
     internal static DecompilerTypeSystem ChooseTypeSystemFor(ModuleReading reading, LoadedModule module, DecompilerTypeSystem typeSystem,
-        DecompilerSettings settings)
+        DecompilerSettings settings, CallbackFailure callbacks)
     {
         var options = DecompilerTypeSystem.GetOptions(settings);
         if (options == DefaultTypeSystemOptions)
@@ -382,8 +382,8 @@ public static class LoadedAssemblies
         var library = GetLibrary(module);
         while (true)
         {
-            var kept = library.TypeSystems.GetOrAdd(options, static (o, s) => new Lazy<TypeSystemBuild<DecompilerTypeSystem>>(() => BuildTypeSystem(s.library, s.reading, o)),
-                (library, reading));
+            var kept = library.TypeSystems.GetOrAdd(options, static (o, s) => new Lazy<TypeSystemBuild<DecompilerTypeSystem>>(() => BuildTypeSystem(s.library, s.reading, o, s.callbacks)),
+                (library, reading, callbacks));
             var build = kept.Value;
             if (build.TryReadHandedOut(reading))
             {
@@ -394,9 +394,11 @@ public static class LoadedAssemblies
         }
     }
 
-    private static TypeSystemBuild<DecompilerTypeSystem> BuildTypeSystem(ModuleLibrary library, ModuleReading reading, TypeSystemOptions options)
+    private static TypeSystemBuild<DecompilerTypeSystem> BuildTypeSystem(ModuleLibrary library, ModuleReading reading, TypeSystemOptions options,
+        CallbackFailure callbacks)
     {
-        var resolver = new ReadingResolver(library, reading);
+        // The resolver marks the read's count, which the catch around the read that built it reads (CF10).
+        var resolver = new ReadingResolver(library, reading) { Callbacks = callbacks };
         var typeSystem = new DecompilerTypeSystem(library.File, resolver, options);
         return new TypeSystemBuild<DecompilerTypeSystem> { Built = typeSystem, HandedOut = resolver.ListHandedOut() };
     }

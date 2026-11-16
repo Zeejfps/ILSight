@@ -79,4 +79,20 @@ public sealed class CallbackFailureTests
 
         Assert.False(callbacks.Failed);
     }
+
+    // A catch that says the read's failure as the data's reads the count (CF10): saving a node's code, a bug in the
+    // builder's work goes on to the edge, never the save's failure.
+    [Fact]
+    public async Task A_bug_in_the_builders_work_while_a_nodes_code_is_saved_reaches_the_edge_not_the_saves_failure()
+    {
+        var list = new AssemblyList { Runtime = TestRuntime.Installed };
+        var reference = await list.Open(Trees.TestAssemblyPath).ReadRootAsync().GetChildAsync("References", "System.Runtime");
+        using var temp = new TempDir();
+        Directory.CreateDirectory(temp.Path);
+
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CodeFiles.SaveAsync(TestSession.Shared, reference, DecompilationLanguage.CSharp, DecompilerOptions.Default, new BrokenReferenceNotes(), temp.PathOf("Reference.cs")));
+
+        Assert.Equal(BrokenReferenceNotes.Message, thrown.Message);
+    }
 }
