@@ -1446,25 +1446,27 @@ foreach (var line in lines)
    thing that makes `store.SaveOrderAsync(order, ct);` look wrong.
 6. **A call made for its effect is its own statement.** Where it also returns something, the result goes into a local
    named for what it is, and that local is passed on: `var save = loop.AfterDraw(state); RetrySaveWhenAsked(ui, save);`,
-   never `RetrySaveWhenAsked(ui, loop.AfterDraw(state))`. Only calls with no effect sit inside another call's
-   arguments or an interpolated string: queries, pure functions, value constructors (`Get*`, `Find*`, `Is*`, `To*`,
-   `With*`, `Calculate*`, `Build*`, `Create*`, LINQ, `nameof`). Inside an argument an effect hides in an expression
-   read for its value: a condition put on the line later takes the effect with it, and a second reader of the result,
-   having no name to use, writes the call again. Decided cases: a fluent builder's chain is a receiver, not an argument
-   (`With*` returns what to keep using); `await` of a query sits in an argument (`Show(await FindAsync(id, ct))`), of
-   an effect doesn't; the tasks handed to `Task.WhenAll` / `WhenAny` start in its arguments (`Task.WhenAll(StartX(),
-   StartY())`), its own job being to run them together; a lambda's body is its own (LINQ's deferred calls are R011's).
-   A test's act is its own line too (`var toggle = bookmarks.Toggle(...); Assert.IsType<Added>(toggle);`). A pure
-   function named with an action verb (`SetToggle(options, ...)` returning a copy, `WritePage(model)` returning text)
-   breaks point 4 or the Actions table: it is renamed (`WithToggle`, `BuildPage`), not split. In testing (S21, ILSight's
-   window frame running the loop's after-draw chores inside the retry's argument; the retry put later under
-   `if (window.IsShown)`, and a status bar reading the save's outcome written later), ten minimized frames ran no
-   queued command and saved nothing, and the status bar's reader called `AfterDraw` again, two writes a frame; the call
-   its own statement and its outcome a named local, every frame ran its commands and saved once. RL0309 suggests a call
-   of the codebase's own written as an argument or an interpolated hole whose name starts with an action verb (R003's,
-   the reacting verbs included) or with no verb, only a moment (`After`, `Before`, `On`, `When`); receivers,
-   `Task.WhenAll`'s tasks, a text catalog's methods, a delegate's `Invoke` and a lookup's noun phrase (`PlaceOf`) aside
-   (RULE-ISSUES CI4-CI6).
+   never `RetrySaveWhenAsked(ui, loop.AfterDraw(state))`. Only calls with no effect sit inside another call's arguments
+   or an interpolated string: queries, pure functions, value constructors (`Get*`, `Find*`, `Is*`, `To*`, `With*`,
+   `Calculate*`, `Build*`, `Create*`, LINQ, `nameof`). Inside an argument an effect hides in an expression read for its
+   value: a condition put on the line later takes the effect with it, and a second reader of the result, having no name
+   to use, writes the call again. Decided cases: a fluent builder's chain is a receiver, not an argument (`With*`
+   returns what to keep using); `await` of a query sits in an argument (`Show(await FindAsync(id, ct))`), of an effect
+   doesn't; the tasks handed to `Task.WhenAll` / `WhenAny` start in its arguments (`Task.WhenAll(StartX(), StartY())`),
+   its own job being to run them together; a lambda's body is its own (LINQ's deferred calls are R011's). A test's act
+   is its own line too (`var toggle = bookmarks.Toggle(...); Assert.IsType<Added>(toggle);`). Split, the calls keep the
+   order they ran in (C# runs arguments left to right): an argument to the effect's left that reads what it changes is
+   named first. A pure function named with an action verb (`SetToggle(options, ...)` returning a copy,
+   `WritePage(model)` returning text) breaks point 4 or the Actions table: it is renamed (`WithToggle`, `BuildPage`),
+   not split. In testing (S21, ILSight's window frame running the loop's after-draw chores inside the retry's argument;
+   the retry put later under `if (window.IsShown)`, and a status bar reading the save's outcome written later), ten
+   minimized frames ran no queued command and saved nothing, and the status bar's reader called `AfterDraw` again, two
+   writes a frame; the call its own statement and its outcome a named local, every frame ran its commands and saved
+   once; split with the after-draw pulled ahead of `loop.Queued` to its left, a log said no command was queued in any
+   frame (S21 c). RL0309 suggests a call of the codebase's own written as an argument or an interpolated hole whose name
+   starts with an action verb (R003's, the reacting verbs included) or with no verb, only a moment (`After`, `Before`,
+   `On`, `When`); receivers, `Task.WhenAll`'s tasks, a text catalog's methods, a delegate's `Invoke` and a lookup's noun
+   phrase (`PlaceOf`) aside (RULE-ISSUES CI4-CI6, CJ3).
 
 ### Properties
 
@@ -1502,7 +1504,7 @@ Framework-facing code uses the names its framework **requires or documents**. Ev
 - [ ] No noun-named methods that should be properties, and no `Set*` methods that should be property setters.
 - [ ] Builders are mutable: `With*` for values, `Add*` for repeatable items, `Build()` at the end.
 - [ ] Every awaitable-returning method ends in `Async`.
-- [ ] A call made for its effect is its own statement, its result a local named for what it is and passed on; only queries, pure functions and value constructors sit inside another call's arguments (RL0309).
+- [ ] A call made for its effect is its own statement, its result a local named for what it is and passed on, split in the order the arguments ran; only queries, pure functions and value constructors sit inside another call's arguments (RL0309).
 
 ---
 
@@ -1704,7 +1706,7 @@ that is also the activity only on a class), union cases, static classes and test
   file), static (h, s) => h.Handle(s.imports, s.file))`), so a frame that asks for nothing allocates nothing (R011).
   An object holding a runner starts work, so it is the feature's edge (`[Edge]`; R001: a part never takes the runner,
   which would put I/O among its decisions); a chore that only changes a part is that part's method. The loop's calls
-  take what every host has (the app's state, the frame's input), never the screen: a host with no screen calls the
+  take what every host has (the app's state, the frame's input), never the window: a host with no window calls the
   same ones, and no second loop type is written for it (two sequences again). A window-only chore that does I/O (the
   code font's file) is an `[Edge]` object of its own, top-level, its logic with its state, held by the window class;
   not a data class with its logic left in the window. A step every host runs stays inside the loop's call that runs it,

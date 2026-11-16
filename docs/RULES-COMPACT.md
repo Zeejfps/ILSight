@@ -176,8 +176,8 @@ RL0309 (an action call inside an argument).
   `Sync`, `React`); a conditional effect says both (`ReloadListWhenLoadOptionsChange`). Event handlers too.
 - **A call made for its effect is its own statement**, its result a local named for what it is, passed on
   (`var save = loop.AfterDraw(state); RetrySave(ui, save);`); only queries, pure functions and value constructors sit
-  in arguments. `Task.WhenAll(StartX(), StartY())` and a builder's chain are fine; a pure function named as an action
-  is renamed.
+  in arguments. Split in the arguments' order: one to its left reading what it changes is named first.
+  `Task.WhenAll(StartX(), StartY())` and a builder's chain are fine; a pure function named as an action is renamed.
 - **A `bool` method is a question or a `Try<Verb>`**, its first word saying which; a use case returns a result union
   (R009); an action reporting a fact about what it did returns a value naming it (`tabs.Close(tab).WasActive`).
 - **No sentinels:** missing is `T?`, a union case when the miss carries data (`Missing { InsertAt }`), or
@@ -249,7 +249,7 @@ on purpose, a published member), RL0410 (a static class named for a moment), RL0
 - **Grouped by what the code works on, never by when it runs:** functions that keep taking the same collaborators (a
   runner, a feature's part and handlers) are one object the root builds. A class named for a moment (`AppStart`,
   `AppFrames`) is split into its features; the app loop (Scope) keeps the calls, ordered where it matters, taking no
-  screen, returning a step's outcome for the host to pass on. An object holding a runner is an `[Edge]`. Queued
+  window, returning a step's outcome for the host to pass on. An object holding a runner is an `[Edge]`. Queued
   hot-path work: a `static` lambda handed target and subject.
 - **Static is for code no object owns** (pure functions and parses, I/O over values, extension methods on a type you
   don't own or over sequences, a kind's `static abstract` members, statics a framework or generator requires,
