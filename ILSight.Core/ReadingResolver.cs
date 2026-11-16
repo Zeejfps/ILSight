@@ -9,7 +9,8 @@ namespace ILSight.Core;
 /// noted on the module (<see cref="ModuleLibrary.NoteUnreadReference"/>); one not found is read by name only and noted
 /// as not found (<see cref="ModuleLibrary.NoteMissingReference"/>). The app's code the library calls back while it
 /// reads: its work (the app's lookup of the file, handing it out, noting what it couldn't) marks
-/// <see cref="Callbacks"/> when it throws, so the read's catch lets it through (CD4).</summary>
+/// <see cref="Callbacks"/> when it throws, so the read's catch lets it through (CD4); the reference row it is handed
+/// and the library's own resolver it falls back on are the read's, outside that count (CF9).</summary>
 internal sealed class ReadingResolver : IAssemblyResolver
 {
     private readonly ModuleLibrary _resolving;
@@ -34,17 +35,43 @@ internal sealed class ReadingResolver : IAssemblyResolver
         }
     }
 
+    // What the library hands in and what its own resolver searches are the read's, outside the count (CF9): the
+    // reference row read whole first (its properties read the user's metadata each time they are asked), then the
+    // app's search, the library's where the app's finds nothing, and the app's again on what that answered.
     public MetadataFile? Resolve(IAssemblyReference reference)
     {
-        return Callbacks.Run((Resolver: this, reference), static s => s.Resolver.ResolveAssembly(s.reference));
+        var facts = AssemblyReferenceFacts.Of(reference);
+        var begun = Callbacks.Run((Resolver: this, facts), static s => s.Resolver.BeginResolve(s.facts));
+        if (begun.Done)
+        {
+            return begun.File;
+        }
+
+        var probed = _resolving.Resolver.ProbeLibrary(facts);
+        return Callbacks.Run((Resolver: this, facts, probed), static s => s.Resolver.EndResolve(s.facts, s.probed));
     }
 
-    private MetadataFile? ResolveAssembly(IAssemblyReference reference)
+    private (bool Done, MetadataFile? File) BeginResolve(AssemblyReferenceFacts reference)
+    {
+        (bool Done, LoadedModule? Found) begun;
+        try
+        {
+            begun = _resolving.Resolver.BeginResolveAssembly(reference);
+        }
+        catch (AssemblyLoadException e)
+        {
+            return (true, ReadByNameOnly(reference.Name, e));
+        }
+
+        return begun.Done ? (true, HandOut(begun.Found, reference.Name)) : (false, null);
+    }
+
+    private MetadataFile? EndResolve(AssemblyReferenceFacts reference, LibraryProbe probed)
     {
         LoadedModule? found;
         try
         {
-            found = _resolving.Resolver.ResolveAssembly(reference);
+            found = _resolving.Resolver.EndResolveAssembly(reference, probed);
         }
         catch (AssemblyLoadException e)
         {
@@ -54,6 +81,7 @@ internal sealed class ReadingResolver : IAssemblyResolver
         return HandOut(found, reference.Name);
     }
 
+    // The main module's file name is the library's, held in memory: nothing of the user's data is read in the count.
     public MetadataFile? ResolveModule(MetadataFile mainModule, string moduleName)
     {
         return Callbacks.Run((Resolver: this, mainModule, moduleName), static s => s.Resolver.FindModule(s.mainModule, s.moduleName));

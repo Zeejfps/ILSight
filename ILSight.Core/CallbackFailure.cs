@@ -11,8 +11,12 @@ namespace ILSight.Core;
 /// finally on the way runs, so such a mark isn't there yet when the read's filter asks. <c>Run</c> counts the work as
 /// begun before doing it and as ended only when it returns, with no catch and no finally: while what it threw is on
 /// its way out, and after, the count stays up, and <see cref="Failed"/> says so. One read's code runs on one thread at
-/// a time, so no other call is in progress when its filter asks. Once up, it stays up for the rest of the
-/// read.</para></summary>
+/// a time, so no other call is in progress when its filter asks. Once up, it stays up for the rest of the read.</para>
+/// <para>Only the app's own work is counted (CF9): what a callback reads of the library's objects (a type's definition,
+/// a member's token, a reference row's name) and what it hands back to the library's code (a <c>base</c> writer, the
+/// library's own resolver) is the read's, done before <c>Run</c> or between two, so a lazy decode that throws there is
+/// the data's failure. Where a callback reads only what the library already holds in memory (an AST's nodes and
+/// annotations), it says so and reads it in the count.</para></summary>
 internal sealed class CallbackFailure
 {
     private int _unreturned;

@@ -21,6 +21,8 @@ internal sealed class FieldSelection : IAstTransform
         Callbacks.Run((Kept, rootNode), static s => KeepField(s.Kept, s.rootNode));
     }
 
+    // Reads the decompiler's AST and the symbols annotated on it, in memory, comparing them by reference: nothing of the
+    // user's data is read in the count (CF9).
     private static void KeepField(IField field, AstNode rootNode)
     {
         foreach (var node in rootNode.Children)

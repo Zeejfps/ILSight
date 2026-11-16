@@ -22,6 +22,8 @@ internal sealed class ConstructorSelection : IAstTransform
         Callbacks.Run((Kept, rootNode), static s => KeepConstructor(s.Kept, s.rootNode));
     }
 
+    // Reads the decompiler's AST and the symbols annotated on it, in memory, comparing them by reference: nothing of the
+    // user's data is read in the count (CF9).
     private static void KeepConstructor(IMethod ctor, AstNode rootNode)
     {
         var removed = new HashSet<ISymbol?>();

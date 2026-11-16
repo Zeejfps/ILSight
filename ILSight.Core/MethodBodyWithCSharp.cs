@@ -99,6 +99,8 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         }
     }
 
+    // The IL functions and their methods' tokens are the decompiler's, in memory: nothing of the user's data is read in
+    // the count (CF9).
     private static List<SequencePoint> FindPoints(Dictionary<ILFunction, List<SequencePoint>> points, MethodDefinitionHandle handle)
     {
         foreach (var (function, list) in points)
@@ -227,6 +229,8 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
         return indent;
     }
 
+    // Handed to the output: the app's builder (its own count), or the library's plain text writer for a saved file, which
+    // only appends the app's text in memory.
     private static void WriteComment(ITextOutput output, string text)
     {
         output.WriteLine(CommentPrefix + text);

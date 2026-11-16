@@ -18,6 +18,8 @@ internal sealed class ParameterStarts(TokenWriter decorated, DocumentBuilder out
         base.StartNode(node);
     }
 
+    // The node and its parent are the decompiler's AST, in memory: nothing of the user's data is read in the count
+    // (CF9).
     private void Note(AstNode node)
     {
         if (IsDeclaredParameter(node))

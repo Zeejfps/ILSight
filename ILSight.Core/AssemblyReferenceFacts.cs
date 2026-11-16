@@ -26,7 +26,18 @@ internal sealed class AssemblyReferenceFacts : IAssemblyReference
     /// what the library throws reading them goes on to the caller's catch.</summary>
     public static AssemblyReferenceFacts Read(MetadataFile file, AssemblyReferenceHandle handle)
     {
-        IAssemblyReference reference = new ICSharpCode.Decompiler.Metadata.AssemblyReference(file, handle);
+        return Of(new ICSharpCode.Decompiler.Metadata.AssemblyReference(file, handle));
+    }
+
+    /// <summary>The facts of <paramref name="reference"/>, each read now: what the library throws reading them goes on
+    /// to the caller.</summary>
+    public static AssemblyReferenceFacts Of(IAssemblyReference reference)
+    {
+        if (reference is AssemblyReferenceFacts facts)
+        {
+            return facts;
+        }
+
         return new AssemblyReferenceFacts
         {
             Name = reference.Name,

@@ -52,4 +52,31 @@ public sealed class CallbackFailureTests
 
         Assert.True(read.Failed);
     }
+
+    // What a callback reads of the library's objects is the read's (CF9): a lazy decode that throws there is the data's
+    // failure, the builder and the resolver left unmarked.
+    [Fact]
+    public void A_type_or_member_the_library_fails_reading_while_the_builder_writes_it_is_the_reads_failure_leaving_the_builder_unmarked()
+    {
+        var builder = new DocumentBuilder { Language = DecompilationLanguage.CSharp };
+        ITextOutput output = builder;
+
+        Assert.Throws<BadImageFormatException>(() => output.WriteReference(UnreadableLibraryObject.Create<ICSharpCode.Decompiler.TypeSystem.IType>(), "Cart"));
+        Assert.Throws<BadImageFormatException>(() => output.WriteReference(UnreadableLibraryObject.Create<ICSharpCode.Decompiler.TypeSystem.IMember>(), "Add"));
+        Assert.Throws<BadImageFormatException>(() => builder.MarkStatement(UnreadableLibraryObject.Create<ICSharpCode.Decompiler.TypeSystem.IMethod>(), 0));
+
+        Assert.False(builder.Failed);
+    }
+
+    [Fact]
+    public void A_reference_row_the_library_fails_reading_when_it_asks_the_resolver_is_the_reads_failure_leaving_the_resolver_unmarked()
+    {
+        var callbacks = new CallbackFailure();
+        using var reading = LoadedAssemblies.BeginReading();
+        var resolver = LoadedAssemblies.CreateResolver(reading, Trees.TestAssembly, callbacks);
+
+        Assert.Throws<BadImageFormatException>(() => resolver.Resolve(UnreadableLibraryObject.Create<ICSharpCode.Decompiler.Metadata.IAssemblyReference>()));
+
+        Assert.False(callbacks.Failed);
+    }
 }

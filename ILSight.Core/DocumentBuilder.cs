@@ -19,7 +19,9 @@ namespace ILSight.Core;
 /// its own, changed only by its methods, which keep them in step with the lines and spans written so far. It is the
 /// app's code the decompiler calls back while it reads (CD4): each member that does more than set a field does its work
 /// through <see cref="Callbacks"/>, so a bug in it marks <see cref="Failed"/> and the catch around the read lets it
-/// through to the edge instead of taking it as the decompiler's failure on the method.</summary>
+/// through to the edge instead of taking it as the decompiler's failure on the method. What a member reads of the
+/// library's objects (a type's definition, a handle's target, a method's token) it reads before the count: the read's,
+/// its failure the data's (CF9).</summary>
 internal sealed class DocumentBuilder : ITextOutput
 {
     private const int MaxSignatureLines = 8;
@@ -408,6 +410,7 @@ internal sealed class DocumentBuilder : ITextOutput
         return reference;
     }
 
+    // An opcode's name is the disassembler's own table, in memory: nothing of the user's data is read in the count.
     public void WriteReference(OpCodeInfo opCode, bool omitSuffix = false)
     {
         Callbacks.Run((Builder: this, opCode, omitSuffix), static s => s.Builder.WriteOpCode(s.opCode, s.omitSuffix));
@@ -427,42 +430,50 @@ internal sealed class DocumentBuilder : ITextOutput
         Write(name, SpanKind.ILOpcode);
     }
 
+    // What the handle names is read of the library's metadata before the count: the read's, its failure the data's
+    // (CF9). Only the span made of it is the app's counted work.
     public void WriteReference(MetadataFile metadata, Handle handle, string text, string protocol = "decompile", bool isDefinition = false)
     {
-        Callbacks.Run((Builder: this, metadata, handle, text, isDefinition), static s => s.Builder.WriteHandle(s.metadata, s.handle, s.text, s.isDefinition));
+        var reference = FindReference(metadata, handle, text);
+        Callbacks.Run((Builder: this, reference, text, isDefinition), static s => s.Builder.WriteHandle(s.reference, s.text, s.isDefinition));
     }
 
-    private void WriteHandle(MetadataFile metadata, Handle handle, string text, bool isDefinition)
+    private void WriteHandle(CodeReference.Navigable? reference, string text, bool isDefinition)
     {
-        var reference = FindReference(metadata, handle, text);
         var kind = _kind ?? (reference is null ? SpanKind.Plain : isDefinition && text.StartsWith('.') ? SpanKind.Keyword : GetSpanKind(reference));
         WriteReferenceSpan(text, kind, reference, isDefinition);
     }
 
+    // The type's definition, its module and token are read of the library's type system before the count (CF9).
     public void WriteReference(IType type, string text, bool isDefinition = false)
-    {
-        Callbacks.Run((Builder: this, type, text, isDefinition), static s => s.Builder.WriteType(s.type, s.text, s.isDefinition));
-    }
-
-    private void WriteType(IType type, string text, bool isDefinition)
     {
         var definition = type.GetDefinition();
         var reference = definition is not null ? CodeReferences.Find(definition, text) : null;
+        Callbacks.Run((Builder: this, reference, text, isDefinition), static s => s.Builder.WriteType(s.reference, s.text, s.isDefinition));
+    }
+
+    private void WriteType(CodeReference.Entity? reference, string text, bool isDefinition)
+    {
         WriteReferenceSpan(text, _kind ?? SpanKind.Type, reference, isDefinition);
     }
 
+    // The member's definition, its kind, module and token are read of the library's type system before the count (CF9).
     public void WriteReference(IMember member, string text, bool isDefinition = false)
     {
-        Callbacks.Run((Builder: this, member, text, isDefinition), static s => s.Builder.WriteMember(s.member, s.text, s.isDefinition));
-    }
-
-    private void WriteMember(IMember member, string text, bool isDefinition)
-    {
         var definition = member.MemberDefinition ?? member;
-        var kind = _kind ?? GetSpanKind(CodeReferences.GetKind(definition.SymbolKind));
-        WriteReferenceSpan(text, kind, CodeReferences.Find(definition, text), isDefinition);
+        var entityKind = CodeReferences.GetKind(definition.SymbolKind);
+        var reference = CodeReferences.Find(definition, text);
+        Callbacks.Run((Builder: this, entityKind, reference, text, isDefinition),
+            static s => s.Builder.WriteMember(s.entityKind, s.reference, s.text, s.isDefinition));
     }
 
+    private void WriteMember(EntityKind entityKind, CodeReference.Entity? reference, string text, bool isDefinition)
+    {
+        WriteReferenceSpan(text, _kind ?? GetSpanKind(entityKind), reference, isDefinition);
+    }
+
+    // A local's kind is a type test and a field of the decompiler's IL variable, which it holds in memory: nothing of the
+    // user's data is read in the count.
     public void WriteLocalReference(string text, object reference, bool isDefinition = false, bool isHoverOnly = false)
     {
         Callbacks.Run((Builder: this, text, reference, isDefinition), static s => s.Builder.WriteLocal(s.text, s.reference, s.isDefinition));
@@ -494,19 +505,17 @@ internal sealed class DocumentBuilder : ITextOutput
     }
 
     /// <summary>Marks the line being written as where the statement at <paramref name="ilOffset"/> of
-    /// <paramref name="method"/> starts. A line keeps the first method marked on it and its lowest offset.</summary>
+    /// <paramref name="method"/> starts. A line keeps the first method marked on it and its lowest offset. The method's
+    /// module and token are read of the library's type system before the count (CF9).</summary>
     public void MarkStatement(IMethod method, int ilOffset)
     {
-        Callbacks.Run((Builder: this, method, ilOffset), static s => s.Builder.MarkMethodStatement(s.method, s.ilOffset));
-    }
-
-    private void MarkMethodStatement(IMethod method, int ilOffset)
-    {
         var reference = CodeReferences.Find(method);
-        if (reference != null)
+        if (reference is null)
         {
-            MarkStatement(reference, ilOffset);
+            return;
         }
+
+        Callbacks.Run((Builder: this, reference, ilOffset), static s => s.Builder.MarkStatement(s.reference, s.ilOffset));
     }
 
     private void MarkStatement(CodeReference.Entity method, int ilOffset)
