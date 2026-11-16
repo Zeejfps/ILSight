@@ -28,7 +28,8 @@ public sealed class WorkflowRunner(BackgroundWork work, ErrorLog errors)
     public void Start(string name, Func<CancellationToken, Task> workflow, params ReadOnlySpan<CancellationToken> cancelledOnPurposeBy)
     {
         var link = Link(cancelledOnPurposeBy);
-        work.Track(name, RunAsync(workflow, null, null, link, [.. cancelledOnPurposeBy], link.Token));
+        var running = RunAsync(workflow, null, null, link, [.. cancelledOnPurposeBy], link.Token);
+        work.Track(name, running);
     }
 
     /// <summary>As <see cref="Start"/>, for a workflow whose start recorded a pending state on the app state (a tab
@@ -38,7 +39,8 @@ public sealed class WorkflowRunner(BackgroundWork work, ErrorLog errors)
         params ReadOnlySpan<CancellationToken> cancelledOnPurposeBy)
     {
         var link = Link(cancelledOnPurposeBy);
-        work.Track(name, RunAsync(workflow, settle, null, link, [.. cancelledOnPurposeBy], link.Token));
+        var running = RunAsync(workflow, settle, null, link, [.. cancelledOnPurposeBy], link.Token);
+        work.Track(name, running);
     }
 
     /// <summary>As <see cref="StartSettling"/>,
@@ -50,7 +52,8 @@ public sealed class WorkflowRunner(BackgroundWork work, ErrorLog errors)
         params ReadOnlySpan<CancellationToken> cancelledOnPurposeBy)
     {
         var link = Link(cancelledOnPurposeBy);
-        work.Track(name, RunAsync(workflow, settle, endedQuietly, link, [.. cancelledOnPurposeBy], link.Token));
+        var running = RunAsync(workflow, settle, endedQuietly, link, [.. cancelledOnPurposeBy], link.Token);
+        work.Track(name, running);
     }
 
     /// <summary>As <see cref="Start"/>, for a workflow that runs until the app shuts down, such as watching a
@@ -60,7 +63,8 @@ public sealed class WorkflowRunner(BackgroundWork work, ErrorLog errors)
     {
         _untilShutdown.RemoveAll(static running => running.IsCompleted);
         var link = Link([]);
-        _untilShutdown.Add(RunAsync(workflow, null, null, link, [], link.Token));
+        var running = RunAsync(workflow, null, null, link, [], link.Token);
+        _untilShutdown.Add(running);
     }
 
     /// <summary>Cancels the workflows running, and any started later, as the app shuts down. Their ending

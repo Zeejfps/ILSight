@@ -117,7 +117,8 @@ internal static class StatusBarView
         var i = ui.Clickable("restart-to-update");
         if (i.Clicked)
         {
-            AboutDialogView.Restart(ui, commands, updates.StartRestart());
+            var restart = updates.StartRestart();
+            AboutDialogView.Restart(ui, commands, restart);
         }
 
         using (ui.Row(i.Id, new Box

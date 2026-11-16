@@ -100,7 +100,11 @@ public static class Commands
     /// and what the reference points at is found and analyzed then (<see cref="StartAnalyzing"/>).</summary>
     public static void AnalyzeLater(IAppCommandWriter commands, Panels panels, CodeReference.Navigable reference)
     {
-        Later(commands, (panels, reference), static (a, s) => StartAnalyzing(a, AnalyzerPanelView.ShowAnalyzing(s.panels, a.ListSession.Analyzer, s.reference)));
+        Later(commands, (panels, reference), static (a, s) =>
+        {
+            var pendingAnalysis = AnalyzerPanelView.ShowAnalyzing(s.panels, a.ListSession.Analyzer, s.reference);
+            StartAnalyzing(a, pendingAnalysis);
+        });
     }
 
     /// <summary>Asks for <paramref name="symbol"/> to be analyzed once the frame is drawn (<see cref="Analyze"/>).</summary>
@@ -125,7 +129,11 @@ public static class Commands
     {
         appState.ListSession.Analyzer.AddRoot(symbol).Switch(
             analyzing => AnalyzerPanelView.ShowAnalysis(panels, rows, analyzing.Root),
-            listing => StartAnalyzing(appState, AnalyzerPanelView.ShowListing(panels, listing.Pending)),
+            listing =>
+            {
+                var pendingAnalysis = AnalyzerPanelView.ShowListing(panels, listing.Pending);
+                StartAnalyzing(appState, pendingAnalysis);
+            },
             refused => appState.Refusals.Show(refused.Why));
     }
 
@@ -708,21 +716,24 @@ public static class Commands
     /// the modules taken off released, each once nothing reads it.</summary>
     public static void CloseAssemblies(AppState appState, IReadOnlyList<LoadedAssembly> items)
     {
-        LoadedAssemblies.Release(appState.ListSession.CloseAssemblies(items));
+        var removed = appState.ListSession.CloseAssemblies(items);
+        LoadedAssemblies.Release(removed);
     }
 
     /// <summary>Takes the files that failed to load off the open list
     /// (<see cref="OpenListSession.CloseFailedAssemblies"/>), released as every close's modules are.</summary>
     public static void CloseFailedAssemblies(AppState appState)
     {
-        LoadedAssemblies.Release(appState.ListSession.CloseFailedAssemblies());
+        var removed = appState.ListSession.CloseFailedAssemblies();
+        LoadedAssemblies.Release(removed);
     }
 
     /// <summary>Closes every assembly of the open list (<see cref="OpenListSession.CloseAllAssemblies"/>), then starts
     /// the loads that started in its tabs and has the modules taken off released.</summary>
     public static void CloseAllAssemblies(AppState appState)
     {
-        FinishClosing(appState, appState.ListSession.CloseAllAssemblies());
+        var listClose = appState.ListSession.CloseAllAssemblies();
+        FinishClosing(appState, listClose);
     }
 
     /// <summary>Starts the loads closing the list started in its tabs, and has the modules it took off released, each
@@ -762,8 +773,12 @@ public static class Commands
     private static void StartFindingNodes(AppState appState, ReopenedNodesLookup lookup)
     {
         appState.Workflows.StartSettling(nameof(ShowReopenedNodesHandler),
-            async ct => StartDecompiling(appState, await appState.ShowReopenedNodesHandler.HandleAsync(appState.ListSession.Reopened, appState.ListSession.Navigation,
-                appState.Decompiler, appState.ViewCommands, lookup, ct)),
+            async ct =>
+            {
+                var reopenedLoads = await appState.ShowReopenedNodesHandler.HandleAsync(appState.ListSession.Reopened, appState.ListSession.Navigation,
+                    appState.Decompiler, appState.ViewCommands, lookup, ct);
+                StartDecompiling(appState, reopenedLoads);
+            },
             error => ShowReopenedNodesHandler.ShowLookupFailed(appState.ListSession.Reopened, appState.ListSession.Navigation, lookup.Nodes, error));
     }
 

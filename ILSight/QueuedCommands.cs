@@ -184,7 +184,8 @@ internal static class QueuedCommands
             return;
         }
 
-        Commands.StartDecompiling(appState, navigation.FocusTab(tab, appState.Decompiler.Setup));
+        var decompileTicket = navigation.FocusTab(tab, appState.Decompiler.Setup);
+        Commands.StartDecompiling(appState, decompileTicket);
     }
 
     internal static void CloseTabAndFocusNext(Panels panels, AppState appState, DocumentTab tab)

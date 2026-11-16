@@ -29,7 +29,8 @@ internal static class ProcessPickerView
     /// again once the frame is drawn, as they come and go.</summary>
     public static void Open(IAppCommandWriter commands, ProcessPicker picker)
     {
-        Scan(commands, picker.Browser, picker.Open());
+        var scanTicket = picker.Open();
+        Scan(commands, picker.Browser, scanTicket);
     }
 
     // Runs once the frame is drawn; another scan or closing the dialog cancels it.
@@ -61,7 +62,8 @@ internal static class ProcessPickerView
 
         if (open && browser.CanOpen)
         {
-            Commands.OpenFilesLater(commands, navigation.BeginOpening(browser.ListToOpen()));
+            var openRequest = navigation.BeginOpening(browser.ListToOpen());
+            Commands.OpenFilesLater(commands, openRequest);
             ui.RequestUpdate();
             close = true;
         }
@@ -117,7 +119,8 @@ internal static class ProcessPickerView
             ui.Spacer();
             if (ui.Button(t.ProcessPickerRefresh, enabled: browser.Scan is not ProcessScan.Scanning, id: "process-refresh"))
             {
-                Scan(commands, browser, browser.StartScan());
+                var scanTicket = browser.StartScan();
+                Scan(commands, browser, scanTicket);
             }
 
             close |= ui.Button(t.PickerCancel, id: "process-cancel");

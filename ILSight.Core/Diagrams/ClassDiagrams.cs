@@ -117,7 +117,8 @@ public static partial class ClassDiagrams
 
     private static string ReadAsset(string name)
     {
-        using var reader = new StreamReader(OpenAsset(name));
+        var asset = OpenAsset(name);
+        using var reader = new StreamReader(asset);
         return reader.ReadToEnd();
     }
 

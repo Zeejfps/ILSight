@@ -227,7 +227,8 @@ public sealed class AssemblyReloader(AssemblyReloader.IPorts ports)
 
         var paths = lists.ActivePaths.ToList();
         var tabs = ReleaseShownTabs(session.Navigation, session.Assemblies, decompiler.Setup.Language);
-        ports.ReleaseModules(session.ClearAssemblies());
+        var removed = session.ClearAssemblies();
+        ports.ReleaseModules(removed);
         return new ReloadBegun { Paths = paths, Tabs = tabs, Intent = intent, Work = session.Assemblies.Work };
     }
 
@@ -374,7 +375,8 @@ public sealed class AssemblyReloader(AssemblyReloader.IPorts ports)
         }
 
         var reopened = SavedDocuments.ShowReopenedDocuments(session.Navigation, session.Reopened, session.Assemblies);
-        return TabLoads.None.With(loads).With(reopened).With(Analysis.BeginRetrying(session.Analyzer, session.Assemblies));
+        var retriedAnalyses = Analysis.BeginRetrying(session.Analyzer, session.Assemblies);
+        return TabLoads.None.With(loads).With(reopened).With(retriedAnalyses);
     }
 
     private void ReshowTab(Navigation navigation, Queue<ViewCommand> viewCommands, DecompilerSetup decompiler, ReloadingTab reloading,

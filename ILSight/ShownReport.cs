@@ -19,7 +19,7 @@ public sealed class ShownReport
             return document;
         }
 
-        document = ExportReportText.Write(t, [report]);
+        document = ExportReportText.BuildDocument(t, [report]);
         _written = new Memo<(ByReference<ExportReport>, ByReference<Strings>), DecompiledDocument>(key, document);
         return document;
     }

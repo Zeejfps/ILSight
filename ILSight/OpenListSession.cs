@@ -93,7 +93,8 @@ public sealed class OpenListSession
         var removed = RemovedModules.None;
         foreach (var item in items)
         {
-            removed = removed.With(_assemblies.Close(item));
+            var itemRemoved = _assemblies.Close(item);
+            removed = removed.With(itemRemoved);
             _analyzer.RemoveAnalysesOf(item.ListedItem);
             ShowTabsClosed(item.ListedItem);
         }

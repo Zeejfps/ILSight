@@ -153,7 +153,8 @@ internal static class OmnibarView
 
         if (i.ClickedWith(PointerButton.Middle))
         {
-            Commands.DecompileLater(commands, navigation.ShowNode(node, setup, inNewTab: true));
+            var decompileTicket = navigation.ShowNode(node, setup, inNewTab: true);
+            Commands.DecompileLater(commands, decompileTicket);
         }
     }
 
@@ -462,7 +463,8 @@ internal static class OmnibarView
         }
 
         omnibar.StopSearch();
-        Commands.DecompileLater(commands, navigation.ShowNode(match.Node, setup, clicked.InNewTab));
+        var decompileTicket = navigation.ShowNode(match.Node, setup, clicked.InNewTab);
+        Commands.DecompileLater(commands, decompileTicket);
     }
 
     private static void SyntaxTooltip(Ui ui, Appearance appearance, Omnibar omnibar, int fieldId)

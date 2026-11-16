@@ -100,7 +100,8 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
 
     public override void WriteToken(string token)
     {
-        using var span = StartSpan(_builder.Callbacks.Run((Writer: this, token), static s => s.Writer.KindOfToken(s.token)));
+        var kind = _builder.Callbacks.Run((Writer: this, token), static s => s.Writer.KindOfToken(s.token));
+        using var span = StartSpan(kind);
         base.WriteToken(token);
     }
 
@@ -123,7 +124,8 @@ internal sealed class HighlightingTokenWriter : DecoratingTokenWriter
 
     public override void WriteIdentifier(Identifier identifier)
     {
-        using var span = StartSpan(_builder.Callbacks.Run((Writer: this, identifier), static s => s.Writer.Classify(s.identifier)));
+        var kind = _builder.Callbacks.Run((Writer: this, identifier), static s => s.Writer.Classify(s.identifier));
+        using var span = StartSpan(kind);
         base.WriteIdentifier(identifier);
     }
 

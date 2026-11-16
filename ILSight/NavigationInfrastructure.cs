@@ -110,7 +110,8 @@ public sealed class NavigationInfrastructure(ErrorLog errors, RefusalLine refusa
         var opened = new List<LoadedAssembly>();
         foreach (var path in paths)
         {
-            opened.Add(AssemblyListing.Open(assemblies, path, work, ct));
+            var assembly = AssemblyListing.Open(assemblies, path, work, ct);
+            opened.Add(assembly);
         }
 
         var scope = Navigation.ListIdScope(assemblies, opened);

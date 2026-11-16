@@ -111,7 +111,8 @@ internal static class DocumentsView
 
         if (picked.Definition != null)
         {
-            Commands.GoToReferenceLater(commands, picked.Definition, navigation.BeginResolving(picked.InNewTab));
+            var resolveTicket = navigation.BeginResolving(picked.InNewTab);
+            Commands.GoToReferenceLater(commands, picked.Definition, resolveTicket);
         }
     }
 
@@ -142,11 +143,19 @@ internal static class DocumentsView
         }
 
         intent.Switch((appearance, commands, panels, bookmarksPanel, navigation, tab),
-            navigate: static (s, navigate) => Commands.GoToReferenceLater(s.commands, navigate.Target, s.navigation.BeginResolving(navigate.InNewTab)),
+            navigate: static (s, navigate) =>
+            {
+                var resolveTicket = s.navigation.BeginResolving(navigate.InNewTab);
+                Commands.GoToReferenceLater(s.commands, navigate.Target, resolveTicket);
+            },
             toggleBookmark: static (s, toggle) => Commands.Later(s.commands, (bookmarksPanel: s.bookmarksPanel, s.tab, line: toggle.Line, t: s.appearance.Strings),
                 static (a, s) => ToggleLineBookmark(s.bookmarksPanel, a, s.tab, s.line, s.t)),
             analyze: static (s, analyze) => Commands.AnalyzeLater(s.commands, s.panels, analyze.Entity),
-            showInMetadata: static (s, metadata) => Commands.ShowInMetadataLater(s.commands, metadata.Target, s.navigation.BeginResolving(inNewTab: false)),
+            showInMetadata: static (s, metadata) =>
+            {
+                var resolveTicket = s.navigation.BeginResolving(inNewTab: false);
+                Commands.ShowInMetadataLater(s.commands, metadata.Target, resolveTicket);
+            },
             showInApiReference: static (s, reference) => Commands.Start(s.commands, nameof(ShowInApiReferenceHandler), reference.Entity,
                 static (a, entity, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, entity, ct)),
             showInDiagram: static (s, diagram) => DiagramView.ShowInDiagramLater(s.commands, diagram.Type, new TabTitle.Diagram(diagram.Type.Name)),

@@ -42,7 +42,8 @@ internal static class NuGetPickerView
     {
         var picker = nuGetPicker;
         Dialog(ui, appearance, commands, downloadNuGetPackageHandler, picker);
-        FreeImages(ui, picker.Browser.StopUnlessOpen(picker.IsOpen));
+        var stoppedImages = picker.Browser.StopUnlessOpen(picker.IsOpen);
+        FreeImages(ui, stoppedImages);
         AskForFetchingFrame(ui, picker.Browser);
         picker.Window.Settle(ui.Input.IsDown(PointerButton.Left));
     }
@@ -60,7 +61,8 @@ internal static class NuGetPickerView
         var file = AssemblyPath.Parse(path);
         if (file is not null)
         {
-            Commands.OpenFilesLater(commands, navigation.BeginOpening([file]));
+            var openRequest = navigation.BeginOpening([file]);
+            Commands.OpenFilesLater(commands, openRequest);
         }
 
         picker.IsOpen = false;
@@ -108,7 +110,8 @@ internal static class NuGetPickerView
         open |= Footer(ui, appearance, picker);
         if (open)
         {
-            Download(ui, commands, downloadNuGetPackageHandler, picker.Browser, picker.Browser.StartDownload());
+            var downloadTicket = picker.Browser.StartDownload();
+            Download(ui, commands, downloadNuGetPackageHandler, picker.Browser, downloadTicket);
         }
     }
 
@@ -163,7 +166,8 @@ internal static class NuGetPickerView
 
     private static void Submit(Ui ui, IAppCommandWriter commands, DownloadNuGetPackageHandler downloadNuGetPackageHandler, NuGetPicker picker)
     {
-        Download(ui, commands, downloadNuGetPackageHandler, picker.Browser, picker.Browser.Submit());
+        var downloadTicket = picker.Browser.Submit();
+        Download(ui, commands, downloadNuGetPackageHandler, picker.Browser, downloadTicket);
         // The download or the search shows from this frame on.
         ui.RequestUpdateIn(0);
     }

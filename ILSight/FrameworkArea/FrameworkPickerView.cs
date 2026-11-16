@@ -76,7 +76,8 @@ internal static class FrameworkPickerView
 
         if (open && browser.HasSelection)
         {
-            Commands.OpenFilesLater(commands, navigation.BeginOpening(ListPaths(browser.ListSelected())));
+            var openRequest = navigation.BeginOpening(ListPaths(browser.ListSelected()));
+            Commands.OpenFilesLater(commands, openRequest);
             ui.RequestUpdate();
             close = true;
         }

@@ -207,7 +207,8 @@ internal static class SearchPanelView
             var row = PickSelected(search.Results);
             if (row != null)
             {
-                Commands.DecompileLater(commands, navigation.ShowNode(row.Node, setup));
+                var decompileTicket = navigation.ShowNode(row.Node, setup);
+                Commands.DecompileLater(commands, decompileTicket);
             }
 
             return;
@@ -333,7 +334,8 @@ internal static class SearchPanelView
         var selected = results.Selection.Item;
         if (body.Activated && selected != null)
         {
-            Commands.DecompileLater(commands, navigation.ShowNode(selected.Node, setup, body.InNewTab));
+            var decompileTicket = navigation.ShowNode(selected.Node, setup, body.InNewTab);
+            Commands.DecompileLater(commands, decompileTicket);
         }
     }
 
@@ -348,7 +350,8 @@ internal static class SearchPanelView
         {
             if (row.Interaction.Clicked)
             {
-                Commands.DecompileLater(commands, navigation.ShowNode(node, setup));
+                var decompileTicket = navigation.ShowNode(node, setup);
+                Commands.DecompileLater(commands, decompileTicket);
             }
 
             NameCell(ui, appearance, row, result);

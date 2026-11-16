@@ -88,7 +88,7 @@ internal static class ExportReportText
 
     /// <summary>Each of <paramref name="reports"/> in full: its summary, kind, folder and time, then
     /// the files it wrote and its problems with their errors.</summary>
-    public static DecompiledDocument Write(Strings t, IReadOnlyList<ExportReport> reports)
+    public static DecompiledDocument BuildDocument(Strings t, IReadOnlyList<ExportReport> reports)
     {
         var text = new StringBuilder();
         foreach (var report in reports)

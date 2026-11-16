@@ -221,7 +221,8 @@ internal static class MainMenuView
             return;
         }
 
-        Commands.OpenFilesLater(commands, navigation.BeginOpening([file]));
+        var openRequest = navigation.BeginOpening([file]);
+        Commands.OpenFilesLater(commands, openRequest);
     }
 
     private static void FileMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, BrowseTree tree, FrameworkPicker frameworkPicker, NuGetPicker nuGetPicker, ReadNuGetSetupHandler readNuGetSetupHandler, ProcessPicker processPicker, ExportSetup exportSetup, AppState appState)

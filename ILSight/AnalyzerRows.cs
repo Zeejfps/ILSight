@@ -186,7 +186,11 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
             return;
         }
 
-        AppCommands.Enqueue(AppCommandFactory.Create(kind, static (a, k) => Commands.StartAnalysis(a, k.StartRun())));
+        AppCommands.Enqueue(AppCommandFactory.Create(kind, static (a, k) =>
+        {
+            var run = k.StartRun();
+            Commands.StartAnalysis(a, run);
+        }));
     }
 
     private IReadOnlyList<AnalyzerNode> ListResults(AnalyzerKindNode kind)

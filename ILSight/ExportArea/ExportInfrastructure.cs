@@ -91,7 +91,8 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
     {
         using var link = CancellationTokenSource.CreateLinkedTokenSource(start.Token, ct);
         var token = link.Token;
-        return await StopOrMatchAsync(Background.Run(() => work(token)), start, ct);
+        var running = Background.Run(() => work(token));
+        return await StopOrMatchAsync(running, start, ct);
     }
 
     private static async Task<ExportOutcome<T>> RunAsync<T>(Func<CancellationToken, Task<Outcome<T>>> work, ExportTurn.Started start, CancellationToken ct)

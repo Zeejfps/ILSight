@@ -136,7 +136,8 @@ internal static class AnalyzerPanelView
             return;
         }
 
-        Commands.GoToReferenceLater(commands, reference, navigation.BeginResolving(inNewTab: false));
+        var resolveTicket = navigation.BeginResolving(inNewTab: false);
+        Commands.GoToReferenceLater(commands, reference, resolveTicket);
     }
 
     private static void ContextMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, AnalyzerRows analyzerRows, Navigation navigation, AnalyzerTree analyzer)
@@ -195,12 +196,14 @@ internal static class AnalyzerPanelView
         var t = appearance.Strings;
         if (ui.MenuItem(t.AnalyzerGoTo, Shortcuts.Enter, id: "go-to"))
         {
-            Commands.GoToReferenceLater(commands, target, navigation.BeginResolving(inNewTab: false));
+            var resolveTicket = navigation.BeginResolving(inNewTab: false);
+            Commands.GoToReferenceLater(commands, target, resolveTicket);
         }
 
         if (ui.MenuItem(t.CodeOpenInNewTab, id: "open-in-new-tab"))
         {
-            Commands.GoToReferenceLater(commands, target, navigation.BeginResolving(inNewTab: true));
+            var resolveTicket = navigation.BeginResolving(inNewTab: true);
+            Commands.GoToReferenceLater(commands, target, resolveTicket);
         }
     }
 

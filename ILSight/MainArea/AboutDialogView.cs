@@ -73,7 +73,8 @@ internal static class AboutDialogView
             var label = ui.Memo("about-restart", (t, Version: AppUpdates.GetVersion(ready.Update)), static a => a.t.AboutRestartToUpdate(a.Version));
             if (ui.Button(label, id: "about-updates"))
             {
-                Restart(ui, commands, updates.StartRestart());
+                var restart = updates.StartRestart();
+                Restart(ui, commands, restart);
             }
 
             return;
@@ -81,7 +82,8 @@ internal static class AboutDialogView
         var text = ButtonText(ui, appearance, updates.Status);
         if (ui.Button(text, enabled: updates.CanCheck(), id: "about-updates", variant: ButtonVariant.Neutral))
         {
-            Check(ui, commands, updates.StartCheck(asked: true));
+            var check = updates.StartCheck(asked: true);
+            Check(ui, commands, check);
         }
     }
 

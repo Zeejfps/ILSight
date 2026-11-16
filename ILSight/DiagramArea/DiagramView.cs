@@ -392,7 +392,8 @@ internal static class DiagramView
             return;
         }
 
-        Commands.GoToReferenceLater(commands, target, navigation.BeginResolvingFromDiagram(diagram, inNewTab));
+        var resolveTicket = navigation.BeginResolvingFromDiagram(diagram, inNewTab);
+        Commands.GoToReferenceLater(commands, target, resolveTicket);
     }
 
     private static void Pan(Ui ui, DiagramViewState view, Interaction i)
@@ -708,7 +709,8 @@ internal static class DiagramView
 
         ui.HideTooltip();
         var inNewTab = click.Button == PointerButton.Middle || IsCommandHeld(ui.Input.Modifiers);
-        Commands.GoToReferenceLater(commands, reference, navigation.BeginResolvingFromDiagram(diagram, inNewTab));
+        var resolveTicket = navigation.BeginResolvingFromDiagram(diagram, inNewTab);
+        Commands.GoToReferenceLater(commands, reference, resolveTicket);
     }
 
     /// <summary>Asks for the type <paramref name="type"/> points at to be shown on the diagram the user last worked
@@ -767,12 +769,14 @@ internal static class DiagramView
         var t = appearance.Strings;
         if (ui.MenuItem(t.TreeOpen, id: "open"))
         {
-            Commands.GoToReferenceLater(commands, card.Type, navigation.BeginResolvingFromDiagram(diagram, inNewTab: false));
+            var resolveTicket = navigation.BeginResolvingFromDiagram(diagram, inNewTab: false);
+            Commands.GoToReferenceLater(commands, card.Type, resolveTicket);
         }
 
         if (ui.MenuItem(t.TreeOpenInNewTab, id: "open-in-new-tab"))
         {
-            Commands.GoToReferenceLater(commands, card.Type, navigation.BeginResolvingFromDiagram(diagram, inNewTab: true));
+            var resolveTicket = navigation.BeginResolvingFromDiagram(diagram, inNewTab: true);
+            Commands.GoToReferenceLater(commands, card.Type, resolveTicket);
         }
 
         ui.MenuSeparator();

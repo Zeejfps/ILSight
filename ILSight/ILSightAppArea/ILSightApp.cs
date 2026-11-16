@@ -300,7 +300,8 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     private SettingsWriteResult SaveOnExit(WindowBounds window)
     {
         _appState.KeptScreen.KeepWindow(window);
-        _appState.KeptScreen.KeepView(ScreenSettings.TakeViewSettings(UiState));
+        var viewSettings = ScreenSettings.TakeViewSettings(UiState);
+        _appState.KeptScreen.KeepView(viewSettings);
         return _appState.SettingsSaver.Save(_appState);
     }
 }

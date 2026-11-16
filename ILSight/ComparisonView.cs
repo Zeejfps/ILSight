@@ -78,7 +78,8 @@ internal static class ComparisonView
             ui.Separator(ui.Theme.IconSize);
             if (ui.IconButton("swap", icons.ComparisonSwap, why ?? t.ComparisonSwap, enabled: why is null))
             {
-                Commands.CompareLater(commands, Comparisons.SwapComparedAssemblies(assemblies, comparison));
+                var swapped = Comparisons.SwapComparedAssemblies(assemblies, comparison);
+                Commands.CompareLater(commands, swapped);
             }
 
             ui.Separator(ui.Theme.IconSize);
@@ -197,7 +198,8 @@ internal static class ComparisonView
             return;
         }
 
-        Commands.GoToReferenceLater(commands, side.Reference, navigation.BeginResolving(inNewTab));
+        var resolveTicket = navigation.BeginResolving(inNewTab);
+        Commands.GoToReferenceLater(commands, side.Reference, resolveTicket);
     }
 
     private static ApiSide? LeftOf(ApiEntry entry)
@@ -245,12 +247,14 @@ internal static class ComparisonView
         var right = RightOf(entry);
         if (ui.MenuItem(t.ComparisonOpenLeft, enabled: left != null, id: "open-left") && left != null)
         {
-            Commands.GoToReferenceLater(commands, left.Reference, navigation.BeginResolving(inNewTab: false));
+            var resolveTicket = navigation.BeginResolving(inNewTab: false);
+            Commands.GoToReferenceLater(commands, left.Reference, resolveTicket);
         }
 
         if (ui.MenuItem(t.ComparisonOpenRight, enabled: right != null, id: "open-right") && right != null)
         {
-            Commands.GoToReferenceLater(commands, right.Reference, navigation.BeginResolving(inNewTab: false));
+            var resolveTicket = navigation.BeginResolving(inNewTab: false);
+            Commands.GoToReferenceLater(commands, right.Reference, resolveTicket);
         }
     }
 }

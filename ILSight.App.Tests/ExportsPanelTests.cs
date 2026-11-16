@@ -79,7 +79,7 @@ public sealed class ExportsPanelTests : IDisposable
         var shown = Assert.IsType<TabContent.Report>(tab.Content);
         Assert.Equal(path, Assert.Single(Assert.IsType<ExportEnd.Finished>(shown.Export.End).Written));
         Assert.Equal("Export report", DocumentsView.Tab(app.Ui.Appearance, app.Ui.Tree, app.AppState.ListSession.Navigation, tab).Title);
-        var text = Documents.GetText(ExportReportText.Write(Strings.En, [shown.Export]));
+        var text = Documents.GetText(ExportReportText.BuildDocument(Strings.En, [shown.Export]));
         Assert.Contains("    " + path, text);
         Assert.DoesNotContain("Farewell", text);
         Assert.Equal(2, app.AppState.FinishedExports.Count);

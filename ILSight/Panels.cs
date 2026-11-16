@@ -101,7 +101,8 @@ public sealed class Panels
         var shown = Docking.ListDocumentPanels(_layout);
         if (shown.Count == 0)
         {
-            shown.Add(OpenActiveTabPanel());
+            var panelId = OpenActiveTabPanel();
+            shown.Add(panelId);
         }
 
         Docking.ResetLayout(_layout, shown);
@@ -336,7 +337,8 @@ public sealed class Panels
 
     private void FocusTab(Navigation navigation, DecompilerSetup setup, DocumentTab tab)
     {
-        Commands.DecompileLater(_commands, navigation.FocusTab(tab, setup));
+        var decompileTicket = navigation.FocusTab(tab, setup);
+        Commands.DecompileLater(_commands, decompileTicket);
     }
 
     /// <summary>Focuses another tab when the active one was closed by a feature, as <see cref="FocusNextTab"/> does,
@@ -598,7 +600,8 @@ public sealed class Panels
         var setup = decompiler.Setup;
         foreach (var tab in ListFrontTabs())
         {
-            Commands.DecompileLater(_commands, Decompilation.StartDecompilingAgainIfOutdated(tab, setup.Language, setup.Options));
+            var decompileTicket = Decompilation.StartDecompilingAgainIfOutdated(tab, setup.Language, setup.Options);
+            Commands.DecompileLater(_commands, decompileTicket);
         }
     }
 

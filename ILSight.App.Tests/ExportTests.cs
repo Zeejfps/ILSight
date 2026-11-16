@@ -239,7 +239,7 @@ public sealed class ExportTests : IDisposable
         var closed = Assert.IsType<ExportEnd.AssemblyClosed>(report.End);
         Assert.Equal("ILSight.App.Tests.dll", closed.Assembly);
         Assert.Equal("Greeter wasn't exported: ILSight.App.Tests.dll was closed", ExportReportText.DescribeOutcome(Strings.En, report));
-        Assert.StartsWith("Greeter wasn't exported: ILSight.App.Tests.dll was closed", Documents.GetText(ExportReportText.Write(Strings.En, [report])));
+        Assert.StartsWith("Greeter wasn't exported: ILSight.App.Tests.dll was closed", Documents.GetText(ExportReportText.BuildDocument(Strings.En, [report])));
         Assert.False(File.Exists(path));
         Assert.Empty(app.AppState.Errors.Entries);
     }
@@ -507,7 +507,7 @@ public sealed class ExportTests : IDisposable
         Assert.Empty(d.AppState.Errors.Entries);
 
         // The report a tab shows: the headline and the cause, then the stack trace under its label, apart.
-        var lines = ExportReportText.Write(Strings.En, [report]).Lines.Select(static l => l.Text).ToList();
+        var lines = ExportReportText.BuildDocument(Strings.En, [report]).Lines.Select(static l => l.Text).ToList();
         var headline = lines.IndexOf("    Cannot save the code of Greeter");
         Assert.Equal($"        {failed.Error.Message}", lines[headline + 1]);
         Assert.Equal("        Technical details", lines[headline + 2]);
@@ -518,7 +518,7 @@ public sealed class ExportTests : IDisposable
         // section after the problems, under the headline again.
         var problem = new ExportProblem.FileNotWritten { Path = "Greeter.cs", Error = new ExportError { Error = failed.Error } };
         var finished = report with { End = new ExportEnd.Finished { Written = [], Problems = [problem] } };
-        var problemLines = ExportReportText.Write(Strings.En, [finished]).Lines.Select(static l => l.Text).ToList();
+        var problemLines = ExportReportText.BuildDocument(Strings.En, [finished]).Lines.Select(static l => l.Text).ToList();
         var problemLine = problemLines.IndexOf($"    Greeter.cs: {failed.Error.Message}");
         Assert.Equal("", problemLines[problemLine + 1]);
         Assert.Equal("Technical details", problemLines[problemLine + 2]);
@@ -535,7 +535,7 @@ public sealed class ExportTests : IDisposable
         var job = new ExportJob { Kind = ExportKind.Project, Name = "Shop", Folder = "C:/out" };
         var report = new ExportReport { Run = new ExportRun(1), Job = job, FolderExists = true, Elapsed = TimeSpan.FromSeconds(1), End = new ExportEnd.Finished { Written = [], Problems = problems } };
 
-        var copy = string.Join(Environment.NewLine, ExportReportText.Write(Strings.En, [report]).Lines.Select(static l => l.Text));
+        var copy = string.Join(Environment.NewLine, ExportReportText.BuildDocument(Strings.En, [report]).Lines.Select(static l => l.Text));
 
         var first = copy.IndexOf("    A.cs: A.cs is locked.", StringComparison.Ordinal);
         var last = copy.IndexOf("    C.cs: C.cs is locked.", StringComparison.Ordinal);
@@ -556,7 +556,7 @@ public sealed class ExportTests : IDisposable
             .ToList();
         var job = new ExportJob { Kind = ExportKind.Project, Name = "Shop", Folder = "C:/out" };
         var report = new ExportReport { Run = new ExportRun(1), Job = job, FolderExists = true, Elapsed = TimeSpan.FromSeconds(1), End = new ExportEnd.Finished { Written = [], Problems = problems } };
-        var view = CodeViewDriver.Showing(ExportReportText.Write(Strings.En, [report]), height: 2000f);
+        var view = CodeViewDriver.Showing(ExportReportText.BuildDocument(Strings.En, [report]), height: 2000f);
 
         view.Key(KeyboardKey.Tab).Frame();
         view.Key(Shortcuts.SelectAll);

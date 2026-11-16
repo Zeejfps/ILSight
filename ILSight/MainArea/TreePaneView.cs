@@ -155,7 +155,8 @@ internal static class TreePaneView
             case 2:
                 if (DrawTool(ui, inMenu, "expand", icons.AssembliesExpandNamespaces, t.TreeExpandNamespaces, any))
                 {
-                    Commands.ExpandNamespacesLater(commands, tree, tree.ExpandNamespaces());
+                    var expansion = tree.ExpandNamespaces();
+                    Commands.ExpandNamespacesLater(commands, tree, expansion);
                 }
 
                 return;
@@ -386,10 +387,12 @@ internal static class TreePaneView
         var activation = node.Activation;
         if (activation is Activation.Navigate jump)
         {
-            Commands.GoToReferenceLater(commands, jump.Target, navigation.BeginResolving(inNewTab: false));
+            var resolveTicket = navigation.BeginResolving(inNewTab: false);
+            Commands.GoToReferenceLater(commands, jump.Target, resolveTicket);
             return;
         }
-        Commands.DecompileLater(commands, navigation.OpenNode(node, setup));
+        var decompileTicket = navigation.OpenNode(node, setup);
+        Commands.DecompileLater(commands, decompileTicket);
     }
 
     private static void OpenContextMenu(Ui ui, BrowseTree tree, BrowseNode node, PointF at)
@@ -423,17 +426,20 @@ internal static class TreePaneView
         var openKey = jump != null ? null : Shortcuts.Enter;
         if (ui.MenuItem(t.TreeOpen, openKey, id: "open"))
         {
-            Commands.DecompileLater(commands, navigation.OpenNode(node, setup));
+            var decompileTicket = navigation.OpenNode(node, setup);
+            Commands.DecompileLater(commands, decompileTicket);
         }
 
         if (ui.MenuItem(t.TreeOpenInNewTab, id: "open-in-new-tab"))
         {
-            Commands.DecompileLater(commands, navigation.ShowNode(node, setup, inNewTab: true));
+            var decompileTicket = navigation.ShowNode(node, setup, inNewTab: true);
+            Commands.DecompileLater(commands, decompileTicket);
         }
 
         if (jump != null && ui.MenuItem(t.TreeGoToTarget, Shortcuts.Enter, id: "go-to-target"))
         {
-            Commands.GoToReferenceLater(commands, jump.Target, navigation.BeginResolving(inNewTab: false));
+            var resolveTicket = navigation.BeginResolving(inNewTab: false);
+            Commands.GoToReferenceLater(commands, jump.Target, resolveTicket);
         }
 
         if (ui.MenuItem(t.TreeCopyFullName, id: "copy-full-name"))
@@ -451,7 +457,8 @@ internal static class TreePaneView
         var definition = node.Reference;
         if (definition != null && ui.MenuItem(t.TreeShowInMetadata, id: "show-in-metadata"))
         {
-            Commands.ShowInMetadataLater(commands, definition, navigation.BeginResolving(inNewTab: false));
+            var resolveTicket = navigation.BeginResolving(inNewTab: false);
+            Commands.ShowInMetadataLater(commands, definition, resolveTicket);
         }
 
         if (node.Subject is NodeSubject.TypeDefinition type)

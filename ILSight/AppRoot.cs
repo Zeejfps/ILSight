@@ -179,7 +179,8 @@ internal static class AppRoot
     {
         var appState = CreateAppState(settings, session, updates ?? new AppUpdatesAdapter(), hooks);
         appState.ListSession.Navigation.OpenFirstTab();
-        ShowRefusal(appState, Settings.Restore(appState, settings));
+        var restored = Settings.Restore(appState, settings);
+        ShowRefusal(appState, restored);
         appState.UserThemes.ReadThemes();
         appState.UserIconThemes.ReadThemes();
         return appState;

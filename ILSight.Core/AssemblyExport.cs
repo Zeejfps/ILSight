@@ -181,7 +181,8 @@ public static class AssemblyExport
             var project = projects[i];
             var projectPath = FullFilePath.Of(ExportNames.ProjectPathIn(folder, project.Name));
             var part = BeginPart(progress, project.Assembly, i, bounds);
-            exported.Add(await ExportProjectAsync(reading, project.Assembly, options, projectPath, withExtras, part, callbacks, cancellationToken));
+            var exportedProject = await ExportProjectAsync(reading, project.Assembly, options, projectPath, withExtras, part, callbacks, cancellationToken);
+            exported.Add(exportedProject);
         }
         var items = exported.ConvertAll(ToSolutionItem);
         SolutionCreator.WriteSolutionFile(solutionPath, items);
@@ -208,8 +209,12 @@ public static class AssemblyExport
         TypeSystemWork<string> written;
         try
         {
-            written = await LoadedAssemblies.WithTypeSystemAsync(assembly, (reading, typeSystem) => GeneratePdb(reading, assembly, typeSystem, options, path,
-                embedSources: true, BeginPart(progress, assembly, 0, WholeExport), callbacks, cancellationToken), cancellationToken);
+            written = await LoadedAssemblies.WithTypeSystemAsync(assembly, (reading, typeSystem) =>
+            {
+                var partProgress = BeginPart(progress, assembly, 0, WholeExport);
+                return GeneratePdb(reading, assembly, typeSystem, options, path,
+                    embedSources: true, partProgress, callbacks, cancellationToken);
+            }, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

@@ -223,7 +223,7 @@ internal static class TooltipLayouts
         {
             DocSectionKind.TypeParameter => [new RichTextRun(label.Text, styles.Code(SpanKind.Type))],
             DocSectionKind.Parameter => [new RichTextRun(label.Text, styles.Code(SpanKind.Parameter))],
-            _ => [Run(styles, label)],
+            _ => [ToRichTextRun(styles, label)],
         };
     }
 
@@ -299,7 +299,7 @@ internal static class TooltipLayouts
         var converted = new List<RichTextRun>();
         foreach (var run in runs)
         {
-            converted.Add(Run(styles, run));
+            converted.Add(ToRichTextRun(styles, run));
         }
 
         return converted;
@@ -310,7 +310,7 @@ internal static class TooltipLayouts
         return reference as CodeReference.Entity;
     }
 
-    private static RichTextRun Run(TooltipStyles styles, DocRun run)
+    private static RichTextRun ToRichTextRun(TooltipStyles styles, DocRun run)
     {
         return run.Style switch
         {
