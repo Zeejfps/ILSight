@@ -64,7 +64,8 @@ public sealed class ILSpyTreeTests
     {
         using var temp = new TempDir();
         var grow = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Circle", "Grow");
-        var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, grow));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, grow);
+        var path = AssemblyPath.Of(unreadablePath);
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var token = (uint)MetadataTokens.GetToken(grow);
 
@@ -78,7 +79,8 @@ public sealed class ILSpyTreeTests
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var unreadable = AssemblyPath.Of(temp.Write("notes.dll", "not an assembly"));
+        var path = temp.Write("notes.dll", "not an assembly");
+        var unreadable = AssemblyPath.Of(path);
         var gone = AssemblyPath.Of(temp.PathOf("gone.dll"));
 
         var located = await ILSpyTree.LocateAsync(list, TestSession.Shared, unreadable, null, 0x06000001, "N.T.M", CancellationToken.None);

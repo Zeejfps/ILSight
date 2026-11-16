@@ -45,7 +45,8 @@ public sealed class DiagramTests : IDisposable
     public async Task A_diagrammer_of_a_module_whose_member_the_library_cannot_read_is_its_failure_saying_why()
     {
         var add = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Calculator`1", "Add");
-        var module = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(BrokenAssemblies.WriteUnreadableMethodName(_temp, Trees.TestAssemblyPath, add));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableMethodName(_temp, Trees.TestAssemblyPath, add);
+        var module = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(unreadablePath);
 
         var written = await ClassDiagrams.WriteAsync(module, _temp.PathOf("broken diagram"));
 

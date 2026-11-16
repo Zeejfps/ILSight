@@ -20,7 +20,8 @@ public sealed class PackageTests
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
 
-        var package = list.Open(WritePackage(temp));
+        var packagePath = WritePackage(temp);
+        var package = list.Open(packagePath);
 
         Assert.IsType<LoadedPackage>(package);
         Assert.Equal([package], list.Listed);
@@ -100,14 +101,17 @@ public sealed class PackageTests
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var package = list.Open(WritePackage(temp));
+        var packagePath = WritePackage(temp);
+        var package = list.Open(packagePath);
         var sibling = package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Core.dll"));
         list.TargetFrameworks.Pick(sibling, Frameworks.Net48);
-        LoadedAssemblies.Release(list.CloseAll());
+        var removed = list.CloseAll();
+        LoadedAssemblies.Release(removed);
         var assembly = AssemblyListing.TryLoad(list, package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Tests.dll"))).GetValue().FoundOrNull;
         Assert.NotNull(assembly);
 
-        LoadedAssemblies.Release(list.Close(assembly));
+        var closed = list.Close(assembly);
+        LoadedAssemblies.Release(closed);
 
         Assert.Empty(list.TargetFrameworks.All);
     }
@@ -117,7 +121,8 @@ public sealed class PackageTests
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var package = list.Open(WritePackage(temp));
+        var packagePath = WritePackage(temp);
+        var package = list.Open(packagePath);
         var old = list.Assemblies.ToList();
 
         var read = AssemblyListing.ReadAgain(list, old[1]).GetValue();
@@ -140,7 +145,8 @@ public sealed class PackageTests
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var package = list.Open(WritePackage(temp));
+        var packagePath = WritePackage(temp);
+        var package = list.Open(packagePath);
 
         var folder = await package.ReadRootAsync().GetChildAsync(LibFolder);
         var root = await TestAssemblyRootAsync(folder);
@@ -158,7 +164,8 @@ public sealed class PackageTests
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var package = list.Open(WritePackage(temp));
+        var packagePath = WritePackage(temp);
+        var package = list.Open(packagePath);
         var path = package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Tests.dll"));
 
         var assembly = AssemblyListing.TryLoad(list, path).GetValue().FoundOrNull;
@@ -193,7 +200,8 @@ public sealed class PackageTests
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var package = list.Open(WritePackage(temp));
+        var packagePath = WritePackage(temp);
+        var package = list.Open(packagePath);
         var assembly = (await TestAssemblyRootAsync(await package.ReadRootAsync().GetChildAsync(LibFolder))).Assembly;
 
         var core = await assembly.ReadRootAsync().GetChildAsync("References", "ILSight.Core");
@@ -227,7 +235,8 @@ public sealed class PackageTests
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var package = list.Open(WritePackage(temp));
+        var packagePath = WritePackage(temp);
+        var package = list.Open(packagePath);
         var lib = await package.ReadRootAsync().GetChildAsync(LibFolder);
         var add = await (await TestAssemblyRootAsync(lib)).Assembly.CalculatorAsync().GetChildAsync("Add(T) : void");
         var symbol = add.Analysis;
@@ -249,7 +258,8 @@ public sealed class PackageTests
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        list.Open(WriteTextPackage(temp, "ILSight.Core.zip"));
+        var packagePath = WriteTextPackage(temp, "ILSight.Core.zip");
+        list.Open(packagePath);
         var assembly = list.Open(Trees.TestAssemblyPath);
 
         var core = await assembly.ReadRootAsync().GetChildAsync("References", "ILSight.Core");
@@ -262,7 +272,9 @@ public sealed class PackageTests
     public async Task A_file_of_a_package_that_is_no_assembly_shows_its_contents()
     {
         using var temp = new TempDir();
-        var package = Assert.IsType<LoadedPackage>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(WritePackage(temp)));
+        var packagePath = WritePackage(temp);
+        var opened = new AssemblyList { Runtime = TestRuntime.Installed }.Open(packagePath);
+        var package = Assert.IsType<LoadedPackage>(opened);
 
         var readme = await package.ReadRootAsync().GetChildAsync("readme.txt");
         var native = await package.ReadRootAsync().GetChildAsync("runtimes/win-x64/native", "native.dll");
@@ -279,7 +291,9 @@ public sealed class PackageTests
     public async Task A_package_and_its_folders_list_what_they_hold(DecompilationLanguage language)
     {
         using var temp = new TempDir();
-        var package = Assert.IsType<LoadedPackage>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(WritePackage(temp)));
+        var packagePath = WritePackage(temp);
+        var opened = new AssemblyList { Runtime = TestRuntime.Installed }.Open(packagePath);
+        var package = Assert.IsType<LoadedPackage>(opened);
 
         var root = await package.ReadRootAsync().DecompileAsync(language);
         var folder = await package.ReadRootAsync().GetChildAsync(LibFolder).DecompileAsync(language);
@@ -298,7 +312,8 @@ public sealed class PackageTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var before = (await TestAssemblyRootAsync(await list.Open(packagePath).ReadRootAsync().GetChildAsync(LibFolder))).Assembly;
 
-        LoadedAssemblies.Release(list.Close(list.Listed[0]));
+        var removed = list.Close(list.Listed[0]);
+        LoadedAssemblies.Release(removed);
         Assert.Empty(list.Assemblies);
         var after = (await TestAssemblyRootAsync(await list.Open(packagePath).ReadRootAsync().GetChildAsync(LibFolder))).Assembly;
 
@@ -310,7 +325,8 @@ public sealed class PackageTests
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var package = list.Open(WritePackage(temp));
+        var packagePath = WritePackage(temp);
+        var package = list.Open(packagePath);
 
         var results = new List<SearchResult>();
         await foreach (var batch in list.SearchAsync("Calculator", SearchKinds.Types))
@@ -328,7 +344,8 @@ public sealed class PackageTests
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var package = list.Open(WritePackage(temp));
+        var packagePath = WritePackage(temp);
+        var package = list.Open(packagePath);
         var folder = await package.ReadRootAsync().GetChildAsync(LibFolder);
         var assembly = Assert.IsType<LoadedModule>((await TestAssemblyRootAsync(folder)).Assembly);
         var core = list.Assemblies.Single(a => a.Name == "ILSight.Core");
@@ -343,7 +360,9 @@ public sealed class PackageTests
     public async Task Extracting_a_folder_writes_its_files_at_their_paths_from_it()
     {
         using var temp = new TempDir();
-        var package = Assert.IsType<LoadedPackage>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(WritePackage(temp)));
+        var packagePath = WritePackage(temp);
+        var opened = new AssemblyList { Runtime = TestRuntime.Installed }.Open(packagePath);
+        var package = Assert.IsType<LoadedPackage>(opened);
         var target = temp.PathOf("out");
 
         var extracted = PackageExtraction.ExtractFolder(package.Package, FolderOf(await package.ReadRootAsync().GetChildAsync(LibFolder)), target);
@@ -359,7 +378,9 @@ public sealed class PackageTests
     public async Task Extracting_a_package_keeps_its_folders()
     {
         using var temp = new TempDir();
-        var package = Assert.IsType<LoadedPackage>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(WritePackage(temp)));
+        var packagePath = WritePackage(temp);
+        var opened = new AssemblyList { Runtime = TestRuntime.Installed }.Open(packagePath);
+        var package = Assert.IsType<LoadedPackage>(opened);
         var target = temp.PathOf("out");
 
         PackageExtraction.ExtractFolder(package.Package, FolderOf(await package.ReadRootAsync()), target);
@@ -379,7 +400,8 @@ public sealed class PackageTests
             WriteText(archive, "../escaped.txt", "Out");
             WriteText(archive, "kept.txt", "In");
         }
-        var package = Assert.IsType<LoadedPackage>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(path));
+        var opened = new AssemblyList { Runtime = TestRuntime.Installed }.Open(path);
+        var package = Assert.IsType<LoadedPackage>(opened);
         var target = temp.PathOf("out");
 
         var extracted = PackageExtraction.ExtractFolder(package.Package, FolderOf(await package.ReadRootAsync()), target);
@@ -395,7 +417,8 @@ public sealed class PackageTests
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
 
-        var failed = list.Open(temp.Write("notes.dll", "not an assembly"));
+        var path = temp.Write("notes.dll", "not an assembly");
+        var failed = list.Open(path);
 
         Assert.IsType<FailedAssembly>(failed);
         Assert.IsNotType<LoadedPackage>(failed);

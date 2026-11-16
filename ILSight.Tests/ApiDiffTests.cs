@@ -33,7 +33,8 @@ public sealed class ApiDiffTests
         var add = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Calculator`1", "Add");
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var left = list.OpenModule(Trees.TestAssemblyPath);
-        var right = list.OpenModule(BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, add));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, add);
+        var right = list.OpenModule(unreadablePath);
 
         var compared = await ApiEntries.CompareAsync(left, right, ApiScope.PublicApi, CancellationToken.None);
 

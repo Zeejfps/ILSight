@@ -76,14 +76,37 @@ public sealed class SavedPathTests : IDisposable
     // The file is left in place for another list to open.
     private async Task<BrowseNode> SampleAsync(string kind)
     {
-        return kind switch
+        switch (kind)
         {
-            "Package" or "PackageFolder" => await FirstOfAsync(Open(PackageTests.WritePackage(_temp)), kind),
-            "Bundle" => await Open(BundleTests.WriteBundle(_temp)).ReadRootAsync(),
-            "FailedAssembly" => await Open(_temp.Write("broken.dll", "no assembly")).ReadRootAsync(),
-            "ForwardedType" => await FirstOfAsync(Open(Path.Combine(RuntimeAssemblies.ListDirectories(TestRuntime.Installed)[0], "System.Runtime.dll")), kind),
-            _ => await FirstOfAsync(Open(Trees.TestAssemblyPath), kind),
-        };
+            case "Package" or "PackageFolder":
+            {
+                var packagePath = PackageTests.WritePackage(_temp);
+                var package = Open(packagePath);
+                return await FirstOfAsync(package, kind);
+            }
+            case "Bundle":
+            {
+                var bundlePath = BundleTests.WriteBundle(_temp);
+                var bundle = Open(bundlePath);
+                return await bundle.ReadRootAsync();
+            }
+            case "FailedAssembly":
+            {
+                var brokenPath = _temp.Write("broken.dll", "no assembly");
+                var broken = Open(brokenPath);
+                return await broken.ReadRootAsync();
+            }
+            case "ForwardedType":
+            {
+                var runtime = Open(Path.Combine(RuntimeAssemblies.ListDirectories(TestRuntime.Installed)[0], "System.Runtime.dll"));
+                return await FirstOfAsync(runtime, kind);
+            }
+            default:
+            {
+                var assembly = Open(Trees.TestAssemblyPath);
+                return await FirstOfAsync(assembly, kind);
+            }
+        }
     }
 
     private static LoadedAssembly Open(string path)

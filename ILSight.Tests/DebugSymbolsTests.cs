@@ -69,10 +69,12 @@ public sealed class DebugSymbolsTests
         using var temp = new TempDir();
         var copy = temp.Copy(Trees.TestAssemblyPath, Path.GetFileName(Trees.TestAssemblyPath));
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var before = LoadedAssemblies.EnsureDebugSymbols(list.OpenModule(copy));
+        var module = list.OpenModule(copy);
+        var before = LoadedAssemblies.EnsureDebugSymbols(module);
 
         list.Pdbs.Pick(AssemblyPath.Of(copy), TestPdbPath);
-        LoadedAssemblies.Release(list.CloseAll());
+        var removed = list.CloseAll();
+        LoadedAssemblies.Release(removed);
         var after = list.OpenModule(copy);
 
         Assert.Null(before);
@@ -91,7 +93,8 @@ public sealed class DebugSymbolsTests
         var test = list.Open(Trees.TestAssemblyPath);
         list.Pdbs.Pick(test.FilePath, TestPdbPath);
 
-        LoadedAssemblies.Release(list.Close(test));
+        var removed = list.Close(test);
+        LoadedAssemblies.Release(removed);
 
         Assert.Empty(list.Pdbs.All);
     }

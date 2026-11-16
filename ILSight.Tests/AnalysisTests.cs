@@ -51,7 +51,8 @@ public sealed class AnalysisTests
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var unreadable = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = AssemblyPath.Of(temp.Write("notes.dll", "not an assembly")), Token = 0x06000001 };
+        var path = temp.Write("notes.dll", "not an assembly");
+        var unreadable = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = AssemblyPath.Of(path), Token = 0x06000001 };
         var gone = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = AssemblyPath.Of(temp.PathOf("gone.dll")), Token = 0x06000001 };
 
         Assert.IsType<AssemblyLoadException>(Assert.IsType<Outcome<Lookup<AnalysisSymbol>>.Failed>(await Analyzers.FindAsync(list, unreadable, CancellationToken.None)).Error);
@@ -64,7 +65,8 @@ public sealed class AnalysisTests
         using var temp = new TempDir();
         var add = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Calculator`1", "Add");
         var plus = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Calculator`1", "op_Addition");
-        var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, plus));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, plus);
+        var path = AssemblyPath.Of(unreadablePath);
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         list.OpenModule(path.Text);
         var anchor = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = path, Token = MetadataTokens.GetToken(add) };
@@ -132,7 +134,8 @@ public sealed class AnalysisTests
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var core = list.OpenModule(typeof(AssemblyList).Assembly.Location);
-        list.OpenModule(BrokenAssemblies.WriteUnreadableTypeSystem(temp, Trees.TestAssemblyPath));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableTypeSystem(temp, Trees.TestAssemblyPath);
+        list.OpenModule(unreadablePath);
         var symbol = (await core.ReadRootAsync().GetChildAsync("ILSight.Core", "AssemblyPath")).Analysis;
         Assert.NotNull(symbol);
         var usedBy = symbol.Kinds.Single(static k => Analyzers.GetHeader(k) == "Used By");
@@ -155,7 +158,8 @@ public sealed class AnalysisTests
     {
         using var temp = new TempDir();
         var tryGet = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Calculator`1", "TryGet");
-        var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodBody(temp, Trees.TestAssemblyPath, tryGet));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableMethodBody(temp, Trees.TestAssemblyPath, tryGet);
+        var path = AssemblyPath.Of(unreadablePath);
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         list.OpenModule(path.Text);
         var items = typeof(Fixtures.Calculator<>).GetField("_items", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);

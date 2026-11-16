@@ -58,7 +58,8 @@ public sealed class TargetFrameworkTests
         var reference = AssemblyNameReference.Parse("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
         var onCore = LoadedAssemblies.GetResolver(detected).FindAssemblyFile(reference);
         list.TargetFrameworks.Pick(detected.FilePath, Frameworks.Net48);
-        LoadedAssemblies.Release(list.CloseAll());
+        var removed = list.CloseAll();
+        LoadedAssemblies.Release(removed);
         var picked = list.OpenModule(Trees.TestAssemblyPath);
 
         var onFramework = LoadedAssemblies.GetResolver(picked).FindAssemblyFile(reference);
@@ -78,7 +79,8 @@ public sealed class TargetFrameworkTests
         var detected = list.OpenModule(Trees.TestAssemblyPath);
 
         list.TargetFrameworks.Pick(detected.FilePath, Frameworks.Net48);
-        LoadedAssemblies.Release(list.CloseAll());
+        var removed = list.CloseAll();
+        LoadedAssemblies.Release(removed);
         var picked = list.OpenModule(Trees.TestAssemblyPath);
 
         Assert.False(detected.IsTargetFrameworkPicked);
@@ -95,7 +97,8 @@ public sealed class TargetFrameworkTests
         var assembly = list.Open(Trees.TestAssemblyPath);
         list.TargetFrameworks.Pick(assembly.FilePath, Frameworks.Net48);
 
-        LoadedAssemblies.Release(list.Close(assembly));
+        var removed = list.Close(assembly);
+        LoadedAssemblies.Release(removed);
 
         Assert.Empty(list.TargetFrameworks.All);
     }

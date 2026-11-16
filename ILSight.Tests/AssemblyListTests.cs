@@ -61,7 +61,8 @@ public sealed class AssemblyListTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var assembly = list.Open(Trees.TestAssemblyPath);
         var fresh = AssemblyListing.ReadAgain(list, assembly).GetValue();
-        LoadedAssemblies.Release(list.Close(assembly));
+        var closed = list.Close(assembly);
+        LoadedAssemblies.Release(closed);
 
         var replaced = list.TryReplace(assembly, fresh, out var removed);
         LoadedAssemblies.Release(removed);
@@ -89,14 +90,16 @@ public sealed class AssemblyListTests
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var before = list.Generation;
-        LoadedAssemblies.Release(list.CloseAll());
+        var removed = list.CloseAll();
+        LoadedAssemblies.Release(removed);
 
         var late = list.TryLoad(Trees.TestAssemblyPath, before);
         Assert.NotNull(late);
 
         Assert.False(AssemblyListing.TryList(list, late, before));
         Assert.Empty(list.Assemblies);
-        Assert.NotSame(late, list.Open(Trees.TestAssemblyPath));
+        var opened = list.Open(Trees.TestAssemblyPath);
+        Assert.NotSame(late, opened);
     }
 
     [Fact]
@@ -104,7 +107,8 @@ public sealed class AssemblyListTests
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var corrupt = AssemblyPath.Of(temp.Write("corrupt.dll", "no assembly"));
+        var path = temp.Write("corrupt.dll", "no assembly");
+        var corrupt = AssemblyPath.Of(path);
         var gone = AssemblyPath.Of(temp.PathOf("gone.dll"));
         var folderGone = AssemblyPath.Of(temp.PathOf(Path.Combine("no-folder", "gone.dll")));
 
@@ -134,7 +138,8 @@ public sealed class AssemblyListTests
         Assert.Equal([Trees.TestAssemblyPath, typeof(AssemblyList).Assembly.Location], list.ListFilePaths().Select(static p => p.Text));
         Assert.Equal(2, list.Version);
 
-        LoadedAssemblies.Release(list.Close(tests));
+        var removed = list.Close(tests);
+        LoadedAssemblies.Release(removed);
 
         Assert.Equal([core], list.Assemblies);
         Assert.Equal(3, changes);
@@ -147,7 +152,8 @@ public sealed class AssemblyListTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var first = list.Open(Trees.TestAssemblyPath);
 
-        LoadedAssemblies.Release(list.Close(first));
+        var removed = list.Close(first);
+        LoadedAssemblies.Release(removed);
         var second = list.Open(Trees.TestAssemblyPath);
 
         Assert.NotSame(first, second);
@@ -169,7 +175,8 @@ public sealed class AssemblyListTests
         Assert.Equal([notPe, missing], list.Listed);
         Assert.Equal([text, text + ".missing"], list.ListFilePaths().Select(static p => p.Text));
         Assert.Empty(list.Assemblies);
-        Assert.Same(notPe, list.Open(text));
+        var opened = list.Open(text);
+        Assert.Same(notPe, opened);
     }
 
     [Fact]
@@ -215,7 +222,8 @@ public sealed class AssemblyListTests
         using var temp = new TempDir();
         var failed = list.Open(temp.PathOf("missing.dll"));
 
-        LoadedAssemblies.Release(list.Close(failed));
+        var removed = list.Close(failed);
+        LoadedAssemblies.Release(removed);
 
         Assert.Empty(list.Listed);
     }
@@ -249,7 +257,8 @@ public sealed class AssemblyListTests
         var root = temp.Path;
         string Runtime(string version)
         {
-            return Path.GetDirectoryName(temp.Write(Path.Combine("shared", "Microsoft.NETCore.App", version, "System.Private.CoreLib.dll"), "")) ?? throw new InvalidOperationException("A file written to the temp folder is in a folder.");
+            var path = temp.Write(Path.Combine("shared", "Microsoft.NETCore.App", version, "System.Private.CoreLib.dll"), "");
+            return Path.GetDirectoryName(path) ?? throw new InvalidOperationException("A file written to the temp folder is in a folder.");
         }
 
         Runtime("9.0.11");
@@ -372,7 +381,9 @@ public sealed class AssemblyListTests
 
         for (var round = 0; round < 30; round++)
         {
-            LoadedAssemblies.Release(list.Close(list.Open(Trees.TestAssemblyPath)));
+            var opened = list.Open(Trees.TestAssemblyPath);
+            var removed = list.Close(opened);
+            LoadedAssemblies.Release(removed);
         }
 
         await stop.CancelAsync();

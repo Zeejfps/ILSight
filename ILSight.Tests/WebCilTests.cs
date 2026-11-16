@@ -21,7 +21,8 @@ public sealed class WebCilTests
         using var folder = new TempDir();
         var path = CopyLargeApp(folder);
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var module = Assert.IsType<LoadedModule>(list.Open(path));
+        var opened = list.Open(path);
+        var module = Assert.IsType<LoadedModule>(opened);
         var part = await module.ReadRootAsync().GetChildAsync("LargeApp", "Part159");
         var whole = await File.ReadAllBytesAsync(path);
         var query = SearchQueries.ParseQuery("Describe");
@@ -29,7 +30,8 @@ public sealed class WebCilTests
         // Units under way on the module, their readings begun before the close: one the test ends, and a decompile.
         var underWay = LoadedAssemblies.TryBeginReading(module) ?? throw new InvalidOperationException("The fixture was released before it was closed.");
         var decompiling = part.DecompileAsync(DecompilationLanguage.CSharp);
-        LoadedAssemblies.Release(list.Close(module));
+        var removed = list.Close(module);
+        LoadedAssemblies.Release(removed);
         var released = LoadedAssemblies.WaitForReleaseAsync(module, CancellationToken.None);
         var decompiled = await decompiling.WithinPatienceAsync();
         var isReleasedWhileRead = released.IsCompleted;
@@ -51,7 +53,8 @@ public sealed class WebCilTests
         using var folder = new TempDir();
         var path = CopyLargeApp(folder);
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var module = Assert.IsType<LoadedModule>(list.Open(path));
+        var opened = list.Open(path);
+        var module = Assert.IsType<LoadedModule>(opened);
         await module.ReadRootAsync().GetChildAsync("LargeApp", "Part000").DecompileAsync(DecompilationLanguage.CSharp);
 
         var removed = list.Close(module);
@@ -118,7 +121,8 @@ public sealed class WebCilTests
     [Fact]
     public void A_webcil_grid_the_app_fails_to_build_of_what_was_read_is_the_apps_failure_and_one_whose_rows_cannot_be_read_the_grids()
     {
-        var module = Assert.IsType<LoadedModule>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath));
+        var opened = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
+        var module = Assert.IsType<LoadedModule>(opened);
         var file = LoadedAssemblies.GetFile(module);
         var table = Assert.IsAssignableFrom<GridSchema>(MetadataTables.Create(TableIndex.TypeDef, file));
         var columns = table.Columns.Select(static c => c.Column.Name == "Name"

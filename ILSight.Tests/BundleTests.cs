@@ -26,7 +26,8 @@ public sealed class BundleTests
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
 
-        var bundle = list.Open(WriteBundle(temp));
+        var bundlePath = WriteBundle(temp);
+        var bundle = list.Open(bundlePath);
 
         Assert.IsType<LoadedPackage>(bundle);
         Assert.True(Assert.IsType<NodeSubject.Package>((await bundle.ReadRootAsync()).Subject).Value.Package.Package.IsBundle);
@@ -42,7 +43,8 @@ public sealed class BundleTests
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var bundle = list.Open(WriteBundle(temp));
+        var bundlePath = WriteBundle(temp);
+        var bundle = list.Open(bundlePath);
         var assembly = list.Assemblies.Single(a => a.Name == TestAssemblyName);
 
         var calculator = await assembly.CalculatorAsync().DecompileAsync(DecompilationLanguage.CSharp);
@@ -57,7 +59,8 @@ public sealed class BundleTests
     public async Task A_file_of_a_bundle_that_is_no_assembly_shows_its_contents()
     {
         using var temp = new TempDir();
-        var bundle = new AssemblyList { Runtime = TestRuntime.Installed }.Open(WriteBundle(temp));
+        var bundlePath = WriteBundle(temp);
+        var bundle = new AssemblyList { Runtime = TestRuntime.Installed }.Open(bundlePath);
 
         var deps = await bundle.ReadRootAsync().GetChildAsync("App.deps.json");
 
@@ -69,7 +72,8 @@ public sealed class BundleTests
     {
         using var temp = new TempDir();
         var path = WriteBundle(temp, ("Broken.dll", [1, 2, 3], false, 1_000_000));
-        var bundle = Assert.IsType<LoadedPackage>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(path));
+        var opened = new AssemblyList { Runtime = TestRuntime.Installed }.Open(path);
+        var bundle = Assert.IsType<LoadedPackage>(opened);
 
         var broken = await bundle.ReadRootAsync().GetChildAsync("Broken.dll");
 
@@ -82,7 +86,8 @@ public sealed class BundleTests
     {
         using var temp = new TempDir();
         var path = WriteBundle(temp, ("Broken.dll", [1, 2, 3], false, 1_000_000), ("App.deps.json", Encoding.UTF8.GetBytes("{}"), false, 0));
-        var bundle = Assert.IsType<LoadedPackage>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(path));
+        var opened = new AssemblyList { Runtime = TestRuntime.Installed }.Open(path);
+        var bundle = Assert.IsType<LoadedPackage>(opened);
         var target = temp.PathOf("out");
 
         var extracted = PackageExtraction.ExtractFolder(bundle.Package, FolderOf(await bundle.ReadRootAsync()), target);
@@ -130,7 +135,8 @@ public sealed class BundleTests
         var entries = new List<(long Offset, long Size, long CompressedSize, string Path)>();
         foreach (var file in files)
         {
-            entries.Add(WriteFile(writer, file));
+            var entry = WriteFile(writer, file);
+            entries.Add(entry);
         }
 
         var manifestOffset = stream.Position;

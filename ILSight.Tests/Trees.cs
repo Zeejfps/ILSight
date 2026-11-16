@@ -87,7 +87,8 @@ internal static class Trees
     /// the test when it opens as anything else.</summary>
     public static LoadedModule OpenModule(this AssemblyList list, string path)
     {
-        return Assert.IsType<LoadedModule>(list.Open(path));
+        var opened = list.Open(path);
+        return Assert.IsType<LoadedModule>(opened);
     }
 
     /// <summary>Opens the file at <paramref name="path"/>, which the test names and must be absolute.</summary>

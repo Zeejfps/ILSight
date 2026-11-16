@@ -149,9 +149,13 @@ public sealed class TypeCardTests
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var shapes = list.OpenModule(WrittenAssemblies.WriteWithBase(temp, "Shapes", "Shape", "Circle"));
-        list.OpenModule(BrokenAssemblies.WriteUnreadableTypeSystem(temp, WrittenAssemblies.WriteDeriving(temp, "Billing", "Shapes", "Shape", "Invoice")));
-        list.OpenModule(WrittenAssemblies.WriteDeriving(temp, "Orders", "Shapes", "Shape", "Order"));
+        var shapesPath = WrittenAssemblies.WriteWithBase(temp, "Shapes", "Shape", "Circle");
+        var shapes = list.OpenModule(shapesPath);
+        var billingPath = WrittenAssemblies.WriteDeriving(temp, "Billing", "Shapes", "Shape", "Invoice");
+        var unreadableBillingPath = BrokenAssemblies.WriteUnreadableTypeSystem(temp, billingPath);
+        list.OpenModule(unreadableBillingPath);
+        var ordersPath = WrittenAssemblies.WriteDeriving(temp, "Orders", "Shapes", "Shape", "Order");
+        list.OpenModule(ordersPath);
         var shape = (await shapes.ReadRootAsync().GetChildAsync("Shapes", "Shape")).Definition;
 
         var derived = (await TypeCards.ReadDerivedAsync(list, shape, CancellationToken.None)).GetValue();
@@ -185,7 +189,8 @@ public sealed class TypeCardTests
     {
         using var temp = new TempDir();
         var grow = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Circle", "Grow");
-        var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, grow));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, grow);
+        var path = AssemblyPath.Of(unreadablePath);
         var circle = CodeReferences.CreateEntity(EntityKind.Type, "Circle", path, BrokenAssemblies.GetTypeHandle(Trees.TestAssemblyPath, "Circle"));
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
 

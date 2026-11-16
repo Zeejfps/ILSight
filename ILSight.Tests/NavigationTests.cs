@@ -212,7 +212,8 @@ public sealed class NavigationTests
     public async Task Lookups_into_a_module_whose_types_cannot_be_read_name_it_rather_than_find_nothing()
     {
         using var temp = new TempDir();
-        var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableTypeSystem(temp, Trees.TestAssemblyPath));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableTypeSystem(temp, Trees.TestAssemblyPath);
+        var path = AssemblyPath.Of(unreadablePath);
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var session = TestSession.Shared;
         var type = CodeReferences.CreateEntity(EntityKind.Type, "Circle", path, MetadataTokens.TypeDefinitionHandle(2));
@@ -243,7 +244,8 @@ public sealed class NavigationTests
         var grow = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Circle", "Grow");
         var path = BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, grow);
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var module = Assert.IsType<LoadedModule>(AssemblyListing.Open(list, AssemblyPath.Of(path)));
+        var opened = AssemblyListing.Open(list, AssemblyPath.Of(path));
+        var module = Assert.IsType<LoadedModule>(opened);
 
         var byId = await NodeLookup.FindByIdAsync(TestSession.Shared, "M:ILSight.Tests.Fixtures.Circle.Grow(System.Double,System.Int32)", [module],
             CancellationToken.None);
@@ -274,7 +276,8 @@ public sealed class NavigationTests
     {
         using var temp = new TempDir();
         var grow = BrokenAssemblies.GetMethod(Trees.TestAssemblyPath, "Circle", "Grow");
-        var path = AssemblyPath.Of(BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, grow));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableMethodName(temp, Trees.TestAssemblyPath, grow);
+        var path = AssemblyPath.Of(unreadablePath);
         var area = BrokenAssemblies.GetProperty(Trees.TestAssemblyPath, "Circle", "Area");
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var session = TestSession.Shared;

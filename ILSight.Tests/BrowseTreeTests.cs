@@ -118,9 +118,13 @@ public sealed class BrowseTreeTests
     {
         using var temp = new TempDir();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var shapes = list.OpenModule(WrittenAssemblies.WriteWithBase(temp, "Shapes", "Shape", "Circle"));
-        list.OpenModule(BrokenAssemblies.WriteUnreadableTypeSystem(temp, WrittenAssemblies.WriteDeriving(temp, "Billing", "Shapes", "Shape", "Invoice")));
-        list.OpenModule(WrittenAssemblies.WriteDeriving(temp, "Orders", "Shapes", "Shape", "Order"));
+        var shapesPath = WrittenAssemblies.WriteWithBase(temp, "Shapes", "Shape", "Circle");
+        var shapes = list.OpenModule(shapesPath);
+        var billingPath = WrittenAssemblies.WriteDeriving(temp, "Billing", "Shapes", "Shape", "Invoice");
+        var unreadableBillingPath = BrokenAssemblies.WriteUnreadableTypeSystem(temp, billingPath);
+        list.OpenModule(unreadableBillingPath);
+        var ordersPath = WrittenAssemblies.WriteDeriving(temp, "Orders", "Shapes", "Shape", "Order");
+        list.OpenModule(ordersPath);
         var folder = await shapes.ReadRootAsync().GetChildAsync("Shapes", "Shape", "Derived Types");
 
         var derived = await folder.ListChildrenAsync();

@@ -21,8 +21,10 @@ public sealed class ModuleReleaseTests
         var leftCode = await left.ReadRootAsync().GetChildAsync("Left", "Derived").DecompileAsync(DecompilationLanguage.CSharp);
         var rightCode = await right.ReadRootAsync().GetChildAsync("Right", "Derived").DecompileAsync(DecompilationLanguage.CSharp);
 
-        LoadedAssemblies.Release(list.Close(left));
-        LoadedAssemblies.Release(list.Close(right));
+        var leftRemoved = list.Close(left);
+        LoadedAssemblies.Release(leftRemoved);
+        var rightRemoved = list.Close(right);
+        LoadedAssemblies.Release(rightRemoved);
         await LoadedAssemblies.WaitForReleaseAsync(left, CancellationToken.None).WithinPatienceAsync();
         await LoadedAssemblies.WaitForReleaseAsync(right, CancellationToken.None).WithinPatienceAsync();
 
@@ -40,7 +42,8 @@ public sealed class ModuleReleaseTests
         var before = await ReadTypeSystemAsync(left);
         await right.ReadRootAsync().GetChildAsync("Right", "Derived").DecompileAsync(DecompilationLanguage.CSharp);
 
-        LoadedAssemblies.Release(list.Close(right));
+        var removed = list.Close(right);
+        LoadedAssemblies.Release(removed);
         await LoadedAssemblies.WaitForReleaseAsync(right, CancellationToken.None).WithinPatienceAsync();
         var again = await derived.DecompileAsync(DecompilationLanguage.CSharp);
         var after = await ReadTypeSystemAsync(left);
@@ -58,7 +61,8 @@ public sealed class ModuleReleaseTests
         var derived = await left.ReadRootAsync().GetChildAsync("Left", "Derived");
         var underWay = LoadedAssemblies.TryBeginReading(left) ?? throw new InvalidOperationException("Left was released before it was closed.");
 
-        LoadedAssemblies.Release(list.Close(left));
+        var removed = list.Close(left);
+        LoadedAssemblies.Release(removed);
         var released = LoadedAssemblies.WaitForReleaseAsync(left, CancellationToken.None);
         var newReader = LoadedAssemblies.TryBeginReading(left);
         var decompiled = (await NodeContentLoader.DecompileAsync(TestSession.Shared, derived, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance)).GetValue();

@@ -40,7 +40,8 @@ public sealed class MetadataTests
     public async Task A_cell_whose_read_fails_shows_a_question_mark_and_why_on_hover()
     {
         using var temp = new TempDir();
-        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(BrokenAssemblies.WriteUnreadableParameterName(temp, Trees.TestAssemblyPath));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableParameterName(temp, Trees.TestAssemblyPath);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(unreadablePath);
         var grid = await GridAsync(await TableAsync(assembly, "Param"));
         var name = grid.Column("Name");
 
@@ -61,7 +62,8 @@ public sealed class MetadataTests
     {
         using var temp = new TempDir();
         var path = BrokenAssemblies.WriteUnreadableMemberReferenceSignature(temp, Trees.TestAssemblyPath);
-        var module = Assert.IsType<LoadedModule>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(path));
+        var opened = new AssemblyList { Runtime = TestRuntime.Installed }.Open(path);
+        var module = Assert.IsType<LoadedModule>(opened);
         var file = LoadedAssemblies.GetFile(module);
         var schema = MetadataTables.Create(TableIndex.MemberRef, file);
         Assert.NotNull(schema);
@@ -137,7 +139,8 @@ public sealed class MetadataTests
     private static MetadataGrid.Paged MemberRefGrid(Func<IReadOnlyList<GridColumn>, IReadOnlyList<GridColumn>> columnsOf,
         Func<object, object?>? readDetails, Func<object, MetadataRowDetails?>? makeDetails)
     {
-        var module = Assert.IsType<LoadedModule>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath));
+        var opened = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath);
+        var module = Assert.IsType<LoadedModule>(opened);
         var file = LoadedAssemblies.GetFile(module);
         var table = MetadataTables.Create(TableIndex.MemberRef, file);
         Assert.NotNull(table);
@@ -157,7 +160,8 @@ public sealed class MetadataTests
     // The test assembly's MemberRef table, paged, its Name column's tooltip read and made as given.
     private static MetadataGrid.Paged MemberRefGridWithNameTooltip(Func<object, int, object?> read, Func<object, MetadataTooltip?>? make)
     {
-        var module = Assert.IsType<LoadedModule>(new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath));
+        var opened = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath);
+        var module = Assert.IsType<LoadedModule>(opened);
         var file = LoadedAssemblies.GetFile(module);
         var schema = MetadataTables.Create(TableIndex.MemberRef, file);
         Assert.NotNull(schema);
@@ -557,7 +561,8 @@ public sealed class MetadataTests
         Assert.Equal(MatchMode.Any, restored.Mode);
         Assert.Equal(["Abstract"], saved.Flags.Keys);
         Assert.Equal(["Visibility"], saved.Groups.Keys);
-        Assert.Null(FilterStatePresenter.SaveFilter(FilterState.From(schema)));
+        var savedFilter = FilterStatePresenter.SaveFilter(FilterState.From(schema));
+        Assert.Null(savedFilter);
     }
 
     [Fact]
@@ -706,7 +711,8 @@ public sealed class MetadataTests
     public async Task The_edit_and_continue_tables_list_each_logged_change_and_mapped_token()
     {
         using var temp = new TempDir();
-        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(WriteEditAndContinueAssembly(temp));
+        var editAndContinuePath = WriteEditAndContinueAssembly(temp);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(editAndContinuePath);
         var type = MetadataTokens.GetToken(MetadataTokens.TypeDefinitionHandle(1));
 
         var log = await GridAsync(await TableAsync(assembly, "EncLog"));

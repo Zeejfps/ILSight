@@ -17,7 +17,8 @@ public sealed class BrowseSessionTests : IDisposable
     public async Task Children_are_built_once_and_every_caller_gets_the_same_ones()
     {
         var session = new BrowseSession();
-        var root = session.EnsureRoot(new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath));
+        var opened = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath);
+        var root = session.EnsureRoot(opened);
 
         var waits = Enumerable.Range(0, 16).AsParallel().WithDegreeOfParallelism(8).Select(_ => BrowseSessions.GetChildrenAsync(session, root)).ToArray();
         var waited = await Task.WhenAll(waits).WithinPatienceAsync();
@@ -30,7 +31,8 @@ public sealed class BrowseSessionTests : IDisposable
     public async Task The_caller_that_starts_a_build_awaits_it_to_its_end_even_when_cancelled()
     {
         var session = new BrowseSession();
-        var root = (await BrowseSessions.EnsureRootAsync(session, new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath)));
+        var opened = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.TestAssemblyPath);
+        var root = (await BrowseSessions.EnsureRootAsync(session, opened));
 
         var started = await BrowseSessions.GetChildrenAsync(session, root, new CancellationToken(canceled: true));
         var state = await BrowseSessions.GetChildrenAsync(session, root);
@@ -43,7 +45,8 @@ public sealed class BrowseSessionTests : IDisposable
     public async Task Children_that_fail_to_build_say_why_once_and_count_as_children()
     {
         var session = new BrowseSession();
-        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(BrokenAssemblies.WriteUnreadableAvaloniaContainer(_temp));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableAvaloniaContainer(_temp);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(unreadablePath);
         var resources = (await BrowseSessions.ListChildrenAsync(session, (await BrowseSessions.EnsureRootAsync(session, assembly)))).Single(c => c.Subject is NodeSubject.Resources);
         var container = Assert.Single((await BrowseSessions.ListChildrenAsync(session, resources)));
 
@@ -72,8 +75,11 @@ public sealed class BrowseSessionTests : IDisposable
     public void A_listed_items_root_shows_what_a_node_made_from_its_subject_shows()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var module = Assert.IsType<LoadedModule>(list.Open(Trees.TestAssemblyPath));
-        var failed = Assert.IsType<FailedAssembly>(list.Open(_temp.Write("broken.dll", "no assembly")));
+        var opened = list.Open(Trees.TestAssemblyPath);
+        var module = Assert.IsType<LoadedModule>(opened);
+        var path = _temp.Write("broken.dll", "no assembly");
+        var brokenOpened = list.Open(path);
+        var failed = Assert.IsType<FailedAssembly>(brokenOpened);
         var session = new BrowseSession();
 
         AssertShowsTheSame(BrowseNodes.Create(null, new NodeSubject.Module { Value = module }), session.EnsureRoot(module));

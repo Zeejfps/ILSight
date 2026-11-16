@@ -561,7 +561,8 @@ public sealed class DecompilationTests
     public async Task A_module_the_library_cannot_read_shows_why_as_its_document()
     {
         using var temp = new TempDir();
-        var module = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(BrokenAssemblies.WriteUnreadableTypeSystem(temp, Trees.TestAssemblyPath));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableTypeSystem(temp, Trees.TestAssemblyPath);
+        var module = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(unreadablePath);
 
         var document = await module.ReadRootAsync().DecompileAsync(DecompilationLanguage.CSharp);
 

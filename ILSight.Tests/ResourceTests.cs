@@ -16,7 +16,8 @@ public sealed class ResourceTests
     public async Task A_resources_file_the_library_cannot_read_is_its_nodes_failure_saying_why()
     {
         using var temp = new TempDir();
-        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(BrokenAssemblies.WriteUnreadableResourcesFile(temp));
+        var unreadablePath = BrokenAssemblies.WriteUnreadableResourcesFile(temp);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(unreadablePath);
         var container = Assert.Single(await (await ResourcesAsync(assembly)).ListChildrenAsync());
 
         var content = await NodeContentLoader.ReadContentAsync(TestSession.Shared, container, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance,

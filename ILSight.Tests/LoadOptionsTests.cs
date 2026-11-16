@@ -63,7 +63,8 @@ public sealed class LoadOptionsTests
         var clearWork = list.Work.Ending;
         int? clearCancelledIn = null;
         using var clearSeen = clearWork.Register(() => clearCancelledIn = list.Generation);
-        LoadedAssemblies.Release(list.CloseAll());
+        var removed = list.CloseAll();
+        LoadedAssemblies.Release(removed);
 
         Assert.Equal(beforeOptions + 1, optionsCancelledIn);
         Assert.Equal(beforeClear + 1, clearCancelledIn);
@@ -77,7 +78,8 @@ public sealed class LoadOptionsTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var linked = list.Work.Ending;
         var generation = list.Generation;
-        LoadedAssemblies.Release(list.CloseAll());
+        var removed = list.CloseAll();
+        LoadedAssemblies.Release(removed);
 
         var cancelled = Assert.ThrowsAny<OperationCanceledException>(() => AssemblyListing.Open(list, AssemblyPath.Of(Trees.TestAssemblyPath), linked));
 
@@ -92,7 +94,8 @@ public sealed class LoadOptionsTests
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var work = list.Work;
-        LoadedAssemblies.Release(list.CloseAll());
+        var removed = list.CloseAll();
+        LoadedAssemblies.Release(removed);
         using var ending = new CancellationTokenSource();
         var endedBeforeItsCancel = new GenerationWork(work.Generation, ending);
 
