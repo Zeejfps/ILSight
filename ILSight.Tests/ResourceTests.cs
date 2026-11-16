@@ -141,6 +141,50 @@ public sealed class ResourceTests
     }
 
     [Fact]
+    public void A_GIF_frame_too_large_for_its_pixels_array_is_out_of_range_never_an_overflow()
+    {
+        // A 1×1 GIF whose one frame says it is 65535×65535: its pixels' count overflows an int.
+        byte[] gif =
+        [
+            (byte)'G', (byte)'I', (byte)'F', (byte)'8', (byte)'9', (byte)'a', 1, 0, 1, 0, 0, 0, 0,
+            0x2C, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0, 2, 0, 0x3B,
+        ];
+
+        var read = ResourceImages.DecodeImage(gif);
+
+        Assert.Equal("A 65535×65535 picture is out of range.", Assert.IsType<ResourceImageRead.Unreadable>(read).Why);
+    }
+
+    // PngSharp's facts are values ILSight doesn't control: laying them out checks each before it sizes or indexes.
+    [Fact]
+    public void A_PNGs_pixels_shorter_than_their_samples_span_are_cut_short_never_an_index_out_of_range()
+    {
+        var read = new ResourceImages.PngRead
+        {
+            Width = 1, Height = 1, Depth = 16, ColorType = PngSharp.Spec.Chunks.IHDR.ColorType.TrueColor, BytesPerPixel = 3,
+            Pixels = [1, 2, 3], Palette = null, Transparency = null,
+        };
+
+        var thrown = Assert.Throws<InvalidDataException>(() => ResourceImages.MakePng(read, "PNG"));
+
+        Assert.Equal("The PNG's pixels are cut short.", thrown.Message);
+    }
+
+    [Fact]
+    public void A_PNG_depth_with_no_scale_reads_each_sample_as_its_byte_never_a_division_by_zero()
+    {
+        var read = new ResourceImages.PngRead
+        {
+            Width = 1, Height = 1, Depth = 0, ColorType = PngSharp.Spec.Chunks.IHDR.ColorType.Grayscale, BytesPerPixel = 1,
+            Pixels = [5], Palette = null, Transparency = null,
+        };
+
+        var image = ResourceImages.MakePng(read, "PNG");
+
+        Assert.Equal([5, 5, 5, 255], image.Rgba);
+    }
+
+    [Fact]
     public void Anything_else_is_no_picture()
     {
         var blob = Fixture("blob.bin");

@@ -225,7 +225,9 @@ public static class ResourceImages
         }
     }
 
-    private static ResourceImage MakePng(PngRead read, string format)
+    // The PNG's facts are PngSharp's, values ILSight doesn't control: each is checked before it sizes or indexes
+    // anything, so bad ones are an InvalidDataException, never an index out of range or a division by zero.
+    internal static ResourceImage MakePng(PngRead read, string format)
     {
         int width = read.Width, height = read.Height;
         if (width <= 0 || height <= 0 || (long)width * height > int.MaxValue / 4)
@@ -235,18 +237,21 @@ public static class ResourceImages
 
         var depth = read.Depth;
         var src = read.Pixels;
-        var bytesPerPixel = read.BytesPerPixel;
         var wide = depth == 16;
+        // A pixel's step is at least what its samples span, whatever PngSharp says it is.
+        var bytesPerPixel = Math.Max(read.BytesPerPixel, SampleBytes(read.ColorType, wide));
         var palette = read.Palette;
         var transparency = read.Transparency;
         var rgba = new byte[width * height * 4];
         for (var i = 0; i < width * height; i++)
         {
-            var at = i * bytesPerPixel;
-            if (at + bytesPerPixel > src.Length)
+            var start = (long)i * bytesPerPixel;
+            if (start + bytesPerPixel > src.Length)
             {
                 throw new InvalidDataException($"The {format}'s pixels are cut short.");
             }
+
+            var at = (int)start;
 
             byte r, g, b, a = 255;
             switch (read.ColorType)
@@ -336,14 +341,28 @@ public static class ResourceImages
             return wide ? src[at] << 8 | src[at + 1] : src[at];
         }
 
+        // A sample scaled to a byte: a depth below 8 (1, 2 or 4) scaled up; any other read as its first byte.
         static byte Sample(byte[] src, int at, int depth)
         {
-            return depth switch
+            if (depth is > 0 and < 8)
             {
-                16 => src[at],
-                8 => src[at],
-                _ => (byte)(src[at] * 255 / ((1 << depth) - 1)),
+                return (byte)(src[at] * 255 / ((1 << depth) - 1));
+            }
+
+            return src[at];
+        }
+
+        // The bytes one pixel's samples span: one per channel, two for 16-bit samples; a palette index is one byte.
+        static int SampleBytes(ColorType colorType, bool wide)
+        {
+            var channels = colorType switch
+            {
+                ColorType.GrayscaleWithAlpha => 2,
+                ColorType.TrueColor => 3,
+                ColorType.TrueColorWithAlpha => 4,
+                _ => 1,
             };
+            return colorType == ColorType.IndexedColor || !wide ? channels : channels * 2;
         }
     }
 
@@ -360,6 +379,17 @@ public static class ResourceImages
         catch (Exception e) when (e is not OperationCanceledException && e is not OutOfMemoryException)
         {
             return CannotBeRead(e);
+        }
+
+        // Laid out by JpegSharp's size, values ILSight doesn't control: checked against its pixels before they're used.
+        if (width <= 0 || height <= 0)
+        {
+            return new ResourceImageRead.Unreadable { Why = $"A {width}×{height} picture is out of range." };
+        }
+
+        if (pixels.Length < (long)width * height)
+        {
+            return new ResourceImageRead.Unreadable { Why = "The JPEG's pixels are cut short." };
         }
 
         var rgba = new byte[pixels.Length * 4];
@@ -631,7 +661,7 @@ public static class ResourceImages
     }
 
     // What PngSharp read of a PNG: plain values, which MakePng makes into RGBA.
-    private sealed record PngRead
+    internal sealed record PngRead
     {
         public required int Width { get; init; }
 

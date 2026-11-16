@@ -45,6 +45,12 @@ internal static class Gif
                     var top = data.UInt16(at + 3);
                     var frameWidth = data.UInt16(at + 5);
                     var frameHeight = data.UInt16(at + 7);
+                    // The frame's own size sizes its pixels' array: bounded as the picture's is, never an overflow.
+                    if ((long)frameWidth * frameHeight > int.MaxValue / 4)
+                    {
+                        throw new InvalidDataException($"A {frameWidth}×{frameHeight} picture is out of range.");
+                    }
+
                     var frameFlags = data[at + 9];
                     at += 10;
                     var palette = global;
