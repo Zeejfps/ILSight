@@ -23,8 +23,8 @@ The complete C# rules for agents, with the IDs of `RULES.md` (rationale and evid
   Hosts running the whole app (startup, tests) build it through one root entry point and call the lifecycle owner it
   builds, if the app has one, keeping host-only setup in the host; building starts nothing. Other edges receive what
   they call.
-- **Tests** follow R002, R003, R005, R007, R008, R010 (test methods needn't take a token), R012, R013, R014 and R009's
-  ban on empty catches; not R001, R004 or R011 (fakes implementing a port are expected).
+- **Tests** follow every rule but R001, R004, R006 and R011 (fakes implementing a port are expected), of R009 only its
+  ban on empty catches; test methods needn't take a token.
   - The codebase's naming convention (a new one: `Method_Scenario_Expected`); own assertion helpers carry
     `[DoesNotReturnIf(false)]`; test data uses object initializers; shared helpers live in one test project.
   - **A missing value fails the test** (RL0204): `?.` feeds an assertion only where null fails it (`Equal` / `Same`
@@ -262,8 +262,7 @@ named with `-ing`).
   through the framework's mechanism (its bound setter or change notification, where it calls one); a field written by
   `ref` runs no code: the frame section.
 - **A framework's protocol** (a host's lifecycle calls too) may impose order: expose exactly its members, later calls
-  taking earlier results or reading
-  them from their shared object.
+  taking earlier results or reading them from their shared object.
 
 ## R005: Data goes in through `required init` properties
 
@@ -342,7 +341,8 @@ RL0906 (an edge loop with no per-item catch), RL0907 (a case's nullable exceptio
 - Throw only for bugs (bad argument, wrong state, impossible case, corrupt state): a built-in type, a message saying
   what was expected (a custom type only if caught); never `throw ex` or `Exception`. Expected failures are returned (a
   union per operation, `Result<T>`, `Find*`, `Try*`; no library result types), never discarded; infrastructure failures
-  propagate. Bad data in the app's own decoder is its specific exception, caught by type into the unit's failure.
+  propagate. The app's own decoder says bad data by its specific exception, caught by type into the unit's failure, or
+  a result: in a callback's marked work a result, made the exception outside the mark, once it is lowered.
 - **What the user asked for ends in something they see.** A refusal answers the request; a failure is something going
   wrong doing it; separate cases where refusal and failure are different outcomes; an optional cause within one failure
   outcome stays nullable. A refusal goes where it was asked, alike from every input, or the action shows unavailable
@@ -425,9 +425,9 @@ RL0906 (an edge loop with no per-item catch), RL0907 (a case's nullable exceptio
   (plain `Task` only), else its failure propagates. The one exception: a library in `rulelab.untrusted_libraries`
   reading the user's data (in an adapter, a conversion step, or a library object that is data) is caught around the read
   only (an app callback only collects, or raises a mark before its work, lowered on return, that the filter lets
-  through; a `finally` is too late), all but requested cancellation, into the requested unit's failure case with why,
-  shown where its answer would be, in the project calling it (your core's answer carries the case); never list your own
-  code.
+  through; a `finally` is too late; its reads of the library's objects and calls back into its code are outside the
+  mark), all but requested cancellation, into the requested unit's failure case with why, shown where its answer would
+  be, in the project calling it (your core's answer carries the case); never list your own code.
 - **Lazy library failures are translated inside each adapter member's read**, told by what the code does: inside, the
   library's reads and the facts they decode (its own predicates included); after the outermost catch, the app's policy
   (which analyses apply, what to read next, decided on facts read under a narrow catch), ordering (even text it sorts
