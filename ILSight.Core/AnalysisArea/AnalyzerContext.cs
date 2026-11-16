@@ -32,20 +32,6 @@ public sealed class AnalyzerContext
 
     public CancellationToken CancellationToken { get; internal init; }
 
-    /// <summary>How C# maps the compiler-generated code around <paramref name="entity"/> to the
-    /// methods it came from; the last one asked for is kept.</summary>
-    internal CodeMappingInfo EnsureMapping(ICSharpCode.Decompiler.TypeSystem.IEntity entity)
-    {
-        var file = DecompilerFacts.GetMetadataFile(entity);
-        var mapping = _mapping;
-        if (mapping is null || mapping.Value.File != file || mapping.Value.Handle != entity.MetadataToken)
-        {
-            mapping = (file, entity.MetadataToken, ICSharpCode.Decompiler.CSharp.CSharpDecompiler.GetCodeMappingInfo(file, entity.MetadataToken));
-            _mapping = mapping;
-        }
-        return mapping.Value.Mapping;
-    }
-
     /// <summary>The mapping of the compiler-generated code around the entity <paramref name="handle"/> names in
     /// <paramref name="file"/>, when it is the one kept (<see cref="KeepMapping"/>); null when another is.</summary>
     internal CodeMappingInfo? FindMapping(MetadataFile file, EntityHandle handle)

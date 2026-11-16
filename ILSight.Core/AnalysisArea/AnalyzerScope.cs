@@ -264,8 +264,8 @@ internal sealed class AnalyzerScope
 
     /// <summary>The members in scope with code <paramref name="matches"/> accepts, type by type: each such method, then
     /// each property and event with such an accessor. A type's members are read under a catch of their own;
-    /// <paramref name="matches"/>, the analysis's test, runs outside it.</summary>
-    public IEnumerable<IEntity> FindMembersWithCode(Func<IMethod, bool> matches, CancellationToken ct)
+    /// <paramref name="matches"/>, the analysis's test, runs outside it, given the file the method was found in.</summary>
+    public IEnumerable<IEntity> FindMembersWithCode(Func<MetadataFile, IMethod, bool> matches, CancellationToken ct)
     {
         foreach (var (file, type) in ListTypes(ct))
         {
@@ -277,14 +277,14 @@ internal sealed class AnalyzerScope
 
             foreach (var method in members.Methods)
             {
-                if (matches(method))
+                if (matches(file, method))
                 {
                     yield return method;
                 }
             }
             foreach (var (member, accessors) in members.Accessed)
             {
-                if (accessors.Any(matches))
+                if (accessors.Any(a => matches(file, a)))
                 {
                     yield return member;
                 }

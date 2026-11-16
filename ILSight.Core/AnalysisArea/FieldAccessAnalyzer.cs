@@ -2,12 +2,17 @@
 
 using System.Reflection.Metadata;
 using ICSharpCode.Decompiler;
+using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core.AnalysisArea;
 
 /// <summary>Finds the members whose code, compiler-generated parts included, accesses a field in
 /// one particular way.</summary>
+/// <remarks>Each step reads under a catch of its own, noting a part the library fails reading as passed over: where a
+/// method's code is, its parts, each part's body and instructions, then the field an access chosen by its opcode names.
+/// Which opcodes access the field the way asked, and whether the field named is the analyzed one, are decided
+/// outside.</remarks>
 internal static class FieldAccessAnalyzer
 {
     public static AnalysisRun? Prepare(FieldAccessKind kind, ISymbol? symbol)
@@ -28,21 +33,86 @@ internal static class FieldAccessAnalyzer
 
     private static IEnumerable<ISymbol> Analyze(FieldAccessKind kind, IField field, AnalyzerContext context)
     {
-        return AnalyzerScope.Create(context, field).FindMembersWithCode(method => Accesses(kind, method, field, context), context.CancellationToken);
+        var key = ReadKey(field, context);
+        if (key is null)
+        {
+            yield break;
+        }
+
+        var scope = AnalyzerScope.Create(context, field);
+        if (scope is null)
+        {
+            yield break;
+        }
+
+        foreach (var member in scope.FindMembersWithCode((file, method) => Accesses(kind, file, method, key.Value, context), context.CancellationToken))
+        {
+            yield return member;
+        }
     }
 
-    private static bool Accesses(FieldAccessKind kind, IMethod method, IField field, AnalyzerContext context)
+    private static DefinitionKey? ReadKey(IField field, AnalyzerContext context)
     {
-        if (method.MetadataToken.IsNil || method.ParentModule is not MetadataModule module || module.MetadataFile is null)
+        try
+        {
+            return DefinitionKey.Of(field);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            context.PassedOver.Note(context.AnalyzedFile, e);
+            return null;
+        }
+    }
+
+    private static bool Accesses(FieldAccessKind kind, MetadataFile file, IMethod method, DefinitionKey field, AnalyzerContext context)
+    {
+        var code = MethodBodies.ReadCode(method, file, context.PassedOver);
+        if (code is null)
         {
             return false;
         }
 
-        var file = module.MetadataFile;
-        var mapping = context.EnsureMapping(DecompilerFacts.GetDeclaringTypeDefinition(method));
-        return mapping.GetMethodParts(DecompilerFacts.GetMethodHandle(method))
-            .Any(part => MethodBodies.HasToken(file, part, context.PassedOver, (opCode, token) =>
-                Is(kind, opCode) && token.Kind.IsMemberKind() && module.ResolveEntity(token) is IField found && Members.IsSame(found, field)));
+        var parts = MethodBodies.ReadParts(context, code.File, code.Declaring, code.Handle);
+        return parts is not null && parts.Any(part => AccessesIn(kind, code, part, field, context.PassedOver));
+    }
+
+    private static bool AccessesIn(FieldAccessKind kind, MethodCode code, MethodDefinitionHandle part, DefinitionKey field, PassedOver passedOver)
+    {
+        var body = MethodBodies.Read(code.File, part, passedOver);
+        if (body is null)
+        {
+            return false;
+        }
+
+        foreach (var (opCode, token) in MethodBodies.ListTokens(code.File, body, passedOver))
+        {
+            if (!Is(kind, opCode) || !token.Kind.IsMemberKind())
+            {
+                continue;
+            }
+
+            var found = ReadField(code, token, passedOver);
+            if (found is not null && found.Value.Is(field))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // The field the token names; null when it names none, or the library fails resolving it, noted.
+    private static DefinitionKey? ReadField(MethodCode code, EntityHandle token, PassedOver passedOver)
+    {
+        try
+        {
+            var found = code.Module.ResolveEntity(token);
+            return found is IField field ? DefinitionKey.Of(field) : null;
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            passedOver.Note(code.File, e);
+            return null;
+        }
     }
 
     private static bool Is(FieldAccessKind kind, ILOpCode opCode)
