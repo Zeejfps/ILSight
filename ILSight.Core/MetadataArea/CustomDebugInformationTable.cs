@@ -210,7 +210,9 @@ internal static class CustomDebugInformationTable
             var rows = new List<IReadOnlyList<string>>();
             while (reader.RemainingBytes > 0)
             {
-                rows.Add([ReadNullTerminatedUtf8(ref reader), ReadNullTerminatedUtf8(ref reader)]);
+                var name = ReadNullTerminatedUtf8(ref reader);
+                var value = ReadNullTerminatedUtf8(ref reader);
+                rows.Add([name, value]);
             }
 
             return new MetadataRowDetails.Table { Headers = ["Name", "Value"], Rows = rows };
@@ -239,7 +241,8 @@ internal static class CustomDebugInformationTable
             var rows = new List<IReadOnlyList<string>>();
             while (reader.RemainingBytes > 0)
             {
-                rows.Add([ReadNullTerminatedUtf8(ref reader)]);
+                var elementName = ReadNullTerminatedUtf8(ref reader);
+                rows.Add([elementName]);
             }
 
             return new MetadataRowDetails.Table { Headers = ["Element Name"], Rows = rows };

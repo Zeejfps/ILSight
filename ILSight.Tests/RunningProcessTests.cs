@@ -36,8 +36,11 @@ public sealed class RunningProcessTests
         buffer.Position = 0;
         using var reader = new BinaryReader(buffer);
 
-        Assert.Equal("héllo", DiagnosticsIpc.ReadString(reader));
-        Assert.Null(DiagnosticsIpc.ReadString(reader));
+        var first = DiagnosticsIpc.ReadString(reader);
+        var second = DiagnosticsIpc.ReadString(reader);
+
+        Assert.Equal("héllo", first);
+        Assert.Null(second);
     }
 
     [Theory]

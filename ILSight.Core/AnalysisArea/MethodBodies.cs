@@ -153,7 +153,8 @@ internal static class MethodBodies
             var operandType = opCode.GetOperandType();
             if (operandType is OperandType.Field or OperandType.Method or OperandType.Sig or OperandType.Tok or OperandType.Type)
             {
-                token = MetadataTokenHelpers.EntityHandleOrNil(blob.ReadInt32());
+                var rawToken = blob.ReadInt32();
+                token = MetadataTokenHelpers.EntityHandleOrNil(rawToken);
             }
             else
             {

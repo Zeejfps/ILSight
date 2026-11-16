@@ -76,7 +76,8 @@ internal static class NettraceRundown
     {
         try
         {
-            return new RundownRead.Read(ReadModules(stream));
+            var modules = ReadModules(stream);
+            return new RundownRead.Read(modules);
         }
         catch (NettraceFaultException e)
         {
@@ -282,7 +283,8 @@ internal static class NettraceRundown
     // the wrong bytes for its size.
     private static void SkipBlock(BinaryReader reader)
     {
-        SeekTo(reader, ReadBlockEnd(reader));
+        var blockEnd = ReadBlockEnd(reader);
+        SeekTo(reader, blockEnd);
     }
 
     private static long ReadBlockEnd(BinaryReader reader)

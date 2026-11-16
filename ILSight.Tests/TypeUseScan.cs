@@ -70,7 +70,8 @@ internal sealed class TypeUseScan : ISignatureTypeProvider<ImmutableArray<TypeDe
             var operandType = opCode.GetOperandType();
             if (operandType is OperandType.Field or OperandType.Method or OperandType.Tok or OperandType.Type)
             {
-                Add(uses, ListTypesNamedBy(MetadataTokenHelpers.EntityHandleOrNil(il.ReadInt32())));
+                var rawToken = il.ReadInt32();
+                Add(uses, ListTypesNamedBy(MetadataTokenHelpers.EntityHandleOrNil(rawToken)));
             }
             else
             {
