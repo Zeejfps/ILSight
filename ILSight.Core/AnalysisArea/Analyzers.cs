@@ -260,8 +260,9 @@ public static class Analyzers
     /// read only in part. Results come
     /// sorted when the analysis asks for it, after all are found. A unit reading the symbol's module and those it
     /// scans: a module released (closed) before is passed over, the symbol's own finding nothing. What the library
-    /// throws as the analysis reads ends the stream with <see cref="Outcome{T}.Failed"/>, after what was found before
-    /// it; the cancellation of <paramref name="cancellationToken"/> is let through.</summary>
+    /// throws as the analysis reads a part (a type, a member, a body, a symbol found) passes that part over, said as its
+    /// module read only in part; what the analysis's own code throws, a bug, ends the stream with it, to the edge. The
+    /// cancellation of <paramref name="cancellationToken"/> is let through.</summary>
     public static IAsyncEnumerable<Outcome<IReadOnlyList<AnalysisFind>>> RunAsync(AssemblyList list, AnalysisSymbol symbol, AnalysisKind kind,
         CancellationToken cancellationToken = default)
     {
@@ -284,12 +285,7 @@ public static class Analyzers
 
             var reads = await AnalyzerScope.ReadReachableAsync(reading, list, own, token);
             var context = new AnalyzerContext { AssemblyList = list, TypeSystems = reads, AnalyzedFile = file, CancellationToken = token };
-            var found = EmitFound(run, context, kind.SortsResults, emit, token);
-            if (found is Outcome.Failed)
-            {
-                return found;
-            }
-
+            EmitFound(run, context, kind.SortsResults, emit, token);
             foreach (var unreadable in context.Unreadable.Values.OrderBy(static u => u.Module.FilePath.FileName, StringComparer.OrdinalIgnoreCase))
             {
                 emit(new AnalysisFind.Unreadable { Name = unreadable.Module.FilePath.FileName, Why = unreadable.Why.Message, Error = unreadable.Why });
@@ -304,71 +300,58 @@ public static class Analyzers
         }, cancellationToken);
     }
 
-    private static Outcome EmitFound(AnalysisRun run, AnalyzerContext context, bool sorts, Action<AnalysisFind> emit, CancellationToken ct)
+    private static void EmitFound(AnalysisRun run, AnalyzerContext context, bool sorts, Action<AnalysisFind> emit, CancellationToken ct)
     {
         if (!sorts)
         {
-            return ReadEach(run, context, s => emit(new AnalysisFind.Found { Symbol = s }), ct);
+            ReadEach(run, context, s => emit(new AnalysisFind.Found { Symbol = s }), ct);
+            return;
         }
 
         var all = new List<AnalysisSymbol>();
-        var read = ReadEach(run, context, all.Add, ct);
-        if (read is Outcome.Failed)
-        {
-            return read;
-        }
-
+        ReadEach(run, context, all.Add, ct);
         foreach (var result in all.OrderBy(static s => s.Label, StringComparer.OrdinalIgnoreCase))
         {
             ct.ThrowIfCancellationRequested();
             emit(new AnalysisFind.Found { Symbol = result });
         }
-
-        return read;
     }
 
-    // The analysis reads the library's symbols as it is enumerated, and reading each one's facts reads it again; the
-    // description is composed from the facts outside the catch, so that a bug of the app's is not the library's.
-    // Left inside the catch: the analyzers' own walk (ILSpy's analyzers, adapted), whose every test of a candidate reads
-    // the type system as it decodes the metadata (a type's bases, a member's overrides, a body's tokens resolved), so
-    // its reads can't be taken out ahead of it without a copy of the type system.
-    private static Outcome ReadEach(AnalysisRun run, AnalyzerContext context, Action<AnalysisSymbol> take, CancellationToken ct)
+    // The analysis reads each step under a catch of its own and decides outside it, so it is run outside any catch here:
+    // a bug of the app's in its tests goes on to the edge. Each symbol it finds is described from facts read under the
+    // read's catch, one the library fails describing passed over in its module; the description is composed outside.
+    private static void ReadEach(AnalysisRun run, AnalyzerContext context, Action<AnalysisSymbol> take, CancellationToken ct)
     {
-        IEnumerator<ISymbol>? each = null;
-        try
+        foreach (var symbol in run(context))
         {
-            while (true)
+            ct.ThrowIfCancellationRequested();
+            var facts = ReadFound(symbol, context);
+            if (facts is not null)
             {
-                SymbolFacts? facts;
-                try
-                {
-                    each ??= run(context).GetEnumerator();
-                    if (!each.MoveNext())
-                    {
-                        return new Outcome.Done();
-                    }
-
-                    facts = ReadFacts(each.Current);
-                }
-                catch (OperationCanceledException) when (ct.IsCancellationRequested)
-                {
-                    throw;
-                }
-                catch (Exception e)
-                {
-                    return new Outcome.Failed(e);
-                }
-
-                ct.ThrowIfCancellationRequested();
-                if (facts is not null)
-                {
-                    take(Compose(facts, Kinds));
-                }
+                take(Compose(facts, Kinds));
             }
         }
-        finally
+    }
+
+    // The facts of a symbol found; null for one that is no entity or module, or when the library fails reading them,
+    // noted against its module, else the analyzed one.
+    private static SymbolFacts? ReadFound(ISymbol symbol, AnalyzerContext context)
+    {
+        MetadataFile? file = null;
+        try
         {
-            each?.Dispose();
+            file = symbol switch
+            {
+                IModule module => module.MetadataFile,
+                IEntity entity => entity.ParentModule?.MetadataFile,
+                _ => null,
+            };
+            return ReadFacts(symbol);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            context.PassedOver.Note(file ?? context.AnalyzedFile, e);
+            return null;
         }
     }
 

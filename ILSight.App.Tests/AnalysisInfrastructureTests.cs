@@ -8,7 +8,7 @@ namespace ILSight.App.Tests;
 public sealed class AnalysisInfrastructureTests
 {
     [Fact]
-    public async Task RunAsync_CallerTheLibraryCannotRead_EndsWithItsFailureWithWhy()
+    public async Task RunAsync_CallerTheLibraryCannotRead_NamesItsModulePartlyReadWithWhy()
     {
         using var temp = new TempDir();
         var greet = BrokenAssemblies.GetMethod(AppStateDriver.FixturePath, "Greeter", "Greet");
@@ -29,6 +29,9 @@ public sealed class AnalysisInfrastructureTests
             batches.Add(batch);
         }
 
-        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<IReadOnlyList<AnalysisFind>>.Failed>(batches[^1]).Error);
+        var finds = batches.SelectMany(static b => Assert.IsType<Outcome<IReadOnlyList<AnalysisFind>>.Ok>(b).Value).ToList();
+        var partly = Assert.IsType<AnalysisFind.PartlyRead>(Assert.Single(finds, static f => f is AnalysisFind.PartlyRead));
+        Assert.Equal("UnreadableMethodName.dll", partly.Name);
+        Assert.IsType<BadImageFormatException>(partly.Error);
     }
 }

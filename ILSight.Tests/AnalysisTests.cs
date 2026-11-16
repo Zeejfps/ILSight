@@ -277,4 +277,35 @@ public sealed class AnalysisTests
         Assert.False(callbacks.Failed);
         Assert.Equal(PrimitiveTypeCode.Int32, decoder.GetUnderlyingEnumType((TokenSearchResult)PrimitiveTypeCode.Int32));
     }
+
+    [Fact]
+    public async Task A_bug_in_an_analysiss_own_test_ends_the_run_with_it_not_as_the_librarys_failure()
+    {
+        var (list, add) = await MemberAsync("Add(T) : void");
+        var facts = Assert.IsType<AnalysisFacts>(add.AnalysisFacts);
+        var buggy = new AnalysisKind
+        {
+            Name = AnalysisName.Uses, Order = 1, Applies = static _ => true,
+            Prepare = static symbol => _ => FindThenFail(Assert.IsAssignableFrom<IEntity>(symbol)),
+        };
+        var symbol = Analyzers.Compose(facts, [buggy]);
+
+        var batches = new List<Outcome<IReadOnlyList<AnalysisFind>>>();
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        {
+            await foreach (var batch in Analyzers.RunAsync(list, symbol, buggy, CancellationToken.None))
+            {
+                batches.Add(batch);
+            }
+        });
+
+        Assert.Equal("the analysis's bug", thrown.Message);
+        Assert.DoesNotContain(batches, static b => b is Outcome<IReadOnlyList<AnalysisFind>>.Failed);
+    }
+
+    private static IEnumerable<ISymbol> FindThenFail(IEntity analyzed)
+    {
+        yield return analyzed;
+        throw new InvalidOperationException("the analysis's bug");
+    }
 }
