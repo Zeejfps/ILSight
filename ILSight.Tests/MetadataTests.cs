@@ -128,7 +128,9 @@ public sealed class MetadataTests
 
         var page = Assert.IsType<ModuleRead<MetadataGridPage>.Read>(MetadataGrids.ReadPage(grid, 0).GetValue()).Value;
 
-        Assert.Equal(new MetadataRowDetails.Failed("Cut short."), page.Details[0]);
+        var failed = Assert.IsType<MetadataRowDetails.Failed>(page.Details[0]);
+        Assert.Equal("Cut short.", failed.Reason);
+        Assert.Equal("Cut short.", Assert.IsType<BadImageFormatException>(failed.Error).Message);
     }
 
     // The test assembly's MemberRef table, paged, its columns as given and its rows' details read and made as given.

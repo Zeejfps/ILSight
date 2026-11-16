@@ -197,7 +197,9 @@ public sealed class ResourceTests
         var read = ResourceImages.DecodeImage(png);
         var next = ResourceImages.DecodeImage(whole);
 
-        Assert.StartsWith("The picture cannot be read: ", Assert.IsType<ResourceImageRead.Unreadable>(read).Why);
+        var unreadable = Assert.IsType<ResourceImageRead.Unreadable>(read);
+        Assert.Equal($"The picture cannot be read: {unreadable.Error.Message}", unreadable.Why);
+        Assert.IsType<OutOfMemoryException>(unreadable.Error);
         Assert.IsType<ResourceImageRead.Decoded>(next);
     }
 

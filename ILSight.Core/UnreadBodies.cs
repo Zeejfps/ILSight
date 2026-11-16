@@ -5,11 +5,11 @@ internal sealed class UnreadBodies
 {
     public int Count { get; private set; }
 
-    public string? FirstWhy { get; private set; }
+    public BadImageFormatException? First { get; private set; }
 
     public void Note(BadImageFormatException why)
     {
         Count++;
-        FirstWhy ??= why.Message;
+        First ??= why;
     }
 }

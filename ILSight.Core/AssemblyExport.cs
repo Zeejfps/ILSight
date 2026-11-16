@@ -89,7 +89,7 @@ public static class AssemblyExport
         using var projectFile = new StreamWriter(projectPath.Text);
         var id = decompiler.DecompileProject(LoadedAssemblies.GetFile(assembly), folder, projectFile, cancellationToken);
         var errors = decompiler.Errors
-            .Select(static e => new ExportError { Message = e.Message, Details = e.ToString() })
+            .Select(static e => new ExportError { Error = e })
             .ToList();
         return new ExportedProject { Assembly = assembly, ProjectPath = projectPath.Text, Errors = errors, Id = id };
     }
@@ -294,11 +294,7 @@ public static class AssemblyExport
             u => new PdbFailure.NotWritten
             {
                 Assembly = assembly,
-                Error = new ExportError
-                {
-                    Message = u.Thrown.SourceException.Message,
-                    Details = u.Thrown.SourceException.ToString(),
-                },
+                Error = new ExportError { Error = u.Thrown.SourceException },
             },
             static c => throw new InvalidOperationException($"'{c.Module.FilePath}' was exported after its release: the export holds a reading of each assembly it exports."));
     }
@@ -317,7 +313,7 @@ public static class AssemblyExport
             return new PdbFailure.NotWritten
             {
                 Assembly = assembly,
-                Error = new ExportError { Message = e.Message, Details = e.ToString() },
+                Error = new ExportError { Error = e },
             };
         }
     }

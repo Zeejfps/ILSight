@@ -349,7 +349,7 @@ public static class Commands
     // A method of its own, so that the frames that start nothing allocate no closure.
     private static void StartReadingPage(WorkflowRunner workflows, ReadMetadataPageHandler handler, MetadataGridPageAsk ask)
     {
-        workflows.StartSettling(nameof(ReadMetadataPageHandler), ct => handler.HandleAsync(ask, ct), error => ask.Grid.FailPage(ask.Page, error.Message));
+        workflows.StartSettling(nameof(ReadMetadataPageHandler), ct => handler.HandleAsync(ask, ct), error => ask.Grid.FailPage(ask.Page, error));
     }
 
     /// <summary>Asks for the files of the request <paramref name="opening"/> began to be opened once the frame is drawn

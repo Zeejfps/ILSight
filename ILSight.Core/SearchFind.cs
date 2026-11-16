@@ -23,6 +23,9 @@ public abstract record SearchFind
         public required LoadedModule Assembly { get; init; }
 
         public required string Why { get; init; }
+
+        /// <summary>What the library threw, so its record has the diagnostic (CF3).</summary>
+        public required Exception Error { get; init; }
     }
 
     /// <summary><see cref="Assembly"/> was searched but for <see cref="Count"/> method bodies whose IL the library
@@ -34,6 +37,9 @@ public abstract record SearchFind
         public required int Count { get; init; }
 
         public required string Why { get; init; }
+
+        /// <summary>What the library threw on the first body, so its record has the diagnostic (CF3).</summary>
+        public required Exception Error { get; init; }
     }
 
     /// <summary>A match in <see cref="Assembly"/> whose place in the tree the library couldn't read, so no node shows
@@ -47,6 +53,9 @@ public abstract record SearchFind
         public required string? Name { get; init; }
 
         public required string Why { get; init; }
+
+        /// <summary>What the library threw placing it, so its record has the diagnostic (CF3).</summary>
+        public required Exception Error { get; init; }
     }
 
     public TResult Match<TResult>(Func<Hit, TResult> hit, Func<Unsearched, TResult> unsearched, Func<PartlySearched, TResult> partlySearched,

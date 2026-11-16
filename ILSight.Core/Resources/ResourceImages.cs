@@ -167,8 +167,10 @@ public static class ResourceImages
             return DecodeSvg(data);
         }
 
-        return new ResourceImageRead.Unreadable { Why = "This is no PNG, JPEG, BMP, GIF, ICO, CUR or SVG picture." };
+        return new ResourceImageRead.Unreadable { Why = NoPicture, Error = new InvalidDataException(NoPicture) };
     }
+
+    private const string NoPicture = "This is no PNG, JPEG, BMP, GIF, ICO, CUR or SVG picture.";
 
     private static ReadOnlySpan<byte> PngSignature => [0x89, (byte)'P', (byte)'N', (byte)'G'];
 
@@ -178,16 +180,16 @@ public static class ResourceImages
     {
         if (e is InvalidDataException)
         {
-            return new ResourceImageRead.Unreadable { Why = e.Message };
+            return new ResourceImageRead.Unreadable { Why = e.Message, Error = e };
         }
 
-        return new ResourceImageRead.Unreadable { Why = $"The picture cannot be read: {e.Message}" };
+        return new ResourceImageRead.Unreadable { Why = $"The picture cannot be read: {e.Message}", Error = e };
     }
 
     // Why one of ILSight's own decoders failed on the bytes.
     private static ResourceImageRead.Unreadable BadData(InvalidDataException e)
     {
-        return new ResourceImageRead.Unreadable { Why = e.Message };
+        return new ResourceImageRead.Unreadable { Why = e.Message, Error = e };
     }
 
     // A PNG's facts read by PngSharp (a listed library) inside its catch; its pixels made into RGBA by ILSight after it.
@@ -384,12 +386,12 @@ public static class ResourceImages
         // Laid out by JpegSharp's size, values ILSight doesn't control: checked against its pixels before they're used.
         if (width <= 0 || height <= 0)
         {
-            return new ResourceImageRead.Unreadable { Why = $"A {width}×{height} picture is out of range." };
+            return BadData(new InvalidDataException($"A {width}×{height} picture is out of range."));
         }
 
         if (pixels.Length < (long)width * height)
         {
-            return new ResourceImageRead.Unreadable { Why = "The JPEG's pixels are cut short." };
+            return BadData(new InvalidDataException("The JPEG's pixels are cut short."));
         }
 
         var rgba = new byte[pixels.Length * 4];

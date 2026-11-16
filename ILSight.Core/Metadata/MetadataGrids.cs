@@ -175,14 +175,14 @@ public static class MetadataGrids
     }
 
     /// <summary>The page at <paramref name="page"/> of <paramref name="grid"/> when reading it failed with
-    /// <paramref name="why"/>: each of its cells that failure, in its place.</summary>
-    public static MetadataGridPage FailedPage(MetadataGrid.Paged grid, int page, string why)
+    /// <paramref name="error"/>: each of its cells that failure, in its place.</summary>
+    public static MetadataGridPage FailedPage(MetadataGrid.Paged grid, int page, Exception error)
     {
         var rows = Math.Clamp(grid.RowCount - page * MetadataGrid.Paged.RowsPerPage, 0, MetadataGrid.Paged.RowsPerPage);
         var cells = rows * grid.GridColumns.Count;
-        var failure = new MetadataCellFailure { Reason = why };
-        var tooltip = new MetadataTooltip { Text = why, Groups = [] };
-        MetadataRowDetails? details = grid.HasDetails ? new MetadataRowDetails.Failed(why) : null;
+        var failure = new MetadataCellFailure { Reason = error.Message, Error = error };
+        var tooltip = new MetadataTooltip { Text = error.Message, Groups = [] };
+        MetadataRowDetails? details = grid.HasDetails ? new MetadataRowDetails.Failed { Reason = error.Message, Error = error } : null;
         return new MetadataGridPage
         {
             Values = Enumerable.Repeat<object?>(failure, cells).ToArray(),
@@ -316,7 +316,7 @@ public static class MetadataGrids
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
-            return new MetadataRowDetails.Failed(e.Message);
+            return new MetadataRowDetails.Failed { Reason = e.Message, Error = e };
         }
 #pragma warning restore RL0902
     }
@@ -426,7 +426,7 @@ public static class MetadataGrids
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
-            return new MetadataCellFailure { Reason = e.Message };
+            return new MetadataCellFailure { Reason = e.Message, Error = e };
         }
 #pragma warning restore RL0902
     }
@@ -693,7 +693,7 @@ public static class MetadataGrids
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
-            return new MetadataCellFailure { Reason = e.Message };
+            return new MetadataCellFailure { Reason = e.Message, Error = e };
         }
 #pragma warning restore RL0902
     }
@@ -769,6 +769,9 @@ public static class MetadataGrids
     private sealed class MetadataCellFailure
     {
         public required string Reason { get; init; }
+
+        // What the library threw reading the cell: the diagnostic its record carries (CF3).
+        public required Exception Error { get; init; }
     }
 
     // A page as read, inside its catch: each cell's value and tooltip and each row's details as read, which MakePage

@@ -516,7 +516,7 @@ public sealed class ExportTests : IDisposable
 
         // A problem of a finished export: its headline says it by its message; the stack trace is in the labelled
         // section after the problems, under the headline again.
-        var problem = new ExportProblem.FileNotWritten { Path = "Greeter.cs", Error = new ExportError { Message = failed.Error.Message, Details = failed.Error.ToString() } };
+        var problem = new ExportProblem.FileNotWritten { Path = "Greeter.cs", Error = new ExportError { Error = failed.Error } };
         var finished = report with { End = new ExportEnd.Finished { Written = [], Problems = [problem] } };
         var problemLines = ExportReportText.Write(Strings.En, [finished]).Lines.Select(static l => l.Text).ToList();
         var problemLine = problemLines.IndexOf($"    Greeter.cs: {failed.Error.Message}");
@@ -577,7 +577,7 @@ public sealed class ExportTests : IDisposable
         }
         catch (Exception e)
         {
-            return new ExportError { Message = e.Message, Details = e.ToString() };
+            return new ExportError { Error = e };
         }
     }
 

@@ -173,7 +173,7 @@ public static class NodeContentLoader
         }
         catch (Exception e)
         {
-            return new ResourceImageRead.Unreadable { Why = e.Message };
+            return new ResourceImageRead.Unreadable { Why = e.Message, Error = e };
         }
 
         return ResourceImages.DecodeImage(bytes);

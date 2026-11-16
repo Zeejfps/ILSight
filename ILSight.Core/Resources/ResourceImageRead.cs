@@ -18,6 +18,10 @@ public abstract record ResourceImageRead
     public sealed record Unreadable : ResourceImageRead
     {
         public required string Why { get; init; }
+
+        /// <summary>What the decoder threw, so its record has the diagnostic (CF3); where ILSight's own check of the bytes
+        /// decided it, the <see cref="System.IO.InvalidDataException"/> its decoders say bad data by.</summary>
+        public required Exception Error { get; init; }
     }
 
     public TResult Match<TResult>(Func<Decoded, TResult> decoded, Func<Unreadable, TResult> unreadable)

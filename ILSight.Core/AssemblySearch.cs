@@ -33,26 +33,26 @@ public static class AssemblySearch
                 var why = await AssemblySearch.TrySearchAssemblyAsync(search, assembly, token);
                 if (why is not null)
                 {
-                    emit(new SearchFind.Unsearched { Assembly = assembly, Why = why });
+                    emit(new SearchFind.Unsearched { Assembly = assembly, Why = why.Message, Error = why });
                 }
             }
         }, cancellationToken);
     }
 
-    private static async Task<string?> TrySearchAssemblyAsync(Search search, LoadedModule assembly, CancellationToken ct)
+    private static async Task<Exception?> TrySearchAssemblyAsync(Search search, LoadedModule assembly, CancellationToken ct)
     {
         using var reading = LoadedAssemblies.BeginReading();
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, search.CancellationToken);
         // One released (closed) before is passed over, as one no longer listed.
         return await read.Match(
             r => TrySearchAssemblyAsync(search, assembly, r.TypeSystem.MainModule, ct),
-            static u => Task.FromResult<string?>(u.Thrown.SourceException.Message),
-            static _ => Task.FromResult<string?>(null));
+            static u => Task.FromResult<Exception?>(u.Thrown.SourceException),
+            static _ => Task.FromResult<Exception?>(null));
     }
 
     // What the library throws on the assembly's metadata (as placing a match does) is the assembly's failure, said in
     // the search; anything else is a bug of the search's own, which goes on to the workflow's edge and its error report.
-    private static async Task<string?> TrySearchAssemblyAsync(Search search, LoadedModule assembly, MetadataModule main, CancellationToken ct)
+    private static async Task<Exception?> TrySearchAssemblyAsync(Search search, LoadedModule assembly, MetadataModule main, CancellationToken ct)
     {
         try
         {
@@ -61,11 +61,11 @@ public static class AssemblySearch
         }
         catch (BadImageFormatException e)
         {
-            return e.Message;
+            return e;
         }
         catch (InvalidOperationException e)
         {
-            return e.Message;
+            return e;
         }
     }
 
@@ -284,9 +284,10 @@ public static class AssemblySearch
                 }
             }
 
-            if (unread.Count > 0)
+            var first = unread.First;
+            if (first is not null)
             {
-                search.Emit(new SearchFind.PartlySearched { Assembly = assembly, Count = unread.Count, Why = unread.FirstWhy ?? "" });
+                search.Emit(new SearchFind.PartlySearched { Assembly = assembly, Count = unread.Count, Why = first.Message, Error = first });
             }
         }
 
@@ -699,7 +700,7 @@ public static class AssemblySearch
 
         private static void EmitNotShown(Search search, LoadedModule assembly, EntityHandle handle, string? name, Exception why)
         {
-            search.Emit(new SearchFind.NotShown { Assembly = assembly, Token = MetadataTokens.GetToken(handle), Name = name, Why = why.Message });
+            search.Emit(new SearchFind.NotShown { Assembly = assembly, Token = MetadataTokens.GetToken(handle), Name = name, Why = why.Message, Error = why });
         }
 
         private static void AddResult(Search search, BrowseNode node)

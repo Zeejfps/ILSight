@@ -120,7 +120,7 @@ public static class PackageExtraction
         return new ExtractFailure.NotWritten
         {
             File = file,
-            Error = new ExportError { Message = e.Message, Details = e.ToString() },
+            Error = new ExportError { Error = e },
         };
     }
 }

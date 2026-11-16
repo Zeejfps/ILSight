@@ -25,6 +25,7 @@ public sealed class RunSearchHandlerAdapterTests
         var unsearched = Assert.IsType<SearchFind.Unsearched>(Assert.Single(found, static f => f is SearchFind.Unsearched));
         Assert.Same(module, unsearched.Assembly);
         Assert.NotEmpty(unsearched.Why);
+        Assert.Equal(unsearched.Why, unsearched.Error.Message);
     }
 
     [Fact]
@@ -49,10 +50,12 @@ public sealed class RunSearchHandlerAdapterTests
         Assert.Same(module, partly.Assembly);
         Assert.Equal(1, partly.Count);
         Assert.NotEmpty(partly.Why);
+        Assert.Equal(partly.Why, Assert.IsType<BadImageFormatException>(partly.Error).Message);
         var notShown = Assert.IsType<SearchFind.NotShown>(Assert.Single(found, static f => f is SearchFind.NotShown));
         Assert.Same(module, notShown.Assembly);
         Assert.Equal(MetadataTokens.GetToken(unplaced), notShown.Token);
         Assert.NotEmpty(notShown.Why);
+        Assert.Equal(notShown.Why, notShown.Error.Message);
         Assert.DoesNotContain(found, static f => f is SearchFind.Unsearched);
     }
 }

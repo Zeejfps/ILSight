@@ -199,16 +199,16 @@ public abstract class MetadataGrid
             _asked.Remove(page);
         }
 
-        /// <summary>Keeps the page at <paramref name="page"/> as failed with <paramref name="why"/>, each cell saying so,
+        /// <summary>Keeps the page at <paramref name="page"/> as failed with <paramref name="error"/>, each cell saying so,
         /// unless it was read meanwhile.</summary>
-        public void FailPage(int page, string why)
+        public void FailPage(int page, Exception error)
         {
             if (_pages.ContainsKey(page))
             {
                 return;
             }
 
-            AddPage(page, MetadataGrids.FailedPage(this, page, why));
+            AddPage(page, MetadataGrids.FailedPage(this, page, error));
         }
 
         internal override object? FindValue(int row, int column)

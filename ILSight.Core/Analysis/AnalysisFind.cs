@@ -22,6 +22,9 @@ public abstract record AnalysisFind
 
         /// <summary>Why the library could not read it.</summary>
         public required string Why { get; init; }
+
+        /// <summary>What the library threw, so its record has the diagnostic (CF3).</summary>
+        public required Exception Error { get; init; }
     }
 
     /// <summary>A module the analysis read but for <see cref="Count"/> parts the library couldn't read (a method body,
@@ -34,6 +37,9 @@ public abstract record AnalysisFind
         public required int Count { get; init; }
 
         public required string Why { get; init; }
+
+        /// <summary>What the library threw on the first part, so its record has the diagnostic (CF3).</summary>
+        public required Exception Error { get; init; }
     }
 
     public TResult Match<TResult>(Func<Found, TResult> found, Func<Unreadable, TResult> unreadable, Func<PartlyRead, TResult> partlyRead)

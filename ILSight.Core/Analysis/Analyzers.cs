@@ -290,12 +290,12 @@ public static class Analyzers
 
             foreach (var unreadable in context.Unreadable.Values.OrderBy(static u => u.Module.FilePath.FileName, StringComparer.OrdinalIgnoreCase))
             {
-                emit(new AnalysisFind.Unreadable { Name = unreadable.Module.FilePath.FileName, Why = unreadable.Why.Message });
+                emit(new AnalysisFind.Unreadable { Name = unreadable.Module.FilePath.FileName, Why = unreadable.Why.Message, Error = unreadable.Why });
             }
 
-            foreach (var (name, count, why) in context.PassedOver.List())
+            foreach (var (name, count, first) in context.PassedOver.List())
             {
-                emit(new AnalysisFind.PartlyRead { Name = name, Count = count, Why = why });
+                emit(new AnalysisFind.PartlyRead { Name = name, Count = count, Why = first.Message, Error = first });
             }
 
             return new Outcome.Done();

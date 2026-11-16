@@ -25,8 +25,14 @@ public abstract record MetadataRowDetails
         public required IReadOnlyList<IReadOnlyList<string>> Rows { get; init; }
     }
 
-    /// <summary>Why the row's details could not be read: what the library threw reading them.</summary>
-    public sealed record Failed(string Reason) : MetadataRowDetails;
+    /// <summary>Why the row's details could not be read, and what the library threw reading them, so its record has the
+    /// diagnostic (CF3).</summary>
+    public sealed record Failed : MetadataRowDetails
+    {
+        public required string Reason { get; init; }
+
+        public required Exception Error { get; init; }
+    }
 
     public TResult Match<TResult>(Func<Text, TResult> text, Func<Table, TResult> table, Func<Failed, TResult> failed)
     {

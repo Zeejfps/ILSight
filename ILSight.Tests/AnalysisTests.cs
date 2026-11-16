@@ -147,6 +147,7 @@ public sealed class AnalysisTests
         var unreadable = Assert.IsType<AnalysisFind.Unreadable>(Assert.Single(found, static f => f is AnalysisFind.Unreadable));
         Assert.Equal("UnreadableTypes.dll", unreadable.Name);
         Assert.NotEmpty(unreadable.Why);
+        Assert.Equal(unreadable.Why, unreadable.Error.Message);
     }
 
     [Fact]
@@ -176,6 +177,7 @@ public sealed class AnalysisTests
         Assert.Equal("UnreadableMethodBody.dll", partly.Name);
         Assert.Equal(1, partly.Count);
         Assert.NotEmpty(partly.Why);
+        Assert.Equal(partly.Why, partly.Error.Message);
     }
 
     [Fact]

@@ -9,19 +9,19 @@ namespace ILSight.Core.Analysis;
 /// parallel.</summary>
 internal sealed class PassedOver
 {
-    private readonly ConcurrentDictionary<MetadataFile, (int Count, string Why)> _modules = new();
+    private readonly ConcurrentDictionary<MetadataFile, (int Count, Exception First)> _modules = new();
 
     public void Note(MetadataFile module, Exception why)
     {
-        _modules.AddOrUpdate(module, (1, why.Message), static (_, noted) => (noted.Count + 1, noted.Why));
+        _modules.AddOrUpdate(module, (1, why), static (_, noted) => (noted.Count + 1, noted.First));
     }
 
-    /// <summary>Each module with a part passed over: its file name, how many parts, and why the first; by file
-    /// name.</summary>
-    public IReadOnlyList<(string Name, int Count, string Why)> List()
+    /// <summary>Each module with a part passed over: its file name, how many parts, and what the library threw on the
+    /// first; by file name.</summary>
+    public IReadOnlyList<(string Name, int Count, Exception First)> List()
     {
         return _modules
-            .Select(static m => (Name: Path.GetFileName(m.Key.FileName), m.Value.Count, m.Value.Why))
+            .Select(static m => (Name: Path.GetFileName(m.Key.FileName), m.Value.Count, m.Value.First))
             .OrderBy(static m => m.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
