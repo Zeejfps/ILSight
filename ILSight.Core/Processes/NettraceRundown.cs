@@ -63,7 +63,7 @@ internal static class NettraceRundown
         public required string NativePath { get; init; }
     }
 
-    private sealed class Reading
+    private sealed class RundownParse
     {
         public readonly Dictionary<int, EventMetadata> Metadata = new();
         public readonly List<ModuleEvent> Modules = new();
@@ -101,7 +101,7 @@ internal static class NettraceRundown
         using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
         ReadStreamHeader(reader);
 
-        var reading = new Reading();
+        var reading = new RundownParse();
         while (true)
         {
             var tag = reader.ReadByte();
@@ -418,7 +418,7 @@ internal static class NettraceRundown
 
     // An event of a metadata block describes a kind of event: which provider and event the id it carries stands for in
     // the event blocks after it.
-    private static void ReadMetadataEvent(BinaryReader reader, int metadataId, long payloadEnd, Reading reading)
+    private static void ReadMetadataEvent(BinaryReader reader, int metadataId, long payloadEnd, RundownParse reading)
     {
         if (metadataId != 0)
         {
@@ -434,7 +434,7 @@ internal static class NettraceRundown
         reading.Metadata[id] = new EventMetadata { ProviderName = providerName, EventId = eventId, Version = version };
     }
 
-    private static void ReadEvent(BinaryReader reader, int metadataId, long payloadEnd, Reading reading)
+    private static void ReadEvent(BinaryReader reader, int metadataId, long payloadEnd, RundownParse reading)
     {
         if (!reading.Metadata.TryGetValue(metadataId, out var meta))
         {

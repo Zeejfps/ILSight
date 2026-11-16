@@ -6,7 +6,7 @@ using ILSight.AppSettingArea;
 namespace ILSight.SettingArea;
 
 /// <summary>Restoring what the settings keep into the app state, and the settings as the app state holds them now, to
-/// be saved (<see cref="SettingsSaving"/>).</summary>
+/// be saved (<see cref="SettingsSaver"/>).</summary>
 public static class Settings
 {
     /// <summary>Restores into <paramref name="appState"/> what <paramref name="settings"/> keep: the assembly

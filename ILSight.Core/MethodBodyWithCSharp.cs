@@ -24,7 +24,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     private const string NoCSharp = "(no C# code)";
     private const string CommentPrefix = "// ";
 
-    private readonly ModuleReading _reading;
+    private readonly ModuleReadLease _reading;
     private readonly LoadedModule _assembly;
     private readonly DecompilerTypeSystem _typeSystem;
     private readonly DecompilerSettings _settings;
@@ -40,7 +40,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     /// the catch around the whole write reads (the builder's, or a saved file's own).</param>
     /// <param name="reading">The reading of the unit writing.</param>
     /// <param name="typeSystem">The type system of <paramref name="assembly"/>, as the unit writing read it.</param>
-    public MethodBodyWithCSharp(ITextOutput output, CallbackFailure callbacks, ModuleReading reading, LoadedModule assembly, DecompilerTypeSystem typeSystem,
+    public MethodBodyWithCSharp(ITextOutput output, CallbackFailure callbacks, ModuleReadLease reading, LoadedModule assembly, DecompilerTypeSystem typeSystem,
         DecompilerSettings settings, CancellationToken cancellationToken)
         : base(output, cancellationToken)
     {

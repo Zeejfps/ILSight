@@ -14,10 +14,10 @@ namespace ILSight.Core;
 internal sealed class ReadingResolver : IAssemblyResolver
 {
     private readonly ModuleLibrary _resolving;
-    private readonly ModuleReading _reading;
+    private readonly ModuleReadLease _reading;
     private readonly List<ModuleLibrary> _handedOut = [];
 
-    public ReadingResolver(ModuleLibrary resolving, ModuleReading reading)
+    public ReadingResolver(ModuleLibrary resolving, ModuleReadLease reading)
     {
         _resolving = resolving;
         _reading = reading;

@@ -353,10 +353,10 @@ public static class Commands
     }
 
     /// <summary>Asks for the files of the request <paramref name="opening"/> began to be opened once the frame is drawn
-    /// (<see cref="AssemblyOpening"/>), then the load of the last one shown: the input began the request in its own
+    /// (<see cref="AssemblyOpener"/>), then the load of the last one shown: the input began the request in its own
     /// frame, and only opening the files, which takes longer than a frame, waits for the edge. Nothing when
     /// <paramref name="opening"/> is null.</summary>
-    public static void OpenFilesLater(IAppCommandWriter commands, FileOpening? opening)
+    public static void OpenFilesLater(IAppCommandWriter commands, OpenRequest? opening)
     {
         if (opening is null)
         {
@@ -368,15 +368,15 @@ public static class Commands
 
     // A request the input began opening: when its workflow fails or ends quietly, the app no longer says it is opening
     // its files. Newer opens and a clear of the list cancel it: it is work of the list's generation now.
-    private static void StartOpening(AppState appState, FileOpening opening)
+    private static void StartOpening(AppState appState, OpenRequest opening)
     {
         var work = appState.ListSession.Assemblies.Work;
-        StartShowingSettled(appState, nameof(AssemblyOpening.OpenAssembliesAsync), ct => appState.AssemblyOpening.OpenAssembliesAsync(appState, opening, work, ct),
+        StartShowingSettled(appState, nameof(AssemblyOpener.OpenAssembliesAsync), ct => appState.AssemblyOpener.OpenAssembliesAsync(appState, opening, work, ct),
             () => appState.ListSession.Navigation.EndOpening(opening.Intent), work.Ending);
     }
 
     /// <summary>Asks for the files among <paramref name="dropped"/> to be opened once the frame is drawn
-    /// (<see cref="AssemblyOpening.OpenDroppedFilesAsync"/>), then the load of the last one shown, cancelled with the
+    /// (<see cref="AssemblyOpener.OpenDroppedFilesAsync"/>), then the load of the last one shown, cancelled with the
     /// opens under way; when its workflow fails or ends quietly, the app no longer says it is opening them.</summary>
     public static void OpenDroppedLater(IAppCommandWriter commands, IReadOnlyList<string> dropped)
     {
@@ -386,16 +386,16 @@ public static class Commands
     private static void StartOpeningDropped(AppState appState, IReadOnlyList<string> dropped)
     {
         var work = appState.ListSession.Assemblies.Work;
-        StartShowingSettled(appState, nameof(AssemblyOpening.OpenDroppedFilesAsync), ct => appState.AssemblyOpening.OpenDroppedFilesAsync(appState, dropped, work, ct),
+        StartShowingSettled(appState, nameof(AssemblyOpener.OpenDroppedFilesAsync), ct => appState.AssemblyOpener.OpenDroppedFilesAsync(appState, dropped, work, ct),
             () => appState.ListSession.Navigation.FailOpening(), work.Ending);
     }
 
     /// <summary>Asks for the assemblies <paramref name="assembly"/> references to be opened once the frame is drawn
-    /// (<see cref="AssemblyOpening.OpenDependenciesAsync"/>), cancelled with the opens under way then.</summary>
+    /// (<see cref="AssemblyOpener.OpenDependenciesAsync"/>), cancelled with the opens under way then.</summary>
     public static void OpenDependenciesLater(IAppCommandWriter commands, LoadedModule assembly)
     {
-        StartLater(commands, nameof(AssemblyOpening.OpenDependenciesAsync), assembly, static (a, _) => a.ListSession.Assemblies.Work,
-            static (a, m, work, ct) => a.AssemblyOpening.OpenDependenciesAsync(m, work, ct), static work => work.Ending);
+        StartLater(commands, nameof(AssemblyOpener.OpenDependenciesAsync), assembly, static (a, _) => a.ListSession.Assemblies.Work,
+            static (a, m, work, ct) => a.AssemblyOpener.OpenDependenciesAsync(m, work, ct), static work => work.Ending);
     }
 
     /// <summary>Asks for every assembly of the open list to be reloaded once the frame is drawn
@@ -405,42 +405,42 @@ public static class Commands
         Later(commands, expanded, static (a, e) => StartReloading(a, e));
     }
 
-    /// <summary>Starts reloading every assembly of the open list now: its clear (<see cref="AssemblyReloading.BeginReload"/>),
+    /// <summary>Starts reloading every assembly of the open list now: its clear (<see cref="AssemblyReloader.BeginReload"/>),
     /// which begins the generation the files are read again in, then the reopen under that generation's work
-    /// (<see cref="AssemblyReloading.RefreshAssembliesAsync"/>), cancelled by a newer reload or a clear of the list
+    /// (<see cref="AssemblyReloader.RefreshAssembliesAsync"/>), cancelled by a newer reload or a clear of the list
     /// through the reload's ticket and by any end of that generation through its ending, then the loads it started.
     /// When either workflow fails, the reload ends and the tabs it left reloading say why
-    /// (<see cref="AssemblyReloading.FailReload"/>); when the reopen ends quietly, the reload ends as well, unless a
+    /// (<see cref="AssemblyReloader.FailReload"/>); when the reopen ends quietly, the reload ends as well, unless a
     /// newer one or a stop replaced it, and the tabs it left reloading stop waiting
-    /// (<see cref="AssemblyReloading.EndQuietly"/>).</summary>
+    /// (<see cref="AssemblyReloader.EndQuietly"/>).</summary>
     public static void StartReloading(AppState appState, IReadOnlyList<NodePath> expanded)
     {
         var session = appState.ListSession;
         var ticket = session.Reload.Start();
-        appState.Workflows.StartSettling(nameof(AssemblyReloading.BeginReload),
+        appState.Workflows.StartSettling(nameof(AssemblyReloader.BeginReload),
             _ =>
             {
                 BeginReload(appState, expanded, ticket);
                 return Task.CompletedTask;
             },
-            error => StartLoads(appState, AssemblyReloading.FailReload(session, ticket, error)), ticket.Token);
+            error => StartLoads(appState, AssemblyReloader.FailReload(session, ticket, error)), ticket.Token);
     }
 
     // The clear ends there, handing back the generation it began; the reopen is started under its work.
     private static void BeginReload(AppState appState, IReadOnlyList<NodePath> expanded, ReloadTicket ticket)
     {
-        var begun = appState.AssemblyReloading.BeginReload(appState.Lists, appState.ListSession, appState.Decompiler);
+        var begun = appState.AssemblyReloader.BeginReload(appState.Lists, appState.ListSession, appState.Decompiler);
         StartReopeningReloaded(appState, expanded, ticket, begun);
     }
 
     private static void StartReopeningReloaded(AppState appState, IReadOnlyList<NodePath> expanded, ReloadTicket ticket, ReloadBegun begun)
     {
         var session = appState.ListSession;
-        appState.Workflows.StartSettlingEveryEnd(nameof(AssemblyReloading.RefreshAssembliesAsync),
-            async ct => StartLoads(appState, await appState.AssemblyReloading.RefreshAssembliesAsync(session, appState.ViewCommands, appState.Decompiler,
+        appState.Workflows.StartSettlingEveryEnd(nameof(AssemblyReloader.RefreshAssembliesAsync),
+            async ct => StartLoads(appState, await appState.AssemblyReloader.RefreshAssembliesAsync(session, appState.ViewCommands, appState.Decompiler,
                 expanded, ticket, begun, ct)),
-            error => StartLoads(appState, AssemblyReloading.FailReload(session, ticket, error)),
-            () => StartLoads(appState, AssemblyReloading.EndQuietly(session, ticket, begun.Tabs)), ticket.Token, begun.Work.Ending);
+            error => StartLoads(appState, AssemblyReloader.FailReload(session, ticket, error)),
+            () => StartLoads(appState, AssemblyReloader.EndQuietly(session, ticket, begun.Tabs)), ticket.Token, begun.Work.Ending);
     }
 
     /// <summary>As <see cref="Start{T}(IAppCommandWriter, string, T, Func{AppState, T, CancellationToken, Task{List{DecompileTicket}}})"/>,
@@ -458,7 +458,7 @@ public static class Commands
     /// is drawn (<see cref="StartOpeningList"/>), then the loads that started in the tabs: the draw switched
     /// the list in the frame of its input, and only opening its files, which takes longer than a frame, waits for the
     /// edge. Nothing when <paramref name="opening"/> is null.</summary>
-    public static void OpenListLater(IAppCommandWriter commands, ListOpening? opening)
+    public static void OpenListLater(IAppCommandWriter commands, ListSwitch? opening)
     {
         if (opening is null)
         {
@@ -468,7 +468,7 @@ public static class Commands
         commands.Enqueue(CreateOpenList(opening));
     }
 
-    private static AppCommand CreateOpenList(ListOpening opening)
+    private static AppCommand CreateOpenList(ListSwitch opening)
     {
         return appState =>
         {
@@ -480,7 +480,7 @@ public static class Commands
     /// assemblies of the list <paramref name="opening"/> began opening, as the reload it holds, then
     /// the loads that started in the tabs, and beside it the finding of the list's analyses
     /// (<see cref="StartRestoringAnalyses"/>), each now and none waiting for another; nothing when it is null.</summary>
-    public static void StartOpeningList(AppState appState, ListOpening? opening)
+    public static void StartOpeningList(AppState appState, ListSwitch? opening)
     {
         if (opening is null)
         {
@@ -492,7 +492,7 @@ public static class Commands
         StartRestoringAnalyses(appState, opening.Analyses);
     }
 
-    private static void StartReopening(AppState appState, ListReopening reopening)
+    private static void StartReopening(AppState appState, ListReopen reopening)
     {
         var session = appState.ListSession;
         var handler = appState.OpenAssembliesAsReloadHandler;
@@ -505,7 +505,7 @@ public static class Commands
     /// and by any end of the generation it opens in through that generation's ending, each asked; when its workflow
     /// fails or ends quietly, the reopening ends unfinished (<see cref="OpenAssembliesAsReloadHandler.EndUnfinished"/>),
     /// unless a newer reload or a stop replaced it.</summary>
-    public static void StartOpeningAsReload(AppState appState, string name, ListReopening reopening, Func<CancellationToken, Task<TabLoads>> open)
+    public static void StartOpeningAsReload(AppState appState, string name, ListReopen reopening, Func<CancellationToken, Task<TabLoads>> open)
     {
         var session = appState.ListSession;
         appState.Workflows.StartSettlingEveryEnd(name, async ct => StartLoads(appState, await open(ct)),
@@ -727,7 +727,7 @@ public static class Commands
 
     /// <summary>Starts the loads closing the list started in its tabs, and has the modules it took off released, each
     /// once nothing reads it.</summary>
-    public static void FinishClosing(AppState appState, ListClosing closing)
+    public static void FinishClosing(AppState appState, ListClose closing)
     {
         StartLoads(appState, closing.Loads);
         LoadedAssemblies.Release(closing.Removed);

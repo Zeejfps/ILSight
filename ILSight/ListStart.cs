@@ -9,7 +9,7 @@ namespace ILSight;
 [MustUse]
 public sealed class ListStart
 {
-    public required ListReopening Reopening { get; init; }
+    public required ListReopen Reopening { get; init; }
 
     public required AnalysesRestore? Analyses { get; init; }
 }

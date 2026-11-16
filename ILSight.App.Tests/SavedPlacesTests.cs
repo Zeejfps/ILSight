@@ -64,7 +64,7 @@ public sealed class SavedPlacesTests : IDisposable
 
     private JsonElement Saved(AppStateDriver d)
     {
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
         using var json = JsonDocument.Parse(File.ReadAllText(_temp.PathOf("settings.json")));
         return json.RootElement.Clone();
     }

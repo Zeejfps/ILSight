@@ -16,7 +16,7 @@ public sealed class DockPanelsTests
         var d = app.Driver;
         app.DockWidget.Float(DockPanels.Assemblies, new UiRect(40f, 50f, 300f, 400f));
         app.Run();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
 
         var next = new AppStateDriver(temp.Settings());
         var restored = next.Arrangement;
@@ -84,7 +84,7 @@ public sealed class DockPanelsTests
 
         d.Ui.Search.LookFor(SearchKinds.Literals);
         d.NextFrame();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
 
         Assert.Equal(SearchKinds.Literals, new AppStateDriver(temp.Settings()).Ui.Search.Kinds);
     }
@@ -99,7 +99,7 @@ public sealed class DockPanelsTests
         d.Ui.Search.LookFor(SearchKinds.Literals);
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         d.NextFrame();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
 
         Assert.Equal(SearchKinds.TypesAndMembers, settings.SearchKinds);
         Assert.Equal(DecompilationLanguage.CSharp, settings.Language);

@@ -32,24 +32,24 @@ internal static class BookmarkImportDialogView
                 {
                     if (ui.Button(t.BookmarksImportCancel, id: "import-cancel", variant: ButtonVariant.Ghost))
                     {
-                        Commands.Later(commands, import, static (a, i) => a.BookmarkImporting.FinishImport(a.Bookmarks, a.Imports, i, null));
+                        Commands.Later(commands, import, static (a, i) => a.BookmarkImporter.FinishImport(a.Bookmarks, a.Imports, i, null));
                     }
 
                     if (ui.Button(t.BookmarksImportReplace, id: "import-replace"))
                     {
-                        Commands.Later(commands, import, static (a, i) => a.BookmarkImporting.FinishImport(a.Bookmarks, a.Imports, i, BookmarkImportMode.Replace));
+                        Commands.Later(commands, import, static (a, i) => a.BookmarkImporter.FinishImport(a.Bookmarks, a.Imports, i, BookmarkImportMode.Replace));
                     }
 
                     if (ui.Button(t.BookmarksImportMerge, id: "import-merge", variant: ButtonVariant.Primary))
                     {
-                        Commands.Later(commands, import, static (a, i) => a.BookmarkImporting.FinishImport(a.Bookmarks, a.Imports, i, BookmarkImportMode.Merge));
+                        Commands.Later(commands, import, static (a, i) => a.BookmarkImporter.FinishImport(a.Bookmarks, a.Imports, i, BookmarkImportMode.Merge));
                     }
                 }
             }
         }
         if (!open)
         {
-            Commands.Later(commands, import, static (a, i) => a.BookmarkImporting.FinishImport(a.Bookmarks, a.Imports, i, null));
+            Commands.Later(commands, import, static (a, i) => a.BookmarkImporter.FinishImport(a.Bookmarks, a.Imports, i, null));
         }
     }
 }

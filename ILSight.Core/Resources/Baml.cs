@@ -30,7 +30,7 @@ internal static class Baml
 
     /// <summary>The BAML in <paramref name="data"/>, of <paramref name="assembly"/>, as XAML text, its types resolved in
     /// the unit of <paramref name="reading"/>; a failure of the resolver's own work marks <paramref name="callbacks"/>.</summary>
-    internal static string DecompileToText(ModuleReading reading, LoadedModule assembly, byte[] data, CallbackFailure callbacks, CancellationToken cancellationToken)
+    internal static string DecompileToText(ModuleReadLease reading, LoadedModule assembly, byte[] data, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         var typeSystem = new BamlDecompilerTypeSystem(LoadedAssemblies.GetFile(assembly), LoadedAssemblies.CreateResolver(reading, assembly, callbacks));
         using var stream = new MemoryStream(data);

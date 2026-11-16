@@ -3,7 +3,7 @@ using ILSight.Core;
 namespace ILSight.ExportArea;
 
 /// <summary>The edge where the exports the screen asks for start, once the frame is drawn: each is queued and its
-/// writing started as a workflow (<see cref="ExportWriting"/>), which waits for its turn; a resource or a single file of
+/// writing started as a workflow (<see cref="ExportWriter"/>), which waits for its turn; a resource or a single file of
 /// a package starts writing at once, as a workflow of its own, counted in the app's background work until it
 /// ends.</summary>
 [Edge]
@@ -89,8 +89,8 @@ public static class ExportCommands
     private static void StartWriting(AppState appState, ExportWork work)
     {
         var ticket = Exports.Enter(appState.Export, appState.ViewCommands, work.Job);
-        appState.Workflows.StartSettling(nameof(ExportWriting),
-            ct => appState.ExportWriting.HandleAsync(appState.FinishedExports, appState.ViewCommands, work, ticket, ct),
+        appState.Workflows.StartSettling(nameof(ExportWriter),
+            ct => appState.ExportWriter.HandleAsync(appState.FinishedExports, appState.ViewCommands, work, ticket, ct),
             error => FailWriting(appState, work, ticket, error));
     }
 

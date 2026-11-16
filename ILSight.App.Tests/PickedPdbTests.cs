@@ -38,7 +38,7 @@ public sealed class PickedPdbTests
         var d = OpenedCopy(temp, copy);
 
         Pick(d, FixturePdb);
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
         var next = new AppStateDriver(temp.Settings());
         next.Settle();
 
@@ -51,7 +51,7 @@ public sealed class PickedPdbTests
     {
         var d = AppStateDriver.Opened();
 
-        d.Start((a, ct) => a.AssemblyReloading.UsePdbAsync(a.ListSession, a.Reopens, a.Decompiler, OpenAssemblyOf(d), OtherBuildPdb, ct));
+        d.Start((a, ct) => a.AssemblyReloader.UsePdbAsync(a.ListSession, a.Reopens, a.Decompiler, OpenAssemblyOf(d), OtherBuildPdb, ct));
         d.Settle();
 
         var refused = Assert.IsType<Refusal.PdbUnusable>(d.AppState.Refusals.Shown);
@@ -70,7 +70,7 @@ public sealed class PickedPdbTests
 
         d.InTurn(() => Commands.CloseAllAssemblies(d.AppState));
         AssemblyLists.RememberOpenAssemblies(d.AppState.Lists, d.AppState.ListSession);
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
 
         Assert.Empty(d.AppState.ListSession.Assemblies.Pdbs.All);
         Assert.Null(Assert.Single(temp.Settings().AssemblyLists).Pdbs);
@@ -92,7 +92,7 @@ public sealed class PickedPdbTests
 
     private static void Pick(AppStateDriver d, string pdb)
     {
-        d.Start((a, ct) => a.AssemblyReloading.UsePdbAsync(a.ListSession, a.Reopens, a.Decompiler, OpenAssemblyOf(d), pdb, ct));
+        d.Start((a, ct) => a.AssemblyReloader.UsePdbAsync(a.ListSession, a.Reopens, a.Decompiler, OpenAssemblyOf(d), pdb, ct));
         d.RunUntil(() => d.AppState.ListSession.Assemblies.Pdbs.All.Count > 0);
         d.Settle();
     }

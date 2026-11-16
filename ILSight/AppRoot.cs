@@ -35,7 +35,7 @@ internal static class AppRoot
 {
     private const string LicensesFolder = "licenses";
 
-    /// <summary>Where this run's <paramref name="arguments"/> go (<see cref="RunRouting"/>), over the role and the
+    /// <summary>Where this run's <paramref name="arguments"/> go (<see cref="RunRouter"/>), over the role and the
     /// hand-over of the settings at <paramref name="settingsPath"/>, with no receiver when they were handed to the window
     /// already open, or the hand-over stayed unconfirmed (said on <paramref name="notice"/>, this run's channel when
     /// null, in the language those settings choose), the inbox dropped unread; else the receiver of later runs'
@@ -49,8 +49,8 @@ internal static class AppRoot
         var inbox = Channel.CreateUnbounded<RunArguments>();
         // Unbounded, and completed only by the app as its window closes: it takes them.
         inbox.Writer.TryWrite(arguments);
-        var routing = new RunRoutingAdapter(address, inbox, () => ReadRunStrings(settingsPath), notice ?? RunNotice.ForThisRun());
-        var route = await new RunRouting(routing).RouteAsync(arguments, newInstance, ct);
+        var routing = new RunRouterAdapter(address, inbox, () => ReadRunStrings(settingsPath), notice ?? RunNotice.ForThisRun());
+        var route = await new RunRouter(routing).RouteAsync(arguments, newInstance, ct);
         if (route is RunRoute.HandedOver or RunRoute.Unconfirmed)
         {
             return new RoutedRun { Route = route, Receiver = null };
@@ -155,7 +155,7 @@ internal static class AppRoot
     /// it; read from the disk.</summary>
     internal static SettingsLoadResult ReadSettingsFile(FullFilePath file)
     {
-        var reading = new SettingsReading(new SettingsReadingAdapter());
+        var reading = new SettingsFileReader(new SettingsFileReaderAdapter());
         return reading.ReadFile(file);
     }
 
@@ -255,18 +255,18 @@ internal static class AppRoot
             OpenAndShowIdHandler = new OpenAndShowIdHandler(navigation),
             GoToBookmarkHandler = new GoToBookmarkHandler(MakePort<GoToBookmarkHandler.IPorts>(navigation, hooks?.GoingToBookmarks)),
             ShowReopenedNodesHandler = new ShowReopenedNodesHandler(navigation),
-            BookmarkImporting = new BookmarkImporting(bookmarks),
+            BookmarkImporter = new BookmarkImporter(bookmarks),
             ExportBookmarksHandler = new ExportBookmarksHandler(bookmarks),
-            SettingsSaving = new SettingsSaving(new SettingsSavingAdapter(errors)),
+            SettingsSaver = new SettingsSaver(new SettingsSaverAdapter(errors)),
             BuildChildrenHandler = new BuildChildrenHandler(tree),
             LookUpTooltipHandler = new LookUpTooltipHandler(new LookUpTooltipHandlerAdapter(errors, assemblies)),
             RunSearchHandler = new RunSearchHandler(MakePort<RunSearchHandler.IPorts>(new RunSearchHandlerAdapter(session), hooks?.Searching)),
             ExpandNamespacesHandler = new ExpandNamespacesHandler(tree),
-            ExportWriting = new ExportWriting(MakePort<ExportWriting.IPorts>(exports, hooks?.Exporting)),
+            ExportWriter = new ExportWriter(MakePort<ExportWriter.IPorts>(exports, hooks?.Exporting)),
             SaveResourceHandler = new SaveResourceHandler(exports),
             ExtractPackageFileHandler = new ExtractPackageFileHandler(exports),
             CheckExportFilesHandler = new CheckExportFilesHandler(exports),
-            DiagramGrowing = new DiagramGrowing(MakePort<DiagramGrowing.IPorts>(diagrams, hooks?.Growing)),
+            DiagramGrower = new DiagramGrower(MakePort<DiagramGrower.IPorts>(diagrams, hooks?.Grower)),
             ReopenDiagramHandler = new ReopenDiagramHandler(diagrams),
             LayOutDiagramHandler = new LayOutDiagramHandler(diagrams),
             CompareAssembliesHandler = new CompareAssembliesHandler(MakePort<CompareAssembliesHandler.IPorts>(new CompareAssembliesHandlerAdapter(errors), hooks?.Comparing)),
@@ -274,8 +274,8 @@ internal static class AppRoot
             AnalyzeReferenceHandler = new AnalyzeReferenceHandler(navigation),
             RestoreAnalysesHandler = new RestoreAnalysesHandler(analysis),
             GoToHistoryEntryHandler = new GoToHistoryEntryHandler(navigation),
-            AssemblyOpening = new AssemblyOpening(assemblyList),
-            AssemblyReloading = new AssemblyReloading(MakePort<AssemblyReloading.IPorts>(assemblyList, hooks?.Reloading)),
+            AssemblyOpener = new AssemblyOpener(assemblyList),
+            AssemblyReloader = new AssemblyReloader(MakePort<AssemblyReloader.IPorts>(assemblyList, hooks?.Reloader)),
             OpenAssembliesAsReloadHandler = new OpenAssembliesAsReloadHandler(MakePort<OpenAssembliesAsReloadHandler.IPorts>(assemblyList, hooks?.Reopening)),
             Session = session,
             SettingsPlace = settingsPlace,

@@ -30,7 +30,7 @@ internal static class BookmarksPanelView
     {
         var t = appearance.Strings;
         var panel = bookmarksPanel;
-        panel.Renaming.ForgetRenameOfRemovedBookmark(bookmarks.Items);
+        panel.Renamer.ForgetRenameOfRemovedBookmark(bookmarks.Items);
         using var pane = ui.Column(new Box { Height = Sizing.Grow(), Gap = 0f });
         Toolbar(ui, appearance, bookmarksPanel, commands, bookmarks);
         ui.Separator();
@@ -56,7 +56,7 @@ internal static class BookmarksPanelView
     {
         var panel = bookmarksPanel;
         var palette = appearance.CodeViewPalette;
-        var renaming = panel.Renaming.Bookmark is not null;
+        var renaming = panel.Renamer.Bookmark is not null;
         Bookmark? removed = null;
         var selected = panel.Selection.Item;
         if (table.Focused && !renaming && selected is not null && ui.Input.TakeKey(KeyboardKey.F2))
@@ -90,7 +90,7 @@ internal static class BookmarksPanelView
             return;
         }
 
-        if (body.Activated && panel.Renaming.Bookmark is null)
+        if (body.Activated && panel.Renamer.Bookmark is null)
         {
             Commands.GoToBookmarkLater(commands, selected);
         }
@@ -171,7 +171,7 @@ internal static class BookmarksPanelView
     private static void PickImportFile(Ui ui, Appearance appearance, IAppCommandWriter commands)
     {
         var t = appearance.Strings;
-        ui.PickFile(t.BookmarksImportTitle, null, Filters(t), path => Commands.Start(commands, nameof(BookmarkImporting.ImportAsync), path, static (a, p, ct) => a.BookmarkImporting.ImportAsync(a.Bookmarks, a.Imports, p, ct)));
+        ui.PickFile(t.BookmarksImportTitle, null, Filters(t), path => Commands.Start(commands, nameof(BookmarkImporter.ImportAsync), path, static (a, p, ct) => a.BookmarkImporter.ImportAsync(a.Bookmarks, a.Imports, p, ct)));
     }
 
     // The cell's value as the bookmark holds it, which copying the whole cell takes; it is drawn on the row's one line
@@ -237,7 +237,7 @@ internal static class BookmarksPanelView
 
     private static void NameCell(Ui ui, IAppCommandWriter commands, BookmarksPanel panel, TableRow row, Bookmark bookmark, bool listed)
     {
-        if (panel.Renaming.Bookmark != bookmark)
+        if (panel.Renamer.Bookmark != bookmark)
         {
             TextCell(ui, row, bookmark, listed, NameColumn);
             return;
@@ -325,7 +325,7 @@ internal static class BookmarksPanelView
 
     private static void RenameField(Ui ui, IAppCommandWriter commands, BookmarksPanel panel)
     {
-        var begin = panel.Renaming.TryTakeFocus();
+        var begin = panel.Renamer.TryTakeFocus();
         var result = ui.InlineEdit("name", ref panel.RenameText, begin, Sizing.Grow());
         if (result == InlineEditResult.Editing)
         {
@@ -339,7 +339,7 @@ internal static class BookmarksPanelView
         }
         else
         {
-            panel.Renaming.End();
+            panel.Renamer.End();
         }
 
         panel.Cells.StopEditing();
@@ -469,7 +469,7 @@ internal static class BookmarksPanelView
 
     private static void CommitRename(IAppCommandWriter commands, BookmarksPanel panel)
     {
-        var bookmark = panel.Renaming.End();
+        var bookmark = panel.Renamer.End();
         if (bookmark is null)
         {
             return;

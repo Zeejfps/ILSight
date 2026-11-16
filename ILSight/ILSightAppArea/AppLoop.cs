@@ -100,7 +100,7 @@ public sealed class AppLoop
     /// asking for another frame while there is more to show; last, the settings are saved when they changed, at
     /// <paramref name="frame"/>'s time. Returns what that save came to, for a host with frames to come back when a
     /// write waits or failed: the save is the loop's step, so every host that runs a frame saves.</summary>
-    public Saving AfterDraw(UiState screen, IFrameHost frame)
+    public SettingsSave AfterDraw(UiState screen, IFrameHost frame)
     {
         var appState = _appState;
         var workflows = appState.Workflows;
@@ -117,6 +117,6 @@ public sealed class AppLoop
         Commands.StartScanningPresets(workflows, screen.Presets);
         QueuedCommands.RunAppCommandsAndRedraw(frame, screen.AppCommands, appState);
         QueuedCommands.RequestFrameWhileViewCommandsWait(frame, appState.ViewCommands);
-        return appState.SettingsSaving.SaveIfChanged(appState, frame.Now);
+        return appState.SettingsSaver.SaveIfChanged(appState, frame.Now);
     }
 }

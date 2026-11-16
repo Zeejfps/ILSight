@@ -44,7 +44,7 @@ public static class CodeFiles
         return new Outcome<TypeSystemWork<string>>.Ok(written);
     }
 
-    private static async Task<TypeSystemWork<string>> SaveUnderReadingAsync(BrowseSession session, ModuleReading reading, BrowseNode node,
+    private static async Task<TypeSystemWork<string>> SaveUnderReadingAsync(BrowseSession session, ModuleReadLease reading, BrowseNode node,
         DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, string path, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         var export = await NodeContentLoader.ToCodeExportAsync(session, node, cancellationToken);
@@ -61,7 +61,7 @@ public static class CodeFiles
             static c => new TypeSystemWork<string>.Closed { Module = c.Module });
     }
 
-    private static TypeSystemWork<string> SaveUnreadable(ModuleReading reading, CodeExport export, LoadedModule module, TypeSystemRead.Unreadable unreadable,
+    private static TypeSystemWork<string> SaveUnreadable(ModuleReadLease reading, CodeExport export, LoadedModule module, TypeSystemRead.Unreadable unreadable,
         DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, string path, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         if (export is CodeExport.Document document && !NodeDecompiler.IsReadThroughTypeSystem(document.Request))
@@ -72,7 +72,7 @@ public static class CodeFiles
         return new TypeSystemWork<string>.Unreadable { Module = new UnreadableModule { Module = module, Why = unreadable.Thrown.SourceException } };
     }
 
-    private static TypeSystemWork<string> Save(ModuleReading reading, CodeExport export, DecompilerTypeSystem? typeSystem, DecompilationLanguage language, DecompilerOptions options,
+    private static TypeSystemWork<string> Save(ModuleReadLease reading, CodeExport export, DecompilerTypeSystem? typeSystem, DecompilationLanguage language, DecompilerOptions options,
         IDocumentNotes notes, string path, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         AtomicFile.Write(path, stream => NodeDecompiler.WriteCode(reading, export, typeSystem, language, options, notes, callbacks, stream, cancellationToken));

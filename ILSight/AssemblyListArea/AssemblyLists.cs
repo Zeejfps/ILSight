@@ -36,7 +36,7 @@ public static class AssemblyLists
     /// it for when it opens again; its documents reopen waiting for their places, its analyses wait to be found, and
     /// its assemblies begin reopening as a reload. Returns what is left for the edge to open
     /// (<see cref="Commands.StartOpeningList"/>); null when there is no list by that name.</summary>
-    public static ListOpening? SwitchAssemblyList(SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
+    public static ListSwitch? SwitchAssemblyList(SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
         RememberActiveAssemblyList(lists, session, view);
         if (!lists.TryActivate(name))
@@ -49,7 +49,7 @@ public static class AssemblyLists
 
     /// <summary>Makes the list named <paramref name="name"/> the open one, as <see cref="SwitchAssemblyList"/> does,
     /// adding an empty one by that name when there is none. Returns what is left for the edge to open.</summary>
-    public static ListOpening? SwitchToListNamed(SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
+    public static ListSwitch? SwitchToListNamed(SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
         if (!lists.HasList(name))
         {
@@ -59,7 +59,7 @@ public static class AssemblyLists
         return SwitchAssemblyList(lists, session, view, name);
     }
 
-    private static ListOpening BeginOpeningActiveList(SavedAssemblyLists lists, OpenListSession session)
+    private static ListSwitch BeginOpeningActiveList(SavedAssemblyLists lists, OpenListSession session)
     {
         var closing = session.CloseAllAssemblies();
         SavedDocuments.ReopenDocuments(lists, session);
@@ -67,7 +67,7 @@ public static class AssemblyLists
         var reopening = session.BeginReopening(lists);
         session.Analyzer.AddPending(lists.ActiveAnalyses);
         var analyses = Analysis.BeginRestoring(session.Analyzer, session.Assemblies);
-        return new ListOpening { Reopening = reopening, Closing = closing, Analyses = analyses };
+        return new ListSwitch { Reopening = reopening, Closing = closing, Analyses = analyses };
     }
 
     /// <summary>Adds an empty list named <paramref name="name"/>, or numbered when that is taken,
@@ -95,7 +95,7 @@ public static class AssemblyLists
     /// <summary>Removes the list named <paramref name="name"/>; when it was open, makes the list that takes its place
     /// the open one, as <see cref="SwitchAssemblyList"/> does. Returns what is left for the edge to open; null when it
     /// was not open.</summary>
-    public static ListOpening? DeleteAssemblyList(SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
+    public static ListSwitch? DeleteAssemblyList(SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
         var wasActive = string.Equals(name, lists.Active, StringComparison.OrdinalIgnoreCase);
         RememberActiveAssemblyList(lists, session, view);

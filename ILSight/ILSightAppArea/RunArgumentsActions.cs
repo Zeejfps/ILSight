@@ -26,7 +26,7 @@ public static class RunArgumentsActions
     {
         if (files.NavigateTo is null)
         {
-            return appState.AssemblyOpening.OpenAssembliesAsync(appState, files.Paths, work, ct);
+            return appState.AssemblyOpener.OpenAssembliesAsync(appState, files.Paths, work, ct);
         }
         return appState.OpenAndShowIdHandler.HandleAsync(appState.ListSession.Navigation, appState.Decompiler, files.Paths, files.NavigateTo, work, ct);
     }

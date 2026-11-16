@@ -21,7 +21,7 @@ public sealed class SearchResults
 
     private readonly TypedText _typed = new();
 
-    private readonly SearchSorting _sorting = new();
+    private readonly SearchSorter _sorter = new();
 
     /// <summary>The hits so far, in the order the sort says, of the assemblies searched only.</summary>
     public IReadOnlyList<SearchResult> Rows => _rows;
@@ -49,19 +49,19 @@ public sealed class SearchResults
 
 
     /// <summary>Whether results may still arrive, or be sorted into the order asked for.</summary>
-    public bool IsBusy => _runs.IsRunning || _sorting.IsSorting;
+    public bool IsBusy => _runs.IsRunning || _sorter.IsSorting;
 
     /// <summary>Why a run of the query searched failed, the rows it found before kept; null while none failed.</summary>
     public string? RunFailure => _runs.Failure;
 
     /// <summary>The order asked for last, which the header shows.</summary>
-    public SearchOrder AskedOrder => _sorting.Asked;
+    public SearchOrder AskedOrder => _sorter.Asked;
 
     /// <summary>The order the rows are in, which rows that arrive are merged in by.</summary>
-    public SearchOrder AppliedOrder => _sorting.Applied;
+    public SearchOrder AppliedOrder => _sorter.Applied;
 
     /// <summary>Counts the changes to the rows other than sorting them.</summary>
-    public int RowsVersion => _sorting.RowsVersion;
+    public int RowsVersion => _sorter.RowsVersion;
 
     /// <summary>Whether runs were asked for that have not been started yet.</summary>
     public bool HasAskedRuns => _runs.HasAsked;
@@ -122,7 +122,7 @@ public sealed class SearchResults
         _unsearched.Clear();
         _partlySearched.Clear();
         _notShown.Clear();
-        _sorting.NoteRowsEmptied();
+        _sorter.NoteRowsEmptied();
         Selection.Clear();
         var listed = assemblies.Assemblies;
         _searchedAssemblies.Clear();
@@ -155,7 +155,7 @@ public sealed class SearchResults
         _unsearched.RemoveAll(u => !_searchedAssemblies.Contains(u.Assembly));
         _partlySearched.RemoveAll(p => !_searchedAssemblies.Contains(p.Assembly));
         _notShown.RemoveAll(n => !_searchedAssemblies.Contains(n.Assembly));
-        _sorting.NoteRowsChanged();
+        _sorter.NoteRowsChanged();
         Selection.DropIfGone(_rows);
     }
 
@@ -228,7 +228,7 @@ public sealed class SearchResults
 
         var arrived = SortArrived(hits);
         MergeIntoRows(arrived);
-        _sorting.NoteRowsChanged();
+        _sorter.NoteRowsChanged();
     }
 
     private void NoteUnsearched(SearchFind.Unsearched unsearched)
@@ -259,7 +259,7 @@ public sealed class SearchResults
 
     private List<SearchResult> SortArrived(IReadOnlyList<SearchResult> batch)
     {
-        var applied = _sorting.Applied;
+        var applied = _sorter.Applied;
         var order = Comparer<SearchResult>.Create(applied.Compare);
         return batch
             .Where(r => _searchedAssemblies.Contains(r.Node.Assembly))
@@ -271,7 +271,7 @@ public sealed class SearchResults
     private void MergeIntoRows(List<SearchResult> arrived)
     {
         var rows = _rows;
-        var applied = _sorting.Applied;
+        var applied = _sorter.Applied;
         var kept = rows.Count - 1;
         var next = arrived.Count - 1;
         rows.AddRange(arrived);
@@ -306,21 +306,21 @@ public sealed class SearchResults
     /// sort the results into it, which a newer sort or a new search cancels.</summary>
     public SearchSortTicket StartSort(SearchSort sort)
     {
-        var asked = _sorting.Asked;
+        var asked = _sorter.Asked;
         if (asked.Sort == sort && asked.Descending)
         {
             sort = SearchSort.Relevance;
         }
 
         var order = new SearchOrder { Sort = sort, Descending = asked.Sort == sort && sort != SearchSort.Relevance };
-        return _sorting.Start(order, _rows);
+        return _sorter.Start(order, _rows);
     }
 
     /// <summary>Ends <paramref name="sorting"/> when its workflow failed (the edge's settle, which reports it): the rows
     /// stay in the order they are in, which the header shows again, unless a newer order was asked for since.</summary>
     public void FailSort(SearchSortTicket sorting)
     {
-        _sorting.Fail(sorting);
+        _sorter.Fail(sorting);
     }
 
     /// <summary>Shows <paramref name="sorted"/>, the rows as of <see cref="RowsVersion"/> in the order
@@ -328,7 +328,7 @@ public sealed class SearchResults
     /// meanwhile, or the search started again: then they are dropped.</summary>
     public void TakeSorted(SearchSortTicket sorting, List<SearchResult> sorted)
     {
-        if (!_sorting.TryFinish(sorting))
+        if (!_sorter.TryFinish(sorting))
         {
             return;
         }

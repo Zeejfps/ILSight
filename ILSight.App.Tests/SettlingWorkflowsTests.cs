@@ -43,7 +43,7 @@ public sealed class SettlingWorkflowsTests
     [Fact]
     public async Task An_export_that_throws_is_reported_once_and_stays_in_the_exports_panel_failed()
     {
-        var ports = new FakeExportWritingPorts { CodeFileThrows = new InvalidOperationException("broken") };
+        var ports = new FakeExportWriterPorts { CodeFileThrows = new InvalidOperationException("broken") };
         var d = AppStateDriver.OpenedWith(new AdapterHooks { Exporting = _ => ports });
         var greeter = await d.FixtureAsync("Greeter");
         using var temp = new TempDir();
@@ -85,8 +85,8 @@ public sealed class SettlingWorkflowsTests
     [Fact]
     public async Task A_diagram_read_that_throws_is_reported_once_and_the_diagram_shows_it_failed_saying_why()
     {
-        var ports = new FakeDiagramGrowingPorts();
-        var d = AppStateDriver.OpenedWith(new AdapterHooks { Growing = _ => ports });
+        var ports = new FakeDiagramGrowerPorts();
+        var d = AppStateDriver.OpenedWith(new AdapterHooks { Grower = _ => ports });
         var greeter = (await d.FixtureAsync("Greeter")).Definition;
         Assert.NotNull(greeter);
         d.InTurn(() => DiagramView.ShowInNewDiagramLater(d.Ui.AppCommands, greeter, new TabTitle.Saved("Greeter")));
@@ -135,7 +135,7 @@ public sealed class SettlingWorkflowsTests
         var ticket = session.Reload.Start();
         tab.Load.ShowReloading(location);
 
-        var loads = AssemblyReloading.FailReload(session, ticket, new InvalidOperationException("broken"));
+        var loads = AssemblyReloader.FailReload(session, ticket, new InvalidOperationException("broken"));
 
         Assert.False(session.Reload.IsRunning);
         var failed = Assert.IsType<TabContent.Unreadable>(tab.Content);

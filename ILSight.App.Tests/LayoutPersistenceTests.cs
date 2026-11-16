@@ -32,7 +32,7 @@ public sealed class LayoutPersistenceTests : IDisposable
         d.Ui.Panels.Open(DockView.Analyzer);
         app.DockWidget.Dock(DockPanels.Bookmarks, DockPanels.Analyzer, DockEdge.Center);
         app.Run();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
 
         var next = new AppStateDriver(_temp.Settings());
         var layout = next.Arrangement;
@@ -61,7 +61,7 @@ public sealed class LayoutPersistenceTests : IDisposable
         d.Ui.Panels.Open(DockView.Analyzer);
         app.DockWidget.Dock(DockPanels.Search, DockPanels.Analyzer, DockEdge.Center);
         app.Run();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
 
         var next = new AppStateDriver(_temp.Settings()).Arrangement;
 

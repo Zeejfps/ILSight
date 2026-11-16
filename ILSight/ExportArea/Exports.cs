@@ -7,7 +7,7 @@ namespace ILSight.ExportArea;
 
 /// <summary>The exports of code, projects, solutions, portable PDBs, class diagrams and the files of packages: which
 /// are asked for and queued in <see cref="AppState.Export"/>, to be written one at a time in the order they were asked
-/// for (<see cref="ExportWriting"/>), the reports of those that ended in <see cref="AppState.FinishedExports"/>, and the
+/// for (<see cref="ExportWriter"/>), the reports of those that ended in <see cref="AppState.FinishedExports"/>, and the
 /// export dialog's choices. Resources and single files of packages are written straight away
 /// (<see cref="SaveResourceHandler"/>, <see cref="ExtractPackageFileHandler"/>).</summary>
 public static class Exports
@@ -47,7 +47,7 @@ public static class Exports
     }
 
     /// <summary>Queues the export <paramref name="job"/> and brings the exports panel to the front, where it waits,
-    /// runs and ends; its turn comes once the exports queued before it have ended (<see cref="ExportWriting"/>).</summary>
+    /// runs and ends; its turn comes once the exports queued before it have ended (<see cref="ExportWriter"/>).</summary>
     public static ExportTicket Enter(ExportQueue queue, Queue<ViewCommand> viewCommands, ExportJob job)
     {
         viewCommands.Enqueue(new ViewCommand.OpenPanel(DockView.Exports));

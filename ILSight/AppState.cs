@@ -55,7 +55,7 @@ public sealed class AppState
     public LastSave LastSave { get; } = new();
 
     /// <summary>Whether the window closes as the user asks it to, from what saving the settings then did.</summary>
-    public WindowClosing Closing { get; } = new();
+    public WindowCloser WindowCloser { get; } = new();
 
     public BookmarkList Bookmarks { get; } = new();
 
@@ -95,7 +95,7 @@ public sealed class AppState
     public required GoToBookmarkHandler GoToBookmarkHandler { get; init; }
 
     /// <summary>Imports bookmarks from files, this app's or the real ILSpy's.</summary>
-    public required BookmarkImporting BookmarkImporting { get; init; }
+    public required BookmarkImporter BookmarkImporter { get; init; }
 
     /// <summary>Runs the search panel's and the omnibar's searches.</summary>
     public required RunSearchHandler RunSearchHandler { get; init; }
@@ -109,10 +109,10 @@ public sealed class AppState
     /// <summary>Finishes expanding an assembly and the namespaces in it.</summary>
     public required ExpandNamespacesHandler ExpandNamespacesHandler { get; init; }
 
-    public required SettingsSaving SettingsSaving { get; init; }
+    public required SettingsSaver SettingsSaver { get; init; }
 
     /// <summary>Writes an export the exports panel queued, once its turn comes.</summary>
-    public required ExportWriting ExportWriting { get; init; }
+    public required ExportWriter ExportWriter { get; init; }
 
     /// <summary>Saves the bytes of a resource to a file straight away.</summary>
     public required SaveResourceHandler SaveResourceHandler { get; init; }
@@ -127,7 +127,7 @@ public sealed class AppState
     public required ExportBookmarksHandler ExportBookmarksHandler { get; init; }
 
     /// <summary>Grows diagrams by the cards of types: one shown with its neighbours, and those a card links to.</summary>
-    public required DiagramGrowing DiagramGrowing { get; init; }
+    public required DiagramGrower DiagramGrower { get; init; }
 
     /// <summary>Brings in the cards of the diagrams reopened from the open list's saved documents.</summary>
     public required ReopenDiagramHandler ReopenDiagramHandler { get; init; }
@@ -154,10 +154,10 @@ public sealed class AppState
     public required GoToHistoryEntryHandler GoToHistoryEntryHandler { get; init; }
 
     /// <summary>Opens assemblies into the list: files picked or dropped, and the assemblies one references.</summary>
-    public required AssemblyOpening AssemblyOpening { get; init; }
+    public required AssemblyOpener AssemblyOpener { get; init; }
 
     /// <summary>Reads the assemblies of the list again, one with a PDB or target framework picked, or all of them.</summary>
-    public required AssemblyReloading AssemblyReloading { get; init; }
+    public required AssemblyReloader AssemblyReloader { get; init; }
 
     /// <summary>Opens a list's files as a reload does, as switching lists or starting the app does.</summary>
     public required OpenAssembliesAsReloadHandler OpenAssembliesAsReloadHandler { get; init; }

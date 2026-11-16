@@ -16,7 +16,7 @@ public sealed record AdapterHooks
     public Func<OpenAssembliesAsReloadHandler.IPorts, OpenAssembliesAsReloadHandler.IPorts>? Reopening { get; init; }
 
     /// <summary>The port a reload and a reopen of one assembly read the files again through.</summary>
-    public Func<AssemblyReloading.IPorts, AssemblyReloading.IPorts>? Reloading { get; init; }
+    public Func<AssemblyReloader.IPorts, AssemblyReloader.IPorts>? Reloader { get; init; }
 
     /// <summary>The port a search's runs search the open assemblies through.</summary>
     public Func<RunSearchHandler.IPorts, RunSearchHandler.IPorts>? Searching { get; init; }
@@ -28,10 +28,10 @@ public sealed record AdapterHooks
     public Func<GoToBookmarkHandler.IPorts, GoToBookmarkHandler.IPorts>? GoingToBookmarks { get; init; }
 
     /// <summary>The port showing a type on a diagram reads its card and its neighbours' through.</summary>
-    public Func<DiagramGrowing.IPorts, DiagramGrowing.IPorts>? Growing { get; init; }
+    public Func<DiagramGrower.IPorts, DiagramGrower.IPorts>? Grower { get; init; }
 
     /// <summary>The port an export writes through.</summary>
-    public Func<ExportWriting.IPorts, ExportWriting.IPorts>? Exporting { get; init; }
+    public Func<ExportWriter.IPorts, ExportWriter.IPorts>? Exporting { get; init; }
 
     /// <summary>The port the window is brought to the front through.</summary>
     public Func<IWindowFront, IWindowFront>? BringingToFront { get; init; }

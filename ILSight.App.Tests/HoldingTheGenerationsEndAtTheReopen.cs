@@ -3,12 +3,12 @@ using ILSight.Core;
 
 namespace ILSight.App.Tests;
 
-/// <summary>The port the root hands the reload (<see cref="AdapterHooks.Reloading"/>): the real adapter, but as the reopen
+/// <summary>The port the root hands the reload (<see cref="AdapterHooks.Reloader"/>): the real adapter, but as the reopen
 /// begins, <see cref="End"/> runs on a thread of its own and is held inside the cancel of the generation's ending, after
 /// the list's lock is released: a callback registered on that ending after the edge linked it runs first (callbacks run
 /// newest first) and waits there until <see cref="Release"/>. The reopen's check runs meanwhile, the ending marked
 /// cancelled and the edge's linked token not reached yet.</summary>
-internal sealed class HoldingTheGenerationsEndAtTheReopen(AssemblyReloading.IPorts real) : AssemblyReloading.IPorts
+internal sealed class HoldingTheGenerationsEndAtTheReopen(AssemblyReloader.IPorts real) : AssemblyReloader.IPorts
 {
     private static readonly TimeSpan Bound = TimeSpan.FromSeconds(30);
 
@@ -35,7 +35,7 @@ internal sealed class HoldingTheGenerationsEndAtTheReopen(AssemblyReloading.IPor
         real.ShowRefusal(refusal);
     }
 
-    public Task<PdbChecking> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct)
+    public Task<PdbCheckOutcome> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct)
     {
         return real.CheckPdbAsync(assembly, pdbPath, ct);
     }

@@ -4,7 +4,7 @@ using ILSight.Core;
 
 namespace ILSight.ILSightAppArea;
 
-/// <summary>Where runs meet to hand their arguments over (<see cref="RunRouting"/> decides where they go).</summary>
+/// <summary>Where runs meet to hand their arguments over (<see cref="RunRouter"/> decides where they go).</summary>
 public static class RunArgumentsRouting
 {
     private const string NamePrefix = "ILSight-";

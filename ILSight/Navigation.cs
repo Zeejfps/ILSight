@@ -131,7 +131,7 @@ public sealed class Navigation
 
     /// <summary>Begins a request to open <paramref name="paths"/>, as <see cref="UserIntent.BeginOpening"/>
     /// does: in the frame it is asked in, the app says it is opening them (<see cref="IsOpening"/>).</summary>
-    public FileOpening? BeginOpening(IEnumerable<AssemblyPath> paths)
+    public OpenRequest? BeginOpening(IEnumerable<AssemblyPath> paths)
     {
         return _intent.BeginOpening(paths);
     }

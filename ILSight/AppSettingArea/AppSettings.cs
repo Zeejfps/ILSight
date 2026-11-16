@@ -9,7 +9,7 @@ using ILSight.SettingArea;
 namespace ILSight.AppSettingArea;
 
 /// <summary>What persists between runs, in the user's app-data folder, as read from its file by
-/// <see cref="SettingsReading"/>: whatever the file held, every value here is one the app can use.</summary>
+/// <see cref="SettingsFileReader"/>: whatever the file held, every value here is one the app can use.</summary>
 public sealed record AppSettings
 {
     /// <summary>The settings file in the user's app-data folder; under this process's folder when the
@@ -21,7 +21,7 @@ public sealed record AppSettings
     /// in memory only.</summary>
     public FullFilePath? FilePath { get; init; }
 
-    /// <summary>Whether <see cref="SettingsSaving.WriteSettings"/> writes to <see cref="FilePath"/>; false when the
+    /// <summary>Whether <see cref="SettingsSaver.WriteSettings"/> writes to <see cref="FilePath"/>; false when the
     /// file there could be neither read whole nor copied aside, so writing over it would lose what it holds.</summary>
     public bool CanSaveOverFile { get; init; } = true;
 

@@ -89,7 +89,7 @@ public static class NodeLookup
 
     // The listed assembly defining what reference points at, and its handle there; a file resolving it needs that
     // can't be read, the lookup's failure. Each library read on the way is under its own catch (ResolveListedAsync).
-    private static async Task<Outcome<Lookup<(LoadedModule Assembly, EntityHandle Handle)>>> ResolveAsync(AssemblyList list, ModuleReading reading,
+    private static async Task<Outcome<Lookup<(LoadedModule Assembly, EntityHandle Handle)>>> ResolveAsync(AssemblyList list, ModuleReadLease reading,
         CodeReference.Navigable reference, CancellationToken ct)
     {
         try
@@ -106,7 +106,7 @@ public static class NodeLookup
         }
     }
 
-    private static async Task<Outcome<Lookup<BrowseNode>>> FindTargetAsync(BrowseSession session, ModuleReading reading, LoadedModule assembly,
+    private static async Task<Outcome<Lookup<BrowseNode>>> FindTargetAsync(BrowseSession session, ModuleReadLease reading, LoadedModule assembly,
         EntityHandle handle, CancellationToken ct)
     {
         if (handle.Kind == HandleKind.AssemblyDefinition)

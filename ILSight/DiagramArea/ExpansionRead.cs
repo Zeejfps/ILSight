@@ -3,7 +3,7 @@ using ILSight.Core.Diagrams;
 
 namespace ILSight.DiagramArea;
 
-/// <summary>A read of the cards a card's links lead to, started from its menu, for <see cref="DiagramGrowing"/> to
+/// <summary>A read of the cards a card's links lead to, started from its menu, for <see cref="DiagramGrower"/> to
 /// bring in: on the diagram, which counts the read as under way until it ends or fails, and whose closing cancels
 /// it.</summary>
 [MustUse]

@@ -203,7 +203,7 @@ public static class AssemblyListing
     /// A file it needs that can't be read throws its <see cref="AssemblyLoadException"/>, or the
     /// <see cref="DefinitionUnreadException"/> holding it. Each module it reads is added to <paramref name="reading"/>,
     /// the unit's: one released meanwhile is passed over, as one no longer listed.</summary>
-    internal static async Task<Lookup<(LoadedModule Assembly, EntityHandle Handle)>> ResolveListedAsync(AssemblyList list, ModuleReading reading,
+    internal static async Task<Lookup<(LoadedModule Assembly, EntityHandle Handle)>> ResolveListedAsync(AssemblyList list, ModuleReadLease reading,
         CodeReference.Navigable reference, CancellationToken ct)
     {
         var generation = list.Generation;
@@ -231,7 +231,7 @@ public static class AssemblyListing
         return resolved;
     }
 
-    private static async Task<Lookup<(LoadedModule Assembly, EntityHandle Handle)>> ResolveTargetAsync(AssemblyList list, ModuleReading reading,
+    private static async Task<Lookup<(LoadedModule Assembly, EntityHandle Handle)>> ResolveTargetAsync(AssemblyList list, ModuleReadLease reading,
         LoadedModule owner, CodeReference.Navigable reference, int generation, CancellationToken ct)
     {
         switch (reference)
@@ -351,7 +351,7 @@ public static class AssemblyListing
     /// <see cref="DescribeReferenceAsync"/> says; each module read is added to <paramref name="reading"/>, the unit's,
     /// one released meanwhile passed over. What else the library throws resolving it goes on to the caller, whose read
     /// catches it as its unit's failure. Call it off the UI thread.</summary>
-    internal static async Task<Lookup<ITypeDefinition>> FindTypeDefinitionAsync(AssemblyList list, ModuleReading reading, CodeReference.Entity reference,
+    internal static async Task<Lookup<ITypeDefinition>> FindTypeDefinitionAsync(AssemblyList list, ModuleReadLease reading, CodeReference.Entity reference,
         CancellationToken ct)
     {
         if (reference.Kind != EntityKind.Type)
@@ -371,7 +371,7 @@ public static class AssemblyListing
     /// can't be read throws its <see cref="AssemblyLoadException"/>, the lookup's failure with why); unreadable when
     /// the library could not read its type system. What else the library throws reading it goes on to the caller, as
     /// above. Call it off the UI thread.</summary>
-    internal static async Task<Lookup<ITypeDefinition>> FindTypeDefinitionAsync(AssemblyList list, ModuleReading reading, TypeAnchor anchor,
+    internal static async Task<Lookup<ITypeDefinition>> FindTypeDefinitionAsync(AssemblyList list, ModuleReadLease reading, TypeAnchor anchor,
         CancellationToken ct)
     {
         var assembly = FindAssemblyToLookIn(list, anchor.AssemblyPath);
@@ -387,7 +387,7 @@ public static class AssemblyListing
             static _ => new Lookup<ITypeDefinition>.NotFound());
     }
 
-    private static async Task<Lookup<ResolvedEntity>> ResolveEntityAsync(AssemblyList list, ModuleReading reading, CodeReference.Entity entity,
+    private static async Task<Lookup<ResolvedEntity>> ResolveEntityAsync(AssemblyList list, ModuleReadLease reading, CodeReference.Entity entity,
         CancellationToken ct)
     {
         var generation = list.Generation;
@@ -401,7 +401,7 @@ public static class AssemblyListing
         return await definition.ThenFindAsync((found, c) => ResolveEntityAsync(reading, found.Assembly, found.Handle, c), ct);
     }
 
-    private static async Task<Lookup<ResolvedEntity>> ResolveEntityAsync(ModuleReading reading, LoadedModule assembly, EntityHandle handle,
+    private static async Task<Lookup<ResolvedEntity>> ResolveEntityAsync(ModuleReadLease reading, LoadedModule assembly, EntityHandle handle,
         CancellationToken ct)
     {
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
@@ -668,7 +668,7 @@ public static class AssemblyListing
         }
     }
 
-    private static async Task<Lookup<(LoadedModule Assembly, EntityHandle Handle)>> ResolveDefinitionAsync(AssemblyList list, ModuleReading reading,
+    private static async Task<Lookup<(LoadedModule Assembly, EntityHandle Handle)>> ResolveDefinitionAsync(AssemblyList list, ModuleReadLease reading,
         LoadedModule owner, EntityHandle handle, int generation, CancellationToken ct)
     {
         switch (handle.Kind)

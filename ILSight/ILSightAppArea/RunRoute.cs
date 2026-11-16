@@ -1,6 +1,6 @@
 namespace ILSight.ILSightAppArea;
 
-/// <summary>Where a run's arguments go (<see cref="RunRouting"/>).</summary>
+/// <summary>Where a run's arguments go (<see cref="RunRouter"/>).</summary>
 public enum RunRoute
 {
     /// <summary>This run took the role: it opens the window and receives later runs' arguments.</summary>

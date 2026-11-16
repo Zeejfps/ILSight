@@ -115,7 +115,7 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
         }
     }
 
-    private static void RetrySaveWhenAsked(Ui ui, Saving autosave)
+    private static void RetrySaveWhenAsked(Ui ui, SettingsSave autosave)
     {
         var retryIn = autosave.Match<TimeSpan?>(
             static _ => null,
@@ -217,13 +217,13 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     }
 
     /// <summary>Saves the settings, with the window at <paramref name="window"/>, as the user asks to close it, while it
-    /// can still show a failure; true when it may close, as <see cref="WindowClosing"/> answers from the save (a failed
+    /// can still show a failure; true when it may close, as <see cref="WindowCloser"/> answers from the save (a failed
     /// one keeps it open once, the error panel showing why in the next frame). Arguments are refused once it closes,
     /// while a run sending one can still be told to open its own: no frame runs after this to take it.</summary>
     internal bool TryClose(WindowBounds window)
     {
         var write = SaveOnExit(window);
-        if (!_appState.Closing.TryClose(write))
+        if (!_appState.WindowCloser.TryClose(write))
         {
             // What the user just asked for failed: said where they acted, the window they asked to close, by opening
             // the errors on why. Errors nobody asked about are only counted on the status bar.
@@ -301,6 +301,6 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
     {
         _appState.KeptScreen.KeepWindow(window);
         _appState.KeptScreen.KeepView(ScreenSettings.TakeViewSettings(UiState));
-        return _appState.SettingsSaving.Save(_appState);
+        return _appState.SettingsSaver.Save(_appState);
     }
 }

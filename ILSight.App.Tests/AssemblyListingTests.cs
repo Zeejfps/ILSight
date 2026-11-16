@@ -17,7 +17,7 @@ public sealed class AssemblyListingTests
     {
         using var temp = new TempDir();
         var d = AppStateDriver.Opened(temp.Settings());
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
 
         var loaded = temp.Settings();
 
@@ -38,7 +38,7 @@ public sealed class AssemblyListingTests
         }];
         var d = AppStateDriver.Starting(settings);
 
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
 
         Assert.Equal([AppStateDriver.FixturePath, other], Assert.Single(temp.Settings().AssemblyLists).Assemblies.Select(static p => p.Text));
         d.Settle();
@@ -59,7 +59,7 @@ public sealed class AssemblyListingTests
         var d = new AppStateDriver(settings);
 
         d.Settle();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
 
         var roots = d.Ui.Tree.Roots;
         Assert.Equal([NodeIcon.FailedAssembly, NodeIcon.Assembly], roots.Select(r => r.Icon));
@@ -91,13 +91,13 @@ public sealed class AssemblyListingTests
         using var temp = new TempDir();
         var first = AppStateDriver.Opened(temp.Settings());
         first.Analyze(await first.FixtureAsync("Greeter"));
-        Assert.IsType<SettingsWriteResult.Written>(first.AppState.SettingsSaving.Save(first.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(first.AppState.SettingsSaver.Save(first.AppState));
         var d = new AppStateDriver(temp.Settings());
         d.AppState.Lists.Add(Other);
 
         d.SwitchList(Other);
         d.Settle();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
 
         var lists = temp.Settings().AssemblyLists;
         Assert.Empty(d.AppState.ListSession.Analyzer.Roots);

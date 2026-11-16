@@ -5,7 +5,7 @@ namespace ILSight.BookmarkArea;
 
 /// <summary>Marking lines with bookmarks, and making bookmarks and the records the bookmarks file keeps of them.
 /// Going to them is <see cref="GoToBookmarkHandler"/>'s, importing them
-/// <see cref="BookmarkImporting"/>'s and exporting them <see cref="ExportBookmarksHandler"/>'s.</summary>
+/// <see cref="BookmarkImporter"/>'s and exporting them <see cref="ExportBookmarksHandler"/>'s.</summary>
 public static class Bookmarks
 {
     /// <summary>Removes the bookmark marking <paramref name="line"/> of <paramref name="tab"/>'s

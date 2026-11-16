@@ -4,9 +4,9 @@ using ILSight.AssemblyArea;
 namespace ILSight.AssemblyListArea;
 
 /// <summary>Reaches the app's error reports, the file system and the open assemblies off the UI thread, for
-/// <see cref="AssemblyOpening"/>, <see cref="AssemblyReloading"/> and <see cref="OpenAssembliesAsReloadHandler"/>.</summary>
+/// <see cref="AssemblyOpener"/>, <see cref="AssemblyReloader"/> and <see cref="OpenAssembliesAsReloadHandler"/>.</summary>
 public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refusals, AssemblyList assemblies, BrowseSession session)
-    : AssemblyOpening.IPorts, AssemblyReloading.IPorts, OpenAssembliesAsReloadHandler.IPorts
+    : AssemblyOpener.IPorts, AssemblyReloader.IPorts, OpenAssembliesAsReloadHandler.IPorts
 {
     public void ReportError(AppProblem problem)
     {
@@ -43,7 +43,7 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
 
     /// <summary>Opens as <see cref="OpenFilesAsync"/> does, and gives the root node of the last file listed, which
     /// opening shows.</summary>
-    async Task<BrowseNode?> AssemblyOpening.IPorts.OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, GenerationWork work, CancellationToken ct)
+    async Task<BrowseNode?> AssemblyOpener.IPorts.OpenFilesAsync(IReadOnlyList<AssemblyPath> paths, GenerationWork work, CancellationToken ct)
     {
         var root = await Background.Wait(Task.Run(() => OpenFilesAndFindRootAsync(paths, work, ct), ct));
         ct.ThrowIfCancellationRequested();
@@ -71,18 +71,18 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
     }
 
     /// <summary>Checks on the thread pool, under a reading of the assembly, and comes back on the UI thread, with
-    /// a file it could not read (<see cref="FileReadFailures"/>) as <see cref="PdbChecking.Failed"/>; an assembly closed before answers
-    /// <see cref="PdbChecking.Closed"/>.</summary>
-    public async Task<PdbChecking> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct)
+    /// a file it could not read (<see cref="FileReadFailures"/>) as <see cref="PdbCheckOutcome.Failed"/>; an assembly closed before answers
+    /// <see cref="PdbCheckOutcome.Closed"/>.</summary>
+    public async Task<PdbCheckOutcome> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct)
     {
         using var reading = LoadedAssemblies.TryBeginReading(assembly);
         if (reading is null)
         {
-            return new PdbChecking.Closed { Assembly = assembly.FilePath.FileName };
+            return new PdbCheckOutcome.Closed { Assembly = assembly.FilePath.FileName };
         }
 
         var checking = await FileReadFailures.CatchAsync(Background.Wait(Task.Run(() => PdbFiles.Check(assembly, pdbPath), ct)), ct);
-        return checking.Match<PdbChecking>(static ok => new PdbChecking.Checked { Check = ok.Value }, static failed => new PdbChecking.Failed { Error = failed.Error });
+        return checking.Match<PdbCheckOutcome>(static ok => new PdbCheckOutcome.Checked { Check = ok.Value }, static failed => new PdbCheckOutcome.Failed { Error = failed.Error });
     }
 
     /// <summary>Reads on the thread pool and comes back on the UI thread, a file that can no longer be read as

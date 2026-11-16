@@ -76,15 +76,15 @@ public static class LoadedAssemblies
 
     /// <summary>Begins a unit's reading, of no module yet: the unit adds each module as it comes to read it
     /// (<see cref="TryRead"/>, <see cref="ReadTypeSystemAsync"/>) and disposes it however it ends.</summary>
-    public static ModuleReading BeginReading()
+    public static ModuleReadLease BeginReading()
     {
-        return new ModuleReading();
+        return new ModuleReadLease();
     }
 
     /// <summary>Begins a unit's reading of <paramref name="module"/>, which the unit disposes however it ends; null once
     /// the module was closed, which the unit answers as closed. While it is open, the module isn't released, closed or
     /// not.</summary>
-    public static ModuleReading? TryBeginReading(LoadedModule module)
+    public static ModuleReadLease? TryBeginReading(LoadedModule module)
     {
         var reading = BeginReading();
         if (!TryRead(reading, module))
@@ -99,7 +99,7 @@ public static class LoadedAssemblies
     /// <summary>Adds <paramref name="module"/> to what <paramref name="reading"/> reads, so it isn't released before the
     /// unit ends; false once it was closed, unless the unit already reads it, which the unit answers as closed, or
     /// passes over.</summary>
-    public static bool TryRead(ModuleReading reading, LoadedModule module)
+    public static bool TryRead(ModuleReadLease reading, LoadedModule module)
     {
         return reading.TryAdd(GetKept(module));
     }
@@ -125,7 +125,7 @@ public static class LoadedAssemblies
     /// <summary>The resolver of what <paramref name="module"/> references, for the library to ask within the unit of
     /// <paramref name="reading"/>: what it hands out is added to that reading. A failure of its own work marks
     /// <paramref name="callbacks"/>, the read's (CD4).</summary>
-    internal static IAssemblyResolver CreateResolver(ModuleReading reading, LoadedModule module, CallbackFailure callbacks)
+    internal static IAssemblyResolver CreateResolver(ModuleReadLease reading, LoadedModule module, CallbackFailure callbacks)
     {
         return new ReadingResolver(GetLibrary(module), reading) { Callbacks = callbacks };
     }
@@ -303,7 +303,7 @@ public static class LoadedAssemblies
     /// read began ends it early. The module is added to <paramref name="reading"/>, the unit's, first: one closed before
     /// answers <see cref="TypeSystemRead.Closed"/>, read nothing. So is every module its type system was handed, the type
     /// system read again without one closed since.</summary>
-    public static async Task<TypeSystemRead> ReadTypeSystemAsync(ModuleReading reading, LoadedModule module, CancellationToken ct)
+    public static async Task<TypeSystemRead> ReadTypeSystemAsync(ModuleReadLease reading, LoadedModule module, CancellationToken ct)
     {
         if (!TryRead(reading, module))
         {
@@ -324,7 +324,7 @@ public static class LoadedAssemblies
     /// <summary>Awaits the read of <paramref name="module"/>'s type system, then does <paramref name="work"/> with it on
     /// the thread the read ends on, under a reading of its own, which it is handed; for a module the library could not
     /// read, says why and does nothing; for one closed before, says so and does nothing.</summary>
-    internal static async Task<TypeSystemWork<T>> WithTypeSystemAsync<T>(LoadedModule module, Func<ModuleReading, DecompilerTypeSystem, T> work,
+    internal static async Task<TypeSystemWork<T>> WithTypeSystemAsync<T>(LoadedModule module, Func<ModuleReadLease, DecompilerTypeSystem, T> work,
         CancellationToken ct)
     {
         using var reading = BeginReading();
@@ -338,7 +338,7 @@ public static class LoadedAssemblies
     /// <summary>The reads of <paramref name="modules"/>' type systems, each added to <paramref name="reading"/>, the
     /// unit's, and awaited and matched once: those read, and those the library could not read, with what it threw, in
     /// the order given. One released before is passed over, as one no longer listed.</summary>
-    internal static async Task<ModuleTypeSystems> ReadTypeSystemsAsync(ModuleReading reading, IEnumerable<LoadedModule> modules, CancellationToken ct)
+    internal static async Task<ModuleTypeSystems> ReadTypeSystemsAsync(ModuleReadLease reading, IEnumerable<LoadedModule> modules, CancellationToken ct)
     {
         var asked = new List<LoadedModule>();
         var read = new Dictionary<MetadataFile, DecompilerTypeSystem>();
@@ -370,7 +370,7 @@ public static class LoadedAssemblies
     /// assembly's own as read, unless they turn language features on or off that it models; then the one made for
     /// them, made the first time on this thread, inside the caller's read. Every module it was handed is added to
     /// <paramref name="reading"/>, the unit's: with one closed since, it is made again, resolving without it.</summary>
-    internal static DecompilerTypeSystem ChooseTypeSystemFor(ModuleReading reading, LoadedModule module, DecompilerTypeSystem typeSystem,
+    internal static DecompilerTypeSystem ChooseTypeSystemFor(ModuleReadLease reading, LoadedModule module, DecompilerTypeSystem typeSystem,
         DecompilerSettings settings, CallbackFailure callbacks)
     {
         var options = DecompilerTypeSystem.GetOptions(settings);
@@ -394,7 +394,7 @@ public static class LoadedAssemblies
         }
     }
 
-    private static TypeSystemBuild<DecompilerTypeSystem> BuildTypeSystem(ModuleLibrary library, ModuleReading reading, TypeSystemOptions options,
+    private static TypeSystemBuild<DecompilerTypeSystem> BuildTypeSystem(ModuleLibrary library, ModuleReadLease reading, TypeSystemOptions options,
         CallbackFailure callbacks)
     {
         // The resolver marks the read's count, which the catch around the read that built it reads (CF10).

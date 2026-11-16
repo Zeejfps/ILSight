@@ -45,7 +45,7 @@ public sealed class UserIntent
 
     /// <summary>Begins a request to open <paramref name="paths"/>: what was still being looked up for an older request
     /// is dropped. Returns the files with the request's ticket; null, beginning nothing, when there are none.</summary>
-    public FileOpening? BeginOpening(IEnumerable<AssemblyPath> paths)
+    public OpenRequest? BeginOpening(IEnumerable<AssemblyPath> paths)
     {
         var files = paths.ToArray();
         if (files.Length == 0)
@@ -55,7 +55,7 @@ public sealed class UserIntent
 
         var ticket = Begin();
         _opening = ticket;
-        return new FileOpening { Paths = files, Intent = ticket };
+        return new OpenRequest { Paths = files, Intent = ticket };
     }
 
     /// <summary>Ends the opening of the current request when the workflow opening its files failed (the edge's settle,

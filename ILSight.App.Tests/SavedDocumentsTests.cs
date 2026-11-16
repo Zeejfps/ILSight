@@ -561,7 +561,7 @@ public sealed class SavedDocumentsTests : IDisposable
     {
         var d = new AppStateDriver(_temp.Settings());
         d.NextFrame();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
 
         var saved = _temp.Settings();
         var next = new AppStateDriver(saved);

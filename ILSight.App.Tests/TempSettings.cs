@@ -14,6 +14,6 @@ internal static class TempSettings
     /// <summary>Writes <paramref name="settings"/> where they were read from, as the app saves them.</summary>
     public static SettingsWriteResult Save(AppSettings settings)
     {
-        return new SettingsSaving(new SettingsSavingAdapter(new ErrorLog())).WriteSettings(settings);
+        return new SettingsSaver(new SettingsSaverAdapter(new ErrorLog())).WriteSettings(settings);
     }
 }

@@ -18,7 +18,7 @@ public sealed class GenerationEndTests
     public void A_reload_whose_generation_ends_by_a_change_that_stops_no_reload_ends_quietly_and_leaves_nothing_reloading()
     {
         EndingTheGenerationBeforeReopening? ports = null;
-        var d = AppStateDriver.OpenedWith(new AdapterHooks { Reloading = real => ports = new EndingTheGenerationBeforeReopening(real) });
+        var d = AppStateDriver.OpenedWith(new AdapterHooks { Reloader = real => ports = new EndingTheGenerationBeforeReopening(real) });
         Assert.NotNull(ports);
         var session = d.AppState.ListSession;
         var tab = session.Navigation.ActiveTab;
@@ -38,7 +38,7 @@ public sealed class GenerationEndTests
     public void A_reload_stopped_by_closing_every_assembly_leaves_no_tab_reloading()
     {
         EndingTheGenerationBeforeReopening? ports = null;
-        var d = AppStateDriver.OpenedWith(new AdapterHooks { Reloading = real => ports = new EndingTheGenerationBeforeReopening(real) });
+        var d = AppStateDriver.OpenedWith(new AdapterHooks { Reloader = real => ports = new EndingTheGenerationBeforeReopening(real) });
         Assert.NotNull(ports);
         var appState = d.AppState;
         var tab = appState.ListSession.Navigation.ActiveTab;
@@ -59,7 +59,7 @@ public sealed class GenerationEndTests
     public void A_reload_stopped_with_its_assembly_listed_again_says_the_tab_was_not_reloaded_never_gone()
     {
         EndingTheGenerationBeforeReopening? ports = null;
-        var d = AppStateDriver.OpenedWith(new AdapterHooks { Reloading = real => ports = new EndingTheGenerationBeforeReopening(real) });
+        var d = AppStateDriver.OpenedWith(new AdapterHooks { Reloader = real => ports = new EndingTheGenerationBeforeReopening(real) });
         Assert.NotNull(ports);
         var appState = d.AppState;
         var session = appState.ListSession;
@@ -83,7 +83,7 @@ public sealed class GenerationEndTests
     public void A_reload_whose_generation_new_load_options_end_leaves_the_new_reload_pending_until_its_own_end()
     {
         EndingTheGenerationBeforeReopening? ports = null;
-        var d = AppStateDriver.OpenedWith(new AdapterHooks { Reloading = real => ports = new EndingTheGenerationBeforeReopening(real) });
+        var d = AppStateDriver.OpenedWith(new AdapterHooks { Reloader = real => ports = new EndingTheGenerationBeforeReopening(real) });
         Assert.NotNull(ports);
         var appState = d.AppState;
         var session = appState.ListSession;
@@ -116,7 +116,7 @@ public sealed class GenerationEndTests
     public void A_reload_whose_check_lands_while_the_generations_end_is_still_cancelling_ends_quietly()
     {
         HoldingTheGenerationsEndAtTheReopen? ports = null;
-        var d = AppStateDriver.OpenedWith(new AdapterHooks { Reloading = real => ports = new HoldingTheGenerationsEndAtTheReopen(real) });
+        var d = AppStateDriver.OpenedWith(new AdapterHooks { Reloader = real => ports = new HoldingTheGenerationsEndAtTheReopen(real) });
         Assert.NotNull(ports);
         var session = d.AppState.ListSession;
         var removed = RemovedModules.None;

@@ -47,7 +47,7 @@ public sealed class OpenListSession
     /// those of the reopening it stops no longer, with the analyses of them. Returns the files to open and the reload,
     /// for the edge to open (<see cref="AssemblyArea.OpenAssembliesAsReloadHandler"/>, which ends it through
     /// <see cref="TryFinishReopening"/>).</summary>
-    public ListReopening BeginReopening(SavedAssemblyLists lists)
+    public ListReopen BeginReopening(SavedAssemblyLists lists)
     {
         Assemblies.Pdbs.Use(lists.ActivePdbs);
         Assemblies.TargetFrameworks.Use(lists.ActiveFrameworks);
@@ -56,7 +56,7 @@ public sealed class OpenListSession
         var reload = Reload.Start();
         _assemblies.BeginArriving(paths);
         _reopening = paths;
-        return new ListReopening { Paths = paths, Reload = reload, Work = Assemblies.Work };
+        return new ListReopen { Paths = paths, Reload = reload, Work = Assemblies.Work };
     }
 
     /// <summary>Ends the reopening <paramref name="ticket"/> was given for (<see cref="BeginReopening"/>): what it
@@ -169,7 +169,7 @@ public sealed class OpenListSession
     /// tabs still waiting for it to reopen their places show what is left of them, and those showing what was read
     /// from it keep what they show, saying it was closed, and read it no more. Returns the loads that started in those
     /// tabs and the modules taken off, for the edge that asked for this to start and to have released.</summary>
-    public ListClosing CloseAllAssemblies()
+    public ListClose CloseAllAssemblies()
     {
         Navigation.BeginRequest();
         Reload.Stop();
@@ -182,6 +182,6 @@ public sealed class OpenListSession
         _analyzer.ClearRoots();
         Assemblies.Pdbs.ForgetAll();
         Assemblies.TargetFrameworks.ForgetAll();
-        return new ListClosing { Loads = SavedDocuments.ShowReopenedDocuments(Navigation, Reopened, Assemblies), Removed = removed };
+        return new ListClose { Loads = SavedDocuments.ShowReopenedDocuments(Navigation, Reopened, Assemblies), Removed = removed };
     }
 }

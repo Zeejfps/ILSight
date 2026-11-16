@@ -717,8 +717,8 @@ internal static class DiagramView
     /// token closing the diagram cancels.</summary>
     internal static void ShowInDiagramLater(IAppCommandWriter commands, CodeReference.Entity type, TabTitle newTitle)
     {
-        Commands.StartSettlingLater(commands, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, newTitle), static (a, s) => Diagrams.ShowInDiagram(a.ListSession.Navigation, s.type, s.newTitle),
-            static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token,
+        Commands.StartSettlingLater(commands, nameof(DiagramGrower.AddWithNeighboursAsync), (type, newTitle), static (a, s) => Diagrams.ShowInDiagram(a.ListSession.Navigation, s.type, s.newTitle),
+            static (a, _, read, ct) => a.DiagramGrower.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token,
             static (_, read, error) => read.Diagram.FailReading(read.Read, error.Message));
     }
 
@@ -726,8 +726,8 @@ internal static class DiagramView
     /// (<see cref="Diagrams.ShowInNewDiagram"/>).</summary>
     internal static void ShowInNewDiagramLater(IAppCommandWriter commands, CodeReference.Entity type, TabTitle title)
     {
-        Commands.StartSettlingLater(commands, nameof(DiagramGrowing.AddWithNeighboursAsync), (type, title), static (a, s) => Diagrams.ShowInNewDiagram(a.ListSession.Navigation, s.type, s.title),
-            static (a, _, read, ct) => a.DiagramGrowing.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token,
+        Commands.StartSettlingLater(commands, nameof(DiagramGrower.AddWithNeighboursAsync), (type, title), static (a, s) => Diagrams.ShowInNewDiagram(a.ListSession.Navigation, s.type, s.title),
+            static (a, _, read, ct) => a.DiagramGrower.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token,
             static (_, read, error) => read.Diagram.FailReading(read.Read, error.Message));
     }
 
@@ -790,14 +790,14 @@ internal static class DiagramView
         var open = why is null;
         if (HasLinks(card, Diagrams.IsBaseLink) && ui.MenuItem(t.DiagramAddBases, enabled: open && Diagrams.HasMissingBases(diagram, card), id: "add-bases", detail: why))
         {
-            StartExpanding(commands, nameof(DiagramGrowing.ExpandBasesAsync), diagram, card, static (a, _, read, ct) => a.DiagramGrowing.ExpandBasesAsync(read, ct));
+            StartExpanding(commands, nameof(DiagramGrower.ExpandBasesAsync), diagram, card, static (a, _, read, ct) => a.DiagramGrower.ExpandBasesAsync(read, ct));
         }
 
         if (HasLinks(card, Diagrams.IsInterfaceLink)
             && ui.MenuItem(t.DiagramAddInterfaces, enabled: open && Diagrams.HasMissingInterfaces(diagram, card), id: "add-interfaces", detail: why))
         {
-            StartExpanding(commands, nameof(DiagramGrowing.ExpandInterfacesAsync), diagram, card,
-                static (a, _, read, ct) => a.DiagramGrowing.ExpandInterfacesAsync(read, ct));
+            StartExpanding(commands, nameof(DiagramGrower.ExpandInterfacesAsync), diagram, card,
+                static (a, _, read, ct) => a.DiagramGrower.ExpandInterfacesAsync(read, ct));
         }
 
         if (card.CanHaveDerived)
@@ -805,14 +805,14 @@ internal static class DiagramView
             var derivedItem = DerivedItemOf(ui, appearance, card);
             if (ui.MenuItem(derivedItem, enabled: open, id: "add-derived", detail: why))
             {
-                StartExpanding(commands, nameof(DiagramGrowing.ExpandDerivedAsync), diagram, card,
-                    static (a, _, read, ct) => a.DiagramGrowing.ExpandDerivedAsync(read, ct));
+                StartExpanding(commands, nameof(DiagramGrower.ExpandDerivedAsync), diagram, card,
+                    static (a, _, read, ct) => a.DiagramGrower.ExpandDerivedAsync(read, ct));
             }
         }
 
         if (HasLinks(card, Diagrams.IsHeldLink) && ui.MenuItem(t.DiagramAddHeld, enabled: open && Diagrams.HasMissingHeld(diagram, card), id: "add-held", detail: why))
         {
-            StartExpanding(commands, nameof(DiagramGrowing.ExpandHeldAsync), diagram, card, static (a, _, read, ct) => a.DiagramGrowing.ExpandHeldAsync(read, ct));
+            StartExpanding(commands, nameof(DiagramGrower.ExpandHeldAsync), diagram, card, static (a, _, read, ct) => a.DiagramGrower.ExpandHeldAsync(read, ct));
         }
     }
 

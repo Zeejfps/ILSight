@@ -2,9 +2,9 @@ using ILSight.Core;
 
 namespace ILSight.AssemblyArea;
 
-/// <summary>A reload of the open list begun (<see cref="AssemblyReloading.BeginReload"/>): the files to read again, the
+/// <summary>A reload of the open list begun (<see cref="AssemblyReloader.BeginReload"/>): the files to read again, the
 /// tabs whose places to find in them, the request it began, and the work of the list's generation its clear began, which
-/// the reopen carries (<see cref="AssemblyReloading.RefreshAssembliesAsync"/>): the edge links and asks its ending, so
+/// the reopen carries (<see cref="AssemblyReloader.RefreshAssembliesAsync"/>): the edge links and asks its ending, so
 /// any end of that generation ends the reopen quietly, whether or not it stops the reload. Dropped, the tabs stay
 /// reloading for good.</summary>
 [MustUse]

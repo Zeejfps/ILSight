@@ -3,7 +3,7 @@ using ILSight.ILSightAppArea;
 
 namespace ILSight.App.Tests;
 
-/// <summary>The role and the hand-over as a run reaches them (<see cref="RunRoutingAdapter"/>), awaited for the
+/// <summary>The role and the hand-over as a run reaches them (<see cref="RunRouterAdapter"/>), awaited for the
 /// tests that drive the real pipes.</summary>
 internal static class RunPipes
 {
@@ -25,6 +25,6 @@ internal static class RunPipes
     /// as request <paramref name="requestId"/>.</summary>
     public static Task<HandOverAnswer> SendAsync(RunArgumentsAddress address, RunArguments arguments, Guid requestId)
     {
-        return new RunRoutingAdapter(address, Channel.CreateUnbounded<RunArguments>(), static () => Strings.For(Locale.En), new RunNotice.OnConsole(TextWriter.Null)).SendAsync(arguments, requestId, CancellationToken.None);
+        return new RunRouterAdapter(address, Channel.CreateUnbounded<RunArguments>(), static () => Strings.For(Locale.En), new RunNotice.OnConsole(TextWriter.Null)).SendAsync(arguments, requestId, CancellationToken.None);
     }
 }

@@ -12,7 +12,7 @@ internal sealed class TypeSystemBuild<T>
 
     /// <summary>Adds each module handed out to the build to <paramref name="reading"/>, the unit's; false when one was
     /// closed, which the unit answers by building the type system again, resolving without it.</summary>
-    public bool TryReadHandedOut(ModuleReading reading)
+    public bool TryReadHandedOut(ModuleReadLease reading)
     {
         foreach (var library in HandedOut)
         {

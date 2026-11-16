@@ -8,7 +8,7 @@ namespace ILSight.DiagramArea;
 
 /// <summary>Diagrams of types, each in a tab of its own: showing a type on one, taking cards off it, and what the
 /// diagram and its view hold. Showing a type, reopening a diagram and laying one out start the work they need,
-/// returned for the edge to run (<see cref="DiagramGrowing"/>, <see cref="ReopenDiagramHandler"/>,
+/// returned for the edge to run (<see cref="DiagramGrower"/>, <see cref="ReopenDiagramHandler"/>,
 /// <see cref="LayOutDiagramHandler"/>), whose results are dropped when their diagram is closed meanwhile.</summary>
 public static class Diagrams
 {
@@ -69,7 +69,7 @@ public static class Diagrams
     /// <summary>Shows the type <paramref name="type"/> points at, with the types of its assembly it is
     /// directly related to, on the diagram the user last worked in, brought to the front; on a new one
     /// when none is open, titled <paramref name="newTitle"/>. Returns the read of their cards it started, for the
-    /// edge to start (<see cref="DiagramGrowing.AddWithNeighboursAsync"/>) on a token closing the diagram cancels.</summary>
+    /// edge to start (<see cref="DiagramGrower.AddWithNeighboursAsync"/>) on a token closing the diagram cancels.</summary>
     public static NeighboursRead ShowInDiagram(Navigation navigation, CodeReference.Entity type, TabTitle newTitle)
     {
         var tab = navigation.DiagramTab;

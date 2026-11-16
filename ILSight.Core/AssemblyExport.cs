@@ -50,7 +50,7 @@ public static class AssemblyExport
         return new Outcome<ModuleRead<ExportedProject>>.Ok(new ModuleRead<ExportedProject>.Read { Value = project });
     }
 
-    private static async Task<ExportedProject> ExportProjectAsync(ModuleReading reading, LoadedModule assembly, DecompilerOptions options,
+    private static async Task<ExportedProject> ExportProjectAsync(ModuleReadLease reading, LoadedModule assembly, DecompilerOptions options,
         FullFilePath projectPath, ProjectExtras extras, PartProgress? part, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         var (projectPart, pdbPart) = SplitForPdb(part, extras.Pdb);
@@ -78,7 +78,7 @@ public static class AssemblyExport
         return GetHalves(part);
     }
 
-    private static ExportedProject WriteProject(ModuleReading reading, LoadedModule assembly, DecompilerOptions options, FullFilePath projectPath, string? strongNameKeyFile,
+    private static ExportedProject WriteProject(ModuleReadLease reading, LoadedModule assembly, DecompilerOptions options, FullFilePath projectPath, string? strongNameKeyFile,
         IProgress<DecompilationProgress>? progress, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         var folder = projectPath.Folder;
@@ -94,7 +94,7 @@ public static class AssemblyExport
         return new ExportedProject { Assembly = assembly, ProjectPath = projectPath.Text, Errors = errors, Id = id };
     }
 
-    private static WholeProjectDecompiler CreateProjectDecompiler(ModuleReading reading, LoadedModule assembly, DecompilerOptions options,
+    private static WholeProjectDecompiler CreateProjectDecompiler(ModuleReadLease reading, LoadedModule assembly, DecompilerOptions options,
         CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         var settings = Settings.Create(options);
@@ -102,7 +102,7 @@ public static class AssemblyExport
         return new BamlProjectDecompiler(assembly, LoadedAssemblies.CreateResolver(reading, assembly, callbacks), settings, symbols, cancellationToken);
     }
 
-    private static async Task<ExportedProject> WithPdbAsync(ModuleReading reading, ExportedProject project, DecompilerOptions options, string folder,
+    private static async Task<ExportedProject> WithPdbAsync(ModuleReadLease reading, ExportedProject project, DecompilerOptions options, string folder,
         bool embedSources, IProgress<DecompilationProgress>? progress, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         var failure = await TryGeneratePdbAsync(reading, project.Assembly, options, folder, embedSources, progress, callbacks, cancellationToken);
@@ -154,7 +154,7 @@ public static class AssemblyExport
         return new Outcome<ModuleRead<List<ExportedProject>>>.Ok(new ModuleRead<List<ExportedProject>>.Read { Value = exported });
     }
 
-    private static bool TryReadAll(ModuleReading reading, IReadOnlyList<LoadedModule> assemblies, [NotNullWhen(false)] out LoadedModule? closed)
+    private static bool TryReadAll(ModuleReadLease reading, IReadOnlyList<LoadedModule> assemblies, [NotNullWhen(false)] out LoadedModule? closed)
     {
         foreach (var assembly in assemblies)
         {
@@ -169,7 +169,7 @@ public static class AssemblyExport
         return true;
     }
 
-    private static async Task<List<ExportedProject>> ExportSolutionAsync(ModuleReading reading, IReadOnlyList<SolutionProject> projects,
+    private static async Task<List<ExportedProject>> ExportSolutionAsync(ModuleReadLease reading, IReadOnlyList<SolutionProject> projects,
         IReadOnlyList<LoadedModule> assemblies, DecompilerOptions options, string folder, string solutionPath, ProjectExtras withExtras,
         IProgress<ExportProgress>? progress, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
@@ -223,7 +223,7 @@ public static class AssemblyExport
         return new Outcome<TypeSystemWork<string>>.Ok(written);
     }
 
-    private static string GeneratePdb(ModuleReading reading, LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerOptions options, string path,
+    private static string GeneratePdb(ModuleReadLease reading, LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerOptions options, string path,
         bool embedSources, IProgress<DecompilationProgress>? progress, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         var settings = Settings.Create(options);
@@ -261,7 +261,7 @@ public static class AssemblyExport
         return new ModuleRead<List<PdbFailure>>.Read { Value = failures };
     }
 
-    private static async Task<List<PdbFailure>> GeneratePdbsAsync(ModuleReading reading, IReadOnlyList<LoadedModule> assemblies, DecompilerOptions options,
+    private static async Task<List<PdbFailure>> GeneratePdbsAsync(ModuleReadLease reading, IReadOnlyList<LoadedModule> assemblies, DecompilerOptions options,
         string folder, IProgress<ExportProgress>? progress, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         var bounds = PartBounds(assemblies);
@@ -280,7 +280,7 @@ public static class AssemblyExport
         return failures;
     }
 
-    private static async Task<PdbFailure?> TryGeneratePdbAsync(ModuleReading reading, LoadedModule assembly, DecompilerOptions options, string folder,
+    private static async Task<PdbFailure?> TryGeneratePdbAsync(ModuleReadLease reading, LoadedModule assembly, DecompilerOptions options, string folder,
         bool embedSources, IProgress<DecompilationProgress>? progress, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         if (!assembly.CanGeneratePdb)
@@ -299,7 +299,7 @@ public static class AssemblyExport
             static c => throw new InvalidOperationException($"'{c.Module.FilePath}' was exported after its release: the export holds a reading of each assembly it exports."));
     }
 
-    private static PdbFailure? TryGeneratePdb(ModuleReading reading, LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerOptions options,
+    private static PdbFailure? TryGeneratePdb(ModuleReadLease reading, LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerOptions options,
         string folder, bool embedSources, IProgress<DecompilationProgress>? progress, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         var path = Path.Combine(folder, assembly.PdbFileName);

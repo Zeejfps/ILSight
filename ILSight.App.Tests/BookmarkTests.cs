@@ -185,7 +185,7 @@ public sealed class BookmarkTests : IDisposable
     {
         var (d, tab, line) = await OutlineAtAsync("return First();", new AppStateDriver(_temp.Settings()));
         Assert.IsType<BookmarkToggle.Added>(Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark));
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
         var settings = _temp.Settings();
         settings.Bookmarks.Add(settings.Bookmarks[0] with { Name = "Twin" });
 
@@ -369,7 +369,7 @@ public sealed class BookmarkTests : IDisposable
         Click(app, "Bookmark 1");
         app.Frames.Frame(2);
 
-        Assert.Null(d.Ui.BookmarksPanel.Renaming.Bookmark);
+        Assert.Null(d.Ui.BookmarksPanel.Renamer.Bookmark);
         Assert.True(d.Ui.BookmarksPanel.Cells.IsAt(0, BookmarksPanelView.NameColumn));
     }
 
@@ -383,7 +383,7 @@ public sealed class BookmarkTests : IDisposable
         app.Frames.Key(KeyboardKey.Enter).Frame(2);
 
         Assert.Equal("Calls First", d.AppState.Bookmarks.Items[0].Name);
-        Assert.Null(d.Ui.BookmarksPanel.Renaming.Bookmark);
+        Assert.Null(d.Ui.BookmarksPanel.Renamer.Bookmark);
         Assert.True(app.Frames.Drew("Calls First"));
     }
 
@@ -397,7 +397,7 @@ public sealed class BookmarkTests : IDisposable
         app.Frames.Key(KeyboardKey.Escape).Frame(2);
 
         Assert.Equal("Bookmark 1", d.AppState.Bookmarks.Items[0].Name);
-        Assert.Null(d.Ui.BookmarksPanel.Renaming.Bookmark);
+        Assert.Null(d.Ui.BookmarksPanel.Renamer.Bookmark);
     }
 
     [Fact]
@@ -410,7 +410,7 @@ public sealed class BookmarkTests : IDisposable
         app.Frames.Key(Shortcuts.Copy).Frame();
 
         Assert.Equal(location, app.Frames.Clipboard.Text);
-        Assert.Null(d.Ui.BookmarksPanel.Renaming.Bookmark);
+        Assert.Null(d.Ui.BookmarksPanel.Renamer.Bookmark);
     }
 
     [Fact]
@@ -424,7 +424,7 @@ public sealed class BookmarkTests : IDisposable
         app.Frames.Key(KeyboardKey.Enter).Frame(2);
 
         Assert.Equal("Calls First", d.AppState.Bookmarks.Items[0].Name);
-        Assert.Null(d.Ui.BookmarksPanel.Renaming.Bookmark);
+        Assert.Null(d.Ui.BookmarksPanel.Renamer.Bookmark);
         Assert.True(app.Frames.Drew("Calls First"));
     }
 
@@ -445,7 +445,7 @@ public sealed class BookmarkTests : IDisposable
         var d = new AppStateDriver(_temp.Settings());
         d.Ui.BookmarksPanel.Columns.Restore([1f, 1f, 4f, 1f]);
         d.NextFrame();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
 
         var restored = new AppStateDriver(_temp.Settings()).Ui.BookmarksPanel.Columns.Weights;
 
@@ -454,12 +454,12 @@ public sealed class BookmarkTests : IDisposable
 
     private static void ImportBookmarks(AppStateDriver d, string path)
     {
-        d.Start((a, ct) => a.BookmarkImporting.ImportAsync(a.Bookmarks, a.Imports, path, ct));
+        d.Start((a, ct) => a.BookmarkImporter.ImportAsync(a.Bookmarks, a.Imports, path, ct));
     }
 
     private static void FinishBookmarkImport(AppStateDriver d, PendingImport import, BookmarkImportMode? mode)
     {
-        d.AppState.BookmarkImporting.FinishImport(d.AppState.Bookmarks, d.AppState.Imports, import, mode);
+        d.AppState.BookmarkImporter.FinishImport(d.AppState.Bookmarks, d.AppState.Imports, import, mode);
     }
 
     private static void ExportBookmarks(AppStateDriver d, string path)

@@ -19,7 +19,7 @@ public sealed class BookmarksPanel
     /// <summary>The cell of the selected bookmark current in the panel, and the text selected in it.</summary>
     public TableCellSelection Cells { get; }
 
-    public BookmarkRenaming Renaming { get; } = new();
+    public BookmarkRenamer Renamer { get; } = new();
 
     /// <summary>The columns of the panel's table: mark, name, location and module.</summary>
     public TableColumns Columns { get; } = new(
@@ -36,7 +36,7 @@ public sealed class BookmarksPanel
     public void StartRename(Bookmark bookmark)
     {
         RenameText = bookmark.Name;
-        Renaming.Start(bookmark);
+        Renamer.Start(bookmark);
     }
 
     /// <summary>Selects the bookmark a toggle added, or passes the selection of the one it removed to
@@ -53,7 +53,7 @@ public sealed class BookmarksPanel
     /// bookmark now in its row, and ends its rename.</summary>
     public void TakeRemoved(Bookmark bookmark, int row, IReadOnlyList<Bookmark> bookmarks)
     {
-        Renaming.Drop(bookmark);
+        Renamer.Drop(bookmark);
         if (Selection.Item != bookmark)
         {
             return;

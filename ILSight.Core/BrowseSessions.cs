@@ -564,7 +564,7 @@ public static class BrowseSessions
     /// system, which listing the module's folders reads; the failure, with why, of the folders or tables on the way
     /// whose children failed to build, never not found for the row they hold. The module is added to
     /// <paramref name="reading"/>, the unit's: not found when it was released (closed) before.</summary>
-    internal static async Task<Outcome<Lookup<MetadataTarget>>> FindMetadataRowAsync(BrowseSession session, ModuleReading reading,
+    internal static async Task<Outcome<Lookup<MetadataTarget>>> FindMetadataRowAsync(BrowseSession session, ModuleReadLease reading,
         LoadedModule module, EntityHandle handle, CancellationToken ct)
     {
         if (!MetadataTokens.TryGetTableIndex(handle.Kind, out var index) || !LoadedAssemblies.TryRead(reading, module))

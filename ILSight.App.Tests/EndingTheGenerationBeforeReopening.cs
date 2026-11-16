@@ -3,10 +3,10 @@ using ILSight.Core;
 
 namespace ILSight.App.Tests;
 
-/// <summary>The port the root hands the reload (<see cref="AdapterHooks.Reloading"/>): the real adapter, but the reopen
+/// <summary>The port the root hands the reload (<see cref="AdapterHooks.Reloader"/>): the real adapter, but the reopen
 /// first runs <see cref="End"/> on the thread that owns the list, as a change that ends the list's generation and stops
 /// no reload would, between the reload's clear and the reopen's check.</summary>
-internal sealed class EndingTheGenerationBeforeReopening(AssemblyReloading.IPorts real) : AssemblyReloading.IPorts
+internal sealed class EndingTheGenerationBeforeReopening(AssemblyReloader.IPorts real) : AssemblyReloader.IPorts
 {
     private int _reopens;
 
@@ -30,7 +30,7 @@ internal sealed class EndingTheGenerationBeforeReopening(AssemblyReloading.IPort
         real.ShowRefusal(refusal);
     }
 
-    public Task<PdbChecking> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct)
+    public Task<PdbCheckOutcome> CheckPdbAsync(LoadedModule assembly, string pdbPath, CancellationToken ct)
     {
         return real.CheckPdbAsync(assembly, pdbPath, ct);
     }

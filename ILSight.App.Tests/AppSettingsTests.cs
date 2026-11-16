@@ -140,7 +140,7 @@ public sealed class AppSettingsTests : IDisposable
         d.Ui.ExportSetup.Window.Bounds = new WindowBounds(-900, 200, 700, 800, false);
         d.Ui.ExportSetup.Window.Settle(held: false);
         d.NextFrame();
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
 
         var next = new AppStateDriver(AppRoot.ReadSettingsFile(FullFilePath.Of(SettingsFile)).Settings);
 
@@ -308,7 +308,7 @@ public sealed class AppSettingsTests : IDisposable
         }
 
         var appState = AppRoot.RestoreStartingState(loadResult, TestSession.Shared);
-        Assert.IsType<SettingsWriteResult.Written>(appState.SettingsSaving.Save(appState));
+        Assert.IsType<SettingsWriteResult.Written>(appState.SettingsSaver.Save(appState));
 
         Assert.IsType<SettingsKept.NotSaved>(Assert.IsType<SettingsProblem.NotRead>(loadResult.Problem).Kept);
         Assert.Contains(ThemeId<ThemeFile>.Of("mine"), appState.Themes.Ids);

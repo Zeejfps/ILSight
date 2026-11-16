@@ -4,7 +4,7 @@ using ILSight.Core.Diagrams;
 
 namespace ILSight.ExportArea;
 
-/// <summary>Reaches the app's error reports, the clock and the disk, for <see cref="ExportWriting"/>,
+/// <summary>Reaches the app's error reports, the clock and the disk, for <see cref="ExportWriter"/>,
 /// <see cref="SaveResourceHandler"/>, <see cref="ExtractPackageFileHandler"/> and
 /// <see cref="CheckExportFilesHandler"/>. An export's work runs on the thread pool and comes back on the UI thread, on a
 /// token its turn's cancellation and the workflow's both cancel: what the library (or the disk it writes to) failed with
@@ -12,7 +12,7 @@ namespace ILSight.ExportArea;
 /// <see cref="ExportOutcome{T}.Stopped"/>, an assembly the read answers closed as <see cref="ExportOutcome{T}.Closed"/>
 /// (a refusal), and the workflow's own cancellation, and anything else, are let through.</summary>
 public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, BrowseSession session)
-    : ExportWriting.IPorts, SaveResourceHandler.IPorts, ExtractPackageFileHandler.IPorts, CheckExportFilesHandler.IPorts
+    : ExportWriter.IPorts, SaveResourceHandler.IPorts, ExtractPackageFileHandler.IPorts, CheckExportFilesHandler.IPorts
 {
     public ClockReading Now => new ClockReading(Stopwatch.GetTimestamp());
 

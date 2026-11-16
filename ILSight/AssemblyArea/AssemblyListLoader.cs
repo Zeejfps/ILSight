@@ -58,7 +58,7 @@ public sealed class AssemblyListLoader
 
     // As a reload, so that the list is saved whole until they are all open (files that are gone or fail to load stay
     // listed as failed). Returns the loads that started in the tabs reopened from the list's saved documents.
-    private Task<TabLoads> OpenStartupAssembliesAsync(ListReopening reopening, CancellationToken ct)
+    private Task<TabLoads> OpenStartupAssembliesAsync(ListReopen reopening, CancellationToken ct)
     {
         return _appState.OpenAssembliesAsReloadHandler.HandleAsync(_appState.ListSession, reopening.Paths, reopening.Reload, reopening.Work, ct);
     }

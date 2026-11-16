@@ -618,8 +618,8 @@ internal static class TreePaneView
         var detectedLabel = DetectedFrameworkLabel(t, assembly);
         if (ui.MenuRadioItem(detectedLabel, !assembly.IsTargetFrameworkPicked, id: "detected"))
         {
-            Commands.StartReopening(commands, nameof(AssemblyReloading.SetTargetFrameworkAsync), assembly, assembly,
-                static (a, m, ct) => a.AssemblyReloading.SetTargetFrameworkAsync(a.ListSession, a.Reopens, a.Decompiler, m, null, ct));
+            Commands.StartReopening(commands, nameof(AssemblyReloader.SetTargetFrameworkAsync), assembly, assembly,
+                static (a, m, ct) => a.AssemblyReloader.SetTargetFrameworkAsync(a.ListSession, a.Reopens, a.Decompiler, m, null, ct));
         }
 
         ui.MenuSeparator();
@@ -629,8 +629,8 @@ internal static class TreePaneView
             var framework = frameworks[i];
             if (ui.MenuRadioItem(framework.Moniker, IsPicked(assembly, framework), id: framework.Text))
             {
-                Commands.StartReopening(commands, nameof(AssemblyReloading.SetTargetFrameworkAsync), assembly, (assembly, framework),
-                    static (a, s, ct) => a.AssemblyReloading.SetTargetFrameworkAsync(a.ListSession, a.Reopens, a.Decompiler, s.assembly, s.framework, ct));
+                Commands.StartReopening(commands, nameof(AssemblyReloader.SetTargetFrameworkAsync), assembly, (assembly, framework),
+                    static (a, s, ct) => a.AssemblyReloader.SetTargetFrameworkAsync(a.ListSession, a.Reopens, a.Decompiler, s.assembly, s.framework, ct));
             }
         }
     }
@@ -660,8 +660,8 @@ internal static class TreePaneView
         var t = appearance.Strings;
         FileFilter[] filters = [new FileFilter(t.FileFilterPdb, ["*.pdb"]), new FileFilter(t.FileFilterAll, ["*.*"])];
         var title = t.TreeSelectPdbTitle(assembly.Name);
-        ui.PickFile(title, FindFolderOf(assembly), filters, path => Commands.StartReopening(commands, nameof(AssemblyReloading.UsePdbAsync), assembly, (assembly, path),
-            static (a, s, ct) => a.AssemblyReloading.UsePdbAsync(a.ListSession, a.Reopens, a.Decompiler, s.assembly, s.path, ct)));
+        ui.PickFile(title, FindFolderOf(assembly), filters, path => Commands.StartReopening(commands, nameof(AssemblyReloader.UsePdbAsync), assembly, (assembly, path),
+            static (a, s, ct) => a.AssemblyReloader.UsePdbAsync(a.ListSession, a.Reopens, a.Decompiler, s.assembly, s.path, ct)));
     }
 
     private static string? FindFolderOf(LoadedModule assembly)

@@ -191,7 +191,7 @@ internal sealed class AppStateDriver : IFrameHost
 
     /// <summary>What the last autosave, a frame's or a <see cref="Pump"/>'s, came to. A frame asks to come back when a
     /// write waits or failed; the driver's time moves only when the test moves it, so the test reads it here.</summary>
-    public Saving Autosaved { get; private set; } = new Saving.Unchanged();
+    public SettingsSave Autosaved { get; private set; } = new SettingsSave.Unchanged();
 
     public static string FixturePath => typeof(Greeter).Assembly.Location;
 
@@ -291,7 +291,7 @@ internal sealed class AppStateDriver : IFrameHost
             return;
         }
 
-        Autosaved = AppState.SettingsSaving.SaveIfChanged(AppState, Now);
+        Autosaved = AppState.SettingsSaver.SaveIfChanged(AppState, Now);
     }
 
     /// <summary>Runs a frame of the app's loop as the window does, with no draw between: the loop's calls before a draw
@@ -386,7 +386,7 @@ internal sealed class AppStateDriver : IFrameHost
     /// <summary>Opens the fixture assembly and waits until its root shows.</summary>
     public LoadedModule OpenFixtures()
     {
-        Start((a, ct) => a.AssemblyOpening.OpenAssembliesAsync(a, [AssemblyPath.Of(FixturePath)], a.ListSession.Assemblies.Work, ct));
+        Start((a, ct) => a.AssemblyOpener.OpenAssembliesAsync(a, [AssemblyPath.Of(FixturePath)], a.ListSession.Assemblies.Work, ct));
         RunUntil(() => AppState.ListSession.Navigation.ActiveTab?.Node?.Icon == NodeIcon.Assembly);
         Settle();
         return Assert.IsType<LoadedModule>(AppState.ListSession.Navigation.ActiveTab?.Node?.Assembly);
@@ -504,7 +504,7 @@ internal sealed class AppStateDriver : IFrameHost
         Commands.StartShowing(appState, nameof(Start), ct => show(appState, ct));
     }
 
-    /// <summary>Starts opening <paramref name="paths"/> now (<see cref="AssemblyArea.AssemblyOpening.OpenAssembliesAsync(AppState, IEnumerable{AssemblyPath}, GenerationWork, CancellationToken)"/>),
+    /// <summary>Starts opening <paramref name="paths"/> now (<see cref="AssemblyArea.AssemblyOpener.OpenAssembliesAsync(AppState, IEnumerable{AssemblyPath}, GenerationWork, CancellationToken)"/>),
     /// then the load of the last one shown, as the app's commands start it: cancelled with the opens under way, by
     /// newer opens and a clear of the list, and no longer opening when its workflow fails or ends quietly.</summary>
     public void Open(IReadOnlyList<AssemblyPath> paths)
@@ -512,7 +512,7 @@ internal sealed class AppStateDriver : IFrameHost
         using var turn = _posted.Install();
         var appState = AppState;
         var work = appState.ListSession.Assemblies.Work;
-        Commands.StartShowingSettled(appState, nameof(Open), ct => appState.AssemblyOpening.OpenAssembliesAsync(appState, paths, work, ct),
+        Commands.StartShowingSettled(appState, nameof(Open), ct => appState.AssemblyOpener.OpenAssembliesAsync(appState, paths, work, ct),
             () => appState.ListSession.Navigation.FailOpening(), work.Ending);
     }
 

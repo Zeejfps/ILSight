@@ -40,7 +40,7 @@ internal sealed class AnalyzerScope
     /// <summary>The reads of the type systems of every module a scope over <paramref name="list"/> can reach, each
     /// awaited: the listed modules', and <paramref name="own"/>'s, the module the analyzed symbol is in; each added to
     /// <paramref name="reading"/>, the unit's, one released (closed) before passed over.</summary>
-    public static Task<ModuleTypeSystems> ReadReachableAsync(ModuleReading reading, AssemblyList list, LoadedModule own, CancellationToken ct)
+    public static Task<ModuleTypeSystems> ReadReachableAsync(ModuleReadLease reading, AssemblyList list, LoadedModule own, CancellationToken ct)
     {
         return LoadedAssemblies.ReadTypeSystemsAsync(reading, list.Assemblies.Append(own).Distinct(), ct);
     }

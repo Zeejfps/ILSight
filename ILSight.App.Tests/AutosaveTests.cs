@@ -210,7 +210,7 @@ public sealed class AutosaveTests : IDisposable
         var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
 
         d.Analyze(reference);
-        Assert.IsType<Saving.Unchanged>(d.AppState.SettingsSaving.SaveIfChanged(d.AppState, d.Now));
+        Assert.IsType<SettingsSave.Unchanged>(d.AppState.SettingsSaver.SaveIfChanged(d.AppState, d.Now));
         var savedWhileFinding = _temp.Settings().AssemblyLists.Single().Analyzed?.Count ?? 0;
         d.Settle();
         d.Pump();
@@ -293,27 +293,27 @@ public sealed class AutosaveTests : IDisposable
     public void Saving_tells_whether_it_wrote_failed_or_waits_to_try_again()
     {
         var d = new AppStateDriver(_temp.Settings());
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
-        var unchanged = d.AppState.SettingsSaving.SaveIfChanged(d.AppState, d.Now);
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
+        var unchanged = d.AppState.SettingsSaver.SaveIfChanged(d.AppState, d.Now);
         var blocker = BlockSettingsWrites();
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
 
-        var failed = d.AppState.SettingsSaving.SaveIfChanged(d.AppState, d.Now);
-        var waiting = d.AppState.SettingsSaving.SaveIfChanged(d.AppState, d.Now + TimeSpan.FromSeconds(0.5));
+        var failed = d.AppState.SettingsSaver.SaveIfChanged(d.AppState, d.Now);
+        var waiting = d.AppState.SettingsSaver.SaveIfChanged(d.AppState, d.Now + TimeSpan.FromSeconds(0.5));
         Directory.Delete(blocker);
-        var saved = d.AppState.SettingsSaving.SaveIfChanged(d.AppState, d.Now + SaveRetry.Delay);
+        var saved = d.AppState.SettingsSaver.SaveIfChanged(d.AppState, d.Now + SaveRetry.Delay);
 
-        Assert.IsType<Saving.Unchanged>(unchanged);
-        Assert.Equal(SaveRetry.Delay, Assert.IsType<Saving.Failed>(failed).RetryIn);
-        Assert.Equal(SaveRetry.Delay - TimeSpan.FromSeconds(0.5), Assert.IsType<Saving.Waiting>(waiting).RetryIn);
-        Assert.IsType<Saving.Saved>(saved);
+        Assert.IsType<SettingsSave.Unchanged>(unchanged);
+        Assert.Equal(SaveRetry.Delay, Assert.IsType<SettingsSave.Failed>(failed).RetryIn);
+        Assert.Equal(SaveRetry.Delay - TimeSpan.FromSeconds(0.5), Assert.IsType<SettingsSave.Waiting>(waiting).RetryIn);
+        Assert.IsType<SettingsSave.Saved>(saved);
     }
 
     [Fact]
     public void A_failed_write_is_retried_after_a_wait_and_reported_once_until_one_succeeds()
     {
         var d = new AppStateDriver(_temp.Settings());
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
         var blocker = BlockSettingsWrites();
 
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
@@ -330,10 +330,10 @@ public sealed class AutosaveTests : IDisposable
         d.Now += SaveRetry.Delay;
         d.Pump();
 
-        Assert.IsType<Saving.Failed>(first);
-        Assert.IsType<Saving.Failed>(retried);
-        Assert.IsType<Saving.Waiting>(waiting);
-        Assert.IsType<Saving.Saved>(d.Autosaved);
+        Assert.IsType<SettingsSave.Failed>(first);
+        Assert.IsType<SettingsSave.Failed>(retried);
+        Assert.IsType<SettingsSave.Waiting>(waiting);
+        Assert.IsType<SettingsSave.Saved>(d.Autosaved);
         Assert.Equal(DecompilationLanguage.CSharp, languageWhileWaiting);
         Assert.Equal(DecompilationLanguage.IL, _temp.Settings().Language);
         Assert.Equal("Cannot save the settings", Assert.Single(d.AppState.Errors.Entries).Words().Title);
@@ -371,7 +371,7 @@ public sealed class AutosaveTests : IDisposable
         d.Pump();
         Directory.Delete(blocker);
 
-        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaving.Save(d.AppState));
+        Assert.IsType<SettingsWriteResult.Written>(d.AppState.SettingsSaver.Save(d.AppState));
 
         Assert.Equal(DecompilationLanguage.IL, _temp.Settings().Language);
     }

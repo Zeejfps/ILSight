@@ -189,7 +189,7 @@ public static class TypeCards
                 new Outcome<ScopeSearch<TypeCard>>.Ok(new ScopeSearch<TypeCard> { Found = [], Unreadable = [unreadable.Module] })));
     }
 
-    private static async Task<Outcome<ScopeSearch<TypeCard>>> ReadDerivedAsync(AssemblyList list, ModuleReading reading, ITypeDefinition definition,
+    private static async Task<Outcome<ScopeSearch<TypeCard>>> ReadDerivedAsync(AssemblyList list, ModuleReadLease reading, ITypeDefinition definition,
         CancellationToken cancellationToken)
     {
         var module = AssemblyListing.GetLoadedFrom(list, DecompilerFacts.GetMetadataFile(definition));

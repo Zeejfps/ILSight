@@ -54,7 +54,7 @@ internal static class AssemblyListDeleteDialogView
         }
     }
 
-    private static ListOpening? Delete(AssemblyListsDialog dialog, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
+    private static ListSwitch? Delete(AssemblyListsDialog dialog, SavedAssemblyLists lists, OpenListSession session, ViewSettings view, string name)
     {
         var opening = AssemblyLists.DeleteAssemblyList(lists, session, view, name);
         dialog.PickList(lists, lists.Active);

@@ -34,7 +34,7 @@ internal sealed class ModuleLibrary
     {
         File = file;
         Resolver = resolver;
-        TypeSystem = new TypeSystemReading(this);
+        TypeSystem = new TypeSystemReader(this);
         DebugSymbols = new Lazy<DebugSymbols?>(readDebugSymbols);
         ReferenceUsage = new Lazy<ReferenceUsage>(readReferenceUsage);
     }
@@ -43,7 +43,7 @@ internal sealed class ModuleLibrary
 
     public AssemblyResolver Resolver { get; }
 
-    public TypeSystemReading TypeSystem { get; }
+    public TypeSystemReader TypeSystem { get; }
 
     /// <summary>The assembly's portable PDB; null when it has none.</summary>
     public Lazy<DebugSymbols?> DebugSymbols { get; }
