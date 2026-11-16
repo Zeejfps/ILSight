@@ -420,9 +420,9 @@ public sealed class ResourceTests
     {
         byte[] container = [8, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0];
 
-        var error = Assert.Throws<InvalidDataException>(() => AvaloniaResources.ReadEntries(container));
+        var error = Assert.Throws<AvaloniaContainerException>(() => AvaloniaResources.ReadEntries(container));
 
-        Assert.Contains("unknown version 9", error.Message);
+        Assert.Equal(new AvaloniaContainerFault.IndexVersionUnknown(9), error.Fault);
     }
 
     [Fact]

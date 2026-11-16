@@ -1,6 +1,7 @@
 using System.Reflection.Metadata.Ecma335;
 using ILSight.Core;
 using ILSight.Core.Metadata;
+using ILSight.Core.Resources;
 
 namespace ILSight.Tests;
 
@@ -52,7 +53,7 @@ public sealed class BrowseSessionTests : IDisposable
 
         var failed = Assert.IsType<ChildrenState.Failed>((await BrowseSessions.GetChildrenAsync(session, container)));
 
-        Assert.IsType<InvalidDataException>(failed.Error);
+        Assert.IsType<AvaloniaContainerException>(failed.Error);
         Assert.Same(failed, (await BrowseSessions.GetChildrenAsync(session, container)));
         Assert.True(session.HasChildren(container));
         Assert.Empty((await BrowseSessions.ListChildrenAsync(session, container)));

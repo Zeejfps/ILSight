@@ -11,8 +11,6 @@ namespace ILSight.Core.Resources;
 /// </summary>
 internal static class AvaloniaResources
 {
-    public const string ContainerName = "!AvaloniaResources";
-
     private const int XmlIndexVersion = 1;
     private const int BinaryIndexVersion = 2;
 
@@ -33,7 +31,7 @@ internal static class AvaloniaResources
 
     public static bool IsContainerName(string name)
     {
-        return name == ContainerName;
+        return name == AvaloniaContainerFault.ContainerName;
     }
 
     /// <summary>Each asset's path and bytes, in index order. Throws when
@@ -62,7 +60,7 @@ internal static class AvaloniaResources
             return ReadXmlIndex(container, indexLength);
         }
 
-        throw new InvalidDataException($"{ContainerName} has an index of unknown version {version}.");
+        throw new AvaloniaContainerException(new AvaloniaContainerFault.IndexVersionUnknown(version));
     }
 
     private static List<IndexEntry> ReadBinaryIndex(BinaryReader reader)
@@ -102,7 +100,7 @@ internal static class AvaloniaResources
 
     private static XElement Required(XElement entry, XName name)
     {
-        return entry.Element(name) ?? throw new InvalidDataException($"{ContainerName} has an index entry without {name.LocalName}.");
+        return entry.Element(name) ?? throw new AvaloniaContainerException(new AvaloniaContainerFault.IndexEntryIncomplete(name.LocalName));
     }
 
     private static byte[] Slice(byte[] container, int dataStart, IndexEntry entry)
@@ -110,7 +108,7 @@ internal static class AvaloniaResources
         var start = (long)dataStart + entry.Offset;
         if (!IsWithin(container, start, entry))
         {
-            throw new InvalidDataException($"{entry.Path} lies outside {ContainerName}.");
+            throw new AvaloniaContainerException(new AvaloniaContainerFault.EntryOutside(entry.Path));
         }
 
         return container.AsSpan((int)start, entry.Size).ToArray();

@@ -1,5 +1,7 @@
 using System.Runtime.CompilerServices;
 using ZGF.Gui.Immediate.Widgets;
+using ZGF.Gui.Immediate;
+using ILSight.BuiltInArea;
 using ILSight.Core;
 using ILSight.CommandArea;
 
@@ -64,10 +66,15 @@ public sealed class BrowseTreeTests
         var children = tree.GetChildren(container);
         var failed = Assert.IsType<TreeRow>(children.PlaceholderRow);
         Assert.Empty(children.Nodes);
-        Assert.StartsWith("Error: ", failed.Label);
-        Assert.Contains("unknown version 9", failed.Label);
+        Assert.Equal("Error: !AvaloniaResources has an index of unknown version 9.", failed.Label);
         Assert.False(failed.Spinning);
         Assert.True(tree.HasChildren(container));
+
+        var light = Theming.CreateCatalog(BuiltInThemes.Files).GetTheme(Theming.LightId);
+        tree.SetStyle(UiTheme.Light, light.Icons, BuiltInGlyphs.Icons, Strings.For(Locale.Ja));
+
+        var japanese = Assert.IsType<TreeRow>(tree.GetChildren(container).PlaceholderRow);
+        Assert.Equal(Strings.For(Locale.Ja).TreeChildrenFailed("!AvaloniaResources のインデックスのバージョン 9 は不明です。"), japanese.Label);
     }
 
     [Fact]
