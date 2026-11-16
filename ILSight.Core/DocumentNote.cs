@@ -48,13 +48,15 @@ public abstract record DocumentNote
 
         public required string File { get; init; }
 
-        public required string Why { get; init; }
+        /// <summary>Why the file couldn't be read, said as <see cref="IDocumentNotes.DescribeUnopened"/> says it.</summary>
+        public required AssemblyLoadException Why { get; init; }
 
         public required string Module { get; init; }
 
         private protected override string Say(IDocumentNotes notes)
         {
-            return notes.ReferenceUnreadable(Reference, File, Why, Module);
+            var why = notes.DescribeUnopened(Why);
+            return notes.ReferenceUnreadable(Reference, File, why, Module);
         }
     }
 
@@ -86,17 +88,19 @@ public abstract record DocumentNote
         }
     }
 
-    /// <summary>That <see cref="File"/> could not be read as an assembly: <see cref="Why"/>, the message of what the
-    /// reading threw, on one line; or, when null, as it is no assembly or package that can be read.</summary>
+    /// <summary>That <see cref="File"/> could not be read as an assembly: why, where the system, the library or the
+    /// package said (<see cref="Error"/>'s inner exception), as <see cref="IDocumentNotes.DescribeUnopened"/> says it;
+    /// else as it is no assembly or package that can be read.</summary>
     public sealed record AssemblyUnreadable : DocumentNote
     {
         public required string File { get; init; }
 
-        public required string? Why { get; init; }
+        public required AssemblyLoadException Error { get; init; }
 
         private protected override string Say(IDocumentNotes notes)
         {
-            return notes.AssemblyUnreadable(File, Why);
+            var why = Error.InnerException is null ? null : notes.DescribeUnopened(Error);
+            return notes.AssemblyUnreadable(File, why);
         }
     }
 

@@ -39,6 +39,11 @@ public sealed class DocumentNoteTexts(Strings t) : IDocumentNotes
         return why is null ? t.ErrorFileDamaged(file) : t.CauseModuleUnreadableSentence(name: file, why: why);
     }
 
+    public string DescribeUnopened(AssemblyLoadException error)
+    {
+        return FailureTexts.DescribeUnopened(t, error);
+    }
+
     public string ReferenceAssembly()
     {
         return t.DocumentNoteReferenceAssembly;

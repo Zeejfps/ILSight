@@ -23,9 +23,14 @@ public interface IDocumentNotes
     /// <summary>What made a decompilation fail, by <paramref name="message"/>, the exception's message as written.</summary>
     string FailureCause(string message);
 
-    /// <summary>That <paramref name="file"/> could not be read as an assembly, by <paramref name="why"/>, the message
-    /// of what the reading threw; or, when null, as it is no assembly or package that can be read.</summary>
+    /// <summary>That <paramref name="file"/> could not be read as an assembly, by <paramref name="why"/>
+    /// (<see cref="DescribeUnopened"/>); or, when null, as it is no assembly or package that can be read.</summary>
     string AssemblyUnreadable(string file, string? why);
+
+    /// <summary>Why the file of <paramref name="error"/> couldn't be opened, as a sentence the notes above say as their
+    /// why: what the system or the library said, a cause of ILSight's own in the app's words, else by its message as
+    /// written; where the loader found the cause itself, that cause in the app's words.</summary>
+    string DescribeUnopened(AssemblyLoadException error);
 
     /// <summary>That the assembly is a reference assembly, holding metadata and no code.</summary>
     string ReferenceAssembly();

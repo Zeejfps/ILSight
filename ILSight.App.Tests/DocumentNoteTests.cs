@@ -96,12 +96,13 @@ public sealed class DocumentNoteTests
         var notes = DocumentNoteTexts.For(locale);
         DocumentNote[] all =
         [
-            new DocumentNote.ReferenceUnreadable { Reference = "R", File = "F", Why = DocumentNote.OneLine("first" + Environment.NewLine + "second"), Module = "M" },
+            new DocumentNote.ReferenceUnreadable { Reference = "R", File = "F", Why = CannotOpen("first" + Environment.NewLine + "second"), Module = "M" },
+            new DocumentNote.ReferenceUnreadable { Reference = "R", File = "F", Why = NotAssembly(), Module = "M" },
             new DocumentNote.ReferenceNotFound("R"),
             new DocumentNote.DecompileFailed("N"),
             new DocumentNote.FailureCause(DocumentNote.OneLine("first" + Environment.NewLine + "second")),
-            new DocumentNote.AssemblyUnreadable { File = "F", Why = "W" },
-            new DocumentNote.AssemblyUnreadable { File = "F", Why = null },
+            new DocumentNote.AssemblyUnreadable { File = "F", Error = CannotOpen("W") },
+            new DocumentNote.AssemblyUnreadable { File = "F", Error = NotAssembly() },
             new DocumentNote.ReferenceAssembly(),
             new DocumentNote.ModuleKind(true),
             new DocumentNote.ModuleKind(false),
@@ -217,6 +218,8 @@ public sealed class DocumentNoteTests
         Assert.Equal(app.FailureCause("W"), tests.FailureCause("W"));
         Assert.Equal(app.AssemblyUnreadable("F", null), tests.AssemblyUnreadable("F", null));
         Assert.Equal(app.AssemblyUnreadable("F", "W"), tests.AssemblyUnreadable("F", "W"));
+        Assert.Equal(app.DescribeUnopened(CannotOpen("W")), tests.DescribeUnopened(CannotOpen("W")));
+        Assert.Equal(app.DescribeUnopened(NotAssembly()), tests.DescribeUnopened(NotAssembly()));
         Assert.Equal(app.ReferenceAssembly(), tests.ReferenceAssembly());
         Assert.Equal(app.ModuleWithMetadata(), tests.ModuleWithMetadata());
         Assert.Equal(app.ModuleWithoutMetadata(), tests.ModuleWithoutMetadata());
@@ -238,8 +241,42 @@ public sealed class DocumentNoteTests
 
         Assert.Equal("原因: Bad IL range.", new DocumentNote.FailureCause("Bad IL range.").Words(notes));
         Assert.Equal(Strings.For(Locale.Ja).CauseModuleUnreadableSentence(name: "Shop.dll", why: "Access denied."),
-            new DocumentNote.AssemblyUnreadable { File = "Shop.dll", Why = "Access denied." }.Words(notes));
-        Assert.Equal(Strings.For(Locale.Ja).ErrorFileDamaged("Shop.dll"), new DocumentNote.AssemblyUnreadable { File = "Shop.dll", Why = null }.Words(notes));
+            new DocumentNote.AssemblyUnreadable { File = "Shop.dll", Error = CannotOpen("Access denied.") }.Words(notes));
+        Assert.Equal(Strings.For(Locale.Ja).ErrorFileDamaged("Shop.dll"), new DocumentNote.AssemblyUnreadable { File = "Shop.dll", Error = NotAssembly() }.Words(notes));
+    }
+
+    [Fact]
+    public void A_file_that_cannot_be_opened_is_said_in_a_note_from_its_cause_in_the_apps_language()
+    {
+        var notes = DocumentNoteTexts.For(Locale.Ja);
+        var japanese = Strings.For(Locale.Ja);
+        var bundle = new BundleEntryException(new BundleEntryFault.Outside { Entry = "Shop.dll" }, "The bundle's entry 'Shop.dll' cannot be read: it starts at -1.");
+        var inBundle = new AssemblyLoadException(ShopPath, new AssemblyLoadFault.CannotOpen(), "Cannot open.", bundle);
+        var package = AssemblyPath.Of(Path.Combine(Path.GetTempPath(), "Shop", "Shop.exe"));
+        var notInPackage = new AssemblyLoadException(ShopPath, new AssemblyLoadFault.NotInPackage { Package = package, FullName = "Shop.dll" }, "Holds no Shop.dll.",
+            new FileNotFoundException("Holds no Shop.dll."));
+        var bundleWhy = japanese.CauseBundleEntryOutsideSentence(entry: "Shop.dll");
+
+        Assert.Equal(japanese.CauseModuleUnreadableSentence(name: "Shop.dll", why: bundleWhy),
+            new DocumentNote.AssemblyUnreadable { File = "Shop.dll", Error = inBundle }.Words(notes));
+        Assert.Equal(japanese.CauseModuleUnreadableSentence(name: "Shop.dll", why: japanese.CauseAssemblyNotInPackageSentence(package: package.Text, name: "Shop.dll")),
+            new DocumentNote.AssemblyUnreadable { File = "Shop.dll", Error = notInPackage }.Words(notes));
+        Assert.Equal(japanese.CauseModuleUnreadableNote(reference: "Shop", file: "Shop.dll", why: japanese.CauseAssemblyNotDotnetSentence(file: ShopPath.Text), module: "App.dll"),
+            new DocumentNote.ReferenceUnreadable { Reference = "Shop", File = "Shop.dll", Why = NotAssembly(), Module = "App.dll" }.Words(notes));
+    }
+
+    private static readonly AssemblyPath ShopPath = AssemblyPath.Of(Path.Combine(Path.GetTempPath(), "Shop", "Shop.dll"));
+
+    // A file the system or the library refused, saying why.
+    private static AssemblyLoadException CannotOpen(string why)
+    {
+        return new AssemblyLoadException(ShopPath, new AssemblyLoadFault.CannotOpen(), $"Cannot open: {why}", new IOException(why));
+    }
+
+    // A file that is an image with no .NET metadata.
+    private static AssemblyLoadException NotAssembly()
+    {
+        return new AssemblyLoadException(ShopPath, new AssemblyLoadFault.NotAssembly(), "Not a .NET assembly.");
     }
 
     [Fact]

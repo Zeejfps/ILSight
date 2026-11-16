@@ -34,6 +34,22 @@ internal sealed class EnglishNotes : IDocumentNotes
         return why is null ? $"{file} isn't a .NET assembly or package that can be read." : $"{file} couldn't be read ({why}).";
     }
 
+    public string DescribeUnopened(AssemblyLoadException error)
+    {
+        return error.Fault.Match(
+            _ => DescribeInner(error),
+            _ => $"{error.FilePath.Text} isn't a .NET assembly.",
+            p => $"{p.Container.Text} isn't a package.",
+            i => $"{i.Package.Text} holds no file {i.FullName}.");
+    }
+
+    // What the system or the library said, as written: the core's tests make no cause of ILSight's own an inner one.
+    private static string DescribeInner(AssemblyLoadException error)
+    {
+        var why = error.InnerException;
+        return why is null ? error.Message : why.Message;
+    }
+
     public string ReferenceAssembly()
     {
         return "This assembly is marked as 'reference assembly', which means that it only contains metadata and no executable code.";

@@ -40,6 +40,11 @@ internal sealed class BrokenReferenceNotes : IDocumentNotes
         return English.AssemblyUnreadable(file, why);
     }
 
+    public string DescribeUnopened(AssemblyLoadException error)
+    {
+        return English.DescribeUnopened(error);
+    }
+
     public string ReferenceAssembly()
     {
         return English.ReferenceAssembly();

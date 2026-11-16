@@ -23,6 +23,19 @@ public static class FailureTexts
         };
     }
 
+    /// <summary>Why the file of <paramref name="error"/> couldn't be opened, where a sentence names the file already:
+    /// what the system or the library said, as <see cref="DescribeCause"/> says it; else the loader's own cause.</summary>
+    public static string DescribeUnopened(Strings t, AssemblyLoadException error)
+    {
+        var why = error.InnerException;
+        if (why is null || error.Fault is not AssemblyLoadFault.CannotOpen)
+        {
+            return DescribeAssemblyLoad(t, error);
+        }
+
+        return DescribeCause(t, why);
+    }
+
     // The file's cause in the language's words; where the system or the library said why it couldn't be opened, that
     // cause too, said as DescribeCause says it, joined by the language's template.
     private static string DescribeAssemblyLoad(Strings t, AssemblyLoadException load)

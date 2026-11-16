@@ -35,6 +35,12 @@ internal sealed class VisibleNoteValues(IDocumentNotes words) : IDocumentNotes
         return words.AssemblyUnreadable(OneLineText.Name(file), why is null ? null : OneLineText.Message(why));
     }
 
+    // A why the notes above are given, and make one line there.
+    public string DescribeUnopened(AssemblyLoadException error)
+    {
+        return words.DescribeUnopened(error);
+    }
+
     public string ReferenceAssembly()
     {
         return words.ReferenceAssembly();

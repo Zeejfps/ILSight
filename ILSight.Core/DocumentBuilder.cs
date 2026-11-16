@@ -88,8 +88,7 @@ internal sealed class DocumentBuilder : ITextOutput
         UnreadReferences = unread;
         foreach (var reference in unread)
         {
-            var why = DocumentNote.OneLine(reference.Error.InnerException?.Message ?? reference.Error.Message);
-            WriteNote(new DocumentNote.ReferenceUnreadable { Reference = reference.Name, File = $"{reference.Error.FilePath}", Why = why, Module = reference.Module }, notes);
+            WriteNote(new DocumentNote.ReferenceUnreadable { Reference = reference.Name, File = $"{reference.Error.FilePath}", Why = reference.Error, Module = reference.Module }, notes);
             WriteLine();
         }
 

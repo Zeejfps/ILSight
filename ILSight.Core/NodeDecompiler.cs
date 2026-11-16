@@ -191,14 +191,13 @@ internal static class NodeDecompiler
         return error.BuildFailure(request.Title, thrown);
     }
 
-    // A file that could not be read as an assembly, said by the message of what its reading threw, as an app note; the
-    // exception stays on the document.
+    // A file that could not be read as an assembly, said from its cause, as an app note; the exception stays on the
+    // document.
     private static DecompiledDocument DescribeLoadError(DocumentRequest.Failure failure, DecompilationLanguage language, IDocumentNotes notes)
     {
         var error = failure.Assembly.Error;
         var builder = new DocumentBuilder { Language = language };
-        var why = error.InnerException is null ? null : DocumentNote.OneLine(error.InnerException.Message);
-        WriteNote(builder, new DocumentNote.AssemblyUnreadable { File = error.FilePath.FileName, Why = why }, notes);
+        WriteNote(builder, new DocumentNote.AssemblyUnreadable { File = error.FilePath.FileName, Error = error }, notes);
         return builder.BuildFailure(failure.Title, error);
     }
 
