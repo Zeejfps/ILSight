@@ -237,7 +237,7 @@ public sealed class ProcessPickerTests
             Modules = static (process, _) => AnswerAsync(new ModuleScan.Unreachable
             {
                 Process = process,
-                Detail = "gone",
+                Cause = new UnreachableCause.Failure("gone"),
                 EntryAssembly = TestPaths.FakePath("Jobs.Worker.dll"),
             }),
         };
@@ -245,7 +245,7 @@ public sealed class ProcessPickerTests
 
         await SelectAndListAsync(picker, Worker);
 
-        Assert.Equal("gone", Assert.IsType<ModuleScan.Unreachable>(picker.Browser.Modules).Detail);
+        Assert.Equal(new UnreachableCause.Failure("gone"), Assert.IsType<ModuleScan.Unreachable>(picker.Browser.Modules).Cause);
         Assert.True(picker.Browser.CanOpen);
         Assert.Equal([TestPaths.FakePath("Jobs.Worker.dll")], picker.Browser.ListToOpen());
     }
@@ -284,7 +284,7 @@ public sealed class ProcessPickerTests
 
         await SelectAndListAsync(picker, Web);
 
-        Assert.Equal("broken", Assert.IsType<ModuleScan.Unreachable>(picker.Browser.Modules).Detail);
+        Assert.Equal(new UnreachableCause.Failure("broken"), Assert.IsType<ModuleScan.Unreachable>(picker.Browser.Modules).Cause);
         Assert.IsType<AppProblem.Unexpected>(Assert.Single(ports.Reported));
     }
 

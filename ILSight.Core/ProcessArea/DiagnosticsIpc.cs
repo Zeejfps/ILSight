@@ -105,7 +105,7 @@ internal static class DiagnosticsIpc
 
         if (length > MaxStringLength)
         {
-            throw new IOException($"A diagnostics IPC string claims {length} chars.");
+            throw new DiagnosticsIpcException(new UnreachableCause.AnswerMalformed(), $"A diagnostics IPC string claims {length} chars.");
         }
 
         var chars = new char[length];
@@ -132,13 +132,13 @@ internal static class DiagnosticsIpc
         var magic = header.AsSpan(0, Magic.Length);
         if (!magic.SequenceEqual(Magic))
         {
-            throw new IOException("A diagnostics IPC response does not start with the DOTNET_IPC_V1 magic.");
+            throw new DiagnosticsIpcException(new UnreachableCause.AnswerMalformed(), "A diagnostics IPC response does not start with the DOTNET_IPC_V1 magic.");
         }
 
         var size = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(14));
         if (size < HeaderSize)
         {
-            throw new IOException($"A diagnostics IPC response claims an impossible size of {size} bytes.");
+            throw new DiagnosticsIpcException(new UnreachableCause.AnswerMalformed(), $"A diagnostics IPC response claims an impossible size of {size} bytes.");
         }
 
         var payload = new byte[size - HeaderSize];
@@ -168,7 +168,7 @@ internal static class DiagnosticsIpc
         info = await QueryProcessInfoAsync(endpoint, ProcessInfoCommandId, budget, cancellationToken).ConfigureAwait(false);
         if (info is null)
         {
-            throw new IOException("The runtime refused to say what process it is.");
+            throw new DiagnosticsIpcException(new UnreachableCause.Refused(), "The runtime refused to say what process it is.");
         }
 
         return info;
@@ -231,7 +231,7 @@ internal static class DiagnosticsIpc
         trace = await CollectAsync(endpoint, CollectTracing2CommandId, budget, cancellationToken).ConfigureAwait(false);
         if (trace is null)
         {
-            throw new IOException("The runtime refused to start a session.");
+            throw new DiagnosticsIpcException(new UnreachableCause.Refused(), "The runtime refused to start a session.");
         }
 
         return trace;
@@ -253,7 +253,7 @@ internal static class DiagnosticsIpc
 
                 if (ok.Payload.Length < sizeof(ulong))
                 {
-                    throw new IOException("The runtime did not give the session's id.");
+                    throw new DiagnosticsIpcException(new UnreachableCause.AnswerMalformed(), "The runtime did not give the session's id.");
                 }
 
                 var sessionId = BinaryPrimitives.ReadUInt64LittleEndian(ok.Payload);
@@ -280,7 +280,7 @@ internal static class DiagnosticsIpc
             var response = await ReadResponseAsync(stream, cancellationToken).ConfigureAwait(false);
             if (response is IpcResponse.Rejected rejected)
             {
-                throw new IOException($"The runtime refused to stop the session (error 0x{rejected.HResult:X8}).");
+                throw new DiagnosticsIpcException(new UnreachableCause.Refused(), $"The runtime refused to stop the session (error 0x{rejected.HResult:X8}).");
             }
         }
     }

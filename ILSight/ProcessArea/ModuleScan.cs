@@ -32,7 +32,8 @@ public abstract record ModuleScan
     {
         public required RunningProcess Process { get; init; }
 
-        public required string Detail { get; init; }
+        /// <summary>Why, the cause the picker words in the app's language.</summary>
+        public required UnreachableCause Cause { get; init; }
 
         public required AssemblyPath? EntryAssembly { get; init; }
     }

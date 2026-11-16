@@ -16,7 +16,7 @@ public abstract record ModuleListing
     public sealed record Listed(IReadOnlyList<RunningModule> Modules) : ModuleListing;
 
     /// <summary>The process could not be asked: it is gone, refused, or didn't answer in time.</summary>
-    public sealed record Unreachable(string Detail) : ModuleListing;
+    public sealed record Unreachable(UnreachableCause Cause) : ModuleListing;
 
     /// <summary>The process answered with what could not be read.</summary>
     public sealed record Unreadable : ModuleListing

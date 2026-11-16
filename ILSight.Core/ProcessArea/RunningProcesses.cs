@@ -112,12 +112,24 @@ public static class RunningProcesses
         var endpoint = FindEndpoint(id);
         if (endpoint is null)
         {
-            return new ModuleListing.Unreachable($"Process {id} has no diagnostics endpoint.");
+            return new ModuleListing.Unreachable(new UnreachableCause.NoEndpoint());
         }
 
         return await AskUnlessUnreachableAsync(
             async ct => ReadModules(await DiagnosticsIpc.CollectRundownAsync(endpoint, budget, ct).ConfigureAwait(false)),
-            static e => new ModuleListing.Unreachable(e.Message), cancellationToken).ConfigureAwait(false);
+            static e => new ModuleListing.Unreachable(CauseOf(e)), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Why the process couldn't be asked, by what <paramref name="error"/> says: the cause ILSight's own client
+    /// found, a timeout, or what the system said, as written.</summary>
+    internal static UnreachableCause CauseOf(Exception error)
+    {
+        return error switch
+        {
+            DiagnosticsIpcException ipc => ipc.Cause,
+            TimeoutException => new UnreachableCause.TimedOut(),
+            _ => new UnreachableCause.Failure(error.Message),
+        };
     }
 
     private static ModuleListing ReadModules(MemoryStream trace)

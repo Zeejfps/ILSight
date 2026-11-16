@@ -233,6 +233,14 @@ public sealed class RunningProcessTests
     }
 
     [Fact]
+    public void A_process_that_cannot_be_asked_is_unreachable_for_the_cause_the_client_found_else_for_what_was_said()
+    {
+        Assert.Equal(new UnreachableCause.Refused(), RunningProcesses.CauseOf(new DiagnosticsIpcException(new UnreachableCause.Refused(), "The runtime refused.")));
+        Assert.Equal(new UnreachableCause.TimedOut(), RunningProcesses.CauseOf(new TimeoutException("late")));
+        Assert.Equal(new UnreachableCause.Failure("The pipe is broken."), RunningProcesses.CauseOf(new IOException("The pipe is broken.")));
+    }
+
+    [Fact]
     public async Task An_endpoint_that_never_answers_runs_out_of_time()
     {
         using var temp = new TempDir();

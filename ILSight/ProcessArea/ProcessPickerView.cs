@@ -251,8 +251,19 @@ internal static class ProcessPickerView
             none: static (s, _) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerPickProcess),
             loading: static (s, _) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerLoading),
             loaded: static (s, loaded) => ModuleRows(s.ui, s.appearance, s.processModuleColumns, s.browser, loaded.Modules),
-            unreachable: static (s, unreachable) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerUnreachable, unreachable.Detail),
+            unreachable: static (s, unreachable) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerUnreachable, DescribeUnreachable(s.appearance.Strings, unreachable.Cause)),
             unreadable: static (s, unreadable) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerUnreadable, DescribeFault(s.appearance.Strings, unreadable.Fault)));
+    }
+
+    // Why the process couldn't be asked, in the app's language; a failure known only by its message, as written.
+    private static string DescribeUnreachable(Strings t, UnreachableCause cause)
+    {
+        return cause.Match(
+            _ => t.CauseProcessNoEndpointSentence,
+            _ => t.CauseProcessTimedOutSentence,
+            _ => t.CauseProcessRefusedSentence,
+            _ => t.CauseProcessAnswerMalformedSentence,
+            static f => f.Message);
     }
 
     // Why the trace couldn't be read, in the app's language.

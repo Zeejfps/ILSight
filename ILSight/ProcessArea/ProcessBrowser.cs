@@ -141,7 +141,7 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
             return;
         }
 
-        Modules = new ModuleScan.Unreachable { Process = listing.Process, Detail = error.Message, EntryAssembly = null };
+        Modules = new ModuleScan.Unreachable { Process = listing.Process, Cause = new UnreachableCause.Failure(error.Message), EntryAssembly = null };
     }
 
     private ProcessScan.Failed ReportScanFailure(Outcome<IReadOnlyList<RunningProcess>>.Failed failed)
@@ -281,7 +281,7 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
     {
         // A process that can't be asked is a result, so a failure here is a bug.
         ports.ReportError(new AppProblem.Unexpected(error));
-        return new ModuleScan.Unreachable { Process = process, Detail = error.Message, EntryAssembly = null };
+        return new ModuleScan.Unreachable { Process = process, Cause = new UnreachableCause.Failure(error.Message), EntryAssembly = null };
     }
 
     private void StopListing()
