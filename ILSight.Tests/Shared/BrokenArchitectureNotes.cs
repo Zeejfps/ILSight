@@ -1,4 +1,5 @@
 using ILSight.Core;
+using ILSight.Core.Resources;
 
 namespace ILSight.Tests;
 
@@ -67,6 +68,11 @@ internal sealed class BrokenArchitectureNotes : IDocumentNotes
     public string ResolvesTo(string path)
     {
         return English.ResolvesTo(path);
+    }
+
+    public string PictureUnreadable(PictureFault fault)
+    {
+        return English.PictureUnreadable(fault);
     }
 
     public string Truncated(int bytes)

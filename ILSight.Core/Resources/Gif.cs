@@ -1,7 +1,7 @@
 namespace ILSight.Core.Resources;
 
 /// <summary>The first frame of a GIF, as ILSpy shows it. ILSight's own decoder: bad bytes are an
-/// <see cref="InvalidDataException"/>, anything else it throws a bug.</summary>
+/// <see cref="PictureFaultException"/>, anything else it throws a bug.</summary>
 internal static class Gif
 {
     // The widest code size a GIF's LZW data may start from, its table holding 4096 codes.
@@ -13,7 +13,7 @@ internal static class Gif
         var height = data.UInt16(8);
         if ((long)width * height > int.MaxValue / 4)
         {
-            throw new InvalidDataException($"A {width}×{height} picture is out of range.");
+            throw new PictureFaultException(new PictureFault.SizeOutOfRange { Width = width, Height = height });
         }
 
         var flags = data[10];
@@ -48,7 +48,7 @@ internal static class Gif
                     // The frame's own size sizes its pixels' array: bounded as the picture's is, never an overflow.
                     if ((long)frameWidth * frameHeight > int.MaxValue / 4)
                     {
-                        throw new InvalidDataException($"A {frameWidth}×{frameHeight} picture is out of range.");
+                        throw new PictureFaultException(new PictureFault.SizeOutOfRange { Width = frameWidth, Height = frameHeight });
                     }
 
                     var frameFlags = data[at + 9];
@@ -63,7 +63,7 @@ internal static class Gif
                     var minimumCodeSize = data[at++];
                     if (minimumCodeSize > MaxMinimumCodeSize)
                     {
-                        throw new InvalidDataException("The GIF's code size is out of range.");
+                        throw new PictureFaultException(new PictureFault.CodeSizeOutOfRange());
                     }
 
                     var compressed = new List<byte>();
@@ -97,10 +97,10 @@ internal static class Gif
                     }
                     return new ResourceImage { Width = width, Height = height, Rgba = rgba, Format = "GIF" };
                 default:
-                    throw new InvalidDataException("The GIF has no picture.");
+                    throw new PictureFaultException(new PictureFault.NoPicture("GIF"));
             }
         }
-        throw new InvalidDataException("The GIF has no picture.");
+        throw new PictureFaultException(new PictureFault.NoPicture("GIF"));
     }
 
     private static int SkipBlocks(PictureBytes data, int at)

@@ -1,3 +1,5 @@
+using ILSight.Core.Resources;
+
 namespace ILSight.Core;
 
 /// <summary>A note the app writes into a document beside what the document shows, kept as its cause: which note it is
@@ -135,6 +137,15 @@ public abstract record DocumentNote
         private protected override string Say(IDocumentNotes notes)
         {
             return Path is null ? notes.ReferenceNotResolved() : notes.ResolvesTo(Path);
+        }
+    }
+
+    /// <summary>That the resource's picture can't be shown, by <see cref="Fault"/>; its bytes are shown instead.</summary>
+    public sealed record PictureUnreadable(PictureFault Fault) : DocumentNote
+    {
+        private protected override string Say(IDocumentNotes notes)
+        {
+            return notes.PictureUnreadable(Fault);
         }
     }
 

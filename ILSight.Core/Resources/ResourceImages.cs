@@ -132,7 +132,7 @@ public static class ResourceImages
     /// name; <see cref="ResourceImageRead.Unreadable"/> when it is no picture this can decode, or one the decoders fail
     /// on. A listed decoder (PngSharp, JpegSharp, ZGF.Svg) failing on the bytes, whatever it throws, is the picture's
     /// failure; ILSight's own decoders (BMP, GIF, ICO and CUR, and what it makes of a listed decoder's pixels) fail on
-    /// bad bytes with an <see cref="InvalidDataException"/> alone, and anything else they throw is a bug, for the
+    /// bad bytes with a <see cref="PictureFaultException"/> alone, and anything else they throw is a bug, for the
     /// caller's edge.</summary>
     internal static ResourceImageRead DecodeImage(byte[] data)
     {
@@ -167,29 +167,23 @@ public static class ResourceImages
             return DecodeSvg(data);
         }
 
-        return new ResourceImageRead.Unreadable { Why = NoPicture, Error = new InvalidDataException(NoPicture) };
+        var fault = new PictureFault.NotAPicture();
+        return new ResourceImageRead.Unreadable { Fault = fault, Error = new PictureFaultException(fault) };
     }
-
-    private const string NoPicture = "This is no PNG, JPEG, BMP, GIF, ICO, CUR or SVG picture.";
 
     private static ReadOnlySpan<byte> PngSignature => [0x89, (byte)'P', (byte)'N', (byte)'G'];
 
-    // Why a listed decoder failed on the bytes: what it says of bad data as it says it, else what it threw, after
+    // Why a listed decoder failed on the bytes: its own message, whatever it threw, which each language's words join to
     // "cannot be read".
     private static ResourceImageRead.Unreadable CannotBeRead(Exception e)
     {
-        if (e is InvalidDataException)
-        {
-            return new ResourceImageRead.Unreadable { Why = e.Message, Error = e };
-        }
-
-        return new ResourceImageRead.Unreadable { Why = $"The picture cannot be read: {e.Message}", Error = e };
+        return new ResourceImageRead.Unreadable { Fault = new PictureFault.LibraryFailure(e.Message), Error = e };
     }
 
-    // Why one of ILSight's own decoders failed on the bytes.
-    private static ResourceImageRead.Unreadable BadData(InvalidDataException e)
+    // Why one of ILSight's own decoders failed on the bytes: the cause it found.
+    private static ResourceImageRead.Unreadable BadData(PictureFaultException e)
     {
-        return new ResourceImageRead.Unreadable { Why = e.Message, Error = e };
+        return new ResourceImageRead.Unreadable { Fault = e.Fault, Error = e };
     }
 
     // A PNG's facts read by PngSharp (a listed library) inside its catch; its pixels made into RGBA by ILSight after it.
@@ -221,20 +215,20 @@ public static class ResourceImages
         {
             return new ResourceImageRead.Decoded { Image = MakePng(read, format) };
         }
-        catch (InvalidDataException e)
+        catch (PictureFaultException e)
         {
             return BadData(e);
         }
     }
 
     // The PNG's facts are PngSharp's, values ILSight doesn't control: each is checked before it sizes or indexes
-    // anything, so bad ones are an InvalidDataException, never an index out of range or a division by zero.
+    // anything, so bad ones are a PictureFaultException, never an index out of range or a division by zero.
     internal static ResourceImage MakePng(PngRead read, string format)
     {
         int width = read.Width, height = read.Height;
         if (width <= 0 || height <= 0 || (long)width * height > int.MaxValue / 4)
         {
-            throw new InvalidDataException($"A {width}×{height} picture is out of range.");
+            throw new PictureFaultException(new PictureFault.SizeOutOfRange { Width = width, Height = height });
         }
 
         var depth = read.Depth;
@@ -250,7 +244,7 @@ public static class ResourceImages
             var start = (long)i * bytesPerPixel;
             if (start + bytesPerPixel > src.Length)
             {
-                throw new InvalidDataException($"The {format}'s pixels are cut short.");
+                throw new PictureFaultException(new PictureFault.PixelsCutShort(format));
             }
 
             var at = (int)start;
@@ -290,7 +284,7 @@ public static class ResourceImages
                     var index = src[at];
                     if (palette is null || index * 3 + 2 >= palette.Length)
                     {
-                        throw new InvalidDataException("A palette index is out of range.");
+                        throw new PictureFaultException(new PictureFault.PaletteIndexOutOfRange());
                     }
 
                     (r, g, b) = (palette[index * 3], palette[index * 3 + 1], palette[index * 3 + 2]);
@@ -301,7 +295,7 @@ public static class ResourceImages
 
                     break;
                 default:
-                    throw new InvalidDataException($"Unknown PNG color type {read.ColorType}.");
+                    throw new PictureFaultException(new PictureFault.ColorTypeUnknown($"{read.ColorType}"));
             }
             rgba[i * 4] = r;
             rgba[i * 4 + 1] = g;
@@ -386,12 +380,12 @@ public static class ResourceImages
         // Laid out by JpegSharp's size, values ILSight doesn't control: checked against its pixels before they're used.
         if (width <= 0 || height <= 0)
         {
-            return BadData(new InvalidDataException($"A {width}×{height} picture is out of range."));
+            return BadData(new PictureFaultException(new PictureFault.SizeOutOfRange { Width = width, Height = height }));
         }
 
         if (pixels.Length < (long)width * height)
         {
-            return BadData(new InvalidDataException("The JPEG's pixels are cut short."));
+            return BadData(new PictureFaultException(new PictureFault.PixelsCutShort("JPEG")));
         }
 
         var rgba = new byte[pixels.Length * 4];
@@ -439,7 +433,7 @@ public static class ResourceImages
             var pixels = bytes.Int32(10);
             return new ResourceImageRead.Decoded { Image = DecodeDib(bytes.From(14), "BMP", isIcon: false, pixelOffset: pixels - 14L) };
         }
-        catch (InvalidDataException e)
+        catch (PictureFaultException e)
         {
             return BadData(e);
         }
@@ -451,7 +445,7 @@ public static class ResourceImages
         {
             return new ResourceImageRead.Decoded { Image = Gif.Decode(new PictureBytes(data, "GIF")) };
         }
-        catch (InvalidDataException e)
+        catch (PictureFaultException e)
         {
             return BadData(e);
         }
@@ -472,7 +466,7 @@ public static class ResourceImages
         {
             payload = ChooseIconPicture(new PictureBytes(data, format), format);
         }
-        catch (InvalidDataException e)
+        catch (PictureFaultException e)
         {
             return BadData(e);
         }
@@ -487,7 +481,7 @@ public static class ResourceImages
         {
             return new ResourceImageRead.Decoded { Image = DecodeDib(new PictureBytes(payload, format), format, isIcon: true) };
         }
-        catch (InvalidDataException e)
+        catch (PictureFaultException e)
         {
             return BadData(e);
         }
@@ -509,7 +503,7 @@ public static class ResourceImages
         }
         if (best < 0)
         {
-            throw new InvalidDataException($"The {format} holds no pictures.");
+            throw new PictureFaultException(new PictureFault.NoPicture(format));
         }
 
         var chosen = data.Part(6 + best * 16L, 16);
@@ -546,7 +540,7 @@ public static class ResourceImages
 
         if (width <= 0 || height <= 0 || width > 16384 || height > 16384)
         {
-            throw new InvalidDataException($"A {width}×{height} picture is out of range.");
+            throw new PictureFaultException(new PictureFault.SizeOutOfRange { Width = width, Height = height });
         }
 
         uint redMask = 0x00FF0000, greenMask = 0x0000FF00, blueMask = 0x000000FF, alphaMask = bits == 32 && !isIcon ? 0u : 0xFF000000;
@@ -565,7 +559,7 @@ public static class ResourceImages
         }
         else if (compression != 0)
         {
-            throw new InvalidDataException("Compressed BMPs are not supported.");
+            throw new PictureFaultException(new PictureFault.CompressionNotRead());
         }
 
         var entrySize = headerSize == 12 ? 3 : 4;
@@ -612,7 +606,7 @@ public static class ResourceImages
                         }
                         break;
                     default:
-                        throw new InvalidDataException($"{bits}-bit BMPs are not supported.");
+                        throw new PictureFaultException(new PictureFault.BitDepthNotRead(bits));
                 }
                 var at = (y * width + x) * 4;
                 rgba[at] = r;

@@ -87,7 +87,7 @@ public static class NodeContentLoader
     }
 
     private static async Task<Outcome<DecompiledDocument>> DecompileAsync(BrowseSession session, ModuleReadLease reading, BrowseNode node,
-        DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, string? note, CancellationToken cancellationToken)
+        DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, DocumentNote? note, CancellationToken cancellationToken)
     {
         var request = await ReadRequestAsync(session, node, cancellationToken);
         return await request.Match(
@@ -96,7 +96,7 @@ public static class NodeContentLoader
     }
 
     private static async Task<Outcome<DecompiledDocument>> DecompileRequestAsync(ModuleReadLease reading, DocumentRequest request,
-        DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, string? note, CancellationToken cancellationToken)
+        DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, DocumentNote? note, CancellationToken cancellationToken)
     {
         return new Outcome<DecompiledDocument>.Ok(await NodeDecompiler.DecompileAsync(reading, request, language, options, notes, cancellationToken, note));
     }
@@ -142,11 +142,11 @@ public static class NodeContentLoader
         var read = ReadImage(node, cancellationToken);
         return await read.Match(
             decoded => GetPictureAsync(session, reading, node, decoded.Image, language, options, notes, cancellationToken),
-            unreadable => DecompileWithNoteAsync(session, reading, node, language, options, notes, unreadable.Why, cancellationToken));
+            unreadable => DecompileWithNoteAsync(session, reading, node, language, options, notes, new DocumentNote.PictureUnreadable(unreadable.Fault), cancellationToken));
     }
 
     private static async Task<Outcome<NodeContent>> DecompileWithNoteAsync(BrowseSession session, ModuleReadLease reading, BrowseNode node,
-        DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, string note, CancellationToken cancellationToken)
+        DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, DocumentNote note, CancellationToken cancellationToken)
     {
         return ToCode(await DecompileAsync(session, reading, node, language, options, notes, note, cancellationToken));
     }
@@ -173,7 +173,7 @@ public static class NodeContentLoader
         }
         catch (Exception e)
         {
-            return new ResourceImageRead.Unreadable { Why = e.Message, Error = e };
+            return new ResourceImageRead.Unreadable { Fault = new PictureFault.LibraryFailure(e.Message), Error = e };
         }
 
         return ResourceImages.DecodeImage(bytes);

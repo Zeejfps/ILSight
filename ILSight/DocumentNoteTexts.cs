@@ -1,4 +1,5 @@
 using ILSight.Core;
+using ILSight.Core.Resources;
 
 namespace ILSight;
 
@@ -66,6 +67,22 @@ public sealed class DocumentNoteTexts(Strings t) : IDocumentNotes
     public string ResolvesTo(string path)
     {
         return t.DocumentNoteResolvesTo(path: path);
+    }
+
+    public string PictureUnreadable(PictureFault fault)
+    {
+        return fault.Match(
+            c => t.CausePictureCutShortNote(format: c.Format),
+            p => t.CausePicturePixelsCutShortNote(format: p.Format),
+            s => t.CausePictureSizeOutOfRangeNote(width: s.Width, height: s.Height),
+            _ => t.CausePicturePaletteIndexOutOfRangeNote,
+            _ => t.CausePictureCompressionNotReadNote,
+            b => t.CausePictureBitDepthNotReadNote(bits: b.Bits),
+            n => t.CausePictureNoPictureNote(format: n.Format),
+            _ => t.CausePictureCodeSizeOutOfRangeNote,
+            c => t.CausePictureColorTypeUnknownNote(kind: c.ColorType),
+            _ => t.CausePictureNotAPictureNote,
+            l => t.CausePictureUnreadableNote(message: l.Message));
     }
 
     public string Truncated(int bytes)

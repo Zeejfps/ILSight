@@ -25,12 +25,12 @@ internal static class NodeDecompiler
     private const string ReferenceAssemblyAttribute = "System.Runtime.CompilerServices.ReferenceAssemblyAttribute";
 
     /// <summary>Writes the document <paramref name="request"/> asks for, after <paramref name="note"/>
-    /// as a comment when given, once the read of its module's type system ended, the app's notes beside the code in
+    /// on a line of its own when given, once the read of its module's type system ended, the app's notes beside the code in
     /// <paramref name="notes"/>' words. Throws
     /// <see cref="OperationCanceledException"/> when cancelled; a module the library could not read, for code that
     /// reads it, and whatever the decompiler throws while it writes become a document describing it.</summary>
     public static async Task<DecompiledDocument> DecompileAsync(ModuleReadLease reading, DocumentRequest request, DecompilationLanguage language,
-        DecompilerOptions options, IDocumentNotes notes, CancellationToken cancellationToken, string? note = null)
+        DecompilerOptions options, IDocumentNotes notes, CancellationToken cancellationToken, DocumentNote? note = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (request is DocumentRequest.Failure failure)
@@ -88,7 +88,7 @@ internal static class NodeDecompiler
     }
 
     private static DecompiledDocument DecompileUnreadable(ModuleReadLease reading, DocumentRequest request, Exception why, DecompilationLanguage language, DecompilerOptions options,
-        IDocumentNotes notes, CancellationToken cancellationToken, string? note)
+        IDocumentNotes notes, CancellationToken cancellationToken, DocumentNote? note)
     {
         if (IsReadThroughTypeSystem(request))
         {
@@ -107,12 +107,12 @@ internal static class NodeDecompiler
 
     private static DecompiledDocument Decompile(ModuleReadLease reading, DocumentRequest request, DecompilerTypeSystem? typeSystem,
         DecompilerTypeSystem? chosenTypeSystem, DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, CancellationToken cancellationToken,
-        string? note)
+        DocumentNote? note)
     {
         var builder = new DocumentBuilder { Language = language, Assembly = ModuleOf(request), TypeSystem = typeSystem, ChosenTypeSystem = chosenTypeSystem };
         if (note is not null)
         {
-            WriteComment(builder, note);
+            WriteNote(builder, note, notes);
         }
 
         WriteUnreadReferences(builder, request, typeSystem, notes);

@@ -24,6 +24,13 @@ internal static class BrokenAssemblies
         return WriteWithResource(temp, "UnreadableResources.dll", "Broken.resources", "no resources file"u8.ToArray());
     }
 
+    /// <summary>An assembly holding one picture, <paramref name="picture"/>'s bytes as given, under
+    /// <paramref name="resourceName"/>.</summary>
+    public static string WriteWithPicture(TempDir temp, string resourceName, byte[] picture)
+    {
+        return WriteWithResource(temp, "Picture.dll", resourceName, picture);
+    }
+
     private static string WriteWithResource(TempDir temp, string fileName, string resourceName, byte[] content)
     {
         var metadata = new MetadataBuilder();

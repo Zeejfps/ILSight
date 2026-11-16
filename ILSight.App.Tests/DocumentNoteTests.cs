@@ -1,6 +1,7 @@
 using ILSight.BookmarkArea;
 using ILSight.CommandArea;
 using ILSight.Core;
+using ILSight.Core.Resources;
 
 namespace ILSight.App.Tests;
 
@@ -67,6 +68,27 @@ public sealed class DocumentNoteTests
         Assert.Same(made, view.Layout.Document);
     }
 
+    [Fact]
+    public async Task A_cut_short_BMP_is_noted_in_the_apps_language_and_its_bytes_are_shown_the_same_in_every_language()
+    {
+        using var temp = new TempDir();
+        var whole = Picture("logo.bmp");
+        var path = BrokenAssemblies.WriteWithPicture(temp, "cut.bmp", whole[..20]);
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(path);
+        var picture = await assembly.ReadRootAsync().GetChildAsync("Resources", "cut.bmp");
+
+        var englishRead = await NodeContentLoader.ReadContentAsync(TestSession.Shared, picture, DecompilationLanguage.CSharp, DecompilerOptions.Default,
+            DocumentNoteTexts.For(Locale.En), firstGridRows: 1).GetValueAsync();
+        var japaneseRead = await NodeContentLoader.ReadContentAsync(TestSession.Shared, picture, DecompilationLanguage.CSharp, DecompilerOptions.Default,
+            DocumentNoteTexts.For(Locale.Ja), firstGridRows: 1).GetValueAsync();
+
+        var english = Assert.IsType<NodeContent.Code>(englishRead).Document;
+        var japanese = Assert.IsType<NodeContent.Code>(japaneseRead).Document;
+        Assert.Equal("// The BMP is cut short.", english.Lines[0].Text);
+        Assert.Equal("// BMP のデータが途中で切れています。", japanese.Lines[0].Text);
+        Assert.Equal(english.Lines.Skip(1).Select(static l => l.Text), japanese.Lines.Skip(1).Select(static l => l.Text));
+    }
+
     [Theory]
     [MemberData(nameof(LocalizationTests.AllLocales), MemberType = typeof(LocalizationTests))]
     public void Every_note_is_one_line_in_every_language_so_a_switch_moves_no_line_under_it(Locale locale)
@@ -87,6 +109,17 @@ public sealed class DocumentNoteTests
             new DocumentNote.Resolution(null),
             new DocumentNote.Resolution("P"),
             new DocumentNote.Truncated(65536),
+            new DocumentNote.PictureUnreadable(new PictureFault.CutShort("BMP")),
+            new DocumentNote.PictureUnreadable(new PictureFault.PixelsCutShort("PNG")),
+            new DocumentNote.PictureUnreadable(new PictureFault.SizeOutOfRange { Width = 65535, Height = 65535 }),
+            new DocumentNote.PictureUnreadable(new PictureFault.PaletteIndexOutOfRange()),
+            new DocumentNote.PictureUnreadable(new PictureFault.CompressionNotRead()),
+            new DocumentNote.PictureUnreadable(new PictureFault.BitDepthNotRead(2)),
+            new DocumentNote.PictureUnreadable(new PictureFault.NoPicture("GIF")),
+            new DocumentNote.PictureUnreadable(new PictureFault.CodeSizeOutOfRange()),
+            new DocumentNote.PictureUnreadable(new PictureFault.ColorTypeUnknown("5")),
+            new DocumentNote.PictureUnreadable(new PictureFault.NotAPicture()),
+            new DocumentNote.PictureUnreadable(new PictureFault.LibraryFailure("first" + Environment.NewLine + "second")),
             new DocumentNote.ArchitectureOf(new ModuleArchitecture { Platform = "AnyCPU", PreferredBits = null }),
             new DocumentNote.ArchitectureOf(new ModuleArchitecture { Platform = "AnyCPU", PreferredBits = 64 }),
             new DocumentNote.TargetFramework("T"),
@@ -218,5 +251,13 @@ public sealed class DocumentNoteTests
         Assert.Equal("Architecture: AnyCPU (64-bit preferred)", DocumentNoteTexts.For(Locale.En).Architecture(preferring));
         Assert.Equal("アーキテクチャ: AnyCPU（64 ビット優先）", DocumentNoteTexts.For(Locale.Ja).Architecture(preferring));
         Assert.Equal("アーキテクチャ: Amd64", DocumentNoteTexts.For(Locale.Ja).Architecture(stating));
+    }
+
+    private static byte[] Picture(string name)
+    {
+        using var stream = typeof(DocumentNoteTests).Assembly.GetManifestResourceStream(name) ?? throw new InvalidOperationException($"No resource is embedded as '{name}'.");
+        using var copy = new MemoryStream();
+        stream.CopyTo(copy);
+        return copy.ToArray();
     }
 }

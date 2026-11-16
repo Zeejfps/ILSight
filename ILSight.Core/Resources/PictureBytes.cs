@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 namespace ILSight.Core.Resources;
 
 /// <summary>A picture's bytes as ILSight's own decoders read them (<see cref="ResourceImages"/>, <see cref="Gif"/>): a
-/// read past their end, or before their start, is bad data, an <see cref="InvalidDataException"/> saying the
+/// read past their end, or before their start, is bad data, a <see cref="PictureFaultException"/> saying the
 /// <see cref="Format"/> is cut short, never an index out of range, which stays a bug of the decoder's own.</summary>
 internal readonly ref struct PictureBytes
 {
@@ -66,8 +66,8 @@ internal readonly ref struct PictureBytes
         return BinaryPrimitives.ReadUInt32LittleEndian(Slice(at, 4));
     }
 
-    private InvalidDataException CutShort()
+    private PictureFaultException CutShort()
     {
-        return new InvalidDataException($"The {Format} is cut short.");
+        return new PictureFaultException(new PictureFault.CutShort(Format));
     }
 }

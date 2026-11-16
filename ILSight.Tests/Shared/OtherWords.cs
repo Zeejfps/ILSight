@@ -1,4 +1,5 @@
 using ILSight.Core;
+using ILSight.Core.Resources;
 
 namespace ILSight.Tests;
 
@@ -61,6 +62,11 @@ internal sealed class OtherWords : IDocumentNotes
     public string ResolvesTo(string path)
     {
         return "[x] " + English.ResolvesTo(path);
+    }
+
+    public string PictureUnreadable(PictureFault fault)
+    {
+        return "[x] " + English.PictureUnreadable(fault);
     }
 
     public string Truncated(int bytes)

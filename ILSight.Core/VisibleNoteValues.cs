@@ -1,3 +1,5 @@
+using ILSight.Core.Resources;
+
 namespace ILSight.Core;
 
 /// <summary>The app's words for its notes (<see cref="IDocumentNotes"/>), every value said in them first made to stay on
@@ -61,6 +63,12 @@ internal sealed class VisibleNoteValues(IDocumentNotes words) : IDocumentNotes
     public string ResolvesTo(string path)
     {
         return words.ResolvesTo(OneLineText.Name(path));
+    }
+
+    public string PictureUnreadable(PictureFault fault)
+    {
+        var shown = fault is PictureFault.LibraryFailure failure ? failure with { Message = OneLineText.Message(failure.Message) } : fault;
+        return words.PictureUnreadable(shown);
     }
 
     public string Truncated(int bytes)

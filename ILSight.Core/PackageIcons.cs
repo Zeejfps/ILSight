@@ -28,7 +28,7 @@ public sealed class PackageIcons
         {
             var bytes = await ReadIconBytesAsync(url, cancellationToken).ConfigureAwait(false);
             var read = ResourceImages.DecodeImage(bytes);
-            return read.Match(decoded => ResourceImages.FitInto(decoded.Image, side), static unreadable => throw new InvalidDataException(unreadable.Why));
+            return read.Match(decoded => ResourceImages.FitInto(decoded.Image, side), static unreadable => throw new InvalidDataException(unreadable.Error.Message, unreadable.Error));
         }
         finally
         {

@@ -124,7 +124,7 @@ public sealed class ResourceTests
         Assert.Equal(text, ResourceText.IndentOneLine(text, ResourceSyntax.Xml));
     }
 
-    // ILSight's own decoders catch only InvalidDataException: every cut of a picture's bytes must be bad data said as
+    // ILSight's own decoders catch only PictureFaultException: every cut of a picture's bytes must be bad data said as
     // such, never an index out of range, which would now reach the edge as the app's bug.
     [Theory]
     [InlineData("logo.bmp", "BMP")]
@@ -138,7 +138,7 @@ public sealed class ResourceTests
         var reads = Enumerable.Range(6, whole.Length - 6).Select(length => ResourceImages.DecodeImage(whole[..length])).ToList();
 
         Assert.All(reads, static r => Assert.True(r is ResourceImageRead.Decoded or ResourceImageRead.Unreadable));
-        Assert.Equal($"The {format} is cut short.", Assert.IsType<ResourceImageRead.Unreadable>(reads[0]).Why);
+        Assert.Equal(new PictureFault.CutShort(format), Assert.IsType<ResourceImageRead.Unreadable>(reads[0]).Fault);
     }
 
     [Fact]
@@ -153,7 +153,7 @@ public sealed class ResourceTests
 
         var read = ResourceImages.DecodeImage(gif);
 
-        Assert.Equal("A 65535×65535 picture is out of range.", Assert.IsType<ResourceImageRead.Unreadable>(read).Why);
+        Assert.Equal(new PictureFault.SizeOutOfRange { Width = 65535, Height = 65535 }, Assert.IsType<ResourceImageRead.Unreadable>(read).Fault);
     }
 
     // PngSharp's facts are values ILSight doesn't control: laying them out checks each before it sizes or indexes.
@@ -166,9 +166,9 @@ public sealed class ResourceTests
             Pixels = [1, 2, 3], Palette = null, Transparency = null,
         };
 
-        var thrown = Assert.Throws<InvalidDataException>(() => ResourceImages.MakePng(read, "PNG"));
+        var thrown = Assert.Throws<PictureFaultException>(() => ResourceImages.MakePng(read, "PNG"));
 
-        Assert.Equal("The PNG's pixels are cut short.", thrown.Message);
+        Assert.Equal(new PictureFault.PixelsCutShort("PNG"), thrown.Fault);
     }
 
     [Fact]
@@ -199,7 +199,7 @@ public sealed class ResourceTests
         var next = ResourceImages.DecodeImage(whole);
 
         var unreadable = Assert.IsType<ResourceImageRead.Unreadable>(read);
-        Assert.Equal($"The picture cannot be read: {unreadable.Error.Message}", unreadable.Why);
+        Assert.Equal(new PictureFault.LibraryFailure(unreadable.Error.Message), unreadable.Fault);
         Assert.IsType<OutOfMemoryException>(unreadable.Error);
         Assert.IsType<ResourceImageRead.Decoded>(next);
     }
@@ -209,7 +209,7 @@ public sealed class ResourceTests
     {
         var blob = Fixture("blob.bin");
 
-        Assert.IsType<ResourceImageRead.Unreadable>(ResourceImages.DecodeImage(blob));
+        Assert.Equal(new PictureFault.NotAPicture(), Assert.IsType<ResourceImageRead.Unreadable>(ResourceImages.DecodeImage(blob)).Fault);
         Assert.IsType<ResourceImageRead.Unreadable>(ResourceImages.DecodeImage([0x89, (byte)'P', (byte)'N', (byte)'G', 1, 2]));
     }
 

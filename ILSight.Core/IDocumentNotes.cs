@@ -1,3 +1,5 @@
+using ILSight.Core.Resources;
+
 namespace ILSight.Core;
 
 /// <summary>The app's words for the notes it writes into a document beside what the document shows: each a message in
@@ -42,6 +44,10 @@ public interface IDocumentNotes
 
     /// <summary>The file at <paramref name="path"/> a reference resolves to.</summary>
     string ResolvesTo(string path);
+
+    /// <summary>Why the resource's picture can't be shown, <paramref name="fault"/>: a cause of ILSight's own decoders,
+    /// or a listed library's failure, its message as written.</summary>
+    string PictureUnreadable(PictureFault fault);
 
     /// <summary>That a resource's bytes are shown up to <paramref name="bytes"/>.</summary>
     string Truncated(int bytes);

@@ -17,10 +17,11 @@ public abstract record ResourceImageRead
     /// <summary>No picture these decoders know, or one they fail on.</summary>
     public sealed record Unreadable : ResourceImageRead
     {
-        public required string Why { get; init; }
+        /// <summary>Why, the cause the app words in each language.</summary>
+        public required PictureFault Fault { get; init; }
 
         /// <summary>What the decoder threw, so its record has the diagnostic (CF3); where ILSight's own check of the bytes
-        /// decided it, the <see cref="System.IO.InvalidDataException"/> its decoders say bad data by.</summary>
+        /// decided it, the <see cref="PictureFaultException"/> its decoders say bad data by, its message in English.</summary>
         public required Exception Error { get; init; }
     }
 
