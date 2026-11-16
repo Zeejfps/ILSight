@@ -44,7 +44,7 @@ public static class ProblemTexts
             unresolved: p => AskAgainOrReport(t, t.ErrorResolve(OneLineText.Name(p.Reference.Name)), p.Error),
             unresolvedFileDenied: p => (t.ErrorResolve(OneLineText.Name(p.Reference.Name)), Denied(t, p.File), p.Error),
             unresolvedFileDamaged: p => (t.ErrorResolve(OneLineText.Name(p.Reference.Name)), Damaged(t, p.File), p.Error),
-            placeLookupFailed: p => (t.ErrorLookUpPlace(OneLineText.Name(p.Place.Label)), AfterStep(t, p.Step, ReportIt(t, p.Error.Message)), p.Error),
+            placeLookupFailed: p => (t.ErrorLookUpPlace(OneLineText.Name(p.Place.Label)), AfterStep(t, p.Step, BuildCauseAskingForReport(t, p.Error.Message)), p.Error),
             placeLookupFileDenied: p => (t.ErrorLookUpPlace(OneLineText.Name(p.Place.Label)),
                 AfterStep(t, p.Step, Denied(t, p.File)), p.Error),
             placeLookupFileDamaged: p => (t.ErrorLookUpPlace(OneLineText.Name(p.Place.Label)),
@@ -150,11 +150,11 @@ public static class ProblemTexts
     // which the copied error's technical details make.
     private static (string Title, string Details, Exception? Diagnostic) Reportable(Strings t, string title, Exception error)
     {
-        return (title, ReportIt(t, error.Message), error);
+        return (title, BuildCauseAskingForReport(t, error.Message), error);
     }
 
     // The cause, then the recovery that asks for a report: defined once for every failure that is the app's to report.
-    private static string ReportIt(Strings t, string cause)
+    private static string BuildCauseAskingForReport(Strings t, string cause)
     {
         return t.ErrorCauseAndRecovery(cause: cause, recovery: t.ErrorRecoveryReportBug);
     }

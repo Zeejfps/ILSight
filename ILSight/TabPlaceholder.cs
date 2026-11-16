@@ -18,7 +18,7 @@ public sealed class TabPlaceholder
             return document;
         }
 
-        document = Documents.CreateFromText("", $"// {TabPlaceholders.Write(t, content)}");
+        document = Documents.CreateFromText("", $"// {TabPlaceholders.Describe(t, content)}");
         _written = new Memo<(TabContent, ByReference<Strings>), DecompiledDocument>(key, document);
         return document;
     }

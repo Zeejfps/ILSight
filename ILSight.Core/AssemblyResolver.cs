@@ -135,7 +135,7 @@ public sealed class AssemblyResolver
 
     private LoadedModule? EndFindAssembly(IAssemblyReference reference, LibraryProbe probed)
     {
-        return FindLoadedOrKnown(reference, AfterProbe(reference, probed));
+        return FindLoadedOrKnown(reference, FindAfterProbe(reference, probed));
     }
 
     private LoadedModule? FindLoadedOrKnown(IAssemblyReference reference, AssemblyPath? path)
@@ -151,7 +151,7 @@ public sealed class AssemblyResolver
 
     internal AssemblyPath? FindAssemblyFile(IAssemblyReference reference)
     {
-        return FindNearby(reference) ?? AfterProbe(reference, ProbeLibrary(reference));
+        return FindNearby(reference) ?? FindAfterProbe(reference, ProbeLibrary(reference));
     }
 
     // The folders near the main assembly, then the installed runtime for one that runs on .NET Core.
@@ -200,7 +200,7 @@ public sealed class AssemblyResolver
         }
     }
 
-    private AssemblyPath? AfterProbe(IAssemblyReference reference, LibraryProbe probed)
+    private AssemblyPath? FindAfterProbe(IAssemblyReference reference, LibraryProbe probed)
     {
         if (probed.Failed)
         {

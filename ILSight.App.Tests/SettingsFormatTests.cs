@@ -194,7 +194,7 @@ public sealed class SettingsFormatTests : IDisposable
             Theme = ThemeId<ThemeFile>.Of("monokai"),
             IconTheme = ThemeId<IconThemeFile>.Of("custom-icons"),
             Language = DecompilationLanguage.IL,
-            Decompiler = DecompilerToggles.SetToggle(new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp12 }, braces, false),
+            Decompiler = DecompilerToggles.WithToggle(new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp12 }, braces, false),
             FoldedOptionGroups = ["Other"],
             Display = new DisplayOptions
             {

@@ -33,7 +33,7 @@ public static class BookmarkFile
     private static BookmarkFileJson FileOf(List<BookmarkRecord> bookmarks)
     {
         var json = AppSettingsJson.Default.BookmarkJson;
-        var written = bookmarks.ConvertAll(b => JsonSerializer.SerializeToElement(SettingsJson.Write(b), json));
+        var written = bookmarks.ConvertAll(b => JsonSerializer.SerializeToElement(SettingsJson.ToJson(b), json));
         return new BookmarkFileJson { Version = CurrentVersion, Bookmarks = written };
     }
 

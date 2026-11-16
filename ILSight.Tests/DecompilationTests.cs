@@ -121,7 +121,7 @@ public sealed class DecompilationTests
     public async Task Locals_take_their_names_from_the_pdb_until_debug_symbols_are_off()
     {
         var grow = await Trees.TestAssembly.FixturesAsync().GetChildAsync("Circle", "Grow(double, int) : double");
-        var off = DecompilerToggles.SetToggle(DecompilerOptions.Default, DecompilerToggle.UseDebugSymbols, false);
+        var off = DecompilerToggles.WithToggle(DecompilerOptions.Default, DecompilerToggle.UseDebugSymbols, false);
 
         var named = Documents.GetText(await grow.DecompileAsync(DecompilationLanguage.CSharp));
         var guessed = Documents.GetText(await grow.DecompileAsync(DecompilationLanguage.CSharp, off));
@@ -136,7 +136,7 @@ public sealed class DecompilationTests
     public async Task IL_names_locals_from_the_pdb_until_debug_symbols_are_off()
     {
         var grow = await Trees.TestAssembly.FixturesAsync().GetChildAsync("Circle", "Grow(double, int) : double");
-        var off = DecompilerToggles.SetToggle(DecompilerOptions.Default, DecompilerToggle.UseDebugSymbols, false);
+        var off = DecompilerToggles.WithToggle(DecompilerOptions.Default, DecompilerToggle.UseDebugSymbols, false);
 
         var named = Documents.GetText(await grow.DecompileAsync(DecompilationLanguage.IL));
         var unnamed = Documents.GetText(await grow.DecompileAsync(DecompilationLanguage.IL, off));
@@ -151,8 +151,8 @@ public sealed class DecompilationTests
     {
         var braces = DecompilerToggles.FindToggle("AlwaysUseBraces");
         Assert.NotNull(braces);
-        var bracesOff = DecompilerToggles.SetToggle(DecompilerOptions.Default, braces, false);
-        var symbolsOff = DecompilerToggles.SetToggle(DecompilerOptions.Default, DecompilerToggle.UseDebugSymbols, false);
+        var bracesOff = DecompilerToggles.WithToggle(DecompilerOptions.Default, braces, false);
+        var symbolsOff = DecompilerToggles.WithToggle(DecompilerOptions.Default, DecompilerToggle.UseDebugSymbols, false);
 
         Assert.True(DecompilerToggles.ProducesSameCode(DecompilerOptions.Default, bracesOff, DecompilationLanguage.IL));
         Assert.False(DecompilerToggles.ProducesSameCode(DecompilerOptions.Default, bracesOff, DecompilationLanguage.CSharp));
@@ -237,7 +237,7 @@ public sealed class DecompilationTests
         var count = await Trees.TestAssembly.CalculatorAsync().GetChildAsync("Count : int");
         var docs = DecompilerToggles.FindToggle("ShowXmlDocumentation");
         Assert.NotNull(docs);
-        var off = DecompilerToggles.SetToggle(DecompilerOptions.Default, docs, false);
+        var off = DecompilerToggles.WithToggle(DecompilerOptions.Default, docs, false);
 
         Assert.Contains("/// <summary>How many items were added.</summary>", Documents.GetText(await count.DecompileAsync(DecompilationLanguage.CSharp)));
         Assert.DoesNotContain("///", Documents.GetText(await count.DecompileAsync(DecompilationLanguage.CSharp, off)));
@@ -260,15 +260,15 @@ public sealed class DecompilationTests
         var count = await assembly.CalculatorAsync().GetChildAsync("Count : int");
         var bodies = DecompilerToggles.FindToggle("UseExpressionBodyForCalculatedGetterOnlyProperties");
         Assert.NotNull(bodies);
-        var off = DecompilerToggles.SetToggle(DecompilerOptions.Default, bodies, false);
+        var off = DecompilerToggles.WithToggle(DecompilerOptions.Default, bodies, false);
         var offOnCSharp5 = off with { LanguageVersion = CSharpVersion.CSharp5 };
 
         Assert.Contains("return _items.Count;", Documents.GetText(await count.DecompileAsync(DecompilationLanguage.CSharp, off)));
         Assert.False(DecompilerToggles.Allows(offOnCSharp5, bodies));
         Assert.False(DecompilerToggles.IsOn(offOnCSharp5, bodies));
         Assert.True(DecompilerToggles.IsOn(DecompilerOptions.Default, bodies));
-        Assert.Equal(DecompilerOptions.Default, DecompilerToggles.SetToggle(off, bodies, true));
-        Assert.Equal(off, DecompilerToggles.SetToggle(DecompilerOptions.Default, bodies, false));
+        Assert.Equal(DecompilerOptions.Default, DecompilerToggles.WithToggle(off, bodies, true));
+        Assert.Equal(off, DecompilerToggles.WithToggle(DecompilerOptions.Default, bodies, false));
     }
 
     [Fact]
@@ -549,7 +549,7 @@ public sealed class DecompilationTests
     {
         var bodies = DecompilerToggles.FindToggle("UseExpressionBodyForCalculatedGetterOnlyProperties");
         Assert.NotNull(bodies);
-        var set = DecompilerToggles.SetToggle(DecompilerOptions.Default, bodies, !bodies.DefaultValue);
+        var set = DecompilerToggles.WithToggle(DecompilerOptions.Default, bodies, !bodies.DefaultValue);
 
         var copy = set with { Changes = set.Changes.With([bodies], bodies.DefaultValue) };
 

@@ -1005,7 +1005,7 @@ public static class CodeViewWidget
     {
         var goal = state.Keys.Goal;
         var column = goal is not null && goal.Value.At == state.Selection.Caret ? goal.Value.Column : caret.Column;
-        var to = CodeCaret.MoveRows(document, state.Selection.Folds, caret, rows, column);
+        var to = CodeCaret.CalculatePositionRowsAway(document, state.Selection.Folds, caret, rows, column);
         PutCaret(state, to, extend);
         state.Keys.AimAt(new CaretGoal { At = to, Column = column });
     }

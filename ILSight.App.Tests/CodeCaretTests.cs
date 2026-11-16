@@ -78,19 +78,19 @@ public sealed class CodeCaretTests
 
         Assert.Equal(
             new TextPosition { Line = 2, Column = 10 },
-            CodeCaret.MoveRows(document, open, new TextPosition { Line = 3, Column = 7 }, -1, 10));
+            CodeCaret.CalculatePositionRowsAway(document, open, new TextPosition { Line = 3, Column = 7 }, -1, 10));
         Assert.Equal(
             new TextPosition { Line = 1, Column = 1 },
-            CodeCaret.MoveRows(document, open, new TextPosition { Line = 2, Column = 10 }, -1, 10));
+            CodeCaret.CalculatePositionRowsAway(document, open, new TextPosition { Line = 2, Column = 10 }, -1, 10));
         Assert.Equal(
             new TextPosition { Line = 5, Column = 3 },
-            CodeCaret.MoveRows(document, shut, new TextPosition { Line = 0, Column = 3 }, 1, 3));
+            CodeCaret.CalculatePositionRowsAway(document, shut, new TextPosition { Line = 0, Column = 3 }, 1, 3));
         Assert.Equal(
             new TextPosition { Line = 0, Column = 0 },
-            CodeCaret.MoveRows(document, shut, new TextPosition { Line = 0, Column = 3 }, -1, 3));
+            CodeCaret.CalculatePositionRowsAway(document, shut, new TextPosition { Line = 0, Column = 3 }, -1, 3));
         Assert.Equal(
             new TextPosition { Line = 5, Column = 6 },
-            CodeCaret.MoveRows(document, shut, new TextPosition { Line = 5, Column = 1 }, 1, 1));
+            CodeCaret.CalculatePositionRowsAway(document, shut, new TextPosition { Line = 5, Column = 1 }, 1, 1));
     }
 
     [Fact]

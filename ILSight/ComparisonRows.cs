@@ -86,7 +86,7 @@ public sealed class ComparisonRows : ITreeModel<ApiEntry>
         ListRoots();
     }
 
-    public ComparisonViewRecord SaveView()
+    public ComparisonViewRecord ToViewRecord()
     {
         return new ComparisonViewRecord(_onlyDifferences);
     }

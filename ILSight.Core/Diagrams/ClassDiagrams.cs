@@ -59,7 +59,7 @@ public static partial class ClassDiagrams
         var model = BuildModel(assembly, main, progress, cancellationToken);
         Directory.CreateDirectory(folder);
         var page = Path.Combine(folder, PageFileName);
-        File.WriteAllText(page, WritePage(main, model));
+        File.WriteAllText(page, BuildPage(main, model));
         foreach (var asset in Assets)
         {
             CopyAsset(asset, folder);
@@ -104,7 +104,7 @@ public static partial class ClassDiagrams
         return byId;
     }
 
-    private static string WritePage(MetadataModule module, DiagramModel model)
+    private static string BuildPage(MetadataModule module, DiagramModel model)
     {
         var json = JsonSerializer.Serialize(model, DiagramJson.Default.DiagramModel);
         return ReadAsset(TemplateName)
@@ -498,7 +498,7 @@ public static partial class ClassDiagrams
         return new DiagramType
         {
             Name = FindNameUnlessId(diagram, type, id),
-            Body = WriteDefinition(id, WriteBody(diagram, type, members)),
+            Body = WriteDefinition(id, BuildBody(diagram, type, members)),
             HasOne = MapHasOne(diagram, members, type),
             HasMany = MapHasMany(diagram, members, type),
             BaseType = MapBaseType(diagram, type),
@@ -655,7 +655,7 @@ public static partial class ClassDiagrams
         return new ManyRelation { Property = property, ElementType = elementType };
     }
 
-    private static string WriteBody(DiagramTypes diagram, ITypeDefinition type, DeclaredMembers members)
+    private static string BuildBody(DiagramTypes diagram, ITypeDefinition type, DeclaredMembers members)
     {
         var own = PadMembers(ListFlatMembers(diagram, members, type, ""));
         var annotation = FindAnnotation(type);

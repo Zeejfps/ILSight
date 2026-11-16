@@ -84,7 +84,7 @@ public sealed class ShowReopenedNodesHandlerTests
         Assert.Equal(waiting.Place, content.Location);
         Assert.Equal(module.FilePath.FileName, content.Module);
         Assert.Equal("Bad namespace.", content.Why);
-        Assert.Equal($"{module.FilePath.FileName} couldn't be read (Bad namespace.).", TabPlaceholders.Write(Strings.For(Locale.En), content));
+        Assert.Equal($"{module.FilePath.FileName} couldn't be read (Bad namespace.).", TabPlaceholders.Describe(Strings.For(Locale.En), content));
         Assert.Equal(waiting.Place, waiting.Reopened.Tab.Location);
     }
 

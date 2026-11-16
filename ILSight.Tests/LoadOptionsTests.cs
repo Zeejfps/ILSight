@@ -7,7 +7,7 @@ public sealed class LoadOptionsTests
 {
     private static DecompilerOptions Off(DecompilerToggle toggle)
     {
-        return DecompilerToggles.SetToggle(DecompilerOptions.Default, toggle, false);
+        return DecompilerToggles.WithToggle(DecompilerOptions.Default, toggle, false);
     }
 
     private static (AssemblyList List, LoadedModule Assembly) OpenWith(DecompilerOptions options)

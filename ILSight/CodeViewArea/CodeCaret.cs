@@ -49,7 +49,7 @@ internal static class CodeCaret
     /// <summary><paramref name="rows"/> rows below <paramref name="at"/>, above when negative, at the column of
     /// <paramref name="goal"/> or the end of the line when it is shorter; past the first row the start of the
     /// document, past the last the end of its line.</summary>
-    public static TextPosition MoveRows(DecompiledDocument document, CodeFolds folds, TextPosition at, int rows, int goal)
+    public static TextPosition CalculatePositionRowsAway(DecompiledDocument document, CodeFolds folds, TextPosition at, int rows, int goal)
     {
         if (folds.RowCount == 0)
         {

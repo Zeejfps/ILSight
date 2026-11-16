@@ -28,7 +28,7 @@ public static class AssemblyLists
         RememberOpenAssemblies(lists, session);
         var analyzed = session.Analyzer.ListSavedAnalyses();
         lists.RememberActiveAnalyses(analyzed);
-        lists.RememberActiveDocuments(SavedDocuments.SaveDocuments(session, view));
+        lists.RememberActiveDocuments(SavedDocuments.ToDocumentsRecord(session, view));
     }
 
     /// <summary>Makes the list named <paramref name="name"/> the open one, with the analyses and documents it had,

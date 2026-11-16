@@ -51,7 +51,7 @@ public sealed class GenerationEndTests
         Assert.False(appState.ListSession.Reload.IsRunning);
         var shown = Assert.IsType<TabContent.NotReloaded>(tab.Content);
         Assert.Equal(ReloadEnd.AssemblyClosed, shown.End);
-        Assert.Equal($"{shown.Location.FilePath.FileName} was closed.", TabPlaceholders.Write(Strings.For(Locale.En), tab.Content));
+        Assert.Equal($"{shown.Location.FilePath.FileName} was closed.", TabPlaceholders.Describe(Strings.For(Locale.En), tab.Content));
         Assert.Empty(appState.Errors.Entries);
     }
 
@@ -75,7 +75,7 @@ public sealed class GenerationEndTests
         Assert.Equal(ReloadEnd.Stopped, shown.End);
         Assert.True(session.Assemblies.IsListed(shown.Location.FilePath));
         Assert.Equal($"{shown.Location.Label} was not reloaded: the reload was stopped. Use Reload all to look for it again.",
-            TabPlaceholders.Write(Strings.For(Locale.En), tab.Content));
+            TabPlaceholders.Describe(Strings.For(Locale.En), tab.Content));
         Assert.Empty(appState.Errors.Entries);
     }
 
@@ -91,7 +91,7 @@ public sealed class GenerationEndTests
         Assert.NotNull(tab);
         var newReopen = new TaskCompletionSource();
         ports.LaterReopensWaitFor = newReopen.Task;
-        var options = DecompilerToggles.SetToggle(appState.Decompiler.Setup.Options, DecompilerToggle.AutoLoadAssemblyReferences,
+        var options = DecompilerToggles.WithToggle(appState.Decompiler.Setup.Options, DecompilerToggle.AutoLoadAssemblyReferences,
             !DecompilerToggles.IsOn(appState.Decompiler.Setup.Options, DecompilerToggle.AutoLoadAssemblyReferences));
         ports.End = () =>
         {

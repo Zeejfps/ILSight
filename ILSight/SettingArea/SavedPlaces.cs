@@ -11,14 +11,14 @@ public static class SavedPlaces
 {
     /// <summary><paramref name="segment"/> as a step of a saved place holds it: its case, a space,
     /// then what it names, such as <c>Definition T:Ns.Calculator`1</c>.</summary>
-    public static string Write(NodePathSegment segment)
+    public static string ToText(NodePathSegment segment)
     {
         return segment.Match(
             @namespace: static ns => $"Namespace {ns.Name}",
             definition: static definition => $"Definition {definition.Id}",
             folder: static folder => $"Folder {folder.Role}",
             metadata: static metadata => $"Metadata {metadata.Which}",
-            metadataPart: static part => $"MetadataPart {Write(part.Part)}",
+            metadataPart: static part => $"MetadataPart {ToText(part.Part)}",
             assemblyReference: static reference => $"AssemblyReference {reference.Name}",
             moduleReference: static reference => $"ModuleReference {reference.Name}",
             importedMethod: static import => $"ImportedMethod {import.Id}",
@@ -34,7 +34,7 @@ public static class SavedPlaces
             embeddedModule: static module => $"EmbeddedModule {module.Path}");
     }
 
-    private static string Write(MetadataPartKey part)
+    private static string ToText(MetadataPartKey part)
     {
         return part.Match(
             static header => $"Header {header.Which}",
@@ -45,7 +45,7 @@ public static class SavedPlaces
             static entry => $"DebugEntry {entry.Index} {entry.Type}");
     }
 
-    /// <summary>The segment <paramref name="text"/> holds, as <see cref="Write(NodePathSegment)"/> writes
+    /// <summary>The segment <paramref name="text"/> holds, as <see cref="ToText(NodePathSegment)"/> writes
     /// one; null when it holds none.</summary>
     public static NodePathSegment? ParseSegment(string text)
     {

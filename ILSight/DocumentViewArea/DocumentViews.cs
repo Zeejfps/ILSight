@@ -257,7 +257,7 @@ public sealed class DocumentViews
             return null;
         }
 
-        return new TabPanel { Tab = tab, Panel = view.Panel, View = SaveView(tab, view) };
+        return new TabPanel { Tab = tab, Panel = view.Panel, View = ToPanelView(tab, view) };
     }
 
     /// <summary>The panel each tab with a view is docked as, and how its diagram or comparison is viewed,
@@ -267,22 +267,22 @@ public sealed class DocumentViews
         var panels = new List<TabPanel>();
         foreach (var (tab, view) in _views)
         {
-            panels.Add(new TabPanel { Tab = tab, Panel = view.Panel, View = SaveView(tab, view) });
+            panels.Add(new TabPanel { Tab = tab, Panel = view.Panel, View = ToPanelView(tab, view) });
         }
 
         return panels;
     }
 
-    private static TabPanelView SaveView(DocumentTab tab, TabView view)
+    private static TabPanelView ToPanelView(DocumentTab tab, TabView view)
     {
         if (tab.Content is TabContent.Diagram)
         {
-            return new TabPanelView.Diagram(Diagrams.SaveView(view.Diagram));
+            return new TabPanelView.Diagram(Diagrams.ToViewRecord(view.Diagram));
         }
 
         if (tab.Content is TabContent.Comparison)
         {
-            return new TabPanelView.Comparison(view.Comparison.SaveView());
+            return new TabPanelView.Comparison(view.Comparison.ToViewRecord());
         }
 
         return new TabPanelView.None();

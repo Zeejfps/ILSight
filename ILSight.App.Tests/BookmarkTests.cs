@@ -632,7 +632,7 @@ public sealed class BookmarkTests : IDisposable
     }
 
     // ILSpy records the full name of the member token names as well as the token.
-    private static string Record(string name, string kind, int token, int ilOffset, int lineNumber, string treePath, string? file = null,
+    private static string BuildRecord(string name, string kind, int token, int ilOffset, int lineNumber, string treePath, string? file = null,
         string memberName = Fixtures + ".Outline.Third")
     {
         return System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object?>
@@ -694,8 +694,8 @@ public sealed class BookmarkTests : IDisposable
     [Fact]
     public async Task A_file_ILSpy_wrote_imports_with_each_bookmark_placed_by_ILSpys_tree_path()
     {
-        var path = ILSpyFile(Record("Bookmark0", "Body", TokenOf("Third"), 0, 99, Fixtures + ".Outline") + "," +
-                             Record("Bookmark1", "Line", TokenOf("Third"), 0, 3, Fixtures + ".Outline"));
+        var path = ILSpyFile(BuildRecord("Bookmark0", "Body", TokenOf("Third"), 0, 99, Fixtures + ".Outline") + "," +
+                             BuildRecord("Bookmark1", "Line", TokenOf("Third"), 0, 3, Fixtures + ".Outline"));
         var (d, tab, line) = await OutlineAtAsync("return First();");
 
         ImportBookmarks(d, path);
@@ -714,9 +714,9 @@ public sealed class BookmarkTests : IDisposable
     [Fact]
     public void Bookmarks_from_a_file_marking_one_line_replace_as_one_and_say_how_many_were_left_out()
     {
-        var twins = Record("First", "Body", TokenOf("Third"), 0, 1, Fixtures + ".Outline") + "," +
-                    Record("Second", "Body", TokenOf("Third"), 0, 1, Fixtures + ".Outline") + "," +
-                    Record("Third", "Body", TokenOf("Third"), 0, 1, Fixtures + ".Outline");
+        var twins = BuildRecord("First", "Body", TokenOf("Third"), 0, 1, Fixtures + ".Outline") + "," +
+                    BuildRecord("Second", "Body", TokenOf("Third"), 0, 1, Fixtures + ".Outline") + "," +
+                    BuildRecord("Third", "Body", TokenOf("Third"), 0, 1, Fixtures + ".Outline");
         var path = ILSpyFile(twins);
         var d = new AppStateDriver();
 
@@ -750,7 +750,7 @@ public sealed class BookmarkTests : IDisposable
     public void A_bookmark_in_a_file_that_is_not_one_at_all_is_left_out_alone_and_reported()
     {
         var path = ILSpyFile("""{ "Name": "Broken", "Token": "not a number" }, """ +
-                             Record("Kept", "Body", TokenOf("Third"), 0, 1, Fixtures + ".Outline"));
+                             BuildRecord("Kept", "Body", TokenOf("Third"), 0, 1, Fixtures + ".Outline"));
         var d = new AppStateDriver();
 
         ImportBookmarks(d, path);
@@ -765,7 +765,7 @@ public sealed class BookmarkTests : IDisposable
     [Fact]
     public void Read_EntryThatIsNotABookmark_LeavesItOutByItsPosition()
     {
-        var path = ILSpyFile(Record("Kept", "Body", TokenOf("Third"), 0, 1, Fixtures + ".Outline") + "," +
+        var path = ILSpyFile(BuildRecord("Kept", "Body", TokenOf("Third"), 0, 1, Fixtures + ".Outline") + "," +
                              """{ "Name": "Broken", "Token": "not a number" }""");
 
         var read = Assert.IsType<BookmarksRead.Read>(BookmarkFile.Read(path));
@@ -777,7 +777,7 @@ public sealed class BookmarkTests : IDisposable
     [Fact]
     public void A_bookmark_whose_saved_place_cannot_be_read_is_placed_as_ILSpy_places_it_and_reported_by_its_position()
     {
-        var unreadablePlace = """{ "Path": { "Version": 99, "Steps": [] }, """ + Record("Placed", "Body", TokenOf("Third"), 0, 1, Fixtures + ".Outline")[1..];
+        var unreadablePlace = """{ "Path": { "Version": 99, "Steps": [] }, """ + BuildRecord("Placed", "Body", TokenOf("Third"), 0, 1, Fixtures + ".Outline")[1..];
         var path = ILSpyFile(unreadablePlace);
         var d = new AppStateDriver();
 
@@ -793,8 +793,8 @@ public sealed class BookmarkTests : IDisposable
     [Fact]
     public void A_bookmark_whose_tree_path_is_stale_is_placed_by_its_token_and_one_with_no_file_is_said_left_out()
     {
-        var gone = Record("Gone", "Token", TokenOf("Third"), 0, 1, Fixtures + ".Outline", _temp.PathOf("gone.dll"));
-        var path = ILSpyFile(Record("Moved", "Token", TokenOf("Third"), 0, 1, Fixtures + ".Renamed") + "," + gone);
+        var gone = BuildRecord("Gone", "Token", TokenOf("Third"), 0, 1, Fixtures + ".Outline", _temp.PathOf("gone.dll"));
+        var path = ILSpyFile(BuildRecord("Moved", "Token", TokenOf("Third"), 0, 1, Fixtures + ".Renamed") + "," + gone);
         var d = new AppStateDriver();
 
         ImportBookmarks(d, path);
@@ -811,7 +811,7 @@ public sealed class BookmarkTests : IDisposable
     [Fact]
     public void A_bookmark_whose_token_now_names_another_member_is_said_left_out_rather_than_placed_there()
     {
-        var path = ILSpyFile(Record("Rebuilt", "Token", TokenOf("Third"), 0, 1, Fixtures + ".Renamed", memberName: Fixtures + ".Outline.Removed"));
+        var path = ILSpyFile(BuildRecord("Rebuilt", "Token", TokenOf("Third"), 0, 1, Fixtures + ".Renamed", memberName: Fixtures + ".Outline.Removed"));
         var d = new AppStateDriver();
 
         ImportBookmarks(d, path);

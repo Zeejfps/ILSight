@@ -34,7 +34,7 @@ public static class Diagrams
     }
 
     /// <summary>What the settings keep of the view.</summary>
-    public static DiagramViewRecord SaveView(DiagramViewState view)
+    public static DiagramViewRecord ToViewRecord(DiagramViewState view)
     {
         var corner = view.Camera.Corner;
         return new DiagramViewRecord

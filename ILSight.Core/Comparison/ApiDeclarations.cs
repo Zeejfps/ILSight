@@ -57,13 +57,13 @@ internal static class ApiDeclarations
                 continue;
             }
 
-            text.Append(WriteAttribute(attribute));
+            text.Append(ToDeclaration(attribute));
             text.Append(' ');
         }
         return text.ToString();
     }
 
-    private static string WriteAttribute(IAttribute attribute)
+    private static string ToDeclaration(IAttribute attribute)
     {
         var name = attribute.AttributeType.Name;
         var shortName = name.Substring(0, name.Length - AttributeSuffix.Length);
@@ -199,14 +199,14 @@ internal static class ApiDeclarations
     {
         if (accessor.Accessibility != property.Accessibility)
         {
-            text.Append(WriteAccessibility(accessor.Accessibility));
+            text.Append(ToKeyword(accessor.Accessibility));
             text.Append(' ');
         }
         text.Append(keyword);
         text.Append("; ");
     }
 
-    private static string WriteAccessibility(Accessibility accessibility)
+    private static string ToKeyword(Accessibility accessibility)
     {
         return accessibility switch
         {

@@ -726,7 +726,7 @@ public sealed class AppStateTests
         Assert.Equal("Greeter", tab.TitleIn(Strings.En));
         Assert.NotNull(tab.Location);
         Assert.Equal(new TabContent.Gone { Location = tab.Location, Title = "Greeter" }, tab.Content);
-        Assert.Contains("gone", TabPlaceholders.Write(d.Ui.Appearance.Strings, tab.Content));
+        Assert.Contains("gone", TabPlaceholders.Describe(d.Ui.Appearance.Strings, tab.Content));
         Assert.IsType<FailedAssembly>(Assert.Single(d.AppState.ListSession.Assemblies.Listed));
         // The tab says the place is gone, where it was; only the file that could not be read again is an error.
         Assert.DoesNotContain(d.AppState.Errors.Entries, e => e.Words().Title.Contains("Greeter"));

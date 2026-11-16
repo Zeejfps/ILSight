@@ -106,7 +106,7 @@ public static class SearchQueries
 
     /// <summary><paramref name="text"/> with its <paramref name="prefix"/> term, if any, replaced by
     /// one for <paramref name="value"/>, placed first.</summary>
-    public static string AddScope(string text, string prefix, string value)
+    public static string WithScope(string text, string prefix, string value)
     {
         var parts = Split(text).Where(p => !p.StartsWith(prefix + ":", StringComparison.OrdinalIgnoreCase));
         var scoped = prefix + ":" + (value.Length == 0 || value.Contains(' ') ? $"\"{value}\"" : value);

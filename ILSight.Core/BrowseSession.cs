@@ -274,12 +274,12 @@ public sealed class BrowseSession
             return new ChildrenState.Ready(nested);
         }
 
-        return new ChildrenState.Ready(AddNested(node, ready.Children));
+        return new ChildrenState.Ready(WithNested(node, ready.Children));
     }
 
     // Apart from PeekNestedChildren, which the tree asks per expanded row every frame, so that only the first time pays
     // for the closure.
-    private IReadOnlyList<BrowseNode> AddNested(BrowseNode node, IReadOnlyList<BrowseNode> children)
+    private IReadOnlyList<BrowseNode> WithNested(BrowseNode node, IReadOnlyList<BrowseNode> children)
     {
         return _nested.GetValue(node, n => NestChildren(n, children));
     }

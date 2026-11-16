@@ -142,7 +142,7 @@ public static class SavedDocuments
     /// <summary>The open tabs as the settings keep them with the open list: each docked tab showing a node
     /// or a diagram, and each still waiting for what it was reopened to show, with the active and the
     /// preview tab and how their panels are arranged. Null when no tab is kept.</summary>
-    internal static DocumentsRecord? SaveDocuments(OpenListSession session, ViewSettings view)
+    internal static DocumentsRecord? ToDocumentsRecord(OpenListSession session, ViewSettings view)
     {
         var saved = session.Navigation
             .OpenTabs.Select(t => SaveTab(session, view, t))

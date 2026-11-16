@@ -46,7 +46,7 @@ public static class DecompilerToggles
     {
         if (DecompilationLanguages.ShowsCSharp(language))
         {
-            return LeaveOutProjectExport(options).Equals(LeaveOutProjectExport(other));
+            return WithoutProjectExport(options).Equals(WithoutProjectExport(other));
         }
 
         var symbols = DecompilerToggle.UseDebugSymbols;
@@ -62,18 +62,18 @@ public static class DecompilerToggles
     }
 
     // The project export toggles only shape exported projects, not code.
-    private static DecompilerOptions LeaveOutProjectExport(DecompilerOptions options)
+    private static DecompilerOptions WithoutProjectExport(DecompilerOptions options)
     {
         var shapingProjects = DecompilerToggle.All.Where(static t => t.Group is DecompilerToggleGroup.ProjectExport);
         return options with { Changes = options.Changes.Without(shapingProjects) };
     }
 
-    public static DecompilerOptions SetToggle(DecompilerOptions options, DecompilerToggle toggle, bool value)
+    public static DecompilerOptions WithToggle(DecompilerOptions options, DecompilerToggle toggle, bool value)
     {
-        return SetToggle(options, [toggle], value);
+        return WithToggle(options, [toggle], value);
     }
 
-    public static DecompilerOptions SetToggle(DecompilerOptions options, IEnumerable<DecompilerToggle> toggles, bool value)
+    public static DecompilerOptions WithToggle(DecompilerOptions options, IEnumerable<DecompilerToggle> toggles, bool value)
     {
         return options with { Changes = options.Changes.With(toggles, value) };
     }

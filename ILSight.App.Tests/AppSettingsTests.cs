@@ -46,7 +46,7 @@ public sealed class AppSettingsTests : IDisposable
         settings.Language = DecompilationLanguage.IL;
         var braces = DecompilerToggles.FindToggle("AlwaysUseBraces");
         Assert.NotNull(braces);
-        settings.Decompiler = DecompilerToggles.SetToggle(new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp7_3 }, braces, false);
+        settings.Decompiler = DecompilerToggles.WithToggle(new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp7_3 }, braces, false);
         settings.FoldedOptionGroups = ["Other"];
 
         Assert.IsType<SettingsWriteResult.Written>(TempSettings.Save(settings));
@@ -89,7 +89,7 @@ public sealed class AppSettingsTests : IDisposable
         Assert.Equal(["Decompiler"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
         var braces = DecompilerToggles.FindToggle("AlwaysUseBraces");
         Assert.NotNull(braces);
-        Assert.Equal(DecompilerToggles.SetToggle(DecompilerOptions.Default, braces, false), loaded.Decompiler);
+        Assert.Equal(DecompilerToggles.WithToggle(DecompilerOptions.Default, braces, false), loaded.Decompiler);
     }
 
     [Fact]

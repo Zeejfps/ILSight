@@ -15,13 +15,13 @@ public static class Preferences
 
     public static void SetDecompilerToggle(AppState appState, DecompilerToggle toggle, bool value)
     {
-        var options = DecompilerToggles.SetToggle(appState.Decompiler.Setup.Options, toggle, value);
+        var options = DecompilerToggles.WithToggle(appState.Decompiler.Setup.Options, toggle, value);
         SetDecompilerOptions(appState, options);
     }
 
     public static void SetDecompilerToggles(AppState appState, IEnumerable<DecompilerToggle> toggles, bool value)
     {
-        var options = DecompilerToggles.SetToggle(appState.Decompiler.Setup.Options, toggles, value);
+        var options = DecompilerToggles.WithToggle(appState.Decompiler.Setup.Options, toggles, value);
         SetDecompilerOptions(appState, options);
     }
 

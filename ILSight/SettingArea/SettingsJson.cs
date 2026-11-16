@@ -80,31 +80,31 @@ internal static class SettingsJson
         return $"{location}[\"{key}\"]";
     }
 
-    public static SettingsFile Write(AppSettings settings)
+    public static SettingsFile ToSettingsFile(AppSettings settings)
     {
         return new SettingsFile
         {
-            AssemblyLists = settings.AssemblyLists.ConvertAll(Write),
+            AssemblyLists = settings.AssemblyLists.ConvertAll(ToJson),
             ActiveAssemblyList = settings.ActiveAssemblyList,
             Theme = settings.Theme.Text,
             IconTheme = settings.IconTheme.Text,
             Language = settings.Language,
-            Decompiler = Write(settings.Decompiler),
+            Decompiler = ToJson(settings.Decompiler),
             FoldedOptionGroups = settings.FoldedOptionGroups,
-            Display = settings.Display is null ? null : Write(settings.Display),
+            Display = settings.Display is null ? null : ToJson(settings.Display),
             Locale = settings.Locale,
             ApiVisibility = settings.ApiVisibility,
             CheckForUpdates = settings.CheckForUpdates,
             SearchKinds = settings.SearchKinds,
             Layout = settings.Layout is null ? null : DockJson.Write(settings.Layout),
-            Bookmarks = settings.Bookmarks.ConvertAll(Write),
+            Bookmarks = settings.Bookmarks.ConvertAll(ToJson),
             BookmarkColumns = settings.BookmarkColumns,
             SearchColumns = settings.SearchColumns,
             ExportColumns = settings.ExportColumns,
             FlagsFilters = WriteFilters(settings.FlagsFilters),
             Window = WriteWindow(settings.Window),
             ExportWindow = WriteWindow(settings.ExportWindow),
-            NuGet = settings.NuGet is null ? null : Write(settings.NuGet),
+            NuGet = settings.NuGet is null ? null : ToJson(settings.NuGet),
             NuGetWindow = WriteWindow(settings.NuGetWindow),
             ProcessWindow = WriteWindow(settings.ProcessWindow),
             ProcessColumns = settings.ProcessColumns,
@@ -123,7 +123,7 @@ internal static class SettingsJson
         var written = new Dictionary<string, SavedFilterStateJson?>();
         foreach (var (key, filter) in filters)
         {
-            written.Add(key, Write(filter));
+            written.Add(key, ToJson(filter));
         }
 
         return written;
@@ -136,19 +136,19 @@ internal static class SettingsJson
             return null;
         }
 
-        return Write(bounds.Value);
+        return ToJson(bounds.Value);
     }
 
-    private static AssemblyListJson Write(AssemblyListRecord list)
+    private static AssemblyListJson ToJson(AssemblyListRecord list)
     {
         return new AssemblyListJson
         {
             Name = list.Name,
             Assemblies = WritePaths(list.Assemblies),
-            Analyzed = list.Analyzed?.Select(static CodeAnchorJson? (a) => Write(a)).ToList(),
+            Analyzed = list.Analyzed?.Select(static CodeAnchorJson? (a) => ToJson(a)).ToList(),
             Pdbs = WritePicks(list.Pdbs),
             Frameworks = WritePicks(list.Frameworks),
-            Documents = list.Documents is null ? null : Write(list.Documents),
+            Documents = list.Documents is null ? null : ToJson(list.Documents),
         };
     }
 
@@ -200,10 +200,10 @@ internal static class SettingsJson
         return kept;
     }
 
-    private static DocumentsJson Write(DocumentsRecord documents)
+    private static DocumentsJson ToJson(DocumentsRecord documents)
     {
         var json = AppSettingsJson.Default.DocumentJson;
-        var tabs = documents.Tabs.ConvertAll(t => JsonSerializer.SerializeToElement(Write(t), json));
+        var tabs = documents.Tabs.ConvertAll(t => JsonSerializer.SerializeToElement(ToJson(t), json));
         var layout = documents.Layout is null ? null : DockJson.Write(documents.Layout);
         return new DocumentsJson
         {
@@ -282,13 +282,13 @@ internal static class SettingsJson
         return null;
     }
 
-    private static DocumentJson Write(DocumentRecord document)
+    private static DocumentJson ToJson(DocumentRecord document)
     {
         return document switch
         {
-            NodeDocumentRecord node => Write(node),
-            DiagramDocumentRecord diagram => Write(diagram),
-            ComparisonDocumentRecord comparison => Write(comparison),
+            NodeDocumentRecord node => ToJson(node),
+            DiagramDocumentRecord diagram => ToJson(diagram),
+            ComparisonDocumentRecord comparison => ToJson(comparison),
             _ => throw new UnreachableException(),
         };
     }
@@ -304,7 +304,7 @@ internal static class SettingsJson
         };
     }
 
-    private static NodeDocumentJson Write(NodeDocumentRecord node)
+    private static NodeDocumentJson ToJson(NodeDocumentRecord node)
     {
         var code = node.View?.Code;
         var grid = node.View?.Grid;
@@ -313,10 +313,10 @@ internal static class SettingsJson
             Panel = node.Panel,
             Title = node.Title,
             FilePath = node.Location.FilePath.Text,
-            Path = Write(node.Location),
+            Path = ToJson(node.Location),
             Language = node.Language,
-            Position = code is null ? null : Write(code.Value),
-            GridPosition = grid is null ? null : Write(grid.Value),
+            Position = code is null ? null : ToJson(code.Value),
+            GridPosition = grid is null ? null : ToJson(grid.Value),
         };
     }
 
@@ -364,16 +364,16 @@ internal static class SettingsJson
         return null;
     }
 
-    private static DiagramDocumentJson Write(DiagramDocumentRecord diagram)
+    private static DiagramDocumentJson ToJson(DiagramDocumentRecord diagram)
     {
         return new DiagramDocumentJson
         {
             Panel = diagram.Panel,
             Title = SavedTextOf(diagram.Title),
             TitleName = (diagram.Title as TabTitle.Diagram)?.Type,
-            Types = diagram.Types.Select(static TypeAnchorJson? (t) => Write(t)).ToList(),
+            Types = diagram.Types.Select(static TypeAnchorJson? (t) => ToJson(t)).ToList(),
             HomeAssemblies = diagram.HomeAssemblies is null ? null : WritePaths(diagram.HomeAssemblies),
-            View = diagram.View is null ? null : Write(diagram.View),
+            View = diagram.View is null ? null : ToJson(diagram.View),
         };
     }
 
@@ -396,7 +396,7 @@ internal static class SettingsJson
         };
     }
 
-    private static ComparisonDocumentJson Write(ComparisonDocumentRecord comparison)
+    private static ComparisonDocumentJson ToJson(ComparisonDocumentRecord comparison)
     {
         return new ComparisonDocumentJson
         {
@@ -568,14 +568,14 @@ internal static class SettingsJson
         return location;
     }
 
-    private static SavedPathJson Write(NodePath place)
+    private static SavedPathJson ToJson(NodePath place)
     {
         return new SavedPathJson
         {
             Version = SavedPathJson.CurrentVersion,
             Steps = place.Steps.Select(static SavedPathStepJson? (s) => new SavedPathStepJson
             {
-                Step = SavedPlaces.Write(s.Segment),
+                Step = SavedPlaces.ToText(s.Segment),
                 Label = s.Label,
             }).ToList(),
         };
@@ -623,7 +623,7 @@ internal static class SettingsJson
         return new NodePathStep { Segment = segment, Label = json.Label };
     }
 
-    public static BookmarkJson Write(BookmarkRecord bookmark)
+    public static BookmarkJson ToJson(BookmarkRecord bookmark)
     {
         return new BookmarkJson
         {
@@ -638,9 +638,9 @@ internal static class SettingsJson
             LineNumber = bookmark.LineNumber,
             MemberName = bookmark.MemberName,
             LocationNodeName = bookmark.LocationNodeName,
-            ViewState = bookmark.ViewState is null ? null : Write(bookmark.ViewState),
+            ViewState = bookmark.ViewState is null ? null : ToJson(bookmark.ViewState),
             Language = bookmark.Language,
-            Path = bookmark.Location is null ? null : Write(bookmark.Location),
+            Path = bookmark.Location is null ? null : ToJson(bookmark.Location),
         };
     }
 
@@ -679,7 +679,7 @@ internal static class SettingsJson
         };
     }
 
-    private static BookmarkViewStateJson Write(BookmarkViewState view)
+    private static BookmarkViewStateJson ToJson(BookmarkViewState view)
     {
         return new BookmarkViewStateJson
         {
@@ -688,8 +688,8 @@ internal static class SettingsJson
             VerticalOffset = view.VerticalOffset,
             HorizontalOffset = view.HorizontalOffset,
             FoldingChecksum = view.FoldingChecksum,
-            ExpandedFoldings = view.ExpandedFoldings?.Select(static BookmarkFoldingRangeJson? (f) => Write(f)).ToList(),
-            RenderedLayoutSettings = view.RenderedLayoutSettings is null ? null : Write(view.RenderedLayoutSettings),
+            ExpandedFoldings = view.ExpandedFoldings?.Select(static BookmarkFoldingRangeJson? (f) => ToJson(f)).ToList(),
+            RenderedLayoutSettings = view.RenderedLayoutSettings is null ? null : ToJson(view.RenderedLayoutSettings),
             SelectedTreeNodePath = view.SelectedTreeNodePath is null ? null : new List<string?>(view.SelectedTreeNodePath),
         };
     }
@@ -726,7 +726,7 @@ internal static class SettingsJson
         return steps;
     }
 
-    private static BookmarkFoldingRangeJson Write(BookmarkFoldingRange range)
+    private static BookmarkFoldingRangeJson ToJson(BookmarkFoldingRange range)
     {
         return new BookmarkFoldingRangeJson { Start = range.Start, End = range.End };
     }
@@ -736,7 +736,7 @@ internal static class SettingsJson
         return new BookmarkFoldingRange { Start = json.Start, End = json.End };
     }
 
-    private static BookmarkRenderedLayoutSettingsJson Write(BookmarkRenderedLayoutSettings settings)
+    private static BookmarkRenderedLayoutSettingsJson ToJson(BookmarkRenderedLayoutSettings settings)
     {
         return new BookmarkRenderedLayoutSettingsJson
         {
@@ -766,7 +766,7 @@ internal static class SettingsJson
         };
     }
 
-    private static CodeAnchorJson Write(CodeAnchor anchor)
+    private static CodeAnchorJson ToJson(CodeAnchor anchor)
     {
         return new CodeAnchorJson
         {
@@ -793,14 +793,14 @@ internal static class SettingsJson
         return new CodeAnchor { Kind = json.Kind, FilePath = path, Token = json.Token, ILOffset = json.ILOffset };
     }
 
-    private static CodeViewPositionJson Write(CodeViewPosition position)
+    private static CodeViewPositionJson ToJson(CodeViewPosition position)
     {
         return new CodeViewPositionJson
         {
             TopLine = position.TopLine,
             ScrollX = position.ScrollX,
-            Anchor = Write(position.Anchor),
-            Caret = Write(position.Caret),
+            Anchor = ToJson(position.Anchor),
+            Caret = ToJson(position.Caret),
         };
     }
 
@@ -815,7 +815,7 @@ internal static class SettingsJson
         };
     }
 
-    private static TextPositionJson Write(TextPosition position)
+    private static TextPositionJson ToJson(TextPosition position)
     {
         return new TextPositionJson { Line = position.Line, Column = position.Column };
     }
@@ -825,7 +825,7 @@ internal static class SettingsJson
         return new TextPosition { Line = json.Line, Column = json.Column };
     }
 
-    private static GridPositionJson Write(GridPosition position)
+    private static GridPositionJson ToJson(GridPosition position)
     {
         return new GridPositionJson
         {
@@ -846,7 +846,7 @@ internal static class SettingsJson
         return new ComparisonViewRecord(json.OnlyDifferences);
     }
 
-    private static TypeAnchorJson Write(TypeAnchor anchor)
+    private static TypeAnchorJson ToJson(TypeAnchor anchor)
     {
         return new TypeAnchorJson { AssemblyPath = anchor.AssemblyPath.Text, FullName = anchor.FullName };
     }
@@ -867,14 +867,14 @@ internal static class SettingsJson
         return new TypeAnchor { AssemblyPath = path, FullName = json.FullName };
     }
 
-    private static DiagramViewJson Write(DiagramViewRecord view)
+    private static DiagramViewJson ToJson(DiagramViewRecord view)
     {
         return new DiagramViewJson
         {
             X = view.X,
             Y = view.Y,
             Zoom = view.Zoom,
-            Folds = view.Folds?.Select(static CardFoldJson? (f) => Write(f)).ToList(),
+            Folds = view.Folds?.Select(static CardFoldJson? (f) => ToJson(f)).ToList(),
             ShowsHiddenMembers = view.ShowsHiddenMembers,
         };
     }
@@ -892,13 +892,13 @@ internal static class SettingsJson
         };
     }
 
-    private static CardFoldJson Write(CardFold fold)
+    private static CardFoldJson ToJson(CardFold fold)
     {
         return fold.Match(
-            own: static own => new CardFoldJson { Card = Write(own.Card), Section = own.Section, InheritedFrom = null },
+            own: static own => new CardFoldJson { Card = ToJson(own.Card), Section = own.Section, InheritedFrom = null },
             inherited: static inherited => new CardFoldJson
             {
-                Card = Write(inherited.Card),
+                Card = ToJson(inherited.Card),
                 Section = null,
                 InheritedFrom = inherited.From,
             });
@@ -930,7 +930,7 @@ internal static class SettingsJson
         return null;
     }
 
-    private static NuGetSearchJson Write(SavedNuGetSearch search)
+    private static NuGetSearchJson ToJson(SavedNuGetSearch search)
     {
         return new NuGetSearchJson { FeedUrl = search.FeedUrl, IncludePrerelease = search.IncludePrerelease };
     }
@@ -945,7 +945,7 @@ internal static class SettingsJson
         return new SavedNuGetSearch { FeedUrl = json.FeedUrl, IncludePrerelease = json.IncludePrerelease };
     }
 
-    private static DisplayOptionsJson Write(DisplayOptions options)
+    private static DisplayOptionsJson ToJson(DisplayOptions options)
     {
         return new DisplayOptionsJson
         {
@@ -956,7 +956,7 @@ internal static class SettingsJson
             HighlightUsagesAtCaret = options.HighlightUsagesAtCaret,
             ShowOmnibar = options.ShowOmnibar,
             UiScale = options.UiScale,
-            Font = options.Font is null ? null : Write(options.Font),
+            Font = options.Font is null ? null : ToJson(options.Font),
             TreeTokens = options.TreeTokens,
             ShowEmptyMetadataTables = options.ShowEmptyMetadataTables,
             NestedNamespaces = options.NestedNamespaces,
@@ -993,7 +993,7 @@ internal static class SettingsJson
         return CodeDisplay.SetFontSize(scaled, json.FontSize.Value);
     }
 
-    private static CodeFontJson Write(CodeFont font)
+    private static CodeFontJson ToJson(CodeFont font)
     {
         return new CodeFontJson { Family = font.Family, Path = font.Path, FaceIndex = font.FaceIndex };
     }
@@ -1008,7 +1008,7 @@ internal static class SettingsJson
         return new CodeFont { Family = json.Family, Path = json.Path, FaceIndex = json.FaceIndex };
     }
 
-    private static DecompilerOptionsJson Write(DecompilerOptions options)
+    private static DecompilerOptionsJson ToJson(DecompilerOptions options)
     {
         return new DecompilerOptionsJson
         {
@@ -1035,12 +1035,12 @@ internal static class SettingsJson
                 leaveOut();
                 continue;
             }
-            options = DecompilerToggles.SetToggle(options, toggle, value);
+            options = DecompilerToggles.WithToggle(options, toggle, value);
         }
         return options;
     }
 
-    private static WindowBoundsJson Write(WindowBounds bounds)
+    private static WindowBoundsJson ToJson(WindowBounds bounds)
     {
         return new WindowBoundsJson
         {
@@ -1057,7 +1057,7 @@ internal static class SettingsJson
         return new WindowBounds(json.X, json.Y, json.Width, json.Height, json.Maximized);
     }
 
-    private static SavedFilterStateJson Write(SavedFilterState filter)
+    private static SavedFilterStateJson ToJson(SavedFilterState filter)
     {
         var groups = filter.Groups?.ToDictionary(static g => g.Key, static uint[]? (g) => g.Value);
         return new SavedFilterStateJson { Groups = groups, Flags = filter.Flags, Mode = filter.Mode };
@@ -1482,6 +1482,6 @@ internal static class SettingsJson
     /// <summary>The text of the settings file that keeps <paramref name="settings"/>.</summary>
     public static string ToJson(AppSettings settings)
     {
-        return JsonSerializer.Serialize(Write(settings), AppSettingsJson.Default.SettingsFile);
+        return JsonSerializer.Serialize(ToSettingsFile(settings), AppSettingsJson.Default.SettingsFile);
     }
 }

@@ -336,8 +336,8 @@ public sealed class SearchTests
     [Fact]
     public void Scoping_replaces_an_existing_scope_and_goes_first()
     {
-        Assert.Equal("inassembly:Other Foo ", SearchQueries.AddScope("inassembly:Core Foo", "inassembly", "Other"));
-        Assert.Equal("innamespace:\"\" ", SearchQueries.AddScope("", "innamespace", ""));
+        Assert.Equal("inassembly:Other Foo ", SearchQueries.WithScope("inassembly:Core Foo", "inassembly", "Other"));
+        Assert.Equal("innamespace:\"\" ", SearchQueries.WithScope("", "innamespace", ""));
     }
 
     private static async Task<List<SearchResult>> CollectAsync(IAsyncEnumerable<IReadOnlyList<SearchFind>> search)

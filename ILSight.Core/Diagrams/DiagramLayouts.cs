@@ -184,10 +184,10 @@ public static class DiagramLayouts
     // lowest, and the layout is drawn with it running down.
     private static PointF TopLeftOf(MsaglRectangle box, MsaglPoint origin)
     {
-        return Place(new MsaglPoint(box.Left, box.Bottom), origin);
+        return ToRelative(new MsaglPoint(box.Left, box.Bottom), origin);
     }
 
-    private static PointF Place(MsaglPoint point, MsaglPoint origin)
+    private static PointF ToRelative(MsaglPoint point, MsaglPoint origin)
     {
         return new PointF((float)(point.X - origin.X), (float)(point.Y - origin.Y));
     }
@@ -216,7 +216,7 @@ public static class DiagramLayouts
 
         var pieces = new List<RoutePiece>();
         AddPieces(pieces, curve, origin);
-        var tip = Place(edge.EdgeGeometry.TargetArrowhead.TipPosition, origin);
+        var tip = ToRelative(edge.EdgeGeometry.TargetArrowhead.TipPosition, origin);
         if (edge.UserData is not TypeLink link)
         {
             throw new UnreachableException("Every edge of the graph carries the link it was made for.");
@@ -240,7 +240,7 @@ public static class DiagramLayouts
             return null;
         }
 
-        return Place(diamond.TipPosition, origin);
+        return ToRelative(diamond.TipPosition, origin);
     }
 
     private static PointF? LabelCenterOf(Edge edge, MsaglPoint origin)
@@ -250,7 +250,7 @@ public static class DiagramLayouts
             return null;
         }
 
-        return Place(edge.Label.Center, origin);
+        return ToRelative(edge.Label.Center, origin);
     }
 
     private static void AddPieces(List<RoutePiece> pieces, ICurve curve, MsaglPoint origin)
@@ -265,7 +265,7 @@ public static class DiagramLayouts
 
                 break;
             case LineSegment line:
-                pieces.Add(CreateLine(Place(line.Start, origin), Place(line.End, origin)));
+                pieces.Add(CreateLine(ToRelative(line.Start, origin), ToRelative(line.End, origin)));
                 break;
             case CubicBezierSegment bezier:
                 pieces.Add(BezierPiece(bezier, origin));
@@ -280,20 +280,20 @@ public static class DiagramLayouts
     {
         return new RoutePiece
         {
-            Start = Place(bezier.B(0), origin),
-            Control1 = Place(bezier.B(1), origin),
-            Control2 = Place(bezier.B(2), origin),
-            End = Place(bezier.B(3), origin),
+            Start = ToRelative(bezier.B(0), origin),
+            Control1 = ToRelative(bezier.B(1), origin),
+            Control2 = ToRelative(bezier.B(2), origin),
+            End = ToRelative(bezier.B(3), origin),
         };
     }
 
     private static void AddSampled(List<RoutePiece> pieces, ICurve curve, MsaglPoint origin)
     {
         var step = (curve.ParEnd - curve.ParStart) / SamplesPerCurve;
-        var previous = Place(curve.Start, origin);
+        var previous = ToRelative(curve.Start, origin);
         for (var i = 1; i <= SamplesPerCurve; i++)
         {
-            var next = Place(curve[curve.ParStart + step * i], origin);
+            var next = ToRelative(curve[curve.ParStart + step * i], origin);
             pieces.Add(CreateLine(previous, next));
             previous = next;
         }

@@ -48,7 +48,7 @@ public sealed class AppUpdatesTests
         }
     }
 
-    private static UpdateInfo Update(string version)
+    private static UpdateInfo CreateUpdate(string version)
     {
         return new UpdateInfo(new VelopackAsset { Version = SemanticVersion.Parse(version) }, false);
     }
@@ -60,7 +60,7 @@ public sealed class AppUpdatesTests
 
     private static Task<Outcome<UpdateInfo?>> FoundAsync(string version)
     {
-        return AnswerAsync(new Outcome<UpdateInfo?>.Ok(Update(version)));
+        return AnswerAsync(new Outcome<UpdateInfo?>.Ok(CreateUpdate(version)));
     }
 
     private static Task CheckAsync(AppUpdates updates, bool asked, CancellationToken ct)

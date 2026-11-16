@@ -172,7 +172,7 @@ public static class AssemblySearch
                         var method = reader.GetMethodDefinition(handle);
                         if (!reader.StringComparer.StartsWith(method.Name, "."))
                     {
-                        await MatchMemberAsync(search, assembly, main, typeName, AddTypeParameters(search, reader, ReadName(search, reader, method.Name), method.GetGenericParameters(), 0), handle, ct);
+                        await MatchMemberAsync(search, assembly, main, typeName, WithTypeParameters(search, reader, ReadName(search, reader, method.Name), method.GetGenericParameters(), 0), handle, ct);
                     }
                 }
                 }
@@ -210,10 +210,10 @@ public static class AssemblySearch
 
         var declaring = type.GetDeclaringType();
             var inherited = declaring.IsNil ? 0 : reader.GetTypeDefinition(declaring).GetGenericParameters().Count;
-            return AddTypeParameters(search, reader, name, type.GetGenericParameters(), inherited);
+            return WithTypeParameters(search, reader, name, type.GetGenericParameters(), inherited);
         }
 
-        private static string AddTypeParameters(Search search, MetadataReader reader, string name, GenericParameterHandleCollection parameters, int inherited)
+        private static string WithTypeParameters(Search search, MetadataReader reader, string name, GenericParameterHandleCollection parameters, int inherited)
         {
             if (!search.Query.Generics || parameters.Count <= inherited)
         {

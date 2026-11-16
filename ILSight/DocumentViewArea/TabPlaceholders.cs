@@ -7,7 +7,7 @@ namespace ILSight.DocumentViewArea;
 public static class TabPlaceholders
 {
     /// <summary>What the note for <paramref name="content"/> says.</summary>
-    internal static string Write(Strings t, TabContent content)
+    internal static string Describe(Strings t, TabContent content)
     {
         if (content is TabContent.Loading)
         {

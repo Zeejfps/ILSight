@@ -69,9 +69,9 @@ public sealed class Search
     {
         if (node.Subject is NodeSubject.Namespace)
         {
-            return SearchQueries.AddScope(Query, NamespaceScope, node.FullName);
+            return SearchQueries.WithScope(Query, NamespaceScope, node.FullName);
         }
 
-        return SearchQueries.AddScope(Query, AssemblyScope, node.Assembly.Name);
+        return SearchQueries.WithScope(Query, AssemblyScope, node.Assembly.Name);
     }
 }

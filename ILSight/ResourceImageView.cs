@@ -156,13 +156,13 @@ internal static class ResourceImageView
     {
         var t = appearance.Strings;
         var fileName = node.ResourceFileName ?? throw new InvalidOperationException($"{node.Text} is no resource.");
-        ui.PickSaveFile(t.ResourceExportTitle, null, fileName, ExportFilters(t, fileName),
+        ui.PickSaveFile(t.ResourceExportTitle, null, fileName, BuildExportFilters(t, fileName),
             path => Commands.Later(commands, (node, path), static (a, s) => ExportArea.ExportCommands.SaveResource(a, s.node, s.path)));
     }
 
     private const string XamlExtension = ".xaml";
 
-    private static FileFilter[] ExportFilters(Strings t, string fileName)
+    private static FileFilter[] BuildExportFilters(Strings t, string fileName)
     {
         var all = new FileFilter(t.FileFilterAll, ["*.*"]);
         if (!IsXamlName(fileName))
