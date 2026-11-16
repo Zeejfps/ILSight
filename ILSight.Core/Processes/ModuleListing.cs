@@ -19,7 +19,14 @@ public abstract record ModuleListing
     public sealed record Unreachable(string Detail) : ModuleListing;
 
     /// <summary>The process answered with what could not be read.</summary>
-    public sealed record Unreadable(string Detail) : ModuleListing;
+    public sealed record Unreadable : ModuleListing
+    {
+        /// <summary>Why, the cause the app words in each language.</summary>
+        public required NettraceFault Fault { get; init; }
+
+        /// <summary>What the reader threw, its message the English diagnostic.</summary>
+        public required Exception Error { get; init; }
+    }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>
     public TResult Match<TResult>(Func<Listed, TResult> listed, Func<Unreachable, TResult> unreachable,

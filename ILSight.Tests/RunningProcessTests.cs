@@ -114,9 +114,9 @@ public sealed class RunningProcessTests
         var empty = NettraceRundown.Read(new MemoryStream());
 
         Assert.NotEmpty(Assert.IsType<RundownRead.Read>(whole).Modules);
-        Assert.IsType<RundownRead.Corrupt>(cut);
+        Assert.Equal(new NettraceFault.CutShort(), Assert.IsType<RundownRead.Corrupt>(cut).Fault);
         Assert.IsType<RundownRead.Corrupt>(noise);
-        Assert.IsType<RundownRead.Corrupt>(empty);
+        Assert.Equal(new NettraceFault.NotNettrace(), Assert.IsType<RundownRead.Corrupt>(empty).Fault);
     }
 
     [Fact]
@@ -136,7 +136,9 @@ public sealed class RunningProcessTests
     {
         var trace = WriteTrace(block: "SPBlock", content: [0, 0, 0, 0], claimedSize: 4096);
 
-        Assert.IsType<RundownRead.Corrupt>(NettraceRundown.Read(new MemoryStream(trace)));
+        var read = NettraceRundown.Read(new MemoryStream(trace));
+
+        Assert.Equal(new NettraceFault.CutShort(), Assert.IsType<RundownRead.Corrupt>(read).Fault);
     }
 
     [Fact]

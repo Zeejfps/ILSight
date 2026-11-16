@@ -74,7 +74,8 @@ public sealed class ProcessBrowserAdapter(Action<AppProblem> reportError) : Proc
             unreadable => new ModuleScan.Unreadable
             {
                 Process = process,
-                Detail = unreadable.Detail,
+                Fault = unreadable.Fault,
+                Error = unreadable.Error,
                 EntryAssembly = RunningProcesses.FindEntryAssembly(process, []),
             });
     }

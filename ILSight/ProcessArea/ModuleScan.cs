@@ -42,7 +42,11 @@ public abstract record ModuleScan
     {
         public required RunningProcess Process { get; init; }
 
-        public required string Detail { get; init; }
+        /// <summary>Why, the cause the picker words in the app's language.</summary>
+        public required NettraceFault Fault { get; init; }
+
+        /// <summary>What the reader threw, its message the English diagnostic.</summary>
+        public required Exception Error { get; init; }
 
         public required AssemblyPath? EntryAssembly { get; init; }
     }

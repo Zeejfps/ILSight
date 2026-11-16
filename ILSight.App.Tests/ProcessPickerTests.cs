@@ -259,7 +259,8 @@ public sealed class ProcessPickerTests
             Modules = static (process, _) => AnswerAsync(new ModuleScan.Unreadable
             {
                 Process = process,
-                Detail = "garbled",
+                Fault = new NettraceFault.CutShort(),
+                Error = new EndOfStreamException("garbled"),
                 EntryAssembly = null,
             }),
         };
@@ -267,7 +268,7 @@ public sealed class ProcessPickerTests
 
         await SelectAndListAsync(picker, Silent);
 
-        Assert.Equal("garbled", Assert.IsType<ModuleScan.Unreadable>(picker.Browser.Modules).Detail);
+        Assert.Equal(new NettraceFault.CutShort(), Assert.IsType<ModuleScan.Unreadable>(picker.Browser.Modules).Fault);
         Assert.False(picker.Browser.CanOpen);
     }
 

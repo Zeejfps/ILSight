@@ -14,7 +14,13 @@ internal abstract record RundownRead
 
     public sealed record Read(IReadOnlyList<RundownModule> Modules) : RundownRead;
 
-    public sealed record Corrupt(string Detail) : RundownRead;
+    public sealed record Corrupt : RundownRead
+    {
+        public required NettraceFault Fault { get; init; }
+
+        /// <summary>What the reader threw, its message the English diagnostic.</summary>
+        public required Exception Error { get; init; }
+    }
 
     /// <summary>What the handler of whichever case this is makes of it.</summary>
     public TResult Match<TResult>(Func<Read, TResult> read, Func<Corrupt, TResult> corrupt)

@@ -252,7 +252,17 @@ internal static class ProcessPickerView
             loading: static (s, _) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerLoading),
             loaded: static (s, loaded) => ModuleRows(s.ui, s.appearance, s.processModuleColumns, s.browser, loaded.Modules),
             unreachable: static (s, unreachable) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerUnreachable, unreachable.Detail),
-            unreadable: static (s, unreadable) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerUnreadable, unreadable.Detail));
+            unreadable: static (s, unreadable) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerUnreadable, DescribeFault(s.appearance.Strings, unreadable.Fault)));
+    }
+
+    // Why the trace couldn't be read, in the app's language.
+    private static string DescribeFault(Strings t, NettraceFault fault)
+    {
+        return fault.Match(
+            v => t.CauseTraceVersionNewerSentence(version: v.Version),
+            _ => t.CauseTraceNotNettraceSentence,
+            _ => t.CauseTraceCutShortSentence,
+            _ => t.CauseTraceMalformedSentence);
     }
 
     private static bool ModuleRows(Ui ui, Appearance appearance, TableColumns processModuleColumns, ProcessBrowser browser, IReadOnlyList<RunningModule> modules)

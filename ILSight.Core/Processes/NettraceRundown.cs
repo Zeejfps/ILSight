@@ -78,22 +78,35 @@ internal static class NettraceRundown
         {
             return new RundownRead.Read(ReadModules(stream));
         }
-        catch (InvalidDataException e)
+        catch (NettraceFaultException e)
         {
-            return new RundownRead.Corrupt(e.Message);
+            return new RundownRead.Corrupt { Fault = e.Fault, Error = e };
         }
         catch (EndOfStreamException e)
         {
-            return new RundownRead.Corrupt(e.Message);
+            return new RundownRead.Corrupt { Fault = new NettraceFault.CutShort(), Error = e };
         }
         catch (IOException e)
         {
-            return new RundownRead.Corrupt(e.Message);
+            // The stream refusing a seek the trace's sizes asked for.
+            return new RundownRead.Corrupt { Fault = new NettraceFault.Malformed(), Error = e };
         }
         catch (OverflowException e)
         {
-            return new RundownRead.Corrupt(e.Message);
+            // A count the trace gives past what an int holds.
+            return new RundownRead.Corrupt { Fault = new NettraceFault.Malformed(), Error = e };
         }
+    }
+
+    private static NettraceFaultException Malformed(string diagnostic)
+    {
+        return new NettraceFaultException(new NettraceFault.Malformed(), diagnostic);
+    }
+
+    // Bad data the reader found: the cause the app words, the message the English diagnostic of what exactly was found.
+    private sealed class NettraceFaultException(NettraceFault fault, string diagnostic) : Exception(diagnostic)
+    {
+        public NettraceFault Fault { get; } = fault;
     }
 
     private static IReadOnlyList<RundownModule> ReadModules(Stream stream)
@@ -112,7 +125,7 @@ internal static class NettraceRundown
 
             if (tag != TagBeginObject && tag != TagBeginPrivateObject)
             {
-                throw new InvalidDataException($"Unexpected FastSerialization tag 0x{tag:X2} in the nettrace stream.");
+                throw Malformed($"Unexpected FastSerialization tag 0x{tag:X2} in the nettrace stream.");
             }
 
             var typeName = ReadTypeName(reader, out var version);
@@ -121,7 +134,7 @@ internal static class NettraceRundown
                 case "Trace":
                     if (version > MaxSupportedTraceVersion)
                     {
-                        throw new InvalidDataException($"Nettrace version {version} is newer than this reads.");
+                        throw new NettraceFaultException(new NettraceFault.VersionNewer(version), $"Nettrace version {version} is newer than this reads.");
                     }
 
                     SkipTraceObject(reader);
@@ -157,13 +170,13 @@ internal static class NettraceRundown
         var text = Encoding.ASCII.GetString(magic);
         if (magic.Length < 8 || text != "Nettrace")
         {
-            throw new InvalidDataException("The stream does not start with the Nettrace magic.");
+            throw new NettraceFaultException(new NettraceFault.NotNettrace(), "The stream does not start with the Nettrace magic.");
         }
 
         var serializer = ReadLengthPrefixedAsciiString(reader);
         if (!serializer.StartsWith("!FastSerialization", StringComparison.Ordinal))
         {
-            throw new InvalidDataException($"Unexpected nettrace serializer '{serializer}'.");
+            throw new NettraceFaultException(new NettraceFault.NotNettrace(), $"Unexpected nettrace serializer '{serializer}'.");
         }
     }
 
@@ -184,7 +197,7 @@ internal static class NettraceRundown
         var length = reader.ReadInt32();
         if (length is < 0 or > MaxNameLength)
         {
-            throw new InvalidDataException($"Implausible nettrace string length {length}.");
+            throw Malformed($"Implausible nettrace string length {length}.");
         }
 
         var bytes = reader.ReadBytes(length);
@@ -201,7 +214,7 @@ internal static class NettraceRundown
         var tag = reader.ReadByte();
         if (tag != expected)
         {
-            throw new InvalidDataException($"Expected FastSerialization tag 0x{expected:X2}, found 0x{tag:X2}.");
+            throw Malformed($"Expected FastSerialization tag 0x{expected:X2}, found 0x{tag:X2}.");
         }
     }
 
@@ -210,7 +223,7 @@ internal static class NettraceRundown
         var tag = reader.ReadByte();
         if (tag != expected && tag != alternative)
         {
-            throw new InvalidDataException($"Expected FastSerialization tag 0x{expected:X2}, found 0x{tag:X2}.");
+            throw Malformed($"Expected FastSerialization tag 0x{expected:X2}, found 0x{tag:X2}.");
         }
     }
 
@@ -244,13 +257,13 @@ internal static class NettraceRundown
 
             if (payloadSize < 0)
             {
-                throw new InvalidDataException($"Implausible nettrace payload size {payloadSize}.");
+                throw Malformed($"Implausible nettrace payload size {payloadSize}.");
             }
 
             var payloadEnd = reader.BaseStream.Position + payloadSize;
             if (payloadEnd > blockEnd)
             {
-                throw new InvalidDataException("A nettrace event's payload runs past the end of its block.");
+                throw Malformed("A nettrace event's payload runs past the end of its block.");
             }
 
             onEvent(reader, metadataId, payloadEnd);
@@ -277,7 +290,7 @@ internal static class NettraceRundown
         var blockSize = reader.ReadInt32();
         if (blockSize < 0)
         {
-            throw new InvalidDataException($"Implausible nettrace block size {blockSize}.");
+            throw Malformed($"Implausible nettrace block size {blockSize}.");
         }
 
         // Blocks are aligned to 4 bytes from the start of the stream.
@@ -307,7 +320,7 @@ internal static class NettraceRundown
 
         if (reader.BaseStream.Position > blockEnd)
         {
-            throw new InvalidDataException("A nettrace block's header runs past the end of the block.");
+            throw Malformed("A nettrace block's header runs past the end of the block.");
         }
 
         compressed = (flags & 1) != 0;
@@ -411,7 +424,7 @@ internal static class NettraceRundown
             shift += 7;
             if (shift > 63)
             {
-                throw new InvalidDataException("A malformed variable-length integer in the nettrace stream.");
+                throw Malformed("A malformed variable-length integer in the nettrace stream.");
             }
         }
     }
@@ -509,6 +522,6 @@ internal static class NettraceRundown
 
             builder.Append((char)c);
         }
-        throw new InvalidDataException("A nettrace event's payload ends inside a string.");
+        throw Malformed("A nettrace event's payload ends inside a string.");
     }
 }
