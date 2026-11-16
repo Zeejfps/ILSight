@@ -15,7 +15,8 @@ namespace ILSight.Core;
 /// <summary>Making what an <see cref="AssemblyList"/> holds, and asking it for what takes reading.</summary>
 public static class LoadedAssemblies
 {
-    private static readonly TypeSystemOptions DefaultTypeSystemOptions = DecompilerTypeSystem.GetOptions(Settings.Create());
+    /// <summary>The options of a module's own type system: those of the default settings.</summary>
+    internal static readonly TypeSystemOptions DefaultTypeSystemOptions = DecompilerTypeSystem.GetOptions(Settings.Create());
 
     // Kept against the module, so the library's objects live as long as it does; released once it is closed and nothing
     // reads it (Release).
@@ -329,6 +330,23 @@ public static class LoadedAssemblies
     {
         using var reading = BeginReading();
         var read = await ReadTypeSystemAsync(reading, module, ct);
+        return MatchWork(module, read, reading, work);
+    }
+
+    /// <summary>As <see cref="WithTypeSystemAsync{T}(LoadedModule, Func{ModuleReadLease, DecompilerTypeSystem, T}, CancellationToken)"/>,
+    /// with the type system decompiling with <paramref name="settings"/> reads
+    /// (<see cref="ReadChosenTypeSystemAsync(ModuleReadLease, LoadedModule, DecompilerSettings, CancellationToken)"/>).</summary>
+    internal static async Task<TypeSystemWork<T>> WithTypeSystemAsync<T>(LoadedModule module, DecompilerSettings settings,
+        Func<ModuleReadLease, DecompilerTypeSystem, T> work, CancellationToken ct)
+    {
+        using var reading = BeginReading();
+        var read = await ReadChosenTypeSystemAsync(reading, module, settings, ct);
+        return MatchWork(module, read, reading, work);
+    }
+
+    private static TypeSystemWork<T> MatchWork<T>(LoadedModule module, TypeSystemRead read, ModuleReadLease reading,
+        Func<ModuleReadLease, DecompilerTypeSystem, T> work)
+    {
         return read.Match<TypeSystemWork<T>>(
             r => new TypeSystemWork<T>.Done { Value = work(reading, r.TypeSystem) },
             u => new TypeSystemWork<T>.Unreadable { Module = new UnreadableModule { Module = module, Why = u.Thrown.SourceException } },
@@ -366,41 +384,24 @@ public static class LoadedAssemblies
         return null;
     }
 
-    /// <summary>The type system decompiling with <paramref name="settings"/> reads: <paramref name="typeSystem"/>, the
-    /// assembly's own as read, unless they turn language features on or off that it models; then the one made for
-    /// them, made the first time on this thread, inside the caller's read. Every module it was handed is added to
-    /// <paramref name="reading"/>, the unit's: with one closed since, it is made again, resolving without it.</summary>
-    internal static DecompilerTypeSystem ChooseTypeSystemFor(ModuleReadLease reading, LoadedModule module, DecompilerTypeSystem typeSystem,
-        DecompilerSettings settings, CallbackFailure callbacks)
+    /// <summary>The read of the type system decompiling with <paramref name="settings"/> reads: <paramref name="module"/>'s
+    /// own (<see cref="ReadTypeSystemAsync(ModuleReadLease, LoadedModule, CancellationToken)"/>), unless they turn
+    /// language features on or off that it models; then the one made for them, a shared read of its own as the module's
+    /// own is: begun by whoever asks first, its resolver counting into its own mark, and kept, so every asker takes the
+    /// same outcome. A unit whose decompiler needs it awaits this before its read starts, matches it once and hands the
+    /// decompiler the type system. The module is added to <paramref name="reading"/>, the unit's, first: one closed
+    /// before answers <see cref="TypeSystemRead.Closed"/>; so is every module the type system was handed.</summary>
+    internal static async Task<TypeSystemRead> ReadChosenTypeSystemAsync(ModuleReadLease reading, LoadedModule module, DecompilerSettings settings,
+        CancellationToken ct)
     {
+        if (!TryRead(reading, module))
+        {
+            return new TypeSystemRead.Closed { Module = module };
+        }
+
         var options = DecompilerTypeSystem.GetOptions(settings);
-        if (options == DefaultTypeSystemOptions)
-        {
-            return typeSystem;
-        }
-
-        var library = GetLibrary(module);
-        while (true)
-        {
-            var kept = library.TypeSystems.GetOrAdd(options, static (o, s) => new Lazy<TypeSystemBuild<DecompilerTypeSystem>>(() => BuildTypeSystem(s.library, s.reading, o, s.callbacks)),
-                (library, reading, callbacks));
-            var build = kept.Value;
-            if (build.TryReadHandedOut(reading))
-            {
-                return build.Built;
-            }
-
-            library.TypeSystems.TryRemove(KeyValuePair.Create(options, kept));
-        }
-    }
-
-    private static TypeSystemBuild<DecompilerTypeSystem> BuildTypeSystem(ModuleLibrary library, ModuleReadLease reading, TypeSystemOptions options,
-        CallbackFailure callbacks)
-    {
-        // The resolver marks the read's count, which the catch around the read that built it reads (CF10).
-        var resolver = new ReadingResolver(library, reading) { Callbacks = callbacks };
-        var typeSystem = new DecompilerTypeSystem(library.File, resolver, options);
-        return new TypeSystemBuild<DecompilerTypeSystem> { Built = typeSystem, HandedOut = resolver.ListHandedOut() };
+        var reader = GetLibrary(module).EnsureTypeSystemReader(options);
+        return await reader.ReadAsync(reading, ct);
     }
 
     /// <summary>What the assembly uses of the assemblies it references. Read the first time, then kept.</summary>

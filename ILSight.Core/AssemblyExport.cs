@@ -206,14 +206,15 @@ public static class AssemblyExport
     {
         // The app's callbacks' failures go on to the edge (CF10).
         var callbacks = new CallbackFailure();
+        // The type system these settings read is awaited and matched before the read starts (CJ8).
+        var settings = Settings.Create(options);
         TypeSystemWork<string> written;
         try
         {
-            written = await LoadedAssemblies.WithTypeSystemAsync(assembly, (reading, typeSystem) =>
+            written = await LoadedAssemblies.WithTypeSystemAsync(assembly, settings, (_, typeSystem) =>
             {
                 var partProgress = BeginPart(progress, assembly, 0, WholeExport);
-                return GeneratePdb(reading, assembly, typeSystem, options, path,
-                    embedSources: true, partProgress, callbacks, cancellationToken);
+                return GeneratePdb(assembly, typeSystem, settings, path, embedSources: true, partProgress, cancellationToken);
             }, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -228,11 +229,11 @@ public static class AssemblyExport
         return new Outcome<TypeSystemWork<string>>.Ok(written);
     }
 
-    private static string GeneratePdb(ModuleReadLease reading, LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerOptions options, string path,
-        bool embedSources, IProgress<DecompilationProgress>? progress, CallbackFailure callbacks, CancellationToken cancellationToken)
+    // chosenTypeSystem is the type system settings read, which the unit awaited before its read began.
+    private static string GeneratePdb(LoadedModule assembly, DecompilerTypeSystem chosenTypeSystem, DecompilerSettings settings, string path,
+        bool embedSources, IProgress<DecompilationProgress>? progress, CancellationToken cancellationToken)
     {
-        var settings = Settings.Create(options);
-        var decompiler = NodeDecompiler.CreateCSharpDecompiler(reading, assembly, typeSystem, settings, callbacks, cancellationToken);
+        var decompiler = NodeDecompiler.CreateCSharpDecompiler(assembly, chosenTypeSystem, settings, cancellationToken);
         var writer = new PortablePdbWriter { Progress = progress, EmbedSourceFiles = embedSources };
         AtomicFile.Write(path, stream => writer.WritePdb(PortableExecutableOf(assembly), decompiler, settings, stream));
         return path;
@@ -293,9 +294,11 @@ public static class AssemblyExport
             return new PdbFailure.NoDebugEntry { Assembly = assembly };
         }
 
-        var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, cancellationToken);
+        // The type system these settings read, awaited and matched before the read starts (CJ8).
+        var settings = Settings.Create(options);
+        var read = await LoadedAssemblies.ReadChosenTypeSystemAsync(reading, assembly, settings, cancellationToken);
         return read.Match(
-            r => TryGeneratePdb(reading, assembly, r.TypeSystem, options, folder, embedSources, progress, callbacks, cancellationToken),
+            r => TryGeneratePdb(assembly, r.TypeSystem, settings, folder, embedSources, progress, callbacks, cancellationToken),
             u => new PdbFailure.NotWritten
             {
                 Assembly = assembly,
@@ -304,13 +307,13 @@ public static class AssemblyExport
             static c => throw new InvalidOperationException($"'{c.Module.FilePath}' was exported after its release: the export holds a reading of each assembly it exports."));
     }
 
-    private static PdbFailure? TryGeneratePdb(ModuleReadLease reading, LoadedModule assembly, DecompilerTypeSystem typeSystem, DecompilerOptions options,
-        string folder, bool embedSources, IProgress<DecompilationProgress>? progress, CallbackFailure callbacks, CancellationToken cancellationToken)
+    private static PdbFailure? TryGeneratePdb(LoadedModule assembly, DecompilerTypeSystem chosenTypeSystem, DecompilerSettings settings, string folder,
+        bool embedSources, IProgress<DecompilationProgress>? progress, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         var path = Path.Combine(folder, assembly.PdbFileName);
         try
         {
-            GeneratePdb(reading, assembly, typeSystem, options, path, embedSources, progress, callbacks, cancellationToken);
+            GeneratePdb(assembly, chosenTypeSystem, settings, path, embedSources, progress, cancellationToken);
             return null;
         }
         catch (Exception e) when (e is not OperationCanceledException && !callbacks.Failed)

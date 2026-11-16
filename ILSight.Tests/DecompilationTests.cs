@@ -160,6 +160,45 @@ public sealed class DecompilationTests
         Assert.False(DecompilerToggles.ProducesSameCode(DecompilerOptions.Default, symbolsOff, DecompilationLanguage.IL));
     }
 
+    // The type system settings choose is a shared read of its own (CJ8), awaited by each unit before its read starts.
+    [Fact]
+    public async Task The_type_system_settings_choose_is_one_read_every_unit_shares_and_the_modules_own_for_the_defaults()
+    {
+        var dynamic = DecompilerToggles.FindToggle("Dynamic");
+        Assert.NotNull(dynamic);
+        var dynamicOff = Settings.Create(DecompilerToggles.WithToggle(DecompilerOptions.Default, dynamic, false));
+        using var firstReading = LoadedAssemblies.BeginReading();
+        using var secondReading = LoadedAssemblies.BeginReading();
+
+        var own = await LoadedAssemblies.ReadTypeSystemAsync(firstReading, Trees.TestAssembly, CancellationToken.None);
+        var first = await LoadedAssemblies.ReadChosenTypeSystemAsync(firstReading, Trees.TestAssembly, dynamicOff, CancellationToken.None);
+        var second = await LoadedAssemblies.ReadChosenTypeSystemAsync(secondReading, Trees.TestAssembly, dynamicOff, CancellationToken.None);
+        var defaults = await LoadedAssemblies.ReadChosenTypeSystemAsync(secondReading, Trees.TestAssembly, Settings.Create(), CancellationToken.None);
+
+        var ownTypeSystem = Assert.IsType<TypeSystemRead.Read>(own).TypeSystem;
+        var chosen = Assert.IsType<TypeSystemRead.Read>(first).TypeSystem;
+        Assert.Same(chosen, Assert.IsType<TypeSystemRead.Read>(second).TypeSystem);
+        Assert.NotSame(ownTypeSystem, chosen);
+        Assert.Same(ownTypeSystem, Assert.IsType<TypeSystemRead.Read>(defaults).TypeSystem);
+    }
+
+    [Fact]
+    public async Task Code_decompiled_with_settings_that_choose_another_type_system_is_written_in_CSharp_and_in_IL_with_CSharp()
+    {
+        var dynamic = DecompilerToggles.FindToggle("Dynamic");
+        Assert.NotNull(dynamic);
+        var dynamicOff = DecompilerToggles.WithToggle(DecompilerOptions.Default, dynamic, false);
+        var calculator = await Trees.TestAssembly.CalculatorAsync();
+
+        var csharp = await calculator.DecompileAsync(DecompilationLanguage.CSharp, dynamicOff);
+        var ilWithCSharp = await calculator.DecompileAsync(DecompilationLanguage.ILWithCSharp, dynamicOff);
+
+        Assert.Null(csharp.Error);
+        Assert.Contains("class Calculator", Documents.GetText(csharp));
+        Assert.Null(ilWithCSharp.Error);
+        Assert.Contains("_items.Add(item);", Documents.GetText(ilWithCSharp));
+    }
+
     [Fact]
     public async Task IL_with_CSharp_writes_each_statement_above_its_first_instruction_in_CSharps_colors()
     {

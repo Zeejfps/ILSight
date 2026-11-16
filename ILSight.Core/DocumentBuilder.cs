@@ -56,6 +56,11 @@ internal sealed class DocumentBuilder : ITextOutput
     /// when there is none to read with, or the library could not read it.</summary>
     public DecompilerTypeSystem? TypeSystem { get; internal init; }
 
+    /// <summary>The type system the decompiler reads with the unit's settings, as the unit awaited its read before it
+    /// began: <see cref="TypeSystem"/>, unless the settings turn language features on or off that it models; null when
+    /// the unit writes no C#.</summary>
+    public DecompilerTypeSystem? ChosenTypeSystem { get; internal init; }
+
     /// <summary>The references of <see cref="Assembly"/> whose file could not be read, which the code was written reading
     /// by name only; the document carries them.</summary>
     public IReadOnlyList<UnreadReference> UnreadReferences { get; private set; } = [];

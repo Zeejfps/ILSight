@@ -3,13 +3,15 @@ using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ILSight.Core;
 
-/// <summary>Reads a module's type system once: the read begun by whoever asks first (the edge that reads it ahead of its first
+/// <summary>Reads a module's type system for one set of options once (the module's own, or one the decompiler's settings
+/// choose when they turn language features on or off that the module's own models): the read begun by whoever asks first (the edge that reads it ahead of its first
 /// use, or that first use), on the thread pool, and kept, so every asker takes the same outcome. A read cancelled before
 /// it began is begun again by the next asker. The read runs under the lease of the unit that began it, which awaits it
 /// to its end, and what its resolver hands out is added to that lease; each asker then reads the modules handed out
 /// under its own (<see cref="TypeSystemBuild{T}"/>), and one of them closed drops the read, begun again in that unit,
-/// resolving without it.</summary>
-internal sealed class TypeSystemReader(ModuleLibrary library)
+/// resolving without it. Its resolver counts into a mark of its own, which its catch reads: a bug of the resolver's goes
+/// on to every asker as the bug, never kept as the module's failure.</summary>
+internal sealed class TypeSystemReader(ModuleLibrary library, TypeSystemOptions options)
 {
     private readonly Lock _gate = new();
     private Task<TypeSystemBuild<TypeSystemRead>>? _read;
@@ -65,10 +67,9 @@ internal sealed class TypeSystemReader(ModuleLibrary library)
 
     private TypeSystemRead Build(ReadingResolver resolver, CancellationToken ct)
     {
-        var settings = Settings.Create();
         try
         {
-            return new TypeSystemRead.Read { TypeSystem = new DecompilerTypeSystem(library.File, resolver, settings) };
+            return new TypeSystemRead.Read { TypeSystem = new DecompilerTypeSystem(library.File, resolver, options) };
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {

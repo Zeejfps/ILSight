@@ -41,14 +41,50 @@ internal static class NodeDecompiler
         var module = ModuleOf(request);
         if (module is null)
         {
-            return Decompile(reading, request, null, language, options, notes, cancellationToken, note);
+            return Decompile(reading, request, null, null, language, options, notes, cancellationToken, note);
         }
 
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, module, cancellationToken);
-        return read.Match(
-            r => Decompile(reading, request, r.TypeSystem, language, options, notes, cancellationToken, note),
-            u => DecompileUnreadable(reading, request, u.Thrown.SourceException, language, options, notes, cancellationToken, note),
-            static c => throw new InvalidOperationException($"'{c.Module.FilePath}' was decompiled after its release: the unit holds a reading of the node's module, which the request's is."));
+        if (read is not TypeSystemRead.Read own || !WritesCSharp(request, language))
+        {
+            return read.Match(
+                r => Decompile(reading, request, r.TypeSystem, null, language, options, notes, cancellationToken, note),
+                u => DecompileUnreadable(reading, request, u.Thrown.SourceException, language, options, notes, cancellationToken, note),
+                static c => throw ReadAfterRelease(c));
+        }
+
+        // The type system the decompiler reads with these settings, a shared read of its own, awaited and matched
+        // before the write's read starts: what the library failed on reading it is the node's failure, said as a
+        // decompiler's would be; a bug of its resolver's has gone on from the await.
+        var chosen = await LoadedAssemblies.ReadChosenTypeSystemAsync(reading, module, Settings.Create(options), cancellationToken);
+        return chosen.Match(
+            r => Decompile(reading, request, own.TypeSystem, r.TypeSystem, language, options, notes, cancellationToken, note),
+            u => DescribeFailure(request, language, notes, u.Thrown.SourceException),
+            static c => throw ReadAfterRelease(c));
+    }
+
+    private static InvalidOperationException ReadAfterRelease(TypeSystemRead.Closed closed)
+    {
+        return new InvalidOperationException(
+            $"'{closed.Module.FilePath}' was decompiled after its release: the unit holds a reading of the node's module, which the request's is.");
+    }
+
+    /// <summary>Whether writing <paramref name="request"/> in <paramref name="language"/> runs the C# decompiler: code read
+    /// through the type system, as C# or as IL with the C# of each method above it.</summary>
+    internal static bool WritesCSharp(DocumentRequest request, DecompilationLanguage language)
+    {
+        return IsReadThroughTypeSystem(request) && language != DecompilationLanguage.IL;
+    }
+
+    /// <summary>Whether writing <paramref name="export"/> in <paramref name="language"/> runs the C# decompiler.</summary>
+    internal static bool WritesCSharp(CodeExport export, DecompilationLanguage language)
+    {
+        if (language == DecompilationLanguage.IL)
+        {
+            return false;
+        }
+
+        return export is not CodeExport.Document document || IsReadThroughTypeSystem(document.Request);
     }
 
     private static DecompiledDocument DecompileUnreadable(ModuleReadLease reading, DocumentRequest request, Exception why, DecompilationLanguage language, DecompilerOptions options,
@@ -59,7 +95,7 @@ internal static class NodeDecompiler
             return DescribeFailure(request, language, notes, why);
         }
 
-        return Decompile(reading, request, null, language, options, notes, cancellationToken, note);
+        return Decompile(reading, request, null, null, language, options, notes, cancellationToken, note);
     }
 
     /// <summary>Whether writing <paramref name="request"/> reads its module's type system: a module's preview, a type's
@@ -69,10 +105,11 @@ internal static class NodeDecompiler
         return request is DocumentRequest.ModulePreview or DocumentRequest.Type or DocumentRequest.Member;
     }
 
-    private static DecompiledDocument Decompile(ModuleReadLease reading, DocumentRequest request, DecompilerTypeSystem? typeSystem, DecompilationLanguage language,
-        DecompilerOptions options, IDocumentNotes notes, CancellationToken cancellationToken, string? note)
+    private static DecompiledDocument Decompile(ModuleReadLease reading, DocumentRequest request, DecompilerTypeSystem? typeSystem,
+        DecompilerTypeSystem? chosenTypeSystem, DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, CancellationToken cancellationToken,
+        string? note)
     {
-        var builder = new DocumentBuilder { Language = language, Assembly = ModuleOf(request), TypeSystem = typeSystem };
+        var builder = new DocumentBuilder { Language = language, Assembly = ModuleOf(request), TypeSystem = typeSystem, ChosenTypeSystem = chosenTypeSystem };
         if (note is not null)
         {
             WriteComment(builder, note);
@@ -111,8 +148,9 @@ internal static class NodeDecompiler
         }
     }
 
-    private static DecompiledDocument DecompileOrThrow(ModuleReadLease reading, DocumentRequest request, DecompilerTypeSystem? typeSystem, DecompilationLanguage language,
-        DecompilerOptions options, IDocumentNotes notes, CallbackFailure callbacks, CancellationToken cancellationToken)
+    private static DecompiledDocument DecompileOrThrow(ModuleReadLease reading, DocumentRequest request, DecompilerTypeSystem? typeSystem,
+        DecompilerTypeSystem? chosenTypeSystem, DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, CallbackFailure callbacks,
+        CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (request is DocumentRequest.Failure failure)
@@ -120,7 +158,10 @@ internal static class NodeDecompiler
             return DescribeLoadError(failure, language, notes);
         }
 
-        var builder = new DocumentBuilder { Language = language, Assembly = ModuleOf(request), TypeSystem = typeSystem, Callbacks = callbacks };
+        var builder = new DocumentBuilder
+        {
+            Language = language, Assembly = ModuleOf(request), TypeSystem = typeSystem, ChosenTypeSystem = chosenTypeSystem, Callbacks = callbacks,
+        };
         WriteUnreadReferences(builder, request, typeSystem, notes);
         Write(reading, request, builder, language, Settings.Create(options), notes, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
@@ -188,68 +229,71 @@ internal static class NodeDecompiler
 
     /// <summary>Writes the code <paramref name="export"/> names to <paramref name="stream"/>, the app's notes beside a
     /// document's code in <paramref name="notes"/>' words. Throws when decompiling fails.</summary>
-    internal static void WriteCode(ModuleReadLease reading, CodeExport export, DecompilerTypeSystem? typeSystem, DecompilationLanguage language,
-        DecompilerOptions options, IDocumentNotes notes, CallbackFailure callbacks, Stream stream, CancellationToken cancellationToken)
+    internal static void WriteCode(ModuleReadLease reading, CodeExport export, DecompilerTypeSystem? typeSystem, DecompilerTypeSystem? chosenTypeSystem,
+        DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, CallbackFailure callbacks, Stream stream, CancellationToken cancellationToken)
     {
         using var writer = new StreamWriter(stream);
-        export.Switch((reading, typeSystem, language, options, notes, callbacks, writer, cancellationToken),
-            static (s, whole) => WriteWholeCode(s.reading, whole, RequireTypeSystem(s.typeSystem), s.language, s.options, s.callbacks, s.writer, s.cancellationToken),
-            static (s, ns) => WriteWholeCode(s.reading, ns, RequireTypeSystem(s.typeSystem), s.language, s.options, s.callbacks, s.writer, s.cancellationToken),
+        export.Switch((reading, typeSystem, chosenTypeSystem, language, options, notes, callbacks, writer, cancellationToken),
+            static (s, whole) => WriteWholeCode(s.reading, whole, RequireTypeSystem(s.typeSystem), s.chosenTypeSystem, s.language, s.options, s.callbacks, s.writer,
+                s.cancellationToken),
+            static (s, ns) => WriteWholeCode(s.reading, ns, RequireTypeSystem(s.typeSystem), s.chosenTypeSystem, s.language, s.options, s.callbacks, s.writer,
+                s.cancellationToken),
             static (s, document) =>
             {
-                var written = DecompileOrThrow(s.reading, document.Request, s.typeSystem, s.language, s.options, s.notes, s.callbacks, s.cancellationToken);
+                var written = DecompileOrThrow(s.reading, document.Request, s.typeSystem, s.chosenTypeSystem, s.language, s.options, s.notes, s.callbacks,
+                    s.cancellationToken);
                 s.writer.Write(Documents.GetText(written));
             });
     }
 
-    private static void WriteWholeCode(ModuleReadLease reading, CodeExport export, DecompilerTypeSystem typeSystem, DecompilationLanguage language, DecompilerOptions options,
-        CallbackFailure callbacks, TextWriter writer, CancellationToken cancellationToken)
+    private static void WriteWholeCode(ModuleReadLease reading, CodeExport export, DecompilerTypeSystem typeSystem, DecompilerTypeSystem? chosenTypeSystem,
+        DecompilationLanguage language, DecompilerOptions options, CallbackFailure callbacks, TextWriter writer, CancellationToken cancellationToken)
     {
         var settings = Settings.Create(options);
         var output = new PlainTextOutput(writer) { IndentationString = settings.CSharpFormattingOptions.IndentationString };
         if (language == DecompilationLanguage.CSharp)
         {
-            WriteWholeCSharp(reading, export, typeSystem, output, settings, callbacks, cancellationToken);
+            WriteWholeCSharp(export, RequireTypeSystem(chosenTypeSystem), output, settings, cancellationToken);
         }
         else
         {
-            WriteWholeIL(reading, export, typeSystem, output, language, settings, callbacks, cancellationToken);
+            WriteWholeIL(reading, export, typeSystem, chosenTypeSystem, output, language, settings, callbacks, cancellationToken);
         }
     }
 
-    private static void WriteWholeCSharp(ModuleReadLease reading, CodeExport export, DecompilerTypeSystem typeSystem, ITextOutput output, DecompilerSettings settings,
-        CallbackFailure callbacks, CancellationToken cancellationToken)
+    private static void WriteWholeCSharp(CodeExport export, DecompilerTypeSystem chosenTypeSystem, ITextOutput output, DecompilerSettings settings,
+        CancellationToken cancellationToken)
     {
-        var syntaxTree = DecompileWhole(reading, export, typeSystem, settings, callbacks, cancellationToken);
+        var syntaxTree = DecompileWhole(export, chosenTypeSystem, settings, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         syntaxTree.AcceptVisitor(new InsertParenthesesVisitor { InsertParenthesesForReadability = true });
         var writer = new TextTokenWriter(output, settings);
         syntaxTree.AcceptVisitor(new CSharpOutputVisitor(writer, settings.CSharpFormattingOptions));
     }
 
-    private static SyntaxTree DecompileWhole(ModuleReadLease reading, CodeExport export, DecompilerTypeSystem typeSystem, DecompilerSettings settings,
-        CallbackFailure callbacks, CancellationToken cancellationToken)
+    private static SyntaxTree DecompileWhole(CodeExport export, DecompilerTypeSystem chosenTypeSystem, DecompilerSettings settings,
+        CancellationToken cancellationToken)
     {
         if (export is CodeExport.WholeModule whole)
         {
-            return CreateCSharpDecompiler(reading, whole.Module, typeSystem, settings, callbacks, cancellationToken).DecompileWholeModuleAsSingleFile();
+            return CreateCSharpDecompiler(whole.Module, chosenTypeSystem, settings, cancellationToken).DecompileWholeModuleAsSingleFile();
         }
 
         if (export is CodeExport.Namespace ns)
         {
-            return CreateCSharpDecompiler(reading, ns.Module, typeSystem, settings, callbacks, cancellationToken).DecompileTypes(TypeHandles(ns));
+            return CreateCSharpDecompiler(ns.Module, chosenTypeSystem, settings, cancellationToken).DecompileTypes(TypeHandles(ns));
         }
 
         throw new UnreachableException();
     }
 
-    private static void WriteWholeIL(ModuleReadLease reading, CodeExport export, DecompilerTypeSystem typeSystem, ITextOutput output, DecompilationLanguage language,
-        DecompilerSettings settings, CallbackFailure callbacks, CancellationToken cancellationToken)
+    private static void WriteWholeIL(ModuleReadLease reading, CodeExport export, DecompilerTypeSystem typeSystem, DecompilerTypeSystem? chosenTypeSystem,
+        ITextOutput output, DecompilationLanguage language, DecompilerSettings settings, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
         if (export is CodeExport.WholeModule whole)
         {
             var file = LoadedAssemblies.GetFile(whole.Module);
-            var disassembler = CreateDisassembler(reading, whole.Module, typeSystem, output, callbacks, language, settings, cancellationToken);
+            var disassembler = CreateDisassembler(reading, whole.Module, typeSystem, chosenTypeSystem, output, callbacks, language, settings, cancellationToken);
             disassembler.WriteAssemblyReferences(file.Metadata);
             if (file.Metadata.IsAssembly)
             {
@@ -265,7 +309,7 @@ internal static class NodeDecompiler
 
         if (export is CodeExport.Namespace ns)
         {
-            CreateDisassembler(reading, ns.Module, typeSystem, output, callbacks, language, settings, cancellationToken)
+            CreateDisassembler(reading, ns.Module, typeSystem, chosenTypeSystem, output, callbacks, language, settings, cancellationToken)
                 .DisassembleNamespace(ns.Name, LoadedAssemblies.GetFile(ns.Module), TypeHandles(ns));
             return;
         }
@@ -324,7 +368,7 @@ internal static class NodeDecompiler
             static (s, preview) =>
             {
                 var file = LoadedAssemblies.GetFile(preview.Module);
-                var disassembler = CreateDisassembler(s.reading, preview.Module, RequireTypeSystem(s.output.TypeSystem), s.output, s.output.Callbacks, s.language, s.settings, s.cancellationToken);
+                var disassembler = CreateDisassembler(s.reading, preview.Module, RequireTypeSystem(s.output.TypeSystem), s.output.ChosenTypeSystem, s.output, s.output.Callbacks, s.language, s.settings, s.cancellationToken);
                 WriteAssemblySummary(preview.Module, s.output, s.notes);
                 s.output.WriteLine();
                 disassembler.WriteAssemblyReferences(file.Metadata);
@@ -336,11 +380,11 @@ internal static class NodeDecompiler
                 s.output.WriteLine();
                 disassembler.WriteModuleHeader(file);
             },
-            static (s, type) => CreateDisassembler(s.reading, type.Definition.Module, RequireTypeSystem(s.output.TypeSystem), s.output, s.output.Callbacks, s.language, s.settings, s.cancellationToken)
+            static (s, type) => CreateDisassembler(s.reading, type.Definition.Module, RequireTypeSystem(s.output.TypeSystem), s.output.ChosenTypeSystem, s.output, s.output.Callbacks, s.language, s.settings, s.cancellationToken)
                 .DisassembleType(LoadedAssemblies.GetFile(type.Definition.Module), type.Definition.Handle),
             static (s, member) =>
             {
-                var memberDisassembler = CreateDisassembler(s.reading, member.Definition.Module, RequireTypeSystem(s.output.TypeSystem), s.output, s.output.Callbacks, s.language, s.settings,
+                var memberDisassembler = CreateDisassembler(s.reading, member.Definition.Module, RequireTypeSystem(s.output.TypeSystem), s.output.ChosenTypeSystem, s.output, s.output.Callbacks, s.language, s.settings,
                     s.cancellationToken);
                 DisassembleMember(memberDisassembler, LoadedAssemblies.GetFile(member.Definition.Module), member.Definition.Reference.Handle);
             },
@@ -372,9 +416,10 @@ internal static class NodeDecompiler
     }
 
     private static ReflectionDisassembler CreateDisassembler(ModuleReadLease reading, LoadedModule assembly, DecompilerTypeSystem typeSystem,
-        ITextOutput output, CallbackFailure callbacks, DecompilationLanguage language, DecompilerSettings settings, CancellationToken cancellationToken)
+        DecompilerTypeSystem? chosenTypeSystem, ITextOutput output, CallbackFailure callbacks, DecompilationLanguage language, DecompilerSettings settings,
+        CancellationToken cancellationToken)
     {
-        var body = CreateMethodBodyDisassembler(reading, assembly, typeSystem, output, callbacks, language, settings, cancellationToken);
+        var body = CreateMethodBodyDisassembler(assembly, typeSystem, chosenTypeSystem, output, callbacks, language, settings, cancellationToken);
         return new ReflectionDisassembler(output, body, cancellationToken)
         {
             DetectControlStructure = true,
@@ -384,12 +429,13 @@ internal static class NodeDecompiler
         };
     }
 
-    private static MethodBodyDisassembler CreateMethodBodyDisassembler(ModuleReadLease reading, LoadedModule assembly, DecompilerTypeSystem typeSystem,
-        ITextOutput output, CallbackFailure callbacks, DecompilationLanguage language, DecompilerSettings settings, CancellationToken cancellationToken)
+    private static MethodBodyDisassembler CreateMethodBodyDisassembler(LoadedModule assembly, DecompilerTypeSystem typeSystem,
+        DecompilerTypeSystem? chosenTypeSystem, ITextOutput output, CallbackFailure callbacks, DecompilationLanguage language, DecompilerSettings settings,
+        CancellationToken cancellationToken)
     {
         if (language == DecompilationLanguage.ILWithCSharp)
         {
-            return new MethodBodyWithCSharp(output, callbacks, reading, assembly, typeSystem, settings, cancellationToken);
+            return new MethodBodyWithCSharp(output, callbacks, assembly, typeSystem, RequireTypeSystem(chosenTypeSystem), settings, cancellationToken);
         }
 
         return new MethodBodyDisassembler(output, cancellationToken);
@@ -437,7 +483,7 @@ internal static class NodeDecompiler
     private static void WriteSyntaxTree(ModuleReadLease reading, LoadedModule assembly, DocumentBuilder output, DecompilerSettings settings,
         Func<CSharpDecompiler, SyntaxTree> decompile, CancellationToken cancellationToken)
     {
-        var decompiler = CreateCSharpDecompiler(reading, assembly, RequireTypeSystem(output.TypeSystem), settings, output.Callbacks, cancellationToken);
+        var decompiler = CreateCSharpDecompiler(assembly, RequireTypeSystem(output.ChosenTypeSystem), settings, cancellationToken);
         var syntaxTree = decompile(decompiler);
         cancellationToken.ThrowIfCancellationRequested();
         output.IndentAs(settings.CSharpFormattingOptions);
@@ -469,12 +515,12 @@ internal static class NodeDecompiler
     }
 
     /// <summary>The C# decompiler of <paramref name="assembly"/> with <paramref name="settings"/>, over
-    /// <paramref name="typeSystem"/>, the assembly's own as read, or the one the settings choose, read in the unit of
-    /// <paramref name="reading"/>.</summary>
-    internal static CSharpDecompiler CreateCSharpDecompiler(ModuleReadLease reading, LoadedModule assembly, DecompilerTypeSystem typeSystem,
-        DecompilerSettings settings, CallbackFailure callbacks, CancellationToken cancellationToken)
+    /// <paramref name="chosenTypeSystem"/>, the type system those settings read, which the unit awaited before its read
+    /// began (<see cref="LoadedAssemblies.ReadChosenTypeSystemAsync(ModuleReadLease, LoadedModule, DecompilerSettings, CancellationToken)"/>).</summary>
+    internal static CSharpDecompiler CreateCSharpDecompiler(LoadedModule assembly, DecompilerTypeSystem chosenTypeSystem, DecompilerSettings settings,
+        CancellationToken cancellationToken)
     {
-        return new CSharpDecompiler(LoadedAssemblies.ChooseTypeSystemFor(reading, assembly, typeSystem, settings, callbacks), settings)
+        return new CSharpDecompiler(chosenTypeSystem, settings)
         {
             CancellationToken = cancellationToken,
             DebugInfoProvider = DebugSymbolsFor(assembly, settings),

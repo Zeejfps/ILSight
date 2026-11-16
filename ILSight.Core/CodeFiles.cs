@@ -51,13 +51,24 @@ public static class CodeFiles
         var module = FindModule(export);
         if (module is null)
         {
-            return Save(reading, export, null, language, options, notes, path, callbacks, cancellationToken);
+            return Save(reading, export, null, null, language, options, notes, path, callbacks, cancellationToken);
         }
 
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, module, cancellationToken);
-        return read.Match(
-            r => Save(reading, export, r.TypeSystem, language, options, notes, path, callbacks, cancellationToken),
-            u => SaveUnreadable(reading, export, module, u, language, options, notes, path, callbacks, cancellationToken),
+        if (read is not TypeSystemRead.Read own || !NodeDecompiler.WritesCSharp(export, language))
+        {
+            return read.Match(
+                r => Save(reading, export, r.TypeSystem, null, language, options, notes, path, callbacks, cancellationToken),
+                u => SaveUnreadable(reading, export, module, u, language, options, notes, path, callbacks, cancellationToken),
+                static c => new TypeSystemWork<string>.Closed { Module = c.Module });
+        }
+
+        // The type system the decompiler reads with these settings, a shared read of its own, awaited and matched before
+        // the save's read starts: what the library failed on reading it is the module's, unreadable, with why.
+        var chosen = await LoadedAssemblies.ReadChosenTypeSystemAsync(reading, module, Settings.Create(options), cancellationToken);
+        return chosen.Match<TypeSystemWork<string>>(
+            r => Save(reading, export, own.TypeSystem, r.TypeSystem, language, options, notes, path, callbacks, cancellationToken),
+            u => new TypeSystemWork<string>.Unreadable { Module = new UnreadableModule { Module = module, Why = u.Thrown.SourceException } },
             static c => new TypeSystemWork<string>.Closed { Module = c.Module });
     }
 
@@ -66,16 +77,17 @@ public static class CodeFiles
     {
         if (export is CodeExport.Document document && !NodeDecompiler.IsReadThroughTypeSystem(document.Request))
         {
-            return Save(reading, export, null, language, options, notes, path, callbacks, cancellationToken);
+            return Save(reading, export, null, null, language, options, notes, path, callbacks, cancellationToken);
         }
 
         return new TypeSystemWork<string>.Unreadable { Module = new UnreadableModule { Module = module, Why = unreadable.Thrown.SourceException } };
     }
 
-    private static TypeSystemWork<string> Save(ModuleReadLease reading, CodeExport export, DecompilerTypeSystem? typeSystem, DecompilationLanguage language, DecompilerOptions options,
-        IDocumentNotes notes, string path, CallbackFailure callbacks, CancellationToken cancellationToken)
+    private static TypeSystemWork<string> Save(ModuleReadLease reading, CodeExport export, DecompilerTypeSystem? typeSystem, DecompilerTypeSystem? chosenTypeSystem,
+        DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, string path, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
-        AtomicFile.Write(path, stream => NodeDecompiler.WriteCode(reading, export, typeSystem, language, options, notes, callbacks, stream, cancellationToken));
+        AtomicFile.Write(path, stream => NodeDecompiler.WriteCode(reading, export, typeSystem, chosenTypeSystem, language, options, notes, callbacks, stream,
+            cancellationToken));
         return new TypeSystemWork<string>.Done { Value = path };
     }
 

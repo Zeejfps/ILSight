@@ -24,9 +24,9 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     private const string NoCSharp = "(no C# code)";
     private const string CommentPrefix = "// ";
 
-    private readonly ModuleReadLease _reading;
     private readonly LoadedModule _assembly;
     private readonly DecompilerTypeSystem _typeSystem;
+    private readonly DecompilerTypeSystem _chosenTypeSystem;
     private readonly DecompilerSettings _settings;
     private readonly CancellationToken _cancellationToken;
     private readonly DocumentBuilder? _document;
@@ -38,15 +38,16 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
 
     /// <param name="callbacks">What the app's code the disassembler calls back marks when it throws: the read's, which
     /// the catch around the whole write reads (the builder's, or a saved file's own).</param>
-    /// <param name="reading">The reading of the unit writing.</param>
     /// <param name="typeSystem">The type system of <paramref name="assembly"/>, as the unit writing read it.</param>
-    public MethodBodyWithCSharp(ITextOutput output, CallbackFailure callbacks, ModuleReadLease reading, LoadedModule assembly, DecompilerTypeSystem typeSystem,
-        DecompilerSettings settings, CancellationToken cancellationToken)
+    /// <param name="chosenTypeSystem">The type system the decompiler reads with <paramref name="settings"/>, as the unit
+    /// writing awaited it.</param>
+    public MethodBodyWithCSharp(ITextOutput output, CallbackFailure callbacks, LoadedModule assembly, DecompilerTypeSystem typeSystem,
+        DecompilerTypeSystem chosenTypeSystem, DecompilerSettings settings, CancellationToken cancellationToken)
         : base(output, cancellationToken)
     {
-        _reading = reading;
         _assembly = assembly;
         _typeSystem = typeSystem;
+        _chosenTypeSystem = chosenTypeSystem;
         _settings = settings;
         _cancellationToken = cancellationToken;
         _document = output as DocumentBuilder;
@@ -88,7 +89,7 @@ internal sealed class MethodBodyWithCSharp : MethodBodyDisassembler
     {
         try
         {
-            var decompiler = NodeDecompiler.CreateCSharpDecompiler(_reading, _assembly, _typeSystem, _settings, _callbacks, _cancellationToken);
+            var decompiler = NodeDecompiler.CreateCSharpDecompiler(_assembly, _chosenTypeSystem, _settings, _cancellationToken);
             var syntaxTree = decompiler.Decompile(handle);
             NodeDecompiler.WriteLocatedSyntaxTree(syntaxTree, builder, _settings);
             return decompiler.CreateSequencePoints(syntaxTree);

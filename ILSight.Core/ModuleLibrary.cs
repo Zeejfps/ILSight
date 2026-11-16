@@ -34,7 +34,7 @@ internal sealed class ModuleLibrary
     {
         File = file;
         Resolver = resolver;
-        TypeSystem = new TypeSystemReader(this);
+        TypeSystem = new TypeSystemReader(this, LoadedAssemblies.DefaultTypeSystemOptions);
         DebugSymbols = new Lazy<DebugSymbols?>(readDebugSymbols);
         ReferenceUsage = new Lazy<ReferenceUsage>(readReferenceUsage);
     }
@@ -51,9 +51,20 @@ internal sealed class ModuleLibrary
     /// <summary>What the assembly uses of the assemblies it references.</summary>
     public Lazy<ReferenceUsage> ReferenceUsage { get; }
 
-    /// <summary>The type systems of the settings that turn language features on or off that
-    /// <see cref="TypeSystem"/> models, each with the modules its build was handed.</summary>
-    public ConcurrentDictionary<TypeSystemOptions, Lazy<TypeSystemBuild<DecompilerTypeSystem>>> TypeSystems { get; } = new();
+    private readonly ConcurrentDictionary<TypeSystemOptions, TypeSystemReader> _typeSystemsForOptions = new();
+
+    /// <summary>The read of the type system <paramref name="options"/> make: <see cref="TypeSystem"/> for the module's
+    /// own options, else one made for them the first time they are asked for, then kept, each a shared read of its
+    /// own.</summary>
+    public TypeSystemReader EnsureTypeSystemReader(TypeSystemOptions options)
+    {
+        if (options == LoadedAssemblies.DefaultTypeSystemOptions)
+        {
+            return TypeSystem;
+        }
+
+        return _typeSystemsForOptions.GetOrAdd(options, static (o, library) => new TypeSystemReader(library, o), this);
+    }
 
     /// <summary>The references whose file was found but could not be read, each once by its name, in the order met: the
     /// type systems read them by name only (<see cref="ReadingResolver"/>).</summary>
