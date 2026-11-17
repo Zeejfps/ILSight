@@ -83,7 +83,12 @@ public static class Analysis
     /// <see cref="AnalyzeReferenceHandler"/> to find and analyze.</summary>
     public static PendingAnalysis BeginAnalyzing(AnalyzerTree analyzer, CodeReference.Navigable reference)
     {
-        return new PendingAnalysis.OfTarget { Root = analyzer.AddPending(savedAs: null), Reference = reference };
+        return new PendingAnalysis
+        {
+            Root = analyzer.AddPending(savedAs: null),
+            Reference = reference,
+            Kind = new PendingAnalysisKind.OfTarget(),
+        };
     }
 
     /// <summary>The roots of <paramref name="analyzer"/> restored from the saved analyses that still wait for their

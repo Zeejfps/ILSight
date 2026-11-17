@@ -89,7 +89,12 @@ public sealed class AnalyzerTree
     private AnalyzerAdd BeginListing(AnalysisSymbol symbol)
     {
         var reference = symbol.Reference ?? throw new InvalidOperationException($"{symbol.Label} is listed by its reference, which it has none of.");
-        var pending = new PendingAnalysis.OfSymbol { Root = AddPending(savedAs: null), Reference = reference, Symbol = symbol };
+        var pending = new PendingAnalysis
+        {
+            Root = AddPending(savedAs: null),
+            Reference = reference,
+            Kind = new PendingAnalysisKind.OfSymbol { Symbol = symbol },
+        };
         return new AnalyzerAdd.Listing { Pending = pending };
     }
 

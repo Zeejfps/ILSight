@@ -100,7 +100,7 @@ public sealed class CodeViewTests
 
         var result = view.Click(line, column + 2);
 
-        var navigate = Assert.IsType<CodeViewIntent.Navigate>(result.Intent);
+        var navigate = UnionAsserts.GetCase<CodeViewIntent.Navigate>(result.Intent);
         Assert.Equal(view.Document.SpanAt(line, column).Reference, navigate.Target);
         Assert.Equal(EntityKind.Method, UnionAsserts.GetCase<CodeReference.Entity>(navigate.Target).Kind);
         Assert.False(navigate.InNewTab);
@@ -116,10 +116,10 @@ public sealed class CodeViewTests
         var middle = view.Click(line, column, PointerButton.Middle);
 
         var reference = view.Document.SpanAt(line, column).Reference;
-        var withCtrl = Assert.IsType<CodeViewIntent.Navigate>(ctrl.Intent);
+        var withCtrl = UnionAsserts.GetCase<CodeViewIntent.Navigate>(ctrl.Intent);
         Assert.True(withCtrl.InNewTab);
         Assert.Equal(reference, withCtrl.Target);
-        var withMiddle = Assert.IsType<CodeViewIntent.Navigate>(middle.Intent);
+        var withMiddle = UnionAsserts.GetCase<CodeViewIntent.Navigate>(middle.Intent);
         Assert.True(withMiddle.InNewTab);
         Assert.Equal(reference, withMiddle.Target);
     }
@@ -388,7 +388,7 @@ public sealed class CodeViewTests
         view.Run();
         var item = view.Frames.Canvas.Texts.Single(t => t.Inputs.Text == "Go to definition").Inputs.Position;
         view.Frames.Click(item.Left + 2f, view.Frames.Height - item.Center.Y);
-        var navigate = Assert.IsType<CodeViewIntent.Navigate>(view.Last.Intent);
+        var navigate = UnionAsserts.GetCase<CodeViewIntent.Navigate>(view.Last.Intent);
 
         Assert.Equal(view.Document.SpanAt(line, column).Reference, navigate.Target);
         Assert.False(navigate.InNewTab);
@@ -407,7 +407,7 @@ public sealed class CodeViewTests
             var item = view.Frames.Canvas.Texts.Single(t => t.Inputs.Text == "Show in metadata").Inputs.Position;
             view.Frames.Click(item.Left + 2f, view.Frames.Height - item.Center.Y);
 
-            var shown = Assert.IsType<CodeViewIntent.ShowInMetadata>(view.Last.Intent);
+            var shown = UnionAsserts.GetCase<CodeViewIntent.ShowInMetadata>(view.Last.Intent);
             Assert.Equal(view.Document.SpanAt(line, column).Reference, shown.Target);
         }
     }
@@ -422,7 +422,7 @@ public sealed class CodeViewTests
         var item = view.Frames.Canvas.Texts.Single(t => t.Inputs.Text == "Show in .NET API reference").Inputs.Position;
         view.Frames.Click(item.Left + 2f, view.Frames.Height - item.Center.Y);
 
-        var shown = Assert.IsType<CodeViewIntent.ShowInApiReference>(view.Last.Intent);
+        var shown = UnionAsserts.GetCase<CodeViewIntent.ShowInApiReference>(view.Last.Intent);
         Assert.Equal(view.Document.SpanAt(line, column).Reference, shown.Entity);
     }
 

@@ -94,7 +94,7 @@ public sealed class RunAnalysisHandlerTests
         await d.RunAsync(() => new RunAnalysisHandler(ports).HandleAsync(d.AppState.ListSession.Analyzer, run, CancellationToken.None));
 
         Assert.Empty(run.Kind.Found);
-        Assert.IsType<AnalyzerRun.Stopped>(run.Kind.Run);
+        UnionAsserts.GetCase<AnalyzerRun.Stopped>(run.Kind.Run);
     }
 
     [Fact]

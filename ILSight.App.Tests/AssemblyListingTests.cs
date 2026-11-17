@@ -606,7 +606,7 @@ public sealed class AssemblyListingTests
 
         Assert.Contains("Work", app.AppState.Lists.Names);
         Assert.Equal(SavedAssemblyLists.DefaultName, app.AppState.Lists.Active);
-        Assert.IsType<ListsDialogMode.Browsing>(app.Ui.ListsDialog.Mode);
+        UnionAsserts.GetCase<ListsDialogMode.Browsing>(app.Ui.ListsDialog.Mode);
     }
 
     [Fact]
@@ -640,7 +640,7 @@ public sealed class AssemblyListingTests
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, preset.Name));
         app.Frames.Frame(2);
 
-        Assert.Equal(preset.Name, Assert.IsType<ListsDialogMode.Renaming>(app.Ui.ListsDialog.Mode).List);
+        Assert.Equal(preset.Name, UnionAsserts.GetCase<ListsDialogMode.Renaming>(app.Ui.ListsDialog.Mode).List);
         Assert.Equal(preset.Paths, app.AppState.Lists.GetPaths(preset.Name));
         Assert.Equal(SavedAssemblyLists.DefaultName, app.AppState.Lists.Active);
     }
@@ -652,14 +652,14 @@ public sealed class AssemblyListingTests
 
         app.DoubleClickOn(Selector.WithText(Other));
         app.Frames.Frame(2);
-        Assert.Equal(Other, Assert.IsType<ListsDialogMode.Renaming>(app.Ui.ListsDialog.Mode).List);
+        Assert.Equal(Other, UnionAsserts.GetCase<ListsDialogMode.Renaming>(app.Ui.ListsDialog.Mode).List);
         app.Frames.Type("Gone");
         app.Frames.Frame(2);
         app.Frames.Key(KeyboardKey.Escape);
         app.Frames.Frame(2);
 
         Assert.Equal([SavedAssemblyLists.DefaultName, Other], app.AppState.Lists.Names);
-        Assert.IsType<ListsDialogMode.Browsing>(app.Ui.ListsDialog.Mode);
+        UnionAsserts.GetCase<ListsDialogMode.Browsing>(app.Ui.ListsDialog.Mode);
         Assert.True(app.Ui.ListsDialog.IsOpen);
         Assert.Equal(SavedAssemblyLists.DefaultName, app.AppState.Lists.Active);
     }
@@ -672,7 +672,7 @@ public sealed class AssemblyListingTests
         app.Frames.ClickOn(Selector.AtPath("delete"));
         app.Frames.Frame(2);
         Assert.True(app.Frames.Drew("Delete assembly list"));
-        Assert.Equal(SavedAssemblyLists.DefaultName, Assert.IsType<ListsDialogMode.ConfirmingDelete>(app.Ui.ListsDialog.Mode).List);
+        Assert.Equal(SavedAssemblyLists.DefaultName, UnionAsserts.GetCase<ListsDialogMode.ConfirmingDelete>(app.Ui.ListsDialog.Mode).List);
         Assert.Equal(Other, app.AppState.Lists.GetReplacement(SavedAssemblyLists.DefaultName));
         app.Frames.ClickOn(Selector.WithText("Delete list"));
         app.Frames.Frame(2);
@@ -695,7 +695,7 @@ public sealed class AssemblyListingTests
         app.Frames.Frame(2);
 
         Assert.False(app.Frames.Drew("Delete assembly list"));
-        Assert.IsType<ListsDialogMode.Browsing>(app.Ui.ListsDialog.Mode);
+        UnionAsserts.GetCase<ListsDialogMode.Browsing>(app.Ui.ListsDialog.Mode);
         Assert.True(app.Ui.ListsDialog.IsOpen);
         Assert.Equal([SavedAssemblyLists.DefaultName, Other], app.AppState.Lists.Names);
     }

@@ -412,7 +412,7 @@ public sealed class AppStateTests
         Assert.Same(tab, d.AppState.ListSession.Navigation.ActiveTab);
         Assert.False(tab.Load.IsBusy);
         Assert.Same(document, tab.Document);
-        Assert.IsType<PendingScroll.Restore>(view.Reveal.Pending);
+        UnionAsserts.GetCase<PendingScroll.Restore>(view.Reveal.Pending);
     }
 
     [Fact]
@@ -548,13 +548,13 @@ public sealed class AppStateTests
         var fixturesNamespace = await d.NodeAsync(AppStateDriver.FixturesNamespace);
         d.StartShowing(fixturesNamespace);
         d.NextFrame();
-        Assert.IsNotType<PendingScroll.Reveal>(view.Reveal.Pending);
+        Assert.False(view.Reveal.Pending is PendingScroll.Reveal);
         d.Settle();
-        Assert.IsNotType<PendingScroll.Reveal>(view.Reveal.Pending);
+        Assert.False(view.Reveal.Pending is PendingScroll.Reveal);
 
         var greeter = await d.FixtureAsync("Greeter");
         d.Show(greeter);
-        var reveal = Assert.IsType<PendingScroll.Reveal>(view.Reveal.Pending);
+        var reveal = UnionAsserts.GetCase<PendingScroll.Reveal>(view.Reveal.Pending);
         Assert.NotNull(tab.Node);
         Assert.Equal(Documents.FindDefinitionLine(tab.Document, tab.Node), reveal.Line);
     }

@@ -128,7 +128,7 @@ internal static class DocumentsView
             closedAssembly: tab.Load.ClosedAssembly);
         if (result.Intent is not null)
         {
-            Act(ui, appearance, commands, panels, bookmarksPanel, navigation, tab, result.Intent);
+            Act(ui, appearance, commands, panels, bookmarksPanel, navigation, tab, result.Intent.Value);
         }
 
         Zoom(display, appearance, result.Zoom);
@@ -143,24 +143,34 @@ internal static class DocumentsView
             return;
         }
 
-        intent.Switch((appearance, commands, panels, bookmarksPanel, navigation, tab),
-            navigate: static (s, navigate) =>
-            {
-                var resolveTicket = s.navigation.BeginResolving(navigate.InNewTab);
-                Commands.GoToReferenceLater(s.commands, navigate.Target, resolveTicket);
-            },
-            toggleBookmark: static (s, toggle) => Commands.Later(s.commands, (bookmarksPanel: s.bookmarksPanel, s.tab, line: toggle.Line, t: s.appearance.Strings),
-                static (a, s) => ToggleLineBookmark(s.bookmarksPanel, a, s.tab, s.line, s.t)),
-            analyze: static (s, analyze) => Commands.AnalyzeLater(s.commands, s.panels, analyze.Entity),
-            showInMetadata: static (s, metadata) =>
-            {
-                var resolveTicket = s.navigation.BeginResolving(inNewTab: false);
-                Commands.ShowInMetadataLater(s.commands, metadata.Target, resolveTicket);
-            },
-            showInApiReference: static (s, reference) => Commands.Start(s.commands, nameof(ShowInApiReferenceHandler), reference.Entity,
-                static (a, entity, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, entity, ct)),
-            showInDiagram: static (s, diagram) => DiagramView.ShowInDiagramLater(s.commands, diagram.Type, new TabTitle.Diagram(diagram.Type.Name)),
-            showInNewDiagram: static (s, diagram) => DiagramView.ShowInNewDiagramLater(s.commands, diagram.Type, new TabTitle.Diagram(diagram.Type.Name)));
+        switch (intent)
+        {
+            case CodeViewIntent.Navigate navigate:
+                var navigateTicket = navigation.BeginResolving(navigate.InNewTab);
+                Commands.GoToReferenceLater(commands, navigate.Target, navigateTicket);
+                break;
+            case CodeViewIntent.ToggleBookmark toggle:
+                Commands.Later(commands, (bookmarksPanel, tab, line: toggle.Line, t: appearance.Strings),
+                    static (a, s) => ToggleLineBookmark(s.bookmarksPanel, a, s.tab, s.line, s.t));
+                break;
+            case CodeViewIntent.Analyze analyze:
+                Commands.AnalyzeLater(commands, panels, analyze.Entity);
+                break;
+            case CodeViewIntent.ShowInMetadata metadata:
+                var metadataTicket = navigation.BeginResolving(inNewTab: false);
+                Commands.ShowInMetadataLater(commands, metadata.Target, metadataTicket);
+                break;
+            case CodeViewIntent.ShowInApiReference reference:
+                Commands.Start(commands, nameof(ShowInApiReferenceHandler), reference.Entity,
+                    static (a, entity, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, entity, ct));
+                break;
+            case CodeViewIntent.ShowInDiagram diagram:
+                DiagramView.ShowInDiagramLater(commands, diagram.Type, new TabTitle.Diagram(diagram.Type.Name));
+                break;
+            case CodeViewIntent.ShowInNewDiagram diagram:
+                DiagramView.ShowInNewDiagramLater(commands, diagram.Type, new TabTitle.Diagram(diagram.Type.Name));
+                break;
+        }
     }
 
     private static void Zoom(ScreenDisplay display, Appearance appearance, CodeZoom zoom)

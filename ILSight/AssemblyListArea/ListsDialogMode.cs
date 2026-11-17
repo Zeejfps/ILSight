@@ -2,17 +2,14 @@ namespace ILSight.AssemblyListArea;
 
 /// <summary>What the assembly lists dialog is doing: closed; open on the lists; renaming one, with the name
 /// typed so far; or asking whether to delete one.</summary>
-public abstract record ListsDialogMode
+public union ListsDialogMode(ListsDialogMode.Closed, ListsDialogMode.Browsing, ListsDialogMode.Renaming,
+    ListsDialogMode.ConfirmingDelete)
 {
-    private ListsDialogMode()
-    {
-    }
+    public sealed record Closed;
 
-    public sealed record Closed : ListsDialogMode;
+    public sealed record Browsing;
 
-    public sealed record Browsing : ListsDialogMode;
-
-    public sealed record Renaming(string List) : ListsDialogMode
+    public sealed record Renaming(string List)
     {
         /// <summary>A field, for the edit box to take by <c>ref</c>.</summary>
         public string NewName = List;
@@ -29,5 +26,5 @@ public abstract record ListsDialogMode
         }
     }
 
-    public sealed record ConfirmingDelete(string List) : ListsDialogMode;
+    public sealed record ConfirmingDelete(string List);
 }

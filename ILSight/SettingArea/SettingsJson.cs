@@ -881,27 +881,44 @@ internal static class SettingsJson
 
     private static DiagramViewRecord Parse(DiagramViewJson json)
     {
-        var folds = json.Folds?.OfType<CardFoldJson>().Select(static f => Parse(f)).OfType<CardFold>().ToList();
         return new DiagramViewRecord
         {
             X = json.X,
             Y = json.Y,
             Zoom = json.Zoom,
-            Folds = folds,
+            Folds = json.Folds is null ? null : ParseFolds(json.Folds),
             ShowsHiddenMembers = json.ShowsHiddenMembers,
         };
     }
 
+    // The folds that read as one; a fold that doesn't is left out, as a fold the view no longer has.
+    private static List<CardFold> ParseFolds(IEnumerable<CardFoldJson?> folds)
+    {
+        var parsed = new List<CardFold>();
+        foreach (var json in folds)
+        {
+            var fold = json is null ? null : Parse(json);
+            if (fold is not null)
+            {
+                parsed.Add(fold.Value);
+            }
+        }
+
+        return parsed;
+    }
+
     private static CardFoldJson ToJson(CardFold fold)
     {
-        return fold.Match(
-            own: static own => new CardFoldJson { Card = ToJson(own.Card), Section = own.Section, InheritedFrom = null },
-            inherited: static inherited => new CardFoldJson
+        return fold switch
+        {
+            CardFold.Own own => new CardFoldJson { Card = ToJson(own.Card), Section = own.Section, InheritedFrom = null },
+            CardFold.Inherited inherited => new CardFoldJson
             {
                 Card = ToJson(inherited.Card),
                 Section = null,
                 InheritedFrom = inherited.From,
-            });
+            },
+        };
     }
 
     internal static CardFold? Parse(CardFoldJson json)

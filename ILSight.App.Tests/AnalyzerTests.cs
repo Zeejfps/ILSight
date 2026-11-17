@@ -163,7 +163,7 @@ public sealed class AnalyzerTests
         view.Click(line, column + "return First".Length);
         view.Key(Shortcuts.Analyze);
 
-        Assert.Equal("First", Assert.IsType<CodeViewIntent.Analyze>(view.Last.Intent).Entity.Name);
+        Assert.Equal("First", UnionAsserts.GetCase<CodeViewIntent.Analyze>(view.Last.Intent).Entity.Name);
     }
 
     [Fact]
@@ -233,7 +233,7 @@ public sealed class AnalyzerTests
         Assert.Equal(greeter, Assert.IsType<CommandOffer<AnalysisSymbol>.Runs>(offered).Target);
         var why = UnionAsserts.GetCase<Refusal.NotAnalyzable>(Assert.IsType<CommandOffer<AnalysisSymbol>.Unavailable>(unavailable).Why);
         var rootAdd = analyzer.AddRoot(unlisted);
-        Assert.Equal(why, Assert.IsType<AnalyzerAdd.Refused>(rootAdd).Why);
+        Assert.Equal(why, UnionAsserts.GetCase<AnalyzerAdd.Refused>(rootAdd).Why);
         Assert.Empty(analyzer.Roots);
     }
 
@@ -398,10 +398,10 @@ public sealed class AnalyzerTests
         var analyzer = d.AppState.ListSession.Analyzer;
         var firstNode = await FirstAsync(d);
         var firstAdd = analyzer.AddRoot(SymbolOf(firstNode));
-        var first = Assert.IsType<AnalyzerAdd.Analyzing>(firstAdd).Root;
+        var first = UnionAsserts.GetCase<AnalyzerAdd.Analyzing>(firstAdd).Root;
         var greeterNode = await d.FixtureAsync("Greeter");
         var greeterAdd = analyzer.AddRoot(SymbolOf(greeterNode));
-        var greeter = Assert.IsType<AnalyzerAdd.Analyzing>(greeterAdd).Root;
+        var greeter = UnionAsserts.GetCase<AnalyzerAdd.Analyzing>(greeterAdd).Root;
         d.TakeViewCommands();
 
         d.InTurn(() =>
@@ -569,7 +569,7 @@ public sealed class AnalyzerTests
 
         Analysis.CancelNode(kind);
 
-        Assert.IsType<AnalyzerRun.Stopped>(kind.Run);
+        UnionAsserts.GetCase<AnalyzerRun.Stopped>(kind.Run);
     }
 
     [Fact]
@@ -599,7 +599,7 @@ public sealed class AnalyzerTests
 
         Analysis.CancelNode(kind);
 
-        Assert.IsType<AnalyzerRun.Stopped>(kind.Run);
+        UnionAsserts.GetCase<AnalyzerRun.Stopped>(kind.Run);
         Assert.True(kind.HasStarted);
         Assert.False(kind.IsDone);
         Assert.Null(kind.Work);

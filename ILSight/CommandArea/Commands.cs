@@ -128,14 +128,19 @@ public static class Commands
     public static void Analyze(AppState appState, Panels panels, AnalyzerRows rows, AnalysisSymbol symbol)
     {
         var added = appState.ListSession.Analyzer.AddRoot(symbol);
-        added.Switch(
-            analyzing => AnalyzerPanelView.ShowAnalysis(panels, rows, analyzing.Root),
-            listing =>
-            {
+        switch (added)
+        {
+            case AnalyzerAdd.Analyzing analyzing:
+                AnalyzerPanelView.ShowAnalysis(panels, rows, analyzing.Root);
+                break;
+            case AnalyzerAdd.Listing listing:
                 var pendingAnalysis = AnalyzerPanelView.ShowListing(panels, listing.Pending);
                 StartAnalyzing(appState, pendingAnalysis);
-            },
-            refused => appState.Refusals.Show(refused.Why));
+                break;
+            case AnalyzerAdd.Refused refused:
+                appState.Refusals.Show(refused.Why);
+                break;
+        }
     }
 
     /// <summary>Starts finding what the reference of <paramref name="pending"/> points at and analyzing it in its root

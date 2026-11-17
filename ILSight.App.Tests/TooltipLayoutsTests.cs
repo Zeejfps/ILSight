@@ -220,7 +220,7 @@ public sealed class TooltipLayoutsTests
 
         var layout = TooltipLayouts.Build(Styles, English, Tooltip(Plain("Steps"), null, summary));
 
-        var block = Assert.IsType<ListBlock>(Assert.Single(Assert.Single(layout.Groups[0].Entries).Blocks));
+        var block = UnionAsserts.GetCase<ListBlock>(Assert.Single(Assert.Single(layout.Groups[0].Entries).Blocks));
         Assert.False(block.IsTable);
         Assert.Equal(["1.", "2."], block.Rows.Select(static r => TextOf(r.Lead)));
         Assert.Equal(["First – comes first.", "Then this."], block.Rows.Select(static r => TextOf(r.Content)));
@@ -262,10 +262,10 @@ public sealed class TooltipLayoutsTests
         var layout = TooltipLayouts.Build(Styles, English, Tooltip(Plain("Flags"), null, remarks));
 
         var blocks = Assert.Single(layout.Groups[0].Entries).Blocks;
-        var rows = Assert.IsType<ListBlock>(blocks[0]).Rows;
+        var rows = UnionAsserts.GetCase<ListBlock>(blocks[0]).Rows;
         Assert.Equal(["Value", "0"], rows.Select(static r => TextOf(r.Lead)));
         Assert.Same(Styles.Heading, rows[0].Lead[0].Style);
         Assert.Same(Styles.Heading, rows[0].Content[0].Style);
-        Assert.Equal("var x = 0;", TextOf(Assert.IsType<CodeBlock>(blocks[1]).Runs));
+        Assert.Equal("var x = 0;", TextOf(UnionAsserts.GetCase<CodeBlock>(blocks[1]).Runs));
     }
 }

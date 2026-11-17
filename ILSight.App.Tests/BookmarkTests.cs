@@ -241,7 +241,7 @@ public sealed class BookmarkTests : IDisposable
         view.Bookmarks = new Dictionary<int, bool> { [CodeFolding.GetLineAt(view.State.Selection.Folds, new CodeRow(5))] = true };
         var clicked = view.Click(view.MarkOf(new CodeRow(3)));
 
-        Assert.Equal(line, Assert.IsType<CodeViewIntent.ToggleBookmark>(clicked.Intent).Line);
+        Assert.Equal(line, UnionAsserts.GetCase<CodeViewIntent.ToggleBookmark>(clicked.Intent).Line);
         Assert.Equal(2, view.Frames.Canvas.Texts.Count(t => t.Inputs.Text == BuiltInGlyphs.Text(BuiltInGlyphs.Icons.CodeBookmark)));
         Assert.False(view.State.Selection.HasSelection);
     }
@@ -253,7 +253,7 @@ public sealed class BookmarkTests : IDisposable
 
         var clicked = view.Click(view.MarkOf(new CodeRow(3)));
 
-        Assert.IsNotType<CodeViewIntent.ToggleBookmark>(clicked.Intent);
+        Assert.False(clicked.Intent is CodeViewIntent.ToggleBookmark);
         Assert.DoesNotContain(view.Frames.Canvas.Texts, t => t.Inputs.Text == BuiltInGlyphs.Text(BuiltInGlyphs.Icons.CodeBookmark));
     }
 

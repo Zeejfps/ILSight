@@ -713,7 +713,7 @@ public static class CodeViewWidget
             return;
         }
 
-        ScrollToPending(ui, state, pending, document, rowHeight, advance, textLeft, content, deltaY);
+        ScrollToPending(ui, state, pending.Value, document, rowHeight, advance, textLeft, content, deltaY);
     }
 
     // A position restored goes before the scroll, so the scroll moves on from it; the others go after it, so they win
@@ -721,27 +721,25 @@ public static class CodeViewWidget
     private static void ScrollToPending(Ui ui, CodeViewState state, PendingScroll pending, DecompiledDocument document, float rowHeight,
         float advance, float textLeft, UiRect content, float deltaY)
     {
-        pending.Switch(
-            reveal: reveal =>
-            {
+        switch (pending)
+        {
+            case PendingScroll.Reveal reveal:
                 state.ScrollBy(rowHeight, content.Height, deltaY);
                 ScrollToRevealed(ui, state, document, rowHeight, content, reveal);
-            },
-            restore: restore =>
-            {
+                break;
+            case PendingScroll.Restore restore:
                 ScrollToRestored(ui, state, document, rowHeight, content, restore);
                 state.ScrollBy(rowHeight, content.Height, deltaY);
-            },
-            showMatch: match =>
-            {
+                break;
+            case PendingScroll.ShowMatch match:
                 state.ScrollBy(rowHeight, content.Height, deltaY);
                 ScrollToMatch(ui, state, rowHeight, advance, textLeft, content, match);
-            },
-            showCaret: _ =>
-            {
+                break;
+            case PendingScroll.ShowCaret:
                 state.ScrollBy(rowHeight, content.Height, deltaY);
                 ShowCaretOnceLaidOut(ui, state, document, rowHeight, advance, textLeft, content);
-            });
+                break;
+        }
     }
 
     private static void ScrollToRestored(Ui ui, CodeViewState state, DecompiledDocument document, float rowHeight, UiRect content,

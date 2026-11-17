@@ -11,10 +11,10 @@ public sealed class RestoreAnalysesHandlerTests
         var analyzer = d.AppState.ListSession.Analyzer;
         var greeterSymbol = await SymbolOfAsync(d, "Greeter");
         var greeterAdd = analyzer.AddRoot(greeterSymbol);
-        var greeter = Assert.IsType<AnalyzerAdd.Analyzing>(greeterAdd).Root;
+        var greeter = UnionAsserts.GetCase<AnalyzerAdd.Analyzing>(greeterAdd).Root;
         var farewellSymbol = await SymbolOfAsync(d, "Farewell");
         var farewellAdd = analyzer.AddRoot(farewellSymbol);
-        var farewell = Assert.IsType<AnalyzerAdd.Analyzing>(farewellAdd).Root;
+        var farewell = UnionAsserts.GetCase<AnalyzerAdd.Analyzing>(farewellAdd).Root;
         Assert.Equal<AnalyzerNode>([greeter, farewell], analyzer.Roots);
         var saved = analyzer.ListSavedAnalyses();
         analyzer.ClearRoots();

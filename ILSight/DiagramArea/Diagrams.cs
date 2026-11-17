@@ -16,9 +16,11 @@ public static class Diagrams
     public static bool IsFoldOpen(DiagramViewState view, CardFold fold)
     {
         var flipped = view.FlippedFolds.Contains(fold);
-        return fold.Match(flipped,
-            own: static (flipped, _) => !flipped,
-            inherited: static (flipped, _) => flipped);
+        return fold switch
+        {
+            CardFold.Own => !flipped,
+            CardFold.Inherited => flipped,
+        };
     }
 
     /// <summary>Opens <paramref name="fold"/> when it is folded, and folds it when it is open.</summary>
