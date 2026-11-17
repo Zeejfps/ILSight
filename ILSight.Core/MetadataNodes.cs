@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
@@ -11,41 +12,56 @@ internal static class MetadataNodes
     /// <summary>The node of the metadata of <paramref name="file"/>, titled <paramref name="title"/>, under <paramref name="parent"/>.</summary>
     internal static BrowseNode CreateMetadataFolder(LoadedModule module, BrowseNode parent, MetadataFile file, string title)
     {
-        return BrowseNodes.Create(parent, new NodeSubject.Metadata { Value = new MetadataFolderInfo { Module = module, File = file, Title = title } });
+        return BrowseNodes.CreateListed(parent, new NodeSubject.Metadata { Value = new MetadataFolderInfo { Module = module, File = file, Title = title } });
     }
 
     private static BrowseNode CreatePart(BrowseNode parent, MetadataTableInfo part)
     {
-        return BrowseNodes.Create(parent, new NodeSubject.MetadataTable { Value = part });
+        return BrowseNodes.CreateListed(parent, new NodeSubject.MetadataTable { Value = part });
     }
 
     /// <summary>For a PE file its headers and debug directory, then the tables and the four heaps.</summary>
     internal static BrowseNode[] ListMetadata(BrowseNode parent, MetadataFolderInfo folder)
     {
-        var file = folder.File;
-        var result = new List<BrowseNode>();
-        if (file is PEFile pe)
-        {
-            AddHeader(parent, result, folder, PEHeaderKind.Dos, PEHeaderEntries.Dos(pe));
-            AddHeader(parent, result, folder, PEHeaderKind.Coff, PEHeaderEntries.Coff(pe));
-            AddHeader(parent, result, folder, PEHeaderKind.Optional, PEHeaderEntries.Optional(pe));
-            var directories = PEHeaderEntries.DataDirectories(pe);
-            result.Add(CreatePart(parent, MetadataTables.CreateGridPart(folder.Module, file, directories.Key, new MetadataPartKey.DataDirectories(), MetadataGridRole.Directory,
-                directories)));
-            result.Add(CreatePart(parent, MetadataTables.CreateDebugDirectoryPart(folder.Module, pe)));
-        }
-        result.Add(BrowseNodes.Create(parent, new NodeSubject.MetadataTables { Folder = folder }));
-        foreach (var (title, heap) in MetadataHeaps.Create(file))
-        {
-            result.Add(CreatePart(parent, MetadataTables.CreateGridPart(folder.Module, file, title, new MetadataPartKey.Heap(heap.Key), MetadataGridRole.Heap, heap)));
-        }
-
+        var (headers, heaps) = ListingReads.ValueOf(ReadParts(folder));
+        var result = headers.Select(p => CreatePart(parent, p)).ToList();
+        result.Add(BrowseNodes.CreateListed(parent, new NodeSubject.MetadataTables { Folder = folder }));
+        result.AddRange(heaps.Select(p => CreatePart(parent, p)));
         return result.ToArray();
     }
 
-    private static void AddHeader(BrowseNode parent, List<BrowseNode> result, MetadataFolderInfo folder, PEHeaderKind which, GridSchema header)
+    // The parts the folder lists before its tables (for a PE file its headers, data directories and debug directory),
+    // and after them (the four heaps), each read from the file.
+    private static Outcome<(MetadataTableInfo[] Headers, MetadataTableInfo[] Heaps)> ReadParts(MetadataFolderInfo folder)
     {
-        result.Add(CreatePart(parent, MetadataTables.CreateGridPart(folder.Module, folder.File, header.Key, new MetadataPartKey.Header(which), MetadataGridRole.Header, header)));
+        try
+        {
+            var file = folder.File;
+            var headers = new List<MetadataTableInfo>();
+            if (file is PEFile pe)
+            {
+                headers.Add(CreateHeader(folder, PEHeaderKind.Dos, PEHeaderEntries.Dos(pe)));
+                headers.Add(CreateHeader(folder, PEHeaderKind.Coff, PEHeaderEntries.Coff(pe)));
+                headers.Add(CreateHeader(folder, PEHeaderKind.Optional, PEHeaderEntries.Optional(pe)));
+                var directories = PEHeaderEntries.DataDirectories(pe);
+                headers.Add(MetadataTables.CreateGridPart(folder.Module, file, directories.Key, new MetadataPartKey.DataDirectories(), MetadataGridRole.Directory, directories));
+                headers.Add(MetadataTables.CreateDebugDirectoryPart(folder.Module, pe));
+            }
+
+            var heaps = MetadataHeaps.Create(file)
+                .Select(h => MetadataTables.CreateGridPart(folder.Module, file, h.Title, new MetadataPartKey.Heap(h.Schema.Key), MetadataGridRole.Heap, h.Schema))
+                .ToArray();
+            return new Outcome<(MetadataTableInfo[] Headers, MetadataTableInfo[] Heaps)>.Ok((headers.ToArray(), heaps));
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new Outcome<(MetadataTableInfo[] Headers, MetadataTableInfo[] Heaps)>.Failed(e);
+        }
+    }
+
+    private static MetadataTableInfo CreateHeader(MetadataFolderInfo folder, PEHeaderKind which, GridSchema header)
+    {
+        return MetadataTables.CreateGridPart(folder.Module, folder.File, header.Key, new MetadataPartKey.Header(which), MetadataGridRole.Header, header);
     }
 
     /// <summary>The entries of the debug directory: what ILSpy decodes of each, else its raw bytes; the
@@ -54,22 +70,11 @@ internal static class MetadataNodes
     {
         var reader = file.Reader;
         var result = new List<BrowseNode>();
-        var entries = reader.ReadDebugDirectory();
+        var entries = ListingReads.ValueOf(ReadDebugDirectory(reader));
         for (var index = 0; index < entries.Length; index++)
         {
             var entry = entries[index];
-            object? decoded;
-            var failed = false;
-            try
-            {
-                decoded = ReadDecoded(reader, module, entry);
-            }
-            catch (BadImageFormatException)
-            {
-                // An entry that cannot be decoded shows its raw bytes, as one of a type ILSpy doesn't decode.
-                decoded = null;
-                failed = true;
-            }
+            var (decoded, failed) = ListingReads.ValueOf(ReadDecodedOrRaw(reader, module, entry));
 
             // An embedded PDB the module has none of shows nothing, as before; the lines are made of what was read,
             // outside the read's catch.
@@ -89,6 +94,36 @@ internal static class MetadataNodes
             });
         }
         return result.ToArray();
+    }
+
+    private static Outcome<ImmutableArray<DebugDirectoryEntry>> ReadDebugDirectory(PEReader reader)
+    {
+        try
+        {
+            return new Outcome<ImmutableArray<DebugDirectoryEntry>>.Ok(reader.ReadDebugDirectory());
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new Outcome<ImmutableArray<DebugDirectoryEntry>>.Failed(e);
+        }
+    }
+
+    // What the library decodes of the entry, as ReadDecoded; an entry it can't decode is shown raw, as one of a type ILSpy
+    // doesn't decode, and said failed.
+    private static Outcome<(object? Decoded, bool Failed)> ReadDecodedOrRaw(PEReader reader, LoadedModule module, DebugDirectoryEntry entry)
+    {
+        try
+        {
+            return new Outcome<(object? Decoded, bool Failed)>.Ok((ReadDecoded(reader, module, entry), false));
+        }
+        catch (BadImageFormatException)
+        {
+            return new Outcome<(object? Decoded, bool Failed)>.Ok((null, true));
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new Outcome<(object? Decoded, bool Failed)>.Failed(e);
+        }
     }
 
     // What the library decodes of the entry: its CodeView data, its PDB checksum, the embedded PDB's symbols; null for an

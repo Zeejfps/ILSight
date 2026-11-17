@@ -7,11 +7,11 @@ namespace ILSight.Core;
 /// <summary>Reading the types an assembly forwards from its ExportedType table.</summary>
 internal static class ForwardedTypes
 {
-    /// <summary>The top-level types <paramref name="metadata"/> forwards, by namespace. Nested
+    /// <summary>The top-level types <paramref name="metadata"/> forwards, in the table's order. Nested
     /// forwarded types are left out: they come with the type that holds them.</summary>
-    public static Dictionary<string, List<ForwardedType>> ListByNamespace(MetadataReader metadata)
+    public static IReadOnlyList<ForwardedType> ListForwarders(MetadataReader metadata)
     {
-        var byNamespace = new Dictionary<string, List<ForwardedType>>(StringComparer.Ordinal);
+        var forwarders = new List<ForwardedType>();
         foreach (var handle in metadata.ExportedTypes)
         {
             var exported = metadata.GetExportedType(handle);
@@ -20,15 +20,9 @@ internal static class ForwardedTypes
                 continue;
             }
 
-            var type = Read(metadata, handle, exported);
-            if (!byNamespace.TryGetValue(type.Namespace, out var types))
-            {
-                byNamespace.Add(type.Namespace, types = new List<ForwardedType>());
-            }
-
-            types.Add(type);
+            forwarders.Add(Read(metadata, handle, exported));
         }
-        return byNamespace;
+        return forwarders;
     }
 
     internal static bool IsTopLevelForwarder(ExportedType exported)

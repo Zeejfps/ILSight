@@ -228,9 +228,9 @@ public sealed class BrowseSession
         {
             return new ChildrenState.Ready(MetadataTableNodes.List(tables, folder));
         }
-        catch (Exception e) when (e is not OperationCanceledException)
+        catch (ListingReadException e)
         {
-            return new ChildrenState.Failed(e);
+            return new ChildrenState.Failed(e.Error);
         }
     }
 

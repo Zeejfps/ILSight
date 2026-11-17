@@ -263,7 +263,9 @@ public static class BrowseNodes
     }
 
     /// <summary>Builds the children in ILSpy's order, with <paramref name="reads"/>, what the build reads, awaited before
-    /// it began; the <see cref="BrowseSession"/> calls it once.</summary>
+    /// it began; the <see cref="BrowseSession"/> calls it once. Each read of the library is under a catch of its own
+    /// (<see cref="ListingReads"/>), the app's rules over what was read between them: what the library throws ends the
+    /// listing as a <see cref="ListingReadException"/>.</summary>
     internal static BrowseNode[] CreateChildren(BrowseNode parent, ChildrenReads reads)
     {
         return parent.Subject.Match((parent, reads),
@@ -296,37 +298,113 @@ public static class BrowseNodes
     }
 
     /// <summary>The node of <paramref name="subject"/>, under <paramref name="parent"/>, which for a namespace may be one
-    /// extending the name of <paramref name="enclosingNamespace"/> by a segment, with the values it shows (its full
-    /// name, visibility, definition and activation) read now from what the subject stands for. It is made inside its
-    /// parent's listing (<see cref="CreateChildren"/>, under the session's catch), so it only reads: the full name and
-    /// the visibility are the library's values (its formatter, the flags a definition read), the activation the
-    /// reference a read took out; what analyses it offers, the app's table, is decided outside that catch when first
-    /// asked for (<see cref="BrowseNode.Analysis"/>), from the facts read here.</summary>
+    /// extending the name of <paramref name="enclosingNamespace"/> by a segment: its facts read
+    /// (<see cref="ReadFacts"/>), then the node made of them (<see cref="Make"/>). For a node made outside a listing (a
+    /// tree's root); a listing's child is <see cref="CreateListed"/>.</summary>
     internal static BrowseNode Create(BrowseNode? parent, NodeSubject subject, BrowseNode? enclosingNamespace = null)
     {
-        var text = GetText(subject);
-        var assembly = GetAssembly(subject);
-        var segment = parent is null ? null : NodeDefinitions.FindPathSegment(subject);
-        return new BrowseNode
+        var facts = ReadFacts(subject);
+        return Make(parent, subject, facts, enclosingNamespace);
+    }
+
+    /// <summary>As <see cref="Create"/>, for a child of a listing: its facts read under a catch of their own
+    /// (<see cref="ListingReads"/>), the node made after it.</summary>
+    internal static BrowseNode CreateListed(BrowseNode parent, NodeSubject subject, BrowseNode? enclosingNamespace = null)
+    {
+        var facts = ListingReads.ValueOf(ReadListedFacts(subject));
+        return Make(parent, subject, facts, enclosingNamespace);
+    }
+
+    // What a node shows of what it stands for, read from its subject: the values of BrowseNode of the same names, before
+    // the node is made.
+    private sealed record NodeFacts
+    {
+        public required string Text { get; init; }
+
+        public required string FullName { get; init; }
+
+        // The segment naming the node among its siblings; a tree's root keeps none.
+        public required NodePathSegment? Segment { get; init; }
+
+        public required NodeVisibility Visibility { get; init; }
+
+        public required CodeReference.Entity? Reference { get; init; }
+
+        public required Activation Activation { get; init; }
+
+        public required AnalysisArea.AnalysisFacts? AnalysisFacts { get; init; }
+
+        public required bool CanHaveChildren { get; init; }
+
+        public required string Name { get; init; }
+
+        public required string? ResourceFileName { get; init; }
+
+        public required string? ILSpyName { get; init; }
+
+        public required string? EntityFullName { get; init; }
+    }
+
+    private static Outcome<NodeFacts> ReadListedFacts(NodeSubject subject)
+    {
+        try
         {
-            Assembly = assembly,
-            Parent = parent,
+            return new Outcome<NodeFacts>.Ok(ReadFacts(subject));
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new Outcome<NodeFacts>.Failed(e);
+        }
+    }
+
+    // Only reads: the full name and the visibility are the library's values (its formatter, the flags a definition
+    // read), the activation the reference a read took out, each picked by the subject's case; what analyses the node
+    // offers, the app's table, is decided when first asked for (BrowseNode.Analysis).
+    private static NodeFacts ReadFacts(NodeSubject subject)
+    {
+        var text = GetText(subject);
+        return new NodeFacts
+        {
             Text = text,
-            Subject = subject,
-            EnclosingNamespace = enclosingNamespace,
-            Segment = segment,
-            Path = NodeDefinitions.ExtendPath(parent, assembly, segment, text),
             FullName = ComposeFullName(subject, text),
+            Segment = NodeDefinitions.FindPathSegment(subject),
             Visibility = NodeDefinitions.GetVisibility(subject),
             Reference = NodeDefinitions.ReferenceOf(subject),
             Activation = NodeDefinitions.GetActivation(subject),
             AnalysisFacts = AnalysisArea.Analyzers.Of(subject),
             CanHaveChildren = CanHaveChildren(subject),
-            Name = GetName(subject, assembly, text),
-            IsCode = IsCode(subject),
+            Name = GetName(subject, GetAssembly(subject), text),
             ResourceFileName = FindResourceData(subject)?.FileName,
             ILSpyName = ILSpyTree.NameOf(subject),
             EntityFullName = FindEntityFullName(subject),
+        };
+    }
+
+    // The node made of facts read: its place in the tree (the path, the app's), and whether it shows code.
+    private static BrowseNode Make(BrowseNode? parent, NodeSubject subject, NodeFacts facts, BrowseNode? enclosingNamespace)
+    {
+        var assembly = GetAssembly(subject);
+        var segment = parent is null ? null : facts.Segment;
+        return new BrowseNode
+        {
+            Assembly = assembly,
+            Parent = parent,
+            Text = facts.Text,
+            Subject = subject,
+            EnclosingNamespace = enclosingNamespace,
+            Segment = segment,
+            Path = NodeDefinitions.ExtendPath(parent, assembly, segment, facts.Text),
+            FullName = facts.FullName,
+            Visibility = facts.Visibility,
+            Reference = facts.Reference,
+            Activation = facts.Activation,
+            AnalysisFacts = facts.AnalysisFacts,
+            CanHaveChildren = facts.CanHaveChildren,
+            Name = facts.Name,
+            IsCode = IsCode(subject),
+            ResourceFileName = facts.ResourceFileName,
+            ILSpyName = facts.ILSpyName,
+            EntityFullName = facts.EntityFullName,
         };
     }
 
@@ -357,30 +435,55 @@ public static class BrowseNodes
         return FindResourceData(node.Subject) ?? throw new InvalidOperationException($"{node.Text} is no resource.");
     }
 
-    /// <summary>The node of <paramref name="type"/>, under <paramref name="parent"/>; null for a type with
-    /// no metadata token, which the tree does not list.</summary>
-    internal static BrowseNode? CreateForType(LoadedModule module, BrowseNode parent, ITypeDefinition type)
+    /// <summary>The node of <paramref name="type"/>, a child of <paramref name="parent"/>'s listing, its definition and
+    /// facts read under the listing's catches; null for a type with no metadata token, which the tree does not
+    /// list.</summary>
+    internal static BrowseNode? CreateListedType(LoadedModule module, BrowseNode parent, ITypeDefinition type)
     {
-        var definition = NodeDefinitions.FindType(module, type);
+        var definition = ListingReads.ValueOf(ReadDefinedType(module, type));
         if (definition is null)
         {
             return null;
         }
 
-        return Create(parent, new NodeSubject.TypeDefinition { Definition = definition });
+        return CreateListed(parent, new NodeSubject.TypeDefinition { Definition = definition });
     }
 
-    /// <summary>The node of <paramref name="member"/>, under <paramref name="parent"/>; null for a member
-    /// with no metadata token, which the tree does not list.</summary>
-    internal static BrowseNode? CreateForMember(LoadedModule module, BrowseNode parent, IMember member)
+    /// <summary>The node of <paramref name="member"/>, a child of <paramref name="parent"/>'s listing, as
+    /// <see cref="CreateListedType"/>; null for a member with no metadata token, which the tree does not list.</summary>
+    internal static BrowseNode? CreateListedMember(LoadedModule module, BrowseNode parent, IMember member)
     {
-        var definition = NodeDefinitions.FindMember(module, member);
+        var definition = ListingReads.ValueOf(ReadDefinedMember(module, member));
         if (definition is null)
         {
             return null;
         }
 
-        return Create(parent, new NodeSubject.MemberDefinition { Definition = definition });
+        return CreateListed(parent, new NodeSubject.MemberDefinition { Definition = definition });
+    }
+
+    private static Outcome<DefinedType?> ReadDefinedType(LoadedModule module, ITypeDefinition type)
+    {
+        try
+        {
+            return new Outcome<DefinedType?>.Ok(NodeDefinitions.FindType(module, type));
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new Outcome<DefinedType?>.Failed(e);
+        }
+    }
+
+    private static Outcome<DefinedMember?> ReadDefinedMember(LoadedModule module, IMember member)
+    {
+        try
+        {
+            return new Outcome<DefinedMember?>.Ok(NodeDefinitions.FindMember(module, member));
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new Outcome<DefinedMember?>.Failed(e);
+        }
     }
 
     /// <summary>The type or member <paramref name="node"/> defines; null for a node of anything else.</summary>

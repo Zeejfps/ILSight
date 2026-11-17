@@ -184,7 +184,7 @@ public static class BrowseSessions
         {
             var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, module, ct);
             return read.Match<ChildrenState>(
-                r => BuildChildren(session, node, new ChildrenReads { Main = r.TypeSystem.MainModule }, ct),
+                r => BuildChildren(session, node, new ChildrenReads { Main = r.TypeSystem.MainModule }),
                 static u => new ChildrenState.Failed(u.Thrown.SourceException),
                 static _ => new ChildrenState.Ready([]));
         }
@@ -193,26 +193,24 @@ public static class BrowseSessions
         if (derivedOf is not null)
         {
             var reachable = await DerivedTypes.ReadReachableAsync(reading, derivedOf, ct);
-            return BuildChildren(session, node, new ChildrenReads { Reachable = reachable }, ct);
+            return BuildChildren(session, node, new ChildrenReads { Reachable = reachable });
         }
 
-        return BuildChildren(session, node, ChildrenReads.None, ct);
+        return BuildChildren(session, node, ChildrenReads.None);
     }
 
-    private static ChildrenState BuildChildren(BrowseSession session, BrowseNode node, ChildrenReads reads, CancellationToken ct)
+    // Only what the library threw at one of the listing's reads fails the children (ListingReads); the app's own bug
+    // goes on to the edge.
+    private static ChildrenState BuildChildren(BrowseSession session, BrowseNode node, ChildrenReads reads)
     {
         BrowseNode[] built;
         try
         {
             built = BrowseNodes.CreateChildren(node, reads);
         }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        catch (ListingReadException e)
         {
-            throw;
-        }
-        catch (Exception e)
-        {
-            return new ChildrenState.Failed(e);
+            return new ChildrenState.Failed(e.Error);
         }
 
         foreach (var child in built)

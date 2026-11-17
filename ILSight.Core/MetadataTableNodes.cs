@@ -1,3 +1,4 @@
+using ICSharpCode.Decompiler.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using ILSight.Core.MetadataArea;
 
@@ -19,8 +20,8 @@ internal static class MetadataTableNodes
         var result = new List<BrowseNode>();
         foreach (var index in Enum.GetValues<TableIndex>())
         {
-            var rows = file.Metadata.GetTableRowCount(index);
-            var schema = rows == 0 ? null : MetadataTables.Create(index, file);
+            var rows = ListingReads.ValueOf(ReadRowCount(file, index));
+            var schema = rows == 0 ? null : ListingReads.ValueOf(ReadSchema(file, index));
             if (schema is null)
             {
                 result.Add(Create(parent, MetadataTables.CreateRowCountPart(folder.Module, file, index, rows)));
@@ -32,6 +33,31 @@ internal static class MetadataTableNodes
             }
         }
         return result.ToArray();
+    }
+
+    private static Outcome<int> ReadRowCount(MetadataFile file, TableIndex index)
+    {
+        try
+        {
+            return new Outcome<int>.Ok(file.Metadata.GetTableRowCount(index));
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new Outcome<int>.Failed(e);
+        }
+    }
+
+    // The grid of the table's rows; none for a table ILSpy does not list.
+    private static Outcome<GridSchema?> ReadSchema(MetadataFile file, TableIndex index)
+    {
+        try
+        {
+            return new Outcome<GridSchema?>.Ok(MetadataTables.Create(index, file));
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new Outcome<GridSchema?>.Failed(e);
+        }
     }
 
     private static BrowseNode Create(BrowseNode parent, MetadataTableInfo part)

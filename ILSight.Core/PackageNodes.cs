@@ -11,7 +11,7 @@ internal static class PackageNodes
         var children = new List<BrowseNode>();
         foreach (var child in folder.Folder.Folders)
         {
-            children.Add(BrowseNodes.Create(parent, new NodeSubject.Package { Value = CreateMergedFolder(package, child) }));
+            children.Add(BrowseNodes.CreateListed(parent, new NodeSubject.Package { Value = CreateMergedFolder(package, child) }));
         }
 
         foreach (var file in folder.Folder.Files)
@@ -46,12 +46,13 @@ internal static class PackageNodes
 
     private static BrowseNode CreateFileNode(BrowseNode parent, LoadedPackage package, PackageFile file)
     {
+        // Reading the package's assemblies passes over a file that doesn't load (AssemblyListing.TryLoadOutOf).
         var assembly = PackageContents.IsAssemblyName(file.Name) ? LoadedAssemblies.FindAssembly(package.Package, LoadedAssemblies.EnsureAssemblies(package), file) : null;
         if (assembly is null)
         {
-            return BrowseNodes.Create(parent, new NodeSubject.PackageFile { Value = new PackageFileInfo { Package = package, File = file } });
+            return BrowseNodes.CreateListed(parent, new NodeSubject.PackageFile { Value = new PackageFileInfo { Package = package, File = file } });
         }
 
-        return ModuleNodes.CreateModuleRoot(assembly, parent);
+        return BrowseNodes.CreateListed(parent, new NodeSubject.Module { Value = assembly });
     }
 }

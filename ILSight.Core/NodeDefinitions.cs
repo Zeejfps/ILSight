@@ -50,8 +50,9 @@ public static class NodeDefinitions
     }
 
     /// <summary>The namespace <paramref name="name"/> of <paramref name="module"/>, holding <paramref name="types"/>
-    /// and forwarding <paramref name="forwarded"/>.</summary>
-    internal static NamespaceInfo CreateNamespace(LoadedModule module, string name, IReadOnlyList<ITypeDefinition> types, IReadOnlyList<ForwardedTypeInfo> forwarded)
+    /// and forwarding <paramref name="forwarded"/>, public API and compiler-generated as read of them.</summary>
+    internal static NamespaceInfo CreateNamespace(LoadedModule module, string name, IReadOnlyList<ITypeDefinition> types, IReadOnlyList<ForwardedTypeInfo> forwarded,
+        bool isPublicApi, bool isCompilerGenerated)
     {
         var info = new NamespaceInfo
         {
@@ -59,8 +60,8 @@ public static class NodeDefinitions
             Name = name,
             TypeCount = types.Count,
             Forwarded = forwarded,
-            IsPublicApi = forwarded.Count > 0 || types.Any(EntityText.IsPublicApi),
-            IsCompilerGenerated = forwarded.Count == 0 && types.All(Members.IsCompilerGenerated),
+            IsPublicApi = isPublicApi,
+            IsCompilerGenerated = isCompilerGenerated,
         };
         return LibraryObjects<NamespaceInfo, IReadOnlyList<ITypeDefinition>>.Keep(info, types);
     }
