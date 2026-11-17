@@ -36,7 +36,8 @@ public sealed class AnchorTests
         Assert.Equal(CodeAnchorKind.Definition, anchor.Kind);
         Assert.Equal(line, Documents.FindLine(type, anchor));
         var calculator = await Trees.TestAssembly.CalculatorAsync();
-        Assert.Equal(Documents.FindDefinitionLine(il, await calculator.GetChildAsync("Add(T) : void")), Documents.FindLine(il, anchor));
+        var add = await calculator.GetChildAsync("Add(T) : void");
+        Assert.Equal(Documents.FindDefinitionLine(il, add), Documents.FindLine(il, anchor));
     }
 
     [CaseInsensitivePathsTheory]
@@ -119,7 +120,8 @@ public sealed class AnchorTests
         var rebuilt = NodePath.From(path.FilePath, path.Steps.ToList());
 
         Assert.Equal(path, rebuilt);
-        Assert.Same(await calculator.GetChildAsync("Add(T) : void"), await list.FindNodeAsync(rebuilt));
+        var addNode = await calculator.GetChildAsync("Add(T) : void");
+        Assert.Same(addNode, await list.FindNodeAsync(rebuilt));
     }
 
     private sealed class CaseInsensitivePathsFactAttribute : FactAttribute

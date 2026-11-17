@@ -36,7 +36,8 @@ public sealed class ModuleReferenceTests
     [Fact]
     public async Task Module_references_come_after_the_assembly_references()
     {
-        var children = await ReferencesOfAsync("System.IO.Compression").ListChildrenAsync();
+        var references = await ReferencesOfAsync("System.IO.Compression");
+        var children = await references.ListChildrenAsync();
         var modules = children
             .Select(static c => c.Subject is NodeSubject.ModuleReference)
             .ToList();
@@ -92,7 +93,8 @@ public sealed class ModuleReferenceTests
 
         Assert.Contains("Calls fixture_answer in fixture-native", text);
         var fixtures = await assembly.FixturesAsync();
-        Assert.Same(await fixtures.GetChildAsync("NativeImports", "Answer() : int"), definition);
+        var answerNode = await fixtures.GetChildAsync("NativeImports", "Answer() : int");
+        Assert.Same(answerNode, definition);
     }
 
     [Fact]
@@ -113,7 +115,8 @@ public sealed class ModuleReferenceTests
         var definition = await list.FindNodeAsync(collect.Destination);
         Assert.NotNull(definition);
 
-        Assert.DoesNotContain(await qcall.ListChildrenAsync(), i => i.Text.Contains(">g__", StringComparison.Ordinal));
+        var qcallChildren = await qcall.ListChildrenAsync();
+        Assert.DoesNotContain(qcallChildren, i => i.Text.Contains(">g__", StringComparison.Ordinal));
         Assert.Equal("System.GC", Assert.IsType<NodeSubject.ImportedMethod>(collect.Subject).Value.DeclaringTypeName);
         Assert.StartsWith("_Collect(", definition.Text, StringComparison.Ordinal);
         Assert.Equal(MemberShape.Method, definition.MemberShape);

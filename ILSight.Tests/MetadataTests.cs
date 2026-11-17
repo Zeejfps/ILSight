@@ -35,7 +35,8 @@ public sealed class MetadataTests
 
     private static async Task<MetadataGrid> TypeDefsAsync()
     {
-        return await GridAsync(await TableAsync(Trees.TestAssembly, "TypeDef"));
+        var typeDefTable = await TableAsync(Trees.TestAssembly, "TypeDef");
+        return await GridAsync(typeDefTable);
     }
 
     [Fact]
@@ -44,7 +45,8 @@ public sealed class MetadataTests
         using var temp = new TempDir();
         var unreadablePath = BrokenAssemblies.WriteUnreadableParameterName(temp, Trees.TestAssemblyPath);
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(unreadablePath);
-        var grid = await GridAsync(await TableAsync(assembly, "Param"));
+        var paramTable = await TableAsync(assembly, "Param");
+        var grid = await GridAsync(paramTable);
         var name = grid.Column("Name");
 
         var text = MetadataGrids.GetText(grid, 0, name);
@@ -211,7 +213,8 @@ public sealed class MetadataTests
         Assert.Equal(["String Heap", "UserString Heap", "Guid Heap", "Blob Heap"], children.Skip(6).Select(c => c.Text[..c.Text.IndexOf(" (")]));
         Assert.All(children.Skip(6), c => Assert.Equal(MetadataGridRole.Heap, c.MetadataRole));
         var tables = await metadata.GetChildAsync("Tables");
-        Assert.Contains(await tables.ListChildrenAsync(), c => c.Text.StartsWith("02 TypeDef (", StringComparison.Ordinal));
+        var tablesChildren = await tables.ListChildrenAsync();
+        Assert.Contains(tablesChildren, c => c.Text.StartsWith("02 TypeDef (", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -228,7 +231,8 @@ public sealed class MetadataTests
         Assert.True(Assert.IsType<NodeSubject.MetadataTable>(empty.Subject).Value.IsEmptyTable);
         Assert.Equal("03 FieldPtr (0)", empty.Text);
         Assert.Contains("FieldPtr: 0 rows", Documents.GetText(await empty.DecompileAsync(DecompilationLanguage.CSharp)));
-        Assert.False(Assert.IsType<NodeSubject.MetadataTable>((await TableAsync(assembly, "TypeDef")).Subject).Value.IsEmptyTable);
+        var typeDefTable = await TableAsync(assembly, "TypeDef");
+        Assert.False(Assert.IsType<NodeSubject.MetadataTable>(typeDefTable.Subject).Value.IsEmptyTable);
     }
 
     [Fact]
@@ -300,8 +304,10 @@ public sealed class MetadataTests
     public async Task Values_read_for_a_tooltip_are_made_into_its_text_after_the_read()
     {
         var assembly = Trees.TestAssembly;
-        var module = await GridAsync(await TableAsync(assembly, "Module"));
-        var constants = await GridAsync(await TableAsync(assembly, "Constant"));
+        var moduleTable = await TableAsync(assembly, "Module");
+        var module = await GridAsync(moduleTable);
+        var constantTable = await TableAsync(assembly, "Constant");
+        var constants = await GridAsync(constantTable);
 
         var mvid = MetadataGrids.FindTooltip(module, 0, module.Column("Mvid"))?.Text;
         var type = MetadataGrids.FindTooltip(constants, 0, constants.Column("Type"))?.Text;
@@ -361,7 +367,8 @@ public sealed class MetadataTests
         var link = Assert.IsType<MetadataAddress>(MetadataGrids.FindLink(grid, row, grid.Column("BaseType")));
         var target = Assert.IsType<MetadataTarget>(TestSession.Shared.FindMetadataRow(types, link));
 
-        Assert.Same(await TableAsync(assembly, "TypeRef"), target.Node);
+        var typeRefTable = await TableAsync(assembly, "TypeRef");
+        Assert.Same(typeRefTable, target.Node);
         var typeRefs = await GridAsync(target.Node);
         Assert.Equal("Object", MetadataGrids.GetText(typeRefs, target.Row, typeRefs.Column("Name")));
         Assert.Equal(target.Row, MetadataGrids.FindRow(typeRefs, Convert.ToInt32(MetadataGrids.GetText(grid, row, grid.Column("BaseType")), 16)));
@@ -371,18 +378,22 @@ public sealed class MetadataTests
     public async Task A_row_goes_to_the_definition_its_token_names()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var types = await GridAsync(await TableAsync(assembly, "TypeDef"));
-        var references = await GridAsync(await TableAsync(assembly, "TypeRef"));
+        var typeDefTable = await TableAsync(assembly, "TypeDef");
+        var types = await GridAsync(typeDefTable);
+        var typeRefTable = await TableAsync(assembly, "TypeRef");
+        var references = await GridAsync(typeRefTable);
 
         var calculator = MetadataGrids.FindDefinition(types, types.RowNamed("Calculator`1"));
         Assert.NotNull(calculator);
         var obj = MetadataGrids.FindDefinition(references, references.RowNamed("Object"));
         Assert.NotNull(obj);
 
-        Assert.Same(await assembly.CalculatorAsync(), await list.FindNodeAsync(calculator));
+        var calculatorNode = await assembly.CalculatorAsync();
+        Assert.Same(calculatorNode, await list.FindNodeAsync(calculator));
         Assert.Equal("Object", (await list.FindNodeAsync(obj))?.Text);
         var metadata = await MetadataAsync(assembly);
-        Assert.Null(MetadataGrids.FindDefinition(await GridAsync(await metadata.GetChildAsync("DOS Header")), 0));
+        var dosHeader = await metadata.GetChildAsync("DOS Header");
+        Assert.Null(MetadataGrids.FindDefinition(await GridAsync(dosHeader), 0));
     }
 
     [Fact]
@@ -420,7 +431,8 @@ public sealed class MetadataTests
     public async Task The_debug_directory_raw_data_is_hex_made_after_the_read_and_sorted_by_that_text()
     {
         var metadata = await MetadataAsync(Trees.TestAssembly);
-        var grid = await GridAsync(await metadata.GetChildAsync("Debug Directory"));
+        var debugDirectory = await metadata.GetChildAsync("Debug Directory");
+        var grid = await GridAsync(debugDirectory);
         var rawData = grid.Column("RawData");
 
         var texts = Enumerable.Range(0, grid.RowCount).Select(r => MetadataGrids.GetText(grid, r, rawData)).ToList();
@@ -435,11 +447,13 @@ public sealed class MetadataTests
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.EmbeddedPdbPath);
         var root = await assembly.ReadRootAsync();
-        var atRoot = FolderOf(await root.GetChildAsync("Debug Metadata (Embedded)"));
+        var debugMetadata = await root.GetChildAsync("Debug Metadata (Embedded)");
+        var atRoot = FolderOf(debugMetadata);
 
         var metadata = await MetadataAsync(assembly);
         var directory = await metadata.GetChildAsync("Debug Directory");
-        var embedded = FolderOf(await directory.GetChildAsync("Debug Metadata (Embedded)"));
+        var directoryEntry = await directory.GetChildAsync("Debug Metadata (Embedded)");
+        var embedded = FolderOf(directoryEntry);
 
         Assert.Same(atRoot.File, embedded.File);
     }
@@ -588,7 +602,8 @@ public sealed class MetadataTests
     {
         var assembly = Trees.TestAssembly;
         var metadata = await MetadataAsync(assembly);
-        var coff = await GridAsync(await metadata.GetChildAsync("COFF Header"));
+        var coffHeader = await metadata.GetChildAsync("COFF Header");
+        var coff = await GridAsync(coffHeader);
         var characteristics = Enumerable.Range(0, coff.RowCount).Single(r => MetadataGrids.GetText(coff, r, coff.Column("Member")) == "Characteristics");
 
         var tooltip = MetadataGrids.FindTooltip(coff, characteristics, coff.Column("Value"));
@@ -599,7 +614,8 @@ public sealed class MetadataTests
         Assert.Equal(16, bits.Count);
         Assert.Contains(new MetadataFlag { Name = "File is executable (0002)", IsSet = true }, bits);
         Assert.Null(MetadataGrids.FindTooltip(coff, 0, coff.Column("Value")));
-        Assert.False((await GridAsync(await TableAsync(assembly, "TypeDef"))).HasDetails);
+        var typeDefTable = await TableAsync(assembly, "TypeDef");
+        Assert.False((await GridAsync(typeDefTable)).HasDetails);
     }
 
     [Fact]
@@ -609,7 +625,8 @@ public sealed class MetadataTests
         var root = await assembly.ReadRootAsync();
         var debugMetadata = await root.GetChildAsync("Debug Metadata (From portable PDB)");
         var pdb = await debugMetadata.GetChildAsync("Tables");
-        var grid = await GridAsync(await pdb.TableAsync("CustomDebugInformation"));
+        var customDebugInformationTable = await pdb.TableAsync("CustomDebugInformation");
+        var grid = await GridAsync(customDebugInformationTable);
         var kind = grid.Column("KindString");
 
         var options = Enumerable.Range(0, grid.RowCount).Single(r => MetadataGrids.GetText(grid, r, kind).StartsWith("Compilation Options"));
@@ -631,7 +648,8 @@ public sealed class MetadataTests
         var root = await assembly.ReadRootAsync();
         var debugMetadata = await root.GetChildAsync("Debug Metadata (From portable PDB)");
         var pdb = await debugMetadata.GetChildAsync("Tables");
-        var debugInformation = await GridAsync(await pdb.TableAsync("CustomDebugInformation"));
+        var customDebugInformationTable = await pdb.TableAsync("CustomDebugInformation");
+        var debugInformation = await GridAsync(customDebugInformationTable);
         using var stream = File.OpenRead(Trees.TestAssemblyPath);
         using var pe = new PEReader(stream);
         var metadata = pe.GetMetadataReader();
@@ -682,31 +700,38 @@ public sealed class MetadataTests
         var types = md.TypeDefinitions.Select(t => (Handle: t, Type: md.GetTypeDefinition(t))).ToArray();
         var fields = md.FieldDefinitions.Select(f => (Handle: f, Field: md.GetFieldDefinition(f))).ToArray();
 
+        var nestedClassTable = await TableAsync(corelib, "NestedClass");
         Assert.Equal(
             types.Where(t => !t.Type.GetDeclaringType().IsNil).Select(t => (Token(t.Handle), Token(t.Type.GetDeclaringType()))).Order(),
-            (await CellsAsync(await TableAsync(corelib, "NestedClass"), "NestedClass", "EnclosingClass")).Order());
+            (await CellsAsync(nestedClassTable, "NestedClass", "EnclosingClass")).Order());
 
+        var interfaceImplTable = await TableAsync(corelib, "InterfaceImpl");
         Assert.Equal(
             types.SelectMany(t => t.Type.GetInterfaceImplementations().Select(i => (Token(t.Handle), Token(md.GetInterfaceImplementation(i).Interface)))).Order(),
-            (await CellsAsync(await TableAsync(corelib, "InterfaceImpl"), "Class", "Interface")).Order());
+            (await CellsAsync(interfaceImplTable, "Class", "Interface")).Order());
 
+        var fieldLayoutTable = await TableAsync(corelib, "FieldLayout");
         Assert.Equal(
             fields.Where(f => f.Field.GetOffset() >= 0).Select(f => (Token(f.Handle), f.Field.GetOffset())),
-            await CellsAsync(await TableAsync(corelib, "FieldLayout"), "Field", "FieldOffset"));
+            await CellsAsync(fieldLayoutTable, "Field", "FieldOffset"));
 
+        var fieldRvaTable = await TableAsync(corelib, "FieldRva");
         Assert.Equal(
             fields.Where(f => f.Field.GetRelativeVirtualAddress() != 0).Select(f => (Token(f.Handle), f.Field.GetRelativeVirtualAddress())),
-            await CellsAsync(await TableAsync(corelib, "FieldRva"), "Field", "RVA"));
+            await CellsAsync(fieldRvaTable, "Field", "RVA"));
 
+        var eventMapTable = await TableAsync(corelib, "EventMap");
         Assert.Equal(
             types.Where(t => t.Type.GetEvents().Count > 0).Select(t => (Token(t.Handle), Token(t.Type.GetEvents().First()))),
-            await CellsAsync(await TableAsync(corelib, "EventMap"), "Parent", "EventList"));
+            await CellsAsync(eventMapTable, "Parent", "EventList"));
 
+        var propertyMapTable = await TableAsync(corelib, "PropertyMap");
         Assert.Equal(
             types.Where(t => t.Type.GetProperties().Count > 0).Select(t => (Token(t.Handle), Token(t.Type.GetProperties().First()))),
-            await CellsAsync(await TableAsync(corelib, "PropertyMap"), "Parent", "PropertyList"));
+            await CellsAsync(propertyMapTable, "Parent", "PropertyList"));
 
-        var layouts = await GridAsync(await TableAsync(corelib, "ClassLayout"));
+        var classLayoutTable = await TableAsync(corelib, "ClassLayout");
+        var layouts = await GridAsync(classLayoutTable);
         Assert.NotEqual(0, layouts.RowCount);
         for (var row = 0; row < layouts.RowCount; row++)
         {
@@ -725,7 +750,8 @@ public sealed class MetadataTests
         var debugMetadata = await root.GetChildAsync("Debug Metadata (From portable PDB)");
         var tables = await debugMetadata.GetChildAsync("Tables");
 
-        var rows = await CellsAsync(await tables.TableAsync("StateMachineMethod"), "MoveNextMethod", "KickoffMethod");
+        var stateMachineMethodTable = await tables.TableAsync("StateMachineMethod");
+        var rows = await CellsAsync(stateMachineMethodTable, "MoveNextMethod", "KickoffMethod");
 
         Assert.NotEmpty(rows);
         Assert.Equal(
@@ -742,8 +768,10 @@ public sealed class MetadataTests
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(editAndContinuePath);
         var type = MetadataTokens.GetToken(MetadataTokens.TypeDefinitionHandle(1));
 
-        var log = await GridAsync(await TableAsync(assembly, "EncLog"));
-        var map = await GridAsync(await TableAsync(assembly, "EncMap"));
+        var encLogTable = await TableAsync(assembly, "EncLog");
+        var log = await GridAsync(encLogTable);
+        var encMapTable = await TableAsync(assembly, "EncMap");
+        var map = await GridAsync(encMapTable);
 
         Assert.Equal(["RID", "Token", "Offset", "Handle", "FuncCode"], log.Columns.Select(c => c.Name));
         Assert.Equal(2, log.RowCount);
@@ -757,11 +785,12 @@ public sealed class MetadataTests
             Table = TableIndex.TypeDef,
             Row = 0,
         }, MetadataGrids.FindLink(map, 0, map.Column("Handle")));
+        var typeDefTable = await TableAsync(assembly, "TypeDef");
         Assert.Equal(new MetadataTarget
         {
-            Node = await TableAsync(assembly, "TypeDef"),
+            Node = typeDefTable,
             Row = 0,
-        }, TestSession.Shared.FindMetadataRow(await TableAsync(assembly, "EncMap"), new MetadataAddress
+        }, TestSession.Shared.FindMetadataRow(encMapTable, new MetadataAddress
         {
             Table = TableIndex.TypeDef,
             Row = 0,

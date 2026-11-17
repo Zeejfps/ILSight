@@ -10,7 +10,9 @@ public sealed class ModuleReleaseTests
         var leftPath = WrittenAssemblies.WriteDerivingFrom(temp, "Left", "Right");
         var rightPath = WrittenAssemblies.WriteDerivingFrom(temp, "Right", "Left");
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        return (list, list.OpenModule(leftPath), list.OpenModule(rightPath));
+        var left = list.OpenModule(leftPath);
+        var right = list.OpenModule(rightPath);
+        return (list, left, right);
     }
 
     [Fact]

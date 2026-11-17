@@ -49,7 +49,8 @@ public sealed class ExportTests : IDisposable
     {
         var path = _temp.PathOf("Fixtures.il");
 
-        var saved = await CodeFiles.SaveAsync(TestSession.Shared, await Trees.TestAssembly.FixturesAsync(), DecompilationLanguage.ILWithCSharp, DecompilerOptions.Default, EnglishNotes.Instance, path);
+        var fixtures = await Trees.TestAssembly.FixturesAsync();
+        var saved = await CodeFiles.SaveAsync(TestSession.Shared, fixtures, DecompilationLanguage.ILWithCSharp, DecompilerOptions.Default, EnglishNotes.Instance, path);
         Assert.IsType<TypeSystemWork<string>.Done>(saved.GetValue());
 
         var code = await File.ReadAllTextAsync(path);
@@ -62,7 +63,8 @@ public sealed class ExportTests : IDisposable
     {
         var path = _temp.PathOf("Tests.il");
 
-        var saved = await CodeFiles.SaveAsync(TestSession.Shared, await Trees.TestAssembly.ReadRootAsync(), DecompilationLanguage.IL, DecompilerOptions.Default, EnglishNotes.Instance, path);
+        var root = await Trees.TestAssembly.ReadRootAsync();
+        var saved = await CodeFiles.SaveAsync(TestSession.Shared, root, DecompilationLanguage.IL, DecompilerOptions.Default, EnglishNotes.Instance, path);
         Assert.IsType<TypeSystemWork<string>.Done>(saved.GetValue());
 
         var code = await File.ReadAllTextAsync(path);

@@ -48,16 +48,21 @@ public sealed class BrowseSessionTests : IDisposable
         var session = new BrowseSession();
         var unreadablePath = BrokenAssemblies.WriteUnreadableAvaloniaContainer(_temp);
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(unreadablePath);
-        var children = await BrowseSessions.ListChildrenAsync(session, (await BrowseSessions.EnsureRootAsync(session, assembly)));
+        var root = await BrowseSessions.EnsureRootAsync(session, assembly);
+        var children = await BrowseSessions.ListChildrenAsync(session, root);
         var resources = children.Single(c => c.Subject is NodeSubject.Resources);
-        var container = Assert.Single((await BrowseSessions.ListChildrenAsync(session, resources)));
+        var resourcesChildren = await BrowseSessions.ListChildrenAsync(session, resources);
+        var container = Assert.Single(resourcesChildren);
 
-        var failed = Assert.IsType<ChildrenState.Failed>((await BrowseSessions.GetChildrenAsync(session, container)));
+        var childrenState = await BrowseSessions.GetChildrenAsync(session, container);
+        var failed = Assert.IsType<ChildrenState.Failed>(childrenState);
 
         Assert.IsType<AvaloniaContainerException>(failed.Error);
-        Assert.Same(failed, (await BrowseSessions.GetChildrenAsync(session, container)));
+        var childrenStateAgain = await BrowseSessions.GetChildrenAsync(session, container);
+        Assert.Same(failed, childrenStateAgain);
         Assert.True(session.HasChildren(container));
-        Assert.Empty((await BrowseSessions.ListChildrenAsync(session, container)));
+        var containerChildren = await BrowseSessions.ListChildrenAsync(session, container);
+        Assert.Empty(containerChildren);
     }
 
     [Fact]
@@ -67,10 +72,14 @@ public sealed class BrowseSessionTests : IDisposable
         var first = new BrowseSession();
         var second = new BrowseSession();
 
-        Assert.Same(first.EnsureRoot(assembly), first.EnsureRoot(assembly));
-        Assert.Same(first.EnsureRoot(assembly), (await BrowseSessions.EnsureRootAsync(first, assembly)));
-        Assert.NotSame(first.EnsureRoot(assembly), second.EnsureRoot(assembly));
-        Assert.IsType<ChildrenState.Unloaded>(second.PeekChildren(first.EnsureRoot(assembly)));
+        var root = first.EnsureRoot(assembly);
+        var rootAgain = first.EnsureRoot(assembly);
+        Assert.Same(root, rootAgain);
+        var rootAwaited = await BrowseSessions.EnsureRootAsync(first, assembly);
+        Assert.Same(root, rootAwaited);
+        var secondRoot = second.EnsureRoot(assembly);
+        Assert.NotSame(root, secondRoot);
+        Assert.IsType<ChildrenState.Unloaded>(second.PeekChildren(root));
     }
 
     [Fact]
@@ -84,8 +93,10 @@ public sealed class BrowseSessionTests : IDisposable
         var failed = Assert.IsType<FailedAssembly>(brokenOpened);
         var session = new BrowseSession();
 
-        AssertShowsTheSame(BrowseNodes.Create(null, new NodeSubject.Module { Value = module }), session.EnsureRoot(module));
-        AssertShowsTheSame(BrowseNodes.Create(null, new NodeSubject.FailedAssembly { Value = failed }), session.EnsureRoot(failed));
+        var moduleRoot = session.EnsureRoot(module);
+        AssertShowsTheSame(BrowseNodes.Create(null, new NodeSubject.Module { Value = module }), moduleRoot);
+        var failedRoot = session.EnsureRoot(failed);
+        AssertShowsTheSame(BrowseNodes.Create(null, new NodeSubject.FailedAssembly { Value = failed }), failedRoot);
     }
 
     private static async Task<(BrowseNode Header, BrowseNode Tables)> MetadataHeaderAndTablesAsync(BrowseSession session)

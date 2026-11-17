@@ -17,7 +17,8 @@ public sealed class ReferencedTypesTests
             var children = await reference.ListChildrenAsync();
             foreach (var types in children.Where(c => c.Subject is NodeSubject.ReferencedTypes))
             {
-                used.AddRange(await types.ListChildrenAsync());
+                var typesChildren = await types.ListChildrenAsync();
+                used.AddRange(typesChildren);
             }
         }
 
@@ -58,7 +59,8 @@ public sealed class ReferencedTypesTests
         var current = await list.GetChildAsync("Enumerator", "Current : T");
 
         Assert.Equal(MemberShape.Property, Assert.IsType<NodeSubject.MemberReference>(current.Subject).Value.Shape);
-        Assert.DoesNotContain(await list.ListChildrenAsync(), IsSpecialized);
+        var children = await list.ListChildrenAsync();
+        Assert.DoesNotContain(children, IsSpecialized);
     }
 
     private static bool IsSpecialized(BrowseNode node)

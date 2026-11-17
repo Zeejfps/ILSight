@@ -20,7 +20,8 @@ public sealed class ResourceTests
         var unreadablePath = BrokenAssemblies.WriteUnreadableResourcesFile(temp);
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(unreadablePath);
         var resources = await ResourcesAsync(assembly);
-        var container = Assert.Single(await resources.ListChildrenAsync());
+        var resourcesChildren = await resources.ListChildrenAsync();
+        var container = Assert.Single(resourcesChildren);
 
         var content = await NodeContentLoader.ReadContentAsync(TestSession.Shared, container, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance,
             NodeQueries.FirstGridRows);
@@ -232,11 +233,13 @@ public sealed class ResourceTests
         Assert.True(xml.IsCode);
         var resourcesNode = await resources.GetChildAsync("Mixed.resources");
         Assert.IsType<NodeSubject.ResourceContainer>(resourcesNode.Subject);
-        Assert.All(await resources.ListChildrenAsync(), c => Assert.True(c.HasResource));
+        var resourcesChildren = await resources.ListChildrenAsync();
+        Assert.All(resourcesChildren, c => Assert.True(c.HasResource));
 
         var image = Assert.IsType<NodeContent.Picture>(await png.ReadContentAsync()).Image;
         Assert.Equal(Expected, image.Rgba);
-        Assert.Equal(Fixture("logo.png"), BrowseNodes.ReadResource(await resources.GetChildAsync("logo.png")));
+        var logo = await resources.GetChildAsync("logo.png");
+        Assert.Equal(Fixture("logo.png"), BrowseNodes.ReadResource(logo));
     }
 
     [Fact]
@@ -410,7 +413,8 @@ public sealed class ResourceTests
                 ("/Assets/logo.png", true), ("/Assets/notes.json", false),
             ],
             entries);
-        Assert.Equal((64, 64, "SVG"), await PictureAsync(await container.GetChildAsync("/Assets/icon.svg")));
+        var svg = await container.GetChildAsync("/Assets/icon.svg");
+        Assert.Equal((64, 64, "SVG"), await PictureAsync(svg));
         var png = await container.GetChildAsync("/Assets/logo.png");
         Assert.Equal(Expected, Assert.IsType<NodeContent.Picture>(await png.ReadContentAsync()).Image.Rgba);
         var json = await container.GetChildAsync("/Assets/notes.json");

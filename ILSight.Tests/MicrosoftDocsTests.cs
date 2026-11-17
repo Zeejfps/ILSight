@@ -21,10 +21,12 @@ public sealed class MicrosoftDocsTests
 
         Assert.Equal(ApiReference + "system.collections.generic", MicrosoftDocs.FindPage(generic));
         Assert.Equal(ApiReference + "system.collections.generic.list-1", MicrosoftDocs.FindPage(list));
-        Assert.Equal(ApiReference + "system.collections.generic.list-1.add", MicrosoftDocs.FindPage(await list.GetChildAsync("Add(T) : void")));
+        var add = await list.GetChildAsync("Add(T) : void");
+        Assert.Equal(ApiReference + "system.collections.generic.list-1.add", MicrosoftDocs.FindPage(add));
         Assert.Equal(ApiReference + "system.collections.generic.list-1.-ctor", MicrosoftDocs.FindPage(constructor));
         Assert.Null(MicrosoftDocs.FindPage(staticConstructor));
-        Assert.Equal(ApiReference + "system.collections.generic.dictionary-2.enumerator", MicrosoftDocs.FindPage(await dictionary.GetChildAsync("Enumerator")));
+        var enumerator = await dictionary.GetChildAsync("Enumerator");
+        Assert.Equal(ApiReference + "system.collections.generic.dictionary-2.enumerator", MicrosoftDocs.FindPage(enumerator));
     }
 
     [Fact]
@@ -50,10 +52,12 @@ public sealed class MicrosoftDocsTests
         var assembly = Trees.TestAssembly;
         var calculator = await assembly.CalculatorAsync();
 
-        Assert.Null(MicrosoftDocs.FindPage(await calculator.GetChildAsync("_items : List<T>")));
-        Assert.Null(MicrosoftDocs.FindPage(await assembly.ReadRootAsync()));
+        var items = await calculator.GetChildAsync("_items : List<T>");
+        Assert.Null(MicrosoftDocs.FindPage(items));
         var root = await assembly.ReadRootAsync();
-        Assert.Null(MicrosoftDocs.FindPage(await root.GetChildAsync("References")));
+        Assert.Null(MicrosoftDocs.FindPage(root));
+        var references = await root.GetChildAsync("References");
+        Assert.Null(MicrosoftDocs.FindPage(references));
     }
 
     [Fact]

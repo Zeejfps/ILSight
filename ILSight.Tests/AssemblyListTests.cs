@@ -116,9 +116,12 @@ public sealed class AssemblyListTests
         var loaded = AssemblyListing.TryLoad(list, AssemblyPath.Of(Trees.TestAssemblyPath));
 
         Assert.IsType<Lookup<LoadedAssembly>.Found>(Assert.IsType<Outcome<Lookup<LoadedAssembly>>.Ok>(loaded).Value);
-        Assert.IsType<Lookup<LoadedAssembly>.NotFound>(Assert.IsType<Outcome<Lookup<LoadedAssembly>>.Ok>(AssemblyListing.TryLoad(list, gone)).Value);
-        Assert.IsType<Lookup<LoadedAssembly>.NotFound>(Assert.IsType<Outcome<Lookup<LoadedAssembly>>.Ok>(AssemblyListing.TryLoad(list, folderGone)).Value);
-        var failed = Assert.IsType<Outcome<Lookup<LoadedAssembly>>.Failed>(AssemblyListing.TryLoad(list, corrupt));
+        var goneLoad = AssemblyListing.TryLoad(list, gone);
+        Assert.IsType<Lookup<LoadedAssembly>.NotFound>(Assert.IsType<Outcome<Lookup<LoadedAssembly>>.Ok>(goneLoad).Value);
+        var folderGoneLoad = AssemblyListing.TryLoad(list, folderGone);
+        Assert.IsType<Lookup<LoadedAssembly>.NotFound>(Assert.IsType<Outcome<Lookup<LoadedAssembly>>.Ok>(folderGoneLoad).Value);
+        var corruptLoad = AssemblyListing.TryLoad(list, corrupt);
+        var failed = Assert.IsType<Outcome<Lookup<LoadedAssembly>>.Failed>(corruptLoad);
         Assert.IsType<BadImageFormatException>(Assert.IsType<AssemblyLoadException>(failed.Error).InnerException);
         Assert.Throws<AssemblyLoadException>(() => AssemblyListing.FindAssemblyToLookIn(list, corrupt));
         Assert.Null(AssemblyListing.FindAssemblyToLookIn(list, gone));
@@ -193,7 +196,8 @@ public sealed class AssemblyListTests
 
         Assert.IsType<NodeSubject.FailedAssembly>(root.Subject);
         Assert.Equal("text.dll", root.Text);
-        Assert.Empty(await root.ListChildrenAsync());
+        var rootChildren = await root.ListChildrenAsync();
+        Assert.Empty(rootChildren);
         var error = Assert.IsType<AssemblyLoadException>(document.Error);
         var said = error.InnerException is null ? "text.dll isn't a .NET assembly or package that can be read." : $"text.dll couldn't be read ({error.InnerException.Message}).";
         Assert.Equal($"// {said}", Assert.Single(document.Lines).Text);
@@ -332,7 +336,8 @@ public sealed class AssemblyListTests
         Assert.NotNull(runtime);
         Assert.Equal(Path.Combine(RuntimeAssemblies.ListDirectories(TestRuntime.Installed)[0], "System.Runtime.dll"), runtime.Assembly.FilePath.Text, ignoreCase: true);
         Assert.Equal(typeof(AssemblyList).Assembly.Location, sibling?.Assembly.FilePath.Text, ignoreCase: true);
-        Assert.Same(await runtime.Assembly.ReadRootAsync(), runtime);
+        var runtimeRoot = await runtime.Assembly.ReadRootAsync();
+        Assert.Same(runtimeRoot, runtime);
         Assert.Contains(runtime.Assembly, list.Assemblies);
     }
 
@@ -429,7 +434,13 @@ public sealed class AssemblyListTests
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(Trees.TestAssemblyPath);
 
         var read = Enumerable.Range(0, 16).AsParallel().WithDegreeOfParallelism(8)
-            .Select(_ => (TypeSystem: LoadedAssemblies.ReadTypeSystemAheadAsync(assembly, CancellationToken.None), Usage: LoadedAssemblies.EnsureReferenceUsage(assembly), Symbols: LoadedAssemblies.EnsureDebugSymbols(assembly)))
+            .Select(_ =>
+            {
+                var typeSystem = LoadedAssemblies.ReadTypeSystemAheadAsync(assembly, CancellationToken.None);
+                var usage = LoadedAssemblies.EnsureReferenceUsage(assembly);
+                var symbols = LoadedAssemblies.EnsureDebugSymbols(assembly);
+                return (TypeSystem: typeSystem, Usage: usage, Symbols: symbols);
+            })
             .ToList();
         var typeSystems = await Task.WhenAll(read.Select(static r => r.TypeSystem)).WithinPatienceAsync();
 

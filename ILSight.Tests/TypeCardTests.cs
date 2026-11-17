@@ -20,7 +20,8 @@ public sealed class TypeCardTests
 
     private static async Task<TypeCard> CardAsync(string type)
     {
-        var card = (await TypeCards.ReadAsync(List, await ZooAsync(type), CancellationToken.None)).GetValue().FoundOrNull;
+        var zoo = await ZooAsync(type);
+        var card = (await TypeCards.ReadAsync(List, zoo, CancellationToken.None)).GetValue().FoundOrNull;
         Assert.NotNull(card);
         return card;
     }
@@ -128,7 +129,8 @@ public sealed class TypeCardTests
     [Fact]
     public async Task A_type_reads_with_the_types_of_its_assembly_it_is_related_to_either_way()
     {
-        var read = Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>((await TypeCards.ReadWithNeighboursAsync(List, await ZooAsync("Animal"), CancellationToken.None)).GetValue());
+        var animal = await ZooAsync("Animal");
+        var read = Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>((await TypeCards.ReadWithNeighboursAsync(List, animal, CancellationToken.None)).GetValue());
         var cards = read.Value;
 
         Assert.Equal("Animal", cards[0].Name);
@@ -138,8 +140,10 @@ public sealed class TypeCardTests
     [Fact]
     public async Task The_types_deriving_from_a_class_or_implementing_an_interface_are_found_among_the_open_assemblies()
     {
-        var derived = (await TypeCards.ReadDerivedAsync(List, await ZooAsync("Animal"), CancellationToken.None)).GetValue();
-        var implementing = (await TypeCards.ReadDerivedAsync(List, await ZooAsync("IFeeds"), CancellationToken.None)).GetValue();
+        var animal = await ZooAsync("Animal");
+        var derived = (await TypeCards.ReadDerivedAsync(List, animal, CancellationToken.None)).GetValue();
+        var iFeeds = await ZooAsync("IFeeds");
+        var implementing = (await TypeCards.ReadDerivedAsync(List, iFeeds, CancellationToken.None)).GetValue();
 
         Assert.Equal(["Lion", "Parrot"], NamesOf(derived.Found).Order());
         Assert.Equal(["Lion"], NamesOf(implementing.Found));

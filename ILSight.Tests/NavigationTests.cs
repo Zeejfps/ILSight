@@ -63,7 +63,8 @@ public sealed class NavigationTests
         Assert.Contains(node.Assembly, list.Assemblies);
         var root = await node.Assembly.ReadRootAsync();
         var generic = await root.GetChildAsync("System.Collections.Generic");
-        Assert.Same(node, await generic.GetChildAsync("List<T>"));
+        var listNode = await generic.GetChildAsync("List<T>");
+        Assert.Same(node, listNode);
     }
 
     [Fact]
@@ -80,7 +81,8 @@ public sealed class NavigationTests
         Assert.NotNull(addOnList);
         Assert.Equal("Add(T) : void", addOnList.Text);
         Assert.Equal("List<T>", addOnList.Parent?.Text);
-        Assert.Same(await calculator.GetChildAsync("_items : List<T>"), field);
+        var items = await calculator.GetChildAsync("_items : List<T>");
+        Assert.Same(items, field);
     }
 
     [Fact]
@@ -143,15 +145,20 @@ public sealed class NavigationTests
         var csharp = await Trees.CalculatorDocumentAsync(DecompilationLanguage.CSharp);
         var il = await Trees.CalculatorDocumentAsync(DecompilationLanguage.IL);
 
-        Assert.Contains("public void Add(T item)", csharp.Lines[Assert.NotNull(Documents.FindDefinitionLine(csharp, await calculator.GetChildAsync("Add(T) : void")))].Text);
-        Assert.Contains("public int Count", csharp.Lines[Assert.NotNull(Documents.FindDefinitionLine(csharp, await calculator.GetChildAsync("Count : int")))].Text);
+        var add = await calculator.GetChildAsync("Add(T) : void");
+        Assert.Contains("public void Add(T item)", csharp.Lines[Assert.NotNull(Documents.FindDefinitionLine(csharp, add))].Text);
+        var count = await calculator.GetChildAsync("Count : int");
+        Assert.Contains("public int Count", csharp.Lines[Assert.NotNull(Documents.FindDefinitionLine(csharp, count))].Text);
         var mode = await calculator.GetChildAsync("Mode");
-        Assert.Contains("Fast", csharp.Lines[Assert.NotNull(Documents.FindDefinitionLine(csharp, await mode.GetChildAsync("Fast : Mode")))].Text);
+        var fast = await mode.GetChildAsync("Fast : Mode");
+        Assert.Contains("Fast", csharp.Lines[Assert.NotNull(Documents.FindDefinitionLine(csharp, fast))].Text);
         Assert.Contains("public class Calculator<T>", csharp.Lines[Assert.NotNull(Documents.FindDefinitionLine(csharp, calculator))].Text);
-        Assert.Contains(".method", il.Lines[Assert.NotNull(Documents.FindDefinitionLine(il, await calculator.GetChildAsync("Describe() : string")))].Text);
+        var describe = await calculator.GetChildAsync("Describe() : string");
+        Assert.Contains(".method", il.Lines[Assert.NotNull(Documents.FindDefinitionLine(il, describe))].Text);
         var fixtures = await assembly.FixturesAsync();
-        Assert.Null(Documents.FindDefinitionLine(csharp, await fixtures.GetChildAsync("Size")));
-        Assert.Null(Documents.FindDefinitionLine(csharp, await assembly.FixturesAsync()));
+        var size = await fixtures.GetChildAsync("Size");
+        Assert.Null(Documents.FindDefinitionLine(csharp, size));
+        Assert.Null(Documents.FindDefinitionLine(csharp, fixtures));
     }
 
     [Fact]
@@ -207,7 +214,8 @@ public sealed class NavigationTests
 
         var node = await list.FindNodeAsync(getter);
 
-        Assert.Same(await lambdaOwner.GetChildAsync("Count : int"), node);
+        var countNode = await lambdaOwner.GetChildAsync("Count : int");
+        Assert.Same(countNode, node);
     }
 
     [Fact]
@@ -317,7 +325,8 @@ public sealed class NavigationTests
 
         // The method whose name can't be read fails the listing of its namespace's types, Circle among them.
         var fixtures = await module.FixturesAsync();
-        var why = Assert.IsType<ChildrenState.Failed>(await BrowseSessions.GetChildrenAsync(session, fixtures)).Error;
+        var childrenState = await BrowseSessions.GetChildrenAsync(session, fixtures);
+        var why = Assert.IsType<ChildrenState.Failed>(childrenState).Error;
         Assert.Same(why, Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(byReference).Error);
         Assert.Same(why, Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(byId).Error);
         Assert.Same(why, Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(byPath).Error);

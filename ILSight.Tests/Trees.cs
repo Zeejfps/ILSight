@@ -88,7 +88,8 @@ internal static class Trees
     public static (AssemblyList List, LoadedModule Assembly) OpenTestAssembly()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        return (list, list.OpenModule(TestAssemblyPath));
+        var module = list.OpenModule(TestAssemblyPath);
+        return (list, module);
     }
 
     /// <summary>The assembly or module at <paramref name="path"/>, opened in <paramref name="list"/>; fails

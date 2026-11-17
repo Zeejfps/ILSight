@@ -100,10 +100,12 @@ public sealed class CodeTooltipTests
         var (list, assembly) = Trees.OpenTestAssembly();
 
         var calculatorNode = await assembly.CalculatorAsync();
-        var mode = await TooltipOfAsync(list, await calculatorNode.GetChildAsync("Mode"));
-        var calculator = await TooltipOfAsync(list, await assembly.CalculatorAsync());
+        var modeNode = await calculatorNode.GetChildAsync("Mode");
+        var mode = await TooltipOfAsync(list, modeNode);
+        var calculator = await TooltipOfAsync(list, calculatorNode);
         var fixtures = await assembly.FixturesAsync();
-        var point = await TooltipOfAsync(list, await fixtures.GetChildAsync("Point"));
+        var pointNode = await fixtures.GetChildAsync("Point");
+        var point = await TooltipOfAsync(list, pointNode);
 
         Assert.Equal("public enum Calculator<T>.Mode", mode.Signature.Line.Text);
         Assert.Equal(new CodeContainer
@@ -133,7 +135,8 @@ public sealed class CodeTooltipTests
 
         Assert.Equal("public TKey Circle.Pick<TKey, TValue>(TKey key, TValue value)", signature.Line.Text);
         Assert.Equal(["where TKey : class, IComparable<TKey>, new()", "where TValue : struct"], constraints);
-        Assert.Empty((await TooltipOfAsync(list, await assembly.CalculatorAsync())).Signature.Constraints);
+        var calculator = await assembly.CalculatorAsync();
+        Assert.Empty((await TooltipOfAsync(list, calculator)).Signature.Constraints);
     }
 
     [Fact]
@@ -157,8 +160,10 @@ public sealed class CodeTooltipTests
         var (list, assembly) = Trees.OpenTestAssembly();
 
         var fixtures = await assembly.FixturesAsync();
-        var x = await TooltipOfAsync(list, await fixtures.GetChildAsync("Point", "X : int"));
-        var width = await TooltipOfAsync(list, await fixtures.GetChildAsync("Size", "Width : int"));
+        var xNode = await fixtures.GetChildAsync("Point", "X : int");
+        var x = await TooltipOfAsync(list, xNode);
+        var widthNode = await fixtures.GetChildAsync("Size", "Width : int");
+        var width = await TooltipOfAsync(list, widthNode);
 
         Assert.Equal("record", x.Container?.Keyword);
         Assert.Equal("struct", width.Container?.Keyword);
@@ -176,7 +181,7 @@ public sealed class CodeTooltipTests
 
         Assert.Equal("public bool Calculator<T>.TryGet(int index, out T? item)", text);
         Assert.Equal(["int index, ", "out T? item)"], ParameterTexts(signature));
-        Assert.Empty((await TooltipOfAsync(list, await assembly.CalculatorAsync())).Signature.ParameterStarts);
+        Assert.Empty((await TooltipOfAsync(list, calculator)).Signature.ParameterStarts);
     }
 
     [Fact]
@@ -185,7 +190,8 @@ public sealed class CodeTooltipTests
         var (list, assembly) = Trees.OpenTestAssembly();
         var calculator = await assembly.CalculatorAsync();
 
-        var tooltip = await TooltipOfAsync(list, await calculator.GetChildAsync("Add(T) : void"));
+        var add = await calculator.GetChildAsync("Add(T) : void");
+        var tooltip = await TooltipOfAsync(list, add);
         var summary = Assert.Single(Section(tooltip, DocSectionKind.Summary).Blocks);
         var item = Section(tooltip, DocSectionKind.Parameter);
         var changed = RunOf(summary, "Calculator<T>.Changed");
@@ -193,7 +199,8 @@ public sealed class CodeTooltipTests
         Assert.Equal([DocSectionKind.Summary, DocSectionKind.Parameter], tooltip.Sections.Select(s => s.Kind));
         Assert.Equal("Adds an item and raises Calculator<T>.Changed.", TextOf(summary));
         Assert.Equal(DocStyle.Reference, changed.Style);
-        Assert.Same(await calculator.GetChildAsync("Changed : EventHandler?"), await list.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(changed.Reference)));
+        var changedNode = await calculator.GetChildAsync("Changed : EventHandler?");
+        Assert.Same(changedNode, await list.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(changed.Reference)));
         Assert.Equal("item", item.Label?.Text);
         Assert.Equal("The item to add.", TextOf(Assert.Single(item.Blocks)));
     }
@@ -289,7 +296,8 @@ public sealed class CodeTooltipTests
     {
         var (list, assembly) = Trees.OpenTestAssembly();
 
-        var tooltip = await TooltipOfAsync(list, await assembly.CalculatorAsync());
+        var calculator = await assembly.CalculatorAsync();
+        var tooltip = await TooltipOfAsync(list, calculator);
 
         Assert.Equal("public class Calculator<T>", tooltip.Signature.Line.Text);
         Assert.Empty(tooltip.Sections);

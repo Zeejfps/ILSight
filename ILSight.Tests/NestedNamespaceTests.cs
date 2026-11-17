@@ -25,7 +25,8 @@ public sealed class NestedNamespaceTests
         Assert.Equal(["-", "ILSight", TestsNamespace, Trees.FixturesNamespace], namespaces.Select(n => n.Text));
         Assert.Equal([false, true, false, false], namespaces.Select(n => Assert.IsType<NodeSubject.Namespace>(n.Subject).Value.IsEnclosingOnly));
         var ilsightNamespace = await root.GetChildAsync("ILSight");
-        Assert.Empty(await ilsightNamespace.ListChildrenAsync());
+        var ilsightNamespaceChildren = await ilsightNamespace.ListChildrenAsync();
+        Assert.Empty(ilsightNamespaceChildren);
         Assert.False(ilsightNamespace.HasChildren);
     }
 
@@ -52,14 +53,18 @@ public sealed class NestedNamespaceTests
     {
         var root = await Trees.TestAssembly.ReadRootAsync();
 
-        var outermost = (await NestedChildrenAsync(root))
+        var rootNested = await NestedChildrenAsync(root);
+        var outermost = rootNested
             .Where(c => c.Subject is NodeSubject.Namespace)
             .Select(c => c.Text);
 
         Assert.Equal(["-", "ILSight"], outermost);
-        Assert.Equal([await root.GetChildAsync(TestsNamespace)], await NestedChildrenAsync(await root.GetChildAsync("ILSight")));
+        var testsNamespace = await root.GetChildAsync(TestsNamespace);
+        var ilsightNamespace = await root.GetChildAsync("ILSight");
+        var ilsightNested = await NestedChildrenAsync(ilsightNamespace);
+        Assert.Equal([testsNamespace], ilsightNested);
         var children = await root.ListChildrenAsync();
-        Assert.Equal(children.Where(c => c.Subject is not NodeSubject.Namespace), (await NestedChildrenAsync(root)).Where(c => c.Subject is not NodeSubject.Namespace));
+        Assert.Equal(children.Where(c => c.Subject is not NodeSubject.Namespace), rootNested.Where(c => c.Subject is not NodeSubject.Namespace));
     }
 
     [Fact]
@@ -72,12 +77,16 @@ public sealed class NestedNamespaceTests
         var nested = await NestedChildrenAsync(tests);
         var at = nested.ToList().IndexOf(fixtures);
 
-        Assert.Equal(await tests.ListChildrenAsync(), nested.Where(c => c != fixtures));
+        var testsChildren = await tests.ListChildrenAsync();
+        Assert.Equal(testsChildren, nested.Where(c => c != fixtures));
         Assert.True(at > 0);
         Assert.True(NaturalStringComparer.Instance.Compare(nested[at - 1].Text, "Fixtures") < 0);
         Assert.True(NaturalStringComparer.Instance.Compare(nested[at + 1].Text, "Fixtures") > 0);
-        Assert.Equal(await fixtures.ListChildrenAsync(), await NestedChildrenAsync(fixtures));
-        Assert.Contains(await fixtures.GetChildAsync("Calculator<T>"), await NestedChildrenAsync(fixtures));
+        var fixturesChildren = await fixtures.ListChildrenAsync();
+        var fixturesNested = await NestedChildrenAsync(fixtures);
+        Assert.Equal(fixturesChildren, fixturesNested);
+        var calculator = await fixtures.GetChildAsync("Calculator<T>");
+        Assert.Contains(calculator, fixturesNested);
     }
 
     [Fact]

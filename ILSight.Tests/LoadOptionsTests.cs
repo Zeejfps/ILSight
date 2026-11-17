@@ -14,7 +14,8 @@ public sealed class LoadOptionsTests
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         AssemblyListing.TryChangeLoadOptions(list, options);
-        return (list, list.OpenModule(Trees.TestAssemblyPath));
+        var module = list.OpenModule(Trees.TestAssemblyPath);
+        return (list, module);
     }
 
     private static async Task<BrowseNode> RuntimeReferenceAsync(LoadedAssembly assembly)
@@ -138,7 +139,8 @@ public sealed class LoadOptionsTests
     {
         var (_, assembly) = OpenWith(Off(DecompilerToggle.AutoLoadAssemblyReferences));
 
-        var children = await RuntimeReferenceAsync(assembly).ListChildrenAsync();
+        var runtimeReference = await RuntimeReferenceAsync(assembly);
+        var children = await runtimeReference.ListChildrenAsync();
 
         Assert.All(children, c => Assert.IsType<NodeSubject.ReferencedTypes>(c.Subject));
     }
@@ -151,7 +153,8 @@ public sealed class LoadOptionsTests
         Assert.NotNull(runtimePath);
         list.Open(runtimePath);
 
-        var children = await RuntimeReferenceAsync(assembly).ListChildrenAsync();
+        var runtimeReference = await RuntimeReferenceAsync(assembly);
+        var children = await runtimeReference.ListChildrenAsync();
 
         Assert.Contains(children, c => c.Text == "System.Private.CoreLib");
     }

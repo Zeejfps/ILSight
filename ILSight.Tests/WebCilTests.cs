@@ -117,7 +117,8 @@ public sealed class WebCilTests
 
         var root = await assembly.ReadRootAsync();
         var tables = await root.GetChildAsync("Metadata", "Tables");
-        var grid = Assert.IsType<NodeContent.Table>(await tables.TableAsync("TypeDef").ReadContentAsync()).Grid;
+        var typeDefTable = await tables.TableAsync("TypeDef");
+        var grid = Assert.IsType<NodeContent.Table>(await typeDefTable.ReadContentAsync()).Grid;
 
         Assert.IsType<MetadataGrid.Paged>(grid);
         var counter = grid.RowNamed("Counter");

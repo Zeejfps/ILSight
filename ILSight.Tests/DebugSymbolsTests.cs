@@ -17,7 +17,8 @@ public sealed class DebugSymbolsTests
 
         Assert.NotNull(symbols);
         Assert.Equal(Path.ChangeExtension(Trees.TestAssemblyPath, ".pdb"), symbols.SourceFileName);
-        Assert.Same(symbols, LoadedAssemblies.EnsureDebugSymbols(assembly));
+        var symbolsAgain = LoadedAssemblies.EnsureDebugSymbols(assembly);
+        Assert.Same(symbols, symbolsAgain);
     }
 
     [Fact]
@@ -99,7 +100,8 @@ public sealed class DebugSymbolsTests
         Assert.True(reader.TryGetName(CircleMethod(nameof(Circle.Grow)), 1, out var name));
         Assert.Equal("step", name);
         var afterRoot = await after.ReadRootAsync();
-        Assert.Contains(await afterRoot.ListChildrenAsync(), c => c.Text == "Debug Metadata (From portable PDB)");
+        var afterRootChildren = await afterRoot.ListChildrenAsync();
+        Assert.Contains(afterRootChildren, c => c.Text == "Debug Metadata (From portable PDB)");
     }
 
     [Fact]

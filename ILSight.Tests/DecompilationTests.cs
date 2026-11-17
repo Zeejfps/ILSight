@@ -370,7 +370,8 @@ public sealed class DecompilationTests
 
         Assert.Equal("namespace ILSight.Tests.Fixtures", document.Lines[0].Text);
         Assert.False(circle.IsDefinition);
-        Assert.Same(await fixtures.GetChildAsync("Circle"), await list.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(circle.Reference)));
+        var circleNode = await fixtures.GetChildAsync("Circle");
+        Assert.Same(circleNode, await list.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(circle.Reference)));
     }
 
     [Fact]
@@ -526,7 +527,8 @@ public sealed class DecompilationTests
         foreach (var path in new[] { Trees.TestAssemblyPath, Trees.SampleAppPath, package })
         {
             var assembly = list.Open(path);
-            roots.Add(await assembly.ReadRootAsync());
+            var root = await assembly.ReadRootAsync();
+            roots.Add(root);
         }
 
         var failed = new List<string>();

@@ -13,7 +13,8 @@ public sealed class AnalysisTests
     {
         var (list, assembly) = Trees.OpenTestAssembly();
         var calculator = await assembly.CalculatorAsync();
-        return (list, await calculator.GetChildAsync(label));
+        var node = await calculator.GetChildAsync(label);
+        return (list, node);
     }
 
     private static List<AnalysisSymbol> Run(AssemblyList list, BrowseNode node, string header)
@@ -273,7 +274,8 @@ public sealed class AnalysisTests
             Name = AnalysisName.UsedBy, Order = 1, Prepare = static _ => null, Applies = static _ => throw new InvalidOperationException("the table's bug"),
         };
 
-        var listed = Assert.IsType<ChildrenState.Ready>(await BrowseSessions.GetChildrenAsync(session, calculator)).Children;
+        var childrenState = await BrowseSessions.GetChildrenAsync(session, calculator);
+        var listed = Assert.IsType<ChildrenState.Ready>(childrenState).Children;
         var add = listed.Single(static c => c.Text == "Add(T) : void");
         var facts = Assert.IsType<AnalysisFacts>(add.AnalysisFacts);
         var thrown = Assert.Throws<InvalidOperationException>(() => Analyzers.Compose(facts, [buggy]));

@@ -22,7 +22,8 @@ public sealed class UnresolvedReferenceTests : IDisposable
     private (AssemblyList List, LoadedModule Assembly) OpenAlone()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        return (list, list.OpenModule(_temp.Copy(Trees.TestAssemblyPath, "ILSight.Tests.dll")));
+        var module = list.OpenModule(_temp.Copy(Trees.TestAssemblyPath, "ILSight.Tests.dll"));
+        return (list, module);
     }
 
     private static async Task<BrowseNode> BaseTypesAsync(LoadedAssembly assembly)
@@ -39,7 +40,8 @@ public sealed class UnresolvedReferenceTests : IDisposable
         var root = await assembly.ReadRootAsync();
         var core = await root.GetChildAsync("References", Core);
 
-        Assert.IsType<NodeSubject.ReferencedTypes>(Assert.Single(await core.ListChildrenAsync()).Subject);
+        var coreChildren = await core.ListChildrenAsync();
+        Assert.IsType<NodeSubject.ReferencedTypes>(Assert.Single(coreChildren).Subject);
         Assert.Null(await list.FindNodeAsync(core.Destination));
         Assert.Contains("// Not found", Documents.GetText(await core.DecompileAsync(DecompilationLanguage.CSharp)));
     }
@@ -50,8 +52,10 @@ public sealed class UnresolvedReferenceTests : IDisposable
         var (_, alone) = OpenAlone();
         var (list, beside) = Trees.OpenTestAssembly();
 
-        var unresolved = await BaseTypesAsync(alone).GetChildAsync(nameof(GridSchema));
-        var resolved = await BaseTypesAsync(beside).GetChildAsync(nameof(GridSchema));
+        var aloneBaseTypes = await BaseTypesAsync(alone);
+        var unresolved = await aloneBaseTypes.GetChildAsync(nameof(GridSchema));
+        var besideBaseTypes = await BaseTypesAsync(beside);
+        var resolved = await besideBaseTypes.GetChildAsync(nameof(GridSchema));
 
         Assert.IsType<NodeSubject.BaseType>(unresolved.Subject);
         Assert.IsType<Activation.OpenSelf>(unresolved.Activation);
@@ -73,7 +77,8 @@ public sealed class UnresolvedReferenceTests : IDisposable
         Assert.IsType<NodeSubject.TypeReference>(used.Subject);
         Assert.Equal(typeof(GridSchema).FullName, used.FullName);
         Assert.Null(await list.FindNodeAsync(used.Destination));
-        Assert.NotEmpty(await used.ListChildrenAsync());
+        var usedChildren = await used.ListChildrenAsync();
+        Assert.NotEmpty(usedChildren);
         foreach (var member in await used.ListChildrenAsync())
         {
             Assert.Null(await list.FindNodeAsync(member.Destination));

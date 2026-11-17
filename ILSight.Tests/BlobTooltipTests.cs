@@ -40,7 +40,8 @@ public sealed class BlobTooltipTests
     [Fact]
     public async Task A_signature_of_locals_lists_each_local_by_its_index()
     {
-        var signatures = ListTooltipTexts(await GridAsync("StandAloneSig"), "Signature");
+        var grid = await GridAsync("StandAloneSig");
+        var signatures = ListTooltipTexts(grid, "Signature");
 
         Assert.Contains(signatures, s => s is not null && s.StartsWith("[0] ", StringComparison.Ordinal));
         Assert.DoesNotContain(signatures, s => s is not null && s.Contains("/* signature", StringComparison.Ordinal));
@@ -49,7 +50,8 @@ public sealed class BlobTooltipTests
     [Fact]
     public async Task A_constant_reads_as_the_literal_it_holds()
     {
-        var values = ListTooltipTexts(await GridAsync("Constant"), "Value");
+        var grid = await GridAsync("Constant");
+        var values = ListTooltipTexts(grid, "Value");
 
         Assert.Contains("42", values);
     }

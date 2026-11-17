@@ -161,7 +161,8 @@ public sealed class SavedPathTests : IDisposable
 
     private static async Task<BrowseNode> FirstOfAsync(LoadedAssembly assembly, string kind)
     {
-        var queue = new Queue<BrowseNode>([await assembly.ReadRootAsync()]);
+        var root = await assembly.ReadRootAsync();
+        var queue = new Queue<BrowseNode>([root]);
         while (queue.Count > 0)
         {
             var node = queue.Dequeue();

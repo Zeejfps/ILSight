@@ -16,14 +16,21 @@ public sealed class ILSpyTreeTests
         var assembly = Trees.TestAssembly;
         var calculator = await assembly.CalculatorAsync();
 
-        Assert.Equal(assembly.FilePath.Text, ILSpyTree.NameOf(await assembly.ReadRootAsync()));
-        Assert.Equal(Trees.FixturesNamespace, ILSpyTree.NameOf(await assembly.FixturesAsync()));
+        var root = await assembly.ReadRootAsync();
+        Assert.Equal(assembly.FilePath.Text, ILSpyTree.NameOf(root));
+        var fixtures = await assembly.FixturesAsync();
+        Assert.Equal(Trees.FixturesNamespace, ILSpyTree.NameOf(fixtures));
         Assert.Equal(Trees.FixturesNamespace + ".Calculator`1", ILSpyTree.NameOf(calculator));
-        Assert.Equal(Trees.FixturesNamespace + ".Calculator`1+Mode", ILSpyTree.NameOf(await calculator.GetChildAsync("Mode")));
-        Assert.Equal("Field _items", ILSpyTree.NameOf(await calculator.GetChildAsync("_items : List<T>")));
-        Assert.Equal("Event Changed", ILSpyTree.NameOf(await calculator.GetChildAsync("Changed : EventHandler?")));
-        Assert.StartsWith("Method Add(", ILSpyTree.NameOf(await calculator.GetChildAsync("Add(T) : void")));
-        Assert.StartsWith("Property Count", ILSpyTree.NameOf(await calculator.GetChildAsync("Count : int")));
+        var mode = await calculator.GetChildAsync("Mode");
+        Assert.Equal(Trees.FixturesNamespace + ".Calculator`1+Mode", ILSpyTree.NameOf(mode));
+        var items = await calculator.GetChildAsync("_items : List<T>");
+        Assert.Equal("Field _items", ILSpyTree.NameOf(items));
+        var changed = await calculator.GetChildAsync("Changed : EventHandler?");
+        Assert.Equal("Event Changed", ILSpyTree.NameOf(changed));
+        var add = await calculator.GetChildAsync("Add(T) : void");
+        Assert.StartsWith("Method Add(", ILSpyTree.NameOf(add));
+        var count = await calculator.GetChildAsync("Count : int");
+        Assert.StartsWith("Property Count", ILSpyTree.NameOf(count));
     }
 
     [Fact]
@@ -33,7 +40,7 @@ public sealed class ILSpyTreeTests
 
         var calculator = await assembly.CalculatorAsync();
         var children = await calculator.ListChildrenAsync();
-        foreach (var node in children.Prepend(await assembly.CalculatorAsync()))
+        foreach (var node in children.Prepend(calculator))
         {
             var path = ILSpyTree.PathOf(node);
             if (path is null)

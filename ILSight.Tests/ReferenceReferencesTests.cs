@@ -61,7 +61,8 @@ public sealed class ReferenceReferencesTests
         var found = await list.FindNodeAsync(coreLib.Path);
 
         Assert.Same(coreLib, found);
-        Assert.Same(await assembly.ReadRootAsync(), coreLib.Root);
+        var root = await assembly.ReadRootAsync();
+        Assert.Same(root, coreLib.Root);
     }
 
     [Fact]

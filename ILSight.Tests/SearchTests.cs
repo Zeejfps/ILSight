@@ -14,7 +14,8 @@ public sealed class SearchTests
         var results = await CollectAsync(list.SearchAsync("calcul", SearchKinds.Types));
 
         var calculator = Assert.Single(results);
-        Assert.Same(await assembly.CalculatorAsync(), calculator.Node);
+        var calculatorNode = await assembly.CalculatorAsync();
+        Assert.Same(calculatorNode, calculator.Node);
         Assert.Equal("Calculator<T>", calculator.Text);
         Assert.Equal(Trees.FixturesNamespace, calculator.Location);
         Assert.Equal("ILSight.Tests", calculator.Node.Assembly.Name);
@@ -30,7 +31,8 @@ public sealed class SearchTests
 
         var hit = Assert.Single(tryGet);
         var calculator = await assembly.CalculatorAsync();
-        Assert.Same(await calculator.GetChildAsync("TryGet(int, out T?) : bool"), hit.Node);
+        var tryGetNode = await calculator.GetChildAsync("TryGet(int, out T?) : bool");
+        Assert.Same(tryGetNode, hit.Node);
         Assert.Equal(Trees.FixturesNamespace + ".Calculator<T>", hit.Location);
         Assert.Equal([Trees.FixturesNamespace + ".Circle", Trees.FixturesNamespace + ".IShape"], area.Select(r => r.Location).Order());
         Assert.All(area, r => Assert.Equal(MemberShape.Property, r.Node.MemberShape));
@@ -136,7 +138,8 @@ public sealed class SearchTests
         var method = await CollectAsync(list.SearchAsync("md:=Empty<T>"));
         var pair = await CollectAsync(list.SearchAsync("t:\"=Dictionary<TKey, TValue>\""));
 
-        Assert.Same(await assembly.CalculatorAsync(), Assert.Single(type).Node);
+        var calculator = await assembly.CalculatorAsync();
+        Assert.Same(calculator, Assert.Single(type).Node);
         Assert.Empty(other);
         Assert.Equal("Mode", Assert.Single(nested).Text);
         Assert.Contains(method, r => r.Location == "System.Array");
@@ -195,7 +198,8 @@ public sealed class SearchTests
 
         var results = await CollectAsync(list.SearchAsync($"@{token:X8}"));
 
-        Assert.Same(await assembly.CalculatorAsync(), Assert.Single(results).Node);
+        var calculator = await assembly.CalculatorAsync();
+        Assert.Same(calculator, Assert.Single(results).Node);
     }
 
     [Fact]
@@ -208,9 +212,11 @@ public sealed class SearchTests
         var byPath = await CollectAsync(list.SearchAsync("af:.dll"));
         var resources = await CollectAsync(list.SearchAsync("r:logo"));
 
-        Assert.Same(await assembly.FixturesAsync(), Assert.Single(ns).Node);
-        Assert.Same(await assembly.ReadRootAsync(), Assert.Single(byName).Node);
-        Assert.Same(await assembly.ReadRootAsync(), Assert.Single(byPath).Node);
+        var fixtures = await assembly.FixturesAsync();
+        Assert.Same(fixtures, Assert.Single(ns).Node);
+        var root = await assembly.ReadRootAsync();
+        Assert.Same(root, Assert.Single(byName).Node);
+        Assert.Same(root, Assert.Single(byPath).Node);
         Assert.Equal(["/Assets/logo.png", "logo.bmp", "logo.ico", "logo.png"], resources.Select(r => r.Text).Order());
     }
 
@@ -223,7 +229,8 @@ public sealed class SearchTests
 
         Assert.Equal(["ILSight.Tests", Trees.FixturesNamespace], found.Select(r => r.Text).Order());
         var root = await assembly.ReadRootAsync();
-        Assert.DoesNotContain(await root.GetChildAsync("ILSight"), found.Select(r => r.Node));
+        var ilsightNamespace = await root.GetChildAsync("ILSight");
+        Assert.DoesNotContain(ilsightNamespace, found.Select(r => r.Node));
     }
 
     [Fact]
