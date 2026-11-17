@@ -173,10 +173,17 @@ internal static class NuGetDetailsView
             return;
         }
 
-        details.Switch((ui, appearance, picker, package),
-            loading: static (s, _) => LoadingStatus(s.ui, s.appearance),
-            read: static (_, _) => { },
-            failed: static (s, _) => RetryStatus(s.ui, s.appearance, s.picker, s.package));
+        switch (details)
+        {
+            case VersionDetails.Loading:
+                LoadingStatus(ui, appearance);
+                break;
+            case VersionDetails.Read:
+                break;
+            case VersionDetails.Failed:
+                RetryStatus(ui, appearance, picker, package);
+                break;
+        }
     }
 
     private static void LoadingStatus(Ui ui, Appearance appearance)

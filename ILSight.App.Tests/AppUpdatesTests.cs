@@ -89,7 +89,7 @@ public sealed class AppUpdatesTests
     {
         var updates = new AppUpdates(ports);
         await CheckAsync(updates, asked: true, CancellationToken.None);
-        Assert.IsType<UpdateStatus.Ready>(updates.Status);
+        UnionAsserts.GetCase<UpdateStatus.Ready>(updates.Status);
         return updates;
     }
 
@@ -102,7 +102,7 @@ public sealed class AppUpdatesTests
 
         await CheckAsync(updates, asked: false, shutdown.Token);
 
-        var ready = Assert.IsType<UpdateStatus.Ready>(updates.Status);
+        var ready = UnionAsserts.GetCase<UpdateStatus.Ready>(updates.Status);
         Assert.Equal("9.0.0", AppUpdates.GetVersion(ready.Update));
         Assert.Equal([nameof(FakePorts.LookUpUpdateAsync), nameof(FakePorts.TryDownloadAsync)], ports.Asked);
         Assert.All(ports.Tokens, token => Assert.Equal(shutdown.Token, token));
@@ -118,7 +118,7 @@ public sealed class AppUpdatesTests
 
         await CheckAsync(updates, asked, CancellationToken.None);
 
-        Assert.IsType(expected, updates.Status);
+        Assert.Equal(expected, UnionAsserts.GetCaseType(updates.Status));
         Assert.Equal([nameof(FakePorts.LookUpUpdateAsync)], ports.Asked);
     }
 
@@ -132,7 +132,7 @@ public sealed class AppUpdatesTests
 
         await CheckAsync(updates, asked, CancellationToken.None);
 
-        Assert.IsType(expected, updates.Status);
+        Assert.Equal(expected, UnionAsserts.GetCaseType(updates.Status));
         Assert.True(updates.CanCheck());
     }
 
@@ -146,7 +146,7 @@ public sealed class AppUpdatesTests
 
         await CheckAsync(updates, asked, CancellationToken.None);
 
-        Assert.IsType(expected, updates.Status);
+        Assert.Equal(expected, UnionAsserts.GetCaseType(updates.Status));
     }
 
     [Fact]
@@ -157,7 +157,7 @@ public sealed class AppUpdatesTests
 
         await CheckAsync(updates, asked: true, CancellationToken.None);
 
-        Assert.IsType<UpdateStatus.Idle>(updates.Status);
+        UnionAsserts.GetCase<UpdateStatus.Idle>(updates.Status);
         Assert.Empty(ports.Asked);
         Assert.False(updates.CanCheck());
     }
@@ -175,7 +175,7 @@ public sealed class AppUpdatesTests
         await first.WithinPatienceAsync();
 
         Assert.Single(ports.Asked);
-        Assert.IsType<UpdateStatus.Idle>(updates.Status);
+        UnionAsserts.GetCase<UpdateStatus.Idle>(updates.Status);
     }
 
     [Fact]
@@ -188,7 +188,7 @@ public sealed class AppUpdatesTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => CheckAsync(updates, asked: true, shutdown.Token));
 
-        Assert.IsNotType<UpdateStatus.Failed>(updates.Status);
+        Assert.False(updates.Status is UpdateStatus.Failed);
         Assert.DoesNotContain(nameof(FakePorts.TryDownloadAsync), ports.Asked);
     }
 
@@ -202,7 +202,7 @@ public sealed class AppUpdatesTests
         await RestartAsync(updates, viewCommands, CancellationToken.None);
 
         UnionAsserts.GetCase<ViewCommand.Quit>(Assert.Single(viewCommands));
-        Assert.IsType<UpdateStatus.Restarting>(updates.Status);
+        UnionAsserts.GetCase<UpdateStatus.Restarting>(updates.Status);
         Assert.Equal(nameof(FakePorts.TryApplyAfterExitAsync), ports.Asked[^1]);
     }
 
@@ -230,7 +230,7 @@ public sealed class AppUpdatesTests
         await RestartAsync(updates, viewCommands, CancellationToken.None);
 
         Assert.Empty(viewCommands);
-        Assert.IsType<UpdateStatus.Failed>(updates.Status);
+        UnionAsserts.GetCase<UpdateStatus.Failed>(updates.Status);
     }
 
     [Fact]
@@ -244,7 +244,7 @@ public sealed class AppUpdatesTests
 
         Assert.Empty(viewCommands);
         Assert.Empty(ports.Asked);
-        Assert.IsType<UpdateStatus.Idle>(updates.Status);
+        UnionAsserts.GetCase<UpdateStatus.Idle>(updates.Status);
     }
 
     [Fact]
@@ -262,9 +262,9 @@ public sealed class AppUpdatesTests
         answer.SetResult(new Outcome<UpdateInfo?>.Ok(null));
         await checking.WithinPatienceAsync();
 
-        Assert.IsType<UpdateStatus.Checking>(shownAtOnce);
+        UnionAsserts.GetCase<UpdateStatus.Checking>(shownAtOnce);
         Assert.Equal(0, askedBeforeTheEdgeRan);
-        Assert.IsType<UpdateStatus.UpToDate>(updates.Status);
+        UnionAsserts.GetCase<UpdateStatus.UpToDate>(updates.Status);
     }
 
     [Fact]
@@ -276,7 +276,7 @@ public sealed class AppUpdatesTests
         var restart = updates.StartRestart();
 
         Assert.NotNull(restart);
-        Assert.IsType<UpdateStatus.Restarting>(updates.Status);
+        UnionAsserts.GetCase<UpdateStatus.Restarting>(updates.Status);
         Assert.NotEqual(nameof(FakePorts.TryApplyAfterExitAsync), ports.Asked[^1]);
     }
 
@@ -289,7 +289,7 @@ public sealed class AppUpdatesTests
         await updates.CheckAsync(new UpdateCheck { Asked = true }, CancellationToken.None);
 
         Assert.Empty(ports.Asked);
-        Assert.IsType<UpdateStatus.Idle>(updates.Status);
+        UnionAsserts.GetCase<UpdateStatus.Idle>(updates.Status);
     }
 
     [Fact]
@@ -311,6 +311,6 @@ public sealed class AppUpdatesTests
 
         updates.FailCheck(asked);
 
-        Assert.IsType<UpdateStatus.Failed>(updates.Status);
+        UnionAsserts.GetCase<UpdateStatus.Failed>(updates.Status);
     }
 }

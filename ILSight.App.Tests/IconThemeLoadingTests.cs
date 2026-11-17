@@ -104,8 +104,8 @@ public sealed class IconThemeLoadingTests
         Assert.Empty(catalog.Errors);
         Assert.NotNull(theme.Icons.NodeClass.Svg);
         Assert.True(theme.Icons.NodeClass.Svg?.UsesCurrentColor);
-        Assert.Equal("svg/class.svg", Assert.IsType<IconValue.Picture>(theme.Values["node.class"]).SvgPath);
-        Assert.Equal("lucide", Assert.IsType<IconValue.Glyph>(theme.Values["node.method"]).Font);
+        Assert.Equal("svg/class.svg", UnionAsserts.GetCase<IconValue.Picture>(theme.Values["node.class"]).SvgPath);
+        Assert.Equal("lucide", UnionAsserts.GetCase<IconValue.Glyph>(theme.Values["node.method"]).Font);
     }
 
     public static TheoryData<string, ThemeProblem, string, string> BadInput => new TheoryData<string, ThemeProblem, string, string>()
@@ -158,7 +158,7 @@ public sealed class IconThemeLoadingTests
         var error = Assert.Single(file.Json.Errors);
 
         Assert.Equal((ThemeProblem.UnknownKey, "icons.node.class.size"), (error.Problem, error.Subject));
-        Assert.Equal(0xE061, Assert.IsType<IconValue.Glyph>(Assert.IsType<IconThemeContents>(file.Contents).Icons["node.class"]).Codepoint);
+        Assert.Equal(0xE061, UnionAsserts.GetCase<IconValue.Glyph>(Assert.IsType<IconThemeContents>(file.Contents).Icons["node.class"]).Codepoint);
     }
 
     [Fact]
@@ -236,7 +236,7 @@ public sealed class IconThemeLoadingTests
             """);
 
         Assert.Empty(file.Json.Errors);
-        Assert.Equal(0xE061, Assert.IsType<IconValue.Glyph>(Assert.IsType<IconThemeContents>(file.Contents).Icons["node.class"]).Codepoint);
+        Assert.Equal(0xE061, UnionAsserts.GetCase<IconValue.Glyph>(Assert.IsType<IconThemeContents>(file.Contents).Icons["node.class"]).Codepoint);
     }
 
     [Theory]

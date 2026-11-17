@@ -351,8 +351,8 @@ public sealed class NuGetPickerTests : IDisposable
         picker.Browser.RetryDetails(selected, Packages.Version("2.0.0"));
         var retried = ReadDetails(picker, posted);
 
-        Assert.IsType<VersionDetails.Failed>(failed);
-        Assert.Equal("MIT", Assert.IsType<VersionDetails.Read>(retried).Details.License);
+        UnionAsserts.GetCase<VersionDetails.Failed>(failed);
+        Assert.Equal("MIT", UnionAsserts.GetCase<VersionDetails.Read>(retried).Details.License);
     }
 
     private VersionDetails ReadDetails(NuGetPicker picker, PostedActions posted)
@@ -363,7 +363,7 @@ public sealed class NuGetPickerTests : IDisposable
             Assert.NotNull(selected);
             return picker.Browser.EnsureDetails(selected, Packages.Version("2.0.0"));
         }
-        Assert.IsType<VersionDetails.Loading>(DetailsNow());
+        UnionAsserts.GetCase<VersionDetails.Loading>(DetailsNow());
         var work = new BackgroundWork();
         using (posted.Install())
         {
@@ -374,7 +374,7 @@ public sealed class NuGetPickerTests : IDisposable
         Poll.Until(() => work.Outstanding.Count == 0, posted.Run);
         var details = DetailsNow();
         Assert.NotNull(details);
-        return details;
+        return details.Value;
     }
 
     [Fact]
@@ -428,8 +428,9 @@ public sealed class NuGetPickerTests : IDisposable
         Assert.NotNull(selected);
         var again = picker.Browser.EnsureDetails(selected, Packages.Version("2.0.0"));
 
-        Assert.Equal("MIT", Assert.IsType<VersionDetails.Read>(details).Details.License);
-        Assert.Same(details, again);
+        Assert.Equal("MIT", UnionAsserts.GetCase<VersionDetails.Read>(details).Details.License);
+        Assert.NotNull(again);
+        UnionAsserts.SameCase(details, again.Value);
         Assert.Single(_fake.Requested, DetailsUrl);
     }
 

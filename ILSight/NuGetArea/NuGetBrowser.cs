@@ -704,7 +704,8 @@ public sealed class NuGetBrowser
     /// loading, unless they were dropped or asked for again meanwhile.</summary>
     internal void ShowDetails(VersionDetailsFetch fetch, Outcome<PackageVersionDetails> read)
     {
-        if (!_details.TryGetValue(fetch.Key, out var current) || !ReferenceEquals(current, fetch.Loading))
+        if (!_details.TryGetValue(fetch.Key, out var current) || current is not VersionDetails.Loading loading
+            || !ReferenceEquals(loading, fetch.Loading))
         {
             return;
         }

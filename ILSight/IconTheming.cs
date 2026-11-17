@@ -152,7 +152,7 @@ public static class IconTheming
             var value = BuildPicture(theme, picture, GetReadOrDefault(named, picture.Path));
             if (value is not null)
             {
-                icons[key] = value;
+                icons[key] = value.Value;
             }
         }
 
@@ -211,7 +211,7 @@ public static class IconTheming
         var name = Theming.ReadJsonName(theme.Json, ref reader, line, theme.Id.Text);
         if (name is not null)
         {
-            theme.Name = name;
+            theme.Name = name.Value;
         }
     }
 
@@ -368,7 +368,7 @@ public static class IconTheming
         }
 
         theme.NamedPictures.Remove(key);
-        theme.Icons[key] = value;
+        theme.Icons[key] = value.Value;
     }
 
     private static IconValue? MakeGlyph(ParsedIconTheme theme, string subject, string font, string glyph, int line)

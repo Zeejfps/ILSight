@@ -322,9 +322,11 @@ public static class Theming
 
     private static IconGlyph? MakeGlyph(MergedIconTheme merged, string key, IconValue value, ICollection<ThemeError> errors)
     {
-        return value.Match((merged, key, errors),
-            glyph: static (s, glyph) => MakeFontGlyph(s.merged, s.key, glyph, s.errors),
-            picture: static (_, picture) => IconGlyph.FromSvg(picture.Svg));
+        return value switch
+        {
+            IconValue.Glyph glyph => MakeFontGlyph(merged, key, glyph, errors),
+            IconValue.Picture picture => IconGlyph.FromSvg(picture.Svg),
+        };
     }
 
     private static IconGlyph? MakeFontGlyph(MergedIconTheme merged, string key, IconValue.Glyph glyph, ICollection<ThemeError> errors)
@@ -365,10 +367,15 @@ public static class Theming
 
     private static List<FontFace> ListFaces(MergedIconTheme merged, IconTheme? fallback)
     {
-        var faces = merged.Fonts.Values
-            .OfType<IconFont.Loaded>()
-            .Select(static f => f.Face)
-            .ToList();
+        var faces = new List<FontFace>();
+        foreach (var font in merged.Fonts.Values)
+        {
+            if (font is IconFont.Loaded loaded)
+            {
+                faces.Add(loaded.Face);
+            }
+        }
+
         if (fallback is null)
         {
             return faces;
@@ -634,7 +641,7 @@ public static class Theming
         var name = Theming.ReadJsonName(theme.Json, ref reader, line, theme.Id.Text);
         if (name is not null)
         {
-            theme.Name = name;
+            theme.Name = name.Value;
         }
     }
 

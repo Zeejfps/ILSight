@@ -2,18 +2,14 @@ namespace ILSight.ILSightAppArea;
 
 /// <summary>Where a run that opens no window of its own tells the user something: its standard error, where the run
 /// has a console, or else a small dialog of its own that waits for a click.</summary>
-public abstract record RunNotice
+public union RunNotice(RunNotice.OnConsole, RunNotice.InDialog)
 {
-    private RunNotice()
-    {
-    }
-
     /// <summary>Written to <see cref="Error"/>, the run's standard error.</summary>
-    public sealed record OnConsole(TextWriter Error) : RunNotice;
+    public sealed record OnConsole(TextWriter Error);
 
     /// <summary>Shown by <see cref="Show"/>, handed the message and its button's label, which returns once the user
     /// clicked it or closed the dialog.</summary>
-    public sealed record InDialog(Action<string, string> Show) : RunNotice;
+    public sealed record InDialog(Action<string, string> Show);
 
     /// <summary>The channel this run has: its standard error where it has a console, else a dialog
     /// (<see cref="RunNoticeDialog"/>).</summary>

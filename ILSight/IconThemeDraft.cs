@@ -44,9 +44,15 @@ public static class IconThemeDraft
 
     private static void AppendIcon(StringBuilder text, IconValue value)
     {
-        value.Switch(text,
-            glyph: static (text, glyph) => AppendGlyph(text, glyph),
-            picture: static (text, picture) => text.Append("{ \"svg\": ").Append(Quote(picture.SvgPath)).Append(" }"));
+        switch (value)
+        {
+            case IconValue.Glyph glyph:
+                AppendGlyph(text, glyph);
+                break;
+            case IconValue.Picture picture:
+                text.Append("{ \"svg\": ").Append(Quote(picture.SvgPath)).Append(" }");
+                break;
+        }
     }
 
     private static void AppendGlyph(StringBuilder text, IconValue.Glyph glyph)

@@ -24,7 +24,7 @@ public sealed class UpdateTests : IDisposable
         return app;
     }
 
-    private static void AwaitStatus<T>(AppDriver app) where T : UpdateStatus
+    private static void AwaitStatus<T>(AppDriver app) where T : class
     {
         app.Frames.WaitUntil(() => app.AppState.Updates.Status is T, Waits.Patience);
     }
@@ -52,7 +52,7 @@ public sealed class UpdateTests : IDisposable
         app.Run(2);
 
         Assert.Equal(0, feed.Finds);
-        Assert.IsType<UpdateStatus.Idle>(app.AppState.Updates.Status);
+        UnionAsserts.GetCase<UpdateStatus.Idle>(app.AppState.Updates.Status);
     }
 
     [Fact]
@@ -163,7 +163,7 @@ public sealed class UpdateTests : IDisposable
         return app.TextRect(app.Ui.Appearance.Strings.AboutClose).Y;
     }
 
-    private static void Ask<T>(AppDriver app) where T : UpdateStatus
+    private static void Ask<T>(AppDriver app) where T : class
     {
         app.Frames.ClickOn(Selector.WithText(app.Ui.Appearance.Strings.AboutCheckForUpdates));
         app.Frames.Frame(2);

@@ -446,10 +446,10 @@ public sealed class NuGetBrowserTests
         await RunFetchesAsync(ports, picker.Browser);
         var details = picker.Browser.EnsureDetails(package, Version("2.0.0"));
 
-        Assert.IsType<VersionDetails.Loading>(loading);
+        UnionAsserts.GetCase<VersionDetails.Loading>(loading);
         Assert.True(asked);
         Assert.False(picker.Browser.HasDownloadsToStart);
-        Assert.Same(read, Assert.IsType<VersionDetails.Read>(details).Details);
+        Assert.Same(read, UnionAsserts.GetCase<VersionDetails.Read>(details).Details);
         Assert.True(ports.Tokens[^1].CanBeCanceled);
     }
 
@@ -461,14 +461,14 @@ public sealed class NuGetBrowserTests
         await SearchAsync(ports, picker, now: TimeSpan.FromSeconds(10));
         var package = Assert.Single(picker.Browser.Results);
 
-        Assert.IsType<VersionDetails.Loading>(picker.Browser.EnsureDetails(package, Version("2.0.0")));
+        UnionAsserts.GetCase<VersionDetails.Loading>(picker.Browser.EnsureDetails(package, Version("2.0.0")));
         await RunFetchesAsync(ports, picker.Browser);
         var failed = picker.Browser.EnsureDetails(package, Version("2.0.0"));
         picker.Browser.RetryDetails(package, Version("2.0.0"));
         var retried = picker.Browser.EnsureDetails(package, Version("2.0.0"));
 
-        Assert.Equal("No catalog.", Assert.IsType<VersionDetails.Failed>(failed).Error.Message);
-        Assert.IsType<VersionDetails.Loading>(retried);
+        Assert.Equal("No catalog.", UnionAsserts.GetCase<VersionDetails.Failed>(failed).Error.Message);
+        UnionAsserts.GetCase<VersionDetails.Loading>(retried);
         Assert.True(picker.Browser.HasDownloadsToStart);
         Assert.Empty(ports.Reported);
     }
