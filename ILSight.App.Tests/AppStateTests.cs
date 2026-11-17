@@ -489,7 +489,7 @@ public sealed class AppStateTests
         Assert.NotNull(active);
         var document = active.Document;
         var (line, column) = document.GetPosition("Name;");
-        var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference);
+        var reference = UnionAsserts.GetNavigable(document.SpanAt(line, column).Reference);
         var farewell = await d.FixtureAsync("Farewell");
 
         d.Start((a, ct) =>
@@ -523,7 +523,7 @@ public sealed class AppStateTests
         var document = active.Document;
         var (line, column) = document.GetPosition("Name;");
 
-        var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference);
+        var reference = UnionAsserts.GetNavigable(document.SpanAt(line, column).Reference);
         d.Start((a, ct) =>
         {
             var resolveTicket = a.ListSession.Navigation.BeginResolving(inNewTab: false);
@@ -581,7 +581,7 @@ public sealed class AppStateTests
         Assert.NotNull(active);
         var document = active.Document;
         var (line, column) = document.GetPosition("Length");
-        var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference);
+        var reference = UnionAsserts.GetNavigable(document.SpanAt(line, column).Reference);
         d.Start((a, ct) =>
         {
             var resolveTicket = a.ListSession.Navigation.BeginResolving(inNewTab: true);
@@ -604,7 +604,7 @@ public sealed class AppStateTests
         var greeter = await d.FixtureAsync("Greeter");
         var document = await greeter.DecompileAsync(DecompilationLanguage.CSharp);
         var (line, column) = document.GetPosition("Length");
-        Assert.NotNull(await d.AppState.ListSession.Assemblies.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column).Reference)));
+        Assert.NotNull(await d.AppState.ListSession.Assemblies.FindNodeAsync(UnionAsserts.GetNavigable(document.SpanAt(line, column).Reference)));
         var search = d.Ui.Search;
         search.Query = "IsLeapYear";
         search.RunSearch(d.AppState.ListSession.Assemblies, TimeSpan.FromSeconds(0), true);

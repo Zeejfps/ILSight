@@ -200,7 +200,7 @@ public sealed class CodeTooltipTests
         Assert.Equal("Adds an item and raises Calculator<T>.Changed.", TextOf(summary));
         Assert.Equal(DocStyle.Reference, changed.Style);
         var changedNode = await calculator.GetChildAsync("Changed : EventHandler?");
-        Assert.Same(changedNode, await list.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(changed.Reference)));
+        Assert.Same(changedNode, await list.FindNodeAsync(UnionAsserts.GetNavigable(changed.Reference)));
         Assert.Equal("item", item.Label?.Text);
         Assert.Equal("The item to add.", TextOf(Assert.Single(item.Blocks)));
     }
@@ -312,7 +312,7 @@ public sealed class CodeTooltipTests
         var document = await add.DecompileAsync(DecompilationLanguage.CSharp);
         var call = document.Lines[document.LineContaining("_items.Add(item)")];
 
-        var tooltip = (await AssemblyListing.DescribeReferenceAsync(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("Add").Reference), CancellationToken.None))
+        var tooltip = (await AssemblyListing.DescribeReferenceAsync(list, UnionAsserts.GetCase<CodeReference.Entity>(call.SpanAt("Add").Reference), CancellationToken.None))
             .GetValue().FoundOrNull;
         Assert.NotNull(tooltip);
 
@@ -340,7 +340,7 @@ public sealed class CodeTooltipTests
         var references = await referencesNode.DecompileAsync(DecompilationLanguage.CSharp);
         var runtime = references.SpansOf().First(s => s.Text.StartsWith("System.Runtime, Version=")).Span.Reference;
 
-        Assert.IsType<CodeReference.Local>(local);
-        Assert.IsType<CodeReference.Assembly>(runtime);
+        UnionAsserts.GetCase<CodeReference.Local>(local);
+        UnionAsserts.GetCase<CodeReference.Assembly>(runtime);
     }
 }

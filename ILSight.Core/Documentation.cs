@@ -76,7 +76,7 @@ internal static class Documentation
             return new DocCref { Name = null, Reference = null };
         }
 
-        return new DocCref { Name = ReadShortName(entity), Reference = CodeReferences.Find(entity) };
+        return new DocCref { Name = ReadShortName(entity), Reference = CodeReference.FromNullable(CodeReferences.Find(entity)) };
     }
 
     private static string ReadShortName(IEntity entity)

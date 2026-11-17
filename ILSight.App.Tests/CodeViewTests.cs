@@ -102,7 +102,7 @@ public sealed class CodeViewTests
 
         var navigate = Assert.IsType<CodeViewIntent.Navigate>(result.Intent);
         Assert.Equal(view.Document.SpanAt(line, column).Reference, navigate.Target);
-        Assert.Equal(EntityKind.Method, Assert.IsType<CodeReference.Entity>(navigate.Target).Kind);
+        Assert.Equal(EntityKind.Method, UnionAsserts.GetCase<CodeReference.Entity>(navigate.Target).Kind);
         Assert.False(navigate.InNewTab);
     }
 

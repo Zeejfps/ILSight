@@ -434,7 +434,7 @@ internal ref struct MetadataGridFrame
     private void OpenDefinition(int row, bool inNewTab)
     {
         var definition = MetadataGrids.FindDefinition(Grid, row);
-        if (definition == null)
+        if (definition is null)
         {
             return;
         }
@@ -566,7 +566,7 @@ internal ref struct MetadataGridFrame
 
         var target = column >= 0 ? MetadataGrids.FindLink(Grid, row, column) : null;
         var definition = MetadataGrids.FindDefinition(Grid, row);
-        if (target is null && definition == null)
+        if (target is null && definition is null)
         {
             return null;
         }
@@ -579,7 +579,7 @@ internal ref struct MetadataGridFrame
             result = new MetadataGridResult { Target = target, Definition = null, InNewTab = false };
         }
 
-        if (definition != null)
+        if (definition is not null)
         {
             if (Ui.MenuItem(Strings.CodeGoToDefinition, Shortcuts.Enter, enabled: why is null, id: "go-to-definition", detail: why))
             {

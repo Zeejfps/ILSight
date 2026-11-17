@@ -121,7 +121,7 @@ public sealed class AnalysisTests
         var calculator = add.Parent;
         Assert.NotNull(calculator);
         var children = await calculator.ListChildrenAsync();
-        Assert.Same(children.Single(c => c.Is(MemberShape.Operator)), await list.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(plus.Reference)));
+        Assert.Same(children.Single(c => c.Is(MemberShape.Operator)), await list.FindNodeAsync(UnionAsserts.GetNavigable(plus.Reference)));
     }
 
     [Fact]

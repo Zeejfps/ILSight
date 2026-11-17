@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using ILSight.Core;
 
 namespace ILSight.Tests;
 
@@ -13,6 +14,16 @@ public static class UnionAsserts
         Assert.NotNull(union);
         // The suite's one read of a union's Value: xUnit's type check needs the case as an object.
         return Assert.IsType<TCase>(union.Value);
+    }
+
+    /// <summary><paramref name="reference"/>, asserted to be there and navigable: an assembly's or an entity's. A
+    /// navigable is a union of its own, so <c>Assert.IsAssignableFrom</c> never sees a reference as one.</summary>
+    public static CodeReference.Navigable GetNavigable(CodeReference? reference)
+    {
+        Assert.NotNull(reference);
+        var navigable = reference.Value.AsNavigable;
+        Assert.NotNull(navigable);
+        return navigable.Value;
     }
 
     /// <summary>The type of the case <paramref name="union"/> holds, asserted to hold one: a union's own

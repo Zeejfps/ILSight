@@ -249,8 +249,9 @@ public sealed class AnalyzerTests
         var append = uses.Found.OfType<AnalyzerSymbolNode>().First(n => n.Symbol.Label.StartsWith("Append("));
         var file = append.Symbol.File;
         Assert.NotNull(file);
-        var reference = append.Symbol.Reference;
-        Assert.NotNull(reference);
+        var symbolReference = append.Symbol.Reference;
+        Assert.NotNull(symbolReference);
+        var reference = symbolReference.Value;
         var listedBefore = ListedPaths(d);
 
         d.InTurn(() => Commands.Analyze(d.AppState, d.Ui.Panels, d.Ui.Analyzer, append.Symbol));
@@ -320,7 +321,7 @@ public sealed class AnalyzerTests
         Assert.NotNull(tab);
         var document = tab.Document;
         var (line, column) = document.GetPosition("return First();");
-        var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
+        var reference = UnionAsserts.GetNavigable(document.SpanAt(line, column + "return ".Length).Reference);
         d.TakeViewCommands();
 
         d.InTurn(() =>
@@ -344,7 +345,7 @@ public sealed class AnalyzerTests
         Assert.NotNull(tab);
         var document = tab.Document;
         var (line, column) = document.GetPosition(text);
-        return Assert.IsType<CodeReference.Entity>(document.SpanAt(line, column + offset).Reference);
+        return UnionAsserts.GetCase<CodeReference.Entity>(document.SpanAt(line, column + offset).Reference);
     }
 
     private static async Task<CodeReference.Entity> ReferenceToFirstAsync(AppStateDriver d)
@@ -443,7 +444,7 @@ public sealed class AnalyzerTests
         var outline = await root.GetChildAsync(AppStateDriver.FixturesNamespace, "Outline");
         var document = await outline.DecompileAsync(DecompilationLanguage.CSharp);
         var (line, column) = document.GetPosition("return First();");
-        var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
+        var reference = UnionAsserts.GetNavigable(document.SpanAt(line, column + "return ".Length).Reference);
         d.InTurn(() => Commands.CloseAssemblies(d.AppState, [assembly]));
         File.Delete(copy);
 

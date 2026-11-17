@@ -131,13 +131,13 @@ internal static class AnalyzerPanelView
         }
 
         var reference = symbol.Symbol.Reference;
-        if (reference == null)
+        if (reference is null)
         {
             return;
         }
 
         var resolveTicket = navigation.BeginResolving(inNewTab: false);
-        Commands.GoToReferenceLater(commands, reference, resolveTicket);
+        Commands.GoToReferenceLater(commands, reference.Value, resolveTicket);
     }
 
     private static void ContextMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, AnalyzerRows analyzerRows, Navigation navigation, AnalyzerTree analyzer)
@@ -157,9 +157,9 @@ internal static class AnalyzerPanelView
 
         var isRoot = analyzer.HasRoot(node);
         var target = node.Symbol.Reference;
-        if (target != null)
+        if (target is not null)
         {
-            GoToItems(ui, appearance, commands, navigation, target);
+            GoToItems(ui, appearance, commands, navigation, target.Value);
         }
 
         AnalyzeItem(ui, appearance, commands, panels, analyzerRows, OfferAnalysis(rows, analyzer));

@@ -109,10 +109,11 @@ internal static class DocumentsView
             Commands.DecompileLater(commands, load);
         }
 
-        if (picked.Definition != null)
+        var definition = picked.Definition;
+        if (definition is not null)
         {
             var resolveTicket = navigation.BeginResolving(picked.InNewTab);
-            Commands.GoToReferenceLater(commands, picked.Definition, resolveTicket);
+            Commands.GoToReferenceLater(commands, definition.Value, resolveTicket);
         }
     }
 

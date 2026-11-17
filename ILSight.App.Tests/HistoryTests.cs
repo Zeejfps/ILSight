@@ -112,7 +112,7 @@ public sealed class HistoryTests
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var (line, column) = tab.Document.GetPosition("return First();");
-        var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(tab.Document.SpanAt(line, column + "return ".Length).Reference);
+        var reference = UnionAsserts.GetNavigable(tab.Document.SpanAt(line, column + "return ".Length).Reference);
         var before = ScrollTo(app, 25,
             new TextPosition { Line = line, Column = column }, new TextPosition { Line = line, Column = column + 6 });
 

@@ -281,8 +281,8 @@ public static class CodeViewWidget
             var hoverSpan = hover.Span;
             var hovered = hoverSpan is not null ? document.Lines[hoverSpan.Value.Line].Spans[hoverSpan.Value.Span] : default;
             var hoverReference = hovered.Reference;
-            var hoverTarget = hoverReference is CodeReference.Navigable underPointer && !hovered.IsDefinition ? underPointer : null;
-            var hoverNavigable = hoverTarget != null;
+            var hoverTarget = hovered.IsDefinition ? null : hoverReference?.AsNavigable;
+            var hoverNavigable = hoverTarget is not null;
 
             if (i.Hovered || i.Held)
             {
@@ -345,18 +345,19 @@ public static class CodeViewWidget
             {
                 var pressedSpan = clicked.Span;
                 var reference = pressedSpan is not null ? document.Lines[pressedSpan.Value.Line].Spans[pressedSpan.Value.Span] : default;
-                if (reference.Reference is CodeReference.Navigable target && !reference.IsDefinition)
+                var target = reference.IsDefinition ? null : reference.Reference?.AsNavigable;
+                if (target is not null)
                 {
-                    intent = new CodeViewIntent.Navigate { Target = target, InNewTab = clicked.ForNewTab };
+                    intent = new CodeViewIntent.Navigate { Target = target.Value, InNewTab = clicked.ForNewTab };
                 }
                 else
                 {
                     state.Pointer.Mark(reference.Reference);
                 }
             }
-            if (i.ClickedWith(PointerButton.Middle) && hoverTarget != null)
+            if (i.ClickedWith(PointerButton.Middle) && hoverTarget is not null)
             {
-                intent = new CodeViewIntent.Navigate { Target = hoverTarget, InNewTab = true };
+                intent = new CodeViewIntent.Navigate { Target = hoverTarget.Value, InNewTab = true };
             }
 
             if (i.ClickedWith(PointerButton.Right))
@@ -599,7 +600,8 @@ public static class CodeViewWidget
 
     private static CodeViewIntent? NavigateToClickedLink(Ui ui, RichTextClick click)
     {
-        if (click.Link is not CodeReference.Navigable reference)
+        // A tooltip links an entity, held as the case itself: a navigable boxed would be the union, never its case.
+        if (click.Link is not CodeReference.Entity reference)
         {
             return null;
         }
@@ -634,7 +636,7 @@ public static class CodeViewWidget
             return null;
         }
 
-        return document.Lines[span.Value.Line].Spans[span.Value.Span].Reference as CodeReference.Entity;
+        return document.Lines[span.Value.Line].Spans[span.Value.Span].Reference is CodeReference.Entity entity ? entity : null;
     }
 
     // Widened to the left by the tooltip's padding so that the tooltip's text starts where the word does.
@@ -850,7 +852,7 @@ public static class CodeViewWidget
             }
 
             var reference = spans[index.Value].Reference;
-            if (reference != null)
+            if (reference is not null)
             {
                 return reference;
             }
@@ -1281,23 +1283,23 @@ public static class CodeViewWidget
         }
         var why = ClosedText(ui, appearance, closedAssembly);
         var reference = target.Navigable;
-        if (reference != null)
+        if (reference is not null)
         {
             ui.MenuSeparator();
             if (ui.MenuItem(t.CodeGoToDefinition, enabled: why is null, id: "go-to-definition", detail: why))
             {
-                picked = new CodeViewIntent.Navigate { Target = reference, InNewTab = false };
+                picked = new CodeViewIntent.Navigate { Target = reference.Value, InNewTab = false };
             }
 
             if (ui.MenuItem(t.CodeOpenInNewTab, enabled: why is null, id: "open-in-new-tab", detail: why))
             {
-                picked = new CodeViewIntent.Navigate { Target = reference, InNewTab = true };
+                picked = new CodeViewIntent.Navigate { Target = reference.Value, InNewTab = true };
             }
         }
         var entity = target.Entity;
         if (entity != null)
         {
-            if (target.Navigable == null)
+            if (target.Navigable is null)
             {
                 ui.MenuSeparator();
             }
@@ -1317,16 +1319,16 @@ public static class CodeViewWidget
             picked = DiagramItems(ui, appearance, entity, why) ?? picked;
         }
         var shown = target.Metadata;
-        if (shown != null)
+        if (shown is not null)
         {
-            if (target.Navigable == null && target.Entity == null)
+            if (target.Navigable is null && target.Entity == null)
             {
                 ui.MenuSeparator();
             }
 
             if (ui.MenuItem(t.TreeShowInMetadata, enabled: why is null, id: "show-in-metadata", detail: why))
             {
-                picked = new CodeViewIntent.ShowInMetadata(shown);
+                picked = new CodeViewIntent.ShowInMetadata(shown.Value);
             }
         }
         return picked;
@@ -1378,11 +1380,13 @@ public static class CodeViewWidget
             FillBrackets(p, frame, x0, textAreaLeft, r, index, frame.Brackets.Value);
         }
 
-        if (frame.Highlight != null)
+        var highlight = frame.Highlight;
+        if (highlight is not null)
         {
             foreach (var span in line.Spans)
             {
-                if (span.Reference != null && span.Reference.Equals(frame.Highlight))
+                var reference = span.Reference;
+                if (reference is not null && reference.Value == highlight.Value)
                 {
                     FillCells(p, frame, x0, textAreaLeft, r, span.Start, span.End, frame.Palette.Occurrence);
                 }

@@ -9,61 +9,101 @@ namespace ILSight.Core;
 /// <see cref="Navigable"/> references can be resolved to a tree node with
 /// <see cref="NodeLookup.FindAsync(AssemblyList, BrowseSession, CodeReference.Navigable, CancellationToken)"/>.
 /// </summary>
-public abstract class CodeReference : IEquatable<CodeReference>
+public union CodeReference(CodeReference.Assembly, CodeReference.Entity, CodeReference.Local, CodeReference.Label) : IEquatable<CodeReference>
 {
-    private CodeReference()
+    /// <summary>An assembly or entity, found by a handle in the file at <see cref="FilePath"/>: what a reference holds
+    /// but a local and a label. It compares as the reference it is.</summary>
+    public union Navigable(Assembly, Entity) : IEquatable<Navigable>
     {
-    }
-
-    /// <summary>The target's name as written where it was referenced.</summary>
-    public required string Name { get; init; }
-
-    /// <summary>The target as a person reads it: every kind of reference says what it points to.</summary>
-    public abstract override string ToString();
-
-    /// <summary>An assembly or entity, found by a handle in the file at <see cref="FilePath"/>.</summary>
-    public abstract class Navigable : CodeReference
-    {
-        private protected Navigable()
+        /// <summary>The target's name as written where it was referenced.</summary>
+        public string Name => this switch
         {
-        }
+            Assembly assembly => assembly.Name,
+            Entity entity => entity.Name,
+        };
 
-        public required AssemblyPath FilePath { get; init; }
+        public AssemblyPath FilePath => this switch
+        {
+            Assembly assembly => assembly.FilePath,
+            Entity entity => entity.FilePath,
+        };
 
         /// <summary>What it is found by in the file.</summary>
-        public abstract EntityHandle Handle { get; }
-
-        public override bool Equals(CodeReference? other)
+        public EntityHandle Handle => this switch
         {
-            if (ReferenceEquals(this, other))
+            Assembly assembly => assembly.Handle,
+            Entity entity => entity.Handle,
+        };
+
+        /// <summary><paramref name="entity"/> as a navigable; null for none. A null entity converted to a navigable
+        /// would be one holding no case.</summary>
+        public static Navigable? FromNullable(Entity? entity)
+        {
+            if (entity is null)
             {
-                return true;
+                return null;
             }
 
-            if (other is not Navigable navigable)
-            {
-                return false;
-            }
+            return entity;
+        }
 
-            return Handle == navigable.Handle && FilePath.Equals(navigable.FilePath);
+        /// <summary>The navigable as the reference it is.</summary>
+        public static implicit operator CodeReference(Navigable navigable)
+        {
+            return navigable switch
+            {
+                Assembly assembly => assembly,
+                Entity entity => entity,
+            };
+        }
+
+        public bool Equals(Navigable other)
+        {
+            return ((CodeReference)this).Equals(other);
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return ((CodeReference)this).Equals(obj);
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(FilePath, MetadataTokens.GetToken(Handle));
+            return ((CodeReference)this).GetHashCode();
+        }
+
+        /// <summary>The target as a person reads it: every kind of reference says what it points to.</summary>
+        public override string ToString()
+        {
+            return ((CodeReference)this).ToString();
+        }
+
+        public static bool operator ==(Navigable left, Navigable right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(Navigable left, Navigable right)
+        {
+            return !left.Equals(right);
         }
     }
 
-    /// <summary>The assembly in the file at <see cref="Navigable.FilePath"/> itself, or one that file
+    /// <summary>The assembly in the file at <see cref="FilePath"/> itself, or one that file
     /// references by <see cref="Referenced"/>.</summary>
-    public sealed class Assembly : Navigable
+    public sealed class Assembly
     {
+        /// <summary>The target's name as written where it was referenced.</summary>
+        public required string Name { get; init; }
+
+        public required AssemblyPath FilePath { get; init; }
+
         /// <summary>The reference to the assembly from the file; null for the file's own assembly.</summary>
         public required AssemblyReferenceHandle? Referenced { get; init; }
 
         /// <summary>The reference in the file, or the file's own assembly, which <see cref="Referenced"/>
         /// says, so that the two can't disagree.</summary>
-        public override EntityHandle Handle
+        public EntityHandle Handle
         {
             get
             {
@@ -76,42 +116,91 @@ public abstract class CodeReference : IEquatable<CodeReference>
             }
         }
 
+        public override bool Equals(object? obj)
+        {
+            return ReferenceEquals(this, obj) || IsSameNavigable(Handle, FilePath, obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashNavigable(Handle, FilePath);
+        }
+
         public override string ToString()
         {
             return $"Assembly {Name}";
         }
+
+        public static bool operator ==(Assembly? left, Assembly? right)
+        {
+            return Equals(left, right);
+        }
+
+        public static bool operator !=(Assembly? left, Assembly? right)
+        {
+            return !Equals(left, right);
+        }
     }
 
     /// <summary>A type or member, defined or referenced by its handle in the file.</summary>
-    public sealed class Entity : Navigable
+    public sealed class Entity
     {
+        /// <summary>The target's name as written where it was referenced.</summary>
+        public required string Name { get; init; }
+
+        public required AssemblyPath FilePath { get; init; }
+
         public required EntityKind Kind { get; init; }
 
         /// <summary>The type or member, as the file names it.</summary>
         public required EntityHandle Target { get; init; }
 
-        public override EntityHandle Handle => Target;
+        /// <summary>What it is found by in the file.</summary>
+        public EntityHandle Handle => Target;
+
+        public override bool Equals(object? obj)
+        {
+            return ReferenceEquals(this, obj) || IsSameNavigable(Handle, FilePath, obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashNavigable(Handle, FilePath);
+        }
 
         public override string ToString()
         {
             return $"{Kind} {Name}";
         }
+
+        public static bool operator ==(Entity? left, Entity? right)
+        {
+            return Equals(left, right);
+        }
+
+        public static bool operator !=(Entity? left, Entity? right)
+        {
+            return !Equals(left, right);
+        }
     }
 
     /// <summary>A local variable or parameter, numbered by <see cref="Key"/> within <see cref="Scope"/>.</summary>
-    public sealed class Local : CodeReference
+    public sealed class Local
     {
+        /// <summary>The target's name as written where it was referenced.</summary>
+        public required string Name { get; init; }
+
         public required int Key { get; init; }
         public required Entity? Scope { get; init; }
 
-        public override bool Equals(CodeReference? other)
+        public override bool Equals(object? obj)
         {
-            if (ReferenceEquals(this, other))
+            if (ReferenceEquals(this, obj))
             {
                 return true;
             }
 
-            return other is Local local && Key == local.Key && Equals(Scope, local.Scope);
+            return obj is Local local && Key == local.Key && Equals(Scope, local.Scope);
         }
 
         public override int GetHashCode()
@@ -123,22 +212,35 @@ public abstract class CodeReference : IEquatable<CodeReference>
         {
             return $"Local {Name}";
         }
+
+        public static bool operator ==(Local? left, Local? right)
+        {
+            return Equals(left, right);
+        }
+
+        public static bool operator !=(Local? left, Local? right)
+        {
+            return !Equals(left, right);
+        }
     }
 
     /// <summary>An IL label, numbered by <see cref="Key"/> within <see cref="Scope"/>.</summary>
-    public sealed class Label : CodeReference
+    public sealed class Label
     {
+        /// <summary>The target's name as written where it was referenced.</summary>
+        public required string Name { get; init; }
+
         public required int Key { get; init; }
         public required Entity? Scope { get; init; }
 
-        public override bool Equals(CodeReference? other)
+        public override bool Equals(object? obj)
         {
-            if (ReferenceEquals(this, other))
+            if (ReferenceEquals(this, obj))
             {
                 return true;
             }
 
-            return other is Label label && Key == label.Key && Equals(Scope, label.Scope);
+            return obj is Label label && Key == label.Key && Equals(Scope, label.Scope);
         }
 
         public override int GetHashCode()
@@ -150,24 +252,112 @@ public abstract class CodeReference : IEquatable<CodeReference>
         {
             return $"Label {Name}";
         }
+
+        public static bool operator ==(Label? left, Label? right)
+        {
+            return Equals(left, right);
+        }
+
+        public static bool operator !=(Label? left, Label? right)
+        {
+            return !Equals(left, right);
+        }
     }
 
-    public abstract bool Equals(CodeReference? other);
-
-    public sealed override bool Equals(object? obj)
+    /// <summary>The target's name as written where it was referenced.</summary>
+    public string Name => this switch
     {
-        return obj is CodeReference other && Equals(other);
+        Assembly assembly => assembly.Name,
+        Entity entity => entity.Name,
+        Local local => local.Name,
+        Label label => label.Name,
+    };
+
+    /// <summary><paramref name="entity"/> as a reference; null for none. A null entity converted to a reference would
+    /// be one holding no case.</summary>
+    public static CodeReference? FromNullable(Entity? entity)
+    {
+        if (entity is null)
+        {
+            return null;
+        }
+
+        return entity;
     }
 
-    public abstract override int GetHashCode();
-
-    public static bool operator ==(CodeReference? left, CodeReference? right)
+    /// <summary>The reference as a navigable one: an assembly's or an entity's; null for a local's or a label's.</summary>
+    public Navigable? AsNavigable => this switch
     {
-        return Equals(left, right);
+        Assembly assembly => assembly,
+        Entity entity => entity,
+        Local or Label => (Navigable?)null,
+    };
+
+    // The case held, as the object whose equality the reference's is.
+    private object Held => this switch
+    {
+        Assembly assembly => assembly,
+        Entity entity => entity,
+        Local local => local,
+        Label label => label,
+    };
+
+    public bool Equals(CodeReference other)
+    {
+        return Held.Equals(other.Held);
     }
 
-    public static bool operator !=(CodeReference? left, CodeReference? right)
+    // A navigable compares as the reference it is, as it did when it was one.
+    public override bool Equals(object? obj)
     {
-        return !Equals(left, right);
+        if (obj is CodeReference reference)
+        {
+            return Equals(reference);
+        }
+
+        return obj is Navigable navigable && Equals((CodeReference)navigable);
+    }
+
+    public override int GetHashCode()
+    {
+        return Held.GetHashCode();
+    }
+
+    /// <summary>The target as a person reads it: every kind of reference says what it points to.</summary>
+    public override string ToString()
+    {
+        return this switch
+        {
+            Assembly assembly => assembly.ToString(),
+            Entity entity => entity.ToString(),
+            Local local => local.ToString(),
+            Label label => label.ToString(),
+        };
+    }
+
+    public static bool operator ==(CodeReference left, CodeReference right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(CodeReference left, CodeReference right)
+    {
+        return !left.Equals(right);
+    }
+
+    // Navigables compare by the handle and the file, whichever case holds them, as they did when both were one type.
+    private static bool IsSameNavigable(EntityHandle handle, AssemblyPath filePath, object? other)
+    {
+        if (other is Assembly assembly)
+        {
+            return handle == assembly.Handle && filePath.Equals(assembly.FilePath);
+        }
+
+        return other is Entity entity && handle == entity.Handle && filePath.Equals(entity.FilePath);
+    }
+
+    private static int HashNavigable(EntityHandle handle, AssemblyPath filePath)
+    {
+        return HashCode.Combine(filePath, MetadataTokens.GetToken(handle));
     }
 }

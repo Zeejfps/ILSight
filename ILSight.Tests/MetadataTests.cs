@@ -389,8 +389,8 @@ public sealed class MetadataTests
         Assert.NotNull(obj);
 
         var calculatorNode = await assembly.CalculatorAsync();
-        Assert.Same(calculatorNode, await list.FindNodeAsync(calculator));
-        Assert.Equal("Object", (await list.FindNodeAsync(obj))?.Text);
+        Assert.Same(calculatorNode, await list.FindNodeAsync(calculator.Value));
+        Assert.Equal("Object", (await list.FindNodeAsync(obj.Value))?.Text);
         var metadata = await MetadataAsync(assembly);
         var dosHeader = await metadata.GetChildAsync("DOS Header");
         Assert.Null(MetadataGrids.FindDefinition(await GridAsync(dosHeader), 0));

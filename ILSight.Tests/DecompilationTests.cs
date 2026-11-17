@@ -371,7 +371,7 @@ public sealed class DecompilationTests
         Assert.Equal("namespace ILSight.Tests.Fixtures", document.Lines[0].Text);
         Assert.False(circle.IsDefinition);
         var circleNode = await fixtures.GetChildAsync("Circle");
-        Assert.Same(circleNode, await list.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(circle.Reference)));
+        Assert.Same(circleNode, await list.FindNodeAsync(UnionAsserts.GetNavigable(circle.Reference)));
     }
 
     [Fact]

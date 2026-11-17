@@ -95,14 +95,14 @@ public sealed class AnalyzerTree
 
     private AnalyzerSymbolNode? FindRoot(AnalysisSymbol symbol)
     {
-        if (symbol.Reference == null)
+        if (symbol.Reference is null)
         {
             return null;
         }
 
         foreach (var root in _roots)
         {
-            if (root is AnalyzerSymbolNode found && Equals(found.Symbol.Reference, symbol.Reference))
+            if (root is AnalyzerSymbolNode found && found.Symbol.Reference == symbol.Reference)
             {
                 return found;
             }

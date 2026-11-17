@@ -120,7 +120,7 @@ public sealed class CodeViewTooltipTests
         view.Run(2);
 
         var navigate = Assert.IsType<CodeViewIntent.Navigate>(result.Intent);
-        Assert.Equal(EntityKind.Type, Assert.IsType<CodeReference.Entity>(navigate.Target).Kind);
+        Assert.Equal(EntityKind.Type, UnionAsserts.GetCase<CodeReference.Entity>(navigate.Target).Kind);
         Assert.Equal("Farewell", navigate.Target.Name);
         Assert.False(navigate.InNewTab);
         Assert.False(view.Frames.Drew("Says "));

@@ -40,7 +40,7 @@ public sealed class NavigateHandlerTests
             return new NavigateHandler(lookup).HandleAsync(appState.ListSession.Navigation, appState.Decompiler, reference, resolveTicket, CancellationToken.None);
         });
 
-        Assert.Same(reference, Assert.Single(lookup.LookedUp));
+        Assert.Same(reference, UnionAsserts.GetCase<CodeReference.Entity>(Assert.Single(lookup.LookedUp)));
         Assert.Same(farewell, appState.ListSession.Navigation.ActiveTab?.Node);
         var active = appState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
@@ -75,7 +75,7 @@ public sealed class NavigateHandlerTests
         });
 
         var notThere = Assert.IsType<Refusal.Unresolved>(Assert.Single(missing.Refused));
-        Assert.Same(reference, notThere.Reference);
+        Assert.Same(reference, UnionAsserts.GetCase<CodeReference.Entity>(notThere.Reference));
         Assert.Empty(missing.Reported);
         Assert.Same(error, Assert.IsType<AppProblem.Unresolved>(Assert.Single(failed.Reported)).Error);
         Assert.Same(shown, d.AppState.ListSession.Navigation.ActiveTab?.Node);

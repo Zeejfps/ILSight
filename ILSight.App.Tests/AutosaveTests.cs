@@ -214,7 +214,7 @@ public sealed class AutosaveTests : IDisposable
         Assert.NotNull(tab);
         var document = tab.Document;
         var (line, column) = document.GetPosition("return First();");
-        var reference = Assert.IsAssignableFrom<CodeReference.Navigable>(document.SpanAt(line, column + "return ".Length).Reference);
+        var reference = UnionAsserts.GetNavigable(document.SpanAt(line, column + "return ".Length).Reference);
 
         d.Analyze(reference);
         var settingsSave = d.AppState.SettingsSaver.SaveIfChanged(d.AppState, d.Now);

@@ -309,7 +309,7 @@ internal static class TooltipLayouts
 
     private static CodeReference.Entity? LinkOf(CodeReference? reference)
     {
-        return reference as CodeReference.Entity;
+        return reference is CodeReference.Entity entity ? entity : null;
     }
 
     private static RichTextRun ToRichTextRun(TooltipStyles styles, DocRun run)

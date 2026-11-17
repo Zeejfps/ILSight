@@ -54,7 +54,7 @@ public sealed class NavigationTests
         var document = await calculator.DecompileAsync(DecompilationLanguage.CSharp);
         var line = document.Lines[document.LineContaining("private readonly List<T> _items")];
 
-        var node = await list.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(line.SpanAt("List").Reference));
+        var node = await list.FindNodeAsync(UnionAsserts.GetNavigable(line.SpanAt("List").Reference));
 
         Assert.NotNull(node);
         Assert.Equal("List<T>", node.Text);
@@ -75,8 +75,8 @@ public sealed class NavigationTests
         var document = await calculator.DecompileAsync(DecompilationLanguage.CSharp);
         var call = document.Lines[document.LineContaining("_items.Add(item);")];
 
-        var addOnList = await list.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(call.SpanAt("Add").Reference));
-        var field = await list.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(call.SpanAt("_items").Reference));
+        var addOnList = await list.FindNodeAsync(UnionAsserts.GetNavigable(call.SpanAt("Add").Reference));
+        var field = await list.FindNodeAsync(UnionAsserts.GetNavigable(call.SpanAt("_items").Reference));
 
         Assert.NotNull(addOnList);
         Assert.Equal("Add(T) : void", addOnList.Text);
@@ -93,8 +93,8 @@ public sealed class NavigationTests
         var document = await calculator.DecompileAsync(DecompilationLanguage.CSharp);
         var call = document.Lines[document.LineContaining("_items.Add(item);")];
 
-        var add = Assert.NotNull(await list.FindMetadataRowAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(call.SpanAt("Add").Reference)));
-        var field = Assert.NotNull(await list.FindMetadataRowAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(call.SpanAt("_items").Reference)));
+        var add = Assert.NotNull(await list.FindMetadataRowAsync(UnionAsserts.GetNavigable(call.SpanAt("Add").Reference)));
+        var field = Assert.NotNull(await list.FindMetadataRowAsync(UnionAsserts.GetNavigable(call.SpanAt("_items").Reference)));
         var self = Assert.NotNull(await list.FindMetadataRowAsync(CodeReferences.CreateAssembly(assembly.Name, assembly.FilePath)));
 
         var methods = Assert.IsType<MetadataGrid.InMemory>(UnionAsserts.GetCase<Outcome<MetadataGrid>.Ok>(MetadataTables.EnsureGrid(TableOf(add.Node), NodeQueries.FirstGridRows)).Value);
@@ -117,7 +117,7 @@ public sealed class NavigationTests
         var document = await add.DecompileAsync(DecompilationLanguage.CSharp);
         var item = document.SpansOf().First(s => s.Text == "item").Span.Reference;
 
-        Assert.IsType<CodeReference.Local>(item);
+        UnionAsserts.GetCase<CodeReference.Local>(item);
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public sealed class NavigationTests
         var objectReference = document.SpansOf().First(s => s.Text == "System.Object" && s.Span.Reference is not null).Span.Reference;
         Assert.NotNull(objectReference);
 
-        var node = await list.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(objectReference));
+        var node = await list.FindNodeAsync(UnionAsserts.GetNavigable(objectReference));
 
         Assert.NotNull(node);
         Assert.Equal("Object", node.Text);
@@ -192,7 +192,7 @@ public sealed class NavigationTests
         Assert.Equal(2, items.Length);
         Assert.True(items[0].IsDefinition);
         Assert.Equal(items[0].Reference, items[1].Reference);
-        Assert.IsType<CodeReference.Local>(items[0].Reference);
+        UnionAsserts.GetCase<CodeReference.Local>(items[0].Reference);
     }
 
     [Fact]
@@ -208,7 +208,7 @@ public sealed class NavigationTests
         var getter = document.SpansOf()
             .Select(static s => s.Span)
             .Where(static s => s.IsDefinition)
-            .Select(static s => s.Reference)
+            .Select(static s => s.Reference is CodeReference.Entity entity ? entity : null)
             .OfType<CodeReference.Entity>()
             .First(static r => r.Kind == EntityKind.Property);
 

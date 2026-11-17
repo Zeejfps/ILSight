@@ -446,7 +446,7 @@ internal sealed class DocumentBuilder : ITextOutput
 
     private void WriteHandle(CodeReference.Navigable? reference, string text, bool isDefinition)
     {
-        var kind = _kind ?? (reference is null ? SpanKind.Plain : isDefinition && text.StartsWith('.') ? SpanKind.Keyword : GetSpanKind(reference));
+        var kind = _kind ?? (reference is null ? SpanKind.Plain : isDefinition && text.StartsWith('.') ? SpanKind.Keyword : GetSpanKind(reference.Value));
         WriteReferenceSpan(text, kind, reference, isDefinition);
     }
 
@@ -460,7 +460,7 @@ internal sealed class DocumentBuilder : ITextOutput
 
     private void WriteType(CodeReference.Entity? reference, string text, bool isDefinition)
     {
-        WriteReferenceSpan(text, _kind ?? SpanKind.Type, reference, isDefinition);
+        WriteReferenceSpan(text, _kind ?? SpanKind.Type, CodeReference.FromNullable(reference), isDefinition);
     }
 
     // The member's definition, its kind, module and token are read of the library's type system before the count (CF9).
@@ -475,7 +475,7 @@ internal sealed class DocumentBuilder : ITextOutput
 
     private void WriteMember(EntityKind entityKind, CodeReference.Entity? reference, string text, bool isDefinition)
     {
-        WriteReferenceSpan(text, _kind ?? GetSpanKind(entityKind), reference, isDefinition);
+        WriteReferenceSpan(text, _kind ?? GetSpanKind(entityKind), CodeReference.FromNullable(reference), isDefinition);
     }
 
     // Whether the local is a parameter is read of the decompiler's IL variable before the count (CF9, CJ9); the span,
@@ -728,9 +728,10 @@ internal sealed class DocumentBuilder : ITextOutput
                 AppendSpan(_indentation, SpanKind.Plain, null, false);
             }
         }
-        if (isDefinition && reference is CodeReference.Navigable navigable)
+        var navigable = reference?.AsNavigable;
+        if (isDefinition && navigable is not null)
         {
-            _definitions.TryAdd(navigable, _lines.Count);
+            _definitions.TryAdd(navigable.Value, _lines.Count);
         }
 
         AppendSpan(text, kind, reference, isDefinition);
@@ -807,7 +808,7 @@ internal sealed class DocumentBuilder : ITextOutput
             var definition = ResolveDefinition(metadata, (EntityHandle)handle);
             if (definition is not null)
             {
-                return CodeReferences.Find(definition, text);
+                return CodeReference.Navigable.FromNullable(CodeReferences.Find(definition, text));
             }
         }
         return CodeReferences.Find(metadata.Metadata, handle, text, AssemblyPath.Of(metadata.FileName));

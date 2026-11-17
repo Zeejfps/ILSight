@@ -85,7 +85,7 @@ public static class SavedPlaces
         };
     }
 
-    private static NodePathSegment.Folder? ParseFolder(string text)
+    private static NodePathSegment? ParseFolder(string text)
     {
         var role = ParseName<NodeFolder>(text);
         if (role is null)
@@ -96,7 +96,7 @@ public static class SavedPlaces
         return new NodePathSegment.Folder(role.Value);
     }
 
-    private static NodePathSegment.Metadata? ParseMetadata(string text)
+    private static NodePathSegment? ParseMetadata(string text)
     {
         var which = ParseName<MetadataSource>(text);
         if (which is null)
@@ -107,7 +107,7 @@ public static class SavedPlaces
         return new NodePathSegment.Metadata(which.Value);
     }
 
-    private static NodePathSegment.MetadataPart? ParseMetadataPart(string text)
+    private static NodePathSegment? ParseMetadataPart(string text)
     {
         var part = ParsePart(text);
         if (part == null)

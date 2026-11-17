@@ -76,7 +76,7 @@ public sealed class AssemblyMenuTests
         Assert.NotNull(tab);
         var document = tab.Document;
         var references = document.SpansOf()
-            .Select(s => s.Span.Reference)
+            .Select(s => s.Span.Reference is CodeReference.Entity entity ? entity : null)
             .OfType<CodeReference.Entity>()
             .Where(r => r.Kind == EntityKind.Type)
             .ToList();

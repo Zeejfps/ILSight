@@ -117,7 +117,7 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
         var frame = view.State.Frame;
         return marked switch
         {
-            "reference" => frame.Highlight != null,
+            "reference" => frame.Highlight is not null,
             "chevron" => frame.HoverFold is not null,
             "chip" => frame.HoverChip is not null,
             "mark" => frame.HoverMark is not null,
@@ -141,7 +141,7 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
         {
             foreach (var span in document.Lines[line].Spans)
             {
-                if (span.Reference != null)
+                if (span.Reference is not null)
                 {
                     return (line, span.Start);
                 }
