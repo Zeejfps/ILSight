@@ -56,11 +56,12 @@ internal static class FrameworkPickerView
 
             using (ui.Panel(new Box { Height = Sizing.Grow(), Padding = theme.BorderWidth, Background = theme.Field, Clip = true }))
             {
-                open |= browser.Scan.Match((ui, appearance, browser, listId),
-                    notStarted: static (s, _) => NoteScanning(s.ui, s.appearance),
-                    scanning: static (s, _) => NoteScanning(s.ui, s.appearance),
-                    scanned: static (s, _) => Rows(s.ui, s.appearance, s.browser, s.listId),
-                    failed: static (s, failed) => NoteScanFailed(s.ui, s.appearance, failed.Error));
+                open |= browser.Scan switch
+                {
+                    RuntimeScan.Scanned => Rows(ui, appearance, browser, listId),
+                    RuntimeScan.Failed failed => NoteScanFailed(ui, appearance, failed.Error),
+                    RuntimeScan.NotStarted or RuntimeScan.Scanning => NoteScanning(ui, appearance),
+                };
             }
 
             using (ui.Row(new Box { Gap = theme.GapTight }))

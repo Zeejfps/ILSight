@@ -37,23 +37,26 @@ public static class ProcessPicking
     /// <summary>The process <paramref name="scan"/> is of, or null when none is selected.</summary>
     public static RunningProcess? FindProcess(ModuleScan scan)
     {
-        return scan.Match<RunningProcess?>(
-            none: static _ => null,
-            loading: static loading => loading.Process,
-            loaded: static loaded => loaded.Process,
-            unreachable: static unreachable => unreachable.Process,
-            unreadable: static unreadable => unreadable.Process);
+        return scan switch
+        {
+            ModuleScan.Loading loading => loading.Process,
+            ModuleScan.Loaded loaded => loaded.Process,
+            ModuleScan.Unreachable unreachable => unreachable.Process,
+            ModuleScan.Unreadable unreadable => unreadable.Process,
+            ModuleScan.None => null,
+        };
     }
 
     /// <summary>The entry assembly found for the process <paramref name="scan"/> is of, or null.</summary>
     public static AssemblyPath? FindEntryAssembly(ModuleScan scan)
     {
-        return scan.Match<AssemblyPath?>(
-            none: static _ => null,
-            loading: static _ => null,
-            loaded: static loaded => loaded.EntryAssembly,
-            unreachable: static unreachable => unreachable.EntryAssembly,
-            unreadable: static unreadable => unreadable.EntryAssembly);
+        return scan switch
+        {
+            ModuleScan.Loaded loaded => loaded.EntryAssembly,
+            ModuleScan.Unreachable unreachable => unreachable.EntryAssembly,
+            ModuleScan.Unreadable unreadable => unreadable.EntryAssembly,
+            ModuleScan.None or ModuleScan.Loading => null,
+        };
     }
 
     /// <summary>The modules listed, or none while they aren't.</summary>

@@ -185,8 +185,8 @@ public sealed class SettlingWorkflowsTests
         runtime.FailScan(runtimeScan, new InvalidOperationException("broken"));
         processes.FailScan(processScan, new InvalidOperationException("broken"));
 
-        Assert.Equal("broken", Assert.IsType<RuntimeScan.Failed>(runtime.Scan).Error);
-        Assert.Equal("broken", Assert.IsType<ProcessScan.Failed>(processes.Scan).Error);
+        Assert.Equal("broken", UnionAsserts.GetCase<RuntimeScan.Failed>(runtime.Scan).Error);
+        Assert.Equal("broken", UnionAsserts.GetCase<ProcessScan.Failed>(processes.Scan).Error);
     }
 
     [Fact]

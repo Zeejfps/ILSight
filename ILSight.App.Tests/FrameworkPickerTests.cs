@@ -30,7 +30,7 @@ public sealed class FrameworkPickerTests
 
         await OpenAsync(picker);
 
-        Assert.Contains("no runtime", Assert.IsType<RuntimeScan.Failed>(picker.Browser.Scan).Error);
+        Assert.Contains("no runtime", UnionAsserts.GetCase<RuntimeScan.Failed>(picker.Browser.Scan).Error);
         Assert.Single(runtime.Reported);
     }
 
@@ -46,7 +46,7 @@ public sealed class FrameworkPickerTests
         await OpenAsync(picker);
         await OpenAsync(picker);
 
-        Assert.IsType<RuntimeScan.Scanned>(picker.Browser.Scan);
+        UnionAsserts.GetCase<RuntimeScan.Scanned>(picker.Browser.Scan);
         Assert.Equal(2, runtime.Scans);
         Assert.Single(runtime.Reported);
         Assert.True(picker.IsOpen);
@@ -66,8 +66,8 @@ public sealed class FrameworkPickerTests
         Assert.NotNull(scan);
         await picker.Browser.ScanAsync(scan, scan.Token);
 
-        Assert.IsType<RuntimeScan.Scanning>(shownAtOnce);
-        Assert.IsType<RuntimeScan.Scanned>(picker.Browser.Scan);
+        UnionAsserts.GetCase<RuntimeScan.Scanning>(shownAtOnce);
+        UnionAsserts.GetCase<RuntimeScan.Scanned>(picker.Browser.Scan);
     }
 
     [Fact]
@@ -161,7 +161,7 @@ public sealed class FrameworkPickerTests
 
         Assert.True(shownThatFrame);
         Assert.True(app.Ui.Picker.IsOpen);
-        Assert.IsType<RuntimeScan.Scanned>(app.Ui.Picker.Browser.Scan);
+        UnionAsserts.GetCase<RuntimeScan.Scanned>(app.Ui.Picker.Browser.Scan);
         Assert.Empty(app.AppState.Errors.Entries);
     }
 

@@ -187,11 +187,12 @@ internal static class ProcessPickerView
 
     private static bool Processes(Ui ui, Appearance appearance, TableColumns processColumns, ProcessBrowser browser, int listId)
     {
-        return browser.Scan.Match((ui, appearance, processColumns, browser, listId),
-            notStarted: static (s, _) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerScanning),
-            scanning: static (s, _) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerScanning),
-            scanned: static (s, scanned) => ScannedProcesses(s.ui, s.appearance, s.processColumns, s.browser, s.listId, scanned),
-            failed: static (s, failed) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerScanFailed, failed.Error));
+        return browser.Scan switch
+        {
+            ProcessScan.Scanned scanned => ScannedProcesses(ui, appearance, processColumns, browser, listId, scanned),
+            ProcessScan.Failed failed => NoteInstead(ui, appearance.Strings.ProcessPickerScanFailed, failed.Error),
+            ProcessScan.NotStarted or ProcessScan.Scanning => NoteInstead(ui, appearance.Strings.ProcessPickerScanning),
+        };
     }
 
     private static bool NoteInstead(Ui ui, string text)
@@ -247,12 +248,16 @@ internal static class ProcessPickerView
 
     private static bool Modules(Ui ui, Appearance appearance, TableColumns processModuleColumns, ProcessBrowser browser)
     {
-        return browser.Modules.Match((ui, appearance, processModuleColumns, browser),
-            none: static (s, _) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerPickProcess),
-            loading: static (s, _) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerLoading),
-            loaded: static (s, loaded) => ModuleRows(s.ui, s.appearance, s.processModuleColumns, s.browser, loaded.Modules),
-            unreachable: static (s, unreachable) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerUnreachable, DescribeUnreachable(s.appearance.Strings, unreachable.Cause)),
-            unreadable: static (s, unreadable) => NoteInstead(s.ui, s.appearance.Strings.ProcessPickerUnreadable, DescribeFault(s.appearance.Strings, unreadable.Fault)));
+        return browser.Modules switch
+        {
+            ModuleScan.None => NoteInstead(ui, appearance.Strings.ProcessPickerPickProcess),
+            ModuleScan.Loading => NoteInstead(ui, appearance.Strings.ProcessPickerLoading),
+            ModuleScan.Loaded loaded => ModuleRows(ui, appearance, processModuleColumns, browser, loaded.Modules),
+            ModuleScan.Unreachable unreachable => NoteInstead(ui, appearance.Strings.ProcessPickerUnreachable,
+                DescribeUnreachable(appearance.Strings, unreachable.Cause)),
+            ModuleScan.Unreadable unreadable => NoteInstead(ui, appearance.Strings.ProcessPickerUnreadable,
+                DescribeFault(appearance.Strings, unreadable.Fault)),
+        };
     }
 
     // Why the process couldn't be asked, in the app's language; a failure known only by its message, as written.

@@ -291,14 +291,17 @@ internal ref struct MetadataGridFrame
         }
 
         var pending = State.TakePending();
-        if (pending is null)
+        switch (pending)
         {
-            return;
+            case null:
+                break;
+            case PendingGridScroll.Reveal reveal:
+                ArriveAtRevealed(State, body, rowHeight, reveal.Row);
+                break;
+            case PendingGridScroll.Restore restore:
+                ArriveAtRestored(State, body, rowHeight, restore.Position);
+                break;
         }
-
-        pending.Switch((state: State, body, rowHeight),
-            reveal: static (s, reveal) => ArriveAtRevealed(s.state, s.body, s.rowHeight, reveal.Row),
-            restore: static (s, restore) => ArriveAtRestored(s.state, s.body, s.rowHeight, restore.Position));
     }
 
     private static void ArriveAtRestored(MetadataGridState state, TableBody body, float rowHeight, GridPosition restore)

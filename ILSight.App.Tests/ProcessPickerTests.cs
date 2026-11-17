@@ -174,7 +174,7 @@ public sealed class ProcessPickerTests
 
         await picker.Browser.ListModulesAsync(Select(picker, Web), shutdown.Token);
 
-        var loaded = Assert.IsType<ModuleScan.Loaded>(picker.Browser.Modules);
+        var loaded = UnionAsserts.GetCase<ModuleScan.Loaded>(picker.Browser.Modules);
         Assert.Equal(Web, loaded.Process);
         Assert.Equal([CoreLib, Generated, WebDll], loaded.Modules);
         Assert.Equal([TestPaths.FakePath("Web.Api.dll")], picker.Browser.ListToOpen());
@@ -221,11 +221,11 @@ public sealed class ProcessPickerTests
         var listing = Select(picker, Worker);
 
         Assert.Equal(Worker, listing.Process);
-        Assert.Equal(Worker, Assert.IsType<ModuleScan.Loading>(picker.Browser.Modules).Process);
+        Assert.Equal(Worker, UnionAsserts.GetCase<ModuleScan.Loading>(picker.Browser.Modules).Process);
         Assert.Equal(0, picker.Browser.ModuleSelection.Count);
         Assert.False(picker.Browser.CanOpen);
         await picker.Browser.ListModulesAsync(listing, listing.Work.Token);
-        Assert.Equal(Worker, Assert.IsType<ModuleScan.Loaded>(picker.Browser.Modules).Process);
+        Assert.Equal(Worker, UnionAsserts.GetCase<ModuleScan.Loaded>(picker.Browser.Modules).Process);
     }
 
     [Fact]
@@ -245,7 +245,7 @@ public sealed class ProcessPickerTests
 
         await SelectAndListAsync(picker, Worker);
 
-        Assert.Equal(new UnreachableCause.Failure("gone"), Assert.IsType<ModuleScan.Unreachable>(picker.Browser.Modules).Cause);
+        Assert.Equal(new UnreachableCause.Failure("gone"), UnionAsserts.GetCase<ModuleScan.Unreachable>(picker.Browser.Modules).Cause);
         Assert.True(picker.Browser.CanOpen);
         Assert.Equal([TestPaths.FakePath("Jobs.Worker.dll")], picker.Browser.ListToOpen());
     }
@@ -268,7 +268,7 @@ public sealed class ProcessPickerTests
 
         await SelectAndListAsync(picker, Silent);
 
-        Assert.Equal(new NettraceFault.CutShort(), Assert.IsType<ModuleScan.Unreadable>(picker.Browser.Modules).Fault);
+        Assert.Equal(new NettraceFault.CutShort(), UnionAsserts.GetCase<ModuleScan.Unreadable>(picker.Browser.Modules).Fault);
         Assert.False(picker.Browser.CanOpen);
     }
 
@@ -284,7 +284,7 @@ public sealed class ProcessPickerTests
 
         await SelectAndListAsync(picker, Web);
 
-        Assert.Equal(new UnreachableCause.Failure("broken"), Assert.IsType<ModuleScan.Unreachable>(picker.Browser.Modules).Cause);
+        Assert.Equal(new UnreachableCause.Failure("broken"), UnionAsserts.GetCase<ModuleScan.Unreachable>(picker.Browser.Modules).Cause);
         UnionAsserts.GetCase<AppProblem.Unexpected>(Assert.Single(ports.Reported));
     }
 
@@ -299,7 +299,7 @@ public sealed class ProcessPickerTests
         };
         var picker = await OpenAsync(ports);
         var listingWeb = SelectAndListAsync(picker, Web);
-        Assert.Equal(Web, Assert.IsType<ModuleScan.Loading>(picker.Browser.Modules).Process);
+        Assert.Equal(Web, UnionAsserts.GetCase<ModuleScan.Loading>(picker.Browser.Modules).Process);
 
         await SelectAndListAsync(picker, Worker);
         first.SetResult(new Outcome<ModuleScan>.Ok(new ModuleScan.Loaded
@@ -312,7 +312,7 @@ public sealed class ProcessPickerTests
 
         Assert.True(ports.ListingTokens[0].IsCancellationRequested);
         Assert.False(ports.ListingTokens[1].IsCancellationRequested);
-        var loaded = Assert.IsType<ModuleScan.Loaded>(picker.Browser.Modules);
+        var loaded = UnionAsserts.GetCase<ModuleScan.Loaded>(picker.Browser.Modules);
         Assert.Equal(Worker, loaded.Process);
         Assert.Equal([CoreLib], loaded.Modules);
         Assert.Empty(ports.Reported);
@@ -336,7 +336,7 @@ public sealed class ProcessPickerTests
         await listing.WithinPatienceAsync();
 
         Assert.True(Assert.Single(ports.ListingTokens).IsCancellationRequested);
-        Assert.IsType<ModuleScan.None>(picker.Browser.Modules);
+        UnionAsserts.GetCase<ModuleScan.None>(picker.Browser.Modules);
         Assert.Null(picker.Browser.FindSelectedProcess());
         Assert.False(picker.IsOpen);
     }
@@ -369,7 +369,7 @@ public sealed class ProcessPickerTests
         Assert.Null(ListSelectedProcessModules(picker));
         Assert.Equal([Worker], picker.Browser.Filtered);
         Assert.Equal(Worker, picker.Browser.FindSelectedProcess());
-        Assert.IsType<ModuleScan.Loaded>(picker.Browser.Modules);
+        UnionAsserts.GetCase<ModuleScan.Loaded>(picker.Browser.Modules);
     }
 
     [Fact]
@@ -382,7 +382,7 @@ public sealed class ProcessPickerTests
 
         var scanTicket = picker.Browser.StartScan();
         var refreshing = ScanAsync(picker.Browser, scanTicket);
-        Assert.Equal([Web], Assert.IsType<ProcessScan.Scanned>(picker.Browser.Scan).Processes);
+        Assert.Equal([Web], UnionAsserts.GetCase<ProcessScan.Scanned>(picker.Browser.Scan).Processes);
         refreshed.SetResult(new Outcome<IReadOnlyList<RunningProcess>>.Ok([Worker]));
         await refreshing.WithinPatienceAsync();
         picker.Browser.TakeFilter(picker.Filter);
@@ -399,7 +399,7 @@ public sealed class ProcessPickerTests
         var picker = new ProcessPicker { Browser = new ProcessBrowser(ports) };
         var olderTicket = picker.Open();
         var olderScan = ScanAsync(picker.Browser, olderTicket);
-        Assert.IsType<ProcessScan.Scanning>(picker.Browser.Scan);
+        UnionAsserts.GetCase<ProcessScan.Scanning>(picker.Browser.Scan);
 
         var scanTicket = picker.Browser.StartScan();
         await ScanAsync(picker.Browser, scanTicket);
@@ -425,7 +425,7 @@ public sealed class ProcessPickerTests
         await scan.WithinPatienceAsync();
 
         Assert.True(ticket.Token.IsCancellationRequested);
-        Assert.IsType<ProcessScan.Scanning>(picker.Browser.Scan);
+        UnionAsserts.GetCase<ProcessScan.Scanning>(picker.Browser.Scan);
         Assert.Empty(picker.Browser.Filtered);
     }
 
@@ -441,7 +441,7 @@ public sealed class ProcessPickerTests
         var scanTicket = picker.Browser.StartScan();
         await ScanAsync(picker.Browser, scanTicket);
 
-        Assert.Equal("broken", Assert.IsType<ProcessScan.Failed>(picker.Browser.Scan).Error);
+        Assert.Equal("broken", UnionAsserts.GetCase<ProcessScan.Failed>(picker.Browser.Scan).Error);
         UnionAsserts.GetCase<AppProblem.Unexpected>(Assert.Single(ports.Reported));
     }
 
@@ -487,9 +487,9 @@ public sealed class ProcessPickerTests
         again.SetResult(new Outcome<IReadOnlyList<RunningProcess>>.Ok([Web]));
         await asked.WithinPatienceAsync();
 
-        Assert.IsType<ProcessScan.Failed>(failedBefore);
-        Assert.IsType<ProcessScan.Scanning>(shownAtOnce);
-        Assert.IsType<ProcessScan.Scanned>(picker.Browser.Scan);
+        UnionAsserts.GetCase<ProcessScan.Failed>(failedBefore);
+        UnionAsserts.GetCase<ProcessScan.Scanning>(shownAtOnce);
+        UnionAsserts.GetCase<ProcessScan.Scanned>(picker.Browser.Scan);
     }
 
     [Fact]
@@ -507,7 +507,7 @@ public sealed class ProcessPickerTests
         });
 
         Assert.Equal(shutdown.Token, Assert.Single(ports.ScanTokens));
-        Assert.IsNotType<ProcessScan.Failed>(picker.Browser.Scan);
+        Assert.False(picker.Browser.Scan is ProcessScan.Failed);
         Assert.Empty(ports.Reported);
     }
 
@@ -534,7 +534,7 @@ public sealed class ProcessPickerTests
 
         await SelectAndListAsync(picker, self);
 
-        var modules = Assert.IsType<ModuleScan.Loaded>(picker.Browser.Modules).Modules;
+        var modules = UnionAsserts.GetCase<ModuleScan.Loaded>(picker.Browser.Modules).Modules;
         Assert.Contains(new RunningModule.OnDisk
         {
             Name = "ILSight.Core.dll",

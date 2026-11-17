@@ -780,11 +780,13 @@ public sealed class NuGetBrowser
 
     private FeedSearch? FindLastSearched()
     {
-        return _run.Match<FeedSearch?>(
-            static _ => null,
-            static running => running.Search,
-            static found => found.Search,
-            static failed => failed.Search);
+        return _run switch
+        {
+            SearchRun.Running running => running.Search,
+            SearchRun.Found found => found.Search,
+            SearchRun.Failed failed => failed.Search,
+            SearchRun.None => null,
+        };
     }
 
     private FeedSearch? FindShownSearch()
@@ -902,33 +904,44 @@ public sealed class NuGetBrowser
         public required FeedPage Found { get; init; }
     }
 
-    private abstract record SetupState
+    /// <summary>The last search: none since the dialog was made or the search was dropped, one running, or one that
+    /// found a page or failed to.</summary>
+    private union SearchRun(SearchRun.None, SearchRun.Running, SearchRun.Found, SearchRun.Failed)
     {
-        private SetupState()
+        public sealed record None;
+
+        public sealed record Running(FeedSearch Search);
+
+        public sealed record Found(FeedSearch Search);
+
+        public sealed record Failed
         {
+            public required FeedSearch Search { get; init; }
+
+            // What failed, said from its cause (FailureTexts).
+            public required Exception Error { get; init; }
         }
+    }
 
-        public sealed record Unread : SetupState;
+    private union SetupState(SetupState.Unread, SetupState.Reading, SetupState.Ready)
+    {
+        public sealed record Unread;
 
-        public sealed record Reading : SetupState;
+        public sealed record Reading;
 
-        public sealed record Ready(NuGetSetup Setup) : SetupState
+        public sealed record Ready(NuGetSetup Setup)
         {
             public bool IsBeingReadAgain { get; init; }
         }
     }
 
     // Done holds the package file fetched until it is taken.
-    private abstract record DownloadState
+    private union DownloadState(DownloadState.None, DownloadState.Running, DownloadState.Done)
     {
-        private DownloadState()
-        {
-        }
+        public sealed record None;
 
-        public sealed record None : DownloadState;
+        public sealed record Running(string Name);
 
-        public sealed record Running(string Name) : DownloadState;
-
-        public sealed record Done(string Path) : DownloadState;
+        public sealed record Done(string Path);
     }
 }
