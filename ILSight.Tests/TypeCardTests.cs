@@ -190,7 +190,7 @@ public sealed class TypeCardTests
         var nameNode = await root.GetChildAsync(ZooNamespace, "Animal", "Name : string");
         var name = nameNode.Definition;
 
-        Assert.IsType<Lookup<TypeCard>.NotFound>((await TypeCards.ReadAsync(List, name, CancellationToken.None)).GetValue());
+        UnionAsserts.GetCase<Lookup<TypeCard>.NotFound>((await TypeCards.ReadAsync(List, name, CancellationToken.None)).GetValue());
         Assert.Empty(Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>((await TypeCards.ReadWithNeighboursAsync(List, name, CancellationToken.None)).GetValue()).Value);
     }
 

@@ -30,13 +30,26 @@ public sealed class ShowInApiReferenceHandler(ShowInApiReferenceHandler.IPorts p
         switch (answer)
         {
             case Outcome<Lookup<string>>.Ok ok:
-                ok.Value.Switch(
-                    found => viewCommands.Enqueue(new ViewCommand.OpenWebPage(found.Value)),
-                    _ => ports.ShowRefusal(new Refusal.NoApiReferencePage { Name = reference.Name }),
-                    unreadable => ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module)));
+                Show(viewCommands, reference, ok.Value);
                 break;
             case Outcome<Lookup<string>>.Failed failed:
                 ports.ReportError(LookupFailures.OfReference(reference, failed.Error));
+                break;
+        }
+    }
+
+    private void Show(Queue<ViewCommand> viewCommands, CodeReference.Entity reference, Lookup<string> page)
+    {
+        switch (page)
+        {
+            case Lookup<string>.Found found:
+                viewCommands.Enqueue(new ViewCommand.OpenWebPage(found.Value));
+                break;
+            case Lookup<string>.NotFound:
+                ports.ShowRefusal(new Refusal.NoApiReferencePage { Name = reference.Name });
+                break;
+            case Lookup<string>.Unreadable unreadable:
+                ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module));
                 break;
         }
     }

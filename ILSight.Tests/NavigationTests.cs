@@ -256,13 +256,13 @@ public sealed class NavigationTests
         var module = Assert.IsType<LoadedModule>(Assert.Single(list.Assemblies));
         var byId = (await NodeLookup.FindByIdAsync(session, "T:ILSight.Tests.Fixtures.Circle", [module], CancellationToken.None)).GetValue();
 
-        Assert.Equal("UnreadableTypes.dll", Assert.IsType<Lookup<BrowseNode>.Unreadable>(node).Module.Module.FilePath.FileName);
-        Assert.NotEmpty(Assert.IsType<Lookup<BrowseNode>.Unreadable>(node).Module.Why.Message);
-        Assert.Same(module, Assert.IsType<Lookup<MetadataTarget>.Unreadable>(row).Module.Module);
-        Assert.Same(module, Assert.IsType<Lookup<BrowseNode>.Unreadable>(atPlace).Module.Module);
-        Assert.Same(module, Assert.IsType<Lookup<CodeTooltip>.Unreadable>(tooltip).Module.Module);
-        Assert.Same(module, Assert.IsType<Lookup<TypeCard>.Unreadable>(card).Module.Module);
-        Assert.Same(module, Assert.IsType<Lookup<BrowseNode>.Unreadable>(byId).Module.Module);
+        Assert.Equal("UnreadableTypes.dll", UnionAsserts.GetCase<Lookup<BrowseNode>.Unreadable>(node).Module.Module.FilePath.FileName);
+        Assert.NotEmpty(UnionAsserts.GetCase<Lookup<BrowseNode>.Unreadable>(node).Module.Why.Message);
+        Assert.Same(module, UnionAsserts.GetCase<Lookup<MetadataTarget>.Unreadable>(row).Module.Module);
+        Assert.Same(module, UnionAsserts.GetCase<Lookup<BrowseNode>.Unreadable>(atPlace).Module.Module);
+        Assert.Same(module, UnionAsserts.GetCase<Lookup<CodeTooltip>.Unreadable>(tooltip).Module.Module);
+        Assert.Same(module, UnionAsserts.GetCase<Lookup<TypeCard>.Unreadable>(card).Module.Module);
+        Assert.Same(module, UnionAsserts.GetCase<Lookup<BrowseNode>.Unreadable>(byId).Module.Module);
     }
 
     [Fact]
@@ -279,7 +279,7 @@ public sealed class NavigationTests
             CancellationToken.None);
 
         // The library's failure on the user's module, read under the step's own catch: the module's, said as unreadable.
-        var unreadable = Assert.IsType<Lookup<BrowseNode>.Unreadable>(byId.GetValue());
+        var unreadable = UnionAsserts.GetCase<Lookup<BrowseNode>.Unreadable>(byId.GetValue());
         Assert.Same(module, unreadable.Module.Module);
         Assert.IsType<BadImageFormatException>(unreadable.Module.Why);
     }
@@ -331,6 +331,6 @@ public sealed class NavigationTests
         Assert.Same(why, UnionAsserts.GetCase<Outcome<Lookup<BrowseNode>>.Failed>(byId).Error);
         Assert.Same(why, UnionAsserts.GetCase<Outcome<Lookup<BrowseNode>>.Failed>(byPath).Error);
         Assert.Same(why, UnionAsserts.GetCase<Outcome<Lookup<BrowseNode>>.Failed>(listedByPath).Error);
-        Assert.IsType<Lookup<BrowseNode>.NotFound>(toExpand.GetValue());
+        UnionAsserts.GetCase<Lookup<BrowseNode>.NotFound>(toExpand.GetValue());
     }
 }

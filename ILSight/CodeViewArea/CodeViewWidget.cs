@@ -553,7 +553,7 @@ public static class CodeViewWidget
         var tooltip = TooltipOf(state, document, tooltips, hovered);
         var part = 0;
         var span = hovered.Span;
-        if (tooltip != null && span is not null)
+        if (tooltip is not null && span is not null)
         {
             part = HashCode.Combine(span.Value.Line, span.Value.Span) | 1;
         }
@@ -567,12 +567,12 @@ public static class CodeViewWidget
         }
 
         var shown = state.Tooltip.Find(shownPart);
-        if (shown == null)
+        if (shown is null)
         {
             return null;
         }
 
-        var click = CodeTooltipView.Render(ui, appearance, shown);
+        var click = CodeTooltipView.Render(ui, appearance, shown.Value);
         return NavigateToClickedLink(ui, click);
     }
 

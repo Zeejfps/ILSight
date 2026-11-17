@@ -429,24 +429,25 @@ public sealed class AssemblyReloader(AssemblyReloader.IPorts ports)
         }
 
         var tab = reloading.Tab;
-        var node = place.Match<BrowseNode?>(
-            static found => found.Value,
-            _ =>
-            {
-                ReleaseGoneTab(tab, reloading.Location);
-                return null;
-            },
-            unreadable =>
-            {
-                ReleaseUnreadableTab(tab, reloading.Location, unreadable.Module);
-                return null;
-            });
-        if (node is null)
+        switch (place)
         {
-            return null;
+            case Lookup<BrowseNode>.Found found:
+                return Restore(navigation, decompiler, reloading, found.Value, loads);
+            case Lookup<BrowseNode>.NotFound:
+                ReleaseGoneTab(tab, reloading.Location);
+                break;
+            case Lookup<BrowseNode>.Unreadable unreadable:
+                ReleaseUnreadableTab(tab, reloading.Location, unreadable.Module);
+                break;
         }
 
-        var load = navigation.Restore(tab, node, decompiler, reloading.Position);
+        return null;
+    }
+
+    private static BrowseNode Restore(Navigation navigation, DecompilerSetup decompiler, ReloadingTab reloading, BrowseNode node,
+        List<DecompileTicket> loads)
+    {
+        var load = navigation.Restore(reloading.Tab, node, decompiler, reloading.Position);
         if (load is not null)
         {
             loads.Add(load);

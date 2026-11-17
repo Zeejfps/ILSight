@@ -61,17 +61,18 @@ public sealed class OpenAndShowIdHandler(OpenAndShowIdHandler.IPorts ports)
             return null;
         }
 
-        return lookup.Match<DecompileTicket?>(
-            found => navigation.ShowNode(found.Value, decompiler.Setup),
-            _ =>
-            {
+        switch (lookup)
+        {
+            case Lookup<BrowseNode>.Found found:
+                return navigation.ShowNode(found.Value, decompiler.Setup);
+            case Lookup<BrowseNode>.NotFound:
                 ports.ShowRefusal(new Refusal.IdNotFound { Id = idString });
-                return null;
-            },
-            unreadable =>
-            {
+                break;
+            case Lookup<BrowseNode>.Unreadable unreadable:
                 ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module));
-                return null;
-            });
+                break;
+        }
+
+        return null;
     }
 }

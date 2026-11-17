@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using ILSight.Core;
 
 namespace ILSight.CodeTooltipArea;
@@ -28,8 +27,9 @@ public sealed class CodeTooltips
     public bool HasAsked => _asked.Count > 0;
 
     /// <summary>Whether the lookup of <paramref name="reference"/> is done, with what it found,
-    /// <paramref name="tooltip"/>: the tooltip, none, or the module it is in that could not be read.</summary>
-    public bool TryGetOrAskTooltip(CodeReference.Entity reference, [NotNullWhen(true)] out Lookup<CodeTooltip>? tooltip)
+    /// <paramref name="tooltip"/>: the tooltip, none, or the module it is in that could not be read. When it is not
+    /// done, <paramref name="tooltip"/> holds no case and is not to be read.</summary>
+    public bool TryGetOrAskTooltip(CodeReference.Entity reference, out Lookup<CodeTooltip> tooltip)
     {
         ForgetIfStale();
         if (_found.TryGetValue(reference, out tooltip))
@@ -55,7 +55,11 @@ public sealed class CodeTooltips
             return null;
         }
 
-        return tooltip.Match<Lookup<CodeTooltip>?>(static found => found, static _ => null, static unreadable => unreadable);
+        return tooltip switch
+        {
+            Lookup<CodeTooltip>.Found or Lookup<CodeTooltip>.Unreadable => tooltip,
+            Lookup<CodeTooltip>.NotFound => (Lookup<CodeTooltip>?)null,
+        };
     }
 
     private void ForgetIfStale()

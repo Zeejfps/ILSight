@@ -12,7 +12,7 @@ public sealed class ShowInMetadataHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var greeter = await d.FixtureAsync("Greeter");
         var reference = greeter.Definition;
-        var row = Assert.IsType<Lookup<MetadataTarget>.Found>((await NodeLookup.FindMetadataRowAsync(d.AppState.ListSession.Assemblies, d.AppState.Session, reference, CancellationToken.None)).GetValue()).Value;
+        var row = UnionAsserts.GetCase<Lookup<MetadataTarget>.Found>((await NodeLookup.FindMetadataRowAsync(d.AppState.ListSession.Assemblies, d.AppState.Session, reference, CancellationToken.None)).GetValue()).Value;
         var lookup = new FakeShowInMetadataHandlerPorts { Found = new Outcome<Lookup<MetadataTarget>>.Ok(Lookup.FromNullable<MetadataTarget>(row)) };
 
         var load = await d.RunAsync(() =>

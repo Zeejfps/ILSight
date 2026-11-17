@@ -91,10 +91,10 @@ public sealed class PackageTests
 
         Assert.Null(await list.FindNodeAsync(type));
         Assert.Null(await list.FindMetadataRowAsync(type));
-        Assert.IsType<Lookup<CodeTooltip>.NotFound>((await AssemblyListing.DescribeReferenceAsync(list, type, CancellationToken.None)).GetValue());
-        Assert.IsType<Lookup<string>.NotFound>((await AssemblyListing.FindApiReferencePageAsync(list, type, CancellationToken.None)).GetValue());
+        UnionAsserts.GetCase<Lookup<CodeTooltip>.NotFound>((await AssemblyListing.DescribeReferenceAsync(list, type, CancellationToken.None)).GetValue());
+        UnionAsserts.GetCase<Lookup<string>.NotFound>((await AssemblyListing.FindApiReferencePageAsync(list, type, CancellationToken.None)).GetValue());
         using var reading = LoadedAssemblies.BeginReading();
-        Assert.IsType<Lookup<ITypeDefinition>.NotFound>(await AssemblyListing.FindTypeDefinitionAsync(list, reading, type, CancellationToken.None));
+        UnionAsserts.GetCase<Lookup<ITypeDefinition>.NotFound>(await AssemblyListing.FindTypeDefinitionAsync(list, reading, type, CancellationToken.None));
         Assert.Null(await list.FindMetadataRowAsync(CodeReferences.CreateAssembly("Sample", AssemblyPath.Of(path))));
     }
 

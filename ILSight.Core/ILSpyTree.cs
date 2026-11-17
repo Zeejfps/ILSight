@@ -185,31 +185,36 @@ public static class ILSpyTree
         uint token, string memberName, CancellationToken ct)
     {
         var resolved = ResolveEntity(assembly, main, (int)token);
-        if (resolved is Lookup<IEntity>.Unreadable unreadable)
+        return resolved switch
         {
-            return new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Unreadable { Module = unreadable.Module });
-        }
+            Lookup<IEntity>.Found found => await FindSavedAsync(session, assembly, main, found.Value, memberName, ct),
+            Lookup<IEntity>.NotFound => NotFound,
+            Lookup<IEntity>.Unreadable unreadable => new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Unreadable { Module = unreadable.Module }),
+        };
+    }
 
-        if (resolved is not Lookup<IEntity>.Found found)
+    private static async Task<Outcome<Lookup<BrowseNode>>> FindSavedAsync(BrowseSession session, LoadedModule assembly, MetadataModule main,
+        IEntity entity, string memberName, CancellationToken ct)
+    {
+        var read = ReadSavedEntity(assembly, entity);
+        return read switch
         {
-            return NotFound;
-        }
+            Lookup<SavedEntity>.Found saved => await FindNamedAsync(session, assembly, main, saved.Value, memberName, ct),
+            Lookup<SavedEntity>.NotFound => NotFound,
+            Lookup<SavedEntity>.Unreadable unreadable => new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Unreadable { Module = unreadable.Module }),
+        };
+    }
 
-        var read = ReadSavedEntity(assembly, found.Value);
-        if (read is Lookup<SavedEntity>.Unreadable unreadableName)
-        {
-            return new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Unreadable { Module = unreadableName.Module });
-        }
-
-        var saved = (Lookup<SavedEntity>.Found)read;
-
+    private static async Task<Outcome<Lookup<BrowseNode>>> FindNamedAsync(BrowseSession session, LoadedModule assembly, MetadataModule main,
+        SavedEntity saved, string memberName, CancellationToken ct)
+    {
         // After a rebuild the token can name another entity: the app's check, on the name read.
-        if (saved.Value.FullName != memberName)
+        if (saved.FullName != memberName)
         {
             return NotFound;
         }
 
-        return await BrowseSessions.FindOrAncestorAsync(session, assembly, main, saved.Value.Handle, ct);
+        return await BrowseSessions.FindOrAncestorAsync(session, assembly, main, saved.Handle, ct);
     }
 
     // What the bookmark's token names, read out of the module: its full name and handle.

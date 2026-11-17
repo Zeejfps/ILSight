@@ -654,12 +654,12 @@ internal static class DiagramView
         }
 
         var shown = view.Tooltip.Find(shownPart);
-        if (shown == null)
+        if (shown is null)
         {
             return;
         }
 
-        var click = CodeTooltipView.Render(ui, appearance, shown);
+        var click = CodeTooltipView.Render(ui, appearance, shown.Value);
         NavigateToClickedLink(ui, commands, navigation, diagram, click);
     }
 
@@ -687,7 +687,7 @@ internal static class DiagramView
 
     private static int PartOf(Lookup<CodeTooltip>? tooltip, DiagramHit hit)
     {
-        if (tooltip == null)
+        if (tooltip is null)
         {
             return 0;
         }

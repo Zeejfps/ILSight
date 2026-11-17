@@ -1,88 +1,42 @@
-using System.Diagnostics;
-
 namespace ILSight.Core;
 
 /// <summary>What looking something up in the open assemblies came to: found, not there, or in a module whose type
 /// system the library could not read, with why, so not looked for.</summary>
-public abstract record Lookup<T> where T : notnull
+public union Lookup<T>(Lookup<T>.Found, Lookup<T>.NotFound, Lookup<T>.Unreadable) where T : notnull
 {
-    private Lookup()
-    {
-    }
-
-    public sealed record Found : Lookup<T>
+    public sealed record Found
     {
         public required T Value { get; init; }
     }
 
-    public sealed record NotFound : Lookup<T>;
+    public sealed record NotFound;
 
-    public sealed record Unreadable : Lookup<T>
+    public sealed record Unreadable
     {
         public required UnreadableModule Module { get; init; }
-    }
-
-    public TResult Match<TResult>(Func<Found, TResult> found, Func<NotFound, TResult> notFound, Func<Unreadable, TResult> unreadable)
-    {
-        return this switch
-        {
-            Found c => found(c),
-            NotFound c => notFound(c),
-            Unreadable c => unreadable(c),
-            _ => throw new UnreachableException($"Lookup.Match does not handle {GetType().Name}."),
-        };
-    }
-
-    /// <summary>What the handler of whichever case this is makes of it and <paramref name="state"/>, which it is
-    /// handed, so that a handler that needs the caller's values can be static and allocate nothing.</summary>
-    public TResult Match<TState, TResult>(TState state, Func<TState, Found, TResult> found, Func<TState, NotFound, TResult> notFound,
-        Func<TState, Unreadable, TResult> unreadable)
-    {
-        return this switch
-        {
-            Found c => found(state, c),
-            NotFound c => notFound(state, c),
-            Unreadable c => unreadable(state, c),
-            _ => throw new UnreachableException($"Lookup.Match does not handle {GetType().Name}."),
-        };
-    }
-
-    /// <summary>Does what the handler of whichever case this is does with it.</summary>
-    public void Switch(Action<Found> found, Action<NotFound> notFound, Action<Unreadable> unreadable)
-    {
-        switch (this)
-        {
-            case Found c:
-                found(c);
-                return;
-            case NotFound c:
-                notFound(c);
-                return;
-            case Unreadable c:
-                unreadable(c);
-                return;
-            default:
-                throw new UnreachableException($"Lookup.Switch does not handle {GetType().Name}.");
-        }
     }
 
     /// <summary>What <paramref name="selector"/> makes of the value found; not found or unreadable as this is.</summary>
     public Lookup<TNext> Select<TNext>(Func<T, TNext> selector) where TNext : notnull
     {
-        return Match<Lookup<TNext>>(
-            found => new Lookup<TNext>.Found { Value = selector(found.Value) },
-            static _ => new Lookup<TNext>.NotFound(),
-            static unreadable => new Lookup<TNext>.Unreadable { Module = unreadable.Module });
+        return this switch
+        {
+            Found found => new Lookup<TNext>.Found { Value = selector(found.Value) },
+            NotFound => new Lookup<TNext>.NotFound(),
+            Unreadable unreadable => new Lookup<TNext>.Unreadable { Module = unreadable.Module },
+        };
     }
 
     /// <summary>What <paramref name="next"/> finds from the value found; not found or unreadable as this is, with
     /// nothing more looked up.</summary>
     public Task<Lookup<TNext>> ThenFindAsync<TNext>(Func<T, CancellationToken, Task<Lookup<TNext>>> next, CancellationToken ct) where TNext : notnull
     {
-        return Match(
-            found => next(found.Value, ct),
-            static _ => Task.FromResult<Lookup<TNext>>(new Lookup<TNext>.NotFound()),
-            static unreadable => Task.FromResult<Lookup<TNext>>(new Lookup<TNext>.Unreadable { Module = unreadable.Module }));
+        return this switch
+        {
+            Found found => next(found.Value, ct),
+            NotFound => Task.FromResult<Lookup<TNext>>(new Lookup<TNext>.NotFound()),
+            Unreadable unreadable => Task.FromResult<Lookup<TNext>>(new Lookup<TNext>.Unreadable { Module = unreadable.Module }),
+        };
     }
 
     /// <summary>What <paramref name="next"/> finds from the value found, or why it failed; not found or unreadable as
@@ -90,11 +44,13 @@ public abstract record Lookup<T> where T : notnull
     public Task<Outcome<Lookup<TNext>>> ThenTryFindAsync<TNext>(Func<T, CancellationToken, Task<Outcome<Lookup<TNext>>>> next, CancellationToken ct)
         where TNext : notnull
     {
-        return Match(
-            found => next(found.Value, ct),
-            static _ => Task.FromResult<Outcome<Lookup<TNext>>>(new Outcome<Lookup<TNext>>.Ok(new Lookup<TNext>.NotFound())),
-            static unreadable => Task.FromResult<Outcome<Lookup<TNext>>>(
-                new Outcome<Lookup<TNext>>.Ok(new Lookup<TNext>.Unreadable { Module = unreadable.Module })));
+        return this switch
+        {
+            Found found => next(found.Value, ct),
+            NotFound => Task.FromResult<Outcome<Lookup<TNext>>>(new Outcome<Lookup<TNext>>.Ok(new Lookup<TNext>.NotFound())),
+            Unreadable unreadable => Task.FromResult<Outcome<Lookup<TNext>>>(
+                new Outcome<Lookup<TNext>>.Ok(new Lookup<TNext>.Unreadable { Module = unreadable.Module })),
+        };
     }
 }
 

@@ -45,8 +45,8 @@ public sealed class AnalysisTests
         var pastTheEnd = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = path, Token = 0x06FFFFFF };
         var noEntities = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = path, Token = 0x23000001 };
 
-        Assert.IsType<Lookup<AnalysisSymbol>.NotFound>((await Analyzers.FindAsync(list, pastTheEnd, CancellationToken.None)).GetValue());
-        Assert.IsType<Lookup<AnalysisSymbol>.NotFound>((await Analyzers.FindAsync(list, noEntities, CancellationToken.None)).GetValue());
+        UnionAsserts.GetCase<Lookup<AnalysisSymbol>.NotFound>((await Analyzers.FindAsync(list, pastTheEnd, CancellationToken.None)).GetValue());
+        UnionAsserts.GetCase<Lookup<AnalysisSymbol>.NotFound>((await Analyzers.FindAsync(list, noEntities, CancellationToken.None)).GetValue());
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public sealed class AnalysisTests
         var gone = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = AssemblyPath.Of(temp.PathOf("gone.dll")), Token = 0x06000001 };
 
         Assert.IsType<AssemblyLoadException>(UnionAsserts.GetCase<Outcome<Lookup<AnalysisSymbol>>.Failed>(await Analyzers.FindAsync(list, unreadable, CancellationToken.None)).Error);
-        Assert.IsType<Lookup<AnalysisSymbol>.NotFound>((await Analyzers.FindAsync(list, gone, CancellationToken.None)).GetValue());
+        UnionAsserts.GetCase<Lookup<AnalysisSymbol>.NotFound>((await Analyzers.FindAsync(list, gone, CancellationToken.None)).GetValue());
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public sealed class AnalysisTests
 
         var found = await Analyzers.FindAsync(list, anchor, CancellationToken.None);
 
-        var unreadable = Assert.IsType<Lookup<AnalysisSymbol>.Unreadable>(found.GetValue());
+        var unreadable = UnionAsserts.GetCase<Lookup<AnalysisSymbol>.Unreadable>(found.GetValue());
         Assert.Equal(path, unreadable.Module.Module.FilePath);
         Assert.IsType<BadImageFormatException>(unreadable.Module.Why);
     }
@@ -90,7 +90,7 @@ public sealed class AnalysisTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         list.OpenModule(path.Text);
         var anchor = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = path, Token = MetadataTokens.GetToken(add) };
-        var symbol = Assert.IsType<Lookup<AnalysisSymbol>.Found>((await Analyzers.FindAsync(list, anchor, CancellationToken.None)).GetValue()).Value;
+        var symbol = UnionAsserts.GetCase<Lookup<AnalysisSymbol>.Found>((await Analyzers.FindAsync(list, anchor, CancellationToken.None)).GetValue()).Value;
         var usedBy = symbol.Kinds.Single(static k => Analyzers.GetHeader(k) == "Used By");
 
         var batches = new List<Outcome<IReadOnlyList<AnalysisFind>>>();
@@ -194,7 +194,7 @@ public sealed class AnalysisTests
         var items = typeof(Fixtures.Calculator<>).GetField("_items", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         Assert.NotNull(items);
         var anchor = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = path, Token = items.MetadataToken };
-        var symbol = Assert.IsType<Lookup<AnalysisSymbol>.Found>((await Analyzers.FindAsync(list, anchor, CancellationToken.None)).GetValue()).Value;
+        var symbol = UnionAsserts.GetCase<Lookup<AnalysisSymbol>.Found>((await Analyzers.FindAsync(list, anchor, CancellationToken.None)).GetValue()).Value;
         var readBy = symbol.Kinds.Single(static k => Analyzers.GetHeader(k) == "Read By");
 
         var found = new List<AnalysisFind>();
@@ -251,7 +251,7 @@ public sealed class AnalysisTests
             Name = AnalysisName.UsedBy, Order = 2, Prepare = static _ => null, Applies = static _ => throw new InvalidOperationException("the table's bug"),
         };
 
-        var offered = Assert.IsType<Lookup<AnalysisSymbol>.Found>((await Analyzers.FindAsync(list, anchor, [recording], CancellationToken.None)).GetValue()).Value;
+        var offered = UnionAsserts.GetCase<Lookup<AnalysisSymbol>.Found>((await Analyzers.FindAsync(list, anchor, [recording], CancellationToken.None)).GetValue()).Value;
         var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() => Analyzers.FindAsync(list, anchor, [recording, buggy], CancellationToken.None));
 
         Assert.Equal("the table's bug", thrown.Message);

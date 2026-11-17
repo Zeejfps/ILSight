@@ -12,7 +12,7 @@ internal sealed class KeptTooltip
     /// of another part, <paramref name="shownPart"/>, is still shown.</summary>
     public void Keep(Lookup<CodeTooltip>? tooltip, int part, int shownPart)
     {
-        if (tooltip == null)
+        if (tooltip is null)
         {
             return;
         }
@@ -22,7 +22,7 @@ internal sealed class KeptTooltip
             return;
         }
 
-        _kept = (tooltip, part);
+        _kept = (tooltip.Value, part);
     }
 
     public Lookup<CodeTooltip>? Find(int shownPart)

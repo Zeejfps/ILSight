@@ -50,17 +50,19 @@ public sealed class AnalyzeReferenceHandler(AnalyzeReferenceHandler.IPorts ports
 
     private void Analyze(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, PendingAnalysis pending, Lookup<BrowseNode> lookup)
     {
-        lookup.Switch(
-            found => pending.Analyze(analyzer, viewCommands, found.Value),
-            _ =>
-            {
+        switch (lookup)
+        {
+            case Lookup<BrowseNode>.Found found:
+                pending.Analyze(analyzer, viewCommands, found.Value);
+                break;
+            case Lookup<BrowseNode>.NotFound:
                 analyzer.RemoveRoot(pending.Root);
                 ports.ShowRefusal(new Refusal.Unresolved { Reference = pending.Reference });
-            },
-            unreadable =>
-            {
+                break;
+            case Lookup<BrowseNode>.Unreadable unreadable:
                 analyzer.FailUnresolved(pending.Root, unreadable.Module.Module.FilePath.FileName, unreadable.Module.Why);
                 ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module));
-            });
+                break;
+        }
     }
 }

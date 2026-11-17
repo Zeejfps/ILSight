@@ -12,13 +12,12 @@ internal static class LookupQueries
         {
             get
             {
-                Assert.IsNotType<Lookup<T>.Unreadable>(lookup);
-                if (lookup is Lookup<T>.Found found)
+                return lookup switch
                 {
-                    return found.Value;
-                }
-
-                return null;
+                    Lookup<T>.Found found => found.Value,
+                    Lookup<T>.NotFound => null,
+                    Lookup<T>.Unreadable unreadable => throw CreateUnreadableFailure(unreadable),
+                };
             }
         }
     }
@@ -29,14 +28,20 @@ internal static class LookupQueries
         {
             get
             {
-                Assert.IsNotType<Lookup<T>.Unreadable>(lookup);
-                if (lookup is Lookup<T>.Found found)
+                return lookup switch
                 {
-                    return found.Value;
-                }
-
-                return null;
+                    Lookup<T>.Found found => found.Value,
+                    Lookup<T>.NotFound => null,
+                    Lookup<T>.Unreadable unreadable => throw CreateUnreadableFailure(unreadable),
+                };
             }
         }
+    }
+
+    private static InvalidOperationException CreateUnreadableFailure<T>(Lookup<T>.Unreadable unreadable) where T : notnull
+    {
+        return new InvalidOperationException(
+            $"The lookup met a module whose type system could not be read, which the test expected the library to read: {unreadable.Module.Why.Message}",
+            unreadable.Module.Why);
     }
 }

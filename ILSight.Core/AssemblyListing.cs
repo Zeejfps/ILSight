@@ -214,10 +214,23 @@ public static class AssemblyListing
         }
 
         var resolved = await ResolveTargetAsync(list, reading, owner, reference, generation, ct);
-        return resolved.Match<Lookup<(LoadedModule Assembly, EntityHandle Handle)>>(
-            found => ListResolved(list, found, generation, ct),
-            static notFound => notFound,
-            static unreadable => unreadable);
+        return resolved switch
+        {
+            Lookup<(LoadedModule Assembly, EntityHandle Handle)>.Found found => ListResolved(list, found, generation, ct),
+            Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound or Lookup<(LoadedModule Assembly, EntityHandle Handle)>.Unreadable => resolved,
+        };
+    }
+
+    // Resolved after the read, of what it read: the resolver is the app's.
+    private static Lookup<(LoadedModule Assembly, EntityHandle Handle)> ResolveReferenced(LoadedModule owner, AssemblyReferenceFacts referenced)
+    {
+        var target = LoadedAssemblies.GetResolver(owner).ResolveAssembly(referenced);
+        if (target is null)
+        {
+            return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound();
+        }
+
+        return Found(target, EntityHandle.AssemblyDefinition);
     }
 
     private static Lookup<(LoadedModule Assembly, EntityHandle Handle)> ListResolved(AssemblyList list,
@@ -245,19 +258,12 @@ public static class AssemblyListing
                 }
 
                 var referenced = ReadAssemblyReference(owner, assembly.Referenced.Value);
-                if (referenced is not Lookup<AssemblyReferenceFacts>.Found named)
+                return referenced switch
                 {
-                    return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.Unreadable { Module = ((Lookup<AssemblyReferenceFacts>.Unreadable)referenced).Module };
-                }
-
-                // Resolved after the read, of what it read: the resolver is the app's.
-                var target = LoadedAssemblies.GetResolver(owner).ResolveAssembly(named.Value);
-                if (target is null)
-                {
-                    return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound();
-                }
-
-                return Found(target, EntityHandle.AssemblyDefinition);
+                    Lookup<AssemblyReferenceFacts>.Found named => ResolveReferenced(owner, named.Value),
+                    Lookup<AssemblyReferenceFacts>.NotFound => new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound(),
+                    Lookup<AssemblyReferenceFacts>.Unreadable unreadable => new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.Unreadable { Module = unreadable.Module },
+                };
             default:
                 throw new UnreachableException();
         }
@@ -388,10 +394,12 @@ public static class AssemblyListing
         }
 
         var resolved = await ResolveEntityAsync(list, reading, reference, ct);
-        return resolved.Match(
-            static found => Lookup.FromNullable(found.Value.Entity as ITypeDefinition),
-            static _ => new Lookup<ITypeDefinition>.NotFound(),
-            static unreadable => new Lookup<ITypeDefinition>.Unreadable { Module = unreadable.Module });
+        return resolved switch
+        {
+            Lookup<ResolvedEntity>.Found found => Lookup.FromNullable(found.Value.Entity as ITypeDefinition),
+            Lookup<ResolvedEntity>.NotFound => new Lookup<ITypeDefinition>.NotFound(),
+            Lookup<ResolvedEntity>.Unreadable unreadable => new Lookup<ITypeDefinition>.Unreadable { Module = unreadable.Module },
+        };
     }
 
     /// <summary>The definition of the type <paramref name="anchor"/> names, loading the assembly that

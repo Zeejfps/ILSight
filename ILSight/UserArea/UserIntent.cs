@@ -118,9 +118,11 @@ public sealed class UserIntent
 
     private static Resolution<T> Resolve<T>(Lookup<T> lookup) where T : notnull
     {
-        return lookup.Match<Resolution<T>>(
-            static found => new Resolution<T>.Found(found.Value),
-            static _ => new Resolution<T>.Missing(),
-            static unreadable => new Resolution<T>.Unreadable { Module = unreadable.Module });
+        return lookup switch
+        {
+            Lookup<T>.Found found => new Resolution<T>.Found(found.Value),
+            Lookup<T>.NotFound => new Resolution<T>.Missing(),
+            Lookup<T>.Unreadable unreadable => new Resolution<T>.Unreadable { Module = unreadable.Module },
+        };
     }
 }

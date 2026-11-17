@@ -65,7 +65,7 @@ public sealed class ILSpyTreeTests
 
         Assert.Equal(calculator.Path, PathOf((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, token, name, CancellationToken.None)).GetValue().FoundOrNull));
         Assert.Equal(calculator.Path, PathOf((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, ["no such file"], token, name, CancellationToken.None)).GetValue().FoundOrNull));
-        Assert.IsType<Lookup<BrowseNode>.NotFound>((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, 0x06FFFFFF, name, CancellationToken.None)).GetValue());
+        UnionAsserts.GetCase<Lookup<BrowseNode>.NotFound>((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, 0x06FFFFFF, name, CancellationToken.None)).GetValue());
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public sealed class ILSpyTreeTests
 
         var located = await ILSpyTree.LocateAsync(list, TestSession.Shared, path, null, token, Trees.FixturesNamespace + ".Circle.Grow", CancellationToken.None);
 
-        var unreadable = Assert.IsType<Lookup<BrowseNode>.Unreadable>(located.GetValue());
+        var unreadable = UnionAsserts.GetCase<Lookup<BrowseNode>.Unreadable>(located.GetValue());
         Assert.Equal(path, unreadable.Module.Module.FilePath);
         Assert.IsType<BadImageFormatException>(unreadable.Module.Why);
     }
@@ -97,7 +97,7 @@ public sealed class ILSpyTreeTests
         var located = await ILSpyTree.LocateAsync(list, TestSession.Shared, unreadable, null, 0x06000001, "N.T.M", CancellationToken.None);
 
         Assert.IsType<AssemblyLoadException>(UnionAsserts.GetCase<Outcome<Lookup<BrowseNode>>.Failed>(located).Error);
-        Assert.IsType<Lookup<BrowseNode>.NotFound>((await ILSpyTree.LocateAsync(list, TestSession.Shared, gone, null, 0x06000001, "N.T.M", CancellationToken.None)).GetValue());
+        UnionAsserts.GetCase<Lookup<BrowseNode>.NotFound>((await ILSpyTree.LocateAsync(list, TestSession.Shared, gone, null, 0x06000001, "N.T.M", CancellationToken.None)).GetValue());
     }
 
     [Fact]
@@ -109,8 +109,8 @@ public sealed class ILSpyTreeTests
         Assert.NotNull(definedToken);
         var token = (uint)definedToken.Value;
 
-        Assert.IsType<Lookup<BrowseNode>.NotFound>((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, token, Trees.FixturesNamespace + ".Renamed", CancellationToken.None)).GetValue());
-        Assert.IsType<Lookup<BrowseNode>.NotFound>((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, ["no such file"], token, "", CancellationToken.None)).GetValue());
+        UnionAsserts.GetCase<Lookup<BrowseNode>.NotFound>((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, null, token, Trees.FixturesNamespace + ".Renamed", CancellationToken.None)).GetValue());
+        UnionAsserts.GetCase<Lookup<BrowseNode>.NotFound>((await ILSpyTree.LocateAsync(list, TestSession.Shared, assembly.FilePath, ["no such file"], token, "", CancellationToken.None)).GetValue());
     }
 
     [Fact]

@@ -113,18 +113,19 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
     private static DecompileTicket? ShowFound(Navigation navigation, DecompilerChoice decompiler, Queue<ViewCommand> viewCommands, WaitingNode waiting,
         DocumentTab tab, Lookup<BrowseNode> lookup)
     {
-        return lookup.Match<DecompileTicket?>(
-            found => Restore(navigation, decompiler, viewCommands, waiting, tab, found.Value),
-            _ =>
-            {
+        switch (lookup)
+        {
+            case Lookup<BrowseNode>.Found found:
+                return Restore(navigation, decompiler, viewCommands, waiting, tab, found.Value);
+            case Lookup<BrowseNode>.NotFound:
                 tab.Load.ShowGone(waiting.Record.Location);
-                return null;
-            },
-            unreadable =>
-            {
+                break;
+            case Lookup<BrowseNode>.Unreadable unreadable:
                 tab.Load.ShowUnreadable(waiting.Record.Location, unreadable.Module);
-                return null;
-            });
+                break;
+        }
+
+        return null;
     }
 
     private static DecompileTicket? Restore(Navigation navigation, DecompilerChoice decompiler, Queue<ViewCommand> viewCommands, WaitingNode waiting,

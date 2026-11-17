@@ -180,13 +180,21 @@ public static class Analysis
 
     private static void AnalyzeAgain(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, AnalyzerPendingNode root, Lookup<AnalysisSymbol> found)
     {
-        found.Switch(
-            symbol => ResolveAnalysis(analyzer, viewCommands, root, symbol.Value),
-            _ => analyzer.FailRoot(root, new RestoreFailure.NotFound()),
-            unreadable => analyzer.FailRoot(root, new RestoreFailure.Unreadable
-            {
-                Name = unreadable.Module.Module.FilePath.FileName,
-                Why = unreadable.Module.Why.Message,
-            }));
+        switch (found)
+        {
+            case Lookup<AnalysisSymbol>.Found symbol:
+                ResolveAnalysis(analyzer, viewCommands, root, symbol.Value);
+                break;
+            case Lookup<AnalysisSymbol>.NotFound:
+                analyzer.FailRoot(root, new RestoreFailure.NotFound());
+                break;
+            case Lookup<AnalysisSymbol>.Unreadable unreadable:
+                analyzer.FailRoot(root, new RestoreFailure.Unreadable
+                {
+                    Name = unreadable.Module.Module.FilePath.FileName,
+                    Why = unreadable.Module.Why.Message,
+                });
+                break;
+        }
     }
 }

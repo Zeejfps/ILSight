@@ -49,10 +49,12 @@ public static class TypeCards
         try
         {
             var definition = await AssemblyListing.FindTypeDefinitionAsync(list, reading, type, cancellationToken);
-            walked = definition.Match(
-                static found => Lookup.FromNullable(WalkFrom(found.Value)),
-                static _ => new Lookup<Walk>.NotFound(),
-                static unreadable => new Lookup<Walk>.Unreadable { Module = unreadable.Module });
+            walked = definition switch
+            {
+                Lookup<ITypeDefinition>.Found found => Lookup.FromNullable(WalkFrom(found.Value)),
+                Lookup<ITypeDefinition>.NotFound => new Lookup<Walk>.NotFound(),
+                Lookup<ITypeDefinition>.Unreadable unreadable => new Lookup<Walk>.Unreadable { Module = unreadable.Module },
+            };
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -63,10 +65,12 @@ public static class TypeCards
             return new Outcome<TypeSystemWork<List<TypeCard>>>.Failed(e);
         }
 
-        return walked.Match(
-            found => ReadNeighbours(found.Value, cancellationToken),
-            static _ => new Outcome<TypeSystemWork<List<TypeCard>>>.Ok(new TypeSystemWork<List<TypeCard>>.Done { Value = [] }),
-            static unreadable => new Outcome<TypeSystemWork<List<TypeCard>>>.Ok(new TypeSystemWork<List<TypeCard>>.Unreadable { Module = unreadable.Module }));
+        return walked switch
+        {
+            Lookup<Walk>.Found found => ReadNeighbours(found.Value, cancellationToken),
+            Lookup<Walk>.NotFound => new Outcome<TypeSystemWork<List<TypeCard>>>.Ok(new TypeSystemWork<List<TypeCard>>.Done { Value = [] }),
+            Lookup<Walk>.Unreadable unreadable => new Outcome<TypeSystemWork<List<TypeCard>>>.Ok(new TypeSystemWork<List<TypeCard>>.Unreadable { Module = unreadable.Module }),
+        };
     }
 
     // The type's card read and the types it could be shown with, each with the facts the app's rule asks of it; null when
@@ -145,18 +149,17 @@ public static class TypeCards
 
     private static Lookup<ReadType> ReadFound(Lookup<ITypeDefinition> definition)
     {
-        return definition.Match(
-            static found => Lookup.FromNullable(Read(found.Value)),
-            static _ => new Lookup<ReadType>.NotFound(),
-            static unreadable => new Lookup<ReadType>.Unreadable { Module = unreadable.Module });
+        return definition switch
+        {
+            Lookup<ITypeDefinition>.Found found => Lookup.FromNullable(Read(found.Value)),
+            Lookup<ITypeDefinition>.NotFound => new Lookup<ReadType>.NotFound(),
+            Lookup<ITypeDefinition>.Unreadable unreadable => new Lookup<ReadType>.Unreadable { Module = unreadable.Module },
+        };
     }
 
     private static Lookup<TypeCard> MakeFound(Lookup<ReadType> read)
     {
-        return read.Match<Lookup<TypeCard>>(
-            static found => new Lookup<TypeCard>.Found { Value = Make(found.Value) },
-            static _ => new Lookup<TypeCard>.NotFound(),
-            static unreadable => new Lookup<TypeCard>.Unreadable { Module = unreadable.Module });
+        return read.Select(Make);
     }
 
     /// <summary>The cards of the types deriving directly from, or implementing, the type
@@ -182,11 +185,12 @@ public static class TypeCards
             return new Outcome<ScopeSearch<TypeCard>>.Failed(e);
         }
 
-        return await definition.Match(
-            found => ReadDerivedAsync(list, reading, found.Value, cancellationToken),
-            static _ => Task.FromResult<Outcome<ScopeSearch<TypeCard>>>(new Outcome<ScopeSearch<TypeCard>>.Ok(new ScopeSearch<TypeCard> { Found = [], Unreadable = [] })),
-            static unreadable => Task.FromResult<Outcome<ScopeSearch<TypeCard>>>(
-                new Outcome<ScopeSearch<TypeCard>>.Ok(new ScopeSearch<TypeCard> { Found = [], Unreadable = [unreadable.Module] })));
+        return definition switch
+        {
+            Lookup<ITypeDefinition>.Found found => await ReadDerivedAsync(list, reading, found.Value, cancellationToken),
+            Lookup<ITypeDefinition>.NotFound => new Outcome<ScopeSearch<TypeCard>>.Ok(new ScopeSearch<TypeCard> { Found = [], Unreadable = [] }),
+            Lookup<ITypeDefinition>.Unreadable unreadable => new Outcome<ScopeSearch<TypeCard>>.Ok(new ScopeSearch<TypeCard> { Found = [], Unreadable = [unreadable.Module] }),
+        };
     }
 
     private static async Task<Outcome<ScopeSearch<TypeCard>>> ReadDerivedAsync(AssemblyList list, ModuleReadLease reading, ITypeDefinition definition,

@@ -26,7 +26,7 @@ public sealed class LookUpTooltipHandlerTests
         await d.RunAsync(() => new LookUpTooltipHandler(ports).HandleAsync(tooltips, lookup, CancellationToken.None));
 
         Assert.True(tooltips.TryGetOrAskTooltip(lookup.Reference, out var kept));
-        Assert.Same(tooltip, kept);
+        Assert.Equal(tooltip, kept);
     }
 
     [Fact]
@@ -42,7 +42,7 @@ public sealed class LookUpTooltipHandlerTests
         await d.RunAsync(() => new LookUpTooltipHandler(ports).HandleAsync(tooltips, lookup, CancellationToken.None));
 
         Assert.True(tooltips.TryGetOrAskTooltip(lookup.Reference, out var kept));
-        Assert.IsType<Lookup<CodeTooltip>.NotFound>(kept);
+        UnionAsserts.GetCase<Lookup<CodeTooltip>.NotFound>(kept);
         var reported = Assert.IsType<AppProblem.Unexpected>(Assert.Single(ports.Reported));
         Assert.Same(error, reported.Error);
     }
@@ -60,7 +60,7 @@ public sealed class LookUpTooltipHandlerTests
 
         await d.RunAsync(() => new LookUpTooltipHandler(ports).HandleAsync(tooltips, lookup, CancellationToken.None));
 
-        Assert.Same(unreadable, tooltips.FindShown(lookup.Reference));
+        Assert.Same(unreadable, UnionAsserts.GetCase<Lookup<CodeTooltip>.Unreadable>(tooltips.FindShown(lookup.Reference)));
     }
 
     [Fact]

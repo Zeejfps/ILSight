@@ -49,10 +49,12 @@ internal static class CodeTooltipView
     /// could not be read, and why; returns the link clicked in it this frame, if one was.</summary>
     public static RichTextClick Render(Ui ui, Appearance appearance, Lookup<CodeTooltip> shown)
     {
-        return shown.Match<(Ui Ui, Appearance Appearance), RichTextClick>((ui, appearance),
-            static (at, found) => Render(at.Ui, at.Appearance, found.Value),
-            static (_, _) => default,
-            static (at, unreadable) => RenderUnreadable(at.Ui, at.Appearance, unreadable.Module));
+        return shown switch
+        {
+            Lookup<CodeTooltip>.Found found => Render(ui, appearance, found.Value),
+            Lookup<CodeTooltip>.NotFound => default,
+            Lookup<CodeTooltip>.Unreadable unreadable => RenderUnreadable(ui, appearance, unreadable.Module),
+        };
     }
 
     private static RichTextClick RenderUnreadable(Ui ui, Appearance appearance, UnreadableModule unreadable)

@@ -20,7 +20,7 @@ public sealed class AnalysisInfrastructureTests
         var analysis = new AnalysisInfrastructure(new ErrorLog(), assemblies);
         var anchor = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = path, Token = MetadataTokens.GetToken(greet) };
         var found = UnionAsserts.GetCase<Outcome<Lookup<AnalysisSymbol>>.Ok>(Assert.Single(await analysis.LookUpAnalyzedAsync([anchor], CancellationToken.None))).Value;
-        var symbol = Assert.IsType<Lookup<AnalysisSymbol>.Found>(found).Value;
+        var symbol = UnionAsserts.GetCase<Lookup<AnalysisSymbol>.Found>(found).Value;
         var usedBy = symbol.Kinds.Single(static k => Analyzers.GetHeader(k) == "Used By");
 
         var batches = new List<Outcome<IReadOnlyList<AnalysisFind>>>();
