@@ -35,11 +35,12 @@ internal static class MetadataDetailsView
         }
 
         var padding = ui.Theme.GapTight * 2;
-        return details.Match(
-            (Ui: ui, Texts: texts, Row: row, Width: width, Padding: padding),
-            static (at, text) => TextHeight(at.Ui, MeasureText(at.Texts, at.Row, text.Content), at.Width - Left(at.Ui.Theme) - at.Ui.Theme.ShellPaddingX) + at.Padding,
-            static (at, table) => MathF.Min(MaxTableHeight, (table.Rows.Count + 1) * at.Ui.Theme.RowHeight + at.Padding),
-            static (at, _) => at.Ui.Theme.RowHeight + at.Padding);
+        return details.Value switch
+        {
+            MetadataRowDetails.Text text => TextHeight(ui, MeasureText(texts, row, text.Content), width - Left(ui.Theme) - ui.Theme.ShellPaddingX) + padding,
+            MetadataRowDetails.Table table => MathF.Min(MaxTableHeight, (table.Rows.Count + 1) * ui.Theme.RowHeight + padding),
+            MetadataRowDetails.Failed => ui.Theme.RowHeight + padding,
+        };
     }
 
     private static TextSize MeasureText(DetailTexts texts, int row, string text)
@@ -89,11 +90,20 @@ internal static class MetadataDetailsView
         });
         using var scope = ui.Id(row);
         var details = MetadataGrids.FindDetails(grid, row);
-        details?.Switch(
-            (Ui: ui, Appearance: appearance, Display: display, Grid: grid, Texts: texts, Row: row),
-            static (at, text) => Text(at.Ui, at.Appearance, at.Display, at.Grid, at.Texts, at.Row, text),
-            static (at, table) => Table(at.Ui, table),
-            static (at, failed) => Failed(at.Ui, failed));
+        switch (details)
+        {
+            case null:
+                break;
+            case MetadataRowDetails.Text text:
+                Text(ui, appearance, display, grid, texts, row, text);
+                break;
+            case MetadataRowDetails.Table table:
+                Table(ui, table);
+                break;
+            case MetadataRowDetails.Failed failed:
+                Failed(ui, failed);
+                break;
+        }
     }
 
     private static DetailText GetText(DetailTexts texts, int row, string title, string text)

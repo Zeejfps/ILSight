@@ -41,7 +41,7 @@ internal static class CustomDebugInformationTable
         GridSchemas.AddValue(table, "Info", r => FindInfo(m, r));
         GridSchemas.AddBlob(table, "Value", r => r.Value, r => r.Value.IsNil ? NilValue : m.GetBlobBytes(r.Value), ExplainValue);
         GridSchemas.AddValue(table, "ValueLength", r => m.GetBlobReader(r.Value).Length, "X8");
-        GridSchemas.SetDetails(table, r => ReadDetails(m, r), MakeDetails);
+        GridSchemas.SetDetails(table, r => ReadDetails(m, r), static MetadataRowDetails? (read) => MakeDetails(read));
         return table.ToSchema();
     }
 

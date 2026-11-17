@@ -751,12 +751,12 @@ internal static class MetadataTables
     /// read (<see cref="LazyGrid"/>), or what the library threw reading it; null for a part shown as text.</summary>
     internal static Outcome<MetadataGrid>? EnsureGrid(MetadataTableInfo table, int firstRows, CancellationToken ct = default)
     {
-        return table.Part.Match<(int Rows, CancellationToken Ct), Outcome<MetadataGrid>?>((firstRows, ct),
-            static (s, grid) => grid.View.Ensure(s.Rows, s.Ct),
-            static (s, directory) => directory.View.Ensure(s.Rows, s.Ct),
-            static (_, _) => null,
-            static (_, _) => null,
-            static (_, _) => null);
+        return table.Part switch
+        {
+            MetadataPart.Grid grid => grid.View.Ensure(firstRows, ct),
+            MetadataPart.DebugDirectory directory => directory.View.Ensure(firstRows, ct),
+            MetadataPart.RowCount or MetadataPart.DecodedDebugEntry or MetadataPart.RawDebugEntry => (Outcome<MetadataGrid>?)null,
+        };
     }
 
     internal static MetadataTableInfo CreateGridPart(LoadedModule module, MetadataFile file, string title, MetadataPartKey key, MetadataGridRole role,
@@ -851,12 +851,13 @@ internal static class MetadataTables
     /// as its raw bytes in hex; a grid's title alone.</summary>
     internal static IEnumerable<string> ListPartLines(MetadataTableInfo table)
     {
-        return table.Part.Match<MetadataTableInfo, IEnumerable<string>>(table,
-            static (info, _) => [info.Title],
-            static (info, _) => [info.Title],
-            static (_, count) => [$"{count.Table}: {count.Rows} rows"],
-            static (info, decoded) => decoded.Lines.Prepend(info.Title),
-            static (info, raw) => ListRawEntryLines(info, raw));
+        return table.Part switch
+        {
+            MetadataPart.Grid or MetadataPart.DebugDirectory => [table.Title],
+            MetadataPart.RowCount count => [$"{count.Table}: {count.Rows} rows"],
+            MetadataPart.DecodedDebugEntry decoded => decoded.Lines.Prepend(table.Title),
+            MetadataPart.RawDebugEntry raw => ListRawEntryLines(table, raw),
+        };
     }
 
     private static IEnumerable<string> ListRawEntryLines(MetadataTableInfo table, MetadataPart.RawDebugEntry raw)

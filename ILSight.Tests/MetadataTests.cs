@@ -134,7 +134,7 @@ public sealed class MetadataTests
 
         var page = UnionAsserts.GetCase<ModuleRead<MetadataGridPage>.Read>(MetadataGrids.ReadPage(grid, 0).GetValue()).Value;
 
-        var failed = Assert.IsType<MetadataRowDetails.Failed>(page.Details[0]);
+        var failed = UnionAsserts.GetCase<MetadataRowDetails.Failed>(page.Details[0]);
         Assert.Equal("Cut short.", failed.Reason);
         Assert.Equal("Cut short.", Assert.IsType<BadImageFormatException>(failed.Error).Message);
     }
@@ -630,7 +630,7 @@ public sealed class MetadataTests
         var kind = grid.Column("KindString");
 
         var options = Enumerable.Range(0, grid.RowCount).Single(r => MetadataGrids.GetText(grid, r, kind).StartsWith("Compilation Options"));
-        var table = Assert.IsType<MetadataRowDetails.Table>(MetadataGrids.FindDetails(grid, options));
+        var table = UnionAsserts.GetCase<MetadataRowDetails.Table>(MetadataGrids.FindDetails(grid, options));
 
         Assert.True(grid.HasDetails);
         Assert.Equal(["Name", "Value"], table.Headers);

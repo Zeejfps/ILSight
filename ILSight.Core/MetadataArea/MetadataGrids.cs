@@ -180,7 +180,7 @@ public static class MetadataGrids
         var cells = rows * grid.GridColumns.Count;
         var failure = new MetadataCellFailure { Reason = error.Message, Error = error };
         var tooltip = new MetadataTooltip { Text = error.Message, Groups = [] };
-        MetadataRowDetails? details = grid.HasDetails ? new MetadataRowDetails.Failed { Reason = error.Message, Error = error } : null;
+        var details = grid.HasDetails ? new MetadataRowDetails.Failed { Reason = error.Message, Error = error } : (MetadataRowDetails?)null;
         return new MetadataGridPage
         {
             Values = Enumerable.Repeat<object?>(failure, cells).ToArray(),
@@ -256,9 +256,9 @@ public static class MetadataGrids
         for (var c = 0; c < columns; c++)
         {
             var filter = filters[c];
-            if (filter is not null && filter.IsActive)
+            if (filter is not null && filter.Value.IsActive)
             {
-                active.Add((c, filter));
+                active.Add((c, filter.Value));
             }
         }
         var rows = order ?? Enumerable.Range(0, grid.Rows.Count).ToArray();
@@ -322,9 +322,15 @@ public static class MetadataGrids
     /// shown.</summary>
     internal static MetadataRowDetails? MakeDetails(MetadataGrid grid, object? read)
     {
-        if (read is null or MetadataRowDetails.Failed)
+        // What the read half holds is the bare case, not a union: a failure is matched as the case it is.
+        if (read is null)
         {
-            return (MetadataRowDetails?)read;
+            return null;
+        }
+
+        if (read is MetadataRowDetails.Failed failed)
+        {
+            return failed;
         }
 
         var format = grid.Schema.FormatDetails ?? throw new UnreachableException("A schema that reads details makes them.");
@@ -549,9 +555,11 @@ public static class MetadataGrids
             return false;
         }
 
-        return filter.Match((grid, column, value),
-            static (s, text) => MatchesText(s.grid, s.column, s.value, text.Text),
-            static (s, flags) => flags.Flags.IsEmpty || flags.Flags.Matches(GetBits(s.value)));
+        return filter switch
+        {
+            MetadataColumnFilter.ByText text => MatchesText(grid, column, value, text.Text),
+            MetadataColumnFilter.ByFlags flags => flags.Flags.IsEmpty || flags.Flags.Matches(GetBits(value)),
+        };
     }
 
     private static bool MatchesText(MetadataGrid grid, int column, object value, string text)

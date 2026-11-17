@@ -38,13 +38,15 @@ public static class SavedPlaces
 
     private static string ToText(MetadataPartKey part)
     {
-        return part.Match(
-            static header => $"Header {header.Which}",
-            static _ => "DataDirectories",
-            static _ => "DebugDirectory",
-            static table => $"Table {table.Index}",
-            static heap => $"Heap {heap.Name}",
-            static entry => $"DebugEntry {entry.Index} {entry.Type}");
+        return part switch
+        {
+            MetadataPartKey.Header header => $"Header {header.Which}",
+            MetadataPartKey.DataDirectories => "DataDirectories",
+            MetadataPartKey.DebugDirectory => "DebugDirectory",
+            MetadataPartKey.Table table => $"Table {table.Index}",
+            MetadataPartKey.Heap heap => $"Heap {heap.Name}",
+            MetadataPartKey.DebugEntry entry => $"DebugEntry {entry.Index} {entry.Type}",
+        };
     }
 
     /// <summary>The segment <paramref name="text"/> holds, as <see cref="ToText(NodePathSegment)"/> writes
@@ -110,12 +112,12 @@ public static class SavedPlaces
     private static NodePathSegment? ParseMetadataPart(string text)
     {
         var part = ParsePart(text);
-        if (part == null)
+        if (part is null)
         {
             return null;
         }
 
-        return new NodePathSegment.MetadataPart(part);
+        return new NodePathSegment.MetadataPart(part.Value);
     }
 
     private static MetadataPartKey? ParsePart(string text)
@@ -133,7 +135,8 @@ public static class SavedPlaces
         };
     }
 
-    private static MetadataPartKey.Header? ParseHeader(string text)
+    // A key, not its case, so that none is a null key rather than a key holding no case.
+    private static MetadataPartKey? ParseHeader(string text)
     {
         var which = ParseName<PEHeaderKind>(text);
         if (which is null)
@@ -144,7 +147,7 @@ public static class SavedPlaces
         return new MetadataPartKey.Header(which.Value);
     }
 
-    private static MetadataPartKey.Table? ParseTable(string text)
+    private static MetadataPartKey? ParseTable(string text)
     {
         var table = ParseName<TableIndex>(text);
         if (table is null)
@@ -156,7 +159,7 @@ public static class SavedPlaces
     }
 
     // Held as "2 CodeView": where the entry stands, then its type, which for a type .NET does not name is its number.
-    private static MetadataPartKey.DebugEntry? ParseDebugEntry(string text)
+    private static MetadataPartKey? ParseDebugEntry(string text)
     {
         var (index, type) = Split(text);
         if (!int.TryParse(index, out var at) || at < 0)

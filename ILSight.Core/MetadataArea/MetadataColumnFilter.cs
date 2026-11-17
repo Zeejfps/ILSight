@@ -1,24 +1,19 @@
-using System.Diagnostics;
-
 namespace ILSight.Core.MetadataArea;
 
 /// <summary>What one column of a <see cref="MetadataGrid"/> is filtered by, as ILSpy's header filters do:
-/// text for most columns, and for a column of flags which of them a row is to have.</summary>
-public abstract class MetadataColumnFilter
+/// text for most columns, and for a column of flags which of them a row is to have. The cases are classes: a column's
+/// filter is edited in place, every copy of the union holding the one being edited.</summary>
+public union MetadataColumnFilter(MetadataColumnFilter.ByText, MetadataColumnFilter.ByFlags)
 {
-    private MetadataColumnFilter()
-    {
-    }
-
     /// <summary>A <c>/regex/</c>, a comparison such as <c>&gt;= 0x100</c> for a number, or else a part
     /// of the cell's text, ignoring case; nothing filters nothing.</summary>
-    public sealed class ByText : MetadataColumnFilter
+    public sealed class ByText
     {
         public string Text { get; set; } = "";
     }
 
     /// <summary>The flags picked for a column of flags.</summary>
-    public sealed class ByFlags : MetadataColumnFilter
+    public sealed class ByFlags
     {
         public required FilterState Flags { get; init; }
     }
@@ -27,7 +22,6 @@ public abstract class MetadataColumnFilter
     {
         ByText text => text.Text.Length > 0,
         ByFlags flags => !flags.Flags.IsEmpty,
-        _ => throw new UnreachableException(),
     };
 
     /// <summary>A copy of this filter as it stands, for a filter run to read while this one changes.</summary>
@@ -37,47 +31,6 @@ public abstract class MetadataColumnFilter
         {
             ByText text => new ByText { Text = text.Text },
             ByFlags flags => new ByFlags { Flags = flags.Flags.Copy() },
-            _ => throw new UnreachableException(),
-        };
-    }
-
-    /// <summary>What the handler of whichever case this is makes of it.</summary>
-    public TResult Match<TResult>(Func<ByText, TResult> byText, Func<ByFlags, TResult> byFlags)
-    {
-        return this switch
-        {
-            ByText c => byText(c),
-            ByFlags c => byFlags(c),
-            _ => throw new UnreachableException($"MetadataColumnFilter.Match does not handle {GetType().Name}."),
-        };
-    }
-
-    /// <summary>Does what the handler of whichever case this is does with it.</summary>
-    public void Switch(Action<ByText> byText, Action<ByFlags> byFlags)
-    {
-        switch (this)
-        {
-            case ByText c:
-                byText(c);
-                return;
-            case ByFlags c:
-                byFlags(c);
-                return;
-            default:
-                throw new UnreachableException($"MetadataColumnFilter.Switch does not handle {GetType().Name}.");
-        }
-    }
-
-    /// <summary>What the handler of whichever case this is makes of it and <paramref name="state"/>, which it is
-    /// handed, so that a handler that needs the caller's values can be static and allocate nothing.</summary>
-    public TResult Match<TState, TResult>(TState state, Func<TState, ByText, TResult> byText,
-        Func<TState, ByFlags, TResult> byFlags)
-    {
-        return this switch
-        {
-            ByText c => byText(state, c),
-            ByFlags c => byFlags(state, c),
-            _ => throw new UnreachableException($"MetadataColumnFilter.Match does not handle {GetType().Name}."),
         };
     }
 }

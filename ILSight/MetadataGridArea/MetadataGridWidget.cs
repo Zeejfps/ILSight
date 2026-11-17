@@ -74,12 +74,12 @@ public static class MetadataGridWidget
         var filter = state.Filters[column];
         if (filter is not null)
         {
-            return filter;
+            return filter.Value;
         }
 
-        filter = CreateColumnFilter(state, column, flags);
-        state.Filters[column] = filter;
-        return filter;
+        var created = CreateColumnFilter(state, column, flags);
+        state.Filters[column] = created;
+        return created;
     }
 
     private static MetadataColumnFilter CreateColumnFilter(MetadataGridState state, int column, MetadataFilters flags)
@@ -139,7 +139,7 @@ public static class MetadataGridWidget
     {
         foreach (var filter in state.Filters)
         {
-            if (filter is not null && filter.IsActive)
+            if (filter is not null && filter.Value.IsActive)
             {
                 return true;
             }
@@ -156,7 +156,12 @@ public static class MetadataGridWidget
         {
             // A column of flags is filtered by what is kept for it, whether or not its heading was drawn yet.
             var filter = IsFlagsColumn(state, c) ? EnsureColumnFilter(state, c, flags) : state.Filters[c];
-            key.Add(filter is null ? 0 : filter.Match(static typed => typed.Text.GetHashCode(), static picked => picked.Flags.Revision.GetHashCode()));
+            key.Add(filter switch
+            {
+                null => 0,
+                MetadataColumnFilter.ByText typed => typed.Text.GetHashCode(),
+                MetadataColumnFilter.ByFlags picked => picked.Flags.Revision.GetHashCode(),
+            });
         }
         return key.ToHashCode() | 1;
     }
@@ -345,9 +350,15 @@ public static class MetadataGridWidget
 
     private static void ClickFunnel(MetadataGridState state, MetadataColumnFilter filter, int column)
     {
-        filter.Switch(
-            text => ClickTextFunnel(state, text, column),
-            _ => state.Flyout.Toggle(column));
+        switch (filter)
+        {
+            case MetadataColumnFilter.ByText text:
+                ClickTextFunnel(state, text, column);
+                break;
+            case MetadataColumnFilter.ByFlags:
+                state.Flyout.Toggle(column);
+                break;
+        }
     }
 
     private static void ClickTextFunnel(MetadataGridState state, MetadataColumnFilter.ByText text, int column)
