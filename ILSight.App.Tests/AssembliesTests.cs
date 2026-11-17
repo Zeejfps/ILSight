@@ -459,7 +459,8 @@ public sealed class AssembliesTests
     public async Task HandleAsync_TabsWaitingForNodes_HandsBackTheLookupOfThemUnstarted()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var place = (await d.FixtureAsync("Greeter")).Path;
+        var greeter = await d.FixtureAsync("Greeter");
+        var place = greeter.Path;
         var record = new NodeDocumentRecord
         {
             Panel = "document-9",

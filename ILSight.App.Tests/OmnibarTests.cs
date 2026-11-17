@@ -55,14 +55,17 @@ public sealed class OmnibarTests
         Assert.NotNull(path);
         var crumb = path.Segments;
         // The arrow after a crumb shares its depth.
-        app.Frames.ClickOn(Targets.GetPath([.. crumb.Take(crumb.Count - 1), new TestSegment.Named("children")])).Frame(2);
+        app.Frames.ClickOn(Targets.GetPath([.. crumb.Take(crumb.Count - 1), new TestSegment.Named("children")]));
+        app.Frames.Frame(2);
     }
 
     private static void SearchFor(AppDriver app, string query, int moreThan = 0)
     {
         var omnibar = app.Ui.Omnibar;
-        app.Frames.Key(Shortcuts.OmnibarSearch).Frame(2);
-        app.Frames.Type(query).Frame();
+        app.Frames.Key(Shortcuts.OmnibarSearch);
+        app.Frames.Frame(2);
+        app.Frames.Type(query);
+        app.Frames.Frame();
         app.RunOut();
         Assert.False(omnibar.Search.Results.IsBusy);
         Assert.True(omnibar.Search.ShowsQuery);
@@ -134,7 +137,8 @@ public sealed class OmnibarTests
         var menu = app.Ui.Omnibar.Menu;
         Assert.NotNull(menu);
         var selected = menu.Selection.Item;
-        app.Frames.ClickOn(Targets.GetCrumbChild("document-1", "Farewell")).Frame(2);
+        app.Frames.ClickOn(Targets.GetCrumbChild("document-1", "Farewell"));
+        app.Frames.Frame(2);
         app.Settle(2);
 
         Assert.Same(await app.FixtureAsync("Greeter"), selected);
@@ -150,9 +154,11 @@ public sealed class OmnibarTests
         ClickArrowAfter(app, AppStateDriver.FixturesNamespace);
         var menu = app.Ui.Omnibar.Menu;
         Assert.NotNull(menu);
-        app.Frames.Type("arew").Frame(2);
+        app.Frames.Type("arew");
+        app.Frames.Frame(2);
         var shown = menu.Shown.ToList();
-        app.Frames.Key(KeyboardKey.Enter).Frame(2);
+        app.Frames.Key(KeyboardKey.Enter);
+        app.Frames.Frame(2);
         app.Settle(2);
 
         Assert.Equal([await app.FixtureAsync("Farewell")], shown);
@@ -167,7 +173,8 @@ public sealed class OmnibarTests
 
         SearchFor(app, "Farewell");
         var searchedIn = omnibar.SearchingPanel;
-        app.Frames.Key(KeyboardKey.Enter).Frame(2);
+        app.Frames.Key(KeyboardKey.Enter);
+        app.Frames.Frame(2);
         app.Settle(2);
 
         var active = app.AppState.ListSession.Navigation.ActiveTab;
@@ -185,11 +192,14 @@ public sealed class OmnibarTests
         var omnibar = app.Ui.Omnibar;
         SearchFor(app, "Gree", moreThan: 1);
 
-        app.Frames.Key(KeyboardKey.DownArrow).Frame();
+        app.Frames.Key(KeyboardKey.DownArrow);
+        app.Frames.Frame();
         var first = omnibar.SelectedSuggestion;
-        app.Frames.Key(KeyboardKey.DownArrow).Frame();
+        app.Frames.Key(KeyboardKey.DownArrow);
+        app.Frames.Frame();
         var second = omnibar.SelectedSuggestion;
-        app.Frames.Key(KeyboardKey.Escape).Frame(2);
+        app.Frames.Key(KeyboardKey.Escape);
+        app.Frames.Frame(2);
 
         Assert.Same(omnibar.Search.Results.Rows[0], first);
         Assert.Same(omnibar.Search.Results.Rows[1], second);
@@ -204,7 +214,8 @@ public sealed class OmnibarTests
         var app = await ShowingAsync("Greeter");
         SearchFor(app, "Farewell");
 
-        app.Frames.ClickOn(Targets.GetSuggestion("document-1", "Farewell")).Frame(2);
+        app.Frames.ClickOn(Targets.GetSuggestion("document-1", "Farewell"));
+        app.Frames.Frame(2);
         app.Settle(2);
 
         Assert.Same(await app.FixtureAsync("Farewell"), app.AppState.ListSession.Navigation.ActiveTab?.Node);
@@ -216,7 +227,8 @@ public sealed class OmnibarTests
     {
         var app = await ShowingAsync("Greeter");
 
-        app.Frames.ClickOn(Selector.AtPath("dock/document-1/search")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/document-1/search"));
+        app.Frames.Frame(2);
 
         var active = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
@@ -234,7 +246,8 @@ public sealed class OmnibarTests
         var searchIcon = BuiltInGlyphs.Text(BuiltInGlyphs.Icons.SearchField);
         var searchButtons = app.Frames.TextRects()
             .Count(t => t.Text == searchIcon);
-        app.Frames.Key(Shortcuts.OmnibarSearch).Frame(2);
+        app.Frames.Key(Shortcuts.OmnibarSearch);
+        app.Frames.Frame(2);
 
         Assert.Equal(1, searchButtons);
         Assert.False(app.Ui.Omnibar.IsSearching);
@@ -249,9 +262,12 @@ public sealed class OmnibarTests
         Assert.NotNull(tab);
         var view = app.Ui.Documents.GetView(tab);
 
-        app.Frames.Click(700f, 400f).Frame();
-        app.Frames.Key(KeyboardKey.M, KeyModifiers.Control).Frame();
-        app.Frames.Key(KeyboardKey.L, KeyModifiers.Control).Frame(2);
+        app.Frames.Click(700f, 400f);
+        app.Frames.Frame();
+        app.Frames.Key(KeyboardKey.M, KeyModifiers.Control);
+        app.Frames.Frame();
+        app.Frames.Key(KeyboardKey.L, KeyModifiers.Control);
+        app.Frames.Frame(2);
 
         Assert.False(app.Ui.Omnibar.IsSearching);
         Assert.True(view.Code.Selection.Folds.AnyCollapsed);

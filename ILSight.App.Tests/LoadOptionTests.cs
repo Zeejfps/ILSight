@@ -9,14 +9,16 @@ public sealed class LoadOptionTests
     {
         var app = AppDriver.Opened();
         app.Settle(2);
-        var before = (await app.NodeAsync()).Assembly;
+        var rootBefore = await app.NodeAsync();
+        var before = rootBefore.Assembly;
 
         Preferences.SetDecompilerToggle(app.AppState, DecompilerToggle.AutoLoadAssemblyReferences, false);
         app.Run(2);
         app.Settle(2);
         var runtime = await app.NodeAsync("References", "System.Runtime");
 
-        Assert.NotSame(before, (await app.NodeAsync()).Assembly);
+        var rootAfter = await app.NodeAsync();
+        Assert.NotSame(before, rootAfter.Assembly);
         Assert.All(await runtime.ListChildrenAsync(), c => Assert.Equal(NodeIcon.ReferencedTypes, c.Icon));
     }
 

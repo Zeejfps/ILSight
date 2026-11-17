@@ -159,7 +159,8 @@ public sealed class ExportTests : IDisposable
         var path = _temp.PathOf("Greeter.cs");
         app.Frames.FilePicker.Answer = path;
 
-        app.Frames.Key(Shortcuts.SaveCode).Frame(2);
+        app.Frames.Key(Shortcuts.SaveCode);
+        app.Frames.Frame(2);
         app.Settle();
 
         Assert.Equal(["Save C# code as shown when you asked"], app.Frames.FilePicker.Titles);
@@ -184,7 +185,8 @@ public sealed class ExportTests : IDisposable
         };
         app.Frames.FilePicker.Answer = path;
 
-        app.Frames.Key(Shortcuts.SaveCode).Frame(2);
+        app.Frames.Key(Shortcuts.SaveCode);
+        app.Frames.Frame(2);
         app.Settle();
 
         // Told to the user where they asked: the code in the language shown, as shown, whatever changes while it's open.
@@ -212,7 +214,8 @@ public sealed class ExportTests : IDisposable
         app.Frames.FilePicker.OnOpen = () => Preferences.SetDecompilerToggle(app.AppState, stringConcat, false);
         app.Frames.FilePicker.Answer = path;
 
-        app.Frames.Key(Shortcuts.SaveCode).Frame(2);
+        app.Frames.Key(Shortcuts.SaveCode);
+        app.Frames.Frame(2);
         app.Settle();
 
         Assert.Equal(["Save C# code as shown when you asked"], app.Frames.FilePicker.Titles);
@@ -232,7 +235,8 @@ public sealed class ExportTests : IDisposable
         app.Frames.FilePicker.OnOpen = () => CommandArea.Commands.CloseAllAssemblies(app.AppState);
         app.Frames.FilePicker.Answer = path;
 
-        app.Frames.Key(Shortcuts.SaveCode).Frame(2);
+        app.Frames.Key(Shortcuts.SaveCode);
+        app.Frames.Frame(2);
         app.Settle();
 
         var report = Assert.Single(app.AppState.FinishedExports);
@@ -257,7 +261,8 @@ public sealed class ExportTests : IDisposable
         var path = _temp.PathOf("mainwindow.xaml");
         app.Frames.FilePicker.Answer = path;
 
-        app.Frames.Key(Shortcuts.SaveCode).Frame(2);
+        app.Frames.Key(Shortcuts.SaveCode);
+        app.Frames.Frame(2);
         app.Settle();
 
         var (fileName, filters) = app.Frames.FilePicker.LastSave;
@@ -273,7 +278,8 @@ public sealed class ExportTests : IDisposable
         var app = AppDriver.Opened();
         app.Run(2);
 
-        app.Frames.ClickOn(Selector.WithText("File")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("File"));
+        app.Frames.Frame(2);
 
         IconGlyph[] icons = [BuiltInGlyphs.Icons.FileOpen, BuiltInGlyphs.Icons.FileOpenFromFramework, BuiltInGlyphs.Icons.FileOpenFromProcess, BuiltInGlyphs.Icons.FileSaveCode, BuiltInGlyphs.Icons.FileExportProject,
             BuiltInGlyphs.Icons.FileGeneratePdb];
@@ -285,8 +291,10 @@ public sealed class ExportTests : IDisposable
     {
         var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
-        var first = d.InTurn(() => queue.Enter(TestJobs.Named("First"))).Turn;
-        var second = d.InTurn(() => queue.Enter(TestJobs.Named("Second"))).Turn;
+        var firstEntry = d.InTurn(() => queue.Enter(TestJobs.Named("First")));
+        var first = firstEntry.Turn;
+        var secondEntry = d.InTurn(() => queue.Enter(TestJobs.Named("Second")));
+        var second = secondEntry.Turn;
 
         Assert.True(first.IsCompleted);
         Assert.False(second.IsCompleted);
@@ -305,9 +313,11 @@ public sealed class ExportTests : IDisposable
     {
         var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
-        var first = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("First"))).Turn);
+        var firstEntry = d.InTurn(() => queue.Enter(TestJobs.Named("First")));
+        var first = Assert.IsType<ExportTurn.Started>(await firstEntry.Turn);
         d.InTurn(first.EndTurn);
-        var second = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("Second"))).Turn);
+        var secondEntry = d.InTurn(() => queue.Enter(TestJobs.Named("Second")));
+        var second = Assert.IsType<ExportTurn.Started>(await secondEntry.Turn);
 
         d.InTurn(first.EndTurn);
 
@@ -321,8 +331,10 @@ public sealed class ExportTests : IDisposable
     {
         var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
-        var first = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("First"))).Turn);
-        var second = d.InTurn(() => queue.Enter(TestJobs.Named("Second"))).Turn;
+        var firstEntry = d.InTurn(() => queue.Enter(TestJobs.Named("First")));
+        var first = Assert.IsType<ExportTurn.Started>(await firstEntry.Turn);
+        var secondEntry = d.InTurn(() => queue.Enter(TestJobs.Named("Second")));
+        var second = secondEntry.Turn;
 
         queue.Withdraw(Assert.Single(queue.Waiting).Run);
 
@@ -336,8 +348,10 @@ public sealed class ExportTests : IDisposable
     {
         var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
-        var first = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("First"))).Turn);
-        var second = d.InTurn(() => queue.Enter(TestJobs.Named("Second"))).Turn;
+        var firstEntry = d.InTurn(() => queue.Enter(TestJobs.Named("First")));
+        var first = Assert.IsType<ExportTurn.Started>(await firstEntry.Turn);
+        var secondEntry = d.InTurn(() => queue.Enter(TestJobs.Named("Second")));
+        var second = secondEntry.Turn;
 
         queue.CancelRunning();
 
@@ -354,10 +368,12 @@ public sealed class ExportTests : IDisposable
     {
         var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
-        var first = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("First"))).Turn);
+        var firstEntry = d.InTurn(() => queue.Enter(TestJobs.Named("First")));
+        var first = Assert.IsType<ExportTurn.Started>(await firstEntry.Turn);
         first.Progress.Report(new ExportProgress { Name = "First", Part = 1, Parts = 1, Fraction = 0.5f });
         d.InTurn(first.EndTurn);
-        Assert.True(d.InTurn(() => queue.Enter(TestJobs.Named("Second"))).Turn.IsCompletedSuccessfully);
+        var entry = d.InTurn(() => queue.Enter(TestJobs.Named("Second")));
+        Assert.True(entry.Turn.IsCompletedSuccessfully);
 
         d.Pump();
 
@@ -375,7 +391,8 @@ public sealed class ExportTests : IDisposable
     {
         var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
-        var start = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("Fixtures"))).Turn);
+        var startEntry = d.InTurn(() => queue.Enter(TestJobs.Named("Fixtures")));
+        var start = Assert.IsType<ExportTurn.Started>(await startEntry.Turn);
 
         start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.75f });
         var beforePump = queue.Running;
@@ -391,7 +408,8 @@ public sealed class ExportTests : IDisposable
     {
         var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
-        var start = Assert.IsType<ExportTurn.Started>(await d.InTurn(() => queue.Enter(TestJobs.Named("Fixtures"))).Turn);
+        var startEntry = d.InTurn(() => queue.Enter(TestJobs.Named("Fixtures")));
+        var start = Assert.IsType<ExportTurn.Started>(await startEntry.Turn);
 
         start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.6f });
         start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.4f });
@@ -442,14 +460,17 @@ public sealed class ExportTests : IDisposable
     public async Task The_status_bar_shows_the_export_and_how_many_wait_and_cancels_it()
     {
         var app = AppDriver.Opened();
-        var start = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Fixtures"))).Turn);
-        Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Later"))).Turn.IsCompleted);
+        var startEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Fixtures")));
+        var start = Assert.IsType<ExportTurn.Started>(await startEntry.Turn);
+        var entry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Later")));
+        Assert.False(entry.Turn.IsCompleted);
         start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 2, Parts = 3, Fraction = 0.5f });
         app.Run(2);
 
         Assert.True(app.Frames.Drew("Exporting 2/3 · Fixtures"));
         Assert.True(app.Frames.Drew("1 more queued"));
-        app.Frames.ClickOn(Selector.AtPath("cancel-export")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("cancel-export"));
+        app.Frames.Frame();
 
         Assert.True(start.Token.IsCancellationRequested);
     }
@@ -558,7 +579,8 @@ public sealed class ExportTests : IDisposable
         var report = new ExportReport { Run = new ExportRun(1), Job = job, FolderExists = true, Elapsed = TimeSpan.FromSeconds(1), End = new ExportEnd.Finished { Written = [], Problems = problems } };
         var view = CodeViewDriver.Showing(ExportReportText.BuildDocument(Strings.En, [report]), height: 2000f);
 
-        view.Key(KeyboardKey.Tab).Frame();
+        view.Key(KeyboardKey.Tab);
+        view.Frames.Frame();
         view.Key(Shortcuts.SelectAll);
         view.Key(Shortcuts.Copy);
 
@@ -587,7 +609,8 @@ public sealed class ExportTests : IDisposable
         var app = AppDriver.Opened();
         app.Run(2);
 
-        app.Frames.ClickOn(Selector.WithText("File")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("File"));
+        app.Frames.Frame(2);
 
         Assert.True(app.Frames.Drew("Export…"));
         Assert.False(app.Frames.Drew("Export all as solution…"));

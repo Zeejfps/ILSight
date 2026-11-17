@@ -56,7 +56,8 @@ public sealed class ExportsPanelTests : IDisposable
         app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, farewellNode, app.AppState.Decompiler.Setup, Path.Combine(Folder("Second"), "Farewell.cs")));
         app.Settle(2);
 
-        app.Frames.ClickOn(Selector.AtPath("dock/exports/#1/open-folder")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/exports/#1/open-folder"));
+        app.Frames.Frame();
 
         Assert.Equal([first], app.Frames.OpenedFolders);
     }
@@ -72,7 +73,8 @@ public sealed class ExportsPanelTests : IDisposable
         app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, farewellNode, app.AppState.Decompiler.Setup, _temp.PathOf("Farewell.cs")));
         app.Settle(2);
 
-        app.Frames.ClickOn(Selector.AtPath("dock/exports/#1/show-report")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/exports/#1/show-report"));
+        app.Frames.Frame(2);
 
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -128,8 +130,10 @@ public sealed class ExportsPanelTests : IDisposable
         var greeterNode = await app.FixtureAsync("Greeter");
         app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, app.AppState.Decompiler.Setup, _temp.PathOf("Greeter.cs")));
         app.Settle();
-        var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
-        Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Later"))).Turn.IsCompleted);
+        var runningEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running")));
+        var running = Assert.IsType<ExportTurn.Started>(await runningEntry.Turn);
+        var laterEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Later")));
+        Assert.False(laterEntry.Turn.IsCompleted);
         app.Run(2);
 
         Assert.True(app.Frames.Drew("Running"));
@@ -144,10 +148,12 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened();
         app.Ui.Panels.Open(DockView.Exports);
-        var start = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Fixtures"))).Turn);
+        var startEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Fixtures")));
+        var start = Assert.IsType<ExportTurn.Started>(await startEntry.Turn);
         app.Run(2);
 
-        app.Frames.ClickOn(Selector.WithText("Cancel")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Cancel"));
+        app.Frames.Frame(2);
 
         Assert.True(start.Token.IsCancellationRequested);
         Assert.True(app.AppState.Export.Running?.IsCancelling);
@@ -191,7 +197,8 @@ public sealed class ExportsPanelTests : IDisposable
         app.Frames.FilePicker.OnOpen = () => CommandArea.Commands.CloseAllAssemblies(app.AppState);
         app.Frames.FilePicker.Answer = _temp.PathOf("Greeter.cs");
 
-        app.Frames.Key(Shortcuts.SaveCode).Frame(2);
+        app.Frames.Key(Shortcuts.SaveCode);
+        app.Frames.Frame(2);
         app.Settle(2);
 
         Assert.IsType<ExportEnd.AssemblyClosed>(Assert.Single(app.AppState.FinishedExports).End);
@@ -249,9 +256,12 @@ public sealed class ExportsPanelTests : IDisposable
         var greeterNode = await app.FixtureAsync("Greeter");
         app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, app.AppState.Decompiler.Setup, _temp.PathOf("Greeter.cs")));
         app.Settle();
-        var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
-        Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Second"))).Turn.IsCompleted);
-        Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Third"))).Turn.IsCompleted);
+        var runningEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running")));
+        var running = Assert.IsType<ExportTurn.Started>(await runningEntry.Turn);
+        var secondEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Second")));
+        Assert.False(secondEntry.Turn.IsCompleted);
+        var thirdEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Third")));
+        Assert.False(thirdEntry.Turn.IsCompleted);
         app.Run(2);
 
         Assert.True(app.Frames.Drew("1 running · 2 queued · 1 finished"));
@@ -266,7 +276,8 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened();
         app.Ui.Panels.Open(DockView.Exports);
-        var start = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Both"))).Turn);
+        var startEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Both")));
+        var start = Assert.IsType<ExportTurn.Started>(await startEntry.Turn);
         start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 2, Parts = 4, Fraction = 0.5f });
         app.Run(2);
 
@@ -314,11 +325,13 @@ public sealed class ExportsPanelTests : IDisposable
     public async Task The_status_bar_shows_only_the_running_export_and_opens_the_panel()
     {
         var app = AppDriver.Opened();
-        var start = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Fixtures"))).Turn);
+        var startEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Fixtures")));
+        var start = Assert.IsType<ExportTurn.Started>(await startEntry.Turn);
         app.Run(2);
         Assert.False(app.Arrangement.Contains(DockPanels.Exports));
 
-        app.Frames.ClickOn(Selector.AtPath("export-glance")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("export-glance"));
+        app.Frames.Frame(2);
 
         Assert.True(app.Arrangement.Contains(DockPanels.Exports));
         app.Driver.InTurn(start.EndTurn);

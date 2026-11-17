@@ -7,7 +7,8 @@ public sealed class ExpandNamespacesHandlerTests
     private static async Task<(BrowseTree Tree, BrowseNode Root)> OpenedTreeAsync()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var root = await list.Open(AppStateDriver.FixturePath).ReadRootAsync();
+        var assembly = list.Open(AppStateDriver.FixturePath);
+        var root = await assembly.ReadRootAsync();
         var tree = new BrowseTree { Session = TestSession.Shared };
         tree.TrySyncRoots(list);
         return (tree, root);

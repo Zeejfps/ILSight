@@ -134,17 +134,22 @@ public sealed class CodeCaretTests
         var view = CodeViewDriver.Showing(CodeViewDriver.Numbered(5), frames: 2);
         view.Click(1, 2);
 
-        view.Key(KeyboardKey.DownArrow).Frame();
-        view.Key(KeyboardKey.RightArrow).Frame();
+        view.Key(KeyboardKey.DownArrow);
+        view.Frames.Frame();
+        view.Key(KeyboardKey.RightArrow);
+        view.Frames.Frame();
         Assert.Equal(new TextPosition { Line = 2, Column = 3 }, view.State.Selection.Caret);
         Assert.False(view.State.Selection.HasSelection);
 
-        view.Key(KeyboardKey.RightArrow, KeyModifiers.Shift).Frame();
-        view.Key(KeyboardKey.RightArrow, KeyModifiers.Shift).Frame();
+        view.Key(KeyboardKey.RightArrow, KeyModifiers.Shift);
+        view.Frames.Frame();
+        view.Key(KeyboardKey.RightArrow, KeyModifiers.Shift);
+        view.Frames.Frame();
         Assert.Equal(new TextPosition { Line = 2, Column = 3 }, view.State.Selection.Start);
         Assert.Equal(new TextPosition { Line = 2, Column = 5 }, view.State.Selection.End);
 
-        view.Key(KeyboardKey.LeftArrow).Frame();
+        view.Key(KeyboardKey.LeftArrow);
+        view.Frames.Frame();
         Assert.Equal(new TextPosition { Line = 2, Column = 3 }, view.State.Selection.Caret);
         Assert.False(view.State.Selection.HasSelection);
     }
@@ -188,7 +193,8 @@ public sealed class CodeCaretTests
         var view = CodeViewDriver.Showing(CodeViewDriver.Numbered(200), frames: 2);
         view.Click(0, 0);
 
-        view.Key(Shortcut.Command(KeyboardKey.End)).Frame();
+        view.Key(Shortcut.Command(KeyboardKey.End));
+        view.Frames.Frame();
 
         Assert.Equal(new TextPosition { Line = 199, Column = 8 }, view.State.Selection.Caret);
         Assert.Contains(view.DrawnText(), d => d.Text == "line 199");

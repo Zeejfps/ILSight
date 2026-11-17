@@ -90,7 +90,8 @@ public sealed class NestedNamespaceTests
     public async Task Showing_public_api_a_namespace_of_internal_types_is_hidden_unless_a_namespace_nested_in_it_shows()
     {
         var tree = new BrowseTree { Session = TestSession.Shared };
-        var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync();
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath);
+        var root = await assembly.ReadRootAsync();
         var fixtures = await root.GetChildAsync(AppStateDriver.FixturesNamespace);
         var vault = await root.GetChildAsync(AppStateDriver.FixturesNamespace + ".Vault");
         var door = await root.GetChildAsync(AppStateDriver.FixturesNamespace + ".Vault.Door");

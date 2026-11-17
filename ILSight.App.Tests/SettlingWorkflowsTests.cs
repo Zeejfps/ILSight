@@ -31,7 +31,8 @@ public sealed class SettlingWorkflowsTests
         app.Ui.Panels.OpenSearch();
         app.Run();
 
-        app.Frames.Type("Greeter").Frame();
+        app.Frames.Type("Greeter");
+        app.Frames.Frame();
         app.RunOut();
 
         Assert.False(app.Ui.Search.Results.IsBusy);
@@ -87,7 +88,8 @@ public sealed class SettlingWorkflowsTests
     {
         var ports = new FakeDiagramGrowerPorts();
         var d = AppStateDriver.OpenedWith(new AdapterHooks { Grower = _ => ports });
-        var greeter = (await d.FixtureAsync("Greeter")).Definition;
+        var greeterNode = await d.FixtureAsync("Greeter");
+        var greeter = greeterNode.Definition;
         Assert.NotNull(greeter);
         d.InTurn(() => DiagramView.ShowInNewDiagramLater(d.Ui.AppCommands, greeter, new TabTitle.Saved("Greeter")));
         d.RunUntil(() => ports.Requests.Count == 1);

@@ -84,11 +84,15 @@ public sealed class DisplayOptionsTests
         var view = Showing(CodeViewDriver.Numbered(200), DisplayOptions.Default);
         view.MoveTo(2, 0);
 
-        view.Frames.Key(KeyboardKey.LeftControl, KeyModifiers.Control).Wheel(-1).Frame();
+        view.Frames.Key(KeyboardKey.LeftControl, KeyModifiers.Control);
+        view.Frames.Wheel(-1);
+        view.Frames.Frame();
         Assert.Equal(CodeZoom.Out, view.Last.Zoom);
         Assert.Equal(0f, view.State.ScrollY);
 
-        view.Frames.Key(KeyboardKey.F12).Wheel(-1).Frame();
+        view.Frames.Key(KeyboardKey.F12);
+        view.Frames.Wheel(-1);
+        view.Frames.Frame();
         Assert.Equal(CodeZoom.None, view.Last.Zoom);
         Assert.True(view.State.ScrollY > 0f);
     }
@@ -150,7 +154,8 @@ public sealed class DisplayOptionsTests
         var view = ClickedOnB(new DisplayOptions { HighlightUsagesAtCaret = true });
         Assert.Equal("b", view.State.Frame.Highlight?.Name);
 
-        view.Key(KeyboardKey.Home).Frame();
+        view.Key(KeyboardKey.Home);
+        view.Frames.Frame();
 
         Assert.Equal(new TextPosition { Line = 0, Column = 0 }, view.State.Selection.Caret);
         Assert.Equal("a", view.State.Frame.Highlight?.Name);
@@ -161,8 +166,10 @@ public sealed class DisplayOptionsTests
     {
         var view = ClickedOnB(new DisplayOptions { HighlightUsagesAtCaret = true });
 
-        view.Key(KeyboardKey.End).Frame();
-        view.Key(KeyboardKey.LeftArrow).Frame();
+        view.Key(KeyboardKey.End);
+        view.Frames.Frame();
+        view.Key(KeyboardKey.LeftArrow);
+        view.Frames.Frame();
 
         Assert.Equal(new TextPosition { Line = 0, Column = 9 }, view.State.Selection.Caret);
 
@@ -174,7 +181,8 @@ public sealed class DisplayOptionsTests
     {
         var view = ClickedOnB(new DisplayOptions { HighlightUsagesAtCaret = true });
 
-        view.Key(KeyboardKey.DownArrow).Frame();
+        view.Key(KeyboardKey.DownArrow);
+        view.Frames.Frame();
 
         Assert.Null(view.State.Frame.Highlight);
     }
@@ -184,7 +192,8 @@ public sealed class DisplayOptionsTests
     {
         var view = ClickedOnB(DisplayOptions.Default);
 
-        view.Key(KeyboardKey.Home).Frame();
+        view.Key(KeyboardKey.Home);
+        view.Frames.Frame();
 
         Assert.Equal("b", view.State.Frame.Highlight?.Name);
     }
@@ -223,8 +232,10 @@ public sealed class DisplayOptionsTests
         app.Run();
         Assert.True(app.Frames.Drew("100%"));
 
-        app.Frames.ClickOn(Selector.WithText("100%")).Frame();
-        app.Frames.ClickOn(Selector.WithText("125%")).Frame();
+        app.Frames.ClickOn(Selector.WithText("100%"));
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.WithText("125%"));
+        app.Frames.Frame();
 
         Assert.Equal(1.25f, app.Ui.Display.Options.UiScale);
         Assert.True(app.Frames.Drew("125%"));
@@ -278,9 +289,12 @@ public sealed class DisplayOptionsTests
         app.Run();
         var size = app.Ui.Appearance.Theme.MonoFontSize;
 
-        app.Frames.ClickOn(Selector.AtPath("dock/display-options/larger")).Frame();
-        app.Frames.ClickOn(Selector.WithText("Line numbers")).Frame();
-        app.Frames.ClickOn(Selector.WithText("Highlight current line")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/display-options/larger"));
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.WithText("Line numbers"));
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.WithText("Highlight current line"));
+        app.Frames.Frame();
 
         var changed = new DisplayOptions
         {
@@ -292,10 +306,12 @@ public sealed class DisplayOptionsTests
         Assert.True(IsBold(app, "Line numbers"));
         Assert.False(IsBold(app, "UI scale"));
 
-        app.Frames.ClickOn(Selector.WithText("Reset to defaults")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Reset to defaults"));
+        app.Frames.Frame(2);
         Assert.True(app.Ui.Display.Reset.IsAsked);
         Assert.Equal(changed, app.Ui.Display.Options);
-        app.Frames.ClickOn(Selector.WithText("Reset")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Reset"));
+        app.Frames.Frame(2);
 
         Assert.False(app.Ui.Display.Reset.IsAsked);
         Assert.Equal(DisplayOptions.Default, app.Ui.Display.Options);
@@ -309,8 +325,10 @@ public sealed class DisplayOptionsTests
         app.Run();
         Assert.False(IsBold(app, "Metadata tokens"));
 
-        app.Frames.ClickOn(Selector.WithText("Hidden")).Frame();
-        app.Frames.ClickOn(Selector.WithText("Hexadecimal")).Frame();
+        app.Frames.ClickOn(Selector.WithText("Hidden"));
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.WithText("Hexadecimal"));
+        app.Frames.Frame();
 
         Assert.Equal(TokenFormat.Hex, app.Ui.Display.Options.TreeTokens);
         Assert.True(IsBold(app, "Metadata tokens"));
@@ -326,7 +344,8 @@ public sealed class DisplayOptionsTests
         app.Run();
         Assert.DoesNotContain(empty, app.Ui.Tree.GetChildren(tables).Nodes);
 
-        app.Frames.ClickOn(Selector.WithText("Show empty metadata tables")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Show empty metadata tables"));
+        app.Frames.Frame(2);
 
         Assert.True(app.Ui.Display.Options.ShowEmptyMetadataTables);
         Assert.True(IsBold(app, "Show empty metadata tables"));
@@ -345,7 +364,8 @@ public sealed class DisplayOptionsTests
         Assert.Contains(fixtures, app.Ui.Tree.GetChildren(root).Nodes);
         Assert.DoesNotContain(outermost, app.Ui.Tree.GetChildren(root).Nodes);
 
-        app.Frames.ClickOn(Selector.WithText("Nested namespaces")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Nested namespaces"));
+        app.Frames.Frame(2);
 
         Assert.True(app.Ui.Display.Options.NestedNamespaces);
         Assert.True(IsBold(app, "Nested namespaces"));
@@ -362,7 +382,8 @@ public sealed class DisplayOptionsTests
         app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
-        app.Frames.ClickOn(Selector.WithText("Preview tabs")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Preview tabs"));
+        app.Frames.Frame(2);
 
         Assert.NotNull(shown);
         Assert.False(app.Ui.Display.Options.PreviewTabs);
@@ -379,8 +400,10 @@ public sealed class DisplayOptionsTests
         app.Run();
         Assert.Equal("dark", app.AppState.ChosenThemes.Theme.Text);
 
-        app.Frames.ClickOn(Selector.WithText("Dark")).Frame();
-        app.Frames.ClickOn(Selector.WithText("Dracula")).Frame();
+        app.Frames.ClickOn(Selector.WithText("Dark"));
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.WithText("Dracula"));
+        app.Frames.Frame();
 
         Assert.Equal("dracula", app.AppState.ChosenThemes.Theme.Text);
         Assert.Equal(app.AppState.Themes.GetTheme(ThemeId<ThemeFile>.Of("dracula")).Ui.Background, app.Frames.WindowBackground);
@@ -395,8 +418,10 @@ public sealed class DisplayOptionsTests
         app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
-        app.Frames.ClickOn(Selector.WithText("Dark")).Frame();
-        app.Frames.ClickOn(Selector.WithText("Midnight")).Frame();
+        app.Frames.ClickOn(Selector.WithText("Dark"));
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.WithText("Midnight"));
+        app.Frames.Frame();
 
         Assert.Equal("midnight", app.AppState.ChosenThemes.Theme.Text);
         Assert.Equal(0xFF000010u, app.Frames.WindowBackground);
@@ -412,12 +437,16 @@ public sealed class DisplayOptionsTests
         app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
-        app.Frames.ClickOn(Selector.WithText("Dark")).Frame();
-        app.Frames.Click(TwinRects(app)[1]).Frame();
+        app.Frames.ClickOn(Selector.WithText("Dark"));
+        app.Frames.Frame();
+        app.Frames.Click(TwinRects(app)[1]);
+        app.Frames.Frame();
         Assert.Equal("twin-b", app.AppState.ChosenThemes.Theme.Text);
 
-        app.Frames.ClickOn(Selector.WithText("Twin")).Frame();
-        app.Frames.Click(TwinRects(app)[1]).Frame();
+        app.Frames.ClickOn(Selector.WithText("Twin"));
+        app.Frames.Frame();
+        app.Frames.Click(TwinRects(app)[1]);
+        app.Frames.Frame();
         Assert.Equal("twin-a", app.AppState.ChosenThemes.Theme.Text);
         Assert.Equal(0xFF00000Au, app.Frames.WindowBackground);
     }
@@ -428,7 +457,8 @@ public sealed class DisplayOptionsTests
         var app = AppDriver.Opened(width: 1600f);
         app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
-        app.Frames.ClickOn(Selector.WithText("Dark")).Frame();
+        app.Frames.ClickOn(Selector.WithText("Dark"));
+        app.Frames.Frame();
         Assert.True(IsDrawn(app, "Dracula"));
 
         app.AppState.UserThemes.ReloadThemes();
@@ -445,7 +475,8 @@ public sealed class DisplayOptionsTests
         app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
-        app.Frames.ClickOn(Selector.AtPath("dock/display-options/customize-theme")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/display-options/customize-theme"));
+        app.Frames.Frame();
 
         Assert.Equal("dark-custom", app.AppState.ChosenThemes.Theme.Text);
         Assert.Equal([temp.PathOf(Path.Combine("themes", "dark-custom.json"))], app.Frames.OpenedFiles);
@@ -594,8 +625,10 @@ public sealed class DisplayOptionsTests
         app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
-        app.Frames.ClickOn(Selector.WithText("English")).Frame();
-        app.Frames.ClickOn(Selector.WithText("Deutsch")).Frame();
+        app.Frames.ClickOn(Selector.WithText("English"));
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.WithText("Deutsch"));
+        app.Frames.Frame();
 
         Assert.Equal(ILSight.Locale.De, app.AppState.Locale);
         Assert.True(app.Frames.Drew("Sprache"));
@@ -607,10 +640,13 @@ public sealed class DisplayOptionsTests
         var app = AppDriver.Opened(width: 1600f, height: TallWindow);
         app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
-        app.Frames.ClickOn(Selector.WithText("Line numbers")).Frame();
+        app.Frames.ClickOn(Selector.WithText("Line numbers"));
+        app.Frames.Frame();
 
-        app.Frames.ClickOn(Selector.WithText("Reset to defaults")).Frame(2);
-        app.Frames.ClickOn(Selector.WithText("Cancel")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Reset to defaults"));
+        app.Frames.Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Cancel"));
+        app.Frames.Frame(2);
 
         Assert.False(app.Ui.Display.Reset.IsAsked);
         Assert.False(app.Ui.Display.Options.ShowLineNumbers);
@@ -623,9 +659,11 @@ public sealed class DisplayOptionsTests
         app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
-        app.Frames.ClickOn(Selector.AtPath("dock/display-options/larger")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/display-options/larger"));
+        app.Frames.Frame();
         Assert.True(IsBold(app, "Font size"));
-        app.Frames.ClickOn(Selector.AtPath("dock/display-options/smaller")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/display-options/smaller"));
+        app.Frames.Frame();
 
         Assert.Null(app.Ui.Display.Options.FontSize);
         Assert.False(IsBold(app, "Font size"));
@@ -641,8 +679,10 @@ public sealed class DisplayOptionsTests
         var size = app.Ui.Appearance.Theme.MonoFontSize;
 
         var code = app.Frames.Canvas.GlyphRuns.First(r => r.Text == "Greeter");
-        app.Frames.Click(code.Origin.X + 2f, app.Frames.Height - code.Origin.Y + 2f).Frame();
-        app.Frames.Key(Shortcuts.ZoomIn).Frame();
+        app.Frames.Click(code.Origin.X + 2f, app.Frames.Height - code.Origin.Y + 2f);
+        app.Frames.Frame();
+        app.Frames.Key(Shortcuts.ZoomIn);
+        app.Frames.Frame();
 
         Assert.Equal(size + 1f, app.Ui.Display.Options.FontSize?.Points);
     }
@@ -670,7 +710,8 @@ public sealed class DisplayOptionsTests
     {
         var app = OpenedWithFonts(Family("Consolas", "consola.ttf"), Family("Segoe UI", "segoeui.ttf", monospaced: false));
 
-        app.Frames.ClickOn(Selector.WithText("JetBrains Mono")).Frame();
+        app.Frames.ClickOn(Selector.WithText("JetBrains Mono"));
+        app.Frames.Frame();
 
         Assert.True(app.Frames.Drew("Consolas"));
         Assert.False(app.Frames.Drew("Segoe UI"));
@@ -683,16 +724,20 @@ public sealed class DisplayOptionsTests
         var path = temp.Write("consola.ttf", FontBytes);
         var app = OpenedWithFonts(Family("Consolas", path));
 
-        app.Frames.ClickOn(Selector.WithText("JetBrains Mono")).Frame();
-        app.Frames.ClickOn(Selector.WithText("Consolas")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("JetBrains Mono"));
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.WithText("Consolas"));
+        app.Frames.Frame(2);
 
         Assert.Equal(new CodeFont { Family = "Consolas", Path = path, FaceIndex = 0 }, app.Ui.Display.Options.Font);
         Assert.Equal(MonoFonts.Code, app.Frames.RegisteredFonts[^1].Family);
         Assert.Equal(FontBytes, app.Frames.RegisteredFonts[^1].Data);
         Assert.True(IsBold(app, "Font"));
 
-        app.Frames.ClickOn(Selector.WithText("Consolas")).Frame();
-        app.Frames.ClickOn(Selector.WithText("JetBrains Mono")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Consolas"));
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.WithText("JetBrains Mono"));
+        app.Frames.Frame(2);
 
         Assert.Null(app.Ui.Display.Options.Font);
         Assert.NotEqual(FontBytes, app.Frames.RegisteredFonts[^1].Data);
@@ -715,7 +760,8 @@ public sealed class DisplayOptionsTests
     {
         var app = OpenedWithFonts();
 
-        app.Frames.ClickOn(Selector.AtPath("dock/display-options/larger")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/display-options/larger"));
+        app.Frames.Frame();
 
         var preview = app.Frames.Canvas.Texts.First(t => t.Inputs.Text.StartsWith("The quick brown fox"));
         Assert.Equal(MonoFonts.Code, preview.Inputs.Style.FontFamily.Value);

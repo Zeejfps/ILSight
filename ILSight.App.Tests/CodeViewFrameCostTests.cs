@@ -154,7 +154,8 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
     {
         var view = CodeViewDriver.Showing(Folded(100), Height, frames: 2);
         var (x, y) = view.ChevronOf(new CodeRow(view.Document.Folds[0].StartLine));
-        view.Frames.MovePointer(x, y).Frame();
+        view.Frames.MovePointer(x, y);
+        view.Frames.Frame();
         return view;
     }
 
@@ -173,7 +174,8 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
         var view = CodeViewDriver.Showing(CodeViewDriver.Numbered(100), Height, frames: 2);
         view.Bookmarks = new Dictionary<int, bool> { [1] = true, [3] = false };
         var (x, y) = view.MarkOf(new CodeRow(2));
-        view.Frames.MovePointer(x, y).Frame();
+        view.Frames.MovePointer(x, y);
+        view.Frames.Frame();
         return view;
     }
 
@@ -182,7 +184,8 @@ public sealed class CodeViewFrameCostTests(ITestOutputHelper output)
         var view = CodeViewDriver.Showing(CodeViewDriver.Numbered(100), Height, frames: 2);
         view.Click(0, 0);
         view.Key(Shortcuts.Find);
-        view.Frames.Type("line").Frame(3);
+        view.Frames.Type("line");
+        view.Frames.Frame(3);
         return view;
     }
 

@@ -17,12 +17,14 @@ public sealed class AssemblyMenuTests
         app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 3, Waits.Patience);
         app.Settle(2);
 
-        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/sort-list")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/sort-list"));
+        app.Frames.Frame(2);
 
         var sorted = app.AppState.ListSession.Assemblies.ListFilePaths();
         Assert.Equal([AppStateDriver.FixturePath, missing, CoreLibPath], sorted.Select(static p => p.Text));
 
-        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-failed")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-failed"));
+        app.Frames.Frame(2);
 
         var roots = app.Ui.Tree.Roots;
         Assert.Equal([AppStateDriver.FixturePath, CoreLibPath], roots.Select(r => r.Assembly.FilePath.Text));
@@ -52,7 +54,8 @@ public sealed class AssemblyMenuTests
         app.Run(2);
 
         app.PickFromTreeMenu("Greeter", "Show in .NET API reference");
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Hidden"), PointerButton.Right).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Hidden"), PointerButton.Right);
+        app.Frames.Frame();
 
         var page = MicrosoftDocs.FindPage(greeter);
         Assert.NotNull(page);
@@ -77,7 +80,8 @@ public sealed class AssemblyMenuTests
             .Where(r => r.Kind == EntityKind.Type)
             .ToList();
         var greeter = references.First(r => r.Name == "Greeter");
-        var internalType = (await app.FixtureAsync("Hidden")).Definition;
+        var hidden = await app.FixtureAsync("Hidden");
+        var internalType = hidden.Definition;
 
         app.Start((a, ct) => a.ShowInApiReferenceHandler.HandleAsync(a.ViewCommands, greeter, ct));
         app.Frames.WaitUntil(() => app.Frames.OpenedUrls.Count == 1, Waits.Patience);
@@ -98,8 +102,10 @@ public sealed class AssemblyMenuTests
         app.Run(2);
         var name = app.AppState.ListSession.Assemblies.Assemblies[0].Name;
 
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, name), PointerButton.Right).Frame();
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Load dependencies")).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, name), PointerButton.Right);
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Load dependencies"));
+        app.Frames.Frame();
         app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Assemblies.Any(a => a.Name == "System.Runtime"), Waits.Patience);
         app.Settle(2);
 

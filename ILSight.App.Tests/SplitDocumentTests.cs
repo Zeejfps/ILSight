@@ -87,17 +87,22 @@ public sealed class SplitDocumentTests
         var (app, left, right) = await SideBySideAsync();
         var d = app.Driver;
 
-        app.Frames.MovePointer(250f, 400f).Frame().Wheel(-5).Frame(2);
+        app.Frames.MovePointer(250f, 400f);
+        app.Frames.Frame();
+        app.Frames.Wheel(-5);
+        app.Frames.Frame(2);
         Assert.True(app.Ui.Documents.GetView(left).Code.ScrollY > 0f);
         Assert.Equal(0f, app.Ui.Documents.GetView(right).Code.ScrollY);
 
-        app.Frames.Click(750f, 400f).Frame();
+        app.Frames.Click(750f, 400f);
+        app.Frames.Frame();
         Assert.Same(right, d.AppState.ListSession.Navigation.ActiveTab);
         app.Show(await app.FixtureAsync("Greeter"), 2);
         Assert.Equal("Outline", left.Node?.Text);
         Assert.Equal("Greeter", right.Node?.Text);
 
-        app.Frames.Click(250f, 400f).Frame();
+        app.Frames.Click(250f, 400f);
+        app.Frames.Frame();
         Assert.Same(left, d.AppState.ListSession.Navigation.ActiveTab);
         Assert.Same(right.Node, d.Ui.Tree.View.Selected);
     }
@@ -111,7 +116,8 @@ public sealed class SplitDocumentTests
         Assert.Equal(theme.Accent, Indicator(app, app.LastTabTitleRect("Outline")));
         Assert.Equal(theme.BorderStrong, Indicator(app, app.TabTitleRect("Outline")));
 
-        app.Frames.Click(250f, 400f).Frame();
+        app.Frames.Click(250f, 400f);
+        app.Frames.Frame();
 
         Assert.Same(left, app.AppState.ListSession.Navigation.ActiveTab);
         Assert.Equal(theme.Accent, Indicator(app, app.TabTitleRect("Outline")));
@@ -126,7 +132,8 @@ public sealed class SplitDocumentTests
         Assert.NotSame(arrangement.GroupOf(app.Ui.Documents.GetPanel(left)), arrangement.GroupOf(app.Ui.Documents.GetPanel(right)));
 
         app.Frames.ClickOn(Selector.WithText("View"));
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Close all documents")).Frame(2);
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Close all documents"));
+        app.Frames.Frame(2);
         app.Settle(2);
 
         Assert.Empty(app.AppState.ListSession.Navigation.OpenTabs);

@@ -57,7 +57,8 @@ public sealed class NavigateHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var shown = d.AppState.ListSession.Navigation.ActiveTab?.Node;
         Assert.NotNull(shown);
-        var reference = (await d.FixtureAsync("Farewell")).Definition;
+        var farewell = await d.FixtureAsync("Farewell");
+        var reference = farewell.Definition;
         var error = new IOException("unreadable");
         var missing = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)) };
         var failed = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(error) };
@@ -87,7 +88,8 @@ public sealed class NavigateHandlerTests
     public async Task HandleAsync_LookupFoundAFileThatIsNoAssembly_ReportsItUnresolvedWithWhatTheUserCanDo()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var reference = (await d.FixtureAsync("Farewell")).Definition;
+        var farewell = await d.FixtureAsync("Farewell");
+        var reference = farewell.Definition;
         var file = AssemblyPath.Of(Path.Combine(Path.GetTempPath(), "Damaged", "Damaged.dll"));
         var error = new AssemblyLoadException(file, new AssemblyLoadFault.NotAssembly(), $"'{file}' is not a .NET assembly.");
         var failed = new FakeNavigateHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(error) };

@@ -64,7 +64,8 @@ public sealed class CodeViewFoldTests
         var row = CodeFolding.GetRowOf(view.State.Selection.Folds, first);
 
         var (x, y) = view.ChevronOf(row);
-        view.Frames.MovePointer(x, y).Frame();
+        view.Frames.MovePointer(x, y);
+        view.Frames.Frame();
         var hand = view.Frames.Cursor;
         var lit = view.Frames.Canvas.Lines.Count(l => l.Inputs.Color == UiTheme.Dark.Text);
         ClickChevron(view, row);
@@ -124,7 +125,9 @@ public sealed class CodeViewFoldTests
             view.Click(line, 2, PointerButton.Right);
             view.Run();
             var at = view.Frames.Canvas.Texts.Single(t => t.Inputs.Text == item).Inputs.Position;
-            view.Frames.Click(at.Left + 2f, view.Frames.Height - at.Center.Y).Frame().Wait(1);
+            view.Frames.Click(at.Left + 2f, view.Frames.Height - at.Center.Y);
+            view.Frames.Frame();
+            view.Frames.Wait(1);
         }
 
         Pick(0, "Collapse all");
@@ -152,9 +155,11 @@ public sealed class CodeViewFoldTests
         ClickChevron(view, CodeFolding.GetRowOf(view.State.Selection.Folds, first));
 
         view.MoveTo(first - 1, 0);
-        view.Frames.Press().Frame();
+        view.Frames.Press();
+        view.Frames.Frame();
         view.MoveTo(end, 4);
-        view.Frames.Release().Frame();
+        view.Frames.Release();
+        view.Frames.Frame();
         view.Key(Shortcuts.Copy);
 
         Assert.Equal(
@@ -174,7 +179,8 @@ public sealed class CodeViewFoldTests
         view.Click(0, 0);
 
         view.Key(Shortcuts.Find);
-        view.Frames.Type("needle").Frame(2);
+        view.Frames.Type("needle");
+        view.Frames.Frame(2);
 
         Assert.False(ShowsFolded(view, "public string Second()"));
         Assert.Contains(Rows(view), r => r.Contains("builder.Append(\"needle\")"));

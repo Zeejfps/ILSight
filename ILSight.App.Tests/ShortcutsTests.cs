@@ -13,14 +13,20 @@ public sealed class ShortcutsTests
         var active = navigation.ActiveTab;
         Assert.NotNull(active);
         var open = navigation.OpenTabs.Count;
-        app.Frames.Key(Shortcuts.Search).Frame(2);
-        app.Frames.Type("Gre").Frame(2);
+        app.Frames.Key(Shortcuts.Search);
+        app.Frames.Frame(2);
+        app.Frames.Type("Gre");
+        app.Frames.Frame(2);
         Assert.Equal("Gre", app.Ui.Search.Query);
 
-        app.Frames.Key(Shortcuts.CloseTab).Frame(2);
-        app.Frames.Key(Shortcuts.NextTab).Frame(2);
-        app.Frames.Key(Shortcuts.PreviousTab).Frame(2);
-        app.Frames.Key(Shortcuts.Export).Frame(2);
+        app.Frames.Key(Shortcuts.CloseTab);
+        app.Frames.Frame(2);
+        app.Frames.Key(Shortcuts.NextTab);
+        app.Frames.Frame(2);
+        app.Frames.Key(Shortcuts.PreviousTab);
+        app.Frames.Frame(2);
+        app.Frames.Key(Shortcuts.Export);
+        app.Frames.Frame(2);
         app.Settle(2);
 
         Assert.Equal(open, navigation.OpenTabs.Count);

@@ -33,7 +33,8 @@ public sealed class WebCilGridTests
     public async Task A_webcil_modules_grid_opens_showing_its_rows_with_no_frame_of_loading_after_its_contents()
     {
         var app = OpenWebCil();
-        var typeDefs = await (await MetadataAsync(app, "Tables")).TableAsync("TypeDef");
+        var metadata = await MetadataAsync(app, "Tables");
+        var typeDefs = await metadata.TableAsync("TypeDef");
         var loading = app.Ui.Appearance.Strings.MetadataLoading;
         // What each frame drew, read before the next one pumps the app state: whether the tab showed its grid then.
         var frames = new List<(bool Grid, bool Rows, bool Loading)>();
@@ -101,7 +102,8 @@ public sealed class WebCilGridTests
     {
         var app = OpenWebCil(new AppDriver(height: 500f, measurer: new WideDigits()), WebCilLargePath);
 
-        app.Show(await (await MetadataAsync(app, "Tables")).TableAsync("MethodDef"), 2);
+        var metadata = await MetadataAsync(app, "Tables");
+        app.Show(await metadata.TableAsync("MethodDef"), 2);
 
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -119,7 +121,8 @@ public sealed class WebCilGridTests
     {
         var app = OpenWebCil(new AppDriver(height: 8000f), WebCilLargePath);
         app.Run(2);
-        var methods = await (await MetadataAsync(app, "Tables")).TableAsync("MethodDef");
+        var metadata = await MetadataAsync(app, "Tables");
+        var methods = await metadata.TableAsync("MethodDef");
         var loading = app.Ui.Appearance.Strings.MetadataLoading;
         // What each frame drew, read before the next one pumps the app state: whether the tab showed its grid then.
         var frames = new List<(bool Grid, bool Loading)>();

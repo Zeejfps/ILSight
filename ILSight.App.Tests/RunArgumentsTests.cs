@@ -173,7 +173,8 @@ public sealed class RunArgumentsTests
 
         var indicator = app.TextRect(t.StatusErrors(1));
         var note = app.TextRect(refused.Words(t).What);
-        app.Frames.MovePointer(note.X + 2f, note.Y + note.Height / 2).Frame(90);
+        app.Frames.MovePointer(note.X + 2f, note.Y + note.Height / 2);
+        app.Frames.Frame(90);
 
         Assert.True(indicator.X + indicator.Width <= 1000f, $"The error indicator ends at {indicator.X + indicator.Width}, past the window.");
         var details = refused.ListItems(t);
@@ -205,7 +206,8 @@ public sealed class RunArgumentsTests
         var what = refused.Words(t).What;
 
         var note = TabTo(app, what);
-        app.Frames.Key(KeyboardKey.Enter).Frame(2);
+        app.Frames.Key(KeyboardKey.Enter);
+        app.Frames.Frame(2);
 
         Assert.Equal(t.StatusRefusalDetails, note.Value);
         Assert.True(app.Ui.RefusalDetails.IsOpen);
@@ -213,7 +215,9 @@ public sealed class RunArgumentsTests
         // Not hovered, so no tooltip: the details list the arguments one a line, from the first, and scroll to the last.
         Assert.Equal(ignored[0], DrawnArguments(app, ignored)[0]);
         var first = app.TextRect(ignored[0]);
-        app.Frames.MovePointer(first.X + 2f, first.Y + first.Height / 2).Wheel(-100).Frame(30);
+        app.Frames.MovePointer(first.X + 2f, first.Y + first.Height / 2);
+        app.Frames.Wheel(-100);
+        app.Frames.Frame(30);
         Assert.Equal(ignored[^1], DrawnArguments(app, ignored)[^1]);
         Assert.True(app.Ui.RefusalDetails.IsOpen);
     }
@@ -235,7 +239,8 @@ public sealed class RunArgumentsTests
                 return focused;
             }
 
-            app.Frames.Key(KeyboardKey.Tab).Frame();
+            app.Frames.Key(KeyboardKey.Tab);
+            app.Frames.Frame();
         }
 
         throw new InvalidOperationException("Tab never reached the refusal note.");

@@ -56,7 +56,8 @@ public sealed class SavedDocumentsTests : IDisposable
         var app = new AppDriver(height: 360f, settings: _temp.Settings());
         app.Driver.OpenFixtures();
         app.Run(3);
-        app.Show(await (await app.NodeAsync("Metadata", "Tables")).TableAsync("TypeDef"), 4);
+        var tables = await app.NodeAsync("Metadata", "Tables");
+        app.Show(await tables.TableAsync("TypeDef"), 4);
         var tab = GridTab(app);
         var grid = tab.Grid;
         Assert.NotNull(grid);
@@ -243,7 +244,8 @@ public sealed class SavedDocumentsTests : IDisposable
         Assert.NotNull(greeter);
         MoveRightOf(app, greeter, outline);
         app.Show(await app.FixtureAsync("Farewell"), 4);
-        DiagramView.ShowInNewDiagramLater(app.Ui.AppCommands, (await app.FixtureAsync("Vehicle")).Definition, Names.Diagram((await app.FixtureAsync("Vehicle")).Definition));
+        var vehicle = await app.FixtureAsync("Vehicle");
+        DiagramView.ShowInNewDiagramLater(app.Ui.AppCommands, vehicle.Definition, Names.Diagram(vehicle.Definition));
         app.Settle(2);
         var diagram = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(diagram);
@@ -284,7 +286,8 @@ public sealed class SavedDocumentsTests : IDisposable
         var app = new AppDriver(height: 360f, settings: _temp.Settings());
         app.Driver.OpenFixtures();
         app.Run(3);
-        app.Show(await (await app.NodeAsync("Metadata", "Tables")).TableAsync("TypeDef"), 4);
+        var tables = await app.NodeAsync("Metadata", "Tables");
+        app.Show(await tables.TableAsync("TypeDef"), 4);
         var tab = GridTab(app);
         app.AppState.ListSession.Navigation.KeepTabOpen(tab);
         var grid = tab.Grid;

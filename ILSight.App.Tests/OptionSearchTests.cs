@@ -196,7 +196,8 @@ public sealed class OptionSearchTests
         app.Run();
         Assert.True(app.Frames.Drew("No options match the search."));
 
-        app.Frames.ClickOn(Selector.WithText("Clear search")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Clear search"));
+        app.Frames.Frame(2);
 
         Assert.Equal("", app.Ui.DisplayOptionsPanel.Query);
         Assert.True(app.Frames.Drew("UI scale"));
@@ -208,11 +209,14 @@ public sealed class OptionSearchTests
         var app = AppDriver.Opened(width: 1600f);
         app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
-        app.Frames.ClickOn(Selector.WithText("Search options")).Frame();
-        app.Frames.Type("line").Frame();
+        app.Frames.ClickOn(Selector.WithText("Search options"));
+        app.Frames.Frame();
+        app.Frames.Type("line");
+        app.Frames.Frame();
         Assert.Equal("line", app.Ui.DisplayOptionsPanel.Query);
 
-        app.Frames.Key(KeyboardKey.Escape).Frame(2);
+        app.Frames.Key(KeyboardKey.Escape);
+        app.Frames.Frame(2);
 
         Assert.Equal("", app.Ui.DisplayOptionsPanel.Query);
         Assert.True(app.Frames.Drew("UI scale"));

@@ -138,11 +138,13 @@ public sealed class AutosaveTests : IDisposable
         var app = new AppDriver(settings: _temp.Settings());
         app.Run(2);
 
-        app.Frames.Press().Frame();
+        app.Frames.Press();
+        app.Frames.Frame();
         app.Ui.ExportSetup.Window.Bounds = MovedExportWindow;
         app.Run(2);
         var savedWhileHeld = _temp.Settings().ExportWindow;
-        app.Frames.Release().Frame();
+        app.Frames.Release();
+        app.Frames.Frame();
 
         Assert.Null(savedWhileHeld);
         Assert.Equal(MovedExportWindow, _temp.Settings().ExportWindow);
@@ -174,7 +176,8 @@ public sealed class AutosaveTests : IDisposable
         var app = new AppDriver(settings: _temp.Settings());
         app.Run(2);
 
-        app.Frames.Press().Frame();
+        app.Frames.Press();
+        app.Frames.Frame();
         app.Ui.ExportSetup.Window.Bounds = MovedExportWindow;
         app.Run(2);
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 700, false)));
@@ -392,7 +395,8 @@ public sealed class AutosaveTests : IDisposable
         var divider = GetDivider(app, root);
 
         app.Frames.Drag(new PointF(divider, 350f), new PointF(divider + 20f, 350f), new PointF(divider + 120f, 350f));
-        app.Frames.Release().Frame(2);
+        app.Frames.Release();
+        app.Frames.Frame(2);
 
         var layout = _temp.Settings().Layout;
         Assert.NotNull(layout);
@@ -407,7 +411,8 @@ public sealed class AutosaveTests : IDisposable
         var guess = root.Ratio * app.Frames.Width;
         for (var x = guess - 40f; x < guess + 40f; x++)
         {
-            app.Frames.MovePointer(x, 350f).Frame();
+            app.Frames.MovePointer(x, 350f);
+            app.Frames.Frame();
             if (app.Frames.Cursor == MouseCursor.ResizeHorizontal)
             {
                 return x;

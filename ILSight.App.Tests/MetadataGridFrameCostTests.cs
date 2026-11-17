@@ -66,7 +66,8 @@ public sealed class MetadataGridFrameCostTests(ITestOutputHelper output)
     private static async Task<MetadataGrid> OpenTableAsync(string name)
     {
         var app = AppDriver.Opened(width: 1800f);
-        app.Show(await (await app.NodeAsync("Metadata", "Tables")).TableAsync(name), 3);
+        var tables = await app.NodeAsync("Metadata", "Tables");
+        app.Show(await tables.TableAsync(name), 3);
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = tab.Grid;

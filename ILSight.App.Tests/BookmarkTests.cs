@@ -108,7 +108,8 @@ public sealed class BookmarkTests : IDisposable
         Assert.NotNull(tab.Node);
         var il = tab.Document.Lines[Assert.Single(bookmarks.ListMarkedLines(tab.Document, tab.Node)).Key].Text;
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.CSharp);
-        d.Show((await d.FixtureAsync("Outline").ListChildrenAsync()).Single(c => c.Text.StartsWith("Third()")));
+        var outline = await d.FixtureAsync("Outline");
+        d.Show((await outline.ListChildrenAsync()).Single(c => c.Text.StartsWith("Third()")));
         Assert.NotNull(tab.Node);
         var own = tab.Document.Lines[Assert.Single(bookmarks.ListMarkedLines(tab.Document, tab.Node)).Key].Text;
 
@@ -272,12 +273,16 @@ public sealed class BookmarkTests : IDisposable
 
     private static void Click(AppDriver app, string text, KeyModifiers modifiers = KeyModifiers.None)
     {
-        app.Frames.Wait(1).Click(app.TextRect(text), modifiers: modifiers).Frame();
+        app.Frames.Wait(1);
+        app.Frames.Click(app.TextRect(text), modifiers: modifiers);
+        app.Frames.Frame();
     }
 
     private static void DoubleClick(AppDriver app, string text)
     {
-        app.Frames.Wait(1).DoubleClick(app.TextRect(text)).Frame();
+        app.Frames.Wait(1);
+        app.Frames.DoubleClick(app.TextRect(text));
+        app.Frames.Frame();
     }
 
     private static async Task<(AppDriver App, AppStateDriver Driver, DocumentTab Tab, int Line)> ShowBookmarkAsync(int frames = 3)
@@ -298,7 +303,8 @@ public sealed class BookmarkTests : IDisposable
         app.Show(await app.FixtureAsync("Greeter"), 2);
         var location = app.TextRect(d.AppState.Bookmarks.Items[0].Location);
 
-        app.Frames.MovePointer(location.X + 2f, location.Y + location.Height / 2).Frame(90);
+        app.Frames.MovePointer(location.X + 2f, location.Y + location.Height / 2);
+        app.Frames.Frame(90);
         Assert.True(app.Frames.Drew(Strings.En.BookmarksGoToHint));
 
         app.Frames.Click(app.TextRect(BuiltInGlyphs.Icons.LinkBookmark));
@@ -318,7 +324,8 @@ public sealed class BookmarkTests : IDisposable
         app.Run(2);
         var location = app.TextRect(bookmark.Location);
 
-        app.Frames.MovePointer(location.X + 2f, location.Y + location.Height / 2).Frame(90);
+        app.Frames.MovePointer(location.X + 2f, location.Y + location.Height / 2);
+        app.Frames.Frame(90);
         Assert.Contains(app.Frames.TextRects(), t => t.Text.StartsWith(bookmark.Module + " "));
 
         d.InTurn(() => Commands.StartGoingToBookmark(d.AppState, bookmark));
@@ -398,8 +405,10 @@ public sealed class BookmarkTests : IDisposable
         var (app, d, _, _) = await ShowBookmarkAsync();
 
         DoubleClick(app, "Bookmark 1");
-        app.Frames.Type("Calls First").Frame(2);
-        app.Frames.Key(KeyboardKey.Enter).Frame(2);
+        app.Frames.Type("Calls First");
+        app.Frames.Frame(2);
+        app.Frames.Key(KeyboardKey.Enter);
+        app.Frames.Frame(2);
 
         Assert.Equal("Calls First", d.AppState.Bookmarks.Items[0].Name);
         Assert.Null(d.Ui.BookmarksPanel.Renamer.Bookmark);
@@ -412,8 +421,10 @@ public sealed class BookmarkTests : IDisposable
         var (app, d, _, _) = await ShowBookmarkAsync();
 
         DoubleClick(app, "Bookmark 1");
-        app.Frames.Type("Gone").Frame(2);
-        app.Frames.Key(KeyboardKey.Escape).Frame(2);
+        app.Frames.Type("Gone");
+        app.Frames.Frame(2);
+        app.Frames.Key(KeyboardKey.Escape);
+        app.Frames.Frame(2);
 
         Assert.Equal("Bookmark 1", d.AppState.Bookmarks.Items[0].Name);
         Assert.Null(d.Ui.BookmarksPanel.Renamer.Bookmark);
@@ -426,7 +437,8 @@ public sealed class BookmarkTests : IDisposable
         var location = d.AppState.Bookmarks.Items[0].Location;
 
         Click(app, location);
-        app.Frames.Key(Shortcuts.Copy).Frame();
+        app.Frames.Key(Shortcuts.Copy);
+        app.Frames.Frame();
 
         Assert.Equal(location, app.Frames.Clipboard.Text);
         Assert.Null(d.Ui.BookmarksPanel.Renamer.Bookmark);
@@ -438,9 +450,12 @@ public sealed class BookmarkTests : IDisposable
         var (app, d, _, _) = await ShowBookmarkAsync();
         Click(app, d.AppState.Bookmarks.Items[0].Location);
 
-        app.Frames.Key(KeyboardKey.F2).Frame(2);
-        app.Frames.Type("Calls First").Frame(2);
-        app.Frames.Key(KeyboardKey.Enter).Frame(2);
+        app.Frames.Key(KeyboardKey.F2);
+        app.Frames.Frame(2);
+        app.Frames.Type("Calls First");
+        app.Frames.Frame(2);
+        app.Frames.Key(KeyboardKey.Enter);
+        app.Frames.Frame(2);
 
         Assert.Equal("Calls First", d.AppState.Bookmarks.Items[0].Name);
         Assert.Null(d.Ui.BookmarksPanel.Renamer.Bookmark);
@@ -633,10 +648,12 @@ public sealed class BookmarkTests : IDisposable
         var (app, d, _, _) = await ShowBookmarkAsync();
         app.Frames.FilePicker.Answer = path;
 
-        app.Frames.ClickOn(Selector.AtPath("dock/bookmarks/import")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/bookmarks/import"));
+        app.Frames.Frame();
         app.Settle(2);
         var asked = app.Frames.Drew("Import bookmarks");
-        app.Frames.ClickOn(Selector.WithText("Merge")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Merge"));
+        app.Frames.Frame(2);
 
         Assert.True(asked);
         Assert.Equal(2, d.AppState.Bookmarks.Items.Count);

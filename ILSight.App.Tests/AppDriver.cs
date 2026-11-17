@@ -300,8 +300,10 @@ internal sealed class AppDriver
     /// from its menu.</summary>
     public void PickFromTreeMenu(string row, string item)
     {
-        Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, row), PointerButton.Right).Frame();
-        Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, item)).Frame();
+        Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, row), PointerButton.Right);
+        Frames.Frame();
+        Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, item));
+        Frames.Frame();
     }
 
     /// <summary>Double-clicks where a press reaches the node <paramref name="selector"/> names.</summary>

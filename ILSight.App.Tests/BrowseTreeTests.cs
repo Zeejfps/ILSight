@@ -14,7 +14,8 @@ public sealed class BrowseTreeTests
     {
         var d = AppStateDriver.Started();
         var tree = new BrowseTree { Session = TestSession.Shared };
-        var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync();
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath);
+        var root = await assembly.ReadRootAsync();
 
         var first = tree.GetChildren(root);
 
@@ -33,7 +34,8 @@ public sealed class BrowseTreeTests
     {
         var session = new BrowseSession();
         var tree = new BrowseTree { Session = session };
-        var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync();
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath);
+        var root = await assembly.ReadRootAsync();
         var neverBuilt = new TaskCompletionSource<ChildrenState>();
         using (var held = session.EnsureChildrenSlot(root).Enter())
         {
@@ -121,7 +123,8 @@ public sealed class BrowseTreeTests
     {
         var d = AppStateDriver.Started();
         var tree = new BrowseTree { Session = TestSession.Shared };
-        var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync();
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath);
+        var root = await assembly.ReadRootAsync();
         var ns = await root.GetChildAsync(AppStateDriver.FixturesNamespace);
         var secret = await ns.GetChildAsync("Hidden", "Secret() : int");
         tree.ShowApi(ApiVisibility.PublicOnly);
@@ -138,7 +141,8 @@ public sealed class BrowseTreeTests
     public async Task Compiler_generated_members_show_only_when_everything_is_shown()
     {
         var tree = new BrowseTree { Session = TestSession.Shared };
-        var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync();
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath);
+        var root = await assembly.ReadRootAsync();
         var counter = await root.GetChildAsync(AppStateDriver.FixturesNamespace, "Counter");
         var backingField = await counter.GetChildAsync("<Count>k__BackingField : int");
 

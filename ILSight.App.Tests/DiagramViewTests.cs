@@ -138,13 +138,15 @@ public sealed class DiagramViewTests
 
     private static void RightClick(AppDriver app, UiRect rect)
     {
-        app.Frames.Click(rect.X + 2f, rect.Y + rect.Height / 2, PointerButton.Right).Frame();
+        app.Frames.Click(rect.X + 2f, rect.Y + rect.Height / 2, PointerButton.Right);
+        app.Frames.Frame();
     }
 
     private static void PickFromCardMenu(AppDriver app, string card, string item)
     {
         RightClick(app, CardText(app, card));
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, item)).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, item));
+        app.Frames.Frame();
         SettleDiagram(app);
     }
 
@@ -155,7 +157,8 @@ public sealed class DiagramViewTests
 
     private static void ClickAt(AppDriver app, UiRect rect)
     {
-        app.Frames.Click(rect.X + 4f, rect.Y + rect.Height / 2).Frame();
+        app.Frames.Click(rect.X + 4f, rect.Y + rect.Height / 2);
+        app.Frames.Frame();
     }
 
     [Fact]
@@ -201,7 +204,8 @@ public sealed class DiagramViewTests
         app.Settle(2);
         Assert.Equal("Bike", app.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
 
-        app.Frames.ClickOn(Selector.WithText(VehicleDiagram)).Frame();
+        app.Frames.ClickOn(Selector.WithText(VehicleDiagram));
+        app.Frames.Frame();
         ClickAt(app, CardText(app, "Mileage() : int"));
         app.Settle(2);
         Assert.Equal("Mileage() : int", app.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);
@@ -274,7 +278,8 @@ public sealed class DiagramViewTests
         app.AppState.ListSession.Navigation.CloseTab(tab);
         var diagramAt = app.AppState.ListSession.Navigation.HistoryIndex - 1;
         Assert.IsType<HistoryEntry.Diagram>(app.AppState.ListSession.Navigation.HistoryEntries[diagramAt]);
-        var fixtures = (await app.FixtureAsync("Greeter")).Root.Assembly;
+        var greeter = await app.FixtureAsync("Greeter");
+        var fixtures = greeter.Root.Assembly;
         app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [fixtures]));
         app.Run(2);
 
@@ -309,7 +314,8 @@ public sealed class DiagramViewTests
         var member = CardText(app, "Mileage() : int");
         Assert.DoesNotContain(app.Frames.Canvas.Lines, l => IsUnderOf(app, l, member));
 
-        app.Frames.MovePointer(CenterOf(member)).Frame();
+        app.Frames.MovePointer(CenterOf(member));
+        app.Frames.Frame();
 
         Assert.Equal(MouseCursor.Hand, app.Frames.Cursor);
         Assert.Contains(app.Frames.Canvas.Lines, l => IsUnderOf(app, l, member));
@@ -321,7 +327,8 @@ public sealed class DiagramViewTests
         var app = await PickFromTreeAsync("Vehicle", "Show in diagram");
         var member = CardText(app, "Mileage() : int");
 
-        app.Frames.MovePointer(member.X - 200f, member.Y).Frame();
+        app.Frames.MovePointer(member.X - 200f, member.Y);
+        app.Frames.Frame();
 
         Assert.NotEqual(MouseCursor.Hand, app.Frames.Cursor);
     }
@@ -378,7 +385,8 @@ public sealed class DiagramViewTests
         var moved = CardText(app, "Vehicle");
         Assert.Equal(vehicle.X, moved.X, Near);
         Assert.Equal(vehicle.Y, moved.Y, Near);
-        app.Frames.ClickOn(Selector.WithText("Fit to view")).Frame();
+        app.Frames.ClickOn(Selector.WithText("Fit to view"));
+        app.Frames.Frame();
         Assert.True(WasDrawnOnDiagram(app, "Vehicles *"));
     }
 
@@ -461,12 +469,14 @@ public sealed class DiagramViewTests
         var from = CenterOf(CardText(app, "Garage"));
 
         app.Frames.Drag(from, new PointF(from.X + 20f, from.Y), new PointF(from.X + 40f, from.Y + 30f));
-        app.Frames.Release().Frame();
+        app.Frames.Release();
+        app.Frames.Frame();
 
         Assert.Equal(corner.X - 40f / camera.Zoom, camera.Corner.X, 0.01f);
         Assert.Equal(corner.Y - 30f / camera.Zoom, camera.Corner.Y, 0.01f);
         var panned = camera.Corner;
-        app.Frames.Wheel(-1).Frame();
+        app.Frames.Wheel(-1);
+        app.Frames.Frame();
         Assert.True(camera.Corner.Y > panned.Y);
     }
 
@@ -477,10 +487,12 @@ public sealed class DiagramViewTests
         var camera = ViewOf(app, DiagramTab(app)).Camera;
         var fitted = camera.Zoom;
 
-        app.Frames.ClickOn(Selector.AtPath("dock/document-2/zoom-in")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/document-2/zoom-in"));
+        app.Frames.Frame();
         Assert.True(camera.Zoom > fitted);
 
-        app.Frames.ClickOn(Selector.WithText("Fit to view")).Frame();
+        app.Frames.ClickOn(Selector.WithText("Fit to view"));
+        app.Frames.Frame();
         Assert.Equal(fitted, camera.Zoom, 0.001f);
     }
 }

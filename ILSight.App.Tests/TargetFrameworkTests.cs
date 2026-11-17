@@ -19,9 +19,12 @@ public sealed class TargetFrameworkTests
 
     private static void PickFramework(AppDriver app, string item)
     {
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, FixturesOf(app.AppState.ListSession.Assemblies).Name), PointerButton.Right).Frame();
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Target framework")).Frame();
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, item)).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, FixturesOf(app.AppState.ListSession.Assemblies).Name), PointerButton.Right);
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Target framework"));
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, item));
+        app.Frames.Frame();
         app.Settle(2);
     }
 

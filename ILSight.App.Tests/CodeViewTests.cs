@@ -69,7 +69,8 @@ public sealed class CodeViewTests
 
         Assert.False(HasFocusRing(view));
 
-        view.Key(KeyboardKey.Tab).Frame();
+        view.Key(KeyboardKey.Tab);
+        view.Frames.Frame();
         Assert.True(HasFocusRing(view));
         view.Key(Shortcuts.SelectAll);
         view.Key(Shortcuts.Copy);
@@ -129,7 +130,8 @@ public sealed class CodeViewTests
         var (view, line, column) = await GreeterAtAsync("text = ");
 
         var result = view.Click(line, column);
-        view.Frames.MovePointer(1000f, 1000f).Frame();
+        view.Frames.MovePointer(1000f, 1000f);
+        view.Frames.Frame();
 
         Assert.Null(result.Intent);
         var occurrence = BuiltInThemes.Dark.Code.Occurrence;
@@ -143,9 +145,13 @@ public sealed class CodeViewTests
     {
         var view = ThreeLines();
 
-        view.MoveTo(0, 6).Press().Frame();
+        view.MoveTo(0, 6);
+        view.Frames.Press();
+        view.Frames.Frame();
         view.MoveTo(1, 3);
-        view.MoveTo(2, 3).Release().Frame();
+        view.MoveTo(2, 3);
+        view.Frames.Release();
+        view.Frames.Frame();
         view.Key(Shortcuts.Copy);
 
         Assert.Equal("beta\ngamma delta\neps", view.Frames.Clipboard.Text);
@@ -158,7 +164,8 @@ public sealed class CodeViewTests
         var (view, _, _) = await GreeterAtAsync("public class Greeter");
         var palette = BuiltInThemes.Dark.Code;
 
-        view.Key(KeyboardKey.Tab).Frame();
+        view.Key(KeyboardKey.Tab);
+        view.Frames.Frame();
         view.Key(Shortcuts.SelectAll);
         view.Key(Shortcuts.Copy);
 
@@ -175,8 +182,12 @@ public sealed class CodeViewTests
     public void Ctrl_shift_c_and_the_context_menu_copy_plain_text_without_html()
     {
         var view = ThreeLines();
-        view.MoveTo(0, 6).Press().Frame();
-        view.MoveTo(2, 3).Release().Frame();
+        view.MoveTo(0, 6);
+        view.Frames.Press();
+        view.Frames.Frame();
+        view.MoveTo(2, 3);
+        view.Frames.Release();
+        view.Frames.Frame();
 
         view.Key(Shortcuts.CopyPlainText);
         Assert.Equal("beta\ngamma delta\neps", view.Frames.Clipboard.Text);
@@ -233,10 +244,14 @@ public sealed class CodeViewTests
     {
         var view = CodeViewDriver.Showing(CodeViewDriver.Numbered(1000));
 
-        view.MoveTo(0, 0).Press().Frame();
-        view.Frames.MovePointer(100f, 400f).Frame(30);
+        view.MoveTo(0, 0);
+        view.Frames.Press();
+        view.Frames.Frame();
+        view.Frames.MovePointer(100f, 400f);
+        view.Frames.Frame(30);
         var requested = view.Frames.UpdateRequested;
-        view.Frames.Release().Frame();
+        view.Frames.Release();
+        view.Frames.Frame();
 
         Assert.True(requested);
         Assert.True(view.State.Selection.End.Line > ViewHeight / CodeViewDriver.Row + 5);
@@ -250,7 +265,8 @@ public sealed class CodeViewTests
         view.Click(2, 0);
 
         view.Key(Shortcuts.Find);
-        view.Frames.Type("foo").Frame();
+        view.Frames.Type("foo");
+        view.Frames.Frame();
         var first = (view.Frames.Drew("3 of 4"), view.State.Selection.Start);
         view.Key(KeyboardKey.Enter);
         var second = (view.Frames.Drew("4 of 4"), view.State.Selection.Start);
@@ -273,7 +289,8 @@ public sealed class CodeViewTests
         view.Click(0, 0);
 
         view.Key(Shortcuts.Find);
-        view.Frames.Type("line 700").Frame(3);
+        view.Frames.Type("line 700");
+        view.Frames.Frame(3);
         var shown = view.DrawnText().Any(d => d.Text == "line 700");
         var counted = view.Frames.Drew("1 of 1");
         view.Key(KeyboardKey.Escape);
@@ -301,7 +318,9 @@ public sealed class CodeViewTests
     public void A_new_document_resets_selection_and_scroll_but_the_same_one_keeps_them()
     {
         var view = CodeViewDriver.Showing(CodeViewDriver.Numbered(1000));
-        view.MoveTo(5, 0).Wheel(-20).Frame(2);
+        view.MoveTo(5, 0);
+        view.Frames.Wheel(-20);
+        view.Frames.Frame(2);
         view.Click(3, 0);
         view.Frames.Wait(1);
         view.Click(3, 2, modifiers: KeyModifiers.Shift);
@@ -329,9 +348,11 @@ public sealed class CodeViewTests
 
         var page = (int)MathF.Floor(ViewHeight / CodeViewDriver.Row) - 1;
 
-        view.Key(KeyboardKey.PageDown).Frame();
+        view.Key(KeyboardKey.PageDown);
+        view.Frames.Frame();
         var paged = view.DrawnText().Single(d => d.Text == $"line {page}").Top;
-        view.Key(Shortcut.Command(KeyboardKey.End)).Frame();
+        view.Key(Shortcut.Command(KeyboardKey.End));
+        view.Frames.Frame();
         var end = view.DrawnText().Any(d => d.Text == "line 999");
 
         Assert.Equal(CodeViewDriver.Origin, paged);

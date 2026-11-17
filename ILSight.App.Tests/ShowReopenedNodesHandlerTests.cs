@@ -7,7 +7,8 @@ public sealed class ShowReopenedNodesHandlerTests
 {
     private static async Task<WaitingNode> WaitForGreeterAsync(AppStateDriver d)
     {
-        var place = (await d.FixtureAsync("Greeter")).Path;
+        var greeter = await d.FixtureAsync("Greeter");
+        var place = greeter.Path;
         var record = new NodeDocumentRecord
         {
             Panel = "document-9",

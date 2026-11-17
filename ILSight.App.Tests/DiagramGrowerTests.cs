@@ -8,7 +8,8 @@ public sealed class DiagramGrowerTests
 {
     private static async Task<CodeReference.Entity> TypeOfAsync(AppStateDriver d, string type)
     {
-        return (await d.FixtureAsync(type)).Definition;
+        var fixture = await d.FixtureAsync(type);
+        return fixture.Definition;
     }
 
     private static async Task<TypeCard> CardOfAsync(AppStateDriver d, string type)
@@ -84,7 +85,8 @@ public sealed class DiagramGrowerTests
     public async Task AddWithNeighboursAsync_NothingRead_ReportsTheTypeUnreadable()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var member = (await d.FixtureAsync("Greeter").GetChildAsync("Twice() : int")).Definition;
+        var greeter = await d.FixtureAsync("Greeter");
+        var member = (await greeter.GetChildAsync("Twice() : int")).Definition;
         var read = Diagrams.ShowInNewDiagram(d.AppState.ListSession.Navigation, member, new TabTitle.Diagram("Twice"));
         var viewCommands = new Queue<ViewCommand>();
         var ports = new FakeDiagramGrowerPorts();

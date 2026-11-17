@@ -11,7 +11,8 @@ public sealed class ShowInApiReferenceHandlerTests
         d.TakeViewCommands();
         var reference = new FakeShowInApiReferenceHandlerPorts { Page = new Outcome<Lookup<string>>.Ok(Lookup.FromNullable<string>("https://learn.microsoft.com/dotnet/api/greeter")) };
 
-        var greeter = (await d.FixtureAsync("Greeter")).Definition;
+        var greeterNode = await d.FixtureAsync("Greeter");
+        var greeter = greeterNode.Definition;
         await d.RunAsync(() => new ShowInApiReferenceHandler(reference).HandleAsync(d.AppState.ViewCommands, greeter, CancellationToken.None));
 
         var viewCommands = d.TakeViewCommands();
@@ -25,7 +26,8 @@ public sealed class ShowInApiReferenceHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         d.TakeViewCommands();
-        var hidden = (await d.FixtureAsync("Hidden")).Definition;
+        var hiddenNode = await d.FixtureAsync("Hidden");
+        var hidden = hiddenNode.Definition;
         var none = new FakeShowInApiReferenceHandlerPorts { Page = new Outcome<Lookup<string>>.Ok(Lookup.FromNullable<string>(null)) };
         var failed = new FakeShowInApiReferenceHandlerPorts { Page = new Outcome<Lookup<string>>.Failed(new IOException("unreadable")) };
 

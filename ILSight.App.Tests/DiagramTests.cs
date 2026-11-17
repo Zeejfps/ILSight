@@ -9,7 +9,8 @@ public sealed class DiagramTests
 {
     private static async Task<CodeReference.Entity> TypeOfAsync(AppStateDriver d, string type)
     {
-        return (await d.FixtureAsync(type)).Definition;
+        var fixture = await d.FixtureAsync(type);
+        return fixture.Definition;
     }
 
     private static List<string> CardNames(TypeDiagram diagram)
@@ -48,7 +49,8 @@ public sealed class DiagramTests
     public async Task A_diagrams_tab_is_titled_in_the_language_chosen_after_it_opened_as_is_its_problem()
     {
         var app = AppDriver.Opened();
-        var vehicle = (await app.FixtureAsync("Vehicle")).Definition;
+        var vehicleNode = await app.FixtureAsync("Vehicle");
+        var vehicle = vehicleNode.Definition;
         DiagramView.ShowInNewDiagramLater(app.Ui.AppCommands, vehicle, Names.Diagram(vehicle));
         app.Settle(2);
 
@@ -294,7 +296,8 @@ public sealed class DiagramTests
     public async Task What_is_no_type_that_can_be_read_is_refused_on_the_refusal_line_not_reported()
     {
         var d = AppStateDriver.Opened();
-        var member = (await d.FixtureAsync("Greeter").GetChildAsync("Twice() : int")).Definition;
+        var greeter = await d.FixtureAsync("Greeter");
+        var member = (await greeter.GetChildAsync("Twice() : int")).Definition;
 
         DiagramView.ShowInNewDiagramLater(d.Ui.AppCommands, member, Names.Diagram(member));
         d.Settle();

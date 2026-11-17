@@ -18,7 +18,8 @@ public sealed class PreviewTabTests
 
     private static void Pick(AppDriver app, string row)
     {
-        app.Frames.ClickOn(Targets.GetFixtureRow(row)).Frame(2);
+        app.Frames.ClickOn(Targets.GetFixtureRow(row));
+        app.Frames.Frame(2);
         app.Settle(2);
     }
 
@@ -67,7 +68,8 @@ public sealed class PreviewTabTests
         Assert.NotNull(preview);
         app.Frames.MoveTo(Targets.GetFixtureRow("Farewell"));
 
-        app.Frames.Press().Frame();
+        app.Frames.Press();
+        app.Frames.Frame();
 
         Assert.Equal("Farewell", preview.Node?.Text);
         Assert.Contains(app.Frames.Canvas.Texts, t => t.Inputs.Text == "Farewell" && IsItalic(t));
@@ -78,7 +80,8 @@ public sealed class PreviewTabTests
     public async Task Double_clicking_a_node_keeps_its_tab_open_and_the_next_node_picked_opens_a_new_preview_tab()
     {
         var app = await RevealedAsync();
-        app.DoubleClickOn(Selector.WithText("Greeter")).Frame(2);
+        app.DoubleClickOn(Selector.WithText("Greeter"));
+        app.Frames.Frame(2);
         app.Settle(2);
         var kept = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(kept);
@@ -122,7 +125,8 @@ public sealed class PreviewTabTests
         Assert.NotNull(kept);
         app.AppState.ListSession.Navigation.KeepTabOpen(kept);
 
-        var farewell = (await app.FixtureAsync("Farewell")).Definition;
+        var farewellNode = await app.FixtureAsync("Farewell");
+        var farewell = farewellNode.Definition;
         app.Start((a, ct) =>
         {
             var resolveTicket = a.ListSession.Navigation.BeginResolving(inNewTab: false);
@@ -142,7 +146,8 @@ public sealed class PreviewTabTests
         app.Show(await app.FixtureAsync("Greeter"), 2);
         var title = PreviewTitle(app, "Greeter");
 
-        app.Frames.DoubleClick(title).Frame(2);
+        app.Frames.DoubleClick(title);
+        app.Frames.Frame(2);
 
         Assert.Null(app.AppState.ListSession.Navigation.PreviewTab);
         Assert.DoesNotContain(app.Frames.Canvas.Texts, IsItalic);
@@ -155,8 +160,10 @@ public sealed class PreviewTabTests
         app.Show(await app.FixtureAsync("Greeter"), 2);
         var title = PreviewTitle(app, "Greeter");
 
-        app.Frames.Click(title.X + 2f, title.Y + title.Height / 2, PointerButton.Right).Frame();
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Keep tab open")).Frame(2);
+        app.Frames.Click(title.X + 2f, title.Y + title.Height / 2, PointerButton.Right);
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Keep tab open"));
+        app.Frames.Frame(2);
 
         Assert.Null(app.AppState.ListSession.Navigation.PreviewTab);
         Assert.Equal("Greeter", app.AppState.ListSession.Navigation.ActiveTab?.Node?.Text);

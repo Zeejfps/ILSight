@@ -29,7 +29,8 @@ public sealed class AnalyzeReferenceHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var analyzer = d.AppState.ListSession.Analyzer;
-        var reference = (await d.FixtureAsync("Greeter")).Definition;
+        var greeter = await d.FixtureAsync("Greeter");
+        var reference = greeter.Definition;
         var error = new IOException("unreadable");
         var missing = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)) };
         var failed = new FakeAnalyzeReferenceHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Failed(error) };
@@ -59,7 +60,8 @@ public sealed class AnalyzeReferenceHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var analyzer = d.AppState.ListSession.Analyzer;
-        var pending = Analysis.BeginAnalyzing(analyzer, (await d.FixtureAsync("Greeter")).Definition);
+        var greeter = await d.FixtureAsync("Greeter");
+        var pending = Analysis.BeginAnalyzing(analyzer, greeter.Definition);
 
         var broken = new InvalidOperationException("broken");
         analyzer.FailUnresolved(pending.Root, "Greeter", broken);

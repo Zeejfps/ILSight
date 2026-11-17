@@ -57,10 +57,12 @@ public sealed class TitleBarTests : IDisposable
     public void With_a_menu_open_hovering_the_app_icon_opens_the_window_menu_as_the_other_menus_do()
     {
         var app = WithTitleBarToDrawIn();
-        app.Frames.ClickOn(Selector.WithText("File")).Frame();
+        app.Frames.ClickOn(Selector.WithText("File"));
+        app.Frames.Frame();
         var icon = app.Frames.RectOf(AppIcon);
 
-        app.Frames.MovePointer(icon.X + icon.Width / 2f, icon.Y + icon.Height / 2f).Frame(2);
+        app.Frames.MovePointer(icon.X + icon.Width / 2f, icon.Y + icon.Height / 2f);
+        app.Frames.Frame(2);
 
         Assert.True(app.Frames.Drew("Maximize"));
         Assert.False(app.Frames.Drew("Open…"));
@@ -87,7 +89,8 @@ public sealed class TitleBarTests : IDisposable
         app.Run();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Restore"));
         Assert.Null(app.Frames.RequestedWindowState);
-        app.Frames.Key(KeyboardKey.Escape).Frame();
+        app.Frames.Key(KeyboardKey.Escape);
+        app.Frames.Frame();
 
         app.Frames.WindowBounds = new WindowBounds(0, 0, 1000, 700, Maximized: true);
         app.Frames.ClickOn(AppIcon);
@@ -103,13 +106,15 @@ public sealed class TitleBarTests : IDisposable
         app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
-        app.Frames.ClickOn(Selector.WithText(SystemTitleBarOption)).Frame(2);
+        app.Frames.ClickOn(Selector.WithText(SystemTitleBarOption));
+        app.Frames.Frame(2);
 
         Assert.True(app.Ui.Display.Options.SystemTitleBar);
         Assert.Null(app.Frames.TitleBarBackground);
         Assert.Empty(app.Frames.TitleBarDragAreas);
 
-        app.Frames.ClickOn(Selector.WithText(SystemTitleBarOption)).Frame(2);
+        app.Frames.ClickOn(Selector.WithText(SystemTitleBarOption));
+        app.Frames.Frame(2);
 
         Assert.False(app.Ui.Display.Options.SystemTitleBar);
         Assert.NotNull(app.Frames.TitleBarBackground);

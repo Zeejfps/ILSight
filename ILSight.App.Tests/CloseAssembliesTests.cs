@@ -136,7 +136,8 @@ public sealed class CloseAssembliesTests
         var fixtures = app.AppState.ListSession.Assemblies.Listed.Single(static a => a.FilePath.Text == AppStateDriver.FixturePath);
         app.Ui.Closer.Open(app.AppState.ListSession.Assemblies, fixtures);
         app.Run(2);
-        app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("close-ticked"));
+        app.Frames.Frame(2);
         app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 1, Waits.Patience);
         app.Run(2);
 
@@ -169,12 +170,14 @@ public sealed class CloseAssembliesTests
         app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, Waits.Patience);
         app.Run(2);
 
-        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly"));
+        app.Frames.Frame(2);
         var closer = app.Ui.Closer;
         Assert.True(closer.IsOpen);
         closer.Rows.Order[1].Included = true;
         app.Run(2);
-        app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("close-ticked"));
+        app.Frames.Frame(2);
         app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 1, Waits.Patience);
 
         Assert.False(closer.IsOpen);
@@ -232,7 +235,8 @@ public sealed class CloseAssembliesTests
     {
         app.Ui.Closer.Open(app.AppState.ListSession.Assemblies, KeyboardOf(app));
         app.Run(2);
-        app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("close-ticked"));
+        app.Frames.Frame(2);
         app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 1, Waits.Patience);
         app.Run(2);
     }
@@ -266,7 +270,8 @@ public sealed class CloseAssembliesTests
         app.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         app.Settle(2);
         var inFront = closed.Load.Language;
-        app.Frames.ClickOn(Targets.GetTab("Greeter")).Frame(2);
+        app.Frames.ClickOn(Targets.GetTab("Greeter"));
+        app.Frames.Frame(2);
         app.Settle(2);
 
         Assert.Equal(DecompilationLanguage.CSharp, inFront);
@@ -284,7 +289,8 @@ public sealed class CloseAssembliesTests
         var closed = TabShowing(app, "KeyboardKey");
         var code = closed.Document;
         var shownWith = closed.Load.Options;
-        app.Frames.ClickOn(Targets.GetTab("Greeter")).Frame(2);
+        app.Frames.ClickOn(Targets.GetTab("Greeter"));
+        app.Frames.Frame(2);
         app.Settle(2);
         var stringConcat = DecompilerToggles.FindToggle("StringConcat");
         Assert.NotNull(stringConcat);
@@ -293,7 +299,8 @@ public sealed class CloseAssembliesTests
         app.Settle(2);
         var greeter = TabShowing(app, "Greeter");
         var greeterText = Documents.GetText(greeter.Document);
-        app.Frames.ClickOn(Targets.GetTab("KeyboardKey")).Frame(2);
+        app.Frames.ClickOn(Targets.GetTab("KeyboardKey"));
+        app.Frames.Frame(2);
         app.Settle(2);
 
         Assert.Contains("string.Concat", greeterText);
@@ -350,7 +357,8 @@ public sealed class CloseAssembliesTests
         var tab = TabShowing(app, "KeyboardKey");
         var code = app.Ui.Documents.GetView(tab).Code;
         var bar = app.TextRect($"{KeyboardFile} was closed.");
-        app.Frames.Click(bar.X + 300f, bar.Y + 150f).Frame();
+        app.Frames.Click(bar.X + 300f, bar.Y + 150f);
+        app.Frames.Frame();
         var (line, column) = tab.Document.GetPosition("enum KeyboardKey");
         var name = new TextPosition { Line = line, Column = column + "enum ".Length + 1 };
         code.Selection.Select(name, name);
@@ -361,7 +369,8 @@ public sealed class CloseAssembliesTests
     {
         for (var pressed = 0; pressed < 6; pressed++)
         {
-            app.Frames.Key(Shortcuts.Analyze).Frame(2);
+            app.Frames.Key(Shortcuts.Analyze);
+            app.Frames.Frame(2);
         }
 
         app.Settle(2);
@@ -408,7 +417,8 @@ public sealed class CloseAssembliesTests
     {
         var (app, tab) = await ClosedKeyboardKeyWithCaretOnItAsync();
 
-        app.Frames.Key(Shortcuts.Analyze).Frame(2);
+        app.Frames.Key(Shortcuts.Analyze);
+        app.Frames.Frame(2);
         app.Settle(2);
 
         Assert.Empty(app.AppState.ListSession.Analyzer.Roots);
@@ -430,7 +440,8 @@ public sealed class CloseAssembliesTests
         app.Open([AssemblyPath.Of(KeyboardPath)]);
         app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, Waits.Patience);
         app.Settle(4);
-        app.Frames.ClickOn(Targets.GetTab("KeyboardKey")).Frame(2);
+        app.Frames.ClickOn(Targets.GetTab("KeyboardKey"));
+        app.Frames.Frame(2);
         app.Settle(2);
 
         Assert.Same(closed, TabShowing(app, "KeyboardKey"));

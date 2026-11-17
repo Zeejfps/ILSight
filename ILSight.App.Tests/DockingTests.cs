@@ -47,7 +47,8 @@ public sealed class DockingTests
         var closed = !app.Arrangement.Contains(DockPanels.Assemblies);
         app.Frames.ClickOn(Selector.WithText("View"));
         app.Frames.ClickOn(Selector.WithText("Panels"));
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Assemblies")).Frame(2);
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Assemblies"));
+        app.Frames.Frame(2);
 
         Assert.True(closed);
         var layout = app.Arrangement;
@@ -67,7 +68,8 @@ public sealed class DockingTests
         Assert.True(app.Frames.Drew("Back"));
         Assert.True(app.Frames.Drew("Forward"));
         app.Frames.ClickOn(Selector.WithText("Panels"));
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Search")).Frame(2);
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Search"));
+        app.Frames.Frame(2);
 
         Assert.True(app.Arrangement.Contains(DockPanels.Search));
         Assert.True(app.Frames.Drew("Search…"));
@@ -124,9 +126,11 @@ public sealed class DockingTests
         app.Run(2);
 
         app.Frames.ClickOn(Selector.WithText("View"));
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Reset layout")).Frame(2);
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Reset layout"));
+        app.Frames.Frame(2);
         Assert.True(app.Arrangement.Contains(DockPanels.Bookmarks));
-        app.Frames.ClickOn(Selector.WithText("Reset")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Reset"));
+        app.Frames.Frame(2);
 
         var layout = d.Arrangement;
         var split = Assert.IsType<DockSplit>(layout.Root);

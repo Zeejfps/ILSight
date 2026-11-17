@@ -15,7 +15,8 @@ public sealed class MetadataGridTests
 {
     private static async Task<BrowseNode> TableAsync(AppDriver app, string name)
     {
-        return await (await app.NodeAsync("Metadata", "Tables")).TableAsync(name);
+        var tables = await app.NodeAsync("Metadata", "Tables");
+        return await tables.TableAsync(name);
     }
 
     private static async Task<(AppDriver App, DocumentTab Tab, MetadataGrid Grid)> ShowTableAsync(string name, int frames = 3)
@@ -53,8 +54,14 @@ public sealed class MetadataGridTests
 
     private static void Drag(AppDriver app, float fromX, float toX, float y)
     {
-        app.Frames.Wait(1).Click(fromX, y).Key(KeyboardKey.F2).Frame();
-        app.Frames.Wait(1).Drag(new PointF(fromX, y), new PointF(toX, y)).Release().Frame();
+        app.Frames.Wait(1);
+        app.Frames.Click(fromX, y);
+        app.Frames.Key(KeyboardKey.F2);
+        app.Frames.Frame();
+        app.Frames.Wait(1);
+        app.Frames.Drag(new PointF(fromX, y), new PointF(toX, y));
+        app.Frames.Release();
+        app.Frames.Frame();
     }
 
     [Fact]
@@ -156,8 +163,10 @@ public sealed class MetadataGridTests
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Greeter"), PointerButton.Right).Frame();
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Show in metadata")).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Greeter"), PointerButton.Right);
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Show in metadata"));
+        app.Frames.Frame();
         app.Settle(3);
 
         var typeDefs = tab.Grid;
@@ -180,7 +189,8 @@ public sealed class MetadataGridTests
         app.Ui.Tree.RevealNode(greeter);
         app.Run(2);
 
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Greeter"), PointerButton.Right).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, "Greeter"), PointerButton.Right);
+        app.Frames.Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Show in metadata"));
 
         Assert.True(app.Frames.Drew(app.Ui.Appearance.Strings.StatusResolving));
@@ -194,7 +204,8 @@ public sealed class MetadataGridTests
         var (app, tab, grid, row) = await ShowGreeterRowAsync();
         var token = TextBeside(app, MetadataGrids.GetText(grid, row, grid.Column("BaseType")), "Greeter");
 
-        app.Frames.MovePointer(token.X + 2f, token.Y + token.Height / 2).Frame(2);
+        app.Frames.MovePointer(token.X + 2f, token.Y + token.Height / 2);
+        app.Frames.Frame(2);
         app.Frames.Click(TextBeside(app, BuiltInGlyphs.Text(BuiltInGlyphs.Icons.LinkToken), "Greeter"));
         app.Settle(3);
 
@@ -209,10 +220,12 @@ public sealed class MetadataGridTests
         var row = Enumerable.Range(0, grid.RowCount).First(r => MetadataGrids.FindLink(grid, r, baseType) is not null);
         var name = MetadataGrids.GetText(grid, row, grid.Column("Name"));
         var token = TextBeside(app, MetadataGrids.GetText(grid, row, baseType), name);
-        app.Frames.MovePointer(token.X + 2f, token.Y + token.Height / 2).Frame(2);
+        app.Frames.MovePointer(token.X + 2f, token.Y + token.Height / 2);
+        app.Frames.Frame(2);
         var icon = TextBeside(app, BuiltInGlyphs.Text(BuiltInGlyphs.Icons.LinkToken), name);
 
-        app.Frames.MovePointer(icon).Frame(2);
+        app.Frames.MovePointer(icon);
+        app.Frames.Frame(2);
 
         Assert.True(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.LinkToken)));
         Assert.Contains(app.Frames.Canvas.Rects, r => r.Inputs.Style.BackgroundColor == app.Theme.RowHover
@@ -237,9 +250,11 @@ public sealed class MetadataGridTests
         var (app, tab, _, _) = await ShowGreeterRowAsync();
         app.Frames.Click(TextBeside(app, "Greeter", "Greeter"));
 
-        app.Frames.Key(Shortcuts.Copy).Frame();
+        app.Frames.Key(Shortcuts.Copy);
+        app.Frames.Frame();
         var copied = app.Frames.Clipboard.Text;
-        app.Frames.Key(KeyboardKey.Enter).Frame();
+        app.Frames.Key(KeyboardKey.Enter);
+        app.Frames.Frame();
         app.Settle();
 
         Assert.Equal("Greeter", copied);
@@ -338,12 +353,14 @@ public sealed class MetadataGridTests
 
         app.Settle(2);
 
-        app.Frames.Click(greeter, PointerButton.Right).Frame(2);
+        app.Frames.Click(greeter, PointerButton.Right);
+        app.Frames.Frame(2);
         var disabled = new[] { "Go to definition", "Open in new tab" }
             .Select(label => app.Frames.Find(Selector.OfRole(SemanticRole.MenuItem, label)).Has(SemanticStates.Disabled))
             .ToList();
         var why = app.Frames.Drew(closed);
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Go to definition")).Frame(2);
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Go to definition"));
+        app.Frames.Frame(2);
         app.Settle(2);
 
         Assert.Equal([true, true], disabled);
@@ -359,7 +376,8 @@ public sealed class MetadataGridTests
         var (app, _, grid, row) = await ShowGreeterRowAsync();
         var attributes = TextBeside(app, MetadataGrids.GetText(grid, row, grid.Column("Attributes")), "Greeter");
 
-        app.Frames.MovePointer(attributes.X + 2f, attributes.Y + attributes.Height / 2).Frame(90);
+        app.Frames.MovePointer(attributes.X + 2f, attributes.Y + attributes.Height / 2);
+        app.Frames.Frame(90);
 
         app.TextRect("Visibility");
         app.TextRect("Public (0001)");
@@ -383,10 +401,12 @@ public sealed class MetadataGridTests
         var name = grid.Column("Name");
 
         app.Frames.Click(FunnelOf(app, "Name"));
-        app.Frames.Type("greet").Frame(2);
+        app.Frames.Type("greet");
+        app.Frames.Frame(2);
         app.Settle();
         var filtered = GridOf(app, tab).View.Select(r => MetadataGrids.GetText(grid, r, name)).ToList();
-        app.Frames.Key(KeyboardKey.Escape).Frame(2);
+        app.Frames.Key(KeyboardKey.Escape);
+        app.Frames.Frame(2);
         app.Settle();
 
         Assert.Contains("Greeter", filtered);
@@ -401,7 +421,8 @@ public sealed class MetadataGridTests
         var attributes = grid.Column("Attributes");
 
         app.Frames.Click(FunnelOf(app, "Attributes"));
-        app.Frames.ClickOn(Selector.WithText("Public (0001)")).Frame();
+        app.Frames.ClickOn(Selector.WithText("Public (0001)"));
+        app.Frames.Frame();
         // The filtered rows are worked out off the UI thread: wait for that work, not a count of frames.
         app.RunOut();
 
@@ -433,7 +454,8 @@ public sealed class MetadataGridTests
         var row = Enumerable.Range(0, grid.RowCount).Single(r => MetadataGrids.GetText(grid, r, grid.Column("Member")) == "Characteristics");
         var value = TextBeside(app, MetadataGrids.GetText(grid, row, grid.Column("Value")), "Characteristics");
 
-        app.Frames.MovePointer(value.X + 2f, value.Y + value.Height / 2).Frame(90);
+        app.Frames.MovePointer(value.X + 2f, value.Y + value.Height / 2);
+        app.Frames.Frame(90);
 
         app.TextRect("File is executable (0002)");
         app.TextRect("DLL (2000)");
@@ -447,7 +469,8 @@ public sealed class MetadataGridTests
         var advance = name.Width / "Greeter".Length;
 
         Drag(app, name.X + 1f, name.X + advance * 4, name.Y + name.Height / 2);
-        app.Frames.Key(Shortcuts.Copy).Frame();
+        app.Frames.Key(Shortcuts.Copy);
+        app.Frames.Frame();
 
         Assert.Equal("Gree", app.Frames.Clipboard.Text);
         Assert.Equal(row, GridOf(app, tab).Selected);
@@ -476,7 +499,8 @@ public sealed class MetadataGridTests
 
         app.Frames.Click(TextBeside(app, baseType, "Greeter"));
         app.Settle();
-        app.Frames.Key(Shortcuts.Copy).Frame();
+        app.Frames.Key(Shortcuts.Copy);
+        app.Frames.Frame();
 
         Assert.Same(await TableAsync(app, "TypeDef"), tab.Node);
         Assert.Equal(baseType, app.Frames.Clipboard.Text);
@@ -489,9 +513,12 @@ public sealed class MetadataGridTests
         var name = TextBeside(app, "Greeter", "Greeter");
         Drag(app, name.X + 1f, name.X + name.Width / 2, name.Y + name.Height / 2);
 
-        app.Frames.Key(KeyboardKey.LeftArrow).Frame();
-        app.Frames.Key(KeyboardKey.RightArrow).Frame();
-        app.Frames.Key(Shortcuts.Copy).Frame();
+        app.Frames.Key(KeyboardKey.LeftArrow);
+        app.Frames.Frame();
+        app.Frames.Key(KeyboardKey.RightArrow);
+        app.Frames.Frame();
+        app.Frames.Key(Shortcuts.Copy);
+        app.Frames.Frame();
 
         Assert.Equal("Greeter", app.Frames.Clipboard.Text);
     }
@@ -500,7 +527,8 @@ public sealed class MetadataGridTests
     public async Task Selecting_debug_information_shows_its_decoded_value_under_it()
     {
         var app = AppDriver.Opened(width: 1800f, height: 900f);
-        var table = await (await app.NodeAsync("Debug Metadata (From portable PDB)", "Tables")).TableAsync("CustomDebugInformation");
+        var tables = await app.NodeAsync("Debug Metadata (From portable PDB)", "Tables");
+        var table = await tables.TableAsync("CustomDebugInformation");
         app.Show(table);
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -594,7 +622,8 @@ public sealed class MetadataGridTests
     public async Task The_selected_rows_details_go_under_its_tallest_cell()
     {
         var app = AppDriver.Opened(width: 1800f, height: 900f);
-        app.Show(await (await app.NodeAsync("Debug Metadata (From portable PDB)", "Tables")).TableAsync("CustomDebugInformation"));
+        var tables = await app.NodeAsync("Debug Metadata (From portable PDB)", "Tables");
+        app.Show(await tables.TableAsync("CustomDebugInformation"));
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = tab.Grid;

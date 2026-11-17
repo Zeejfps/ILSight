@@ -541,9 +541,11 @@ public sealed class NuGetPickerTests : IDisposable
         var downloading = Strings.En.NugetDownloading("Fixtures 2.0.0");
         var before = app.Frames.Drew(downloading);
 
-        app.Frames.Key(KeyboardKey.Enter).Frame();
+        app.Frames.Key(KeyboardKey.Enter);
+        app.Frames.Frame();
         var inThatFrame = app.Frames.Drew(downloading);
-        app.Frames.Key(KeyboardKey.Escape).Frame();
+        app.Frames.Key(KeyboardKey.Escape);
+        app.Frames.Frame();
         app.Frames.WaitUntil(() => _fake.Cancelled > 0, Waits.Patience);
         app.Settle(2);
 
@@ -583,10 +585,13 @@ public sealed class NuGetPickerTests : IDisposable
         picker.Open();
         app.Frames.WaitUntil(() => picker.Browser.Results.Count > 0, Waits.Patience);
         app.Run(2);
-        app.Frames.ClickOn(Selector.AtPath("Fixtures/version")).Frame();
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "1.0.0")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("Fixtures/version"));
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "1.0.0"));
+        app.Frames.Frame();
         var picked = picker.Browser.Version;
-        app.Frames.ClickOn(Selector.AtPath("nuget-open")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("nuget-open"));
+        app.Frames.Frame();
         app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count > 0, Waits.Patience);
         app.Settle(2);
 
@@ -624,7 +629,8 @@ public sealed class NuGetPickerTests : IDisposable
         app.Frames.WaitUntil(() => picker.Browser.Results.Count > 0, Waits.Patience);
         app.Run(2);
         var first = app.Frames.Drew("Page 1 of 3");
-        app.Frames.ClickOn(Selector.AtPath("nuget-next")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("nuget-next"));
+        app.Frames.Frame();
         app.Frames.WaitUntil(() => !picker.Browser.IsSearching, Waits.Patience);
         app.Run(2);
 

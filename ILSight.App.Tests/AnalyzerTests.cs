@@ -13,7 +13,8 @@ public sealed class AnalyzerTests
 {
     private static async Task<BrowseNode> FirstAsync(AppStateDriver d)
     {
-        return (await d.FixtureAsync("Outline").ListChildrenAsync()).Single(c => c.Text.StartsWith("First()"));
+        var outline = await d.FixtureAsync("Outline");
+        return (await outline.ListChildrenAsync()).Single(c => c.Text.StartsWith("First()"));
     }
 
     private static AnalyzerKindNode Expand(AppStateDriver d, AnalyzerSymbolNode symbol, string header)
@@ -56,7 +57,8 @@ public sealed class AnalyzerTests
     {
         // A symbol another list described: the core's own code fails on it, not the library's read.
         var d = AppStateDriver.Opened();
-        var elsewhere = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync().GetChildAsync(AppStateDriver.FixturesNamespace, "Outline");
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath);
+        var elsewhere = await assembly.ReadRootAsync().GetChildAsync(AppStateDriver.FixturesNamespace, "Outline");
         var symbol = elsewhere.Analysis;
         Assert.NotNull(symbol);
         var kind = new AnalyzerKindNode { Subject = symbol, Kind = symbol.Kinds.Single(k => Core.AnalysisArea.Analyzers.GetHeader(k) == "Used By") };
@@ -84,7 +86,8 @@ public sealed class AnalyzerTests
     public async Task Used_By_a_property_or_event_finds_each_member_using_its_accessors_once(string member, string user)
     {
         var d = AppStateDriver.Opened();
-        var node = (await d.FixtureAsync("Counter").ListChildrenAsync())
+        var counter = await d.FixtureAsync("Counter");
+        var node = (await counter.ListChildrenAsync())
             .Where(c => !c.IsCompilerGenerated)
             .Single(c => c.Text.StartsWith(member + " "));
 
@@ -114,7 +117,8 @@ public sealed class AnalyzerTests
         var d = app.Driver;
         d.Analyze(await FirstAsync(d));
         var analyzer = d.AppState.ListSession.Analyzer;
-        var caller = (AnalyzerSymbolNode)Expand(d, analyzer.Found()[0], "Used By").Found[0];
+        var kind = Expand(d, analyzer.Found()[0], "Used By");
+        var caller = (AnalyzerSymbolNode)kind.Found[0];
         app.Ui.Analyzer.View.Select(caller);
         app.Run(3);
 
@@ -134,10 +138,12 @@ public sealed class AnalyzerTests
         var d = app.Driver;
         d.Ui.Tree.RevealNode(await FirstAsync(d));
         app.Run(2);
-        app.Frames.ClickOn(Targets.GetFixtureRow("Outline", (await FirstAsync(d)).Text));
+        var first = await FirstAsync(d);
+        app.Frames.ClickOn(Targets.GetFixtureRow("Outline", first.Text));
         d.Settle();
 
-        app.Frames.Key(Shortcuts.Analyze).Frame(2);
+        app.Frames.Key(Shortcuts.Analyze);
+        app.Frames.Frame(2);
 
         Assert.StartsWith("First()", Assert.Single(d.AppState.ListSession.Analyzer.Found()).Symbol.Label);
     }
@@ -160,9 +166,11 @@ public sealed class AnalyzerTests
         var app = AppDriver.Opened(height: 600f);
         var d = app.Driver;
         await ShowFirstCallerAsync(app);
-        app.Frames.ClickOn(Targets.GetAnalyzerRow("First() : int", "Used By", "Third() : int")).Frame();
+        app.Frames.ClickOn(Targets.GetAnalyzerRow("First() : int", "Used By", "Third() : int"));
+        app.Frames.Frame();
 
-        app.Frames.Key(Shortcuts.Analyze).Frame(2);
+        app.Frames.Key(Shortcuts.Analyze);
+        app.Frames.Frame(2);
 
         Assert.Equal(2, d.AppState.ListSession.Analyzer.Roots.Count);
         Assert.StartsWith("Third()", d.AppState.ListSession.Analyzer.Found()[1].Symbol.Label);
@@ -175,12 +183,15 @@ public sealed class AnalyzerTests
         var d = app.Driver;
         await ShowFirstCallerAsync(app);
         var root = Assert.Single(d.AppState.ListSession.Analyzer.Roots);
-        app.Frames.ClickOn(Targets.GetAnalyzerRow("First() : int")).Frame();
+        app.Frames.ClickOn(Targets.GetAnalyzerRow("First() : int"));
+        app.Frames.Frame();
         app.Ui.Analyzer.View.SetExpanded(root, false);
         app.Run(1);
 
-        app.Frames.Key(Shortcuts.Analyze).Frame(2);
-        app.Frames.ClickOn(Targets.GetAnalyzerRow("First() : int"), PointerButton.Right).Frame();
+        app.Frames.Key(Shortcuts.Analyze);
+        app.Frames.Frame(2);
+        app.Frames.ClickOn(Targets.GetAnalyzerRow("First() : int"), PointerButton.Right);
+        app.Frames.Frame();
 
         Assert.False(app.Ui.Analyzer.View.IsExpanded(root));
         Assert.Same(root, Assert.Single(d.AppState.ListSession.Analyzer.Roots));
@@ -194,7 +205,8 @@ public sealed class AnalyzerTests
     {
         var d = AppStateDriver.Opened();
         var analyzer = d.AppState.ListSession.Analyzer;
-        var greeter = (await d.FixtureAsync("Greeter")).Analysis;
+        var greeterNode = await d.FixtureAsync("Greeter");
+        var greeter = greeterNode.Analysis;
         Assert.NotNull(greeter);
         var unlisted = new AnalysisSymbol
         {
@@ -224,7 +236,8 @@ public sealed class AnalyzerTests
     {
         var d = AppStateDriver.Opened();
         var analyzer = d.AppState.ListSession.Analyzer;
-        d.Analyze((await d.FixtureAsync("Outline").ListChildrenAsync()).Single(c => c.Text.StartsWith("Second()")));
+        var outline = await d.FixtureAsync("Outline");
+        d.Analyze((await outline.ListChildrenAsync()).Single(c => c.Text.StartsWith("Second()")));
         var uses = Expand(d, analyzer.Found()[0], "Uses");
         var append = uses.Found.OfType<AnalyzerSymbolNode>().First(n => n.Symbol.Label.StartsWith("Append("));
         var file = append.Symbol.File;
@@ -282,7 +295,8 @@ public sealed class AnalyzerTests
         var d = app.Driver;
         var analyzer = d.AppState.ListSession.Analyzer;
         d.Analyze(await FirstAsync(d));
-        var caller = Expand(d, analyzer.Found()[0], "Used By").Found[0];
+        var kind = Expand(d, analyzer.Found()[0], "Used By");
+        var caller = kind.Found[0];
         d.Ui.Analyzer.View.ScrollIntoView(caller);
         app.Run(3);
     }
@@ -453,7 +467,8 @@ public sealed class AnalyzerTests
         var analyzer = d.AppState.ListSession.Analyzer;
         d.Analyze(await FirstAsync(d));
         var root = analyzer.Found()[0];
-        var caller = (AnalyzerSymbolNode)Expand(d, root, "Used By").Found[0];
+        var kind = Expand(d, root, "Used By");
+        var caller = (AnalyzerSymbolNode)kind.Found[0];
 
         analyzer.RemoveRoot(root);
 
@@ -462,7 +477,8 @@ public sealed class AnalyzerTests
 
     private static async Task<AnalyzerKindNode> NewKindAsync(AppStateDriver d)
     {
-        var symbol = (await FirstAsync(d)).Analysis;
+        var first = await FirstAsync(d);
+        var symbol = first.Analysis;
         Assert.NotNull(symbol);
         return new AnalyzerKindNode { Subject = symbol, Kind = symbol.Kinds[0] };
     }
@@ -483,7 +499,8 @@ public sealed class AnalyzerTests
     public async Task Cancelling_a_symbol_cancels_the_analyses_listed_under_it()
     {
         var d = AppStateDriver.Opened();
-        var analyzed = (await FirstAsync(d)).Analysis;
+        var first = await FirstAsync(d);
+        var analyzed = first.Analysis;
         Assert.NotNull(analyzed);
         var symbol = new AnalyzerSymbolNode { Symbol = analyzed };
         var running = symbol.EnsureChildren().OfType<AnalyzerKindNode>().First();
@@ -499,7 +516,8 @@ public sealed class AnalyzerTests
     public async Task Cancelling_a_symbol_whose_children_were_never_listed_leaves_them_unlisted()
     {
         var d = AppStateDriver.Opened();
-        var analyzed = (await FirstAsync(d)).Analysis;
+        var first = await FirstAsync(d);
+        var analyzed = first.Analysis;
         Assert.NotNull(analyzed);
         var symbol = new AnalyzerSymbolNode { Symbol = analyzed };
 
@@ -593,7 +611,8 @@ public sealed class AnalyzerTests
     {
         var d = AppStateDriver.Opened();
         var rows = NewRows();
-        var analyzed = (await FirstAsync(d)).Analysis;
+        var first = await FirstAsync(d);
+        var analyzed = first.Analysis;
         Assert.NotNull(analyzed);
         var symbol = new AnalyzerSymbolNode { Symbol = analyzed };
 
@@ -659,8 +678,10 @@ public sealed class AnalyzerTests
         var d = app.Driver;
         d.Analyze(await FirstAsync(d));
         app.Run(3);
-        app.Frames.ClickOn(Targets.GetAnalyzerRow("First() : int"), PointerButton.Right).Frame();
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Clear")).Frame(2);
+        app.Frames.ClickOn(Targets.GetAnalyzerRow("First() : int"), PointerButton.Right);
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Clear"));
+        app.Frames.Frame(2);
 
         Assert.Empty(d.AppState.ListSession.Analyzer.Roots);
     }
@@ -677,10 +698,12 @@ public sealed class AnalyzerTests
         var rows = app.Ui.Analyzer;
         var kinds = rows.ListChildren(root).OfType<AnalyzerKindNode>().ToList();
 
-        app.Frames.ClickOn(Selector.AtPath("dock/analyzer/expand")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/analyzer/expand"));
+        app.Frames.Frame();
         var expanded = kinds.All(k => rows.View.IsExpanded(k));
         d.RunUntil(() => kinds.All(k => k.IsDone));
-        app.Frames.ClickOn(Selector.AtPath("dock/analyzer/collapse")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/analyzer/collapse"));
+        app.Frames.Frame();
 
         Assert.NotEmpty(kinds);
         Assert.True(expanded);
@@ -694,14 +717,17 @@ public sealed class AnalyzerTests
         var d = app.Driver;
         var analyzer = d.AppState.ListSession.Analyzer;
         d.Analyze(await FirstAsync(d));
-        var caller = (AnalyzerSymbolNode)Expand(d, analyzer.Found()[0], "Used By").Found[0];
+        var kind = Expand(d, analyzer.Found()[0], "Used By");
+        var caller = (AnalyzerSymbolNode)kind.Found[0];
         d.Analyze(await d.FixtureAsync("Greeter"));
         app.Ui.Analyzer.View.Select(caller);
         app.Run(3);
 
-        app.Frames.ClickOn(Selector.AtPath("dock/analyzer/remove")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/analyzer/remove"));
+        app.Frames.Frame(2);
         var left = analyzer.Found().Select(r => r.Symbol.Label).ToList();
-        app.Frames.ClickOn(Selector.AtPath("dock/analyzer/clear")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/analyzer/clear"));
+        app.Frames.Frame(2);
 
         Assert.Equal(["Greeter"], left);
         Assert.Empty(analyzer.Roots);
@@ -713,9 +739,11 @@ public sealed class AnalyzerTests
         var app = AppDriver.Opened(height: 600f);
         var d = app.Driver;
         await ShowFirstCallerAsync(app);
-        app.Frames.ClickOn(Targets.GetAnalyzerRow("First() : int", "Used By", "Third() : int")).Frame();
+        app.Frames.ClickOn(Targets.GetAnalyzerRow("First() : int", "Used By", "Third() : int"));
+        app.Frames.Frame();
 
-        app.Frames.Key(KeyboardKey.Delete).Frame(2);
+        app.Frames.Key(KeyboardKey.Delete);
+        app.Frames.Frame(2);
 
         Assert.Empty(d.AppState.ListSession.Analyzer.Roots);
     }

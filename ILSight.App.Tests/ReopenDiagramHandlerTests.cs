@@ -8,7 +8,8 @@ public sealed class ReopenDiagramHandlerTests
 {
     private static async Task<SavedDiagramRead> ReopenAsync(AppStateDriver d)
     {
-        var vehicle = (await TypeCards.ReadAsync(d.AppState.ListSession.Assemblies, (await d.FixtureAsync("Vehicle")).Definition, CancellationToken.None)).GetValue().FoundOrNull;
+        var vehicleNode = await d.FixtureAsync("Vehicle");
+        var vehicle = (await TypeCards.ReadAsync(d.AppState.ListSession.Assemblies, vehicleNode.Definition, CancellationToken.None)).GetValue().FoundOrNull;
         Assert.NotNull(vehicle);
         var saved = new DiagramDocumentRecord
         {
@@ -32,7 +33,8 @@ public sealed class ReopenDiagramHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var read = await ReopenAsync(d);
         var ports = new FakeReopenDiagramHandlerPorts();
-        var vehicle = (await TypeCards.ReadAsync(d.AppState.ListSession.Assemblies, (await d.FixtureAsync("Vehicle")).Definition, CancellationToken.None)).GetValue().FoundOrNull;
+        var vehicleNode = await d.FixtureAsync("Vehicle");
+        var vehicle = (await TypeCards.ReadAsync(d.AppState.ListSession.Assemblies, vehicleNode.Definition, CancellationToken.None)).GetValue().FoundOrNull;
         Assert.NotNull(vehicle);
         Assert.True(read.Diagram.IsBusy);
 

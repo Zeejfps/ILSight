@@ -267,8 +267,10 @@ public sealed class UserIconThemeTests : IDisposable
         app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
-        app.Frames.ClickOn(Selector.AtPath("dock/display-options/icon-theme")).Frame();
-        app.Frames.ClickOn(Selector.WithText("Shapes")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/display-options/icon-theme"));
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.WithText("Shapes"));
+        app.Frames.Frame(2);
 
         Assert.Equal("shapes", app.AppState.ChosenThemes.IconTheme.Text);
         Assert.NotNull(app.Ui.Appearance.Icons.NodeClass.Svg);
@@ -282,7 +284,8 @@ public sealed class UserIconThemeTests : IDisposable
         app.Ui.Panels.Open(DockView.DisplayOptions);
         app.Run();
 
-        app.Frames.ClickOn(Selector.AtPath("dock/display-options/customize-icon-theme")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/display-options/customize-icon-theme"));
+        app.Frames.Frame();
 
         Assert.Equal("lucide-custom", app.AppState.ChosenThemes.IconTheme.Text);
         Assert.Equal([_temp.PathOf(Path.Combine("icon-themes", "lucide-custom.json"))], app.Frames.OpenedFiles);

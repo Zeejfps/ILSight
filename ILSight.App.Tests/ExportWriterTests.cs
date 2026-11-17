@@ -100,7 +100,8 @@ public sealed class ExportWriterTests
     public async Task HandleAsync_DiagramWritten_OpensItsPage()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var assembly = Assert.IsType<LoadedModule>((await d.NodeAsync()).Assembly);
+        var node = await d.NodeAsync();
+        var assembly = Assert.IsType<LoadedModule>(node.Assembly);
         var work = new ExportWork.Diagram { Assembly = assembly, Folder = Exports.GetDiagramFolder(assembly, Folder) };
         var page = Path.Combine(work.Folder, "index.html");
         var queue = new ExportQueue();

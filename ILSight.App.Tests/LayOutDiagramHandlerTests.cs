@@ -18,8 +18,10 @@ public sealed class LayOutDiagramHandlerTests
     public async Task HandleAsync_NewerLayoutStarted_DropsTheOlderAndHoldsTheNewer()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var vehicle = (await d.FixtureAsync("Vehicle")).Definition;
-        var car = (await d.FixtureAsync("Car")).Definition;
+        var vehicleNode = await d.FixtureAsync("Vehicle");
+        var vehicle = vehicleNode.Definition;
+        var carNode = await d.FixtureAsync("Car");
+        var car = carNode.Definition;
         var diagram = new TypeDiagram();
         var ports = new FakeLayOutDiagramHandlerPorts();
         var handler = new LayOutDiagramHandler(ports);
@@ -55,7 +57,8 @@ public sealed class LayOutDiagramHandlerTests
         Assert.NotNull(layout);
         var error = new InvalidOperationException("No room.");
 
-        var measures = MeasuresOf((await d.FixtureAsync("Vehicle")).Definition);
+        var vehicle = await d.FixtureAsync("Vehicle");
+        var measures = MeasuresOf(vehicle.Definition);
         var laying = d.BeginAsync(() => new LayOutDiagramHandler(ports).HandleAsync(diagram, layout, measures, CancellationToken.None));
         Assert.Single(ports.Answers).SetResult(new Outcome<TypeLayout>.Failed(error));
         await d.EndAsync(laying);

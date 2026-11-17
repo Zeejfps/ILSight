@@ -77,7 +77,8 @@ public sealed class HistoryTests
         await ShowAsync(app, "Outline");
         await ShowAsync(app, "Greeter");
 
-        app.Frames.Key(Shortcuts.Back).Frame();
+        app.Frames.Key(Shortcuts.Back);
+        app.Frames.Frame();
 
         Assert.True(app.Frames.Drew(app.Ui.Appearance.Strings.StatusResolving));
         app.Settle(4);
@@ -93,9 +94,11 @@ public sealed class HistoryTests
         Assert.NotNull(outline);
         app.Show(await app.FixtureAsync("Greeter"), 4, inNewTab: true);
 
-        app.Frames.Key(Shortcuts.Back).Frame();
+        app.Frames.Key(Shortcuts.Back);
+        app.Frames.Frame();
 
-        Assert.True(app.Frames.Drew((await app.FixtureAsync("Outline")).FullName));
+        var outlineNode = await app.FixtureAsync("Outline");
+        Assert.True(app.Frames.Drew(outlineNode.FullName));
         Assert.Same(outline, app.AppState.ListSession.Navigation.ActiveTab);
     }
 
@@ -343,6 +346,7 @@ public sealed class HistoryTests
     {
         var icon = app.TextRect(BuiltInGlyphs.Icons.ToolbarBack);
         var x = icon.X + icon.Width / 2 + app.Theme.IconButtonSize / 2 + app.Theme.DropdownButtonWidth / 2;
-        app.Frames.Click(x, icon.Y + icon.Height / 2).Frame();
+        app.Frames.Click(x, icon.Y + icon.Height / 2);
+        app.Frames.Frame();
     }
 }

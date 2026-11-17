@@ -73,7 +73,8 @@ public sealed class NavigationInfrastructureTests
     public async Task LookUpPlaceAsync_BugInTheAppsWorkOnThePathsWay_ReachesTheEdgeRecordedOnce()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var place = (await d.FixtureAsync("Greeter")).Path;
+        var greeter = await d.FixtureAsync("Greeter");
+        var place = greeter.Path;
         var errors = new ErrorLog();
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var session = new BrowseSession();

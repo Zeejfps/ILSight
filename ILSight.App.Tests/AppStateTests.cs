@@ -96,7 +96,8 @@ public sealed class AppStateTests
     {
         var d = AppStateDriver.Opened();
         var ns = await d.NodeAsync(AppStateDriver.FixturesNamespace);
-        d.Show(await (await d.NodeAsync("Metadata", "Tables")).TableAsync("TypeDef"));
+        var tables = await d.NodeAsync("Metadata", "Tables");
+        d.Show(await tables.TableAsync("TypeDef"));
         var grid = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(grid);
         d.Show(await d.FixtureAsync("Greeter"), inNewTab: true);
@@ -126,7 +127,8 @@ public sealed class AppStateTests
     public async Task A_row_revealed_before_a_new_view_of_a_tab_is_drawn_stays_to_be_revealed()
     {
         var d = AppStateDriver.Opened();
-        d.Show(await (await d.NodeAsync("Metadata", "Tables")).TableAsync("TypeDef"));
+        var tables = await d.NodeAsync("Metadata", "Tables");
+        d.Show(await tables.TableAsync("TypeDef"));
         var grid = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(grid);
         var documents = d.Ui.Documents;
@@ -263,7 +265,9 @@ public sealed class AppStateTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         d.Show(await d.FixtureAsync("Greeter"));
-        var expanded = new List<NodePath> { (await d.NodeAsync()).Path, (await d.NodeAsync(AppStateDriver.FixturesNamespace)).Path };
+        var node = await d.NodeAsync();
+        var nodeNode = await d.NodeAsync(AppStateDriver.FixturesNamespace);
+        var expanded = new List<NodePath> { node.Path, nodeNode.Path };
         d.TakeViewCommands();
 
         d.Reload(expanded);

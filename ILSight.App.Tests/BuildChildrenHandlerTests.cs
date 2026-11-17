@@ -8,7 +8,8 @@ public sealed class BuildChildrenHandlerTests
     public async Task HandleAsync_Ended_TheChildrenMayBeAskedForAgain()
     {
         var tree = new BrowseTree { Session = TestSession.Shared };
-        var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync();
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath);
+        var root = await assembly.ReadRootAsync();
         tree.Builds.Ask(root);
         var firstAsked = tree.Builds.TakeAsked();
         var ports = new FakeBuildChildrenHandlerPorts();
@@ -26,7 +27,8 @@ public sealed class BuildChildrenHandlerTests
     public async Task Ask_WhileAskedOrBuilding_AsksOnce()
     {
         var tree = new BrowseTree { Session = TestSession.Shared };
-        var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync();
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath);
+        var root = await assembly.ReadRootAsync();
 
         tree.Builds.Ask(root);
         tree.Builds.Ask(root);

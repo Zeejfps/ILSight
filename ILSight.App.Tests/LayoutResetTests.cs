@@ -12,9 +12,11 @@ public sealed class LayoutResetTests
         app.Run(2);
 
         app.Frames.ClickOn(Selector.WithText("View"));
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Reset layout")).Frame(2);
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Reset layout"));
+        app.Frames.Frame(2);
         Assert.True(screen.LayoutReset.IsAsked);
-        app.Frames.ClickOn(Selector.WithText("Cancel")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Cancel"));
+        app.Frames.Frame(2);
 
         Assert.False(screen.LayoutReset.IsAsked);
         Assert.True(screen.Panels.IsOpen(DockPanels.Bookmarks));

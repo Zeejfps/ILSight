@@ -53,7 +53,8 @@ public sealed class PackageBrowsingTests
         using var temp = new TempDir();
         var app = OpenedPackage(temp);
 
-        var assembly = (await GreeterAsync(app)).Assembly;
+        var greeter = await GreeterAsync(app);
+        var assembly = greeter.Assembly;
         app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [assembly]));
         app.Run(2);
 
@@ -68,17 +69,21 @@ public sealed class PackageBrowsingTests
         var app = OpenedPackage(temp);
         var package = app.AppState.ListSession.Assemblies.Listed[0];
 
-        app.Ui.Tree.View.Select(await (await GreeterAsync(app)).Assembly.ReadRootAsync());
+        var greeter = await GreeterAsync(app);
+        app.Ui.Tree.View.Select(await greeter.Assembly.ReadRootAsync());
         app.Run(2);
-        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly"));
+        app.Frames.Frame(2);
         Assert.False(Assert.Single(app.Ui.Closer.Rows.Order).Included);
         app.Ui.Closer.Close();
 
         app.Ui.Tree.View.Select(await package.ReadRootAsync());
         app.Run(2);
-        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly"));
+        app.Frames.Frame(2);
         Assert.True(Assert.Single(app.Ui.Closer.Rows.Order).Included);
-        app.Frames.ClickOn(Selector.AtPath("close-ticked")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("close-ticked"));
+        app.Frames.Frame(2);
 
         Assert.Empty(app.AppState.ListSession.Assemblies.Listed);
     }
@@ -88,7 +93,8 @@ public sealed class PackageBrowsingTests
     {
         using var temp = new TempDir();
         var app = OpenedPackage(temp);
-        var assembly = (await GreeterAsync(app)).Assembly;
+        var greeter = await GreeterAsync(app);
+        var assembly = greeter.Assembly;
 
         var label = NodeText.AssemblyLabel(assembly);
 
@@ -100,7 +106,8 @@ public sealed class PackageBrowsingTests
     {
         using var temp = new TempDir();
         var app = OpenedPackage(temp);
-        var assembly = Assert.IsType<LoadedModule>((await GreeterAsync(app)).Assembly);
+        var greeter = await GreeterAsync(app);
+        var assembly = Assert.IsType<LoadedModule>(greeter.Assembly);
 
         app.OpenExportSetup(assembly);
 
@@ -114,7 +121,8 @@ public sealed class PackageBrowsingTests
     {
         using var temp = new TempDir();
         var app = OpenedPackage(temp);
-        var assembly = (await GreeterAsync(app)).Assembly;
+        var greeter = await GreeterAsync(app);
+        var assembly = greeter.Assembly;
         var path = temp.PathOf("Extracted.dll");
         app.Ui.Tree.RevealNode(await assembly.ReadRootAsync());
         app.Run(2);

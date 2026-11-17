@@ -147,7 +147,8 @@ internal sealed class CodeViewDriver
     public UiFrames MoveTo(CodeRow row, int column)
     {
         var (x, y) = PointOf(row, column);
-        return Frames.MovePointer(x, y).Frame();
+        Frames.MovePointer(x, y);
+        return Frames.Frame();
     }
 
     public UiFrames MoveTo(int line, int column)
@@ -170,21 +171,26 @@ internal sealed class CodeViewDriver
     /// <summary>Clicks at <paramref name="at"/> and returns what the press asked for, or else what the release did.</summary>
     public CodeViewResult Click((float X, float Y) at, PointerButton button = PointerButton.Left, KeyModifiers modifiers = KeyModifiers.None)
     {
-        Frames.MovePointer(at.X, at.Y).Frame();
-        Frames.Press(button, modifiers).Frame();
+        Frames.MovePointer(at.X, at.Y);
+        Frames.Frame();
+        Frames.Press(button, modifiers);
+        Frames.Frame();
         var pressed = Last;
-        Frames.Release(button, modifiers).Frame();
+        Frames.Release(button, modifiers);
+        Frames.Frame();
         return pressed != default ? pressed : Last;
     }
 
     public UiFrames Key(KeyboardKey key, KeyModifiers modifiers = KeyModifiers.None)
     {
-        return Frames.Key(key, modifiers).Frame();
+        Frames.Key(key, modifiers);
+        return Frames.Frame();
     }
 
     public UiFrames Key(Shortcut shortcut)
     {
-        return Frames.Key(shortcut).Frame();
+        Frames.Key(shortcut);
+        return Frames.Frame();
     }
 
     /// <summary>The lines whose text was drawn, by the top of the row they were drawn in.</summary>

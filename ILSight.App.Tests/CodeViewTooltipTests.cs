@@ -18,7 +18,8 @@ public sealed class CodeViewTooltipTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var type = typeof(Farewell);
         Assert.NotNull(type.Namespace);
-        var node = await list.Open(type.Assembly.Location).ReadRootAsync().GetChildAsync(type.Namespace, type.Name);
+        var assembly = list.Open(type.Assembly.Location);
+        var node = await assembly.ReadRootAsync().GetChildAsync(type.Namespace, type.Name);
         var view = new CodeViewDriver(await node.DecompileAsync(DecompilationLanguage.CSharp), WindowHeight) { Tooltips = new CodeTooltips { Assemblies = list, Version = list.Version } };
         view.Run();
         return view;
@@ -133,7 +134,8 @@ public sealed class CodeViewTooltipTests
         var shown = IsTooltipDrawn(view);
 
         view.MoveTo(0, 0);
-        view.Frames.Wait(LeaveGraceSeconds).Frame(2);
+        view.Frames.Wait(LeaveGraceSeconds);
+        view.Frames.Frame(2);
 
         Assert.True(shown);
         Assert.False(view.Frames.Drew("Says "));
@@ -146,7 +148,8 @@ public sealed class CodeViewTooltipTests
         var view = await FarewellAsync();
 
         RestOn(view, "public class");
-        view.Frames.Wait(RestSeconds).Frame(2);
+        view.Frames.Wait(RestSeconds);
+        view.Frames.Frame(2);
         RunOut(view);
 
         Assert.False(IsTooltipDrawn(view));

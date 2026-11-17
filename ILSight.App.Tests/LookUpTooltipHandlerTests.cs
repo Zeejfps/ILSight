@@ -7,7 +7,8 @@ public sealed class LookUpTooltipHandlerTests
 {
     private static async Task<TooltipLookup> AskForGreeterAsync(AppStateDriver d, CodeTooltips tooltips)
     {
-        Assert.False(tooltips.TryGetOrAskTooltip((await d.FixtureAsync("Greeter")).Definition, out _));
+        var greeter = await d.FixtureAsync("Greeter");
+        Assert.False(tooltips.TryGetOrAskTooltip(greeter.Definition, out _));
         var asked = tooltips.TakeAsked();
         return Assert.Single(asked);
     }

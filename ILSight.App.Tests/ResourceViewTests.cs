@@ -64,11 +64,14 @@ public sealed class ResourceViewTests
     {
         var (app, tab) = await ShowResourceAsync("logo.png");
 
-        app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-in")).Frame();
-        app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-in")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-in"));
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-in"));
+        app.Frames.Frame();
         var zoomed = DrawnSize(app, tab);
         app.TextRect("400%");
-        app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-reset")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-reset"));
+        app.Frames.Frame();
 
         Assert.Equal((8f, 8f), zoomed);
         Assert.Equal((2f, 2f), DrawnSize(app, tab));
@@ -80,7 +83,8 @@ public sealed class ResourceViewTests
     {
         var (app, tab) = await ShowResourceAsync("shape.svg");
 
-        app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-in")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-in"));
+        app.Frames.Frame();
 
         Assert.Equal((8f, 4f), DrawnSize(app, tab));
         Assert.Equal((8, 4), UploadedSize(app, tab));
@@ -90,7 +94,8 @@ public sealed class ResourceViewTests
     public async Task A_zoom_lasts_until_another_picture_arrives_in_the_tab()
     {
         var (app, tab) = await ShowResourceAsync("shape.svg");
-        app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-in")).Frame();
+        app.Frames.ClickOn(Selector.AtPath("dock/document-1/zoom-in"));
+        app.Frames.Frame();
         var zoomedBefore = !app.Ui.Documents.GetView(tab).Picture.Zoom.IsOwnSize;
 
         app.Show(await app.NodeAsync(["Resources", "logo.png"]), 3);
@@ -105,10 +110,12 @@ public sealed class ResourceViewTests
     {
         var (app, tab) = await ShowResourceAsync("shape.svg");
 
-        app.Frames.ClickOn(Selector.WithText("Source")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Source"));
+        app.Frames.Frame(2);
         var showsSource = app.Ui.Documents.GetView(tab).Picture.ShowsSource;
         var drewPicture = app.Frames.Canvas.Images.Any(i => i.Inputs.ImageId == ImageOf(app, tab));
-        app.Frames.ClickOn(Selector.WithText("Picture")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Picture"));
+        app.Frames.Frame(2);
 
         Assert.True(showsSource);
         Assert.False(drewPicture);
@@ -174,7 +181,9 @@ public sealed class ResourceViewTests
 
     private static void Click(AppDriver app, UiRect at)
     {
-        app.Frames.Wait(1).Click(at).Frame(2);
+        app.Frames.Wait(1);
+        app.Frames.Click(at);
+        app.Frames.Frame(2);
     }
 
     [Fact]
@@ -203,10 +212,13 @@ public sealed class ResourceViewTests
         var (app, _) = await ShowResourceAsync("Mixed.resources");
 
         Click(app, app.TextRect("first line"));
-        app.Frames.Key(KeyboardKey.F2).Frame(2);
-        app.Frames.Key(KeyboardKey.Escape).Frame(2);
+        app.Frames.Key(KeyboardKey.F2);
+        app.Frames.Frame(2);
+        app.Frames.Key(KeyboardKey.Escape);
+        app.Frames.Frame(2);
         Assert.True(app.Frames.Drew("second line"));
-        app.Frames.Key(KeyboardKey.Escape).Frame(2);
+        app.Frames.Key(KeyboardKey.Escape);
+        app.Frames.Frame(2);
         Assert.False(app.Frames.Drew("second line"));
     }
 
@@ -233,12 +245,16 @@ public sealed class ResourceViewTests
         var (app, _) = await ShowResourceAsync("Mixed.resources");
 
         Click(app, app.TextRect("first line"));
-        app.Frames.Key(Shortcuts.Copy).Frame();
+        app.Frames.Key(Shortcuts.Copy);
+        app.Frames.Frame();
         Assert.Equal("first line\nsecond line", app.Frames.Clipboard.Text);
 
         var name = app.TextRect("Notes.xml");
-        app.Frames.Wait(1).DoubleClick(name with { Width = name.Width / 3 }).Frame(2);
-        app.Frames.Key(Shortcuts.Copy).Frame();
+        app.Frames.Wait(1);
+        app.Frames.DoubleClick(name with { Width = name.Width / 3 });
+        app.Frames.Frame(2);
+        app.Frames.Key(Shortcuts.Copy);
+        app.Frames.Frame();
         Assert.Equal("Notes", app.Frames.Clipboard.Text);
     }
 

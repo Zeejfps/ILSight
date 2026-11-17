@@ -24,7 +24,8 @@ public sealed class RestoreAnalysesHandlerTests
 
     private static async Task<AnalysisSymbol> SymbolOfAsync(AppStateDriver d, string type)
     {
-        var symbol = (await d.FixtureAsync(type)).Analysis;
+        var fixture = await d.FixtureAsync(type);
+        var symbol = fixture.Analysis;
         Assert.NotNull(symbol);
         return symbol;
     }

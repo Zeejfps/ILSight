@@ -33,7 +33,8 @@ public sealed class CodeViewScrollTests
         view.Click(0, 0);
 
         view.Key(Shortcut.Command(KeyboardKey.End));
-        view.Key(KeyboardKey.Home).Frame(4);
+        view.Key(KeyboardKey.Home);
+        view.Frames.Frame(4);
 
         var last = view.DrawnText().Single(d => d.Text.StartsWith("www"));
         var horizontal = Thumbs(view).Single(t => t.Width > t.Height);

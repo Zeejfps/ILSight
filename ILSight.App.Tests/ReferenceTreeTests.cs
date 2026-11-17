@@ -29,7 +29,8 @@ public sealed class ReferenceTreeTests
         app.Ui.Tree.RevealNode(baseType);
         app.Run(2);
 
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, baseType.Text), PointerButton.Right).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, baseType.Text), PointerButton.Right);
+        app.Frames.Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, app.Ui.Appearance.Strings.TreeGoToTarget));
 
         Assert.True(app.Frames.Drew(app.Ui.Appearance.Strings.StatusResolving));

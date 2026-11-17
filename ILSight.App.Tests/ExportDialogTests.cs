@@ -47,7 +47,8 @@ public sealed class ExportDialogTests : IDisposable
 
     private static async Task<LoadedModule> FixturesAsync(AppStateDriver d)
     {
-        return Assert.IsType<LoadedModule>((await d.NodeAsync()).Assembly);
+        var node = await d.NodeAsync();
+        return Assert.IsType<LoadedModule>(node.Assembly);
     }
 
     private static void TickAll(ExportSetup setup, bool all)
@@ -423,13 +424,17 @@ public sealed class ExportDialogTests : IDisposable
         app.Run(2);
         var setup = app.Ui.ExportSetup;
 
-        app.Frames.ClickOn(Selector.AtPath("add")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("add"));
+        app.Frames.Frame(2);
         Assert.Equal(ExportPage.Choose, setup.Assemblies.Page);
-        app.Frames.ClickOn(Selector.WithText("Done")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Done"));
+        app.Frames.Frame(2);
         Assert.Equal(ExportPage.Main, setup.Assemblies.Page);
 
-        app.Frames.ClickOn(Selector.AtPath("add")).Frame(2);
-        app.Frames.Key(KeyboardKey.Escape).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("add"));
+        app.Frames.Frame(2);
+        app.Frames.Key(KeyboardKey.Escape);
+        app.Frames.Frame(2);
 
         Assert.Equal(ExportPage.Main, setup.Assemblies.Page);
         Assert.True(setup.IsOpen);
@@ -446,7 +451,8 @@ public sealed class ExportDialogTests : IDisposable
         app.Run(2);
 
         Assert.True(app.Frames.Drew("No assemblies match the filter."));
-        app.Frames.ClickOn(Selector.WithText("Clear filter")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("Clear filter"));
+        app.Frames.Frame(2);
 
         Assert.Equal("", setup.Picker.Filter);
         Assert.Single(ExportDialogView.ListShown(setup.Picker));
@@ -460,7 +466,8 @@ public sealed class ExportDialogTests : IDisposable
         TickAll(app.Ui.ExportSetup, false);
         app.Run(2);
 
-        app.Frames.ClickOn(Selector.AtPath("add")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("add"));
+        app.Frames.Frame(2);
 
         Assert.Equal(ExportPage.Choose, app.Ui.ExportSetup.Assemblies.Page);
     }
@@ -485,7 +492,8 @@ public sealed class ExportDialogTests : IDisposable
             .Where(t => t.Text == assembly.Name && t.Rect.Y == projectName.Y)
             .MinBy(t => t.Rect.X)
             .Rect;
-        app.Frames.Click(cell.X + 2f, cell.Y + cell.Height / 2, modifiers: modifiers).Frame();
+        app.Frames.Click(cell.X + 2f, cell.Y + cell.Height / 2, modifiers: modifiers);
+        app.Frames.Frame();
     }
 
     [Fact]
@@ -498,7 +506,8 @@ public sealed class ExportDialogTests : IDisposable
         Assert.False(setup.RowSelection.Count > 0);
 
         ClickRowOf(app, first);
-        app.Frames.ClickOn(Selector.AtPath("remove-selected")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("remove-selected"));
+        app.Frames.Frame(2);
 
         Assert.Equal([false, true], setup.Assemblies.Choices.Select(c => c.Included));
         Assert.True(setup.RowSelection.IsOnly(setup.Assemblies.Choices[1]));
@@ -514,7 +523,8 @@ public sealed class ExportDialogTests : IDisposable
         ClickRowOf(app, app.AppState.ListSession.Assemblies.Assemblies[0]);
         ClickRowOf(app, app.AppState.ListSession.Assemblies.Assemblies[1], KeyModifiers.Control);
         Assert.Equal(2, setup.RowSelection.Count);
-        app.Frames.Key(KeyboardKey.Delete).Frame(2);
+        app.Frames.Key(KeyboardKey.Delete);
+        app.Frames.Frame(2);
 
         Assert.Equal(0, setup.IncludedCount);
         Assert.True(app.Frames.Drew("No assemblies included yet."));
@@ -528,14 +538,17 @@ public sealed class ExportDialogTests : IDisposable
         app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(SampleAppPath)), Waits.Patience);
         app.Settle(2);
 
-        app.Frames.Key(Shortcuts.Export).Frame(2);
+        app.Frames.Key(Shortcuts.Export);
+        app.Frames.Frame(2);
         Assert.True(app.Ui.ExportSetup.IsOpen);
         app.Frames.FilePicker.Answer = _temp.Path;
-        app.Frames.ClickOn(Selector.AtPath("browse")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("browse"));
+        app.Frames.Frame(2);
         Assert.Equal(_temp.Path, app.Ui.ExportSetup.Folder);
         app.Settle();
 
-        app.Frames.ClickOn(Selector.AtPath("export-start")).Frame(2);
+        app.Frames.ClickOn(Selector.AtPath("export-start"));
+        app.Frames.Frame(2);
         app.Settle(1);
 
         Assert.False(app.Ui.ExportSetup.IsOpen);
@@ -551,8 +564,10 @@ public sealed class ExportDialogTests : IDisposable
         app.Settle(2);
         var second = app.AppState.ListSession.Assemblies.Assemblies[1];
 
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, app.Ui.Tree.GetLabel(await second.ReadRootAsync())), PointerButton.Right).Frame();
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Export…")).Frame(2);
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, app.Ui.Tree.GetLabel(await second.ReadRootAsync())), PointerButton.Right);
+        app.Frames.Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Export…"));
+        app.Frames.Frame(2);
 
         var setup = app.Ui.ExportSetup;
         Assert.True(setup.IsOpen);
@@ -584,7 +599,8 @@ public sealed class ExportDialogTests : IDisposable
         app.OpenExportSetup(null);
         app.Run(2);
 
-        app.Frames.ClickOn(Selector.WithText("A folder per namespace part")).Frame(2);
+        app.Frames.ClickOn(Selector.WithText("A folder per namespace part"));
+        app.Frames.Frame(2);
 
         Assert.Equal(!nested.DefaultValue, DecompilerToggles.IsOn(app.AppState.Decompiler.Setup.Options, nested));
     }

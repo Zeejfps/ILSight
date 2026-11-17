@@ -28,7 +28,8 @@ public sealed class PresentationTests
     [Fact]
     public async Task Every_node_of_a_tree_draws_the_icon_its_subject_names_and_the_tree_draws_many()
     {
-        var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync();
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath);
+        var root = await assembly.ReadRootAsync();
         var pending = new Queue<BrowseNode>([root]);
         var seen = new HashSet<NodeIcon>();
 
@@ -136,7 +137,8 @@ public sealed class PresentationTests
     [Fact]
     public async Task Non_public_nodes_carry_an_accessibility_overlay_in_the_palette_color_and_dimmed_text()
     {
-        var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync();
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath);
+        var root = await assembly.ReadRootAsync();
         var ns = await root.GetChildAsync(AppStateDriver.FixturesNamespace);
         var privateField = (await ns.GetChildAsync("Outline").ListChildrenAsync()).Single(c => c.Icon == NodeIcon.Field && c.Accessibility == NodeAccessibility.Private);
         var tree = new BrowseTree { Session = TestSession.Shared };
@@ -253,7 +255,8 @@ public sealed class PresentationTests
     [Fact]
     public async Task A_non_public_type_says_its_accessibility_in_its_tooltip()
     {
-        var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath).ReadRootAsync();
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath);
+        var root = await assembly.ReadRootAsync();
         var hidden = await root.GetChildAsync(AppStateDriver.FixturesNamespace, "Hidden");
         var tree = new BrowseTree { Session = TestSession.Shared };
 

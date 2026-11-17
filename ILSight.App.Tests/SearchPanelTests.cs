@@ -30,7 +30,8 @@ public sealed class SearchPanelTests : IDisposable
         app.Ui.Panels.OpenSearch();
         app.Run();
 
-        app.Frames.Type("t:e").Frame();
+        app.Frames.Type("t:e");
+        app.Frames.Frame();
         app.RunOut();
 
         var search = app.Ui.Search;
@@ -54,7 +55,8 @@ public sealed class SearchPanelTests : IDisposable
         app.Ui.Panels.OpenSearch();
         app.Run();
 
-        app.Frames.Type("c:7340033").Frame();
+        app.Frames.Type("c:7340033");
+        app.Frames.Frame();
         app.RunOut();
 
         var results = app.Ui.Search.Results;

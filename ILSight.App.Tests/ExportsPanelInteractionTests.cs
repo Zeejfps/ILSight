@@ -53,12 +53,16 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     {
         var app = await TwoFinishedAsync();
 
-        app.Frames.Wait(1).Click(app.TextRect("Farewell")).Frame();
+        app.Frames.Wait(1);
+        app.Frames.Click(app.TextRect("Farewell"));
+        app.Frames.Frame();
         Assert.Equal(RunOf(app, "Farewell"), app.Ui.ExportsPanel.Selected);
 
-        app.Frames.Key(KeyboardKey.DownArrow).Frame();
+        app.Frames.Key(KeyboardKey.DownArrow);
+        app.Frames.Frame();
         Assert.Equal(RunOf(app, "Greeter"), app.Ui.ExportsPanel.Selected);
-        app.Frames.Key(KeyboardKey.UpArrow).Frame();
+        app.Frames.Key(KeyboardKey.UpArrow);
+        app.Frames.Frame();
         Assert.Equal(RunOf(app, "Farewell"), app.Ui.ExportsPanel.Selected);
     }
 
@@ -66,15 +70,20 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     public async Task Enter_and_a_double_click_open_the_report_of_a_finished_export()
     {
         var app = await TwoFinishedAsync();
-        app.Frames.Wait(1).Click(app.TextRect("Greeter")).Frame();
+        app.Frames.Wait(1);
+        app.Frames.Click(app.TextRect("Greeter"));
+        app.Frames.Frame();
 
-        app.Frames.Key(KeyboardKey.Enter).Frame(2);
+        app.Frames.Key(KeyboardKey.Enter);
+        app.Frames.Frame(2);
         var active = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
         Assert.Equal("Export report", DocumentsView.Tab(app.Ui.Appearance, app.Ui.Tree, app.AppState.ListSession.Navigation, active).Title);
         var tabs = app.AppState.ListSession.Navigation.OpenTabs.Count();
 
-        app.Frames.Wait(1).DoubleClick(app.TextRect("Farewell")).Frame(2);
+        app.Frames.Wait(1);
+        app.Frames.DoubleClick(app.TextRect("Farewell"));
+        app.Frames.Frame(2);
         Assert.Equal(tabs + 1, app.AppState.ListSession.Navigation.OpenTabs.Count());
     }
 
@@ -82,9 +91,12 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     public async Task Delete_takes_the_selected_export_off_the_history()
     {
         var app = await TwoFinishedAsync();
-        app.Frames.Wait(1).Click(app.TextRect("Greeter")).Frame();
+        app.Frames.Wait(1);
+        app.Frames.Click(app.TextRect("Greeter"));
+        app.Frames.Frame();
 
-        app.Frames.Key(KeyboardKey.Delete).Frame();
+        app.Frames.Key(KeyboardKey.Delete);
+        app.Frames.Frame();
 
         Assert.Equal("Farewell", Assert.Single(app.AppState.FinishedExports).Job.Name);
     }
@@ -93,9 +105,12 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     public async Task Ctrl_C_copies_the_folder_of_the_selected_export()
     {
         var app = await TwoFinishedAsync();
-        app.Frames.Wait(1).Click(app.TextRect("Greeter")).Frame();
+        app.Frames.Wait(1);
+        app.Frames.Click(app.TextRect("Greeter"));
+        app.Frames.Frame();
 
-        app.Frames.Key(Shortcuts.Copy).Frame();
+        app.Frames.Key(Shortcuts.Copy);
+        app.Frames.Frame();
 
         Assert.Equal(_temp.PathOf("First"), app.Frames.Clipboard.Text);
     }
@@ -105,9 +120,12 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     {
         var app = await TwoFinishedAsync();
 
-        app.Frames.Wait(1).Click(app.TextRect("Greeter"), button: PointerButton.Right).Frame(2);
+        app.Frames.Wait(1);
+        app.Frames.Click(app.TextRect("Greeter"), button: PointerButton.Right);
+        app.Frames.Frame(2);
         Assert.True(app.Frames.Drew("Copy folder path"));
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Remove from history")).Frame();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Remove from history"));
+        app.Frames.Frame();
 
         Assert.Equal("Farewell", Assert.Single(app.AppState.FinishedExports).Job.Name);
     }
@@ -116,9 +134,12 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     public async Task Shift_F10_opens_the_menu_of_the_selected_export()
     {
         var app = await TwoFinishedAsync();
-        app.Frames.Wait(1).Click(app.TextRect("Greeter")).Frame();
+        app.Frames.Wait(1);
+        app.Frames.Click(app.TextRect("Greeter"));
+        app.Frames.Frame();
 
-        app.Frames.Key(KeyboardKey.F10, KeyModifiers.Shift).Frame(2);
+        app.Frames.Key(KeyboardKey.F10, KeyModifiers.Shift);
+        app.Frames.Frame(2);
 
         Assert.True(app.Frames.Drew("Copy folder path"));
         Assert.Equal(RunOf(app, "Greeter"), app.Ui.ExportsPanel.MenuTarget);
@@ -129,17 +150,24 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     {
         var app = AppDriver.Opened(height: TallWindow);
         app.Ui.Panels.Open(DockView.Exports);
-        var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
-        Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Later"))).Turn.IsCompleted);
+        var runningEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running")));
+        var running = Assert.IsType<ExportTurn.Started>(await runningEntry.Turn);
+        var laterEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Later")));
+        Assert.False(laterEntry.Turn.IsCompleted);
         app.Run(2);
 
-        app.Frames.Wait(1).Click(app.TextRect("Running")).Frame();
-        app.Frames.Key(KeyboardKey.Delete).Frame();
+        app.Frames.Wait(1);
+        app.Frames.Click(app.TextRect("Running"));
+        app.Frames.Frame();
+        app.Frames.Key(KeyboardKey.Delete);
+        app.Frames.Frame();
         Assert.True(app.AppState.Export.IsRunning);
         Assert.Equal(1, app.AppState.Export.WaitingCount);
 
-        app.Frames.Key(KeyboardKey.DownArrow).Frame();
-        app.Frames.Key(KeyboardKey.Delete).Frame();
+        app.Frames.Key(KeyboardKey.DownArrow);
+        app.Frames.Frame();
+        app.Frames.Key(KeyboardKey.Delete);
+        app.Frames.Frame();
         Assert.Equal(0, app.AppState.Export.WaitingCount);
         app.Driver.InTurn(running.EndTurn);
     }
@@ -149,12 +177,17 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     {
         var app = AppDriver.Opened(height: TallWindow);
         app.Ui.Panels.Open(DockView.Exports);
-        var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
-        Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Second"))).Turn.IsCompleted);
-        Assert.False(app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Third"))).Turn.IsCompleted);
+        var runningEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running")));
+        var running = Assert.IsType<ExportTurn.Started>(await runningEntry.Turn);
+        var secondEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Second")));
+        Assert.False(secondEntry.Turn.IsCompleted);
+        var thirdEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Third")));
+        Assert.False(thirdEntry.Turn.IsCompleted);
         app.Run(2);
 
-        app.Frames.Wait(1).Click(app.TextRect("Remove from queue")).Frame(2);
+        app.Frames.Wait(1);
+        app.Frames.Click(app.TextRect("Remove from queue"));
+        app.Frames.Frame(2);
 
         Assert.Equal(["Third"], app.AppState.Export.Waiting.Select(q => q.Job.Name));
         app.Driver.InTurn(running.EndTurn);
@@ -176,7 +209,8 @@ public sealed class ExportsPanelInteractionTests : IDisposable
         var app = AppDriver.Opened(height: TallWindow);
         var theme = app.Theme;
         app.Ui.Panels.Open(DockView.Exports);
-        var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
+        var runningEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running")));
+        var running = Assert.IsType<ExportTurn.Started>(await runningEntry.Turn);
         running.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.5f });
         app.Run(2);
 
@@ -203,7 +237,8 @@ public sealed class ExportsPanelInteractionTests : IDisposable
     {
         var app = AppDriver.Opened();
         app.Ui.Panels.Open(DockView.Exports);
-        var running = Assert.IsType<ExportTurn.Started>(await app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running"))).Turn);
+        var runningEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running")));
+        var running = Assert.IsType<ExportTurn.Started>(await runningEntry.Turn);
         app.Run(2);
 
         Assert.False(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.StatusLoading)));
