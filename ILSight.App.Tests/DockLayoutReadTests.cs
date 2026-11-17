@@ -24,7 +24,7 @@ public sealed class DockLayoutReadTests
     {
         var read = DockJson.ToLayout(BuildSplitLayout(2, 2, nextId: 3));
 
-        Assert.IsType<DockLayoutRead.IdsRepeated>(read);
+        UnionAsserts.GetCase<DockLayoutRead.IdsRepeated>(read);
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public sealed class DockLayoutReadTests
 
         var read = DockJson.ToLayout(json);
 
-        Assert.IsType<DockLayoutRead.IdsRepeated>(read);
+        UnionAsserts.GetCase<DockLayoutRead.IdsRepeated>(read);
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public sealed class DockLayoutReadTests
 
         var read = DockJson.ToLayout(json);
 
-        Assert.IsType<DockLayoutRead.PartsMissing>(read);
+        UnionAsserts.GetCase<DockLayoutRead.PartsMissing>(read);
     }
 
     [Theory]
@@ -60,7 +60,7 @@ public sealed class DockLayoutReadTests
 
         var read = DockJson.ToLayout(json);
 
-        Assert.Equal(6, Assert.IsType<DockLayoutRead.Parsed>(read).Layout.NextId);
+        Assert.Equal(6, UnionAsserts.GetCase<DockLayoutRead.Parsed>(read).Layout.NextId);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public sealed class DockLayoutReadTests
     {
         var read = DockJson.ToLayout(BuildSplitLayout(2, 3, nextId: 9));
 
-        Assert.Equal(9, Assert.IsType<DockLayoutRead.Parsed>(read).Layout.NextId);
+        Assert.Equal(9, UnionAsserts.GetCase<DockLayoutRead.Parsed>(read).Layout.NextId);
     }
 
     [Fact]
@@ -76,6 +76,6 @@ public sealed class DockLayoutReadTests
     {
         var read = DockJson.ToLayout(new DockLayoutJson { NextId = 0 });
 
-        Assert.Equal(1, Assert.IsType<DockLayoutRead.Parsed>(read).Layout.NextId);
+        Assert.Equal(1, UnionAsserts.GetCase<DockLayoutRead.Parsed>(read).Layout.NextId);
     }
 }

@@ -139,7 +139,7 @@ public sealed class TitleBarTests : IDisposable
         d.Ui.Display.Set(d.Ui.Display.Options with { SystemTitleBar = true });
         d.NextFrame();
         var write = d.AppState.SettingsSaver.Save(d.AppState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
 
         var next = AppStateDriver.Started(_temp.Settings());
 

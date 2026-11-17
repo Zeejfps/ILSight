@@ -4,6 +4,10 @@ namespace ILSight;
 /// failing, and when to try again. A failure is reported once until a write succeeds.</summary>
 public sealed class LastSave
 {
+    /// <summary>How long the autosave waits after a failed write before trying again, from the first frame that asks
+    /// after the failure.</summary>
+    public static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(2);
+
     private SaveRetry _retry = new SaveRetry.Clear();
 
     /// <summary>What the settings were saved from the last time.</summary>
@@ -35,21 +39,38 @@ public sealed class LastSave
     /// beginning with the first ask after the failure; zero when writes are going through.</summary>
     public TimeSpan AdvanceRetry(TimeSpan now)
     {
-        return _retry.Match<(LastSave save, TimeSpan now), TimeSpan>((this, now),
-            static (_, _) => TimeSpan.Zero,
-            static (s, _) => s.save.StartWaiting(s.now),
-            static (s, waiting) => CalculateWaitLeft(s.now, waiting.Since));
+        return _retry switch
+        {
+            SaveRetry.Clear => TimeSpan.Zero,
+            SaveRetry.Failed => StartWaiting(now),
+            SaveRetry.Waiting waiting => CalculateWaitLeft(now, waiting.Since),
+        };
     }
 
     private TimeSpan StartWaiting(TimeSpan now)
     {
         _retry = new SaveRetry.Waiting(now);
-        return SaveRetry.Delay;
+        return RetryDelay;
     }
 
     private static TimeSpan CalculateWaitLeft(TimeSpan now, TimeSpan since)
     {
-        var left = SaveRetry.Delay - (now - since);
+        var left = RetryDelay - (now - since);
         return left > TimeSpan.Zero ? left : TimeSpan.Zero;
+    }
+
+    /// <summary>Whether writing the settings is failing. A failure is reported once until a write succeeds, and the
+    /// autosave waits <see cref="RetryDelay"/> before trying again, from the first frame that asks after the
+    /// failure.</summary>
+    private union SaveRetry(SaveRetry.Clear, SaveRetry.Failed, SaveRetry.Waiting)
+    {
+        // Writes are going through.
+        public sealed record Clear;
+
+        // A write failed, and no frame has asked since.
+        public sealed record Failed;
+
+        // A write failed, and the wait for the next try began at Since.
+        public sealed record Waiting(TimeSpan Since);
     }
 }

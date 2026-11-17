@@ -540,7 +540,7 @@ public sealed class SavedDocumentsTests : IDisposable
             },
         });
         var write = TempSettings.Save(settings);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
 
         var documents = _temp.Settings().AssemblyLists.Single(static l => l.Name == "Hand").Documents;
         Assert.NotNull(documents);
@@ -577,7 +577,7 @@ public sealed class SavedDocumentsTests : IDisposable
         var d = AppStateDriver.Started(_temp.Settings());
         d.NextFrame();
         var write = d.AppState.SettingsSaver.Save(d.AppState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
 
         var saved = _temp.Settings();
         var next = AppStateDriver.Started(saved);

@@ -63,7 +63,7 @@ public sealed class UserIconThemeTests : IDisposable
 
         appState.ChosenThemes.ChooseIconTheme(Id("mine"));
         var settingsSave = appState.SettingsSaver.SaveIfChanged(appState, TimeSpan.FromSeconds(0));
-        Assert.IsType<SettingsSave.Saved>(settingsSave);
+        UnionAsserts.GetCase<SettingsSave.Saved>(settingsSave);
 
         Assert.Equal("mine", Settings().IconTheme.Text);
     }
@@ -85,7 +85,7 @@ public sealed class UserIconThemeTests : IDisposable
 
         Assert.Same(appState.IconThemes.GetTheme(Id("lucide")), IconTheming.ResolveIconTheme(appState));
         var write = appState.SettingsSaver.Save(appState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
         Assert.Equal("gone", Settings().IconTheme.Text);
     }
 

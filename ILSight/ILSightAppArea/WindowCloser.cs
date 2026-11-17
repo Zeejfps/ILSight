@@ -13,7 +13,11 @@ public sealed class WindowCloser
     /// the request before it was refused already.</summary>
     public bool TryClose(SettingsWriteResult save)
     {
-        var refuses = save.Match(_refused, static (_, _) => false, static (refusedBefore, _) => !refusedBefore);
+        var refuses = save switch
+        {
+            SettingsWriteResult.Written => false,
+            SettingsWriteResult.Failed => !_refused,
+        };
         _refused = refuses;
         return !refuses;
     }

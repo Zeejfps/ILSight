@@ -24,8 +24,8 @@ public sealed class SettingsSaverTests
         var first = saving.SaveIfChanged(d.AppState, TimeSpan.FromSeconds(0));
         var second = saving.SaveIfChanged(d.AppState, TimeSpan.FromSeconds(0));
 
-        Assert.IsType<SettingsSave.Saved>(first);
-        Assert.IsType<SettingsSave.Unchanged>(second);
+        UnionAsserts.GetCase<SettingsSave.Saved>(first);
+        UnionAsserts.GetCase<SettingsSave.Unchanged>(second);
         Assert.Equal([SettingsFile], ports.Written);
     }
 
@@ -39,11 +39,11 @@ public sealed class SettingsSaverTests
 
         var failed = saving.SaveIfChanged(d.AppState, TimeSpan.FromSeconds(0));
         var waiting = saving.SaveIfChanged(d.AppState, TimeSpan.FromSeconds(1));
-        var failedAgain = saving.SaveIfChanged(d.AppState, SaveRetry.Delay);
+        var failedAgain = saving.SaveIfChanged(d.AppState, LastSave.RetryDelay);
 
-        Assert.Equal(SaveRetry.Delay, Assert.IsType<SettingsSave.Failed>(failed).RetryIn);
-        Assert.Equal(SaveRetry.Delay - TimeSpan.FromSeconds(1), Assert.IsType<SettingsSave.Waiting>(waiting).RetryIn);
-        Assert.IsType<SettingsSave.Failed>(failedAgain);
+        Assert.Equal(LastSave.RetryDelay, UnionAsserts.GetCase<SettingsSave.Failed>(failed).RetryIn);
+        Assert.Equal(LastSave.RetryDelay - TimeSpan.FromSeconds(1), UnionAsserts.GetCase<SettingsSave.Waiting>(waiting).RetryIn);
+        UnionAsserts.GetCase<SettingsSave.Failed>(failedAgain);
         Assert.Equal(2, ports.Written.Count);
         Assert.Equal("Disk full.", UnionAsserts.GetCase<AppProblem.SettingsNotSaved>(Assert.Single(ports.Reported)).Reason);
     }
@@ -55,7 +55,7 @@ public sealed class SettingsSaverTests
 
         var written = new SettingsSaver(ports).WriteSettings(new AppSettings());
 
-        Assert.IsType<SettingsWriteResult.Written>(written);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(written);
         Assert.Empty(ports.Written);
     }
 
@@ -66,7 +66,7 @@ public sealed class SettingsSaverTests
 
         var written = new SettingsSaver(ports).WriteSettings(new AppSettings { FilePath = SettingsFile, CanSaveOverFile = false });
 
-        Assert.IsType<SettingsWriteResult.Written>(written);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(written);
         Assert.Empty(ports.Written);
     }
 }

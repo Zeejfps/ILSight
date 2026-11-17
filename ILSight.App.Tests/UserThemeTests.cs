@@ -100,7 +100,7 @@ public sealed class UserThemeTests : IDisposable
 
         Assert.Same(appState.Themes.GetTheme(Id("dark")), Theming.ResolveTheme(appState));
         var write = appState.SettingsSaver.Save(appState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
         Assert.Equal("gone", _temp.Settings().Theme.Text);
     }
 

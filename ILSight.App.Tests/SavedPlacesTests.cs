@@ -28,7 +28,7 @@ public sealed class SavedPlacesTests : IDisposable
     private AppStateDriver Restored(string json)
     {
         var (d, problem) = RestoredWith(json);
-        Assert.IsType<SettingsProblem.None>(problem);
+        UnionAsserts.GetCase<SettingsProblem.None>(problem);
         return d;
     }
 
@@ -66,7 +66,7 @@ public sealed class SavedPlacesTests : IDisposable
     private JsonElement Saved(AppStateDriver d)
     {
         var write = d.AppState.SettingsSaver.Save(d.AppState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
         using var json = JsonDocument.Parse(File.ReadAllText(_temp.PathOf("settings.json")));
         return json.RootElement.Clone();
     }
@@ -114,7 +114,7 @@ public sealed class SavedPlacesTests : IDisposable
     {
         var (d, problem) = RestoredWith(WithTab($"\"Path\": {path}"));
 
-        Assert.Equal(["AssemblyLists[0].Documents.Tabs[0]"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
+        Assert.Equal(["AssemblyLists[0].Documents.Tabs[0]"], UnionAsserts.GetCase<SettingsProblem.ValuesLeftOut>(problem).Fields);
         Assert.Null(Assert.Single(d.AppState.ListSession.Navigation.OpenTabs).Node);
     }
 
@@ -123,7 +123,7 @@ public sealed class SavedPlacesTests : IDisposable
     {
         var (d, problem) = RestoredWith(WithBookmark("\"Path\": { \"Version\": 2, \"Steps\": [] }"));
 
-        Assert.Equal(["Bookmarks[0]"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
+        Assert.Equal(["Bookmarks[0]"], UnionAsserts.GetCase<SettingsProblem.ValuesLeftOut>(problem).Fields);
         Assert.Empty(d.AppState.Bookmarks.Items);
     }
 

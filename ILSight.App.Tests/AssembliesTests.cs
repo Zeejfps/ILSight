@@ -382,7 +382,7 @@ public sealed class AssembliesTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var appState = d.AppState;
         var write = appState.SettingsSaver.Save(appState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
         var ports = new FakeAssemblyReloaderPorts { Reopen = static places => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = [], Places = places.Select(static _ => (Outcome<Lookup<BrowseNode>>)new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound())).ToArray() }) };
 
         var loads = await d.RunAsync(() =>
@@ -395,7 +395,7 @@ public sealed class AssembliesTests
         Assert.False(appState.ListSession.Reload.IsRunning);
         Assert.NotEqual(SettingArea.Settings.CaptureSavedSources(appState), appState.LastSave.Sources);
         var settingsSave = appState.SettingsSaver.SaveIfChanged(appState, d.Now);
-        Assert.IsType<SettingsSave.Saved>(settingsSave);
+        UnionAsserts.GetCase<SettingsSave.Saved>(settingsSave);
     }
 
     [Fact]
@@ -442,7 +442,7 @@ public sealed class AssembliesTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var appState = d.AppState;
         var write = appState.SettingsSaver.Save(appState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
         appState.Locale = Locale.De;
         var ports = new FakeOpenAssembliesAsReloadHandlerPorts { Opened = FixturesOf(d) };
 
@@ -456,7 +456,7 @@ public sealed class AssembliesTests
         Assert.False(appState.ListSession.Reload.IsRunning);
         Assert.NotEqual(SettingArea.Settings.CaptureSavedSources(appState), appState.LastSave.Sources);
         var settingsSave = appState.SettingsSaver.SaveIfChanged(appState, d.Now);
-        Assert.IsType<SettingsSave.Saved>(settingsSave);
+        UnionAsserts.GetCase<SettingsSave.Saved>(settingsSave);
     }
 
     [Fact]

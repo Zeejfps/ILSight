@@ -450,7 +450,7 @@ public sealed class MetadataGridTests
         var settings = temp.Settings();
         settings.FlagsFilters = app.Ui.Grids.Filters.ListSaved();
         var write = TempSettings.Save(settings);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
         var saved = temp.Settings().FlagsFilters;
         var restored = MetadataFilters.From(saved).GetFilter(grid, attributes);
         Assert.Equal("Visibility = Public", FilterStatePresenter.Describe(restored));

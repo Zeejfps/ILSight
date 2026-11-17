@@ -18,7 +18,7 @@ public sealed class AssemblyListingTests
         using var temp = new TempDir();
         var d = AppStateDriver.Opened(temp.Settings());
         var write = d.AppState.SettingsSaver.Save(d.AppState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
 
         var loaded = temp.Settings();
 
@@ -40,7 +40,7 @@ public sealed class AssemblyListingTests
         var d = AppStateDriver.Starting(settings);
 
         var write = d.AppState.SettingsSaver.Save(d.AppState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
 
         Assert.Equal([AppStateDriver.FixturePath, other], Assert.Single(temp.Settings().AssemblyLists).Assemblies.Select(static p => p.Text));
         d.Settle();
@@ -62,7 +62,7 @@ public sealed class AssemblyListingTests
 
         d.Settle();
         var write = d.AppState.SettingsSaver.Save(d.AppState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
 
         var roots = d.Ui.Tree.Roots;
         Assert.Equal([NodeIcon.FailedAssembly, NodeIcon.Assembly], roots.Select(r => r.Icon));
@@ -97,14 +97,14 @@ public sealed class AssemblyListingTests
         var greeter = await first.FixtureAsync("Greeter");
         first.Analyze(greeter);
         var firstWrite = first.AppState.SettingsSaver.Save(first.AppState);
-        Assert.IsType<SettingsWriteResult.Written>(firstWrite);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(firstWrite);
         var d = AppStateDriver.Started(temp.Settings());
         d.AppState.Lists.Add(Other);
 
         d.SwitchList(Other);
         d.Settle();
         var secondWrite = d.AppState.SettingsSaver.Save(d.AppState);
-        Assert.IsType<SettingsWriteResult.Written>(secondWrite);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(secondWrite);
 
         var lists = temp.Settings().AssemblyLists;
         Assert.Empty(d.AppState.ListSession.Analyzer.Roots);

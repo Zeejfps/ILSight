@@ -1,41 +1,21 @@
-using System.Diagnostics;
-
 namespace ILSight;
 
 /// <summary>What one save of the settings when they changed did.</summary>
-public abstract record SettingsSave
+public union SettingsSave(SettingsSave.Unchanged, SettingsSave.Saved, SettingsSave.Waiting, SettingsSave.Failed)
 {
-    private SettingsSave()
-    {
-    }
-
     /// <summary>Nothing changed since the last write, or the assemblies are reloading.</summary>
-    public sealed record Unchanged : SettingsSave;
+    public sealed record Unchanged;
 
-    public sealed record Saved : SettingsSave;
+    public sealed record Saved;
 
     /// <summary>A failed write is tried again only in <see cref="RetryIn"/>.</summary>
-    public sealed record Waiting(TimeSpan RetryIn) : SettingsSave;
+    public sealed record Waiting(TimeSpan RetryIn);
 
     /// <summary>The write failed, and is tried again in <see cref="RetryIn"/>.</summary>
-    public sealed record Failed : SettingsSave
+    public sealed record Failed
     {
         public required string Reason { get; init; }
 
         public required TimeSpan RetryIn { get; init; }
-    }
-
-    /// <summary>What the handler of whichever case this is makes of it.</summary>
-    public TResult Match<TResult>(Func<Unchanged, TResult> unchanged, Func<Saved, TResult> saved,
-        Func<Waiting, TResult> waiting, Func<Failed, TResult> failed)
-    {
-        return this switch
-        {
-            Unchanged c => unchanged(c),
-            Saved c => saved(c),
-            Waiting c => waiting(c),
-            Failed c => failed(c),
-            _ => throw new UnreachableException($"SettingsSave.Match does not handle {GetType().Name}."),
-        };
     }
 }

@@ -16,7 +16,7 @@ public sealed class SettingsFileReaderTests
         var settings = read.Settings;
         var problem = read.Problem;
 
-        Assert.IsType<SettingsProblem.None>(problem);
+        UnionAsserts.GetCase<SettingsProblem.None>(problem);
         Assert.Equal(SettingsFile, settings.FilePath);
         Assert.True(settings.CanSaveOverFile);
         Assert.Empty(ports.Kept);
@@ -31,7 +31,7 @@ public sealed class SettingsFileReaderTests
         var settings = read.Settings;
         var problem = read.Problem;
 
-        var notRead = Assert.IsType<SettingsProblem.NotRead>(problem);
+        var notRead = UnionAsserts.GetCase<SettingsProblem.NotRead>(problem);
         Assert.Equal("Locked.", notRead.Detail);
         Assert.Equal(new SettingsKept.CopiedTo("settings.unreadable.json"), notRead.Kept);
         Assert.True(settings.CanSaveOverFile);
@@ -47,7 +47,7 @@ public sealed class SettingsFileReaderTests
         var settings = read.Settings;
         var problem = read.Problem;
 
-        Assert.IsType<SettingsKept.NotSaved>(Assert.IsType<SettingsProblem.NotJson>(problem).Kept);
+        UnionAsserts.GetCase<SettingsKept.NotSaved>(UnionAsserts.GetCase<SettingsProblem.NotJson>(problem).Kept);
         Assert.False(settings.CanSaveOverFile);
     }
 
@@ -60,7 +60,7 @@ public sealed class SettingsFileReaderTests
         var settings = read.Settings;
         var problem = read.Problem;
 
-        Assert.Equal(["Language"], Assert.IsType<SettingsProblem.ValuesLeftOut>(problem).Fields);
+        Assert.Equal(["Language"], UnionAsserts.GetCase<SettingsProblem.ValuesLeftOut>(problem).Fields);
         Assert.False(settings.CheckForUpdates);
         Assert.Equal([SettingsFile], ports.Kept);
     }
@@ -74,7 +74,7 @@ public sealed class SettingsFileReaderTests
         var settings = read.Settings;
         var problem = read.Problem;
 
-        Assert.IsType<SettingsProblem.None>(problem);
+        UnionAsserts.GetCase<SettingsProblem.None>(problem);
         Assert.False(settings.CheckForUpdates);
         Assert.Empty(ports.Kept);
     }

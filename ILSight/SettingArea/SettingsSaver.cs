@@ -45,13 +45,15 @@ public sealed class SettingsSaver(SettingsSaver.IPorts ports)
         }
 
         var write = Save(appState);
-        return write.Match<(AppState appState, TimeSpan now), SettingsSave>((appState, now),
-            static (_, _) => new SettingsSave.Saved(),
-            static (s, failed) => new SettingsSave.Failed
+        return write switch
+        {
+            SettingsWriteResult.Written => new SettingsSave.Saved(),
+            SettingsWriteResult.Failed failed => new SettingsSave.Failed
             {
                 Reason = failed.Reason,
-                RetryIn = s.appState.LastSave.AdvanceRetry(s.now),
-            });
+                RetryIn = appState.LastSave.AdvanceRetry(now),
+            },
+        };
     }
 
     /// <summary>Writes the settings, counting what they were copied from as saved only once the write
@@ -80,9 +82,15 @@ public sealed class SettingsSaver(SettingsSaver.IPorts ports)
 
     private void TakeWrite(AppState appState, SavedSources sources, SettingsWriteResult write)
     {
-        write.Switch(
-            _ => appState.LastSave.TakeWritten(sources),
-            failed => ReportWriteFailure(appState, failed.Reason));
+        switch (write)
+        {
+            case SettingsWriteResult.Written:
+                appState.LastSave.TakeWritten(sources);
+                break;
+            case SettingsWriteResult.Failed failed:
+                ReportWriteFailure(appState, failed.Reason);
+                break;
+        }
     }
 
     private void ReportWriteFailure(AppState appState, string error)

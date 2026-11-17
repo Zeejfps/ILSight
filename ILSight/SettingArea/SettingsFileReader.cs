@@ -36,27 +36,31 @@ public sealed class SettingsFileReader(SettingsFileReader.IPorts ports)
     private SettingsLoadResult ReadSettings(FullFilePath file)
     {
         var read = ports.ReadSettingsText(file);
-        return read.Match(
-            none: _ => new SettingsLoadResult { Settings = new AppSettings(), Problem = new SettingsProblem.None() },
-            text: text => ReadText(file, text.Content),
-            notRead: notRead => new SettingsLoadResult
+        return read switch
+        {
+            SettingsFileText.None => new SettingsLoadResult { Settings = new AppSettings(), Problem = new SettingsProblem.None() },
+            SettingsFileText.Text text => ReadText(file, text.Content),
+            SettingsFileText.NotRead notRead => new SettingsLoadResult
             {
                 Settings = new AppSettings(),
                 Problem = new SettingsProblem.NotRead { Detail = notRead.Detail, Kept = ports.KeepUnreadable(file) },
-            });
+            },
+        };
     }
 
     private SettingsLoadResult ReadText(FullFilePath file, string text)
     {
         var content = SettingsJson.ParseSettingsText(text);
-        return content.Match(
-            notJson: notJson => new SettingsLoadResult
+        return content switch
+        {
+            SettingsTextContent.NotJson notJson => new SettingsLoadResult
             {
                 Settings = new AppSettings(),
                 Problem = new SettingsProblem.NotJson { Detail = notJson.Detail, Kept = ports.KeepUnreadable(file) },
             },
-            empty: _ => new SettingsLoadResult { Settings = new AppSettings(), Problem = new SettingsProblem.Empty() },
-            values: values => ReadValues(file, values));
+            SettingsTextContent.Empty => new SettingsLoadResult { Settings = new AppSettings(), Problem = new SettingsProblem.Empty() },
+            SettingsTextContent.Values values => ReadValues(file, values),
+        };
     }
 
     private SettingsLoadResult ReadValues(FullFilePath file, SettingsTextContent.Values values)

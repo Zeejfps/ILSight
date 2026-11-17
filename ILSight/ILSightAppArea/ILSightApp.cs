@@ -117,11 +117,12 @@ public sealed class ILSightApp : ImmediateGuiApp<UiState>
 
     private static void RetrySaveWhenAsked(Ui ui, SettingsSave autosave)
     {
-        var retryIn = autosave.Match<TimeSpan?>(
-            static _ => null,
-            static _ => null,
-            static waiting => waiting.RetryIn,
-            static failed => failed.RetryIn);
+        TimeSpan? retryIn = autosave switch
+        {
+            SettingsSave.Waiting waiting => waiting.RetryIn,
+            SettingsSave.Failed failed => failed.RetryIn,
+            SettingsSave.Unchanged or SettingsSave.Saved => null,
+        };
         if (retryIn is null)
         {
             return;

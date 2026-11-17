@@ -292,7 +292,7 @@ public sealed class RunArgumentsTests
 
         var d = Start(settings, "--list=other", OtherAssembly);
         var write = d.AppState.SettingsSaver.Save(d.AppState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
 
         AssemblyPath[] opened = [TestPaths.PathOf(AppStateDriver.FixturePath), TestPaths.PathOf(OtherAssembly)];
         Assert.Equal(Other, d.AppState.Lists.Active);
@@ -310,7 +310,7 @@ public sealed class RunArgumentsTests
             Assemblies = [TestPaths.PathOf(AppStateDriver.FixturePath)],
         }), "--clear-list", OtherAssembly);
         var write = d.AppState.SettingsSaver.Save(d.AppState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
 
         Assert.Equal([OtherAssembly], d.AppState.ListSession.Assemblies.ListFilePaths().Select(static p => p.Text));
         Assert.Equal([OtherAssembly], Assert.Single(temp.Settings().AssemblyLists).Assemblies.Select(static p => p.Text));
@@ -409,7 +409,7 @@ public sealed class RunArgumentsTests
     private static List<string> DescribeSaved(AppDriver app, TempDir temp)
     {
         var write = app.AppState.SettingsSaver.Save(app.AppState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
         return temp.Settings().AssemblyLists
             .Select(static l => $"{l.Name}: [{string.Join(",", l.Assemblies.Select(static p => p.Text))}] analyses [{string.Join(",", l.Analyzed ?? [])}]")
             .ToList();

@@ -27,9 +27,16 @@ public sealed class SaveResourceHandler(SaveResourceHandler.IPorts ports)
     public async Task HandleAsync(BrowseNode node, string path, CancellationToken ct)
     {
         var saved = await ports.SaveResourceAsync(node, path, ct);
-        saved.Switch(
-            static _ => { },
-            closed => ports.ShowRefusal(new Refusal.ResourceNotSaved { Resource = node.Text, Assembly = closed.Assembly }),
-            failed => ports.ReportError(new AppProblem.ResourceNotSaved { Resource = node.Text, Error = failed.Error }));
+        switch (saved)
+        {
+            case ResourceSave.Saved:
+                break;
+            case ResourceSave.Closed closed:
+                ports.ShowRefusal(new Refusal.ResourceNotSaved { Resource = node.Text, Assembly = closed.Assembly });
+                break;
+            case ResourceSave.Failed failed:
+                ports.ReportError(new AppProblem.ResourceNotSaved { Resource = node.Text, Error = failed.Error });
+                break;
+        }
     }
 }

@@ -45,7 +45,7 @@ public sealed class SettingsFormatTests : IDisposable
         var settings = ExpectedSettings() with { FilePath = FullFilePath.Of(path) };
 
         var write = TempSettings.Save(settings);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
 
         AssertSameJson(Fixture(SettingsFixture), File.ReadAllText(path));
     }
@@ -106,9 +106,9 @@ public sealed class SettingsFormatTests : IDisposable
         var read = AppRoot.ReadSettingsFile(FullFilePath.Of(path));
         var loaded = read.Settings;
         var problem = read.Problem;
-        Assert.IsType<SettingsProblem.None>(problem);
+        UnionAsserts.GetCase<SettingsProblem.None>(problem);
         var write = TempSettings.Save(loaded);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
 
         AssertSameJson(Fixture(SettingsFixture), File.ReadAllText(path));
     }
@@ -126,7 +126,7 @@ public sealed class SettingsFormatTests : IDisposable
         var diagram = loaded.AssemblyLists.SelectMany(static l => l.Documents?.Tabs ?? []).Select(static t => t.Content is DiagramDocumentRecord diagram ? diagram : null)
             .OfType<DiagramDocumentRecord>().Single();
         var write = TempSettings.Save(loaded);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
         var saved = JsonNode.Parse(File.ReadAllText(path))?.ToJsonString();
 
         Assert.Equal(new TabTitle.Saved("Diagramm von Calculator"), diagram.Title);

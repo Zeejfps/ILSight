@@ -200,7 +200,7 @@ public sealed class BookmarkTests : IDisposable
         var toggle = Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
         UnionAsserts.GetCase<BookmarkToggle.Added>(toggle);
         var write = d.AppState.SettingsSaver.Save(d.AppState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
         var settings = _temp.Settings();
         settings.Bookmarks.Add(settings.Bookmarks[0] with { Name = "Twin" });
 
@@ -485,7 +485,7 @@ public sealed class BookmarkTests : IDisposable
         d.Ui.BookmarksPanel.Columns.Restore([1f, 1f, 4f, 1f]);
         d.NextFrame();
         var write = d.AppState.SettingsSaver.Save(d.AppState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
 
         var restored = AppStateDriver.Started(_temp.Settings()).Ui.BookmarksPanel.Columns.Weights;
 

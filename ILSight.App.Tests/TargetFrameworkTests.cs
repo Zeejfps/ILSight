@@ -38,7 +38,7 @@ public sealed class TargetFrameworkTests
 
         PickFramework(app, "net48");
         var write = app.AppState.SettingsSaver.Save(app.AppState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
 
         var assembly = FixturesOf(app.AppState.ListSession.Assemblies);
         Assert.True(assembly.IsTargetFrameworkPicked);

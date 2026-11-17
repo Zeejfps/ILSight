@@ -195,33 +195,37 @@ public static class ProblemTexts
 
     private static string SettingsTitle(Strings t, SettingsProblem problem)
     {
-        return problem.Match(
-            none: static _ => throw new UnreachableException("SettingsProblem.None is no problem to tell of."),
-            notRead: _ => t.ErrorReadSettings,
-            notJson: _ => t.ErrorReadSettings,
-            valuesLeftOut: _ => t.ErrorReadSomeSettings,
-            empty: _ => t.ErrorReadSettings,
-            layoutPartsMissing: _ => t.ErrorReadLayout,
-            layoutPartsRepeated: _ => t.ErrorReadLayout);
+        return problem switch
+        {
+            SettingsProblem.None => throw new UnreachableException("SettingsProblem.None is no problem to tell of."),
+            SettingsProblem.NotRead or SettingsProblem.NotJson or SettingsProblem.Empty => t.ErrorReadSettings,
+            SettingsProblem.ValuesLeftOut => t.ErrorReadSomeSettings,
+            SettingsProblem.LayoutPartsMissing or SettingsProblem.LayoutPartsRepeated => t.ErrorReadLayout,
+        };
     }
 
     private static string DescribeSettings(Strings t, SettingsProblem problem)
     {
-        return problem.Match(
-            none: static _ => throw new UnreachableException("SettingsProblem.None is no problem to tell of."),
-            notRead: notRead => notRead.Detail + Environment.NewLine + DescribeKept(t, notRead.Kept),
-            notJson: notJson => t.ErrorSettingsNotJson(notJson.Detail) + Environment.NewLine + DescribeKept(t, notJson.Kept),
-            valuesLeftOut: leftOut => t.ErrorSettingsValuesLeftOut(string.Join(", ", leftOut.Fields)) + Environment.NewLine + DescribeKept(t, leftOut.Kept),
-            empty: _ => t.ErrorSettingsEmpty,
-            layoutPartsMissing: _ => t.ErrorLayoutPartsMissing,
-            layoutPartsRepeated: _ => t.ErrorLayoutPartsRepeated);
+        return problem switch
+        {
+            SettingsProblem.None => throw new UnreachableException("SettingsProblem.None is no problem to tell of."),
+            SettingsProblem.NotRead notRead => notRead.Detail + Environment.NewLine + DescribeKept(t, notRead.Kept),
+            SettingsProblem.NotJson notJson => t.ErrorSettingsNotJson(notJson.Detail) + Environment.NewLine + DescribeKept(t, notJson.Kept),
+            SettingsProblem.ValuesLeftOut leftOut => t.ErrorSettingsValuesLeftOut(string.Join(", ", leftOut.Fields)) + Environment.NewLine
+                + DescribeKept(t, leftOut.Kept),
+            SettingsProblem.Empty => t.ErrorSettingsEmpty,
+            SettingsProblem.LayoutPartsMissing => t.ErrorLayoutPartsMissing,
+            SettingsProblem.LayoutPartsRepeated => t.ErrorLayoutPartsRepeated,
+        };
     }
 
     private static string DescribeKept(Strings t, SettingsKept kept)
     {
-        return kept.Match(
-            copied => t.ErrorSettingsKeptAs(copied.Path),
-            _ => t.ErrorSettingsNotSaved);
+        return kept switch
+        {
+            SettingsKept.CopiedTo copied => t.ErrorSettingsKeptAs(copied.Path),
+            SettingsKept.NotSaved => t.ErrorSettingsNotSaved,
+        };
     }
 
     private static string ThemeFileTitle(Strings t, ThemeKind kind, string file)

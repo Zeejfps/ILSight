@@ -59,7 +59,7 @@ public sealed class ScreenIsolationTests : IDisposable
         d.Ui.BookmarksPanel.Columns.Restore([1f, 1f, 4f, 1f]);
         d.Settle();
         var write = d.AppState.SettingsSaver.Save(d.AppState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
 
         var reached = FindScreenObject(d.AppState, FindLayouts(d.Ui.Panels));
 

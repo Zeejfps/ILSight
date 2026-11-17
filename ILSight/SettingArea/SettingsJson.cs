@@ -1350,11 +1350,15 @@ internal static class SettingsJson
             return null;
         }
 
-        (var layout, problem) = DockJson.ToLayout(saved).Match<(DockLayout?, SettingsProblem)>(
-            parsed: static parsed => (parsed.Layout, new SettingsProblem.None()),
-            partsMissing: static _ => (null, new SettingsProblem.LayoutPartsMissing()),
-            idsRepeated: static _ => (null, new SettingsProblem.LayoutPartsRepeated()));
-        return layout;
+        var read = DockJson.ToLayout(saved);
+        (DockLayout? Layout, SettingsProblem Problem) layout = read switch
+        {
+            DockLayoutRead.Parsed parsed => (parsed.Layout, new SettingsProblem.None()),
+            DockLayoutRead.PartsMissing => (null, new SettingsProblem.LayoutPartsMissing()),
+            DockLayoutRead.IdsRepeated => (null, new SettingsProblem.LayoutPartsRepeated()),
+        };
+        problem = layout.Problem;
+        return layout.Layout;
     }
 
     private static Dictionary<string, SavedFilterState>? ReadFlagsFilters(SettingsReader file)

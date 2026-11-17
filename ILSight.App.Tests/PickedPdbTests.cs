@@ -41,7 +41,7 @@ public sealed class PickedPdbTests
 
         Pick(d, FixturePdb);
         var write = d.AppState.SettingsSaver.Save(d.AppState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
         var next = AppStateDriver.Started(temp.Settings());
         next.Settle();
 
@@ -75,7 +75,7 @@ public sealed class PickedPdbTests
         d.InTurn(() => Commands.CloseAllAssemblies(d.AppState));
         AssemblyLists.RememberOpenAssemblies(d.AppState.Lists, d.AppState.ListSession);
         var write = d.AppState.SettingsSaver.Save(d.AppState);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
 
         Assert.Empty(d.AppState.ListSession.Assemblies.Pdbs.All);
         Assert.Null(Assert.Single(temp.Settings().AssemblyLists).Pdbs);

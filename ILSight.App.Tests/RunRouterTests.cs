@@ -65,7 +65,7 @@ public sealed class RunRouterTests
         var settings = temp.Settings();
         settings.Locale = Locale.De;
         var write = TempSettings.Save(settings);
-        Assert.IsType<SettingsWriteResult.Written>(write);
+        UnionAsserts.GetCase<SettingsWriteResult.Written>(write);
         var unreadable = FullFilePath.Of(temp.PathOf("unreadable.json"));
         File.WriteAllText(unreadable.Text, "not json");
 
