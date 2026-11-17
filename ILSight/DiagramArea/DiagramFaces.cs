@@ -286,21 +286,23 @@ internal static class DiagramFaces
 
     private static float MeasureRowText(Ui ui, CardRow row)
     {
-        return row.Content.Match((ui, text: row.Text),
-            name: static (s, _) => s.ui.MeasureText(s.text, bold: true),
-            stereotype: static (s, _) => s.ui.MeasureText(s.text, family: TextFonts.Italic),
-            fold: static (s, _) => s.ui.MeasureText(s.text),
-            member: static (s, _) => s.ui.MeasureText(s.text));
+        return row.Content switch
+        {
+            CardRowContent.Name => ui.MeasureText(row.Text, bold: true),
+            CardRowContent.Stereotype => ui.MeasureText(row.Text, family: TextFonts.Italic),
+            CardRowContent.Fold or CardRowContent.Member => ui.MeasureText(row.Text),
+        };
     }
 
     // What a row draws before its text: a chevron, an icon, or nothing.
     private static float GetLead(RowStack stack, CardRow row)
     {
-        return row.Content.Match(stack,
-            name: static (stack, _) => stack.IconSize + IconGap,
-            stereotype: static (_, _) => 0f,
-            fold: static (_, _) => ChevronWidth,
-            member: static (stack, _) => stack.IconSize + IconGap);
+        return row.Content switch
+        {
+            CardRowContent.Name or CardRowContent.Member => stack.IconSize + IconGap,
+            CardRowContent.Stereotype => 0f,
+            CardRowContent.Fold => ChevronWidth,
+        };
     }
 
     private sealed class RowStack

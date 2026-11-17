@@ -123,7 +123,8 @@ public sealed class SettingsFormatTests : IDisposable
         var path = _temp.Write(SettingsFixture, earlier);
 
         var loaded = AppRoot.ReadSettingsFile(FullFilePath.Of(path)).Settings;
-        var diagram = loaded.AssemblyLists.SelectMany(static l => l.Documents?.Tabs ?? []).OfType<DiagramDocumentRecord>().Single();
+        var diagram = loaded.AssemblyLists.SelectMany(static l => l.Documents?.Tabs ?? []).Select(static t => t.Content is DiagramDocumentRecord diagram ? diagram : null)
+            .OfType<DiagramDocumentRecord>().Single();
         var write = TempSettings.Save(loaded);
         Assert.IsType<SettingsWriteResult.Written>(write);
         var saved = JsonNode.Parse(File.ReadAllText(path))?.ToJsonString();
@@ -292,38 +293,50 @@ public sealed class SettingsFormatTests : IDisposable
         };
         DocumentRecord[] tabs =
         [
-            new NodeDocumentRecord
+            new DocumentRecord
             {
                 Panel = "document-1",
-                Title = "Calculator",
-                Location = CalculatorPlace(),
-                Language = DecompilationLanguage.IL,
-                View = code,
+                Content = new NodeDocumentRecord
+                {
+                    Title = "Calculator",
+                    Location = CalculatorPlace(),
+                    Language = DecompilationLanguage.IL,
+                    View = code,
+                },
             },
-            new NodeDocumentRecord
+            new DocumentRecord
             {
                 Panel = "document-2",
-                Title = "Other",
-                Location = OtherPlace(),
-                Language = DecompilationLanguage.ILWithCSharp,
-                View = grid,
+                Content = new NodeDocumentRecord
+                {
+                    Title = "Other",
+                    Location = OtherPlace(),
+                    Language = DecompilationLanguage.ILWithCSharp,
+                    View = grid,
+                },
             },
-            new DiagramDocumentRecord
+            new DocumentRecord
             {
                 Panel = "document-3",
-                Title = new TabTitle.Diagram("Calculator"),
-                Types = [Calculator, new TypeAnchor { AssemblyPath = B, FullName = "Ns.Other" }],
-                HomeAssemblies = [A],
-                View = view,
+                Content = new DiagramDocumentRecord
+                {
+                    Title = new TabTitle.Diagram("Calculator"),
+                    Types = [Calculator, new TypeAnchor { AssemblyPath = B, FullName = "Ns.Other" }],
+                    HomeAssemblies = [A],
+                    View = view,
+                },
             },
-            new ComparisonDocumentRecord
+            new DocumentRecord
             {
                 Panel = "document-4",
-                Title = new TabTitle.Comparison("A"),
-                LeftPath = A,
-                RightPath = B,
-                Scope = ApiScope.AllDeclared,
-                View = new ComparisonViewRecord(true),
+                Content = new ComparisonDocumentRecord
+                {
+                    Title = new TabTitle.Comparison("A"),
+                    LeftPath = A,
+                    RightPath = B,
+                    Scope = ApiScope.AllDeclared,
+                    View = new ComparisonViewRecord(true),
+                },
             },
         ];
         var layout = new DockLayout

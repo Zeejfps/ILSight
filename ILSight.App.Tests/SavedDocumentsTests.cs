@@ -339,8 +339,9 @@ public sealed class SavedDocumentsTests : IDisposable
         var settings = _temp.Settings();
         var documents = Assert.Single(settings.AssemblyLists).Documents;
         Assert.NotNull(documents);
-        var saved = documents.Tabs.OfType<NodeDocumentRecord>().Single(t => t.View?.Grid is not null);
-        var older = saved with { View = ViewPosition.OfCode(new CodeViewPosition
+        var saved = documents.Tabs.Single(static t => t.Content is NodeDocumentRecord shown && shown.View?.Grid is not null);
+        var node = UnionAsserts.GetCase<NodeDocumentRecord>(saved.Content);
+        var older = saved with { Content = node with { View = ViewPosition.OfCode(new CodeViewPosition
         {
             TopLine = row,
             ScrollX = 0f,
@@ -350,7 +351,7 @@ public sealed class SavedDocumentsTests : IDisposable
                 Line = row,
                 Column = 1,
             },
-        }) };
+        }) } };
         documents.Tabs[documents.Tabs.IndexOf(saved)] = older;
 
         var next = new AppDriver(height: 360f, settings: settings);
@@ -364,7 +365,6 @@ public sealed class SavedDocumentsTests : IDisposable
     {
         var missing = new NodeDocumentRecord
         {
-            Panel = MissingPanel,
             Title = "Missing",
             Location = FixturePlace("Missing"),
             Language = DecompilationLanguage.CSharp,
@@ -372,7 +372,7 @@ public sealed class SavedDocumentsTests : IDisposable
         };
         var d = AppStateDriver.Started(SettingsWith(new DocumentsRecord
         {
-            Tabs = [missing],
+            Tabs = [new DocumentRecord { Panel = MissingPanel, Content = missing }],
             Active = MissingPanel,
             Preview = null,
             Layout = null,
@@ -392,7 +392,6 @@ public sealed class SavedDocumentsTests : IDisposable
     {
         var greeter = new NodeDocumentRecord
         {
-            Panel = MissingPanel,
             Title = "Greeter",
             Location = FixturePlace("Greeter"),
             Language = DecompilationLanguage.CSharp,
@@ -400,7 +399,7 @@ public sealed class SavedDocumentsTests : IDisposable
         };
         var d = AppStateDriver.Starting(SettingsWith(new DocumentsRecord
         {
-            Tabs = [greeter],
+            Tabs = [new DocumentRecord { Panel = MissingPanel, Content = greeter }],
             Active = MissingPanel,
             Preview = null,
             Layout = null,
@@ -419,7 +418,6 @@ public sealed class SavedDocumentsTests : IDisposable
         var vehicle = FixtureType("Vehicle");
         var saved = new DiagramDocumentRecord
         {
-            Panel = DiagramPanel,
             Title = new TabTitle.Diagram("Vehicle"),
             Types = [vehicle, FixtureType("Missing")],
             HomeAssemblies = [TestPaths.PathOf(AppStateDriver.FixturePath)],
@@ -427,7 +425,7 @@ public sealed class SavedDocumentsTests : IDisposable
         };
         var d = AppStateDriver.Started(SettingsWith(new DocumentsRecord
         {
-            Tabs = [saved],
+            Tabs = [new DocumentRecord { Panel = DiagramPanel, Content = saved }],
             Active = DiagramPanel,
             Preview = null,
             Layout = null,
@@ -551,16 +549,16 @@ public sealed class SavedDocumentsTests : IDisposable
         Assert.Equal(["First"], kept.Select(Names.SavedTitle));
     }
 
-    private static NodeDocumentRecord HandTab(string panel, string title)
+    private static DocumentRecord HandTab(string panel, string title)
     {
-        return new NodeDocumentRecord
+        var node = new NodeDocumentRecord
         {
-            Panel = panel,
             Title = title,
             Location = NodePath.From(TestPaths.PathOf(AppStateDriver.FixturePath), []),
             Language = DecompilationLanguage.CSharp,
             View = null,
         };
+        return new DocumentRecord { Panel = panel, Content = node };
     }
 
     [Fact]

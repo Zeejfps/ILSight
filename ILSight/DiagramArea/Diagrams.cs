@@ -162,7 +162,7 @@ public static class Diagrams
 
         var tab = reopened.Tab;
         var diagram = ShowSavedDiagram(navigation, tab, saved);
-        var waiting = SavedDocuments.WaitFor(reopenedTabs, tab, saved);
+        var waiting = SavedDocuments.WaitFor(reopenedTabs, tab, reopened.Record);
         var read = diagram.StartReading();
         return new SavedDiagramRead { Reopened = waiting, Diagram = diagram, Read = read, Saved = saved };
     }

@@ -44,7 +44,7 @@ public sealed class ComparisonTests
 
     private static ApiDiff DiffOf(AssemblyComparison comparison)
     {
-        return Assert.IsType<ComparisonResult.Compared>(comparison.Result).Diff;
+        return UnionAsserts.GetCase<ComparisonResult.Compared>(comparison.Result).Diff;
     }
 
     private static bool HasCompared(AssemblyComparison? comparison)
@@ -184,7 +184,7 @@ public sealed class ComparisonTests
         Assert.NotNull(again);
         Assert.NotSame(compared, again);
         Assert.Equal([RightPath, LeftPath], [again.LeftPath.Text, again.RightPath.Text]);
-        Assert.IsType<ComparisonResult.Compared>(again.Result);
+        UnionAsserts.GetCase<ComparisonResult.Compared>(again.Result);
     }
 
     [Fact]
@@ -290,7 +290,7 @@ public sealed class ComparisonTests
         d.StartComparing(swappedRun);
         d.Settle();
 
-        var failed = Assert.IsType<ComparisonResult.Failed>(comparison.Result);
+        var failed = UnionAsserts.GetCase<ComparisonResult.Failed>(comparison.Result);
         Assert.Equal(new ComparisonFailure.AssemblyClosed("ApiDiffSample.dll"), failed.Failure);
     }
 
@@ -309,7 +309,7 @@ public sealed class ComparisonTests
         d.Settle();
 
         Assert.True(comparison.Work.IsClosed);
-        Assert.IsType<ComparisonResult.NotYet>(comparison.Result);
+        UnionAsserts.GetCase<ComparisonResult.NotYet>(comparison.Result);
         Assert.False(comparison.Work.IsRunning);
     }
 

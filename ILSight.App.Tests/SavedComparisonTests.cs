@@ -55,6 +55,7 @@ public sealed class SavedComparisonTests : IDisposable
         var documents = _temp.Settings().AssemblyLists.Single().Documents;
         Assert.NotNull(documents);
         return documents.Tabs
+            .Select(static t => t.Content is ComparisonDocumentRecord comparison ? comparison : null)
             .OfType<ComparisonDocumentRecord>()
             .Single();
     }
@@ -83,7 +84,7 @@ public sealed class SavedComparisonTests : IDisposable
         Assert.Equal(panel, next.Ui.Documents.GetPanel(restored));
         Assert.Equal(RightPath, reopened.LeftPath.Text);
         Assert.Equal(LeftPath, reopened.RightPath.Text);
-        var diff = Assert.IsType<ComparisonResult.Compared>(reopened.Result).Diff;
+        var diff = UnionAsserts.GetCase<ComparisonResult.Compared>(reopened.Result).Diff;
         Assert.Equal(ApiScope.AllDeclared, diff.Scope);
         Assert.Equal("ApiDiffSample (2.0.0.0)", diff.LeftName);
         Assert.False(next.Ui.Documents.GetView(restored).Comparison.OnlyDifferences);

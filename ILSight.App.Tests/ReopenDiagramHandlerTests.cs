@@ -13,7 +13,6 @@ public sealed class ReopenDiagramHandlerTests
         Assert.NotNull(vehicle);
         var saved = new DiagramDocumentRecord
         {
-            Panel = "document-1",
             Title = new TabTitle.Diagram("Vehicle"),
             Types = [vehicle.Anchor],
             HomeAssemblies = null,
@@ -21,7 +20,7 @@ public sealed class ReopenDiagramHandlerTests
         };
         var tab = d.AppState.ListSession.Navigation.OpenReopenedTab();
         d.AppState.ListSession.Navigation.WaitForDiagram(tab, saved.Title);
-        var reopened = SavedDocuments.WaitFor(d.AppState.ListSession.Reopened, tab, saved);
+        var reopened = SavedDocuments.WaitFor(d.AppState.ListSession.Reopened, tab, new DocumentRecord { Panel = "document-1", Content = saved });
         var read = Diagrams.ReopenDiagram(d.AppState.ListSession.Navigation, d.AppState.ListSession.Reopened, reopened, saved);
         Assert.NotNull(read);
         return read;

@@ -576,7 +576,7 @@ public sealed class CloseAssembliesTests
 
         Assert.Contains("Compared", savedOpen);
         Assert.Equal(KeyboardFile, closed);
-        Assert.IsType<ComparisonResult.Compared>(shownClosed);
+        UnionAsserts.GetCase<ComparisonResult.Compared>(shownClosed);
         Assert.True(drewBar);
         Assert.DoesNotContain("Compared", savedClosed);
         Assert.Null(tab.ClosedAssembly);

@@ -79,7 +79,7 @@ public sealed class SettlingWorkflowsTests
         d.Settle();
 
         Assert.False(comparison.Work.IsRunning);
-        Assert.IsType<ComparisonFailure.Failed>(Assert.IsType<ComparisonResult.Failed>(comparison.Result).Failure);
+        UnionAsserts.GetCase<ComparisonFailure.Failed>(UnionAsserts.GetCase<ComparisonResult.Failed>(comparison.Result).Failure);
         Assert.Equal("broken", ReportedOnce(d.AppState).Error.Message);
     }
 

@@ -25,11 +25,12 @@ public readonly record struct CardRow
     public float Bottom => Top + Height;
 
     /// <summary>The type or member whose code a click on the row opens, or null for a row that opens none.</summary>
-    public CodeReference.Entity? Target => Content.Match<CodeReference.Entity?>(
-        name: static name => name.Type,
-        stereotype: static _ => null,
-        fold: static _ => null,
-        member: static member => member.Reference);
+    public CodeReference.Entity? Target => Content switch
+    {
+        CardRowContent.Name name => name.Type,
+        CardRowContent.Member member => member.Reference,
+        CardRowContent.Stereotype or CardRowContent.Fold => null,
+    };
 
     /// <summary>Whether a click on the row opens the code of what it shows.</summary>
     public bool IsLink => Target != null;

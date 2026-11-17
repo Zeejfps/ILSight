@@ -29,10 +29,12 @@ public sealed class ComparisonChoice
     {
         get
         {
-            return Dialog.Match<LoadedModule?>(
-                static _ => null,
-                static open => open.Compared,
-                static going => going.Compared);
+            return Dialog switch
+            {
+                ComparisonDialog.Closed => null,
+                ComparisonDialog.Open open => open.Compared,
+                ComparisonDialog.Going going => going.Compared,
+            };
         }
     }
 
@@ -165,5 +167,17 @@ public sealed class ComparisonChoice
         }
 
         Selection.Select(_filtered[index], _filtered);
+    }
+
+    /// <summary>Whether the "compare with" dialog shows, and of which assembly.</summary>
+    private union ComparisonDialog(ComparisonDialog.Closed, ComparisonDialog.Open, ComparisonDialog.Going)
+    {
+        public sealed record Closed;
+
+        // Asks what to compare Compared with.
+        public sealed record Open(LoadedModule Compared);
+
+        // Dismissed from the dialog itself, which goes out still showing Compared.
+        public sealed record Going(LoadedModule Compared);
     }
 }

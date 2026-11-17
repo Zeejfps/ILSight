@@ -55,7 +55,6 @@ public sealed class TabLoadsTests
         var path = d.AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.Text == AppStateDriver.FixturePath).FilePath;
         var record = new ComparisonDocumentRecord
         {
-            Panel = "document-9",
             Title = new TabTitle.Comparison("Fixtures"),
             LeftPath = path,
             RightPath = path,
@@ -64,7 +63,7 @@ public sealed class TabLoadsTests
         };
         var tab = d.AppState.ListSession.Navigation.OpenReopenedTab();
         d.AppState.ListSession.Navigation.WaitForComparison(tab, record.Title);
-        SavedDocuments.WaitFor(d.AppState.ListSession.Reopened, tab, record);
+        SavedDocuments.WaitFor(d.AppState.ListSession.Reopened, tab, new DocumentRecord { Panel = "document-9", Content = record });
         var runs = new List<ComparisonRun>();
         var other = 0;
 

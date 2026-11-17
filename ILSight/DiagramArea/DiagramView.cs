@@ -309,10 +309,12 @@ internal static class DiagramView
 
     private static CardFace? FaceOf(DiagramHit hit)
     {
-        return hit.Match<CardFace?>(
-            static _ => null,
-            static card => card.Face,
-            static row => row.Face);
+        return hit switch
+        {
+            DiagramHit.Nothing => null,
+            DiagramHit.Card card => card.Face,
+            DiagramHit.Row row => row.Face,
+        };
     }
 
     private static CardRow? RowOf(DiagramHit hit)
@@ -1007,11 +1009,21 @@ internal static class DiagramView
 
         var left = card.X + row.Indent * frame.Zoom;
         var underlined = isHovered && row.IsLink;
-        row.Content.Switch((p, frame, rect, left, row, underlined),
-            name: static (s, name) => PaintIconRow(s.p, s.frame, s.rect, s.left, s.row, name.Icon, name.Accessibility, bold: true, s.underlined),
-            stereotype: static (s, _) => PaintText(s.p, s.frame, s.rect, s.left, s.row.Text, s.frame.Theme.TextMuted, family: TextFonts.Italic),
-            fold: static (s, fold) => PaintFold(s.p, s.frame, s.rect, s.left, s.row, fold.IsOpen),
-            member: static (s, member) => PaintIconRow(s.p, s.frame, s.rect, s.left, s.row, member.Icon, member.Accessibility, bold: false, s.underlined));
+        switch (row.Content)
+        {
+            case CardRowContent.Name name:
+                PaintIconRow(p, frame, rect, left, row, name.Icon, name.Accessibility, bold: true, underlined);
+                break;
+            case CardRowContent.Stereotype:
+                PaintText(p, frame, rect, left, row.Text, frame.Theme.TextMuted, family: TextFonts.Italic);
+                break;
+            case CardRowContent.Fold fold:
+                PaintFold(p, frame, rect, left, row, fold.IsOpen);
+                break;
+            case CardRowContent.Member member:
+                PaintIconRow(p, frame, rect, left, row, member.Icon, member.Accessibility, bold: false, underlined);
+                break;
+        }
     }
 
     private static void PaintIconRow(UiPainter p, DiagramFrame frame, UiRect rect, float left, CardRow row, NodeIcon icon,

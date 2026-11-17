@@ -4,7 +4,7 @@ namespace ILSight;
 
 /// <summary>A tab showing the node at <see cref="Location"/>, in <see cref="Language"/>, its view standing
 /// at <see cref="View"/>.</summary>
-public sealed record NodeDocumentRecord : DocumentRecord
+public sealed record NodeDocumentRecord
 {
     /// <summary>The node's name as it was last known, which no language words; null where none was.</summary>
     public required string? Title { get; init; }

@@ -499,7 +499,7 @@ public sealed class AppSettingsTests : IDisposable
         Assert.NotNull(list.Analyzed);
         Assert.Empty(list.Analyzed);
         Assert.NotNull(list.Documents);
-        var diagram = Assert.IsType<DiagramDocumentRecord>(Assert.Single(list.Documents.Tabs));
+        var diagram = UnionAsserts.GetCase<DiagramDocumentRecord>(Assert.Single(list.Documents.Tabs).Content);
         Assert.Empty(diagram.Types);
         var bookmark = Assert.Single(loaded.Bookmarks);
         Assert.Equal(("", "a.dll", ""), (bookmark.Name, bookmark.ModuleName, bookmark.MemberName));

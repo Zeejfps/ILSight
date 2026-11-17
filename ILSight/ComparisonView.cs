@@ -142,15 +142,22 @@ internal static class ComparisonView
 
     private static string? FindHint(Ui ui, Appearance appearance, AssemblyComparison comparison, ComparisonRows rows)
     {
-        return comparison.Result.Match<(Ui ui, Strings t, ComparisonRows rows), string?>((ui, appearance.Strings, rows),
-            static (s, _) => s.t.ComparisonComparing,
-            static (s, _) => FindNoDifferencesHint(s.t, s.rows),
-            static (s, failed) => s.ui.Memo("comparison-failure", (failed.Failure, s.t), static a => DescribeFailure(a.t, a.Failure)));
+        var t = appearance.Strings;
+        return comparison.Result switch
+        {
+            ComparisonResult.NotYet => t.ComparisonComparing,
+            ComparisonResult.Compared => FindNoDifferencesHint(t, rows),
+            ComparisonResult.Failed failed => ui.Memo("comparison-failure", (failed.Failure, t), static a => DescribeFailure(a.t, a.Failure)),
+        };
     }
 
     private static ApiDiff? FindDiff(AssemblyComparison comparison)
     {
-        return comparison.Result.Match<ApiDiff?>(static _ => null, static compared => compared.Diff, static _ => null);
+        return comparison.Result switch
+        {
+            ComparisonResult.Compared compared => compared.Diff,
+            ComparisonResult.NotYet or ComparisonResult.Failed => null,
+        };
     }
 
     private static string? FindNoDifferencesHint(Strings t, ComparisonRows rows)
@@ -165,9 +172,11 @@ internal static class ComparisonView
 
     private static string DescribeFailure(Strings t, ComparisonFailure failure)
     {
-        return failure.Match(t,
-            static (t, closed) => t.ComparisonAssemblyClosed(closed.File),
-            static (t, failed) => t.ErrorCompare(left: failed.Left, right: failed.Right));
+        return failure switch
+        {
+            ComparisonFailure.AssemblyClosed closed => t.ComparisonAssemblyClosed(closed.File),
+            ComparisonFailure.Failed failed => t.ErrorCompare(left: failed.Left, right: failed.Right),
+        };
     }
 
     private static void Tree(Ui ui, IAppCommandWriter commands, Navigation navigation, ComparisonRows rows)

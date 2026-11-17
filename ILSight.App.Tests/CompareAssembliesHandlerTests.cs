@@ -40,7 +40,7 @@ public sealed class CompareAssembliesHandlerTests
         Assert.Single(ports.Answers).SetResult(new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Read { Value = diff }));
         await d.EndAsync(comparing);
 
-        Assert.Same(diff, Assert.IsType<ComparisonResult.Compared>(comparison.Result).Diff);
+        Assert.Same(diff, UnionAsserts.GetCase<ComparisonResult.Compared>(comparison.Result).Diff);
         Assert.False(comparison.Work.IsRunning);
         Assert.Empty(ports.Reported);
     }
@@ -58,8 +58,8 @@ public sealed class CompareAssembliesHandlerTests
         Assert.Single(ports.Answers).SetResult(new Outcome<ModuleRead<ApiDiff>>.Failed(error));
         await d.EndAsync(comparing);
 
-        var failed = Assert.IsType<ComparisonResult.Failed>(comparison.Result);
-        Assert.IsType<ComparisonFailure.Failed>(failed.Failure);
+        var failed = UnionAsserts.GetCase<ComparisonResult.Failed>(comparison.Result);
+        UnionAsserts.GetCase<ComparisonFailure.Failed>(failed.Failure);
         Assert.Same(error, UnionAsserts.GetCase<AppProblem.ComparisonFailed>(Assert.Single(ports.Reported)).Error);
     }
 
@@ -78,12 +78,12 @@ public sealed class CompareAssembliesHandlerTests
 
         ports.Answers[0].SetResult(new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Read { Value = await DiffAsync(older) }));
         await d.EndAsync(olderComparing);
-        Assert.IsType<ComparisonResult.NotYet>(comparison.Result);
+        UnionAsserts.GetCase<ComparisonResult.NotYet>(comparison.Result);
         ports.Answers[1].SetResult(new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Read { Value = newerDiff }));
         await d.EndAsync(newerComparing);
 
         Assert.True(older.Work.Token.IsCancellationRequested);
-        Assert.Same(newerDiff, Assert.IsType<ComparisonResult.Compared>(comparison.Result).Diff);
+        Assert.Same(newerDiff, UnionAsserts.GetCase<ComparisonResult.Compared>(comparison.Result).Diff);
         Assert.Empty(ports.Reported);
     }
 
@@ -97,7 +97,7 @@ public sealed class CompareAssembliesHandlerTests
         var run = Comparisons.SwapComparedAssemblies(d.AppState.ListSession.Assemblies, comparison);
 
         Assert.Null(run);
-        Assert.IsType<ComparisonFailure.AssemblyClosed>(Assert.IsType<ComparisonResult.Failed>(comparison.Result).Failure);
+        UnionAsserts.GetCase<ComparisonFailure.AssemblyClosed>(UnionAsserts.GetCase<ComparisonResult.Failed>(comparison.Result).Failure);
         Assert.False(comparison.Work.IsRunning);
     }
 }

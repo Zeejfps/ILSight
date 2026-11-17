@@ -23,12 +23,11 @@ internal static class Names
     /// <summary>The title <paramref name="saved"/> was kept under, in English.</summary>
     public static string? SavedTitle(DocumentRecord saved)
     {
-        return saved switch
+        return saved.Content switch
         {
             NodeDocumentRecord node => node.Title,
             DiagramArea.DiagramDocumentRecord diagram => diagram.Title?.Words(Strings.En),
             ComparisonDocumentRecord comparison => comparison.Title?.Words(Strings.En),
-            _ => null,
         };
     }
 }

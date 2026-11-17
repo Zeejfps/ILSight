@@ -467,7 +467,6 @@ public sealed class AssembliesTests
         var place = greeter.Path;
         var record = new NodeDocumentRecord
         {
-            Panel = "document-9",
             Title = "Greeter",
             Location = place,
             Language = DecompilationLanguage.CSharp,
@@ -475,7 +474,7 @@ public sealed class AssembliesTests
         };
         var tab = d.AppState.ListSession.Navigation.OpenReopenedTab();
         d.AppState.ListSession.Navigation.WaitForNode(tab, place, record.Title, record.Language);
-        var reopened = SavedDocuments.WaitFor(d.AppState.ListSession.Reopened, tab, record);
+        var reopened = SavedDocuments.WaitFor(d.AppState.ListSession.Reopened, tab, new DocumentRecord { Panel = "document-9", Content = record });
         var ports = new FakeOpenAssembliesAsReloadHandlerPorts();
 
         var loads = await d.RunAsync(() =>

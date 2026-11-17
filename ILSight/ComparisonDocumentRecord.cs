@@ -5,7 +5,7 @@ namespace ILSight;
 
 /// <summary>A tab comparing the API of the assembly at <see cref="LeftPath"/> with that of the one at
 /// <see cref="RightPath"/>, taking in what <see cref="Scope"/> says, and how it was viewed.</summary>
-public sealed record ComparisonDocumentRecord : DocumentRecord
+public sealed record ComparisonDocumentRecord
 {
     /// <summary>What its tab was titled, worded again when drawn; null where the settings held none.</summary>
     public required TabTitle? Title { get; init; }

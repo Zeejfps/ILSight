@@ -230,8 +230,8 @@ public sealed class AnalyzerTests
         var offered = Analysis.OfferAnalysis(analyzer, greeter);
         var unavailable = Analysis.OfferAnalysis(analyzer, unlisted);
 
-        Assert.Equal(greeter, Assert.IsType<CommandOffer<AnalysisSymbol>.Runs>(offered).Target);
-        var why = UnionAsserts.GetCase<Refusal.NotAnalyzable>(Assert.IsType<CommandOffer<AnalysisSymbol>.Unavailable>(unavailable).Why);
+        Assert.Equal(greeter, UnionAsserts.GetCase<CommandOffer<AnalysisSymbol>.Runs>(offered).Target);
+        var why = UnionAsserts.GetCase<Refusal.NotAnalyzable>(UnionAsserts.GetCase<CommandOffer<AnalysisSymbol>.Unavailable>(unavailable).Why);
         var rootAdd = analyzer.AddRoot(unlisted);
         Assert.Equal(why, UnionAsserts.GetCase<AnalyzerAdd.Refused>(rootAdd).Why);
         Assert.Empty(analyzer.Roots);

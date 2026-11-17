@@ -284,12 +284,11 @@ internal static class SettingsJson
 
     private static DocumentJson ToJson(DocumentRecord document)
     {
-        return document switch
+        return document.Content switch
         {
-            NodeDocumentRecord node => ToJson(node),
-            DiagramDocumentRecord diagram => ToJson(diagram),
-            ComparisonDocumentRecord comparison => ToJson(comparison),
-            _ => throw new UnreachableException(),
+            NodeDocumentRecord node => ToJson(document.Panel, node),
+            DiagramDocumentRecord diagram => ToJson(document.Panel, diagram),
+            ComparisonDocumentRecord comparison => ToJson(document.Panel, comparison),
         };
     }
 
@@ -304,13 +303,13 @@ internal static class SettingsJson
         };
     }
 
-    private static NodeDocumentJson ToJson(NodeDocumentRecord node)
+    private static NodeDocumentJson ToJson(string panel, NodeDocumentRecord node)
     {
         var code = node.View?.Code;
         var grid = node.View?.Grid;
         return new NodeDocumentJson
         {
-            Panel = node.Panel,
+            Panel = panel,
             Title = node.Title,
             FilePath = node.Location.FilePath.Text,
             Path = ToJson(node.Location),
@@ -339,14 +338,14 @@ internal static class SettingsJson
             return null;
         }
 
-        return new NodeDocumentRecord
+        var node = new NodeDocumentRecord
         {
-            Panel = json.Panel,
             Title = json.Title,
             Location = location,
             Language = json.Language,
             View = ParseView(json.Position, json.GridPosition),
         };
+        return new DocumentRecord { Panel = json.Panel, Content = node };
     }
 
     private static ViewPosition? ParseView(CodeViewPositionJson? code, GridPositionJson? grid)
@@ -364,11 +363,11 @@ internal static class SettingsJson
         return null;
     }
 
-    private static DiagramDocumentJson ToJson(DiagramDocumentRecord diagram)
+    private static DiagramDocumentJson ToJson(string panel, DiagramDocumentRecord diagram)
     {
         return new DiagramDocumentJson
         {
-            Panel = diagram.Panel,
+            Panel = panel,
             Title = SavedTextOf(diagram.Title),
             TitleName = (diagram.Title as TabTitle.Diagram)?.Type,
             Types = diagram.Types.Select(static TypeAnchorJson? (t) => ToJson(t)).ToList(),
@@ -386,21 +385,21 @@ internal static class SettingsJson
 
         var types = ListTypes(json.Types, leaveOut);
         var homes = json.HomeAssemblies is null ? null : ListPaths(json.HomeAssemblies, _ => leaveOut());
-        return new DiagramDocumentRecord
+        var diagram = new DiagramDocumentRecord
         {
-            Panel = json.Panel,
             Title = json.TitleName is null ? ParseSavedTitle(json.Title) : new TabTitle.Diagram(json.TitleName),
             Types = types,
             HomeAssemblies = homes,
             View = json.View is null ? null : Parse(json.View),
         };
+        return new DocumentRecord { Panel = json.Panel, Content = diagram };
     }
 
-    private static ComparisonDocumentJson ToJson(ComparisonDocumentRecord comparison)
+    private static ComparisonDocumentJson ToJson(string panel, ComparisonDocumentRecord comparison)
     {
         return new ComparisonDocumentJson
         {
-            Panel = comparison.Panel,
+            Panel = panel,
             Title = SavedTextOf(comparison.Title),
             TitleName = (comparison.Title as TabTitle.Comparison)?.Assembly,
             LeftPath = comparison.LeftPath.Text,
@@ -435,15 +434,15 @@ internal static class SettingsJson
             return null;
         }
 
-        return new ComparisonDocumentRecord
+        var comparison = new ComparisonDocumentRecord
         {
-            Panel = json.Panel,
             Title = json.TitleName is null ? ParseSavedTitle(json.Title) : new TabTitle.Comparison(json.TitleName),
             LeftPath = left,
             RightPath = right,
             Scope = json.Scope,
             View = json.View is null ? null : Parse(json.View),
         };
+        return new DocumentRecord { Panel = json.Panel, Content = comparison };
     }
 
     private static List<string?> WritePaths(List<AssemblyPath> paths)

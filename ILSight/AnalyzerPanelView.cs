@@ -108,10 +108,17 @@ internal static class AnalyzerPanelView
 
     private static void AnalyzeSelected(IAppCommandWriter commands, Panels panels, AnalyzerRows rows, CommandOffer<AnalysisSymbol> offer)
     {
-        offer.Switch(
-            runs => Commands.AnalyzeLater(commands, panels, rows, runs.Target),
-            unavailable => Commands.RefuseLater(commands, unavailable.Why),
-            static _ => { });
+        switch (offer)
+        {
+            case CommandOffer<AnalysisSymbol>.Runs runs:
+                Commands.AnalyzeLater(commands, panels, rows, runs.Target);
+                break;
+            case CommandOffer<AnalysisSymbol>.Unavailable unavailable:
+                Commands.RefuseLater(commands, unavailable.Why);
+                break;
+            case CommandOffer<AnalysisSymbol>.NotOffered:
+                break;
+        }
     }
 
     private static void RemoveSelectedAnalysis(IAppCommandWriter commands, AnalyzerRows rows)
@@ -178,17 +185,21 @@ internal static class AnalyzerPanelView
     private static void AnalyzeItem(Ui ui, Appearance appearance, IAppCommandWriter commands, Panels panels, AnalyzerRows analyzerRows, CommandOffer<AnalysisSymbol> offer)
     {
         var t = appearance.Strings;
-        offer.Switch(
-            runs =>
-            {
+        switch (offer)
+        {
+            case CommandOffer<AnalysisSymbol>.Runs runs:
                 if (ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, id: "analyze"))
                 {
                     Commands.AnalyzeLater(commands, panels, analyzerRows, runs.Target);
                 }
-            },
-            unavailable => ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, enabled: false, id: "analyze",
-                detail: unavailable.Why.Words(t).Why),
-            static _ => { });
+
+                break;
+            case CommandOffer<AnalysisSymbol>.Unavailable unavailable:
+                ui.MenuItem(t.TreeAnalyze, Shortcuts.Analyze, enabled: false, id: "analyze", detail: unavailable.Why.Words(t).Why);
+                break;
+            case CommandOffer<AnalysisSymbol>.NotOffered:
+                break;
+        }
     }
 
     private static void GoToItems(Ui ui, Appearance appearance, IAppCommandWriter commands, Navigation navigation, CodeReference.Navigable target)

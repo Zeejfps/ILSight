@@ -93,7 +93,7 @@ public static class SavedDocuments
 
     private static void WaitForSaved(Navigation navigation, DocumentTab tab, DocumentRecord record)
     {
-        switch (record)
+        switch (record.Content)
         {
             case NodeDocumentRecord node:
                 navigation.WaitForNode(tab, node.Location, node.Title, node.Language);
@@ -213,6 +213,17 @@ public static class SavedDocuments
 
     private static DocumentRecord? SaveShown(DocumentTab tab, TabPanel panel)
     {
+        var content = SaveContent(tab, panel);
+        if (content is null)
+        {
+            return null;
+        }
+
+        return new DocumentRecord { Panel = panel.Panel, Content = content.Value };
+    }
+
+    private static DocumentRecordContent? SaveContent(DocumentTab tab, TabPanel panel)
+    {
         var diagram = tab.Diagram;
         if (diagram is not null)
         {
@@ -233,7 +244,6 @@ public static class SavedDocuments
 
         return new NodeDocumentRecord
         {
-            Panel = panel.Panel,
             Title = tab.Load.Title,
             Location = location,
             Language = tab.Load.Language,
@@ -248,7 +258,6 @@ public static class SavedDocuments
         var view = panel.View as TabPanelView.Diagram;
         return new DiagramDocumentRecord
         {
-            Panel = panel.Panel,
             Title = tab.DocumentTitle,
             Types = types,
             HomeAssemblies = homes,
@@ -261,7 +270,6 @@ public static class SavedDocuments
         var view = panel.View as TabPanelView.Comparison;
         return new ComparisonDocumentRecord
         {
-            Panel = panel.Panel,
             Title = tab.DocumentTitle,
             LeftPath = comparison.LeftPath,
             RightPath = comparison.RightPath,
@@ -397,7 +405,7 @@ public static class SavedDocuments
     private static void ShowReopened(Navigation navigation, ReopenedTabs reopenedTabs, AssemblyList assemblies, ReopenedTab reopened, List<WaitingNode> nodes,
         List<SavedDiagramRead> diagramReads, List<ComparisonRun> comparisonRuns)
     {
-        switch (reopened.Record)
+        switch (reopened.Record.Content)
         {
             case NodeDocumentRecord node:
                 nodes.Add(new WaitingNode { Reopened = reopened, Record = node, Place = FindListedPlace(assemblies, node) });

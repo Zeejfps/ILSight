@@ -11,7 +11,6 @@ public sealed class ShowReopenedNodesHandlerTests
         var place = greeter.Path;
         var record = new NodeDocumentRecord
         {
-            Panel = "document-9",
             Title = "Greeter",
             Location = place,
             Language = DecompilationLanguage.CSharp,
@@ -19,7 +18,7 @@ public sealed class ShowReopenedNodesHandlerTests
         };
         var tab = d.AppState.ListSession.Navigation.OpenReopenedTab();
         d.AppState.ListSession.Navigation.WaitForNode(tab, place, record.Title, record.Language);
-        var reopened = SavedDocuments.WaitFor(d.AppState.ListSession.Reopened, tab, record);
+        var reopened = SavedDocuments.WaitFor(d.AppState.ListSession.Reopened, tab, new DocumentRecord { Panel = "document-9", Content = record });
         return new WaitingNode { Reopened = reopened, Record = record, Place = place };
     }
 

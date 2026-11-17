@@ -311,7 +311,7 @@ public sealed class DocumentViews
 
     private void RestoreDiagramView(ReopenedTab reopened)
     {
-        if (reopened.Record is not DiagramDocumentRecord diagram)
+        if (reopened.Record.Content is not DiagramDocumentRecord diagram)
         {
             return;
         }
@@ -327,7 +327,7 @@ public sealed class DocumentViews
 
     private void RestoreComparisonView(ReopenedTab reopened)
     {
-        if (reopened.Record is not ComparisonDocumentRecord comparison)
+        if (reopened.Record.Content is not ComparisonDocumentRecord comparison)
         {
             return;
         }
