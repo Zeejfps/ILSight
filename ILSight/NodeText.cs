@@ -44,34 +44,22 @@ public static class NodeText
     // The labels the app words for nodes the core names by what they are; null for a node named by what it reads.
     private static string? WriteFixedLabel(Strings t, BrowseNode node)
     {
-        return node.Subject.Match<Strings, string?>(t,
-            module: static (_, _) => null,
-            @namespace: static (_, _) => null,
-            failedAssembly: static (_, _) => null,
-            typeDefinition: static (_, _) => null,
-            memberDefinition: static (_, _) => null,
-            references: static (t, _) => t.TreeReferences,
-            assemblyReference: static (_, _) => null,
-            referencedTypes: static (t, _) => t.TreeReferencedTypes,
-            typeReference: static (_, _) => null,
-            memberReference: static (_, _) => null,
-            moduleReference: static (_, _) => null,
-            importedMethod: static (_, _) => null,
-            forwardedType: static (_, _) => null,
-            baseTypes: static (t, _) => t.TreeBaseTypes,
-            baseType: static (_, _) => null,
-            derivedTypes: static (t, _) => t.TreeDerivedTypes,
-            derivedType: static (_, _) => null,
-            unreadableModule: static (t, unreadable) => t.CauseModuleUnreadableRow(name: OneLineText.Name(unreadable.Value.Module.FilePath.FileName),
+        return node.Subject switch
+        {
+            NodeSubject.Module or NodeSubject.Namespace or NodeSubject.FailedAssembly or NodeSubject.TypeDefinition
+                or NodeSubject.MemberDefinition or NodeSubject.AssemblyReference or NodeSubject.TypeReference or NodeSubject.MemberReference
+                or NodeSubject.ModuleReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType or NodeSubject.BaseType
+                or NodeSubject.DerivedType or NodeSubject.ResourceContainer or NodeSubject.ResourceEntry or NodeSubject.Metadata
+                or NodeSubject.MetadataTable or NodeSubject.Package or NodeSubject.PackageFile => null,
+            NodeSubject.References => t.TreeReferences,
+            NodeSubject.ReferencedTypes => t.TreeReferencedTypes,
+            NodeSubject.BaseTypes => t.TreeBaseTypes,
+            NodeSubject.DerivedTypes => t.TreeDerivedTypes,
+            NodeSubject.UnreadableModule unreadable => t.CauseModuleUnreadableRow(name: OneLineText.Name(unreadable.Value.Module.FilePath.FileName),
                 why: OneLineText.Message(unreadable.Value.Why.Message)),
-            resources: static (t, _) => t.TreeResources,
-            resourceContainer: static (_, _) => null,
-            resourceEntry: static (_, _) => null,
-            metadata: static (_, _) => null,
-            metadataTables: static (t, _) => t.TreeTables,
-            metadataTable: static (_, _) => null,
-            package: static (_, _) => null,
-            packageFile: static (_, _) => null);
+            NodeSubject.Resources => t.TreeResources,
+            NodeSubject.MetadataTables => t.TreeTables,
+        };
     }
 
     /// <summary>The node's full name as the status bar shows it, in <paramref name="t"/>'s language for a node whose

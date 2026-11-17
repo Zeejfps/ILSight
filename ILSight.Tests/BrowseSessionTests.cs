@@ -169,7 +169,7 @@ public sealed class BrowseSessionTests : IDisposable
         Assert.Equal(expected.Path, actual.Path);
         Assert.Equal(expected.Text, actual.Text);
         Assert.Same(expected.Assembly, actual.Assembly);
-        Assert.Equal(expected.Subject.GetType(), actual.Subject.GetType());
+        Assert.Equal(UnionAsserts.GetCaseType(expected.Subject), UnionAsserts.GetCaseType(actual.Subject));
         Assert.Equal(expected.FullName, actual.FullName);
         Assert.Equal(expected.Visibility, actual.Visibility);
         Assert.Equal(expected.Reference, actual.Reference);

@@ -31,11 +31,11 @@ public sealed class BundleTests
 
         Assert.IsType<LoadedPackage>(bundle);
         var bundleRoot = await bundle.ReadRootAsync();
-        Assert.True(Assert.IsType<NodeSubject.Package>(bundleRoot.Subject).Value.Package.Package.IsBundle);
+        Assert.True(UnionAsserts.GetCase<NodeSubject.Package>(bundleRoot.Subject).Value.Package.Package.IsBundle);
         Assert.Equal(BundleName, bundleRoot.Text);
         var children = await bundleRoot.ListChildrenAsync();
         Assert.Equal([typeof(NodeSubject.PackageFile), typeof(NodeSubject.Module), typeof(NodeSubject.Module)],
-            children.Select(static c => c.Subject.GetType()));
+            children.Select(static c => UnionAsserts.GetCaseType(c.Subject)));
         Assert.Equal("App.deps.json", (await bundleRoot.ListChildrenAsync())[0].Text);
         Assert.Equal(["ILSight.Core", TestAssemblyName], list.Assemblies.Select(a => a.Name));
     }
@@ -84,7 +84,7 @@ public sealed class BundleTests
         var bundleRoot = await bundle.ReadRootAsync();
         var broken = await bundleRoot.GetChildAsync("Broken.dll");
 
-        Assert.IsType<NodeSubject.PackageFile>(broken.Subject);
+        UnionAsserts.GetCase<NodeSubject.PackageFile>(broken.Subject);
         var thrown = Assert.Throws<BundleEntryException>(() => BrowseNodes.ReadResource(broken));
         Assert.Equal(new BundleEntryFault.Outside { Entry = "Broken.dll" }, thrown.Fault);
     }

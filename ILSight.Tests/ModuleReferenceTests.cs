@@ -77,8 +77,8 @@ public sealed class ModuleReferenceTests
         var fixtureNative = await root.GetChildAsync("References", "fixture-native");
         var answer = await fixtureNative.GetChildAsync("Answer() : int");
 
-        Assert.IsType<NodeSubject.ImportedMethod>(answer.Subject);
-        Assert.Equal("ILSight.Tests.Fixtures.NativeImports", Assert.IsType<NodeSubject.ImportedMethod>(answer.Subject).Value.DeclaringTypeName);
+        UnionAsserts.GetCase<NodeSubject.ImportedMethod>(answer.Subject);
+        Assert.Equal("ILSight.Tests.Fixtures.NativeImports", UnionAsserts.GetCase<NodeSubject.ImportedMethod>(answer.Subject).Value.DeclaringTypeName);
     }
 
     [Fact]
@@ -117,7 +117,7 @@ public sealed class ModuleReferenceTests
 
         var qcallChildren = await qcall.ListChildrenAsync();
         Assert.DoesNotContain(qcallChildren, i => i.Text.Contains(">g__", StringComparison.Ordinal));
-        Assert.Equal("System.GC", Assert.IsType<NodeSubject.ImportedMethod>(collect.Subject).Value.DeclaringTypeName);
+        Assert.Equal("System.GC", UnionAsserts.GetCase<NodeSubject.ImportedMethod>(collect.Subject).Value.DeclaringTypeName);
         Assert.StartsWith("_Collect(", definition.Text, StringComparison.Ordinal);
         Assert.Equal(MemberShape.Method, definition.MemberShape);
     }

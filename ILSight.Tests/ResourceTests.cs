@@ -232,7 +232,7 @@ public sealed class ResourceTests
         UnionAsserts.GetCase<NodeContent.Code>(await xml.ReadContentAsync());
         Assert.True(xml.IsCode);
         var resourcesNode = await resources.GetChildAsync("Mixed.resources");
-        Assert.IsType<NodeSubject.ResourceContainer>(resourcesNode.Subject);
+        UnionAsserts.GetCase<NodeSubject.ResourceContainer>(resourcesNode.Subject);
         var resourcesChildren = await resources.ListChildrenAsync();
         Assert.All(resourcesChildren, c => Assert.True(c.HasResource));
 

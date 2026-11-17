@@ -142,7 +142,7 @@ public sealed class LoadOptionsTests
         var runtimeReference = await RuntimeReferenceAsync(assembly);
         var children = await runtimeReference.ListChildrenAsync();
 
-        Assert.All(children, c => Assert.IsType<NodeSubject.ReferencedTypes>(c.Subject));
+        Assert.All(children, c => UnionAsserts.GetCase<NodeSubject.ReferencedTypes>(c.Subject));
     }
 
     [Fact]

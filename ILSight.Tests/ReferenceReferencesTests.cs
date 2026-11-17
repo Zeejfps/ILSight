@@ -21,9 +21,9 @@ public sealed class ReferenceReferencesTests
         var runtimeReference = await RuntimeReferenceAsync(assembly);
         var children = await runtimeReference.ListChildrenAsync();
 
-        Assert.IsType<NodeSubject.ReferencedTypes>(children[0].Subject);
+        UnionAsserts.GetCase<NodeSubject.ReferencedTypes>(children[0].Subject);
         var coreLib = Assert.Single(children, c => c.Text == CoreLib);
-        Assert.IsType<NodeSubject.AssemblyReference>(coreLib.Subject);
+        UnionAsserts.GetCase<NodeSubject.AssemblyReference>(coreLib.Subject);
         Assert.Equal(Runtime, coreLib.Assembly.Name);
     }
 

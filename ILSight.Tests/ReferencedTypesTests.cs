@@ -42,12 +42,12 @@ public sealed class ReferencedTypesTests
 
         var list = await UsedListAsync(assembly);
 
-        Assert.IsType<NodeSubject.TypeReference>(list.Subject);
+        UnionAsserts.GetCase<NodeSubject.TypeReference>(list.Subject);
         Assert.Equal("System.Collections.Generic.List<>", list.FullName);
         var add = await list.GetChildAsync("Add(T) : void");
-        Assert.Equal(MemberShape.Method, Assert.IsType<NodeSubject.MemberReference>(add.Subject).Value.Shape);
+        Assert.Equal(MemberShape.Method, UnionAsserts.GetCase<NodeSubject.MemberReference>(add.Subject).Value.Shape);
         var enumerator = await list.GetChildAsync("Enumerator");
-        Assert.IsType<NodeSubject.TypeReference>(enumerator.Subject);
+        UnionAsserts.GetCase<NodeSubject.TypeReference>(enumerator.Subject);
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public sealed class ReferencedTypesTests
 
         var current = await list.GetChildAsync("Enumerator", "Current : T");
 
-        Assert.Equal(MemberShape.Property, Assert.IsType<NodeSubject.MemberReference>(current.Subject).Value.Shape);
+        Assert.Equal(MemberShape.Property, UnionAsserts.GetCase<NodeSubject.MemberReference>(current.Subject).Value.Shape);
         var children = await list.ListChildrenAsync();
         Assert.DoesNotContain(children, IsSpecialized);
     }

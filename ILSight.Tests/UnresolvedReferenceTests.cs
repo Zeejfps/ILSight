@@ -41,7 +41,7 @@ public sealed class UnresolvedReferenceTests : IDisposable
         var core = await root.GetChildAsync("References", Core);
 
         var coreChildren = await core.ListChildrenAsync();
-        Assert.IsType<NodeSubject.ReferencedTypes>(Assert.Single(coreChildren).Subject);
+        UnionAsserts.GetCase<NodeSubject.ReferencedTypes>(Assert.Single(coreChildren).Subject);
         Assert.Null(await list.FindNodeAsync(core.Destination));
         Assert.Contains("// Not found", Documents.GetText(await core.DecompileAsync(DecompilationLanguage.CSharp)));
     }
@@ -57,7 +57,7 @@ public sealed class UnresolvedReferenceTests : IDisposable
         var besideBaseTypes = await BaseTypesAsync(beside);
         var resolved = await besideBaseTypes.GetChildAsync(nameof(GridSchema));
 
-        Assert.IsType<NodeSubject.BaseType>(unresolved.Subject);
+        UnionAsserts.GetCase<NodeSubject.BaseType>(unresolved.Subject);
         UnionAsserts.GetCase<Activation.OpenSelf>(unresolved.Activation);
         Assert.Equal(NodeAccessibility.None, unresolved.Accessibility);
         Assert.True(unresolved.IsPublicApi);
@@ -74,7 +74,7 @@ public sealed class UnresolvedReferenceTests : IDisposable
         var root = await assembly.ReadRootAsync();
         var used = await root.GetChildAsync("References", Core, "Referenced types", nameof(GridSchema));
 
-        Assert.IsType<NodeSubject.TypeReference>(used.Subject);
+        UnionAsserts.GetCase<NodeSubject.TypeReference>(used.Subject);
         Assert.Equal(typeof(GridSchema).FullName, used.FullName);
         Assert.Null(await list.FindNodeAsync(used.Destination));
         var usedChildren = await used.ListChildrenAsync();

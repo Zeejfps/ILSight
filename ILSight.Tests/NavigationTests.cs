@@ -9,7 +9,7 @@ public sealed class NavigationTests
 {
     private static MetadataTableInfo TableOf(BrowseNode node)
     {
-        return Assert.IsType<NodeSubject.MetadataTable>(node.Subject).Value;
+        return UnionAsserts.GetCase<NodeSubject.MetadataTable>(node.Subject).Value;
     }
 
     [Theory]

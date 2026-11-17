@@ -373,45 +373,36 @@ public static class NodeContentLoader
 
     private static DocumentSubject SubjectOf(BrowseNode node, SummarizedChildren children, RequestFacts facts)
     {
-        return node.Subject.Match<(BrowseNode Node, SummarizedChildren Children, RequestFacts Facts), DocumentSubject>((node, children, facts),
-            module: static (_, module) => new DocumentSubject.ModulePreview { Module = module.Value },
-            @namespace: static (s, _) => SummarySubject(s.Node, new SummaryInfo.Namespace
+        return node.Subject switch
+        {
+            NodeSubject.Module module => new DocumentSubject.ModulePreview { Module = module.Value },
+            NodeSubject.Namespace => SummarySubject(node, new SummaryInfo.Namespace
             {
-                Name = s.Node.Text,
-                Entries = ListNamespaceEntries(s.Children, s.Facts),
+                Name = node.Text,
+                Entries = ListNamespaceEntries(children, facts),
             }),
-            failedAssembly: static (_, failed) => new DocumentSubject.Failure { Assembly = failed.Value },
-            typeDefinition: static (_, type) => new DocumentSubject.Type { Definition = type.Definition },
-            memberDefinition: static (_, member) => new DocumentSubject.Member { Definition = member.Definition },
-            references: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            assemblyReference: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            referencedTypes: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            typeReference: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            memberReference: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            moduleReference: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            importedMethod: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            forwardedType: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            baseTypes: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            baseType: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            derivedTypes: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            derivedType: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            unreadableModule: static (s, _) => new DocumentSubject.Summary
+            NodeSubject.FailedAssembly failed => new DocumentSubject.Failure { Assembly = failed.Value },
+            NodeSubject.TypeDefinition type => new DocumentSubject.Type { Definition = type.Definition },
+            NodeSubject.MemberDefinition member => new DocumentSubject.Member { Definition = member.Definition },
+            NodeSubject.References or NodeSubject.AssemblyReference or NodeSubject.ReferencedTypes or NodeSubject.TypeReference
+                or NodeSubject.MemberReference or NodeSubject.ModuleReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType
+                or NodeSubject.BaseTypes or NodeSubject.BaseType or NodeSubject.DerivedTypes or NodeSubject.DerivedType => SummarySubject(node, SummaryOf(node, children, facts)),
+            NodeSubject.UnreadableModule => new DocumentSubject.Summary
             {
-                Info = new SummaryInfo.Comments([s.Node.Text]),
+                Info = new SummaryInfo.Comments([node.Text]),
                 Module = null,
             },
-            resources: static (s, _) => SummarySubject(s.Node, DescribeResources(s.Children)),
-            resourceContainer: static (s, container) => ContainerSubject(s.Node, s.Children, container.Value),
-            resourceEntry: static (s, entry) => EntrySubject(s.Node, entry.Value),
-            metadata: static (s, _) => SummarySubject(s.Node, new SummaryInfo.Comments(s.Facts.LinesRead)),
-            metadataTables: static (s, _) => SummarySubject(s.Node, new SummaryInfo.Comments(s.Facts.LinesRead)),
-            metadataTable: static (s, _) => SummarySubject(s.Node, new SummaryInfo.Comments(s.Facts.LinesRead)),
-            package: static (s, _) => new DocumentSubject.Summary
+            NodeSubject.Resources => SummarySubject(node, DescribeResources(children)),
+            NodeSubject.ResourceContainer container => ContainerSubject(node, children, container.Value),
+            NodeSubject.ResourceEntry entry => EntrySubject(node, entry.Value),
+            NodeSubject.Metadata or NodeSubject.MetadataTables or NodeSubject.MetadataTable => SummarySubject(node, new SummaryInfo.Comments(facts.LinesRead)),
+            NodeSubject.Package => new DocumentSubject.Summary
             {
-                Info = new SummaryInfo.Comments(s.Children.Children.Select(DescribePackageChild).ToList()),
+                Info = new SummaryInfo.Comments(children.Children.Select(DescribePackageChild).ToList()),
                 Module = null,
             },
-            packageFile: static (s, file) => ResourceSubject(s.Node, ResourceNodes.CreateData(file.Value)));
+            NodeSubject.PackageFile file => ResourceSubject(node, ResourceNodes.CreateData(file.Value)),
+        };
     }
 
     private static DocumentSubject.Summary SummarySubject(BrowseNode node, SummaryInfo summary)
@@ -460,76 +451,61 @@ public static class NodeContentLoader
 
     private static SummaryInfo SummaryOf(BrowseNode node, SummarizedChildren children, RequestFacts facts)
     {
-        return node.Subject.Match<(BrowseNode Node, SummarizedChildren Children, RequestFacts Facts), SummaryInfo>((node, children, facts),
-            module: static (_, _) => throw new UnreachableException(),
-            @namespace: static (_, _) => throw new UnreachableException(),
-            failedAssembly: static (_, _) => throw new UnreachableException(),
-            typeDefinition: static (_, _) => throw new UnreachableException(),
-            memberDefinition: static (_, _) => throw new UnreachableException(),
-            references: static (s, _) => new SummaryInfo.References
+        return node.Subject switch
+        {
+            NodeSubject.Module or NodeSubject.Namespace or NodeSubject.FailedAssembly or NodeSubject.TypeDefinition
+                or NodeSubject.MemberDefinition or NodeSubject.UnreadableModule or NodeSubject.Resources or NodeSubject.ResourceContainer
+                or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables or NodeSubject.MetadataTable
+                or NodeSubject.Package or NodeSubject.PackageFile => throw new UnreachableException(),
+            NodeSubject.References => new SummaryInfo.References
             {
-                Assemblies = ChildrenAbout<NodeSubject.AssemblyReference>(s.Children).Select(r => new SummaryLink
+                Assemblies = ChildrenAbout<NodeSubject.AssemblyReference>(children).Select(r => new SummaryLink
                 {
                     Text = r.FullName,
-                    Target = s.Facts.Targets[r],
+                    Target = facts.Targets[r],
                 }).ToList(),
-                Modules = ChildrenAbout<NodeSubject.ModuleReference>(s.Children).Select(static m => m.Text).ToList(),
+                Modules = ChildrenAbout<NodeSubject.ModuleReference>(children).Select(static m => m.Text).ToList(),
             },
-            assemblyReference: static (_, reference) => new SummaryInfo.AssemblyReference
+            NodeSubject.AssemblyReference reference => new SummaryInfo.AssemblyReference
             {
                 Module = reference.Value.Module,
                 Reference = reference.Value.Reference,
             },
-            referencedTypes: static (s, _) => new SummaryInfo.Used(ListUsed(s.Children, s.Facts)),
-            typeReference: static (s, _) => new SummaryInfo.Used([UsedOf(s.Node, s.Children, s.Facts)]),
-            memberReference: static (s, _) => new SummaryInfo.Used([UsedOf(s.Node, s.Children, s.Facts)]),
-            moduleReference: static (s, module) => new SummaryInfo.ModuleReference
+            NodeSubject.ReferencedTypes => new SummaryInfo.Used(ListUsed(children, facts)),
+            NodeSubject.TypeReference or NodeSubject.MemberReference => new SummaryInfo.Used([UsedOf(node, children, facts)]),
+            NodeSubject.ModuleReference module => new SummaryInfo.ModuleReference
             {
                 Name = module.Value.Name,
                 ContainsMetadata = module.Value.ContainsMetadata,
-                Imports = ChildrenAbout<NodeSubject.ImportedMethod>(s.Children).Select(i => new SummaryLink
+                Imports = ChildrenAbout<NodeSubject.ImportedMethod>(children).Select(i => new SummaryLink
                 {
                     Text = i.FullName,
-                    Target = s.Facts.Targets[i],
+                    Target = facts.Targets[i],
                 }).ToList(),
             },
-            importedMethod: static (s, import) => new SummaryInfo.ImportedMethod
+            NodeSubject.ImportedMethod import => new SummaryInfo.ImportedMethod
             {
                 Method = new SummaryLink
                 {
-                    Text = s.Node.FullName,
-                    Target = s.Facts.Targets[s.Node],
+                    Text = node.FullName,
+                    Target = facts.Targets[node],
                 },
                 EntryPoint = import.Value.EntryPoint,
                 ModuleName = import.Value.ModuleName,
             },
-            forwardedType: static (s, forwarded) => new SummaryInfo.ForwardedType
+            NodeSubject.ForwardedType forwarded => new SummaryInfo.ForwardedType
             {
                 FullName = forwarded.Value.FullName,
-                Target = s.Facts.Targets[s.Node],
+                Target = facts.Targets[node],
                 Destination = forwarded.Value.Destination,
             },
-            baseTypes: static (s, _) => TypesOf(s.Children, s.Facts),
-            baseType: static (s, _) => new SummaryInfo.Types([new SummaryLink
+            NodeSubject.BaseTypes or NodeSubject.DerivedTypes => TypesOf(children, facts),
+            NodeSubject.BaseType or NodeSubject.DerivedType => new SummaryInfo.Types([new SummaryLink
             {
-                Text = s.Node.Text,
-                Target = s.Facts.Targets[s.Node],
+                Text = node.Text,
+                Target = facts.Targets[node],
             }]),
-            derivedTypes: static (s, _) => TypesOf(s.Children, s.Facts),
-            derivedType: static (s, _) => new SummaryInfo.Types([new SummaryLink
-            {
-                Text = s.Node.Text,
-                Target = s.Facts.Targets[s.Node],
-            }]),
-            unreadableModule: static (_, _) => throw new UnreachableException(),
-            resources: static (_, _) => throw new UnreachableException(),
-            resourceContainer: static (_, _) => throw new UnreachableException(),
-            resourceEntry: static (_, _) => throw new UnreachableException(),
-            metadata: static (_, _) => throw new UnreachableException(),
-            metadataTables: static (_, _) => throw new UnreachableException(),
-            metadataTable: static (_, _) => throw new UnreachableException(),
-            package: static (_, _) => throw new UnreachableException(),
-            packageFile: static (_, _) => throw new UnreachableException());
+        };
     }
 
     private static SummaryInfo.Types TypesOf(SummarizedChildren children, RequestFacts facts)
@@ -541,7 +517,7 @@ public static class NodeContentLoader
         }).ToList());
     }
 
-    private static IEnumerable<BrowseNode> ChildrenAbout<TSubject>(SummarizedChildren children) where TSubject : NodeSubject
+    private static IEnumerable<BrowseNode> ChildrenAbout<TSubject>(SummarizedChildren children) where TSubject : class
     {
         return children.Children.Where(static c => c.Subject is TSubject);
     }

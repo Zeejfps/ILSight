@@ -18,7 +18,7 @@ public sealed class MetadataTests
 
     private static MetadataFolderInfo FolderOf(BrowseNode node)
     {
-        return Assert.IsType<NodeSubject.Metadata>(node.Subject).Value;
+        return UnionAsserts.GetCase<NodeSubject.Metadata>(node.Subject).Value;
     }
 
     private static async Task<BrowseNode> TableAsync(LoadedAssembly assembly, string name)
@@ -184,7 +184,7 @@ public sealed class MetadataTests
 
         var root = await assembly.ReadRootAsync();
         var children = await root.ListChildrenAsync();
-        var first = children.Take(3).Select(static c => (c.Subject.GetType(), c.Text));
+        var first = children.Take(3).Select(static c => (UnionAsserts.GetCaseType(c.Subject), c.Text));
 
         Assert.Equal(
             [
@@ -208,7 +208,7 @@ public sealed class MetadataTests
                 (MetadataGridRole.Directory, "Data Directories"), (MetadataGridRole.Directory, "Debug Directory"),
             ],
             children.Take(5).Select(static c => (c.MetadataRole, c.Text)));
-        Assert.IsType<NodeSubject.MetadataTables>(children[5].Subject);
+        UnionAsserts.GetCase<NodeSubject.MetadataTables>(children[5].Subject);
         Assert.Equal("Tables", children[5].Text);
         Assert.Equal(["String Heap", "UserString Heap", "Guid Heap", "Blob Heap"], children.Skip(6).Select(c => c.Text[..c.Text.IndexOf(" (")]));
         Assert.All(children.Skip(6), c => Assert.Equal(MetadataGridRole.Heap, c.MetadataRole));
@@ -228,11 +228,11 @@ public sealed class MetadataTests
         var empty = await TableAsync(assembly, "FieldPtr");
 
         Assert.Equal(Enum.GetValues<TableIndex>().Length, tables.Count);
-        Assert.True(Assert.IsType<NodeSubject.MetadataTable>(empty.Subject).Value.IsEmptyTable);
+        Assert.True(UnionAsserts.GetCase<NodeSubject.MetadataTable>(empty.Subject).Value.IsEmptyTable);
         Assert.Equal("03 FieldPtr (0)", empty.Text);
         Assert.Contains("FieldPtr: 0 rows", Documents.GetText(await empty.DecompileAsync(DecompilationLanguage.CSharp)));
         var typeDefTable = await TableAsync(assembly, "TypeDef");
-        Assert.False(Assert.IsType<NodeSubject.MetadataTable>(typeDefTable.Subject).Value.IsEmptyTable);
+        Assert.False(UnionAsserts.GetCase<NodeSubject.MetadataTable>(typeDefTable.Subject).Value.IsEmptyTable);
     }
 
     [Fact]

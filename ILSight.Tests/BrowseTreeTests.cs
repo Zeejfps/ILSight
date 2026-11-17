@@ -10,13 +10,13 @@ public sealed class BrowseTreeTests
         var assembly = Trees.TestAssembly;
         var root = await assembly.ReadRootAsync();
 
-        Assert.IsType<NodeSubject.Module>(root.Subject);
+        UnionAsserts.GetCase<NodeSubject.Module>(root.Subject);
         // MinVer versions the build from the release tags, so the label names whatever this one is.
         var version = typeof(BrowseTreeTests).Assembly.GetName().Version;
         Assert.Equal($"ILSight.Tests ({version}, .NETCoreApp, v11.0)", root.Text);
-        Assert.IsType<NodeSubject.Metadata>((await root.ListChildrenAsync())[0].Subject);
+        UnionAsserts.GetCase<NodeSubject.Metadata>((await root.ListChildrenAsync())[0].Subject);
         var children = await root.ListChildrenAsync();
-        Assert.IsType<NodeSubject.References>(children.First(c => c.Subject is not NodeSubject.Metadata).Subject);
+        UnionAsserts.GetCase<NodeSubject.References>(children.First(c => c.Subject is not NodeSubject.Metadata).Subject);
         var namespaces = children.Where(c => c.Subject is NodeSubject.Namespace).Select(c => c.Text).ToArray();
         Assert.Equal(["-", "ILSight", "ILSight.Tests", "ILSight.Tests.Fixtures"], namespaces);
         var references = await root.GetChildAsync("References");
@@ -61,8 +61,8 @@ public sealed class BrowseTreeTests
             .ToArray();
 
         Assert.Equal(["Base Types", "Derived Types", "Mode"], children.Take(3).Select(static c => c.Text));
-        Assert.IsType<NodeSubject.BaseTypes>(children[0].Subject);
-        Assert.IsType<NodeSubject.DerivedTypes>(children[1].Subject);
+        UnionAsserts.GetCase<NodeSubject.BaseTypes>(children[0].Subject);
+        UnionAsserts.GetCase<NodeSubject.DerivedTypes>(children[1].Subject);
         Assert.Equal(TypeShape.Enum, children[2].TypeShape);
         Assert.Equal(
             [
@@ -119,7 +119,7 @@ public sealed class BrowseTreeTests
         var derived = await derivedTypes.ListChildrenAsync();
 
         var circle = Assert.Single(derived);
-        Assert.IsType<NodeSubject.DerivedType>(circle.Subject);
+        UnionAsserts.GetCase<NodeSubject.DerivedType>(circle.Subject);
         Assert.Equal("Circle", circle.Text);
         Assert.Equal(NodeAccessibility.Internal, circle.Accessibility);
         Assert.False(circle.HasChildren);
@@ -156,7 +156,7 @@ public sealed class BrowseTreeTests
 
         Assert.Equal(["Circle", "Order"], derived.Where(static c => c.Subject is NodeSubject.DerivedType).Select(static c => c.Text));
         var row = derived[^1];
-        var unreadable = Assert.IsType<NodeSubject.UnreadableModule>(row.Subject).Value;
+        var unreadable = UnionAsserts.GetCase<NodeSubject.UnreadableModule>(row.Subject).Value;
         Assert.Equal("UnreadableTypes.dll", unreadable.Module.FilePath.FileName);
         Assert.Equal($"UnreadableTypes.dll: couldn't be read ({unreadable.Why.Message})", row.Text);
         Assert.Equal(3, derived.Count);
@@ -181,7 +181,7 @@ public sealed class BrowseTreeTests
         var systemDerived = await system.ListChildrenAsync();
         var argument = systemDerived.Single(c => c.Text.EndsWith("ArgumentException", StringComparison.Ordinal));
 
-        Assert.IsType<NodeSubject.DerivedType>(argument.Subject);
+        UnionAsserts.GetCase<NodeSubject.DerivedType>(argument.Subject);
         var argumentChildren = await argument.ListChildrenAsync();
         Assert.Contains(argumentChildren, c => c.Text.EndsWith("ArgumentNullException", StringComparison.Ordinal));
         Assert.Contains(system.Text, Documents.GetText(await derivedTypes.DecompileAsync(DecompilationLanguage.CSharp)));
@@ -198,7 +198,7 @@ public sealed class BrowseTreeTests
         var bases = await baseTypes.ListChildrenAsync();
 
         Assert.Equal(["object", "IShape"], bases.Select(b => b.Text));
-        Assert.All(bases, b => Assert.IsType<NodeSubject.BaseType>(b.Subject));
+        Assert.All(bases, b => UnionAsserts.GetCase<NodeSubject.BaseType>(b.Subject));
         var iShape = await fixtures.GetChildAsync("IShape");
         Assert.Same(iShape, await list.FindNodeAsync(bases[1].Destination));
     }

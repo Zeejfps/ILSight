@@ -65,13 +65,13 @@ internal static class SessionQueries
         public IReadOnlyList<BrowseNode> InnerNamespaces => TestSession.Shared.ListInnerNamespaces(node);
 
         /// <summary>What sort of type the node defines; fails the test when it defines none.</summary>
-        public TypeShape TypeShape => Assert.IsType<NodeSubject.TypeDefinition>(node.Subject).Definition.Shape;
+        public TypeShape TypeShape => UnionAsserts.GetCase<NodeSubject.TypeDefinition>(node.Subject).Definition.Shape;
 
         /// <summary>What sort of member the node defines; fails the test when it defines none.</summary>
-        public MemberShape MemberShape => Assert.IsType<NodeSubject.MemberDefinition>(node.Subject).Definition.Shape;
+        public MemberShape MemberShape => UnionAsserts.GetCase<NodeSubject.MemberDefinition>(node.Subject).Definition.Shape;
 
         /// <summary>What the part of metadata the node stands for lists; fails the test when it stands for none.</summary>
-        public MetadataGridRole MetadataRole => Assert.IsType<NodeSubject.MetadataTable>(node.Subject).Value.Role;
+        public MetadataGridRole MetadataRole => UnionAsserts.GetCase<NodeSubject.MetadataTable>(node.Subject).Value.Role;
 
         public bool Is(TypeShape shape)
         {

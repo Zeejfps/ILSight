@@ -116,17 +116,18 @@ public sealed class SavedPathTests : IDisposable
 
     private static string KindOf(BrowseNode node)
     {
-        return node.Subject.Match(
-            module: static _ => "Assembly",
-            @namespace: static _ => "Namespace",
-            failedAssembly: static _ => "FailedAssembly",
-            typeDefinition: static type => type.Definition.Shape.ToString(),
-            memberDefinition: static member => member.Definition.Shape.ToString(),
-            references: static _ => "ReferencesFolder",
-            assemblyReference: static _ => "AssemblyReference",
-            referencedTypes: static _ => "ReferencedTypes",
-            typeReference: static _ => "TypeReference",
-            memberReference: static member => member.Value.Shape switch
+        return node.Subject switch
+        {
+            NodeSubject.Module => "Assembly",
+            NodeSubject.Namespace => "Namespace",
+            NodeSubject.FailedAssembly => "FailedAssembly",
+            NodeSubject.TypeDefinition type => type.Definition.Shape.ToString(),
+            NodeSubject.MemberDefinition member => member.Definition.Shape.ToString(),
+            NodeSubject.References => "ReferencesFolder",
+            NodeSubject.AssemblyReference => "AssemblyReference",
+            NodeSubject.ReferencedTypes => "ReferencedTypes",
+            NodeSubject.TypeReference => "TypeReference",
+            NodeSubject.MemberReference member => member.Value.Shape switch
             {
                 MemberShape.Field or MemberShape.Constant => "FieldReference",
                 MemberShape.Property or MemberShape.Indexer => "PropertyReference",
@@ -134,20 +135,20 @@ public sealed class SavedPathTests : IDisposable
                 MemberShape.Method or MemberShape.Constructor or MemberShape.Operator => "MethodReference",
                 _ => throw new UnreachableException(),
             },
-            moduleReference: static _ => "ModuleReference",
-            importedMethod: static _ => "ImportedMethod",
-            forwardedType: static _ => "ForwardedType",
-            baseTypes: static _ => "BaseTypes",
-            baseType: static _ => "BaseType",
-            derivedTypes: static _ => "DerivedTypes",
-            derivedType: static _ => "DerivedType",
-            unreadableModule: static _ => "UnreadableModule",
-            resources: static _ => "ResourcesFolder",
-            resourceContainer: static _ => "ResourcesFile",
-            resourceEntry: static entry => entry.Value.IsImage ? "ResourceImage" : "Resource",
-            metadata: static _ => "Metadata",
-            metadataTables: static _ => "MetadataTables",
-            metadataTable: static table => table.Value.Role switch
+            NodeSubject.ModuleReference => "ModuleReference",
+            NodeSubject.ImportedMethod => "ImportedMethod",
+            NodeSubject.ForwardedType => "ForwardedType",
+            NodeSubject.BaseTypes => "BaseTypes",
+            NodeSubject.BaseType => "BaseType",
+            NodeSubject.DerivedTypes => "DerivedTypes",
+            NodeSubject.DerivedType => "DerivedType",
+            NodeSubject.UnreadableModule => "UnreadableModule",
+            NodeSubject.Resources => "ResourcesFolder",
+            NodeSubject.ResourceContainer => "ResourcesFile",
+            NodeSubject.ResourceEntry entry => entry.Value.IsImage ? "ResourceImage" : "Resource",
+            NodeSubject.Metadata => "Metadata",
+            NodeSubject.MetadataTables => "MetadataTables",
+            NodeSubject.MetadataTable table => table.Value.Role switch
             {
                 MetadataGridRole.Header => "MetadataHeader",
                 MetadataGridRole.Directory => "MetadataDirectory",
@@ -155,8 +156,9 @@ public sealed class SavedPathTests : IDisposable
                 MetadataGridRole.Heap => "MetadataHeap",
                 _ => throw new UnreachableException(),
             },
-            package: static package => !package.Value.IsRoot ? "PackageFolder" : package.Value.Package.Package.IsBundle ? "Bundle" : "Package",
-            packageFile: static file => file.Value.IsImage ? "ResourceImage" : "Resource");
+            NodeSubject.Package package => !package.Value.IsRoot ? "PackageFolder" : package.Value.Package.Package.IsBundle ? "Bundle" : "Package",
+            NodeSubject.PackageFile file => file.Value.IsImage ? "ResourceImage" : "Resource",
+        };
     }
 
     private static async Task<BrowseNode> FirstOfAsync(LoadedAssembly assembly, string kind)

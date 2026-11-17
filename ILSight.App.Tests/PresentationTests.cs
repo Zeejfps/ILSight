@@ -122,7 +122,7 @@ public sealed class PresentationTests
         var derivedChildren = await derived.ListChildrenAsync();
         var unreadable = derivedChildren.Single(static c => c.Subject is NodeSubject.UnreadableModule);
         var references = await shapesRoot.GetChildAsync("References");
-        var why = Assert.IsType<NodeSubject.UnreadableModule>(unreadable.Subject).Value.Why.Message;
+        var why = UnionAsserts.GetCase<NodeSubject.UnreadableModule>(unreadable.Subject).Value.Why.Message;
         var english = new BrowseTree { Session = TestSession.Shared };
         english.SetStyle(UiTheme.Light, Light.Icons, BuiltInGlyphs.Icons, Strings.For(Locale.En));
         var japanese = new BrowseTree { Session = TestSession.Shared };

@@ -194,7 +194,7 @@ public sealed class AssemblyListTests
         var root = await assembly.ReadRootAsync();
         var document = await root.DecompileAsync(DecompilationLanguage.CSharp);
 
-        Assert.IsType<NodeSubject.FailedAssembly>(root.Subject);
+        UnionAsserts.GetCase<NodeSubject.FailedAssembly>(root.Subject);
         Assert.Equal("text.dll", root.Text);
         var rootChildren = await root.ListChildrenAsync();
         Assert.Empty(rootChildren);

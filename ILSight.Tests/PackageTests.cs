@@ -28,7 +28,7 @@ public sealed class PackageTests
         Assert.Equal(["ILSight.Core", TestAssemblyName], list.Assemblies.Select(a => a.Name));
         Assert.All(list.Assemblies, a => Assert.Same(package, ContainerOf(a)));
         var packageRoot = await package.ReadRootAsync();
-        Assert.False(Assert.IsType<NodeSubject.Package>(packageRoot.Subject).Value.Package.Package.IsBundle);
+        Assert.False(UnionAsserts.GetCase<NodeSubject.Package>(packageRoot.Subject).Value.Package.Package.IsBundle);
         Assert.Equal("Sample.1.0.0.nupkg", packageRoot.Text);
         var children = await packageRoot.ListChildrenAsync();
         Assert.Equal([LibFolder, "runtimes/win-x64/native", "readme.txt"], children.Select(c => c.Text));
@@ -309,7 +309,7 @@ public sealed class PackageTests
         var native = await packageRoot.GetChildAsync("runtimes/win-x64/native", "native.dll");
 
         Assert.Equal("Read me", Encoding.UTF8.GetString(BrowseNodes.ReadResource(readme)));
-        Assert.IsType<NodeSubject.PackageFile>(native.Subject);
+        UnionAsserts.GetCase<NodeSubject.PackageFile>(native.Subject);
         Assert.False(native.IsImage);
         Assert.Contains("Read me", Documents.GetText(await readme.DecompileAsync(DecompilationLanguage.CSharp)));
     }

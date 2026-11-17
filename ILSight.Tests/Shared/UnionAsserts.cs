@@ -14,4 +14,14 @@ public static class UnionAsserts
         // The suite's one read of a union's Value: xUnit's type check needs the case as an object.
         return Assert.IsType<TCase>(union.Value);
     }
+
+    /// <summary>The type of the case <paramref name="union"/> holds, asserted to hold one: a union's own
+    /// <c>GetType()</c> is the union's type, whichever case it holds.</summary>
+    public static Type GetCaseType(IUnion union)
+    {
+        // Read as GetCase reads it: the case is the union's Value.
+        var held = union.Value;
+        Assert.NotNull(held);
+        return held.GetType();
+    }
 }

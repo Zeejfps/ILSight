@@ -118,33 +118,19 @@ public static class Analyzers
     /// them when first asked for (<see cref="AnalysisFacts.Symbol"/>).</summary>
     internal static AnalysisFacts? Of(NodeSubject subject)
     {
-        return subject.Match<AnalysisFacts?>(
-            module: static _ => null,
-            @namespace: static _ => null,
-            failedAssembly: static _ => null,
-            typeDefinition: static type => Read(NodeDefinitions.GetSymbol(type.Definition)),
-            memberDefinition: static member => Read(NodeDefinitions.GetSymbol(member.Definition)),
-            references: static _ => null,
-            assemblyReference: static _ => null,
-            referencedTypes: static _ => null,
-            typeReference: static _ => null,
-            memberReference: static _ => null,
-            moduleReference: static _ => null,
-            importedMethod: static _ => null,
-            forwardedType: static _ => null,
-            baseTypes: static _ => null,
-            baseType: static baseType => DescribeBase(baseType.Value),
-            derivedTypes: static _ => null,
-            derivedType: static derived => Read(NodeDefinitions.GetSymbol(derived.Value)),
-            unreadableModule: static _ => null,
-            resources: static _ => null,
-            resourceContainer: static _ => null,
-            resourceEntry: static _ => null,
-            metadata: static _ => null,
-            metadataTables: static _ => null,
-            metadataTable: static _ => null,
-            package: static _ => null,
-            packageFile: static _ => null);
+        return subject switch
+        {
+            NodeSubject.Module or NodeSubject.Namespace or NodeSubject.FailedAssembly or NodeSubject.References
+                or NodeSubject.AssemblyReference or NodeSubject.ReferencedTypes or NodeSubject.TypeReference or NodeSubject.MemberReference
+                or NodeSubject.ModuleReference or NodeSubject.ImportedMethod or NodeSubject.ForwardedType or NodeSubject.BaseTypes
+                or NodeSubject.DerivedTypes or NodeSubject.UnreadableModule or NodeSubject.Resources or NodeSubject.ResourceContainer
+                or NodeSubject.ResourceEntry or NodeSubject.Metadata or NodeSubject.MetadataTables or NodeSubject.MetadataTable
+                or NodeSubject.Package or NodeSubject.PackageFile => null,
+            NodeSubject.TypeDefinition type => Read(NodeDefinitions.GetSymbol(type.Definition)),
+            NodeSubject.MemberDefinition member => Read(NodeDefinitions.GetSymbol(member.Definition)),
+            NodeSubject.BaseType baseType => DescribeBase(baseType.Value),
+            NodeSubject.DerivedType derived => Read(NodeDefinitions.GetSymbol(derived.Value)),
+        };
     }
 
     private static AnalysisFacts? DescribeBase(BaseTypeInfo baseType)

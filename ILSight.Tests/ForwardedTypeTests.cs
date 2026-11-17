@@ -21,11 +21,11 @@ public sealed class ForwardedTypeTests
         var exception = await generic.GetChildAsync("KeyNotFoundException");
 
         Assert.True(generic.IsPublicApi);
-        Assert.IsType<NodeSubject.ForwardedType>(list.Subject);
-        Assert.Equal("System.Private.CoreLib", Assert.IsType<NodeSubject.ForwardedType>(list.Subject).Value.Destination);
+        UnionAsserts.GetCase<NodeSubject.ForwardedType>(list.Subject);
+        Assert.Equal("System.Private.CoreLib", UnionAsserts.GetCase<NodeSubject.ForwardedType>(list.Subject).Value.Destination);
         Assert.Equal("System.Collections.Generic.IList<>", list.FullName);
-        Assert.IsType<NodeSubject.ForwardedType>(dictionary.Subject);
-        Assert.IsType<NodeSubject.ForwardedType>(exception.Subject);
+        UnionAsserts.GetCase<NodeSubject.ForwardedType>(dictionary.Subject);
+        UnionAsserts.GetCase<NodeSubject.ForwardedType>(exception.Subject);
         Assert.False(list.HasChildren);
     }
 
@@ -57,7 +57,7 @@ public sealed class ForwardedTypeTests
 
         var definition = await list.FindNodeAsync(forwarded.Destination);
 
-        Assert.Equal("System.Collections", Assert.IsType<NodeSubject.ForwardedType>(forwarded.Subject).Value.Destination);
+        Assert.Equal("System.Collections", UnionAsserts.GetCase<NodeSubject.ForwardedType>(forwarded.Subject).Value.Destination);
         Assert.NotNull(definition);
         Assert.Equal(TypeShape.Class, definition.TypeShape);
         Assert.Equal("List<T>", definition.Text);

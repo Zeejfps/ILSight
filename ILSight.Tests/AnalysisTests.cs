@@ -223,7 +223,7 @@ public sealed class AnalysisTests
         list.OpenModule(Trees.TestAssemblyPath);
         var coreRoot = await core.ReadRootAsync();
         var assemblyPath = await coreRoot.GetChildAsync("ILSight.Core", "AssemblyPath");
-        var type = Assert.IsAssignableFrom<IEntity>(NodeDefinitions.GetSymbol(Assert.IsType<NodeSubject.TypeDefinition>(assemblyPath.Subject).Definition));
+        var type = Assert.IsAssignableFrom<IEntity>(NodeDefinitions.GetSymbol(UnionAsserts.GetCase<NodeSubject.TypeDefinition>(assemblyPath.Subject).Definition));
 
         var scanned = AnalyzerScope.Create(list, reads, new ConcurrentDictionary<LoadedModule, UnreadableModule>(), type).ListTypeSystems(CancellationToken.None).ToList();
 

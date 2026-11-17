@@ -23,7 +23,7 @@ public sealed class NestedNamespaceTests
             .ToList();
 
         Assert.Equal(["-", "ILSight", TestsNamespace, Trees.FixturesNamespace], namespaces.Select(n => n.Text));
-        Assert.Equal([false, true, false, false], namespaces.Select(n => Assert.IsType<NodeSubject.Namespace>(n.Subject).Value.IsEnclosingOnly));
+        Assert.Equal([false, true, false, false], namespaces.Select(n => UnionAsserts.GetCase<NodeSubject.Namespace>(n.Subject).Value.IsEnclosingOnly));
         var ilsightNamespace = await root.GetChildAsync("ILSight");
         var ilsightNamespaceChildren = await ilsightNamespace.ListChildrenAsync();
         Assert.Empty(ilsightNamespaceChildren);
@@ -100,7 +100,7 @@ public sealed class NestedNamespaceTests
 
         Assert.Equal([new NodePathSegment.Namespace("ILSight")], ilsight.Path.Steps.Select(static s => s.Segment));
         Assert.NotNull(found);
-        Assert.True(Assert.IsType<NodeSubject.Namespace>(found.Subject).Value.IsEnclosingOnly);
+        Assert.True(UnionAsserts.GetCase<NodeSubject.Namespace>(found.Subject).Value.IsEnclosingOnly);
         Assert.Equal("ILSight", found.Text);
         Assert.StartsWith("namespace ILSight", Documents.GetText(await ilsight.DecompileAsync(DecompilationLanguage.CSharp)));
     }
