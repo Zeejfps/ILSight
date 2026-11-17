@@ -24,7 +24,7 @@ public sealed class RunSearchHandlerAdapterTests
             found.AddRange(batch);
         }
 
-        var unsearched = Assert.IsType<SearchFind.Unsearched>(Assert.Single(found, static f => f is SearchFind.Unsearched));
+        var unsearched = UnionAsserts.GetCase<SearchFind.Unsearched>(Assert.Single(found, static f => f is SearchFind.Unsearched));
         Assert.Same(module, unsearched.Assembly);
         Assert.NotEmpty(unsearched.Why);
         Assert.Equal(unsearched.Why, unsearched.Error.Message);
@@ -48,14 +48,14 @@ public sealed class RunSearchHandlerAdapterTests
             found.AddRange(batch);
         }
 
-        var hit = Assert.IsType<SearchFind.Hit>(Assert.Single(found, static f => f is SearchFind.Hit));
+        var hit = UnionAsserts.GetCase<SearchFind.Hit>(Assert.Single(found, static f => f is SearchFind.Hit));
         Assert.StartsWith(nameof(NumberLoads.Shown), hit.Result.Text, StringComparison.Ordinal);
-        var partly = Assert.IsType<SearchFind.PartlySearched>(Assert.Single(found, static f => f is SearchFind.PartlySearched));
+        var partly = UnionAsserts.GetCase<SearchFind.PartlySearched>(Assert.Single(found, static f => f is SearchFind.PartlySearched));
         Assert.Same(module, partly.Assembly);
         Assert.Equal(1, partly.Count);
         Assert.NotEmpty(partly.Why);
         Assert.Equal(partly.Why, Assert.IsType<BadImageFormatException>(partly.Error).Message);
-        var notShown = Assert.IsType<SearchFind.NotShown>(Assert.Single(found, static f => f is SearchFind.NotShown));
+        var notShown = UnionAsserts.GetCase<SearchFind.NotShown>(Assert.Single(found, static f => f is SearchFind.NotShown));
         Assert.Same(module, notShown.Assembly);
         Assert.Equal(MetadataTokens.GetToken(unplaced), notShown.Token);
         Assert.NotEmpty(notShown.Why);

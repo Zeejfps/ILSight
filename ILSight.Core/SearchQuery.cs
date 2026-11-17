@@ -44,5 +44,10 @@ public sealed class SearchQuery
     public string? InNamespace { get; internal set; }
 
     /// <summary>Whether the query can find anything: it has terms, or a valid regular expression.</summary>
-    public bool CanFind => Matcher.Match(static terms => terms.Values.Count > 0, static _ => true, static _ => false);
+    public bool CanFind => Matcher switch
+    {
+        SearchMatcher.Terms terms => terms.Values.Count > 0,
+        SearchMatcher.Regex => true,
+        SearchMatcher.InvalidRegex => false,
+    };
 }

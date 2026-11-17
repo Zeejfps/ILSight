@@ -1,21 +1,15 @@
-using System.Diagnostics;
-
 namespace ILSight.Core.AnalysisArea;
 
 /// <summary>What an analysis finds: a symbol, or a module it should have searched that the library could not read, or
 /// one it read only in part, named beside what the others gave.</summary>
-public abstract record AnalysisFind
+public union AnalysisFind(AnalysisFind.Found, AnalysisFind.Unreadable, AnalysisFind.PartlyRead)
 {
-    private AnalysisFind()
-    {
-    }
-
-    public sealed record Found : AnalysisFind
+    public sealed record Found
     {
         public required AnalysisSymbol Symbol { get; init; }
     }
 
-    public sealed record Unreadable : AnalysisFind
+    public sealed record Unreadable
     {
         /// <summary>The module's file name.</summary>
         public required string Name { get; init; }
@@ -29,7 +23,7 @@ public abstract record AnalysisFind
 
     /// <summary>A module the analysis read but for <see cref="Count"/> parts the library couldn't read (a method body,
     /// an instruction, a token, a method's locals, an attribute's value), the first for <see cref="Why"/>.</summary>
-    public sealed record PartlyRead : AnalysisFind
+    public sealed record PartlyRead
     {
         /// <summary>The module's file name.</summary>
         public required string Name { get; init; }
@@ -40,16 +34,5 @@ public abstract record AnalysisFind
 
         /// <summary>What the library threw on the first part, so its record has the diagnostic (CF3).</summary>
         public required Exception Error { get; init; }
-    }
-
-    public TResult Match<TResult>(Func<Found, TResult> found, Func<Unreadable, TResult> unreadable, Func<PartlyRead, TResult> partlyRead)
-    {
-        return this switch
-        {
-            Found c => found(c),
-            Unreadable c => unreadable(c),
-            PartlyRead c => partlyRead(c),
-            _ => throw new UnreachableException($"AnalysisFind.Match does not handle {GetType().Name}."),
-        };
     }
 }

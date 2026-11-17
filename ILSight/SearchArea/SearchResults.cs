@@ -176,7 +176,7 @@ public sealed class SearchResults
     private void Ask(SearchedQuery searched, IReadOnlyList<LoadedModule> within)
     {
         var query = SearchQueries.ParseQuery(searched.Query, searched.Kinds);
-        InvalidRegex = query.Matcher as SearchMatcher.InvalidRegex;
+        InvalidRegex = query.Matcher is SearchMatcher.InvalidRegex invalid ? invalid : null;
         if (!query.CanFind)
         {
             return;
@@ -223,12 +223,32 @@ public sealed class SearchResults
         var hits = new List<SearchResult>();
         foreach (var find in batch)
         {
-            find.Switch(hit => hits.Add(hit.Result), NoteUnsearched, NotePartlySearched, NoteNotShown);
+            NoteFind(find, hits);
         }
 
         var arrived = SortArrived(hits);
         MergeIntoRows(arrived);
         _sorter.NoteRowsChanged();
+    }
+
+    // A hit joins hits; what the search couldn't read is noted where it is in an assembly still searched.
+    private void NoteFind(SearchFind find, List<SearchResult> hits)
+    {
+        switch (find)
+        {
+            case SearchFind.Hit hit:
+                hits.Add(hit.Result);
+                break;
+            case SearchFind.Unsearched unsearched:
+                NoteUnsearched(unsearched);
+                break;
+            case SearchFind.PartlySearched partly:
+                NotePartlySearched(partly);
+                break;
+            case SearchFind.NotShown notShown:
+                NoteNotShown(notShown);
+                break;
+        }
     }
 
     private void NoteUnsearched(SearchFind.Unsearched unsearched)

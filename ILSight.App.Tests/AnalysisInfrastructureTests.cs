@@ -30,7 +30,7 @@ public sealed class AnalysisInfrastructureTests
         }
 
         var finds = batches.SelectMany(static b => UnionAsserts.GetCase<Outcome<IReadOnlyList<AnalysisFind>>.Ok>(b).Value).ToList();
-        var partly = Assert.IsType<AnalysisFind.PartlyRead>(Assert.Single(finds, static f => f is AnalysisFind.PartlyRead));
+        var partly = UnionAsserts.GetCase<AnalysisFind.PartlyRead>(Assert.Single(finds, static f => f is AnalysisFind.PartlyRead));
         Assert.Equal("UnreadableMethodName.dll", partly.Name);
         Assert.IsType<BadImageFormatException>(partly.Error);
     }

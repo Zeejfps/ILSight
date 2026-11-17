@@ -273,7 +273,7 @@ public sealed class PackageTests
         var callers = Analyzers.RunAsync(list, symbol, usedBy)
             .ToBlockingEnumerable()
             .SelectMany(static b => b.GetValue())
-            .Select(static f => Assert.IsType<AnalysisFind.Found>(f).Symbol)
+            .Select(static f => UnionAsserts.GetCase<AnalysisFind.Found>(f).Symbol)
             .ToList();
 
         var plus = Assert.Single(callers);
@@ -370,7 +370,7 @@ public sealed class PackageTests
         var results = new List<SearchResult>();
         await foreach (var batch in list.SearchAsync("Calculator", SearchKinds.Types))
         {
-            results.AddRange(batch.Select(static f => Assert.IsType<SearchFind.Hit>(f).Result));
+            results.AddRange(batch.Select(static f => UnionAsserts.GetCase<SearchFind.Hit>(f).Result));
         }
 
         var calculator = Assert.Single(results, r => r.Text == "Calculator<T>");

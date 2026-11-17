@@ -366,11 +366,13 @@ public static class AssemblySearch
             return false;
         }
 
-        return literal.Match(
-            integer => IsIntegerConstant(value, integer.Value),
-            single => value is float f && f == single.Value,
-            real => value is double d && d == real.Value,
-            _ => SearchQueries.IsMatch(search.Query, value.ToString() ?? ""));
+        return literal switch
+        {
+            SearchLiteral.Integer integer => IsIntegerConstant(value, integer.Value),
+            SearchLiteral.Single single => value is float f && f == single.Value,
+            SearchLiteral.Double real => value is double d && d == real.Value,
+            SearchLiteral.Text => SearchQueries.IsMatch(search.Query, value.ToString() ?? ""),
+        };
     }
 
     private static bool IsIntegerConstant(object value, long number)
@@ -386,11 +388,13 @@ public static class AssemblySearch
 
     private static bool HasMatchInBody(Search search, BlobReader body, MetadataReader reader, SearchLiteral literal)
     {
-        return literal.Match(
-            integer => HasIntegerLoad(body, integer.Value),
-            single => HasSingleLoad(body, single.Value),
-            real => HasDoubleLoad(body, real.Value),
-            _ => HasStringLoad(search, body, reader));
+        return literal switch
+        {
+            SearchLiteral.Integer integer => HasIntegerLoad(body, integer.Value),
+            SearchLiteral.Single single => HasSingleLoad(body, single.Value),
+            SearchLiteral.Double real => HasDoubleLoad(body, real.Value),
+            SearchLiteral.Text => HasStringLoad(search, body, reader),
+        };
     }
 
     private static bool HasIntegerLoad(BlobReader body, long value)

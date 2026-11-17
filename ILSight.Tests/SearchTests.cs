@@ -253,28 +253,28 @@ public sealed class SearchTests
         var query = SearchQueries.ParseQuery("md:\"Get Value\" inassembly:Core innamespace:\"\" -Async");
 
         Assert.Equal(SearchKinds.Methods, query.Kinds);
-        Assert.Equal(["Get Value", "-Async"], Assert.IsType<SearchMatcher.Terms>(query.Matcher).Values);
+        Assert.Equal(["Get Value", "-Async"], UnionAsserts.GetCase<SearchMatcher.Terms>(query.Matcher).Values);
         Assert.Equal("Core", query.InAssembly);
         Assert.Equal("", query.InNamespace);
-        Assert.Equal(["System.Foo:Bar"], Assert.IsType<SearchMatcher.Terms>(SearchQueries.ParseQuery("System.Foo:Bar").Matcher).Values);
+        Assert.Equal(["System.Foo:Bar"], UnionAsserts.GetCase<SearchMatcher.Terms>(SearchQueries.ParseQuery("System.Foo:Bar").Matcher).Values);
         Assert.False(SearchQueries.ParseQuery("inassembly:Core").CanFind);
     }
 
     [Fact]
     public void FromQuery_EachKindOfTerm_GivesItsLiteral()
     {
-        Assert.Equal(255L, Assert.IsType<SearchLiteral.Integer>(LiteralOf("c:0xFF")).Value);
-        Assert.Equal(-16L, Assert.IsType<SearchLiteral.Integer>(LiteralOf("c:-0x10")).Value);
-        Assert.Equal(42L, Assert.IsType<SearchLiteral.Integer>(LiteralOf("c:42UL")).Value);
-        Assert.Equal(-1L, Assert.IsType<SearchLiteral.Integer>(LiteralOf("c:18446744073709551615")).Value);
-        Assert.Equal(1.5f, Assert.IsType<SearchLiteral.Single>(LiteralOf("c:1.5f")).Value);
-        Assert.Equal(2.0, Assert.IsType<SearchLiteral.Double>(LiteralOf("c:2.0")).Value);
-        Assert.Equal(1000.0, Assert.IsType<SearchLiteral.Double>(LiteralOf("c:1e3")).Value);
-        Assert.Equal(2.5, Assert.IsType<SearchLiteral.Double>(LiteralOf("c:2.5d")).Value);
-        Assert.IsType<SearchLiteral.Text>(LiteralOf("c:abc"));
-        Assert.IsType<SearchLiteral.Text>(LiteralOf("c:0xZZ"));
-        Assert.IsType<SearchLiteral.Text>(LiteralOf("c:1 2"));
-        Assert.IsType<SearchLiteral.Text>(LiteralOf("c:/^4/"));
+        Assert.Equal(255L, UnionAsserts.GetCase<SearchLiteral.Integer>(LiteralOf("c:0xFF")).Value);
+        Assert.Equal(-16L, UnionAsserts.GetCase<SearchLiteral.Integer>(LiteralOf("c:-0x10")).Value);
+        Assert.Equal(42L, UnionAsserts.GetCase<SearchLiteral.Integer>(LiteralOf("c:42UL")).Value);
+        Assert.Equal(-1L, UnionAsserts.GetCase<SearchLiteral.Integer>(LiteralOf("c:18446744073709551615")).Value);
+        Assert.Equal(1.5f, UnionAsserts.GetCase<SearchLiteral.Single>(LiteralOf("c:1.5f")).Value);
+        Assert.Equal(2.0, UnionAsserts.GetCase<SearchLiteral.Double>(LiteralOf("c:2.0")).Value);
+        Assert.Equal(1000.0, UnionAsserts.GetCase<SearchLiteral.Double>(LiteralOf("c:1e3")).Value);
+        Assert.Equal(2.5, UnionAsserts.GetCase<SearchLiteral.Double>(LiteralOf("c:2.5d")).Value);
+        UnionAsserts.GetCase<SearchLiteral.Text>(LiteralOf("c:abc"));
+        UnionAsserts.GetCase<SearchLiteral.Text>(LiteralOf("c:0xZZ"));
+        UnionAsserts.GetCase<SearchLiteral.Text>(LiteralOf("c:1 2"));
+        UnionAsserts.GetCase<SearchLiteral.Text>(LiteralOf("c:/^4/"));
     }
 
     [Fact]
@@ -319,12 +319,12 @@ public sealed class SearchTests
         var withTerm = SearchQueries.ParseQuery("/(/ Calc");
         var results = await CollectAsync(list.SearchAsync("t:/[a/"));
 
-        var invalid = Assert.IsType<SearchMatcher.InvalidRegex>(query.Matcher);
+        var invalid = UnionAsserts.GetCase<SearchMatcher.InvalidRegex>(query.Matcher);
         Assert.NotEmpty(invalid.Message);
         Assert.False(query.CanFind);
-        Assert.IsType<SearchMatcher.InvalidRegex>(withTerm.Matcher);
+        UnionAsserts.GetCase<SearchMatcher.InvalidRegex>(withTerm.Matcher);
         Assert.Empty(results);
-        Assert.IsType<SearchMatcher.Regex>(SearchQueries.ParseQuery("t:/^I.*e$/").Matcher);
+        UnionAsserts.GetCase<SearchMatcher.Regex>(SearchQueries.ParseQuery("t:/^I.*e$/").Matcher);
     }
 
     private static SearchLiteral LiteralOf(string text)
@@ -360,7 +360,7 @@ public sealed class SearchTests
         var results = new List<SearchResult>();
         await foreach (var batch in search)
         {
-            results.AddRange(batch.Select(static f => Assert.IsType<SearchFind.Hit>(f).Result));
+            results.AddRange(batch.Select(static f => UnionAsserts.GetCase<SearchFind.Hit>(f).Result));
         }
 
         return results;

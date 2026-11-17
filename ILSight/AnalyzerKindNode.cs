@@ -84,8 +84,12 @@ public sealed class AnalyzerKindNode : AnalyzerNode
     private static List<AnalyzerNode> CreateNodes(IReadOnlyList<AnalysisFind> found)
     {
         return found
-            .Select(static f => f.Match<AnalyzerNode>(static s => new AnalyzerSymbolNode { Symbol = s.Symbol }, static u => new AnalyzerMessageNode { Unreadable = u },
-                static p => new AnalyzerMessageNode { PartlyRead = p }))
+            .Select(static AnalyzerNode (f) => f switch
+            {
+                AnalysisFind.Found s => new AnalyzerSymbolNode { Symbol = s.Symbol },
+                AnalysisFind.Unreadable u => new AnalyzerMessageNode { Unreadable = u },
+                AnalysisFind.PartlyRead p => new AnalyzerMessageNode { PartlyRead = p },
+            })
             .ToList();
     }
 }

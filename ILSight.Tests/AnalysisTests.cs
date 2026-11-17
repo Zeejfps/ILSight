@@ -22,7 +22,7 @@ public sealed class AnalysisTests
         var symbol = node.Analysis;
         Assert.NotNull(symbol);
         return Analyzers.RunAsync(list, symbol, symbol.Kinds.Single(k => Analyzers.GetHeader(k) == header))
-            .ToBlockingEnumerable().SelectMany(static b => b.GetValue()).Select(static f => Assert.IsType<AnalysisFind.Found>(f).Symbol).ToList();
+            .ToBlockingEnumerable().SelectMany(static b => b.GetValue()).Select(static f => UnionAsserts.GetCase<AnalysisFind.Found>(f).Symbol).ToList();
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public sealed class AnalysisTests
 
         var found = batches.SelectMany(static b => b.GetValue()).ToList();
         Assert.DoesNotContain(found, static f => f is AnalysisFind.Found { Symbol.Label: var label } && label.StartsWith("operator +", StringComparison.Ordinal));
-        var partly = Assert.IsType<AnalysisFind.PartlyRead>(Assert.Single(found, static f => f is AnalysisFind.PartlyRead));
+        var partly = UnionAsserts.GetCase<AnalysisFind.PartlyRead>(Assert.Single(found, static f => f is AnalysisFind.PartlyRead));
         Assert.Equal("UnreadableMethodName.dll", partly.Name);
         Assert.IsType<BadImageFormatException>(partly.Error);
         Assert.Equal(partly.Why, partly.Error.Message);
@@ -176,7 +176,7 @@ public sealed class AnalysisTests
         }
 
         Assert.Contains(found, static f => f is AnalysisFind.Found);
-        var unreadable = Assert.IsType<AnalysisFind.Unreadable>(Assert.Single(found, static f => f is AnalysisFind.Unreadable));
+        var unreadable = UnionAsserts.GetCase<AnalysisFind.Unreadable>(Assert.Single(found, static f => f is AnalysisFind.Unreadable));
         Assert.Equal("UnreadableTypes.dll", unreadable.Name);
         Assert.NotEmpty(unreadable.Why);
         Assert.Equal(unreadable.Why, unreadable.Error.Message);
@@ -203,10 +203,14 @@ public sealed class AnalysisTests
             found.AddRange(batch.GetValue());
         }
 
-        var readers = found.OfType<AnalysisFind.Found>().Select(static f => f.Symbol.Label).ToList();
+        var readers = found
+            .Select(static f => f is AnalysisFind.Found symbol ? symbol : null)
+            .OfType<AnalysisFind.Found>()
+            .Select(static f => f.Symbol.Label)
+            .ToList();
         Assert.Contains(readers, static l => l.StartsWith("Add(", StringComparison.Ordinal));
         Assert.DoesNotContain(readers, static l => l.StartsWith("TryGet(", StringComparison.Ordinal));
-        var partly = Assert.IsType<AnalysisFind.PartlyRead>(Assert.Single(found, static f => f is AnalysisFind.PartlyRead));
+        var partly = UnionAsserts.GetCase<AnalysisFind.PartlyRead>(Assert.Single(found, static f => f is AnalysisFind.PartlyRead));
         Assert.Equal("UnreadableMethodBody.dll", partly.Name);
         Assert.Equal(1, partly.Count);
         Assert.NotEmpty(partly.Why);
