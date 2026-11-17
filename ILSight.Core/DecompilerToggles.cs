@@ -126,7 +126,7 @@ public static class DecompilerToggles
             var group = FindGroup(category);
             if (group is not null)
             {
-                toggles.Add(new DecompilerToggle { Name = property.Name, Group = group, DefaultValue = value });
+                toggles.Add(new DecompilerToggle { Name = property.Name, Group = group.Value, DefaultValue = value });
             }
         }
         return toggles;

@@ -229,10 +229,12 @@ internal static class TooltipLayouts
 
     private static TooltipBlock BlockOf(TooltipStyles styles, DocBlock block)
     {
-        return block.Match<TooltipBlock>(
-            paragraph: paragraph => new TextBlock(Runs(styles, paragraph.Runs)),
-            code: code => new CodeBlock([new RichTextRun(code.Text, styles.CodeBlock)]),
-            list: list => ListOf(styles, list));
+        return block switch
+        {
+            DocBlock.Paragraph paragraph => new TextBlock(Runs(styles, paragraph.Runs)),
+            DocBlock.Code code => new CodeBlock([new RichTextRun(code.Text, styles.CodeBlock)]),
+            DocBlock.List list => ListOf(styles, list),
+        };
     }
 
     private static ListBlock ListOf(TooltipStyles styles, DocBlock.List list)

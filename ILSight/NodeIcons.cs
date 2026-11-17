@@ -59,11 +59,13 @@ public static class NodeIcons
     /// <summary>The icon of a symbol of <paramref name="shape"/>, as an analysis, a comparison or a diagram lists it.</summary>
     public static NodeIcon Of(SymbolShape shape)
     {
-        return shape.Match(
-            static _ => NodeIcon.Assembly,
-            static _ => NodeIcon.Namespace,
-            static type => Of(type.Shape),
-            static member => Of(member.Shape));
+        return shape switch
+        {
+            SymbolShape.Assembly => NodeIcon.Assembly,
+            SymbolShape.Namespace => NodeIcon.Namespace,
+            SymbolShape.Type type => Of(type.Shape),
+            SymbolShape.Member member => Of(member.Shape),
+        };
     }
 
     public static NodeIcon Of(TypeShape shape)

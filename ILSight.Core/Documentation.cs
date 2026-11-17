@@ -153,7 +153,7 @@ internal static class Documentation
             var section = MakeSection(child);
             if (section is not null)
             {
-                sections.Add(section);
+                sections.Add(section.Value);
                 continue;
             }
 
@@ -207,7 +207,7 @@ internal static class Documentation
             DocSectionKind.TypeParameter => new DocSection.TypeParameter { Blocks = blocks, Name = NameOf(element) },
             DocSectionKind.Parameter => new DocSection.Parameter { Blocks = blocks, Name = NameOf(element) },
             DocSectionKind.Returns => new DocSection.Returns { Blocks = blocks },
-            DocSectionKind.Value => new DocSection.Value { Blocks = blocks },
+            DocSectionKind.Value => new DocSection.PropertyValue { Blocks = blocks },
             DocSectionKind.Exception => new DocSection.Exception { Blocks = blocks, Name = ExceptionLabel(element) },
             DocSectionKind.Remarks => new DocSection.Remarks { Blocks = blocks },
             DocSectionKind.Example => new DocSection.Example { Blocks = blocks },

@@ -53,7 +53,7 @@ public sealed class CodeTooltipTests
 
     private static string TextOf(DocBlock block)
     {
-        return TextOf(Assert.IsType<DocBlock.Paragraph>(block).Runs);
+        return TextOf(UnionAsserts.GetCase<DocBlock.Paragraph>(block).Runs);
     }
 
     private static string TextOf(IReadOnlyList<DocRun> runs)
@@ -63,7 +63,7 @@ public sealed class CodeTooltipTests
 
     private static DocRun RunOf(DocBlock block, string text)
     {
-        return Assert.IsType<DocBlock.Paragraph>(block).Runs.Single(r => r.Text == text);
+        return UnionAsserts.GetCase<DocBlock.Paragraph>(block).Runs.Single(r => r.Text == text);
     }
 
     private static List<string> ParameterTexts(CodeSignature signature)
@@ -213,8 +213,8 @@ public sealed class CodeTooltipTests
         var grow = await fixtures.GetChildAsync("Circle", "Grow(double, int) : double");
 
         var remarks = Section(await TooltipOfAsync(list, grow), DocSectionKind.Remarks).Blocks;
-        var bullets = Assert.IsType<DocBlock.List>(remarks[1]);
-        var code = Assert.IsType<DocBlock.Code>(remarks[2]);
+        var bullets = UnionAsserts.GetCase<DocBlock.List>(remarks[1]);
+        var code = UnionAsserts.GetCase<DocBlock.Code>(remarks[2]);
 
         Assert.Equal(3, remarks.Count);
         Assert.Equal("Each step multiplies once:", TextOf(remarks[0]));
@@ -232,8 +232,8 @@ public sealed class CodeTooltipTests
         var spread = await fixtures.GetChildAsync("Circle", "Spread() : double");
 
         var remarks = Section(await TooltipOfAsync(list, spread), DocSectionKind.Remarks).Blocks;
-        var table = Assert.IsType<DocBlock.List>(remarks[0]);
-        var numbered = Assert.IsType<DocBlock.List>(remarks[1]);
+        var table = UnionAsserts.GetCase<DocBlock.List>(remarks[0]);
+        var numbered = UnionAsserts.GetCase<DocBlock.List>(remarks[1]);
 
         Assert.Equal(DocListKind.Table, table.Kind);
         Assert.NotNull(table.Header);

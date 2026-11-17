@@ -124,7 +124,7 @@ public sealed class TypeLayoutTests
 
         var layout = DiagramLayouts.Arrange(measures);
 
-        var route = layout.Routes.Single(r => r.Link == zoo.LionIsAnimal);
+        var route = layout.Routes.Single(r => r.Link.Equals(zoo.LionIsAnimal));
         var lion = Placed(layout, measures, zoo.Lion);
         var animal = Placed(layout, measures, zoo.Animal);
         Assert.True(IsOnBorder(route.Pieces[0].Start, lion.TopLeft, lion.Card));
@@ -142,13 +142,13 @@ public sealed class TypeLayoutTests
 
         var layout = DiagramLayouts.Arrange(measures);
 
-        var held = layout.Routes.Single(r => r.Link == zoo.KeeperHoldsAnimals);
+        var held = layout.Routes.Single(r => r.Link.Equals(zoo.KeeperHoldsAnimals));
         var keeper = Placed(layout, measures, zoo.Keeper);
         Assert.NotNull(held.SourceTip);
         Assert.True(IsOnBorder(held.SourceTip.Value, keeper.TopLeft, keeper.Card));
         var length = MathF.Sqrt(held.SourceTip.Value.DistanceSqTo(held.Pieces[0].Start));
         Assert.Equal(TypeLayout.DiamondLength, length, 0.5f);
-        Assert.Null(layout.Routes.Single(r => r.Link == zoo.LionIsAnimal).SourceTip);
+        Assert.Null(layout.Routes.Single(r => r.Link.Equals(zoo.LionIsAnimal)).SourceTip);
     }
 
     [Fact]
@@ -157,8 +157,8 @@ public sealed class TypeLayoutTests
         var zoo = await s_zoo.ReadAsync();
         var layout = DiagramLayouts.Arrange(Zoo4(zoo));
 
-        Assert.NotNull(layout.Routes.Single(r => r.Link == zoo.KeeperHoldsAnimals).LabelCenter);
-        Assert.Null(layout.Routes.Single(r => r.Link == zoo.ParrotIsAnimal).LabelCenter);
+        Assert.NotNull(layout.Routes.Single(r => r.Link.Equals(zoo.KeeperHoldsAnimals)).LabelCenter);
+        Assert.Null(layout.Routes.Single(r => r.Link.Equals(zoo.ParrotIsAnimal)).LabelCenter);
     }
 
     [Fact]

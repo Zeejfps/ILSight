@@ -500,23 +500,28 @@ public static class TypeCards
 
     private static List<TypeLink> MakeLinks(ReadType type)
     {
-        return type.Relations
-            .Where(static r => IsLink(r.IsBase, r.TargetCode))
-            .Select(r => LinkOf(type.Reference, r))
-            .OfType<TypeLink>()
-            .Distinct()
-            .ToList();
-    }
-
-    private static TypeLink? LinkOf(CodeReference.Entity from, ReadRelation relation)
-    {
-        var to = relation.To;
-        if (to is null)
+        var links = new List<TypeLink>();
+        var seen = new HashSet<TypeLink>();
+        foreach (var relation in type.Relations)
         {
-            return null;
-        }
+            if (!IsLink(relation.IsBase, relation.TargetCode))
+            {
+                continue;
+            }
 
-        return relation.ToLink(from, to);
+            var to = relation.To;
+            if (to is null)
+            {
+                continue;
+            }
+
+            var link = relation.ToLink(type.Reference, to);
+            if (seen.Add(link))
+            {
+                links.Add(link);
+            }
+        }
+        return links;
     }
 
     private static List<Relation> ListRelations(ITypeDefinition type)

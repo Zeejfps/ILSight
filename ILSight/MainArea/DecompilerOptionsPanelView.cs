@@ -192,11 +192,13 @@ internal static class DecompilerOptionsPanelView
     // What a section is known by where its folding is kept.
     private static string GetKey(DecompilerToggleGroup group)
     {
-        return group.Match(
-            static language => language.IntroducedIn.ToString(),
-            static _ => "Other",
-            static _ => "FSharp",
-            static _ => "ProjectExport");
+        return group switch
+        {
+            DecompilerToggleGroup.Language language => language.IntroducedIn.ToString(),
+            DecompilerToggleGroup.Other => "Other",
+            DecompilerToggleGroup.FSharp => "FSharp",
+            DecompilerToggleGroup.ProjectExport => "ProjectExport",
+        };
     }
 
     private static bool? State(DecompilerOptionSection section, DecompilerOptions options)
@@ -269,11 +271,13 @@ internal static class DecompilerOptionsPanelView
 
     private static string Title(Strings t, DecompilerOptionSection section)
     {
-        return section.Group.Match(t,
-            static (_, language) => CSharpVersions.Label(language.IntroducedIn),
-            static (t, _) => t.DecompilerOptionsOther,
-            static (t, _) => t.DecompilerOptionsFsharp,
-            static (_, _) => throw new UnreachableException("The export's toggles have no section here: the export dialog shows them."));
+        return section.Group switch
+        {
+            DecompilerToggleGroup.Language language => CSharpVersions.Label(language.IntroducedIn),
+            DecompilerToggleGroup.Other => t.DecompilerOptionsOther,
+            DecompilerToggleGroup.FSharp => t.DecompilerOptionsFsharp,
+            DecompilerToggleGroup.ProjectExport => throw new UnreachableException("The export's toggles have no section here: the export dialog shows them."),
+        };
     }
 
     private static bool AllFolded(FoldedGroups folded)
@@ -337,7 +341,7 @@ internal static class DecompilerOptionsPanelView
             {
                 Key = GetKey(group),
                 Group = group,
-                Toggles = all.Where(t => t.Group == group).ToArray(),
+                Toggles = all.Where(t => t.Group.Equals(group)).ToArray(),
             })
             .Where(static s => s.Toggles.Length > 0);
         return language.Concat(rest).ToArray();

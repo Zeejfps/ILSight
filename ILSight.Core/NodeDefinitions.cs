@@ -300,10 +300,11 @@ public static class NodeDefinitions
             forwardedType: static forwarded => new Activation.Navigate(CodeReferences.CreateEntity(EntityKind.Type, forwarded.Value.Label,
                 forwarded.Value.Module.FilePath, forwarded.Value.Handle)),
             baseTypes: static _ => Open,
-            baseType: static baseType => baseType.Value.Target.Match<Activation>(
-                static navigable => new Activation.Navigate(navigable.Reference),
-                static _ => Open,
-                static _ => Open),
+            baseType: static baseType => baseType.Value.Target switch
+            {
+                BaseTypeTarget.Navigable navigable => new Activation.Navigate(navigable.Reference),
+                BaseTypeTarget.Unaddressed or BaseTypeTarget.Unresolved => Open,
+            },
             derivedTypes: static _ => Open,
             derivedType: static derived => new Activation.Navigate(derived.Value.Reference),
             unreadableModule: static _ => Open,
