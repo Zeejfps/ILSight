@@ -10,7 +10,8 @@ public sealed class PreviewTabTests
     {
         // Leaves the assembly shown in the preview tab.
         var app = AppDriver.Opened();
-        app.Ui.Tree.RevealNode(await app.FixtureAsync("Greeter"));
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Ui.Tree.RevealNode(greeter);
         app.Ui.Tree.View.ClearSelection();
         app.Run(2);
         return app;
@@ -100,7 +101,8 @@ public sealed class PreviewTabTests
     public async Task Clicking_a_node_a_kept_tab_shows_brings_that_tab_forward_instead_of_previewing_it()
     {
         var app = await RevealedAsync();
-        app.Show(await app.FixtureAsync("Greeter"), 2);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 2);
         var kept = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(kept);
         app.AppState.ListSession.Navigation.KeepTabOpen(kept);
@@ -143,7 +145,8 @@ public sealed class PreviewTabTests
     public async Task The_preview_tabs_title_is_in_italics_until_the_tab_is_double_clicked()
     {
         var app = AppDriver.Opened();
-        app.Show(await app.FixtureAsync("Greeter"), 2);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 2);
         var title = PreviewTitle(app, "Greeter");
 
         app.Frames.DoubleClick(title);
@@ -157,7 +160,8 @@ public sealed class PreviewTabTests
     public async Task The_preview_tabs_menu_keeps_it_open()
     {
         var app = AppDriver.Opened();
-        app.Show(await app.FixtureAsync("Greeter"), 2);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 2);
         var title = PreviewTitle(app, "Greeter");
 
         app.Frames.Click(title.X + 2f, title.Y + title.Height / 2, PointerButton.Right);

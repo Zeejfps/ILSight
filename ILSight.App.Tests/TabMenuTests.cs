@@ -18,7 +18,8 @@ public sealed class TabMenuTests
         Assert.NotNull(assembly);
         foreach (var type in Types)
         {
-            app.Show(await app.FixtureAsync(type), 2, inNewTab: true);
+            var fixture = await app.FixtureAsync(type);
+            app.Show(fixture, 2, inNewTab: true);
         }
 
         app.Settle(2);

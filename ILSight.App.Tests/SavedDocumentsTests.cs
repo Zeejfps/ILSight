@@ -57,7 +57,8 @@ public sealed class SavedDocumentsTests : IDisposable
         app.Driver.OpenFixtures();
         app.Run(3);
         var tables = await app.NodeAsync("Metadata", "Tables");
-        app.Show(await tables.TableAsync("TypeDef"), 4);
+        var typeDefTable = await tables.TableAsync("TypeDef");
+        app.Show(typeDefTable, 4);
         var tab = GridTab(app);
         var grid = tab.Grid;
         Assert.NotNull(grid);
@@ -182,7 +183,8 @@ public sealed class SavedDocumentsTests : IDisposable
         var app = new AppDriver(height: 360f, settings: _temp.Settings());
         app.Driver.OpenFixtures();
         app.Run(3);
-        app.Show(await app.FixtureAsync("Outline"), 4);
+        var outlineNode = await app.FixtureAsync("Outline");
+        app.Show(outlineNode, 4);
         var outline = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(outline);
         app.Run(3);
@@ -205,13 +207,15 @@ public sealed class SavedDocumentsTests : IDisposable
         var app = new AppDriver(height: 360f, settings: _temp.Settings());
         app.Driver.OpenFixtures();
         app.Run(3);
-        app.Show(await app.FixtureAsync("Outline"), 4);
+        var outlineNode = await app.FixtureAsync("Outline");
+        app.Show(outlineNode, 4);
         var outline = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(outline);
         app.AppState.ListSession.Navigation.KeepTabOpen(outline);
         var outlinePosition = ScrollTo(app, outline, 20,
             new TextPosition { Line = 21, Column = 4 }, new TextPosition { Line = 22, Column = 8 });
-        app.Show(await app.FixtureAsync("Greeter"), 4, inNewTab: true);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 4, inNewTab: true);
         app.Run(3);
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
 
@@ -233,17 +237,20 @@ public sealed class SavedDocumentsTests : IDisposable
         var app = new AppDriver(height: 360f, settings: _temp.Settings());
         app.Driver.OpenFixtures();
         app.Run(3);
-        app.Show(await app.FixtureAsync("Outline"), 4);
+        var outlineNode = await app.FixtureAsync("Outline");
+        app.Show(outlineNode, 4);
         var outline = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(outline);
         app.AppState.ListSession.Navigation.KeepTabOpen(outline);
         var outlinePosition = ScrollTo(app, outline, 20,
             new TextPosition { Line = 21, Column = 4 }, new TextPosition { Line = 22, Column = 8 });
-        app.Show(await app.FixtureAsync("Greeter"), 4, inNewTab: true);
+        var greeterNode = await app.FixtureAsync("Greeter");
+        app.Show(greeterNode, 4, inNewTab: true);
         var greeter = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(greeter);
         MoveRightOf(app, greeter, outline);
-        app.Show(await app.FixtureAsync("Farewell"), 4);
+        var farewell = await app.FixtureAsync("Farewell");
+        app.Show(farewell, 4);
         var vehicle = await app.FixtureAsync("Vehicle");
         DiagramView.ShowInNewDiagramLater(app.Ui.AppCommands, vehicle.Definition, Names.Diagram(vehicle.Definition));
         app.Settle(2);
@@ -287,7 +294,8 @@ public sealed class SavedDocumentsTests : IDisposable
         app.Driver.OpenFixtures();
         app.Run(3);
         var tables = await app.NodeAsync("Metadata", "Tables");
-        app.Show(await tables.TableAsync("TypeDef"), 4);
+        var typeDefTable = await tables.TableAsync("TypeDef");
+        app.Show(typeDefTable, 4);
         var tab = GridTab(app);
         app.AppState.ListSession.Navigation.KeepTabOpen(tab);
         var grid = tab.Grid;
@@ -295,7 +303,8 @@ public sealed class SavedDocumentsTests : IDisposable
         var row = grid.RowNamed("Greeter");
         GridOf(app, tab).RevealRow(row);
         app.Run(3);
-        app.Show(await app.FixtureAsync("Greeter"), 4, inNewTab: true);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 4, inNewTab: true);
         app.Run(3);
         Assert.True(app.App.TryClose(new WindowBounds(10, 20, 1000, 360, false)));
 
@@ -439,14 +448,16 @@ public sealed class SavedDocumentsTests : IDisposable
     public async Task Switching_lists_swaps_their_documents()
     {
         var d = AppStateDriver.Opened();
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
         d.AppState.Lists.Add(Other);
         d.SwitchList(Other);
         d.Settle();
         d.Open([AssemblyPath.Of(AppStateDriver.FixturePath)]);
         d.RunUntil(() => d.AppState.ListSession.Assemblies.ListFilePaths().Contains(TestPaths.PathOf(AppStateDriver.FixturePath)));
         d.Settle();
-        d.Show(await d.FixtureAsync("Farewell"));
+        var farewell = await d.FixtureAsync("Farewell");
+        d.Show(farewell);
 
         d.SwitchList(SavedAssemblyLists.DefaultName);
         d.Settle();
@@ -468,12 +479,14 @@ public sealed class SavedDocumentsTests : IDisposable
     {
         var app = AppDriver.Opened();
         var d = app.Driver;
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeterNode = await d.FixtureAsync("Greeter");
+        d.Show(greeterNode);
         var greeter = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(greeter);
         d.AppState.ListSession.Navigation.KeepTabOpen(greeter);
         var greeterPanel = d.Ui.Documents.GetPanel(greeter);
-        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
+        var farewellNode = await d.FixtureAsync("Farewell");
+        d.Show(farewellNode, inNewTab: true);
         var farewell = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(farewell);
         app.DockWidget.Dock(d.Ui.Documents.GetPanel(farewell), greeterPanel, DockEdge.Right);
@@ -584,7 +597,8 @@ public sealed class SavedDocumentsTests : IDisposable
         app.Driver.OpenFixtures();
         app.Run(2);
 
-        app.Show(await app.FixtureAsync("Greeter"), 1, inNewTab: true);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 1, inNewTab: true);
 
         var documents = Assert.Single(_temp.Settings().AssemblyLists).Documents;
         Assert.NotNull(documents);

@@ -193,7 +193,8 @@ public sealed class ExportsPanelTests : IDisposable
     public async Task A_refused_export_has_a_mark_of_its_own_never_the_cancels_or_the_failures_nor_an_error_counted()
     {
         var app = AppDriver.Opened(height: TallWindow);
-        app.Show(await app.FixtureAsync("Greeter"), frames: 2);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, frames: 2);
         app.Frames.FilePicker.OnOpen = () => CommandArea.Commands.CloseAllAssemblies(app.AppState);
         app.Frames.FilePicker.Answer = _temp.PathOf("Greeter.cs");
 
@@ -384,7 +385,8 @@ public sealed class ExportsPanelTests : IDisposable
         d.AppState.ListSession.Navigation.ShowReport(d.AppState.FinishedExports[0]);
         var report = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(report);
-        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
+        var farewell = await d.FixtureAsync("Farewell");
+        d.Show(farewell, inNewTab: true);
 
         d.GoBack();
         d.Settle();
@@ -403,7 +405,8 @@ public sealed class ExportsPanelTests : IDisposable
         d.AppState.ListSession.Navigation.ShowReport(finished);
         var report = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(report);
-        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
+        var farewell = await d.FixtureAsync("Farewell");
+        d.Show(farewell, inNewTab: true);
         d.AppState.ListSession.Navigation.CloseTab(report);
 
         d.GoBack();
@@ -427,7 +430,8 @@ public sealed class ExportsPanelTests : IDisposable
         var report = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(report);
         var reportAt = d.AppState.ListSession.Navigation.HistoryIndex;
-        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
+        var farewell = await d.FixtureAsync("Farewell");
+        d.Show(farewell, inNewTab: true);
         d.AppState.ListSession.Navigation.CloseTab(report);
         Exports.RemoveFinishedExport(d.AppState, finished);
 

@@ -62,14 +62,16 @@ public sealed class PresentationTests
         var tree = new BrowseTree { Session = TestSession.Shared };
         tree.TrySyncRoots(list);
 
-        var first = tree.Row(await original.ReadRootAsync());
-        var second = tree.Row(await duplicate.ReadRootAsync());
+        var originalRoot = await original.ReadRootAsync();
+        var first = tree.Row(originalRoot);
+        var duplicateRoot = await duplicate.ReadRootAsync();
+        var second = tree.Row(duplicateRoot);
 
         Assert.NotEqual(first.Label, second.Label);
         Assert.StartsWith(original.Name, first.Label);
         Assert.Equal($"{duplicate.Name} (copy)", second.Label);
         Assert.Equal(first.Secondary, second.Secondary);
-        Assert.Equal(second.Label, tree.GetLabel(await duplicate.ReadRootAsync()));
+        Assert.Equal(second.Label, tree.GetLabel(duplicateRoot));
         Assert.Contains(original.FilePath.Text, first.Tooltip);
         Assert.Contains(duplicate.FilePath.Text, second.Tooltip);
         Assert.Contains(original.FullName, first.Tooltip);
@@ -83,7 +85,8 @@ public sealed class PresentationTests
         var tree = new BrowseTree { Session = TestSession.Shared };
         tree.TrySyncRoots(list);
 
-        Assert.Equal(assembly.Name, tree.Row(await assembly.ReadRootAsync()).Label);
+        var root = await assembly.ReadRootAsync();
+        Assert.Equal(assembly.Name, tree.Row(root).Label);
     }
 
     [Fact]
@@ -94,7 +97,8 @@ public sealed class PresentationTests
         var tree = new BrowseTree { Session = TestSession.Shared };
         tree.TrySyncRoots(list);
 
-        var row = tree.Row(await assembly.ReadRootAsync());
+        var root = await assembly.ReadRootAsync();
+        var row = tree.Row(root);
 
         Assert.Equal(assembly.Name, row.Label);
         Assert.Equal($"{assembly.Version} · net10.0", row.Secondary);
@@ -112,10 +116,12 @@ public sealed class PresentationTests
         var derivingPath = WrittenAssemblies.WriteDeriving(temp, "Billing", "Shapes", "Shape", "Invoice");
         var unreadablePath = BrokenAssemblies.WriteUnreadableTypeSystem(temp, derivingPath);
         list.Open(unreadablePath);
-        var shape = await shapes.ReadRootAsync().GetChildAsync("Shapes", "Shape");
+        var shapesRoot = await shapes.ReadRootAsync();
+        var shape = await shapesRoot.GetChildAsync("Shapes", "Shape");
         var derived = await shape.GetChildAsync("Derived Types");
-        var unreadable = (await derived.ListChildrenAsync()).Single(static c => c.Subject is NodeSubject.UnreadableModule);
-        var references = await shapes.ReadRootAsync().GetChildAsync("References");
+        var derivedChildren = await derived.ListChildrenAsync();
+        var unreadable = derivedChildren.Single(static c => c.Subject is NodeSubject.UnreadableModule);
+        var references = await shapesRoot.GetChildAsync("References");
         var why = Assert.IsType<NodeSubject.UnreadableModule>(unreadable.Subject).Value.Why.Message;
         var english = new BrowseTree { Session = TestSession.Shared };
         english.SetStyle(UiTheme.Light, Light.Icons, BuiltInGlyphs.Icons, Strings.For(Locale.En));
@@ -140,13 +146,17 @@ public sealed class PresentationTests
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath);
         var root = await assembly.ReadRootAsync();
         var ns = await root.GetChildAsync(AppStateDriver.FixturesNamespace);
-        var privateField = (await ns.GetChildAsync("Outline").ListChildrenAsync()).Single(c => c.Icon == NodeIcon.Field && c.Accessibility == NodeAccessibility.Private);
+        var outline = await ns.GetChildAsync("Outline");
+        var outlineChildren = await outline.ListChildrenAsync();
+        var privateField = outlineChildren.Single(c => c.Icon == NodeIcon.Field && c.Accessibility == NodeAccessibility.Private);
         var tree = new BrowseTree { Session = TestSession.Shared };
         tree.SetStyle(UiTheme.Light, Light.Icons, BuiltInGlyphs.Icons, Strings.For(Locale.En));
 
         var field = tree.Row(privateField);
-        var hidden = tree.Row(await ns.GetChildAsync("Hidden"));
-        var greeter = tree.Row(await ns.GetChildAsync("Greeter"));
+        var hiddenNode = await ns.GetChildAsync("Hidden");
+        var hidden = tree.Row(hiddenNode);
+        var greeterNode = await ns.GetChildAsync("Greeter");
+        var greeter = tree.Row(greeterNode);
 
         Assert.Equal(BuiltInGlyphs.Icons.OverlayPrivate, field.Icon?.Overlay);
         Assert.Equal(Light.Icons.Restricted, field.Icon?.OverlayColor);
@@ -163,18 +173,20 @@ public sealed class PresentationTests
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var assembly = list.Open(AppStateDriver.FixturePath);
-        var greeter = await assembly.ReadRootAsync().GetChildAsync(AppStateDriver.FixturesNamespace, "Greeter");
-        var member = (await greeter.ListChildrenAsync()).First(c => c.Token is not null);
+        var root = await assembly.ReadRootAsync();
+        var greeter = await root.GetChildAsync(AppStateDriver.FixturesNamespace, "Greeter");
+        var greeterChildren = await greeter.ListChildrenAsync();
+        var member = greeterChildren.First(c => c.Token is not null);
         var tree = new BrowseTree { Session = TestSession.Shared };
         tree.TrySyncRoots(list);
-        var identity = tree.Row(await assembly.ReadRootAsync()).Secondary;
+        var identity = tree.Row(root).Secondary;
 
         Assert.Null(tree.Row(greeter).Secondary);
         tree.ShowTokens(TokenFormat.Hex);
         Assert.Equal($"@{greeter.Token:X8}", tree.Row(greeter).Secondary);
         Assert.StartsWith("@02", tree.Row(greeter).Secondary);
         Assert.Equal($"@{member.Token:X8}", tree.Row(member).Secondary);
-        Assert.Equal(identity, tree.Row(await assembly.ReadRootAsync()).Secondary);
+        Assert.Equal(identity, tree.Row(root).Secondary);
         tree.ShowTokens(TokenFormat.Decimal);
         Assert.Equal($"@{greeter.Token}", tree.Row(greeter).Secondary);
     }
@@ -217,7 +229,10 @@ public sealed class PresentationTests
         var runtimeFolder = Path.GetDirectoryName(typeof(object).Assembly.Location) ?? throw new InvalidOperationException($"CoreLib's path names no folder: '{typeof(object).Assembly.Location}'.");
         var runtime = Path.Combine(runtimeFolder, "System.Runtime.dll");
         var facade = new AssemblyList { Runtime = TestRuntime.Installed }.Open(runtime);
-        var forwarded = (await facade.ReadRootAsync().GetChildAsync("System").ListChildrenAsync()).First(c => c.Text == "Object");
+        var facadeRoot = await facade.ReadRootAsync();
+        var system = await facadeRoot.GetChildAsync("System");
+        var systemChildren = await system.ListChildrenAsync();
+        var forwarded = systemChildren.First(c => c.Text == "Object");
         var tree = new BrowseTree { Session = TestSession.Shared };
 
         var row = tree.Row(forwarded);
@@ -233,12 +248,15 @@ public sealed class PresentationTests
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath);
         var usedTypes = new List<BrowseNode>();
-        foreach (var reference in await assembly.ReadRootAsync().GetChildAsync("References").ListChildrenAsync())
+        var root = await assembly.ReadRootAsync();
+        var references = await root.GetChildAsync("References");
+        foreach (var reference in await references.ListChildrenAsync())
         {
             var children = await reference.ListChildrenAsync();
             foreach (var types in children.Where(c => c.Icon == NodeIcon.ReferencedTypes))
             {
-                usedTypes.AddRange(await types.ListChildrenAsync());
+                var typesChildren = await types.ListChildrenAsync();
+                usedTypes.AddRange(typesChildren);
             }
         }
 

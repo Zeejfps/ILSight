@@ -22,7 +22,8 @@ public sealed class DockingTests
     public async Task A_view_docks_as_a_tab_beside_a_document_and_the_document_stays_the_active_tab()
     {
         var app = AppDriver.Opened();
-        app.Show(await app.FixtureAsync("Greeter"));
+        var greeterNode = await app.FixtureAsync("Greeter");
+        app.Show(greeterNode);
         var greeter = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(greeter);
         var greeterPanel = app.Ui.Documents.GetPanel(greeter);
@@ -85,7 +86,8 @@ public sealed class DockingTests
         d.AppState.ListSession.Navigation.CloseTab(active);
         d.NextFrame();
         var left = Assert.IsType<DockGroup>(d.Arrangement.Root).Panels.ToList();
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
 
         Assert.Equal([DockPanels.Assemblies], left);
         var layout = d.Arrangement;
@@ -116,8 +118,10 @@ public sealed class DockingTests
     {
         var app = AppDriver.Opened();
         var d = app.Driver;
-        d.Show(await d.FixtureAsync("Greeter"));
-        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
+        var farewellNode = await d.FixtureAsync("Farewell");
+        d.Show(farewellNode, inNewTab: true);
         var farewell = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(farewell);
         app.DockWidget.DockAtRim(app.Ui.Documents.GetPanel(farewell), DockEdge.Bottom);

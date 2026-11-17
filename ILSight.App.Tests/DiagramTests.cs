@@ -23,7 +23,8 @@ public sealed class DiagramTests
 
     private static async Task<TypeDiagram> ShowInNewAsync(AppStateDriver d, string type)
     {
-        DiagramView.ShowInNewDiagramLater(d.Ui.AppCommands, await TypeOfAsync(d, type), Names.Diagram(await TypeOfAsync(d, type)));
+        var entity = await TypeOfAsync(d, type);
+        DiagramView.ShowInNewDiagramLater(d.Ui.AppCommands, entity, Names.Diagram(entity));
         d.Settle();
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -34,7 +35,8 @@ public sealed class DiagramTests
 
     private static async Task ShowInAsync(AppStateDriver d, string type)
     {
-        DiagramView.ShowInDiagramLater(d.Ui.AppCommands, await TypeOfAsync(d, type), Names.Diagram(await TypeOfAsync(d, type)));
+        var entity = await TypeOfAsync(d, type);
+        DiagramView.ShowInDiagramLater(d.Ui.AppCommands, entity, Names.Diagram(entity));
         d.Settle();
     }
 
@@ -108,7 +110,8 @@ public sealed class DiagramTests
         await ShowInAsync(d, "Vehicle");
         var diagramTab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(diagramTab);
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
 
         await ShowInAsync(d, "Counter");
 
@@ -222,7 +225,8 @@ public sealed class DiagramTests
         var diagram = await ShowInNewAsync(d, "Vehicle");
         var version = diagram.Version;
 
-        diagram.RemoveCard(await TypeOfAsync(d, "Garage"));
+        var garageType = await TypeOfAsync(d, "Garage");
+        diagram.RemoveCard(garageType);
 
         Assert.Equal(["Bike", "Car", "Vehicle"], CardNames(diagram));
         var garage = await TypeOfAsync(d, "Garage");
@@ -254,7 +258,8 @@ public sealed class DiagramTests
     public async Task Closing_a_diagram_drops_what_it_was_reading()
     {
         var d = AppStateDriver.Opened();
-        DiagramView.ShowInNewDiagramLater(d.Ui.AppCommands, await TypeOfAsync(d, "Vehicle"), Names.Diagram(await TypeOfAsync(d, "Vehicle")));
+        var vehicleType = await TypeOfAsync(d, "Vehicle");
+        DiagramView.ShowInNewDiagramLater(d.Ui.AppCommands, vehicleType, Names.Diagram(vehicleType));
         d.NextFrame();
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
@@ -297,7 +302,8 @@ public sealed class DiagramTests
     {
         var d = AppStateDriver.Opened();
         var greeter = await d.FixtureAsync("Greeter");
-        var member = (await greeter.GetChildAsync("Twice() : int")).Definition;
+        var twice = await greeter.GetChildAsync("Twice() : int");
+        var member = twice.Definition;
 
         DiagramView.ShowInNewDiagramLater(d.Ui.AppCommands, member, Names.Diagram(member));
         d.Settle();

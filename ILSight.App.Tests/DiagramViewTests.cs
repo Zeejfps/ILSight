@@ -20,7 +20,8 @@ public sealed class DiagramViewTests
     private static async Task<AppDriver> PickFromTreeAsync(string type, string item)
     {
         var app = AppDriver.Opened();
-        app.Ui.Tree.RevealNode(await app.FixtureAsync(type));
+        var fixture = await app.FixtureAsync(type);
+        app.Ui.Tree.RevealNode(fixture);
         app.Run(2);
         app.PickFromTreeMenu(type, item);
         SettleDiagram(app);
@@ -180,8 +181,10 @@ public sealed class DiagramViewTests
     public async Task Showing_another_type_adds_it_to_the_diagram_and_show_in_new_diagram_opens_another()
     {
         var app = await PickFromTreeAsync("Vehicle", "Show in diagram");
-        app.Ui.Tree.RevealNode(await app.FixtureAsync("Greeter"));
-        app.Ui.Tree.RevealNode(await app.FixtureAsync("Counter"));
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Ui.Tree.RevealNode(greeter);
+        var counter = await app.FixtureAsync("Counter");
+        app.Ui.Tree.RevealNode(counter);
         app.Run(2);
 
         app.PickFromTreeMenu("Greeter", "Show in diagram");
@@ -254,7 +257,8 @@ public sealed class DiagramViewTests
         var tab = DiagramTab(app);
         var cards = ListCardTypes(tab);
         Assert.NotEmpty(cards);
-        app.Show(await app.FixtureAsync("Greeter"), inNewTab: true);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, inNewTab: true);
         app.Settle(2);
         app.AppState.ListSession.Navigation.CloseTab(tab);
         app.Run(2);
@@ -273,7 +277,8 @@ public sealed class DiagramViewTests
     {
         var app = await PickFromTreeAsync("Vehicle", "Show in diagram");
         var tab = DiagramTab(app);
-        app.Show(await app.FixtureAsync("Greeter"), inNewTab: true);
+        var greeterNode = await app.FixtureAsync("Greeter");
+        app.Show(greeterNode, inNewTab: true);
         app.Settle(2);
         app.AppState.ListSession.Navigation.CloseTab(tab);
         var diagramAt = app.AppState.ListSession.Navigation.HistoryIndex - 1;

@@ -103,8 +103,10 @@ public sealed class ComparisonTests
     public async Task Going_back_from_a_comparison_opened_after_two_places_returns_to_the_second()
     {
         var d = OpenWithFixtures();
-        d.Show(await d.FixtureAsync("Outline"));
-        d.Show(await d.FixtureAsync("Greeter"));
+        var outline = await d.FixtureAsync("Outline");
+        d.Show(outline);
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
         Compare(d, LeftPath, RightPath);
 
         d.GoBack();
@@ -118,11 +120,13 @@ public sealed class ComparisonTests
     {
         var d = OpenWithFixtures();
         d.TurnOffPreviewTabs();
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
         var comparison = Compare(d, LeftPath, RightPath);
         var comparisonTab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(comparisonTab);
-        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
+        var farewell = await d.FixtureAsync("Farewell");
+        d.Show(farewell, inNewTab: true);
         d.Ui.Panels.ActivateTab(d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup, comparisonTab);
         d.Settle();
         var account = Entry(DiffOf(comparison), "ApiDiffSample", "Account");
@@ -144,7 +148,8 @@ public sealed class ComparisonTests
     public async Task Going_forward_to_a_comparison_brings_its_tab_to_the_front()
     {
         var d = OpenWithFixtures();
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
         Compare(d, LeftPath, RightPath);
         var compared = d.AppState.ListSession.Navigation.ActiveTab;
         d.GoBack();
@@ -167,7 +172,8 @@ public sealed class ComparisonTests
         d.Settle();
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        d.Show(await d.FixtureAsync("Greeter"), inNewTab: true);
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter, inNewTab: true);
         d.Settle();
         d.AppState.ListSession.Navigation.CloseTab(tab);
 
@@ -185,11 +191,13 @@ public sealed class ComparisonTests
     public async Task Going_back_passes_over_a_comparison_whose_tab_was_closed_and_whose_assemblies_were_closed()
     {
         var d = OpenWithFixtures();
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
         Compare(d, LeftPath, RightPath);
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
+        var farewell = await d.FixtureAsync("Farewell");
+        d.Show(farewell, inNewTab: true);
         d.Settle();
         d.AppState.ListSession.Navigation.CloseTab(tab);
         d.InTurn(() => Commands.CloseAssemblies(d.AppState, [Opened(d, LeftPath), Opened(d, RightPath)]));

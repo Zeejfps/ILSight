@@ -14,7 +14,8 @@ public sealed class OmnibarTests
     {
         var app = AppDriver.Opened();
         app.Settle(2);
-        app.Show(await app.FixtureAsync(type), 2);
+        var fixture = await app.FixtureAsync(type);
+        app.Show(fixture, 2);
         app.Settle(2);
         return app;
     }
@@ -110,7 +111,8 @@ public sealed class OmnibarTests
         ClickCrumb(app, AppStateDriver.FixturesNamespace);
         var drawn = app.Ui.Documents.GetView(tab).Shown;
 
-        Assert.Same(await app.NodeAsync(AppStateDriver.FixturesNamespace), tab.Node);
+        var fixturesNamespace = await app.NodeAsync(AppStateDriver.FixturesNamespace);
+        Assert.Same(fixturesNamespace, tab.Node);
         Assert.NotNull(drawn);
         Assert.True(drawn.IsShownBy(tab));
     }
@@ -123,9 +125,10 @@ public sealed class OmnibarTests
         ClickCrumb(app, AppStateDriver.FixturesNamespace).Frame(2);
         app.Settle(2);
 
-        Assert.Same(await app.NodeAsync(AppStateDriver.FixturesNamespace), app.AppState.ListSession.Navigation.ActiveTab?.Node);
+        var fixturesNamespace = await app.NodeAsync(AppStateDriver.FixturesNamespace);
+        Assert.Same(fixturesNamespace, app.AppState.ListSession.Navigation.ActiveTab?.Node);
         Assert.Same(app.AppState.ListSession.Navigation.ActiveTab, app.AppState.ListSession.Navigation.PreviewTab);
-        Assert.Same(await app.NodeAsync(AppStateDriver.FixturesNamespace), app.Ui.Tree.View.Selected);
+        Assert.Same(fixturesNamespace, app.Ui.Tree.View.Selected);
     }
 
     [Fact]
@@ -141,9 +144,11 @@ public sealed class OmnibarTests
         app.Frames.Frame(2);
         app.Settle(2);
 
-        Assert.Same(await app.FixtureAsync("Greeter"), selected);
+        var greeter = await app.FixtureAsync("Greeter");
+        Assert.Same(greeter, selected);
         Assert.Null(app.Ui.Omnibar.Menu);
-        Assert.Same(await app.FixtureAsync("Farewell"), app.AppState.ListSession.Navigation.ActiveTab?.Node);
+        var farewell = await app.FixtureAsync("Farewell");
+        Assert.Same(farewell, app.AppState.ListSession.Navigation.ActiveTab?.Node);
     }
 
     [Fact]
@@ -161,8 +166,10 @@ public sealed class OmnibarTests
         app.Frames.Frame(2);
         app.Settle(2);
 
-        Assert.Equal([await app.FixtureAsync("Farewell")], shown);
-        Assert.Same(await app.FixtureAsync("Farewell"), app.AppState.ListSession.Navigation.ActiveTab?.Node);
+        var farewell = await app.FixtureAsync("Farewell");
+        Assert.Equal([farewell], shown);
+        var farewellNode = await app.FixtureAsync("Farewell");
+        Assert.Same(farewellNode, app.AppState.ListSession.Navigation.ActiveTab?.Node);
     }
 
     [Fact]
@@ -180,7 +187,8 @@ public sealed class OmnibarTests
         var active = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
         Assert.Equal(app.Ui.Documents.GetPanel(active), searchedIn);
-        Assert.Same(await app.FixtureAsync("Farewell"), active.Node);
+        var farewell = await app.FixtureAsync("Farewell");
+        Assert.Same(farewell, active.Node);
         Assert.False(omnibar.IsSearching);
         GetCrumb(app, "Farewell");
     }
@@ -204,7 +212,8 @@ public sealed class OmnibarTests
         Assert.Same(omnibar.Search.Results.Rows[0], first);
         Assert.Same(omnibar.Search.Results.Rows[1], second);
         Assert.False(omnibar.IsSearching);
-        Assert.Same(await app.FixtureAsync("Greeter"), app.AppState.ListSession.Navigation.ActiveTab?.Node);
+        var greeter = await app.FixtureAsync("Greeter");
+        Assert.Same(greeter, app.AppState.ListSession.Navigation.ActiveTab?.Node);
         GetCrumb(app, "Greeter");
     }
 
@@ -218,7 +227,8 @@ public sealed class OmnibarTests
         app.Frames.Frame(2);
         app.Settle(2);
 
-        Assert.Same(await app.FixtureAsync("Farewell"), app.AppState.ListSession.Navigation.ActiveTab?.Node);
+        var farewell = await app.FixtureAsync("Farewell");
+        Assert.Same(farewell, app.AppState.ListSession.Navigation.ActiveTab?.Node);
         Assert.False(app.Ui.Omnibar.IsSearching);
     }
 
@@ -279,14 +289,16 @@ public sealed class OmnibarTests
     private static async Task<IReadOnlyList<Crumb>> CrumbsToAsync(AppStateDriver d, string type)
     {
         var breadcrumb = new Breadcrumb();
-        breadcrumb.ListCrumbsWhenNodeChanges(await d.FixtureAsync(type), d.Ui.Tree);
+        var fixture = await d.FixtureAsync(type);
+        breadcrumb.ListCrumbsWhenNodeChanges(fixture, d.Ui.Tree);
         return breadcrumb.Crumbs;
     }
 
     private static async Task<CrumbMenu> OpenMenuAsync(AppStateDriver d, BrowseNode? next)
     {
         var omnibar = d.Ui.Omnibar;
-        omnibar.OpenMenu(Panel, await d.NodeAsync(AppStateDriver.FixturesNamespace), next);
+        var fixturesNamespace = await d.NodeAsync(AppStateDriver.FixturesNamespace);
+        omnibar.OpenMenu(Panel, fixturesNamespace, next);
         return Assert.IsType<CrumbMenu>(omnibar.Menu);
     }
 
@@ -334,8 +346,10 @@ public sealed class OmnibarTests
         omnibar.ToggleMenu(Panel, crumbs, namespaceIndex);
 
         Assert.NotNull(opened);
-        Assert.Same(await d.NodeAsync(AppStateDriver.FixturesNamespace), opened.Node);
-        Assert.Same(await d.FixtureAsync("Greeter"), opened.ToSelect);
+        var fixturesNamespace = await d.NodeAsync(AppStateDriver.FixturesNamespace);
+        Assert.Same(fixturesNamespace, opened.Node);
+        var greeter = await d.FixtureAsync("Greeter");
+        Assert.Same(greeter, opened.ToSelect);
         Assert.Null(omnibar.Menu);
     }
 
@@ -348,7 +362,8 @@ public sealed class OmnibarTests
 
         omnibar.ToggleMenu(Panel, crumbs, crumbs.Count - 1);
 
-        Assert.True(omnibar.IsMenuOpenAt(Panel, await d.FixtureAsync("Greeter")));
+        var greeter = await d.FixtureAsync("Greeter");
+        Assert.True(omnibar.IsMenuOpenAt(Panel, greeter));
         var menu = omnibar.Menu;
         Assert.NotNull(menu);
         Assert.Null(menu.ToSelect);
@@ -373,13 +388,15 @@ public sealed class OmnibarTests
     public async Task ListShown_HoldingTheNextCrumb_SelectsItOnce()
     {
         var d = AppStateDriver.Opened();
-        var children = new[] { await d.FixtureAsync("Farewell"), await d.FixtureAsync("Greeter") };
-        var menu = await OpenMenuAsync(d, await d.FixtureAsync("Greeter"));
+        var farewell = await d.FixtureAsync("Farewell");
+        var greeter = await d.FixtureAsync("Greeter");
+        var children = new[] { farewell, greeter };
+        var menu = await OpenMenuAsync(d, greeter);
 
         var shown = menu.ListShown(children, d.Ui.Tree);
 
         Assert.Equal(children, shown);
-        Assert.Same(await d.FixtureAsync("Greeter"), menu.Selection.Item);
+        Assert.Same(greeter, menu.Selection.Item);
         Assert.Null(menu.ToSelect);
     }
 
@@ -387,22 +404,26 @@ public sealed class OmnibarTests
     public async Task ListShown_WithAFilter_ListsTheChildrenHoldingItAndSelectsTheFirst()
     {
         var d = AppStateDriver.Opened();
-        var children = new[] { await d.FixtureAsync("Greeter"), await d.FixtureAsync("Farewell") };
+        var greeter = await d.FixtureAsync("Greeter");
+        var farewell = await d.FixtureAsync("Farewell");
+        var children = new[] { greeter, farewell };
         var menu = await OpenMenuAsync(d, null);
         menu.ListShown(children, d.Ui.Tree);
 
         menu.Filter = "AREW";
         var shown = menu.ListShown(children, d.Ui.Tree);
 
-        Assert.Equal([await d.FixtureAsync("Farewell")], shown);
-        Assert.Same(await d.FixtureAsync("Farewell"), menu.Selection.Item);
+        Assert.Equal([farewell], shown);
+        Assert.Same(farewell, menu.Selection.Item);
     }
 
     [Fact]
     public async Task ListShown_SameChildrenAndFilter_GivesTheListAlreadyFiltered()
     {
         var d = AppStateDriver.Opened();
-        var children = new[] { await d.FixtureAsync("Greeter"), await d.FixtureAsync("Farewell") };
+        var greeter = await d.FixtureAsync("Greeter");
+        var farewell = await d.FixtureAsync("Farewell");
+        var children = new[] { greeter, farewell };
         var menu = await OpenMenuAsync(d, null);
 
         var first = menu.ListShown(children, d.Ui.Tree);
@@ -415,14 +436,18 @@ public sealed class OmnibarTests
     public async Task MoveSelection_PastTheLastChild_StaysWithinThoseListed()
     {
         var d = AppStateDriver.Opened();
-        var children = new[] { await d.FixtureAsync("Greeter"), await d.FixtureAsync("Farewell") };
-        var menu = await OpenMenuAsync(d, await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        var farewell = await d.FixtureAsync("Farewell");
+        var children = new[] { greeter, farewell };
+        var greeterNode = await d.FixtureAsync("Greeter");
+        var menu = await OpenMenuAsync(d, greeterNode);
         menu.ListShown(children, d.Ui.Tree);
 
         menu.MoveSelection(1);
         menu.MoveSelection(1);
 
-        Assert.Same(await d.FixtureAsync("Farewell"), menu.Selection.Item);
+        var farewellNode = await d.FixtureAsync("Farewell");
+        Assert.Same(farewellNode, menu.Selection.Item);
     }
 
     [Fact]
@@ -431,9 +456,11 @@ public sealed class OmnibarTests
         var d = AppStateDriver.Opened();
         var breadcrumb = new Breadcrumb();
 
-        breadcrumb.ListCrumbsWhenNodeChanges(await d.FixtureAsync("Greeter"), d.Ui.Tree);
+        var greeter = await d.FixtureAsync("Greeter");
+        breadcrumb.ListCrumbsWhenNodeChanges(greeter, d.Ui.Tree);
         var first = breadcrumb.Crumbs;
-        breadcrumb.ListCrumbsWhenNodeChanges(await d.FixtureAsync("Greeter"), d.Ui.Tree);
+        var greeterNode = await d.FixtureAsync("Greeter");
+        breadcrumb.ListCrumbsWhenNodeChanges(greeterNode, d.Ui.Tree);
 
         Assert.Same(first, breadcrumb.Crumbs);
         Assert.Equal(["ILSight.App.Tests", AppStateDriver.FixturesNamespace, "Greeter"], first.Select(static c => c.Label));

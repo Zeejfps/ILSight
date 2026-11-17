@@ -9,7 +9,8 @@ public sealed class ExportBookmarksHandlerTests
     private static async Task<BookmarkList> OutlineBookmarkedAsync()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        d.Show(await d.FixtureAsync("Outline"));
+        var outline = await d.FixtureAsync("Outline");
+        d.Show(outline);
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var toggle = Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);

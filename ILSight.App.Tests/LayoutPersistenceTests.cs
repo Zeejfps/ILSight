@@ -76,8 +76,10 @@ public sealed class LayoutPersistenceTests : IDisposable
     {
         var first = AppStateDriver.Opened(_temp.Settings());
         var outline = await first.FixtureAsync("Outline");
-        first.Analyze((await outline.ListChildrenAsync()).Single(c => c.Text.StartsWith("First()")));
-        first.Analyze(await first.FixtureAsync("Greeter"));
+        var outlineChildren = await outline.ListChildrenAsync();
+        first.Analyze(outlineChildren.Single(c => c.Text.StartsWith("First()")));
+        var greeter = await first.FixtureAsync("Greeter");
+        first.Analyze(greeter);
         first.Pump();
 
         var next = AppStateDriver.Started(_temp.Settings());

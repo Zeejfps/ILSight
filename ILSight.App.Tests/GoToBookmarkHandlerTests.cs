@@ -8,12 +8,14 @@ public sealed class GoToBookmarkHandlerTests
     private static async Task<(AppStateDriver Driver, Bookmark Bookmark)> BookmarkedAsync()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        d.Show(await d.FixtureAsync("Outline"));
+        var outline = await d.FixtureAsync("Outline");
+        d.Show(outline);
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var toggle = Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);
         Assert.IsType<BookmarkToggle.Added>(toggle);
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
         return (d, Assert.Single(d.AppState.Bookmarks.Items));
     }
 
@@ -142,7 +144,8 @@ public sealed class GoToBookmarkHandlerTests
             return new GoToBookmarkHandler(ports).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Bookmarks, d.AppState.Decompiler, bookmark, resolveTicket, CancellationToken.None);
         });
         d.AppState.ListSession.Navigation.BeginRequest();
-        Assert.Single(ports.Answers).SetResult(new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(await d.FixtureAsync("Outline"))));
+        var outline = await d.FixtureAsync("Outline");
+        Assert.Single(ports.Answers).SetResult(new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(outline)));
         var load = await d.EndAsync(going);
 
         Assert.Null(load);

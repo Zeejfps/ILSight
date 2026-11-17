@@ -221,7 +221,8 @@ public sealed class SettlingWorkflowsTests
     {
         var ports = new FakeGoToBookmarkHandlerPorts();
         var d = AppStateDriver.OpenedWith(new AdapterHooks { GoingToBookmarks = _ => ports });
-        d.Show(await d.FixtureAsync("Outline"));
+        var outline = await d.FixtureAsync("Outline");
+        d.Show(outline);
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var toggle = Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);

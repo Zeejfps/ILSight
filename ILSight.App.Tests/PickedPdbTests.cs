@@ -19,14 +19,16 @@ public sealed class PickedPdbTests
         app.Open([AssemblyPath.Of(copy)]);
         app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.IsListed(TestPaths.PathOf(copy)), Waits.Patience);
         app.Settle(2);
-        Assert.Null(LoadedAssemblies.EnsureDebugSymbols(OpenAssemblyOf(app.Driver)));
+        var symbolsBefore = LoadedAssemblies.EnsureDebugSymbols(OpenAssemblyOf(app.Driver));
+        Assert.Null(symbolsBefore);
         app.Frames.FilePicker.Answer = FixturePdb;
 
         app.PickFromTreeMenu(OpenAssemblyOf(app.Driver).Name, "Select PDB…");
         app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Pdbs.All.Count > 0, Waits.Patience);
         app.Settle(2);
 
-        Assert.Equal(FixturePdb, LoadedAssemblies.EnsureDebugSymbols(OpenAssemblyOf(app.Driver))?.SourceFileName);
+        var symbols = LoadedAssemblies.EnsureDebugSymbols(OpenAssemblyOf(app.Driver));
+        Assert.Equal(FixturePdb, symbols?.SourceFileName);
         Assert.Empty(app.AppState.Errors.Entries);
     }
 
@@ -44,7 +46,8 @@ public sealed class PickedPdbTests
         next.Settle();
 
         Assert.Equal(FixturePdb, Assert.Single(temp.Settings().AssemblyLists).Pdbs?[TestPaths.PathOf(copy)]);
-        Assert.Equal(FixturePdb, LoadedAssemblies.EnsureDebugSymbols(OpenAssemblyOf(next))?.SourceFileName);
+        var symbols = LoadedAssemblies.EnsureDebugSymbols(OpenAssemblyOf(next));
+        Assert.Equal(FixturePdb, symbols?.SourceFileName);
     }
 
     [Fact]

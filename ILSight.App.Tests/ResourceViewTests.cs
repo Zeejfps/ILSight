@@ -11,7 +11,8 @@ public sealed class ResourceViewTests
     private static async Task<(AppDriver App, DocumentTab Tab)> ShowResourceAsync(params string[] path)
     {
         var app = AppDriver.Opened(width: 1400f);
-        app.Show(await app.NodeAsync(["Resources", .. path]), 3);
+        var resource = await app.NodeAsync(["Resources", .. path]);
+        app.Show(resource, 3);
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         return (app, tab);
@@ -98,7 +99,8 @@ public sealed class ResourceViewTests
         app.Frames.Frame();
         var zoomedBefore = !app.Ui.Documents.GetView(tab).Picture.Zoom.IsOwnSize;
 
-        app.Show(await app.NodeAsync(["Resources", "logo.png"]), 3);
+        var logo = await app.NodeAsync(["Resources", "logo.png"]);
+        app.Show(logo, 3);
 
         Assert.True(zoomedBefore);
         Assert.True(app.Ui.Documents.GetView(tab).Picture.Zoom.IsOwnSize);

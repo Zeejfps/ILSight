@@ -128,8 +128,11 @@ public sealed class CloseAssembliesTests
         app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, Waits.Patience);
         app.Run(2);
         var keyboard = Assert.IsType<LoadedModule>(app.AppState.ListSession.Assemblies.Listed.Single(static a => a.FilePath.Text == KeyboardPath));
-        app.Analyze(await app.FixtureAsync("Greeter"));
-        app.Analyze(await keyboard.ReadRootAsync().GetChildAsync("ZGF.KeyboardModule", "KeyboardKey"));
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Analyze(greeter);
+        var keyboardRoot = await keyboard.ReadRootAsync();
+        var keyboardKey = await keyboardRoot.GetChildAsync("ZGF.KeyboardModule", "KeyboardKey");
+        app.Analyze(keyboardKey);
         app.Settle(2);
         Assert.Equal(2, app.AppState.ListSession.Analyzer.Roots.Count);
 
@@ -211,8 +214,10 @@ public sealed class CloseAssembliesTests
         app.Open([AssemblyPath.Of(KeyboardPath)]);
         app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, Waits.Patience);
         app.Run(2);
-        app.Show(await app.FixtureAsync("Greeter"), 2);
-        app.Show(await KeyboardKeyOfAsync(app), 2, inNewTab: true);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 2);
+        var keyboardKey = await KeyboardKeyOfAsync(app);
+        app.Show(keyboardKey, 2, inNewTab: true);
         return app;
     }
 
@@ -223,7 +228,8 @@ public sealed class CloseAssembliesTests
 
     private static async Task<BrowseNode> KeyboardKeyOfAsync(AppDriver app)
     {
-        return await KeyboardOf(app).ReadRootAsync().GetChildAsync("ZGF.KeyboardModule", "KeyboardKey");
+        var root = await KeyboardOf(app).ReadRootAsync();
+        return await root.GetChildAsync("ZGF.KeyboardModule", "KeyboardKey");
     }
 
     private static DocumentTab TabShowing(AppDriver app, string title)
@@ -463,8 +469,10 @@ public sealed class CloseAssembliesTests
         app.Open([AssemblyPath.Of(KeyboardPath)]);
         app.Frames.WaitUntil(() => app.AppState.ListSession.Assemblies.Listed.Count == 2, Waits.Patience);
         app.Run(2);
-        app.Show(await app.FixtureAsync("Greeter"), 2);
-        app.Show(await KeyboardKeyOfAsync(app), 2, inNewTab: true);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 2);
+        var keyboardKey = await KeyboardKeyOfAsync(app);
+        app.Show(keyboardKey, 2, inNewTab: true);
         app.Driver.Pump();
         var savedOpen = (temp.Settings().AssemblyLists.Single().Documents?.Tabs ?? []).Select(Names.SavedTitle).ToList();
 
@@ -508,7 +516,8 @@ public sealed class CloseAssembliesTests
     {
         using var temp = new TempDir();
         var app = OpenedWithKeyboard(temp);
-        DiagramView.ShowInNewDiagramLater(app.Ui.AppCommands, (await KeyboardKeyOfAsync(app)).Definition, new TabTitle.Saved("Keys"));
+        var keyboardKey = await KeyboardKeyOfAsync(app);
+        DiagramView.ShowInNewDiagramLater(app.Ui.AppCommands, keyboardKey.Definition, new TabTitle.Saved("Keys"));
         app.Frames.WaitUntil(() => app.AppState.ListSession.Navigation.ActiveTab?.Diagram?.Cards.Count > 0, Waits.Patience);
         app.Settle(2);
         var tab = app.AppState.ListSession.Navigation.ActiveTab;

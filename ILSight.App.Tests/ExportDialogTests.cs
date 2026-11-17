@@ -64,7 +64,8 @@ public sealed class ExportDialogTests : IDisposable
     {
         var d = OpenedTwo();
 
-        d.OpenExportSetup(await FixturesAsync(d));
+        var fixtures = await FixturesAsync(d);
+        d.OpenExportSetup(fixtures);
 
         var setup = d.Ui.ExportSetup;
         Assert.True(setup.IsOpen);
@@ -86,7 +87,8 @@ public sealed class ExportDialogTests : IDisposable
     public async Task Ticking_a_second_assembly_makes_the_export_a_solution_named_after_the_folder()
     {
         var d = OpenedTwo();
-        d.OpenExportSetup(await FixturesAsync(d));
+        var fixtures = await FixturesAsync(d);
+        d.OpenExportSetup(fixtures);
         var setup = d.Ui.ExportSetup;
         setup.Folder = _temp.PathOf("Out");
 
@@ -275,7 +277,8 @@ public sealed class ExportDialogTests : IDisposable
         d.OpenExportSetup(null);
         Assert.Equal(ExportPage.Choose, d.Ui.ExportSetup.Assemblies.Page);
 
-        d.OpenExportSetup(await FixturesAsync(d));
+        var fixtures = await FixturesAsync(d);
+        d.OpenExportSetup(fixtures);
         Assert.Equal(ExportPage.Main, d.Ui.ExportSetup.Assemblies.Page);
     }
 
@@ -390,13 +393,14 @@ public sealed class ExportDialogTests : IDisposable
     public async Task Selected_only_hides_the_unticked_assemblies()
     {
         var d = OpenedTwo();
-        d.OpenExportSetup(await FixturesAsync(d));
+        var fixtures = await FixturesAsync(d);
+        d.OpenExportSetup(fixtures);
         var setup = d.Ui.ExportSetup;
         setup.ChooseAssemblies();
 
         setup.Picker.SelectedOnly = true;
 
-        Assert.Equal(await FixturesAsync(d), Assert.Single(ExportDialogView.ListShown(setup.Picker)).Assembly);
+        Assert.Equal(fixtures, Assert.Single(ExportDialogView.ListShown(setup.Picker)).Assembly);
     }
 
     [Fact]
@@ -564,7 +568,8 @@ public sealed class ExportDialogTests : IDisposable
         app.Settle(2);
         var second = app.AppState.ListSession.Assemblies.Assemblies[1];
 
-        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, app.Ui.Tree.GetLabel(await second.ReadRootAsync())), PointerButton.Right);
+        var secondRoot = await second.ReadRootAsync();
+        app.Frames.ClickOn(Selector.OfRole(SemanticRole.TreeItem, app.Ui.Tree.GetLabel(secondRoot)), PointerButton.Right);
         app.Frames.Frame();
         app.Frames.ClickOn(Selector.OfRole(SemanticRole.MenuItem, "Export…"));
         app.Frames.Frame(2);

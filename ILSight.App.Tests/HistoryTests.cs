@@ -18,7 +18,8 @@ public sealed class HistoryTests
 
     private static async Task ShowAsync(AppDriver app, string type)
     {
-        app.Show(await app.FixtureAsync(type), 4);
+        var fixture = await app.FixtureAsync(type);
+        app.Show(fixture, 4);
     }
 
     private static CodeViewPosition ScrollTo(AppDriver app, int topLine, TextPosition anchor, TextPosition caret)
@@ -92,7 +93,8 @@ public sealed class HistoryTests
         await ShowAsync(app, "Outline");
         var outline = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(outline);
-        app.Show(await app.FixtureAsync("Greeter"), 4, inNewTab: true);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 4, inNewTab: true);
 
         app.Frames.Key(Shortcuts.Back);
         app.Frames.Frame();
@@ -156,7 +158,8 @@ public sealed class HistoryTests
         };
         CodeViewWidget.RestorePosition(CodeOf(app, tab), scrolled);
 
-        app.Driver.Show(await app.FixtureAsync("Greeter"));
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Driver.Show(greeter);
         app.Driver.InTurn(() => app.Ui.Documents.KeepTabPositions(app.AppState.ListSession.Navigation));
         app.Settle(4);
         app.GoBack();
@@ -264,7 +267,10 @@ public sealed class HistoryTests
     {
         var app = Opened();
         await ShowAsync(app, "Greeter");
-        app.Show(await OpenApiDiffSample(app).ReadRootAsync().GetChildAsync("ApiDiffSample", "Account"), 4);
+        var apiDiffSample = OpenApiDiffSample(app);
+        var apiDiffSampleRoot = await apiDiffSample.ReadRootAsync();
+        var account = await apiDiffSampleRoot.GetChildAsync("ApiDiffSample", "Account");
+        app.Show(account, 4);
         await ShowAsync(app, "Farewell");
         app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [ApiDiffSampleOf(app)]));
         app.Run(4);

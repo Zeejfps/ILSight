@@ -18,8 +18,10 @@ public sealed class TabLoadsTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var navigation = new Navigation { ViewCommands = new Queue<ViewCommand>(), PreviewTabs = false };
-        var first = StartLoading(navigation, await d.FixtureAsync("Greeter"));
-        var second = StartLoading(navigation, await d.FixtureAsync("Farewell"));
+        var greeter = await d.FixtureAsync("Greeter");
+        var first = StartLoading(navigation, greeter);
+        var farewell = await d.FixtureAsync("Farewell");
+        var second = StartLoading(navigation, farewell);
         var decompiled = new List<DecompileTicket>();
         var read = new List<SavedDiagramRead>();
         var found = new List<ReopenedNodesLookup>();

@@ -58,7 +58,8 @@ public sealed class BrowseTreeTests
         var d = AppStateDriver.Started();
         var tree = new BrowseTree { Session = TestSession.Shared };
         var unreadablePath = BrokenAssemblies.WriteUnreadableAvaloniaContainer(temp);
-        var root = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(unreadablePath).ReadRootAsync();
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(unreadablePath);
+        var root = await assembly.ReadRootAsync();
         var container = await root.GetChildAsync("Resources", BrokenAssemblies.AvaloniaContainer);
 
         tree.GetChildren(container);
@@ -109,13 +110,17 @@ public sealed class BrowseTreeTests
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(AppStateDriver.FixturePath);
         var reopens = new Reopens();
         tree.ShowReopening(reopens.Files);
-        var idle = tree.Row(await assembly.ReadRootAsync()).Spinning;
+        var rootBefore = await assembly.ReadRootAsync();
+        var idle = tree.Row(rootBefore).Spinning;
 
         reopens.Start(assembly.FilePath);
 
         Assert.False(idle);
-        Assert.True(tree.Row(await assembly.ReadRootAsync()).Spinning);
-        Assert.False(tree.Row(await assembly.ReadRootAsync().GetChildAsync(AppStateDriver.FixturesNamespace)).Spinning);
+        var rootReopening = await assembly.ReadRootAsync();
+        Assert.True(tree.Row(rootReopening).Spinning);
+        var root = await assembly.ReadRootAsync();
+        var fixturesNamespace = await root.GetChildAsync(AppStateDriver.FixturesNamespace);
+        Assert.False(tree.Row(fixturesNamespace).Spinning);
     }
 
     [Fact]

@@ -9,9 +9,11 @@ public sealed class RestoreAnalysesHandlerTests
     private static async Task<AnalysesRestore> WaitForGreeterAndFarewellAsync(AppStateDriver d)
     {
         var analyzer = d.AppState.ListSession.Analyzer;
-        var greeterAdd = analyzer.AddRoot(await SymbolOfAsync(d, "Greeter"));
+        var greeterSymbol = await SymbolOfAsync(d, "Greeter");
+        var greeterAdd = analyzer.AddRoot(greeterSymbol);
         var greeter = Assert.IsType<AnalyzerAdd.Analyzing>(greeterAdd).Root;
-        var farewellAdd = analyzer.AddRoot(await SymbolOfAsync(d, "Farewell"));
+        var farewellSymbol = await SymbolOfAsync(d, "Farewell");
+        var farewellAdd = analyzer.AddRoot(farewellSymbol);
         var farewell = Assert.IsType<AnalyzerAdd.Analyzing>(farewellAdd).Root;
         Assert.Equal<AnalyzerNode>([greeter, farewell], analyzer.Roots);
         var saved = analyzer.ListSavedAnalyses();

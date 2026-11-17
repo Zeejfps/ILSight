@@ -52,7 +52,8 @@ public sealed class OpenAndShowIdHandlerTests
         var shown = d.AppState.ListSession.Navigation.ActiveTab?.Node;
         Assert.NotNull(shown);
         var appState = d.AppState;
-        var found = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(await d.FixtureAsync("Greeter"))), WhileOpening = () => appState.ListSession.Navigation.BeginRequest() };
+        var greeter = await d.FixtureAsync("Greeter");
+        var found = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(greeter)), WhileOpening = () => appState.ListSession.Navigation.BeginRequest() };
         var missing = new FakeOpenAndShowIdHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)), WhileOpening = () => appState.ListSession.Navigation.BeginRequest() };
 
         var foundLoad = await d.RunAsync(() => new OpenAndShowIdHandler(found).HandleAsync(appState.ListSession.Navigation, appState.Decompiler, [], "T:Greeter", d.AppState.ListSession.Assemblies.Work, CancellationToken.None));

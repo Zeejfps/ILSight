@@ -66,7 +66,8 @@ public sealed class AppStateTests
     public async Task Closing_the_active_tab_with_no_screen_leaves_the_pick_of_the_next_to_the_view()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        d.Show(await d.FixtureAsync("Greeter"), inNewTab: true);
+        var greeterNode = await d.FixtureAsync("Greeter");
+        d.Show(greeterNode, inNewTab: true);
         var greeter = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(greeter);
 
@@ -82,7 +83,8 @@ public sealed class AppStateTests
     {
         var d = AppStateDriver.Opened();
         var ns = await d.NodeAsync(AppStateDriver.FixturesNamespace);
-        d.StartShowing(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.StartShowing(greeter);
 
         d.InTurn(() => Commands.CloseAllAssemblies(d.AppState));
         d.NextFrame();
@@ -97,10 +99,12 @@ public sealed class AppStateTests
         var d = AppStateDriver.Opened();
         var ns = await d.NodeAsync(AppStateDriver.FixturesNamespace);
         var tables = await d.NodeAsync("Metadata", "Tables");
-        d.Show(await tables.TableAsync("TypeDef"));
+        var typeDefTable = await tables.TableAsync("TypeDef");
+        d.Show(typeDefTable);
         var grid = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(grid);
-        d.Show(await d.FixtureAsync("Greeter"), inNewTab: true);
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter, inNewTab: true);
         var code = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(code);
         d.NextFrame();
@@ -128,7 +132,8 @@ public sealed class AppStateTests
     {
         var d = AppStateDriver.Opened();
         var tables = await d.NodeAsync("Metadata", "Tables");
-        d.Show(await tables.TableAsync("TypeDef"));
+        var typeDefTable = await tables.TableAsync("TypeDef");
+        d.Show(typeDefTable);
         var grid = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(grid);
         var documents = d.Ui.Documents;
@@ -160,8 +165,10 @@ public sealed class AppStateTests
     {
         var app = AppDriver.Opened();
         var d = app.Driver;
-        d.Show(await d.FixtureAsync("Greeter"));
-        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
+        var greeterNode = await d.FixtureAsync("Greeter");
+        d.Show(greeterNode);
+        var farewellNode = await d.FixtureAsync("Farewell");
+        d.Show(farewellNode, inNewTab: true);
         var greeter = d.AppState.ListSession.Navigation.OpenTabs[^2];
         var farewell = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(farewell);
@@ -171,7 +178,8 @@ public sealed class AppStateTests
         d.Ui.Panels.ActivateTab(d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup, greeter);
         app.Run();
 
-        d.Show(await d.FixtureAsync("Outline"), inNewTab: true);
+        var outlineNode = await d.FixtureAsync("Outline");
+        d.Show(outlineNode, inNewTab: true);
 
         var outline = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(outline);
@@ -186,7 +194,8 @@ public sealed class AppStateTests
     {
         var app = AppDriver.Opened();
         var d = app.Driver;
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeterNode = await d.FixtureAsync("Greeter");
+        d.Show(greeterNode);
         var greeter = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(greeter);
         var greeterPanel = d.Ui.Documents.GetPanel(greeter);
@@ -201,7 +210,8 @@ public sealed class AppStateTests
         Assert.NotSame(documents.GroupOf(greeterPanel), documents.GroupOf(d.Ui.Documents.GetPanel(empty)));
         Assert.Same(empty, d.AppState.ListSession.Navigation.ActiveTab);
 
-        d.Show(await d.FixtureAsync("Farewell"));
+        var farewell = await d.FixtureAsync("Farewell");
+        d.Show(farewell);
 
         Assert.Equal("Farewell", empty.Node?.Text);
         Assert.Equal("Greeter", greeter.Node?.Text);
@@ -211,8 +221,10 @@ public sealed class AppStateTests
     public async Task Closing_the_active_tab_activates_the_one_in_front_of_its_group()
     {
         var d = AppStateDriver.Opened();
-        d.Show(await d.FixtureAsync("Greeter"));
-        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
+        var greeterNode = await d.FixtureAsync("Greeter");
+        d.Show(greeterNode);
+        var farewellNode = await d.FixtureAsync("Farewell");
+        d.Show(farewellNode, inNewTab: true);
         var greeter = d.AppState.ListSession.Navigation.OpenTabs[^2];
 
         var farewell = d.AppState.ListSession.Navigation.ActiveTab;
@@ -239,9 +251,10 @@ public sealed class AppStateTests
         var failed = Assert.Single(d.AppState.ListSession.Assemblies.Listed);
         var tab = Assert.Single(d.AppState.ListSession.Navigation.OpenTabs);
         Assert.IsType<FailedAssembly>(failed);
-        Assert.Same(await failed.ReadRootAsync(), tab.Node);
+        var failedRoot = await failed.ReadRootAsync();
+        Assert.Same(failedRoot, tab.Node);
         Assert.Contains(Path.GetFileName(missing), Documents.GetText(tab.Document));
-        Assert.Same(await failed.ReadRootAsync(), Assert.Single(d.Ui.Tree.Roots));
+        Assert.Same(failedRoot, Assert.Single(d.Ui.Tree.Roots));
         Assert.Empty(d.AppState.Errors.Entries);
     }
 
@@ -249,7 +262,8 @@ public sealed class AppStateTests
     public async Task Reloading_does_not_overwrite_a_tab_the_user_pointed_elsewhere_meanwhile()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
         var farewell = await d.FixtureAsync("Farewell");
 
         d.Reload([]);
@@ -264,7 +278,8 @@ public sealed class AppStateTests
     public async Task A_reload_asks_the_view_to_expand_what_it_had_expanded_and_to_reveal_the_active_tabs_node()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
         var node = await d.NodeAsync();
         var nodeNode = await d.NodeAsync(AppStateDriver.FixturesNamespace);
         var expanded = new List<NodePath> { node.Path, nodeNode.Path };
@@ -276,16 +291,20 @@ public sealed class AppStateTests
 
         var expand = Assert.Single(commands.OfType<ViewCommand.ExpandNodes>());
         Assert.Equal(expanded, expand.Nodes.Select(n => n.Path));
-        Assert.Same(await d.NodeAsync(), expand.Nodes[0]);
-        Assert.Contains(new ViewCommand.RevealNode(await d.FixtureAsync("Greeter")), commands);
+        var fixturesRoot = await d.NodeAsync();
+        Assert.Same(fixturesRoot, expand.Nodes[0]);
+        var greeterNode = await d.FixtureAsync("Greeter");
+        Assert.Contains(new ViewCommand.RevealNode(greeterNode), commands);
     }
 
     [Fact]
     public async Task Reloading_twice_lands_every_tab_on_the_newest_assemblies()
     {
         var d = AppStateDriver.Opened();
-        d.Show(await d.FixtureAsync("Greeter"));
-        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
+        var farewell = await d.FixtureAsync("Farewell");
+        d.Show(farewell, inNewTab: true);
 
         d.Reload(d.Ui.Tree.ListExpandedPaths());
         d.Reload(d.Ui.Tree.ListExpandedPaths());
@@ -304,19 +323,24 @@ public sealed class AppStateTests
     public async Task Reloading_keeps_the_tree_expanded_as_it_was()
     {
         var d = AppStateDriver.Opened();
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
         var ns = await d.NodeAsync(AppStateDriver.FixturesNamespace);
-        d.Ui.Tree.View.SetExpanded(await d.FixtureAsync("Greeter"), true);
+        var greeterNode = await d.FixtureAsync("Greeter");
+        d.Ui.Tree.View.SetExpanded(greeterNode, true);
 
         d.Reload(d.Ui.Tree.ListExpandedPaths());
         d.Settle();
 
         var view = d.Ui.Tree.View;
-        Assert.NotSame(ns, await d.NodeAsync(AppStateDriver.FixturesNamespace));
-        Assert.True(view.IsExpanded(await d.NodeAsync()));
-        Assert.True(view.IsExpanded(await d.NodeAsync(AppStateDriver.FixturesNamespace)));
-        Assert.True(view.IsExpanded(await d.FixtureAsync("Greeter")));
-        Assert.Same(await d.FixtureAsync("Greeter"), view.Selected);
+        var fixturesNamespace = await d.NodeAsync(AppStateDriver.FixturesNamespace);
+        Assert.NotSame(ns, fixturesNamespace);
+        var fixturesRoot = await d.NodeAsync();
+        Assert.True(view.IsExpanded(fixturesRoot));
+        Assert.True(view.IsExpanded(fixturesNamespace));
+        var reloadedGreeter = await d.FixtureAsync("Greeter");
+        Assert.True(view.IsExpanded(reloadedGreeter));
+        Assert.Same(reloadedGreeter, view.Selected);
     }
 
     [Fact]
@@ -331,7 +355,8 @@ public sealed class AppStateTests
         d.Open([AssemblyPath.Of(path)]);
         d.RunUntil(() => d.AppState.ListSession.Assemblies.Assemblies.Count == 1);
         d.Settle();
-        d.Ui.Tree.View.SetExpanded(await d.AppState.ListSession.Assemblies.Assemblies[0].ReadRootAsync(), true);
+        var rootBefore = await d.AppState.ListSession.Assemblies.Assemblies[0].ReadRootAsync();
+        d.Ui.Tree.View.SetExpanded(rootBefore, true);
         await File.WriteAllBytesAsync(path, unreadable);
 
         d.Reload(d.Ui.Tree.ListExpandedPaths());
@@ -348,7 +373,8 @@ public sealed class AppStateTests
         var d = AppStateDriver.Opened();
         var before = await d.FixtureAsync("Greeter");
         d.Show(before);
-        d.Show(await d.FixtureAsync("Farewell"));
+        var farewell = await d.FixtureAsync("Farewell");
+        d.Show(farewell);
 
         d.Reload(d.Ui.Tree.ListExpandedPaths());
         d.Settle();
@@ -360,7 +386,8 @@ public sealed class AppStateTests
         Assert.Empty(d.AppState.Errors.Entries.Select(e => e.Words().FullText));
         Assert.Equal("Greeter", shown.Text);
         Assert.NotSame(before, shown);
-        Assert.Same(await d.FixtureAsync("Greeter"), shown);
+        var greeter = await d.FixtureAsync("Greeter");
+        Assert.Same(greeter, shown);
         Assert.Same(shown, d.Ui.Tree.View.Selected);
     }
 
@@ -368,12 +395,14 @@ public sealed class AppStateTests
     public async Task Going_back_to_what_the_tab_shows_returns_to_where_it_was_left_without_decompiling_again()
     {
         var d = AppStateDriver.Opened();
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
         d.Settle();
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var document = tab.Document;
-        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
+        var farewell = await d.FixtureAsync("Farewell");
+        d.Show(farewell, inNewTab: true);
         d.Settle();
 
         d.GoBack();
@@ -390,8 +419,10 @@ public sealed class AppStateTests
     public async Task Going_back_after_clicking_a_tab_returns_to_the_tab_the_user_was_at()
     {
         var d = AppStateDriver.Opened();
-        d.Show(await d.FixtureAsync("Greeter"));
-        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
+        var farewell = await d.FixtureAsync("Farewell");
+        d.Show(farewell, inNewTab: true);
         d.Ui.Panels.ActivateTab(d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup, d.AppState.ListSession.Navigation.OpenTabs[0]);
         d.Settle();
 
@@ -406,11 +437,14 @@ public sealed class AppStateTests
     {
         var d = AppStateDriver.Opened();
         d.TurnOffPreviewTabs();
-        d.Show(await d.FixtureAsync("Greeter"));
-        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
+        var farewell = await d.FixtureAsync("Farewell");
+        d.Show(farewell, inNewTab: true);
         d.Ui.Panels.ActivateTab(d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup, d.AppState.ListSession.Navigation.OpenTabs[0]);
         d.Settle();
-        d.Show(await d.FixtureAsync("Counter"));
+        var counter = await d.FixtureAsync("Counter");
+        d.Show(counter);
 
         d.GoBack();
         d.Settle();
@@ -423,16 +457,20 @@ public sealed class AppStateTests
     {
         var d = AppStateDriver.Opened();
         d.TurnOffPreviewTabs();
-        d.Show(await d.FixtureAsync("Greeter"));
-        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
-        d.Show(await d.FixtureAsync("Outline"), inNewTab: true);
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
+        var farewell = await d.FixtureAsync("Farewell");
+        d.Show(farewell, inNewTab: true);
+        var outlineNode = await d.FixtureAsync("Outline");
+        d.Show(outlineNode, inNewTab: true);
         var outline = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(outline);
         d.InTurn(() => QueuedCommands.CloseTabAndFocusNext(d.Ui.Panels, d.AppState, outline));
         d.Settle();
         var focused = d.AppState.ListSession.Navigation.ActiveTab?.Node?.Text;
         Assert.NotNull(focused);
-        d.Show(await d.FixtureAsync("Counter"));
+        var counter = await d.FixtureAsync("Counter");
+        d.Show(counter);
 
         d.GoBack();
         d.Settle();
@@ -445,7 +483,8 @@ public sealed class AppStateTests
     public async Task A_navigation_result_does_not_override_a_newer_choice()
     {
         var d = AppStateDriver.Opened();
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
         var active = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
         var document = active.Document;
@@ -477,7 +516,8 @@ public sealed class AppStateTests
     public async Task A_navigation_lands_in_the_tab_it_was_asked_from()
     {
         var d = AppStateDriver.Opened();
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
         var active = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
         var document = active.Document;
@@ -505,13 +545,15 @@ public sealed class AppStateTests
 
         var view = d.Ui.Documents.GetView(tab).Code;
 
-        d.StartShowing(await d.NodeAsync(AppStateDriver.FixturesNamespace));
+        var fixturesNamespace = await d.NodeAsync(AppStateDriver.FixturesNamespace);
+        d.StartShowing(fixturesNamespace);
         d.NextFrame();
         Assert.IsNotType<PendingScroll.Reveal>(view.Reveal.Pending);
         d.Settle();
         Assert.IsNotType<PendingScroll.Reveal>(view.Reveal.Pending);
 
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
         var reveal = Assert.IsType<PendingScroll.Reveal>(view.Reveal.Pending);
         Assert.NotNull(tab.Node);
         Assert.Equal(Documents.FindDefinitionLine(tab.Document, tab.Node), reveal.Line);
@@ -521,7 +563,8 @@ public sealed class AppStateTests
     public async Task Search_keeps_its_results_and_selection_when_navigation_opens_an_assembly()
     {
         var d = AppStateDriver.Opened();
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
         var search = d.Ui.Search;
         search.Query = "IsLeapYear";
         search.RunSearch(d.AppState.ListSession.Assemblies, TimeSpan.FromSeconds(0), true);

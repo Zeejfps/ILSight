@@ -673,7 +673,8 @@ public sealed class DisplayOptionsTests
     public async Task Ctrl_equals_in_a_document_makes_its_code_larger()
     {
         var app = AppDriver.Opened();
-        app.Show(await app.FixtureAsync("Greeter"));
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter);
         app.Settle();
         app.Run(3);
         var size = app.Ui.Appearance.Theme.MonoFontSize;

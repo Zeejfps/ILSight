@@ -8,8 +8,10 @@ public sealed class GoToHistoryEntryHandlerTests
     private static async Task<AppStateDriver> ShowGreeterThenFarewellAsync()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        d.Show(await d.FixtureAsync("Greeter"));
-        d.Show(await d.FixtureAsync("Farewell"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
+        var farewell = await d.FixtureAsync("Farewell");
+        d.Show(farewell);
         return d;
     }
 
@@ -84,13 +86,15 @@ public sealed class GoToHistoryEntryHandlerTests
     {
         var found = await ShowGreeterThenFarewellAsync();
         var missing = await ShowGreeterThenFarewellAsync();
-        var foundLookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(await found.FixtureAsync("Greeter"))), WhileLooking = () => found.AppState.ListSession.Navigation.BeginRequest() };
+        var foundGreeter = await found.FixtureAsync("Greeter");
+        var foundLookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(foundGreeter)), WhileLooking = () => found.AppState.ListSession.Navigation.BeginRequest() };
         var missingLookup = new FakeGoToHistoryEntryHandlerPorts { Found = new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable<BrowseNode>(null)), WhileLooking = () => missing.AppState.ListSession.Navigation.BeginRequest() };
 
         var foundLoad = await new GoToHistoryEntryHandler(foundLookup).HandleAsync(found.AppState.ListSession.Navigation, found.AppState.Decompiler, GoTo(found.AppState, found.AppState.ListSession.Navigation.HistoryIndex - 1), CancellationToken.None);
         var missingLoad = await new GoToHistoryEntryHandler(missingLookup).HandleAsync(missing.AppState.ListSession.Navigation, missing.AppState.Decompiler, GoTo(missing.AppState, missing.AppState.ListSession.Navigation.HistoryIndex - 1), CancellationToken.None);
 
-        Assert.Same(await found.FixtureAsync("Farewell"), found.AppState.ListSession.Navigation.ActiveTab?.Node);
+        var farewell = await found.FixtureAsync("Farewell");
+        Assert.Same(farewell, found.AppState.ListSession.Navigation.ActiveTab?.Node);
         Assert.Empty(foundLookup.Reported);
         Assert.Empty(missingLookup.Reported);
         Assert.Null(foundLoad);

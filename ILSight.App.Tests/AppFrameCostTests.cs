@@ -14,7 +14,8 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
     {
         var app = AppDriver.Opened();
         app.Settle(2);
-        app.Show(await app.FixtureAsync("Greeter"), 2);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 2);
         app.Settle(5);
         if (errorsOpen)
         {
@@ -56,12 +57,15 @@ public sealed class AppFrameCostTests(ITestOutputHelper output)
     {
         var app = AppDriver.Opened();
         app.Settle(2);
-        app.Show(await app.FixtureAsync("Greeter"), 2);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 2);
         app.Settle(5);
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var panel = app.Ui.Documents.GetPanel(tab);
-        app.Ui.Omnibar.OpenMenu(panel, await app.NodeAsync(AppStateDriver.FixturesNamespace), await app.FixtureAsync("Greeter"));
+        var fixturesNamespace = await app.NodeAsync(AppStateDriver.FixturesNamespace);
+        var greeterNode = await app.FixtureAsync("Greeter");
+        app.Ui.Omnibar.OpenMenu(panel, fixturesNamespace, greeterNode);
         app.Settle(5);
 
         app.Frames.Canvas.Recording = false;

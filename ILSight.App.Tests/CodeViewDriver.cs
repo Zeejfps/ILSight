@@ -225,7 +225,8 @@ internal sealed class CodeViewDriver
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(type.Assembly.Location);
         Assert.NotNull(type.Namespace);
-        var node = await assembly.ReadRootAsync().GetChildAsync(type.Namespace, type.Name);
+        var root = await assembly.ReadRootAsync();
+        var node = await root.GetChildAsync(type.Namespace, type.Name);
         return await node.DecompileAsync(DecompilationLanguage.CSharp);
     }
 

@@ -70,14 +70,16 @@ public sealed class PackageBrowsingTests
         var package = app.AppState.ListSession.Assemblies.Listed[0];
 
         var greeter = await GreeterAsync(app);
-        app.Ui.Tree.View.Select(await greeter.Assembly.ReadRootAsync());
+        var root = await greeter.Assembly.ReadRootAsync();
+        app.Ui.Tree.View.Select(root);
         app.Run(2);
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly"));
         app.Frames.Frame(2);
         Assert.False(Assert.Single(app.Ui.Closer.Rows.Order).Included);
         app.Ui.Closer.Close();
 
-        app.Ui.Tree.View.Select(await package.ReadRootAsync());
+        var packageRoot = await package.ReadRootAsync();
+        app.Ui.Tree.View.Select(packageRoot);
         app.Run(2);
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly"));
         app.Frames.Frame(2);
@@ -124,7 +126,8 @@ public sealed class PackageBrowsingTests
         var greeter = await GreeterAsync(app);
         var assembly = greeter.Assembly;
         var path = temp.PathOf("Extracted.dll");
-        app.Ui.Tree.RevealNode(await assembly.ReadRootAsync());
+        var root = await assembly.ReadRootAsync();
+        app.Ui.Tree.RevealNode(root);
         app.Run(2);
 
         app.Frames.FilePicker.Answer = path;
@@ -168,7 +171,10 @@ public sealed class PackageBrowsingTests
     private static async Task<BrowseNode> GreeterAsync(AppDriver app)
     {
         var package = app.AppState.ListSession.Assemblies.Listed[0];
-        var fixtures = (await package.ReadRootAsync().GetChildAsync(LibFolder).ListChildrenAsync()).Single(IsAssembly);
+        var packageRoot = await package.ReadRootAsync();
+        var lib = await packageRoot.GetChildAsync(LibFolder);
+        var libChildren = await lib.ListChildrenAsync();
+        var fixtures = libChildren.Single(IsAssembly);
         return await fixtures.GetChildAsync(AppStateDriver.FixturesNamespace, "Greeter");
     }
 

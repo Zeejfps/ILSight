@@ -46,7 +46,8 @@ public sealed class NestedNamespaceTests
             return false;
         }
 
-        return (await ShownChildrenAsync(app, parent)).Contains(node);
+        var shownChildren = await ShownChildrenAsync(app, parent);
+        return shownChildren.Contains(node);
     }
 
     private static async Task<IReadOnlyList<BrowseNode>> ShownChildrenAsync(AppDriver app, BrowseNode node)
@@ -73,17 +74,25 @@ public sealed class NestedNamespaceTests
 
         foreach (var name in EnclosingNamespaces)
         {
-            Assert.True(tree.View.IsExpanded(await app.NodeAsync(name)));
+            var node = await app.NodeAsync(name);
+            Assert.True(tree.View.IsExpanded(node));
         }
         Assert.True(tree.View.IsExpanded(fixtures));
-        Assert.Equal([await app.NodeAsync("ILSight.App"), await app.NodeAsync("ILSight.Tests")], await ShownChildrenAsync(app, ilsight));
+        var appNode = await app.NodeAsync("ILSight.App");
+        var tests = await app.NodeAsync("ILSight.Tests");
+        var shownChildren = await ShownChildrenAsync(app, ilsight);
+        Assert.Equal([appNode, tests], shownChildren);
         Assert.True(tree.HasChildren(ilsight));
-        Assert.Contains(fixtures, await ShownChildrenAsync(app, await app.NodeAsync("ILSight.App.Tests")));
+        var testsNode = await app.NodeAsync("ILSight.App.Tests");
+        var testsShown = await ShownChildrenAsync(app, testsNode);
+        Assert.Contains(fixtures, testsShown);
         Assert.Equal("ILSight", tree.GetRowLabel(ilsight));
-        Assert.Equal("App", tree.GetRowLabel(await app.NodeAsync("ILSight.App")));
+        Assert.Equal("App", tree.GetRowLabel(appNode));
         Assert.Equal("Fixtures", tree.GetRowLabel(fixtures));
         Assert.Equal(AppStateDriver.FixturesNamespace, tree.GetLabel(fixtures));
-        Assert.True(await IsShownNestedAsync(app, await app.FixtureAsync("Greeter")));
+        var greeter = await app.FixtureAsync("Greeter");
+        var shownNested = await IsShownNestedAsync(app, greeter);
+        Assert.True(shownNested);
     }
 
     [Fact]
@@ -121,7 +130,8 @@ public sealed class NestedNamespaceTests
         Nest(app, true);
 
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
-        Assert.True(await IsShownNestedAsync(app, greeter));
+        var shownNested = await IsShownNestedAsync(app, greeter);
+        Assert.True(shownNested);
     }
 
     [Fact]
@@ -140,7 +150,8 @@ public sealed class NestedNamespaceTests
 
         Assert.Same(farewell, app.AppState.ListSession.Navigation.ActiveTab?.Node);
         Assert.Same(farewell, app.Ui.Tree.View.Selected);
-        Assert.True(await IsShownNestedAsync(app, farewell));
+        var shownNested = await IsShownNestedAsync(app, farewell);
+        Assert.True(shownNested);
     }
 
     [Fact]
@@ -149,7 +160,8 @@ public sealed class NestedNamespaceTests
         var app = AppDriver.Opened();
         var greeter = await app.FixtureAsync("Greeter");
         app.Show(greeter, 2);
-        app.Show(await app.FixtureAsync("Farewell"), 2);
+        var farewell = await app.FixtureAsync("Farewell");
+        app.Show(farewell, 2);
         Nest(app, true);
         app.Ui.Tree.CollapseAll();
 
@@ -158,7 +170,8 @@ public sealed class NestedNamespaceTests
 
         Assert.Same(greeter, app.AppState.ListSession.Navigation.ActiveTab?.Node);
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
-        Assert.True(await IsShownNestedAsync(app, greeter));
+        var shownNested = await IsShownNestedAsync(app, greeter);
+        Assert.True(shownNested);
     }
 
     [Fact]
@@ -172,7 +185,8 @@ public sealed class NestedNamespaceTests
         var toggle = Bookmarks.ToggleBookmark(app.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);
         Assert.IsType<BookmarkToggle.Added>(toggle);
         var bookmark = Assert.Single(app.AppState.Bookmarks.Items);
-        app.Show(await app.FixtureAsync("Greeter"), 2);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 2);
         Nest(app, false);
         app.Ui.Tree.CollapseAll();
 
@@ -185,7 +199,9 @@ public sealed class NestedNamespaceTests
         Assert.Same(outline, app.AppState.ListSession.Navigation.ActiveTab?.Node);
         Assert.Same(outline, app.Ui.Tree.View.Selected);
         Assert.True(app.Ui.Tree.View.IsExpanded(fixtures));
-        Assert.Contains(fixtures, await ShownChildrenAsync(app, await app.NodeAsync()));
+        var fixturesRoot = await app.NodeAsync();
+        var shownChildren = await ShownChildrenAsync(app, fixturesRoot);
+        Assert.Contains(fixtures, shownChildren);
     }
 
     [Fact]
@@ -193,16 +209,19 @@ public sealed class NestedNamespaceTests
     {
         var app = OpenedNested();
         var before = await app.NodeAsync("ILSight.App");
-        app.Show(await app.FixtureAsync("Greeter"), 2);
+        var greeterNode = await app.FixtureAsync("Greeter");
+        app.Show(greeterNode, 2);
 
         app.Reload(app.Ui.Tree.ListExpandedPaths());
         app.Settle(1);
 
         var greeter = await app.FixtureAsync("Greeter");
-        Assert.NotSame(before, await app.NodeAsync("ILSight.App"));
+        var appNode = await app.NodeAsync("ILSight.App");
+        Assert.NotSame(before, appNode);
         Assert.Same(greeter, app.AppState.ListSession.Navigation.ActiveTab?.Node);
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
-        Assert.True(await IsShownNestedAsync(app, greeter));
+        var shownNested = await IsShownNestedAsync(app, greeter);
+        Assert.True(shownNested);
     }
 
     [Fact]
@@ -215,8 +234,10 @@ public sealed class NestedNamespaceTests
 
         Nest(app, false);
 
-        Assert.Same(await app.NodeAsync(), app.Ui.Tree.View.Selected);
-        Assert.DoesNotContain(enclosing, await ShownChildrenAsync(app, await app.NodeAsync()));
+        var fixturesRoot = await app.NodeAsync();
+        Assert.Same(fixturesRoot, app.Ui.Tree.View.Selected);
+        var shownChildren = await ShownChildrenAsync(app, fixturesRoot);
+        Assert.DoesNotContain(enclosing, shownChildren);
         Assert.Same(enclosing, app.AppState.ListSession.Navigation.ActiveTab?.Node);
     }
 }

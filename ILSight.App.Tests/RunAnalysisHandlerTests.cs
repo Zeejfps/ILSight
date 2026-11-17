@@ -53,9 +53,10 @@ public sealed class RunAnalysisHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var run = await StartGreeterAnalysisAsync(d);
         var error = new InvalidOperationException("unreadable");
+        var farewellSymbol = await SymbolOfAsync(d, "Farewell");
         var ports = new FakeRunAnalysisHandlerPorts
         {
-            Found = [Batch(await SymbolOfAsync(d, "Farewell")), new Outcome<IReadOnlyList<AnalysisFind>>.Failed(error)],
+            Found = [Batch(farewellSymbol), new Outcome<IReadOnlyList<AnalysisFind>>.Failed(error)],
         };
 
         await d.RunAsync(() => new RunAnalysisHandler(ports).HandleAsync(d.AppState.ListSession.Analyzer, run, CancellationToken.None));
@@ -72,7 +73,8 @@ public sealed class RunAnalysisHandlerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var run = await StartGreeterAnalysisAsync(d);
         var bug = new InvalidOperationException("A bug in the core's own code on what it read.");
-        var ports = new FakeRunAnalysisHandlerPorts { Found = [Batch(await SymbolOfAsync(d, "Farewell"))], Throws = bug };
+        var farewellSymbol = await SymbolOfAsync(d, "Farewell");
+        var ports = new FakeRunAnalysisHandlerPorts { Found = [Batch(farewellSymbol)], Throws = bug };
 
         var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() => d.RunAsync(() => new RunAnalysisHandler(ports).HandleAsync(d.AppState.ListSession.Analyzer, run, CancellationToken.None)));
 
@@ -85,7 +87,8 @@ public sealed class RunAnalysisHandlerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var run = await StartGreeterAnalysisAsync(d);
-        var ports = new FakeRunAnalysisHandlerPorts { Found = [Batch(await SymbolOfAsync(d, "Farewell"))] };
+        var farewellSymbol = await SymbolOfAsync(d, "Farewell");
+        var ports = new FakeRunAnalysisHandlerPorts { Found = [Batch(farewellSymbol)] };
         Analysis.CancelNode(run.Kind);
 
         await d.RunAsync(() => new RunAnalysisHandler(ports).HandleAsync(d.AppState.ListSession.Analyzer, run, CancellationToken.None));

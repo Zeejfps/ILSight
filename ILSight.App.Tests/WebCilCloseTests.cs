@@ -18,7 +18,9 @@ public sealed class WebCilCloseTests
         app.Driver.RunUntil(() => app.AppState.ListSession.Assemblies.Assemblies.Count == 1);
         app.Settle(1);
         var module = app.AppState.ListSession.Assemblies.Assemblies.Single();
-        app.Show(await module.ReadRootAsync().GetChildAsync("LargeApp", "Part159"), 2);
+        var root = await module.ReadRootAsync();
+        var part159 = await root.GetChildAsync("LargeApp", "Part159");
+        app.Show(part159, 2);
         return (app, module, path);
     }
 
@@ -31,7 +33,8 @@ public sealed class WebCilCloseTests
         var tab = app.AppState.ListSession.Navigation.ActiveTab ?? throw new InvalidOperationException("Part159 was shown in no tab.");
         var code = tab.Document;
 
-        var part158 = await module.ReadRootAsync().GetChildAsync("LargeApp", "Part158");
+        var root = await module.ReadRootAsync();
+        var part158 = await root.GetChildAsync("LargeApp", "Part158");
         app.Driver.StartShowing(part158, inNewTab: true);
         var decompiling = app.AppState.ListSession.Navigation.ActiveTab ?? throw new InvalidOperationException("Part158 was shown in no tab.");
         app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [module]));
@@ -94,7 +97,8 @@ public sealed class WebCilCloseTests
         app.Driver.RunUntil(() => app.AppState.ListSession.Assemblies.Assemblies.Count == 1);
         app.Settle(1);
         var module = app.AppState.ListSession.Assemblies.Assemblies.Single();
-        var strings = await module.ReadRootAsync().GetChildAsync("Metadata", "String Heap (357)");
+        var root = await module.ReadRootAsync();
+        var strings = await root.GetChildAsync("Metadata", "String Heap (357)");
         app.Show(strings, 2);
         var tab = app.AppState.ListSession.Navigation.ActiveTab ?? throw new InvalidOperationException("The string heap was shown in no tab.");
         var grid = Assert.IsType<MetadataGrid.Paged>(tab.Grid);

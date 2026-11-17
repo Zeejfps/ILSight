@@ -97,7 +97,8 @@ public sealed class SplitDocumentTests
         app.Frames.Click(750f, 400f);
         app.Frames.Frame();
         Assert.Same(right, d.AppState.ListSession.Navigation.ActiveTab);
-        app.Show(await app.FixtureAsync("Greeter"), 2);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 2);
         Assert.Equal("Outline", left.Node?.Text);
         Assert.Equal("Greeter", right.Node?.Text);
 
@@ -146,10 +147,12 @@ public sealed class SplitDocumentTests
         app.DockWidget.Close(DockPanels.Assemblies);
         app.Run();
         d.TurnOffPreviewTabs();
-        d.Show(await d.FixtureAsync("Outline"));
+        var outline = await d.FixtureAsync("Outline");
+        d.Show(outline);
         var left = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(left);
-        d.Show(await d.FixtureAsync("Outline"), inNewTab: true);
+        var outlineNode = await d.FixtureAsync("Outline");
+        d.Show(outlineNode, inNewTab: true);
         var right = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(right);
         app.DockWidget.Dock(app.Ui.Documents.GetPanel(right), app.Ui.Documents.GetPanel(left), DockEdge.Right, 0.5f);

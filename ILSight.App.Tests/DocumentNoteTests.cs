@@ -15,7 +15,9 @@ public sealed class DocumentNoteTests
         using var temp = new TempDir();
         var sample = temp.Copy(PathsSamplePath, "PathsSample.dll");
         temp.Write("PathsLibrary.dll", "no assembly");
-        var overloads = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(sample).ReadRootAsync().GetChildAsync("PathsSample", "Overloads");
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(sample);
+        var root = await assembly.ReadRootAsync();
+        var overloads = await root.GetChildAsync("PathsSample", "Overloads");
 
         var english = await NodeContentLoader.DecompileAsync(TestSession.Shared, overloads, DecompilationLanguage.CSharp, DecompilerOptions.Default,
             DocumentNoteTexts.For(Locale.En)).GetValueAsync();
@@ -40,7 +42,8 @@ public sealed class DocumentNoteTests
         app.Open([AssemblyPath.Of(sample)]);
         app.Settle();
         var assembly = app.AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.FileName == "PathsSample.dll");
-        var overloads = await assembly.ReadRootAsync().GetChildAsync("PathsSample", "Overloads");
+        var root = await assembly.ReadRootAsync();
+        var overloads = await root.GetChildAsync("PathsSample", "Overloads");
         app.Show(overloads, frames: 2);
         var tab = Assert.Single(app.AppState.ListSession.Navigation.OpenTabs);
         var made = tab.Document;
@@ -75,7 +78,8 @@ public sealed class DocumentNoteTests
         var whole = Picture("logo.bmp");
         var path = BrokenAssemblies.WriteWithPicture(temp, "cut.bmp", whole[..20]);
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(path);
-        var picture = await assembly.ReadRootAsync().GetChildAsync("Resources", "cut.bmp");
+        var root = await assembly.ReadRootAsync();
+        var picture = await root.GetChildAsync("Resources", "cut.bmp");
 
         var englishRead = await NodeContentLoader.ReadContentAsync(TestSession.Shared, picture, DecompilationLanguage.CSharp, DecompilerOptions.Default,
             DocumentNoteTexts.For(Locale.En), firstGridRows: 1).GetValueAsync();
@@ -178,7 +182,8 @@ public sealed class DocumentNoteTests
         app.Open([AssemblyPath.Of(sample)]);
         app.Settle();
         var assembly = app.AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.FileName == "PathsSample.dll");
-        var overloads = await assembly.ReadRootAsync().GetChildAsync("PathsSample", "Overloads");
+        var root = await assembly.ReadRootAsync();
+        var overloads = await root.GetChildAsync("PathsSample", "Overloads");
         app.Show(overloads, frames: 2);
         var tab = Assert.Single(app.AppState.ListSession.Navigation.OpenTabs);
         Assert.NotNull(tab.Node);

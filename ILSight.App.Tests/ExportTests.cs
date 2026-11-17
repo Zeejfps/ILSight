@@ -155,7 +155,8 @@ public sealed class ExportTests : IDisposable
     public async Task Ctrl_S_saves_the_active_tab_where_the_user_picks()
     {
         var app = AppDriver.Opened();
-        app.Show(await app.FixtureAsync("Greeter"), frames: 2);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, frames: 2);
         var path = _temp.PathOf("Greeter.cs");
         app.Frames.FilePicker.Answer = path;
 
@@ -171,7 +172,8 @@ public sealed class ExportTests : IDisposable
     public async Task Code_saved_in_CSharp_stays_CSharp_with_the_options_asked_when_the_language_switches_while_the_file_picker_is_open_and_its_title_says_so()
     {
         var app = AppDriver.Opened();
-        app.Show(await app.FixtureAsync("Greeter"), frames: 2);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, frames: 2);
         var asked = app.AppState.Decompiler.Setup;
         Assert.Equal(DecompilationLanguage.CSharp, asked.Language);
         var stringConcat = DecompilerToggles.FindToggle("StringConcat");
@@ -206,7 +208,8 @@ public sealed class ExportTests : IDisposable
     public async Task Code_saved_with_an_option_on_turned_off_while_the_file_picker_is_open_keeps_it_on_as_the_title_said()
     {
         var app = AppDriver.Opened();
-        app.Show(await app.FixtureAsync("Greeter"), frames: 2);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, frames: 2);
         var stringConcat = DecompilerToggles.FindToggle("StringConcat");
         Assert.NotNull(stringConcat);
         Assert.True(DecompilerToggles.IsOn(app.AppState.Decompiler.Setup.Options, stringConcat));
@@ -230,7 +233,8 @@ public sealed class ExportTests : IDisposable
     public async Task Code_asked_for_whose_assembly_is_closed_while_the_file_picker_is_open_is_refused_saying_it_was_closed()
     {
         var app = AppDriver.Opened();
-        app.Show(await app.FixtureAsync("Greeter"), frames: 2);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, frames: 2);
         var path = _temp.PathOf("Greeter.cs");
         app.Frames.FilePicker.OnOpen = () => CommandArea.Commands.CloseAllAssemblies(app.AppState);
         app.Frames.FilePicker.Answer = path;
@@ -256,7 +260,8 @@ public sealed class ExportTests : IDisposable
         app.Open([AssemblyPath.Of(sample)]);
         app.Driver.RunUntil(() => app.AppState.ListSession.Assemblies.Assemblies.Any(a => a.FilePath.Text == sample));
         var assembly = app.AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.Text == sample);
-        var baml = await assembly.ReadRootAsync().GetChildAsync("Resources", "SampleApp.g.resources", "mainwindow.baml");
+        var root = await assembly.ReadRootAsync();
+        var baml = await root.GetChildAsync("Resources", "SampleApp.g.resources", "mainwindow.baml");
         app.Show(baml, frames: 2);
         var path = _temp.PathOf("mainwindow.xaml");
         app.Frames.FilePicker.Answer = path;

@@ -21,7 +21,8 @@ public sealed class BookmarkTests : IDisposable
     {
         var d = driver ?? AppStateDriver.Started();
         d.OpenFixtures();
-        d.Show(await d.FixtureAsync("Outline"));
+        var outline = await d.FixtureAsync("Outline");
+        d.Show(outline);
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         return (d, tab, tab.Document.GetPosition(text).Line);
@@ -109,7 +110,8 @@ public sealed class BookmarkTests : IDisposable
         var il = tab.Document.Lines[Assert.Single(bookmarks.ListMarkedLines(tab.Document, tab.Node)).Key].Text;
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.CSharp);
         var outline = await d.FixtureAsync("Outline");
-        d.Show((await outline.ListChildrenAsync()).Single(c => c.Text.StartsWith("Third()")));
+        var outlineChildren = await outline.ListChildrenAsync();
+        d.Show(outlineChildren.Single(c => c.Text.StartsWith("Third()")));
         Assert.NotNull(tab.Node);
         var own = tab.Document.Lines[Assert.Single(bookmarks.ListMarkedLines(tab.Document, tab.Node)).Key].Text;
 
@@ -142,7 +144,8 @@ public sealed class BookmarkTests : IDisposable
         var (d, tab, line) = await OutlineAtAsync("return First();", app.Driver);
         var toggle = Bookmarks.ToggleBookmark(d.AppState, tab, line, Names.Bookmark);
         Assert.IsType<BookmarkToggle.Added>(toggle);
-        app.Show(await app.FixtureAsync("Greeter"), 3);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 3);
 
         var bookmark = d.AppState.Bookmarks.Items[0];
         d.InTurn(() => Commands.StartGoingToBookmark(d.AppState, bookmark));
@@ -258,7 +261,8 @@ public sealed class BookmarkTests : IDisposable
     public async Task The_bookmarks_panel_lists_bookmarks_and_Ctrl_clicking_a_location_goes_to_one()
     {
         var (app, d, tab, line) = await ShowBookmarkAsync(frames: 0);
-        app.Show(await app.FixtureAsync("Greeter"), 4);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 4);
 
         Assert.True(app.Frames.Drew("Bookmark 1"));
         Click(app, "Outline:" + (line + 1));
@@ -300,7 +304,8 @@ public sealed class BookmarkTests : IDisposable
     public async Task Hovering_a_location_shows_where_it_points_how_to_follow_it_and_a_link_icon_that_goes_there()
     {
         var (app, d, tab, _) = await ShowBookmarkAsync();
-        app.Show(await app.FixtureAsync("Greeter"), 2);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 2);
         var location = app.TextRect(d.AppState.Bookmarks.Items[0].Location);
 
         app.Frames.MovePointer(location.X + 2f, location.Y + location.Height / 2);

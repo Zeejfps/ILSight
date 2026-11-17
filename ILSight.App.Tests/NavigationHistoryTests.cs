@@ -24,9 +24,11 @@ public sealed class NavigationHistoryTests
         var history = new NavigationHistory();
         var first = new TabVersion { TabId = 1, Version = 1 };
         var second = new TabVersion { TabId = 2, Version = 1 };
-        history.RecordPlace(await d.FixtureAsync("Outline"), DecompilationLanguage.CSharp);
+        var outline = await d.FixtureAsync("Outline");
+        history.RecordPlace(outline, DecompilationLanguage.CSharp);
         history.LeaveEntry(DecompilationLanguage.CSharp, AtLine(5), first);
-        history.RecordPlace(await d.FixtureAsync("Greeter"), DecompilationLanguage.CSharp);
+        var greeter = await d.FixtureAsync("Greeter");
+        history.RecordPlace(greeter, DecompilationLanguage.CSharp);
         history.LeaveEntry(DecompilationLanguage.CSharp, AtLine(7), second);
 
         history.KeepPosition(second, AtLine(9));
@@ -41,7 +43,8 @@ public sealed class NavigationHistoryTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var history = new NavigationHistory();
-        history.RecordPlace(await d.FixtureAsync("Outline"), DecompilationLanguage.CSharp);
+        var outline = await d.FixtureAsync("Outline");
+        history.RecordPlace(outline, DecompilationLanguage.CSharp);
         history.LeaveEntry(DecompilationLanguage.CSharp, AtLine(5), new TabVersion { TabId = 1, Version = 1 });
 
         history.KeepPosition(new TabVersion { TabId = 1, Version = 2 }, AtLine(9));

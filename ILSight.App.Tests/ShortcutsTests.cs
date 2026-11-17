@@ -7,7 +7,8 @@ public sealed class ShortcutsTests
     {
         var app = AppDriver.Opened(width: 1600f);
         app.Settle(2);
-        app.Show(await app.FixtureAsync("Greeter"), 2, inNewTab: true);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 2, inNewTab: true);
         app.Settle(2);
         var navigation = app.AppState.ListSession.Navigation;
         var active = navigation.ActiveTab;

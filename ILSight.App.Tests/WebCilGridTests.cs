@@ -26,7 +26,9 @@ public sealed class WebCilGridTests
 
     private static async Task<BrowseNode> MetadataAsync(AppDriver app, params string[] labels)
     {
-        return await app.AppState.ListSession.Assemblies.Assemblies.Single().ReadRootAsync().GetChildAsync("Metadata").GetChildAsync(labels);
+        var root = await app.AppState.ListSession.Assemblies.Assemblies.Single().ReadRootAsync();
+        var metadata = await root.GetChildAsync("Metadata");
+        return await metadata.GetChildAsync(labels);
     }
 
     [Fact]
@@ -59,7 +61,8 @@ public sealed class WebCilGridTests
     public async Task Scrolling_a_webcil_grid_larger_than_a_window_shows_loading_for_the_page_then_its_rows()
     {
         var app = OpenWebCil(new AppDriver(height: 500f), WebCilLargePath);
-        app.Show(await MetadataAsync(app, "String Heap (357)"), 2);
+        var metadata = await MetadataAsync(app, "String Heap (357)");
+        app.Show(metadata, 2);
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var grid = Assert.IsType<MetadataGrid.Paged>(tab.Grid);
@@ -84,7 +87,8 @@ public sealed class WebCilGridTests
     public async Task A_page_that_could_not_be_read_shows_why_in_each_of_its_cells()
     {
         var app = OpenWebCil(new AppDriver(height: 500f), WebCilLargePath);
-        app.Show(await MetadataAsync(app, "String Heap (357)"), 1);
+        var metadata = await MetadataAsync(app, "String Heap (357)");
+        app.Show(metadata, 1);
         var grid = Assert.IsType<MetadataGrid.Paged>(app.AppState.ListSession.Navigation.ActiveTab?.Grid);
         var row = MetadataGrid.Paged.RowsPerPage * MetadataGrid.Paged.CountPages(MetadataGridFrame.SampleRows);
         Assert.False(grid.IsRowRead(row));
@@ -103,7 +107,8 @@ public sealed class WebCilGridTests
         var app = OpenWebCil(new AppDriver(height: 500f, measurer: new WideDigits()), WebCilLargePath);
 
         var metadata = await MetadataAsync(app, "Tables");
-        app.Show(await metadata.TableAsync("MethodDef"), 2);
+        var methodDefTable = await metadata.TableAsync("MethodDef");
+        app.Show(methodDefTable, 2);
 
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);

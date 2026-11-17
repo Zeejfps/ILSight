@@ -24,7 +24,8 @@ public sealed class ReferenceTreeTests
     {
         var app = AppDriver.Opened();
         var greeter = await app.FixtureAsync("Greeter");
-        var baseType = (await greeter.GetChildAsync("Base Types").ListChildrenAsync())[0];
+        var baseTypes = await greeter.GetChildAsync("Base Types");
+        var baseType = (await baseTypes.ListChildrenAsync())[0];
         app.Show(greeter, 3);
         app.Ui.Tree.RevealNode(baseType);
         app.Run(2);

@@ -7,7 +7,8 @@ public sealed class NamespacePageTests
     {
         var app = AppDriver.Opened();
         var d = app.Driver;
-        d.Show(await d.NodeAsync(AppStateDriver.FixturesNamespace));
+        var fixturesNamespace = await d.NodeAsync(AppStateDriver.FixturesNamespace);
+        d.Show(fixturesNamespace);
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var (line, column) = tab.Document.GetPosition("Greeter");

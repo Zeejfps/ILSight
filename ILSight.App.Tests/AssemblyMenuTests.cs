@@ -69,7 +69,8 @@ public sealed class AssemblyMenuTests
     public async Task A_reference_in_code_opens_its_api_reference_page_and_a_private_one_reports_it_has_none()
     {
         var app = AppDriver.Opened();
-        app.Show(await app.FixtureAsync("Greeter"), 2);
+        var greeterNode = await app.FixtureAsync("Greeter");
+        app.Show(greeterNode, 2);
         app.Settle(2);
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);

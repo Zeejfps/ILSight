@@ -19,7 +19,8 @@ public sealed class CodeViewTooltipTests
         var type = typeof(Farewell);
         Assert.NotNull(type.Namespace);
         var assembly = list.Open(type.Assembly.Location);
-        var node = await assembly.ReadRootAsync().GetChildAsync(type.Namespace, type.Name);
+        var root = await assembly.ReadRootAsync();
+        var node = await root.GetChildAsync(type.Namespace, type.Name);
         var view = new CodeViewDriver(await node.DecompileAsync(DecompilationLanguage.CSharp), WindowHeight) { Tooltips = new CodeTooltips { Assemblies = list, Version = list.Version } };
         view.Run();
         return view;

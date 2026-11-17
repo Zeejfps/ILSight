@@ -14,7 +14,9 @@ public sealed class LayoutTransitionTests
 
     private static async Task<CodeReference.Entity> TypeOfAsync(string type)
     {
-        return (await s_fixtures.Value.ReadRootAsync().GetChildAsync(AppStateDriver.FixturesNamespace, type)).Definition;
+        var root = await s_fixtures.Value.ReadRootAsync();
+        var node = await root.GetChildAsync(AppStateDriver.FixturesNamespace, type);
+        return node.Definition;
     }
 
     private static readonly SharedRead<VehicleTypes> s_vehicles = new(ReadVehiclesAsync);

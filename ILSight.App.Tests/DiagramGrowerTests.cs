@@ -14,7 +14,8 @@ public sealed class DiagramGrowerTests
 
     private static async Task<TypeCard> CardOfAsync(AppStateDriver d, string type)
     {
-        var card = (await TypeCards.ReadAsync(d.AppState.ListSession.Assemblies, await TypeOfAsync(d, type), CancellationToken.None)).GetValue().FoundOrNull;
+        var entity = await TypeOfAsync(d, type);
+        var card = (await TypeCards.ReadAsync(d.AppState.ListSession.Assemblies, entity, CancellationToken.None)).GetValue().FoundOrNull;
         Assert.NotNull(card);
         return card;
     }
@@ -34,7 +35,8 @@ public sealed class DiagramGrowerTests
         var navigation = d.AppState.ListSession.Navigation;
         var lookup = navigation.BeginResolving(inNewTab: false);
 
-        var read = Diagrams.ShowInNewDiagram(d.AppState.ListSession.Navigation, await TypeOfAsync(d, "Vehicle"), new TabTitle.Diagram("Vehicle"));
+        var vehicleType = await TypeOfAsync(d, "Vehicle");
+        var read = Diagrams.ShowInNewDiagram(d.AppState.ListSession.Navigation, vehicleType, new TabTitle.Diagram("Vehicle"));
 
         Assert.Same(read.Tab, navigation.ActiveTab);
         Assert.True(navigation.IsStale(lookup.Intent));
@@ -46,10 +48,12 @@ public sealed class DiagramGrowerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var navigation = d.AppState.ListSession.Navigation;
-        var first = Diagrams.ShowInNewDiagram(d.AppState.ListSession.Navigation, await TypeOfAsync(d, "Vehicle"), new TabTitle.Diagram("Vehicle"));
+        var vehicleType = await TypeOfAsync(d, "Vehicle");
+        var first = Diagrams.ShowInNewDiagram(d.AppState.ListSession.Navigation, vehicleType, new TabTitle.Diagram("Vehicle"));
         var lookup = navigation.BeginResolving(inNewTab: false);
 
-        var read = Diagrams.ShowInDiagram(d.AppState.ListSession.Navigation, await TypeOfAsync(d, "Greeter"), new TabTitle.Diagram("Greeter"));
+        var greeterType = await TypeOfAsync(d, "Greeter");
+        var read = Diagrams.ShowInDiagram(d.AppState.ListSession.Navigation, greeterType, new TabTitle.Diagram("Greeter"));
 
         Assert.Same(first.Tab, read.Tab);
         Assert.Same(read.Tab, navigation.ActiveTab);
@@ -69,7 +73,9 @@ public sealed class DiagramGrowerTests
 
         var adding = d.BeginAsync(() => new DiagramGrower(ports).AddWithNeighboursAsync(viewCommands, read, CancellationToken.None));
         var request = Assert.Single(ports.Requests);
-        request.Answer.SetResult(new Outcome<List<TypeCard>>.Ok([await CardOfAsync(d, "Vehicle"), await CardOfAsync(d, "Car")]));
+        var vehicleCard = await CardOfAsync(d, "Vehicle");
+        var carCard = await CardOfAsync(d, "Car");
+        request.Answer.SetResult(new Outcome<List<TypeCard>>.Ok([vehicleCard, carCard]));
         await d.EndAsync(adding);
 
         Assert.Equal(nameof(FakeDiagramGrowerPorts.ReadWithNeighboursAsync), request.Read);
@@ -86,7 +92,8 @@ public sealed class DiagramGrowerTests
     {
         var d = AppStateDriver.OpenedWithoutScreen();
         var greeter = await d.FixtureAsync("Greeter");
-        var member = (await greeter.GetChildAsync("Twice() : int")).Definition;
+        var twice = await greeter.GetChildAsync("Twice() : int");
+        var member = twice.Definition;
         var read = Diagrams.ShowInNewDiagram(d.AppState.ListSession.Navigation, member, new TabTitle.Diagram("Twice"));
         var viewCommands = new Queue<ViewCommand>();
         var ports = new FakeDiagramGrowerPorts();
@@ -106,7 +113,8 @@ public sealed class DiagramGrowerTests
     public async Task AddWithNeighboursAsync_DiagramClosedMeanwhile_DropsWhatArrives()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        var read = Diagrams.ShowInNewDiagram(d.AppState.ListSession.Navigation, await TypeOfAsync(d, "Vehicle"), new TabTitle.Diagram("Vehicle"));
+        var vehicleType = await TypeOfAsync(d, "Vehicle");
+        var read = Diagrams.ShowInNewDiagram(d.AppState.ListSession.Navigation, vehicleType, new TabTitle.Diagram("Vehicle"));
         var viewCommands = new Queue<ViewCommand>();
         var ports = new FakeDiagramGrowerPorts();
 
@@ -137,11 +145,13 @@ public sealed class DiagramGrowerTests
         });
         var request = Assert.Single(ports.Requests);
         Assert.True(diagram.IsBusy);
-        request.Answer.SetResult(new Outcome<List<TypeCard>>.Ok([await CardOfAsync(d, "Vehicle")]));
+        var vehicleCard = await CardOfAsync(d, "Vehicle");
+        request.Answer.SetResult(new Outcome<List<TypeCard>>.Ok([vehicleCard]));
         await d.EndAsync(adding);
 
         Assert.Equal(nameof(FakeDiagramGrowerPorts.ReadCardsAsync), request.Read);
-        Assert.Equal([await TypeOfAsync(d, "Vehicle")], request.Types);
+        var vehicleType = await TypeOfAsync(d, "Vehicle");
+        Assert.Equal([vehicleType], request.Types);
         Assert.Equal(["Car", "Vehicle"], CardNames(diagram));
         Assert.False(diagram.IsBusy);
         Assert.Empty(ports.Reported);
@@ -153,7 +163,8 @@ public sealed class DiagramGrowerTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var diagram = new TypeDiagram();
         var car = await CardOfAsync(d, "Car");
-        diagram.AddCards([car, await CardOfAsync(d, "Vehicle")]);
+        var vehicleCard = await CardOfAsync(d, "Vehicle");
+        diagram.AddCards([car, vehicleCard]);
         var ports = new FakeDiagramGrowerPorts();
 
         await d.RunAsync(() =>
@@ -212,7 +223,9 @@ public sealed class DiagramGrowerTests
             return new DiagramGrower(ports).ExpandDerivedAsync(expansion, CancellationToken.None);
         });
         var request = Assert.Single(ports.Requests);
-        request.Answer.SetResult(new Outcome<List<TypeCard>>.Ok([await CardOfAsync(d, "Bike"), await CardOfAsync(d, "Car")]));
+        var bikeCard = await CardOfAsync(d, "Bike");
+        var carCard = await CardOfAsync(d, "Car");
+        request.Answer.SetResult(new Outcome<List<TypeCard>>.Ok([bikeCard, carCard]));
         await d.EndAsync(adding);
 
         Assert.Equal(nameof(FakeDiagramGrowerPorts.ReadDerivedAsync), request.Read);

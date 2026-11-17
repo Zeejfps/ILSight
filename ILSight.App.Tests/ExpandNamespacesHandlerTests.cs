@@ -16,7 +16,8 @@ public sealed class ExpandNamespacesHandlerTests
 
     private static async Task<ChildrenState> BuiltAsync(BrowseNode root)
     {
-        return new ChildrenState.Ready(await root.ListChildrenAsync());
+        var rootChildren = await root.ListChildrenAsync();
+        return new ChildrenState.Ready(rootChildren);
     }
 
     [Fact]
@@ -30,8 +31,10 @@ public sealed class ExpandNamespacesHandlerTests
 
         Assert.Equal([root], ports.Asked);
         Assert.True(tree.View.IsExpanded(root));
-        Assert.True(tree.View.IsExpanded(await root.GetChildAsync(AppStateDriver.FixturesNamespace)));
-        Assert.False(tree.View.IsExpanded(await root.GetChildAsync(AppStateDriver.FixturesNamespace, "Greeter")));
+        var fixturesNamespace = await root.GetChildAsync(AppStateDriver.FixturesNamespace);
+        Assert.True(tree.View.IsExpanded(fixturesNamespace));
+        var greeter = await root.GetChildAsync(AppStateDriver.FixturesNamespace, "Greeter");
+        Assert.False(tree.View.IsExpanded(greeter));
     }
 
     [Fact]
@@ -44,7 +47,8 @@ public sealed class ExpandNamespacesHandlerTests
 
         await new ExpandNamespacesHandler(ports).HandleAsync(tree, expansion, root, CancellationToken.None);
 
-        Assert.False(tree.View.IsExpanded(await root.GetChildAsync(AppStateDriver.FixturesNamespace)));
+        var fixturesNamespace = await root.GetChildAsync(AppStateDriver.FixturesNamespace);
+        Assert.False(tree.View.IsExpanded(fixturesNamespace));
     }
 
     [Fact]
@@ -57,7 +61,8 @@ public sealed class ExpandNamespacesHandlerTests
         await new ExpandNamespacesHandler(ports).HandleAsync(tree, expansion, root, CancellationToken.None);
 
         Assert.True(tree.View.IsExpanded(root));
-        Assert.False(tree.View.IsExpanded(await root.GetChildAsync(AppStateDriver.FixturesNamespace)));
+        var fixturesNamespace = await root.GetChildAsync(AppStateDriver.FixturesNamespace);
+        Assert.False(tree.View.IsExpanded(fixturesNamespace));
     }
 
     [Fact]
@@ -71,6 +76,7 @@ public sealed class ExpandNamespacesHandlerTests
         var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() => new ExpandNamespacesHandler(ports).HandleAsync(tree, expansion, root, CancellationToken.None));
 
         Assert.Same(bug, thrown);
-        Assert.False(tree.View.IsExpanded(await root.GetChildAsync(AppStateDriver.FixturesNamespace)));
+        var fixturesNamespace = await root.GetChildAsync(AppStateDriver.FixturesNamespace);
+        Assert.False(tree.View.IsExpanded(fixturesNamespace));
     }
 }

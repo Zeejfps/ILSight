@@ -31,8 +31,10 @@ public sealed class AppTests
     {
         var app = AppDriver.Opened(height: 800f);
         var view = app.Ui.Tree.View;
-        view.SetExpanded(await app.NodeAsync(), true);
-        view.SetExpanded(await app.NodeAsync(AppStateDriver.FixturesNamespace), true);
+        var fixturesRoot = await app.NodeAsync();
+        view.SetExpanded(fixturesRoot, true);
+        var fixturesNamespace = await app.NodeAsync(AppStateDriver.FixturesNamespace);
+        view.SetExpanded(fixturesNamespace, true);
         view.Refresh();
         app.Frames.WaitUntil(() => app.Frames.Drew(until), Waits.Patience);
         return app;
@@ -356,7 +358,8 @@ public sealed class AppTests
     public async Task The_language_control_switches_the_active_tab_to_IL_with_CSharp_and_keeps_the_CSharp_options()
     {
         var app = AppDriver.Opened();
-        app.Show(await app.FixtureAsync("Greeter"), 1);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 1);
 
         app.Frames.ClickOn(Selector.WithText("IL+C#"));
         app.Settle(1);
@@ -374,7 +377,8 @@ public sealed class AppTests
     public async Task IL_with_CSharp_is_named_in_the_interface_language_IL_and_CSharp_as_they_are()
     {
         var app = AppDriver.Opened();
-        app.Show(await app.FixtureAsync("Greeter"), 1);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 1);
         app.Frames.ClickOn(Selector.WithText("IL+C#"));
         app.Settle(1);
 
@@ -436,7 +440,8 @@ public sealed class AppTests
     public async Task A_decompiler_option_ticked_in_its_panel_shows_in_the_open_document_and_resets()
     {
         var app = AppDriver.Opened(width: 1600f);
-        app.Show(await app.FixtureAsync("Greeter"), 1);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 1);
         FoldOptionGroupsBut(app, nameof(CSharpVersion.CSharp1));
         var shown = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(shown);
@@ -470,7 +475,8 @@ public sealed class AppTests
     {
         var app = AppDriver.Opened();
         app.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
-        app.Show(await app.FixtureAsync("Outline"), 1);
+        var outlineNode = await app.FixtureAsync("Outline");
+        app.Show(outlineNode, 1);
         var outline = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(outline);
         var named = Documents.GetText(outline.Document);
@@ -881,7 +887,8 @@ public sealed class AppTests
     {
         var app = await ExpandedTreeAsync(until: "Hidden");
 
-        var secondary = NodeText.Secondary(await app.NodeAsync());
+        var fixturesRoot = await app.NodeAsync();
+        var secondary = NodeText.Secondary(fixturesRoot);
         Assert.NotNull(secondary);
         Assert.True(app.TextRect(secondary).X > app.TextRect(app.AppState.ListSession.Assemblies.Assemblies[0].Name).Right);
         Assert.True(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.OverlayInternal)));

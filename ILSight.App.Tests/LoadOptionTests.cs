@@ -19,7 +19,8 @@ public sealed class LoadOptionTests
 
         var rootAfter = await app.NodeAsync();
         Assert.NotSame(before, rootAfter.Assembly);
-        Assert.All(await runtime.ListChildrenAsync(), c => Assert.Equal(NodeIcon.ReferencedTypes, c.Icon));
+        var runtimeChildren = await runtime.ListChildrenAsync();
+        Assert.All(runtimeChildren, c => Assert.Equal(NodeIcon.ReferencedTypes, c.Icon));
     }
 
     [Fact]

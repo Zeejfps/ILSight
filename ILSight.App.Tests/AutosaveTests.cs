@@ -189,11 +189,13 @@ public sealed class AutosaveTests : IDisposable
     public async Task An_analysis_made_while_saved_ones_are_restoring_is_saved()
     {
         var first = AppStateDriver.Opened(_temp.Settings());
-        first.Analyze(await first.FixtureAsync("Greeter"));
+        var greeter = await first.FixtureAsync("Greeter");
+        first.Analyze(greeter);
         first.Pump();
         var next = AppStateDriver.Starting(_temp.Settings());
 
-        next.Analyze(await first.FixtureAsync("Outline"));
+        var outline = await first.FixtureAsync("Outline");
+        next.Analyze(outline);
         next.Settle();
         next.Pump();
 
@@ -206,7 +208,8 @@ public sealed class AutosaveTests : IDisposable
     public async Task An_analysis_asked_for_by_reference_is_saved_once_it_is_found()
     {
         var d = AppStateDriver.Opened(_temp.Settings());
-        d.Show(await d.FixtureAsync("Outline"));
+        var outline = await d.FixtureAsync("Outline");
+        d.Show(outline);
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var document = tab.Document;
@@ -230,7 +233,8 @@ public sealed class AutosaveTests : IDisposable
     public async Task A_saved_analysis_that_is_not_found_again_shows_failed_and_stays_in_the_settings_with_the_next_save()
     {
         var first = AppStateDriver.Opened(_temp.Settings());
-        first.Analyze(await first.FixtureAsync("Greeter"));
+        var greeter = await first.FixtureAsync("Greeter");
+        first.Analyze(greeter);
         first.Pump();
         var settings = _temp.Settings();
         var list = settings.AssemblyLists.Single();
@@ -258,7 +262,9 @@ public sealed class AutosaveTests : IDisposable
         first.Open([AssemblyPath.Of(copy)]);
         first.Settle();
         var held = first.AppState.ListSession.Assemblies.Assemblies.Single();
-        first.Analyze(await held.ReadRootAsync().GetChildAsync(AppStateDriver.FixturesNamespace, "Greeter"));
+        var heldRoot = await held.ReadRootAsync();
+        var greeter = await heldRoot.GetChildAsync(AppStateDriver.FixturesNamespace, "Greeter");
+        first.Analyze(greeter);
         first.Settle();
         first.Pump();
         var saved = _temp.Settings().AssemblyLists.Single().Analyzed ?? [];

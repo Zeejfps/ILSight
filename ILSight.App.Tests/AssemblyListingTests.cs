@@ -94,7 +94,8 @@ public sealed class AssemblyListingTests
     {
         using var temp = new TempDir();
         var first = AppStateDriver.Opened(temp.Settings());
-        first.Analyze(await first.FixtureAsync("Greeter"));
+        var greeter = await first.FixtureAsync("Greeter");
+        first.Analyze(greeter);
         var firstWrite = first.AppState.SettingsSaver.Save(first.AppState);
         Assert.IsType<SettingsWriteResult.Written>(firstWrite);
         var d = AppStateDriver.Started(temp.Settings());
@@ -119,7 +120,8 @@ public sealed class AssemblyListingTests
     public async Task Switching_back_to_a_list_analyzes_again_what_was_analyzed_in_it()
     {
         var d = AppStateDriver.Opened();
-        d.Analyze(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Analyze(greeter);
         d.AppState.Lists.Add(Other);
 
         d.SwitchList(Other);
@@ -136,7 +138,8 @@ public sealed class AssemblyListingTests
     public async Task A_duplicated_list_has_the_analyses_of_the_one_it_copies()
     {
         var d = AppStateDriver.Opened();
-        d.Analyze(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Analyze(greeter);
         var copy = AssemblyLists.DuplicateAssemblyList(d.AppState, SavedAssemblyLists.DefaultName, "Copy");
 
         d.SwitchList(copy);
@@ -151,8 +154,10 @@ public sealed class AssemblyListingTests
     public async Task Switching_lists_closes_the_assemblies_documents_and_history_of_the_one_before_and_switching_back_reopens_them()
     {
         var d = AppStateDriver.Opened();
-        d.Show(await d.FixtureAsync("Greeter"));
-        d.Show(await d.FixtureAsync("Farewell"), inNewTab: true);
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
+        var farewell = await d.FixtureAsync("Farewell");
+        d.Show(farewell, inNewTab: true);
         d.AppState.Lists.Add(Other);
 
         d.SwitchList(Other);
@@ -279,7 +284,8 @@ public sealed class AssemblyListingTests
         d.RunUntil(() => tree.View.IsExpanded(ns));
 
         Assert.True(tree.View.IsExpanded(root));
-        Assert.False(tree.View.IsExpanded(await d.FixtureAsync("Greeter")));
+        var greeter = await d.FixtureAsync("Greeter");
+        Assert.False(tree.View.IsExpanded(greeter));
     }
 
     [Fact]
@@ -348,7 +354,8 @@ public sealed class AssemblyListingTests
     {
         var app = AppDriver.Opened();
         var farewell = await app.FixtureAsync("Farewell");
-        app.Show(await app.FixtureAsync("Greeter"), 2);
+        var greeter = await app.FixtureAsync("Greeter");
+        app.Show(greeter, 2);
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
 
@@ -394,7 +401,8 @@ public sealed class AssemblyListingTests
         app.Frames.Frame(2);
 
         Assert.Same(greeter, app.Ui.Tree.View.Selected);
-        Assert.True(app.Ui.Tree.View.IsExpanded(await app.NodeAsync(AppStateDriver.FixturesNamespace)));
+        var fixturesNamespace = await app.NodeAsync(AppStateDriver.FixturesNamespace);
+        Assert.True(app.Ui.Tree.View.IsExpanded(fixturesNamespace));
         Assert.Same(greeter, app.AppState.ListSession.Navigation.ActiveTab?.Node);
     }
 
@@ -402,7 +410,8 @@ public sealed class AssemblyListingTests
     public async Task The_assemblies_panels_remove_button_offers_the_assembly_of_the_selected_node_to_close()
     {
         var app = AppDriver.Opened();
-        app.Ui.Tree.View.Select(await app.NodeAsync(AppStateDriver.FixturesNamespace));
+        var fixturesNamespace = await app.NodeAsync(AppStateDriver.FixturesNamespace);
+        app.Ui.Tree.View.Select(fixturesNamespace);
         app.Run(2);
 
         app.Frames.ClickOn(Selector.AtPath("dock/assemblies/close-assembly"));

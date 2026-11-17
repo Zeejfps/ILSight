@@ -36,7 +36,8 @@ public sealed class AssembliesTests
     public async Task OpenAssembliesAsync_FileOpened_ShowsItsRoot()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
         var fixtures = FixturesOf(d);
         var ports = new FakeAssemblyOpenerPorts { Opened = await BrowseSessions.EnsureRootAsync(d.AppState.Session, fixtures) };
         using var shutdown = new CancellationTokenSource();
@@ -46,7 +47,8 @@ public sealed class AssembliesTests
 
         Assert.Equal(path, Assert.Single(Assert.Single(ports.OpenedPaths)));
         Assert.Equal(shutdown.Token, Assert.Single(ports.Tokens));
-        Assert.Same(await BrowseSessions.EnsureRootAsync(d.AppState.Session, fixtures), d.AppState.ListSession.Navigation.ActiveTab?.Node);
+        var root = await BrowseSessions.EnsureRootAsync(d.AppState.Session, fixtures);
+        Assert.Same(root, d.AppState.ListSession.Navigation.ActiveTab?.Node);
         Assert.Empty(ports.Reported);
         var active = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
@@ -76,7 +78,8 @@ public sealed class AssembliesTests
     public async Task OpenAssembliesAsync_SomethingElseAskedForMeanwhile_DoesNotShowIt()
     {
         var d = AppStateDriver.OpenedWithoutScreen();
-        d.Show(await d.FixtureAsync("Greeter"));
+        var greeter = await d.FixtureAsync("Greeter");
+        d.Show(greeter);
         var shown = d.AppState.ListSession.Navigation.ActiveTab?.Node;
         Assert.NotNull(shown);
         var appState = d.AppState;
@@ -234,7 +237,8 @@ public sealed class AssembliesTests
         var fresh = Assert.Single(appState.ListSession.Assemblies.Assemblies, a => a.FilePath.Text == AppStateDriver.FixturePath);
         Assert.NotSame(fixtures, fresh);
         Assert.Equal(Frameworks.Net48, appState.ListSession.Assemblies.TargetFrameworks.All[fixtures.FilePath]);
-        Assert.Same(await BrowseSessions.EnsureRootAsync(appState.Session, fresh), tab.Node);
+        var root = await BrowseSessions.EnsureRootAsync(appState.Session, fresh);
+        Assert.Same(root, tab.Node);
         Assert.False(appState.Reopens.IsRunning);
         Assert.Empty(ports.Reported);
         Assert.Same(tab, Assert.Single(loads).Tab);

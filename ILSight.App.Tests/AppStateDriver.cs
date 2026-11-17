@@ -407,7 +407,8 @@ internal sealed class AppStateDriver : IFrameHost
     public async Task<BrowseNode> NodeAsync(params string[] labels)
     {
         var fixtures = AppState.ListSession.Assemblies.Assemblies.Single(a => a.FilePath.Text == FixturePath);
-        return await fixtures.ReadRootAsync().GetChildAsync(labels);
+        var fixturesRoot = await fixtures.ReadRootAsync();
+        return await fixturesRoot.GetChildAsync(labels);
     }
 
     public async Task<BrowseNode> FixtureAsync(string type)
