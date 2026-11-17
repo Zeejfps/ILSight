@@ -52,19 +52,19 @@ public sealed class DocumentTab
     public DecompiledDocument Document => Load.Document;
 
     /// <summary>The rows the tab shows, or null while it shows no grid.</summary>
-    public MetadataGrid? Grid => (Content as TabContent.Table)?.Grid;
+    public MetadataGrid? Grid => Content is TabContent.Table table ? table.Grid : null;
 
     /// <summary>The picture the tab shows, or null while it shows none.</summary>
-    public ResourceImage? Image => (Content as TabContent.Picture)?.Image;
+    public ResourceImage? Image => Content is TabContent.Picture picture ? picture.Image : null;
 
     /// <summary>The diagram the tab shows, or null while it shows none.</summary>
-    public TypeDiagram? Diagram => (Content as TabContent.Diagram)?.Types;
+    public TypeDiagram? Diagram => Content is TabContent.Diagram diagram ? diagram.Types : null;
 
     /// <summary>The comparison the tab shows, or null while it shows none.</summary>
-    public AssemblyComparison? Comparison => (Content as TabContent.Comparison)?.Assemblies;
+    public AssemblyComparison? Comparison => Content is TabContent.Comparison comparison ? comparison.Assemblies : null;
 
     /// <summary>The export's report the tab shows, or null while it shows none.</summary>
-    public ExportReport? Report => (Content as TabContent.Report)?.Export;
+    public ExportReport? Report => Content is TabContent.Report report ? report.Export : null;
 
     /// <summary>Whether navigating from the tab may show what it is asked for in its place: not while it
     /// shows a diagram or a comparison, which are worked in rather than passed through.</summary>

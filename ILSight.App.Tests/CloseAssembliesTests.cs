@@ -252,13 +252,13 @@ public sealed class CloseAssembliesTests
     {
         var app = await ShowingGreeterAndKeyboardKeyAsync();
         var tab = TabShowing(app, "KeyboardKey");
-        var shown = Assert.IsType<TabContent.Code>(tab.Content);
+        var shown = UnionAsserts.GetCase<TabContent.Code>(tab.Content);
         Assert.Null(tab.Load.ClosedAssembly);
 
         CloseKeyboardFromTheDialog(app);
 
         Assert.Same(tab, app.AppState.ListSession.Navigation.ActiveTab);
-        Assert.Same(shown.Document, Assert.IsType<TabContent.Code>(tab.Content).Document);
+        Assert.Same(shown.Document, UnionAsserts.GetCase<TabContent.Code>(tab.Content).Document);
         Assert.Equal(KeyboardFile, tab.Load.ClosedAssembly);
         Assert.True(app.Frames.Drew($"{KeyboardFile} was closed."));
         Assert.Null(TabShowing(app, "Greeter").Load.ClosedAssembly);
@@ -327,7 +327,7 @@ public sealed class CloseAssembliesTests
         app.Driver.StartShowing(keyboardKey, inNewTab: true);
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        Assert.IsType<TabContent.Loading>(tab.Content);
+        UnionAsserts.GetCase<TabContent.Loading>(tab.Content);
 
         app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [keyboard]));
         app.Settle(2);
@@ -351,7 +351,7 @@ public sealed class CloseAssembliesTests
         app.Reload([]);
         app.Settle(4);
 
-        Assert.Same(shown, closed.Content);
+        UnionAsserts.SameCase(shown, closed.Content);
         Assert.Equal(KeyboardFile, closed.Load.ClosedAssembly);
         Assert.Empty(app.AppState.Errors.Entries);
     }
@@ -455,7 +455,7 @@ public sealed class CloseAssembliesTests
         Assert.NotNull(closed.Node);
         Assert.NotSame(before, closed.Node);
         Assert.Same(KeyboardOf(app), closed.Node.Assembly);
-        Assert.IsType<TabContent.Code>(closed.Content);
+        UnionAsserts.GetCase<TabContent.Code>(closed.Content);
         Assert.False(app.Frames.Drew($"{KeyboardFile} was closed."));
         Assert.Empty(app.AppState.Errors.Entries);
     }

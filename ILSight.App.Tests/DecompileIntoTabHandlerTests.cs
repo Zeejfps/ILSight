@@ -68,7 +68,7 @@ public sealed class DecompileIntoTabHandlerTests
             var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, DocumentNoteTexts.For(Locale.En), NodeQueries.FirstGridRows, CancellationToken.None));
             ports.Requests[^1].Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Read { Value = CodeReading("Greeter", unread) }));
             await d.EndAsync(handling);
-            Assert.IsType<TabContent.Code>(tab.Content);
+            UnionAsserts.GetCase<TabContent.Code>(tab.Content);
         }
 
         var reported = UnionAsserts.GetCase<AppProblem.ReferenceFileDenied>(Assert.Single(ports.Reported));
@@ -104,7 +104,7 @@ public sealed class DecompileIntoTabHandlerTests
         Assert.Single(ports.Requests).Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Read { Value = code }));
         await d.EndAsync(handling);
 
-        Assert.Same(code.Document, Assert.IsType<TabContent.Code>(tab.Content).Document);
+        Assert.Same(code.Document, UnionAsserts.GetCase<TabContent.Code>(tab.Content).Document);
         var reported = UnionAsserts.GetCase<AppProblem.DecompilationFailed>(Assert.Single(ports.Reported));
         Assert.Same(error, reported.Error);
         Assert.Equal(greeter.FullName, reported.Node);
@@ -147,13 +147,13 @@ public sealed class DecompileIntoTabHandlerTests
 
         var handling = d.BeginAsync(() => new DecompileIntoTabHandler(ports).HandleAsync(viewCommands, load, DocumentNoteTexts.For(Locale.En), NodeQueries.FirstGridRows, CancellationToken.None));
         var request = Assert.Single(ports.Requests);
-        Assert.IsType<TabContent.Loading>(tab.Content);
+        UnionAsserts.GetCase<TabContent.Loading>(tab.Content);
         request.Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Read { Value = code }));
         await d.EndAsync(handling);
 
         Assert.Same(greeter, request.Node);
         Assert.Equal(DecompilationLanguage.IL, request.Language);
-        var shown = Assert.IsType<TabContent.Code>(tab.Content);
+        var shown = UnionAsserts.GetCase<TabContent.Code>(tab.Content);
         Assert.Same(code.Document, shown.Document);
         Assert.False(tab.Load.IsBusy);
         Assert.Equal([new ViewCommand.RestoreView { Tab = tab, Position = AtLineTen }], viewCommands);
@@ -176,7 +176,7 @@ public sealed class DecompileIntoTabHandlerTests
         Assert.Single(ports.Requests).Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Failed(corrupt));
         await d.EndAsync(handling);
 
-        var failed = Assert.IsType<TabContent.Failed>(tab.Content);
+        var failed = UnionAsserts.GetCase<TabContent.Failed>(tab.Content);
         Assert.Same(corrupt, failed.Error);
         Assert.False(tab.Load.IsBusy);
         Assert.Same(corrupt, UnionAsserts.GetCase<AppProblem.DecompilationFailed>(Assert.Single(ports.Reported)).Error);
@@ -222,13 +222,13 @@ public sealed class DecompileIntoTabHandlerTests
 
         ports.Requests[0].Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Read { Value = CodeOf("Greeter") }));
         await d.EndAsync(olderHandling);
-        Assert.Same(farewell, Assert.IsType<TabContent.Loading>(tab.Content).Node);
+        Assert.Same(farewell, UnionAsserts.GetCase<TabContent.Loading>(tab.Content).Node);
         ports.Requests[1].Answer.SetResult(new Outcome<ModuleRead<NodeContent>>.Ok(new ModuleRead<NodeContent>.Read { Value = farewellCode }));
         await d.EndAsync(newerHandling);
 
         Assert.True(older.Work.Token.IsCancellationRequested);
         Assert.False(newer.Work.Token.IsCancellationRequested);
-        Assert.Same(farewellCode.Document, Assert.IsType<TabContent.Code>(tab.Content).Document);
+        Assert.Same(farewellCode.Document, UnionAsserts.GetCase<TabContent.Code>(tab.Content).Document);
         Assert.Empty(ports.Reported);
     }
 
@@ -250,7 +250,7 @@ public sealed class DecompileIntoTabHandlerTests
         await d.EndAsync(handling);
 
         Assert.True(load.Work.Token.IsCancellationRequested);
-        Assert.IsType<TabContent.Loading>(tab.Content);
+        UnionAsserts.GetCase<TabContent.Loading>(tab.Content);
         Assert.Empty(viewCommands);
         Assert.Empty(ports.Reported);
     }
@@ -272,7 +272,7 @@ public sealed class DecompileIntoTabHandlerTests
         ShutDown(shutdown);
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => d.EndAsync(handling));
-        Assert.IsType<TabContent.Loading>(tab.Content);
+        UnionAsserts.GetCase<TabContent.Loading>(tab.Content);
         Assert.Empty(viewCommands);
         Assert.Empty(ports.Reported);
     }

@@ -78,7 +78,7 @@ public sealed class ExportsPanelTests : IDisposable
 
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
-        var shown = Assert.IsType<TabContent.Report>(tab.Content);
+        var shown = UnionAsserts.GetCase<TabContent.Report>(tab.Content);
         Assert.Equal(path, Assert.Single(UnionAsserts.GetCase<ExportEnd.Finished>(shown.Export.End).Written));
         Assert.Equal("Export report", DocumentsView.Tab(app.Ui.Appearance, app.Ui.Tree, app.AppState.ListSession.Navigation, tab).Title);
         var text = Documents.GetText(ExportReportText.BuildDocument(Strings.En, [shown.Export]));
@@ -457,6 +457,8 @@ public sealed class ExportsPanelTests : IDisposable
         d.AppState.Decompiler.UseLanguage(DecompilationLanguage.IL);
         d.Settle();
 
-        Assert.Same(report, d.AppState.ListSession.Navigation.ActiveTab?.Content);
+        var shown = d.AppState.ListSession.Navigation.ActiveTab?.Content;
+        Assert.NotNull(shown);
+        UnionAsserts.SameCase(report, shown.Value);
     }
 }

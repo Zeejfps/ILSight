@@ -74,8 +74,10 @@ public sealed class OneLineTextTests
     {
         var t = Strings.For(locale);
 
-        var brokenTitle = new TabTitle.Diagram("Shop\nCart").Words(t);
-        var escapedTitle = new TabTitle.Diagram(@"Shop\nCart").Words(t);
+        TabTitle brokenDiagram = new TabTitle.Diagram("Shop\nCart");
+        TabTitle escapedDiagram = new TabTitle.Diagram(@"Shop\nCart");
+        var brokenTitle = brokenDiagram.Words(t);
+        var escapedTitle = escapedDiagram.Words(t);
         Refusal brokenId = new Refusal.IdNotFound { Id = "T:Shop\nCart" };
         Refusal escapedId = new Refusal.IdNotFound { Id = @"T:Shop\nCart" };
         var brokenRefusal = brokenId.Words(t).What;

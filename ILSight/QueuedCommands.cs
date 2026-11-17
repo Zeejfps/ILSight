@@ -23,20 +23,48 @@ internal static class QueuedCommands
 
     private static void Run(ViewCommand command, UiState uiState, AppState appState)
     {
-        command.Switch((uiState, appState),
-            showTab: static (s, show) => ShowTabIfOpen(s.uiState.Panels, s.appState.ListSession.Navigation, show.Tab, show.Beside),
-            showReopened: static (s, show) => ShowReopenedIfOpen(s.uiState.Panels, s.appState.ListSession.Navigation, show.Tabs, show.Layout),
-            openPanel: static (s, open) => s.uiState.Panels.Open(open.View),
-            restoreView: static (s, restore) => RestoreView(s.uiState.Documents, s.appState.ListSession.Navigation, restore.Tab, restore.Position),
-            revealLine: static (s, reveal) => RevealLine(s.uiState.Documents, s.appState.ListSession.Navigation, reveal.Tab, reveal.Line),
-            revealRow: static (s, reveal) => RevealRow(s.uiState.Documents, s.appState.ListSession.Navigation, reveal.Tab, reveal.Row),
-            revealNode: static (s, reveal) => RevealIfListed(s.uiState.Tree, s.appState.ListSession.Assemblies, reveal.Node),
-            expandNodes: static (s, expand) => ExpandListed(s.uiState.Tree, s.appState.ListSession.Assemblies, expand.Nodes),
-            focusCard: static (s, focus) => FocusCard(s.uiState.Documents, s.appState.ListSession.Navigation, focus.Tab, focus.Type),
-            showAnalysis: static (s, show) => ShowAnalysis(s.uiState.Analyzer, s.appState.ListSession.Analyzer, show.Root),
-            openWebPage: static (s, open) => s.uiState.Shell.OpenWebPage(open.Url),
-            quit: static (s, _) => s.uiState.Shell.Quit(),
-            openFile: static (s, open) => s.uiState.Shell.OpenFile(open.Path));
+        switch (command)
+        {
+            case ViewCommand.ShowTab show:
+                ShowTabIfOpen(uiState.Panels, appState.ListSession.Navigation, show.Tab, show.Beside);
+                break;
+            case ViewCommand.ShowReopened show:
+                ShowReopenedIfOpen(uiState.Panels, appState.ListSession.Navigation, show.Tabs, show.Layout);
+                break;
+            case ViewCommand.OpenPanel open:
+                uiState.Panels.Open(open.View);
+                break;
+            case ViewCommand.RestoreView restore:
+                RestoreView(uiState.Documents, appState.ListSession.Navigation, restore.Tab, restore.Position);
+                break;
+            case ViewCommand.RevealLine reveal:
+                RevealLine(uiState.Documents, appState.ListSession.Navigation, reveal.Tab, reveal.Line);
+                break;
+            case ViewCommand.RevealRow reveal:
+                RevealRow(uiState.Documents, appState.ListSession.Navigation, reveal.Tab, reveal.Row);
+                break;
+            case ViewCommand.RevealNode reveal:
+                RevealIfListed(uiState.Tree, appState.ListSession.Assemblies, reveal.Node);
+                break;
+            case ViewCommand.ExpandNodes expand:
+                ExpandListed(uiState.Tree, appState.ListSession.Assemblies, expand.Nodes);
+                break;
+            case ViewCommand.FocusCard focus:
+                FocusCard(uiState.Documents, appState.ListSession.Navigation, focus.Tab, focus.Type);
+                break;
+            case ViewCommand.ShowAnalysis show:
+                ShowAnalysis(uiState.Analyzer, appState.ListSession.Analyzer, show.Root);
+                break;
+            case ViewCommand.OpenWebPage open:
+                uiState.Shell.OpenWebPage(open.Url);
+                break;
+            case ViewCommand.Quit:
+                uiState.Shell.Quit();
+                break;
+            case ViewCommand.OpenFile open:
+                uiState.Shell.OpenFile(open.Path);
+                break;
+        }
     }
 
     private static void ShowTabIfOpen(Panels panels, Navigation navigation, DocumentTab tab, DocumentTab? beside)

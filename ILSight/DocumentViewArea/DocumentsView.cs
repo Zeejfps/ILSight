@@ -38,22 +38,31 @@ internal static class DocumentsView
         using var content = ui.Column(areaId, new Box { Height = Sizing.Grow(), Gap = 0f });
         documents.GetView(tab).RecordShown(tab);
         ClosedBanner(ui, appearance, tab.ClosedAssembly);
-        tab.Content.Switch((ui, appearance, commands, documents, panels, display, bookmarksPanel, grids, navigation, session, assemblies, setup, bookmarks, tooltips, tab),
-            empty: static (s, _) => Hint(s.ui, s.appearance.Strings.DocumentsHint),
-            loading: static (s, loading) => RenderLoading(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab, loading),
-            code: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
-            table: static (s, table) => RenderGrid(s.ui, s.appearance, s.commands, s.documents, s.display, s.grids, s.navigation, s.session, s.setup, s.tab, table.Grid),
-            picture: static (s, picture) => ResourceImageView.Render(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab, picture),
-            report: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
-            diagram: static (s, diagram) => DiagramView.Render(s.ui, s.documents, s.display, s.appearance, s.commands, s.navigation, s.tooltips, s.tab, diagram.Types),
-            comparison: static (s, comparison) => ComparisonView.Render(s.ui, s.documents, s.appearance, s.display, s.commands, s.navigation, s.assemblies, s.tab, comparison.Assemblies),
-            failed: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
-            stopped: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
-            reloading: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
-            reopening: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
-            gone: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
-            notReloaded: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab),
-            unreadable: static (s, _) => RenderCode(s.ui, s.appearance, s.commands, s.documents, s.panels, s.display, s.bookmarksPanel, s.navigation, s.bookmarks, s.tooltips, s.tab));
+        switch (tab.Content)
+        {
+            case TabContent.Empty:
+                Hint(ui, appearance.Strings.DocumentsHint);
+                break;
+            case TabContent.Loading loading:
+                RenderLoading(ui, appearance, commands, documents, panels, display, bookmarksPanel, navigation, bookmarks, tooltips, tab, loading);
+                break;
+            case TabContent.Table table:
+                RenderGrid(ui, appearance, commands, documents, display, grids, navigation, session, setup, tab, table.Grid);
+                break;
+            case TabContent.Picture picture:
+                ResourceImageView.Render(ui, appearance, commands, documents, panels, display, bookmarksPanel, navigation, bookmarks, tooltips, tab, picture);
+                break;
+            case TabContent.Diagram diagram:
+                DiagramView.Render(ui, documents, display, appearance, commands, navigation, tooltips, tab, diagram.Types);
+                break;
+            case TabContent.Comparison comparison:
+                ComparisonView.Render(ui, documents, appearance, display, commands, navigation, assemblies, tab, comparison.Assemblies);
+                break;
+            case TabContent.Code or TabContent.Report or TabContent.Failed or TabContent.Stopped or TabContent.Reloading
+                or TabContent.Reopening or TabContent.Gone or TabContent.NotReloaded or TabContent.Unreadable:
+                RenderCode(ui, appearance, commands, documents, panels, display, bookmarksPanel, navigation, bookmarks, tooltips, tab);
+                break;
+        }
     }
 
     private static void ClosedBanner(Ui ui, Appearance appearance, string? assembly)

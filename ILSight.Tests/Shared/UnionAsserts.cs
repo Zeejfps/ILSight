@@ -35,4 +35,12 @@ public static class UnionAsserts
         Assert.NotNull(held);
         return held.GetType();
     }
+
+    /// <summary>Asserts that <paramref name="actual"/> holds the very case object <paramref name="expected"/> holds:
+    /// <c>Assert.Same</c> on two unions boxes each, so it never holds.</summary>
+    public static void SameCase(IUnion expected, IUnion actual)
+    {
+        // Read as GetCase reads it: the case is the union's Value.
+        Assert.Same(expected.Value, actual.Value);
+    }
 }

@@ -19,8 +19,9 @@ public sealed class TabDocument
 
     private TabTitle? _title;
 
-    // The title last worded, for the language and the title it was worded for: a tab is titled every frame.
-    private Memo<(ByReference<Strings>, ByReference<TabTitle>), string> _titleWords;
+    // The title last worded, for the language it was worded in, forgotten when the title changes: a tab is titled every
+    // frame.
+    private Memo<ByReference<Strings>, string> _titleWords;
 
     private TabLoad _load;
 
@@ -58,14 +59,14 @@ public sealed class TabDocument
             return null;
         }
 
-        var key = (new ByReference<Strings>(t), new ByReference<TabTitle>(_title));
+        var key = new ByReference<Strings>(t);
         if (_titleWords.TryGet(key, out var words))
         {
             return words;
         }
 
-        words = _title.Words(t);
-        _titleWords = new Memo<(ByReference<Strings>, ByReference<TabTitle>), string>(key, words);
+        words = _title.Value.Words(t);
+        _titleWords = new Memo<ByReference<Strings>, string>(key, words);
         return words;
     }
 
@@ -210,6 +211,7 @@ public sealed class TabDocument
         PointElsewhere();
         _shown = shown;
         _title = title;
+        _titleWords = default;
         _load = new TabLoad(_work);
     }
 

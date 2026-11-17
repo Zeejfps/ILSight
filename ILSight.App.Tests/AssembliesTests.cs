@@ -340,7 +340,7 @@ public sealed class AssembliesTests
 
         Assert.Equal(AppStateDriver.FixturePath, Assert.Single(Assert.Single(ports.OpenedPaths)).Text);
         Assert.Equal(shutdown.Token, Assert.Single(ports.Tokens));
-        Assert.IsType<TabContent.Gone>(tab.Content);
+        UnionAsserts.GetCase<TabContent.Gone>(tab.Content);
         Assert.Empty(ports.Reported);
         Assert.Null(tab.Node);
         Assert.False(appState.ListSession.Reload.IsRunning);
@@ -369,7 +369,7 @@ public sealed class AssembliesTests
         Assert.Same(error, reported.Error);
         Assert.Equal(location, reported.Place);
         UnionAsserts.GetCase<PlaceLookupStep.ReloadingTab>(reported.Step);
-        var failed = Assert.IsType<TabContent.Unreadable>(tab.Content);
+        var failed = UnionAsserts.GetCase<TabContent.Unreadable>(tab.Content);
         Assert.Same(error, failed.Why);
         Assert.Equal(location, failed.Location);
         Assert.False(appState.ListSession.Reload.IsRunning);
@@ -486,7 +486,7 @@ public sealed class AssembliesTests
         var waiting = Assert.Single(Assert.Single(ListLookups(loads)).Nodes);
         Assert.Same(reopened, waiting.Reopened);
         Assert.Equal(place, waiting.Place);
-        Assert.IsType<TabContent.Reloading>(tab.Content);
+        UnionAsserts.GetCase<TabContent.Reloading>(tab.Content);
         Assert.Empty(ListDecompiles(loads));
     }
 

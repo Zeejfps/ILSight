@@ -31,7 +31,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var ports = new FakeShowReopenedNodesHandlerPorts();
 
         var showing = d.BeginAsync(() => new ShowReopenedNodesHandler(ports).HandleAsync(d.AppState.ListSession.Reopened, d.AppState.ListSession.Navigation, d.AppState.Decompiler, d.AppState.ViewCommands, new ReopenedNodesLookup { Nodes = [waiting] }, CancellationToken.None));
-        Assert.IsType<TabContent.Reloading>(waiting.Reopened.Tab.Content);
+        UnionAsserts.GetCase<TabContent.Reloading>(waiting.Reopened.Tab.Content);
         Assert.Single(ports.Answers).SetResult([new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Found { Value = greeter })]);
         var loads = await d.EndAsync(showing);
 
@@ -56,7 +56,7 @@ public sealed class ShowReopenedNodesHandlerTests
         Assert.Single(ports.Answers).SetResult([new Outcome<Lookup<BrowseNode>>.Failed(error), new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Found { Value = greeter })]);
         var loads = await d.EndAsync(showing);
 
-        var failed = Assert.IsType<TabContent.Unreadable>(waiting.Reopened.Tab.Content);
+        var failed = UnionAsserts.GetCase<TabContent.Unreadable>(waiting.Reopened.Tab.Content);
         Assert.Same(error, failed.Why);
         Assert.Equal(waiting.Record.Location, failed.Location);
         var reported = UnionAsserts.GetCase<AppProblem.PlaceLookupFailed>(Assert.Single(ports.Reported));
@@ -80,7 +80,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var loads = await d.EndAsync(showing);
 
         Assert.Empty(loads);
-        var content = Assert.IsType<TabContent.Unreadable>(waiting.Reopened.Tab.Content);
+        var content = UnionAsserts.GetCase<TabContent.Unreadable>(waiting.Reopened.Tab.Content);
         Assert.Equal(waiting.Place, content.Location);
         Assert.Equal(module.FilePath.FileName, content.Module);
         Assert.Equal("Bad namespace.", content.Why.Message);
@@ -101,7 +101,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var loads = await d.EndAsync(showing);
 
         Assert.Empty(loads);
-        Assert.IsType<TabContent.Diagram>(waiting.Reopened.Tab.Content);
+        UnionAsserts.GetCase<TabContent.Diagram>(waiting.Reopened.Tab.Content);
     }
 
     [Fact]

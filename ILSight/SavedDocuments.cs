@@ -255,26 +255,26 @@ public static class SavedDocuments
     {
         var types = diagram.ListAnchors();
         var homes = diagram.HomeAssemblies.ToList();
-        var view = panel.View as TabPanelView.Diagram;
+        var view = panel.View is TabPanelView.Diagram diagramView ? diagramView.View : null;
         return new DiagramDocumentRecord
         {
             Title = tab.DocumentTitle,
             Types = types,
             HomeAssemblies = homes,
-            View = view?.View,
+            View = view,
         };
     }
 
     private static ComparisonDocumentRecord SaveComparison(DocumentTab tab, AssemblyComparison comparison, TabPanel panel)
     {
-        var view = panel.View as TabPanelView.Comparison;
+        var view = panel.View is TabPanelView.Comparison comparisonView ? comparisonView.View : null;
         return new ComparisonDocumentRecord
         {
             Title = tab.DocumentTitle,
             LeftPath = comparison.LeftPath,
             RightPath = comparison.RightPath,
             Scope = comparison.Scope,
-            View = view?.View,
+            View = view,
         };
     }
 

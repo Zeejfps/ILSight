@@ -289,7 +289,7 @@ public sealed class AppStateTests
         d.Settle();
         var commands = d.TakeViewCommands();
 
-        var expand = Assert.Single(commands.OfType<ViewCommand.ExpandNodes>());
+        var expand = Assert.Single(commands.Select(static c => c is ViewCommand.ExpandNodes e ? e : null).OfType<ViewCommand.ExpandNodes>());
         Assert.Equal(expanded, expand.Nodes.Select(n => n.Path));
         var fixturesRoot = await d.NodeAsync();
         Assert.Same(fixturesRoot, expand.Nodes[0]);

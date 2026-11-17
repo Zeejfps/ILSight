@@ -201,7 +201,7 @@ public sealed class AppUpdatesTests
 
         await RestartAsync(updates, viewCommands, CancellationToken.None);
 
-        Assert.IsType<ViewCommand.Quit>(Assert.Single(viewCommands));
+        UnionAsserts.GetCase<ViewCommand.Quit>(Assert.Single(viewCommands));
         Assert.IsType<UpdateStatus.Restarting>(updates.Status);
         Assert.Equal(nameof(FakePorts.TryApplyAfterExitAsync), ports.Asked[^1]);
     }
@@ -217,7 +217,7 @@ public sealed class AppUpdatesTests
 
         await RestartAsync(updates, viewCommands, cancelled.Token);
 
-        Assert.IsType<ViewCommand.Quit>(Assert.Single(viewCommands));
+        UnionAsserts.GetCase<ViewCommand.Quit>(Assert.Single(viewCommands));
     }
 
     [Fact]

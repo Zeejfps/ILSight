@@ -369,7 +369,7 @@ internal static class SettingsJson
         {
             Panel = panel,
             Title = SavedTextOf(diagram.Title),
-            TitleName = (diagram.Title as TabTitle.Diagram)?.Type,
+            TitleName = diagram.Title is TabTitle.Diagram title ? title.Type : null,
             Types = diagram.Types.Select(static TypeAnchorJson? (t) => ToJson(t)).ToList(),
             HomeAssemblies = diagram.HomeAssemblies is null ? null : WritePaths(diagram.HomeAssemblies),
             View = diagram.View is null ? null : ToJson(diagram.View),
@@ -401,7 +401,7 @@ internal static class SettingsJson
         {
             Panel = panel,
             Title = SavedTextOf(comparison.Title),
-            TitleName = (comparison.Title as TabTitle.Comparison)?.Assembly,
+            TitleName = comparison.Title is TabTitle.Comparison title ? title.Assembly : null,
             LeftPath = comparison.LeftPath.Text,
             RightPath = comparison.RightPath.Text,
             Scope = comparison.Scope,
@@ -412,12 +412,12 @@ internal static class SettingsJson
     // A title the settings held worded, kept as it was saved; the rest are saved by the name they are worded around.
     private static string? SavedTextOf(TabTitle? title)
     {
-        return (title as TabTitle.Saved)?.Text;
+        return title is TabTitle.Saved saved ? saved.Text : null;
     }
 
     private static TabTitle? ParseSavedTitle(string? text)
     {
-        return text is null ? null : new TabTitle.Saved(text);
+        return text is null ? null : (TabTitle?)new TabTitle.Saved(text);
     }
 
     private static DocumentRecord? Parse(ComparisonDocumentJson json)

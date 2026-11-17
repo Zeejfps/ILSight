@@ -16,7 +16,7 @@ public sealed class ShowInApiReferenceHandlerTests
         await d.RunAsync(() => new ShowInApiReferenceHandler(reference).HandleAsync(d.AppState.ViewCommands, greeter, CancellationToken.None));
 
         var viewCommands = d.TakeViewCommands();
-        var opened = Assert.IsType<ViewCommand.OpenWebPage>(Assert.Single(viewCommands));
+        var opened = UnionAsserts.GetCase<ViewCommand.OpenWebPage>(Assert.Single(viewCommands));
         Assert.Equal("https://learn.microsoft.com/dotnet/api/greeter", opened.Url);
         Assert.Empty(reference.Reported);
     }

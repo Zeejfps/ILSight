@@ -140,7 +140,7 @@ public sealed class SettlingWorkflowsTests
         var loads = AssemblyReloader.FailReload(session, ticket, new InvalidOperationException("broken"));
 
         Assert.False(session.Reload.IsRunning);
-        var failed = Assert.IsType<TabContent.Unreadable>(tab.Content);
+        var failed = UnionAsserts.GetCase<TabContent.Unreadable>(tab.Content);
         Assert.Equal("broken", failed.Why.Message);
         Assert.Equal(location, failed.Location);
         Commands.StartLoads(d.AppState, loads);

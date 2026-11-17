@@ -381,7 +381,7 @@ public sealed class SavedDocumentsTests : IDisposable
         d.Settle();
 
         var tab = Assert.Single(d.AppState.ListSession.Navigation.OpenTabs);
-        var gone = Assert.IsType<TabContent.Gone>(tab.Content);
+        var gone = UnionAsserts.GetCase<TabContent.Gone>(tab.Content);
         Assert.Equal("Missing", gone.Location.Label);
         Assert.Equal(MissingPanel, d.Ui.Documents.GetPanel(tab));
         Assert.True(d.Arrangement.Contains(MissingPanel));
@@ -409,7 +409,7 @@ public sealed class SavedDocumentsTests : IDisposable
         d.Settle();
 
         var tab = Assert.Single(d.AppState.ListSession.Navigation.OpenTabs);
-        Assert.IsType<TabContent.Gone>(tab.Content);
+        UnionAsserts.GetCase<TabContent.Gone>(tab.Content);
     }
 
     [Fact]

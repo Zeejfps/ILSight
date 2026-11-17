@@ -68,77 +68,63 @@ public sealed class TabLoad
 
     /// <summary>The node shown, or null while the load waits for its place to be found again, or the node no longer
     /// exists.</summary>
-    public BrowseNode? Node => _content.Match<BrowseNode?>(
-        empty: static _ => null,
-        loading: static loading => loading.Node,
-        code: static code => code.Node,
-        table: static table => table.Node,
-        picture: static picture => picture.Node,
-        report: static _ => null,
-        diagram: static _ => null,
-        comparison: static _ => null,
-        failed: static failed => failed.Node,
-        stopped: static stopped => stopped.Node,
-        reloading: static _ => null,
-        reopening: static _ => null,
-        gone: static _ => null,
-        notReloaded: static _ => null,
-        unreadable: static _ => null);
+    public BrowseNode? Node => _content switch
+    {
+        TabContent.Loading loading => loading.Node,
+        TabContent.Code code => code.Node,
+        TabContent.Table table => table.Node,
+        TabContent.Picture picture => picture.Node,
+        TabContent.Failed failed => failed.Node,
+        TabContent.Stopped stopped => stopped.Node,
+        TabContent.Empty or TabContent.Report or TabContent.Diagram or TabContent.Comparison or TabContent.Reloading
+            or TabContent.Reopening or TabContent.Gone or TabContent.NotReloaded or TabContent.Unreadable => null,
+    };
 
     /// <summary>Where the load points: the path of its node, or while the node is away the path it is found again by
     /// or no longer exists at; outlives reloads of the assembly. Null when the load is of no node.</summary>
-    public NodePath? Location => _content.Match<NodePath?>(
-        empty: static _ => null,
-        loading: static loading => loading.Node.Path,
-        code: static code => code.Node.Path,
-        table: static table => table.Node.Path,
-        picture: static picture => picture.Node.Path,
-        report: static _ => null,
-        diagram: static _ => null,
-        comparison: static _ => null,
-        failed: static failed => failed.Node.Path,
-        stopped: static stopped => stopped.Node.Path,
-        reloading: static reloading => reloading.Location,
-        reopening: static _ => null,
-        gone: static gone => gone.Location,
-        notReloaded: static notReloaded => notReloaded.Location,
-        unreadable: static unreadable => unreadable.Location);
+    public NodePath? Location => _content switch
+    {
+        TabContent.Loading loading => loading.Node.Path,
+        TabContent.Code code => code.Node.Path,
+        TabContent.Table table => table.Node.Path,
+        TabContent.Picture picture => picture.Node.Path,
+        TabContent.Failed failed => failed.Node.Path,
+        TabContent.Stopped stopped => stopped.Node.Path,
+        TabContent.Reloading reloading => reloading.Location,
+        TabContent.Gone gone => gone.Location,
+        TabContent.NotReloaded notReloaded => notReloaded.Location,
+        TabContent.Unreadable unreadable => unreadable.Location,
+        TabContent.Empty or TabContent.Report or TabContent.Diagram or TabContent.Comparison
+            or TabContent.Reopening => null,
+    };
 
     /// <summary>The code, document or markup the load shows, or an empty document while it shows none.</summary>
-    public DecompiledDocument Document => _content.Match(
-        empty: static _ => DecompiledDocument.Empty,
-        loading: static _ => DecompiledDocument.Empty,
-        code: static code => code.Document,
-        table: static _ => DecompiledDocument.Empty,
-        picture: static picture => picture.Source ?? DecompiledDocument.Empty,
-        report: static _ => DecompiledDocument.Empty,
-        diagram: static _ => DecompiledDocument.Empty,
-        comparison: static _ => DecompiledDocument.Empty,
-        failed: static _ => DecompiledDocument.Empty,
-        stopped: static _ => DecompiledDocument.Empty,
-        reloading: static _ => DecompiledDocument.Empty,
-        reopening: static _ => DecompiledDocument.Empty,
-        gone: static _ => DecompiledDocument.Empty,
-        notReloaded: static _ => DecompiledDocument.Empty,
-        unreadable: static _ => DecompiledDocument.Empty);
+    public DecompiledDocument Document => _content switch
+    {
+        TabContent.Code code => code.Document,
+        TabContent.Picture picture => picture.Source ?? DecompiledDocument.Empty,
+        TabContent.Empty or TabContent.Loading or TabContent.Table or TabContent.Report or TabContent.Diagram
+            or TabContent.Comparison or TabContent.Failed or TabContent.Stopped or TabContent.Reloading
+            or TabContent.Reopening or TabContent.Gone or TabContent.NotReloaded
+            or TabContent.Unreadable => DecompiledDocument.Empty,
+    };
 
     /// <summary>The name of the node shown, kept while the node is away; null when the load is of no node.</summary>
-    public string? Title => _content.Match<string?>(
-        empty: static _ => null,
-        loading: static loading => NodeText.Name(loading.Node),
-        code: static code => NodeText.Name(code.Node),
-        table: static table => NodeText.Name(table.Node),
-        picture: static picture => NodeText.Name(picture.Node),
-        report: static _ => null,
-        diagram: static _ => null,
-        comparison: static _ => null,
-        failed: static failed => NodeText.Name(failed.Node),
-        stopped: static stopped => NodeText.Name(stopped.Node),
-        reloading: static reloading => reloading.Title,
-        reopening: static _ => null,
-        gone: static gone => gone.Title,
-        notReloaded: static notReloaded => notReloaded.Title,
-        unreadable: static unreadable => unreadable.Title);
+    public string? Title => _content switch
+    {
+        TabContent.Loading loading => NodeText.Name(loading.Node),
+        TabContent.Code code => NodeText.Name(code.Node),
+        TabContent.Table table => NodeText.Name(table.Node),
+        TabContent.Picture picture => NodeText.Name(picture.Node),
+        TabContent.Failed failed => NodeText.Name(failed.Node),
+        TabContent.Stopped stopped => NodeText.Name(stopped.Node),
+        TabContent.Reloading reloading => reloading.Title,
+        TabContent.Gone gone => gone.Title,
+        TabContent.NotReloaded notReloaded => notReloaded.Title,
+        TabContent.Unreadable unreadable => unreadable.Title,
+        TabContent.Empty or TabContent.Report or TabContent.Diagram or TabContent.Comparison
+            or TabContent.Reopening => null,
+    };
 
     public DecompilationLanguage Language => _language;
 

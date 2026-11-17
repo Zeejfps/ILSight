@@ -3,15 +3,11 @@ using ILSight.DiagramArea;
 namespace ILSight;
 
 /// <summary>How a docked tab's diagram or comparison is viewed, or none for a tab showing neither.</summary>
-public abstract record TabPanelView
+public union TabPanelView(TabPanelView.None, TabPanelView.Diagram, TabPanelView.Comparison)
 {
-    private TabPanelView()
-    {
-    }
+    public sealed record None;
 
-    public sealed record None : TabPanelView;
+    public sealed record Diagram(DiagramViewRecord View);
 
-    public sealed record Diagram(DiagramViewRecord View) : TabPanelView;
-
-    public sealed record Comparison(ComparisonViewRecord View) : TabPanelView;
+    public sealed record Comparison(ComparisonViewRecord View);
 }

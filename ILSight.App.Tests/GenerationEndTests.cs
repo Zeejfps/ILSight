@@ -35,7 +35,7 @@ public sealed class GenerationEndTests
         Assert.Empty(session.Assemblies.Assemblies);
         Assert.Empty(d.AppState.Errors.Entries);
         Assert.False(session.Reload.IsRunning);
-        Assert.Equal(ReloadEnd.AssemblyClosed, Assert.IsType<TabContent.NotReloaded>(tab.Content).End);
+        Assert.Equal(ReloadEnd.AssemblyClosed, UnionAsserts.GetCase<TabContent.NotReloaded>(tab.Content).End);
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public sealed class GenerationEndTests
         d.RunUntil(() => appState.Work.Outstanding.Count == 0);
 
         Assert.False(appState.ListSession.Reload.IsRunning);
-        var shown = Assert.IsType<TabContent.NotReloaded>(tab.Content);
+        var shown = UnionAsserts.GetCase<TabContent.NotReloaded>(tab.Content);
         Assert.Equal(ReloadEnd.AssemblyClosed, shown.End);
         Assert.Equal($"{shown.Location.FilePath.FileName} was closed.", TabPlaceholders.Describe(Strings.For(Locale.En), tab.Content));
         Assert.Empty(appState.Errors.Entries);
@@ -75,7 +75,7 @@ public sealed class GenerationEndTests
         d.RunUntil(() => appState.Work.Outstanding.Count == 0);
 
         Assert.False(session.Reload.IsRunning);
-        var shown = Assert.IsType<TabContent.NotReloaded>(tab.Content);
+        var shown = UnionAsserts.GetCase<TabContent.NotReloaded>(tab.Content);
         Assert.Equal(ReloadEnd.Stopped, shown.End);
         Assert.True(session.Assemblies.IsListed(shown.Location.FilePath));
         Assert.Equal($"{shown.Location.Label} was not reloaded: the reload was stopped. Use Reload all to look for it again.",
@@ -109,7 +109,7 @@ public sealed class GenerationEndTests
         d.RunUntil(() => appState.Work.Outstanding.Count == 1);
 
         Assert.True(session.Reload.IsRunning);
-        Assert.IsType<TabContent.Reloading>(tab.Content);
+        UnionAsserts.GetCase<TabContent.Reloading>(tab.Content);
         newReopen.SetResult();
         d.RunUntil(() => appState.Work.Outstanding.Count == 0);
         Assert.False(session.Reload.IsRunning);

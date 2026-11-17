@@ -112,7 +112,7 @@ public sealed class ExportWriterTests
 
         await d.RunAsync(() => new ExportWriter(ports).HandleAsync(finished, viewCommands, work, ticket, CancellationToken.None));
 
-        Assert.Equal(page, Assert.IsType<ViewCommand.OpenFile>(Assert.Single(viewCommands)).Path);
+        Assert.Equal(page, UnionAsserts.GetCase<ViewCommand.OpenFile>(Assert.Single(viewCommands)).Path);
         Assert.Equal([page], UnionAsserts.GetCase<ExportEnd.Finished>(Assert.Single(finished).End).Written);
     }
 }
