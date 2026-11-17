@@ -185,6 +185,20 @@ public sealed class ProblemTextTests
         Assert.Equal($"{bundle.Text} holds no file Shop.dll.", FailureTexts.DescribeCause(Strings.En, notInPackage));
     }
 
+    [Fact]
+    public void A_definition_in_a_reference_whose_file_cannot_be_read_is_said_from_its_cause_in_the_apps_language()
+    {
+        var file = AssemblyPath.Of(Path.Combine(Path.GetTempPath(), "Shop", "Shop.Core.dll"));
+        var bySystem = new AssemblyLoadException(file, new AssemblyLoadFault.CannotOpen(), $"Cannot open '{file}': In use.", new IOException("In use."));
+        var notAssembly = new AssemblyLoadException(file, new AssemblyLoadFault.NotAssembly(), $"'{file}' is not a .NET assembly.");
+        var unopened = new DefinitionUnreadException("Shop.Core", bySystem, $"The definition is in Shop.Core, whose file {file} could not be read.");
+        var unreadable = new DefinitionUnreadException("Shop.Core", notAssembly, $"The definition is in Shop.Core, whose file {file} could not be read.");
+        var japanese = Strings.For(Locale.Ja);
+
+        Assert.Equal($"The definition is in Shop.Core, whose file couldn't be read: {file.Text} couldn't be opened: In use.", FailureTexts.DescribeCause(Strings.En, unopened));
+        Assert.Equal($"定義は Shop.Core にありますが、そのファイルを読み取れませんでした: {file.Text} は .NET アセンブリではありません。", FailureTexts.DescribeCause(japanese, unreadable));
+    }
+
     // An exception as thrown, with its stack trace and an inner exception.
     private static InvalidOperationException Thrown(string message)
     {

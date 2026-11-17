@@ -560,7 +560,7 @@ public static class Commands
     private static void StartReadingPlace(AppState appState, DiagramPlaceRead read)
     {
         appState.Workflows.StartSettling(nameof(ReopenDiagramHandler), ct => appState.ReopenDiagramHandler.ShowPlaceAsync(read, ct),
-            error => read.Diagram.FailReading(read.Read, error.Message), read.Diagram.Token);
+            error => read.Diagram.FailReading(read.Read, error), read.Diagram.Token);
     }
 
     /// <summary>Asks for the comparison <paramref name="run"/> started, if any, to be run once the frame is drawn
@@ -791,7 +791,7 @@ public static class Commands
 
     private static void SettleCardsRead(ReopenedTabs reopened, SavedDiagramRead read, Exception error)
     {
-        read.Diagram.FailReading(read.Read, error.Message);
+        read.Diagram.FailReading(read.Read, error);
         SavedDocuments.TryFinishWaiting(reopened, read.Reopened);
     }
 

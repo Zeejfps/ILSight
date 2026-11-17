@@ -680,6 +680,7 @@
   "cause.assembly_not_dotnet.sentence": "{file} no es un ensamblado de .NET.",
   "cause.assembly_not_package.sentence": "{file} no es un paquete.",
   "cause.assembly_not_in_package.sentence": "{package} no contiene ningún archivo {name}.",
+  "cause.definition_unread.sentence": "La definición está en {assembly}, cuyo archivo no se pudo leer: {why}",
   "process_picker.no_answer": "sin respuesta",
   "process_picker.in_memory": "en memoria",
   "process_picker.count": {"one": "{count:N0} proceso", "other": "{count:N0} procesos"},

@@ -202,7 +202,7 @@ public sealed class DiagramGrowerTests
         Assert.Same(error, problem.Error);
         Assert.Equal(["Vehicle"], CardNames(diagram));
         Assert.False(diagram.IsBusy);
-        Assert.Equal("Unreadable.", diagram.ReadFailure);
+        Assert.Same(error, diagram.ReadFailure);
     }
 
     [Fact]
@@ -241,12 +241,13 @@ public sealed class DiagramGrowerTests
     {
         var diagram = new TypeDiagram();
         var read = diagram.StartReading();
-        diagram.FailReading(read, "Unreadable.");
+        var error = new InvalidOperationException("Unreadable.");
+        diagram.FailReading(read, error);
         var failed = (diagram.IsBusy, diagram.ReadFailure);
 
         var again = diagram.StartReading();
 
-        Assert.Equal((false, "Unreadable."), failed);
+        Assert.Equal((false, error), failed);
         Assert.Null(diagram.ReadFailure);
         Assert.True(diagram.IsBusy);
         diagram.FinishReading(again);

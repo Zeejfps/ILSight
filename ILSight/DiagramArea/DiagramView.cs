@@ -138,7 +138,7 @@ internal static class DiagramView
         var failure = diagram.ReadFailure;
         if (failure is not null && !diagram.IsBusy)
         {
-            DocumentsView.Hint(ui, ui.Memo("diagram-read-failed", (failure, t), static a => a.t.DiagramReadFailed(a.failure)));
+            DocumentsView.Hint(ui, ui.Memo("diagram-read-failed", (failure, t), static a => a.t.DiagramReadFailed(FailureTexts.DescribeCause(a.t, a.failure))));
             return;
         }
 
@@ -147,7 +147,7 @@ internal static class DiagramView
     }
 
     // Above the cards it shows, the last read that failed, until a read is started again.
-    private static void ReadFailure(Ui ui, Appearance appearance, string? failure)
+    private static void ReadFailure(Ui ui, Appearance appearance, Exception? failure)
     {
         if (failure is null)
         {
@@ -155,7 +155,7 @@ internal static class DiagramView
         }
 
         var theme = ui.Theme;
-        var text = ui.Memo("diagram-read-failed", (failure, t: appearance.Strings), static a => a.t.DiagramReadFailed(a.failure));
+        var text = ui.Memo("diagram-read-failed", (failure, t: appearance.Strings), static a => a.t.DiagramReadFailed(FailureTexts.DescribeCause(a.t, a.failure)));
         ui.Text(text, new Box { Width = Sizing.Grow(), Padding = new Spacing(theme.Gap, theme.GapTight) }, color: theme.Warning, size: theme.FontSizeSmall,
             wrap: true);
     }
@@ -721,7 +721,7 @@ internal static class DiagramView
     {
         Commands.StartSettlingLater(commands, nameof(DiagramGrower.AddWithNeighboursAsync), (type, newTitle), static (a, s) => Diagrams.ShowInDiagram(a.ListSession.Navigation, s.type, s.newTitle),
             static (a, _, read, ct) => a.DiagramGrower.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token,
-            static (_, read, error) => read.Diagram.FailReading(read.Read, error.Message));
+            static (_, read, error) => read.Diagram.FailReading(read.Read, error));
     }
 
     /// <summary>As <see cref="ShowInDiagramLater"/>, on a new diagram titled <paramref name="title"/>
@@ -730,7 +730,7 @@ internal static class DiagramView
     {
         Commands.StartSettlingLater(commands, nameof(DiagramGrower.AddWithNeighboursAsync), (type, title), static (a, s) => Diagrams.ShowInNewDiagram(a.ListSession.Navigation, s.type, s.title),
             static (a, _, read, ct) => a.DiagramGrower.AddWithNeighboursAsync(a.ViewCommands, read, ct), static read => read.Diagram.Token,
-            static (_, read, error) => read.Diagram.FailReading(read.Read, error.Message));
+            static (_, read, error) => read.Diagram.FailReading(read.Read, error));
     }
 
     // A read the card's menu started: settled failed on the diagram when its workflow fails.
@@ -738,7 +738,7 @@ internal static class DiagramView
         Func<AppState, (TypeDiagram Diagram, TypeCard Card), ExpansionRead, CancellationToken, Task> run)
     {
         Commands.StartSettlingLater<(TypeDiagram Diagram, TypeCard Card), ExpansionRead>(commands, name, (diagram, card), static (_, s) => ExpansionRead.Start(s.Diagram, s.Card), run,
-            static read => read.Diagram.Token, static (_, read, error) => read.Diagram.FailReading(read.Read, error.Message));
+            static read => read.Diagram.Token, static (_, read, error) => read.Diagram.FailReading(read.Read, error));
     }
 
     private static void CardMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, Navigation navigation, DiagramViewState view, TypeDiagram diagram, string? closedAssembly)

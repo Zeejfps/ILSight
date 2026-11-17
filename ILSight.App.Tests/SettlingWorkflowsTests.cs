@@ -101,7 +101,7 @@ public sealed class SettlingWorkflowsTests
         d.Settle();
 
         Assert.False(diagram.IsBusy);
-        Assert.Equal("broken", diagram.ReadFailure);
+        Assert.Equal("broken", diagram.ReadFailure?.Message);
         Assert.Equal("broken", ReportedOnce(d.AppState).Error.Message);
     }
 

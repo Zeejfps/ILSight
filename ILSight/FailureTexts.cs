@@ -4,7 +4,7 @@ using ILSight.Core.ResourceArea;
 namespace ILSight;
 
 /// <summary>What failed, said from its cause in the app's language where the failure carries one of ILSight's own
-/// (a file it can't open as an assembly, a bundle's file it can't read, a NuGet feed's answer it can't use, an Avalonia
+/// (a file it can't open as an assembly, a definition in a reference whose file it can't read, a bundle's file it can't read, a NuGet feed's answer it can't use, an Avalonia
 /// container it can't list, a request that timed out); any other failure, known only by its exception, by its message
 /// as written.</summary>
 public static class FailureTexts
@@ -15,6 +15,7 @@ public static class FailureTexts
         return error switch
         {
             AssemblyLoadException load => DescribeAssemblyLoad(t, load),
+            DefinitionUnreadException unread => t.CauseDefinitionUnreadSentence(assembly: OneLineText.Name(unread.Assembly), why: DescribeAssemblyLoad(t, unread.Unread)),
             BundleEntryException bundle => DescribeBundleEntry(t, bundle.Fault),
             FeedFaultException feed => DescribeFeed(t, feed.Fault),
             AvaloniaContainerException container => DescribeAvaloniaContainer(t, container.Fault),

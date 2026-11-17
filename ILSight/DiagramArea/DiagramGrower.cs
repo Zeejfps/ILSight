@@ -62,7 +62,7 @@ public sealed class DiagramGrower(DiagramGrower.IPorts ports)
     // A read the library failed shows failed where the diagram is, besides being reported.
     private static void FinishOrFail<T>(TypeDiagram diagram, CardRead reading, Outcome<T> read)
     {
-        read.Switch(_ => diagram.FinishReading(reading), failed => diagram.FailReading(reading, failed.Error.Message));
+        read.Switch(_ => diagram.FinishReading(reading), failed => diagram.FailReading(reading, failed.Error));
     }
 
     private void TakeHome(Queue<ViewCommand> viewCommands, NeighboursRead read, List<TypeCard> cards)

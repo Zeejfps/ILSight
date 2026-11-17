@@ -680,6 +680,7 @@
   "cause.assembly_not_dotnet.sentence": "{file} は .NET アセンブリではありません。",
   "cause.assembly_not_package.sentence": "{file} はパッケージではありません。",
   "cause.assembly_not_in_package.sentence": "{package} にファイル {name} はありません。",
+  "cause.definition_unread.sentence": "定義は {assembly} にありますが、そのファイルを読み取れませんでした: {why}",
   "process_picker.no_answer": "応答なし",
   "process_picker.in_memory": "メモリ内",
   "process_picker.count": {"other": "{count:N0} 個のプロセス"},

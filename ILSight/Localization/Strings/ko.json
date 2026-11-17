@@ -680,6 +680,7 @@
   "cause.assembly_not_dotnet.sentence": "{file}은(는) .NET 어셈블리가 아닙니다.",
   "cause.assembly_not_package.sentence": "{file}은(는) 패키지가 아닙니다.",
   "cause.assembly_not_in_package.sentence": "{package}에 {name} 파일이 없습니다.",
+  "cause.definition_unread.sentence": "정의는 {assembly}에 있지만 해당 파일을 읽을 수 없습니다: {why}",
   "process_picker.no_answer": "응답 없음",
   "process_picker.in_memory": "메모리 내",
   "process_picker.count": {"other": "프로세스 {count:N0}개"},

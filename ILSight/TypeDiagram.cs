@@ -45,9 +45,9 @@ public sealed class TypeDiagram
     /// <summary>True while cards are read or laid out in the background.</summary>
     public bool IsBusy => _reads.Count > 0 || _work.IsRunning;
 
-    /// <summary>Why the last read of cards that failed did, shown where the diagram is until a read is started again;
-    /// null while none failed.</summary>
-    public string? ReadFailure { get; private set; }
+    /// <summary>What the last read of cards that failed failed with, said where the diagram is (in the app's language
+    /// when drawn) until a read is started again; null while none failed.</summary>
+    public Exception? ReadFailure { get; private set; }
 
     /// <summary>Cancelled once the diagram is closed.</summary>
     public CancellationToken Token => _work.UntilClosed;
@@ -221,7 +221,7 @@ public sealed class TypeDiagram
 
     /// <summary>Counts <paramref name="read"/> as ended, failed with <paramref name="why"/>, which the diagram shows
     /// until a read is started again.</summary>
-    public void FailReading(CardRead read, string why)
+    public void FailReading(CardRead read, Exception why)
     {
         _reads.Remove(read);
         ReadFailure = why;

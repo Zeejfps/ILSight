@@ -798,7 +798,7 @@ public static class AssemblyListing
             return new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound();
         }
 
-        throw new DefinitionUnreadException($"The definition is in {needed.Name}, whose file {needed.Error.FilePath} could not be read.", needed.Error);
+        throw new DefinitionUnreadException(needed.Name, needed.Error, $"The definition is in {needed.Name}, whose file {needed.Error.FilePath} could not be read.");
     }
 
     // The library's read of the name of the assembly or module handle points into, under its own catch: none when the
