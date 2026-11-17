@@ -233,10 +233,11 @@ public static class NodeDefinitions
             NodeSubject.BaseType baseType => baseType.Value.Visibility,
             NodeSubject.DerivedType derived => derived.Value.Visibility,
             NodeSubject.ResourceContainer container => GetResourceVisibility(container.Value.Resource),
-            NodeSubject.ResourceEntry entry => entry.Value.Source.Match(
-                static manifest => GetResourceVisibility(manifest.Resource),
-                static _ => NodeVisibility.Open,
-                static _ => NodeVisibility.Open),
+            NodeSubject.ResourceEntry entry => entry.Value.Source switch
+            {
+                ResourceSource.Manifest manifest => GetResourceVisibility(manifest.Resource),
+                ResourceSource.Entry or ResourceSource.Baml => NodeVisibility.Open,
+            },
         };
     }
 

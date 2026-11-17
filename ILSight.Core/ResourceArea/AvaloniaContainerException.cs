@@ -8,9 +8,11 @@ public sealed class AvaloniaContainerException(AvaloniaContainerFault fault) : E
 
     private static string Diagnose(AvaloniaContainerFault fault)
     {
-        return fault.Match(
-            static v => $"{AvaloniaContainerFault.ContainerName} has an index of unknown version {v.Version}.",
-            static i => $"{AvaloniaContainerFault.ContainerName} has an index entry without {i.Field}.",
-            static o => $"{o.Path} lies outside {AvaloniaContainerFault.ContainerName}.");
+        return fault switch
+        {
+            AvaloniaContainerFault.IndexVersionUnknown v => $"{AvaloniaContainerFault.ContainerName} has an index of unknown version {v.Version}.",
+            AvaloniaContainerFault.IndexEntryIncomplete i => $"{AvaloniaContainerFault.ContainerName} has an index entry without {i.Field}.",
+            AvaloniaContainerFault.EntryOutside o => $"{o.Path} lies outside {AvaloniaContainerFault.ContainerName}.",
+        };
     }
 }

@@ -87,9 +87,11 @@ public static class FailureTexts
 
     private static string DescribeAvaloniaContainer(Strings t, AvaloniaContainerFault fault)
     {
-        return fault.Match(
-            v => t.CauseAvaloniaIndexVersionUnknownSentence(container: AvaloniaContainerFault.ContainerName, version: v.Version),
-            i => t.CauseAvaloniaIndexEntryIncompleteSentence(container: AvaloniaContainerFault.ContainerName, field: i.Field),
-            o => t.CauseAvaloniaEntryOutsideSentence(path: OneLineText.Name(o.Path), container: AvaloniaContainerFault.ContainerName));
+        return fault switch
+        {
+            AvaloniaContainerFault.IndexVersionUnknown v => t.CauseAvaloniaIndexVersionUnknownSentence(container: AvaloniaContainerFault.ContainerName, version: v.Version),
+            AvaloniaContainerFault.IndexEntryIncomplete i => t.CauseAvaloniaIndexEntryIncompleteSentence(container: AvaloniaContainerFault.ContainerName, field: i.Field),
+            AvaloniaContainerFault.EntryOutside o => t.CauseAvaloniaEntryOutsideSentence(path: OneLineText.Name(o.Path), container: AvaloniaContainerFault.ContainerName),
+        };
     }
 }

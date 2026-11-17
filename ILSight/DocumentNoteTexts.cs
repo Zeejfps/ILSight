@@ -76,18 +76,20 @@ public sealed class DocumentNoteTexts(Strings t) : IDocumentNotes
 
     public string PictureUnreadable(PictureFault fault)
     {
-        return fault.Match(
-            c => t.CausePictureCutShortNote(format: c.Format),
-            p => t.CausePicturePixelsCutShortNote(format: p.Format),
-            s => t.CausePictureSizeOutOfRangeNote(width: s.Width, height: s.Height),
-            _ => t.CausePicturePaletteIndexOutOfRangeNote,
-            _ => t.CausePictureCompressionNotReadNote,
-            b => t.CausePictureBitDepthNotReadNote(bits: b.Bits),
-            n => t.CausePictureNoPictureNote(format: n.Format),
-            _ => t.CausePictureCodeSizeOutOfRangeNote,
-            c => t.CausePictureColorTypeUnknownNote(kind: c.ColorType),
-            _ => t.CausePictureNotAPictureNote,
-            l => t.CausePictureUnreadableNote(message: l.Message));
+        return fault switch
+        {
+            PictureFault.CutShort c => t.CausePictureCutShortNote(format: c.Format),
+            PictureFault.PixelsCutShort p => t.CausePicturePixelsCutShortNote(format: p.Format),
+            PictureFault.SizeOutOfRange s => t.CausePictureSizeOutOfRangeNote(width: s.Width, height: s.Height),
+            PictureFault.PaletteIndexOutOfRange => t.CausePicturePaletteIndexOutOfRangeNote,
+            PictureFault.CompressionNotRead => t.CausePictureCompressionNotReadNote,
+            PictureFault.BitDepthNotRead b => t.CausePictureBitDepthNotReadNote(bits: b.Bits),
+            PictureFault.NoPicture n => t.CausePictureNoPictureNote(format: n.Format),
+            PictureFault.CodeSizeOutOfRange => t.CausePictureCodeSizeOutOfRangeNote,
+            PictureFault.ColorTypeUnknown c => t.CausePictureColorTypeUnknownNote(kind: c.ColorType),
+            PictureFault.NotAPicture => t.CausePictureNotAPictureNote,
+            PictureFault.LibraryFailure l => t.CausePictureUnreadableNote(message: l.Message),
+        };
     }
 
     public string Truncated(int bytes)

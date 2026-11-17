@@ -147,9 +147,12 @@ public static class NodeContentLoader
         }
 
         var read = ReadImage(node, cancellationToken);
-        return await read.Match(
-            decoded => GetPictureAsync(session, reading, node, decoded.Image, language, options, notes, cancellationToken),
-            unreadable => DecompileWithNoteAsync(session, reading, node, language, options, notes, new DocumentNote.PictureUnreadable(unreadable.Fault), cancellationToken));
+        return await (read switch
+        {
+            ResourceImageRead.Decoded decoded => GetPictureAsync(session, reading, node, decoded.Image, language, options, notes, cancellationToken),
+            ResourceImageRead.Unreadable unreadable => DecompileWithNoteAsync(session, reading, node, language, options, notes,
+                new DocumentNote.PictureUnreadable(unreadable.Fault), cancellationToken),
+        });
     }
 
     private static async Task<Outcome<NodeContent>> DecompileWithNoteAsync(BrowseSession session, ModuleReadLease reading, BrowseNode node,
@@ -416,22 +419,24 @@ public static class NodeContentLoader
 
     private static DocumentSubject ContainerSubject(BrowseNode node, SummarizedChildren children, ResourceContainerInfo container)
     {
-        return container.Contents.Match<(BrowseNode Node, SummarizedChildren Children, ResourceContainerInfo Container), DocumentSubject>(
-            (node, children, container),
-            static (s, _) => ResourceSubject(s.Node, ResourceNodes.CreateData(s.Container)),
-            static (s, _) => SummarySubject(s.Node, DescribeResources(s.Children)));
+        return container.Contents switch
+        {
+            ContainerContents.ResourcesFile => ResourceSubject(node, ResourceNodes.CreateData(container)),
+            ContainerContents.AvaloniaAssets => SummarySubject(node, DescribeResources(children)),
+        };
     }
 
     private static DocumentSubject EntrySubject(BrowseNode node, ResourceEntryInfo entry)
     {
-        return entry.Source.Match<(BrowseNode Node, ResourceEntryInfo Entry), DocumentSubject>((node, entry),
-            static (s, _) => ResourceSubject(s.Node, ResourceNodes.CreateData(s.Entry)),
-            static (s, _) => ResourceSubject(s.Node, ResourceNodes.CreateData(s.Entry)),
-            static (s, baml) => new DocumentSubject.Baml
+        return entry.Source switch
+        {
+            ResourceSource.Manifest or ResourceSource.Entry => ResourceSubject(node, ResourceNodes.CreateData(entry)),
+            ResourceSource.Baml baml => new DocumentSubject.Baml
             {
-                Module = s.Entry.Module,
+                Module = entry.Module,
                 Data = baml.Data,
-            });
+            },
+        };
     }
 
     private static DocumentSubject.Resource ResourceSubject(BrowseNode node, ResourceData resource)

@@ -103,10 +103,12 @@ internal static class ResourceNodes
 
     internal static byte[] ReadData(ResourceEntryInfo entry)
     {
-        return entry.Source.Match(entry,
-            static (_, manifest) => ResourceNodes.Read(manifest.Resource),
-            static (_, bytes) => bytes.Data,
-            static (info, baml) => Encoding.UTF8.GetBytes(DecompileBaml(info.Module, baml.Data)));
+        return entry.Source switch
+        {
+            ResourceSource.Manifest manifest => ResourceNodes.Read(manifest.Resource),
+            ResourceSource.Entry bytes => bytes.Data,
+            ResourceSource.Baml baml => Encoding.UTF8.GetBytes(DecompileBaml(entry.Module, baml.Data)),
+        };
     }
 
     // Read in the unit reading the resource, which holds module; what the BAML's types resolve to is read under this
@@ -129,9 +131,11 @@ internal static class ResourceNodes
     /// none.</summary>
     internal static Outcome<MetadataArea.MetadataGrid>? EnsureGrid(ResourceContainerInfo container, int firstRows, CancellationToken ct = default)
     {
-        return container.Contents.Match<(int Rows, CancellationToken Ct), Outcome<MetadataArea.MetadataGrid>?>((firstRows, ct),
-            static (s, file) => file.Grid.Ensure(s.Rows, s.Ct),
-            static (_, _) => null);
+        return container.Contents switch
+        {
+            ContainerContents.ResourcesFile file => file.Grid.Ensure(firstRows, ct),
+            ContainerContents.AvaloniaAssets => (Outcome<MetadataArea.MetadataGrid>?)null,
+        };
     }
 
     internal static ResourceContainerInfo CreateResourcesFile(LoadedModule module, MetadataResource resource)
@@ -197,24 +201,33 @@ internal static class ResourceNodes
     /// among them, or Avalonia's assets, sorted by their paths.</summary>
     internal static BrowseNode[] ListEntries(BrowseNode parent, ResourceContainerInfo container)
     {
-        return container.Contents.Match((parent, container),
-            static (s, _) => ListingReads.ValueOf(ReadEntries(s.container))
-                .Select(e => e.Value switch
-                {
-                    byte[] bytes => CreateEntry(s.parent, s.container.Module, e.Key, bytes),
-                    MemoryStream stream => CreateEntry(s.parent, s.container.Module, e.Key, stream.ToArray()),
-                    _ => (BrowseNode?)null,
-                })
-                .OfType<BrowseNode>()
-                .ToArray(),
-            static (s, _) =>
+        return container.Contents switch
+        {
+            ContainerContents.ResourcesFile => ListResourcesFileEntries(parent, container),
+            ContainerContents.AvaloniaAssets => ListAvaloniaEntries(parent, container),
+        };
+    }
+
+    private static BrowseNode[] ListResourcesFileEntries(BrowseNode parent, ResourceContainerInfo container)
+    {
+        return ListingReads.ValueOf(ReadEntries(container))
+            .Select(e => e.Value switch
             {
-                var entries = ListingReads.ValueOf(ReadAvaloniaEntries(s.container));
-                return entries
-                    .OrderBy(static e => e.Path, NaturalStringComparer.Instance)
-                    .Select(e => BrowseNodes.CreateListed(s.parent, new NodeSubject.ResourceEntry { Value = new ResourceEntryInfo { Module = s.container.Module, Name = e.Path, Source = new ResourceSource.Entry(e.Data) } }))
-                    .ToArray();
-            });
+                byte[] bytes => CreateEntry(parent, container.Module, e.Key, bytes),
+                MemoryStream stream => CreateEntry(parent, container.Module, e.Key, stream.ToArray()),
+                _ => (BrowseNode?)null,
+            })
+            .OfType<BrowseNode>()
+            .ToArray();
+    }
+
+    private static BrowseNode[] ListAvaloniaEntries(BrowseNode parent, ResourceContainerInfo container)
+    {
+        var entries = ListingReads.ValueOf(ReadAvaloniaEntries(container));
+        return entries
+            .OrderBy(static e => e.Path, NaturalStringComparer.Instance)
+            .Select(e => BrowseNodes.CreateListed(parent, new NodeSubject.ResourceEntry { Value = new ResourceEntryInfo { Module = container.Module, Name = e.Path, Source = new ResourceSource.Entry(e.Data) } }))
+            .ToArray();
     }
 
     // A .resources file's entries, each value as the library read it; read for the tree, the grid keeping its own.
