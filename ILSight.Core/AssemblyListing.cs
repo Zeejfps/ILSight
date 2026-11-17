@@ -417,10 +417,12 @@ public static class AssemblyListing
         }
 
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
-        return read.Match(
-            r => Lookup.FromNullable(r.TypeSystem.MainModule.GetTypeDefinition(new FullTypeName(anchor.FullName))),
-            u => Lookup.FromUnreadable<ITypeDefinition>(assembly, u),
-            static _ => new Lookup<ITypeDefinition>.NotFound());
+        return read switch
+        {
+            TypeSystemRead.Read r => Lookup.FromNullable(r.TypeSystem.MainModule.GetTypeDefinition(new FullTypeName(anchor.FullName))),
+            TypeSystemRead.Unreadable u => Lookup.FromUnreadable<ITypeDefinition>(assembly, u),
+            TypeSystemRead.Closed => new Lookup<ITypeDefinition>.NotFound(),
+        };
     }
 
     private static async Task<Lookup<ResolvedEntity>> ResolveEntityAsync(AssemblyList list, ModuleReadLease reading, CodeReference.Entity entity,
@@ -441,10 +443,12 @@ public static class AssemblyListing
         CancellationToken ct)
     {
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
-        return read.Match(
-            r => ReadEntity(r.TypeSystem, assembly, handle),
-            u => Lookup.FromUnreadable<ResolvedEntity>(assembly, u),
-            static _ => new Lookup<ResolvedEntity>.NotFound());
+        return read switch
+        {
+            TypeSystemRead.Read r => ReadEntity(r.TypeSystem, assembly, handle),
+            TypeSystemRead.Unreadable u => Lookup.FromUnreadable<ResolvedEntity>(assembly, u),
+            TypeSystemRead.Closed => new Lookup<ResolvedEntity>.NotFound(),
+        };
     }
 
     private sealed class ResolvedEntity
@@ -722,10 +726,12 @@ public static class AssemblyListing
         }
 
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, owner, ct);
-        return read.Match(
-            r => ResolveDefinition(list, owner, r.TypeSystem.MainModule, handle, generation),
-            u => Lookup.FromUnreadable<(LoadedModule Assembly, EntityHandle Handle)>(owner, u),
-            static _ => new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound());
+        return read switch
+        {
+            TypeSystemRead.Read r => ResolveDefinition(list, owner, r.TypeSystem.MainModule, handle, generation),
+            TypeSystemRead.Unreadable u => Lookup.FromUnreadable<(LoadedModule Assembly, EntityHandle Handle)>(owner, u),
+            TypeSystemRead.Closed => new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound(),
+        };
     }
 
     private static Lookup<(LoadedModule Assembly, EntityHandle Handle)> ResolveDefinition(AssemblyList list, LoadedModule owner, MetadataModule main,

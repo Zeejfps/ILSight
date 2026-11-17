@@ -210,10 +210,12 @@ public static class Analyzers
 
         using var reading = LoadedAssemblies.BeginReading();
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
-        return read.Match(
-            r => Find(assembly, r.TypeSystem.MainModule, definition, table, ct),
-            u => new Outcome<Lookup<AnalysisSymbol>>.Ok(Lookup.FromUnreadable<AnalysisSymbol>(assembly, u)),
-            static _ => new Outcome<Lookup<AnalysisSymbol>>.Ok(new Lookup<AnalysisSymbol>.NotFound()));
+        return read switch
+        {
+            TypeSystemRead.Read r => Find(assembly, r.TypeSystem.MainModule, definition, table, ct),
+            TypeSystemRead.Unreadable u => new Outcome<Lookup<AnalysisSymbol>>.Ok(Lookup.FromUnreadable<AnalysisSymbol>(assembly, u)),
+            TypeSystemRead.Closed => new Outcome<Lookup<AnalysisSymbol>>.Ok(new Lookup<AnalysisSymbol>.NotFound()),
+        };
     }
 
     // Whether the saved token still names a row is asked of the module first; what the library throws checking it,

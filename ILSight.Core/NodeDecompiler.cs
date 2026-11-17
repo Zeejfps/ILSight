@@ -47,20 +47,24 @@ internal static class NodeDecompiler
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, module, cancellationToken);
         if (read is not TypeSystemRead.Read own || !WritesCSharp(request, language))
         {
-            return read.Match(
-                r => Decompile(reading, request, r.TypeSystem, null, language, options, notes, cancellationToken, note),
-                u => DecompileUnreadable(reading, request, u.Thrown.SourceException, language, options, notes, cancellationToken, note),
-                static c => throw ReadAfterRelease(c));
+            return read switch
+            {
+                TypeSystemRead.Read r => Decompile(reading, request, r.TypeSystem, null, language, options, notes, cancellationToken, note),
+                TypeSystemRead.Unreadable u => DecompileUnreadable(reading, request, u.Thrown.SourceException, language, options, notes, cancellationToken, note),
+                TypeSystemRead.Closed c => throw ReadAfterRelease(c),
+            };
         }
 
         // The type system the decompiler reads with these settings, a shared read of its own, awaited and matched
         // before the write's read starts: what the library failed on reading it is the node's failure, said as a
         // decompiler's would be; a bug of its resolver's has gone on from the await.
         var chosen = await LoadedAssemblies.ReadChosenTypeSystemAsync(reading, module, Settings.Create(options), cancellationToken);
-        return chosen.Match(
-            r => Decompile(reading, request, own.TypeSystem, r.TypeSystem, language, options, notes, cancellationToken, note),
-            u => DescribeFailure(request, language, notes, u.Thrown.SourceException),
-            static c => throw ReadAfterRelease(c));
+        return chosen switch
+        {
+            TypeSystemRead.Read r => Decompile(reading, request, own.TypeSystem, r.TypeSystem, language, options, notes, cancellationToken, note),
+            TypeSystemRead.Unreadable u => DescribeFailure(request, language, notes, u.Thrown.SourceException),
+            TypeSystemRead.Closed c => throw ReadAfterRelease(c),
+        };
     }
 
     private static InvalidOperationException ReadAfterRelease(TypeSystemRead.Closed closed)

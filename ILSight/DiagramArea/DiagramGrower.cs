@@ -53,11 +53,13 @@ public sealed class DiagramGrower(DiagramGrower.IPorts ports)
 
         switch (cards)
         {
-            case Outcome<TypeSystemWork<List<TypeCard>>>.Ok ok:
-                ok.Value.Switch(
-                    done => TakeHome(viewCommands, read, done.Value),
-                    unreadable => ReportModuleUnreadable(unreadable.Module),
-                    static _ => { });
+            case Outcome<TypeSystemWork<List<TypeCard>>>.Ok { Value: TypeSystemWork<List<TypeCard>>.Done done }:
+                TakeHome(viewCommands, read, done.Value);
+                break;
+            case Outcome<TypeSystemWork<List<TypeCard>>>.Ok { Value: TypeSystemWork<List<TypeCard>>.Unreadable unreadable }:
+                ReportModuleUnreadable(unreadable.Module);
+                break;
+            case Outcome<TypeSystemWork<List<TypeCard>>>.Ok { Value: TypeSystemWork<List<TypeCard>>.Closed }:
                 break;
             case Outcome<TypeSystemWork<List<TypeCard>>>.Failed failed:
                 ReportUnreadable(read.Type, failed.Error);

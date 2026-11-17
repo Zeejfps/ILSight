@@ -94,6 +94,6 @@ public sealed class ModuleReleaseTests
     private static async Task<DecompilerTypeSystem> ReadTypeSystemAsync(LoadedModule module)
     {
         var read = await LoadedAssemblies.ReadTypeSystemAheadAsync(module, CancellationToken.None);
-        return Assert.IsType<TypeSystemRead.Read>(read).TypeSystem;
+        return UnionAsserts.GetCase<TypeSystemRead.Read>(read).TypeSystem;
     }
 }

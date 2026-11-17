@@ -290,7 +290,7 @@ public sealed class AnalysisTests
     public async Task An_enum_in_an_attribute_whose_underlying_type_is_unknown_is_bad_data_said_outside_the_decoders_count()
     {
         var read = await LoadedAssemblies.ReadTypeSystemAheadAsync(Trees.TestAssembly, CancellationToken.None);
-        var main = Assert.IsType<TypeSystemRead.Read>(read).TypeSystem.MainModule;
+        var main = UnionAsserts.GetCase<TypeSystemRead.Read>(read).TypeSystem.MainModule;
         var file = main.MetadataFile;
         var callbacks = new CallbackFailure();
         var decoder = new FindTypeInAttributeDecoder

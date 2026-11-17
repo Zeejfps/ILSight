@@ -130,7 +130,7 @@ public sealed class TypeCardTests
     public async Task A_type_reads_with_the_types_of_its_assembly_it_is_related_to_either_way()
     {
         var animal = await ZooAsync("Animal");
-        var read = Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>((await TypeCards.ReadWithNeighboursAsync(List, animal, CancellationToken.None)).GetValue());
+        var read = UnionAsserts.GetCase<TypeSystemWork<List<TypeCard>>.Done>((await TypeCards.ReadWithNeighboursAsync(List, animal, CancellationToken.None)).GetValue());
         var cards = read.Value;
 
         Assert.Equal("Animal", cards[0].Name);
@@ -191,7 +191,7 @@ public sealed class TypeCardTests
         var name = nameNode.Definition;
 
         UnionAsserts.GetCase<Lookup<TypeCard>.NotFound>((await TypeCards.ReadAsync(List, name, CancellationToken.None)).GetValue());
-        Assert.Empty(Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>((await TypeCards.ReadWithNeighboursAsync(List, name, CancellationToken.None)).GetValue()).Value);
+        Assert.Empty(UnionAsserts.GetCase<TypeSystemWork<List<TypeCard>>.Done>((await TypeCards.ReadWithNeighboursAsync(List, name, CancellationToken.None)).GetValue()).Value);
     }
 
     [Fact]

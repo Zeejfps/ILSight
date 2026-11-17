@@ -175,10 +175,12 @@ public static class ILSpyTree
         var assembly = found.Value;
         using var reading = LoadedAssemblies.BeginReading();
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
-        return await read.Match(
-            r => FindEntityAsync(session, assembly, r.TypeSystem.MainModule, token, memberName, ct),
-            u => Task.FromResult<Outcome<Lookup<BrowseNode>>>(new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromUnreadable<BrowseNode>(assembly, u))),
-            static _ => Task.FromResult(NotFound));
+        return read switch
+        {
+            TypeSystemRead.Read r => await FindEntityAsync(session, assembly, r.TypeSystem.MainModule, token, memberName, ct),
+            TypeSystemRead.Unreadable u => new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromUnreadable<BrowseNode>(assembly, u)),
+            TypeSystemRead.Closed => NotFound,
+        };
     }
 
     private static async Task<Outcome<Lookup<BrowseNode>>> FindEntityAsync(BrowseSession session, LoadedModule assembly, MetadataModule main,

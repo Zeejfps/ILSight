@@ -444,7 +444,7 @@ public sealed class AssemblyListTests
             .ToList();
         var typeSystems = await Task.WhenAll(read.Select(static r => r.TypeSystem)).WithinPatienceAsync();
 
-        Assert.Single(typeSystems.Select(static t => Assert.IsType<TypeSystemRead.Read>(t).TypeSystem).Distinct());
+        Assert.Single(typeSystems.Select(static t => UnionAsserts.GetCase<TypeSystemRead.Read>(t).TypeSystem).Distinct());
         Assert.Single(read.Select(r => r.Usage).Distinct());
         Assert.Single(read.Select(r => r.Symbols).Distinct());
     }

@@ -57,19 +57,23 @@ public static class CodeFiles
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, module, cancellationToken);
         if (read is not TypeSystemRead.Read own || !NodeDecompiler.WritesCSharp(export, language))
         {
-            return read.Match(
-                r => Save(reading, export, r.TypeSystem, null, language, options, notes, path, callbacks, cancellationToken),
-                u => SaveUnreadable(reading, export, module, u, language, options, notes, path, callbacks, cancellationToken),
-                static c => new TypeSystemWork<string>.Closed { Module = c.Module });
+            return read switch
+            {
+                TypeSystemRead.Read r => Save(reading, export, r.TypeSystem, null, language, options, notes, path, callbacks, cancellationToken),
+                TypeSystemRead.Unreadable u => SaveUnreadable(reading, export, module, u, language, options, notes, path, callbacks, cancellationToken),
+                TypeSystemRead.Closed c => new TypeSystemWork<string>.Closed { Module = c.Module },
+            };
         }
 
         // The type system the decompiler reads with these settings, a shared read of its own, awaited and matched before
         // the save's read starts: what the library failed on reading it is the module's, unreadable, with why.
         var chosen = await LoadedAssemblies.ReadChosenTypeSystemAsync(reading, module, Settings.Create(options), cancellationToken);
-        return chosen.Match<TypeSystemWork<string>>(
-            r => Save(reading, export, own.TypeSystem, r.TypeSystem, language, options, notes, path, callbacks, cancellationToken),
-            u => new TypeSystemWork<string>.Unreadable { Module = new UnreadableModule { Module = module, Why = u.Thrown.SourceException } },
-            static c => new TypeSystemWork<string>.Closed { Module = c.Module });
+        return chosen switch
+        {
+            TypeSystemRead.Read r => Save(reading, export, own.TypeSystem, r.TypeSystem, language, options, notes, path, callbacks, cancellationToken),
+            TypeSystemRead.Unreadable u => new TypeSystemWork<string>.Unreadable { Module = new UnreadableModule { Module = module, Why = u.Thrown.SourceException } },
+            TypeSystemRead.Closed c => new TypeSystemWork<string>.Closed { Module = c.Module },
+        };
     }
 
     private static TypeSystemWork<string> SaveUnreadable(ModuleReadLease reading, CodeExport export, LoadedModule module, TypeSystemRead.Unreadable unreadable,

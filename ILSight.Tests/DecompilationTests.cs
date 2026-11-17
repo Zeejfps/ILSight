@@ -183,11 +183,11 @@ public sealed class DecompilationTests
         var second = await LoadedAssemblies.ReadChosenTypeSystemAsync(secondReading, Trees.TestAssembly, dynamicOff, CancellationToken.None);
         var defaults = await LoadedAssemblies.ReadChosenTypeSystemAsync(secondReading, Trees.TestAssembly, Settings.Create(), CancellationToken.None);
 
-        var ownTypeSystem = Assert.IsType<TypeSystemRead.Read>(own).TypeSystem;
-        var chosen = Assert.IsType<TypeSystemRead.Read>(first).TypeSystem;
-        Assert.Same(chosen, Assert.IsType<TypeSystemRead.Read>(second).TypeSystem);
+        var ownTypeSystem = UnionAsserts.GetCase<TypeSystemRead.Read>(own).TypeSystem;
+        var chosen = UnionAsserts.GetCase<TypeSystemRead.Read>(first).TypeSystem;
+        Assert.Same(chosen, UnionAsserts.GetCase<TypeSystemRead.Read>(second).TypeSystem);
         Assert.NotSame(ownTypeSystem, chosen);
-        Assert.Same(ownTypeSystem, Assert.IsType<TypeSystemRead.Read>(defaults).TypeSystem);
+        Assert.Same(ownTypeSystem, UnionAsserts.GetCase<TypeSystemRead.Read>(defaults).TypeSystem);
     }
 
     [Fact]

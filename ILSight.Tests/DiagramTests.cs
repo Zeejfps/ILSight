@@ -20,7 +20,7 @@ public sealed class DiagramTests : IDisposable
     private static async Task<MetadataModule> MainOfAsync(LoadedModule module)
     {
         var read = await LoadedAssemblies.ReadTypeSystemAheadAsync(module, CancellationToken.None);
-        return Assert.IsType<TypeSystemRead.Read>(read).TypeSystem.MainModule;
+        return UnionAsserts.GetCase<TypeSystemRead.Read>(read).TypeSystem.MainModule;
     }
 
     private readonly TempDir _temp = new();
@@ -68,7 +68,7 @@ public sealed class DiagramTests : IDisposable
     {
         var folder = _temp.PathOf("diagram");
 
-        var page = Assert.IsType<TypeSystemWork<string>.Done>((await ClassDiagrams.WriteAsync(Trees.TestAssembly, folder)).GetValue()).Value;
+        var page = UnionAsserts.GetCase<TypeSystemWork<string>.Done>((await ClassDiagrams.WriteAsync(Trees.TestAssembly, folder)).GetValue()).Value;
 
         Assert.Equal(Path.Combine(folder, ClassDiagrams.PageFileName), page);
         Assert.True(File.Exists(Path.Combine(folder, "script.js")));

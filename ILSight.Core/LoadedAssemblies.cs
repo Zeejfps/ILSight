@@ -347,10 +347,12 @@ public static class LoadedAssemblies
     private static TypeSystemWork<T> MatchWork<T>(LoadedModule module, TypeSystemRead read, ModuleReadLease reading,
         Func<ModuleReadLease, DecompilerTypeSystem, T> work)
     {
-        return read.Match<TypeSystemWork<T>>(
-            r => new TypeSystemWork<T>.Done { Value = work(reading, r.TypeSystem) },
-            u => new TypeSystemWork<T>.Unreadable { Module = new UnreadableModule { Module = module, Why = u.Thrown.SourceException } },
-            c => new TypeSystemWork<T>.Closed { Module = c.Module });
+        return read switch
+        {
+            TypeSystemRead.Read r => new TypeSystemWork<T>.Done { Value = work(reading, r.TypeSystem) },
+            TypeSystemRead.Unreadable u => new TypeSystemWork<T>.Unreadable { Module = new UnreadableModule { Module = module, Why = u.Thrown.SourceException } },
+            TypeSystemRead.Closed c => new TypeSystemWork<T>.Closed { Module = c.Module },
+        };
     }
 
     /// <summary>The reads of <paramref name="modules"/>' type systems, each added to <paramref name="reading"/>, the
@@ -364,7 +366,12 @@ public static class LoadedAssemblies
         foreach (var module in modules)
         {
             var outcome = await ReadTypeSystemAsync(reading, module, ct);
-            var typeSystem = outcome.Match<DecompilerTypeSystem?>(static r => r.TypeSystem, u => NoteUnreadable(unreadable, module, u), static _ => null);
+            var typeSystem = outcome switch
+            {
+                TypeSystemRead.Read r => r.TypeSystem,
+                TypeSystemRead.Unreadable u => NoteUnreadable(unreadable, module, u),
+                TypeSystemRead.Closed => null,
+            };
             if (outcome is not TypeSystemRead.Closed)
             {
                 asked.Add(module);

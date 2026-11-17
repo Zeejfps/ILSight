@@ -23,7 +23,7 @@ public sealed class ApiDiffTests
     {
         var opened = s_opened.Value;
         var compared = (await ApiEntries.CompareAsync(opened.Left, opened.Right, scope, CancellationToken.None)).GetValue();
-        return Assert.IsType<TypeSystemWork<ApiDiff>.Done>(compared).Value;
+        return UnionAsserts.GetCase<TypeSystemWork<ApiDiff>.Done>(compared).Value;
     }
 
     [Fact]

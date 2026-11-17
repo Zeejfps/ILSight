@@ -24,7 +24,7 @@ public sealed class ExportTests : IDisposable
         var path = _temp.PathOf("Calculator.cs");
 
         var saved = await CodeFiles.SaveAsync(TestSession.Shared, calculator, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, path);
-        Assert.IsType<TypeSystemWork<string>.Done>(saved.GetValue());
+        UnionAsserts.GetCase<TypeSystemWork<string>.Done>(saved.GetValue());
 
         var shown = Documents.GetText(await Trees.CalculatorDocumentAsync(DecompilationLanguage.CSharp));
         Assert.Equal(shown, await File.ReadAllTextAsync(path));
@@ -37,7 +37,7 @@ public sealed class ExportTests : IDisposable
         var path = _temp.PathOf("Fixtures.cs");
 
         var saved = await CodeFiles.SaveAsync(TestSession.Shared, fixtures, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, path);
-        Assert.IsType<TypeSystemWork<string>.Done>(saved.GetValue());
+        UnionAsserts.GetCase<TypeSystemWork<string>.Done>(saved.GetValue());
 
         var code = await File.ReadAllTextAsync(path);
         Assert.Contains("public class Calculator<T>", code);
@@ -51,7 +51,7 @@ public sealed class ExportTests : IDisposable
 
         var fixtures = await Trees.TestAssembly.FixturesAsync();
         var saved = await CodeFiles.SaveAsync(TestSession.Shared, fixtures, DecompilationLanguage.ILWithCSharp, DecompilerOptions.Default, EnglishNotes.Instance, path);
-        Assert.IsType<TypeSystemWork<string>.Done>(saved.GetValue());
+        UnionAsserts.GetCase<TypeSystemWork<string>.Done>(saved.GetValue());
 
         var code = await File.ReadAllTextAsync(path);
         Assert.Contains("// double grown = Radius;", code);
@@ -65,7 +65,7 @@ public sealed class ExportTests : IDisposable
 
         var root = await Trees.TestAssembly.ReadRootAsync();
         var saved = await CodeFiles.SaveAsync(TestSession.Shared, root, DecompilationLanguage.IL, DecompilerOptions.Default, EnglishNotes.Instance, path);
-        Assert.IsType<TypeSystemWork<string>.Done>(saved.GetValue());
+        UnionAsserts.GetCase<TypeSystemWork<string>.Done>(saved.GetValue());
 
         var code = await File.ReadAllTextAsync(path);
         Assert.Contains(".assembly ILSight.Tests", code);
@@ -79,7 +79,7 @@ public sealed class ExportTests : IDisposable
         var path = _temp.PathOf("Tests.cs");
 
         var save = await CodeFiles.SaveAsync(TestSession.Shared, root, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, path);
-        Assert.IsType<TypeSystemWork<string>.Done>(save.GetValue());
+        UnionAsserts.GetCase<TypeSystemWork<string>.Done>(save.GetValue());
 
         var shown = Documents.GetText(await root.DecompileAsync(DecompilationLanguage.CSharp));
         var saved = await File.ReadAllTextAsync(path);
@@ -96,7 +96,7 @@ public sealed class ExportTests : IDisposable
         var path = _temp.PathOf("Fixtures.cs");
 
         var save = await CodeFiles.SaveAsync(TestSession.Shared, fixtures, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, path);
-        Assert.IsType<TypeSystemWork<string>.Done>(save.GetValue());
+        UnionAsserts.GetCase<TypeSystemWork<string>.Done>(save.GetValue());
 
         var shown = Documents.GetText(await fixtures.DecompileAsync(DecompilationLanguage.CSharp));
         var saved = await File.ReadAllTextAsync(path);
@@ -173,7 +173,7 @@ public sealed class ExportTests : IDisposable
         var path = _temp.PathOf("Tests.pdb");
 
         Assert.True(assembly.CanGeneratePdb);
-        Assert.IsType<TypeSystemWork<string>.Done>((await AssemblyExport.GeneratePdbAsync(assembly, DecompilerOptions.Default, path)).GetValue());
+        UnionAsserts.GetCase<TypeSystemWork<string>.Done>((await AssemblyExport.GeneratePdbAsync(assembly, DecompilerOptions.Default, path)).GetValue());
 
         using var stream = File.OpenRead(path);
         using var provider = MetadataReaderProvider.FromPortablePdbStream(stream);

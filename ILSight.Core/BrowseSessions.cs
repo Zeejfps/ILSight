@@ -183,10 +183,12 @@ public static class BrowseSessions
         if (module is not null)
         {
             var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, module, ct);
-            return read.Match<ChildrenState>(
-                r => BuildChildren(session, node, new ChildrenReads { Main = r.TypeSystem.MainModule }),
-                static u => new ChildrenState.Failed(u.Thrown.SourceException),
-                static _ => new ChildrenState.Ready([]));
+            return read switch
+            {
+                TypeSystemRead.Read r => BuildChildren(session, node, new ChildrenReads { Main = r.TypeSystem.MainModule }),
+                TypeSystemRead.Unreadable u => new ChildrenState.Failed(u.Thrown.SourceException),
+                TypeSystemRead.Closed => new ChildrenState.Ready([]),
+            };
         }
 
         var derivedOf = BrowseNodes.FindDerivedTypesModule(node.Subject);
@@ -284,10 +286,12 @@ public static class BrowseSessions
     internal static Outcome<Lookup<BrowseNode>> FindAmongReadable<TState>(TypeSystemWork<ChildrenState> children, TState state,
         Func<IReadOnlyList<BrowseNode>, TState, BrowseNode?> pick)
     {
-        return children.Match(
-            done => FindAmong(done.Value, state, pick),
-            static unreadable => new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Unreadable { Module = unreadable.Module }),
-            static _ => new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound()));
+        return children switch
+        {
+            TypeSystemWork<ChildrenState>.Done done => FindAmong(done.Value, state, pick),
+            TypeSystemWork<ChildrenState>.Unreadable unreadable => new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Unreadable { Module = unreadable.Module }),
+            TypeSystemWork<ChildrenState>.Closed => new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound()),
+        };
     }
 
     /// <summary>Where the children of <paramref name="node"/> stand once built, as <see cref="GetChildrenAsync"/> builds
@@ -304,13 +308,15 @@ public static class BrowseSessions
 
         using var reading = LoadedAssemblies.BeginReading();
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, module, ct);
-        return await read.Match<Task<TypeSystemWork<ChildrenState>>>(
-            async _ => new TypeSystemWork<ChildrenState>.Done { Value = await GetChildrenAsync(session, node, ct) },
-            u => Task.FromResult<TypeSystemWork<ChildrenState>>(new TypeSystemWork<ChildrenState>.Unreadable
+        return read switch
+        {
+            TypeSystemRead.Read => new TypeSystemWork<ChildrenState>.Done { Value = await GetChildrenAsync(session, node, ct) },
+            TypeSystemRead.Unreadable u => new TypeSystemWork<ChildrenState>.Unreadable
             {
                 Module = new UnreadableModule { Module = module, Why = u.Thrown.SourceException },
-            }),
-            static c => Task.FromResult<TypeSystemWork<ChildrenState>>(new TypeSystemWork<ChildrenState>.Closed { Module = c.Module }));
+            },
+            TypeSystemRead.Closed c => new TypeSystemWork<ChildrenState>.Closed { Module = c.Module },
+        };
     }
 
     private static async Task<Outcome<Lookup<BrowseNode>>> FindInPackageAsync(BrowseSession session, BrowseNode packageRoot,

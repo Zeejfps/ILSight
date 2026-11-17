@@ -128,11 +128,13 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
         ExportTurn.Started start, CancellationToken ct)
     {
         var outcome = await RunAsync(work, start, ct);
-        return outcome.Match(
-            static done => done.Value.Match<ExportOutcome<T>>(
-                static d => new ExportOutcome<T>.Done(d.Value),
-                static u => new ExportOutcome<T>.Failed(u.Module.Why),
-                static closed => new ExportOutcome<T>.Closed(closed.Module.FilePath.FileName)),
+        return outcome.Match<ExportOutcome<T>>(
+            static done => done.Value switch
+            {
+                TypeSystemWork<T>.Done d => new ExportOutcome<T>.Done(d.Value),
+                TypeSystemWork<T>.Unreadable u => new ExportOutcome<T>.Failed(u.Module.Why),
+                TypeSystemWork<T>.Closed closed => new ExportOutcome<T>.Closed(closed.Module.FilePath.FileName),
+            },
             static stopped => new ExportOutcome<T>.Stopped(),
             static closed => new ExportOutcome<T>.Closed(closed.Assembly),
             static failed => new ExportOutcome<T>.Failed(failed.Error));

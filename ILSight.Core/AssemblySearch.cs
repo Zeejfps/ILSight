@@ -44,10 +44,12 @@ public static class AssemblySearch
         using var reading = LoadedAssemblies.BeginReading();
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, search.CancellationToken);
         // One released (closed) before is passed over, as one no longer listed.
-        return await read.Match(
-            r => TrySearchAssemblyAsync(search, assembly, r.TypeSystem.MainModule, ct),
-            static u => Task.FromResult<Exception?>(u.Thrown.SourceException),
-            static _ => Task.FromResult<Exception?>(null));
+        return read switch
+        {
+            TypeSystemRead.Read r => await TrySearchAssemblyAsync(search, assembly, r.TypeSystem.MainModule, ct),
+            TypeSystemRead.Unreadable u => u.Thrown.SourceException,
+            TypeSystemRead.Closed => null,
+        };
     }
 
     // What the library throws on the assembly's metadata (as placing a match does) is the assembly's failure, said in

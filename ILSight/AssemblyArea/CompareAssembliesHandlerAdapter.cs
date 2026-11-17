@@ -23,10 +23,11 @@ public sealed class CompareAssembliesHandlerAdapter(ErrorLog errors) : CompareAs
         ct.ThrowIfCancellationRequested();
         return compared switch
         {
-            Outcome<TypeSystemWork<ApiDiff>>.Ok ok => ok.Value.Match<Outcome<ModuleRead<ApiDiff>>>(
-                static done => new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Read { Value = done.Value }),
-                static unreadable => new Outcome<ModuleRead<ApiDiff>>.Failed(unreadable.Module.Why),
-                static closed => new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Closed { Module = closed.Module })),
+            Outcome<TypeSystemWork<ApiDiff>>.Ok { Value: TypeSystemWork<ApiDiff>.Done done } =>
+                new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Read { Value = done.Value }),
+            Outcome<TypeSystemWork<ApiDiff>>.Ok { Value: TypeSystemWork<ApiDiff>.Unreadable unreadable } => new Outcome<ModuleRead<ApiDiff>>.Failed(unreadable.Module.Why),
+            Outcome<TypeSystemWork<ApiDiff>>.Ok { Value: TypeSystemWork<ApiDiff>.Closed closed } =>
+                new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Closed { Module = closed.Module }),
             Outcome<TypeSystemWork<ApiDiff>>.Failed failed => new Outcome<ModuleRead<ApiDiff>>.Failed(failed.Error),
         };
     }

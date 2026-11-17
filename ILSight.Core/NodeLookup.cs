@@ -118,10 +118,12 @@ public static class NodeLookup
         }
 
         var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
-        return await read.Match(
-            r => BrowseSessions.FindOrAncestorAsync(session, assembly, r.TypeSystem.MainModule, handle, ct),
-            u => Task.FromResult<Outcome<Lookup<BrowseNode>>>(new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromUnreadable<BrowseNode>(assembly, u))),
-            static _ => Task.FromResult<Outcome<Lookup<BrowseNode>>>(new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound())));
+        return read switch
+        {
+            TypeSystemRead.Read r => await BrowseSessions.FindOrAncestorAsync(session, assembly, r.TypeSystem.MainModule, handle, ct),
+            TypeSystemRead.Unreadable u => new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromUnreadable<BrowseNode>(assembly, u)),
+            TypeSystemRead.Closed => new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound()),
+        };
     }
 
     /// <summary>The metadata table row that defines what <paramref name="reference"/> points at: the row
@@ -156,10 +158,12 @@ public static class NodeLookup
         foreach (var assembly in assemblies)
         {
             var read = await LoadedAssemblies.ReadTypeSystemAsync(reading, assembly, ct);
-            var found = await read.Match(
-                r => BrowseSessions.FindByIdAsync(session, assembly, r.TypeSystem.MainModule, idString, ct),
-                u => Task.FromResult<Outcome<Lookup<BrowseNode>>>(new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromUnreadable<BrowseNode>(assembly, u))),
-                static _ => Task.FromResult<Outcome<Lookup<BrowseNode>>>(new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound())));
+            var found = read switch
+            {
+                TypeSystemRead.Read r => await BrowseSessions.FindByIdAsync(session, assembly, r.TypeSystem.MainModule, idString, ct),
+                TypeSystemRead.Unreadable u => new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromUnreadable<BrowseNode>(assembly, u)),
+                TypeSystemRead.Closed => new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound()),
+            };
             if (found is Outcome<Lookup<BrowseNode>>.Ok { Value: Lookup<BrowseNode>.Found })
             {
                 return found;

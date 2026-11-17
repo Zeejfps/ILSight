@@ -298,14 +298,16 @@ public static class AssemblyExport
         // The type system these settings read, awaited and matched before the read starts (CJ8).
         var settings = Settings.Create(options);
         var read = await LoadedAssemblies.ReadChosenTypeSystemAsync(reading, assembly, settings, cancellationToken);
-        return read.Match(
-            r => TryGeneratePdb(assembly, r.TypeSystem, settings, folder, embedSources, progress, callbacks, cancellationToken),
-            u => new PdbFailure.NotWritten
+        return read switch
+        {
+            TypeSystemRead.Read r => TryGeneratePdb(assembly, r.TypeSystem, settings, folder, embedSources, progress, callbacks, cancellationToken),
+            TypeSystemRead.Unreadable u => new PdbFailure.NotWritten
             {
                 Assembly = assembly,
                 Error = new ExportError { Error = u.Thrown.SourceException },
             },
-            static c => throw new InvalidOperationException($"'{c.Module.FilePath}' was exported after its release: the export holds a reading of each assembly it exports."));
+            TypeSystemRead.Closed c => throw new InvalidOperationException($"'{c.Module.FilePath}' was exported after its release: the export holds a reading of each assembly it exports."),
+        };
     }
 
     private static PdbFailure? TryGeneratePdb(LoadedModule assembly, DecompilerTypeSystem chosenTypeSystem, DecompilerSettings settings, string folder,

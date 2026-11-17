@@ -44,20 +44,13 @@ public static partial class ClassDiagrams
     {
         var work = await LoadedAssemblies.WithTypeSystemAsync(assembly, (_, typeSystem) => ReadDiagram(assembly, typeSystem.MainModule, progress,
             cancellationToken), cancellationToken);
-        if (work is TypeSystemWork<Outcome<DiagramRead>>.Unreadable unreadable)
+        return work switch
         {
-            return new Outcome<TypeSystemWork<string>>.Ok(new TypeSystemWork<string>.Unreadable { Module = unreadable.Module });
-        }
-
-        if (work is TypeSystemWork<Outcome<DiagramRead>>.Closed closed)
-        {
-            return new Outcome<TypeSystemWork<string>>.Ok(new TypeSystemWork<string>.Closed { Module = closed.Module });
-        }
-
-        return ((TypeSystemWork<Outcome<DiagramRead>>.Done)work).Value switch
-        {
-            Outcome<DiagramRead>.Failed failed => new Outcome<TypeSystemWork<string>>.Failed(failed.Error),
-            Outcome<DiagramRead>.Ok read => WritePage(folder, read.Value),
+            TypeSystemWork<Outcome<DiagramRead>>.Done { Value: Outcome<DiagramRead>.Ok read } => WritePage(folder, read.Value),
+            TypeSystemWork<Outcome<DiagramRead>>.Done { Value: Outcome<DiagramRead>.Failed failed } => new Outcome<TypeSystemWork<string>>.Failed(failed.Error),
+            TypeSystemWork<Outcome<DiagramRead>>.Unreadable unreadable =>
+                new Outcome<TypeSystemWork<string>>.Ok(new TypeSystemWork<string>.Unreadable { Module = unreadable.Module }),
+            TypeSystemWork<Outcome<DiagramRead>>.Closed closed => new Outcome<TypeSystemWork<string>>.Ok(new TypeSystemWork<string>.Closed { Module = closed.Module }),
         };
     }
 
