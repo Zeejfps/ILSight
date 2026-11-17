@@ -59,21 +59,23 @@ public sealed class ExportWriter(ExportWriter.IPorts ports)
 
         var started = ports.Now;
         var subject = work.Subject;
-        var report = await work.Match(
-            code => WriteAsync(token => ports.WriteCodeFileAsync(code, start, token), start, ticket, subject, started,
+        var report = await (work switch
+        {
+            ExportWork.CodeFile code => WriteAsync(token => ports.WriteCodeFileAsync(code, start, token), start, ticket, subject, started,
                 static (r, written) => Exports.ReportWritten(r, written), ct),
-            project => WriteAsync(token => ports.WriteProjectAsync(project, start, token), start, ticket, subject, started,
+            ExportWork.Project project => WriteAsync(token => ports.WriteProjectAsync(project, start, token), start, ticket, subject, started,
                 (r, exported) => Exports.ReportProjects(r, [exported], project.ProjectFile), ct),
-            solution => WriteAsync(token => ports.WriteSolutionAsync(solution, start, token), start, ticket, subject, started,
-                (r, exported) => Exports.ReportProjects(r, exported, solution.SolutionFile), ct),
-            pdb => WriteAsync(token => ports.WritePdbAsync(pdb, start, token), start, ticket, subject, started,
+            ExportWork.Solution solution => WriteAsync(token => ports.WriteSolutionAsync(solution, start, token), start, ticket, subject,
+                started, (r, exported) => Exports.ReportProjects(r, exported, solution.SolutionFile), ct),
+            ExportWork.Pdb pdb => WriteAsync(token => ports.WritePdbAsync(pdb, start, token), start, ticket, subject, started,
                 static (r, written) => Exports.ReportWritten(r, written), ct),
-            pdbs => WriteAsync(token => ports.WritePdbsAsync(pdbs, start, token), start, ticket, subject, started,
+            ExportWork.Pdbs pdbs => WriteAsync(token => ports.WritePdbsAsync(pdbs, start, token), start, ticket, subject, started,
                 (r, failures) => Exports.ReportPdbs(r, pdbs.Assemblies, failures, pdbs.Folder), ct),
-            diagram => WriteAsync(token => ports.WriteDiagramAsync(diagram, start, token), start, ticket, subject, started,
+            ExportWork.Diagram diagram => WriteAsync(token => ports.WriteDiagramAsync(diagram, start, token), start, ticket, subject, started,
                 (r, page) => Exports.OpenDiagram(viewCommands, r, page), ct),
-            folder => WriteAsync(token => ports.ExtractPackageFolderAsync(folder, start, token), start, ticket, subject, started,
-                static (r, extracted) => Exports.ReportExtracted(r, extracted), ct));
+            ExportWork.PackageFolder folder => WriteAsync(token => ports.ExtractPackageFolderAsync(folder, start, token), start, ticket,
+                subject, started, static (r, extracted) => Exports.ReportExtracted(r, extracted), ct),
+        });
         finished.Add(report);
     }
 
@@ -86,8 +88,9 @@ public sealed class ExportWriter(ExportWriter.IPorts ports)
         var job = ticket.Job;
         var elapsed = ports.MeasureSince(started);
         var folderExists = ports.IsFolderThere(job.Folder);
-        return outcome.Match(
-            done => complete(new ExportReport
+        return outcome switch
+        {
+            ExportOutcome<T>.Done done => complete(new ExportReport
             {
                 Run = run,
                 Job = job,
@@ -95,7 +98,7 @@ public sealed class ExportWriter(ExportWriter.IPorts ports)
                 Elapsed = elapsed,
                 FolderExists = folderExists,
             }, done.Value),
-            _ => new ExportReport
+            ExportOutcome<T>.Stopped => new ExportReport
             {
                 Run = run,
                 Job = job,
@@ -103,7 +106,7 @@ public sealed class ExportWriter(ExportWriter.IPorts ports)
                 Elapsed = elapsed,
                 FolderExists = folderExists,
             },
-            closed => new ExportReport
+            ExportOutcome<T>.Closed closed => new ExportReport
             {
                 Run = run,
                 Job = job,
@@ -111,13 +114,14 @@ public sealed class ExportWriter(ExportWriter.IPorts ports)
                 Elapsed = elapsed,
                 FolderExists = folderExists,
             },
-            failed => new ExportReport
+            ExportOutcome<T>.Failed failed => new ExportReport
             {
                 Run = run,
                 Job = job,
                 End = new ExportEnd.Failed { Subject = subject, Error = failed.Error },
                 Elapsed = elapsed,
                 FolderExists = folderExists,
-            });
+            },
+        };
     }
 }

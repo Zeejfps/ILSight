@@ -4,15 +4,11 @@ namespace ILSight.ExportArea;
 
 /// <summary>How an export's turn in the queue goes: it starts, or it was taken out of the queue
 /// before its turn and must not run.</summary>
-public abstract record ExportTurn
+public union ExportTurn(ExportTurn.Started, ExportTurn.Withdrawn)
 {
-    private ExportTurn()
-    {
-    }
-
     /// <summary>What an export works with once its turn comes: the token that cancels it and where it
     /// reports how far it has got. It ends its own turn with <see cref="EndTurn"/>.</summary>
-    public sealed record Started : ExportTurn
+    public sealed record Started
     {
         private readonly Action _endTurn;
 
@@ -39,5 +35,5 @@ public abstract record ExportTurn
     }
 
     /// <summary>The export was taken out of the queue before its turn.</summary>
-    public sealed record Withdrawn : ExportTurn;
+    public sealed record Withdrawn;
 }

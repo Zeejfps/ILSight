@@ -53,7 +53,7 @@ public sealed class SettlingWorkflowsTests
         d.RunUntil(() => d.AppState.FinishedExports.Count == 1);
         d.Settle();
 
-        var failed = Assert.IsType<ExportEnd.Failed>(Assert.Single(d.AppState.FinishedExports).End);
+        var failed = UnionAsserts.GetCase<ExportEnd.Failed>(Assert.Single(d.AppState.FinishedExports).End);
         Assert.Equal("broken", failed.Error.Message);
         Assert.False(d.AppState.Export.IsRunning);
         Assert.Equal("broken", ReportedOnce(d.AppState).Error.Message);

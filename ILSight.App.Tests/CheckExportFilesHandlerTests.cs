@@ -33,7 +33,7 @@ public sealed class CheckExportFilesHandlerTests
 
         await new CheckExportFilesHandler(ports).HandleAsync(checks, firstCheck, CancellationToken.None);
 
-        Assert.Equal("Access is denied.", Assert.IsType<ExportFileLook.Failed>(checks.FindLook(Folder, KeyFile)).Why);
+        Assert.Equal("Access is denied.", UnionAsserts.GetCase<ExportFileLook.Failed>(checks.FindLook(Folder, KeyFile)).Why);
         Assert.Null(checks.FindFacts(Folder, KeyFile));
         var secondCheck = checks.StartCheck(Folder, KeyFile);
         Assert.Null(secondCheck);
@@ -54,7 +54,7 @@ public sealed class CheckExportFilesHandlerTests
         await new CheckExportFilesHandler(new FakeCheckExportFilesHandlerPorts { FilledFolders = [Folder] }).HandleAsync(checks, retried, CancellationToken.None);
 
         Assert.True(retried.IsOf(Folder, ""));
-        Assert.IsType<ExportFileLook.Checking>(lookWhileRetried);
+        UnionAsserts.GetCase<ExportFileLook.Checking>(lookWhileRetried);
         Assert.Equal(new ExportFileFacts { FolderHoldsFiles = true, IsKeyFileMissing = false }, checks.FindFacts(Folder, ""));
         var check = checks.Retry();
         Assert.Null(check);

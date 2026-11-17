@@ -30,11 +30,14 @@ internal static class ExportReportText
     /// with how many problems, and how long it took; or that it was refused, and why.</summary>
     public static string DescribeOutcome(Strings t, ExportReport report)
     {
-        return report.End.Match((t, report.Elapsed, Name: OneLineText.Name(report.Job.Name)),
-            static (s, finished) => DescribeFinished(s.t, finished, s.Elapsed),
-            static (s, _) => s.t.ExportsCancelled,
-            static (s, closed) => s.t.ExportSummaryAssemblyClosed(name: s.Name, assembly: OneLineText.Name(closed.Assembly)),
-            static (s, _) => s.t.ExportsFailed);
+        return report.End switch
+        {
+            ExportEnd.Finished finished => DescribeFinished(t, finished, report.Elapsed),
+            ExportEnd.Cancelled => t.ExportsCancelled,
+            ExportEnd.AssemblyClosed closed => t.ExportSummaryAssemblyClosed(name: OneLineText.Name(report.Job.Name),
+                assembly: OneLineText.Name(closed.Assembly)),
+            ExportEnd.Failed => t.ExportsFailed,
+        };
     }
 
     private static string DescribeFinished(Strings t, ExportEnd.Finished finished, TimeSpan elapsed)
@@ -68,11 +71,14 @@ internal static class ExportReportText
 
     private static string Summarize(Strings t, ExportReport report)
     {
-        return report.End.Match((t, Name: OneLineText.Name(report.Job.Name)),
-            static (s, finished) => SummarizeFinished(s.t, s.Name, finished),
-            static (s, _) => s.t.ExportSummaryCancelled(s.Name),
-            static (s, closed) => s.t.ExportSummaryAssemblyClosed(name: s.Name, assembly: OneLineText.Name(closed.Assembly)),
-            static (s, _) => s.t.ExportSummaryFailed(s.Name));
+        var name = OneLineText.Name(report.Job.Name);
+        return report.End switch
+        {
+            ExportEnd.Finished finished => SummarizeFinished(t, name, finished),
+            ExportEnd.Cancelled => t.ExportSummaryCancelled(name),
+            ExportEnd.AssemblyClosed closed => t.ExportSummaryAssemblyClosed(name: name, assembly: OneLineText.Name(closed.Assembly)),
+            ExportEnd.Failed => t.ExportSummaryFailed(name),
+        };
     }
 
     private static string SummarizeFinished(Strings t, string name, ExportEnd.Finished finished)
@@ -106,15 +112,17 @@ internal static class ExportReportText
         text.AppendLine(OneLineText.Name(report.Job.Folder));
         text.AppendLine(t.ExportTook(FormatDuration(t, report.Elapsed)));
         text.AppendLine();
-        report.End.Switch((text, t, kind: report.Job.Kind),
-            static (s, finished) => WriteFinished(s.text, s.t, s.kind, finished),
-            static (_, _) =>
-            {
-            },
-            static (_, _) =>
-            {
-            },
-            static (s, failed) => WriteFailure(s.text, s.t, s.kind, failed));
+        switch (report.End)
+        {
+            case ExportEnd.Finished finished:
+                WriteFinished(text, t, report.Job.Kind, finished);
+                break;
+            case ExportEnd.Failed failed:
+                WriteFailure(text, t, report.Job.Kind, failed);
+                break;
+            case ExportEnd.Cancelled or ExportEnd.AssemblyClosed:
+                break;
+        }
     }
 
     private static void WriteFinished(StringBuilder text, Strings t, ExportKind kind, ExportEnd.Finished finished)
@@ -188,12 +196,14 @@ internal static class ExportReportText
     /// <summary><paramref name="problem"/> of an export of <paramref name="kind"/> in a line.</summary>
     public static string Headline(Strings t, ExportKind kind, ExportProblem problem)
     {
-        return problem.Match(
-            notDecompiled: static part => OneLineText.Message(part.Error.Message),
-            noPdbEntry: pdb => t.ErrorNoPdbEntry(OneLineText.Name(pdb.Assembly)),
-            pdbNotWritten: static pdb => $"{OneLineText.Name(pdb.Assembly)}: {OneLineText.Message(pdb.Error.Message)}",
-            outsideFolder: outside => t.ExportOutsideFolder(OneLineText.Name(outside.Path)),
-            fileNotWritten: file => $"{OneLineText.Name(file.Path)}: {OneLineText.Message(FailureTexts.DescribeCause(t, file.Error.Error))}");
+        return problem switch
+        {
+            ExportProblem.NotDecompiled part => OneLineText.Message(part.Error.Message),
+            ExportProblem.NoPdbEntry pdb => t.ErrorNoPdbEntry(OneLineText.Name(pdb.Assembly)),
+            ExportProblem.PdbNotWritten pdb => $"{OneLineText.Name(pdb.Assembly)}: {OneLineText.Message(pdb.Error.Message)}",
+            ExportProblem.OutsideFolder outside => t.ExportOutsideFolder(OneLineText.Name(outside.Path)),
+            ExportProblem.FileNotWritten file => $"{OneLineText.Name(file.Path)}: {OneLineText.Message(FailureTexts.DescribeCause(t, file.Error.Error))}",
+        };
     }
 
     /// <summary>The exception behind <paramref name="problem"/> as the runtime wrote it (its type and stack trace), when
@@ -201,12 +211,13 @@ internal static class ExportReportText
     /// message.</summary>
     public static string? TechnicalDetailsOf(ExportProblem problem)
     {
-        return problem.Match<string?>(
-            notDecompiled: static part => part.Error.Details,
-            noPdbEntry: static _ => null,
-            pdbNotWritten: static pdb => pdb.Error.Details,
-            outsideFolder: static _ => null,
-            fileNotWritten: static file => file.Error.Details);
+        return problem switch
+        {
+            ExportProblem.NotDecompiled part => part.Error.Details,
+            ExportProblem.PdbNotWritten pdb => pdb.Error.Details,
+            ExportProblem.FileNotWritten file => file.Error.Details,
+            ExportProblem.NoPdbEntry or ExportProblem.OutsideFolder => null,
+        };
     }
 
     /// <summary>The failure <paramref name="failed"/> of an export of <paramref name="kind"/> in a line.</summary>

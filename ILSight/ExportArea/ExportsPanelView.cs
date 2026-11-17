@@ -590,7 +590,11 @@ internal static class ExportsPanelView
 
     private static bool OpensFolderFirst(ExportReport report)
     {
-        var isClean = report.End.Match(static finished => !finished.HasProblems, static _ => false, static _ => false, static _ => false);
+        var isClean = report.End switch
+        {
+            ExportEnd.Finished finished => !finished.HasProblems,
+            ExportEnd.Cancelled or ExportEnd.AssemblyClosed or ExportEnd.Failed => false,
+        };
         if (!isClean)
         {
             return false;
@@ -601,14 +605,16 @@ internal static class ExportsPanelView
 
     private static IconGlyph OutcomeIcon(AppIcons icons, ExportReport report)
     {
-        return report.End.Match(icons,
-            static (i, finished) => FinishedIcon(i, finished),
-            static (i, _) => i.ExportCancelled,
+        return report.End switch
+        {
+            ExportEnd.Finished finished => FinishedIcon(icons, finished),
+            ExportEnd.Cancelled => icons.ExportCancelled,
             // Refused, its assembly closed: nothing written. A mark of its own, never the cancel's or the failure's, which
             // someone scanning the marks would read as what they cancelled or what to retry; the warning's color, as
             // nothing was written that the user didn't call off, and its own words saying what and why.
-            static (i, _) => i.ExportRefused,
-            static (i, _) => i.ExportProblems);
+            ExportEnd.AssemblyClosed => icons.ExportRefused,
+            ExportEnd.Failed => icons.ExportProblems,
+        };
     }
 
     private static IconGlyph FinishedIcon(AppIcons icons, ExportEnd.Finished finished)
@@ -623,21 +629,25 @@ internal static class ExportsPanelView
 
     private static uint OutcomeColor(UiTheme theme, ExportReport report)
     {
-        return report.End.Match(theme,
-            static (th, finished) => FinishedColor(th, finished, clean: th.Success),
-            static (th, _) => th.TextMuted,
-            static (th, _) => th.Warning,
-            static (th, _) => th.Danger);
+        return report.End switch
+        {
+            ExportEnd.Finished finished => FinishedColor(theme, finished, clean: theme.Success),
+            ExportEnd.Cancelled => theme.TextMuted,
+            ExportEnd.AssemblyClosed => theme.Warning,
+            ExportEnd.Failed => theme.Danger,
+        };
     }
 
     // The outcome's own color when something went wrong, so the problem reads as well as the icon shows it.
     private static uint OutcomeTextColor(UiTheme theme, ExportReport report)
     {
-        return report.End.Match(theme,
-            static (th, finished) => FinishedColor(th, finished, clean: th.TextMuted),
-            static (th, _) => th.TextMuted,
-            static (th, _) => th.Warning,
-            static (th, _) => th.Danger);
+        return report.End switch
+        {
+            ExportEnd.Finished finished => FinishedColor(theme, finished, clean: theme.TextMuted),
+            ExportEnd.Cancelled => theme.TextMuted,
+            ExportEnd.AssemblyClosed => theme.Warning,
+            ExportEnd.Failed => theme.Danger,
+        };
     }
 
     private static uint FinishedColor(UiTheme theme, ExportEnd.Finished finished, uint clean)

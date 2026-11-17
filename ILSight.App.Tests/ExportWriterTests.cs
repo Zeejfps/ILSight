@@ -25,7 +25,7 @@ public sealed class ExportWriterTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var work = await GreeterCodeAsync(d);
         var queue = new ExportQueue();
-        var ticket = queue.Enter(work.Job);
+        var ticket = queue.Enter(((ExportWork)work).Job);
         var ports = new FakeExportWriterPorts { CodeFile = new ExportOutcome<string>.Done(work.File) };
         var finished = new List<ExportReport>();
 
@@ -35,7 +35,7 @@ public sealed class ExportWriterTests
         Assert.Equal(ticket.Run, report.Run);
         Assert.Equal(ExportKind.CSharpFile, report.Job.Kind);
         Assert.Equal(Folder, report.Job.Folder);
-        Assert.Equal([work.File], Assert.IsType<ExportEnd.Finished>(report.End).Written);
+        Assert.Equal([work.File], UnionAsserts.GetCase<ExportEnd.Finished>(report.End).Written);
         Assert.Equal(TimeSpan.FromSeconds(2), report.Elapsed);
         Assert.True(report.FolderExists);
         Assert.False(queue.IsRunning);
@@ -47,14 +47,14 @@ public sealed class ExportWriterTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var work = await GreeterCodeAsync(d);
         var queue = new ExportQueue();
-        var ticket = queue.Enter(work.Job);
+        var ticket = queue.Enter(((ExportWork)work).Job);
         var ports = new FakeExportWriterPorts { CodeFile = new ExportOutcome<string>.Stopped(), AreFoldersThere = false };
         var finished = new List<ExportReport>();
 
         await d.RunAsync(() => new ExportWriter(ports).HandleAsync(finished, new Queue<ViewCommand>(), work, ticket, CancellationToken.None));
 
         var report = Assert.Single(finished);
-        Assert.IsType<ExportEnd.Cancelled>(report.End);
+        UnionAsserts.GetCase<ExportEnd.Cancelled>(report.End);
         Assert.False(report.FolderExists);
         Assert.False(queue.IsRunning);
     }
@@ -65,14 +65,14 @@ public sealed class ExportWriterTests
         var d = AppStateDriver.OpenedWithoutScreen();
         var work = await GreeterCodeAsync(d);
         var queue = new ExportQueue();
-        var ticket = queue.Enter(work.Job);
+        var ticket = queue.Enter(((ExportWork)work).Job);
         var error = new IOException("Disk full.");
         var ports = new FakeExportWriterPorts { CodeFile = new ExportOutcome<string>.Failed(error) };
         var finished = new List<ExportReport>();
 
         await d.RunAsync(() => new ExportWriter(ports).HandleAsync(finished, new Queue<ViewCommand>(), work, ticket, CancellationToken.None));
 
-        var failed = Assert.IsType<ExportEnd.Failed>(Assert.Single(finished).End);
+        var failed = UnionAsserts.GetCase<ExportEnd.Failed>(Assert.Single(finished).End);
         Assert.Equal("Greeter", failed.Subject);
         Assert.Same(error, failed.Error);
     }
@@ -84,7 +84,7 @@ public sealed class ExportWriterTests
         var work = await GreeterCodeAsync(d);
         var queue = new ExportQueue();
         var running = queue.Enter(TestJobs.Named("Running"));
-        var ticket = queue.Enter(work.Job);
+        var ticket = queue.Enter(((ExportWork)work).Job);
         var ports = new FakeExportWriterPorts();
         var finished = new List<ExportReport>();
         queue.Withdraw(ticket.Run);
@@ -105,7 +105,7 @@ public sealed class ExportWriterTests
         var work = new ExportWork.Diagram { Assembly = assembly, Folder = Exports.GetDiagramFolder(assembly, Folder) };
         var page = Path.Combine(work.Folder, "index.html");
         var queue = new ExportQueue();
-        var ticket = queue.Enter(work.Job);
+        var ticket = queue.Enter(((ExportWork)work).Job);
         var ports = new FakeExportWriterPorts { Diagram = new ExportOutcome<string>.Done(page) };
         var finished = new List<ExportReport>();
         var viewCommands = new Queue<ViewCommand>();
@@ -113,6 +113,6 @@ public sealed class ExportWriterTests
         await d.RunAsync(() => new ExportWriter(ports).HandleAsync(finished, viewCommands, work, ticket, CancellationToken.None));
 
         Assert.Equal(page, Assert.IsType<ViewCommand.OpenFile>(Assert.Single(viewCommands)).Path);
-        Assert.Equal([page], Assert.IsType<ExportEnd.Finished>(Assert.Single(finished).End).Written);
+        Assert.Equal([page], UnionAsserts.GetCase<ExportEnd.Finished>(Assert.Single(finished).End).Written);
     }
 }

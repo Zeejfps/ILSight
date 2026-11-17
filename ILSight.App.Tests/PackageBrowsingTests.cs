@@ -152,7 +152,7 @@ public sealed class PackageBrowsingTests
         var report = app.AppState.FinishedExports[0];
         var dll = Path.Combine(folder, "lib", "net10.0", Path.GetFileName(AppStateDriver.FixturePath));
         Assert.Equal(ExportKind.Files, report.Job.Kind);
-        var finished = Assert.IsType<ExportEnd.Finished>(report.End);
+        var finished = UnionAsserts.GetCase<ExportEnd.Finished>(report.End);
         Assert.Empty(finished.Problems);
         Assert.Equal([dll, Path.Combine(folder, "readme.txt")], finished.Written);
         Assert.Equal("Read me", File.ReadAllText(Path.Combine(folder, "readme.txt")));

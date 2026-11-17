@@ -128,31 +128,35 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
         ExportTurn.Started start, CancellationToken ct)
     {
         var outcome = await RunAsync(work, start, ct);
-        return outcome.Match<ExportOutcome<T>>(
-            static done => done.Value switch
+        return outcome switch
+        {
+            ExportOutcome<TypeSystemWork<T>>.Done done => done.Value switch
             {
                 TypeSystemWork<T>.Done d => new ExportOutcome<T>.Done(d.Value),
                 TypeSystemWork<T>.Unreadable u => new ExportOutcome<T>.Failed(u.Module.Why),
                 TypeSystemWork<T>.Closed closed => new ExportOutcome<T>.Closed(closed.Module.FilePath.FileName),
             },
-            static stopped => new ExportOutcome<T>.Stopped(),
-            static closed => new ExportOutcome<T>.Closed(closed.Assembly),
-            static failed => new ExportOutcome<T>.Failed(failed.Error));
+            ExportOutcome<TypeSystemWork<T>>.Stopped => new ExportOutcome<T>.Stopped(),
+            ExportOutcome<TypeSystemWork<T>>.Closed closed => new ExportOutcome<T>.Closed(closed.Assembly),
+            ExportOutcome<TypeSystemWork<T>>.Failed failed => new ExportOutcome<T>.Failed(failed.Error),
+        };
     }
 
     private static async Task<ExportOutcome<T>> RunOverModulesAsync<T>(Func<CancellationToken, Task<Outcome<ModuleRead<T>>>> work, ExportTurn.Started start,
         CancellationToken ct)
     {
         var outcome = await RunAsync(work, start, ct);
-        return outcome.Match<ExportOutcome<T>>(
-            static done => done.Value switch
+        return outcome switch
+        {
+            ExportOutcome<ModuleRead<T>>.Done done => done.Value switch
             {
                 ModuleRead<T>.Read read => new ExportOutcome<T>.Done(read.Value),
                 ModuleRead<T>.Closed closed => new ExportOutcome<T>.Closed(closed.Module.FilePath.FileName),
             },
-            static stopped => new ExportOutcome<T>.Stopped(),
-            static closed => new ExportOutcome<T>.Closed(closed.Assembly),
-            static failed => new ExportOutcome<T>.Failed(failed.Error));
+            ExportOutcome<ModuleRead<T>>.Stopped => new ExportOutcome<T>.Stopped(),
+            ExportOutcome<ModuleRead<T>>.Closed closed => new ExportOutcome<T>.Closed(closed.Assembly),
+            ExportOutcome<ModuleRead<T>>.Failed failed => new ExportOutcome<T>.Failed(failed.Error),
+        };
     }
 
     /// <remarks>Reads the resource under a reading of its module, held until the file is written; one closed before

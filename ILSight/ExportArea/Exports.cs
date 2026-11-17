@@ -360,10 +360,12 @@ public static class Exports
             return new ExportBlocker.Checking();
         }
 
-        return files.Match<ExportBlocker?>(
-            static _ => new ExportBlocker.Checking(),
-            static looked => FindFileBlocker(looked.Facts),
-            static failed => new ExportBlocker.CheckFailed(failed.Why));
+        return files switch
+        {
+            ExportFileLook.Checking => new ExportBlocker.Checking(),
+            ExportFileLook.Checked looked => FindFileBlocker(looked.Facts),
+            ExportFileLook.Failed failed => new ExportBlocker.CheckFailed(failed.Why),
+        };
     }
 
     private static ExportBlocker? FindFileBlocker(ExportFileFacts files)

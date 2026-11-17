@@ -79,7 +79,7 @@ public sealed class ExportsPanelTests : IDisposable
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var shown = Assert.IsType<TabContent.Report>(tab.Content);
-        Assert.Equal(path, Assert.Single(Assert.IsType<ExportEnd.Finished>(shown.Export.End).Written));
+        Assert.Equal(path, Assert.Single(UnionAsserts.GetCase<ExportEnd.Finished>(shown.Export.End).Written));
         Assert.Equal("Export report", DocumentsView.Tab(app.Ui.Appearance, app.Ui.Tree, app.AppState.ListSession.Navigation, tab).Title);
         var text = Documents.GetText(ExportReportText.BuildDocument(Strings.En, [shown.Export]));
         Assert.Contains("    " + path, text);
@@ -131,7 +131,7 @@ public sealed class ExportsPanelTests : IDisposable
         app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, app.AppState.Decompiler.Setup, _temp.PathOf("Greeter.cs")));
         app.Settle();
         var runningEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running")));
-        var running = Assert.IsType<ExportTurn.Started>(await runningEntry.Turn);
+        var running = UnionAsserts.GetCase<ExportTurn.Started>(await runningEntry.Turn);
         var laterEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Later")));
         Assert.False(laterEntry.Turn.IsCompleted);
         app.Run(2);
@@ -149,7 +149,7 @@ public sealed class ExportsPanelTests : IDisposable
         var app = AppDriver.Opened();
         app.Ui.Panels.Open(DockView.Exports);
         var startEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Fixtures")));
-        var start = Assert.IsType<ExportTurn.Started>(await startEntry.Turn);
+        var start = UnionAsserts.GetCase<ExportTurn.Started>(await startEntry.Turn);
         app.Run(2);
 
         app.Frames.ClickOn(Selector.WithText("Cancel"));
@@ -202,7 +202,7 @@ public sealed class ExportsPanelTests : IDisposable
         app.Frames.Frame(2);
         app.Settle(2);
 
-        Assert.IsType<ExportEnd.AssemblyClosed>(Assert.Single(app.AppState.FinishedExports).End);
+        UnionAsserts.GetCase<ExportEnd.AssemblyClosed>(Assert.Single(app.AppState.FinishedExports).End);
         Assert.True(app.Frames.Drew("C# file · Greeter wasn't exported: ILSight.App.Tests.dll was closed"));
         var mark = app.LastTextRect(BuiltInGlyphs.Icons.ExportRefused);
         // The cancel's glyph is the row's remove button's too: drawn on the row only after the mark, as that button.
@@ -258,7 +258,7 @@ public sealed class ExportsPanelTests : IDisposable
         app.Driver.InTurn(() => ExportCommands.SaveCode(app.AppState, greeterNode, app.AppState.Decompiler.Setup, _temp.PathOf("Greeter.cs")));
         app.Settle();
         var runningEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running")));
-        var running = Assert.IsType<ExportTurn.Started>(await runningEntry.Turn);
+        var running = UnionAsserts.GetCase<ExportTurn.Started>(await runningEntry.Turn);
         var secondEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Second")));
         Assert.False(secondEntry.Turn.IsCompleted);
         var thirdEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Third")));
@@ -278,7 +278,7 @@ public sealed class ExportsPanelTests : IDisposable
         var app = AppDriver.Opened();
         app.Ui.Panels.Open(DockView.Exports);
         var startEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Both")));
-        var start = Assert.IsType<ExportTurn.Started>(await startEntry.Turn);
+        var start = UnionAsserts.GetCase<ExportTurn.Started>(await startEntry.Turn);
         start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 2, Parts = 4, Fraction = 0.5f });
         app.Run(2);
 
@@ -327,7 +327,7 @@ public sealed class ExportsPanelTests : IDisposable
     {
         var app = AppDriver.Opened();
         var startEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Fixtures")));
-        var start = Assert.IsType<ExportTurn.Started>(await startEntry.Turn);
+        var start = UnionAsserts.GetCase<ExportTurn.Started>(await startEntry.Turn);
         app.Run(2);
         Assert.False(app.Arrangement.Contains(DockPanels.Exports));
 

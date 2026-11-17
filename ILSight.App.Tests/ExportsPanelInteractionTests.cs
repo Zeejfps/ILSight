@@ -151,7 +151,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
         var app = AppDriver.Opened(height: TallWindow);
         app.Ui.Panels.Open(DockView.Exports);
         var runningEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running")));
-        var running = Assert.IsType<ExportTurn.Started>(await runningEntry.Turn);
+        var running = UnionAsserts.GetCase<ExportTurn.Started>(await runningEntry.Turn);
         var laterEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Later")));
         Assert.False(laterEntry.Turn.IsCompleted);
         app.Run(2);
@@ -178,7 +178,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
         var app = AppDriver.Opened(height: TallWindow);
         app.Ui.Panels.Open(DockView.Exports);
         var runningEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running")));
-        var running = Assert.IsType<ExportTurn.Started>(await runningEntry.Turn);
+        var running = UnionAsserts.GetCase<ExportTurn.Started>(await runningEntry.Turn);
         var secondEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Second")));
         Assert.False(secondEntry.Turn.IsCompleted);
         var thirdEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Third")));
@@ -210,7 +210,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
         var theme = app.Theme;
         app.Ui.Panels.Open(DockView.Exports);
         var runningEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running")));
-        var running = Assert.IsType<ExportTurn.Started>(await runningEntry.Turn);
+        var running = UnionAsserts.GetCase<ExportTurn.Started>(await runningEntry.Turn);
         running.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.5f });
         app.Run(2);
 
@@ -238,7 +238,7 @@ public sealed class ExportsPanelInteractionTests : IDisposable
         var app = AppDriver.Opened();
         app.Ui.Panels.Open(DockView.Exports);
         var runningEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Running")));
-        var running = Assert.IsType<ExportTurn.Started>(await runningEntry.Turn);
+        var running = UnionAsserts.GetCase<ExportTurn.Started>(await runningEntry.Turn);
         app.Run(2);
 
         Assert.False(app.Frames.Drew(BuiltInGlyphs.Text(BuiltInGlyphs.Icons.StatusLoading)));

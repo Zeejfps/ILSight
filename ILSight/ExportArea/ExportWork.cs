@@ -6,21 +6,45 @@ namespace ILSight.ExportArea;
 /// <summary>What one export the exports panel queues writes, one case per kind, with what it is written from: the
 /// export as the panel shows it (<see cref="Job"/>) and what a failure says it was exporting (<see cref="Subject"/>)
 /// follow from it.</summary>
-public abstract record ExportWork
+public union ExportWork(ExportWork.CodeFile, ExportWork.Project, ExportWork.Solution, ExportWork.Pdb, ExportWork.Pdbs,
+    ExportWork.Diagram, ExportWork.PackageFolder)
 {
-    private ExportWork()
-    {
-    }
-
     /// <summary>The export as the user asked for it: what it is named after, what it writes, and its folder.</summary>
-    public abstract ExportJob Job { get; }
+    public ExportJob Job => this switch
+    {
+        CodeFile c => new ExportJob { Name = c.Node.Text, Kind = CodeKindOf(c.Language), Folder = FolderOf(c.File) },
+        Project p => new ExportJob
+        {
+            Name = Path.GetFileNameWithoutExtension(p.ProjectFile),
+            Kind = ExportKind.Project,
+            Folder = FolderOf(p.ProjectFile),
+        },
+        Solution s => new ExportJob
+        {
+            Name = Path.GetFileNameWithoutExtension(s.SolutionFile),
+            Kind = ExportKind.Solution,
+            Folder = FolderOf(s.SolutionFile),
+        },
+        Pdb p => new ExportJob { Name = p.Assembly.Name, Kind = ExportKind.Pdb, Folder = FolderOf(p.File) },
+        Pdbs p => new ExportJob { Name = Path.GetFileName(p.Folder), Kind = ExportKind.Pdbs, Folder = p.Folder },
+        Diagram d => new ExportJob { Name = d.Assembly.Name, Kind = ExportKind.Diagram, Folder = d.Folder },
+        PackageFolder f => new ExportJob { Name = f.Name, Kind = ExportKind.Files, Folder = f.Folder },
+    };
 
     /// <summary>What a failure says the export was exporting; empty when its kind says it.</summary>
-    public abstract string Subject { get; }
+    public string Subject => this switch
+    {
+        CodeFile c => c.Node.Text,
+        Project p => p.Assembly.Name,
+        Pdb p => p.Assembly.Name,
+        Diagram d => d.Assembly.Name,
+        PackageFolder f => f.Name,
+        Solution or Pdbs => "",
+    };
 
     /// <summary>The code of <see cref="Node"/> in <see cref="Language"/>, as one file at <see cref="File"/>, which a
     /// save dialog gave, the app's notes beside the code in <see cref="Notes"/>' words.</summary>
-    public sealed record CodeFile : ExportWork
+    public sealed record CodeFile
     {
         public required BrowseNode Node { get; init; }
 
@@ -31,20 +55,11 @@ public abstract record ExportWork
         public required IDocumentNotes Notes { get; init; }
 
         public required string File { get; init; }
-
-        public override ExportJob Job => new ExportJob
-        {
-            Name = Node.Text,
-            Kind = CodeKindOf(Language),
-            Folder = FolderOf(File),
-        };
-
-        public override string Subject => Node.Text;
     }
 
     /// <summary><see cref="Assembly"/> decompiled into a C# project whose file is <see cref="ProjectFile"/>, with what
     /// <see cref="Extras"/> asks for besides.</summary>
-    public sealed record Project : ExportWork
+    public sealed record Project
     {
         public required LoadedModule Assembly { get; init; }
 
@@ -53,20 +68,11 @@ public abstract record ExportWork
         public required string ProjectFile { get; init; }
 
         public required ProjectExtras Extras { get; init; }
-
-        public override ExportJob Job => new ExportJob
-        {
-            Name = Path.GetFileNameWithoutExtension(ProjectFile),
-            Kind = ExportKind.Project,
-            Folder = FolderOf(ProjectFile),
-        };
-
-        public override string Subject => Assembly.Name;
     }
 
     /// <summary>Each of <see cref="Projects"/> decompiled into a C# project in a folder of its own beside the solution
     /// at <see cref="SolutionFile"/>.</summary>
-    public sealed record Solution : ExportWork
+    public sealed record Solution
     {
         public required IReadOnlyList<SolutionProject> Projects { get; init; }
 
@@ -75,103 +81,47 @@ public abstract record ExportWork
         public required string SolutionFile { get; init; }
 
         public required ProjectExtras Extras { get; init; }
-
-        public override ExportJob Job => new ExportJob
-        {
-            Name = Path.GetFileNameWithoutExtension(SolutionFile),
-            Kind = ExportKind.Solution,
-            Folder = FolderOf(SolutionFile),
-        };
-
-        public override string Subject => "";
     }
 
     /// <summary>A portable PDB of <see cref="Assembly"/>'s decompiled C#, written to <see cref="File"/>.</summary>
-    public sealed record Pdb : ExportWork
+    public sealed record Pdb
     {
         public required LoadedModule Assembly { get; init; }
 
         public required DecompilerOptions Options { get; init; }
 
         public required string File { get; init; }
-
-        public override ExportJob Job => new ExportJob
-        {
-            Name = Assembly.Name,
-            Kind = ExportKind.Pdb,
-            Folder = FolderOf(File),
-        };
-
-        public override string Subject => Assembly.Name;
     }
 
     /// <summary>A portable PDB of each of <see cref="Assemblies"/>, written into <see cref="Folder"/> named after the
     /// assembly.</summary>
-    public sealed record Pdbs : ExportWork
+    public sealed record Pdbs
     {
         public required IReadOnlyList<LoadedModule> Assemblies { get; init; }
 
         public required DecompilerOptions Options { get; init; }
 
         public required string Folder { get; init; }
-
-        public override ExportJob Job => new ExportJob
-        {
-            Name = Path.GetFileName(Folder),
-            Kind = ExportKind.Pdbs,
-            Folder = Folder,
-        };
-
-        public override string Subject => "";
     }
 
     /// <summary>The HTML class diagrammer of <see cref="Assembly"/>, written into <see cref="Folder"/>, a folder of its
     /// own named after it, and opened once written.</summary>
-    public sealed record Diagram : ExportWork
+    public sealed record Diagram
     {
         public required LoadedModule Assembly { get; init; }
 
         public required string Folder { get; init; }
-
-        public override ExportJob Job => new ExportJob
-        {
-            Name = Assembly.Name,
-            Kind = ExportKind.Diagram,
-            Folder = Folder,
-        };
-
-        public override string Subject => Assembly.Name;
     }
 
     /// <summary>Every file in the folder of a package <see cref="Place"/> stands for, shown as <see cref="Name"/>,
     /// written into <see cref="Folder"/> at its path from that folder.</summary>
-    public sealed record PackageFolder : ExportWork
+    public sealed record PackageFolder
     {
         public required string Name { get; init; }
 
         public required PackageFolderPlace Place { get; init; }
 
         public required string Folder { get; init; }
-
-        public override ExportJob Job => new ExportJob { Name = Name, Kind = ExportKind.Files, Folder = Folder };
-
-        public override string Subject => Name;
-    }
-
-    public TResult Match<TResult>(Func<CodeFile, TResult> codeFile, Func<Project, TResult> project, Func<Solution, TResult> solution,
-        Func<Pdb, TResult> pdb, Func<Pdbs, TResult> pdbs, Func<Diagram, TResult> diagram, Func<PackageFolder, TResult> packageFolder)
-    {
-        return this switch
-        {
-            CodeFile c => codeFile(c),
-            Project p => project(p),
-            Solution s => solution(s),
-            Pdb p => pdb(p),
-            Pdbs p => pdbs(p),
-            Diagram d => diagram(d),
-            PackageFolder f => packageFolder(f),
-            _ => throw new UnreachableException($"ExportWork.Match does not handle {GetType().Name}."),
-        };
     }
 
     private static ExportKind CodeKindOf(DecompilationLanguage language)

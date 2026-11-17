@@ -20,9 +20,15 @@ public static class ExportCommands
     public static void SaveCode(AppState appState, BrowseNode node, DecompilerSetup setup, string path)
     {
         var save = Exports.ToCodeSave(node, setup, DocumentNoteTexts.For(appState.Locale), path);
-        save.Switch(appState,
-            static (a, resource) => SaveResource(a, resource.Node, resource.File),
-            static (a, code) => StartWriting(a, code.Work));
+        switch (save)
+        {
+            case CodeSave.ResourceBytes resource:
+                SaveResource(appState, resource.Node, resource.File);
+                break;
+            case CodeSave.Code code:
+                StartWriting(appState, code.Work);
+                break;
+        }
     }
 
     /// <summary>Starts writing the bytes of the resource <paramref name="node"/> stands for to the file at

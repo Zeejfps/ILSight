@@ -142,12 +142,12 @@ public sealed class ExportDialogTests : IDisposable
         var choice = Assert.Single(setup.Assemblies.Choices);
 
         TickAll(setup, false);
-        Assert.IsType<ExportBlocker.NoAssembly>(Exports.FindBlocker(setup, Looked(NothingAmiss)));
+        UnionAsserts.GetCase<ExportBlocker.NoAssembly>(Exports.FindBlocker(setup, Looked(NothingAmiss)));
         TickAll(setup, true);
-        Assert.IsType<ExportBlocker.NoFolder>(Exports.FindBlocker(setup, Looked(NothingAmiss)));
+        UnionAsserts.GetCase<ExportBlocker.NoFolder>(Exports.FindBlocker(setup, Looked(NothingAmiss)));
         setup.Folder = FullPath;
         choice.Name = " ";
-        Assert.IsType<ExportBlocker.NamelessProject>(Exports.FindBlocker(setup, Looked(NothingAmiss)));
+        UnionAsserts.GetCase<ExportBlocker.NamelessProject>(Exports.FindBlocker(setup, Looked(NothingAmiss)));
         choice.Name = "Project";
         Assert.Null(Exports.FindBlocker(setup, Looked(NothingAmiss)));
     }
@@ -178,7 +178,7 @@ public sealed class ExportDialogTests : IDisposable
 
         var blocker = Exports.FindBlocker(setup, Looked(NothingAmiss with { IsKeyFileMissing = true }));
 
-        Assert.IsType<ExportBlocker.KeyFileMissing>(blocker);
+        UnionAsserts.GetCase<ExportBlocker.KeyFileMissing>(blocker);
         Assert.Null(Exports.FindBlocker(setup, Looked(NothingAmiss)));
     }
 
@@ -189,7 +189,7 @@ public sealed class ExportDialogTests : IDisposable
 
         var blocker = Exports.FindBlocker(setup, new ExportFileLook.Failed { Why = "Access is denied." });
 
-        Assert.Equal("Access is denied.", Assert.IsType<ExportBlocker.CheckFailed>(blocker).Why);
+        Assert.Equal("Access is denied.", UnionAsserts.GetCase<ExportBlocker.CheckFailed>(blocker).Why);
     }
 
     [Fact]
@@ -212,7 +212,7 @@ public sealed class ExportDialogTests : IDisposable
 
         var blocker = Exports.FindBlocker(setup, Looked(NothingAmiss with { IsKeyFileMissing = true }));
 
-        Assert.Equal(setup.Assemblies.Choices[0].Name, Assert.IsType<ExportBlocker.Clash>(blocker).Name);
+        Assert.Equal(setup.Assemblies.Choices[0].Name, UnionAsserts.GetCase<ExportBlocker.Clash>(blocker).Name);
     }
 
     [Fact]
@@ -641,7 +641,7 @@ public sealed class ExportDialogTests : IDisposable
 
         var pdb = _temp.PathOf(Assert.Single(d.AppState.ListSession.Assemblies.Assemblies).PdbFileName);
         Assert.True(File.Exists(pdb));
-        Assert.Contains(pdb, Assert.IsType<ExportEnd.Finished>(Assert.Single(d.AppState.FinishedExports).End).Written);
+        Assert.Contains(pdb, UnionAsserts.GetCase<ExportEnd.Finished>(Assert.Single(d.AppState.FinishedExports).End).Written);
     }
 
     [Fact]

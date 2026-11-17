@@ -94,7 +94,7 @@ public sealed class ExportTests : IDisposable
 
         var save = Exports.ToCodeSave(node, setup, DocumentNoteTexts.For(Locale.En), path);
 
-        var bytes = Assert.IsType<CodeSave.ResourceBytes>(save);
+        var bytes = UnionAsserts.GetCase<CodeSave.ResourceBytes>(save);
         Assert.Same(node, bytes.Node);
         Assert.Equal(path, bytes.File);
     }
@@ -109,7 +109,7 @@ public sealed class ExportTests : IDisposable
 
         var save = Exports.ToCodeSave(node, setup, DocumentNoteTexts.For(Locale.En), path);
 
-        var work = Assert.IsType<CodeSave.Code>(save).Work;
+        var work = UnionAsserts.GetCase<CodeSave.Code>(save).Work;
         Assert.Same(node, work.Node);
         Assert.Equal(DecompilationLanguage.IL, work.Language);
         Assert.Same(setup.Options, work.Options);
@@ -145,7 +145,7 @@ public sealed class ExportTests : IDisposable
         var report = Assert.Single(app.AppState.FinishedExports);
         Assert.Equal(["Choose the folder for the diagram"], app.Frames.FilePicker.Titles);
         Assert.Equal(ExportKind.Diagram, report.Job.Kind);
-        Assert.Equal([page], Assert.IsType<ExportEnd.Finished>(report.End).Written);
+        Assert.Equal([page], UnionAsserts.GetCase<ExportEnd.Finished>(report.End).Written);
         Assert.Equal([page], app.Frames.OpenedFiles);
         Assert.Contains("class Counter", File.ReadAllText(page));
         Assert.Empty(app.AppState.Errors.Entries);
@@ -226,7 +226,7 @@ public sealed class ExportTests : IDisposable
         var code = await File.ReadAllTextAsync(path);
         Assert.Contains("public class Greeter", code);
         Assert.DoesNotContain("string.Concat", code);
-        Assert.IsType<ExportEnd.Finished>(Assert.Single(app.AppState.FinishedExports).End);
+        UnionAsserts.GetCase<ExportEnd.Finished>(Assert.Single(app.AppState.FinishedExports).End);
     }
 
     [Fact]
@@ -244,7 +244,7 @@ public sealed class ExportTests : IDisposable
         app.Settle();
 
         var report = Assert.Single(app.AppState.FinishedExports);
-        var closed = Assert.IsType<ExportEnd.AssemblyClosed>(report.End);
+        var closed = UnionAsserts.GetCase<ExportEnd.AssemblyClosed>(report.End);
         Assert.Equal("ILSight.App.Tests.dll", closed.Assembly);
         Assert.Equal("Greeter wasn't exported: ILSight.App.Tests.dll was closed", ExportReportText.DescribeOutcome(Strings.En, report));
         Assert.StartsWith("Greeter wasn't exported: ILSight.App.Tests.dll was closed", Documents.GetText(ExportReportText.BuildDocument(Strings.En, [report])));
@@ -305,7 +305,7 @@ public sealed class ExportTests : IDisposable
         Assert.False(second.IsCompleted);
         Assert.Equal(1, queue.WaitingCount);
 
-        var started = Assert.IsType<ExportTurn.Started>(await first);
+        var started = UnionAsserts.GetCase<ExportTurn.Started>(await first);
         d.InTurn(started.EndTurn);
 
         Assert.True(second.IsCompleted);
@@ -319,10 +319,10 @@ public sealed class ExportTests : IDisposable
         var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
         var firstEntry = d.InTurn(() => queue.Enter(TestJobs.Named("First")));
-        var first = Assert.IsType<ExportTurn.Started>(await firstEntry.Turn);
+        var first = UnionAsserts.GetCase<ExportTurn.Started>(await firstEntry.Turn);
         d.InTurn(first.EndTurn);
         var secondEntry = d.InTurn(() => queue.Enter(TestJobs.Named("Second")));
-        var second = Assert.IsType<ExportTurn.Started>(await secondEntry.Turn);
+        var second = UnionAsserts.GetCase<ExportTurn.Started>(await secondEntry.Turn);
 
         d.InTurn(first.EndTurn);
 
@@ -337,13 +337,13 @@ public sealed class ExportTests : IDisposable
         var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
         var firstEntry = d.InTurn(() => queue.Enter(TestJobs.Named("First")));
-        var first = Assert.IsType<ExportTurn.Started>(await firstEntry.Turn);
+        var first = UnionAsserts.GetCase<ExportTurn.Started>(await firstEntry.Turn);
         var secondEntry = d.InTurn(() => queue.Enter(TestJobs.Named("Second")));
         var second = secondEntry.Turn;
 
         queue.Withdraw(Assert.Single(queue.Waiting).Run);
 
-        Assert.IsType<ExportTurn.Withdrawn>(await second);
+        UnionAsserts.GetCase<ExportTurn.Withdrawn>(await second);
         Assert.Equal(0, queue.WaitingCount);
         Assert.Equal(first.Run, queue.Running?.Export.Run);
     }
@@ -354,7 +354,7 @@ public sealed class ExportTests : IDisposable
         var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
         var firstEntry = d.InTurn(() => queue.Enter(TestJobs.Named("First")));
-        var first = Assert.IsType<ExportTurn.Started>(await firstEntry.Turn);
+        var first = UnionAsserts.GetCase<ExportTurn.Started>(await firstEntry.Turn);
         var secondEntry = d.InTurn(() => queue.Enter(TestJobs.Named("Second")));
         var second = secondEntry.Turn;
 
@@ -363,7 +363,7 @@ public sealed class ExportTests : IDisposable
         Assert.True(first.Token.IsCancellationRequested);
         Assert.Equal(true, queue.Running?.IsCancelling);
         d.InTurn(first.EndTurn);
-        var next = Assert.IsType<ExportTurn.Started>(await second);
+        var next = UnionAsserts.GetCase<ExportTurn.Started>(await second);
         Assert.False(next.Token.IsCancellationRequested);
         Assert.Equal(false, queue.Running?.IsCancelling);
     }
@@ -374,7 +374,7 @@ public sealed class ExportTests : IDisposable
         var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
         var firstEntry = d.InTurn(() => queue.Enter(TestJobs.Named("First")));
-        var first = Assert.IsType<ExportTurn.Started>(await firstEntry.Turn);
+        var first = UnionAsserts.GetCase<ExportTurn.Started>(await firstEntry.Turn);
         first.Progress.Report(new ExportProgress { Name = "First", Part = 1, Parts = 1, Fraction = 0.5f });
         d.InTurn(first.EndTurn);
         var entry = d.InTurn(() => queue.Enter(TestJobs.Named("Second")));
@@ -397,7 +397,7 @@ public sealed class ExportTests : IDisposable
         var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
         var startEntry = d.InTurn(() => queue.Enter(TestJobs.Named("Fixtures")));
-        var start = Assert.IsType<ExportTurn.Started>(await startEntry.Turn);
+        var start = UnionAsserts.GetCase<ExportTurn.Started>(await startEntry.Turn);
 
         start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.75f });
         var beforePump = queue.Running;
@@ -414,7 +414,7 @@ public sealed class ExportTests : IDisposable
         var d = AppStateDriver.Started();
         var queue = d.AppState.Export;
         var startEntry = d.InTurn(() => queue.Enter(TestJobs.Named("Fixtures")));
-        var start = Assert.IsType<ExportTurn.Started>(await startEntry.Turn);
+        var start = UnionAsserts.GetCase<ExportTurn.Started>(await startEntry.Turn);
 
         start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.6f });
         start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 1, Parts = 1, Fraction = 0.4f });
@@ -466,7 +466,7 @@ public sealed class ExportTests : IDisposable
     {
         var app = AppDriver.Opened();
         var startEntry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Fixtures")));
-        var start = Assert.IsType<ExportTurn.Started>(await startEntry.Turn);
+        var start = UnionAsserts.GetCase<ExportTurn.Started>(await startEntry.Turn);
         var entry = app.Driver.InTurn(() => app.AppState.Export.Enter(TestJobs.Named("Later")));
         Assert.False(entry.Turn.IsCompleted);
         start.Progress.Report(new ExportProgress { Name = "Fixtures", Part = 2, Parts = 3, Fraction = 0.5f });
@@ -491,7 +491,7 @@ public sealed class ExportTests : IDisposable
         d.Settle();
 
         var report = Assert.Single(d.AppState.FinishedExports);
-        var finished = Assert.IsType<ExportEnd.Finished>(report.End);
+        var finished = UnionAsserts.GetCase<ExportEnd.Finished>(report.End);
         Assert.Equal("Greeter", report.Job.Name);
         Assert.Equal(_temp.Path, report.Job.Folder);
         Assert.Equal([path], finished.Written);
@@ -510,7 +510,7 @@ public sealed class ExportTests : IDisposable
         d.Settle();
 
         var report = Assert.Single(d.AppState.FinishedExports);
-        Assert.IsType<ExportEnd.Cancelled>(report.End);
+        UnionAsserts.GetCase<ExportEnd.Cancelled>(report.End);
     }
 
     [Fact]
@@ -525,7 +525,7 @@ public sealed class ExportTests : IDisposable
         d.Settle();
 
         var report = Assert.Single(d.AppState.FinishedExports);
-        var failed = Assert.IsType<ExportEnd.Failed>(report.End);
+        var failed = UnionAsserts.GetCase<ExportEnd.Failed>(report.End);
         Assert.Equal("Cannot save the code of Greeter", ExportReportText.Headline(Strings.En, report.Job.Kind, failed));
         Assert.Equal(failed.Error.Message, ExportReportText.CauseOf(failed));
         Assert.DoesNotContain("DirectoryNotFoundException", ExportReportText.CauseOf(failed));

@@ -528,19 +528,17 @@ internal static class ExportDialogView
 
     private static string BlockerText(Strings t, ExportBlocker? blocker)
     {
-        if (blocker is null)
+        return blocker switch
         {
-            return "";
-        }
-
-        return blocker.Match(t,
-            noAssembly: static (t, _) => t.ExportNeedsAssembly,
-            noFolder: static (t, _) => t.ExportNeedsFolder,
-            namelessProject: static (t, _) => t.ExportNeedsName,
-            clash: static (t, clash) => t.ExportNameClash(clash.Name),
-            keyFileMissing: static (t, _) => t.ExportKeyFileMissing,
-            checking: static (_, _) => "",
-            checkFailed: static (_, failed) => failed.Why);
+            null => "",
+            ExportBlocker.NoAssembly => t.ExportNeedsAssembly,
+            ExportBlocker.NoFolder => t.ExportNeedsFolder,
+            ExportBlocker.NamelessProject => t.ExportNeedsName,
+            ExportBlocker.Clash clash => t.ExportNameClash(clash.Name),
+            ExportBlocker.KeyFileMissing => t.ExportKeyFileMissing,
+            ExportBlocker.Checking => "",
+            ExportBlocker.CheckFailed failed => failed.Why,
+        };
     }
 
     private static void ChoosePage(Ui ui, Appearance appearance, ExportSetup setup)
