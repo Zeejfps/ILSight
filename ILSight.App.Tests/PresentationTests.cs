@@ -101,7 +101,7 @@ public sealed class PresentationTests
         var row = tree.Row(root);
 
         Assert.Equal(assembly.Name, row.Label);
-        Assert.Equal($"{assembly.Version} · net10.0", row.Secondary);
+        Assert.Equal($"{assembly.Version} · net11.0", row.Secondary);
         Assert.Contains(assembly.FullName, row.Tooltip);
     }
 

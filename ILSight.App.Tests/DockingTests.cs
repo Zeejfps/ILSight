@@ -55,7 +55,7 @@ public sealed class DockingTests
         var layout = app.Arrangement;
         var split = Assert.IsType<DockSplit>(layout.Root);
         Assert.Same(layout.GroupOf(DockPanels.Assemblies), split.First);
-        Assert.True(app.Frames.Drew("0.0.0.0 · net10.0"));
+        Assert.True(app.Frames.Drew("0.0.0.0 · net11.0"));
     }
 
     [Fact]

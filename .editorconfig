@@ -76,6 +76,8 @@ dotnet_diagnostic.CS1574.severity = error
 dotnet_diagnostic.CS1734.severity = error
 dotnet_diagnostic.CS1572.severity = error
 dotnet_diagnostic.CS1570.severity = error
+# R008: a switch expression over a union names every case; the compiler's exhaustiveness check is an error.
+dotnet_diagnostic.CS8509.severity = error
 dotnet_diagnostic.VSTHRD200.severity = none
 dotnet_diagnostic.VSTHRD003.severity = none
 

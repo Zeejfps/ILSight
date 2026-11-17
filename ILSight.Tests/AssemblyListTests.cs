@@ -16,7 +16,7 @@ public sealed class AssemblyListTests
         Assert.Same(first, second);
         Assert.Single(list.Assemblies);
         Assert.Equal("ILSight.Tests", first.Name);
-        Assert.Equal(".NETCoreApp,Version=v10.0", first.TargetFramework?.Text);
+        Assert.Equal(".NETCoreApp,Version=v11.0", first.TargetFramework?.Text);
     }
 
     [Fact]
