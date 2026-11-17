@@ -422,7 +422,7 @@ internal static class TreePaneView
         BrowseNode node)
     {
         var t = appearance.Strings;
-        var jump = node.Activation as Activation.Navigate;
+        var jump = node.Activation is Activation.Navigate navigate ? navigate : null;
         var openKey = jump != null ? null : Shortcuts.Enter;
         if (ui.MenuItem(t.TreeOpen, openKey, id: "open"))
         {

@@ -515,11 +515,12 @@ public sealed class BrowseTree : ITreeModel<BrowseNode>
     public TreeChildren<BrowseNode> GetChildren(BrowseNode node)
     {
         var state = _nestsNamespaces ? Session.PeekNestedChildren(node) : Session.PeekChildren(node);
-        return state.Match((tree: this, node),
-            static (asked, _) => asked.tree.ShowLoading(asked.node),
-            static (asked, _) => asked.tree.ShowLoading(asked.node),
-            static (shown, ready) => TreeChildren<BrowseNode>.Of(shown.tree.EnsureShownChildren(shown.node, ready.Children)),
-            static (shown, failed) => TreeChildren<BrowseNode>.Placeholder(shown.tree.CreateFailedRow(failed.Error)));
+        return state switch
+        {
+            ChildrenState.Unloaded or ChildrenState.Running => ShowLoading(node),
+            ChildrenState.Ready ready => TreeChildren<BrowseNode>.Of(EnsureShownChildren(node, ready.Children)),
+            ChildrenState.Failed failed => TreeChildren<BrowseNode>.Placeholder(CreateFailedRow(failed.Error)),
+        };
     }
 
     private TreeChildren<BrowseNode> ShowLoading(BrowseNode node)

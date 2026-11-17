@@ -15,6 +15,6 @@ public sealed class TreeInfrastructureTests
 
         var built = await new TreeInfrastructure(TestSession.Shared).BuildAssemblyChildrenAsync(root, CancellationToken.None);
 
-        Assert.IsType<BadImageFormatException>(Assert.IsType<ChildrenState.Failed>(built).Error);
+        Assert.IsType<BadImageFormatException>(UnionAsserts.GetCase<ChildrenState.Failed>(built).Error);
     }
 }

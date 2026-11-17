@@ -198,7 +198,7 @@ public sealed class BrowseSession
                 return ready.Children;
             }
 
-            if (held.Value != ChildrenState.NotLoaded)
+            if (held.Value is not ChildrenState.Unloaded)
             {
                 return [];
             }
@@ -293,11 +293,12 @@ public sealed class BrowseSession
     /// possible. Children that failed to build count, so that why can be shown.</summary>
     public bool HasChildren(BrowseNode node)
     {
-        return PeekChildren(node).Match(node,
-            static (n, _) => n.CanHaveChildren,
-            static (n, _) => n.CanHaveChildren,
-            static (_, ready) => ready.Children.Count > 0,
-            static (_, _) => true);
+        return PeekChildren(node) switch
+        {
+            ChildrenState.Unloaded or ChildrenState.Running => node.CanHaveChildren,
+            ChildrenState.Ready ready => ready.Children.Count > 0,
+            ChildrenState.Failed => true,
+        };
     }
 
     /// <summary>The child of <paramref name="parent"/> standing where <paramref name="other"/> stands under

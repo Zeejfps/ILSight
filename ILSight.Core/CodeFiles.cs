@@ -98,16 +98,11 @@ public static class CodeFiles
     // A package's document is read from no module.
     private static LoadedModule? FindModule(CodeExport export)
     {
-        if (export is CodeExport.WholeModule whole)
+        return export switch
         {
-            return whole.Module;
-        }
-
-        if (export is CodeExport.Namespace ns)
-        {
-            return ns.Module;
-        }
-
-        return NodeDecompiler.ModuleOf(((CodeExport.Document)export).Request);
+            CodeExport.WholeModule whole => whole.Module,
+            CodeExport.Namespace ns => ns.Module,
+            CodeExport.Document document => NodeDecompiler.ModuleOf(document.Request),
+        };
     }
 }

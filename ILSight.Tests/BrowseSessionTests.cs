@@ -24,8 +24,8 @@ public sealed class BrowseSessionTests : IDisposable
         var waits = Enumerable.Range(0, 16).AsParallel().WithDegreeOfParallelism(8).Select(_ => BrowseSessions.GetChildrenAsync(session, root)).ToArray();
         var waited = await Task.WhenAll(waits).WithinPatienceAsync();
 
-        var children = Assert.IsType<ChildrenState.Ready>(session.PeekChildren(root)).Children;
-        Assert.All(waited, s => Assert.Same(children, Assert.IsType<ChildrenState.Ready>(s).Children));
+        var children = UnionAsserts.GetCase<ChildrenState.Ready>(session.PeekChildren(root)).Children;
+        Assert.All(waited, s => Assert.Same(children, UnionAsserts.GetCase<ChildrenState.Ready>(s).Children));
     }
 
     [Fact]
@@ -38,8 +38,9 @@ public sealed class BrowseSessionTests : IDisposable
         var started = await BrowseSessions.GetChildrenAsync(session, root, new CancellationToken(canceled: true));
         var state = await BrowseSessions.GetChildrenAsync(session, root);
 
-        Assert.NotEmpty(Assert.IsType<ChildrenState.Ready>(started).Children);
-        Assert.Same(started, state);
+        var built = UnionAsserts.GetCase<ChildrenState.Ready>(started);
+        Assert.NotEmpty(built.Children);
+        Assert.Same(built, UnionAsserts.GetCase<ChildrenState.Ready>(state));
     }
 
     [Fact]
@@ -55,11 +56,11 @@ public sealed class BrowseSessionTests : IDisposable
         var container = Assert.Single(resourcesChildren);
 
         var childrenState = await BrowseSessions.GetChildrenAsync(session, container);
-        var failed = Assert.IsType<ChildrenState.Failed>(childrenState);
+        var failed = UnionAsserts.GetCase<ChildrenState.Failed>(childrenState);
 
         Assert.IsType<AvaloniaContainerException>(failed.Error);
         var childrenStateAgain = await BrowseSessions.GetChildrenAsync(session, container);
-        Assert.Same(failed, childrenStateAgain);
+        Assert.Same(failed, UnionAsserts.GetCase<ChildrenState.Failed>(childrenStateAgain));
         Assert.True(session.HasChildren(container));
         var containerChildren = await BrowseSessions.ListChildrenAsync(session, container);
         Assert.Empty(containerChildren);
@@ -79,7 +80,7 @@ public sealed class BrowseSessionTests : IDisposable
         Assert.Same(root, rootAwaited);
         var secondRoot = second.EnsureRoot(assembly);
         Assert.NotSame(root, secondRoot);
-        Assert.IsType<ChildrenState.Unloaded>(second.PeekChildren(root));
+        UnionAsserts.GetCase<ChildrenState.Unloaded>(second.PeekChildren(root));
     }
 
     [Fact]
@@ -121,7 +122,7 @@ public sealed class BrowseSessionTests : IDisposable
             Row = 1,
         }));
 
-        Assert.IsType<ChildrenState.Unloaded>(before);
+        UnionAsserts.GetCase<ChildrenState.Unloaded>(before);
         var children = await BrowseSessions.ListChildrenAsync(session, tables);
         var typeDefs = children.Single(static c => c.Subject is NodeSubject.MetadataTable t && t.Value.ListedTable == TableIndex.TypeDef);
         Assert.Same(typeDefs, target.Node);
@@ -153,7 +154,7 @@ public sealed class BrowseSessionTests : IDisposable
         var (header, tables) = await MetadataHeaderAndTablesAsync(session);
         Assert.NotNull(session.FindMetadataRow(header, new MetadataAddress { Table = TableIndex.TypeDef, Row = 0 }));
 
-        var made = Assert.IsType<ChildrenState.Ready>(session.PeekChildren(tables)).Children;
+        var made = UnionAsserts.GetCase<ChildrenState.Ready>(session.PeekChildren(tables)).Children;
 
         Assert.NotEmpty(made);
         Assert.All(made, node =>

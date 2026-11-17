@@ -103,7 +103,9 @@ dotnet_diagnostic.RL0801.severity = error
 dotnet_diagnostic.RL0802.severity = error
 dotnet_diagnostic.RL0803.severity = error
 dotnet_diagnostic.RL0804.severity = error
-dotnet_diagnostic.RL0805.severity = error
+# Off while R008 moves onto C# 15's `union`: the RuleLab build here doesn't yet know a union struct's nested cases, so it
+# reads a case's kind and nullable data as a flat shape. Back to error with the analyzer synced from the rules.
+dotnet_diagnostic.RL0805.severity = none
 dotnet_diagnostic.RL0806.severity = error
 dotnet_diagnostic.RL0807.severity = error
 dotnet_diagnostic.RL0901.severity = error
@@ -145,7 +147,10 @@ dotnet_diagnostic.RL0407.severity = error
 dotnet_diagnostic.RL0408.severity = error
 dotnet_diagnostic.RL0409.severity = error
 dotnet_diagnostic.RL0410.severity = error
-dotnet_diagnostic.RL0411.severity = error
+# Off while R008 moves onto C# 15's `union`: the RuleLab build here doesn't yet know a union struct's nested cases, so it
+# reads a state named as a case (ChildrenState.Running) as an activity's type. Back to error with the analyzer synced
+# from the rules.
+dotnet_diagnostic.RL0411.severity = none
 dotnet_diagnostic.RL0907.severity = error
 dotnet_diagnostic.RL1309.severity = error
 dotnet_diagnostic.RL1401.severity = error

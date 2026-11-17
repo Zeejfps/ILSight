@@ -58,7 +58,7 @@ public sealed class UnresolvedReferenceTests : IDisposable
         var resolved = await besideBaseTypes.GetChildAsync(nameof(GridSchema));
 
         Assert.IsType<NodeSubject.BaseType>(unresolved.Subject);
-        Assert.IsType<Activation.OpenSelf>(unresolved.Activation);
+        UnionAsserts.GetCase<Activation.OpenSelf>(unresolved.Activation);
         Assert.Equal(NodeAccessibility.None, unresolved.Accessibility);
         Assert.True(unresolved.IsPublicApi);
         Assert.Contains(nameof(GridSchema), Documents.GetText(await unresolved.DecompileAsync(DecompilationLanguage.CSharp)));

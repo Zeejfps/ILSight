@@ -275,7 +275,7 @@ public sealed class AnalysisTests
         };
 
         var childrenState = await BrowseSessions.GetChildrenAsync(session, calculator);
-        var listed = Assert.IsType<ChildrenState.Ready>(childrenState).Children;
+        var listed = UnionAsserts.GetCase<ChildrenState.Ready>(childrenState).Children;
         var add = listed.Single(static c => c.Text == "Add(T) : void");
         var facts = Assert.IsType<AnalysisFacts>(add.AnalysisFacts);
         var thrown = Assert.Throws<InvalidOperationException>(() => Analyzers.Compose(facts, [buggy]));

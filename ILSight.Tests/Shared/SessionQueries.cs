@@ -59,7 +59,7 @@ internal static class SessionQueries
         public async Task EnsureChildrenAsync()
         {
             var children = await BrowseSessions.GetChildrenAsync(TestSession.Shared, node);
-            Assert.IsType<ChildrenState.Ready>(children);
+            UnionAsserts.GetCase<ChildrenState.Ready>(children);
         }
 
         public IReadOnlyList<BrowseNode> InnerNamespaces => TestSession.Shared.ListInnerNamespaces(node);
@@ -120,7 +120,7 @@ internal static class SessionQueries
         public int? Token => node.Token;
 
         /// <summary>Where activating the node goes; fails the test when it opens itself.</summary>
-        public CodeReference.Navigable Destination => Assert.IsType<Activation.Navigate>(node.Activation).Target;
+        public CodeReference.Navigable Destination => UnionAsserts.GetCase<Activation.Navigate>(node.Activation).Target;
     }
 
     extension(AssemblyList list)

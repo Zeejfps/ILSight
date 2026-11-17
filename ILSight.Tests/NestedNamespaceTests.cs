@@ -9,7 +9,7 @@ public sealed class NestedNamespaceTests
     private static async Task<IReadOnlyList<BrowseNode>> NestedChildrenAsync(BrowseNode node)
     {
         await node.EnsureChildrenAsync();
-        return Assert.IsType<ChildrenState.Ready>(TestSession.Shared.PeekNestedChildren(node)).Children;
+        return UnionAsserts.GetCase<ChildrenState.Ready>(TestSession.Shared.PeekNestedChildren(node)).Children;
     }
 
     [Fact]

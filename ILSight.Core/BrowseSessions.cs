@@ -77,7 +77,11 @@ public static class BrowseSessions
                 return new Outcome<Lookup<BrowseNode>>.Failed(failed.Error);
             }
 
-            var (shown, within) = FolderStepAmong(((ChildrenState.Ready)children).Children, folder);
+            var (shown, within) = children switch
+            {
+                ChildrenState.Ready ready => FolderStepAmong(ready.Children, folder),
+                ChildrenState.Unloaded or ChildrenState.Running or ChildrenState.Failed => throw new UnreachableException("Children are read once built: ready, or failed as checked above."),
+            };
             if (shown is not null)
             {
                 return new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Found { Value = shown });
@@ -129,11 +133,13 @@ public static class BrowseSessions
         {
             // Running before the build can keep what it built: it waits for the lock held here.
             // The build runs to its end whatever the token says: whoever waits next takes it.
-            var (found, started) = held.Value.Match((session, node, slot),
-                static (s, _) => (Task.Run(() => KeepBuiltAsync(s.session, s.node, s.slot, CancellationToken.None)), true),
-                static (_, running) => (running.Load, false),
-                static (_, ready) => (Task.FromResult<ChildrenState>(ready), false),
-                static (_, failed) => (Task.FromResult<ChildrenState>(failed), false));
+            var (found, started) = held.Value switch
+            {
+                ChildrenState.Unloaded => (Task.Run(() => KeepBuiltAsync(session, node, slot, CancellationToken.None)), true),
+                ChildrenState.Running running => (running.Load, false),
+                ChildrenState.Ready ready => (Task.FromResult<ChildrenState>(ready), false),
+                ChildrenState.Failed failed => (Task.FromResult<ChildrenState>(failed), false),
+            };
             if (started)
             {
                 held.Value = new ChildrenState.Running(found);
@@ -273,12 +279,12 @@ public static class BrowseSessions
     internal static Outcome<Lookup<BrowseNode>> FindAmong<TState>(ChildrenState children, TState state,
         Func<IReadOnlyList<BrowseNode>, TState, BrowseNode?> pick)
     {
-        if (children is ChildrenState.Failed failed)
+        return children switch
         {
-            return new Outcome<Lookup<BrowseNode>>.Failed(failed.Error);
-        }
-
-        return new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable(pick(((ChildrenState.Ready)children).Children, state)));
+            ChildrenState.Ready ready => new Outcome<Lookup<BrowseNode>>.Ok(Lookup.FromNullable(pick(ready.Children, state))),
+            ChildrenState.Failed failed => new Outcome<Lookup<BrowseNode>>.Failed(failed.Error),
+            ChildrenState.Unloaded or ChildrenState.Running => throw new UnreachableException("Children are read once built: ready or failed."),
+        };
     }
 
     /// <summary>As <see cref="FindAmong{TState}"/>, among children read as <see cref="ReadChildrenAsync"/> reads them:

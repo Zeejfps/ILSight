@@ -326,7 +326,7 @@ public sealed class NavigationTests
         // The method whose name can't be read fails the listing of its namespace's types, Circle among them.
         var fixtures = await module.FixturesAsync();
         var childrenState = await BrowseSessions.GetChildrenAsync(session, fixtures);
-        var why = Assert.IsType<ChildrenState.Failed>(childrenState).Error;
+        var why = UnionAsserts.GetCase<ChildrenState.Failed>(childrenState).Error;
         Assert.Same(why, UnionAsserts.GetCase<Outcome<Lookup<BrowseNode>>.Failed>(byReference).Error);
         Assert.Same(why, UnionAsserts.GetCase<Outcome<Lookup<BrowseNode>>.Failed>(byId).Error);
         Assert.Same(why, UnionAsserts.GetCase<Outcome<Lookup<BrowseNode>>.Failed>(byPath).Error);

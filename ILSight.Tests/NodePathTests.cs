@@ -88,9 +88,9 @@ public sealed class NodePathTests
         var (_, assembly) = Trees.OpenTestAssembly();
         var root = await assembly.ReadRootAsync();
 
-        Assert.IsType<ChildrenState.Unloaded>(root.ChildrenState);
+        UnionAsserts.GetCase<ChildrenState.Unloaded>(root.ChildrenState);
 
         var built = await root.ListChildrenAsync();
-        Assert.Same(built, Assert.IsType<ChildrenState.Ready>(root.ChildrenState).Children);
+        Assert.Same(built, UnionAsserts.GetCase<ChildrenState.Ready>(root.ChildrenState).Children);
     }
 }

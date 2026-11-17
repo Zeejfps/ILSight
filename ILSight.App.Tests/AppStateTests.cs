@@ -363,7 +363,7 @@ public sealed class AppStateTests
         d.Settle();
 
         var root = await Assert.Single(d.AppState.ListSession.Assemblies.Assemblies).ReadRootAsync();
-        Assert.IsType<ChildrenState.Failed>(root.ChildrenState);
+        UnionAsserts.GetCase<ChildrenState.Failed>(root.ChildrenState);
         Assert.False(d.Ui.Tree.View.IsExpanded(root));
     }
 

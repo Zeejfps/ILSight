@@ -71,9 +71,8 @@ public static class Exports
     public static ExportReport ReportProjects(ExportReport report, IReadOnlyList<ExportedProject> projects, string first)
     {
         var pdbs = projects
-            .Select(static p => p.Pdb)
-            .OfType<ProjectPdb.Written>()
-            .Select(static p => p.Path);
+            .Select(static p => p.Pdb is ProjectPdb.Written pdb ? pdb.Path : null)
+            .OfType<string>();
         var written = projects
             .Select(static p => p.ProjectPath)
             .Prepend(first)
@@ -81,7 +80,7 @@ public static class Exports
             .Distinct()
             .ToList();
         var pdbProblems = projects
-            .Select(static p => p.Pdb)
+            .Select(static p => p.Pdb is ProjectPdb.Failed pdb ? pdb : null)
             .OfType<ProjectPdb.Failed>()
             .Select(static p => ProblemOf(p.Failure));
         var problems = projects

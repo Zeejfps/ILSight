@@ -307,7 +307,7 @@ public sealed class ExportTests : IDisposable
         });
         var exported = written.GetValue().GetValue();
 
-        var pdb = Assert.IsType<ProjectPdb.Written>(exported.Pdb);
+        var pdb = UnionAsserts.GetCase<ProjectPdb.Written>(exported.Pdb);
         Assert.Equal(_temp.PathOf(Path.Combine("Project", "ILSight.Tests.pdb")), pdb.Path);
         Assert.Equal(embed, CountEmbeddedSources(pdb.Path) > 0);
     }
