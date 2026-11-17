@@ -101,7 +101,7 @@ public sealed class BundleTests
         var root = await bundle.ReadRootAsync();
         var extracted = PackageExtraction.ExtractFolder(bundle.Package, FolderOf(root), target);
 
-        var failure = Assert.IsType<ExtractFailure.NotWritten>(Assert.Single(extracted.Failures));
+        var failure = UnionAsserts.GetCase<ExtractFailure.NotWritten>(Assert.Single(extracted.Failures));
         Assert.Equal("Broken.dll", failure.File.Name);
         Assert.Contains("past the end of the file", failure.Error.Message);
         Assert.Equal([Path.Combine(target, "App.deps.json")], extracted.Written);

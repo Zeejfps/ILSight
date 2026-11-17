@@ -42,11 +42,13 @@ public static class FailureTexts
     private static string DescribeAssemblyLoad(Strings t, AssemblyLoadException load)
     {
         var file = OneLineText.Name(load.FilePath.Text);
-        return load.Fault.Match(
-            _ => DescribeCannotOpen(t, load, file),
-            _ => t.CauseAssemblyNotDotnetSentence(file: file),
-            p => t.CauseAssemblyNotPackageSentence(file: OneLineText.Name(p.Container.Text)),
-            i => t.CauseAssemblyNotInPackageSentence(package: OneLineText.Name(i.Package.Text), name: OneLineText.Name(i.FullName)));
+        return load.Fault switch
+        {
+            AssemblyLoadFault.CannotOpen => DescribeCannotOpen(t, load, file),
+            AssemblyLoadFault.NotAssembly => t.CauseAssemblyNotDotnetSentence(file: file),
+            AssemblyLoadFault.NotPackage p => t.CauseAssemblyNotPackageSentence(file: OneLineText.Name(p.Container.Text)),
+            AssemblyLoadFault.NotInPackage i => t.CauseAssemblyNotInPackageSentence(package: OneLineText.Name(i.Package.Text), name: OneLineText.Name(i.FullName)),
+        };
     }
 
     // The loader makes every such failure with what the system or the library threw; one made without it has only its
@@ -64,19 +66,23 @@ public static class FailureTexts
 
     private static string DescribeFeed(Strings t, FeedFault fault)
     {
-        return fault.Match(
-            _ => t.CauseFeedNotJsonSentence,
-            r => t.CauseFeedResourceMissingSentence(resource: OneLineText.Name(r.Type)),
-            _ => t.CauseFeedMalformedSentence);
+        return fault switch
+        {
+            FeedFault.NotJson => t.CauseFeedNotJsonSentence,
+            FeedFault.ResourceMissing r => t.CauseFeedResourceMissingSentence(resource: OneLineText.Name(r.Type)),
+            FeedFault.Malformed => t.CauseFeedMalformedSentence,
+        };
     }
 
     private static string DescribeBundleEntry(Strings t, BundleEntryFault fault)
     {
         var entry = OneLineText.Name(fault.Entry);
-        return fault.Match(
-            _ => t.CauseBundleEntryOutsideSentence(entry: entry),
-            _ => t.CauseBundleEntrySizeOutOfRangeSentence(entry: entry),
-            _ => t.CauseBundleEntryInflatesWrongSentence(entry: entry));
+        return fault switch
+        {
+            BundleEntryFault.Outside => t.CauseBundleEntryOutsideSentence(entry: entry),
+            BundleEntryFault.SizeOutOfRange => t.CauseBundleEntrySizeOutOfRangeSentence(entry: entry),
+            BundleEntryFault.InflatesWrong => t.CauseBundleEntryInflatesWrongSentence(entry: entry),
+        };
     }
 
     private static string DescribeAvaloniaContainer(Strings t, AvaloniaContainerFault fault)

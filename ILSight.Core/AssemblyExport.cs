@@ -109,7 +109,7 @@ public static class AssemblyExport
         var failure = await TryGeneratePdbAsync(reading, project.Assembly, options, folder, embedSources, progress, callbacks, cancellationToken);
         if (failure is not null)
         {
-            return project with { Pdb = new ProjectPdb.Failed(failure) };
+            return project with { Pdb = new ProjectPdb.Failed(failure.Value) };
         }
 
         var path = Path.Combine(folder, project.Assembly.PdbFileName);
@@ -281,7 +281,7 @@ public static class AssemblyExport
             var failure = await TryGeneratePdbAsync(reading, assembly, options, folder, embedSources: true, part, callbacks, cancellationToken);
             if (failure is not null)
             {
-                failures.Add(failure);
+                failures.Add(failure.Value);
             }
         }
         return failures;

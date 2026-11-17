@@ -36,11 +36,13 @@ internal sealed class EnglishNotes : IDocumentNotes
 
     public string DescribeUnopened(AssemblyLoadException error)
     {
-        return error.Fault.Match(
-            _ => DescribeInner(error),
-            _ => $"{error.FilePath.Text} isn't a .NET assembly.",
-            p => $"{p.Container.Text} isn't a package.",
-            i => $"{i.Package.Text} holds no file {i.FullName}.");
+        return error.Fault switch
+        {
+            AssemblyLoadFault.CannotOpen => DescribeInner(error),
+            AssemblyLoadFault.NotAssembly => $"{error.FilePath.Text} isn't a .NET assembly.",
+            AssemblyLoadFault.NotPackage p => $"{p.Container.Text} isn't a package.",
+            AssemblyLoadFault.NotInPackage i => $"{i.Package.Text} holds no file {i.FullName}.",
+        };
     }
 
     // What the system or the library said, as written: the core's tests make no cause of ILSight's own an inner one.

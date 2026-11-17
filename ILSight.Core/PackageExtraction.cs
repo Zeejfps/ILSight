@@ -31,7 +31,7 @@ public static class PackageExtraction
             var failure = TryExtract(package, files[i], folder, root, written);
             if (failure is not null)
             {
-                failures.Add(failure);
+                failures.Add(failure.Value);
             }
         }
         return new ExtractedFiles { Written = written, Failures = failures };

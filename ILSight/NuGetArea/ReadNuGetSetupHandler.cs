@@ -38,10 +38,12 @@ public sealed class ReadNuGetSetupHandler(ReadNuGetSetupHandler.IPorts ports)
             Outcome<NuGetConfigRead>.Ok ok => ok.Value,
             Outcome<NuGetConfigRead>.Failed failed => ReplaceUnreadableConfig(failed),
         };
-        picker.UseSetup(config.Match(
-            _ => ports.CreateDefaultSetup(),
-            unreadable => ports.CreateDefaultSetup() with { ConfigUnreadable = unreadable.Why },
-            config => ports.CreateSetup(config.Config)));
+        picker.UseSetup(config switch
+        {
+            NuGetConfigRead.Missing => ports.CreateDefaultSetup(),
+            NuGetConfigRead.Unreadable unreadable => ports.CreateDefaultSetup() with { ConfigUnreadable = unreadable.Why },
+            NuGetConfigRead.Read readConfig => ports.CreateSetup(readConfig.Config),
+        });
     }
 
     /// <summary>Has <paramref name="picker"/> search and download with NuGet's default setup when the workflow reading

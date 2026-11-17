@@ -38,7 +38,7 @@ public sealed class NuGetConfigTests
 
         var read = NuGetConfigs.Read(temp.PathOf("NuGet.Config"), CreateEnvironment(null));
 
-        Assert.IsType<NuGetConfigRead.Missing>(read);
+        UnionAsserts.GetCase<NuGetConfigRead.Missing>(read);
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public sealed class NuGetConfigTests
 
         var read = NuGetConfigs.Read(Path.Combine(temp.PathOf("gone"), "NuGet.Config"), CreateEnvironment(null));
 
-        Assert.IsType<NuGetConfigRead.Missing>(read);
+        UnionAsserts.GetCase<NuGetConfigRead.Missing>(read);
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public sealed class NuGetConfigTests
 
         var read = NuGetConfigs.Read(path, CreateEnvironment(null));
 
-        Assert.IsType<NuGetConfigRead.Read>(read);
+        UnionAsserts.GetCase<NuGetConfigRead.Read>(read);
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public sealed class NuGetConfigTests
 
         var read = NuGetConfigs.Read(path, CreateEnvironment(null));
 
-        Assert.NotEmpty(Assert.IsType<NuGetConfigRead.Unreadable>(read).Why);
+        Assert.NotEmpty(UnionAsserts.GetCase<NuGetConfigRead.Unreadable>(read).Why);
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public sealed class NuGetConfigTests
 
     private static NuGetConfig ReadConfig(string path, NuGetEnvironment environment)
     {
-        return Assert.IsType<NuGetConfigRead.Read>(NuGetConfigs.Read(path, environment)).Config;
+        return UnionAsserts.GetCase<NuGetConfigRead.Read>(NuGetConfigs.Read(path, environment)).Config;
     }
 
     [Fact]

@@ -152,9 +152,11 @@ public static class Exports
 
     private static ExportProblem ProblemOf(PdbFailure failure)
     {
-        return failure.Match<ExportProblem>(
-            static f => new ExportProblem.NoPdbEntry(f.Assembly.Name),
-            static f => new ExportProblem.PdbNotWritten { Assembly = f.Assembly.Name, Error = f.Error });
+        return failure switch
+        {
+            PdbFailure.NoDebugEntry f => new ExportProblem.NoPdbEntry(f.Assembly.Name),
+            PdbFailure.NotWritten f => new ExportProblem.PdbNotWritten { Assembly = f.Assembly.Name, Error = f.Error },
+        };
     }
 
     /// <summary><paramref name="report"/> listing the files <paramref name="extracted"/> wrote, and those
@@ -169,9 +171,11 @@ public static class Exports
 
     private static ExportProblem ProblemOf(ExtractFailure failure)
     {
-        return failure.Match<ExportProblem>(
-            static f => new ExportProblem.OutsideFolder(f.File.FullName),
-            static f => new ExportProblem.FileNotWritten { Path = f.File.FullName, Error = f.Error });
+        return failure switch
+        {
+            ExtractFailure.OutsideFolder f => new ExportProblem.OutsideFolder(f.File.FullName),
+            ExtractFailure.NotWritten f => new ExportProblem.FileNotWritten { Path = f.File.FullName, Error = f.Error },
+        };
     }
 
     /// <summary>The runs of every export in the order the exports panel lists them: the running one,
