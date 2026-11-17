@@ -430,7 +430,8 @@ public static class BrowseNodes
         return RequireResource(node).ReadData();
     }
 
-    private static ResourceData RequireResource(BrowseNode node)
+    /// <summary>The resource <paramref name="node"/> stands for; the app's own failure when it stands for none.</summary>
+    internal static ResourceData RequireResource(BrowseNode node)
     {
         return FindResourceData(node.Subject) ?? throw new InvalidOperationException($"{node.Text} is no resource.");
     }

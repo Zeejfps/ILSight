@@ -10,5 +10,5 @@ internal sealed record ResourceData
     public required string FileName { get; init; }
 
     /// <summary>What a saved copy holds, read only when asked for.</summary>
-    public required Func<byte[]> ReadData { get; init; }
+    public required ResourceBytesRead ReadData { get; init; }
 }

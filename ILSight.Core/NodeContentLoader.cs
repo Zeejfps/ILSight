@@ -158,14 +158,15 @@ public static class NodeContentLoader
             static failed => new Outcome<NodeContent>.Failed(failed.Error));
     }
 
-    // The decompiler reads the resource's bytes inside the catch; the decoders read the picture in them after it, each
-    // catching its own failures (ResourceImages.DecodeImage).
+    // The app's check that the node is a resource runs before the catch; the decompiler reads the resource's bytes inside
+    // it; the decoders read the picture in them after it, each catching its own failures (ResourceImages.DecodeImage).
     private static ResourceImageRead ReadImage(BrowseNode node, CancellationToken ct)
     {
+        var resource = BrowseNodes.RequireResource(node);
         byte[] bytes;
         try
         {
-            bytes = BrowseNodes.ReadResource(node);
+            bytes = resource.ReadData();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -460,7 +461,7 @@ public static class NodeContentLoader
         {
             Module = node.SourceModule,
             Description = resource.Description,
-            Read = resource.ReadData,
+            Read = resource.ReadData.Invoke,
             Title = node.Text,
             FullName = node.FullName,
         };
