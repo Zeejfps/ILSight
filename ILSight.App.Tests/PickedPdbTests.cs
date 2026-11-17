@@ -58,7 +58,7 @@ public sealed class PickedPdbTests
         d.Start((a, ct) => a.AssemblyReloader.UsePdbAsync(a.ListSession, a.Reopens, a.Decompiler, OpenAssemblyOf(d), OtherBuildPdb, ct));
         d.Settle();
 
-        var refused = Assert.IsType<Refusal.PdbUnusable>(d.AppState.Refusals.Shown);
+        Refusal refused = UnionAsserts.GetCase<Refusal.PdbUnusable>(d.AppState.Refusals.Shown);
         Assert.Empty(d.AppState.ListSession.Assemblies.Pdbs.All);
         Assert.Contains("another build", refused.Words(Strings.For(Locale.En)).Why);
         Assert.Empty(d.AppState.Errors.Entries);

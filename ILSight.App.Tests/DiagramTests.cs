@@ -308,7 +308,7 @@ public sealed class DiagramTests
         DiagramView.ShowInNewDiagramLater(d.Ui.AppCommands, member, Names.Diagram(member));
         d.Settle();
 
-        var refused = Assert.IsType<Refusal.TypeNotDiagrammed>(d.AppState.Refusals.Shown);
+        Refusal refused = UnionAsserts.GetCase<Refusal.TypeNotDiagrammed>(d.AppState.Refusals.Shown);
         Assert.Equal("Cannot show Twice in a diagram", refused.Words(d.Ui.Appearance.Strings).What);
         Assert.Empty(d.AppState.Errors.Entries);
     }

@@ -183,7 +183,7 @@ public sealed class NestedNamespaceTests
         var tab = app.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var toggle = Bookmarks.ToggleBookmark(app.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);
-        Assert.IsType<BookmarkToggle.Added>(toggle);
+        UnionAsserts.GetCase<BookmarkToggle.Added>(toggle);
         var bookmark = Assert.Single(app.AppState.Bookmarks.Items);
         var greeter = await app.FixtureAsync("Greeter");
         app.Show(greeter, 2);

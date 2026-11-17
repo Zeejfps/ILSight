@@ -19,7 +19,7 @@ public sealed class SettlingWorkflowsTests
 
     private static AppProblem.Unexpected ReportedOnce(AppState appState)
     {
-        return Assert.IsType<AppProblem.Unexpected>(Assert.Single(appState.Errors.Entries).Problem);
+        return UnionAsserts.GetCase<AppProblem.Unexpected>(Assert.Single(appState.Errors.Entries).Problem);
     }
 
     [Fact]
@@ -226,7 +226,7 @@ public sealed class SettlingWorkflowsTests
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var toggle = Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);
-        Assert.IsType<BookmarkToggle.Added>(toggle);
+        UnionAsserts.GetCase<BookmarkToggle.Added>(toggle);
         var bookmark = Assert.Single(d.AppState.Bookmarks.Items);
 
         d.InTurn(() => Commands.StartGoingToBookmark(d.AppState, bookmark));

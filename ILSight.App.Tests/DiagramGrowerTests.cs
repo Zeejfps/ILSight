@@ -102,7 +102,7 @@ public sealed class DiagramGrowerTests
         Assert.Single(ports.Requests).Answer.SetResult(new Outcome<List<TypeCard>>.Ok([]));
         await d.EndAsync(adding);
 
-        var refused = Assert.IsType<Refusal.TypeNotDiagrammed>(Assert.Single(ports.Refused));
+        var refused = UnionAsserts.GetCase<Refusal.TypeNotDiagrammed>(Assert.Single(ports.Refused));
         Assert.Equal(member, refused.Type);
         Assert.Empty(ports.Reported);
         Assert.Empty(read.Diagram.Cards);
@@ -197,7 +197,7 @@ public sealed class DiagramGrowerTests
         await d.EndAsync(adding);
 
         Assert.Equal(nameof(FakeDiagramGrowerPorts.ReadDerivedAsync), request.Read);
-        var problem = Assert.IsType<AppProblem.TypeNotDiagrammed>(Assert.Single(ports.Reported));
+        var problem = UnionAsserts.GetCase<AppProblem.TypeNotDiagrammed>(Assert.Single(ports.Reported));
         Assert.Equal(vehicle.Type, problem.Type);
         Assert.Same(error, problem.Error);
         Assert.Equal(["Vehicle"], CardNames(diagram));
@@ -230,7 +230,7 @@ public sealed class DiagramGrowerTests
 
         Assert.Equal(nameof(FakeDiagramGrowerPorts.ReadDerivedAsync), request.Read);
         Assert.Equal(["Bike", "Car", "Vehicle"], CardNames(diagram));
-        var problem = Assert.IsType<AppProblem.ModuleUnreadable>(Assert.Single(ports.Reported));
+        var problem = UnionAsserts.GetCase<AppProblem.ModuleUnreadable>(Assert.Single(ports.Reported));
         Assert.Equal(module.FilePath.FileName, problem.Module);
         Assert.Same(why, problem.Why);
         Assert.False(diagram.IsBusy);

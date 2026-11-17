@@ -191,7 +191,7 @@ public sealed class DocumentNoteTests
         Assert.Equal(0, Assert.Single(made.Notes).Line);
         var line = made.GetPosition("Take(").Line;
         var toggle = Bookmarks.ToggleBookmark(app.AppState, tab, line, Names.Bookmark);
-        Assert.IsType<BookmarkToggle.Added>(toggle);
+        UnionAsserts.GetCase<BookmarkToggle.Added>(toggle);
         var code = made.Lines[line].Text;
 
         app.AppState.Locale = Locale.Ja;

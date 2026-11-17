@@ -33,50 +33,52 @@ public static class ProblemTexts
     // (OneLineText.Name).
     private static (string Title, string Details, Exception? Diagnostic) Words(Strings t, AppProblem problem)
     {
-        return problem.Match<(string Title, string Details, Exception? Diagnostic)>(
-            openFailed: p => AskAgainOrReport(t, t.ErrorOpenAssemblies, p.Error),
-            pdbUnusable: p => (t.ErrorSelectPdb(file: OneLineText.Name(Path.GetFileName(p.PdbPath)), name: OneLineText.Name(p.Assembly)),
+        return problem switch
+        {
+            AppProblem.OpenFailed p => AskAgainOrReport(t, t.ErrorOpenAssemblies, p.Error),
+            AppProblem.PdbUnusable p => (t.ErrorSelectPdb(file: OneLineText.Name(Path.GetFileName(p.PdbPath)), name: OneLineText.Name(p.Assembly)),
                 DescribePdbCheck(t, p.Check, p.Assembly) + Environment.NewLine + p.PdbPath, null),
-            assemblyNotReloaded: p => AskAgain(t, t.ErrorReloadAssembly(OneLineText.Name(p.Assembly)), p.Error),
-            assembliesNotReloaded: p => AskAgainOrReport(t, t.ErrorReloadAssemblies, p.Error),
-            analysisFailed: p => Reportable(t, t.ErrorAnalyze(name: OneLineText.Name(p.Subject), analysis: AnalyzerText.Header(t, p.Kind)), p.Error),
-            analysesNotRestored: p => Reportable(t, t.ErrorRestoreAnalyses, p.Error),
-            unresolved: p => AskAgainOrReport(t, t.ErrorResolve(OneLineText.Name(p.Reference.Name)), p.Error),
-            unresolvedFileDenied: p => (t.ErrorResolve(OneLineText.Name(p.Reference.Name)), Denied(t, p.File), p.Error),
-            unresolvedFileDamaged: p => (t.ErrorResolve(OneLineText.Name(p.Reference.Name)), Damaged(t, p.File), p.Error),
-            placeLookupFailed: p => (t.ErrorLookUpPlace(OneLineText.Name(p.Place.Label)), AfterStep(t, p.Step, BuildCauseAskingForReport(t, FailureTexts.DescribeCause(t, p.Error))), p.Error),
-            placeLookupFileDenied: p => (t.ErrorLookUpPlace(OneLineText.Name(p.Place.Label)),
+            AppProblem.AssemblyNotReloaded p => AskAgain(t, t.ErrorReloadAssembly(OneLineText.Name(p.Assembly)), p.Error),
+            AppProblem.AssembliesNotReloaded p => AskAgainOrReport(t, t.ErrorReloadAssemblies, p.Error),
+            AppProblem.AnalysisFailed p => Reportable(t, t.ErrorAnalyze(name: OneLineText.Name(p.Subject), analysis: AnalyzerText.Header(t, p.Kind)), p.Error),
+            AppProblem.AnalysesNotRestored p => Reportable(t, t.ErrorRestoreAnalyses, p.Error),
+            AppProblem.Unresolved p => AskAgainOrReport(t, t.ErrorResolve(OneLineText.Name(p.Reference.Name)), p.Error),
+            AppProblem.UnresolvedFileDenied p => (t.ErrorResolve(OneLineText.Name(p.Reference.Name)), Denied(t, p.File), p.Error),
+            AppProblem.UnresolvedFileDamaged p => (t.ErrorResolve(OneLineText.Name(p.Reference.Name)), Damaged(t, p.File), p.Error),
+            AppProblem.PlaceLookupFailed p => (t.ErrorLookUpPlace(OneLineText.Name(p.Place.Label)), AfterStep(t, p.Step, BuildCauseAskingForReport(t, FailureTexts.DescribeCause(t, p.Error))), p.Error),
+            AppProblem.PlaceLookupFileDenied p => (t.ErrorLookUpPlace(OneLineText.Name(p.Place.Label)),
                 AfterStep(t, p.Step, Denied(t, p.File)), p.Error),
-            placeLookupFileDamaged: p => (t.ErrorLookUpPlace(OneLineText.Name(p.Place.Label)),
+            AppProblem.PlaceLookupFileDamaged p => (t.ErrorLookUpPlace(OneLineText.Name(p.Place.Label)),
                 AfterStep(t, p.Step, Damaged(t, p.File)), p.Error),
-            referenceFileDenied: p => (t.ErrorReadReference(name: OneLineText.Name(p.Unread.Name), assembly: OneLineText.Name(p.Unread.Module)),
+            AppProblem.ReferenceFileDenied p => (t.ErrorReadReference(name: OneLineText.Name(p.Unread.Name), assembly: OneLineText.Name(p.Unread.Module)),
                 Degraded(t, p.Unread, t.ErrorFileDenied(p.Unread.Error.FilePath.FileName)), p.Unread.Error),
-            referenceFileDamaged: p => (t.ErrorReadReference(name: OneLineText.Name(p.Unread.Name), assembly: OneLineText.Name(p.Unread.Module)),
+            AppProblem.ReferenceFileDamaged p => (t.ErrorReadReference(name: OneLineText.Name(p.Unread.Name), assembly: OneLineText.Name(p.Unread.Module)),
                 Degraded(t, p.Unread, t.ErrorFileDamaged(p.Unread.Error.FilePath.FileName)), p.Unread.Error),
-            moduleUnreadable: p => Thrown(t, t.CauseModuleUnreadableTitle(OneLineText.Name(p.Module)), p.Why),
-            bookmarksNotExported: p => (t.ErrorExportBookmarks, p.Reason, null),
-            bookmarksNotImported: p => (t.ErrorImportBookmarks(OneLineText.Name(p.File)), p.Reason, null),
-            importedBookmarksUnreadable: p => (t.ErrorBookmarksUnreadable(OneLineText.Name(p.File)), DescribeEntryProblems(t, p.Problems), null),
-            importedBookmarksNotPlaced: p => (t.ErrorBookmarkPlacesFailed(OneLineText.Name(p.File)), DescribePlaceFailures(t, p.Failed), null),
-            comparisonFailed: p => Reportable(t, t.ErrorCompare(left: OneLineText.Name(p.Left), right: OneLineText.Name(p.Right)), p.Error),
-            decompilationFailed: p => Reportable(t, t.ErrorDecompile(OneLineText.Name(p.Node)), p.Error),
-            typeNotDiagrammed: p => Reportable(t, t.ErrorShowInDiagram(OneLineText.Name(p.Type.Name)), p.Error),
-            diagramNotReopened: p => Reportable(t, t.ErrorShowInDiagram(p.Diagram.Words(t)), p.Error),
-            diagramNotLaidOut: p => Reportable(t, t.ErrorLayOutDiagram, p.Error),
-            resourceNotSaved: p => (t.ErrorSaveResource(OneLineText.Name(p.Resource)), FailureTexts.DescribeCause(t, p.Error), null),
-            packageFileNotExtracted: p => (t.ErrorExtractFile(OneLineText.Name(p.File)), FailureTexts.DescribeCause(t, p.Error), null),
-            settingsUnreadable: p => (SettingsTitle(t, p.Problem), $"{p.Path}{Environment.NewLine}{DescribeSettings(t, p.Problem)}", null),
-            settingsNotSaved: p => (t.ErrorSaveSettings, p.Reason, null),
-            themeFileProblems: p => (ThemeFileTitle(t, p.Kind, OneLineText.Name(Path.GetFileName(p.File))), DescribeThemeErrors(t, p.Errors), null),
-            themesFolderNotMade: p => (p.Kind == ThemeKind.Color ? t.ErrorThemesFolder : t.ErrorIconThemesFolder, p.Reason, null),
-            customThemeNotWritten: p => (p.Kind == ThemeKind.Color ? t.ErrorCustomTheme : t.ErrorCustomIconTheme,
+            AppProblem.ModuleUnreadable p => Thrown(t, t.CauseModuleUnreadableTitle(OneLineText.Name(p.Module)), p.Why),
+            AppProblem.BookmarksNotExported p => (t.ErrorExportBookmarks, p.Reason, null),
+            AppProblem.BookmarksNotImported p => (t.ErrorImportBookmarks(OneLineText.Name(p.File)), p.Reason, null),
+            AppProblem.ImportedBookmarksUnreadable p => (t.ErrorBookmarksUnreadable(OneLineText.Name(p.File)), DescribeEntryProblems(t, p.Problems), null),
+            AppProblem.ImportedBookmarksNotPlaced p => (t.ErrorBookmarkPlacesFailed(OneLineText.Name(p.File)), DescribePlaceFailures(t, p.Failed), null),
+            AppProblem.ComparisonFailed p => Reportable(t, t.ErrorCompare(left: OneLineText.Name(p.Left), right: OneLineText.Name(p.Right)), p.Error),
+            AppProblem.DecompilationFailed p => Reportable(t, t.ErrorDecompile(OneLineText.Name(p.Node)), p.Error),
+            AppProblem.TypeNotDiagrammed p => Reportable(t, t.ErrorShowInDiagram(OneLineText.Name(p.Type.Name)), p.Error),
+            AppProblem.DiagramNotReopened p => Reportable(t, t.ErrorShowInDiagram(p.Diagram.Words(t)), p.Error),
+            AppProblem.DiagramNotLaidOut p => Reportable(t, t.ErrorLayOutDiagram, p.Error),
+            AppProblem.ResourceNotSaved p => (t.ErrorSaveResource(OneLineText.Name(p.Resource)), FailureTexts.DescribeCause(t, p.Error), null),
+            AppProblem.PackageFileNotExtracted p => (t.ErrorExtractFile(OneLineText.Name(p.File)), FailureTexts.DescribeCause(t, p.Error), null),
+            AppProblem.SettingsUnreadable p => (SettingsTitle(t, p.Problem), $"{p.Path}{Environment.NewLine}{DescribeSettings(t, p.Problem)}", null),
+            AppProblem.SettingsNotSaved p => (t.ErrorSaveSettings, p.Reason, null),
+            AppProblem.ThemeFileProblems p => (ThemeFileTitle(t, p.Kind, OneLineText.Name(Path.GetFileName(p.File))), DescribeThemeErrors(t, p.Errors), null),
+            AppProblem.ThemesFolderNotMade p => (p.Kind == ThemeKind.Color ? t.ErrorThemesFolder : t.ErrorIconThemesFolder, p.Reason, null),
+            AppProblem.CustomThemeNotWritten p => (p.Kind == ThemeKind.Color ? t.ErrorCustomTheme : t.ErrorCustomIconTheme,
                 $"{p.Path}{Environment.NewLine}{p.Reason}", null),
-            themesNotWatched: p => (p.Kind == ThemeKind.Color ? t.ErrorWatchThemes : t.ErrorWatchIconThemes, p.Reason, null),
-            runtimeNotScanned: p => AskAgain(t, t.ErrorScanRuntime, p.Error),
-            nuGetConfigUnreadable: p => FixNuGetConfigOrReport(t, p.Error),
-            nuGetSearchFailed: p => AskAgain(t, t.ErrorSearchNuget(OneLineText.Name(p.Feed)), p.Error),
-            packageNotDownloaded: p => AskAgain(t, t.ErrorDownloadPackage(OneLineText.Name(p.Package)), p.Error),
-            unexpected: p => Reportable(t, t.ErrorUnexpected, p.Error));
+            AppProblem.ThemesNotWatched p => (p.Kind == ThemeKind.Color ? t.ErrorWatchThemes : t.ErrorWatchIconThemes, p.Reason, null),
+            AppProblem.RuntimeNotScanned p => AskAgain(t, t.ErrorScanRuntime, p.Error),
+            AppProblem.NuGetConfigUnreadable p => FixNuGetConfigOrReport(t, p.Error),
+            AppProblem.NuGetSearchFailed p => AskAgain(t, t.ErrorSearchNuget(OneLineText.Name(p.Feed)), p.Error),
+            AppProblem.PackageNotDownloaded p => AskAgain(t, t.ErrorDownloadPackage(OneLineText.Name(p.Package)), p.Error),
+            AppProblem.Unexpected p => Reportable(t, t.ErrorUnexpected, p.Error),
+        };
     }
 
     // The step that asked for the lookup on its own line, then the rest of the details.
@@ -173,9 +175,11 @@ public static class ProblemTexts
 
     private static string DescribeEntryProblem(Strings t, BookmarkEntryProblem problem)
     {
-        return problem.Match(
-            placeUnreadable: p => t.ErrorBookmarkPlaceUnreadable(p.Entry),
-            notABookmark: n => t.BookmarkEntryProblem(entry: n.Entry, detail: n.Detail));
+        return problem switch
+        {
+            BookmarkEntryProblem.PlaceUnreadable p => t.ErrorBookmarkPlaceUnreadable(p.Entry),
+            BookmarkEntryProblem.NotABookmark n => t.BookmarkEntryProblem(entry: n.Entry, detail: n.Detail),
+        };
     }
 
     internal static string DescribePdbCheck(Strings t, PdbCheck check, string name)

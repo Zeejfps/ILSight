@@ -37,7 +37,7 @@ public sealed class ShowInApiReferenceHandlerTests
         Assert.Equal([new Refusal.NoApiReferencePage { Name = "Hidden" }], none.Refused);
         Assert.Empty(failed.Refused);
         Assert.Empty(none.Reported);
-        Assert.Equal("unreadable", Assert.IsType<AppProblem.Unresolved>(Assert.Single(failed.Reported)).Error.Message);
+        Assert.Equal("unreadable", UnionAsserts.GetCase<AppProblem.Unresolved>(Assert.Single(failed.Reported)).Error.Message);
         var viewCommands = d.TakeViewCommands();
         Assert.Empty(viewCommands);
     }

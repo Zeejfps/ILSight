@@ -77,7 +77,7 @@ public sealed class ReopenDiagramHandlerTests
         Assert.Single(ports.Answers).SetResult(new Outcome<List<Lookup<TypeCard>>>.Failed(error));
         await d.EndAsync(reading);
 
-        var problem = Assert.IsType<AppProblem.DiagramNotReopened>(Assert.Single(ports.Reported));
+        var problem = UnionAsserts.GetCase<AppProblem.DiagramNotReopened>(Assert.Single(ports.Reported));
         Assert.Equal(new TabTitle.Diagram("Vehicle"), problem.Diagram);
         Assert.Same(error, problem.Error);
         Assert.Empty(read.Diagram.Cards);

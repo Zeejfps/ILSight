@@ -93,6 +93,6 @@ public sealed class RunArgumentsInbox
             return;
         }
 
-        _appState.Refusals.Show(ignored);
+        _appState.Refusals.Show(ignored.Value);
     }
 }

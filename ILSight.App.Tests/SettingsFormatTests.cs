@@ -140,7 +140,7 @@ public sealed class SettingsFormatTests : IDisposable
         Directory.CreateDirectory(_temp.Path);
 
         var write = BookmarkFile.Write(path, ExpectedBookmarks());
-        Assert.IsType<BookmarksWriteResult.Written>(write);
+        UnionAsserts.GetCase<BookmarksWriteResult.Written>(write);
 
         AssertSameJson(Fixture(BookmarksFixture), File.ReadAllText(path));
     }
@@ -150,10 +150,10 @@ public sealed class SettingsFormatTests : IDisposable
     {
         var path = _temp.Write(BookmarksFixture, Fixture(BookmarksFixture));
 
-        var read = Assert.IsType<BookmarksRead.Read>(BookmarkFile.Read(path));
+        var read = UnionAsserts.GetCase<BookmarksRead.Read>(BookmarkFile.Read(path));
         Assert.Empty(read.Problems);
         var write = BookmarkFile.Write(path, read.Bookmarks);
-        Assert.IsType<BookmarksWriteResult.Written>(write);
+        UnionAsserts.GetCase<BookmarksWriteResult.Written>(write);
 
         AssertSameJson(Fixture(BookmarksFixture), File.ReadAllText(path));
     }

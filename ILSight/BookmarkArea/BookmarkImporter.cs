@@ -43,17 +43,15 @@ public sealed class BookmarkImporter(BookmarkImporter.IPorts ports)
             return;
         }
 
-        var problem = read.Match<AppProblem?>(
-            read: r => r.Problems.Count == 0 ? null : new AppProblem.ImportedBookmarksUnreadable
-            {
-                File = file,
-                Problems = r.Problems,
-            },
-            notBookmarksFile: static _ => null,
-            failed: f => new AppProblem.BookmarksNotImported { File = file, Reason = f.Reason });
+        AppProblem? problem = read switch
+        {
+            BookmarksRead.Read { Problems.Count: 0 } or BookmarksRead.NotBookmarksFile => null,
+            BookmarksRead.Read r => new AppProblem.ImportedBookmarksUnreadable { File = file, Problems = r.Problems },
+            BookmarksRead.Failed f => new AppProblem.BookmarksNotImported { File = file, Reason = f.Reason },
+        };
         if (problem is not null)
         {
-            ports.ReportError(problem);
+            ports.ReportError(problem.Value);
         }
         if (read is not BookmarksRead.Read bookmarksRead)
         {

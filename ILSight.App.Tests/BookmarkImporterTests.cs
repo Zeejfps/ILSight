@@ -15,9 +15,9 @@ public sealed class BookmarkImporterTests
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var firstToggle = Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);
-        Assert.IsType<BookmarkToggle.Added>(firstToggle);
+        UnionAsserts.GetCase<BookmarkToggle.Added>(firstToggle);
         var secondToggle = Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("foreach").Line, Names.Bookmark);
-        Assert.IsType<BookmarkToggle.Added>(secondToggle);
+        UnionAsserts.GetCase<BookmarkToggle.Added>(secondToggle);
         return d.AppState.Bookmarks.Items.ToList();
     }
 
@@ -62,7 +62,7 @@ public sealed class BookmarkImporterTests
         Assert.Equal([Path], ports.Read);
         Assert.Equal(["Bookmark 1"], bookmarks.Items.Select(static b => b.Name));
         Assert.Null(imports.Asking);
-        var lost = Assert.IsType<Refusal.ImportedBookmarksLost>(Assert.Single(ports.Refused));
+        var lost = UnionAsserts.GetCase<Refusal.ImportedBookmarksLost>(Assert.Single(ports.Refused));
         Assert.Equal("exported.json", lost.File);
         Assert.Single(lost.Lost);
         Assert.Empty(ports.Reported);
@@ -106,7 +106,7 @@ public sealed class BookmarkImporterTests
 
         Assert.Equal(2, bookmarks.Items.Count);
         Assert.Null(imports.Asking);
-        Assert.Equal(1, Assert.IsType<Refusal.BookmarksLeftOut>(Assert.Single(ports.Refused)).Count);
+        Assert.Equal(1, UnionAsserts.GetCase<Refusal.BookmarksLeftOut>(Assert.Single(ports.Refused)).Count);
         Assert.Empty(ports.Reported);
     }
 
@@ -119,7 +119,7 @@ public sealed class BookmarkImporterTests
 
         await new BookmarkImporter(ports).ImportAsync(bookmarks, imports, Path, CancellationToken.None);
 
-        Assert.Equal(Path, Assert.IsType<Refusal.NotBookmarksFile>(Assert.Single(ports.Refused)).Path);
+        Assert.Equal(Path, UnionAsserts.GetCase<Refusal.NotBookmarksFile>(Assert.Single(ports.Refused)).Path);
         Assert.Empty(ports.Reported);
         Assert.Empty(ports.Answers);
         Assert.Empty(bookmarks.Items);
@@ -139,7 +139,7 @@ public sealed class BookmarkImporterTests
         await importing.WithinPatienceAsync();
 
         Assert.Equal(["Bookmark 2"], bookmarks.Items.Select(static b => b.Name));
-        var reported = Assert.IsType<AppProblem.ImportedBookmarksNotPlaced>(Assert.Single(ports.Reported));
+        var reported = UnionAsserts.GetCase<AppProblem.ImportedBookmarksNotPlaced>(Assert.Single(ports.Reported));
         Assert.Equal("exported.json", reported.File);
         var failed = Assert.Single(reported.Failed);
         Assert.Equal("Bookmark 1", failed.Bookmark.Name);
@@ -150,7 +150,7 @@ public sealed class BookmarkImporterTests
     [Fact]
     public void Lost_bookmarks_are_joined_by_each_languages_template_and_separator_the_values_as_they_are()
     {
-        var lost = new Refusal.ImportedBookmarksLost
+        Refusal lost = new Refusal.ImportedBookmarksLost
         {
             File = "exported.json",
             Lost =

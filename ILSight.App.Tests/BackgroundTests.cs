@@ -28,7 +28,7 @@ public sealed class BackgroundTests
         resume.SetResult();
         await WorkflowRunnerTests.WaitUntilEndedAsync(work);
 
-        var problem = Assert.IsType<AppProblem.Unexpected>(Assert.Single(errors.Entries).Problem);
+        var problem = UnionAsserts.GetCase<AppProblem.Unexpected>(Assert.Single(errors.Entries).Problem);
         Assert.IsType<InvalidOperationException>(problem.Error);
         Assert.Equal(Strings.En.ErrorUnexpected, ProblemTexts.Describe(Strings.En, problem).Title);
     }

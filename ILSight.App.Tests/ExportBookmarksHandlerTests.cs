@@ -14,7 +14,7 @@ public sealed class ExportBookmarksHandlerTests
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var toggle = Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);
-        Assert.IsType<BookmarkToggle.Added>(toggle);
+        UnionAsserts.GetCase<BookmarkToggle.Added>(toggle);
         return d.AppState.Bookmarks;
     }
 
@@ -40,6 +40,6 @@ public sealed class ExportBookmarksHandlerTests
 
         new ExportBookmarksHandler(ports).Handle(bookmarks, Path);
 
-        Assert.Equal("Disk full.", Assert.IsType<AppProblem.BookmarksNotExported>(Assert.Single(ports.Reported)).Reason);
+        Assert.Equal("Disk full.", UnionAsserts.GetCase<AppProblem.BookmarksNotExported>(Assert.Single(ports.Reported)).Reason);
     }
 }

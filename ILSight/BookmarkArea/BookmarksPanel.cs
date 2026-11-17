@@ -43,10 +43,17 @@ public sealed class BookmarksPanel
     /// the bookmark now in its row.</summary>
     public void TakeToggle(BookmarkToggle toggle, IReadOnlyList<Bookmark> bookmarks)
     {
-        toggle.Switch(
-            unchanged: static _ => { },
-            added: added => Selection.Select(added.Bookmark, bookmarks),
-            removed: removed => TakeRemoved(removed.Bookmark, removed.Row, bookmarks));
+        switch (toggle)
+        {
+            case BookmarkToggle.Unchanged:
+                break;
+            case BookmarkToggle.Added added:
+                Selection.Select(added.Bookmark, bookmarks);
+                break;
+            case BookmarkToggle.Removed removed:
+                TakeRemoved(removed.Bookmark, removed.Row, bookmarks);
+                break;
+        }
     }
 
     /// <summary>Passes the selection of <paramref name="bookmark"/>, removed from <paramref name="row"/>, to the

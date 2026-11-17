@@ -43,7 +43,7 @@ public sealed class UserThemesTests
         themes.ReadThemes();
         themes.ReloadThemes();
 
-        var problem = Assert.IsType<AppProblem.ThemeFileProblems>(Assert.Single(ports.Reported));
+        var problem = UnionAsserts.GetCase<AppProblem.ThemeFileProblems>(Assert.Single(ports.Reported));
         Assert.Equal(ThemeKind.Color, problem.Kind);
         Assert.Equal(PathOf("locked"), problem.File);
         var error = Assert.Single(problem.Errors);
@@ -66,7 +66,7 @@ public sealed class UserThemesTests
 
         themes.ReadThemes();
 
-        var problem = Assert.IsType<AppProblem.ThemeFileProblems>(Assert.Single(ports.Reported));
+        var problem = UnionAsserts.GetCase<AppProblem.ThemeFileProblems>(Assert.Single(ports.Reported));
         Assert.Contains(new ThemeError
         {
             File = PathOf("mine"),
@@ -100,7 +100,7 @@ public sealed class UserThemesTests
         var folder = themes.PrepareFolder();
 
         Assert.Null(folder);
-        var problem = Assert.IsType<AppProblem.ThemesFolderNotMade>(Assert.Single(ports.Reported));
+        var problem = UnionAsserts.GetCase<AppProblem.ThemesFolderNotMade>(Assert.Single(ports.Reported));
         Assert.Equal("There is a file named themes.", problem.Reason);
     }
 
@@ -139,7 +139,7 @@ public sealed class UserThemesTests
         var custom = themes.CreateCustomTheme(Id("dark"), static _ => "Mine");
 
         Assert.Null(custom);
-        var problem = Assert.IsType<AppProblem.CustomThemeNotWritten>(Assert.Single(ports.Reported));
+        var problem = UnionAsserts.GetCase<AppProblem.CustomThemeNotWritten>(Assert.Single(ports.Reported));
         Assert.Equal(PathOf("dark-custom"), problem.Path);
         Assert.Equal("The folder is read-only.", problem.Reason);
         Assert.DoesNotContain(nameof(FakeUserThemesPorts<ThemeFile, ThemeContents, AppTheme>.ListThemeFiles), ports.Asked);
@@ -183,7 +183,7 @@ public sealed class UserThemesTests
         var watching = Create(ports).WatchAsync(shutdown.Token);
 
         Assert.False(watching.IsCompleted);
-        var problem = Assert.IsType<AppProblem.ThemeFileProblems>(Assert.Single(ports.Reported));
+        var problem = UnionAsserts.GetCase<AppProblem.ThemeFileProblems>(Assert.Single(ports.Reported));
         Assert.Equal(ThemeProblem.Unreadable, Assert.Single(problem.Errors).Problem);
     }
 
@@ -214,7 +214,7 @@ public sealed class UserThemesTests
 
         await Create(ports).WatchAsync(shutdown.Token);
 
-        var problem = Assert.IsType<AppProblem.ThemesNotWatched>(Assert.Single(ports.Reported));
+        var problem = UnionAsserts.GetCase<AppProblem.ThemesNotWatched>(Assert.Single(ports.Reported));
         Assert.Equal("The folder was removed again.", problem.Reason);
         Assert.Equal(2, ports.Asked.Count(static a => a == nameof(FakeUserThemesPorts<ThemeFile, ThemeContents, AppTheme>.TryStartWatching)));
     }
@@ -239,7 +239,7 @@ public sealed class UserThemesTests
 
         await Create(ports).WatchAsync(CancellationToken.None);
 
-        Assert.IsType<AppProblem.ThemesFolderNotMade>(Assert.Single(ports.Reported));
+        UnionAsserts.GetCase<AppProblem.ThemesFolderNotMade>(Assert.Single(ports.Reported));
         Assert.Equal([nameof(FakeUserThemesPorts<ThemeFile, ThemeContents, AppTheme>.TryMakeFolder)], ports.Asked);
     }
 
@@ -250,7 +250,7 @@ public sealed class UserThemesTests
 
         await Create(ports).WatchAsync(CancellationToken.None);
 
-        var problem = Assert.IsType<AppProblem.ThemesNotWatched>(Assert.Single(ports.Reported));
+        var problem = UnionAsserts.GetCase<AppProblem.ThemesNotWatched>(Assert.Single(ports.Reported));
         Assert.Equal(ThemeKind.Color, problem.Kind);
         Assert.Equal("Too many folders are watched.", problem.Reason);
     }

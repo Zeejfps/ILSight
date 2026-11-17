@@ -165,7 +165,7 @@ public sealed class AutosaveTests : IDisposable
         app.Run(2);
 
         Assert.False(first);
-        Assert.IsType<AppProblem.SettingsNotSaved>(Assert.Single(app.AppState.Errors.Entries).Problem);
+        UnionAsserts.GetCase<AppProblem.SettingsNotSaved>(Assert.Single(app.AppState.Errors.Entries).Problem);
         Assert.True(app.Frames.Drew("Cannot save the settings"));
         Assert.True(app.App.TryClose(window));
     }

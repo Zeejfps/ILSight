@@ -61,7 +61,7 @@ public sealed class NavigationInfrastructureTests
             "M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)", list.Work, CancellationToken.None));
 
         // The library's failure on the user's module is the module's: said by its message, no step and no bug report.
-        var reported = Assert.IsType<AppProblem.ModuleUnreadable>(Assert.Single(errors.Entries).Problem);
+        var reported = UnionAsserts.GetCase<AppProblem.ModuleUnreadable>(Assert.Single(errors.Entries).Problem);
         Assert.IsType<BadImageFormatException>(reported.Why);
         var text = ProblemTexts.Describe(Strings.En, reported);
         Assert.Equal(reported.Why.Message, text.Details);
@@ -87,7 +87,7 @@ public sealed class NavigationInfrastructureTests
         new WorkflowRunner(work, errors).Start("look up a place", ct => navigation.LookUpPlaceAsync(place, ct));
         await WorkflowRunnerTests.WaitUntilEndedAsync(work);
 
-        Assert.Equal(BrokenListing.Message, Assert.IsType<AppProblem.Unexpected>(Assert.Single(errors.Entries).Problem).Error.Message);
+        Assert.Equal(BrokenListing.Message, UnionAsserts.GetCase<AppProblem.Unexpected>(Assert.Single(errors.Entries).Problem).Error.Message);
     }
 
     [Fact]

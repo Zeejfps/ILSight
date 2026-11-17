@@ -155,7 +155,7 @@ public sealed class RunArgumentsTests
     {
         var d = Start(new AppSettings(), "--language=il-csharp", "--opengl", "--language=IL");
 
-        var refused = Assert.IsType<Refusal.ArgumentsIgnored>(d.AppState.Refusals.Shown);
+        var refused = UnionAsserts.GetCase<Refusal.ArgumentsIgnored>(d.AppState.Refusals.Shown);
         Assert.Equal(["--language=il-csharp", "--opengl"], refused.Arguments);
         Assert.Empty(d.AppState.Errors.Entries);
         Assert.Equal(DecompilationLanguage.IL, d.AppState.Decompiler.Setup.Language);
@@ -169,7 +169,7 @@ public sealed class RunArgumentsTests
         app.Driver.InTurn(() => Errors.Report(app.AppState, new AppProblem.Unexpected(new InvalidOperationException("Broken."))));
         app.Settle(1);
         var t = app.Ui.Appearance.Strings;
-        var refused = Assert.IsType<Refusal.ArgumentsIgnored>(app.AppState.Refusals.Shown);
+        Refusal refused = UnionAsserts.GetCase<Refusal.ArgumentsIgnored>(app.AppState.Refusals.Shown);
 
         var indicator = app.TextRect(t.StatusErrors(1));
         var note = app.TextRect(refused.Words(t).What);
@@ -191,7 +191,9 @@ public sealed class RunArgumentsTests
         var t = Strings.For(Locale.En);
         var many = Enumerable.Range(1, 40).Select(static i => $"--unknown-option-{i}").ToArray();
 
-        var (_, why) = new Refusal.ArgumentsIgnored { Arguments = many }.Words(t);
+        Refusal refusal = new Refusal.ArgumentsIgnored { Arguments = many };
+
+        var (_, why) = refusal.Words(t);
 
         Assert.Equal(string.Join(" ", many), why);
     }
@@ -202,8 +204,8 @@ public sealed class RunArgumentsTests
         var ignored = Enumerable.Range(1, 40).Select(static i => $"--unknown-option-{i}").ToArray();
         var app = Start(new AppSettings(), ignored);
         var t = app.Ui.Appearance.Strings;
-        var refused = Assert.IsType<Refusal.ArgumentsIgnored>(app.AppState.Refusals.Shown);
-        var what = refused.Words(t).What;
+        var refused = UnionAsserts.GetCase<Refusal.ArgumentsIgnored>(app.AppState.Refusals.Shown);
+        var what = ((Refusal)refused).Words(t).What;
 
         var note = TabTo(app, what);
         app.Frames.Key(KeyboardKey.Enter);
@@ -211,7 +213,7 @@ public sealed class RunArgumentsTests
 
         Assert.Equal(t.StatusRefusalDetails, note.Value);
         Assert.True(app.Ui.RefusalDetails.IsOpen);
-        Assert.Same(refused, app.AppState.Refusals.Shown);
+        Assert.Same(refused, UnionAsserts.GetCase<Refusal.ArgumentsIgnored>(app.AppState.Refusals.Shown));
         // Not hovered, so no tooltip: the details list the arguments one a line, from the first, and scroll to the last.
         Assert.Equal(ignored[0], DrawnArguments(app, ignored)[0]);
         var first = app.TextRect(ignored[0]);

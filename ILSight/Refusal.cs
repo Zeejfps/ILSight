@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ILSight.Core;
 
 namespace ILSight;
@@ -7,15 +6,14 @@ namespace ILSight;
 /// (<see cref="RefusalLine"/>), worded in the language the screen shows (<see cref="Words"/>). A refusal is no failure:
 /// it isn't added to the errors. What the app tells unasked, with no place the user acted (arguments a later run
 /// handed over), is said there too.</summary>
-public abstract record Refusal
+public union Refusal(Refusal.ResourceNotSaved, Refusal.PdbNotRead, Refusal.NotFullPath, Refusal.AssemblyClosed,
+    Refusal.NotAnalyzable, Refusal.IdNotFound, Refusal.ArgumentsIgnored, Refusal.NoApiReferencePage, Refusal.Unresolved,
+    Refusal.HistoryPlaceGone, Refusal.BookmarkGone, Refusal.TypeNotDiagrammed, Refusal.PdbUnusable,
+    Refusal.NotBookmarksFile, Refusal.ImportedBookmarksLost, Refusal.BookmarksLeftOut)
 {
-    private Refusal()
-    {
-    }
-
     /// <summary>The resource <see cref="Resource"/> was not saved: its assembly, the file <see cref="Assembly"/>, was
     /// closed before it was read.</summary>
-    public sealed record ResourceNotSaved : Refusal
+    public sealed record ResourceNotSaved
     {
         public required string Resource { get; init; }
 
@@ -24,7 +22,7 @@ public abstract record Refusal
 
     /// <summary>The PDB <see cref="Pdb"/> was not read for the assembly, the file <see cref="Assembly"/>: it was closed
     /// before it was read.</summary>
-    public sealed record PdbNotRead : Refusal
+    public sealed record PdbNotRead
     {
         public required string Pdb { get; init; }
 
@@ -32,57 +30,57 @@ public abstract record Refusal
     }
 
     /// <summary>The file at <see cref="Path"/>, dropped on the window, was not opened: it is not a full path.</summary>
-    public sealed record NotFullPath : Refusal
+    public sealed record NotFullPath
     {
         public required string Path { get; init; }
     }
 
     /// <summary>What was asked would read <see cref="Assembly"/>, the file a tab shows closed
     /// (<see cref="TabLoad.ShowClosed"/>): a view of a closed assembly asks for nothing more.</summary>
-    public sealed record AssemblyClosed : Refusal
+    public sealed record AssemblyClosed
     {
         public required string Assembly { get; init; }
     }
 
     /// <summary>Analyzing <see cref="Symbol"/> was asked for, but its assembly isn't on the list and nothing names its
     /// definition to list it by.</summary>
-    public sealed record NotAnalyzable : Refusal
+    public sealed record NotAnalyzable
     {
         public required string Symbol { get; init; }
     }
 
     /// <summary>No open assembly has what the documentation id <see cref="Id"/> names.</summary>
-    public sealed record IdNotFound : Refusal
+    public sealed record IdNotFound
     {
         public required string Id { get; init; }
     }
 
     /// <summary>The command line's <see cref="Arguments"/> asked for nothing the app can do.</summary>
-    public sealed record ArgumentsIgnored : Refusal
+    public sealed record ArgumentsIgnored
     {
         public required IReadOnlyList<string> Arguments { get; init; }
     }
 
     /// <summary>The type or member <see cref="Name"/> has no page in the .NET API reference.</summary>
-    public sealed record NoApiReferencePage : Refusal
+    public sealed record NoApiReferencePage
     {
         public required string Name { get; init; }
     }
 
     /// <summary>What <see cref="Reference"/> points at was not found.</summary>
-    public sealed record Unresolved : Refusal
+    public sealed record Unresolved
     {
         public required CodeReference Reference { get; init; }
     }
 
     /// <summary>The place a history entry shows, <see cref="Place"/>, was not found.</summary>
-    public sealed record HistoryPlaceGone : Refusal
+    public sealed record HistoryPlaceGone
     {
         public required NodePath Place { get; init; }
     }
 
     /// <summary>The place the bookmark <see cref="Bookmark"/> marks, <see cref="Place"/>, was not found.</summary>
-    public sealed record BookmarkGone : Refusal
+    public sealed record BookmarkGone
     {
         public required string Bookmark { get; init; }
 
@@ -90,14 +88,14 @@ public abstract record Refusal
     }
 
     /// <summary>A diagram was asked for <see cref="Type"/>, which is no type that can be read.</summary>
-    public sealed record TypeNotDiagrammed : Refusal
+    public sealed record TypeNotDiagrammed
     {
         public required CodeReference.Entity Type { get; init; }
     }
 
     /// <summary>The PDB at <see cref="PdbPath"/>, picked for the assembly <see cref="Assembly"/>, was read and doesn't
     /// match it (<see cref="Check"/>: another build's, or a Windows PDB), so it wasn't used.</summary>
-    public sealed record PdbUnusable : Refusal
+    public sealed record PdbUnusable
     {
         public required string PdbPath { get; init; }
 
@@ -107,14 +105,14 @@ public abstract record Refusal
     }
 
     /// <summary>The file at <see cref="Path"/>, given to import bookmarks from, holds no bookmarks list.</summary>
-    public sealed record NotBookmarksFile : Refusal
+    public sealed record NotBookmarksFile
     {
         public required string Path { get; init; }
     }
 
     /// <summary>The places of the bookmarks <see cref="Lost"/> describes, read from <see cref="File"/>, were not found, so
     /// the import left them out.</summary>
-    public sealed record ImportedBookmarksLost : Refusal
+    public sealed record ImportedBookmarksLost
     {
         public required string File { get; init; }
 
@@ -122,7 +120,7 @@ public abstract record Refusal
     }
 
     /// <summary><see cref="Count"/> bookmarks, imported or restored, were left out because others mark their lines.</summary>
-    public sealed record BookmarksLeftOut : Refusal
+    public sealed record BookmarksLeftOut
     {
         public required int Count { get; init; }
     }
@@ -136,7 +134,9 @@ public abstract record Refusal
         {
             ArgumentsIgnored r => r.Arguments,
             ImportedBookmarksLost r => r.Lost.Select(b => b.Words(t)).ToArray(),
-            _ => null,
+            ResourceNotSaved or PdbNotRead or NotFullPath or AssemblyClosed or NotAnalyzable or IdNotFound or NoApiReferencePage
+                or Unresolved or HistoryPlaceGone or BookmarkGone or TypeNotDiagrammed or PdbUnusable or NotBookmarksFile
+                or BookmarksLeftOut => null,
         };
     }
 
@@ -163,7 +163,6 @@ public abstract record Refusal
             NotBookmarksFile r => (t.ErrorImportBookmarks(N(System.IO.Path.GetFileName(r.Path))), t.ErrorNotBookmarksFile),
             ImportedBookmarksLost r => (t.ErrorBookmarksNotFound(N(r.File)), BookmarkArea.LostBookmark.JoinWords(t, r.Lost)),
             BookmarksLeftOut r => (t.ErrorDuplicateBookmarks(r.Count), ""),
-            _ => throw new UnreachableException($"Refusal.Words does not handle {GetType().Name}."),
         };
     }
 

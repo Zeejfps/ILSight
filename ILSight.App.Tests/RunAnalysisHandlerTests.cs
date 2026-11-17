@@ -64,7 +64,7 @@ public sealed class RunAnalysisHandlerTests
         Assert.IsType<AnalyzerSymbolNode>(run.Kind.Found[0]);
         Assert.Equal("unreadable", Assert.IsType<AnalyzerMessageNode>(run.Kind.Found[1]).Error);
         Assert.True(run.Kind.IsDone);
-        Assert.Same(error, Assert.IsType<AppProblem.AnalysisFailed>(Assert.Single(ports.Reported)).Error);
+        Assert.Same(error, UnionAsserts.GetCase<AppProblem.AnalysisFailed>(Assert.Single(ports.Reported)).Error);
     }
 
     [Fact]

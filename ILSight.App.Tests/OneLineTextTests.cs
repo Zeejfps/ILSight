@@ -76,8 +76,10 @@ public sealed class OneLineTextTests
 
         var brokenTitle = new TabTitle.Diagram("Shop\nCart").Words(t);
         var escapedTitle = new TabTitle.Diagram(@"Shop\nCart").Words(t);
-        var brokenRefusal = new Refusal.IdNotFound { Id = "T:Shop\nCart" }.Words(t).What;
-        var escapedRefusal = new Refusal.IdNotFound { Id = @"T:Shop\nCart" }.Words(t).What;
+        Refusal brokenId = new Refusal.IdNotFound { Id = "T:Shop\nCart" };
+        Refusal escapedId = new Refusal.IdNotFound { Id = @"T:Shop\nCart" };
+        var brokenRefusal = brokenId.Words(t).What;
+        var escapedRefusal = escapedId.Words(t).What;
 
         foreach (var line in new[] { brokenTitle, escapedTitle, brokenRefusal, escapedRefusal })
         {

@@ -250,7 +250,7 @@ public sealed class NuGetBrowserTests
 
         Assert.Equal("The feed is down.", picker.Browser.SearchError?.Message);
         Assert.Empty(picker.Browser.Results);
-        var reported = Assert.IsType<AppProblem.NuGetSearchFailed>(Assert.Single(ports.Reported));
+        var reported = UnionAsserts.GetCase<AppProblem.NuGetSearchFailed>(Assert.Single(ports.Reported));
         Assert.Equal("test", reported.Feed);
     }
 
@@ -331,7 +331,7 @@ public sealed class NuGetBrowserTests
 
         Assert.Equal([nameof(FakePorts.ReadUserConfigAsync), nameof(FakePorts.CreateDefaultSetup)], ports.Asked);
         Assert.Equal(shutdown.Token, Assert.Single(ports.Tokens));
-        Assert.IsType<AppProblem.NuGetConfigUnreadable>(Assert.Single(ports.Reported));
+        UnionAsserts.GetCase<AppProblem.NuGetConfigUnreadable>(Assert.Single(ports.Reported));
         Assert.False(picker.Browser.IsReadingSetup);
         Assert.Equal(FeedUrl, picker.FeedUrl);
     }
@@ -544,7 +544,7 @@ public sealed class NuGetBrowserTests
         Assert.Null(second.Shown);
         Assert.Same(pixels, icons[2]?.Shown?.Pixels);
         Assert.Equal(2, errors.Entries.Count);
-        Assert.All(errors.Entries, static e => Assert.IsType<AppProblem.Unexpected>(e.Problem));
+        Assert.All(errors.Entries, static e => UnionAsserts.GetCase<AppProblem.Unexpected>(e.Problem));
         Assert.False(picker.Browser.HasDownloadsToStart);
     }
 

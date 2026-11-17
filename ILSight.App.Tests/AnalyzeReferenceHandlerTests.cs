@@ -51,7 +51,7 @@ public sealed class AnalyzeReferenceHandlerTests
         Assert.Empty(analyzer.ListSavedAnalyses());
         Assert.Equal([new Refusal.Unresolved { Reference = reference }], missing.Refused);
         Assert.Empty(missing.Reported);
-        Assert.Same(error, Assert.IsType<AppProblem.Unresolved>(Assert.Single(failed.Reported)).Error);
+        Assert.Same(error, UnionAsserts.GetCase<AppProblem.Unresolved>(Assert.Single(failed.Reported)).Error);
         Assert.Empty(failed.Refused);
     }
 

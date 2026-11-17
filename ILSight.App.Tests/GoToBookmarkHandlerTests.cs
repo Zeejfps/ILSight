@@ -13,7 +13,7 @@ public sealed class GoToBookmarkHandlerTests
         var tab = d.AppState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(tab);
         var toggle = Bookmarks.ToggleBookmark(d.AppState, tab, tab.Document.GetPosition("return First();").Line, Names.Bookmark);
-        Assert.IsType<BookmarkToggle.Added>(toggle);
+        UnionAsserts.GetCase<BookmarkToggle.Added>(toggle);
         var greeter = await d.FixtureAsync("Greeter");
         d.Show(greeter);
         return (d, Assert.Single(d.AppState.Bookmarks.Items));
@@ -60,7 +60,7 @@ public sealed class GoToBookmarkHandlerTests
         var load = await d.EndAsync(going);
 
         Assert.Null(load);
-        var gone = Assert.IsType<Refusal.BookmarkGone>(Assert.Single(ports.Refused));
+        var gone = UnionAsserts.GetCase<Refusal.BookmarkGone>(Assert.Single(ports.Refused));
         Assert.Equal(bookmark.Name, gone.Bookmark);
         Assert.Equal(bookmark.Place, gone.Place);
         Assert.Empty(ports.Reported);
@@ -82,7 +82,7 @@ public sealed class GoToBookmarkHandlerTests
         var load = await d.EndAsync(going);
         Assert.Null(load);
 
-        var reported = Assert.IsType<AppProblem.PlaceLookupFailed>(Assert.Single(ports.Reported));
+        var reported = UnionAsserts.GetCase<AppProblem.PlaceLookupFailed>(Assert.Single(ports.Reported));
         Assert.Same(error, reported.Error);
         Assert.Equal(bookmark.Place, reported.Place);
         Assert.Equal(new PlaceLookupStep.GoingToBookmark(bookmark.Name), reported.Step);
@@ -102,14 +102,14 @@ public sealed class GoToBookmarkHandlerTests
         var deniedReport = await ReportedAsync(d, bookmark, denied);
         var damagedReport = await ReportedAsync(d, bookmark, damaged);
 
-        var deniedLookup = Assert.IsType<AppProblem.PlaceLookupFileDenied>(deniedReport);
+        var deniedLookup = UnionAsserts.GetCase<AppProblem.PlaceLookupFileDenied>(deniedReport);
         Assert.Equal(file, deniedLookup.File);
         var deniedText = ProblemTexts.Describe(Strings.En, deniedReport);
         Assert.Equal(Strings.En.ErrorLookUpPlace(bookmark.Place.Label), deniedText.Title);
         Assert.Equal(Strings.En.ErrorStepBookmark(bookmark.Name) + Environment.NewLine + Environment.NewLine + "Locked.dll couldn't be opened: access to it was denied, or another program has it locked. Make it readable, then try again.",
             deniedText.Details);
         Assert.Equal(denied.ToString(), deniedText.TechnicalDetails);
-        var damagedLookup = Assert.IsType<AppProblem.PlaceLookupFileDamaged>(damagedReport);
+        var damagedLookup = UnionAsserts.GetCase<AppProblem.PlaceLookupFileDamaged>(damagedReport);
         Assert.Same(damaged, damagedLookup.Error);
         var damagedText = ProblemTexts.Describe(Strings.En, damagedReport);
         Assert.Equal(Strings.En.ErrorLookUpPlace(bookmark.Place.Label), damagedText.Title);

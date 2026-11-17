@@ -74,10 +74,10 @@ public sealed class NavigateHandlerTests
             return new NavigateHandler(failed).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, reference, resolveTicket, CancellationToken.None);
         });
 
-        var notThere = Assert.IsType<Refusal.Unresolved>(Assert.Single(missing.Refused));
+        var notThere = UnionAsserts.GetCase<Refusal.Unresolved>(Assert.Single(missing.Refused));
         Assert.Same(reference, UnionAsserts.GetCase<CodeReference.Entity>(notThere.Reference));
         Assert.Empty(missing.Reported);
-        Assert.Same(error, Assert.IsType<AppProblem.Unresolved>(Assert.Single(failed.Reported)).Error);
+        Assert.Same(error, UnionAsserts.GetCase<AppProblem.Unresolved>(Assert.Single(failed.Reported)).Error);
         Assert.Same(shown, d.AppState.ListSession.Navigation.ActiveTab?.Node);
         Assert.False(d.AppState.ListSession.Navigation.IsResolving);
         Assert.Null(missingLoad);
@@ -101,7 +101,7 @@ public sealed class NavigateHandlerTests
         });
 
         Assert.Null(load);
-        var reported = Assert.IsType<AppProblem.UnresolvedFileDamaged>(Assert.Single(failed.Reported));
+        var reported = UnionAsserts.GetCase<AppProblem.UnresolvedFileDamaged>(Assert.Single(failed.Reported));
         Assert.Equal(file, reported.File);
         var text = ProblemTexts.Describe(Strings.En, reported);
         Assert.Equal(Strings.En.ErrorResolve(reference.Name), text.Title);
@@ -155,7 +155,7 @@ public sealed class NavigateHandlerTests
         d.Settle();
 
         var reported = Assert.Single(d.AppState.Errors.Entries);
-        var problem = Assert.IsType<AppProblem.ModuleUnreadable>(reported.Problem);
+        var problem = UnionAsserts.GetCase<AppProblem.ModuleUnreadable>(reported.Problem);
         Assert.Equal("UnreadableTypes.dll", problem.Module);
         Assert.NotEmpty(problem.Why.Message);
         Assert.StartsWith("UnreadableTypes.dll couldn't be read — ", reported.Words().Summary);
@@ -179,7 +179,7 @@ public sealed class NavigateHandlerTests
             return new NavigateHandler(lookup).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, greeter.Definition, resolveTicket, CancellationToken.None);
         });
 
-        var problem = Assert.IsType<AppProblem.ModuleUnreadable>(Assert.Single(lookup.Reported));
+        var problem = UnionAsserts.GetCase<AppProblem.ModuleUnreadable>(Assert.Single(lookup.Reported));
         Assert.Equal(module.FilePath.FileName, problem.Module);
         Assert.Same(why, problem.Why);
         Assert.Null(load);

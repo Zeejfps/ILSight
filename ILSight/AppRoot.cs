@@ -194,7 +194,7 @@ internal static class AppRoot
             return;
         }
 
-        Errors.Report(appState, problem);
+        Errors.Report(appState, problem.Value);
     }
 
     private static void ShowRefusal(AppState appState, Refusal? refusal)
@@ -204,7 +204,7 @@ internal static class AppRoot
             return;
         }
 
-        appState.Refusals.Show(refusal);
+        appState.Refusals.Show(refusal.Value);
     }
 
     private static T MakePort<T>(T real, Func<T, T>? hook)

@@ -45,7 +45,7 @@ public sealed class SettingsSaverTests
         Assert.Equal(SaveRetry.Delay - TimeSpan.FromSeconds(1), Assert.IsType<SettingsSave.Waiting>(waiting).RetryIn);
         Assert.IsType<SettingsSave.Failed>(failedAgain);
         Assert.Equal(2, ports.Written.Count);
-        Assert.Equal("Disk full.", Assert.IsType<AppProblem.SettingsNotSaved>(Assert.Single(ports.Reported)).Reason);
+        Assert.Equal("Disk full.", UnionAsserts.GetCase<AppProblem.SettingsNotSaved>(Assert.Single(ports.Reported)).Reason);
     }
 
     [Fact]

@@ -60,7 +60,7 @@ public sealed class CompareAssembliesHandlerTests
 
         var failed = Assert.IsType<ComparisonResult.Failed>(comparison.Result);
         Assert.IsType<ComparisonFailure.Failed>(failed.Failure);
-        Assert.Same(error, Assert.IsType<AppProblem.ComparisonFailed>(Assert.Single(ports.Reported)).Error);
+        Assert.Same(error, UnionAsserts.GetCase<AppProblem.ComparisonFailed>(Assert.Single(ports.Reported)).Error);
     }
 
     [Fact]

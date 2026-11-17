@@ -60,7 +60,7 @@ public sealed class ShowReopenedNodesHandlerTests
         var failed = Assert.IsType<TabContent.Unreadable>(waiting.Reopened.Tab.Content);
         Assert.Same(error, failed.Why);
         Assert.Equal(waiting.Record.Location, failed.Location);
-        var reported = Assert.IsType<AppProblem.PlaceLookupFailed>(Assert.Single(ports.Reported));
+        var reported = UnionAsserts.GetCase<AppProblem.PlaceLookupFailed>(Assert.Single(ports.Reported));
         Assert.Same(error, reported.Error);
         Assert.IsType<PlaceLookupStep.ReopeningTabs>(reported.Step);
         Assert.Same(other.Reopened.Tab, Assert.Single(loads).Tab);

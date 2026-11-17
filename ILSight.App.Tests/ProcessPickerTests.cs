@@ -285,7 +285,7 @@ public sealed class ProcessPickerTests
         await SelectAndListAsync(picker, Web);
 
         Assert.Equal(new UnreachableCause.Failure("broken"), Assert.IsType<ModuleScan.Unreachable>(picker.Browser.Modules).Cause);
-        Assert.IsType<AppProblem.Unexpected>(Assert.Single(ports.Reported));
+        UnionAsserts.GetCase<AppProblem.Unexpected>(Assert.Single(ports.Reported));
     }
 
     [Fact]
@@ -442,7 +442,7 @@ public sealed class ProcessPickerTests
         await ScanAsync(picker.Browser, scanTicket);
 
         Assert.Equal("broken", Assert.IsType<ProcessScan.Failed>(picker.Browser.Scan).Error);
-        Assert.IsType<AppProblem.Unexpected>(Assert.Single(ports.Reported));
+        UnionAsserts.GetCase<AppProblem.Unexpected>(Assert.Single(ports.Reported));
     }
 
     [Fact]
@@ -461,7 +461,7 @@ public sealed class ProcessPickerTests
 
         // The note wraps over lines; joined, they read as it does, and the error comes after it.
         Assert.Contains($"{Strings.En.ProcessPickerScanFailed} broken", string.Join(" ", app.Frames.TextRects().Select(static t => t.Text)));
-        Assert.IsType<AppProblem.Unexpected>(Assert.Single(ports.Reported));
+        UnionAsserts.GetCase<AppProblem.Unexpected>(Assert.Single(ports.Reported));
     }
 
     [Fact]
@@ -514,7 +514,7 @@ public sealed class ProcessPickerTests
     [Fact]
     public async Task ListModulesAsync_AdapterTokenFired_EndsCancelledRatherThanFailed()
     {
-        var adapter = new ProcessBrowserAdapter(static problem => throw new InvalidOperationException(problem.ToString()));
+        var adapter = new ProcessBrowserAdapter(static problem => throw new InvalidOperationException(UnionAsserts.GetCaseType(problem).Name));
         using var shutdown = new CancellationTokenSource();
         await shutdown.CancelAsync();
 
@@ -525,7 +525,7 @@ public sealed class ProcessPickerTests
     [Fact]
     public async Task ScanAsync_ThisTestProcess_IsFoundWithTheAssembliesItLoaded()
     {
-        var adapter = new ProcessBrowserAdapter(static problem => throw new InvalidOperationException(problem.ToString()));
+        var adapter = new ProcessBrowserAdapter(static problem => throw new InvalidOperationException(UnionAsserts.GetCaseType(problem).Name));
         var picker = new ProcessPicker { Browser = new ProcessBrowser(adapter) };
         var opened = picker.Open();
         await ScanAsync(picker.Browser, opened);

@@ -43,7 +43,7 @@ internal static class StatusBarView
                 var refusal = appState.Refusals.Shown;
                 if (refusal is not null)
                 {
-                    RefusalNote(ui, appearance, refusalDetails, commands, refusal);
+                    RefusalNote(ui, appearance, refusalDetails, commands, refusal.Value, appState.Refusals.Showings);
                     Dot(ui);
                 }
 
@@ -134,12 +134,13 @@ internal static class StatusBarView
         }
     }
 
-    private static void RefusalNote(Ui ui, Appearance appearance, RefusalDetails refusalDetails, IAppCommandWriter commands, Refusal refusal)
+    private static void RefusalNote(Ui ui, Appearance appearance, RefusalDetails refusalDetails, IAppCommandWriter commands, Refusal refusal,
+        int showing)
     {
         var t = appearance.Strings;
         var theme = ui.Theme;
         var opened = refusalDetails;
-        opened.CloseUnlessFor(refusal);
+        opened.CloseUnlessFor(showing);
         var items = refusal.ListItems(t);
         // A Tab stop, so the note is reached as the line is, by the keyboard too: Enter (or Space) opens its whole list.
         var i = ui.Pressable(ui.GetId("refusal"), enabled: true, out var activated, out var ring);
@@ -150,7 +151,7 @@ internal static class StatusBarView
 
         if (activated && items is not null)
         {
-            opened.Open(refusal);
+            opened.Open(showing);
         }
 
         var what = ui.Memo("status-refused", (refusal, t), static a => a.refusal.Words(a.t).What);

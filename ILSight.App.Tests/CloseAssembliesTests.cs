@@ -413,7 +413,7 @@ public sealed class CloseAssembliesTests
 
         PressAnalyzeSixTimes(app);
 
-        Assert.Same(failure, Assert.Single(app.AppState.Errors.Entries).Problem);
+        Assert.Same(failure, UnionAsserts.GetCase<AppProblem.Unexpected>(Assert.Single(app.AppState.Errors.Entries).Problem));
         Assert.True(app.Frames.Drew(app.Ui.Appearance.Strings.StatusErrors(1)));
         Assert.Equal(new Refusal.AssemblyClosed { Assembly = KeyboardFile }, app.AppState.Refusals.Shown);
     }

@@ -72,7 +72,7 @@ public static class Analysis
         var refusal = analyzer.FindRefusal(symbol);
         if (refusal is not null)
         {
-            return new CommandOffer<AnalysisSymbol>.Unavailable { Why = refusal };
+            return new CommandOffer<AnalysisSymbol>.Unavailable { Why = refusal.Value };
         }
 
         return new CommandOffer<AnalysisSymbol>.Runs { Target = symbol };

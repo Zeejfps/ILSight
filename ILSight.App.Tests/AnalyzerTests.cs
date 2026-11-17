@@ -76,7 +76,7 @@ public sealed class AnalyzerTests
         var message = Assert.IsType<AnalyzerMessageNode>(Assert.Single(kind.Found));
         Assert.NotNull(message.Error);
         var error = Assert.Single(d.AppState.Errors.Entries);
-        Assert.IsType<AppProblem.Unexpected>(error.Problem);
+        UnionAsserts.GetCase<AppProblem.Unexpected>(error.Problem);
         Assert.DoesNotContain(nameof(InvalidOperationException), error.Words().Details);
         Assert.DoesNotContain("   at ", error.Words().Details);
         Assert.Contains(nameof(InvalidOperationException), error.Words().TechnicalDetails);
@@ -231,7 +231,7 @@ public sealed class AnalyzerTests
         var unavailable = Analysis.OfferAnalysis(analyzer, unlisted);
 
         Assert.Equal(greeter, Assert.IsType<CommandOffer<AnalysisSymbol>.Runs>(offered).Target);
-        var why = Assert.IsType<Refusal.NotAnalyzable>(Assert.IsType<CommandOffer<AnalysisSymbol>.Unavailable>(unavailable).Why);
+        var why = UnionAsserts.GetCase<Refusal.NotAnalyzable>(Assert.IsType<CommandOffer<AnalysisSymbol>.Unavailable>(unavailable).Why);
         var rootAdd = analyzer.AddRoot(unlisted);
         Assert.Equal(why, Assert.IsType<AnalyzerAdd.Refused>(rootAdd).Why);
         Assert.Empty(analyzer.Roots);
@@ -293,7 +293,7 @@ public sealed class AnalyzerTests
         Assert.Empty(d.AppState.Errors.Entries);
         var refusal = d.AppState.Refusals.Shown;
         Assert.NotNull(refusal);
-        var (what, why) = refusal.Words(d.Ui.Appearance.Strings);
+        var (what, why) = refusal.Value.Words(d.Ui.Appearance.Strings);
         Assert.Equal("Cannot analyze Nowhere", what);
         Assert.Equal("Its assembly isn't open, and nothing names its definition to open it by.", why);
     }
@@ -455,7 +455,7 @@ public sealed class AnalyzerTests
         Assert.Empty(d.AppState.Errors.Entries);
         var refusal = d.AppState.Refusals.Shown;
         Assert.NotNull(refusal);
-        Assert.Equal("Cannot resolve First", refusal.Words(d.Ui.Appearance.Strings).What);
+        Assert.Equal("Cannot resolve First", refusal.Value.Words(d.Ui.Appearance.Strings).What);
     }
 
     [Fact]

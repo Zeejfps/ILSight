@@ -71,7 +71,7 @@ public sealed class DecompileIntoTabHandlerTests
             Assert.IsType<TabContent.Code>(tab.Content);
         }
 
-        var reported = Assert.IsType<AppProblem.ReferenceFileDenied>(Assert.Single(ports.Reported));
+        var reported = UnionAsserts.GetCase<AppProblem.ReferenceFileDenied>(Assert.Single(ports.Reported));
         Assert.Same(unread, reported.Unread);
         var text = ProblemTexts.Describe(Strings.En, reported);
         // The full English text, the two names distinct, so a call passing them in the other order fails here.
@@ -105,7 +105,7 @@ public sealed class DecompileIntoTabHandlerTests
         await d.EndAsync(handling);
 
         Assert.Same(code.Document, Assert.IsType<TabContent.Code>(tab.Content).Document);
-        var reported = Assert.IsType<AppProblem.DecompilationFailed>(Assert.Single(ports.Reported));
+        var reported = UnionAsserts.GetCase<AppProblem.DecompilationFailed>(Assert.Single(ports.Reported));
         Assert.Same(error, reported.Error);
         Assert.Equal(greeter.FullName, reported.Node);
     }
@@ -179,7 +179,7 @@ public sealed class DecompileIntoTabHandlerTests
         var failed = Assert.IsType<TabContent.Failed>(tab.Content);
         Assert.Same(corrupt, failed.Error);
         Assert.False(tab.Load.IsBusy);
-        Assert.Same(corrupt, Assert.IsType<AppProblem.DecompilationFailed>(Assert.Single(ports.Reported)).Error);
+        Assert.Same(corrupt, UnionAsserts.GetCase<AppProblem.DecompilationFailed>(Assert.Single(ports.Reported)).Error);
         Assert.DoesNotContain(new ViewCommand.RestoreView { Tab = tab, Position = AtLineTen }, viewCommands);
     }
 

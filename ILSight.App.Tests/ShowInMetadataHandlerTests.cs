@@ -52,7 +52,7 @@ public sealed class ShowInMetadataHandlerTests
 
         Assert.Equal([new Refusal.Unresolved { Reference = reference }], missing.Refused);
         Assert.Empty(missing.Reported);
-        Assert.Same(error, Assert.IsType<AppProblem.Unresolved>(Assert.Single(failed.Reported)).Error);
+        Assert.Same(error, UnionAsserts.GetCase<AppProblem.Unresolved>(Assert.Single(failed.Reported)).Error);
         Assert.Empty(failed.Refused);
         Assert.Same(shown, d.AppState.ListSession.Navigation.ActiveTab?.Node);
         Assert.False(d.AppState.ListSession.Navigation.IsResolving);

@@ -54,7 +54,7 @@ public sealed class AnalyzerTree
         var refusal = FindRefusal(symbol);
         if (refusal is not null)
         {
-            return new AnalyzerAdd.Refused { Why = refusal };
+            return new AnalyzerAdd.Refused { Why = refusal.Value };
         }
 
         if (!IsOnTheList(symbol))

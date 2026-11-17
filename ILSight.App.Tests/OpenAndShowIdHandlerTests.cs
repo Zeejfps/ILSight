@@ -39,7 +39,7 @@ public sealed class OpenAndShowIdHandlerTests
 
         var load = await d.RunAsync(() => new OpenAndShowIdHandler(opening).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, [], "T:Nowhere.Missing", d.AppState.ListSession.Assemblies.Work, CancellationToken.None));
 
-        var refused = Assert.IsType<Refusal.IdNotFound>(Assert.Single(opening.Refused));
+        var refused = UnionAsserts.GetCase<Refusal.IdNotFound>(Assert.Single(opening.Refused));
         Assert.Equal("T:Nowhere.Missing", refused.Id);
         Assert.Empty(opening.Reported);
         Assert.Null(load);
@@ -77,9 +77,9 @@ public sealed class OpenAndShowIdHandlerTests
         var failedLoad = await d.RunAsync(() => new OpenAndShowIdHandler(failed).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, [], "T:Greeter", d.AppState.ListSession.Assemblies.Work, CancellationToken.None));
         var timedOutLoad = await d.RunAsync(() => new OpenAndShowIdHandler(timedOut).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, [], "T:Greeter", d.AppState.ListSession.Assemblies.Work, CancellationToken.None));
 
-        var reported = Assert.IsType<AppProblem.OpenFailed>(Assert.Single(failed.Reported));
+        var reported = UnionAsserts.GetCase<AppProblem.OpenFailed>(Assert.Single(failed.Reported));
         Assert.Equal("unreadable", reported.Error.Message);
-        Assert.IsType<TaskCanceledException>(Assert.IsType<AppProblem.OpenFailed>(Assert.Single(timedOut.Reported)).Error);
+        Assert.IsType<TaskCanceledException>(UnionAsserts.GetCase<AppProblem.OpenFailed>(Assert.Single(timedOut.Reported)).Error);
         Assert.Null(failedLoad);
         Assert.Null(timedOutLoad);
     }

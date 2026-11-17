@@ -246,7 +246,7 @@ public sealed class AppTests
         }));
 
         Assert.Equal(["queued before the failure"], ran);
-        var reported = Assert.IsType<AppProblem.Unexpected>(Assert.Single(app.AppState.Errors.Entries).Problem);
+        var reported = UnionAsserts.GetCase<AppProblem.Unexpected>(Assert.Single(app.AppState.Errors.Entries).Problem);
         Assert.Same(failure, reported.Error);
     }
 

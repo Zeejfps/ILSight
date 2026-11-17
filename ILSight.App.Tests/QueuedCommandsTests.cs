@@ -15,7 +15,7 @@ public sealed class QueuedCommandsTests
 
         Assert.True(ranAfter);
         Assert.True(d.Ui.AppCommands.IsEmpty);
-        var problem = Assert.IsType<AppProblem.Unexpected>(Assert.Single(d.AppState.Errors.Entries).Problem);
+        var problem = UnionAsserts.GetCase<AppProblem.Unexpected>(Assert.Single(d.AppState.Errors.Entries).Problem);
         Assert.Equal("broken", problem.Error.Message);
     }
 }

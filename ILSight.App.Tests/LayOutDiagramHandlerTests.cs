@@ -63,7 +63,7 @@ public sealed class LayOutDiagramHandlerTests
         Assert.Single(ports.Answers).SetResult(new Outcome<TypeLayout>.Failed(error));
         await d.EndAsync(laying);
 
-        Assert.Same(error, Assert.IsType<AppProblem.DiagramNotLaidOut>(Assert.Single(ports.Reported)).Error);
+        Assert.Same(error, UnionAsserts.GetCase<AppProblem.DiagramNotLaidOut>(Assert.Single(ports.Reported)).Error);
         Assert.Null(diagram.Layout);
         Assert.False(diagram.IsBusy);
     }

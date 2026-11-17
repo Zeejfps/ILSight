@@ -55,7 +55,7 @@ public sealed class GoToHistoryEntryHandlerTests
 
         var load = await d.RunAsync(() => new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, GoTo(d.AppState, back), CancellationToken.None));
 
-        var gone = Assert.IsType<Refusal.HistoryPlaceGone>(Assert.Single(lookup.Refused));
+        var gone = UnionAsserts.GetCase<Refusal.HistoryPlaceGone>(Assert.Single(lookup.Refused));
         Assert.Equal(PlaceOf(d.AppState.ListSession.Navigation, back), gone.Place);
         Assert.Empty(lookup.Reported);
         Assert.Same(farewell, d.AppState.ListSession.Navigation.ActiveTab?.Node);
@@ -73,7 +73,7 @@ public sealed class GoToHistoryEntryHandlerTests
 
         var load = await d.RunAsync(() => new GoToHistoryEntryHandler(lookup).HandleAsync(d.AppState.ListSession.Navigation, d.AppState.Decompiler, GoTo(d.AppState, back), CancellationToken.None));
 
-        var reported = Assert.IsType<AppProblem.PlaceLookupFailed>(Assert.Single(lookup.Reported));
+        var reported = UnionAsserts.GetCase<AppProblem.PlaceLookupFailed>(Assert.Single(lookup.Reported));
         Assert.Same(error, reported.Error);
         Assert.IsType<PlaceLookupStep.GoingThroughHistory>(reported.Step);
         Assert.StartsWith(Strings.En.ErrorStepHistory, ProblemTexts.Describe(Strings.En, reported).Details);

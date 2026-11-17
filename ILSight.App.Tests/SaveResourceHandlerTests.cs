@@ -25,7 +25,7 @@ public sealed class SaveResourceHandlerTests
         var json = await d.NodeAsync("Resources", "data.json");
         await new SaveResourceHandler(ports).HandleAsync(json, "data.json", CancellationToken.None);
 
-        var problem = Assert.IsType<AppProblem.ResourceNotSaved>(Assert.Single(ports.Reported));
+        var problem = UnionAsserts.GetCase<AppProblem.ResourceNotSaved>(Assert.Single(ports.Reported));
         Assert.Equal("data.json", problem.Resource);
         Assert.Equal("Disk full.", problem.Error.Message);
         Assert.Empty(ports.Refused);

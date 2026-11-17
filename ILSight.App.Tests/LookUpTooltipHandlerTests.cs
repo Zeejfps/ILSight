@@ -43,7 +43,7 @@ public sealed class LookUpTooltipHandlerTests
 
         Assert.True(tooltips.TryGetOrAskTooltip(lookup.Reference, out var kept));
         UnionAsserts.GetCase<Lookup<CodeTooltip>.NotFound>(kept);
-        var reported = Assert.IsType<AppProblem.Unexpected>(Assert.Single(ports.Reported));
+        var reported = UnionAsserts.GetCase<AppProblem.Unexpected>(Assert.Single(ports.Reported));
         Assert.Same(error, reported.Error);
     }
 

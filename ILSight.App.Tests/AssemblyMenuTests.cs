@@ -92,7 +92,7 @@ public sealed class AssemblyMenuTests
         Assert.EndsWith("/ilsight.app.tests.fixtures.greeter", app.Frames.OpenedUrls[0]);
         var refusal = app.AppState.Refusals.Shown;
         Assert.NotNull(refusal);
-        Assert.StartsWith("Hidden has no page in the .NET API reference", refusal.Words(app.Ui.Appearance.Strings).What);
+        Assert.StartsWith("Hidden has no page in the .NET API reference", refusal.Value.Words(app.Ui.Appearance.Strings).What);
         Assert.Empty(app.AppState.Errors.Entries);
     }
 

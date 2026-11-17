@@ -25,7 +25,7 @@ public sealed class WorkflowRunnerTests
     private static Exception GetReportedError(ErrorLog errors)
     {
         var entry = Assert.Single(errors.Entries);
-        return Assert.IsType<AppProblem.Unexpected>(entry.Problem).Error;
+        return UnionAsserts.GetCase<AppProblem.Unexpected>(entry.Problem).Error;
     }
 
     [Fact]

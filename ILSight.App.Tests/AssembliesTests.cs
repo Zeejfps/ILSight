@@ -146,8 +146,8 @@ public sealed class AssembliesTests
         await d.RunAsync(() => new AssemblyOpener(failed).OpenDependenciesAsync(fixtures, d.AppState.ListSession.Assemblies.Work, CancellationToken.None));
         await d.RunAsync(() => new AssemblyOpener(timedOut).OpenDependenciesAsync(fixtures, d.AppState.ListSession.Assemblies.Work, CancellationToken.None));
 
-        Assert.Same(error, Assert.IsType<AppProblem.OpenFailed>(Assert.Single(failed.Reported)).Error);
-        Assert.IsType<TaskCanceledException>(Assert.IsType<AppProblem.OpenFailed>(Assert.Single(timedOut.Reported)).Error);
+        Assert.Same(error, UnionAsserts.GetCase<AppProblem.OpenFailed>(Assert.Single(failed.Reported)).Error);
+        Assert.IsType<TaskCanceledException>(UnionAsserts.GetCase<AppProblem.OpenFailed>(Assert.Single(timedOut.Reported)).Error);
     }
 
     [Fact]
@@ -161,11 +161,11 @@ public sealed class AssembliesTests
         var otherBuildLoads = await d.RunAsync(() => new AssemblyReloader(otherBuild).UsePdbAsync(d.AppState.ListSession, d.AppState.Reopens, d.AppState.Decompiler, fixtures, "other.pdb", CancellationToken.None));
         var failedLoads = await d.RunAsync(() => new AssemblyReloader(failed).UsePdbAsync(d.AppState.ListSession, d.AppState.Reopens, d.AppState.Decompiler, fixtures, "broken.pdb", CancellationToken.None));
 
-        var unusable = Assert.IsType<Refusal.PdbUnusable>(Assert.Single(otherBuild.Refused));
+        var unusable = UnionAsserts.GetCase<Refusal.PdbUnusable>(Assert.Single(otherBuild.Refused));
         Assert.Equal(PdbCheck.OtherBuild, unusable.Check);
         Assert.Equal("other.pdb", unusable.PdbPath);
         Assert.Empty(otherBuild.Reported);
-        Assert.Equal(PdbCheck.Unreadable, Assert.IsType<AppProblem.PdbUnusable>(Assert.Single(failed.Reported)).Check);
+        Assert.Equal(PdbCheck.Unreadable, UnionAsserts.GetCase<AppProblem.PdbUnusable>(Assert.Single(failed.Reported)).Check);
         Assert.DoesNotContain(nameof(AssemblyReloader.IPorts.ReadAgainAsync), otherBuild.Asked);
         Assert.DoesNotContain(nameof(AssemblyReloader.IPorts.ReadAgainAsync), failed.Asked);
         Assert.Empty(d.AppState.ListSession.Assemblies.Pdbs.All);
@@ -203,7 +203,7 @@ public sealed class AssembliesTests
         Assert.Equal("matching.pdb", d.AppState.ListSession.Assemblies.Pdbs.All[fixtures.FilePath]);
         Assert.Equal([nameof(AssemblyReloader.IPorts.CheckPdbAsync), nameof(AssemblyReloader.IPorts.ReadAgainAsync)], ports.Asked);
         Assert.All(ports.Tokens, t => Assert.Equal(shutdown.Token, t));
-        var notReloaded = Assert.IsType<AppProblem.AssemblyNotReloaded>(Assert.Single(ports.Reported));
+        var notReloaded = UnionAsserts.GetCase<AppProblem.AssemblyNotReloaded>(Assert.Single(ports.Reported));
         Assert.Same(error, notReloaded.Error);
         Assert.False(d.AppState.Reopens.IsRunning);
         Assert.Empty(loads);
@@ -365,7 +365,7 @@ public sealed class AssembliesTests
             return ReloadAsync(new AssemblyReloader(ports), appState, reloadTicket, CancellationToken.None);
         });
 
-        var reported = Assert.IsType<AppProblem.PlaceLookupFailed>(Assert.Single(ports.Reported));
+        var reported = UnionAsserts.GetCase<AppProblem.PlaceLookupFailed>(Assert.Single(ports.Reported));
         Assert.Same(error, reported.Error);
         Assert.Equal(location, reported.Place);
         Assert.IsType<PlaceLookupStep.ReloadingTab>(reported.Step);
@@ -411,7 +411,7 @@ public sealed class AssembliesTests
             return ReloadAsync(new AssemblyReloader(ports), d.AppState, reloadTicket, CancellationToken.None);
         });
 
-        Assert.Same(error, Assert.IsType<AppProblem.AssembliesNotReloaded>(Assert.Single(ports.Reported)).Error);
+        Assert.Same(error, UnionAsserts.GetCase<AppProblem.AssembliesNotReloaded>(Assert.Single(ports.Reported)).Error);
         Assert.False(d.AppState.ListSession.Reload.IsRunning);
         Assert.Empty(ListDecompiles(loads));
     }
