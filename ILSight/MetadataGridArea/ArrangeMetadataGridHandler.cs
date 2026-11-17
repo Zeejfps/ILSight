@@ -22,6 +22,14 @@ public sealed class ArrangeMetadataGridHandler(ArrangeMetadataGridHandler.IPorts
     public async Task HandleAsync(MetadataGridViewAsk ask, CancellationToken ct)
     {
         var arranged = await ports.ArrangeAsync(ask, ct);
-        arranged.Switch(read => ask.State.ShowArranged(ask, read.Value), _ => ask.State.StopArranging(ask.Key));
+        switch (arranged)
+        {
+            case ModuleRead<MetadataGridView>.Read read:
+                ask.State.ShowArranged(ask, read.Value);
+                break;
+            case ModuleRead<MetadataGridView>.Closed:
+                ask.State.StopArranging(ask.Key);
+                break;
+        }
     }
 }

@@ -81,7 +81,7 @@ public sealed class ModuleReleaseTests
         await released.WithinPatienceAsync();
 
         Assert.Null(newReader);
-        Assert.IsType<ModuleRead<DecompiledDocument>.Closed>(decompiled);
+        UnionAsserts.GetCase<ModuleRead<DecompiledDocument>.Closed>(decompiled);
         Assert.False(isReleasedWhileRead);
     }
 

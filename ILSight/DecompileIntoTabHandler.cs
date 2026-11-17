@@ -66,9 +66,8 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
     {
         return read switch
         {
-            Outcome<ModuleRead<NodeContent>>.Ok ok => ok.Value.Match<Outcome<NodeContent>?>(
-                static content => new Outcome<NodeContent>.Ok(content.Value),
-                closed => ShowClosed(load, work, closed.Module)),
+            Outcome<ModuleRead<NodeContent>>.Ok { Value: ModuleRead<NodeContent>.Read content } => new Outcome<NodeContent>.Ok(content.Value),
+            Outcome<ModuleRead<NodeContent>>.Ok { Value: ModuleRead<NodeContent>.Closed closed } => ShowClosed(load, work, closed.Module),
             Outcome<ModuleRead<NodeContent>>.Failed failed => new Outcome<NodeContent>.Failed(failed.Error),
         };
     }

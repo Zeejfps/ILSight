@@ -142,9 +142,12 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
         CancellationToken ct)
     {
         var outcome = await RunAsync(work, start, ct);
-        return outcome.Match(
-            static done => done.Value.Match<ExportOutcome<T>>(static read => new ExportOutcome<T>.Done(read.Value),
-                static closed => new ExportOutcome<T>.Closed(closed.Module.FilePath.FileName)),
+        return outcome.Match<ExportOutcome<T>>(
+            static done => done.Value switch
+            {
+                ModuleRead<T>.Read read => new ExportOutcome<T>.Done(read.Value),
+                ModuleRead<T>.Closed closed => new ExportOutcome<T>.Closed(closed.Module.FilePath.FileName),
+            },
             static stopped => new ExportOutcome<T>.Stopped(),
             static closed => new ExportOutcome<T>.Closed(closed.Assembly),
             static failed => new ExportOutcome<T>.Failed(failed.Error));

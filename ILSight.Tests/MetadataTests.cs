@@ -87,7 +87,7 @@ public sealed class MetadataTests
     {
         var grid = MemberRefGridWithNameTooltip(static (_, _) => throw new BadImageFormatException("Cut short."), null);
 
-        var page = Assert.IsType<ModuleRead<MetadataGridPage>.Read>(MetadataGrids.ReadPage(grid, 0).GetValue()).Value;
+        var page = UnionAsserts.GetCase<ModuleRead<MetadataGridPage>.Read>(MetadataGrids.ReadPage(grid, 0).GetValue()).Value;
 
         var columns = grid.GridColumns.Count;
         Assert.Equal("Cut short.", page.Tooltips[grid.Column("Name")]?.Text);
@@ -132,7 +132,7 @@ public sealed class MetadataTests
         var grid = MemberRefGrid(static columns => columns, static _ => throw new BadImageFormatException("Cut short."),
             static _ => new MetadataRowDetails.Text { Content = "made", Extension = null });
 
-        var page = Assert.IsType<ModuleRead<MetadataGridPage>.Read>(MetadataGrids.ReadPage(grid, 0).GetValue()).Value;
+        var page = UnionAsserts.GetCase<ModuleRead<MetadataGridPage>.Read>(MetadataGrids.ReadPage(grid, 0).GetValue()).Value;
 
         var failed = Assert.IsType<MetadataRowDetails.Failed>(page.Details[0]);
         Assert.Equal("Cut short.", failed.Reason);

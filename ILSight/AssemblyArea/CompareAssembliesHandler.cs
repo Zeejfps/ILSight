@@ -47,9 +47,16 @@ public sealed class CompareAssembliesHandler(CompareAssembliesHandler.IPorts por
     // An assembly closed before the comparison began is shown as such, but it is no failure: nothing to report.
     private static Exception? Show(AssemblyComparison comparison, ModuleRead<ApiDiff> compared)
     {
-        compared.Switch(
-            read => comparison.ShowDiff(read.Value),
-            closed => comparison.ShowFailure(new ComparisonFailure.AssemblyClosed(closed.Module.FilePath.FileName)));
+        switch (compared)
+        {
+            case ModuleRead<ApiDiff>.Read read:
+                comparison.ShowDiff(read.Value);
+                break;
+            case ModuleRead<ApiDiff>.Closed closed:
+                comparison.ShowFailure(new ComparisonFailure.AssemblyClosed(closed.Module.FilePath.FileName));
+                break;
+        }
+
         return null;
     }
 

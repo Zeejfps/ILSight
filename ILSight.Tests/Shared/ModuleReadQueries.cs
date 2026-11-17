@@ -8,9 +8,11 @@ public static class ModuleReadQueries
 {
     public static T GetValue<T>(this ModuleRead<T> read)
     {
-        return read.Match(
-            static r => r.Value,
-            static c => throw new InvalidOperationException($"'{c.Module.FilePath}' was released, which the test never closed."));
+        return read switch
+        {
+            ModuleRead<T>.Read r => r.Value,
+            ModuleRead<T>.Closed c => throw new InvalidOperationException($"'{c.Module.FilePath}' was released, which the test never closed."),
+        };
     }
 
     public static async Task<T> GetValueAsync<T>(this Task<ModuleRead<T>> read)
