@@ -96,7 +96,7 @@ public sealed class ILSpyTreeTests
 
         var located = await ILSpyTree.LocateAsync(list, TestSession.Shared, unreadable, null, 0x06000001, "N.T.M", CancellationToken.None);
 
-        Assert.IsType<AssemblyLoadException>(Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(located).Error);
+        Assert.IsType<AssemblyLoadException>(UnionAsserts.GetCase<Outcome<Lookup<BrowseNode>>.Failed>(located).Error);
         Assert.IsType<Lookup<BrowseNode>.NotFound>((await ILSpyTree.LocateAsync(list, TestSession.Shared, gone, null, 0x06000001, "N.T.M", CancellationToken.None)).GetValue());
     }
 

@@ -116,7 +116,11 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
         }
 
         _appliedFilter = null;
-        Scan = found.Match<ProcessScan>(static ok => new ProcessScan.Scanned(ok.Value), ReportScanFailure);
+        Scan = found switch
+        {
+            Outcome<IReadOnlyList<RunningProcess>>.Ok ok => new ProcessScan.Scanned(ok.Value),
+            Outcome<IReadOnlyList<RunningProcess>>.Failed failed => ReportScanFailure(failed),
+        };
     }
 
     /// <summary>Ends <paramref name="scan"/> as failed with <paramref name="error"/> when its workflow failed (the edge's
@@ -273,7 +277,11 @@ public sealed class ProcessBrowser(ProcessBrowser.IPorts ports)
             return;
         }
 
-        Modules = listed.Match<ModuleScan>(static ok => ok.Value, failed => ReportListingFailure(process, failed.Error));
+        Modules = listed switch
+        {
+            Outcome<ModuleScan>.Ok ok => ok.Value,
+            Outcome<ModuleScan>.Failed failed => ReportListingFailure(process, failed.Error),
+        };
         SelectEntryModule();
     }
 

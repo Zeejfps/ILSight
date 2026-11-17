@@ -66,12 +66,14 @@ public sealed class DiagramInfrastructure(ErrorLog errors, RefusalLine refusals,
         foreach (var type in types)
         {
             var card = await TypeCards.ReadAsync(assemblies, type, ct);
-            if (card is Outcome<Lookup<TypeCard>>.Failed failed)
+            switch (card)
             {
-                return new Outcome<List<Lookup<TypeCard>>>.Failed(failed.Error);
+                case Outcome<Lookup<TypeCard>>.Ok ok:
+                    cards.Add(ok.Value);
+                    break;
+                case Outcome<Lookup<TypeCard>>.Failed failed:
+                    return new Outcome<List<Lookup<TypeCard>>>.Failed(failed.Error);
             }
-
-            cards.Add(((Outcome<Lookup<TypeCard>>.Ok)card).Value);
         }
         return new Outcome<List<Lookup<TypeCard>>>.Ok(cards);
     }
@@ -82,12 +84,14 @@ public sealed class DiagramInfrastructure(ErrorLog errors, RefusalLine refusals,
         foreach (var type in types)
         {
             var card = await TypeCards.ReadAsync(assemblies, type, ct);
-            if (card is Outcome<Lookup<TypeCard>>.Failed failed)
+            switch (card)
             {
-                return new Outcome<List<Lookup<TypeCard>>>.Failed(failed.Error);
+                case Outcome<Lookup<TypeCard>>.Ok ok:
+                    cards.Add(ok.Value);
+                    break;
+                case Outcome<Lookup<TypeCard>>.Failed failed:
+                    return new Outcome<List<Lookup<TypeCard>>>.Failed(failed.Error);
             }
-
-            cards.Add(((Outcome<Lookup<TypeCard>>.Ok)card).Value);
         }
         return new Outcome<List<Lookup<TypeCard>>>.Ok(cards);
     }

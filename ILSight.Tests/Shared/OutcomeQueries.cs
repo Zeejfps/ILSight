@@ -8,10 +8,12 @@ public static class OutcomeQueries
 {
     public static T GetValue<T>(this Outcome<T> outcome)
     {
-        return outcome.Match(
-            static ok => ok.Value,
-            static failed => throw new InvalidOperationException($"The read failed, which the test expected the library to manage: {failed.Error.Message}",
-                failed.Error));
+        return outcome switch
+        {
+            Outcome<T>.Ok ok => ok.Value,
+            Outcome<T>.Failed failed => throw new InvalidOperationException($"The read failed, which the test expected the library to manage: {failed.Error.Message}",
+                failed.Error),
+        };
     }
 
     public static async Task<T> GetValueAsync<T>(this Task<Outcome<T>> read)

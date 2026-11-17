@@ -576,9 +576,11 @@ public static class BrowseSessions
         var table = await ThenFindChildAsync(session, tables, index,
             static (listed, i) => listed.FirstOrDefault(c => c.Subject is NodeSubject.MetadataTable part && part.Value.ListedTable == i), ct);
         var row = MetadataTokens.GetRowNumber(handle) - 1;
-        return table.Match<Outcome<Lookup<MetadataTarget>>>(
-            ok => new Outcome<Lookup<MetadataTarget>>.Ok(ok.Value.Select(node => new MetadataTarget { Node = node, Row = row })),
-            static failed => new Outcome<Lookup<MetadataTarget>>.Failed(failed.Error));
+        return table switch
+        {
+            Outcome<Lookup<BrowseNode>>.Ok ok => new Outcome<Lookup<MetadataTarget>>.Ok(ok.Value.Select(node => new MetadataTarget { Node = node, Row = row })),
+            Outcome<Lookup<BrowseNode>>.Failed failed => new Outcome<Lookup<MetadataTarget>>.Failed(failed.Error),
+        };
     }
 
     // The child pick picks among the children of the node reached; what was reached otherwise, as it was.

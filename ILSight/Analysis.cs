@@ -146,9 +146,15 @@ public static class Analysis
         for (var i = 0; i < restoring.Count; i++)
         {
             var root = restoring[i];
-            found[i].Switch(
-                ok => AnalyzeAgain(analyzer, viewCommands, root, ok.Value),
-                failed => analyzer.FailRoot(root, new RestoreFailure.Failed { Error = failed.Error }));
+            switch (found[i])
+            {
+                case Outcome<Lookup<AnalysisSymbol>>.Ok ok:
+                    AnalyzeAgain(analyzer, viewCommands, root, ok.Value);
+                    break;
+                case Outcome<Lookup<AnalysisSymbol>>.Failed failed:
+                    analyzer.FailRoot(root, new RestoreFailure.Failed { Error = failed.Error });
+                    break;
+            }
         }
     }
 

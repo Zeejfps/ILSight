@@ -59,11 +59,10 @@ public sealed class BookmarkInfrastructure(ErrorLog errors, RefusalLine refusals
 
     private static Outcome<Lookup<NodePath>> PlaceOf(Outcome<Lookup<BrowseNode>> node)
     {
-        if (node is Outcome<Lookup<BrowseNode>>.Failed failed)
+        return node switch
         {
-            return new Outcome<Lookup<NodePath>>.Failed(failed.Error);
-        }
-
-        return new Outcome<Lookup<NodePath>>.Ok(((Outcome<Lookup<BrowseNode>>.Ok)node).Value.Select(static n => n.Path));
+            Outcome<Lookup<BrowseNode>>.Ok ok => new Outcome<Lookup<NodePath>>.Ok(ok.Value.Select(static n => n.Path)),
+            Outcome<Lookup<BrowseNode>>.Failed failed => new Outcome<Lookup<NodePath>>.Failed(failed.Error),
+        };
     }
 }

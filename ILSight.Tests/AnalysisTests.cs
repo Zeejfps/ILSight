@@ -58,7 +58,7 @@ public sealed class AnalysisTests
         var unreadable = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = AssemblyPath.Of(path), Token = 0x06000001 };
         var gone = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = AssemblyPath.Of(temp.PathOf("gone.dll")), Token = 0x06000001 };
 
-        Assert.IsType<AssemblyLoadException>(Assert.IsType<Outcome<Lookup<AnalysisSymbol>>.Failed>(await Analyzers.FindAsync(list, unreadable, CancellationToken.None)).Error);
+        Assert.IsType<AssemblyLoadException>(UnionAsserts.GetCase<Outcome<Lookup<AnalysisSymbol>>.Failed>(await Analyzers.FindAsync(list, unreadable, CancellationToken.None)).Error);
         Assert.IsType<Lookup<AnalysisSymbol>.NotFound>((await Analyzers.FindAsync(list, gone, CancellationToken.None)).GetValue());
     }
 

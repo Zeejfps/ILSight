@@ -12,6 +12,10 @@ internal static class ListingReads
     /// read.</summary>
     internal static T ValueOf<T>(Outcome<T> read)
     {
-        return read.Match(static ok => ok.Value, static failed => throw new ListingReadException(failed.Error));
+        return read switch
+        {
+            Outcome<T>.Ok ok => ok.Value,
+            Outcome<T>.Failed failed => throw new ListingReadException(failed.Error),
+        };
     }
 }

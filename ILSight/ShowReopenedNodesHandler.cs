@@ -97,13 +97,17 @@ public sealed class ShowReopenedNodesHandler(ShowReopenedNodesHandler.IPorts por
             return null;
         }
 
-        return outcome.Match(
-            ok => ShowFound(navigation, decompiler, viewCommands, waiting, tab, ok.Value),
-            failed =>
-            {
-                tab.Load.ShowLookupFailed(waiting.Record.Location, failed.Error);
-                return null;
-            });
+        return outcome switch
+        {
+            Outcome<Lookup<BrowseNode>>.Ok ok => ShowFound(navigation, decompiler, viewCommands, waiting, tab, ok.Value),
+            Outcome<Lookup<BrowseNode>>.Failed lookupFailed => ShowLookupFailed(waiting, tab, lookupFailed.Error),
+        };
+    }
+
+    private static DecompileTicket? ShowLookupFailed(WaitingNode waiting, DocumentTab tab, Exception error)
+    {
+        tab.Load.ShowLookupFailed(waiting.Record.Location, error);
+        return null;
     }
 
     private static DecompileTicket? ShowFound(Navigation navigation, DecompilerChoice decompiler, Queue<ViewCommand> viewCommands, WaitingNode waiting,

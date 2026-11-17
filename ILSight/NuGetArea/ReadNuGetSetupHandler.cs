@@ -33,7 +33,12 @@ public sealed class ReadNuGetSetupHandler(ReadNuGetSetupHandler.IPorts ports)
         }
 
         var read = await ports.ReadUserConfigAsync(ct);
-        picker.UseSetup(read.Match(static ok => ok.Value, ReplaceUnreadableConfig).Match(
+        var config = read switch
+        {
+            Outcome<NuGetConfigRead>.Ok ok => ok.Value,
+            Outcome<NuGetConfigRead>.Failed failed => ReplaceUnreadableConfig(failed),
+        };
+        picker.UseSetup(config.Match(
             _ => ports.CreateDefaultSetup(),
             unreadable => ports.CreateDefaultSetup() with { ConfigUnreadable = unreadable.Why },
             config => ports.CreateSetup(config.Config)));

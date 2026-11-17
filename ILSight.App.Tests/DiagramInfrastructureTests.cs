@@ -19,6 +19,6 @@ public sealed class DiagramInfrastructureTests
 
         var cards = await diagram.ReadCardsAsync([greeter], CancellationToken.None);
 
-        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<List<Lookup<TypeCard>>>.Failed>(cards).Error);
+        Assert.IsType<BadImageFormatException>(UnionAsserts.GetCase<Outcome<List<Lookup<TypeCard>>>.Failed>(cards).Error);
     }
 }

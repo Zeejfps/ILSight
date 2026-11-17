@@ -71,6 +71,6 @@ public sealed class MicrosoftDocsTests
 
         var page = await AssemblyListing.FindApiReferencePageAsync(list, reference, CancellationToken.None);
 
-        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<Lookup<string>>.Failed>(page).Error);
+        Assert.IsType<BadImageFormatException>(UnionAsserts.GetCase<Outcome<Lookup<string>>.Failed>(page).Error);
     }
 }

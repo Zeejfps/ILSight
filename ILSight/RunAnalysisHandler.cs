@@ -28,17 +28,14 @@ public sealed class RunAnalysisHandler(RunAnalysisHandler.IPorts ports)
         var kind = run.Kind;
         await foreach (var found in ports.RunAsync(kind.Subject, kind.Kind, ct))
         {
-            var error = found.Match<Exception?>(
-                ok =>
-                {
-                    Analysis.AddFound(analyzer, run, ok.Value);
-                    return null;
-                },
-                static failed => failed.Error);
-            if (error is not null)
+            switch (found)
             {
-                Fail(analyzer, run, error);
-                return;
+                case Outcome<IReadOnlyList<AnalysisFind>>.Ok ok:
+                    Analysis.AddFound(analyzer, run, ok.Value);
+                    break;
+                case Outcome<IReadOnlyList<AnalysisFind>>.Failed failed:
+                    Fail(analyzer, run, failed.Error);
+                    return;
             }
         }
 

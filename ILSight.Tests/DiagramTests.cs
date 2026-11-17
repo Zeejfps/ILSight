@@ -50,7 +50,7 @@ public sealed class DiagramTests : IDisposable
 
         var written = await ClassDiagrams.WriteAsync(module, _temp.PathOf("broken diagram"));
 
-        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<TypeSystemWork<string>>.Failed>(written).Error);
+        Assert.IsType<BadImageFormatException>(UnionAsserts.GetCase<Outcome<TypeSystemWork<string>>.Failed>(written).Error);
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public sealed class DiagramTests : IDisposable
 
         var written = await ClassDiagrams.WriteAsync(Trees.TestAssembly, folder);
 
-        Assert.IsAssignableFrom<IOException>(Assert.IsType<Outcome<TypeSystemWork<string>>.Failed>(written).Error);
+        Assert.IsAssignableFrom<IOException>(UnionAsserts.GetCase<Outcome<TypeSystemWork<string>>.Failed>(written).Error);
     }
 
     [Fact]

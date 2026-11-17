@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using ILSight.Core;
 using ILSight.AssemblyListArea;
 
@@ -178,9 +177,11 @@ public sealed class AssemblyReloader(AssemblyReloader.IPorts ports)
             return [];
         }
 
-        return outcome.Match(
-            ok => ShowReopened(session, session.Navigation, decompiler, item, ok.Value, tabs),
-            failed => ReportNotReopened(item, failed.Error));
+        return outcome switch
+        {
+            Outcome<ReopenedFile>.Ok ok => ShowReopened(session, session.Navigation, decompiler, item, ok.Value, tabs),
+            Outcome<ReopenedFile>.Failed failed => ReportNotReopened(item, failed.Error),
+        };
     }
 
     private void ReleaseUnlisted(Outcome<ReopenedFile> outcome)
@@ -210,7 +211,7 @@ public sealed class AssemblyReloader(AssemblyReloader.IPorts ports)
 
         for (var i = 0; i < tabs.Count; i++)
         {
-            TryShowAgain(navigation, decompiler, tabs[i], reopened.Places[i], loads, out _);
+            ShowAgain(navigation, decompiler, tabs[i], reopened.Places[i], loads);
         }
         return loads;
     }
@@ -295,9 +296,11 @@ public sealed class AssemblyReloader(AssemblyReloader.IPorts ports)
             return TabLoads.None;
         }
 
-        return outcome.Match(
-            ok => ShowReloaded(session, viewCommands, decompiler, ok.Value, intent, tabs),
-            failed => ShowNotReloaded(session, failed.Error));
+        return outcome switch
+        {
+            Outcome<ReloadedNodes>.Ok ok => ShowReloaded(session, viewCommands, decompiler, ok.Value, intent, tabs),
+            Outcome<ReloadedNodes>.Failed failed => ShowNotReloaded(session, failed.Error),
+        };
     }
 
     private TabLoads ShowNotReloaded(OpenListSession session, Exception error)
@@ -382,7 +385,8 @@ public sealed class AssemblyReloader(AssemblyReloader.IPorts ports)
     private void ReshowTab(Navigation navigation, Queue<ViewCommand> viewCommands, DecompilerSetup decompiler, ReloadingTab reloading,
         Outcome<Lookup<BrowseNode>> place, int intent, List<DecompileTicket> loads)
     {
-        if (!TryShowAgain(navigation, decompiler, reloading, place, loads, out var node))
+        var node = ShowAgain(navigation, decompiler, reloading, place, loads);
+        if (node is null)
         {
             return;
         }
@@ -393,30 +397,39 @@ public sealed class AssemblyReloader(AssemblyReloader.IPorts ports)
         }
     }
 
-    // A place whose lookup failed is reported once, its tab saying so, and why, where it is shown.
-    private bool TryShowAgain(Navigation navigation, DecompilerSetup decompiler, ReloadingTab reloading, Outcome<Lookup<BrowseNode>> outcome,
-        List<DecompileTicket> loads, [NotNullWhen(true)] out BrowseNode? node)
+    // The node shown again, null when it is not. A place whose lookup failed is reported once, its tab saying so, and
+    // why, where it is shown.
+    private BrowseNode? ShowAgain(Navigation navigation, DecompilerSetup decompiler, ReloadingTab reloading, Outcome<Lookup<BrowseNode>> outcome,
+        List<DecompileTicket> loads)
     {
-        node = null;
-        var tab = reloading.Tab;
-        if (outcome is Outcome<Lookup<BrowseNode>>.Failed failed)
+        return outcome switch
         {
-            ports.ReportError(LookupFailures.OfPlace(reloading.Location, new PlaceLookupStep.ReloadingTab(), failed.Error));
-            if (IsStillShowing(navigation, reloading))
-            {
-                tab.Load.ShowLookupFailed(reloading.Location, failed.Error);
-            }
+            Outcome<Lookup<BrowseNode>>.Ok ok => ShowFoundAgain(navigation, decompiler, reloading, ok.Value, loads),
+            Outcome<Lookup<BrowseNode>>.Failed failed => ShowLookupFailed(navigation, reloading, failed.Error),
+        };
+    }
 
-            return false;
+    private BrowseNode? ShowLookupFailed(Navigation navigation, ReloadingTab reloading, Exception error)
+    {
+        ports.ReportError(LookupFailures.OfPlace(reloading.Location, new PlaceLookupStep.ReloadingTab(), error));
+        if (IsStillShowing(navigation, reloading))
+        {
+            reloading.Tab.Load.ShowLookupFailed(reloading.Location, error);
         }
 
+        return null;
+    }
+
+    private BrowseNode? ShowFoundAgain(Navigation navigation, DecompilerSetup decompiler, ReloadingTab reloading, Lookup<BrowseNode> place,
+        List<DecompileTicket> loads)
+    {
         if (!IsStillShowing(navigation, reloading))
         {
-            return false;
+            return null;
         }
 
-        var place = ((Outcome<Lookup<BrowseNode>>.Ok)outcome).Value;
-        node = place.Match<BrowseNode?>(
+        var tab = reloading.Tab;
+        var node = place.Match<BrowseNode?>(
             static found => found.Value,
             _ =>
             {
@@ -430,7 +443,7 @@ public sealed class AssemblyReloader(AssemblyReloader.IPorts ports)
             });
         if (node is null)
         {
-            return false;
+            return null;
         }
 
         var load = navigation.Restore(tab, node, decompiler, reloading.Position);
@@ -439,7 +452,7 @@ public sealed class AssemblyReloader(AssemblyReloader.IPorts ports)
             loads.Add(load);
         }
 
-        return true;
+        return node;
     }
 
     // The tab is still open, showing what the reload left it showing.

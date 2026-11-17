@@ -30,8 +30,9 @@ public sealed class AnalysisInfrastructure(ErrorLog errors, AssemblyList assembl
                 yield break;
             }
 
-            yield return next;
-            if (next is Outcome<IReadOnlyList<AnalysisFind>>.Failed)
+            var batch = next.Value;
+            yield return batch;
+            if (batch is Outcome<IReadOnlyList<AnalysisFind>>.Failed)
             {
                 yield break;
             }
@@ -43,7 +44,12 @@ public sealed class AnalysisInfrastructure(ErrorLog errors, AssemblyList assembl
     {
         var moved = await Background.Wait(batches.MoveNextAsync().AsTask());
         ct.ThrowIfCancellationRequested();
-        return moved ? batches.Current : null;
+        if (!moved)
+        {
+            return null;
+        }
+
+        return batches.Current;
     }
 
     /// <summary>Finds them on the thread pool, each once the read of its assembly's type system ended, and comes back

@@ -19,7 +19,7 @@ public sealed class AnalysisInfrastructureTests
         AssemblyListing.Open(assemblies, path);
         var analysis = new AnalysisInfrastructure(new ErrorLog(), assemblies);
         var anchor = new CodeAnchor { Kind = CodeAnchorKind.Definition, FilePath = path, Token = MetadataTokens.GetToken(greet) };
-        var found = Assert.IsType<Outcome<Lookup<AnalysisSymbol>>.Ok>(Assert.Single(await analysis.LookUpAnalyzedAsync([anchor], CancellationToken.None))).Value;
+        var found = UnionAsserts.GetCase<Outcome<Lookup<AnalysisSymbol>>.Ok>(Assert.Single(await analysis.LookUpAnalyzedAsync([anchor], CancellationToken.None))).Value;
         var symbol = Assert.IsType<Lookup<AnalysisSymbol>.Found>(found).Value;
         var usedBy = symbol.Kinds.Single(static k => Analyzers.GetHeader(k) == "Used By");
 
@@ -29,7 +29,7 @@ public sealed class AnalysisInfrastructureTests
             batches.Add(batch);
         }
 
-        var finds = batches.SelectMany(static b => Assert.IsType<Outcome<IReadOnlyList<AnalysisFind>>.Ok>(b).Value).ToList();
+        var finds = batches.SelectMany(static b => UnionAsserts.GetCase<Outcome<IReadOnlyList<AnalysisFind>>.Ok>(b).Value).ToList();
         var partly = Assert.IsType<AnalysisFind.PartlyRead>(Assert.Single(finds, static f => f is AnalysisFind.PartlyRead));
         Assert.Equal("UnreadableMethodName.dll", partly.Name);
         Assert.IsType<BadImageFormatException>(partly.Error);

@@ -40,7 +40,7 @@ public sealed class NavigationInfrastructureTests
 
         var found = await navigation.OpenAndFindIdAsync([path], "M:ILSight.App.Tests.Fixtures.Greeter.Greet(System.Int32)", list.Work, CancellationToken.None);
 
-        var unreadable = Assert.IsType<Lookup<BrowseNode>.Unreadable>(Assert.IsType<Outcome<Lookup<BrowseNode>>.Ok>(found).Value);
+        var unreadable = Assert.IsType<Lookup<BrowseNode>.Unreadable>(UnionAsserts.GetCase<Outcome<Lookup<BrowseNode>>.Ok>(found).Value);
         Assert.Equal(path, unreadable.Module.Module.FilePath);
         Assert.IsType<BadImageFormatException>(unreadable.Module.Why);
     }

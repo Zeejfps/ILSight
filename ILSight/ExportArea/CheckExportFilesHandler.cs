@@ -26,9 +26,12 @@ public sealed class CheckExportFilesHandler(CheckExportFilesHandler.IPorts ports
     public async Task HandleAsync(ExportFileChecks checks, ExportFileCheck check, CancellationToken ct)
     {
         var folderLook = await LookAtFolderAsync(check.Folder.Trim(), ct);
-        await folderLook.Match(
-            ok => FinishAsync(checks, check, ok.Value, ct),
-            failed => FailAsync(checks, check, failed.Error, ct));
+        var looking = folderLook switch
+        {
+            Outcome<bool>.Ok ok => FinishAsync(checks, check, ok.Value, ct),
+            Outcome<bool>.Failed failed => FailAsync(checks, check, failed.Error, ct),
+        };
+        await looking;
     }
 
     private Task<Outcome<bool>> LookAtFolderAsync(string folder, CancellationToken ct)

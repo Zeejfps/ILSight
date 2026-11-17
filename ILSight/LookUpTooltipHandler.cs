@@ -24,7 +24,12 @@ public sealed class LookUpTooltipHandler(LookUpTooltipHandler.IPorts ports)
     public async Task HandleAsync(CodeTooltips tooltips, TooltipLookup lookup, CancellationToken ct)
     {
         var described = await ports.DescribeReferenceAsync(lookup.Reference, ct);
-        tooltips.Finish(lookup, described.Match(static ok => ok.Value, ReportFailed));
+        var tooltip = described switch
+        {
+            Outcome<Lookup<CodeTooltip>>.Ok ok => ok.Value,
+            Outcome<Lookup<CodeTooltip>>.Failed failed => ReportFailed(failed),
+        };
+        tooltips.Finish(lookup, tooltip);
     }
 
     private Lookup<CodeTooltip> ReportFailed(Outcome<Lookup<CodeTooltip>>.Failed failed)

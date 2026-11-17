@@ -460,7 +460,11 @@ public sealed class NuGetBrowser
         }
 
         var wanted = search.Search;
-        _run = found.Match<SearchRun>(ok => ShowFoundPage(wanted, ok.Value), failed => ShowSearchFailure(wanted, failed.Error));
+        _run = found switch
+        {
+            Outcome<FeedPage>.Ok ok => ShowFoundPage(wanted, ok.Value),
+            Outcome<FeedPage>.Failed failed => ShowSearchFailure(wanted, failed.Error),
+        };
         return true;
     }
 
@@ -528,7 +532,11 @@ public sealed class NuGetBrowser
             return false;
         }
 
-        _download = fetched.Match<DownloadState>(static ok => new DownloadState.Done(ok.Value), static _ => new DownloadState.None());
+        _download = fetched switch
+        {
+            Outcome<string>.Ok ok => new DownloadState.Done(ok.Value),
+            Outcome<string>.Failed => new DownloadState.None(),
+        };
         return true;
     }
 
@@ -701,7 +709,11 @@ public sealed class NuGetBrowser
             return;
         }
 
-        _details[fetch.Key] = read.Match<VersionDetails>(static ok => new VersionDetails.Read(ok.Value), static failed => new VersionDetails.Failed(failed.Error));
+        _details[fetch.Key] = read switch
+        {
+            Outcome<PackageVersionDetails>.Ok ok => new VersionDetails.Read(ok.Value),
+            Outcome<PackageVersionDetails>.Failed failed => new VersionDetails.Failed(failed.Error),
+        };
     }
 
     internal static FeedVersion? FindVersion(FeedPackage package, PackageVersion version)

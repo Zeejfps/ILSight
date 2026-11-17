@@ -60,7 +60,7 @@ public sealed class SavedPathTests : IDisposable
 
         var found = await NodeLookup.FindAsync(new AssemblyList { Runtime = TestRuntime.Installed }, TestSession.Shared, failed.Path, CancellationToken.None);
 
-        var why = Assert.IsType<AssemblyLoadException>(Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(found).Error);
+        var why = Assert.IsType<AssemblyLoadException>(UnionAsserts.GetCase<Outcome<Lookup<BrowseNode>>.Failed>(found).Error);
         Assert.IsType<BadImageFormatException>(why.InnerException);
     }
 

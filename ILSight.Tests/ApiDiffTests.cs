@@ -38,7 +38,7 @@ public sealed class ApiDiffTests
 
         var compared = await ApiEntries.CompareAsync(left, right, ApiScope.PublicApi, CancellationToken.None);
 
-        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<TypeSystemWork<ApiDiff>>.Failed>(compared).Error);
+        Assert.IsType<BadImageFormatException>(UnionAsserts.GetCase<Outcome<TypeSystemWork<ApiDiff>>.Failed>(compared).Error);
     }
 
     private static ApiEntry Entry(ApiDiff diff, params ReadOnlySpan<string> path)

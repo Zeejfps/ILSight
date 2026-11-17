@@ -56,9 +56,15 @@ public sealed class ReopenDiagramHandler(ReopenDiagramHandler.IPorts ports)
             return;
         }
 
-        cards.Switch(
-            ok => AddFound(diagram, types, ok.Value),
-            failed => ports.ReportError(new AppProblem.DiagramNotReopened { Diagram = title, Error = failed.Error }));
+        switch (cards)
+        {
+            case Outcome<List<Lookup<TypeCard>>>.Ok ok:
+                AddFound(diagram, types, ok.Value);
+                break;
+            case Outcome<List<Lookup<TypeCard>>>.Failed failed:
+                ports.ReportError(new AppProblem.DiagramNotReopened { Diagram = title, Error = failed.Error });
+                break;
+        }
     }
 
     private void AddFound(TypeDiagram diagram, IReadOnlyList<TypeAnchor> types, List<Lookup<TypeCard>> cards)

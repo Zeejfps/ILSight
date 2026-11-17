@@ -21,6 +21,6 @@ public sealed class CompareAssembliesHandlerAdapterTests
 
         var compared = await new CompareAssembliesHandlerAdapter(new ErrorLog()).CompareAsync(left, right, ApiScope.PublicApi, CancellationToken.None);
 
-        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<ModuleRead<ApiDiff>>.Failed>(compared).Error);
+        Assert.IsType<BadImageFormatException>(UnionAsserts.GetCase<Outcome<ModuleRead<ApiDiff>>.Failed>(compared).Error);
     }
 }

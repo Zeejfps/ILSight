@@ -27,7 +27,7 @@ public sealed class UserThemesAdapterTests : IDisposable
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiting.WithinPatienceAsync());
         var after = await StartWithoutContextAsync(() => adapter.WaitForChangeAsync(CancellationToken.None)).WithinPatienceAsync();
-        Assert.Equal(ThemeFolderEventKind.Stopped, Assert.IsType<Outcome<ThemeFolderEvent>.Ok>(after).Value.Kind);
+        Assert.Equal(ThemeFolderEventKind.Stopped, UnionAsserts.GetCase<Outcome<ThemeFolderEvent>.Ok>(after).Value.Kind);
     }
 
     // Starts the wait with no synchronization context, as the app's adapter is awaited where there is no UI thread, so
@@ -55,6 +55,6 @@ public sealed class UserThemesAdapterTests : IDisposable
 
         var read = adapter.ReadThemeFile(path);
 
-        Assert.IsType<DirectoryNotFoundException>(Assert.IsType<Outcome<byte[]>.Failed>(read).Error);
+        Assert.IsType<DirectoryNotFoundException>(UnionAsserts.GetCase<Outcome<byte[]>.Failed>(read).Error);
     }
 }

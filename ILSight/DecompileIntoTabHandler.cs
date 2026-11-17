@@ -36,8 +36,14 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
     {
         var read = await ports.DecompileAsync(ticket.Node, ticket.Language, ticket.Options, notes, firstGridRows, ct);
         var load = ticket.Load;
-        var loaded = ShowClosedOrFindLoaded(load, ticket.Work, read);
-        if (loaded is null || !TryShowLoaded(load, ticket.Work, loaded))
+        var shownOrLoaded = ShowClosedOrFindLoaded(load, ticket.Work, read);
+        if (shownOrLoaded is null)
+        {
+            return;
+        }
+
+        var loaded = shownOrLoaded.Value;
+        if (!TryShowLoaded(load, ticket.Work, loaded))
         {
             return;
         }
@@ -58,11 +64,13 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
 
     private static Outcome<NodeContent>? ShowClosedOrFindLoaded(TabLoad load, WorkTicket work, Outcome<ModuleRead<NodeContent>> read)
     {
-        return read.Match<Outcome<NodeContent>?>(
-            ok => ok.Value.Match<Outcome<NodeContent>?>(
+        return read switch
+        {
+            Outcome<ModuleRead<NodeContent>>.Ok ok => ok.Value.Match<Outcome<NodeContent>?>(
                 static content => new Outcome<NodeContent>.Ok(content.Value),
                 closed => ShowClosed(load, work, closed.Module)),
-            static failed => new Outcome<NodeContent>.Failed(failed.Error));
+            Outcome<ModuleRead<NodeContent>>.Failed failed => new Outcome<NodeContent>.Failed(failed.Error),
+        };
     }
 
     private static Outcome<NodeContent>? ShowClosed(TabLoad load, WorkTicket work, LoadedModule module)
@@ -73,16 +81,20 @@ public sealed class DecompileIntoTabHandler(DecompileIntoTabHandler.IPorts ports
 
     private static bool TryShowLoaded(TabLoad load, WorkTicket work, Outcome<NodeContent> loaded)
     {
-        return loaded.Match(
-            ok => load.TryShowLoaded(work, ok.Value),
-            failed => load.TryShowFailed(work, failed.Error));
+        return loaded switch
+        {
+            Outcome<NodeContent>.Ok ok => load.TryShowLoaded(work, ok.Value),
+            Outcome<NodeContent>.Failed failed => load.TryShowFailed(work, failed.Error),
+        };
     }
 
     private static Exception? FindFailure(TabLoad load, Outcome<NodeContent> loaded)
     {
-        return loaded.Match<Exception?>(
-            _ => load.Document.Error,
-            failed => failed.Error);
+        return loaded switch
+        {
+            Outcome<NodeContent>.Ok => load.Document.Error,
+            Outcome<NodeContent>.Failed failed => failed.Error,
+        };
     }
 
     // A reference the code read by name only, its file there but unreadable, is reported once, by the first tab to show it.

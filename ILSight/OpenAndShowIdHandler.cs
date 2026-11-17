@@ -41,13 +41,17 @@ public sealed class OpenAndShowIdHandler(OpenAndShowIdHandler.IPorts ports)
 
     private DecompileTicket? ShowFound(Navigation navigation, DecompilerChoice decompiler, string idString, Outcome<Lookup<BrowseNode>> found, int ticket)
     {
-        return found.Match(
-            ok => ShowFoundNode(navigation, decompiler, idString, ok.Value, ticket),
-            failed =>
-            {
-                ports.ReportError(new AppProblem.OpenFailed(failed.Error));
-                return null;
-            });
+        return found switch
+        {
+            Outcome<Lookup<BrowseNode>>.Ok ok => ShowFoundNode(navigation, decompiler, idString, ok.Value, ticket),
+            Outcome<Lookup<BrowseNode>>.Failed failed => ReportOpenFailed(failed.Error),
+        };
+    }
+
+    private DecompileTicket? ReportOpenFailed(Exception error)
+    {
+        ports.ReportError(new AppProblem.OpenFailed(error));
+        return null;
     }
 
     private DecompileTicket? ShowFoundNode(Navigation navigation, DecompilerChoice decompiler, string idString, Lookup<BrowseNode> lookup, int ticket)

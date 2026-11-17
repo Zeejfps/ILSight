@@ -26,7 +26,7 @@ public sealed class ResourceTests
         var content = await NodeContentLoader.ReadContentAsync(TestSession.Shared, container, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance,
             NodeQueries.FirstGridRows);
 
-        Assert.NotEmpty(Assert.IsType<Outcome<ModuleRead<NodeContent>>.Failed>(content).Error.Message);
+        Assert.NotEmpty(UnionAsserts.GetCase<Outcome<ModuleRead<NodeContent>>.Failed>(content).Error.Message);
     }
 
     private static byte[] Fixture(string name)

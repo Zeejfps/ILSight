@@ -37,7 +37,7 @@ public sealed class CodeTooltipTests
 
         var described = await AssemblyListing.DescribeReferenceAsync(new AssemblyList { Runtime = TestRuntime.Installed }, method, CancellationToken.None);
 
-        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<Lookup<CodeTooltip>>.Failed>(described).Error);
+        Assert.IsType<BadImageFormatException>(UnionAsserts.GetCase<Outcome<Lookup<CodeTooltip>>.Failed>(described).Error);
     }
     private static async Task<CodeTooltip> TooltipOfAsync(AssemblyList list, BrowseNode node)
     {

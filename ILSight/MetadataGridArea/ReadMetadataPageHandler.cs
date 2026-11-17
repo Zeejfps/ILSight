@@ -21,9 +21,11 @@ public sealed class ReadMetadataPageHandler(ReadMetadataPageHandler.IPorts ports
     public async Task HandleAsync(MetadataGridPageAsk ask, CancellationToken ct)
     {
         var read = await ports.ReadPageAsync(ask, ct);
-        var page = read.Match(
-            static ok => ok.Value.Match<MetadataGridPage?>(static r => r.Value, static _ => null),
-            failed => MetadataGrids.FailedPage(ask.Grid, ask.Page, failed.Error));
+        var page = read switch
+        {
+            Outcome<ModuleRead<MetadataGridPage>>.Ok ok => ok.Value.Match<MetadataGridPage?>(static r => r.Value, static _ => null),
+            Outcome<ModuleRead<MetadataGridPage>>.Failed failed => MetadataGrids.FailedPage(ask.Grid, ask.Page, failed.Error),
+        };
         if (page is null)
         {
             return;

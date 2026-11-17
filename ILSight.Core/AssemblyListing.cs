@@ -349,9 +349,11 @@ public static class AssemblyListing
 
         var name = ReadPageName(found.Value.Entity, ct);
         // The page made of the name read, outside the catch: a bug of the app's naming it is not the library's failure.
-        return name.Match<Outcome<Lookup<string>>>(
-            static read => new Outcome<Lookup<string>>.Ok(Lookup.FromNullable(read.Value).Select(MicrosoftDocs.PageAt)),
-            static failed => new Outcome<Lookup<string>>.Failed(failed.Error));
+        return name switch
+        {
+            Outcome<ApiPageName?>.Ok read => new Outcome<Lookup<string>>.Ok(Lookup.FromNullable(read.Value).Select(MicrosoftDocs.PageAt)),
+            Outcome<ApiPageName?>.Failed failed => new Outcome<Lookup<string>>.Failed(failed.Error),
+        };
     }
 
     // The library's read of what names entity's page, under its own catch: the name, null for an entity with no page;

@@ -27,11 +27,17 @@ public sealed class ShowInApiReferenceHandler(ShowInApiReferenceHandler.IPorts p
     public async Task HandleAsync(Queue<ViewCommand> viewCommands, CodeReference.Entity reference, CancellationToken ct)
     {
         var answer = await ports.LookUpApiReferencePageAsync(reference, ct);
-        answer.Switch(
-            ok => ok.Value.Switch(
-                found => viewCommands.Enqueue(new ViewCommand.OpenWebPage(found.Value)),
-                _ => ports.ShowRefusal(new Refusal.NoApiReferencePage { Name = reference.Name }),
-                unreadable => ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module))),
-            failed => ports.ReportError(LookupFailures.OfReference(reference, failed.Error)));
+        switch (answer)
+        {
+            case Outcome<Lookup<string>>.Ok ok:
+                ok.Value.Switch(
+                    found => viewCommands.Enqueue(new ViewCommand.OpenWebPage(found.Value)),
+                    _ => ports.ShowRefusal(new Refusal.NoApiReferencePage { Name = reference.Name }),
+                    unreadable => ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module)));
+                break;
+            case Outcome<Lookup<string>>.Failed failed:
+                ports.ReportError(LookupFailures.OfReference(reference, failed.Error));
+                break;
+        }
     }
 }

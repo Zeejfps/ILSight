@@ -31,9 +31,11 @@ public sealed class CompareAssembliesHandler(CompareAssembliesHandler.IPorts por
             return;
         }
 
-        var error = compared.Match<Exception?>(
-            ok => Show(comparison, ok.Value),
-            static failed => failed.Error);
+        var error = compared switch
+        {
+            Outcome<ModuleRead<ApiDiff>>.Ok ok => Show(comparison, ok.Value),
+            Outcome<ModuleRead<ApiDiff>>.Failed failed => failed.Error,
+        };
         if (error is null)
         {
             return;

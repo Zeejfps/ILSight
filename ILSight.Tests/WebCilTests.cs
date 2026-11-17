@@ -147,7 +147,7 @@ public sealed class WebCilTests
         var unreadable = MetadataGrids.CreateGrid("TypeDef", module, file, SchemaReading(static () => throw new BadImageFormatException("Cut short.")), 1, default);
 
         Assert.Equal("The app's bug.", bug.Message);
-        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<MetadataGrid>.Failed>(unreadable).Error);
+        Assert.IsType<BadImageFormatException>(UnionAsserts.GetCase<Outcome<MetadataGrid>.Failed>(unreadable).Error);
     }
 
     private static Task<NodeContent> ReadFirstPageAsync(BrowseNode node)

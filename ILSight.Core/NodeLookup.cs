@@ -82,9 +82,12 @@ public static class NodeLookup
     {
         using var reading = LoadedAssemblies.BeginReading();
         var resolved = await ResolveAsync(list, reading, reference, ct);
-        return await resolved.Match(
-            ok => ok.Value.ThenTryFindAsync((target, c) => FindTargetAsync(session, reading, target.Assembly, target.Handle, c), ct),
-            static failed => Task.FromResult<Outcome<Lookup<BrowseNode>>>(new Outcome<Lookup<BrowseNode>>.Failed(failed.Error)));
+        return resolved switch
+        {
+            Outcome<Lookup<(LoadedModule Assembly, EntityHandle Handle)>>.Ok ok =>
+                await ok.Value.ThenTryFindAsync((target, c) => FindTargetAsync(session, reading, target.Assembly, target.Handle, c), ct),
+            Outcome<Lookup<(LoadedModule Assembly, EntityHandle Handle)>>.Failed failed => new Outcome<Lookup<BrowseNode>>.Failed(failed.Error),
+        };
     }
 
     // The listed assembly defining what reference points at, and its handle there; a file resolving it needs that
@@ -131,9 +134,12 @@ public static class NodeLookup
     {
         using var reading = LoadedAssemblies.BeginReading();
         var resolved = await ResolveAsync(list, reading, reference, ct);
-        return await resolved.Match(
-            ok => ok.Value.ThenTryFindAsync((target, c) => BrowseSessions.FindMetadataRowAsync(session, reading, target.Assembly, target.Handle, c), ct),
-            static failed => Task.FromResult<Outcome<Lookup<MetadataTarget>>>(new Outcome<Lookup<MetadataTarget>>.Failed(failed.Error)));
+        return resolved switch
+        {
+            Outcome<Lookup<(LoadedModule Assembly, EntityHandle Handle)>>.Ok ok =>
+                await ok.Value.ThenTryFindAsync((target, c) => BrowseSessions.FindMetadataRowAsync(session, reading, target.Assembly, target.Handle, c), ct),
+            Outcome<Lookup<(LoadedModule Assembly, EntityHandle Handle)>>.Failed failed => new Outcome<Lookup<MetadataTarget>>.Failed(failed.Error),
+        };
     }
 
     /// <summary>The node of the namespace, type or member <paramref name="idString"/> names, written as

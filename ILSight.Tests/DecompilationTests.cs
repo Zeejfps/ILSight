@@ -484,7 +484,7 @@ public sealed class DecompilationTests
 
         var widget = new CodeReference.Entity { Name = "Widget", Kind = EntityKind.Type, FilePath = AssemblyPath.Of(sample), Target = GetTypeReference(sample, "Widget") };
         var described = await AssemblyListing.DescribeReferenceAsync(list, widget, CancellationToken.None);
-        var failed = Assert.IsType<Outcome<Lookup<CodeTooltip>>.Failed>(described);
+        var failed = UnionAsserts.GetCase<Outcome<Lookup<CodeTooltip>>.Failed>(described);
         Assert.Same(unread.Error, failed.Error.InnerException);
     }
 

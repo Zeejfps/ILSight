@@ -21,11 +21,13 @@ public sealed class CompareAssembliesHandlerAdapter(ErrorLog errors) : CompareAs
     {
         var compared = await Background.Wait(Task.Run(() => ApiEntries.CompareAsync(left, right, scope, ct), ct));
         ct.ThrowIfCancellationRequested();
-        return compared.Match(
-            static ok => ok.Value.Match<Outcome<ModuleRead<ApiDiff>>>(
+        return compared switch
+        {
+            Outcome<TypeSystemWork<ApiDiff>>.Ok ok => ok.Value.Match<Outcome<ModuleRead<ApiDiff>>>(
                 static done => new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Read { Value = done.Value }),
                 static unreadable => new Outcome<ModuleRead<ApiDiff>>.Failed(unreadable.Module.Why),
                 static closed => new Outcome<ModuleRead<ApiDiff>>.Ok(new ModuleRead<ApiDiff>.Closed { Module = closed.Module })),
-            static failed => new Outcome<ModuleRead<ApiDiff>>.Failed(failed.Error));
+            Outcome<TypeSystemWork<ApiDiff>>.Failed failed => new Outcome<ModuleRead<ApiDiff>>.Failed(failed.Error),
+        };
     }
 }

@@ -67,7 +67,11 @@ public sealed class FrameworkBrowser(FrameworkBrowser.IPorts ports)
         }
 
         _appliedFilter = null;
-        Scan = scanned.Match<RuntimeScan>(static ok => new RuntimeScan.Scanned(ok.Value), ReportFailedScan);
+        Scan = scanned switch
+        {
+            Outcome<IReadOnlyList<RuntimeAssembly>>.Ok ok => new RuntimeScan.Scanned(ok.Value),
+            Outcome<IReadOnlyList<RuntimeAssembly>>.Failed failed => ReportFailedScan(failed),
+        };
     }
 
     /// <summary>Ends <paramref name="scan"/> as failed with <paramref name="error"/> when its workflow failed (the edge's

@@ -32,26 +32,32 @@ internal sealed class FakeDiagramGrowerPorts : DiagramGrower.IPorts
     public async Task<Outcome<TypeSystemWork<List<TypeCard>>>> ReadWithNeighboursAsync(CodeReference.Entity type, CancellationToken ct)
     {
         var read = await AskAsync(nameof(ReadWithNeighboursAsync), [type], ct);
-        return read.Match<Outcome<TypeSystemWork<List<TypeCard>>>>(
-            static ok => new Outcome<TypeSystemWork<List<TypeCard>>>.Ok(new TypeSystemWork<List<TypeCard>>.Done { Value = ok.Value }),
-            static failed => new Outcome<TypeSystemWork<List<TypeCard>>>.Failed(failed.Error));
+        return read switch
+        {
+            Outcome<List<TypeCard>>.Ok ok => new Outcome<TypeSystemWork<List<TypeCard>>>.Ok(new TypeSystemWork<List<TypeCard>>.Done { Value = ok.Value }),
+            Outcome<List<TypeCard>>.Failed failed => new Outcome<TypeSystemWork<List<TypeCard>>>.Failed(failed.Error),
+        };
     }
 
     public async Task<Outcome<List<Lookup<TypeCard>>>> ReadCardsAsync(IReadOnlyList<CodeReference.Entity> types, CancellationToken ct)
     {
         var read = await AskAsync(nameof(ReadCardsAsync), types, ct);
-        return read.Match<Outcome<List<Lookup<TypeCard>>>>(
-            static ok => new Outcome<List<Lookup<TypeCard>>>.Ok(ok.Value.ConvertAll(static c => (Lookup<TypeCard>)new Lookup<TypeCard>.Found { Value = c })),
-            static failed => new Outcome<List<Lookup<TypeCard>>>.Failed(failed.Error));
+        return read switch
+        {
+            Outcome<List<TypeCard>>.Ok ok => new Outcome<List<Lookup<TypeCard>>>.Ok(ok.Value.ConvertAll(static c => (Lookup<TypeCard>)new Lookup<TypeCard>.Found { Value = c })),
+            Outcome<List<TypeCard>>.Failed failed => new Outcome<List<Lookup<TypeCard>>>.Failed(failed.Error),
+        };
     }
 
     public async Task<Outcome<ScopeSearch<TypeCard>>> ReadDerivedAsync(CodeReference.Entity type, CancellationToken ct)
     {
         var read = await AskAsync(nameof(ReadDerivedAsync), [type], ct);
         var unreadable = SearchedUnreadable;
-        return read.Match<Outcome<ScopeSearch<TypeCard>>>(
-            ok => new Outcome<ScopeSearch<TypeCard>>.Ok(new ScopeSearch<TypeCard> { Found = ok.Value, Unreadable = unreadable }),
-            static failed => new Outcome<ScopeSearch<TypeCard>>.Failed(failed.Error));
+        return read switch
+        {
+            Outcome<List<TypeCard>>.Ok ok => new Outcome<ScopeSearch<TypeCard>>.Ok(new ScopeSearch<TypeCard> { Found = ok.Value, Unreadable = unreadable }),
+            Outcome<List<TypeCard>>.Failed failed => new Outcome<ScopeSearch<TypeCard>>.Failed(failed.Error),
+        };
     }
 
     private Task<Outcome<List<TypeCard>>> AskAsync(string read, IReadOnlyList<CodeReference.Entity> types, CancellationToken ct)

@@ -102,7 +102,11 @@ public sealed class UserThemes<TFile, TContents, TTheme>(UserThemes<TFile, TCont
     private TFile ReadTheme(ThemeId<TFile> id, string path)
     {
         var text = ports.ReadThemeFile(path);
-        return text.Match(ok => Complete(TFile.Parse(id, path, ok.Value), path), failed => TFile.CreateUnreadable(id, path, failed.Error.Message));
+        return text switch
+        {
+            Outcome<byte[]>.Ok ok => Complete(TFile.Parse(id, path, ok.Value), path),
+            Outcome<byte[]>.Failed failed => TFile.CreateUnreadable(id, path, failed.Error.Message),
+        };
     }
 
     private TFile Complete(TFile parsed, string path)

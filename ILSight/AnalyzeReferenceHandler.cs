@@ -36,13 +36,16 @@ public sealed class AnalyzeReferenceHandler(AnalyzeReferenceHandler.IPorts ports
             return;
         }
 
-        found.Switch(
-            ok => Analyze(analyzer, viewCommands, pending, ok.Value),
-            failed =>
-            {
+        switch (found)
+        {
+            case Outcome<Lookup<BrowseNode>>.Ok ok:
+                Analyze(analyzer, viewCommands, pending, ok.Value);
+                break;
+            case Outcome<Lookup<BrowseNode>>.Failed failed:
                 analyzer.FailUnresolved(pending.Root, pending.Reference.Name, failed.Error);
                 ports.ReportError(LookupFailures.OfReference(pending.Reference, failed.Error));
-            });
+                break;
+        }
     }
 
     private void Analyze(AnalyzerTree analyzer, Queue<ViewCommand> viewCommands, PendingAnalysis pending, Lookup<BrowseNode> lookup)

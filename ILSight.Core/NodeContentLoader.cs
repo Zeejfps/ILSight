@@ -50,9 +50,11 @@ public static class NodeContentLoader
 
     private static Outcome<ModuleRead<T>> ToModuleRead<T>(Outcome<T> read)
     {
-        return read.Match<Outcome<ModuleRead<T>>>(
-            static ok => new Outcome<ModuleRead<T>>.Ok(new ModuleRead<T>.Read { Value = ok.Value }),
-            static failed => new Outcome<ModuleRead<T>>.Failed(failed.Error));
+        return read switch
+        {
+            Outcome<T>.Ok ok => new Outcome<ModuleRead<T>>.Ok(new ModuleRead<T>.Read { Value = ok.Value }),
+            Outcome<T>.Failed failed => new Outcome<ModuleRead<T>>.Failed(failed.Error),
+        };
     }
 
     private static bool TryReadModuleOf(ModuleReadLease reading, BrowseNode node, [NotNullWhen(false)] out LoadedModule? closed)
@@ -90,9 +92,11 @@ public static class NodeContentLoader
         DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, DocumentNote? note, CancellationToken cancellationToken)
     {
         var request = await ReadRequestAsync(session, node, cancellationToken);
-        return await request.Match(
-            ok => DecompileRequestAsync(reading, ok.Value, language, options, notes, note, cancellationToken),
-            static failed => Task.FromResult<Outcome<DecompiledDocument>>(new Outcome<DecompiledDocument>.Failed(failed.Error)));
+        return request switch
+        {
+            Outcome<DocumentRequest>.Ok ok => await DecompileRequestAsync(reading, ok.Value, language, options, notes, note, cancellationToken),
+            Outcome<DocumentRequest>.Failed failed => new Outcome<DecompiledDocument>.Failed(failed.Error),
+        };
     }
 
     private static async Task<Outcome<DecompiledDocument>> DecompileRequestAsync(ModuleReadLease reading, DocumentRequest request,
@@ -105,9 +109,12 @@ public static class NodeContentLoader
     // (MetadataGrids.CreateGrid), what the library throws the content's failure; the grid is built after them.
     private static Outcome<NodeContent>? FindGridContent(BrowseNode node, int firstRows, CancellationToken ct)
     {
-        return GridOf(node, firstRows, ct)?.Match<Outcome<NodeContent>>(
-            static ok => new Outcome<NodeContent>.Ok(new NodeContent.Table(ok.Value)),
-            static failed => new Outcome<NodeContent>.Failed(failed.Error));
+        return GridOf(node, firstRows, ct) switch
+        {
+            null => null,
+            Outcome<MetadataGrid>.Ok ok => new Outcome<NodeContent>.Ok(new NodeContent.Table(ok.Value)),
+            Outcome<MetadataGrid>.Failed failed => new Outcome<NodeContent>.Failed(failed.Error),
+        };
     }
 
     private static Outcome<MetadataGrid>? GridOf(BrowseNode node, int firstRows, CancellationToken ct)
@@ -131,7 +138,7 @@ public static class NodeContentLoader
         var grid = FindGridContent(node, firstGridRows, cancellationToken);
         if (grid is not null)
         {
-            return grid;
+            return grid.Value;
         }
 
         if (!BrowseNodes.IsImage(node.Subject))
@@ -153,9 +160,11 @@ public static class NodeContentLoader
 
     private static Outcome<NodeContent> ToCode(Outcome<DecompiledDocument> decompiled)
     {
-        return decompiled.Match<Outcome<NodeContent>>(
-            static ok => new Outcome<NodeContent>.Ok(new NodeContent.Code(ok.Value)),
-            static failed => new Outcome<NodeContent>.Failed(failed.Error));
+        return decompiled switch
+        {
+            Outcome<DecompiledDocument>.Ok ok => new Outcome<NodeContent>.Ok(new NodeContent.Code(ok.Value)),
+            Outcome<DecompiledDocument>.Failed failed => new Outcome<NodeContent>.Failed(failed.Error),
+        };
     }
 
     // The app's check that the node is a resource runs before the catch; the decompiler reads the resource's bytes inside
@@ -189,9 +198,11 @@ public static class NodeContentLoader
         }
 
         var source = await DecompileAsync(session, reading, node, language, options, notes, null, cancellationToken);
-        return source.Match<Outcome<NodeContent>>(
-            ok => new Outcome<NodeContent>.Ok(new NodeContent.Picture { Image = image, Source = ok.Value }),
-            static failed => new Outcome<NodeContent>.Failed(failed.Error));
+        return source switch
+        {
+            Outcome<DecompiledDocument>.Ok ok => new Outcome<NodeContent>.Ok(new NodeContent.Picture { Image = image, Source = ok.Value }),
+            Outcome<DecompiledDocument>.Failed failed => new Outcome<NodeContent>.Failed(failed.Error),
+        };
     }
 
     /// <summary>What saving <paramref name="node"/>'s code writes: for an assembly its whole module, for a namespace all

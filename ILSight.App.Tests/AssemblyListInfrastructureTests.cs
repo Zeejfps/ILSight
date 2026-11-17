@@ -19,6 +19,6 @@ public sealed class AssemblyListInfrastructureTests
 
         var read = await adapter.ReadAgainAsync(item, [], CancellationToken.None);
 
-        Assert.IsType<AssemblyLoadException>(Assert.IsType<Outcome<ReopenedFile>.Failed>(read).Error);
+        Assert.IsType<AssemblyLoadException>(UnionAsserts.GetCase<Outcome<ReopenedFile>.Failed>(read).Error);
     }
 }

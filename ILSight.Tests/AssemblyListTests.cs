@@ -53,7 +53,7 @@ public sealed class AssemblyListTests
 
         var read = AssemblyListing.ReadAgain(list, assembly);
 
-        Assert.IsType<AssemblyLoadException>(Assert.IsType<Outcome<FreshItem>.Failed>(read).Error);
+        Assert.IsType<AssemblyLoadException>(UnionAsserts.GetCase<Outcome<FreshItem>.Failed>(read).Error);
     }
 
     [Fact]
@@ -115,13 +115,13 @@ public sealed class AssemblyListTests
 
         var loaded = AssemblyListing.TryLoad(list, AssemblyPath.Of(Trees.TestAssemblyPath));
 
-        Assert.IsType<Lookup<LoadedAssembly>.Found>(Assert.IsType<Outcome<Lookup<LoadedAssembly>>.Ok>(loaded).Value);
+        Assert.IsType<Lookup<LoadedAssembly>.Found>(UnionAsserts.GetCase<Outcome<Lookup<LoadedAssembly>>.Ok>(loaded).Value);
         var goneLoad = AssemblyListing.TryLoad(list, gone);
-        Assert.IsType<Lookup<LoadedAssembly>.NotFound>(Assert.IsType<Outcome<Lookup<LoadedAssembly>>.Ok>(goneLoad).Value);
+        Assert.IsType<Lookup<LoadedAssembly>.NotFound>(UnionAsserts.GetCase<Outcome<Lookup<LoadedAssembly>>.Ok>(goneLoad).Value);
         var folderGoneLoad = AssemblyListing.TryLoad(list, folderGone);
-        Assert.IsType<Lookup<LoadedAssembly>.NotFound>(Assert.IsType<Outcome<Lookup<LoadedAssembly>>.Ok>(folderGoneLoad).Value);
+        Assert.IsType<Lookup<LoadedAssembly>.NotFound>(UnionAsserts.GetCase<Outcome<Lookup<LoadedAssembly>>.Ok>(folderGoneLoad).Value);
         var corruptLoad = AssemblyListing.TryLoad(list, corrupt);
-        var failed = Assert.IsType<Outcome<Lookup<LoadedAssembly>>.Failed>(corruptLoad);
+        var failed = UnionAsserts.GetCase<Outcome<Lookup<LoadedAssembly>>.Failed>(corruptLoad);
         Assert.IsType<BadImageFormatException>(Assert.IsType<AssemblyLoadException>(failed.Error).InnerException);
         Assert.Throws<AssemblyLoadException>(() => AssemblyListing.FindAssemblyToLookIn(list, corrupt));
         Assert.Null(AssemblyListing.FindAssemblyToLookIn(list, gone));

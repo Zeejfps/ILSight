@@ -43,15 +43,39 @@ public sealed class RestoreAnalysesHandler(RestoreAnalysesHandler.IPorts ports)
         }
 
         Analysis.AnalyzeAgain(analyzer, viewCommands, restore.Roots, found);
-        var looked = found
-            .OfType<Outcome<Lookup<AnalysisSymbol>>.Ok>()
-            .Select(static ok => ok.Value)
-            .ToList();
-        ReportUnreadable(Lookup.ListUnreadable(looked));
-        foreach (var failed in found.OfType<Outcome<Lookup<AnalysisSymbol>>.Failed>())
+        ReportUnreadable(Lookup.ListUnreadable(ListLooked(found)));
+        foreach (var error in ListErrors(found))
         {
-            ports.ReportError(new AppProblem.AnalysesNotRestored(failed.Error));
+            ports.ReportError(new AppProblem.AnalysesNotRestored(error));
         }
+    }
+
+    // What the lookups that did not fail came to, in order.
+    private static List<Lookup<AnalysisSymbol>> ListLooked(List<Outcome<Lookup<AnalysisSymbol>>> found)
+    {
+        var looked = new List<Lookup<AnalysisSymbol>>();
+        foreach (var outcome in found)
+        {
+            if (outcome is Outcome<Lookup<AnalysisSymbol>>.Ok ok)
+            {
+                looked.Add(ok.Value);
+            }
+        }
+        return looked;
+    }
+
+    // What the lookups that failed failed with, in order.
+    private static List<Exception> ListErrors(List<Outcome<Lookup<AnalysisSymbol>>> found)
+    {
+        var errors = new List<Exception>();
+        foreach (var outcome in found)
+        {
+            if (outcome is Outcome<Lookup<AnalysisSymbol>>.Failed failed)
+            {
+                errors.Add(failed.Error);
+            }
+        }
+        return errors;
     }
 
     private void ReportUnreadable(List<UnreadableModule> unreadable)

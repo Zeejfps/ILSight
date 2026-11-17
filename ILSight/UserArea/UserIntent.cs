@@ -96,7 +96,12 @@ public sealed class UserIntent
     /// alone, when another one has begun meanwhile. Stops resolving unless stale.</summary>
     public Resolution<T> EndResolving<T>(int ticket, Outcome<Lookup<T>> outcome) where T : notnull
     {
-        return TakeResolution(ticket, outcome.Match(static ok => Resolve(ok.Value), static failed => new Resolution<T>.Failed(failed.Error)));
+        var resolution = outcome switch
+        {
+            Outcome<Lookup<T>>.Ok ok => Resolve(ok.Value),
+            Outcome<Lookup<T>>.Failed failed => new Resolution<T>.Failed(failed.Error),
+        };
+        return TakeResolution(ticket, resolution);
     }
 
     private Resolution<T> TakeResolution<T>(int ticket, Resolution<T> resolution)

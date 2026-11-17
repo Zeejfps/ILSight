@@ -317,22 +317,27 @@ public static class ApiEntries
             return new Outcome<TypeSystemWork<ApiDiff>>.Ok(new TypeSystemWork<ApiDiff>.Unreadable { Module = reads.Unreadable[0] });
         }
 
-        var leftApi = ReadApi(reads.Read[LoadedAssemblies.GetFile(left)].MainModule, scope, cancellationToken);
-        if (leftApi is Outcome<ModuleApi>.Failed leftFailed)
+        // The right side read only once the left one was.
+        Outcome<(ModuleApi Left, ModuleApi Right)> apis = ReadApi(reads.Read[LoadedAssemblies.GetFile(left)].MainModule, scope, cancellationToken) switch
         {
-            return new Outcome<TypeSystemWork<ApiDiff>>.Failed(leftFailed.Error);
-        }
-
-        var rightApi = ReadApi(reads.Read[LoadedAssemblies.GetFile(right)].MainModule, scope, cancellationToken);
-        if (rightApi is Outcome<ModuleApi>.Failed rightFailed)
-        {
-            return new Outcome<TypeSystemWork<ApiDiff>>.Failed(rightFailed.Error);
-        }
+            Outcome<ModuleApi>.Failed leftFailed => new Outcome<(ModuleApi Left, ModuleApi Right)>.Failed(leftFailed.Error),
+            Outcome<ModuleApi>.Ok leftApi => ReadApi(reads.Read[LoadedAssemblies.GetFile(right)].MainModule, scope, cancellationToken) switch
+            {
+                Outcome<ModuleApi>.Failed rightFailed => new Outcome<(ModuleApi Left, ModuleApi Right)>.Failed(rightFailed.Error),
+                Outcome<ModuleApi>.Ok rightApi => new Outcome<(ModuleApi Left, ModuleApi Right)>.Ok((leftApi.Value, rightApi.Value)),
+            },
+        };
 
         // Matched, ordered and counted after both reads, outside their catches: a bug of the app's comparison goes on
         // to the edge, never said as the library's failure on either assembly.
-        var namespaces = CompareNamespaces(((Outcome<ModuleApi>.Ok)leftApi).Value, ((Outcome<ModuleApi>.Ok)rightApi).Value, cancellationToken);
-        return new Outcome<TypeSystemWork<ApiDiff>>.Ok(new TypeSystemWork<ApiDiff>.Done { Value = Compare(left, right, scope, namespaces) });
+        return apis switch
+        {
+            Outcome<(ModuleApi Left, ModuleApi Right)>.Failed failed => new Outcome<TypeSystemWork<ApiDiff>>.Failed(failed.Error),
+            Outcome<(ModuleApi Left, ModuleApi Right)>.Ok read => new Outcome<TypeSystemWork<ApiDiff>>.Ok(new TypeSystemWork<ApiDiff>.Done
+            {
+                Value = Compare(left, right, scope, CompareNamespaces(read.Value.Left, read.Value.Right, cancellationToken)),
+            }),
+        };
     }
 
     private static ApiDiff Compare(LoadedModule left, LoadedModule right, ApiScope scope, List<ApiEntry> namespaces)

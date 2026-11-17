@@ -287,7 +287,7 @@ public sealed class AssembliesTests
             ReadAgain = async (item, places) =>
             {
                 var reopened = await ReadAgainAsync(appState, item, places);
-                read = Assert.IsType<Outcome<ReopenedFile>.Ok>(reopened).Value.Fresh;
+                read = UnionAsserts.GetCase<Outcome<ReopenedFile>.Ok>(reopened).Value.Fresh;
                 return reopened;
             },
             WhileWorking = () => appState.Reopens.Start(fixtures.FilePath),

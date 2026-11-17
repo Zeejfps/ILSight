@@ -82,7 +82,11 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
         }
 
         var checking = await FileReadFailures.CatchAsync(Background.Wait(Task.Run(() => PdbFiles.Check(assembly, pdbPath), ct)), ct);
-        return checking.Match<PdbCheckOutcome>(static ok => new PdbCheckOutcome.Checked { Check = ok.Value }, static failed => new PdbCheckOutcome.Failed { Error = failed.Error });
+        return checking switch
+        {
+            Outcome<PdbCheck>.Ok ok => new PdbCheckOutcome.Checked { Check = ok.Value },
+            Outcome<PdbCheck>.Failed failed => new PdbCheckOutcome.Failed { Error = failed.Error },
+        };
     }
 
     /// <summary>Reads on the thread pool and comes back on the UI thread, a file that can no longer be read as
@@ -141,11 +145,15 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
     private async Task<Outcome<ReopenedFile>> ReadItemAgainAsync(LoadedAssembly item, IReadOnlyList<NodePath> places, CancellationToken ct)
     {
         var read = AssemblyListing.ReadAgain(assemblies, item);
-        if (read is not Outcome<FreshItem>.Ok { Value: var fresh })
+        return read switch
         {
-            return new Outcome<ReopenedFile>.Failed(((Outcome<FreshItem>.Failed)read).Error);
-        }
+            Outcome<FreshItem>.Ok ok => await ReopenAsync(item, ok.Value, places, ct),
+            Outcome<FreshItem>.Failed failed => new Outcome<ReopenedFile>.Failed(failed.Error),
+        };
+    }
 
+    private async Task<Outcome<ReopenedFile>> ReopenAsync(LoadedAssembly item, FreshItem fresh, IReadOnlyList<NodePath> places, CancellationToken ct)
+    {
         var handedOver = false;
         try
         {
@@ -206,13 +214,11 @@ public sealed class AssemblyListInfrastructure(ErrorLog errors, RefusalLine refu
     {
         ListFiles(paths, work, ct);
         var expandedNodes = await GetExpandedNodesAsync(expanded, ct);
-        if (expandedNodes is Outcome<List<BrowseNode>>.Failed expandedFailed)
+        return expandedNodes switch
         {
-            return new Outcome<ReloadedNodes>.Failed(expandedFailed.Error);
-        }
-
-        var placeNodes = await FindNodesAsync(places, ct);
-        return new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = ((Outcome<List<BrowseNode>>.Ok)expandedNodes).Value, Places = placeNodes });
+            Outcome<List<BrowseNode>>.Ok ok => new Outcome<ReloadedNodes>.Ok(new ReloadedNodes { Expanded = ok.Value, Places = await FindNodesAsync(places, ct) }),
+            Outcome<List<BrowseNode>>.Failed failed => new Outcome<ReloadedNodes>.Failed(failed.Error),
+        };
     }
 
     private async Task<Outcome<List<BrowseNode>>> GetExpandedNodesAsync(IReadOnlyList<NodePath> expanded, CancellationToken ct)

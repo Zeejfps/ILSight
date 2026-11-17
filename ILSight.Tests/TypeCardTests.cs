@@ -207,7 +207,7 @@ public sealed class TypeCardTests
         var card = await TypeCards.ReadAsync(list, circle, CancellationToken.None);
         var neighbours = await TypeCards.ReadWithNeighboursAsync(list, circle, CancellationToken.None);
 
-        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<Lookup<TypeCard>>.Failed>(card).Error);
-        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<TypeSystemWork<List<TypeCard>>>.Failed>(neighbours).Error);
+        Assert.IsType<BadImageFormatException>(UnionAsserts.GetCase<Outcome<Lookup<TypeCard>>.Failed>(card).Error);
+        Assert.IsType<BadImageFormatException>(UnionAsserts.GetCase<Outcome<TypeSystemWork<List<TypeCard>>>.Failed>(neighbours).Error);
     }
 }

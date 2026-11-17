@@ -30,8 +30,14 @@ public sealed class LayOutDiagramHandler(LayOutDiagramHandler.IPorts ports)
             return;
         }
 
-        laidOut.Switch(
-            ok => diagram.ShowLayout(ok.Value),
-            failed => ports.ReportError(new AppProblem.DiagramNotLaidOut(failed.Error)));
+        switch (laidOut)
+        {
+            case Outcome<TypeLayout>.Ok ok:
+                diagram.ShowLayout(ok.Value);
+                break;
+            case Outcome<TypeLayout>.Failed failed:
+                ports.ReportError(new AppProblem.DiagramNotLaidOut(failed.Error));
+                break;
+        }
     }
 }

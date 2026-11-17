@@ -97,8 +97,8 @@ public sealed class NavigationTests
         var field = Assert.NotNull(await list.FindMetadataRowAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(call.SpanAt("_items").Reference)));
         var self = Assert.NotNull(await list.FindMetadataRowAsync(CodeReferences.CreateAssembly(assembly.Name, assembly.FilePath)));
 
-        var methods = Assert.IsType<MetadataGrid.InMemory>(Assert.IsType<Outcome<MetadataGrid>.Ok>(MetadataTables.EnsureGrid(TableOf(add.Node), NodeQueries.FirstGridRows)).Value);
-        var fields = Assert.IsType<MetadataGrid.InMemory>(Assert.IsType<Outcome<MetadataGrid>.Ok>(MetadataTables.EnsureGrid(TableOf(field.Node), NodeQueries.FirstGridRows)).Value);
+        var methods = Assert.IsType<MetadataGrid.InMemory>(UnionAsserts.GetCase<Outcome<MetadataGrid>.Ok>(MetadataTables.EnsureGrid(TableOf(add.Node), NodeQueries.FirstGridRows)).Value);
+        var fields = Assert.IsType<MetadataGrid.InMemory>(UnionAsserts.GetCase<Outcome<MetadataGrid>.Ok>(MetadataTables.EnsureGrid(TableOf(field.Node), NodeQueries.FirstGridRows)).Value);
         Assert.Equal("System.Private.CoreLib", add.Node.Assembly.Name);
         Assert.Equal(TableIndex.MethodDef, TableOf(add.Node).ListedTable);
         Assert.Equal("Add", MetadataGrids.GetText(methods, add.Row, methods.Column("Name")));
@@ -327,10 +327,10 @@ public sealed class NavigationTests
         var fixtures = await module.FixturesAsync();
         var childrenState = await BrowseSessions.GetChildrenAsync(session, fixtures);
         var why = Assert.IsType<ChildrenState.Failed>(childrenState).Error;
-        Assert.Same(why, Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(byReference).Error);
-        Assert.Same(why, Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(byId).Error);
-        Assert.Same(why, Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(byPath).Error);
-        Assert.Same(why, Assert.IsType<Outcome<Lookup<BrowseNode>>.Failed>(listedByPath).Error);
+        Assert.Same(why, UnionAsserts.GetCase<Outcome<Lookup<BrowseNode>>.Failed>(byReference).Error);
+        Assert.Same(why, UnionAsserts.GetCase<Outcome<Lookup<BrowseNode>>.Failed>(byId).Error);
+        Assert.Same(why, UnionAsserts.GetCase<Outcome<Lookup<BrowseNode>>.Failed>(byPath).Error);
+        Assert.Same(why, UnionAsserts.GetCase<Outcome<Lookup<BrowseNode>>.Failed>(listedByPath).Error);
         Assert.IsType<Lookup<BrowseNode>.NotFound>(toExpand.GetValue());
     }
 }

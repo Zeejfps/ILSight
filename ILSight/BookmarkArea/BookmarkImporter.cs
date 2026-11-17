@@ -102,10 +102,24 @@ public sealed class BookmarkImporter(BookmarkImporter.IPorts ports)
 
         var lines = lost.ConvertAll(DescribeLostBookmark);
         ports.ShowRefusal(new Refusal.ImportedBookmarksLost { File = file, Lost = lines });
-        foreach (var unreadable in Lookup.ListUnreadable(lost.Select(static f => ((Outcome<Lookup<NodePath>>.Ok)f.Place).Value)))
+        foreach (var unreadable in Lookup.ListUnreadable(ListLookups(lost)))
         {
             ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable));
         }
+    }
+
+    // What the lookups of the bookmarks whose lookup did not fail came to, in order.
+    private static List<Lookup<NodePath>> ListLookups(List<FoundBookmark> found)
+    {
+        var lookups = new List<Lookup<NodePath>>();
+        foreach (var bookmark in found)
+        {
+            if (bookmark.Place is Outcome<Lookup<NodePath>>.Ok ok)
+            {
+                lookups.Add(ok.Value);
+            }
+        }
+        return lookups;
     }
 
     // Each bookmark whose lookup failed, left out, reported once with why: the others settle as their own lookups came out.

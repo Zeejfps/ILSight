@@ -51,18 +51,32 @@ public sealed class DiagramGrower(DiagramGrower.IPorts ports)
             return;
         }
 
-        cards.Switch(
-            ok => ok.Value.Switch(
-                done => TakeHome(viewCommands, read, done.Value),
-                unreadable => ReportModuleUnreadable(unreadable.Module),
-                static _ => { }),
-            failed => ReportUnreadable(read.Type, failed.Error));
+        switch (cards)
+        {
+            case Outcome<TypeSystemWork<List<TypeCard>>>.Ok ok:
+                ok.Value.Switch(
+                    done => TakeHome(viewCommands, read, done.Value),
+                    unreadable => ReportModuleUnreadable(unreadable.Module),
+                    static _ => { });
+                break;
+            case Outcome<TypeSystemWork<List<TypeCard>>>.Failed failed:
+                ReportUnreadable(read.Type, failed.Error);
+                break;
+        }
     }
 
     // A read the library failed shows failed where the diagram is, besides being reported.
     private static void FinishOrFail<T>(TypeDiagram diagram, CardRead reading, Outcome<T> read)
     {
-        read.Switch(_ => diagram.FinishReading(reading), failed => diagram.FailReading(reading, failed.Error));
+        switch (read)
+        {
+            case Outcome<T>.Ok:
+                diagram.FinishReading(reading);
+                break;
+            case Outcome<T>.Failed failed:
+                diagram.FailReading(reading, failed.Error);
+                break;
+        }
     }
 
     private void TakeHome(Queue<ViewCommand> viewCommands, NeighboursRead read, List<TypeCard> cards)
@@ -131,9 +145,15 @@ public sealed class DiagramGrower(DiagramGrower.IPorts ports)
             return;
         }
 
-        read.Switch(
-            ok => AddFound(diagram, ok.Value),
-            failed => ReportUnreadable(card.Type, failed.Error));
+        switch (read)
+        {
+            case Outcome<ScopeSearch<TypeCard>>.Ok ok:
+                AddFound(diagram, ok.Value);
+                break;
+            case Outcome<ScopeSearch<TypeCard>>.Failed failed:
+                ReportUnreadable(card.Type, failed.Error);
+                break;
+        }
     }
 
     private void AddFound(TypeDiagram diagram, ScopeSearch<TypeCard> search)
@@ -153,9 +173,15 @@ public sealed class DiagramGrower(DiagramGrower.IPorts ports)
             return;
         }
 
-        read.Switch(
-            ok => AddFound(diagram, ok.Value),
-            failed => ReportUnreadable(card.Type, failed.Error));
+        switch (read)
+        {
+            case Outcome<List<Lookup<TypeCard>>>.Ok ok:
+                AddFound(diagram, ok.Value);
+                break;
+            case Outcome<List<Lookup<TypeCard>>>.Failed failed:
+                ReportUnreadable(card.Type, failed.Error);
+                break;
+        }
     }
 
     private void AddFound(TypeDiagram diagram, List<Lookup<TypeCard>> cards)

@@ -88,7 +88,9 @@ dotnet_diagnostic.RL0202.severity = error
 dotnet_diagnostic.RL0203.severity = error
 dotnet_diagnostic.RL0204.severity = error
 dotnet_diagnostic.RL0301.severity = error
-dotnet_diagnostic.RL0302.severity = error
+# Off while R008 moves onto C# 15's `union`: the RuleLab build here doesn't yet know a union struct, so it reads
+# Find* returning Outcome<Lookup<T>> as having no not-found case. Back to error with the analyzer synced from the rules.
+dotnet_diagnostic.RL0302.severity = none
 dotnet_diagnostic.RL0303.severity = error
 dotnet_diagnostic.RL0304.severity = error
 dotnet_diagnostic.RL0305.severity = error
@@ -125,7 +127,9 @@ dotnet_diagnostic.RL1301.severity = error
 dotnet_diagnostic.RL1302.severity = error
 dotnet_diagnostic.RL1303.severity = error
 dotnet_diagnostic.RL1304.severity = error
-dotnet_diagnostic.RL1305.severity = error
+# Off while R008 moves onto C# 15's `union`: the RuleLab build here doesn't yet count a union struct's nested cases as
+# its parts. Back to error with the analyzer synced from the rules.
+dotnet_diagnostic.RL1305.severity = none
 dotnet_diagnostic.RL1306.severity = error
 dotnet_diagnostic.RL1307.severity = error
 dotnet_diagnostic.RL1308.severity = error

@@ -82,7 +82,7 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
     /// <remarks>Each file it could not write is a failure of the list it answers.</remarks>
     public Task<ExportOutcome<ExtractedFiles>> ExtractPackageFolderAsync(ExportWork.PackageFolder work, ExportTurn.Started start, CancellationToken ct)
     {
-        return RunAsync(token => new Outcome<ExtractedFiles>.Ok(PackageExtraction.ExtractFolder(work.Place.Container.Package, work.Place.Folder, work.Folder,
+        return RunAsync<ExtractedFiles>(token => new Outcome<ExtractedFiles>.Ok(PackageExtraction.ExtractFolder(work.Place.Container.Package, work.Place.Folder, work.Folder,
             start.Progress, token)), start, ct);
     }
 
@@ -117,7 +117,11 @@ public sealed class ExportInfrastructure(ErrorLog errors, RefusalLine refusals, 
         }
 
         ct.ThrowIfCancellationRequested();
-        return outcome.Match<ExportOutcome<T>>(static ok => new ExportOutcome<T>.Done(ok.Value), static failed => new ExportOutcome<T>.Failed(failed.Error));
+        return outcome switch
+        {
+            Outcome<T>.Ok ok => new ExportOutcome<T>.Done(ok.Value),
+            Outcome<T>.Failed failed => new ExportOutcome<T>.Failed(failed.Error),
+        };
     }
 
     private static async Task<ExportOutcome<T>> RunOverTypeSystemAsync<T>(Func<CancellationToken, Task<Outcome<TypeSystemWork<T>>>> work,

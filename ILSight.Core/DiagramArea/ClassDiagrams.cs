@@ -54,13 +54,17 @@ public static partial class ClassDiagrams
             return new Outcome<TypeSystemWork<string>>.Ok(new TypeSystemWork<string>.Closed { Module = closed.Module });
         }
 
-        var read = ((TypeSystemWork<Outcome<DiagramRead>>.Done)work).Value;
-        if (read is Outcome<DiagramRead>.Failed failed)
+        return ((TypeSystemWork<Outcome<DiagramRead>>.Done)work).Value switch
         {
-            return new Outcome<TypeSystemWork<string>>.Failed(failed.Error);
-        }
+            Outcome<DiagramRead>.Failed failed => new Outcome<TypeSystemWork<string>>.Failed(failed.Error),
+            Outcome<DiagramRead>.Ok read => WritePage(folder, read.Value),
+        };
+    }
 
-        var diagram = ((Outcome<DiagramRead>.Ok)read).Value;
+    // The page made of the diagram read and written into folder with its assets: its path; what the disk throws
+    // writing it, the export's failure.
+    private static Outcome<TypeSystemWork<string>> WritePage(string folder, DiagramRead diagram)
+    {
         var page = BuildPage(diagram);
         var assets = ReadAssets();
         string written;
@@ -106,9 +110,12 @@ public static partial class ClassDiagrams
         }
 
         var identity = ReadIdentity(main);
-        return identity.Match<Outcome<DiagramRead>>(
-            ok => new Outcome<DiagramRead>.Ok(new DiagramRead { Model = model, AssemblyName = ok.Value.Name, AssemblyVersion = ok.Value.Version }),
-            static failed => new Outcome<DiagramRead>.Failed(failed.Error));
+        return identity switch
+        {
+            Outcome<(string Name, string Version)>.Ok ok =>
+                new Outcome<DiagramRead>.Ok(new DiagramRead { Model = model, AssemblyName = ok.Value.Name, AssemblyVersion = ok.Value.Version }),
+            Outcome<(string Name, string Version)>.Failed failed => new Outcome<DiagramRead>.Failed(failed.Error),
+        };
     }
 
     private static Outcome<(string Name, string Version)> ReadIdentity(MetadataModule main)
@@ -133,7 +140,11 @@ public static partial class ClassDiagrams
     // The value a step read; what the library threw there, thrown on as the diagram's failed read.
     private static T ValueOf<T>(Outcome<T> read)
     {
-        return read.Match(static ok => ok.Value, static failed => throw new DiagramReadException(failed.Error));
+        return read switch
+        {
+            Outcome<T>.Ok ok => ok.Value,
+            Outcome<T>.Failed failed => throw new DiagramReadException(failed.Error),
+        };
     }
 
     // The page and its assets written into folder, creating it: the page's path.

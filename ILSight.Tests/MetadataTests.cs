@@ -79,7 +79,7 @@ public sealed class MetadataTests
 
         var page = MetadataGrids.ReadPage(grid, 0);
 
-        Assert.IsType<BadImageFormatException>(Assert.IsType<Outcome<ModuleRead<MetadataGridPage>>.Failed>(page).Error);
+        Assert.IsType<BadImageFormatException>(UnionAsserts.GetCase<Outcome<ModuleRead<MetadataGridPage>>.Failed>(page).Error);
     }
 
     [Fact]
