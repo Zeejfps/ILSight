@@ -1,28 +1,22 @@
-using System.Diagnostics;
-
 namespace ILSight.Core;
 
 /// <summary>What finding an entity's node in a browse tree came to: its node; none, as the tree lists no node for it
 /// (an accessor, a compiler-generated member); the children that would list it failed to build, and why; or the library
 /// failed reading the module's metadata on the way, the module's failure, with why.</summary>
-internal abstract record NodePlace
+internal union NodePlace(NodePlace.Listed, NodePlace.NotListed, NodePlace.Failed, NodePlace.Unreadable)
 {
-    private NodePlace()
-    {
-    }
+    public sealed record Listed(BrowseNode Node);
 
-    public sealed record Listed(BrowseNode Node) : NodePlace;
-
-    public sealed record NotListed : NodePlace;
+    public sealed record NotListed;
 
     /// <summary>The one answer for an entity the tree lists no node for.</summary>
     public static readonly NotListed None = new();
 
-    public sealed record Failed(Exception Error) : NodePlace;
+    public sealed record Failed(Exception Error);
 
     /// <summary>The library failed reading the module's metadata on the way to the place: the user's data, said as the
     /// module's (unreadable), never the app's failure.</summary>
-    public sealed record Unreadable(UnreadableModule Module) : NodePlace;
+    public sealed record Unreadable(UnreadableModule Module);
 
     /// <summary>The node found, or null for an entity not listed or one whose place failed.</summary>
     public BrowseNode? NodeOrNull => this is Listed listed ? listed.Node : null;
@@ -38,7 +32,6 @@ internal abstract record NodePlace
             NotListed => new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.NotFound()),
             Failed failed => new Outcome<Lookup<BrowseNode>>.Failed(failed.Error),
             Unreadable unreadable => new Outcome<Lookup<BrowseNode>>.Ok(new Lookup<BrowseNode>.Unreadable { Module = unreadable.Module }),
-            _ => throw new UnreachableException($"NodePlace.ToLookup does not handle {GetType().Name}."),
         };
     }
 }

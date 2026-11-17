@@ -86,8 +86,8 @@ public sealed class DocumentNoteTests
         var japaneseRead = await NodeContentLoader.ReadContentAsync(TestSession.Shared, picture, DecompilationLanguage.CSharp, DecompilerOptions.Default,
             DocumentNoteTexts.For(Locale.Ja), firstGridRows: 1).GetValueAsync();
 
-        var english = Assert.IsType<NodeContent.Code>(englishRead).Document;
-        var japanese = Assert.IsType<NodeContent.Code>(japaneseRead).Document;
+        var english = UnionAsserts.GetCase<NodeContent.Code>(englishRead).Document;
+        var japanese = UnionAsserts.GetCase<NodeContent.Code>(japaneseRead).Document;
         Assert.Equal("// The BMP is cut short.", english.Lines[0].Text);
         Assert.Equal("// BMP のデータが途中で切れています。", japanese.Lines[0].Text);
         Assert.Equal(english.Lines.Skip(1).Select(static l => l.Text), japanese.Lines.Skip(1).Select(static l => l.Text));
@@ -157,7 +157,7 @@ public sealed class DocumentNoteTests
         Assert.Contains(@"Shop\nclass Injected { }", escaped.Lines[0].Text);
         Assert.DoesNotContain(@"""Shop\nclass", escaped.Lines[0].Text);
         Assert.Equal(3, new[] { broken, spaced, escaped }.Select(d => d.Lines[0].Text).Distinct().Count());
-        Assert.All(new[] { "\t", "\v", "\r\n" }, value => Assert.DoesNotMatch("[\r\n\t\v]", new DocumentNote.ForwardedTo("Shop" + value + "Cart").Words(notes)));
+        Assert.All(new[] { "\t", "\v", "\r\n" }, value => Assert.DoesNotMatch("[\r\n\t\v]", WordsOf(new DocumentNote.ForwardedTo("Shop" + value + "Cart"), notes)));
     }
 
     // A forwarded type's line, its note saying where it went, then a line of code under it.
@@ -244,10 +244,10 @@ public sealed class DocumentNoteTests
     {
         var notes = DocumentNoteTexts.For(Locale.Ja);
 
-        Assert.Equal("原因: Bad IL range.", new DocumentNote.FailureCause("Bad IL range.").Words(notes));
+        Assert.Equal("原因: Bad IL range.", WordsOf(new DocumentNote.FailureCause("Bad IL range."), notes));
         Assert.Equal(Strings.For(Locale.Ja).CauseModuleUnreadableSentence(name: "Shop.dll", why: "Access denied."),
-            new DocumentNote.AssemblyUnreadable { File = "Shop.dll", Error = CannotOpen("Access denied.") }.Words(notes));
-        Assert.Equal(Strings.For(Locale.Ja).ErrorFileDamaged("Shop.dll"), new DocumentNote.AssemblyUnreadable { File = "Shop.dll", Error = NotAssembly() }.Words(notes));
+            WordsOf(new DocumentNote.AssemblyUnreadable { File = "Shop.dll", Error = CannotOpen("Access denied.") }, notes));
+        Assert.Equal(Strings.For(Locale.Ja).ErrorFileDamaged("Shop.dll"), WordsOf(new DocumentNote.AssemblyUnreadable { File = "Shop.dll", Error = NotAssembly() }, notes));
     }
 
     [Fact]
@@ -263,16 +263,22 @@ public sealed class DocumentNoteTests
         var bundleWhy = japanese.CauseBundleEntryOutsideSentence(entry: "Shop.dll");
 
         Assert.Equal(japanese.CauseModuleUnreadableSentence(name: "Shop.dll", why: bundleWhy),
-            new DocumentNote.AssemblyUnreadable { File = "Shop.dll", Error = inBundle }.Words(notes));
+            WordsOf(new DocumentNote.AssemblyUnreadable { File = "Shop.dll", Error = inBundle }, notes));
         Assert.Equal(japanese.CauseModuleUnreadableSentence(name: "Shop.dll", why: japanese.CauseAssemblyNotInPackageSentence(package: package.Text, name: "Shop.dll")),
-            new DocumentNote.AssemblyUnreadable { File = "Shop.dll", Error = notInPackage }.Words(notes));
+            WordsOf(new DocumentNote.AssemblyUnreadable { File = "Shop.dll", Error = notInPackage }, notes));
         Assert.Equal(japanese.CauseModuleUnreadableNote(reference: "Shop", file: "Shop.dll", why: japanese.CauseAssemblyNotDotnetSentence(file: ShopPath.Text), module: "App.dll"),
-            new DocumentNote.ReferenceUnreadable { Reference = "Shop", File = "Shop.dll", Why = NotAssembly(), Module = "App.dll" }.Words(notes));
+            WordsOf(new DocumentNote.ReferenceUnreadable { Reference = "Shop", File = "Shop.dll", Why = NotAssembly(), Module = "App.dll" }, notes));
     }
 
     private static readonly AssemblyPath ShopPath = AssemblyPath.Of(Path.Combine(Path.GetTempPath(), "Shop", "Shop.dll"));
 
     // A file the system or the library refused, saying why.
+    // A case's words, read through the note it is.
+    private static string WordsOf(DocumentNote note, IDocumentNotes notes)
+    {
+        return note.Words(notes);
+    }
+
     private static AssemblyLoadException CannotOpen(string why)
     {
         return new AssemblyLoadException(ShopPath, new AssemblyLoadFault.CannotOpen(), $"Cannot open: {why}", new IOException(why));

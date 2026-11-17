@@ -368,113 +368,88 @@ public static class NodeContentLoader
 
     private static DocumentRequest RequestOf(BrowseNode node, SummarizedChildren children, RequestFacts facts)
     {
-        return node.Subject.Match<(BrowseNode Node, SummarizedChildren Children, RequestFacts Facts), DocumentRequest>((node, children, facts),
-            module: static (s, module) => new DocumentRequest.ModulePreview
-            {
-                Module = module.Value,
-                Title = s.Node.Text,
-                FullName = s.Node.FullName,
-            },
-            @namespace: static (s, _) => SummaryRequest(s.Node, new SummaryInfo.Namespace
+        return new DocumentRequest { Title = node.Text, FullName = node.FullName, Subject = SubjectOf(node, children, facts) };
+    }
+
+    private static DocumentSubject SubjectOf(BrowseNode node, SummarizedChildren children, RequestFacts facts)
+    {
+        return node.Subject.Match<(BrowseNode Node, SummarizedChildren Children, RequestFacts Facts), DocumentSubject>((node, children, facts),
+            module: static (_, module) => new DocumentSubject.ModulePreview { Module = module.Value },
+            @namespace: static (s, _) => SummarySubject(s.Node, new SummaryInfo.Namespace
             {
                 Name = s.Node.Text,
                 Entries = ListNamespaceEntries(s.Children, s.Facts),
             }),
-            failedAssembly: static (s, failed) => new DocumentRequest.Failure
-            {
-                Assembly = failed.Value,
-                Title = s.Node.Text,
-                FullName = s.Node.FullName,
-            },
-            typeDefinition: static (s, type) => new DocumentRequest.Type
-            {
-                Definition = type.Definition,
-                Title = s.Node.Text,
-                FullName = s.Node.FullName,
-            },
-            memberDefinition: static (s, member) => new DocumentRequest.Member
-            {
-                Definition = member.Definition,
-                Title = s.Node.Text,
-                FullName = s.Node.FullName,
-            },
-            references: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            assemblyReference: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            referencedTypes: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            typeReference: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            memberReference: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            moduleReference: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            importedMethod: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            forwardedType: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            baseTypes: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            baseType: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            derivedTypes: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            derivedType: static (s, _) => SummaryRequest(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
-            unreadableModule: static (s, _) => new DocumentRequest.Summary
+            failedAssembly: static (_, failed) => new DocumentSubject.Failure { Assembly = failed.Value },
+            typeDefinition: static (_, type) => new DocumentSubject.Type { Definition = type.Definition },
+            memberDefinition: static (_, member) => new DocumentSubject.Member { Definition = member.Definition },
+            references: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            assemblyReference: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            referencedTypes: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            typeReference: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            memberReference: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            moduleReference: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            importedMethod: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            forwardedType: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            baseTypes: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            baseType: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            derivedTypes: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            derivedType: static (s, _) => SummarySubject(s.Node, SummaryOf(s.Node, s.Children, s.Facts)),
+            unreadableModule: static (s, _) => new DocumentSubject.Summary
             {
                 Info = new SummaryInfo.Comments([s.Node.Text]),
                 Module = null,
-                Title = s.Node.Text,
-                FullName = s.Node.FullName,
             },
-            resources: static (s, _) => SummaryRequest(s.Node, DescribeResources(s.Children)),
-            resourceContainer: static (s, container) => ContainerRequest(s.Node, s.Children, container.Value),
-            resourceEntry: static (s, entry) => EntryRequest(s.Node, entry.Value),
-            metadata: static (s, _) => SummaryRequest(s.Node, new SummaryInfo.Comments(s.Facts.LinesRead)),
-            metadataTables: static (s, _) => SummaryRequest(s.Node, new SummaryInfo.Comments(s.Facts.LinesRead)),
-            metadataTable: static (s, _) => SummaryRequest(s.Node, new SummaryInfo.Comments(s.Facts.LinesRead)),
-            package: static (s, _) => new DocumentRequest.Summary
+            resources: static (s, _) => SummarySubject(s.Node, DescribeResources(s.Children)),
+            resourceContainer: static (s, container) => ContainerSubject(s.Node, s.Children, container.Value),
+            resourceEntry: static (s, entry) => EntrySubject(s.Node, entry.Value),
+            metadata: static (s, _) => SummarySubject(s.Node, new SummaryInfo.Comments(s.Facts.LinesRead)),
+            metadataTables: static (s, _) => SummarySubject(s.Node, new SummaryInfo.Comments(s.Facts.LinesRead)),
+            metadataTable: static (s, _) => SummarySubject(s.Node, new SummaryInfo.Comments(s.Facts.LinesRead)),
+            package: static (s, _) => new DocumentSubject.Summary
             {
                 Info = new SummaryInfo.Comments(s.Children.Children.Select(DescribePackageChild).ToList()),
                 Module = null,
-                Title = s.Node.Text,
-                FullName = s.Node.FullName,
             },
-            packageFile: static (s, file) => ResourceRequest(s.Node, ResourceNodes.CreateData(file.Value)));
+            packageFile: static (s, file) => ResourceSubject(s.Node, ResourceNodes.CreateData(file.Value)));
     }
 
-    private static DocumentRequest.Summary SummaryRequest(BrowseNode node, SummaryInfo summary)
+    private static DocumentSubject.Summary SummarySubject(BrowseNode node, SummaryInfo summary)
     {
-        return new DocumentRequest.Summary
+        return new DocumentSubject.Summary
         {
             Info = summary,
             Module = node.SourceModule,
-            Title = node.Text,
-            FullName = node.FullName,
         };
     }
 
-    private static DocumentRequest ContainerRequest(BrowseNode node, SummarizedChildren children, ResourceContainerInfo container)
+    private static DocumentSubject ContainerSubject(BrowseNode node, SummarizedChildren children, ResourceContainerInfo container)
     {
-        return container.Contents.Match<(BrowseNode Node, SummarizedChildren Children, ResourceContainerInfo Container), DocumentRequest>(
+        return container.Contents.Match<(BrowseNode Node, SummarizedChildren Children, ResourceContainerInfo Container), DocumentSubject>(
             (node, children, container),
-            static (s, _) => ResourceRequest(s.Node, ResourceNodes.CreateData(s.Container)),
-            static (s, _) => SummaryRequest(s.Node, DescribeResources(s.Children)));
+            static (s, _) => ResourceSubject(s.Node, ResourceNodes.CreateData(s.Container)),
+            static (s, _) => SummarySubject(s.Node, DescribeResources(s.Children)));
     }
 
-    private static DocumentRequest EntryRequest(BrowseNode node, ResourceEntryInfo entry)
+    private static DocumentSubject EntrySubject(BrowseNode node, ResourceEntryInfo entry)
     {
-        return entry.Source.Match<(BrowseNode Node, ResourceEntryInfo Entry), DocumentRequest>((node, entry),
-            static (s, _) => ResourceRequest(s.Node, ResourceNodes.CreateData(s.Entry)),
-            static (s, _) => ResourceRequest(s.Node, ResourceNodes.CreateData(s.Entry)),
-            static (s, baml) => new DocumentRequest.Baml
+        return entry.Source.Match<(BrowseNode Node, ResourceEntryInfo Entry), DocumentSubject>((node, entry),
+            static (s, _) => ResourceSubject(s.Node, ResourceNodes.CreateData(s.Entry)),
+            static (s, _) => ResourceSubject(s.Node, ResourceNodes.CreateData(s.Entry)),
+            static (s, baml) => new DocumentSubject.Baml
             {
                 Module = s.Entry.Module,
                 Data = baml.Data,
-                Title = s.Node.Text,
-                FullName = s.Node.FullName,
             });
     }
 
-    private static DocumentRequest.Resource ResourceRequest(BrowseNode node, ResourceData resource)
+    private static DocumentSubject.Resource ResourceSubject(BrowseNode node, ResourceData resource)
     {
-        return new DocumentRequest.Resource
+        return new DocumentSubject.Resource
         {
             Module = node.SourceModule,
             Description = resource.Description,
             Read = resource.ReadData.Invoke,
-            Title = node.Text,
-            FullName = node.FullName,
         };
     }
 

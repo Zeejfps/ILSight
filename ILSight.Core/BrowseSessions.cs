@@ -350,22 +350,17 @@ public static class BrowseSessions
 
     private static string PackagePathOf(NodePathSegment segment)
     {
-        if (segment is NodePathSegment.PackageFolder folder)
+        return segment switch
         {
-            return folder.Path;
-        }
-
-        if (segment is NodePathSegment.PackageFile file)
-        {
-            return file.Path;
-        }
-
-        if (segment is NodePathSegment.EmbeddedModule module)
-        {
-            return module.Path;
-        }
-
-        throw new UnreachableException();
+            NodePathSegment.PackageFolder folder => folder.Path,
+            NodePathSegment.PackageFile file => file.Path,
+            NodePathSegment.EmbeddedModule module => module.Path,
+            NodePathSegment.Namespace or NodePathSegment.Definition or NodePathSegment.Folder or NodePathSegment.Metadata
+                or NodePathSegment.MetadataPart or NodePathSegment.AssemblyReference or NodePathSegment.ModuleReference
+                or NodePathSegment.ImportedMethod or NodePathSegment.UsedType or NodePathSegment.UsedMember or NodePathSegment.ForwardedType
+                or NodePathSegment.BaseType or NodePathSegment.DerivedType or NodePathSegment.UnreadableModule or NodePathSegment.Resource
+                => throw new UnreachableException("Only an entry of a package is found by its path there."),
+        };
     }
 
     /// <summary>Where the type or member <paramref name="handle"/> defines in <paramref name="module"/> sits in the

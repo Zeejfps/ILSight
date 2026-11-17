@@ -101,7 +101,7 @@ public sealed class ResourceTests
         var svg = await resources.GetChildAsync("shape.svg");
 
         Assert.True(svg.IsImage);
-        Assert.Equal("SVG", Assert.IsType<NodeContent.Picture>(await svg.ReadContentAsync()).Image.Format);
+        Assert.Equal("SVG", UnionAsserts.GetCase<NodeContent.Picture>(await svg.ReadContentAsync()).Image.Format);
     }
 
     [Fact]
@@ -226,17 +226,17 @@ public sealed class ResourceTests
         var png = await resources.GetChildAsync("logo.png");
         Assert.True(png.IsImage);
         var gif = await resources.GetChildAsync("red.gif");
-        Assert.IsType<NodeContent.Picture>(await gif.ReadContentAsync());
+        UnionAsserts.GetCase<NodeContent.Picture>(await gif.ReadContentAsync());
         Assert.False(gif.IsCode);
         var xml = await resources.GetChildAsync("sample.xml");
-        Assert.IsType<NodeContent.Code>(await xml.ReadContentAsync());
+        UnionAsserts.GetCase<NodeContent.Code>(await xml.ReadContentAsync());
         Assert.True(xml.IsCode);
         var resourcesNode = await resources.GetChildAsync("Mixed.resources");
         Assert.IsType<NodeSubject.ResourceContainer>(resourcesNode.Subject);
         var resourcesChildren = await resources.ListChildrenAsync();
         Assert.All(resourcesChildren, c => Assert.True(c.HasResource));
 
-        var image = Assert.IsType<NodeContent.Picture>(await png.ReadContentAsync()).Image;
+        var image = UnionAsserts.GetCase<NodeContent.Picture>(await png.ReadContentAsync()).Image;
         Assert.Equal(Expected, image.Rgba);
         var logo = await resources.GetChildAsync("logo.png");
         Assert.Equal(Fixture("logo.png"), BrowseNodes.ReadResource(logo));
@@ -249,7 +249,7 @@ public sealed class ResourceTests
         var resources = await ResourcesAsync(assembly);
         var broken = await resources.GetChildAsync("broken.png");
 
-        var document = Assert.IsType<NodeContent.Code>(await broken.ReadContentAsync(DecompilationLanguage.IL)).Document;
+        var document = UnionAsserts.GetCase<NodeContent.Code>(await broken.ReadContentAsync(DecompilationLanguage.IL)).Document;
 
         Assert.False(broken.IsCode);
         Assert.Equal("// This is no PNG, JPEG, BMP, GIF, ICO, CUR or SVG picture.", document.Lines[0].Text);
@@ -310,7 +310,7 @@ public sealed class ResourceTests
         var resources = await ResourcesAsync(assembly);
         var file = await resources.GetChildAsync("Mixed.resources");
 
-        var grid = Assert.IsType<NodeContent.Table>(await file.ReadContentAsync()).Grid;
+        var grid = UnionAsserts.GetCase<NodeContent.Table>(await file.ReadContentAsync()).Grid;
         var rows = Enumerable.Range(0, grid.RowCount).Select(r => (MetadataGrids.GetText(grid, r, 0), MetadataGrids.GetText(grid, r, 1), MetadataGrids.GetText(grid, r, 2))).ToList();
 
         Assert.Equal(["Name", "Value", "Type"], grid.Columns.Select(c => c.Name));
@@ -329,7 +329,7 @@ public sealed class ResourceTests
         var children = await file.ListChildrenAsync();
         Assert.Equal([("Notes.xml", false), ("Picture.png", true)], children.Select(static c => (c.Text, c.IsImage)));
         var png = await file.GetChildAsync("Picture.png");
-        Assert.Equal(Expected, Assert.IsType<NodeContent.Picture>(await png.ReadContentAsync()).Image.Rgba);
+        Assert.Equal(Expected, UnionAsserts.GetCase<NodeContent.Picture>(await png.ReadContentAsync()).Image.Rgba);
         var xml = await file.GetChildAsync("Notes.xml");
         Assert.Contains(("root", SpanKind.Keyword), (await xml.DecompileAsync(DecompilationLanguage.CSharp)).SpansOf().Select(s => (s.Text, s.Span.Kind)));
     }
@@ -344,7 +344,7 @@ public sealed class ResourceTests
         Assert.Equal(Fixture("Mixed.resources"), BrowseNodes.ReadResource(file));
         Assert.Equal("Mixed.resources", file.ResourceFileName);
         Assert.True(file.HasChildren);
-        Assert.IsType<NodeContent.Table>(await file.ReadContentAsync(DecompilationLanguage.IL));
+        UnionAsserts.GetCase<NodeContent.Table>(await file.ReadContentAsync(DecompilationLanguage.IL));
         Assert.False(file.IsCode);
         Assert.Null(file.FolderInPackage);
     }
@@ -354,7 +354,7 @@ public sealed class ResourceTests
     {
         var baml = await MainWindowBamlAsync();
 
-        var document = Assert.IsType<NodeContent.Code>(await baml.ReadContentAsync(DecompilationLanguage.IL)).Document;
+        var document = UnionAsserts.GetCase<NodeContent.Code>(await baml.ReadContentAsync(DecompilationLanguage.IL)).Document;
 
         Assert.False(baml.IsImage);
         Assert.True(baml.IsCode);
@@ -393,7 +393,7 @@ public sealed class ResourceTests
 
     private static async Task<(int Width, int Height, string Format)> PictureAsync(BrowseNode node)
     {
-        var image = Assert.IsType<NodeContent.Picture>(await node.ReadContentAsync()).Image;
+        var image = UnionAsserts.GetCase<NodeContent.Picture>(await node.ReadContentAsync()).Image;
         return (image.Width, image.Height, image.Format);
     }
 
@@ -416,7 +416,7 @@ public sealed class ResourceTests
         var svg = await container.GetChildAsync("/Assets/icon.svg");
         Assert.Equal((64, 64, "SVG"), await PictureAsync(svg));
         var png = await container.GetChildAsync("/Assets/logo.png");
-        Assert.Equal(Expected, Assert.IsType<NodeContent.Picture>(await png.ReadContentAsync()).Image.Rgba);
+        Assert.Equal(Expected, UnionAsserts.GetCase<NodeContent.Picture>(await png.ReadContentAsync()).Image.Rgba);
         var json = await container.GetChildAsync("/Assets/notes.json");
         Assert.Contains("\"sample\"", Documents.GetText(await json.DecompileAsync(DecompilationLanguage.CSharp)));
         var node = await container.GetChildAsync("/!AvaloniaResourceXamlInfo");
@@ -434,7 +434,7 @@ public sealed class ResourceTests
         var children = await container.ListChildrenAsync();
         Assert.Equal(["/!AvaloniaResourceXamlInfo", "/Assets/logo.png", "/Assets/notes.json"], children.Select(c => c.Text));
         var png = await container.GetChildAsync("/Assets/logo.png");
-        Assert.Equal(Expected, Assert.IsType<NodeContent.Picture>(await png.ReadContentAsync()).Image.Rgba);
+        Assert.Equal(Expected, UnionAsserts.GetCase<NodeContent.Picture>(await png.ReadContentAsync()).Image.Rgba);
     }
 
     [Fact]

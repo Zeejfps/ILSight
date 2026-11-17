@@ -30,7 +30,7 @@ public sealed class MetadataTests
 
     private static async Task<MetadataGrid> GridAsync(BrowseNode node)
     {
-        return Assert.IsType<NodeContent.Table>(await node.ReadContentAsync()).Grid;
+        return UnionAsserts.GetCase<NodeContent.Table>(await node.ReadContentAsync()).Grid;
     }
 
     private static async Task<MetadataGrid> TypeDefsAsync()
@@ -275,7 +275,7 @@ public sealed class MetadataTests
             }
             else
             {
-                Assert.Null(Assert.IsType<NodeContent.Code>(content).Document.Error);
+                Assert.Null(UnionAsserts.GetCase<NodeContent.Code>(content).Document.Error);
             }
             foreach (var child in await node.ListChildrenAsync())
             {

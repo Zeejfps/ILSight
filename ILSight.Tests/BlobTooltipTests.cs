@@ -10,7 +10,7 @@ public sealed class BlobTooltipTests
         var root = await Trees.TestAssembly.ReadRootAsync();
         var tables = await root.GetChildAsync("Metadata", "Tables");
         var node = await tables.TableAsync(table);
-        return Assert.IsType<NodeContent.Table>(await node.ReadContentAsync()).Grid;
+        return UnionAsserts.GetCase<NodeContent.Table>(await node.ReadContentAsync()).Grid;
     }
 
     private static string? TooltipText(MetadataGrid grid, int row, string column)

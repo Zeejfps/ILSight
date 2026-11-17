@@ -686,18 +686,12 @@ public static class AssemblySearch
         // module on the way; null for a place found or not listed.
         private static Exception? WhyNotPlaced(NodePlace place)
         {
-            if (place is NodePlace.Failed failed)
+            return place switch
             {
-                return failed.Error;
-            }
-
-            if (place is NodePlace.Unreadable unreadable)
-            {
-                return unreadable.Module.Why;
-            }
-
-            // Listed or not listed: no failure.
-            return null;
+                NodePlace.Failed failed => failed.Error,
+                NodePlace.Unreadable unreadable => unreadable.Module.Why,
+                NodePlace.Listed or NodePlace.NotListed => null,
+            };
         }
 
         private static void EmitNotShown(Search search, LoadedModule assembly, EntityHandle handle, string? name, Exception why)

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ILSight.Core.MetadataArea;
 using ILSight.Core.ResourceArea;
 
@@ -6,32 +5,17 @@ namespace ILSight.Core;
 
 /// <summary>What a <see cref="BrowseNode"/> shows: a <see cref="Code"/> document, a
 /// <see cref="Table"/> grid or a <see cref="Picture"/>.</summary>
-public abstract record NodeContent
+public union NodeContent(NodeContent.Code, NodeContent.Table, NodeContent.Picture)
 {
-    private NodeContent()
-    {
-    }
+    public sealed record Code(DecompiledDocument Document);
 
-    public sealed record Code(DecompiledDocument Document) : NodeContent;
-
-    public sealed record Table(MetadataGrid Grid) : NodeContent;
+    public sealed record Table(MetadataGrid Grid);
 
     /// <summary>A picture, and for one stored as markup, such as SVG, that markup as a document.</summary>
-    public sealed record Picture : NodeContent
+    public sealed record Picture
     {
         public required ResourceImage Image { get; init; }
 
         public DecompiledDocument? Source { get; init; }
-    }
-
-    public TResult Match<TResult>(Func<Code, TResult> code, Func<Table, TResult> table, Func<Picture, TResult> picture)
-    {
-        return this switch
-        {
-            Code c => code(c),
-            Table t => table(t),
-            Picture p => picture(p),
-            _ => throw new UnreachableException($"NodeContent.Match does not handle {GetType().Name}."),
-        };
     }
 }

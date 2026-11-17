@@ -46,7 +46,7 @@ public sealed class NodePath : IEquatable<NodePath>
 
         for (var i = Steps.Length - 1; i >= 0; i--)
         {
-            if (Steps[i].Segment != other.Steps[i].Segment)
+            if (!Steps[i].Segment.Equals(other.Steps[i].Segment))
             {
                 return false;
             }

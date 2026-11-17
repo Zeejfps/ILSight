@@ -79,7 +79,7 @@ public static class CodeFiles
     private static TypeSystemWork<string> SaveUnreadable(ModuleReadLease reading, CodeExport export, LoadedModule module, TypeSystemRead.Unreadable unreadable,
         DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, string path, CallbackFailure callbacks, CancellationToken cancellationToken)
     {
-        if (export is CodeExport.Document document && !NodeDecompiler.IsReadThroughTypeSystem(document.Request))
+        if (export is CodeExport.Document document && !document.Request.Subject.IsReadThroughTypeSystem)
         {
             return Save(reading, export, null, null, language, options, notes, path, callbacks, cancellationToken);
         }
@@ -102,7 +102,7 @@ public static class CodeFiles
         {
             CodeExport.WholeModule whole => whole.Module,
             CodeExport.Namespace ns => ns.Module,
-            CodeExport.Document document => NodeDecompiler.ModuleOf(document.Request),
+            CodeExport.Document document => document.Request.Subject.Module,
         };
     }
 }

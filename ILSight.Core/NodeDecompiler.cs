@@ -33,12 +33,12 @@ internal static class NodeDecompiler
         DecompilerOptions options, IDocumentNotes notes, CancellationToken cancellationToken, DocumentNote? note = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (request is DocumentRequest.Failure failure)
+        if (request.Subject is DocumentSubject.Failure failure)
         {
-            return DescribeLoadError(failure, language, notes);
+            return DescribeLoadError(request.Title, failure, language, notes);
         }
 
-        var module = ModuleOf(request);
+        var module = request.Subject.Module;
         if (module is null)
         {
             return Decompile(reading, request, null, null, language, options, notes, cancellationToken, note);
@@ -77,7 +77,7 @@ internal static class NodeDecompiler
     /// through the type system, as C# or as IL with the C# of each method above it.</summary>
     internal static bool WritesCSharp(DocumentRequest request, DecompilationLanguage language)
     {
-        return IsReadThroughTypeSystem(request) && language != DecompilationLanguage.IL;
+        return request.Subject.IsReadThroughTypeSystem && language != DecompilationLanguage.IL;
     }
 
     /// <summary>Whether writing <paramref name="export"/> in <paramref name="language"/> runs the C# decompiler.</summary>
@@ -88,13 +88,13 @@ internal static class NodeDecompiler
             return false;
         }
 
-        return export is not CodeExport.Document document || IsReadThroughTypeSystem(document.Request);
+        return export is not CodeExport.Document document || document.Request.Subject.IsReadThroughTypeSystem;
     }
 
     private static DecompiledDocument DecompileUnreadable(ModuleReadLease reading, DocumentRequest request, Exception why, DecompilationLanguage language, DecompilerOptions options,
         IDocumentNotes notes, CancellationToken cancellationToken, DocumentNote? note)
     {
-        if (IsReadThroughTypeSystem(request))
+        if (request.Subject.IsReadThroughTypeSystem)
         {
             return DescribeFailure(request, language, notes, why);
         }
@@ -102,21 +102,14 @@ internal static class NodeDecompiler
         return Decompile(reading, request, null, null, language, options, notes, cancellationToken, note);
     }
 
-    /// <summary>Whether writing <paramref name="request"/> reads its module's type system: a module's preview, a type's
-    /// or member's code; not a summary, resource or BAML.</summary>
-    internal static bool IsReadThroughTypeSystem(DocumentRequest request)
-    {
-        return request is DocumentRequest.ModulePreview or DocumentRequest.Type or DocumentRequest.Member;
-    }
-
     private static DecompiledDocument Decompile(ModuleReadLease reading, DocumentRequest request, DecompilerTypeSystem? typeSystem,
         DecompilerTypeSystem? chosenTypeSystem, DecompilationLanguage language, DecompilerOptions options, IDocumentNotes notes, CancellationToken cancellationToken,
         DocumentNote? note)
     {
-        var builder = new DocumentBuilder { Language = language, Assembly = ModuleOf(request), TypeSystem = typeSystem, ChosenTypeSystem = chosenTypeSystem };
+        var builder = new DocumentBuilder { Language = language, Assembly = request.Subject.Module, TypeSystem = typeSystem, ChosenTypeSystem = chosenTypeSystem };
         if (note is not null)
         {
-            WriteNote(builder, note, notes);
+            WriteNote(builder, note.Value, notes);
         }
 
         WriteUnreadReferences(builder, request, typeSystem, notes);
@@ -157,14 +150,14 @@ internal static class NodeDecompiler
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (request is DocumentRequest.Failure failure)
+        if (request.Subject is DocumentSubject.Failure failure)
         {
-            return DescribeLoadError(failure, language, notes);
+            return DescribeLoadError(request.Title, failure, language, notes);
         }
 
         var builder = new DocumentBuilder
         {
-            Language = language, Assembly = ModuleOf(request), TypeSystem = typeSystem, ChosenTypeSystem = chosenTypeSystem, Callbacks = callbacks,
+            Language = language, Assembly = request.Subject.Module, TypeSystem = typeSystem, ChosenTypeSystem = chosenTypeSystem, Callbacks = callbacks,
         };
         WriteUnreadReferences(builder, request, typeSystem, notes);
         Write(reading, request, builder, language, Settings.Create(options), notes, cancellationToken);
@@ -197,37 +190,24 @@ internal static class NodeDecompiler
 
     // A file that could not be read as an assembly, said from its cause, as an app note; the exception stays on the
     // document.
-    private static DecompiledDocument DescribeLoadError(DocumentRequest.Failure failure, DecompilationLanguage language, IDocumentNotes notes)
+    private static DecompiledDocument DescribeLoadError(string title, DocumentSubject.Failure failure, DecompilationLanguage language, IDocumentNotes notes)
     {
         var error = failure.Assembly.Error;
         var builder = new DocumentBuilder { Language = language };
         WriteNote(builder, new DocumentNote.AssemblyUnreadable { File = error.FilePath.FileName, Error = error }, notes);
-        return builder.BuildFailure(failure.Title, error);
+        return builder.BuildFailure(title, error);
     }
 
     // Code read through a type system that read a reference by name only, not found or its file unreadable, says so first.
     private static void WriteUnreadReferences(DocumentBuilder builder, DocumentRequest request, DecompilerTypeSystem? typeSystem, IDocumentNotes notes)
     {
         var module = builder.Assembly;
-        if (module is null || typeSystem is null || !IsReadThroughTypeSystem(request))
+        if (module is null || typeSystem is null || !request.Subject.IsReadThroughTypeSystem)
         {
             return;
         }
 
         builder.WriteUnreadReferences(LoadedAssemblies.ListUnreadReferences(module), LoadedAssemblies.ListMissingReferences(module), notes);
-    }
-
-    /// <summary>The module the document of <paramref name="request"/> is read from; null for a package's.</summary>
-    internal static LoadedModule? ModuleOf(DocumentRequest request)
-    {
-        return request.Match<LoadedModule?>(
-            static preview => preview.Module,
-            static type => type.Definition.Module,
-            static member => member.Definition.Module,
-            static summary => summary.Module,
-            static resource => resource.Module,
-            static baml => baml.Module,
-            static _ => null);
     }
 
     /// <summary>Writes the code <paramref name="export"/> names to <paramref name="stream"/>, the app's notes beside a
@@ -329,26 +309,35 @@ internal static class NodeDecompiler
     private static void WriteCSharp(ModuleReadLease reading, DocumentRequest request, DocumentBuilder output, DecompilerSettings settings,
         IDocumentNotes notes, CancellationToken cancellationToken)
     {
-        request.Switch((reading, output, settings, notes, cancellationToken),
-            static (s, preview) =>
-            {
-                WriteAssemblySummary(preview.Module, s.output, s.notes);
-                WriteSyntaxTree(s.reading, preview.Module, s.output, s.settings, d => d.DecompileModuleAndAssemblyAttributes(), s.cancellationToken);
-            },
-            static (s, type) =>
-            {
+        switch (request.Subject)
+        {
+            case DocumentSubject.ModulePreview preview:
+                WriteAssemblySummary(preview.Module, output, notes);
+                WriteSyntaxTree(reading, preview.Module, output, settings, d => d.DecompileModuleAndAssemblyAttributes(), cancellationToken);
+                break;
+            case DocumentSubject.Type type:
                 var definition = type.Definition;
-                WriteHeader(definition.Module, s.output, s.notes, NodeDefinitions.GetSymbol(definition), ConversionFlags.UseFullyQualifiedTypeNames | ConversionFlags.UseFullyQualifiedEntityNames);
-                WriteSyntaxTree(s.reading, definition.Module, s.output, s.settings, d => d.Decompile(definition.Handle), s.cancellationToken);
-            },
-            static (s, member) => WriteMember(s.reading, member, s.output, s.settings, s.notes, s.cancellationToken),
-            static (s, summary) => WriteSummary(summary.Info, s.output, s.notes, s.cancellationToken),
-            static (s, resource) => WriteResource(resource, s.output, s.notes),
-            static (s, baml) => WriteXaml(s.reading, baml, s.output, s.cancellationToken),
-            static (_, _) => throw new UnreachableException());
+                WriteHeader(definition.Module, output, notes, NodeDefinitions.GetSymbol(definition), ConversionFlags.UseFullyQualifiedTypeNames | ConversionFlags.UseFullyQualifiedEntityNames);
+                WriteSyntaxTree(reading, definition.Module, output, settings, d => d.Decompile(definition.Handle), cancellationToken);
+                break;
+            case DocumentSubject.Member member:
+                WriteMember(reading, member, output, settings, notes, cancellationToken);
+                break;
+            case DocumentSubject.Summary summary:
+                WriteSummary(summary.Info, output, notes, cancellationToken);
+                break;
+            case DocumentSubject.Resource resource:
+                WriteResource(request.Title, resource, output, notes);
+                break;
+            case DocumentSubject.Baml baml:
+                WriteXaml(reading, baml, output, cancellationToken);
+                break;
+            case DocumentSubject.Failure:
+                throw new UnreachableException("A file that could not be read is described, never written.");
+        }
     }
 
-    private static void WriteMember(ModuleReadLease reading, DocumentRequest.Member request, DocumentBuilder output, DecompilerSettings settings, IDocumentNotes notes,
+    private static void WriteMember(ModuleReadLease reading, DocumentSubject.Member request, DocumentBuilder output, DecompilerSettings settings, IDocumentNotes notes,
         CancellationToken cancellationToken)
     {
         var module = request.Definition.Module;
@@ -366,34 +355,43 @@ internal static class NodeDecompiler
     private static void WriteIL(ModuleReadLease reading, DocumentRequest request, DocumentBuilder output, DecompilationLanguage language,
         DecompilerSettings settings, IDocumentNotes notes, CancellationToken cancellationToken)
     {
-        request.Switch((reading, output, language, settings, notes, cancellationToken),
-            static (s, preview) =>
-            {
+        switch (request.Subject)
+        {
+            case DocumentSubject.ModulePreview preview:
                 var file = LoadedAssemblies.GetFile(preview.Module);
-                var disassembler = CreateDisassembler(s.reading, preview.Module, RequireTypeSystem(s.output.TypeSystem), s.output.ChosenTypeSystem, s.output, s.output.Callbacks, s.language, s.settings, s.cancellationToken);
-                WriteAssemblySummary(preview.Module, s.output, s.notes);
-                s.output.WriteLine();
+                var disassembler = CreateDisassembler(reading, preview.Module, RequireTypeSystem(output.TypeSystem), output.ChosenTypeSystem, output, output.Callbacks, language, settings, cancellationToken);
+                WriteAssemblySummary(preview.Module, output, notes);
+                output.WriteLine();
                 disassembler.WriteAssemblyReferences(file.Metadata);
                 if (file.Metadata.IsAssembly)
                 {
                     disassembler.WriteAssemblyHeader(file);
                 }
 
-                s.output.WriteLine();
+                output.WriteLine();
                 disassembler.WriteModuleHeader(file);
-            },
-            static (s, type) => CreateDisassembler(s.reading, type.Definition.Module, RequireTypeSystem(s.output.TypeSystem), s.output.ChosenTypeSystem, s.output, s.output.Callbacks, s.language, s.settings, s.cancellationToken)
-                .DisassembleType(LoadedAssemblies.GetFile(type.Definition.Module), type.Definition.Handle),
-            static (s, member) =>
-            {
-                var memberDisassembler = CreateDisassembler(s.reading, member.Definition.Module, RequireTypeSystem(s.output.TypeSystem), s.output.ChosenTypeSystem, s.output, s.output.Callbacks, s.language, s.settings,
-                    s.cancellationToken);
+                break;
+            case DocumentSubject.Type type:
+                CreateDisassembler(reading, type.Definition.Module, RequireTypeSystem(output.TypeSystem), output.ChosenTypeSystem, output, output.Callbacks, language, settings, cancellationToken)
+                    .DisassembleType(LoadedAssemblies.GetFile(type.Definition.Module), type.Definition.Handle);
+                break;
+            case DocumentSubject.Member member:
+                var memberDisassembler = CreateDisassembler(reading, member.Definition.Module, RequireTypeSystem(output.TypeSystem), output.ChosenTypeSystem, output, output.Callbacks, language, settings,
+                    cancellationToken);
                 DisassembleMember(memberDisassembler, LoadedAssemblies.GetFile(member.Definition.Module), member.Definition.Reference.Handle);
-            },
-            static (s, summary) => WriteSummary(summary.Info, s.output, s.notes, s.cancellationToken),
-            static (s, resource) => WriteResource(resource, s.output, s.notes),
-            static (s, baml) => WriteXaml(s.reading, baml, s.output, s.cancellationToken),
-            static (_, _) => throw new UnreachableException());
+                break;
+            case DocumentSubject.Summary summary:
+                WriteSummary(summary.Info, output, notes, cancellationToken);
+                break;
+            case DocumentSubject.Resource resource:
+                WriteResource(request.Title, resource, output, notes);
+                break;
+            case DocumentSubject.Baml baml:
+                WriteXaml(reading, baml, output, cancellationToken);
+                break;
+            case DocumentSubject.Failure:
+                throw new UnreachableException("A file that could not be read is described, never written.");
+        }
     }
 
     private static void DisassembleMember(ReflectionDisassembler disassembler, MetadataFile file, EntityHandle handle)
@@ -759,18 +757,18 @@ internal static class NodeDecompiler
         output.WriteLine();
     }
 
-    private static void WriteXaml(ModuleReadLease reading, DocumentRequest.Baml baml, DocumentBuilder output, CancellationToken cancellationToken)
+    private static void WriteXaml(ModuleReadLease reading, DocumentSubject.Baml baml, DocumentBuilder output, CancellationToken cancellationToken)
     {
         var xaml = Baml.DecompileToText(reading, baml.Module, baml.Data, output.Callbacks, cancellationToken);
         ResourceText.Write(output, xaml, ResourceSyntax.Xml);
         output.WriteLine();
     }
 
-    private static void WriteResource(DocumentRequest.Resource resource, DocumentBuilder output, IDocumentNotes notes)
+    private static void WriteResource(string title, DocumentSubject.Resource resource, DocumentBuilder output, IDocumentNotes notes)
     {
         var data = resource.Read();
         // Colored as XML or JSON when it is that, as ILSpy shows it.
-        var detected = ResourceText.Detect(resource.Title, data);
+        var detected = ResourceText.Detect(title, data);
         if (detected is not null)
         {
             var (text, syntax) = detected.Value;

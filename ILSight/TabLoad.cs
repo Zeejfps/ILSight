@@ -217,10 +217,12 @@ public sealed class TabLoad
         }
 
         var node = GetLoadingNode();
-        _content = loaded.Match<TabContent>(
-            code: code => new TabContent.Code { Node = node, Document = code.Document },
-            table: table => new TabContent.Table { Node = node, Grid = table.Grid },
-            picture: picture => new TabContent.Picture { Node = node, Image = picture.Image, Source = picture.Source });
+        _content = loaded switch
+        {
+            NodeContent.Code code => new TabContent.Code { Node = node, Document = code.Document },
+            NodeContent.Table table => new TabContent.Table { Node = node, Grid = table.Grid },
+            NodeContent.Picture picture => new TabContent.Picture { Node = node, Image = picture.Image, Source = picture.Source },
+        };
         return true;
     }
 

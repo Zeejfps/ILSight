@@ -318,7 +318,7 @@ public sealed class BrowseSession
             return null;
         }
 
-        return FindChild(ready.Children, segment);
+        return FindChild(ready.Children, segment.Value);
     }
 
     /// <summary>The one child among <paramref name="children"/> that <paramref name="segment"/> names;
@@ -329,7 +329,7 @@ public sealed class BrowseSession
         foreach (var child in children)
         {
             var childSegment = child.Segment;
-            if (!segment.Equals(childSegment))
+            if (childSegment is null || !segment.Equals(childSegment.Value))
             {
                 continue;
             }

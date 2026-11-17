@@ -345,8 +345,8 @@ public static class NodeDefinitions
             throw new UnreachableException($"'{text}' sits under '{parent.Text}' but no segment names it.");
         }
 
-        var step = new NodePathStep { Segment = segment, Label = text };
-        if (segment.IsPackageEntry)
+        var step = new NodePathStep { Segment = segment.Value, Label = text };
+        if (segment.Value.IsPackageEntry)
         {
             return new NodePath { FilePath = parent.Root.Assembly.FilePath, Steps = [step] };
         }
@@ -369,7 +369,7 @@ public static class NodeDefinitions
     internal static NodePathSegment? FindPathSegment(NodeSubject subject)
     {
         return subject.Match<NodePathSegment?>(
-            module: static module => module.Value.Place is null ? null : new NodePathSegment.EmbeddedModule(module.Value.Place.File.FullName),
+            module: static module => module.Value.Place is null ? (NodePathSegment?)null : new NodePathSegment.EmbeddedModule(module.Value.Place.File.FullName),
             @namespace: static ns => new NodePathSegment.Namespace(ns.Value.Name),
             failedAssembly: static _ => null,
             typeDefinition: static type => new NodePathSegment.Definition(IdStringProvider.GetIdString(NodeDefinitions.GetSymbol(type.Definition))),
@@ -393,7 +393,7 @@ public static class NodeDefinitions
             metadata: static metadata => new NodePathSegment.Metadata(LoadedAssemblies.IsOwnMetadata(metadata.Value) ? MetadataSource.Own : MetadataSource.Debug),
             metadataTables: static _ => new NodePathSegment.Folder(NodeFolder.MetadataTables),
             metadataTable: static table => new NodePathSegment.MetadataPart(table.Value.Key),
-            package: static package => package.Value.IsRoot ? null : new NodePathSegment.PackageFolder(package.Value.Folder.FullName),
+            package: static package => package.Value.IsRoot ? (NodePathSegment?)null : new NodePathSegment.PackageFolder(package.Value.Folder.FullName),
             packageFile: static file => new NodePathSegment.PackageFile(file.Value.File.FullName));
     }
 

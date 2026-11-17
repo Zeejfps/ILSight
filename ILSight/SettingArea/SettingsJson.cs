@@ -615,12 +615,12 @@ internal static class SettingsJson
         }
 
         var segment = SavedPlaces.ParseSegment(json.Step);
-        if (segment == null)
+        if (segment is null)
         {
             return null;
         }
 
-        return new NodePathStep { Segment = segment, Label = json.Label };
+        return new NodePathStep { Segment = segment.Value, Label = json.Label };
     }
 
     public static BookmarkJson ToJson(BookmarkRecord bookmark)

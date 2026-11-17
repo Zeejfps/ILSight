@@ -87,7 +87,7 @@ public sealed class ReferencedTypesTests
         var types = (await UsedListAsync(assembly)).Parent;
         Assert.NotNull(types);
 
-        var text = Documents.GetText(Assert.IsType<NodeContent.Code>(await types.ReadContentAsync()).Document);
+        var text = Documents.GetText(UnionAsserts.GetCase<NodeContent.Code>(await types.ReadContentAsync()).Document);
 
         Assert.Contains("System.Collections.Generic.List<>", text);
         Assert.Contains("    Add(T) : void", text);

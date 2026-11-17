@@ -50,7 +50,7 @@ public sealed class DocumentRewordTests
         var made = await root.DecompileAsync(DecompilationLanguage.CSharp);
 
         var placed = Assert.Single(made.Notes, static n => n.Note is DocumentNote.ArchitectureOf);
-        var note = Assert.IsType<DocumentNote.ArchitectureOf>(placed.Note);
+        var note = UnionAsserts.GetCase<DocumentNote.ArchitectureOf>(placed.Note);
         Assert.Equal(new ModuleArchitecture { Platform = "AnyCPU", PreferredBits = 64 }, note.Architecture);
         Assert.Equal("// Architecture: AnyCPU (64-bit preferred)", made.Lines[placed.Line].Text);
     }

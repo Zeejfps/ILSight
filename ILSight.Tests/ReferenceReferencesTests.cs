@@ -72,7 +72,7 @@ public sealed class ReferenceReferencesTests
         var runtimeReference = await RuntimeReferenceAsync(assembly);
         var coreLib = await runtimeReference.GetChildAsync(CoreLib);
 
-        var text = Documents.GetText(Assert.IsType<NodeContent.Code>(await coreLib.ReadContentAsync()).Document);
+        var text = Documents.GetText(UnionAsserts.GetCase<NodeContent.Code>(await coreLib.ReadContentAsync()).Document);
 
         Assert.Contains("Resolves to", text);
         Assert.Contains($"{CoreLib}.dll", text);

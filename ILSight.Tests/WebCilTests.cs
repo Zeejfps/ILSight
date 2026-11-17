@@ -118,7 +118,7 @@ public sealed class WebCilTests
         var root = await assembly.ReadRootAsync();
         var tables = await root.GetChildAsync("Metadata", "Tables");
         var typeDefTable = await tables.TableAsync("TypeDef");
-        var grid = Assert.IsType<NodeContent.Table>(await typeDefTable.ReadContentAsync()).Grid;
+        var grid = UnionAsserts.GetCase<NodeContent.Table>(await typeDefTable.ReadContentAsync()).Grid;
 
         Assert.IsType<MetadataGrid.Paged>(grid);
         var counter = grid.RowNamed("Counter");
@@ -162,7 +162,7 @@ public sealed class WebCilTests
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
         var root = await assembly.ReadRootAsync();
         var strings = await root.GetChildAsync("Metadata", "String Heap (100)");
-        var grid = Assert.IsType<MetadataGrid.Paged>(Assert.IsType<NodeContent.Table>(await ReadFirstPageAsync(strings)).Grid);
+        var grid = Assert.IsType<MetadataGrid.Paged>(UnionAsserts.GetCase<NodeContent.Table>(await ReadFirstPageAsync(strings)).Grid);
         var last = grid.RowCount - 1;
         var value = grid.Column("Offset");
 
@@ -189,7 +189,7 @@ public sealed class WebCilTests
         var content = await NodeContentLoader.ReadContentAsync(TestSession.Shared, methods, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, 150)
             .GetValueAsync();
 
-        var grid = Assert.IsType<MetadataGrid.Paged>(Assert.IsType<NodeContent.Table>(content).Grid);
+        var grid = Assert.IsType<MetadataGrid.Paged>(UnionAsserts.GetCase<NodeContent.Table>(content).Grid);
         Assert.Equal((true, true, false), (grid.IsRowRead(149), grid.IsRowRead(3 * MetadataGrid.Paged.RowsPerPage - 1), grid.IsRowRead(3 * MetadataGrid.Paged.RowsPerPage)));
     }
 
@@ -199,7 +199,7 @@ public sealed class WebCilTests
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
         var root = await assembly.ReadRootAsync();
         var strings = await root.GetChildAsync("Metadata", "String Heap (100)");
-        var grid = Assert.IsType<NodeContent.Table>(await ReadFirstPageAsync(strings)).Grid;
+        var grid = UnionAsserts.GetCase<NodeContent.Table>(await ReadFirstPageAsync(strings)).Grid;
 
         var order = MetadataGrids.OrderRows(grid, grid.Column("Value"), descending: false);
 

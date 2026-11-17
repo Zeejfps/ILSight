@@ -13,25 +13,27 @@ public static class SavedPlaces
     /// then what it names, such as <c>Definition T:Ns.Calculator`1</c>.</summary>
     public static string ToText(NodePathSegment segment)
     {
-        return segment.Match(
-            @namespace: static ns => $"Namespace {ns.Name}",
-            definition: static definition => $"Definition {definition.Id}",
-            folder: static folder => $"Folder {folder.Role}",
-            metadata: static metadata => $"Metadata {metadata.Which}",
-            metadataPart: static part => $"MetadataPart {ToText(part.Part)}",
-            assemblyReference: static reference => $"AssemblyReference {reference.Name}",
-            moduleReference: static reference => $"ModuleReference {reference.Name}",
-            importedMethod: static import => $"ImportedMethod {import.Id}",
-            usedType: static type => $"UsedType {type.FullName}",
-            usedMember: static member => $"UsedMember {member.Id}",
-            forwardedType: static forwarded => $"ForwardedType {forwarded.FullName}",
-            baseType: static baseType => $"BaseType {baseType.Name}",
-            derivedType: static derived => $"DerivedType {derived.Id}",
-            unreadableModule: static module => $"UnreadableModule {module.Path}",
-            resource: static resource => $"Resource {resource.Name}",
-            packageFolder: static folder => $"PackageFolder {folder.Path}",
-            packageFile: static file => $"PackageFile {file.Path}",
-            embeddedModule: static module => $"EmbeddedModule {module.Path}");
+        return segment switch
+        {
+            NodePathSegment.Namespace ns => $"Namespace {ns.Name}",
+            NodePathSegment.Definition definition => $"Definition {definition.Id}",
+            NodePathSegment.Folder folder => $"Folder {folder.Role}",
+            NodePathSegment.Metadata metadata => $"Metadata {metadata.Which}",
+            NodePathSegment.MetadataPart part => $"MetadataPart {ToText(part.Part)}",
+            NodePathSegment.AssemblyReference reference => $"AssemblyReference {reference.Name}",
+            NodePathSegment.ModuleReference reference => $"ModuleReference {reference.Name}",
+            NodePathSegment.ImportedMethod import => $"ImportedMethod {import.Id}",
+            NodePathSegment.UsedType type => $"UsedType {type.FullName}",
+            NodePathSegment.UsedMember member => $"UsedMember {member.Id}",
+            NodePathSegment.ForwardedType forwarded => $"ForwardedType {forwarded.FullName}",
+            NodePathSegment.BaseType baseType => $"BaseType {baseType.Name}",
+            NodePathSegment.DerivedType derived => $"DerivedType {derived.Id}",
+            NodePathSegment.UnreadableModule module => $"UnreadableModule {module.Path}",
+            NodePathSegment.Resource resource => $"Resource {resource.Name}",
+            NodePathSegment.PackageFolder folder => $"PackageFolder {folder.Path}",
+            NodePathSegment.PackageFile file => $"PackageFile {file.Path}",
+            NodePathSegment.EmbeddedModule module => $"EmbeddedModule {module.Path}",
+        };
     }
 
     private static string ToText(MetadataPartKey part)

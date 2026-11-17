@@ -53,7 +53,7 @@ public sealed class ModuleReferenceTests
         var coreLibReferences = await CoreLibReferencesAsync();
         var qcall = await coreLibReferences.GetChildAsync("QCall");
 
-        var text = Documents.GetText(Assert.IsType<NodeContent.Code>(await qcall.ReadContentAsync()).Document);
+        var text = Documents.GetText(UnionAsserts.GetCase<NodeContent.Code>(await qcall.ReadContentAsync()).Document);
 
         Assert.Contains("// QCall", text);
         Assert.Contains("A native library", text);
@@ -63,7 +63,7 @@ public sealed class ModuleReferenceTests
     public async Task The_references_folder_reads_as_its_assemblies_then_its_modules()
     {
         var coreLibReferences = await CoreLibReferencesAsync();
-        var text = Documents.GetText(Assert.IsType<NodeContent.Code>(await coreLibReferences.ReadContentAsync()).Document);
+        var text = Documents.GetText(UnionAsserts.GetCase<NodeContent.Code>(await coreLibReferences.ReadContentAsync()).Document);
 
         Assert.Contains("// QCall", text);
     }
@@ -88,7 +88,7 @@ public sealed class ModuleReferenceTests
         var root = await assembly.ReadRootAsync();
         var answer = await root.GetChildAsync("References", "fixture-native", "Answer() : int");
 
-        var text = Documents.GetText(Assert.IsType<NodeContent.Code>(await answer.ReadContentAsync()).Document);
+        var text = Documents.GetText(UnionAsserts.GetCase<NodeContent.Code>(await answer.ReadContentAsync()).Document);
         var definition = await list.FindNodeAsync(answer.Destination);
 
         Assert.Contains("Calls fixture_answer in fixture-native", text);
