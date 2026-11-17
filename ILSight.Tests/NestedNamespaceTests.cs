@@ -24,9 +24,9 @@ public sealed class NestedNamespaceTests
 
         Assert.Equal(["-", "ILSight", TestsNamespace, Trees.FixturesNamespace], namespaces.Select(n => n.Text));
         Assert.Equal([false, true, false, false], namespaces.Select(n => Assert.IsType<NodeSubject.Namespace>(n.Subject).Value.IsEnclosingOnly));
-        var iLSight = await root.GetChildAsync("ILSight");
-        Assert.Empty(await iLSight.ListChildrenAsync());
-        Assert.False(iLSight.HasChildren);
+        var ilsightNamespace = await root.GetChildAsync("ILSight");
+        Assert.Empty(await ilsightNamespace.ListChildrenAsync());
+        Assert.False(ilsightNamespace.HasChildren);
     }
 
     [Fact]
