@@ -130,7 +130,7 @@ public sealed class ComparisonTests
         d.Ui.Panels.ActivateTab(d.AppState.ListSession.Navigation, d.AppState.Decompiler.Setup, comparisonTab);
         d.Settle();
         var account = Entry(DiffOf(comparison), "ApiDiffSample", "Account");
-        var sides = Assert.IsType<ApiSides.Both>(Assert.IsType<ApiEntry.Entity>(account).Sides);
+        var sides = UnionAsserts.GetCase<ApiSides.Both>(UnionAsserts.GetCase<ApiEntryKind.Entity>(account.Kind).Sides);
         d.Start((a, ct) =>
         {
             var resolveTicket = a.ListSession.Navigation.BeginResolving(inNewTab: false);
@@ -262,7 +262,7 @@ public sealed class ComparisonTests
         Assert.NotNull(comparisonTab);
         var account = Entry(DiffOf(comparison), "ApiDiffSample", "Account");
 
-        var sides = Assert.IsType<ApiSides.Both>(Assert.IsType<ApiEntry.Entity>(account).Sides);
+        var sides = UnionAsserts.GetCase<ApiSides.Both>(UnionAsserts.GetCase<ApiEntryKind.Entity>(account.Kind).Sides);
         d.Start((a, ct) =>
         {
             var resolveTicket = a.ListSession.Navigation.BeginResolving(inNewTab: false);

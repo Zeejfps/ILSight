@@ -251,17 +251,21 @@ public sealed class ComparisonRows : ITreeModel<ApiEntry>
 
     private string? DescribeDeclarations(ApiEntry entry)
     {
-        return entry.Match<string?>(
-            static _ => null,
-            entity => DescribeDeclarations(entity.Sides));
+        return entry.Kind switch
+        {
+            ApiEntryKind.Namespace => null,
+            ApiEntryKind.Entity entity => DescribeDeclarations(entity.Sides),
+        };
     }
 
     private string DescribeDeclarations(ApiSides sides)
     {
-        return sides.Match(
-            static left => left.Left.Declaration,
-            static right => right.Right.Declaration,
-            both => DescribeDeclarations(both));
+        return sides switch
+        {
+            ApiSides.LeftOnly left => left.Left.Declaration,
+            ApiSides.RightOnly right => right.Right.Declaration,
+            ApiSides.Both both => DescribeDeclarations(both),
+        };
     }
 
     private string DescribeDeclarations(ApiSides.Both sides)

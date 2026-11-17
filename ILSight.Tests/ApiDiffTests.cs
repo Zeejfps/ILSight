@@ -67,7 +67,7 @@ public sealed class ApiDiffTests
 
     private static ApiSides.Both Both(ApiEntry entry)
     {
-        return Assert.IsType<ApiSides.Both>(Assert.IsType<ApiEntry.Entity>(entry).Sides);
+        return UnionAsserts.GetCase<ApiSides.Both>(UnionAsserts.GetCase<ApiEntryKind.Entity>(entry.Kind).Sides);
     }
 
     private static async Task<ApiEntry> PublicAsync(params string[] path)
@@ -108,9 +108,9 @@ public sealed class ApiDiffTests
         var withdraw = await PublicAsync(SampleNamespace, "Account", "Withdraw(decimal) : void");
 
         Assert.Equal(ApiChange.Added, transfer.Change);
-        Assert.IsType<ApiSides.RightOnly>(Assert.IsType<ApiEntry.Entity>(transfer).Sides);
+        UnionAsserts.GetCase<ApiSides.RightOnly>(UnionAsserts.GetCase<ApiEntryKind.Entity>(transfer.Kind).Sides);
         Assert.Equal(ApiChange.Removed, withdraw.Change);
-        Assert.IsType<ApiSides.LeftOnly>(Assert.IsType<ApiEntry.Entity>(withdraw).Sides);
+        UnionAsserts.GetCase<ApiSides.LeftOnly>(UnionAsserts.GetCase<ApiEntryKind.Entity>(withdraw.Kind).Sides);
     }
 
     [Fact]
@@ -226,10 +226,10 @@ public sealed class ApiDiffTests
     {
         var describe = Both(await PublicAsync(SampleNamespace, "Account", "Describe() : string"));
 
-        Assert.Equal(ApiChange.Removed, new ApiSides.LeftOnly(describe.Left).Change);
-        Assert.Equal(ApiChange.Added, new ApiSides.RightOnly(describe.Right).Change);
-        Assert.Equal(ApiChange.Changed, new ApiSides.Both { Left = describe.Left, Right = describe.Right }.Change);
-        Assert.Equal(ApiChange.Unchanged, new ApiSides.Both { Left = describe.Right, Right = describe.Right }.Change);
+        Assert.Equal(ApiChange.Removed, ((ApiSides)new ApiSides.LeftOnly(describe.Left)).Change);
+        Assert.Equal(ApiChange.Added, ((ApiSides)new ApiSides.RightOnly(describe.Right)).Change);
+        Assert.Equal(ApiChange.Changed, ((ApiSides)new ApiSides.Both { Left = describe.Left, Right = describe.Right }).Change);
+        Assert.Equal(ApiChange.Unchanged, ((ApiSides)new ApiSides.Both { Left = describe.Right, Right = describe.Right }).Change);
         Assert.Equal(ApiChange.Added, Entity(new ApiSides.RightOnly(describe.Right)).Change);
     }
 
@@ -255,27 +255,27 @@ public sealed class ApiDiffTests
         Assert.True(Namespace(ApiPresence.LeftOnly, []).HasChanges);
     }
 
-    private static ApiEntry.Entity Entity(ApiSides sides)
+    private static ApiEntry Entity(ApiSides sides)
     {
-        return new ApiEntry.Entity
+        return new ApiEntry
         {
             Shape = new SymbolShape.Member(MemberShape.Method),
             Text = "Deposit(decimal) : void",
             Accessibility = NodeAccessibility.Public,
             Children = [],
-            Sides = sides,
+            Kind = new ApiEntryKind.Entity { Sides = sides },
         };
     }
 
-    private static ApiEntry.Namespace Namespace(ApiPresence presence, IReadOnlyList<ApiEntry> children)
+    private static ApiEntry Namespace(ApiPresence presence, IReadOnlyList<ApiEntry> children)
     {
-        return new ApiEntry.Namespace
+        return new ApiEntry
         {
             Shape = new SymbolShape.Namespace(),
             Text = SampleNamespace,
             Accessibility = NodeAccessibility.None,
             Children = children,
-            Presence = presence,
+            Kind = new ApiEntryKind.Namespace { Presence = presence },
         };
     }
 

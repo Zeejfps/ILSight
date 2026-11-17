@@ -272,25 +272,25 @@ public static class ApiEntries
 
     private static ApiEntry EntryOf(ApiFacts facts, ApiSides sides, List<ApiEntry> children)
     {
-        return new ApiEntry.Entity
+        return new ApiEntry
         {
             Shape = facts.Shape,
             Text = facts.Text,
             Accessibility = EntityText.Map(facts.Accessibility),
             Children = children,
-            Sides = sides,
+            Kind = new ApiEntryKind.Entity { Sides = sides },
         };
     }
 
-    private static ApiEntry.Namespace CreateNamespace(string text, ApiPresence presence, IReadOnlyList<ApiEntry> children)
+    private static ApiEntry CreateNamespace(string text, ApiPresence presence, IReadOnlyList<ApiEntry> children)
     {
-        return new ApiEntry.Namespace
+        return new ApiEntry
         {
             Shape = new SymbolShape.Namespace(),
             Text = text,
             Accessibility = NodeAccessibility.None,
             Children = children,
-            Presence = presence,
+            Kind = new ApiEntryKind.Namespace { Presence = presence },
         };
     }
 
@@ -412,7 +412,7 @@ public static class ApiEntries
 
     private static int Count(ApiEntry entry, ApiChange change)
     {
-        if (entry is not ApiEntry.Entity)
+        if (entry.Kind is not ApiEntryKind.Entity)
         {
             return Count(entry.Children, change);
         }

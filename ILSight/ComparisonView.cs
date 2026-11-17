@@ -204,28 +204,32 @@ internal static class ComparisonView
 
     private static ApiSide? LeftOf(ApiEntry entry)
     {
-        if (entry is not ApiEntry.Entity entity)
+        if (entry.Kind is not ApiEntryKind.Entity entity)
         {
             return null;
         }
 
-        return entity.Sides.Match<ApiSide?>(
-            static sides => sides.Left,
-            static _ => null,
-            static sides => sides.Left);
+        return entity.Sides switch
+        {
+            ApiSides.LeftOnly sides => sides.Left,
+            ApiSides.RightOnly => null,
+            ApiSides.Both sides => sides.Left,
+        };
     }
 
     private static ApiSide? RightOf(ApiEntry entry)
     {
-        if (entry is not ApiEntry.Entity entity)
+        if (entry.Kind is not ApiEntryKind.Entity entity)
         {
             return null;
         }
 
-        return entity.Sides.Match<ApiSide?>(
-            static _ => null,
-            static sides => sides.Right,
-            static sides => sides.Right);
+        return entity.Sides switch
+        {
+            ApiSides.LeftOnly => null,
+            ApiSides.RightOnly sides => sides.Right,
+            ApiSides.Both sides => sides.Right,
+        };
     }
 
     private static void ContextMenu(Ui ui, Appearance appearance, IAppCommandWriter commands, Navigation navigation, ComparisonRows rows)
