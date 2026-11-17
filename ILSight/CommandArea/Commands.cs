@@ -538,7 +538,7 @@ public static class Commands
             return;
         }
 
-        commands.Enqueue(CreateMove(move));
+        commands.Enqueue(CreateMove(move.Value));
     }
 
     private static AppCommand CreateMove(HistoryMove move)
@@ -556,10 +556,27 @@ public static class Commands
     /// the run of a comparison made again (<see cref="StartComparing"/>).</summary>
     public static void StartMoving(AppState appState, HistoryMove move)
     {
-        move.Switch(load => StartDecompiling(appState, load),
-            lookup => StartShowingResolved(appState, nameof(GoToHistoryEntryHandler), lookup.Ticket,
-                ct => appState.GoToHistoryEntryHandler.HandleAsync(appState.ListSession.Navigation, appState.Decompiler, lookup, ct)),
-            read => StartReadingPlace(appState, read), run => StartComparing(appState, run));
+        switch (move)
+        {
+            case HistoryMove.Decompile decompile:
+                StartDecompiling(appState, decompile.Load);
+                break;
+            case HistoryMove.LookUp lookup:
+                StartLookingUp(appState, lookup);
+                break;
+            case HistoryMove.ReadCards read:
+                StartReadingPlace(appState, read.Read);
+                break;
+            case HistoryMove.Compare compare:
+                StartComparing(appState, compare.Run);
+                break;
+        }
+    }
+
+    private static void StartLookingUp(AppState appState, HistoryMove.LookUp lookup)
+    {
+        StartShowingResolved(appState, nameof(GoToHistoryEntryHandler), lookup.Ticket,
+            ct => appState.GoToHistoryEntryHandler.HandleAsync(appState.ListSession.Navigation, appState.Decompiler, lookup, ct));
     }
 
     private static void StartReadingPlace(AppState appState, DiagramPlaceRead read)

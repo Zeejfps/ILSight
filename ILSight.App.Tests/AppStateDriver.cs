@@ -478,7 +478,7 @@ internal sealed class AppStateDriver : IFrameHost
             return;
         }
 
-        Commands.StartMoving(AppState, move);
+        Commands.StartMoving(AppState, move.Value);
     }
 
     /// <summary>Starts <paramref name="workflow"/> over the app state now, as the app starts the workflows the screen

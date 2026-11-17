@@ -38,23 +38,23 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
     private DecompileTicket? ShowResolved(Navigation navigation, DecompilerChoice decompiler, CodeReference reference, Resolution<BrowseNode> resolved,
         TabDestination destination)
     {
-        return resolved.Match<DecompileTicket?>(
-            found => navigation.ShowFoundNode(destination, found.Value, decompiler.Setup),
-            _ =>
-            {
+        switch (resolved)
+        {
+            case Resolution<BrowseNode>.Found found:
+                return navigation.ShowFoundNode(destination, found.Value, decompiler.Setup);
+            case Resolution<BrowseNode>.Missing:
                 ports.ShowRefusal(new Refusal.Unresolved { Reference = reference });
-                return null;
-            },
-            unreadable =>
-            {
+                break;
+            case Resolution<BrowseNode>.Unreadable unreadable:
                 ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module));
-                return null;
-            },
-            failed =>
-            {
+                break;
+            case Resolution<BrowseNode>.Failed failed:
                 ports.ReportError(LookupFailures.OfReference(reference, failed.Error));
-                return null;
-            },
-            static _ => null);
+                break;
+            case Resolution<BrowseNode>.Stale:
+                break;
+        }
+
+        return null;
     }
 }

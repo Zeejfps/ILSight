@@ -704,20 +704,22 @@ public sealed class Navigation
     {
         LeaveActiveTab();
         var entry = _history.MoveToEntry(index);
-        if (entry is null)
+        switch (entry)
         {
-            return null;
+            case null:
+                break;
+            case HistoryEntry.Node node:
+                return ShowNodeOrBeginLookUp(node, assemblies, setup);
+            case HistoryEntry.Diagram diagram:
+                return ShowDiagramPlace(diagram);
+            case HistoryEntry.Comparison comparison:
+                return ShowComparisonPlace(comparison, assemblies);
+            case HistoryEntry.Report report:
+                ShowReportPlace(report, finished);
+                break;
         }
 
-        return entry.Match(
-            node => ShowNodeOrBeginLookUp(node, assemblies, setup),
-            diagram => ShowDiagramPlace(diagram),
-            comparison => ShowComparisonPlace(comparison, assemblies),
-            report =>
-            {
-                ShowReportPlace(report, finished);
-                return null;
-            });
+        return null;
     }
 
     private int? FindEntryToShow(int index, AssemblyList assemblies, IReadOnlyList<ExportReport> finished)
@@ -746,12 +748,15 @@ public sealed class Navigation
     /// among <paramref name="finished"/>. Back and Forward pass over an entry that can't; the history menu marks it.</summary>
     public bool CanShow(HistoryEntry entry, AssemblyList assemblies, IReadOnlyList<ExportReport> finished)
     {
-        return entry.Match(
-            node => FindTabAt(node.Place) is not null || assemblies.IsListed(node.Place.FilePath),
-            diagram => FindDiagramTab(diagram.Id) is not null || IsAnyListed(assemblies, diagram.HomeAssemblies) || IsAnyTypeListed(assemblies, diagram.Types),
-            comparison => FindComparisonTab(comparison.Id) is not null || assemblies.IsListed(comparison.LeftPath)
+        return entry switch
+        {
+            HistoryEntry.Node node => FindTabAt(node.Place) is not null || assemblies.IsListed(node.Place.FilePath),
+            HistoryEntry.Diagram diagram => FindDiagramTab(diagram.Id) is not null || IsAnyListed(assemblies, diagram.HomeAssemblies)
+                || IsAnyTypeListed(assemblies, diagram.Types),
+            HistoryEntry.Comparison comparison => FindComparisonTab(comparison.Id) is not null || assemblies.IsListed(comparison.LeftPath)
                 || assemblies.IsListed(comparison.RightPath),
-            report => FindReportTab(report.Run) is not null || FindFinished(finished, report.Run) is not null);
+            HistoryEntry.Report report => FindReportTab(report.Run) is not null || FindFinished(finished, report.Run) is not null,
+        };
     }
 
     private static bool IsAnyListed(AssemblyList assemblies, IReadOnlyList<AssemblyPath> paths)

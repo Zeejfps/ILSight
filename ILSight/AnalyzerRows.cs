@@ -339,11 +339,16 @@ public sealed class AnalyzerRows : ITreeModel<AnalyzerNode>
     private string GetFailedText(AnalyzerFailedNode failed)
     {
         var anchor = failed.SavedAs;
-        return failed.Failure.Match(
-            unreadable => _strings.CauseModuleUnreadableRow(name: OneLineText.Name(unreadable.Name), why: OneLineText.Message(unreadable.Why)),
+        return failed.Failure switch
+        {
+            RestoreFailure.Unreadable unreadable => _strings.CauseModuleUnreadableRow(name: OneLineText.Name(unreadable.Name),
+                why: OneLineText.Message(unreadable.Why)),
             // The saved place in the language's template: its file and its token in hex (a notation), as they are.
-            _ => _strings.ErrorNoLongerThere(_strings.AnalyzerSavedPlace(file: OneLineText.Name(anchor.FilePath.FileName), token: $"{anchor.Token:X8}")),
-            lookup => _strings.AnalyzerUnreadable(name: OneLineText.Name(anchor.FilePath.FileName), why: OneLineText.Message(FailureTexts.DescribeCause(_strings, lookup.Error))));
+            RestoreFailure.NotFound => _strings.ErrorNoLongerThere(_strings.AnalyzerSavedPlace(file: OneLineText.Name(anchor.FilePath.FileName),
+                token: $"{anchor.Token:X8}")),
+            RestoreFailure.Failed lookup => _strings.AnalyzerUnreadable(name: OneLineText.Name(anchor.FilePath.FileName),
+                why: OneLineText.Message(FailureTexts.DescribeCause(_strings, lookup.Error))),
+        };
     }
 
     private TreeRow CreateLoadingRow()

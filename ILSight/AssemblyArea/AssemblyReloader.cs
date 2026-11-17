@@ -55,7 +55,11 @@ public sealed class AssemblyReloader(AssemblyReloader.IPorts ports)
             return [];
         }
 
-        var check = checking.Match(static c => c.Check, static _ => PdbCheck.Unreadable, static _ => PdbCheck.Unreadable);
+        var check = checking switch
+        {
+            PdbCheckOutcome.Checked c => c.Check,
+            PdbCheckOutcome.Closed or PdbCheckOutcome.Failed => PdbCheck.Unreadable,
+        };
         if (check == PdbCheck.Unreadable)
         {
             ports.ReportError(new AppProblem.PdbUnusable

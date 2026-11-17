@@ -38,24 +38,24 @@ public sealed class GoToBookmarkHandler(GoToBookmarkHandler.IPorts ports)
     private DecompileTicket? ShowBookmarkPlace(Navigation navigation, BookmarkList bookmarks, DecompilerChoice decompiler, Bookmark bookmark,
         Resolution<BrowseNode> resolved, TabDestination destination)
     {
-        return resolved.Match<DecompileTicket?>(
-            found => ShowBookmarkedNode(navigation, bookmarks, decompiler, bookmark, found.Value, destination),
-            _ =>
-            {
+        switch (resolved)
+        {
+            case Resolution<BrowseNode>.Found found:
+                return ShowBookmarkedNode(navigation, bookmarks, decompiler, bookmark, found.Value, destination);
+            case Resolution<BrowseNode>.Missing:
                 ports.ShowRefusal(new Refusal.BookmarkGone { Bookmark = bookmark.Name, Place = bookmark.Place });
-                return null;
-            },
-            unreadable =>
-            {
+                break;
+            case Resolution<BrowseNode>.Unreadable unreadable:
                 ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module));
-                return null;
-            },
-            failed =>
-            {
+                break;
+            case Resolution<BrowseNode>.Failed failed:
                 ReportBookmarkGone(bookmark, failed.Error);
-                return null;
-            },
-            static _ => null);
+                break;
+            case Resolution<BrowseNode>.Stale:
+                break;
+        }
+
+        return null;
     }
 
     private static DecompileTicket? ShowBookmarkedNode(Navigation navigation, BookmarkList bookmarks, DecompilerChoice decompiler, Bookmark bookmark,

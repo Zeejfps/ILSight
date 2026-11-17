@@ -21,7 +21,6 @@ public sealed class CursorListTests
         var list = new CursorList<string>(2);
 
         Assert.Equal(-1, list.CurrentIndex);
-        Assert.Null(list.Current);
         Assert.Equal(0, list.Revision);
     }
 
@@ -31,7 +30,7 @@ public sealed class CursorListTests
         var list = Holding("a", "b");
 
         Assert.Equal(1, list.CurrentIndex);
-        Assert.Equal("b", list.Current);
+        Assert.Equal("b", list[list.CurrentIndex]);
     }
 
     [Fact]
@@ -43,7 +42,7 @@ public sealed class CursorListTests
         list.Add("d");
 
         Assert.Equal(["a", "d"], list);
-        Assert.Equal("d", list.Current);
+        Assert.Equal("d", list[list.CurrentIndex]);
     }
 
     [Fact]
@@ -93,7 +92,7 @@ public sealed class CursorListTests
 
         Assert.True(list.TryMoveTo(0));
 
-        Assert.Equal("a", list.Current);
+        Assert.Equal("a", list[list.CurrentIndex]);
         Assert.True(list.Revision > revision);
     }
 
@@ -105,7 +104,7 @@ public sealed class CursorListTests
 
         list.RemoveAt(1);
 
-        Assert.Equal("a", list.Current);
+        Assert.Equal("a", list[list.CurrentIndex]);
     }
 
     [Fact]
@@ -117,7 +116,7 @@ public sealed class CursorListTests
         list.RemoveAt(0);
 
         Assert.Equal(0, list.CurrentIndex);
-        Assert.Equal("b", list.Current);
+        Assert.Equal("b", list[list.CurrentIndex]);
     }
 
     [Fact]
@@ -127,10 +126,10 @@ public sealed class CursorListTests
         list.TryMoveTo(1);
 
         list.RemoveAt(2);
-        Assert.Equal("b", list.Current);
+        Assert.Equal("b", list[list.CurrentIndex]);
 
         list.RemoveAt(0);
-        Assert.Equal("b", list.Current);
+        Assert.Equal("b", list[list.CurrentIndex]);
         Assert.Equal(0, list.CurrentIndex);
     }
 
@@ -142,7 +141,6 @@ public sealed class CursorListTests
         list.RemoveAt(0);
 
         Assert.Equal(-1, list.CurrentIndex);
-        Assert.Null(list.Current);
     }
 
     [Fact]

@@ -368,7 +368,7 @@ public sealed class AssembliesTests
         var reported = UnionAsserts.GetCase<AppProblem.PlaceLookupFailed>(Assert.Single(ports.Reported));
         Assert.Same(error, reported.Error);
         Assert.Equal(location, reported.Place);
-        Assert.IsType<PlaceLookupStep.ReloadingTab>(reported.Step);
+        UnionAsserts.GetCase<PlaceLookupStep.ReloadingTab>(reported.Step);
         var failed = Assert.IsType<TabContent.Unreadable>(tab.Content);
         Assert.Same(error, failed.Why);
         Assert.Equal(location, failed.Location);

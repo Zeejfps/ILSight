@@ -37,23 +37,23 @@ public sealed class ShowInMetadataHandler(ShowInMetadataHandler.IPorts ports)
     private DecompileTicket? ShowResolvedRow(Navigation navigation, DecompilerChoice decompiler, CodeReference reference,
         Resolution<MetadataTarget> resolved, TabDestination destination)
     {
-        return resolved.Match<DecompileTicket?>(
-            found => navigation.ShowRowIn(destination, found.Value, decompiler.Setup),
-            _ =>
-            {
+        switch (resolved)
+        {
+            case Resolution<MetadataTarget>.Found found:
+                return navigation.ShowRowIn(destination, found.Value, decompiler.Setup);
+            case Resolution<MetadataTarget>.Missing:
                 ports.ShowRefusal(new Refusal.Unresolved { Reference = reference });
-                return null;
-            },
-            unreadable =>
-            {
+                break;
+            case Resolution<MetadataTarget>.Unreadable unreadable:
                 ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module));
-                return null;
-            },
-            failed =>
-            {
+                break;
+            case Resolution<MetadataTarget>.Failed failed:
                 ports.ReportError(LookupFailures.OfReference(reference, failed.Error));
-                return null;
-            },
-            static _ => null);
+                break;
+            case Resolution<MetadataTarget>.Stale:
+                break;
+        }
+
+        return null;
     }
 }

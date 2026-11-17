@@ -7,7 +7,7 @@ namespace ILSight.Core;
 /// the current item and makes the new one current, and past <see cref="Capacity"/> the oldest goes.
 /// <see cref="Revision"/> counts each change to which items there are or which is current; replacing the
 /// current item by one that stands in its place doesn't count.</summary>
-public sealed class CursorList<T> : IReadOnlyList<T> where T : class
+public sealed class CursorList<T> : IReadOnlyList<T> where T : notnull
 {
     private readonly List<T> _items = new();
 
@@ -23,8 +23,6 @@ public sealed class CursorList<T> : IReadOnlyList<T> where T : class
     public int CurrentIndex { get; private set; } = -1;
 
     public int Revision { get; private set; }
-
-    public T? Current => CurrentIndex >= 0 ? _items[CurrentIndex] : null;
 
     public int Count => _items.Count;
 

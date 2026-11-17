@@ -249,7 +249,7 @@ public sealed class AutosaveTests : IDisposable
         next.Pump();
 
         var root = Assert.IsType<AnalyzerFailedNode>(Assert.Single(next.AppState.ListSession.Analyzer.Roots));
-        Assert.IsType<RestoreFailure.NotFound>(root.Failure);
+        UnionAsserts.GetCase<RestoreFailure.NotFound>(root.Failure);
         Assert.EndsWith("is no longer there.", next.Ui.Analyzer.KeyOf(root));
         Assert.Equal([anchor with { Token = anchor.Token + 0xFFFF }], _temp.Settings().AssemblyLists.Single().Analyzed ?? []);
     }

@@ -84,11 +84,13 @@ public static class ProblemTexts
     // The step that asked for the lookup on its own line, then the rest of the details.
     private static string AfterStep(Strings t, PlaceLookupStep step, string details)
     {
-        var asked = step.Match(
-            goingToBookmark: s => t.ErrorStepBookmark(s.Name),
-            goingThroughHistory: _ => t.ErrorStepHistory,
-            reopeningTabs: _ => t.ErrorStepReopenTabs,
-            reloadingTab: _ => t.ErrorStepReloadTab);
+        var asked = step switch
+        {
+            PlaceLookupStep.GoingToBookmark s => t.ErrorStepBookmark(s.Name),
+            PlaceLookupStep.GoingThroughHistory => t.ErrorStepHistory,
+            PlaceLookupStep.ReopeningTabs => t.ErrorStepReopenTabs,
+            PlaceLookupStep.ReloadingTab => t.ErrorStepReloadTab,
+        };
         return asked + Environment.NewLine + Environment.NewLine + details;
     }
 

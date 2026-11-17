@@ -282,7 +282,7 @@ public sealed class DiagramViewTests
         app.Settle(2);
         app.AppState.ListSession.Navigation.CloseTab(tab);
         var diagramAt = app.AppState.ListSession.Navigation.HistoryIndex - 1;
-        Assert.IsType<HistoryEntry.Diagram>(app.AppState.ListSession.Navigation.HistoryEntries[diagramAt]);
+        UnionAsserts.GetCase<HistoryEntry.Diagram>(app.AppState.ListSession.Navigation.HistoryEntries[diagramAt]);
         var greeter = await app.FixtureAsync("Greeter");
         var fixtures = greeter.Root.Assembly;
         app.Driver.InTurn(() => Commands.CloseAssemblies(app.AppState, [fixtures]));

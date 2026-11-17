@@ -249,20 +249,24 @@ internal static class ToolbarView
 
     private static string TextOf(Strings strings, HistoryEntry entry)
     {
-        return entry.Match(strings,
-            static (_, node) => OneLineText.Name(node.Place.Label),
-            static (strings, diagram) => diagram.Title.Words(strings),
-            static (strings, comparison) => comparison.Title.Words(strings),
-            static (strings, _) => strings.ExportReportTitle);
+        return entry switch
+        {
+            HistoryEntry.Node node => OneLineText.Name(node.Place.Label),
+            HistoryEntry.Diagram diagram => diagram.Title.Words(strings),
+            HistoryEntry.Comparison comparison => comparison.Title.Words(strings),
+            HistoryEntry.Report => strings.ExportReportTitle,
+        };
     }
 
     private static string SayWhyNotShown(Strings strings, HistoryEntry entry, string text)
     {
-        return entry.Match(
-            node => strings.ToolbarHistoryClosed(place: text, name: NameOf(node.Place.FilePath)),
-            diagram => strings.ToolbarHistoryClosed(place: text, name: NameDiagramAssemblies(diagram)),
-            comparison => strings.ToolbarHistoryClosed(place: text, name: NameComparedAssemblies(comparison)),
-            report => strings.ToolbarHistoryReportRemoved(text));
+        return entry switch
+        {
+            HistoryEntry.Node node => strings.ToolbarHistoryClosed(place: text, name: NameOf(node.Place.FilePath)),
+            HistoryEntry.Diagram diagram => strings.ToolbarHistoryClosed(place: text, name: NameDiagramAssemblies(diagram)),
+            HistoryEntry.Comparison comparison => strings.ToolbarHistoryClosed(place: text, name: NameComparedAssemblies(comparison)),
+            HistoryEntry.Report => strings.ToolbarHistoryReportRemoved(text),
+        };
     }
 
     private static string NameOf(AssemblyPath path)
@@ -283,10 +287,11 @@ internal static class ToolbarView
 
     private static UiIcon IconOf(Appearance appearance, HistoryEntry entry)
     {
-        return entry.Match(appearance,
-            static (appearance, node) => NodeIcons.Icon(node.Icon, node.Accessibility, appearance.NodeIconPalette, appearance.Icons),
-            static (appearance, _) => new UiIcon(appearance.Icons.TabDiagram),
-            static (appearance, _) => new UiIcon(appearance.Icons.TabPage),
-            static (appearance, _) => new UiIcon(appearance.Icons.TabPage));
+        return entry switch
+        {
+            HistoryEntry.Node node => NodeIcons.Icon(node.Icon, node.Accessibility, appearance.NodeIconPalette, appearance.Icons),
+            HistoryEntry.Diagram => new UiIcon(appearance.Icons.TabDiagram),
+            HistoryEntry.Comparison or HistoryEntry.Report => new UiIcon(appearance.Icons.TabPage),
+        };
     }
 }

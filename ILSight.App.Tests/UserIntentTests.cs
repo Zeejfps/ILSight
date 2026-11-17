@@ -14,7 +14,7 @@ public sealed class UserIntentTests
 
         var resolved = intent.EndResolving<string>(ticket, new Outcome<Lookup<string>>.Ok(Lookup.FromNullable<string>("place")));
 
-        Assert.Equal("place", Assert.IsType<Resolution<string>.Found>(resolved).Value);
+        Assert.Equal("place", UnionAsserts.GetCase<Resolution<string>.Found>(resolved).Value);
         Assert.False(intent.IsResolving);
     }
 
@@ -26,7 +26,7 @@ public sealed class UserIntentTests
 
         var resolved = intent.EndResolving<string>(ticket, new Outcome<Lookup<string>>.Ok(Lookup.FromNullable<string>(null)));
 
-        Assert.IsType<Resolution<string>.Missing>(resolved);
+        UnionAsserts.GetCase<Resolution<string>.Missing>(resolved);
         Assert.False(intent.IsResolving);
     }
 
@@ -39,7 +39,7 @@ public sealed class UserIntentTests
 
         var resolved = intent.EndResolving<string>(ticket, new Outcome<Lookup<string>>.Failed(error));
 
-        Assert.Same(error, Assert.IsType<Resolution<string>.Failed>(resolved).Error);
+        Assert.Same(error, UnionAsserts.GetCase<Resolution<string>.Failed>(resolved).Error);
         Assert.False(intent.IsResolving);
     }
 
@@ -53,8 +53,8 @@ public sealed class UserIntentTests
         var missingTicket = intent.BeginResolving();
         var missing = intent.EndResolving<int>(missingTicket, new Outcome<Lookup<int>>.Ok(Lookup.FromNullable<int>(null)));
 
-        Assert.Equal(7, Assert.IsType<Resolution<int>.Found>(found).Value);
-        Assert.IsType<Resolution<int>.Missing>(missing);
+        Assert.Equal(7, UnionAsserts.GetCase<Resolution<int>.Found>(found).Value);
+        UnionAsserts.GetCase<Resolution<int>.Missing>(missing);
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public sealed class UserIntentTests
 
         var resolved = intent.EndResolving<string>(ticket, new Outcome<Lookup<string>>.Ok(Lookup.FromNullable<string>("place")));
 
-        Assert.IsType<Resolution<string>.Stale>(resolved);
+        UnionAsserts.GetCase<Resolution<string>.Stale>(resolved);
         Assert.True(intent.IsResolving);
         Assert.True(intent.IsCurrent(next));
     }

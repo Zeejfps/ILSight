@@ -45,7 +45,7 @@ public sealed class NavigateHandlerTests
         var active = appState.ListSession.Navigation.ActiveTab;
         Assert.NotNull(active);
         Assert.Same(active, load?.Tab);
-        Assert.Equal(active.Location, Assert.IsType<HistoryEntry.Node>(appState.ListSession.Navigation.HistoryEntries[appState.ListSession.Navigation.HistoryIndex]).Place);
+        Assert.Equal(active.Location, UnionAsserts.GetCase<HistoryEntry.Node>(appState.ListSession.Navigation.HistoryEntries[appState.ListSession.Navigation.HistoryIndex]).Place);
         Assert.True(resolvingWhileLooking);
         Assert.False(appState.ListSession.Navigation.IsResolving);
         Assert.Empty(lookup.Reported);

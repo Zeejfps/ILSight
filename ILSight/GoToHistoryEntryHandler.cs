@@ -39,23 +39,23 @@ public sealed class GoToHistoryEntryHandler(GoToHistoryEntryHandler.IPorts ports
         Resolution<BrowseNode> resolved,
         TabDestination destination)
     {
-        return resolved.Match<DecompileTicket?>(
-            found => navigation.ShowHistoryPlace(destination, found.Value, decompiler.Setup, position),
-            _ =>
-            {
+        switch (resolved)
+        {
+            case Resolution<BrowseNode>.Found found:
+                return navigation.ShowHistoryPlace(destination, found.Value, decompiler.Setup, position);
+            case Resolution<BrowseNode>.Missing:
                 ports.ShowRefusal(new Refusal.HistoryPlaceGone { Place = place });
-                return null;
-            },
-            unreadable =>
-            {
+                break;
+            case Resolution<BrowseNode>.Unreadable unreadable:
                 ports.ReportError(AppProblem.ModuleUnreadable.FromModule(unreadable.Module));
-                return null;
-            },
-            failed =>
-            {
+                break;
+            case Resolution<BrowseNode>.Failed failed:
                 ports.ReportError(LookupFailures.OfPlace(place, new PlaceLookupStep.GoingThroughHistory(), failed.Error));
-                return null;
-            },
-            static _ => null);
+                break;
+            case Resolution<BrowseNode>.Stale:
+                break;
+        }
+
+        return null;
     }
 }

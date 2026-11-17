@@ -26,7 +26,7 @@ public sealed class NavigationHistory
     public bool CanGoBack => CurrentIndex > 0;
     public bool CanGoForward => CurrentIndex < _entries.Count - 1;
 
-    public HistoryEntry? Current => _entries.Current;
+    public HistoryEntry? Current => CurrentIndex >= 0 ? _entries[CurrentIndex] : (HistoryEntry?)null;
 
     /// <summary>Records a new place, dropping what was forward of the current one.</summary>
     public void RecordPlace(BrowseNode node, DecompilationLanguage language)

@@ -17,14 +17,14 @@ public sealed class GoToHistoryEntryHandlerTests
 
     private static NodePath PlaceOf(Navigation navigation, int index)
     {
-        return Assert.IsType<HistoryEntry.Node>(navigation.HistoryEntries[index]).Place;
+        return UnionAsserts.GetCase<HistoryEntry.Node>(navigation.HistoryEntries[index]).Place;
     }
 
     private static HistoryMove.LookUp GoTo(AppState appState, int index)
     {
         var move = appState.ListSession.Navigation.GoToEntry(index, appState.ListSession.Assemblies, appState.FinishedExports, appState.Decompiler.Setup);
         // The tab no longer shows the entry's place, so going to it begins a lookup.
-        return Assert.IsType<HistoryMove.LookUp>(move);
+        return UnionAsserts.GetCase<HistoryMove.LookUp>(move);
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public sealed class GoToHistoryEntryHandlerTests
 
         var reported = UnionAsserts.GetCase<AppProblem.PlaceLookupFailed>(Assert.Single(lookup.Reported));
         Assert.Same(error, reported.Error);
-        Assert.IsType<PlaceLookupStep.GoingThroughHistory>(reported.Step);
+        UnionAsserts.GetCase<PlaceLookupStep.GoingThroughHistory>(reported.Step);
         Assert.StartsWith(Strings.En.ErrorStepHistory, ProblemTexts.Describe(Strings.En, reported).Details);
         Assert.False(d.AppState.ListSession.Navigation.IsResolving);
         Assert.Null(load);

@@ -14,7 +14,7 @@ public sealed class NavigationHistoryTests
         history.RecordDiagram(1, diagram, new TabTitle.Diagram("Vehicle"));
         history.RecordDiagram(1, diagram, new TabTitle.Diagram("Vehicle"));
 
-        Assert.Equal(new TabTitle.Diagram("Vehicle"), Assert.IsType<HistoryEntry.Diagram>(Assert.Single(history.Entries)).Title);
+        Assert.Equal(new TabTitle.Diagram("Vehicle"), UnionAsserts.GetCase<HistoryEntry.Diagram>(Assert.Single(history.Entries)).Title);
     }
 
     [Fact]
@@ -33,7 +33,7 @@ public sealed class NavigationHistoryTests
 
         history.KeepPosition(second, AtLine(9));
 
-        var entries = history.Entries.Cast<HistoryEntry.Node>().ToList();
+        var entries = history.Entries.Select(static e => UnionAsserts.GetCase<HistoryEntry.Node>(e)).ToList();
         Assert.Equal(AtLine(5), entries[0].Position);
         Assert.Equal(AtLine(9), entries[1].Position);
     }
@@ -49,7 +49,7 @@ public sealed class NavigationHistoryTests
 
         history.KeepPosition(new TabVersion { TabId = 1, Version = 2 }, AtLine(9));
 
-        Assert.Equal(AtLine(5), Assert.IsType<HistoryEntry.Node>(Assert.Single(history.Entries)).Position);
+        Assert.Equal(AtLine(5), UnionAsserts.GetCase<HistoryEntry.Node>(Assert.Single(history.Entries)).Position);
     }
 
     private static ViewPosition AtLine(int line)

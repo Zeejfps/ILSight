@@ -61,7 +61,7 @@ public sealed class ShowReopenedNodesHandlerTests
         Assert.Equal(waiting.Record.Location, failed.Location);
         var reported = UnionAsserts.GetCase<AppProblem.PlaceLookupFailed>(Assert.Single(ports.Reported));
         Assert.Same(error, reported.Error);
-        Assert.IsType<PlaceLookupStep.ReopeningTabs>(reported.Step);
+        UnionAsserts.GetCase<PlaceLookupStep.ReopeningTabs>(reported.Step);
         Assert.Same(other.Reopened.Tab, Assert.Single(loads).Tab);
         Assert.Empty(d.AppState.ListSession.Reopened.Tabs);
     }
