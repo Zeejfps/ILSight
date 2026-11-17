@@ -18,6 +18,9 @@ public abstract class CodeReference : IEquatable<CodeReference>
     /// <summary>The target's name as written where it was referenced.</summary>
     public required string Name { get; init; }
 
+    /// <summary>The target as a person reads it: every kind of reference says what it points to.</summary>
+    public abstract override string ToString();
+
     /// <summary>An assembly or entity, found by a handle in the file at <see cref="FilePath"/>.</summary>
     public abstract class Navigable : CodeReference
     {

@@ -772,12 +772,11 @@ public static partial class ClassDiagrams
 
     private static DrawnProperty ReadProperty(IProperty property)
     {
-        var isGeneric = TypeFacts.TryGetElementType(property, out var elementType);
         return new DrawnProperty
         {
             DeclaringType = property.DeclaringType, Name = property.Name, ReturnType = ReadName(property.ReturnType), IsIndexer = property.IsIndexer,
             IndexerParameters = property.IsIndexer ? property.Parameters.Select(static p => p.Type.Name + " " + p.Name).ToArray() : [],
-            Accessibility = property.Accessibility, Modifiers = ReadModifiers(property), ElementType = isGeneric ? ReadName(elementType) : null,
+            Accessibility = property.Accessibility, Modifiers = ReadModifiers(property), ElementType = TypeFacts.TryGetElementType(property, out var elementType) ? ReadName(elementType) : null,
         };
     }
 

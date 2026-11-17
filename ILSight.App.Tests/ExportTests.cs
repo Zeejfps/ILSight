@@ -590,7 +590,9 @@ public sealed class ExportTests : IDisposable
         view.Key(Shortcuts.Copy);
 
         var drawn = view.Document.Lines.Select(static l => l.Text).ToList();
-        var copied = view.Frames.Clipboard.Text.ReplaceLineEndings("\n").Split('\n');
+        var copiedText = view.Frames.Clipboard.Text;
+        Assert.NotNull(copiedText);
+        var copied = copiedText.ReplaceLineEndings("\n").Split('\n');
         Assert.Equal(drawn, copied);
         Assert.Equal(2, copied.Count(static l => l.StartsWith("        System.IO.IOException", StringComparison.Ordinal)));
     }

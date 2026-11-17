@@ -56,7 +56,9 @@ public sealed class DebugSymbolsTests
     [Fact]
     public void A_tuple_names_blob_is_decoded_name_by_name_and_one_whose_last_name_has_no_terminator_is_bad_data()
     {
-        Assert.Equal(["Low", null, "High"], DebugSymbolsReader.DecodeTupleElementNames("Low\0\0High\0"u8.ToArray()));
+        var names = DebugSymbolsReader.DecodeTupleElementNames("Low\0\0High\0"u8.ToArray());
+        Assert.NotNull(names);
+        Assert.Equal<IEnumerable<string?>>(["Low", null, "High"], names);
         Assert.Empty(DebugSymbolsReader.DecodeTupleElementNames([]) ?? ["missing"]);
         Assert.Null(DebugSymbolsReader.DecodeTupleElementNames("Low\0High"u8.ToArray()));
     }
