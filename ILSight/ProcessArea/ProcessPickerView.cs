@@ -258,22 +258,26 @@ internal static class ProcessPickerView
     // Why the process couldn't be asked, in the app's language; a failure known only by its message, as written.
     private static string DescribeUnreachable(Strings t, UnreachableCause cause)
     {
-        return cause.Match(
-            _ => t.CauseProcessNoEndpointSentence,
-            _ => t.CauseProcessTimedOutSentence,
-            _ => t.CauseProcessRefusedSentence,
-            _ => t.CauseProcessAnswerMalformedSentence,
-            static f => f.Message);
+        return cause switch
+        {
+            UnreachableCause.NoEndpoint => t.CauseProcessNoEndpointSentence,
+            UnreachableCause.TimedOut => t.CauseProcessTimedOutSentence,
+            UnreachableCause.Refused => t.CauseProcessRefusedSentence,
+            UnreachableCause.AnswerMalformed => t.CauseProcessAnswerMalformedSentence,
+            UnreachableCause.Failure f => f.Message,
+        };
     }
 
     // Why the trace couldn't be read, in the app's language.
     private static string DescribeFault(Strings t, NettraceFault fault)
     {
-        return fault.Match(
-            v => t.CauseTraceVersionNewerSentence(version: v.Version),
-            _ => t.CauseTraceNotNettraceSentence,
-            _ => t.CauseTraceCutShortSentence,
-            _ => t.CauseTraceMalformedSentence);
+        return fault switch
+        {
+            NettraceFault.VersionNewer v => t.CauseTraceVersionNewerSentence(version: v.Version),
+            NettraceFault.NotNettrace => t.CauseTraceNotNettraceSentence,
+            NettraceFault.CutShort => t.CauseTraceCutShortSentence,
+            NettraceFault.Malformed => t.CauseTraceMalformedSentence,
+        };
     }
 
     private static bool ModuleRows(Ui ui, Appearance appearance, TableColumns processModuleColumns, ProcessBrowser browser, IReadOnlyList<RunningModule> modules)
@@ -287,9 +291,15 @@ internal static class ProcessPickerView
         for (var i = rows.First; i < rows.End; i++)
         {
             using var row = rows.Row(i);
-            modules[i].Switch((ui, appearance, row, theme, t),
-                static (drawn, onDisk) => DrawOnDisk(drawn.ui, drawn.appearance, drawn.row, drawn.theme, onDisk),
-                static (drawn, inMemory) => DrawInMemory(drawn.ui, drawn.appearance, drawn.row, drawn.theme, drawn.t, inMemory));
+            switch (modules[i])
+            {
+                case RunningModule.OnDisk onDisk:
+                    DrawOnDisk(ui, appearance, row, theme, onDisk);
+                    break;
+                case RunningModule.InMemory inMemory:
+                    DrawInMemory(ui, appearance, row, theme, t, inMemory);
+                    break;
+            }
         }
         return rows.Activated;
     }

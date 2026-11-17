@@ -96,7 +96,7 @@ public static class RunningProcesses
             {
                 Id = id,
                 Name = name,
-                Info = await DiagnosticsIpc.QueryProcessInfoAsync(endpoint, budget, ct).ConfigureAwait(false),
+                Info = await DiagnosticsIpc.QueryProcessInfoAsync(endpoint.Value, budget, ct).ConfigureAwait(false),
             },
             _ => new RunningProcess { Id = id, Name = name, Info = null }, cancellationToken).ConfigureAwait(false);
     }
@@ -116,7 +116,7 @@ public static class RunningProcesses
         }
 
         return await AskUnlessUnreachableAsync(
-            async ct => ReadModules(await DiagnosticsIpc.CollectRundownAsync(endpoint, budget, ct).ConfigureAwait(false)),
+            async ct => ReadModules(await DiagnosticsIpc.CollectRundownAsync(endpoint.Value, budget, ct).ConfigureAwait(false)),
             static e => new ModuleListing.Unreachable(CauseOf(e)), cancellationToken).ConfigureAwait(false);
     }
 
@@ -137,9 +137,11 @@ public static class RunningProcesses
         using (trace)
         {
             var read = NettraceRundown.Read(trace);
-            return read.Match<ModuleListing>(
-                static read => new ModuleListing.Listed(ResolveModules(read.Modules, IsFile)),
-                static corrupt => new ModuleListing.Unreadable { Fault = corrupt.Fault, Error = corrupt.Error });
+            return read switch
+            {
+                RundownRead.Read modules => new ModuleListing.Listed(ResolveModules(modules.Modules, IsFile)),
+                RundownRead.Corrupt corrupt => new ModuleListing.Unreadable { Fault = corrupt.Fault, Error = corrupt.Error },
+            };
         }
     }
 

@@ -75,8 +75,8 @@ public sealed class RunningProcessTests
     {
         var listing = await RunningProcesses.GetModulesAsync(Self, CancellationToken.None);
 
-        var modules = Assert.IsType<ModuleListing.Listed>(listing).Modules;
-        var core = Assert.IsType<RunningModule.OnDisk>(Assert.Single(modules, m => m.Name == "ILSight.Core.dll"));
+        var modules = UnionAsserts.GetCase<ModuleListing.Listed>(listing).Modules;
+        var core = UnionAsserts.GetCase<RunningModule.OnDisk>(Assert.Single(modules, m => m.Name == "ILSight.Core.dll"));
         Assert.Equal(AssemblyPath.Of(CoreAssemblyPath), core.Path);
         Assert.Contains(modules, m => m.Name == "System.Private.CoreLib.dll");
     }
@@ -94,7 +94,7 @@ public sealed class RunningProcessTests
 
             var listing = await RunningProcesses.GetModulesAsync(Self, CancellationToken.None);
 
-            var modules = Assert.IsType<ModuleListing.Listed>(listing).Modules;
+            var modules = UnionAsserts.GetCase<ModuleListing.Listed>(listing).Modules;
             Assert.Contains(new RunningModule.InMemory { Name = "SampleApp" }, modules);
         }
         finally
@@ -108,7 +108,7 @@ public sealed class RunningProcessTests
     {
         var endpoint = RunningProcesses.FindEndpoint(Self);
         Assert.NotNull(endpoint);
-        using var trace = await DiagnosticsIpc.CollectRundownAsync(endpoint, DiagnosticsIpc.RundownBudget, CancellationToken.None);
+        using var trace = await DiagnosticsIpc.CollectRundownAsync(endpoint.Value, DiagnosticsIpc.RundownBudget, CancellationToken.None);
         var bytes = trace.ToArray();
 
         var whole = NettraceRundown.Read(new MemoryStream(bytes));
@@ -116,10 +116,10 @@ public sealed class RunningProcessTests
         var noise = NettraceRundown.Read(new MemoryStream(Encoding.ASCII.GetBytes("Nettrace and then nothing it expects")));
         var empty = NettraceRundown.Read(new MemoryStream());
 
-        Assert.NotEmpty(Assert.IsType<RundownRead.Read>(whole).Modules);
-        Assert.Equal(new NettraceFault.CutShort(), Assert.IsType<RundownRead.Corrupt>(cut).Fault);
-        Assert.IsType<RundownRead.Corrupt>(noise);
-        Assert.Equal(new NettraceFault.NotNettrace(), Assert.IsType<RundownRead.Corrupt>(empty).Fault);
+        Assert.NotEmpty(UnionAsserts.GetCase<RundownRead.Read>(whole).Modules);
+        Assert.Equal(new NettraceFault.CutShort(), UnionAsserts.GetCase<RundownRead.Corrupt>(cut).Fault);
+        UnionAsserts.GetCase<RundownRead.Corrupt>(noise);
+        Assert.Equal(new NettraceFault.NotNettrace(), UnionAsserts.GetCase<RundownRead.Corrupt>(empty).Fault);
     }
 
     [Fact]
@@ -131,7 +131,7 @@ public sealed class RunningProcessTests
 
         var read = NettraceRundown.Read(new MemoryStream(trace));
 
-        Assert.Empty(Assert.IsType<RundownRead.Read>(read).Modules);
+        Assert.Empty(UnionAsserts.GetCase<RundownRead.Read>(read).Modules);
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public sealed class RunningProcessTests
 
         var read = NettraceRundown.Read(new MemoryStream(trace));
 
-        Assert.Equal(new NettraceFault.CutShort(), Assert.IsType<RundownRead.Corrupt>(read).Fault);
+        Assert.Equal(new NettraceFault.CutShort(), UnionAsserts.GetCase<RundownRead.Corrupt>(read).Fault);
     }
 
     [Fact]

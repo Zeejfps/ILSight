@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 using System.Text.RegularExpressions;
 using ICSharpCode.Decompiler.Metadata;
@@ -265,15 +264,5 @@ public abstract class MetadataGrid
 
             return page.Definitions[row % RowsPerPage];
         }
-    }
-
-    public TResult Match<TResult>(Func<InMemory, TResult> inMemory, Func<Paged, TResult> paged)
-    {
-        return this switch
-        {
-            InMemory m => inMemory(m),
-            Paged p => paged(p),
-            _ => throw new UnreachableException($"MetadataGrid.Match does not handle {GetType().Name}."),
-        };
     }
 }

@@ -329,9 +329,11 @@ internal static class DiagnosticsIpc
 
     private static Task<Stream> ConnectAsync(DiagnosticsEndpoint endpoint, CancellationToken cancellationToken)
     {
-        return endpoint.Match(
-            socketEndpoint => ConnectSocketAsync(socketEndpoint, cancellationToken),
-            pipeEndpoint => ConnectPipeAsync(pipeEndpoint, cancellationToken));
+        return endpoint switch
+        {
+            DiagnosticsEndpoint.UnixSocket socketEndpoint => ConnectSocketAsync(socketEndpoint, cancellationToken),
+            DiagnosticsEndpoint.NamedPipe pipeEndpoint => ConnectPipeAsync(pipeEndpoint, cancellationToken),
+        };
     }
 
     private static async Task<Stream> ConnectPipeAsync(DiagnosticsEndpoint.NamedPipe pipeEndpoint, CancellationToken cancellationToken)
@@ -374,14 +376,10 @@ internal static class DiagnosticsIpc
     }
 
     // A refusal is an answer too: an older runtime refuses, with an HRESULT, a command it doesn't know.
-    private abstract record IpcResponse
+    private union IpcResponse(IpcResponse.Ok, IpcResponse.Rejected)
     {
-        private IpcResponse()
-        {
-        }
+        public sealed record Ok(byte[] Payload);
 
-        public sealed record Ok(byte[] Payload) : IpcResponse;
-
-        public sealed record Rejected(int HResult) : IpcResponse;
+        public sealed record Rejected(int HResult);
     }
 }
