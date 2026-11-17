@@ -38,7 +38,8 @@ public sealed class AssemblyListTests
         Assert.Equal([fresh.Item, second], list.Listed);
         Assert.Equal([fresh.Item, second], list.Assemblies);
         Assert.Equal("net48", Assert.IsType<LoadedModule>(fresh.Item).FrameworkMoniker);
-        Assert.Same(fresh.Item, (await list.FindNodeAsync((await first.ReadRootAsync()).Path))?.Assembly);
+        var firstRoot = await first.ReadRootAsync();
+        Assert.Same(fresh.Item, (await list.FindNodeAsync(firstRoot.Path))?.Assembly);
     }
 
     [Fact]
@@ -186,7 +187,8 @@ public sealed class AssemblyListTests
         using var temp = new TempDir();
         var text = temp.Write("text.dll", "not a PE file");
 
-        var root = await list.Open(text).ReadRootAsync();
+        var assembly = list.Open(text);
+        var root = await assembly.ReadRootAsync();
         var document = await root.DecompileAsync(DecompilationLanguage.CSharp);
 
         Assert.IsType<NodeSubject.FailedAssembly>(root.Subject);
@@ -235,7 +237,10 @@ public sealed class AssemblyListTests
         using var temp = new TempDir();
         var failed = list.Open(temp.PathOf("missing.dll"));
 
-        Assert.Same(await failed.ReadRootAsync(), await list.FindNodeAsync((await failed.ReadRootAsync()).Path));
+        var root = await failed.ReadRootAsync();
+        var found = await list.FindNodeAsync(root.Path);
+
+        Assert.Same(root, found);
     }
 
     [Fact]
@@ -316,10 +321,13 @@ public sealed class AssemblyListTests
     public async Task References_resolve_from_the_runtime_directory_and_next_to_the_assembly()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var references = await assembly.ReadRootAsync().GetChildAsync("References");
+        var root = await assembly.ReadRootAsync();
+        var references = await root.GetChildAsync("References");
 
-        var runtime = await list.FindNodeAsync((await references.GetChildAsync("System.Runtime")).Destination);
-        var sibling = await list.FindNodeAsync((await references.GetChildAsync("ILSight.Core")).Destination);
+        var runtimeNode = await references.GetChildAsync("System.Runtime");
+        var runtime = await list.FindNodeAsync(runtimeNode.Destination);
+        var core = await references.GetChildAsync("ILSight.Core");
+        var sibling = await list.FindNodeAsync(core.Destination);
 
         Assert.NotNull(runtime);
         Assert.Equal(Path.Combine(RuntimeAssemblies.ListDirectories(TestRuntime.Installed)[0], "System.Runtime.dll"), runtime.Assembly.FilePath.Text, ignoreCase: true);
@@ -402,7 +410,9 @@ public sealed class AssemblyListTests
         {
             var assembly = list.Open(paths[i % paths.Length]);
             _ = list.Assemblies.Count;
-            _ = (await assembly.ReadRootAsync().ListChildrenAsync()).Count;
+            var root = await assembly.ReadRootAsync();
+            var children = await root.ListChildrenAsync();
+            _ = children.Count;
             return assembly;
         }))).WithinPatienceAsync();
 

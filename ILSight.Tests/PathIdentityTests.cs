@@ -19,13 +19,17 @@ public sealed class PathIdentityTests : IDisposable
 
     private static async Task<BrowseNode> RootAsync(string path)
     {
-        return await new AssemblyList { Runtime = TestRuntime.Installed }.Open(path).ReadRootAsync();
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(path);
+        return await assembly.ReadRootAsync();
     }
 
     [Fact]
     public async Task Overloads_told_apart_only_by_the_namespace_of_a_parameter_type_are_each_found_again()
     {
-        var overloads = (await RootAsync(Trees.PathsBeforePath).GetChildAsync(Namespace, "Overloads").ListChildrenAsync())
+        var root = await RootAsync(Trees.PathsBeforePath);
+        var overloadsNode = await root.GetChildAsync(Namespace, "Overloads");
+        var children = await overloadsNode.ListChildrenAsync();
+        var overloads = children
             .Where(static c => c.Text.StartsWith("Take(", StringComparison.Ordinal))
             .ToArray();
 
@@ -35,7 +39,10 @@ public sealed class PathIdentityTests : IDisposable
     [Fact]
     public async Task Types_of_one_name_used_from_two_namespaces_are_each_found_again()
     {
-        var widgets = (await RootAsync(Trees.PathsBeforePath).GetChildAsync("References", "PathsLibrary", "Referenced types").ListChildrenAsync())
+        var root = await RootAsync(Trees.PathsBeforePath);
+        var referencedTypes = await root.GetChildAsync("References", "PathsLibrary", "Referenced types");
+        var children = await referencedTypes.ListChildrenAsync();
+        var widgets = children
             .Where(static c => c.Text == "Widget")
             .ToArray();
 
@@ -45,7 +52,10 @@ public sealed class PathIdentityTests : IDisposable
     [Fact]
     public async Task Methods_of_one_name_two_types_import_from_a_module_are_each_found_again()
     {
-        var imports = (await RootAsync(Trees.PathsBeforePath).GetChildAsync("References", "paths-native").ListChildrenAsync())
+        var root = await RootAsync(Trees.PathsBeforePath);
+        var pathsNative = await root.GetChildAsync("References", "paths-native");
+        var children = await pathsNative.ListChildrenAsync();
+        var imports = children
             .Where(static c => c.Text.StartsWith("Answer(", StringComparison.Ordinal))
             .ToArray();
 
@@ -55,7 +65,10 @@ public sealed class PathIdentityTests : IDisposable
     [Fact]
     public async Task An_event_and_its_backing_field_are_each_found_again()
     {
-        var changed = (await RootAsync(Trees.PathsBeforePath).GetChildAsync(Namespace, "Notifier").ListChildrenAsync())
+        var root = await RootAsync(Trees.PathsBeforePath);
+        var notifier = await root.GetChildAsync(Namespace, "Notifier");
+        var children = await notifier.ListChildrenAsync();
+        var changed = children
             .Where(static c => c.Text.StartsWith("Changed", StringComparison.Ordinal))
             .ToArray();
 
@@ -68,7 +81,10 @@ public sealed class PathIdentityTests : IDisposable
     {
         var path = _temp.Copy(Trees.PathsBeforePath, "PathsSample.dll");
         RetypeDebugEntry(path, DebugDirectoryEntryType.PdbChecksum, DebugDirectoryEntryType.CodeView);
-        var entries = (await RootAsync(path).GetChildAsync("Metadata", "Debug Directory").ListChildrenAsync())
+        var root = await RootAsync(path);
+        var debugDirectory = await root.GetChildAsync("Metadata", "Debug Directory");
+        var children = await debugDirectory.ListChildrenAsync();
+        var entries = children
             .Where(static c => c.Text == nameof(DebugDirectoryEntryType.CodeView))
             .ToArray();
 
@@ -82,13 +98,19 @@ public sealed class PathIdentityTests : IDisposable
         var before = await RootAsync(path);
         var ns = await before.GetChildAsync(Namespace);
         var box = await ns.GetChildAsync("Box<T>");
+        var children = await box.ListChildrenAsync();
+        var shape = await ns.GetChildAsync("Shape");
+        var limits = await ns.GetChildAsync("Limits");
+        var limitsChildren = await limits.ListChildrenAsync();
+        var tablesNode = await before.GetChildAsync("Metadata", "Tables");
+        var tables = await tablesNode.ListChildrenAsync();
         var places = new[]
         {
             box,
-            (await box.ListChildrenAsync()).Single(static c => c.Text.StartsWith("Put(", StringComparison.Ordinal)),
-            await ns.GetChildAsync("Shape"),
-            (await ns.GetChildAsync("Limits").ListChildrenAsync()).Single(static c => c.Text.StartsWith("Max", StringComparison.Ordinal)),
-            (await before.GetChildAsync("Metadata", "Tables").ListChildrenAsync()).Single(static c => c.Text.StartsWith("02 TypeDef", StringComparison.Ordinal)),
+            children.Single(static c => c.Text.StartsWith("Put(", StringComparison.Ordinal)),
+            shape,
+            limitsChildren.Single(static c => c.Text.StartsWith("Max", StringComparison.Ordinal)),
+            tables.Single(static c => c.Text.StartsWith("02 TypeDef", StringComparison.Ordinal)),
         };
         File.Copy(Trees.PathsAfterPath, path, overwrite: true);
 
@@ -113,9 +135,11 @@ public sealed class PathIdentityTests : IDisposable
     public async Task A_node_of_a_rebuilt_file_is_the_counterpart_of_the_node_it_was_before()
     {
         var path = _temp.Copy(Trees.PathsBeforePath, "PathsSample.dll");
-        var shape = await RootAsync(path).GetChildAsync(Namespace, "Shape");
+        var root = await RootAsync(path);
+        var shape = await root.GetChildAsync(Namespace, "Shape");
         File.Copy(Trees.PathsAfterPath, path, overwrite: true);
-        var ns = await RootAsync(path).GetChildAsync(Namespace);
+        var rebuiltRoot = await RootAsync(path);
+        var ns = await rebuiltRoot.GetChildAsync(Namespace);
         await ns.EnsureChildrenAsync();
 
         var counterpart = TestSession.Shared.FindLoadedChildLike(ns, shape);
@@ -129,7 +153,8 @@ public sealed class PathIdentityTests : IDisposable
     {
         var path = _temp.Write("Sample.nupkg", []);
         WritePackage(path, withNotes: false);
-        var lib = await RootAsync(path).GetChildAsync("lib/net10.0");
+        var root = await RootAsync(path);
+        var lib = await root.GetChildAsync("lib/net10.0");
         var modules = await lib.ListChildrenAsync();
         var shape = await modules.Single(static c => c.Subject is NodeSubject.Module).GetChildAsync(Namespace, "Shape");
         WritePackage(path, withNotes: true);

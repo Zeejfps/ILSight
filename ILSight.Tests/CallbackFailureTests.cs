@@ -11,7 +11,8 @@ public sealed class CallbackFailureTests
     public async Task A_bug_in_the_builders_work_while_the_decompiler_writes_reaches_the_edge_not_a_document_saying_the_decompiler_failed()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var root = await list.Open(Trees.TestAssemblyPath).ReadRootAsync();
+        var assembly = list.Open(Trees.TestAssemblyPath);
+        var root = await assembly.ReadRootAsync();
         var notes = new BrokenArchitectureNotes();
 
         var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -105,7 +106,9 @@ public sealed class CallbackFailureTests
     public async Task A_bug_in_the_builders_work_while_a_nodes_code_is_saved_reaches_the_edge_not_the_saves_failure()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var reference = await list.Open(Trees.TestAssemblyPath).ReadRootAsync().GetChildAsync("References", "System.Runtime");
+        var assembly = list.Open(Trees.TestAssemblyPath);
+        var root = await assembly.ReadRootAsync();
+        var reference = await root.GetChildAsync("References", "System.Runtime");
         using var temp = new TempDir();
         Directory.CreateDirectory(temp.Path);
 

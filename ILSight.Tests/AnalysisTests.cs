@@ -12,7 +12,8 @@ public sealed class AnalysisTests
     private static async Task<(AssemblyList List, BrowseNode Node)> MemberAsync(string label)
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        return (list, await assembly.CalculatorAsync().GetChildAsync(label));
+        var calculator = await assembly.CalculatorAsync();
+        return (list, await calculator.GetChildAsync(label));
     }
 
     private static List<AnalysisSymbol> Run(AssemblyList list, BrowseNode node, string header)
@@ -118,7 +119,8 @@ public sealed class AnalysisTests
         Assert.Equal(new SymbolLocation { Container = Trees.FixturesNamespace + ".Calculator<T>", Assembly = "ILSight.Tests" }, plus.Location);
         var calculator = add.Parent;
         Assert.NotNull(calculator);
-        Assert.Same((await calculator.ListChildrenAsync()).Single(c => c.Is(MemberShape.Operator)), await list.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(plus.Reference)));
+        var children = await calculator.ListChildrenAsync();
+        Assert.Same(children.Single(c => c.Is(MemberShape.Operator)), await list.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(plus.Reference)));
     }
 
     [Fact]
@@ -137,7 +139,8 @@ public sealed class AnalysisTests
     public async Task An_interface_is_used_by_the_types_implementing_it_and_its_property_by_theirs()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var shape = await assembly.FixturesAsync().GetChildAsync("IShape");
+        var fixtures = await assembly.FixturesAsync();
+        var shape = await fixtures.GetChildAsync("IShape");
         var area = await shape.GetChildAsync("Area : double");
 
         var users = Run(list, shape, "Used By").Select(r => r.Label);
@@ -159,7 +162,9 @@ public sealed class AnalysisTests
         var core = list.OpenModule(typeof(AssemblyList).Assembly.Location);
         var unreadablePath = BrokenAssemblies.WriteUnreadableTypeSystem(temp, Trees.TestAssemblyPath);
         list.OpenModule(unreadablePath);
-        var symbol = (await core.ReadRootAsync().GetChildAsync("ILSight.Core", "AssemblyPath")).Analysis;
+        var coreRoot = await core.ReadRootAsync();
+        var assemblyPath = await coreRoot.GetChildAsync("ILSight.Core", "AssemblyPath");
+        var symbol = assemblyPath.Analysis;
         Assert.NotNull(symbol);
         var usedBy = symbol.Kinds.Single(static k => Analyzers.GetHeader(k) == "Used By");
 
@@ -215,7 +220,9 @@ public sealed class AnalysisTests
         using var reading = LoadedAssemblies.BeginReading();
         var reads = await AnalyzerScope.ReadReachableAsync(reading, list, core, CancellationToken.None);
         list.OpenModule(Trees.TestAssemblyPath);
-        var type = Assert.IsAssignableFrom<IEntity>(NodeDefinitions.GetSymbol(Assert.IsType<NodeSubject.TypeDefinition>((await core.ReadRootAsync().GetChildAsync("ILSight.Core", "AssemblyPath")).Subject).Definition));
+        var coreRoot = await core.ReadRootAsync();
+        var assemblyPath = await coreRoot.GetChildAsync("ILSight.Core", "AssemblyPath");
+        var type = Assert.IsAssignableFrom<IEntity>(NodeDefinitions.GetSymbol(Assert.IsType<NodeSubject.TypeDefinition>(assemblyPath.Subject).Definition));
 
         var scanned = AnalyzerScope.Create(list, reads, new ConcurrentDictionary<LoadedModule, UnreadableModule>(), type).ListTypeSystems(CancellationToken.None).ToList();
 

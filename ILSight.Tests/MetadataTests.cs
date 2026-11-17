@@ -12,7 +12,8 @@ public sealed class MetadataTests
 {
     private static async Task<BrowseNode> MetadataAsync(LoadedAssembly assembly)
     {
-        return await assembly.ReadRootAsync().GetChildAsync("Metadata");
+        var root = await assembly.ReadRootAsync();
+        return await root.GetChildAsync("Metadata");
     }
 
     private static MetadataFolderInfo FolderOf(BrowseNode node)
@@ -22,7 +23,8 @@ public sealed class MetadataTests
 
     private static async Task<BrowseNode> TableAsync(LoadedAssembly assembly, string name)
     {
-        var tables = await MetadataAsync(assembly).GetChildAsync("Tables");
+        var metadata = await MetadataAsync(assembly);
+        var tables = await metadata.GetChildAsync("Tables");
         return await tables.TableAsync(name);
     }
 
@@ -178,7 +180,9 @@ public sealed class MetadataTests
     {
         var assembly = Trees.TestAssembly;
 
-        var first = (await assembly.ReadRootAsync().ListChildrenAsync()).Take(3).Select(static c => (c.Subject.GetType(), c.Text));
+        var root = await assembly.ReadRootAsync();
+        var children = await root.ListChildrenAsync();
+        var first = children.Take(3).Select(static c => (c.Subject.GetType(), c.Text));
 
         Assert.Equal(
             [
@@ -193,7 +197,8 @@ public sealed class MetadataTests
     {
         var assembly = Trees.TestAssembly;
 
-        var children = await MetadataAsync(assembly).ListChildrenAsync();
+        var metadata = await MetadataAsync(assembly);
+        var children = await metadata.ListChildrenAsync();
 
         Assert.Equal(
             [
@@ -205,7 +210,8 @@ public sealed class MetadataTests
         Assert.Equal("Tables", children[5].Text);
         Assert.Equal(["String Heap", "UserString Heap", "Guid Heap", "Blob Heap"], children.Skip(6).Select(c => c.Text[..c.Text.IndexOf(" (")]));
         Assert.All(children.Skip(6), c => Assert.Equal(MetadataGridRole.Heap, c.MetadataRole));
-        Assert.Contains(await MetadataAsync(assembly).GetChildAsync("Tables").ListChildrenAsync(), c => c.Text.StartsWith("02 TypeDef (", StringComparison.Ordinal));
+        var tables = await metadata.GetChildAsync("Tables");
+        Assert.Contains(await tables.ListChildrenAsync(), c => c.Text.StartsWith("02 TypeDef (", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -213,7 +219,9 @@ public sealed class MetadataTests
     {
         var assembly = Trees.TestAssembly;
 
-        var tables = await MetadataAsync(assembly).GetChildAsync("Tables").ListChildrenAsync();
+        var metadata = await MetadataAsync(assembly);
+        var tablesNode = await metadata.GetChildAsync("Tables");
+        var tables = await tablesNode.ListChildrenAsync();
         var empty = await TableAsync(assembly, "FieldPtr");
 
         Assert.Equal(Enum.GetValues<TableIndex>().Length, tables.Count);
@@ -229,7 +237,9 @@ public sealed class MetadataTests
         var assembly = Trees.TestAssembly;
         var grids = 0;
 
-        foreach (var root in (await assembly.ReadRootAsync().ListChildrenAsync()).Where(c => c.Subject is NodeSubject.Metadata))
+        var assemblyRoot = await assembly.ReadRootAsync();
+        var children = await assemblyRoot.ListChildrenAsync();
+        foreach (var root in children.Where(c => c.Subject is NodeSubject.Metadata))
         {
             grids += await SweepAsync(root);
         }
@@ -371,7 +381,8 @@ public sealed class MetadataTests
 
         Assert.Same(await assembly.CalculatorAsync(), await list.FindNodeAsync(calculator));
         Assert.Equal("Object", (await list.FindNodeAsync(obj))?.Text);
-        Assert.Null(MetadataGrids.FindDefinition(await GridAsync(await MetadataAsync(assembly).GetChildAsync("DOS Header")), 0));
+        var metadata = await MetadataAsync(assembly);
+        Assert.Null(MetadataGrids.FindDefinition(await GridAsync(await metadata.GetChildAsync("DOS Header")), 0));
     }
 
     [Fact]
@@ -393,9 +404,11 @@ public sealed class MetadataTests
     public async Task The_debug_directory_decodes_its_CodeView_entry()
     {
         var assembly = Trees.TestAssembly;
-        var directory = await MetadataAsync(assembly).GetChildAsync("Debug Directory");
+        var metadata = await MetadataAsync(assembly);
+        var directory = await metadata.GetChildAsync("Debug Directory");
 
-        var codeView = Documents.GetText(await directory.GetChildAsync("CodeView").DecompileAsync(DecompilationLanguage.CSharp));
+        var codeViewNode = await directory.GetChildAsync("CodeView");
+        var codeView = Documents.GetText(await codeViewNode.DecompileAsync(DecompilationLanguage.CSharp));
 
         Assert.Contains("// GUID: ", codeView);
         Assert.Contains("// Path: ", codeView);
@@ -406,7 +419,8 @@ public sealed class MetadataTests
     [Fact]
     public async Task The_debug_directory_raw_data_is_hex_made_after_the_read_and_sorted_by_that_text()
     {
-        var grid = await GridAsync(await MetadataAsync(Trees.TestAssembly).GetChildAsync("Debug Directory"));
+        var metadata = await MetadataAsync(Trees.TestAssembly);
+        var grid = await GridAsync(await metadata.GetChildAsync("Debug Directory"));
         var rawData = grid.Column("RawData");
 
         var texts = Enumerable.Range(0, grid.RowCount).Select(r => MetadataGrids.GetText(grid, r, rawData)).ToList();
@@ -420,9 +434,11 @@ public sealed class MetadataTests
     public async Task The_debug_directory_shows_the_embedded_pdb_the_assembly_already_loaded()
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.EmbeddedPdbPath);
-        var atRoot = FolderOf(await assembly.ReadRootAsync().GetChildAsync("Debug Metadata (Embedded)"));
+        var root = await assembly.ReadRootAsync();
+        var atRoot = FolderOf(await root.GetChildAsync("Debug Metadata (Embedded)"));
 
-        var directory = await MetadataAsync(assembly).GetChildAsync("Debug Directory");
+        var metadata = await MetadataAsync(assembly);
+        var directory = await metadata.GetChildAsync("Debug Directory");
         var embedded = FolderOf(await directory.GetChildAsync("Debug Metadata (Embedded)"));
 
         Assert.Same(atRoot.File, embedded.File);
@@ -433,7 +449,9 @@ public sealed class MetadataTests
     {
         var assembly = Trees.TestAssembly;
 
-        var text = Documents.GetText(await MetadataAsync(assembly).GetChildAsync("Tables").DecompileAsync(DecompilationLanguage.CSharp));
+        var metadata = await MetadataAsync(assembly);
+        var tables = await metadata.GetChildAsync("Tables");
+        var text = Documents.GetText(await tables.DecompileAsync(DecompilationLanguage.CSharp));
 
         Assert.StartsWith("// Tables", text);
         Assert.Contains("// 02 TypeDef: ", text);
@@ -569,7 +587,8 @@ public sealed class MetadataTests
     public async Task A_header_breaks_the_bits_of_its_flags_down_on_hovering_their_value()
     {
         var assembly = Trees.TestAssembly;
-        var coff = await GridAsync(await MetadataAsync(assembly).GetChildAsync("COFF Header"));
+        var metadata = await MetadataAsync(assembly);
+        var coff = await GridAsync(await metadata.GetChildAsync("COFF Header"));
         var characteristics = Enumerable.Range(0, coff.RowCount).Single(r => MetadataGrids.GetText(coff, r, coff.Column("Member")) == "Characteristics");
 
         var tooltip = MetadataGrids.FindTooltip(coff, characteristics, coff.Column("Value"));
@@ -587,7 +606,9 @@ public sealed class MetadataTests
     public async Task Debug_information_shows_its_decoded_value_under_the_selected_row()
     {
         var assembly = Trees.TestAssembly;
-        var pdb = await assembly.ReadRootAsync().GetChildAsync("Debug Metadata (From portable PDB)").GetChildAsync("Tables");
+        var root = await assembly.ReadRootAsync();
+        var debugMetadata = await root.GetChildAsync("Debug Metadata (From portable PDB)");
+        var pdb = await debugMetadata.GetChildAsync("Tables");
         var grid = await GridAsync(await pdb.TableAsync("CustomDebugInformation"));
         var kind = grid.Column("KindString");
 
@@ -603,9 +624,13 @@ public sealed class MetadataTests
     public async Task The_blob_heaps_values_and_the_debug_informations_value_tooltips_read_each_blobs_bytes_in_hex_as_the_library_writes_them()
     {
         var assembly = Trees.TestAssembly;
-        var heap = (await MetadataAsync(assembly).ListChildrenAsync()).Single(static c => c.Text.StartsWith("Blob Heap (", StringComparison.Ordinal));
+        var metadataFolder = await MetadataAsync(assembly);
+        var children = await metadataFolder.ListChildrenAsync();
+        var heap = children.Single(static c => c.Text.StartsWith("Blob Heap (", StringComparison.Ordinal));
         var blobs = await GridAsync(heap);
-        var pdb = await assembly.ReadRootAsync().GetChildAsync("Debug Metadata (From portable PDB)").GetChildAsync("Tables");
+        var root = await assembly.ReadRootAsync();
+        var debugMetadata = await root.GetChildAsync("Debug Metadata (From portable PDB)");
+        var pdb = await debugMetadata.GetChildAsync("Tables");
         var debugInformation = await GridAsync(await pdb.TableAsync("CustomDebugInformation"));
         using var stream = File.OpenRead(Trees.TestAssemblyPath);
         using var pe = new PEReader(stream);
@@ -696,7 +721,9 @@ public sealed class MetadataTests
         var assembly = Trees.TestAssembly;
         using var stream = File.OpenRead(Path.ChangeExtension(Trees.TestAssemblyPath, ".pdb"));
         var md = MetadataReaderProvider.FromPortablePdbStream(stream).GetMetadataReader();
-        var tables = await assembly.ReadRootAsync().GetChildAsync("Debug Metadata (From portable PDB)").GetChildAsync("Tables");
+        var root = await assembly.ReadRootAsync();
+        var debugMetadata = await root.GetChildAsync("Debug Metadata (From portable PDB)");
+        var tables = await debugMetadata.GetChildAsync("Tables");
 
         var rows = await CellsAsync(await tables.TableAsync("StateMachineMethod"), "MoveNextMethod", "KickoffMethod");
 
@@ -767,7 +794,11 @@ public sealed class MetadataTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var corelib = list.Open(Trees.CoreLibPath);
 
-        foreach (var node in (await MetadataAsync(corelib).GetChildAsync("Tables").ListChildrenAsync()).Concat((await MetadataAsync(corelib).ListChildrenAsync()).Where(c => c.Is(MetadataGridRole.Heap))))
+        var metadata = await MetadataAsync(corelib);
+        var tables = await metadata.GetChildAsync("Tables");
+        var tableNodes = await tables.ListChildrenAsync();
+        var parts = await metadata.ListChildrenAsync();
+        foreach (var node in tableNodes.Concat(parts.Where(c => c.Is(MetadataGridRole.Heap))))
         {
             var content = await node.ReadContentAsync();
             if (content is not NodeContent.Table gridContent)

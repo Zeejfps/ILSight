@@ -18,8 +18,12 @@ public sealed class ModuleReleaseTests
     {
         using var temp = new TempDir();
         var (list, left, right) = OpenEachReferencingTheOther(temp);
-        var leftCode = await left.ReadRootAsync().GetChildAsync("Left", "Derived").DecompileAsync(DecompilationLanguage.CSharp);
-        var rightCode = await right.ReadRootAsync().GetChildAsync("Right", "Derived").DecompileAsync(DecompilationLanguage.CSharp);
+        var leftRoot = await left.ReadRootAsync();
+        var derived = await leftRoot.GetChildAsync("Left", "Derived");
+        var leftCode = await derived.DecompileAsync(DecompilationLanguage.CSharp);
+        var rightRoot = await right.ReadRootAsync();
+        var derivedNode = await rightRoot.GetChildAsync("Right", "Derived");
+        var rightCode = await derivedNode.DecompileAsync(DecompilationLanguage.CSharp);
 
         var leftRemoved = list.Close(left);
         LoadedAssemblies.Release(leftRemoved);
@@ -37,10 +41,13 @@ public sealed class ModuleReleaseTests
     {
         using var temp = new TempDir();
         var (list, left, right) = OpenEachReferencingTheOther(temp);
-        var derived = await left.ReadRootAsync().GetChildAsync("Left", "Derived");
+        var leftRoot = await left.ReadRootAsync();
+        var derived = await leftRoot.GetChildAsync("Left", "Derived");
         await derived.DecompileAsync(DecompilationLanguage.CSharp);
         var before = await ReadTypeSystemAsync(left);
-        await right.ReadRootAsync().GetChildAsync("Right", "Derived").DecompileAsync(DecompilationLanguage.CSharp);
+        var rightRoot = await right.ReadRootAsync();
+        var derivedNode = await rightRoot.GetChildAsync("Right", "Derived");
+        await derivedNode.DecompileAsync(DecompilationLanguage.CSharp);
 
         var removed = list.Close(right);
         LoadedAssemblies.Release(removed);
@@ -58,7 +65,8 @@ public sealed class ModuleReleaseTests
     {
         using var temp = new TempDir();
         var (list, left, _) = OpenEachReferencingTheOther(temp);
-        var derived = await left.ReadRootAsync().GetChildAsync("Left", "Derived");
+        var leftRoot = await left.ReadRootAsync();
+        var derived = await leftRoot.GetChildAsync("Left", "Derived");
         var underWay = LoadedAssemblies.TryBeginReading(left) ?? throw new InvalidOperationException("Left was released before it was closed.");
 
         var removed = list.Close(left);

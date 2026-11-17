@@ -17,14 +17,16 @@ public sealed class NestedNamespaceTests
     {
         var root = await Trees.TestAssembly.ReadRootAsync();
 
-        var namespaces = (await root.ListChildrenAsync())
+        var children = await root.ListChildrenAsync();
+        var namespaces = children
             .Where(c => c.Subject is NodeSubject.Namespace)
             .ToList();
 
         Assert.Equal(["-", "ILSight", TestsNamespace, Trees.FixturesNamespace], namespaces.Select(n => n.Text));
         Assert.Equal([false, true, false, false], namespaces.Select(n => Assert.IsType<NodeSubject.Namespace>(n.Subject).Value.IsEnclosingOnly));
-        Assert.Empty(await root.GetChildAsync("ILSight").ListChildrenAsync());
-        Assert.False((await root.GetChildAsync("ILSight")).HasChildren);
+        var iLSight = await root.GetChildAsync("ILSight");
+        Assert.Empty(await iLSight.ListChildrenAsync());
+        Assert.False(iLSight.HasChildren);
     }
 
     [Fact]
@@ -35,7 +37,8 @@ public sealed class NestedNamespaceTests
         var tests = await root.GetChildAsync(TestsNamespace);
         var fixtures = await root.GetChildAsync(Trees.FixturesNamespace);
 
-        Assert.Null((await root.GetChildAsync("-")).EnclosingNamespace);
+        var node = await root.GetChildAsync("-");
+        Assert.Null(node.EnclosingNamespace);
         Assert.Null(ilsight.EnclosingNamespace);
         Assert.Same(ilsight, tests.EnclosingNamespace);
         Assert.Same(tests, fixtures.EnclosingNamespace);
@@ -55,7 +58,8 @@ public sealed class NestedNamespaceTests
 
         Assert.Equal(["-", "ILSight"], outermost);
         Assert.Equal([await root.GetChildAsync(TestsNamespace)], await NestedChildrenAsync(await root.GetChildAsync("ILSight")));
-        Assert.Equal((await root.ListChildrenAsync()).Where(c => c.Subject is not NodeSubject.Namespace), (await NestedChildrenAsync(root)).Where(c => c.Subject is not NodeSubject.Namespace));
+        var children = await root.ListChildrenAsync();
+        Assert.Equal(children.Where(c => c.Subject is not NodeSubject.Namespace), (await NestedChildrenAsync(root)).Where(c => c.Subject is not NodeSubject.Namespace));
     }
 
     [Fact]
@@ -79,7 +83,8 @@ public sealed class NestedNamespaceTests
     [Fact]
     public async Task A_namespace_that_only_encloses_others_is_found_again_by_its_full_name()
     {
-        var ilsight = await Trees.TestAssembly.ReadRootAsync().GetChildAsync("ILSight");
+        var root = await Trees.TestAssembly.ReadRootAsync();
+        var ilsight = await root.GetChildAsync("ILSight");
         var (fresh, _) = Trees.OpenTestAssembly();
 
         var found = await fresh.FindNodeAsync(ilsight.Path);

@@ -88,7 +88,9 @@ public sealed class FoldingTests
     [Fact]
     public async Task A_member_on_its_own_folds_its_body_and_plain_text_folds_nothing()
     {
-        var document = await Trees.TestAssembly.CalculatorAsync().GetChildAsync("Describe() : string").DecompileAsync(DecompilationLanguage.CSharp);
+        var calculator = await Trees.TestAssembly.CalculatorAsync();
+        var describe = await calculator.GetChildAsync("Describe() : string");
+        var document = await describe.DecompileAsync(DecompilationLanguage.CSharp);
 
         var body = Assert.Single(document.Folds);
         Assert.Equal(document.LineContaining("internal string Describe()"), body.StartLine);

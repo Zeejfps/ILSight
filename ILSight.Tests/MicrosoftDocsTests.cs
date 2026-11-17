@@ -10,10 +10,12 @@ public sealed class MicrosoftDocsTests
     public async Task Namespaces_types_and_members_open_their_pages_of_the_api_reference()
     {
         var coreLib = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.CoreLibPath);
-        var generic = await coreLib.ReadRootAsync().GetChildAsync("System.Collections.Generic");
+        var coreLibRoot = await coreLib.ReadRootAsync();
+        var generic = await coreLibRoot.GetChildAsync("System.Collections.Generic");
         var list = await generic.GetChildAsync("List<T>");
         var dictionary = await generic.GetChildAsync("Dictionary<TKey, TValue>");
-        var constructors = (await list.ListChildrenAsync()).Where(c => c.Text == "List()").ToList();
+        var children = await list.ListChildrenAsync();
+        var constructors = children.Where(c => c.Text == "List()").ToList();
         var constructor = constructors.Single(c => c.IsPublicApi);
         var staticConstructor = constructors.Single(c => !c.IsPublicApi);
 
@@ -29,9 +31,11 @@ public sealed class MicrosoftDocsTests
     public async Task A_reference_in_code_finds_the_page_of_its_definition_but_not_of_a_private_member_or_a_local()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var document = await assembly.CalculatorAsync().DecompileAsync(DecompilationLanguage.CSharp);
+        var calculator = await assembly.CalculatorAsync();
+        var document = await calculator.DecompileAsync(DecompilationLanguage.CSharp);
         var call = document.Lines[document.LineContaining("_items.Add(item);")];
-        var add = await assembly.CalculatorAsync().GetChildAsync("Add(T) : void").DecompileAsync(DecompilationLanguage.CSharp);
+        var addNode = await calculator.GetChildAsync("Add(T) : void");
+        var add = await addNode.DecompileAsync(DecompilationLanguage.CSharp);
         var item = add.SpansOf().First(s => s.Text == "item").Span.Reference;
 
         Assert.Equal(ApiReference + "system.collections.generic.list-1.add", (await AssemblyListing.FindApiReferencePageAsync(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("Add").Reference), CancellationToken.None)).GetValue().FoundOrNull);
@@ -48,7 +52,8 @@ public sealed class MicrosoftDocsTests
 
         Assert.Null(MicrosoftDocs.FindPage(await calculator.GetChildAsync("_items : List<T>")));
         Assert.Null(MicrosoftDocs.FindPage(await assembly.ReadRootAsync()));
-        Assert.Null(MicrosoftDocs.FindPage(await assembly.ReadRootAsync().GetChildAsync("References")));
+        var root = await assembly.ReadRootAsync();
+        Assert.Null(MicrosoftDocs.FindPage(await root.GetChildAsync("References")));
     }
 
     [Fact]

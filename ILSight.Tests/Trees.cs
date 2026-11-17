@@ -7,8 +7,8 @@ internal static class Trees
     public const string FixturesNamespace = "ILSight.Tests.Fixtures";
 
     private static readonly Lazy<LoadedModule> s_testAssembly = new(() => new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(TestAssemblyPath));
-    private static readonly SharedRead<DecompiledDocument> s_calculatorCSharp = new(() => TestAssembly.CalculatorAsync().DecompileAsync(DecompilationLanguage.CSharp));
-    private static readonly SharedRead<DecompiledDocument> s_calculatorIL = new(() => TestAssembly.CalculatorAsync().DecompileAsync(DecompilationLanguage.IL));
+    private static readonly SharedRead<DecompiledDocument> s_calculatorCSharp = new(() => DecompileCalculatorAsync(DecompilationLanguage.CSharp));
+    private static readonly SharedRead<DecompiledDocument> s_calculatorIL = new(() => DecompileCalculatorAsync(DecompilationLanguage.IL));
 
     public static string TestAssemblyPath => typeof(Trees).Assembly.Location;
 
@@ -67,14 +67,22 @@ internal static class Trees
         };
     }
 
+    private static async Task<DecompiledDocument> DecompileCalculatorAsync(DecompilationLanguage language)
+    {
+        var calculator = await TestAssembly.CalculatorAsync();
+        return await calculator.DecompileAsync(language);
+    }
+
     public static async Task<BrowseNode> FixturesAsync(this LoadedAssembly assembly)
     {
-        return await assembly.ReadRootAsync().GetChildAsync(FixturesNamespace);
+        var root = await assembly.ReadRootAsync();
+        return await root.GetChildAsync(FixturesNamespace);
     }
 
     public static async Task<BrowseNode> CalculatorAsync(this LoadedAssembly assembly)
     {
-        return await assembly.FixturesAsync().GetChildAsync("Calculator<T>");
+        var fixtures = await assembly.FixturesAsync();
+        return await fixtures.GetChildAsync("Calculator<T>");
     }
 
     public static (AssemblyList List, LoadedModule Assembly) OpenTestAssembly()
@@ -99,11 +107,13 @@ internal static class Trees
 
     public static LoadedAssembly? TryLoad(this AssemblyList list, string path)
     {
-        return AssemblyListing.TryLoad(list, AssemblyPath.Of(path)).GetValue().FoundOrNull;
+        var loaded = AssemblyListing.TryLoad(list, AssemblyPath.Of(path));
+        return loaded.GetValue().FoundOrNull;
     }
 
     public static LoadedAssembly? TryLoad(this AssemblyList list, string path, int generation)
     {
-        return AssemblyListing.TryLoad(list, AssemblyPath.Of(path), generation).GetValue().FoundOrNull;
+        var loaded = AssemblyListing.TryLoad(list, AssemblyPath.Of(path), generation);
+        return loaded.GetValue().FoundOrNull;
     }
 }

@@ -50,7 +50,8 @@ public sealed class NavigationTests
     public async Task A_reference_into_the_framework_opens_the_defining_assembly()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var document = await assembly.CalculatorAsync().DecompileAsync(DecompilationLanguage.CSharp);
+        var calculator = await assembly.CalculatorAsync();
+        var document = await calculator.DecompileAsync(DecompilationLanguage.CSharp);
         var line = document.Lines[document.LineContaining("private readonly List<T> _items")];
 
         var node = await list.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(line.SpanAt("List").Reference));
@@ -60,14 +61,17 @@ public sealed class NavigationTests
         Assert.Equal(TypeShape.Class, node.TypeShape);
         Assert.Equal("System.Private.CoreLib", node.Assembly.Name);
         Assert.Contains(node.Assembly, list.Assemblies);
-        Assert.Same(node, await node.Assembly.ReadRootAsync().GetChildAsync("System.Collections.Generic").GetChildAsync("List<T>"));
+        var root = await node.Assembly.ReadRootAsync();
+        var generic = await root.GetChildAsync("System.Collections.Generic");
+        Assert.Same(node, await generic.GetChildAsync("List<T>"));
     }
 
     [Fact]
     public async Task A_member_reference_lands_on_the_member_node()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var document = await assembly.CalculatorAsync().DecompileAsync(DecompilationLanguage.CSharp);
+        var calculator = await assembly.CalculatorAsync();
+        var document = await calculator.DecompileAsync(DecompilationLanguage.CSharp);
         var call = document.Lines[document.LineContaining("_items.Add(item);")];
 
         var addOnList = await list.FindNodeAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(call.SpanAt("Add").Reference));
@@ -76,14 +80,15 @@ public sealed class NavigationTests
         Assert.NotNull(addOnList);
         Assert.Equal("Add(T) : void", addOnList.Text);
         Assert.Equal("List<T>", addOnList.Parent?.Text);
-        Assert.Same(await assembly.CalculatorAsync().GetChildAsync("_items : List<T>"), field);
+        Assert.Same(await calculator.GetChildAsync("_items : List<T>"), field);
     }
 
     [Fact]
     public async Task A_reference_shows_in_metadata_as_the_row_of_its_definition_in_the_assembly_that_defines_it()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var document = await assembly.CalculatorAsync().DecompileAsync(DecompilationLanguage.CSharp);
+        var calculator = await assembly.CalculatorAsync();
+        var document = await calculator.DecompileAsync(DecompilationLanguage.CSharp);
         var call = document.Lines[document.LineContaining("_items.Add(item);")];
 
         var add = Assert.NotNull(await list.FindMetadataRowAsync(Assert.IsAssignableFrom<CodeReference.Navigable>(call.SpanAt("Add").Reference)));
@@ -105,7 +110,9 @@ public sealed class NavigationTests
     public async Task A_local_has_no_metadata_row()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var document = await assembly.CalculatorAsync().GetChildAsync("Add(T) : void").DecompileAsync(DecompilationLanguage.CSharp);
+        var calculator = await assembly.CalculatorAsync();
+        var add = await calculator.GetChildAsync("Add(T) : void");
+        var document = await add.DecompileAsync(DecompilationLanguage.CSharp);
         var item = document.SpansOf().First(s => s.Text == "item").Span.Reference;
 
         Assert.IsType<CodeReference.Local>(item);
@@ -115,7 +122,8 @@ public sealed class NavigationTests
     public async Task IL_type_references_resolve_through_the_referencing_assembly()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var document = await assembly.CalculatorAsync().DecompileAsync(DecompilationLanguage.IL);
+        var calculator = await assembly.CalculatorAsync();
+        var document = await calculator.DecompileAsync(DecompilationLanguage.IL);
         var objectReference = document.SpansOf().First(s => s.Text == "System.Object" && s.Span.Reference is not null).Span.Reference;
         Assert.NotNull(objectReference);
 
@@ -137,10 +145,12 @@ public sealed class NavigationTests
 
         Assert.Contains("public void Add(T item)", csharp.Lines[Assert.NotNull(Documents.FindDefinitionLine(csharp, await calculator.GetChildAsync("Add(T) : void")))].Text);
         Assert.Contains("public int Count", csharp.Lines[Assert.NotNull(Documents.FindDefinitionLine(csharp, await calculator.GetChildAsync("Count : int")))].Text);
-        Assert.Contains("Fast", csharp.Lines[Assert.NotNull(Documents.FindDefinitionLine(csharp, await calculator.GetChildAsync("Mode").GetChildAsync("Fast : Mode")))].Text);
+        var mode = await calculator.GetChildAsync("Mode");
+        Assert.Contains("Fast", csharp.Lines[Assert.NotNull(Documents.FindDefinitionLine(csharp, await mode.GetChildAsync("Fast : Mode")))].Text);
         Assert.Contains("public class Calculator<T>", csharp.Lines[Assert.NotNull(Documents.FindDefinitionLine(csharp, calculator))].Text);
         Assert.Contains(".method", il.Lines[Assert.NotNull(Documents.FindDefinitionLine(il, await calculator.GetChildAsync("Describe() : string")))].Text);
-        Assert.Null(Documents.FindDefinitionLine(csharp, await assembly.FixturesAsync().GetChildAsync("Size")));
+        var fixtures = await assembly.FixturesAsync();
+        Assert.Null(Documents.FindDefinitionLine(csharp, await fixtures.GetChildAsync("Size")));
         Assert.Null(Documents.FindDefinitionLine(csharp, await assembly.FixturesAsync()));
     }
 
@@ -149,9 +159,11 @@ public sealed class NavigationTests
     {
         var calculator = await Trees.TestAssembly.CalculatorAsync();
         var typeDocument = await Trees.CalculatorDocumentAsync(DecompilationLanguage.CSharp);
-        var memberDocument = await calculator.GetChildAsync("Describe() : string").DecompileAsync(DecompilationLanguage.CSharp);
+        var describe = await calculator.GetChildAsync("Describe() : string");
+        var memberDocument = await describe.DecompileAsync(DecompilationLanguage.CSharp);
 
-        var count = (await calculator.GetChildAsync("Count : int")).Definition;
+        var countNode = await calculator.GetChildAsync("Count : int");
+        var count = countNode.Definition;
         var countInType = typeDocument.SpansOf().Where(s => s.Text == "Count").Select(s => s.Span.Reference).ToArray();
         var countInMember = memberDocument.SpansOf().First(s => s.Text == "Count").Span.Reference;
 
@@ -164,7 +176,9 @@ public sealed class NavigationTests
     public async Task Locals_match_each_other_but_are_not_navigable()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var document = await assembly.CalculatorAsync().GetChildAsync("Add(T) : void").DecompileAsync(DecompilationLanguage.CSharp);
+        var calculator = await assembly.CalculatorAsync();
+        var add = await calculator.GetChildAsync("Add(T) : void");
+        var document = await add.DecompileAsync(DecompilationLanguage.CSharp);
 
         var items = document.SpansOf().Where(s => s.Text == "item").Select(s => s.Span).ToArray();
 
@@ -179,8 +193,11 @@ public sealed class NavigationTests
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var coreLib = list.Open(Trees.CoreLibPath);
-        var lambdaOwner = await coreLib.ReadRootAsync().GetChildAsync("System.Collections.Generic").GetChildAsync("List<T>");
-        var document = await lambdaOwner.GetChildAsync("Count : int").DecompileAsync(DecompilationLanguage.IL);
+        var coreLibRoot = await coreLib.ReadRootAsync();
+        var generic = await coreLibRoot.GetChildAsync("System.Collections.Generic");
+        var lambdaOwner = await generic.GetChildAsync("List<T>");
+        var count = await lambdaOwner.GetChildAsync("Count : int");
+        var document = await count.DecompileAsync(DecompilationLanguage.IL);
         var getter = document.SpansOf()
             .Select(static s => s.Span)
             .Where(static s => s.IsDefinition)
@@ -198,8 +215,10 @@ public sealed class NavigationTests
     {
         var calculator = await Trees.TestAssembly.CalculatorAsync();
         var document = await Trees.CalculatorDocumentAsync(DecompilationLanguage.IL);
-        var add = (await calculator.GetChildAsync("Add(T) : void")).Definition;
-        var items = (await calculator.GetChildAsync("_items : List<T>")).Definition;
+        var addNode = await calculator.GetChildAsync("Add(T) : void");
+        var add = addNode.Definition;
+        var itemsNode = await calculator.GetChildAsync("_items : List<T>");
+        var items = itemsNode.Definition;
 
         var uses = document.SpansOf().Where(s => s.Span is { IsDefinition: false, Reference: not null }).Select(s => s.Span.Reference).ToArray();
 
@@ -218,7 +237,8 @@ public sealed class NavigationTests
         var session = TestSession.Shared;
         var type = CodeReferences.CreateEntity(EntityKind.Type, "Circle", path, MetadataTokens.TypeDefinitionHandle(2));
         var (_, healthy) = Trees.OpenTestAssembly();
-        var place = new NodePath { FilePath = path, Steps = (await healthy.FixturesAsync()).Path.Steps };
+        var fixtures = await healthy.FixturesAsync();
+        var place = new NodePath { FilePath = path, Steps = fixtures.Path.Steps };
 
         var node = (await NodeLookup.FindAsync(list, session, type, CancellationToken.None)).GetValue();
         var row = (await NodeLookup.FindMetadataRowAsync(list, session, type, CancellationToken.None)).GetValue();
@@ -260,7 +280,8 @@ public sealed class NavigationTests
     public async Task A_bug_in_the_apps_work_on_a_paths_way_goes_on_to_the_caller_never_the_lookups_failure()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var place = (await assembly.FixturesAsync()).Path;
+        var fixtures = await assembly.FixturesAsync();
+        var place = fixtures.Path;
         var session = new BrowseSession();
         var root = await BrowseSessions.EnsureRootAsync(session, assembly);
         BrokenListing.Settle(session, root);
@@ -283,7 +304,9 @@ public sealed class NavigationTests
         var session = TestSession.Shared;
         var reference = CodeReferences.CreateEntity(EntityKind.Property, "Area", path, area);
         var (_, healthy) = Trees.OpenTestAssembly();
-        var place = new NodePath { FilePath = path, Steps = (await healthy.FixturesAsync().GetChildAsync("Circle").GetChildAsync("Area : double")).Path.Steps };
+        var healthyFixtures = await healthy.FixturesAsync();
+        var areaNode = await healthyFixtures.GetChildAsync("Circle", "Area : double");
+        var place = new NodePath { FilePath = path, Steps = areaNode.Path.Steps };
 
         var byReference = await NodeLookup.FindAsync(list, session, reference, CancellationToken.None);
         var module = Assert.IsType<LoadedModule>(Assert.Single(list.Assemblies));

@@ -68,7 +68,9 @@ public sealed class DecompilationTests
     {
         var assembly = Trees.TestAssembly;
 
-        var document = await assembly.CalculatorAsync().GetChildAsync("Describe() : string").DecompileAsync(DecompilationLanguage.CSharp);
+        var calculator = await assembly.CalculatorAsync();
+        var describe = await calculator.GetChildAsync("Describe() : string");
+        var document = await describe.DecompileAsync(DecompilationLanguage.CSharp);
 
         Assert.Equal("[Description(\"Summarizes the calculator\")]", document.Lines[document.LineContaining("internal string Describe()") - 1].Text);
         Assert.DoesNotContain(document.Lines.ToArray(), l => l.Text.Contains("class"));
@@ -79,7 +81,9 @@ public sealed class DecompilationTests
     {
         var assembly = Trees.TestAssembly;
 
-        var document = await assembly.FixturesAsync().GetChildAsync("Point").DecompileAsync(DecompilationLanguage.CSharp);
+        var fixtures = await assembly.FixturesAsync();
+        var point = await fixtures.GetChildAsync("Point");
+        var document = await point.DecompileAsync(DecompilationLanguage.CSharp);
 
         Assert.Null(document.Error);
         Assert.Contains("public record Point(int X, int Y)", Documents.GetText(document));
@@ -92,9 +96,11 @@ public sealed class DecompilationTests
         var calculator = await assembly.CalculatorAsync();
         var csharp5 = new DecompilerOptions { LanguageVersion = CSharpVersion.CSharp5 };
 
-        var latest = Documents.GetText(await calculator.GetChildAsync("Count : int").DecompileAsync(DecompilationLanguage.CSharp));
-        var older = Documents.GetText(await calculator.GetChildAsync("Count : int").DecompileAsync(DecompilationLanguage.CSharp, csharp5));
-        var ctor = await calculator.GetChildAsync("Calculator()").DecompileAsync(DecompilationLanguage.CSharp, csharp5);
+        var count = await calculator.GetChildAsync("Count : int");
+        var latest = Documents.GetText(await count.DecompileAsync(DecompilationLanguage.CSharp));
+        var older = Documents.GetText(await count.DecompileAsync(DecompilationLanguage.CSharp, csharp5));
+        var constructor = await calculator.GetChildAsync("Calculator()");
+        var ctor = await constructor.DecompileAsync(DecompilationLanguage.CSharp, csharp5);
 
         Assert.Contains("public int Count => _items.Count;", latest);
         Assert.DoesNotContain("=>", older);
@@ -120,7 +126,8 @@ public sealed class DecompilationTests
     [Fact]
     public async Task Locals_take_their_names_from_the_pdb_until_debug_symbols_are_off()
     {
-        var grow = await Trees.TestAssembly.FixturesAsync().GetChildAsync("Circle", "Grow(double, int) : double");
+        var fixtures = await Trees.TestAssembly.FixturesAsync();
+        var grow = await fixtures.GetChildAsync("Circle", "Grow(double, int) : double");
         var off = DecompilerToggles.WithToggle(DecompilerOptions.Default, DecompilerToggle.UseDebugSymbols, false);
 
         var named = Documents.GetText(await grow.DecompileAsync(DecompilationLanguage.CSharp));
@@ -135,7 +142,8 @@ public sealed class DecompilationTests
     [Fact]
     public async Task IL_names_locals_from_the_pdb_until_debug_symbols_are_off()
     {
-        var grow = await Trees.TestAssembly.FixturesAsync().GetChildAsync("Circle", "Grow(double, int) : double");
+        var fixtures = await Trees.TestAssembly.FixturesAsync();
+        var grow = await fixtures.GetChildAsync("Circle", "Grow(double, int) : double");
         var off = DecompilerToggles.WithToggle(DecompilerOptions.Default, DecompilerToggle.UseDebugSymbols, false);
 
         var named = Documents.GetText(await grow.DecompileAsync(DecompilationLanguage.IL));
@@ -240,8 +248,10 @@ public sealed class DecompilationTests
 
     private static async Task<DecompiledDocument> CircleGrowAsync(DecompilationLanguage language)
     {
-        var circle = await Trees.TestAssembly.FixturesAsync().GetChildAsync("Circle");
-        var grow = (await circle.ListChildrenAsync()).Single(c => c.Text.StartsWith("Grow", StringComparison.Ordinal));
+        var fixtures = await Trees.TestAssembly.FixturesAsync();
+        var circle = await fixtures.GetChildAsync("Circle");
+        var children = await circle.ListChildrenAsync();
+        var grow = children.Single(c => c.Text.StartsWith("Grow", StringComparison.Ordinal));
         return await grow.DecompileAsync(language);
     }
 
@@ -273,7 +283,8 @@ public sealed class DecompilationTests
     [Fact]
     public async Task Turning_xml_documentation_off_leaves_it_out()
     {
-        var count = await Trees.TestAssembly.CalculatorAsync().GetChildAsync("Count : int");
+        var calculator = await Trees.TestAssembly.CalculatorAsync();
+        var count = await calculator.GetChildAsync("Count : int");
         var docs = DecompilerToggles.FindToggle("ShowXmlDocumentation");
         Assert.NotNull(docs);
         var off = DecompilerToggles.WithToggle(DecompilerOptions.Default, docs, false);
@@ -287,7 +298,9 @@ public sealed class DecompilationTests
     {
         var coreLib = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.CoreLibPath);
 
-        var empty = await coreLib.ReadRootAsync().GetChildAsync("System", "String", "Empty : string").DecompileAsync(DecompilationLanguage.CSharp);
+        var coreLibRoot = await coreLib.ReadRootAsync();
+        var emptyNode = await coreLibRoot.GetChildAsync("System", "String", "Empty : string");
+        var empty = await emptyNode.DecompileAsync(DecompilationLanguage.CSharp);
 
         Assert.True(empty.LineContaining("/// <summary>") < empty.LineContaining("public static readonly string Empty;"));
     }
@@ -296,7 +309,8 @@ public sealed class DecompilationTests
     public async Task A_toggle_changes_the_code_until_the_version_is_too_old_for_it_and_keeps_its_state()
     {
         var assembly = Trees.TestAssembly;
-        var count = await assembly.CalculatorAsync().GetChildAsync("Count : int");
+        var calculator = await assembly.CalculatorAsync();
+        var count = await calculator.GetChildAsync("Count : int");
         var bodies = DecompilerToggles.FindToggle("UseExpressionBodyForCalculatedGetterOnlyProperties");
         Assert.NotNull(bodies);
         var off = DecompilerToggles.WithToggle(DecompilerOptions.Default, bodies, false);
@@ -315,7 +329,9 @@ public sealed class DecompilationTests
     {
         var assembly = Trees.TestAssembly;
 
-        var document = await assembly.CalculatorAsync().GetChildAsync("Describe() : string").DecompileAsync(DecompilationLanguage.IL);
+        var calculator = await assembly.CalculatorAsync();
+        var describe = await calculator.GetChildAsync("Describe() : string");
+        var document = await describe.DecompileAsync(DecompilationLanguage.IL);
 
         Assert.Equal(DecompilationLanguage.IL, document.Language);
         var spans = document.SpansOf().ToArray();
@@ -332,8 +348,9 @@ public sealed class DecompilationTests
     {
         var assembly = Trees.TestAssembly;
 
-        var csharp = Documents.GetText(await assembly.ReadRootAsync().DecompileAsync(DecompilationLanguage.CSharp));
-        var il = Documents.GetText(await assembly.ReadRootAsync().DecompileAsync(DecompilationLanguage.IL));
+        var root = await assembly.ReadRootAsync();
+        var csharp = Documents.GetText(await root.DecompileAsync(DecompilationLanguage.CSharp));
+        var il = Documents.GetText(await root.DecompileAsync(DecompilationLanguage.IL));
 
         Assert.Contains($"// {Trees.TestAssemblyPath}", csharp);
         Assert.Contains("[assembly: AssemblyProduct(\"ILSight.Tests\")]", csharp);
@@ -361,8 +378,11 @@ public sealed class DecompilationTests
     {
         var coreLib = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.CoreLibPath);
 
-        var references = await Trees.TestAssembly.ReadRootAsync().GetChildAsync("References").DecompileAsync(DecompilationLanguage.CSharp);
-        var resources = await coreLib.ReadRootAsync().GetChildAsync("Resources");
+        var root = await Trees.TestAssembly.ReadRootAsync();
+        var referencesNode = await root.GetChildAsync("References");
+        var references = await referencesNode.DecompileAsync(DecompilationLanguage.CSharp);
+        var coreLibRoot = await coreLib.ReadRootAsync();
+        var resources = await coreLibRoot.GetChildAsync("Resources");
         var resourceFiles = await resources.ListChildrenAsync();
         var strings = await resourceFiles.First(r => r.Text.EndsWith(".resources")).DecompileAsync(DecompilationLanguage.CSharp);
 
@@ -389,7 +409,10 @@ public sealed class DecompilationTests
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var coreLib = list.Open(Trees.CoreLibPath);
-        var types = (await coreLib.ReadRootAsync().GetChildAsync("System.Collections.Generic").ListChildrenAsync()).Take(12).ToArray();
+        var coreLibRoot = await coreLib.ReadRootAsync();
+        var generic = await coreLibRoot.GetChildAsync("System.Collections.Generic");
+        var children = await generic.ListChildrenAsync();
+        var types = children.Take(12).ToArray();
         var languages = new[] { DecompilationLanguage.CSharp, DecompilationLanguage.IL };
 
         var sequential = new List<string>();
@@ -414,7 +437,9 @@ public sealed class DecompilationTests
     {
         using var temp = new TempDir();
         var corrupt = temp.Write("corrupt.dll", WithBrokenAttribute(await File.ReadAllBytesAsync(Trees.TestAssemblyPath), "Describe"));
-        var describe = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(corrupt).CalculatorAsync().GetChildAsync("Describe() : string");
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(corrupt);
+        var calculator = await assembly.CalculatorAsync();
+        var describe = await calculator.GetChildAsync("Describe() : string");
 
         var il = await describe.DecompileAsync(DecompilationLanguage.IL);
         var csharp = await describe.DecompileAsync(DecompilationLanguage.CSharp);
@@ -437,7 +462,9 @@ public sealed class DecompilationTests
         var sample = temp.Copy(Trees.PathsBeforePath, "PathsSample.dll");
         temp.Write("PathsLibrary.dll", "no assembly");
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var overloads = await list.Open(sample).ReadRootAsync().GetChildAsync("PathsSample", "Overloads");
+        var assembly = list.Open(sample);
+        var root = await assembly.ReadRootAsync();
+        var overloads = await root.GetChildAsync("PathsSample", "Overloads");
 
         var document = await overloads.DecompileAsync(DecompilationLanguage.CSharp);
         var again = await overloads.DecompileAsync(DecompilationLanguage.IL);
@@ -465,7 +492,9 @@ public sealed class DecompilationTests
     {
         using var temp = new TempDir();
         var sample = temp.Copy(Trees.PathsBeforePath, "PathsSample.dll");
-        var overloads = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(sample).ReadRootAsync().GetChildAsync("PathsSample", "Overloads");
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(sample);
+        var root = await assembly.ReadRootAsync();
+        var overloads = await root.GetChildAsync("PathsSample", "Overloads");
 
         var document = await overloads.DecompileAsync(DecompilationLanguage.CSharp);
 
@@ -496,7 +525,8 @@ public sealed class DecompilationTests
         var roots = new List<BrowseNode>();
         foreach (var path in new[] { Trees.TestAssemblyPath, Trees.SampleAppPath, package })
         {
-            roots.Add(await list.Open(path).ReadRootAsync());
+            var assembly = list.Open(path);
+            roots.Add(await assembly.ReadRootAsync());
         }
 
         var failed = new List<string>();
@@ -603,7 +633,8 @@ public sealed class DecompilationTests
         var unreadablePath = BrokenAssemblies.WriteUnreadableTypeSystem(temp, Trees.TestAssemblyPath);
         var module = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(unreadablePath);
 
-        var document = await module.ReadRootAsync().DecompileAsync(DecompilationLanguage.CSharp);
+        var root = await module.ReadRootAsync();
+        var document = await root.DecompileAsync(DecompilationLanguage.CSharp);
 
         Assert.NotNull(document.Error);
         Assert.StartsWith("// Error decompiling", document.Lines[0].Text);

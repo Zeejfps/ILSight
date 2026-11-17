@@ -19,7 +19,8 @@ public sealed class LoadOptionsTests
 
     private static async Task<BrowseNode> RuntimeReferenceAsync(LoadedAssembly assembly)
     {
-        return await assembly.ReadRootAsync().GetChildAsync("References", "System.Runtime");
+        var root = await assembly.ReadRootAsync();
+        return await root.GetChildAsync("References", "System.Runtime");
     }
 
     [Fact]
@@ -113,7 +114,8 @@ public sealed class LoadOptionsTests
         var generation = list.Generation;
         AssemblyListing.TryChangeLoadOptions(list, Off(DecompilerToggle.ApplyWindowsRuntimeProjections));
 
-        var readBefore = AssemblyListing.TryLoad(list, AssemblyPath.Of(Trees.TestAssemblyPath), generation).GetValue().FoundOrNull;
+        var loaded = AssemblyListing.TryLoad(list, AssemblyPath.Of(Trees.TestAssemblyPath), generation);
+        var readBefore = loaded.GetValue().FoundOrNull;
         var opened = list.OpenModule(Trees.TestAssemblyPath);
 
         Assert.NotSame(readBefore, opened);

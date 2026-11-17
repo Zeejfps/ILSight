@@ -48,7 +48,8 @@ public sealed class BrowseSessionTests : IDisposable
         var session = new BrowseSession();
         var unreadablePath = BrokenAssemblies.WriteUnreadableAvaloniaContainer(_temp);
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(unreadablePath);
-        var resources = (await BrowseSessions.ListChildrenAsync(session, (await BrowseSessions.EnsureRootAsync(session, assembly)))).Single(c => c.Subject is NodeSubject.Resources);
+        var children = await BrowseSessions.ListChildrenAsync(session, (await BrowseSessions.EnsureRootAsync(session, assembly)));
+        var resources = children.Single(c => c.Subject is NodeSubject.Resources);
         var container = Assert.Single((await BrowseSessions.ListChildrenAsync(session, resources)));
 
         var failed = Assert.IsType<ChildrenState.Failed>((await BrowseSessions.GetChildrenAsync(session, container)));
@@ -90,7 +91,8 @@ public sealed class BrowseSessionTests : IDisposable
     private static async Task<(BrowseNode Header, BrowseNode Tables)> MetadataHeaderAndTablesAsync(BrowseSession session)
     {
         var root = session.EnsureRoot(Trees.TestAssembly);
-        var metadata = (await BrowseSessions.ListChildrenAsync(session, root)).First(static c => c.Subject is NodeSubject.Metadata);
+        var children = await BrowseSessions.ListChildrenAsync(session, root);
+        var metadata = children.First(static c => c.Subject is NodeSubject.Metadata);
         var parts = (await BrowseSessions.ListChildrenAsync(session, metadata));
         return (parts.First(static c => c.Text == "DOS Header"), parts.Single(static c => c.Subject is NodeSubject.MetadataTables));
     }
@@ -109,7 +111,8 @@ public sealed class BrowseSessionTests : IDisposable
         }));
 
         Assert.IsType<ChildrenState.Unloaded>(before);
-        var typeDefs = (await BrowseSessions.ListChildrenAsync(session, tables)).Single(static c => c.Subject is NodeSubject.MetadataTable t && t.Value.ListedTable == TableIndex.TypeDef);
+        var children = await BrowseSessions.ListChildrenAsync(session, tables);
+        var typeDefs = children.Single(static c => c.Subject is NodeSubject.MetadataTable t && t.Value.ListedTable == TableIndex.TypeDef);
         Assert.Same(typeDefs, target.Node);
         Assert.Equal(1, target.Row);
     }

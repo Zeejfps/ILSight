@@ -8,7 +8,8 @@ public sealed class DocumentRewordTests
     public async Task A_documents_notes_are_said_again_in_other_words_from_their_causes_its_code_and_links_unchanged()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var root = await list.Open(Trees.SampleAppPath).ReadRootAsync();
+        var assembly = list.Open(Trees.SampleAppPath);
+        var root = await assembly.ReadRootAsync();
         var made = await root.DecompileAsync(DecompilationLanguage.CSharp);
         var entry = made.LineContaining("// Entry point: ");
         var method = Assert.Single(made.Lines[entry].Spans.ToArray(), static s => s.Reference is not null);
@@ -43,7 +44,8 @@ public sealed class DocumentRewordTests
     public async Task An_assemblys_summary_notes_its_architecture_from_the_facts_read()
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var root = await list.Open(Trees.TestAssemblyPath).ReadRootAsync();
+        var assembly = list.Open(Trees.TestAssemblyPath);
+        var root = await assembly.ReadRootAsync();
 
         var made = await root.DecompileAsync(DecompilationLanguage.CSharp);
 

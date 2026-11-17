@@ -9,7 +9,8 @@ public sealed class ModuleReferenceTests
         var path = RuntimeAssemblies.Find(TestRuntime.Installed, name);
         Assert.NotNull(path);
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(path);
-        return await assembly.ReadRootAsync().GetChildAsync("References");
+        var root = await assembly.ReadRootAsync();
+        return await root.GetChildAsync("References");
     }
 
     // System.Private.CoreLib calls into native modules.
@@ -21,7 +22,9 @@ public sealed class ModuleReferenceTests
     [Fact]
     public async Task The_references_list_the_modules_an_assembly_calls_into_sorted_by_name()
     {
-        var modules = (await CoreLibReferencesAsync().ListChildrenAsync())
+        var coreLibReferences = await CoreLibReferencesAsync();
+        var children = await coreLibReferences.ListChildrenAsync();
+        var modules = children
             .Where(c => c.Subject is NodeSubject.ModuleReference)
             .Select(c => c.Text)
             .ToList();
@@ -33,7 +36,8 @@ public sealed class ModuleReferenceTests
     [Fact]
     public async Task Module_references_come_after_the_assembly_references()
     {
-        var modules = (await ReferencesOfAsync("System.IO.Compression").ListChildrenAsync())
+        var children = await ReferencesOfAsync("System.IO.Compression").ListChildrenAsync();
+        var modules = children
             .Select(static c => c.Subject is NodeSubject.ModuleReference)
             .ToList();
 
@@ -45,7 +49,8 @@ public sealed class ModuleReferenceTests
     [Fact]
     public async Task A_module_reference_reads_as_its_name_and_a_native_library_when_the_assembly_lists_no_such_file()
     {
-        var qcall = await CoreLibReferencesAsync().GetChildAsync("QCall");
+        var coreLibReferences = await CoreLibReferencesAsync();
+        var qcall = await coreLibReferences.GetChildAsync("QCall");
 
         var text = Documents.GetText(Assert.IsType<NodeContent.Code>(await qcall.ReadContentAsync()).Document);
 
@@ -56,7 +61,8 @@ public sealed class ModuleReferenceTests
     [Fact]
     public async Task The_references_folder_reads_as_its_assemblies_then_its_modules()
     {
-        var text = Documents.GetText(Assert.IsType<NodeContent.Code>(await CoreLibReferencesAsync().ReadContentAsync()).Document);
+        var coreLibReferences = await CoreLibReferencesAsync();
+        var text = Documents.GetText(Assert.IsType<NodeContent.Code>(await coreLibReferences.ReadContentAsync()).Document);
 
         Assert.Contains("// QCall", text);
     }
@@ -66,7 +72,9 @@ public sealed class ModuleReferenceTests
     {
         var (_, assembly) = Trees.OpenTestAssembly();
 
-        var answer = await assembly.ReadRootAsync().GetChildAsync("References", "fixture-native").GetChildAsync("Answer() : int");
+        var root = await assembly.ReadRootAsync();
+        var fixtureNative = await root.GetChildAsync("References", "fixture-native");
+        var answer = await fixtureNative.GetChildAsync("Answer() : int");
 
         Assert.IsType<NodeSubject.ImportedMethod>(answer.Subject);
         Assert.Equal("ILSight.Tests.Fixtures.NativeImports", Assert.IsType<NodeSubject.ImportedMethod>(answer.Subject).Value.DeclaringTypeName);
@@ -76,24 +84,29 @@ public sealed class ModuleReferenceTests
     public async Task An_imported_method_reads_as_the_function_it_calls_and_goes_to_the_method()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var answer = await assembly.ReadRootAsync().GetChildAsync("References", "fixture-native", "Answer() : int");
+        var root = await assembly.ReadRootAsync();
+        var answer = await root.GetChildAsync("References", "fixture-native", "Answer() : int");
 
         var text = Documents.GetText(Assert.IsType<NodeContent.Code>(await answer.ReadContentAsync()).Document);
         var definition = await list.FindNodeAsync(answer.Destination);
 
         Assert.Contains("Calls fixture_answer in fixture-native", text);
-        Assert.Same(await assembly.FixturesAsync().GetChildAsync("NativeImports", "Answer() : int"), definition);
+        var fixtures = await assembly.FixturesAsync();
+        Assert.Same(await fixtures.GetChildAsync("NativeImports", "Answer() : int"), definition);
     }
 
     [Fact]
     public async Task A_stub_generated_for_an_import_is_named_and_goes_as_the_method_declaring_it()
     {
-        var qcall = await CoreLibReferencesAsync().GetChildAsync("QCall");
+        var coreLibReferences = await CoreLibReferencesAsync();
+        var qcall = await coreLibReferences.GetChildAsync("QCall");
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var coreLibPath = RuntimeAssemblies.Find(TestRuntime.Installed, "System.Private.CoreLib");
         Assert.NotNull(coreLibPath);
         var coreLib = list.Open(coreLibPath);
-        var imports = await coreLib.ReadRootAsync().GetChildAsync("References", "QCall").ListChildrenAsync();
+        var coreLibRoot = await coreLib.ReadRootAsync();
+        var qCall = await coreLibRoot.GetChildAsync("References", "QCall");
+        var imports = await qCall.ListChildrenAsync();
 
         // GC._Collect is a generated stub on every system; most QCalls are not, or not everywhere.
         var collect = imports.First(i => i.Text.StartsWith("_Collect(", StringComparison.Ordinal));

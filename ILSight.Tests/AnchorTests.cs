@@ -11,7 +11,9 @@ public sealed class AnchorTests
         var line = type.LineContaining("Changed?.Invoke(this, EventArgs.Empty);");
 
         var anchor = Assert.NotNull(Documents.FindAnchorAt(type, line));
-        var method = await Trees.TestAssembly.CalculatorAsync().GetChildAsync("Add(T) : void").DecompileAsync(DecompilationLanguage.CSharp);
+        var calculator = await Trees.TestAssembly.CalculatorAsync();
+        var add = await calculator.GetChildAsync("Add(T) : void");
+        var method = await add.DecompileAsync(DecompilationLanguage.CSharp);
         var il = await Trees.CalculatorDocumentAsync(DecompilationLanguage.IL);
         var ilLine = Assert.NotNull(Documents.FindLine(il, anchor));
 
@@ -33,7 +35,8 @@ public sealed class AnchorTests
 
         Assert.Equal(CodeAnchorKind.Definition, anchor.Kind);
         Assert.Equal(line, Documents.FindLine(type, anchor));
-        Assert.Equal(Documents.FindDefinitionLine(il, await Trees.TestAssembly.CalculatorAsync().GetChildAsync("Add(T) : void")), Documents.FindLine(il, anchor));
+        var calculator = await Trees.TestAssembly.CalculatorAsync();
+        Assert.Equal(Documents.FindDefinitionLine(il, await calculator.GetChildAsync("Add(T) : void")), Documents.FindLine(il, anchor));
     }
 
     [CaseInsensitivePathsTheory]
@@ -86,7 +89,8 @@ public sealed class AnchorTests
 
         for (var round = 0; round < 20; round++)
         {
-            var fresh = await Trees.TestAssembly.CalculatorAsync().DecompileAsync(DecompilationLanguage.CSharp);
+            var calculator = await Trees.TestAssembly.CalculatorAsync();
+            var fresh = await calculator.DecompileAsync(DecompilationLanguage.CSharp);
             var found = new int?[64];
             Parallel.For(0, found.Length, i => found[i] = Documents.FindLine(fresh, anchors[i % anchors.Length]));
 
@@ -108,12 +112,14 @@ public sealed class AnchorTests
     public async Task A_path_rebuilt_from_its_segments_names_the_same_node()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var path = (await assembly.CalculatorAsync().GetChildAsync("Add(T) : void")).Path;
+        var calculator = await assembly.CalculatorAsync();
+        var add = await calculator.GetChildAsync("Add(T) : void");
+        var path = add.Path;
 
         var rebuilt = NodePath.From(path.FilePath, path.Steps.ToList());
 
         Assert.Equal(path, rebuilt);
-        Assert.Same(await assembly.CalculatorAsync().GetChildAsync("Add(T) : void"), await list.FindNodeAsync(rebuilt));
+        Assert.Same(await calculator.GetChildAsync("Add(T) : void"), await list.FindNodeAsync(rebuilt));
     }
 
     private sealed class CaseInsensitivePathsFactAttribute : FactAttribute

@@ -10,7 +10,9 @@ public sealed class ReferencedTypesTests
     private static async Task<BrowseNode> UsedListAsync(LoadedAssembly assembly)
     {
         var used = new List<BrowseNode>();
-        foreach (var reference in await assembly.ReadRootAsync().GetChildAsync("References").ListChildrenAsync())
+        var root = await assembly.ReadRootAsync();
+        var references = await root.GetChildAsync("References");
+        foreach (var reference in await references.ListChildrenAsync())
         {
             var children = await reference.ListChildrenAsync();
             foreach (var types in children.Where(c => c.Subject is NodeSubject.ReferencedTypes))
@@ -41,8 +43,10 @@ public sealed class ReferencedTypesTests
 
         Assert.IsType<NodeSubject.TypeReference>(list.Subject);
         Assert.Equal("System.Collections.Generic.List<>", list.FullName);
-        Assert.Equal(MemberShape.Method, Assert.IsType<NodeSubject.MemberReference>((await list.GetChildAsync("Add(T) : void")).Subject).Value.Shape);
-        Assert.IsType<NodeSubject.TypeReference>((await list.GetChildAsync("Enumerator")).Subject);
+        var add = await list.GetChildAsync("Add(T) : void");
+        Assert.Equal(MemberShape.Method, Assert.IsType<NodeSubject.MemberReference>(add.Subject).Value.Shape);
+        var enumerator = await list.GetChildAsync("Enumerator");
+        Assert.IsType<NodeSubject.TypeReference>(enumerator.Subject);
     }
 
     [Fact]

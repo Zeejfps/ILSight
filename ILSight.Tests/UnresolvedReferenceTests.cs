@@ -27,7 +27,8 @@ public sealed class UnresolvedReferenceTests : IDisposable
 
     private static async Task<BrowseNode> BaseTypesAsync(LoadedAssembly assembly)
     {
-        return await assembly.ReadRootAsync().GetChildAsync("ILSight.Tests", nameof(UnresolvedReferenceTests), nameof(Detached), "Base Types");
+        var root = await assembly.ReadRootAsync();
+        return await root.GetChildAsync("ILSight.Tests", nameof(UnresolvedReferenceTests), nameof(Detached), "Base Types");
     }
 
     [Fact]
@@ -35,7 +36,8 @@ public sealed class UnresolvedReferenceTests : IDisposable
     {
         var (list, assembly) = OpenAlone();
 
-        var core = await assembly.ReadRootAsync().GetChildAsync("References", Core);
+        var root = await assembly.ReadRootAsync();
+        var core = await root.GetChildAsync("References", Core);
 
         Assert.IsType<NodeSubject.ReferencedTypes>(Assert.Single(await core.ListChildrenAsync()).Subject);
         Assert.Null(await list.FindNodeAsync(core.Destination));
@@ -65,7 +67,8 @@ public sealed class UnresolvedReferenceTests : IDisposable
     {
         var (list, assembly) = OpenAlone();
 
-        var used = await assembly.ReadRootAsync().GetChildAsync("References", Core, "Referenced types", nameof(GridSchema));
+        var root = await assembly.ReadRootAsync();
+        var used = await root.GetChildAsync("References", Core, "Referenced types", nameof(GridSchema));
 
         Assert.IsType<NodeSubject.TypeReference>(used.Subject);
         Assert.Equal(typeof(GridSchema).FullName, used.FullName);

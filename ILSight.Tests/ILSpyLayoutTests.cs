@@ -20,7 +20,9 @@ public sealed class ILSpyLayoutTests
     {
         var assembly = Trees.TestAssembly;
 
-        var document = await assembly.CalculatorAsync().GetChildAsync("Add(T) : void").DecompileAsync(DecompilationLanguage.CSharp);
+        var calculator = await assembly.CalculatorAsync();
+        var add = await calculator.GetChildAsync("Add(T) : void");
+        var document = await add.DecompileAsync(DecompilationLanguage.CSharp);
 
         Assert.Equal("// " + assembly.FullName, document.Lines[0].Text);
         Assert.Equal("// " + Trees.FixturesNamespace + ".Calculator<T>", document.Lines[1].Text);
@@ -34,7 +36,8 @@ public sealed class ILSpyLayoutTests
 
         var members = await calculator.ListChildrenAsync();
         var ctor = Documents.GetText(await members.Single(c => c.Text.StartsWith("Calculator()")).DecompileAsync(DecompilationLanguage.CSharp));
-        var field = Documents.GetText(await calculator.GetChildAsync("_items : List<T>").DecompileAsync(DecompilationLanguage.CSharp));
+        var items = await calculator.GetChildAsync("_items : List<T>");
+        var field = Documents.GetText(await items.DecompileAsync(DecompilationLanguage.CSharp));
 
         Assert.Contains("_items = new List<T>()", ctor);
         Assert.Contains("public Calculator()", ctor);

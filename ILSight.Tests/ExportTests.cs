@@ -23,7 +23,8 @@ public sealed class ExportTests : IDisposable
         var calculator = await Trees.TestAssembly.CalculatorAsync();
         var path = _temp.PathOf("Calculator.cs");
 
-        Assert.IsType<TypeSystemWork<string>.Done>((await CodeFiles.SaveAsync(TestSession.Shared, calculator, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, path)).GetValue());
+        var saved = await CodeFiles.SaveAsync(TestSession.Shared, calculator, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, path);
+        Assert.IsType<TypeSystemWork<string>.Done>(saved.GetValue());
 
         var shown = Documents.GetText(await Trees.CalculatorDocumentAsync(DecompilationLanguage.CSharp));
         Assert.Equal(shown, await File.ReadAllTextAsync(path));
@@ -35,7 +36,8 @@ public sealed class ExportTests : IDisposable
         var fixtures = await Trees.TestAssembly.FixturesAsync();
         var path = _temp.PathOf("Fixtures.cs");
 
-        Assert.IsType<TypeSystemWork<string>.Done>((await CodeFiles.SaveAsync(TestSession.Shared, fixtures, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, path)).GetValue());
+        var saved = await CodeFiles.SaveAsync(TestSession.Shared, fixtures, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, path);
+        Assert.IsType<TypeSystemWork<string>.Done>(saved.GetValue());
 
         var code = await File.ReadAllTextAsync(path);
         Assert.Contains("public class Calculator<T>", code);
@@ -47,7 +49,8 @@ public sealed class ExportTests : IDisposable
     {
         var path = _temp.PathOf("Fixtures.il");
 
-        Assert.IsType<TypeSystemWork<string>.Done>((await CodeFiles.SaveAsync(TestSession.Shared, await Trees.TestAssembly.FixturesAsync(), DecompilationLanguage.ILWithCSharp, DecompilerOptions.Default, EnglishNotes.Instance, path)).GetValue());
+        var saved = await CodeFiles.SaveAsync(TestSession.Shared, await Trees.TestAssembly.FixturesAsync(), DecompilationLanguage.ILWithCSharp, DecompilerOptions.Default, EnglishNotes.Instance, path);
+        Assert.IsType<TypeSystemWork<string>.Done>(saved.GetValue());
 
         var code = await File.ReadAllTextAsync(path);
         Assert.Contains("// double grown = Radius;", code);
@@ -59,7 +62,8 @@ public sealed class ExportTests : IDisposable
     {
         var path = _temp.PathOf("Tests.il");
 
-        Assert.IsType<TypeSystemWork<string>.Done>((await CodeFiles.SaveAsync(TestSession.Shared, await Trees.TestAssembly.ReadRootAsync(), DecompilationLanguage.IL, DecompilerOptions.Default, EnglishNotes.Instance, path)).GetValue());
+        var saved = await CodeFiles.SaveAsync(TestSession.Shared, await Trees.TestAssembly.ReadRootAsync(), DecompilationLanguage.IL, DecompilerOptions.Default, EnglishNotes.Instance, path);
+        Assert.IsType<TypeSystemWork<string>.Done>(saved.GetValue());
 
         var code = await File.ReadAllTextAsync(path);
         Assert.Contains(".assembly ILSight.Tests", code);
@@ -72,7 +76,8 @@ public sealed class ExportTests : IDisposable
         var root = await Trees.TestAssembly.ReadRootAsync();
         var path = _temp.PathOf("Tests.cs");
 
-        Assert.IsType<TypeSystemWork<string>.Done>((await CodeFiles.SaveAsync(TestSession.Shared, root, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, path)).GetValue());
+        var save = await CodeFiles.SaveAsync(TestSession.Shared, root, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, path);
+        Assert.IsType<TypeSystemWork<string>.Done>(save.GetValue());
 
         var shown = Documents.GetText(await root.DecompileAsync(DecompilationLanguage.CSharp));
         var saved = await File.ReadAllTextAsync(path);
@@ -88,7 +93,8 @@ public sealed class ExportTests : IDisposable
         var fixtures = await Trees.TestAssembly.FixturesAsync();
         var path = _temp.PathOf("Fixtures.cs");
 
-        Assert.IsType<TypeSystemWork<string>.Done>((await CodeFiles.SaveAsync(TestSession.Shared, fixtures, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, path)).GetValue());
+        var save = await CodeFiles.SaveAsync(TestSession.Shared, fixtures, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, path);
+        Assert.IsType<TypeSystemWork<string>.Done>(save.GetValue());
 
         var shown = Documents.GetText(await fixtures.DecompileAsync(DecompilationLanguage.CSharp));
         var saved = await File.ReadAllTextAsync(path);
@@ -104,7 +110,8 @@ public sealed class ExportTests : IDisposable
 
         Assert.Equal("Calculator.cs", calculator.SuggestCodeFileName(DecompilationLanguage.CSharp));
         Assert.Equal("Calculator.il", calculator.SuggestCodeFileName(DecompilationLanguage.IL));
-        Assert.Equal("ILSight.Tests.cs", (await Trees.TestAssembly.ReadRootAsync()).SuggestCodeFileName(DecompilationLanguage.CSharp));
+        var root = await Trees.TestAssembly.ReadRootAsync();
+        Assert.Equal("ILSight.Tests.cs", root.SuggestCodeFileName(DecompilationLanguage.CSharp));
         Assert.Equal("ILSight.Tests.pdb", Trees.TestAssembly.PdbFileName);
     }
 
@@ -113,7 +120,8 @@ public sealed class ExportTests : IDisposable
     {
         var projectPath = _temp.PathOf(Path.Combine("Project", "Tests.csproj"));
 
-        var exported = await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath).GetValueAsync();
+        var written = await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath);
+        var exported = written.GetValue().GetValue();
 
         Assert.Equal(projectPath, exported.ProjectPath);
         Assert.Contains("<Project", await File.ReadAllTextAsync(projectPath));
@@ -128,7 +136,8 @@ public sealed class ExportTests : IDisposable
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.OpenModule(Trees.SampleAppPath);
         var projectPath = _temp.PathOf(Path.Combine("Sample", "SampleApp.csproj"));
 
-        await AssemblyExport.ExportProjectAsync(assembly, DecompilerOptions.Default, projectPath).GetValueAsync();
+        var written = await AssemblyExport.ExportProjectAsync(assembly, DecompilerOptions.Default, projectPath);
+        written.GetValue().GetValue();
 
         var folder = Path.GetDirectoryName(projectPath) ?? throw new InvalidOperationException($"The project's path names no folder: '{projectPath}'.");
         var project = await File.ReadAllTextAsync(projectPath);
@@ -146,7 +155,8 @@ public sealed class ExportTests : IDisposable
     {
         var solutionPath = _temp.PathOf("All.sln");
 
-        var exported = await AssemblyExport.ExportSolutionAsync(ExportNames.NameProjects([Trees.TestAssembly]), DecompilerOptions.Default, solutionPath).GetValueAsync();
+        var written = await AssemblyExport.ExportSolutionAsync(ExportNames.NameProjects([Trees.TestAssembly]), DecompilerOptions.Default, solutionPath);
+        var exported = written.GetValue().GetValue();
 
         var project = Assert.Single(exported);
         Assert.Equal(_temp.PathOf(Path.Combine("ILSight.Tests", "ILSight.Tests.csproj")), project.ProjectPath);
@@ -176,7 +186,8 @@ public sealed class ExportTests : IDisposable
         var progress = new RecordedProgress();
         var projectPath = _temp.PathOf(Path.Combine("Project", "Tests.csproj"));
 
-        await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, progress: progress).GetValueAsync();
+        var written = await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, progress: progress);
+        written.GetValue().GetValue();
 
         var reports = progress.Reports;
         Assert.Equal(new ExportProgress { Name = "ILSight.Tests", Part = 1, Parts = 1, Fraction = 0f }, reports[0]);
@@ -189,7 +200,8 @@ public sealed class ExportTests : IDisposable
         var progress = new RecordedProgress();
         var solutionPath = _temp.PathOf("All.sln");
 
-        await AssemblyExport.ExportSolutionAsync(ExportNames.NameProjects([Trees.TestAssembly, Trees.TestAssembly]), DecompilerOptions.Default, solutionPath, progress: progress).GetValueAsync();
+        var written = await AssemblyExport.ExportSolutionAsync(ExportNames.NameProjects([Trees.TestAssembly, Trees.TestAssembly]), DecompilerOptions.Default, solutionPath, progress: progress);
+        written.GetValue().GetValue();
 
         Assert.Contains(progress.Reports, r => r is { Part: 1, Parts: 2 });
         Assert.Contains(progress.Reports, r => r is { Part: 2, Parts: 2, Fraction: 0.5f });
@@ -202,7 +214,8 @@ public sealed class ExportTests : IDisposable
         var solutionPath = _temp.PathOf("All.sln");
         SolutionProject[] projects = [new SolutionProject { Assembly = Trees.TestAssembly, Name = "Renamed" }];
 
-        var exported = await AssemblyExport.ExportSolutionAsync(projects, DecompilerOptions.Default, solutionPath).GetValueAsync();
+        var written = await AssemblyExport.ExportSolutionAsync(projects, DecompilerOptions.Default, solutionPath);
+        var exported = written.GetValue().GetValue();
 
         var project = Assert.Single(exported);
         Assert.Equal(_temp.PathOf(Path.Combine("Renamed", "Renamed.csproj")), project.ProjectPath);
@@ -263,7 +276,7 @@ public sealed class ExportTests : IDisposable
         await cancel.CancelAsync();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, cancellationToken: cancel.Token).GetValueAsync());
+            AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, cancellationToken: cancel.Token));
     }
 
     private static readonly Guid EmbeddedSource = new("0E8A571B-6926-466E-B4AD-8AB04611F5FE");
@@ -285,11 +298,12 @@ public sealed class ExportTests : IDisposable
     {
         var projectPath = _temp.PathOf(Path.Combine("Project", "Tests.csproj"));
 
-        var exported = await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, new ProjectExtras
+        var written = await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, new ProjectExtras
         {
             Pdb = true,
             EmbedSourcesInPdb = embed,
-        }).GetValueAsync();
+        });
+        var exported = written.GetValue().GetValue();
 
         var pdb = Assert.IsType<ProjectPdb.Written>(exported.Pdb);
         Assert.Equal(_temp.PathOf(Path.Combine("Project", "ILSight.Tests.pdb")), pdb.Path);
@@ -302,10 +316,11 @@ public sealed class ExportTests : IDisposable
         var key = _temp.Write("keys/signing.snk", [1, 2, 3]);
         var projectPath = _temp.PathOf(Path.Combine("Project", "Tests.csproj"));
 
-        await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, new ProjectExtras
+        var written = await AssemblyExport.ExportProjectAsync(Trees.TestAssembly, DecompilerOptions.Default, projectPath, new ProjectExtras
         {
             StrongNameKeyFile = key,
-        }).GetValueAsync();
+        });
+        written.GetValue().GetValue();
 
         Assert.True(File.Exists(_temp.PathOf(Path.Combine("Project", "signing.snk"))));
         Assert.Contains("signing.snk", await File.ReadAllTextAsync(projectPath));

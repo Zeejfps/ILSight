@@ -83,7 +83,8 @@ public sealed class CodeTooltipTests
     public async Task The_signature_is_the_declaration_highlighted_as_code_with_its_names_linked()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var add = await assembly.CalculatorAsync().GetChildAsync("Add(T) : void");
+        var calculator = await assembly.CalculatorAsync();
+        var add = await calculator.GetChildAsync("Add(T) : void");
 
         var signature = (await TooltipOfAsync(list, add)).Signature.Line;
 
@@ -98,9 +99,11 @@ public sealed class CodeTooltipTests
     {
         var (list, assembly) = Trees.OpenTestAssembly();
 
-        var mode = await TooltipOfAsync(list, await assembly.CalculatorAsync().GetChildAsync("Mode"));
+        var calculatorNode = await assembly.CalculatorAsync();
+        var mode = await TooltipOfAsync(list, await calculatorNode.GetChildAsync("Mode"));
         var calculator = await TooltipOfAsync(list, await assembly.CalculatorAsync());
-        var point = await TooltipOfAsync(list, await assembly.FixturesAsync().GetChildAsync("Point"));
+        var fixtures = await assembly.FixturesAsync();
+        var point = await TooltipOfAsync(list, await fixtures.GetChildAsync("Point"));
 
         Assert.Equal("public enum Calculator<T>.Mode", mode.Signature.Line.Text);
         Assert.Equal(new CodeContainer
@@ -122,7 +125,8 @@ public sealed class CodeTooltipTests
     public async Task Each_type_parameter_constraint_is_a_where_clause_of_its_own()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var pick = await assembly.FixturesAsync().GetChildAsync("Circle", "Pick<TKey,TValue>(TKey, TValue) : TKey");
+        var fixtures = await assembly.FixturesAsync();
+        var pick = await fixtures.GetChildAsync("Circle", "Pick<TKey,TValue>(TKey, TValue) : TKey");
 
         var signature = (await TooltipOfAsync(list, pick)).Signature;
         var constraints = signature.Constraints.Select(c => c.Text.Trim());
@@ -136,7 +140,8 @@ public sealed class CodeTooltipTests
     public async Task A_constrained_type_parameter_is_colored_as_a_type_in_the_tooltip_and_the_code()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var pick = await assembly.FixturesAsync().GetChildAsync("Circle", "Pick<TKey,TValue>(TKey, TValue) : TKey");
+        var fixtures = await assembly.FixturesAsync();
+        var pick = await fixtures.GetChildAsync("Circle", "Pick<TKey,TValue>(TKey, TValue) : TKey");
 
         var constraint = (await TooltipOfAsync(list, pick)).Signature.Constraints[1];
         var code = await pick.DecompileAsync(DecompilationLanguage.CSharp);
@@ -151,8 +156,9 @@ public sealed class CodeTooltipTests
     {
         var (list, assembly) = Trees.OpenTestAssembly();
 
-        var x = await TooltipOfAsync(list, await assembly.FixturesAsync().GetChildAsync("Point", "X : int"));
-        var width = await TooltipOfAsync(list, await assembly.FixturesAsync().GetChildAsync("Size", "Width : int"));
+        var fixtures = await assembly.FixturesAsync();
+        var x = await TooltipOfAsync(list, await fixtures.GetChildAsync("Point", "X : int"));
+        var width = await TooltipOfAsync(list, await fixtures.GetChildAsync("Size", "Width : int"));
 
         Assert.Equal("record", x.Container?.Keyword);
         Assert.Equal("struct", width.Container?.Keyword);
@@ -162,7 +168,8 @@ public sealed class CodeTooltipTests
     public async Task The_signature_marks_where_each_of_its_parameters_starts()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var tryGet = await assembly.CalculatorAsync().GetChildAsync("TryGet(int, out T?) : bool");
+        var calculator = await assembly.CalculatorAsync();
+        var tryGet = await calculator.GetChildAsync("TryGet(int, out T?) : bool");
 
         var signature = (await TooltipOfAsync(list, tryGet)).Signature;
         var text = signature.Line.Text;
@@ -195,7 +202,8 @@ public sealed class CodeTooltipTests
     public async Task Remarks_keep_their_paragraphs_list_items_and_code_blocks()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var grow = await assembly.FixturesAsync().GetChildAsync("Circle", "Grow(double, int) : double");
+        var fixtures = await assembly.FixturesAsync();
+        var grow = await fixtures.GetChildAsync("Circle", "Grow(double, int) : double");
 
         var remarks = Section(await TooltipOfAsync(list, grow), DocSectionKind.Remarks).Blocks;
         var bullets = Assert.IsType<DocBlock.List>(remarks[1]);
@@ -213,7 +221,8 @@ public sealed class CodeTooltipTests
     public async Task A_table_list_keeps_its_header_and_a_numbered_list_its_kind()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var spread = await assembly.FixturesAsync().GetChildAsync("Circle", "Spread() : double");
+        var fixtures = await assembly.FixturesAsync();
+        var spread = await fixtures.GetChildAsync("Circle", "Spread() : double");
 
         var remarks = Section(await TooltipOfAsync(list, spread), DocSectionKind.Remarks).Blocks;
         var table = Assert.IsType<DocBlock.List>(remarks[0]);
@@ -233,7 +242,8 @@ public sealed class CodeTooltipTests
     public async Task Inline_code_keywords_and_links_keep_their_styles()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var grow = await assembly.FixturesAsync().GetChildAsync("Circle", "Grow(double, int) : double");
+        var fixtures = await assembly.FixturesAsync();
+        var grow = await fixtures.GetChildAsync("Circle", "Grow(double, int) : double");
 
         var tooltip = await TooltipOfAsync(list, grow);
         var summary = Section(tooltip, DocSectionKind.Summary).Blocks[0];
@@ -251,7 +261,8 @@ public sealed class CodeTooltipTests
     public async Task An_exception_is_labelled_by_its_type_and_says_when_it_is_thrown()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var grow = await assembly.FixturesAsync().GetChildAsync("Circle", "Grow(double, int) : double");
+        var fixtures = await assembly.FixturesAsync();
+        var grow = await fixtures.GetChildAsync("Circle", "Grow(double, int) : double");
 
         var exception = Section(await TooltipOfAsync(list, grow), DocSectionKind.Exception);
 
@@ -265,7 +276,8 @@ public sealed class CodeTooltipTests
     public async Task Inheritdoc_takes_the_documentation_of_the_member_it_implements()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var area = await assembly.FixturesAsync().GetChildAsync("Circle", "Area : double");
+        var fixtures = await assembly.FixturesAsync();
+        var area = await fixtures.GetChildAsync("Circle", "Area : double");
 
         var summary = Section(await TooltipOfAsync(list, area), DocSectionKind.Summary);
 
@@ -287,7 +299,9 @@ public sealed class CodeTooltipTests
     public async Task A_reference_into_another_assembly_is_described_without_listing_it()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var document = await assembly.CalculatorAsync().GetChildAsync("Add(T) : void").DecompileAsync(DecompilationLanguage.CSharp);
+        var calculator = await assembly.CalculatorAsync();
+        var add = await calculator.GetChildAsync("Add(T) : void");
+        var document = await add.DecompileAsync(DecompilationLanguage.CSharp);
         var call = document.Lines[document.LineContaining("_items.Add(item)")];
 
         var tooltip = (await AssemblyListing.DescribeReferenceAsync(list, Assert.IsType<CodeReference.Entity>(call.SpanAt("Add").Reference), CancellationToken.None))
@@ -309,9 +323,13 @@ public sealed class CodeTooltipTests
     public async Task Locals_and_assemblies_have_no_tooltip()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var document = await assembly.FixturesAsync().GetChildAsync("Circle", "Grow(double, int) : double").DecompileAsync(DecompilationLanguage.CSharp);
+        var fixtures = await assembly.FixturesAsync();
+        var grow = await fixtures.GetChildAsync("Circle", "Grow(double, int) : double");
+        var document = await grow.DecompileAsync(DecompilationLanguage.CSharp);
         var local = document.Lines[document.LineContaining("double grown = Radius;")].SpanAt("grown").Reference;
-        var references = await assembly.ReadRootAsync().GetChildAsync("References").DecompileAsync(DecompilationLanguage.CSharp);
+        var root = await assembly.ReadRootAsync();
+        var referencesNode = await root.GetChildAsync("References");
+        var references = await referencesNode.DecompileAsync(DecompilationLanguage.CSharp);
         var runtime = references.SpansOf().First(s => s.Text.StartsWith("System.Runtime, Version=")).Span.Reference;
 
         Assert.IsType<CodeReference.Local>(local);

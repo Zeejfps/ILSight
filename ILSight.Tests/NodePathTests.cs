@@ -8,7 +8,8 @@ public sealed class NodePathTests
     public async Task A_listed_lookup_finds_a_place_only_in_an_assembly_the_list_holds_and_lists_none()
     {
         var (_, assembly) = Trees.OpenTestAssembly();
-        var add = await assembly.CalculatorAsync().GetChildAsync("Add(T) : void");
+        var calculator = await assembly.CalculatorAsync();
+        var add = await calculator.GetChildAsync("Add(T) : void");
         var empty = new AssemblyList { Runtime = TestRuntime.Installed };
 
         Assert.Null(await empty.FindListedNodeAsync(add.Path));
@@ -22,7 +23,8 @@ public sealed class NodePathTests
     public async Task A_path_finds_the_same_place_in_a_reopened_assembly()
     {
         var (_, assembly) = Trees.OpenTestAssembly();
-        var add = await assembly.CalculatorAsync().GetChildAsync("Add(T) : void");
+        var calculator = await assembly.CalculatorAsync();
+        var add = await calculator.GetChildAsync("Add(T) : void");
         var (fresh, _) = Trees.OpenTestAssembly();
 
         var found = await fresh.FindNodeAsync(add.Path);
@@ -40,10 +42,16 @@ public sealed class NodePathTests
         var (_, a) = Trees.OpenTestAssembly();
         var (_, b) = Trees.OpenTestAssembly();
 
-        Assert.Equal((await a.CalculatorAsync()).Path, (await b.CalculatorAsync()).Path);
-        Assert.Equal((await a.CalculatorAsync()).Path.GetHashCode(), (await b.CalculatorAsync()).Path.GetHashCode());
-        Assert.NotEqual((await a.CalculatorAsync()).Path, (await a.FixturesAsync()).Path);
-        Assert.Equal((await a.ReadRootAsync()).Path, (await b.ReadRootAsync()).Path);
+        var aCalculator = await a.CalculatorAsync();
+        var bCalculator = await b.CalculatorAsync();
+        var aFixtures = await a.FixturesAsync();
+        var aRoot = await a.ReadRootAsync();
+        var bRoot = await b.ReadRootAsync();
+
+        Assert.Equal(aCalculator.Path, bCalculator.Path);
+        Assert.Equal(aCalculator.Path.GetHashCode(), bCalculator.Path.GetHashCode());
+        Assert.NotEqual(aCalculator.Path, aFixtures.Path);
+        Assert.Equal(aRoot.Path, bRoot.Path);
     }
 
     [Fact]
@@ -51,7 +59,9 @@ public sealed class NodePathTests
     {
         using var temp = new TempDir();
         var copy = temp.Copy(Trees.TestAssemblyPath, "fixture.dll");
-        var path = (await new AssemblyList { Runtime = TestRuntime.Installed }.Open(copy).CalculatorAsync()).Path;
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(copy);
+        var calculator = await assembly.CalculatorAsync();
+        var path = calculator.Path;
         File.Delete(copy);
 
         Assert.Null(await new AssemblyList { Runtime = TestRuntime.Installed }.FindNodeAsync(path));

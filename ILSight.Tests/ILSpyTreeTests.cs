@@ -31,7 +31,9 @@ public sealed class ILSpyTreeTests
     {
         var (list, assembly) = Trees.OpenTestAssembly();
 
-        foreach (var node in (await assembly.CalculatorAsync().ListChildrenAsync()).Prepend(await assembly.CalculatorAsync()))
+        var calculator = await assembly.CalculatorAsync();
+        var children = await calculator.ListChildrenAsync();
+        foreach (var node in children.Prepend(await assembly.CalculatorAsync()))
         {
             var path = ILSpyTree.PathOf(node);
             if (path is null)
@@ -95,7 +97,8 @@ public sealed class ILSpyTreeTests
     public async Task A_token_that_names_an_entity_of_another_name_finds_nothing()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var definedToken = (await assembly.CalculatorAsync()).Token;
+        var calculator = await assembly.CalculatorAsync();
+        var definedToken = calculator.Token;
         Assert.NotNull(definedToken);
         var token = (uint)definedToken.Value;
 

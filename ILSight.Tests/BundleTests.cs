@@ -30,11 +30,13 @@ public sealed class BundleTests
         var bundle = list.Open(bundlePath);
 
         Assert.IsType<LoadedPackage>(bundle);
-        Assert.True(Assert.IsType<NodeSubject.Package>((await bundle.ReadRootAsync()).Subject).Value.Package.Package.IsBundle);
-        Assert.Equal(BundleName, (await bundle.ReadRootAsync()).Text);
+        var bundleRoot = await bundle.ReadRootAsync();
+        Assert.True(Assert.IsType<NodeSubject.Package>(bundleRoot.Subject).Value.Package.Package.IsBundle);
+        Assert.Equal(BundleName, bundleRoot.Text);
+        var children = await bundleRoot.ListChildrenAsync();
         Assert.Equal([typeof(NodeSubject.PackageFile), typeof(NodeSubject.Module), typeof(NodeSubject.Module)],
-            (await bundle.ReadRootAsync().ListChildrenAsync()).Select(static c => c.Subject.GetType()));
-        Assert.Equal("App.deps.json", (await bundle.ReadRootAsync().ListChildrenAsync())[0].Text);
+            children.Select(static c => c.Subject.GetType()));
+        Assert.Equal("App.deps.json", (await bundleRoot.ListChildrenAsync())[0].Text);
         Assert.Equal(["ILSight.Core", TestAssemblyName], list.Assemblies.Select(a => a.Name));
     }
 
@@ -47,8 +49,11 @@ public sealed class BundleTests
         var bundle = list.Open(bundlePath);
         var assembly = list.Assemblies.Single(a => a.Name == TestAssemblyName);
 
-        var calculator = await assembly.CalculatorAsync().DecompileAsync(DecompilationLanguage.CSharp);
-        var core = await list.FindNodeAsync((await assembly.ReadRootAsync().GetChildAsync("References", "ILSight.Core")).Destination);
+        var calculatorNode = await assembly.CalculatorAsync();
+        var calculator = await calculatorNode.DecompileAsync(DecompilationLanguage.CSharp);
+        var root = await assembly.ReadRootAsync();
+        var coreNode = await root.GetChildAsync("References", "ILSight.Core");
+        var core = await list.FindNodeAsync(coreNode.Destination);
 
         Assert.Null(calculator.Error);
         Assert.Contains("class Calculator<T>", Documents.GetText(calculator));
@@ -62,7 +67,8 @@ public sealed class BundleTests
         var bundlePath = WriteBundle(temp);
         var bundle = new AssemblyList { Runtime = TestRuntime.Installed }.Open(bundlePath);
 
-        var deps = await bundle.ReadRootAsync().GetChildAsync("App.deps.json");
+        var bundleRoot = await bundle.ReadRootAsync();
+        var deps = await bundleRoot.GetChildAsync("App.deps.json");
 
         Assert.Equal("{}", Encoding.UTF8.GetString(BrowseNodes.ReadResource(deps)));
     }
@@ -75,7 +81,8 @@ public sealed class BundleTests
         var opened = new AssemblyList { Runtime = TestRuntime.Installed }.Open(path);
         var bundle = Assert.IsType<LoadedPackage>(opened);
 
-        var broken = await bundle.ReadRootAsync().GetChildAsync("Broken.dll");
+        var bundleRoot = await bundle.ReadRootAsync();
+        var broken = await bundleRoot.GetChildAsync("Broken.dll");
 
         Assert.IsType<NodeSubject.PackageFile>(broken.Subject);
         var thrown = Assert.Throws<BundleEntryException>(() => BrowseNodes.ReadResource(broken));

@@ -23,7 +23,8 @@ public sealed class WebCilTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var opened = list.Open(path);
         var module = Assert.IsType<LoadedModule>(opened);
-        var part = await module.ReadRootAsync().GetChildAsync("LargeApp", "Part159");
+        var root = await module.ReadRootAsync();
+        var part = await root.GetChildAsync("LargeApp", "Part159");
         var whole = await File.ReadAllBytesAsync(path);
         var query = SearchQueries.ParseQuery("Describe");
 
@@ -55,7 +56,9 @@ public sealed class WebCilTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var opened = list.Open(path);
         var module = Assert.IsType<LoadedModule>(opened);
-        await module.ReadRootAsync().GetChildAsync("LargeApp", "Part000").DecompileAsync(DecompilationLanguage.CSharp);
+        var root = await module.ReadRootAsync();
+        var part000 = await root.GetChildAsync("LargeApp", "Part000");
+        await part000.DecompileAsync(DecompilationLanguage.CSharp);
 
         var removed = list.Close(module);
         LoadedAssemblies.Release(removed);
@@ -82,7 +85,10 @@ public sealed class WebCilTests
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
 
-        var counter = await assembly.ReadRootAsync().GetChildAsync("SampleApp").GetChildAsync("Counter").DecompileAsync(DecompilationLanguage.CSharp);
+        var root = await assembly.ReadRootAsync();
+        var sampleApp = await root.GetChildAsync("SampleApp");
+        var counterNode = await sampleApp.GetChildAsync("Counter");
+        var counter = await counterNode.DecompileAsync(DecompilationLanguage.CSharp);
 
         Assert.IsNotType<FailedAssembly>(assembly);
         Assert.IsNotType<LoadedPackage>(assembly);
@@ -96,7 +102,9 @@ public sealed class WebCilTests
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
 
-        var metadata = await assembly.ReadRootAsync().GetChildAsync("Metadata").ListChildrenAsync();
+        var root = await assembly.ReadRootAsync();
+        var metadataNode = await root.GetChildAsync("Metadata");
+        var metadata = await metadataNode.ListChildrenAsync();
 
         Assert.DoesNotContain(metadata, static c => c.Is(MetadataGridRole.Header));
         Assert.Contains(metadata, static c => c.Subject is NodeSubject.MetadataTables);
@@ -107,7 +115,8 @@ public sealed class WebCilTests
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
 
-        var tables = await assembly.ReadRootAsync().GetChildAsync("Metadata", "Tables");
+        var root = await assembly.ReadRootAsync();
+        var tables = await root.GetChildAsync("Metadata", "Tables");
         var grid = Assert.IsType<NodeContent.Table>(await tables.TableAsync("TypeDef").ReadContentAsync()).Grid;
 
         Assert.IsType<MetadataGrid.Paged>(grid);
@@ -150,7 +159,8 @@ public sealed class WebCilTests
     public async Task A_webcil_modules_rows_past_the_first_page_show_once_their_page_is_read()
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
-        var strings = await assembly.ReadRootAsync().GetChildAsync("Metadata", "String Heap (100)");
+        var root = await assembly.ReadRootAsync();
+        var strings = await root.GetChildAsync("Metadata", "String Heap (100)");
         var grid = Assert.IsType<MetadataGrid.Paged>(Assert.IsType<NodeContent.Table>(await ReadFirstPageAsync(strings)).Grid);
         var last = grid.RowCount - 1;
         var value = grid.Column("Offset");
@@ -171,7 +181,9 @@ public sealed class WebCilTests
     public async Task A_webcil_modules_grid_is_made_with_the_pages_of_the_rows_its_first_show_needs_read()
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilLargePath);
-        var methods = await (await assembly.ReadRootAsync().GetChildAsync("Metadata", "Tables")).TableAsync("MethodDef");
+        var root = await assembly.ReadRootAsync();
+        var tables = await root.GetChildAsync("Metadata", "Tables");
+        var methods = await tables.TableAsync("MethodDef");
 
         var content = await NodeContentLoader.ReadContentAsync(TestSession.Shared, methods, DecompilationLanguage.CSharp, DecompilerOptions.Default, EnglishNotes.Instance, 150)
             .GetValueAsync();
@@ -184,7 +196,8 @@ public sealed class WebCilTests
     public async Task Sorting_a_webcil_modules_grid_reads_every_row_through_its_file()
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
-        var strings = await assembly.ReadRootAsync().GetChildAsync("Metadata", "String Heap (100)");
+        var root = await assembly.ReadRootAsync();
+        var strings = await root.GetChildAsync("Metadata", "String Heap (100)");
         var grid = Assert.IsType<NodeContent.Table>(await ReadFirstPageAsync(strings)).Grid;
 
         var order = MetadataGrids.OrderRows(grid, grid.Column("Value"), descending: false);
@@ -206,7 +219,8 @@ public sealed class WebCilTests
     {
         var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(Trees.WebCilSamplePath);
 
-        var summary = Documents.GetText(await assembly.ReadRootAsync().DecompileAsync(DecompilationLanguage.CSharp));
+        var root = await assembly.ReadRootAsync();
+        var summary = Documents.GetText(await root.DecompileAsync(DecompilationLanguage.CSharp));
 
         Assert.Contains(Trees.WebCilSamplePath, summary);
         Assert.DoesNotContain("Architecture:", summary);

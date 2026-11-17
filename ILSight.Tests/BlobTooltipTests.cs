@@ -7,7 +7,8 @@ public sealed class BlobTooltipTests
 {
     private static async Task<MetadataGrid> GridAsync(string table)
     {
-        var tables = await Trees.TestAssembly.ReadRootAsync().GetChildAsync("Metadata", "Tables");
+        var root = await Trees.TestAssembly.ReadRootAsync();
+        var tables = await root.GetChildAsync("Metadata", "Tables");
         var node = await tables.TableAsync(table);
         return Assert.IsType<NodeContent.Table>(await node.ReadContentAsync()).Grid;
     }

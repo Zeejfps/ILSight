@@ -98,7 +98,8 @@ public sealed class DebugSymbolsTests
         var reader = new DebugSymbolsReader(symbols, new CallbackFailure());
         Assert.True(reader.TryGetName(CircleMethod(nameof(Circle.Grow)), 1, out var name));
         Assert.Equal("step", name);
-        Assert.Contains(await after.ReadRootAsync().ListChildrenAsync(), c => c.Text == "Debug Metadata (From portable PDB)");
+        var afterRoot = await after.ReadRootAsync();
+        Assert.Contains(await afterRoot.ListChildrenAsync(), c => c.Text == "Debug Metadata (From portable PDB)");
     }
 
     [Fact]

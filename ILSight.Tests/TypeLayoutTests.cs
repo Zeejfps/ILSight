@@ -11,7 +11,9 @@ public sealed class TypeLayoutTests
 
     private static async Task<CodeReference.Entity> ZooAsync(string type)
     {
-        return (await Trees.TestAssembly.ReadRootAsync().GetChildAsync(ZooNamespace, type)).Definition;
+        var root = await Trees.TestAssembly.ReadRootAsync();
+        var node = await root.GetChildAsync(ZooNamespace, type);
+        return node.Definition;
     }
 
     private static readonly SharedRead<ZooTypes> s_zoo = new(ReadZooAsync);

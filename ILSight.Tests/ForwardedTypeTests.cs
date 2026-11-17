@@ -14,7 +14,8 @@ public sealed class ForwardedTypeTests
     {
         var facade = new AssemblyList { Runtime = TestRuntime.Installed }.Open(RuntimeFile("System.Runtime.dll"));
 
-        var generic = await facade.ReadRootAsync().GetChildAsync("System.Collections.Generic");
+        var facadeRoot = await facade.ReadRootAsync();
+        var generic = await facadeRoot.GetChildAsync("System.Collections.Generic");
         var list = await generic.GetChildAsync("IList<>");
         var dictionary = await generic.GetChildAsync("IDictionary<,>");
         var exception = await generic.GetChildAsync("KeyNotFoundException");
@@ -33,7 +34,10 @@ public sealed class ForwardedTypeTests
     {
         var facade = new AssemblyList { Runtime = TestRuntime.Installed }.Open(RuntimeFile("System.Runtime.dll"));
 
-        var labels = (await facade.ReadRootAsync().GetChildAsync("System").ListChildrenAsync()).Select(c => c.Text).ToList();
+        var facadeRoot = await facade.ReadRootAsync();
+        var system = await facadeRoot.GetChildAsync("System");
+        var children = await system.ListChildrenAsync();
+        var labels = children.Select(c => c.Text).ToList();
 
         var sorted = labels
             .OrderBy(l => l.Split('<')[0], NaturalStringComparer.Instance)
@@ -47,7 +51,9 @@ public sealed class ForwardedTypeTests
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var netstandard = list.Open(RuntimeFile("netstandard.dll"));
-        var forwarded = await netstandard.ReadRootAsync().GetChildAsync("System.Collections.Generic").GetChildAsync("List<>");
+        var netstandardRoot = await netstandard.ReadRootAsync();
+        var generic = await netstandardRoot.GetChildAsync("System.Collections.Generic");
+        var forwarded = await generic.GetChildAsync("List<>");
 
         var definition = await list.FindNodeAsync(forwarded.Destination);
 
@@ -63,7 +69,9 @@ public sealed class ForwardedTypeTests
     public async Task A_forwarded_type_reads_as_where_it_is_forwarded_to_with_a_link_to_its_definition()
     {
         var facade = new AssemblyList { Runtime = TestRuntime.Installed }.Open(RuntimeFile("System.Runtime.dll"));
-        var forwarded = await facade.ReadRootAsync().GetChildAsync("System.Collections.Generic").GetChildAsync("IList<>");
+        var facadeRoot = await facade.ReadRootAsync();
+        var generic = await facadeRoot.GetChildAsync("System.Collections.Generic");
+        var forwarded = await generic.GetChildAsync("IList<>");
 
         var document = await forwarded.DecompileAsync(DecompilationLanguage.CSharp);
         var namespaceNode = forwarded.Parent;

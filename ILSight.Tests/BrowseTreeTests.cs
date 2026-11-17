@@ -15,10 +15,12 @@ public sealed class BrowseTreeTests
         var version = typeof(BrowseTreeTests).Assembly.GetName().Version;
         Assert.Equal($"ILSight.Tests ({version}, .NETCoreApp, v10.0)", root.Text);
         Assert.IsType<NodeSubject.Metadata>((await root.ListChildrenAsync())[0].Subject);
-        Assert.IsType<NodeSubject.References>((await root.ListChildrenAsync()).First(c => c.Subject is not NodeSubject.Metadata).Subject);
-        var namespaces = (await root.ListChildrenAsync()).Where(c => c.Subject is NodeSubject.Namespace).Select(c => c.Text).ToArray();
+        var children = await root.ListChildrenAsync();
+        Assert.IsType<NodeSubject.References>(children.First(c => c.Subject is not NodeSubject.Metadata).Subject);
+        var namespaces = children.Where(c => c.Subject is NodeSubject.Namespace).Select(c => c.Text).ToArray();
         Assert.Equal(["-", "ILSight", "ILSight.Tests", "ILSight.Tests.Fixtures"], namespaces);
-        Assert.Contains(await root.GetChildAsync("References").ListChildrenAsync(), r => r.Subject is NodeSubject.AssemblyReference && r.Text == "System.Runtime");
+        var references = await root.GetChildAsync("References");
+        Assert.Contains(await references.ListChildrenAsync(), r => r.Subject is NodeSubject.AssemblyReference && r.Text == "System.Runtime");
     }
 
     [Fact]
@@ -27,6 +29,7 @@ public sealed class BrowseTreeTests
         var assembly = Trees.TestAssembly;
         var fixtures = await assembly.FixturesAsync();
 
+        var children = await fixtures.ListChildrenAsync();
         Assert.Equal(
             [
                 ("Animal", TypeShape.Class), ("Calculator<T>", TypeShape.Class), ("Callback", TypeShape.Delegate), ("Circle", TypeShape.Class),
@@ -34,13 +37,15 @@ public sealed class BrowseTreeTests
                 ("Lion", TypeShape.Class), ("NativeImports", TypeShape.Class), ("Parrot", TypeShape.Class), ("Point", TypeShape.Record),
                 ("Size", TypeShape.Struct), ("Visits", TypeShape.Class),
             ],
-            (await fixtures.ListChildrenAsync()).Select(c => (c.Text, c.TypeShape)));
+            children.Select(c => (c.Text, c.TypeShape)));
         var circle = await fixtures.GetChildAsync("Circle");
         Assert.Equal(NodeAccessibility.Internal, circle.Accessibility);
         Assert.False(circle.IsPublicApi);
-        Assert.False((await circle.GetChildAsync("Area : double")).IsPublicApi);
-        Assert.Equal(NodeAccessibility.Public, (await circle.GetChildAsync("Area : double")).Accessibility);
-        Assert.Equal("ILSight.Tests.Fixtures.Calculator<T>", (await fixtures.GetChildAsync("Calculator<T>")).FullName);
+        var area = await circle.GetChildAsync("Area : double");
+        Assert.False(area.IsPublicApi);
+        Assert.Equal(NodeAccessibility.Public, area.Accessibility);
+        var calculator = await fixtures.GetChildAsync("Calculator<T>");
+        Assert.Equal("ILSight.Tests.Fixtures.Calculator<T>", calculator.FullName);
     }
 
     [Fact]
@@ -48,7 +53,9 @@ public sealed class BrowseTreeTests
     {
         var assembly = Trees.TestAssembly;
 
-        var children = (await assembly.CalculatorAsync().ListChildrenAsync())
+        var calculator = await assembly.CalculatorAsync();
+        var calculatorChildren = await calculator.ListChildrenAsync();
+        var children = calculatorChildren
             .Where(c => !c.IsCompilerGenerated)
             .ToArray();
 
@@ -77,9 +84,11 @@ public sealed class BrowseTreeTests
     {
         var assembly = Trees.TestAssembly;
 
-        var mode = await assembly.CalculatorAsync().GetChildAsync("Mode");
+        var calculator = await assembly.CalculatorAsync();
+        var mode = await calculator.GetChildAsync("Mode");
 
-        Assert.Equal(["Base Types", "Fast : Mode", "Slow : Mode", "Precise : Mode"], (await mode.ListChildrenAsync()).Select(c => c.Text));
+        var children = await mode.ListChildrenAsync();
+        Assert.Equal(["Base Types", "Fast : Mode", "Slow : Mode", "Precise : Mode"], children.Select(c => c.Text));
     }
 
     [Fact]
@@ -88,9 +97,13 @@ public sealed class BrowseTreeTests
         var assembly = Trees.TestAssembly;
         var calculator = await assembly.CalculatorAsync();
 
-        Assert.Equal(["get_Count"], (await calculator.GetChildAsync("Count : int").ListChildrenAsync()).Select(c => c.Text));
-        Assert.Equal(["add_Changed", "remove_Changed"], (await calculator.GetChildAsync("Changed : EventHandler?").ListChildrenAsync()).Select(c => c.Text));
-        Assert.All(await calculator.GetChildAsync("Count : int").ListChildrenAsync(), c => Assert.Equal(MemberShape.Method, c.MemberShape));
+        var count = await calculator.GetChildAsync("Count : int");
+        var children = await count.ListChildrenAsync();
+        Assert.Equal(["get_Count"], children.Select(c => c.Text));
+        var changed = await calculator.GetChildAsync("Changed : EventHandler?");
+        var changedAccessors = await changed.ListChildrenAsync();
+        Assert.Equal(["add_Changed", "remove_Changed"], changedAccessors.Select(c => c.Text));
+        Assert.All(await count.ListChildrenAsync(), c => Assert.Equal(MemberShape.Method, c.MemberShape));
     }
 
     [Fact]
@@ -99,7 +112,9 @@ public sealed class BrowseTreeTests
         var (list, assembly) = Trees.OpenTestAssembly();
         var fixtures = await assembly.FixturesAsync();
 
-        var derived = await fixtures.GetChildAsync("IShape").GetChildAsync("Derived Types").ListChildrenAsync();
+        var iShape = await fixtures.GetChildAsync("IShape");
+        var derivedTypes = await iShape.GetChildAsync("Derived Types");
+        var derived = await derivedTypes.ListChildrenAsync();
 
         var circle = Assert.Single(derived);
         Assert.IsType<NodeSubject.DerivedType>(circle.Subject);
@@ -107,9 +122,13 @@ public sealed class BrowseTreeTests
         Assert.Equal(NodeAccessibility.Internal, circle.Accessibility);
         Assert.False(circle.HasChildren);
         Assert.Same(await fixtures.GetChildAsync("Circle"), await list.FindNodeAsync(circle.Destination));
-        Assert.DoesNotContain(await fixtures.GetChildAsync("Circle").ListChildrenAsync(), c => c.Subject is NodeSubject.DerivedTypes);
-        Assert.DoesNotContain(await fixtures.GetChildAsync("Size").ListChildrenAsync(), c => c.Subject is NodeSubject.DerivedTypes);
-        Assert.Empty(await assembly.CalculatorAsync().GetChildAsync("Derived Types").ListChildrenAsync());
+        var circleNode = await fixtures.GetChildAsync("Circle");
+        Assert.DoesNotContain(await circleNode.ListChildrenAsync(), c => c.Subject is NodeSubject.DerivedTypes);
+        var size = await fixtures.GetChildAsync("Size");
+        Assert.DoesNotContain(await size.ListChildrenAsync(), c => c.Subject is NodeSubject.DerivedTypes);
+        var calculator = await assembly.CalculatorAsync();
+        var derivedTypesNode = await calculator.GetChildAsync("Derived Types");
+        Assert.Empty(await derivedTypesNode.ListChildrenAsync());
         Assert.Equal("Circle", circle.Analysis?.Label);
     }
 
@@ -125,7 +144,8 @@ public sealed class BrowseTreeTests
         list.OpenModule(unreadableBillingPath);
         var ordersPath = WrittenAssemblies.WriteDeriving(temp, "Orders", "Shapes", "Shape", "Order");
         list.OpenModule(ordersPath);
-        var folder = await shapes.ReadRootAsync().GetChildAsync("Shapes", "Shape", "Derived Types");
+        var shapesRoot = await shapes.ReadRootAsync();
+        var folder = await shapesRoot.GetChildAsync("Shapes", "Shape", "Derived Types");
 
         var derived = await folder.ListChildrenAsync();
 
@@ -146,14 +166,19 @@ public sealed class BrowseTreeTests
     {
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var corelib = list.Open(Trees.CoreLibPath);
-        var exception = await corelib.ReadRootAsync().GetChildAsync("System").GetChildAsync("Exception");
+        var corelibRoot = await corelib.ReadRootAsync();
+        var systemNode = await corelibRoot.GetChildAsync("System");
+        var exception = await systemNode.GetChildAsync("Exception");
 
-        var system = (await exception.GetChildAsync("Derived Types").ListChildrenAsync()).Single(c => c.Text.EndsWith("SystemException", StringComparison.Ordinal));
-        var argument = (await system.ListChildrenAsync()).Single(c => c.Text.EndsWith("ArgumentException", StringComparison.Ordinal));
+        var derivedTypes = await exception.GetChildAsync("Derived Types");
+        var children = await derivedTypes.ListChildrenAsync();
+        var system = children.Single(c => c.Text.EndsWith("SystemException", StringComparison.Ordinal));
+        var systemDerived = await system.ListChildrenAsync();
+        var argument = systemDerived.Single(c => c.Text.EndsWith("ArgumentException", StringComparison.Ordinal));
 
         Assert.IsType<NodeSubject.DerivedType>(argument.Subject);
         Assert.Contains(await argument.ListChildrenAsync(), c => c.Text.EndsWith("ArgumentNullException", StringComparison.Ordinal));
-        Assert.Contains(system.Text, Documents.GetText(await exception.GetChildAsync("Derived Types").DecompileAsync(DecompilationLanguage.CSharp)));
+        Assert.Contains(system.Text, Documents.GetText(await derivedTypes.DecompileAsync(DecompilationLanguage.CSharp)));
     }
 
     [Fact]
@@ -161,11 +186,14 @@ public sealed class BrowseTreeTests
     {
         var (list, assembly) = Trees.OpenTestAssembly();
 
-        var bases = await assembly.FixturesAsync().GetChildAsync("Circle").GetChildAsync("Base Types").ListChildrenAsync();
+        var fixtures = await assembly.FixturesAsync();
+        var circle = await fixtures.GetChildAsync("Circle");
+        var baseTypes = await circle.GetChildAsync("Base Types");
+        var bases = await baseTypes.ListChildrenAsync();
 
         Assert.Equal(["object", "IShape"], bases.Select(b => b.Text));
         Assert.All(bases, b => Assert.IsType<NodeSubject.BaseType>(b.Subject));
-        Assert.Same(await assembly.FixturesAsync().GetChildAsync("IShape"), await list.FindNodeAsync(bases[1].Destination));
+        Assert.Same(await fixtures.GetChildAsync("IShape"), await list.FindNodeAsync(bases[1].Destination));
     }
 
     [Fact]
@@ -175,12 +203,14 @@ public sealed class BrowseTreeTests
         var calculator = await assembly.CalculatorAsync();
 
         var add = await calculator.GetChildAsync("Add(T) : void");
-        var size = await assembly.FixturesAsync().GetChildAsync("Size");
+        var fixtures = await assembly.FixturesAsync();
+        var size = await fixtures.GetChildAsync("Size");
 
         Assert.False(add.HasChildren);
         Assert.True(size.HasChildren);
         Assert.NotEmpty(await size.ListChildrenAsync());
-        Assert.True((await calculator.GetChildAsync("Count : int")).HasChildren);
+        var count = await calculator.GetChildAsync("Count : int");
+        Assert.True(count.HasChildren);
     }
 
     [Fact]
@@ -188,21 +218,30 @@ public sealed class BrowseTreeTests
     {
         var (_, assembly) = Trees.OpenTestAssembly();
 
-        var nodes = await Task.WhenAll(Enumerable.Range(0, 16).Select(_ => Task.Run(() => assembly.CalculatorAsync().GetChildAsync("Add(T) : void")))).WithinPatienceAsync();
+        var nodes = await Task.WhenAll(Enumerable.Range(0, 16).Select(_ => Task.Run(() => GetAddAsync(assembly)))).WithinPatienceAsync();
 
         Assert.All(nodes, n => Assert.Same(nodes[0], n));
         Assert.Same(await assembly.CalculatorAsync(), nodes[0].Parent);
         Assert.Same(assembly, nodes[0].Assembly);
     }
 
+    // Calculator's Add, its tree read as far as it.
+    private static async Task<BrowseNode> GetAddAsync(LoadedAssembly assembly)
+    {
+        var calculator = await assembly.CalculatorAsync();
+        return await calculator.GetChildAsync("Add(T) : void");
+    }
+
     [Fact]
     public async Task A_node_found_by_its_entity_is_the_one_its_parent_lists_whichever_thread_builds_it_first()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var reference = (await Trees.TestAssembly.CalculatorAsync().GetChildAsync("Add(T) : void")).Definition;
+        var calculator = await Trees.TestAssembly.CalculatorAsync();
+        var add = await calculator.GetChildAsync("Add(T) : void");
+        var reference = add.Definition;
 
         var nodes = await Task.WhenAll(Enumerable.Range(0, 16)
-            .Select(i => Task.Run(async () => i % 2 == 0 ? await list.FindNodeAsync(reference) : await assembly.CalculatorAsync().GetChildAsync("Add(T) : void")))).WithinPatienceAsync();
+            .Select(i => Task.Run(async () => i % 2 == 0 ? await list.FindNodeAsync(reference) : await GetAddAsync(assembly)))).WithinPatienceAsync();
 
         Assert.All(nodes, n => Assert.Same(nodes[0], n));
         Assert.Same(await assembly.CalculatorAsync(), Assert.IsAssignableFrom<BrowseNode>(nodes[0]).Parent);
@@ -212,22 +251,26 @@ public sealed class BrowseTreeTests
     public async Task A_path_in_the_list_that_holds_its_node_finds_that_very_node()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var add = await assembly.CalculatorAsync().GetChildAsync("Add(T) : void");
+        var calculator = await assembly.CalculatorAsync();
+        var add = await calculator.GetChildAsync("Add(T) : void");
 
         Assert.Same(add, await list.FindNodeAsync(add.Path));
         Assert.Same(add, await list.FindListedNodeAsync(add.Path));
-        Assert.Same(await assembly.ReadRootAsync(), await list.FindNodeAsync((await assembly.ReadRootAsync()).Path));
+        var root = await assembly.ReadRootAsync();
+        Assert.Same(root, await list.FindNodeAsync(root.Path));
     }
 
     [Fact]
     public async Task Entity_nodes_carry_a_reference_to_themselves()
     {
         var (list, assembly) = Trees.OpenTestAssembly();
-        var add = await assembly.CalculatorAsync().GetChildAsync("Add(T) : void");
+        var calculator = await assembly.CalculatorAsync();
+        var add = await calculator.GetChildAsync("Add(T) : void");
 
         Assert.Equal(EntityKind.Method, add.Definition.Kind);
         Assert.Same(add, await list.FindNodeAsync(add.Definition));
-        Assert.Null((await assembly.FixturesAsync()).Reference);
+        var fixtures = await assembly.FixturesAsync();
+        Assert.Null(fixtures.Reference);
     }
 
     [Fact]
@@ -236,11 +279,12 @@ public sealed class BrowseTreeTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var coreLib = list.Open(Trees.CoreLibPath);
 
-        var generic = await coreLib.ReadRootAsync().GetChildAsync("System.Collections.Generic");
+        var coreLibRoot = await coreLib.ReadRootAsync();
+        var generic = await coreLibRoot.GetChildAsync("System.Collections.Generic");
         var dictionary = await generic.GetChildAsync("Dictionary<TKey, TValue>");
 
         Assert.Contains(await dictionary.ListChildrenAsync(), c => c.Text == "TryGetValue(TKey, out TValue) : bool");
         Assert.Contains(await dictionary.ListChildrenAsync(), c => c.Is(TypeShape.Struct) && c.Text == "Enumerator");
-        Assert.Contains(await coreLib.ReadRootAsync().ListChildrenAsync(), c => c.Subject is NodeSubject.Resources);
+        Assert.Contains(await coreLibRoot.ListChildrenAsync(), c => c.Subject is NodeSubject.Resources);
     }
 }

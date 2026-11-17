@@ -13,7 +13,9 @@ public sealed class TypeCardTests
 
     private static async Task<CodeReference.Entity> ZooAsync(string type)
     {
-        return (await s_opened.Value.Assembly.ReadRootAsync().GetChildAsync(ZooNamespace, type)).Definition;
+        var root = await s_opened.Value.Assembly.ReadRootAsync();
+        var node = await root.GetChildAsync(ZooNamespace, type);
+        return node.Definition;
     }
 
     private static async Task<TypeCard> CardAsync(string type)
@@ -156,7 +158,9 @@ public sealed class TypeCardTests
         list.OpenModule(unreadableBillingPath);
         var ordersPath = WrittenAssemblies.WriteDeriving(temp, "Orders", "Shapes", "Shape", "Order");
         list.OpenModule(ordersPath);
-        var shape = (await shapes.ReadRootAsync().GetChildAsync("Shapes", "Shape")).Definition;
+        var shapesRoot = await shapes.ReadRootAsync();
+        var shapeNode = await shapesRoot.GetChildAsync("Shapes", "Shape");
+        var shape = shapeNode.Definition;
 
         var derived = (await TypeCards.ReadDerivedAsync(list, shape, CancellationToken.None)).GetValue();
 
@@ -178,7 +182,9 @@ public sealed class TypeCardTests
     [Fact]
     public async Task A_reference_to_a_member_reads_as_no_card()
     {
-        var name = (await s_opened.Value.Assembly.ReadRootAsync().GetChildAsync(ZooNamespace, "Animal", "Name : string")).Definition;
+        var root = await s_opened.Value.Assembly.ReadRootAsync();
+        var nameNode = await root.GetChildAsync(ZooNamespace, "Animal", "Name : string");
+        var name = nameNode.Definition;
 
         Assert.IsType<Lookup<TypeCard>.NotFound>((await TypeCards.ReadAsync(List, name, CancellationToken.None)).GetValue());
         Assert.Empty(Assert.IsType<TypeSystemWork<List<TypeCard>>.Done>((await TypeCards.ReadWithNeighboursAsync(List, name, CancellationToken.None)).GetValue()).Value);

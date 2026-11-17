@@ -27,9 +27,11 @@ public sealed class PackageTests
         Assert.Equal([package], list.Listed);
         Assert.Equal(["ILSight.Core", TestAssemblyName], list.Assemblies.Select(a => a.Name));
         Assert.All(list.Assemblies, a => Assert.Same(package, ContainerOf(a)));
-        Assert.False(Assert.IsType<NodeSubject.Package>((await package.ReadRootAsync()).Subject).Value.Package.Package.IsBundle);
-        Assert.Equal("Sample.1.0.0.nupkg", (await package.ReadRootAsync()).Text);
-        Assert.Equal([LibFolder, "runtimes/win-x64/native", "readme.txt"], (await package.ReadRootAsync().ListChildrenAsync()).Select(c => c.Text));
+        var packageRoot = await package.ReadRootAsync();
+        Assert.False(Assert.IsType<NodeSubject.Package>(packageRoot.Subject).Value.Package.Package.IsBundle);
+        Assert.Equal("Sample.1.0.0.nupkg", packageRoot.Text);
+        var children = await packageRoot.ListChildrenAsync();
+        Assert.Equal([LibFolder, "runtimes/win-x64/native", "readme.txt"], children.Select(c => c.Text));
     }
 
     [Fact]
@@ -107,7 +109,8 @@ public sealed class PackageTests
         list.TargetFrameworks.Pick(sibling, Frameworks.Net48);
         var removed = list.CloseAll();
         LoadedAssemblies.Release(removed);
-        var assembly = AssemblyListing.TryLoad(list, package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Tests.dll"))).GetValue().FoundOrNull;
+        var loaded = AssemblyListing.TryLoad(list, package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Tests.dll")));
+        var assembly = loaded.GetValue().FoundOrNull;
         Assert.NotNull(assembly);
 
         var closed = list.Close(assembly);
@@ -135,9 +138,11 @@ public sealed class PackageTests
         Assert.Equal(read.ReadOutOf, list.Assemblies);
         Assert.All(list.Assemblies, a => Assert.Same(fresh, ContainerOf(a)));
         Assert.Empty(list.Assemblies.Intersect(old));
-        var root = await TestAssemblyRootAsync(await fresh.ReadRootAsync().GetChildAsync(LibFolder));
+        var freshRoot = await fresh.ReadRootAsync();
+        var root = await TestAssemblyRootAsync(await freshRoot.GetChildAsync(LibFolder));
         Assert.Same(list.Assemblies[1], root.Assembly);
-        Assert.Same(root, await list.FindNodeAsync((await old[1].ReadRootAsync()).Path));
+        var oldRoot = await old[1].ReadRootAsync();
+        Assert.Same(root, await list.FindNodeAsync(oldRoot.Path));
     }
 
     [Fact]
@@ -148,7 +153,8 @@ public sealed class PackageTests
         var packagePath = WritePackage(temp);
         var package = list.Open(packagePath);
 
-        var folder = await package.ReadRootAsync().GetChildAsync(LibFolder);
+        var packageRoot = await package.ReadRootAsync();
+        var folder = await packageRoot.GetChildAsync(LibFolder);
         var root = await TestAssemblyRootAsync(folder);
         var assembly = root.Assembly;
 
@@ -156,7 +162,8 @@ public sealed class PackageTests
         Assert.Same(package, ContainerOf(assembly));
         Assert.Same(root, await assembly.ReadRootAsync());
         Assert.Same(folder, root.Parent);
-        Assert.Equal(TypeShape.Class, (await assembly.CalculatorAsync()).TypeShape);
+        var calculator = await assembly.CalculatorAsync();
+        Assert.Equal(TypeShape.Class, calculator.TypeShape);
     }
 
     [Fact]
@@ -168,11 +175,15 @@ public sealed class PackageTests
         var package = list.Open(packagePath);
         var path = package.FilePath.Combine(Path.Combine("lib", "net10.0", "ILSight.Tests.dll"));
 
-        var assembly = AssemblyListing.TryLoad(list, path).GetValue().FoundOrNull;
+        var loaded = AssemblyListing.TryLoad(list, path);
+        var assembly = loaded.GetValue().FoundOrNull;
         Assert.NotNull(assembly);
 
-        Assert.Same(await package.ReadRootAsync().GetChildAsync(LibFolder), (await assembly.ReadRootAsync()).Parent);
-        Assert.Same(await assembly.ReadRootAsync(), await TestAssemblyRootAsync(await package.ReadRootAsync().GetChildAsync(LibFolder)));
+        var packageRoot = await package.ReadRootAsync();
+        var lib = await packageRoot.GetChildAsync(LibFolder);
+        var root = await assembly.ReadRootAsync();
+        Assert.Same(lib, root.Parent);
+        Assert.Same(root, await TestAssemblyRootAsync(lib));
     }
 
     [Fact]
@@ -181,8 +192,11 @@ public sealed class PackageTests
         using var temp = new TempDir();
         var packagePath = WritePackage(temp);
         var first = new AssemblyList { Runtime = TestRuntime.Installed };
-        var lib = await first.Open(packagePath).ReadRootAsync().GetChildAsync(LibFolder);
-        var calculator = await (await TestAssemblyRootAsync(lib)).Assembly.CalculatorAsync();
+        var assembly = first.Open(packagePath);
+        var root = await assembly.ReadRootAsync();
+        var lib = await root.GetChildAsync(LibFolder);
+        var libRoot = await TestAssemblyRootAsync(lib);
+        var calculator = await libRoot.Assembly.CalculatorAsync();
 
         var path = calculator.Path;
         var second = new AssemblyList { Runtime = TestRuntime.Installed };
@@ -202,9 +216,12 @@ public sealed class PackageTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var packagePath = WritePackage(temp);
         var package = list.Open(packagePath);
-        var assembly = (await TestAssemblyRootAsync(await package.ReadRootAsync().GetChildAsync(LibFolder))).Assembly;
+        var packageRoot = await package.ReadRootAsync();
+        var root = await TestAssemblyRootAsync(await packageRoot.GetChildAsync(LibFolder));
+        var assembly = root.Assembly;
 
-        var core = await assembly.ReadRootAsync().GetChildAsync("References", "ILSight.Core");
+        var assemblyRoot = await assembly.ReadRootAsync();
+        var core = await assemblyRoot.GetChildAsync("References", "ILSight.Core");
         var resolved = await list.FindNodeAsync(core.Destination);
 
         Assert.NotNull(resolved);
@@ -217,8 +234,11 @@ public sealed class PackageTests
     {
         using var temp = new TempDir();
         var packagePath = WritePackage(temp);
-        var lib = await new AssemblyList { Runtime = TestRuntime.Installed }.Open(packagePath).ReadRootAsync().GetChildAsync(LibFolder);
-        var calculator = await (await TestAssemblyRootAsync(lib)).Assembly.CalculatorAsync();
+        var assembly = new AssemblyList { Runtime = TestRuntime.Installed }.Open(packagePath);
+        var root = await assembly.ReadRootAsync();
+        var lib = await root.GetChildAsync(LibFolder);
+        var libRoot = await TestAssemblyRootAsync(lib);
+        var calculator = await libRoot.Assembly.CalculatorAsync();
 
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var found = await list.FindNodeAsync(calculator.Definition);
@@ -237,8 +257,11 @@ public sealed class PackageTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var packagePath = WritePackage(temp);
         var package = list.Open(packagePath);
-        var lib = await package.ReadRootAsync().GetChildAsync(LibFolder);
-        var add = await (await TestAssemblyRootAsync(lib)).Assembly.CalculatorAsync().GetChildAsync("Add(T) : void");
+        var packageRoot = await package.ReadRootAsync();
+        var lib = await packageRoot.GetChildAsync(LibFolder);
+        var root = await TestAssemblyRootAsync(lib);
+        var calculator = await root.Assembly.CalculatorAsync();
+        var add = await calculator.GetChildAsync("Add(T) : void");
         var symbol = add.Analysis;
         Assert.NotNull(symbol);
         var usedBy = symbol.Kinds.Single(k => Analyzers.GetHeader(k) == "Used By");
@@ -262,7 +285,8 @@ public sealed class PackageTests
         list.Open(packagePath);
         var assembly = list.Open(Trees.TestAssemblyPath);
 
-        var core = await assembly.ReadRootAsync().GetChildAsync("References", "ILSight.Core");
+        var root = await assembly.ReadRootAsync();
+        var core = await root.GetChildAsync("References", "ILSight.Core");
         var resolved = await list.FindNodeAsync(core.Destination);
 
         Assert.Equal(CoreAssemblyPath, resolved?.Assembly.FilePath.Text, ignoreCase: true);
@@ -276,8 +300,9 @@ public sealed class PackageTests
         var opened = new AssemblyList { Runtime = TestRuntime.Installed }.Open(packagePath);
         var package = Assert.IsType<LoadedPackage>(opened);
 
-        var readme = await package.ReadRootAsync().GetChildAsync("readme.txt");
-        var native = await package.ReadRootAsync().GetChildAsync("runtimes/win-x64/native", "native.dll");
+        var packageRoot = await package.ReadRootAsync();
+        var readme = await packageRoot.GetChildAsync("readme.txt");
+        var native = await packageRoot.GetChildAsync("runtimes/win-x64/native", "native.dll");
 
         Assert.Equal("Read me", Encoding.UTF8.GetString(BrowseNodes.ReadResource(readme)));
         Assert.IsType<NodeSubject.PackageFile>(native.Subject);
@@ -295,8 +320,10 @@ public sealed class PackageTests
         var opened = new AssemblyList { Runtime = TestRuntime.Installed }.Open(packagePath);
         var package = Assert.IsType<LoadedPackage>(opened);
 
-        var root = await package.ReadRootAsync().DecompileAsync(language);
-        var folder = await package.ReadRootAsync().GetChildAsync(LibFolder).DecompileAsync(language);
+        var packageRoot = await package.ReadRootAsync();
+        var root = await packageRoot.DecompileAsync(language);
+        var node = await packageRoot.GetChildAsync(LibFolder);
+        var folder = await node.DecompileAsync(language);
 
         Assert.Null(root.Error);
         Assert.Contains($"{LibFolder}/", Documents.GetText(root));
@@ -310,12 +337,18 @@ public sealed class PackageTests
         using var temp = new TempDir();
         var packagePath = WritePackage(temp);
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
-        var before = (await TestAssemblyRootAsync(await list.Open(packagePath).ReadRootAsync().GetChildAsync(LibFolder))).Assembly;
+        var assembly = list.Open(packagePath);
+        var packageRoot = await assembly.ReadRootAsync();
+        var root = await TestAssemblyRootAsync(await packageRoot.GetChildAsync(LibFolder));
+        var before = root.Assembly;
 
         var removed = list.Close(list.Listed[0]);
         LoadedAssemblies.Release(removed);
         Assert.Empty(list.Assemblies);
-        var after = (await TestAssemblyRootAsync(await list.Open(packagePath).ReadRootAsync().GetChildAsync(LibFolder))).Assembly;
+        var reopened = list.Open(packagePath);
+        var reopenedRoot = await reopened.ReadRootAsync();
+        var reopenedLibRoot = await TestAssemblyRootAsync(await reopenedRoot.GetChildAsync(LibFolder));
+        var after = reopenedLibRoot.Assembly;
 
         Assert.NotSame(before, after);
     }
@@ -336,7 +369,10 @@ public sealed class PackageTests
 
         var calculator = Assert.Single(results, r => r.Text == "Calculator<T>");
         Assert.Same(package, ContainerOf(calculator.Node.Assembly));
-        Assert.Same(await package.ReadRootAsync().GetChildAsync(LibFolder), (await calculator.Node.Assembly.ReadRootAsync()).Parent);
+        var packageRoot = await package.ReadRootAsync();
+        var lib = await packageRoot.GetChildAsync(LibFolder);
+        var calculatorRoot = await calculator.Node.Assembly.ReadRootAsync();
+        Assert.Same(lib, calculatorRoot.Parent);
     }
 
     [Fact]
@@ -346,8 +382,10 @@ public sealed class PackageTests
         var list = new AssemblyList { Runtime = TestRuntime.Installed };
         var packagePath = WritePackage(temp);
         var package = list.Open(packagePath);
-        var folder = await package.ReadRootAsync().GetChildAsync(LibFolder);
-        var assembly = Assert.IsType<LoadedModule>((await TestAssemblyRootAsync(folder)).Assembly);
+        var packageRoot = await package.ReadRootAsync();
+        var folder = await packageRoot.GetChildAsync(LibFolder);
+        var root = await TestAssemblyRootAsync(folder);
+        var assembly = Assert.IsType<LoadedModule>(root.Assembly);
         var core = list.Assemblies.Single(a => a.Name == "ILSight.Core");
 
         var symbols = LoadedAssemblies.EnsureDebugSymbols(assembly);
@@ -365,7 +403,8 @@ public sealed class PackageTests
         var package = Assert.IsType<LoadedPackage>(opened);
         var target = temp.PathOf("out");
 
-        var extracted = PackageExtraction.ExtractFolder(package.Package, FolderOf(await package.ReadRootAsync().GetChildAsync(LibFolder)), target);
+        var packageRoot = await package.ReadRootAsync();
+        var extracted = PackageExtraction.ExtractFolder(package.Package, FolderOf(await packageRoot.GetChildAsync(LibFolder)), target);
 
         var dll = Path.Combine(target, "ILSight.Tests.dll");
         Assert.Empty(extracted.Failures);
@@ -426,7 +465,8 @@ public sealed class PackageTests
 
     private static async Task<BrowseNode> TestAssemblyRootAsync(BrowseNode folder)
     {
-        return (await folder.ListChildrenAsync()).Single(IsTestAssembly);
+        var children = await folder.ListChildrenAsync();
+        return children.Single(IsTestAssembly);
     }
 
     private static bool IsTestAssembly(BrowseNode node)
