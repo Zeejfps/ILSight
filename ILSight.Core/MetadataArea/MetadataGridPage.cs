@@ -13,5 +13,5 @@ public sealed class MetadataGridPage
 
     public required IReadOnlyList<MetadataRowDetails?> Details { get; init; }
 
-    public required IReadOnlyList<CodeReference.Navigable?> Definitions { get; init; }
+    public required IReadOnlyList<Navigable?> Definitions { get; init; }
 }

@@ -26,7 +26,7 @@ internal sealed class FakeShowInMetadataHandlerPorts : ShowInMetadataHandler.IPo
         Refused.Add(refusal);
     }
 
-    public Task<Outcome<Lookup<MetadataTarget>>> LookUpMetadataRowAsync(CodeReference.Navigable reference, CancellationToken ct)
+    public Task<Outcome<Lookup<MetadataTarget>>> LookUpMetadataRowAsync(Navigable reference, CancellationToken ct)
     {
         WhileLooking();
         return Task.FromResult(Found);

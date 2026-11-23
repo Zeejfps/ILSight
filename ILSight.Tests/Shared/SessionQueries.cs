@@ -120,7 +120,7 @@ internal static class SessionQueries
         public int? Token => node.Token;
 
         /// <summary>Where activating the node goes; fails the test when it opens itself.</summary>
-        public CodeReference.Navigable Destination => UnionAsserts.GetCase<Activation.Navigate>(node.Activation).Target;
+        public Navigable Destination => UnionAsserts.GetCase<Activation.Navigate>(node.Activation).Target;
     }
 
     extension(AssemblyList list)
@@ -131,7 +131,7 @@ internal static class SessionQueries
             return found.GetValue().FoundOrNull;
         }
 
-        public async Task<BrowseNode?> FindNodeAsync(CodeReference.Navigable reference)
+        public async Task<BrowseNode?> FindNodeAsync(Navigable reference)
         {
             var found = await NodeLookup.FindAsync(list, TestSession.Shared, reference, CancellationToken.None);
             return found.GetValue().FoundOrNull;
@@ -149,7 +149,7 @@ internal static class SessionQueries
             return found.GetValue().FoundOrNull;
         }
 
-        public async Task<MetadataTarget?> FindMetadataRowAsync(CodeReference.Navigable reference)
+        public async Task<MetadataTarget?> FindMetadataRowAsync(Navigable reference)
         {
             var found = await NodeLookup.FindMetadataRowAsync(list, TestSession.Shared, reference, CancellationToken.None);
             return found.GetValue().FoundValueOrNull;

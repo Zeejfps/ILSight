@@ -11,7 +11,7 @@ public sealed class PendingAnalysis
 {
     public required AnalyzerPendingNode Root { get; init; }
 
-    public required CodeReference.Navigable Reference { get; init; }
+    public required Navigable Reference { get; init; }
 
     /// <summary>What is analyzed once <see cref="Reference"/> is found: what it points at, or a symbol of its own.</summary>
     public required PendingAnalysisKind Kind { get; init; }

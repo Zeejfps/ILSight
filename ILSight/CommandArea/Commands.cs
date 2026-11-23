@@ -63,7 +63,7 @@ public static class Commands
     /// started there: the draw began the request in the frame of its input (the app says it is resolving), and only
     /// the lookup, which takes longer than a frame, waits for the edge. Nothing when <paramref name="lookup"/> is
     /// null.</summary>
-    public static void GoToReferenceLater(IAppCommandWriter commands, CodeReference.Navigable reference, ResolveTicket? lookup)
+    public static void GoToReferenceLater(IAppCommandWriter commands, Navigable reference, ResolveTicket? lookup)
     {
         if (lookup is null)
         {
@@ -89,16 +89,16 @@ public static class Commands
 
     /// <summary>As <see cref="GoToReferenceLater"/>, showing the metadata table row that defines what
     /// <paramref name="reference"/> points at (<see cref="ShowInMetadataHandler"/>).</summary>
-    public static void ShowInMetadataLater(IAppCommandWriter commands, CodeReference.Navigable reference, ResolveTicket lookup)
+    public static void ShowInMetadataLater(IAppCommandWriter commands, Navigable reference, ResolveTicket lookup)
     {
         StartResolving(commands, nameof(ShowInMetadataHandler), (reference, lookup), lookup,
             static (a, s, ct) => a.ShowInMetadataHandler.HandleAsync(a.ListSession.Navigation, a.Decompiler, s.reference, s.lookup, ct));
     }
 
     /// <summary>Asks for what <paramref name="reference"/> points at to be analyzed once the frame is drawn: the analyzer
-    /// opens with a root that shows as loading (<see cref="AnalyzerPanelView.ShowAnalyzing(Panels, AnalyzerTree, CodeReference.Navigable)"/>),
+    /// opens with a root that shows as loading (<see cref="AnalyzerPanelView.ShowAnalyzing(Panels, AnalyzerTree, Navigable)"/>),
     /// and what the reference points at is found and analyzed then (<see cref="StartAnalyzing"/>).</summary>
-    public static void AnalyzeLater(IAppCommandWriter commands, Panels panels, CodeReference.Navigable reference)
+    public static void AnalyzeLater(IAppCommandWriter commands, Panels panels, Navigable reference)
     {
         Later(commands, (panels, reference), static (a, s) =>
         {

@@ -10,7 +10,7 @@ internal sealed class FakeNavigateHandlerPorts : NavigateHandler.IPorts
 
     public Action WhileLooking { get; init; } = static () => { };
 
-    public List<CodeReference.Navigable> LookedUp { get; } = [];
+    public List<Navigable> LookedUp { get; } = [];
 
     public List<AppProblem> Reported { get; } = [];
 
@@ -26,7 +26,7 @@ internal sealed class FakeNavigateHandlerPorts : NavigateHandler.IPorts
         Refused.Add(refusal);
     }
 
-    public Task<Outcome<Lookup<BrowseNode>>> LookUpReferenceAsync(CodeReference.Navigable reference, CancellationToken ct)
+    public Task<Outcome<Lookup<BrowseNode>>> LookUpReferenceAsync(Navigable reference, CancellationToken ct)
     {
         LookedUp.Add(reference);
         WhileLooking();

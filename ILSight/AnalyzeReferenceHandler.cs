@@ -20,7 +20,7 @@ public sealed class AnalyzeReferenceHandler(AnalyzeReferenceHandler.IPorts ports
         /// into a module whose type system the library could not read; looked for without
         /// holding up the screen (it may read an assembly from disk); a lookup that failed comes back as
         /// <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<Lookup<BrowseNode>>> LookUpReferenceAsync(CodeReference.Navigable reference, CancellationToken ct);
+        Task<Outcome<Lookup<BrowseNode>>> LookUpReferenceAsync(Navigable reference, CancellationToken ct);
     }
     /// <summary>Finds what the reference of <paramref name="pending"/> points at, listing its assembly, and turns its
     /// root into the analysis it waits for (<see cref="PendingAnalysis.Analyze"/>), which

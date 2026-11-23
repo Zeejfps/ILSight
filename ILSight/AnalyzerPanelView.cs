@@ -202,7 +202,7 @@ internal static class AnalyzerPanelView
         }
     }
 
-    private static void GoToItems(Ui ui, Appearance appearance, IAppCommandWriter commands, Navigation navigation, CodeReference.Navigable target)
+    private static void GoToItems(Ui ui, Appearance appearance, IAppCommandWriter commands, Navigation navigation, Navigable target)
     {
         var t = appearance.Strings;
         if (ui.MenuItem(t.AnalyzerGoTo, Shortcuts.Enter, id: "go-to"))
@@ -236,7 +236,7 @@ internal static class AnalyzerPanelView
 
     /// <summary>Opens the analyzer if it is not. The root returned shows as loading until the edge finds and analyzes
     /// what <paramref name="reference"/> points at (<see cref="AnalyzeReferenceHandler"/>).</summary>
-    public static PendingAnalysis ShowAnalyzing(Panels panels, AnalyzerTree analyzer, CodeReference.Navigable reference)
+    public static PendingAnalysis ShowAnalyzing(Panels panels, AnalyzerTree analyzer, Navigable reference)
     {
         panels.Open(DockView.Analyzer);
         return Analysis.BeginAnalyzing(analyzer, reference);

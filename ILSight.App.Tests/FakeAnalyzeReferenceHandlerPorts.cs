@@ -24,7 +24,7 @@ internal sealed class FakeAnalyzeReferenceHandlerPorts : AnalyzeReferenceHandler
         Refused.Add(refusal);
     }
 
-    public Task<Outcome<Lookup<BrowseNode>>> LookUpReferenceAsync(CodeReference.Navigable reference, CancellationToken ct)
+    public Task<Outcome<Lookup<BrowseNode>>> LookUpReferenceAsync(Navigable reference, CancellationToken ct)
     {
         WhileLooking();
         return Task.FromResult(Found);

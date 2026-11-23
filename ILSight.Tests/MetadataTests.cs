@@ -269,7 +269,7 @@ public sealed class MetadataTests
                             Assert.InRange(target.Row, 0, (await GridAsync(target.Node)).RowCount - 1);
                         }
                     }
-                    MetadataGrids.FindDefinition(grid, row);
+                    _ = MetadataGrids.FindDefinition(grid, row);
                 }
                 count++;
             }

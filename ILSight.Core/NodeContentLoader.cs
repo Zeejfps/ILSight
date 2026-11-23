@@ -262,14 +262,14 @@ public static class NodeContentLoader
     // What building the request reads of the library's objects, for the node and the children its summary lists.
     private static RequestFacts ReadFacts(BrowseNode node, SummarizedChildren children)
     {
-        var targets = new Dictionary<BrowseNode, CodeReference.Navigable?>(ReferenceEqualityComparer.Instance);
+        var targets = new Dictionary<BrowseNode, Navigable?>(ReferenceEqualityComparer.Instance);
         var kinds = new Dictionary<BrowseNode, SpanKind>(ReferenceEqualityComparer.Instance);
         ReadNodeFacts(node, targets, kinds);
         ReadChildrenFacts(children, targets, kinds);
         return new RequestFacts { Targets = targets, MemberKinds = kinds, Lines = ReadLines(node.Subject) };
     }
 
-    private static void ReadChildrenFacts(SummarizedChildren children, Dictionary<BrowseNode, CodeReference.Navigable?> targets,
+    private static void ReadChildrenFacts(SummarizedChildren children, Dictionary<BrowseNode, Navigable?> targets,
         Dictionary<BrowseNode, SpanKind> kinds)
     {
         foreach (var child in children.Children)
@@ -282,7 +282,7 @@ public static class NodeContentLoader
         }
     }
 
-    private static void ReadNodeFacts(BrowseNode node, Dictionary<BrowseNode, CodeReference.Navigable?> targets, Dictionary<BrowseNode, SpanKind> kinds)
+    private static void ReadNodeFacts(BrowseNode node, Dictionary<BrowseNode, Navigable?> targets, Dictionary<BrowseNode, SpanKind> kinds)
     {
         targets[node] = NodeDefinitions.FindTarget(node.Subject);
         if (node.Subject is NodeSubject.MemberReference member)
@@ -316,7 +316,7 @@ public static class NodeContentLoader
     // What the request is built of from the library's objects, read before it is built.
     private sealed class RequestFacts
     {
-        public required IReadOnlyDictionary<BrowseNode, CodeReference.Navigable?> Targets { get; init; }
+        public required IReadOnlyDictionary<BrowseNode, Navigable?> Targets { get; init; }
 
         public required IReadOnlyDictionary<BrowseNode, SpanKind> MemberKinds { get; init; }
 

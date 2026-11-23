@@ -25,11 +25,11 @@ internal sealed record CodeMenuTarget
     };
 
     /// <summary>The reference to go to from here; null on its definition.</summary>
-    public CodeReference.Navigable? Navigable => OnDefinition ? null : Reference?.AsNavigable;
+    public Navigable? Navigable => OnDefinition ? null : Reference?.AsNavigable;
 
     /// <summary>The entity to analyze, find in the API reference or show in a diagram.</summary>
     public CodeReference.Entity? Entity => Reference is CodeReference.Entity entity ? entity : null;
 
     /// <summary>The reference to show among the metadata tables.</summary>
-    public CodeReference.Navigable? Metadata => Reference?.AsNavigable;
+    public Navigable? Metadata => Reference?.AsNavigable;
 }

@@ -204,7 +204,7 @@ public static class AssemblyListing
     /// <see cref="DefinitionUnreadException"/> holding it. Each module it reads is added to <paramref name="reading"/>,
     /// the unit's: one released meanwhile is passed over, as one no longer listed.</summary>
     internal static async Task<Lookup<(LoadedModule Assembly, EntityHandle Handle)>> ResolveListedAsync(AssemblyList list, ModuleReadLease reading,
-        CodeReference.Navigable reference, CancellationToken ct)
+        Navigable reference, CancellationToken ct)
     {
         var generation = list.Generation;
         var owner = FindAssemblyToLookIn(list, reference.FilePath, generation);
@@ -245,28 +245,29 @@ public static class AssemblyListing
     }
 
     private static async Task<Lookup<(LoadedModule Assembly, EntityHandle Handle)>> ResolveTargetAsync(AssemblyList list, ModuleReadLease reading,
-        LoadedModule owner, CodeReference.Navigable reference, int generation, CancellationToken ct)
+        LoadedModule owner, Navigable reference, int generation, CancellationToken ct)
     {
-        switch (reference)
+        return reference switch
         {
-            case CodeReference.Entity entity:
-                return await ResolveDefinitionAsync(list, reading, owner, entity.Handle, generation, ct);
-            case CodeReference.Assembly assembly:
-                if (assembly.Referenced is null)
-                {
-                    return Found(owner, EntityHandle.AssemblyDefinition);
-                }
+            CodeReference.Entity entity => await ResolveDefinitionAsync(list, reading, owner, entity.Handle, generation, ct),
+            CodeReference.Assembly assembly => ResolveAssembly(owner, assembly),
+        };
+    }
 
-                var referenced = ReadAssemblyReference(owner, assembly.Referenced.Value);
-                return referenced switch
-                {
-                    Lookup<AssemblyReferenceFacts>.Found named => ResolveReferenced(owner, named.Value),
-                    Lookup<AssemblyReferenceFacts>.NotFound => new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound(),
-                    Lookup<AssemblyReferenceFacts>.Unreadable unreadable => new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.Unreadable { Module = unreadable.Module },
-                };
-            default:
-                throw new UnreachableException();
+    private static Lookup<(LoadedModule Assembly, EntityHandle Handle)> ResolveAssembly(LoadedModule owner, CodeReference.Assembly assembly)
+    {
+        if (assembly.Referenced is null)
+        {
+            return Found(owner, EntityHandle.AssemblyDefinition);
         }
+
+        var referenced = ReadAssemblyReference(owner, assembly.Referenced.Value);
+        return referenced switch
+        {
+            Lookup<AssemblyReferenceFacts>.Found named => ResolveReferenced(owner, named.Value),
+            Lookup<AssemblyReferenceFacts>.NotFound => new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.NotFound(),
+            Lookup<AssemblyReferenceFacts>.Unreadable unreadable => new Lookup<(LoadedModule Assembly, EntityHandle Handle)>.Unreadable { Module = unreadable.Module },
+        };
     }
 
     // The library's read of the reference row, under its own catch: its facts; the owner unreadable, with why, when the

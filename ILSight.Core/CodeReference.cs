@@ -7,88 +7,10 @@ namespace ILSight.Core;
 /// An immutable pointer from code or the tree to an assembly, entity, local or label. References to
 /// the same target compare equal, so every occurrence of a symbol in a document can be matched.
 /// <see cref="Navigable"/> references can be resolved to a tree node with
-/// <see cref="NodeLookup.FindAsync(AssemblyList, BrowseSession, CodeReference.Navigable, CancellationToken)"/>.
+/// <see cref="NodeLookup.FindAsync(AssemblyList, BrowseSession, Navigable, CancellationToken)"/>.
 /// </summary>
 public union CodeReference(CodeReference.Assembly, CodeReference.Entity, CodeReference.Local, CodeReference.Label) : IEquatable<CodeReference>
 {
-    /// <summary>An assembly or entity, found by a handle in the file at <see cref="FilePath"/>: what a reference holds
-    /// but a local and a label. It compares as the reference it is.</summary>
-    public union Navigable(Assembly, Entity) : IEquatable<Navigable>
-    {
-        /// <summary>The target's name as written where it was referenced.</summary>
-        public string Name => this switch
-        {
-            Assembly assembly => assembly.Name,
-            Entity entity => entity.Name,
-        };
-
-        public AssemblyPath FilePath => this switch
-        {
-            Assembly assembly => assembly.FilePath,
-            Entity entity => entity.FilePath,
-        };
-
-        /// <summary>What it is found by in the file.</summary>
-        public EntityHandle Handle => this switch
-        {
-            Assembly assembly => assembly.Handle,
-            Entity entity => entity.Handle,
-        };
-
-        /// <summary><paramref name="entity"/> as a navigable; null for none. A null entity converted to a navigable
-        /// would be one holding no case.</summary>
-        public static Navigable? FromNullable(Entity? entity)
-        {
-            if (entity is null)
-            {
-                return null;
-            }
-
-            return entity;
-        }
-
-        /// <summary>The navigable as the reference it is.</summary>
-        public static implicit operator CodeReference(Navigable navigable)
-        {
-            return navigable switch
-            {
-                Assembly assembly => assembly,
-                Entity entity => entity,
-            };
-        }
-
-        public bool Equals(Navigable other)
-        {
-            return ((CodeReference)this).Equals(other);
-        }
-
-        public override bool Equals(object? obj)
-        {
-            return ((CodeReference)this).Equals(obj);
-        }
-
-        public override int GetHashCode()
-        {
-            return ((CodeReference)this).GetHashCode();
-        }
-
-        /// <summary>The target as a person reads it: every kind of reference says what it points to.</summary>
-        public override string ToString()
-        {
-            return ((CodeReference)this).ToString();
-        }
-
-        public static bool operator ==(Navigable left, Navigable right)
-        {
-            return left.Equals(right);
-        }
-
-        public static bool operator !=(Navigable left, Navigable right)
-        {
-            return !left.Equals(right);
-        }
-    }
-
     /// <summary>The assembly in the file at <see cref="FilePath"/> itself, or one that file
     /// references by <see cref="Referenced"/>.</summary>
     public sealed class Assembly

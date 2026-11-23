@@ -70,7 +70,7 @@ public abstract class MetadataGrid
     internal abstract MetadataRowDetails? FindDetails(int row);
 
     /// <summary>What <paramref name="row"/> stands for in the code; null when it is none, or it was not read.</summary>
-    internal abstract CodeReference.Navigable? FindDefinition(int row);
+    internal abstract Navigable? FindDefinition(int row);
 
     /// <summary>A grid whose file is in memory: each cell is read through it where it is needed, a draw
     /// included, and what was read is kept.</summary>
@@ -80,7 +80,7 @@ public abstract class MetadataGrid
         private readonly Dictionary<int, MetadataAddress?> _links = new();
         private readonly Dictionary<TableIndex, bool> _listed = new();
         private readonly Dictionary<int, MetadataRowDetails?> _details = new();
-        private readonly Dictionary<int, CodeReference.Navigable?> _definitions = new();
+        private readonly Dictionary<int, Navigable?> _definitions = new();
 
         public required MetadataFile File { get; init; }
 
@@ -132,7 +132,7 @@ public abstract class MetadataGrid
             return result;
         }
 
-        internal override CodeReference.Navigable? FindDefinition(int row)
+        internal override Navigable? FindDefinition(int row)
         {
             if (_definitions.TryGetValue(row, out var known))
             {
@@ -254,7 +254,7 @@ public abstract class MetadataGrid
             return page.Details[row % RowsPerPage];
         }
 
-        internal override CodeReference.Navigable? FindDefinition(int row)
+        internal override Navigable? FindDefinition(int row)
         {
             var page = _pages.GetValueOrDefault(PageOf(row));
             if (page is null)

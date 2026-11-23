@@ -21,7 +21,7 @@ internal static class CodeReferences
 
     /// <summary>A reference to what <paramref name="handle"/> of <paramref name="metadata"/> names, read
     /// from the file at <paramref name="filePath"/>, or null for a handle no reference is made to.</summary>
-    public static CodeReference.Navigable? Find(MetadataReader metadata, Handle handle, string name, AssemblyPath filePath)
+    public static Navigable? Find(MetadataReader metadata, Handle handle, string name, AssemblyPath filePath)
     {
         return handle.Kind switch
         {

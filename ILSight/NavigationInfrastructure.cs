@@ -25,7 +25,7 @@ public sealed class NavigationInfrastructure(ErrorLog errors, RefusalLine refusa
     /// <summary>Looks in the open assemblies on the thread pool and comes back on the UI thread, a lookup the library
     /// failed as <see cref="Outcome{T}.Failed"/>, as the core answers it; the cancellation of <paramref name="ct"/> is
     /// let through.</summary>
-    public async Task<Outcome<Lookup<BrowseNode>>> LookUpReferenceAsync(CodeReference.Navigable reference, CancellationToken ct)
+    public async Task<Outcome<Lookup<BrowseNode>>> LookUpReferenceAsync(Navigable reference, CancellationToken ct)
     {
         var found = await Background.Wait(Task.Run(() => NodeLookup.FindAsync(assemblies, session, reference, ct), ct));
         ct.ThrowIfCancellationRequested();
@@ -33,7 +33,7 @@ public sealed class NavigationInfrastructure(ErrorLog errors, RefusalLine refusa
     }
 
     /// <inheritdoc cref="LookUpReferenceAsync"/>
-    public async Task<Outcome<Lookup<MetadataTarget>>> LookUpMetadataRowAsync(CodeReference.Navigable reference, CancellationToken ct)
+    public async Task<Outcome<Lookup<MetadataTarget>>> LookUpMetadataRowAsync(Navigable reference, CancellationToken ct)
     {
         var found = await Background.Wait(Task.Run(() => NodeLookup.FindMetadataRowAsync(assemblies, session, reference, ct), ct));
         ct.ThrowIfCancellationRequested();

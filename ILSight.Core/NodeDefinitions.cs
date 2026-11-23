@@ -282,7 +282,7 @@ public static class NodeDefinitions
 
     /// <summary>The reference a node of <paramref name="subject"/> points at, as documents link to it;
     /// null for one that opens itself.</summary>
-    internal static CodeReference.Navigable? FindTarget(NodeSubject subject)
+    internal static Navigable? FindTarget(NodeSubject subject)
     {
         var activation = GetActivation(subject);
         if (activation is not Activation.Navigate navigate)

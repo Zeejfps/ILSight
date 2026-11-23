@@ -567,7 +567,7 @@ internal sealed class AppStateDriver : IFrameHost
     }
 
     /// <summary>Analyzes what <paramref name="reference"/> points at as the views do.</summary>
-    public void Analyze(CodeReference.Navigable reference)
+    public void Analyze(Navigable reference)
     {
         using var turn = _posted.Install();
         var pendingAnalysis = AnalyzerPanelView.ShowAnalyzing(Ui.Panels, AppState.ListSession.Analyzer, reference);

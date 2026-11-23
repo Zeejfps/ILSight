@@ -129,7 +129,7 @@ public static class MetadataGrids
         var tooltips = new object?[rows * columns];
         var links = new MetadataAddress?[rows * columns];
         var details = new object?[rows];
-        var definitions = new CodeReference.Navigable?[rows];
+        var definitions = new Navigable?[rows];
         var listed = new Dictionary<TableIndex, bool>();
         for (var r = 0; r < rows; r++)
         {
@@ -187,7 +187,7 @@ public static class MetadataGrids
             Tooltips = Enumerable.Repeat<MetadataTooltip?>(tooltip, cells).ToArray(),
             Links = new MetadataAddress?[cells],
             Details = Enumerable.Repeat(details, rows).ToArray(),
-            Definitions = new CodeReference.Navigable?[rows],
+            Definitions = new Navigable?[rows],
         };
     }
 
@@ -526,13 +526,13 @@ public static class MetadataGrids
     /// member or assembly it is — a reference resolved to its definition. Null for a row that is
     /// none, a row of debug metadata, or a row not read yet.
     /// </summary>
-    public static CodeReference.Navigable? FindDefinition(MetadataGrid grid, int row)
+    public static Navigable? FindDefinition(MetadataGrid grid, int row)
     {
         return grid.FindDefinition(row);
     }
 
     /// <summary>What <paramref name="row"/> stands for in the code, read through <paramref name="file"/>.</summary>
-    internal static CodeReference.Navigable? ReadDefinition(MetadataGrid grid, MetadataFile file, int row)
+    internal static Navigable? ReadDefinition(MetadataGrid grid, MetadataFile file, int row)
     {
         if (!LoadedAssemblies.IsReadFrom(grid.Module, file) || grid.Schema.Table is null)
         {
@@ -786,6 +786,6 @@ public static class MetadataGrids
 
         public required object?[] Details { get; init; }
 
-        public required CodeReference.Navigable?[] Definitions { get; init; }
+        public required Navigable?[] Definitions { get; init; }
     }
 }

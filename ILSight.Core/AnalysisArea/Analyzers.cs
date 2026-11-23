@@ -379,7 +379,7 @@ public static class Analyzers
         {
             Symbol = module, Shape = new SymbolShape.Assembly(), Accessibility = NodeAccessibility.Public, Label = module.AssemblyName,
             Container = module.MetadataFile?.FileName ?? "", AssemblyName = null,
-            Reference = file is not null ? CodeReferences.CreateAssembly(module.AssemblyName, file) : (CodeReference.Navigable?)null,
+            Reference = file is not null ? CodeReferences.CreateAssembly(module.AssemblyName, file) : (Navigable?)null,
             Offers = OfferFacts.OfModule, Accessors = [], File = file, Definition = null,
         };
     }
@@ -393,7 +393,7 @@ public static class Analyzers
         {
             Symbol = entity, Shape = EntityText.SymbolShapeOf(entity), Accessibility = EntityText.Map(entity.Accessibility), Label = EntityText.Label(entity),
             Container = outer is not null ? EntityText.FullName(outer) : entity is ITypeDefinition type ? type.Namespace : "",
-            AssemblyName = entity.ParentModule?.AssemblyName, Reference = CodeReference.Navigable.FromNullable(CodeReferences.Find(entity)), Offers = ReadOfferFacts(entity),
+            AssemblyName = entity.ParentModule?.AssemblyName, Reference = Navigable.FromNullable(CodeReferences.Find(entity)), Offers = ReadOfferFacts(entity),
             Accessors = Members.Accessors(entity).Select(static m => ReadEntityFacts(m)).ToArray(),
             File = path, Definition = DefinitionOf(entity, path),
         };

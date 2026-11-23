@@ -39,7 +39,7 @@ public static class Documents
     }
 
     /// <summary>The index of the line that defines <paramref name="reference"/>; null when this document does not define it.</summary>
-    public static int? FindDefinitionLine(DecompiledDocument document, CodeReference.Navigable reference)
+    public static int? FindDefinitionLine(DecompiledDocument document, Navigable reference)
     {
         if (document.Definitions.TryGetValue(reference, out var line))
         {

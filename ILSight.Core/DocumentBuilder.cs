@@ -42,7 +42,7 @@ internal sealed class DocumentBuilder : ITextOutput
     private readonly StringBuilder _line = new();
     private readonly List<DocumentSpan> _spans = new();
     private readonly List<(string Text, int First, int Count)> _lines = new();
-    private readonly Dictionary<CodeReference.Navigable, int> _definitions = new();
+    private readonly Dictionary<Navigable, int> _definitions = new();
     private readonly Dictionary<int, (CodeReference.Entity Method, int Offset)> _markedStatements = new();
     private readonly List<DocumentSpan> _lexed = new();
     private readonly Dictionary<object, int> _localKeys = new();
@@ -444,7 +444,7 @@ internal sealed class DocumentBuilder : ITextOutput
         Callbacks.Run((Builder: this, reference, text, isDefinition), static s => s.Builder.WriteHandle(s.reference, s.text, s.isDefinition));
     }
 
-    private void WriteHandle(CodeReference.Navigable? reference, string text, bool isDefinition)
+    private void WriteHandle(Navigable? reference, string text, bool isDefinition)
     {
         var kind = _kind ?? (reference is null ? SpanKind.Plain : isDefinition && text.StartsWith('.') ? SpanKind.Keyword : GetSpanKind(reference.Value));
         WriteReferenceSpan(text, kind, reference, isDefinition);
@@ -796,7 +796,7 @@ internal sealed class DocumentBuilder : ITextOutput
         _spans.AddRange(_lexed);
     }
 
-    private CodeReference.Navigable? FindReference(MetadataFile metadata, Handle handle, string text)
+    private Navigable? FindReference(MetadataFile metadata, Handle handle, string text)
     {
         if (handle.IsNil)
         {
@@ -808,7 +808,7 @@ internal sealed class DocumentBuilder : ITextOutput
             var definition = ResolveDefinition(metadata, (EntityHandle)handle);
             if (definition is not null)
             {
-                return CodeReference.Navigable.FromNullable(CodeReferences.Find(definition, text));
+                return Navigable.FromNullable(CodeReferences.Find(definition, text));
             }
         }
         return CodeReferences.Find(metadata.Metadata, handle, text, AssemblyPath.Of(metadata.FileName));
@@ -847,13 +847,12 @@ internal sealed class DocumentBuilder : ITextOutput
         }
     }
 
-    private static SpanKind GetSpanKind(CodeReference.Navigable reference)
+    private static SpanKind GetSpanKind(Navigable reference)
     {
         return reference switch
             {
                 CodeReference.Entity entity => GetSpanKind(entity.Kind),
                 CodeReference.Assembly => SpanKind.Plain,
-                _ => throw new UnreachableException(),
             };
     }
 

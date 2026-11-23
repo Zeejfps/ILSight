@@ -17,7 +17,7 @@ public sealed class AnalysisSymbol
     public required SymbolLocation Location { get; init; }
 
     /// <summary>What to navigate to it by; null when it cannot be shown.</summary>
-    public required CodeReference.Navigable? Reference { get; init; }
+    public required Navigable? Reference { get; init; }
 
     /// <summary>The analyses that apply to the symbol, in the order they are offered, worked out when it was read.</summary>
     public required IReadOnlyList<AnalysisKind> Kinds { get; init; }

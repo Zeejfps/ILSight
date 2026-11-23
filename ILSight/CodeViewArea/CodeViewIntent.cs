@@ -10,7 +10,7 @@ public union CodeViewIntent(CodeViewIntent.Navigate, CodeViewIntent.ToggleBookma
     /// <summary>Go to <see cref="Target"/>, in a new tab when <see cref="InNewTab"/>.</summary>
     public sealed record Navigate
     {
-        public required CodeReference.Navigable Target { get; init; }
+        public required Navigable Target { get; init; }
 
         public required bool InNewTab { get; init; }
     }
@@ -20,7 +20,7 @@ public union CodeViewIntent(CodeViewIntent.Navigate, CodeViewIntent.ToggleBookma
 
     public sealed record Analyze(CodeReference.Entity Entity);
 
-    public sealed record ShowInMetadata(CodeReference.Navigable Target);
+    public sealed record ShowInMetadata(Navigable Target);
 
     public sealed record ShowInApiReference(CodeReference.Entity Entity);
 

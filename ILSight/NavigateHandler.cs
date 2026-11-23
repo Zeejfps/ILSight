@@ -19,7 +19,7 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
         /// into a module whose type system the library could not read; looked for without
         /// holding up the screen (it may read an assembly from disk); a lookup that failed comes back as
         /// <see cref="Outcome{T}.Failed"/>.</summary>
-        Task<Outcome<Lookup<BrowseNode>>> LookUpReferenceAsync(CodeReference.Navigable reference, CancellationToken ct);
+        Task<Outcome<Lookup<BrowseNode>>> LookUpReferenceAsync(Navigable reference, CancellationToken ct);
     }
 
     /// <summary>Resolves <paramref name="reference"/> in the background (it may load an assembly) for the request
@@ -28,7 +28,7 @@ public sealed class NavigateHandler(NavigateHandler.IPorts ports)
     /// <paramref name="decompiler"/> has it once found, and records it in the history. Returns the load that started in
     /// the tab, for the edge that started this to start under the tab's work; null when none started. Reports a
     /// reference that leads nowhere; drops it when something else was asked for meanwhile.</summary>
-    public async Task<DecompileTicket?> HandleAsync(Navigation navigation, DecompilerChoice decompiler, CodeReference.Navigable reference, ResolveTicket ticket,
+    public async Task<DecompileTicket?> HandleAsync(Navigation navigation, DecompilerChoice decompiler, Navigable reference, ResolveTicket ticket,
         CancellationToken ct)
     {
         var found = await ports.LookUpReferenceAsync(reference, ct);

@@ -81,7 +81,7 @@ public static class Analysis
     /// <summary>Adds a root to <paramref name="analyzer"/> that shows as loading while what
     /// <paramref name="reference"/> points at is found. Returns it with the reference, for
     /// <see cref="AnalyzeReferenceHandler"/> to find and analyze.</summary>
-    public static PendingAnalysis BeginAnalyzing(AnalyzerTree analyzer, CodeReference.Navigable reference)
+    public static PendingAnalysis BeginAnalyzing(AnalyzerTree analyzer, Navigable reference)
     {
         return new PendingAnalysis
         {

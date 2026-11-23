@@ -8,7 +8,7 @@ namespace ILSight.Core;
 /// </summary>
 public sealed class DecompiledDocument
 {
-    public required IReadOnlyDictionary<CodeReference.Navigable, int> Definitions { get; init; }
+    public required IReadOnlyDictionary<Navigable, int> Definitions { get; init; }
 
     public required IReadOnlyDictionary<int, CodeAnchor> Statements { get; init; }
 

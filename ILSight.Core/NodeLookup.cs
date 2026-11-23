@@ -77,7 +77,7 @@ public static class NodeLookup
     /// such as a compiler-generated one, the nearest visible ancestor. Not found if the reference cannot be
     /// resolved; the failure, with why, of a file resolving it needs that can't be read, or of the children that would
     /// list it, never its ancestor nor not found.</summary>
-    public static async Task<Outcome<Lookup<BrowseNode>>> FindAsync(AssemblyList list, BrowseSession session, CodeReference.Navigable reference,
+    public static async Task<Outcome<Lookup<BrowseNode>>> FindAsync(AssemblyList list, BrowseSession session, Navigable reference,
         CancellationToken ct)
     {
         using var reading = LoadedAssemblies.BeginReading();
@@ -93,7 +93,7 @@ public static class NodeLookup
     // The listed assembly defining what reference points at, and its handle there; a file resolving it needs that
     // can't be read, the lookup's failure. Each library read on the way is under its own catch (ResolveListedAsync).
     private static async Task<Outcome<Lookup<(LoadedModule Assembly, EntityHandle Handle)>>> ResolveAsync(AssemblyList list, ModuleReadLease reading,
-        CodeReference.Navigable reference, CancellationToken ct)
+        Navigable reference, CancellationToken ct)
     {
         try
         {
@@ -128,11 +128,11 @@ public static class NodeLookup
 
     /// <summary>The metadata table row that defines what <paramref name="reference"/> points at: the row
     /// of a type or member, or an assembly's own row, opening and listing the assembly that defines it
-    /// as <see cref="FindAsync(AssemblyList, BrowseSession, CodeReference.Navigable, CancellationToken)"/> does. Not
+    /// as <see cref="FindAsync(AssemblyList, BrowseSession, Navigable, CancellationToken)"/> does. Not
     /// found if the reference cannot be resolved; the failure, with why, of a file resolving it needs that can't be
     /// read, or of the folders or tables that would list the row.</summary>
     public static async Task<Outcome<Lookup<MetadataTarget>>> FindMetadataRowAsync(AssemblyList list, BrowseSession session,
-        CodeReference.Navigable reference, CancellationToken ct)
+        Navigable reference, CancellationToken ct)
     {
         using var reading = LoadedAssemblies.BeginReading();
         var resolved = await ResolveAsync(list, reading, reference, ct);

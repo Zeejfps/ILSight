@@ -9,43 +9,25 @@ public static class TabPlaceholders
     /// <summary>What the note for <paramref name="content"/> says.</summary>
     internal static string Describe(Strings t, TabContent content)
     {
-        if (content is TabContent.Loading)
+        return content switch
         {
-            return t.DocumentDecompiling;
-        }
+            TabContent.Loading => t.DocumentDecompiling,
+            TabContent.Failed failed => t.DocumentDecompilationFailed(OneLineText.Message(FailureTexts.DescribeCause(t, failed.Error))),
+            TabContent.Reloading or TabContent.Reopening => t.DocumentReloading,
+            TabContent.Gone gone => t.DocumentGone(OneLineText.Name(gone.Location.Label)),
+            TabContent.NotReloaded notReloaded => DescribeNotReloaded(t, notReloaded),
+            TabContent.Unreadable unreadable => t.CauseModuleUnreadableSentence(name: OneLineText.Name(unreadable.Module),
+                why: OneLineText.Message(FailureTexts.DescribeCause(t, unreadable.Why))),
+            TabContent.Empty or TabContent.Code or TabContent.Table or TabContent.Picture or TabContent.Report
+                or TabContent.Diagram or TabContent.Comparison or TabContent.Stopped
+                => throw new UnreachableException("A tab showing a document or nothing has no placeholder note."),
+        };
+    }
 
-        if (content is TabContent.Failed failed)
-        {
-            return t.DocumentDecompilationFailed(OneLineText.Message(FailureTexts.DescribeCause(t, failed.Error)));
-        }
-
-        if (content is TabContent.Reloading)
-        {
-            return t.DocumentReloading;
-        }
-
-        if (content is TabContent.Reopening)
-        {
-            return t.DocumentReloading;
-        }
-
-        if (content is TabContent.Gone gone)
-        {
-            return t.DocumentGone(OneLineText.Name(gone.Location.Label));
-        }
-
-        if (content is TabContent.NotReloaded notReloaded)
-        {
-            return notReloaded.End == ReloadEnd.AssemblyClosed
-                ? t.DocumentClosed(OneLineText.Name(notReloaded.Location.FilePath.FileName))
-                : t.DocumentNotReloaded(OneLineText.Name(notReloaded.Location.Label));
-        }
-
-        if (content is TabContent.Unreadable unreadable)
-        {
-            return t.CauseModuleUnreadableSentence(name: OneLineText.Name(unreadable.Module), why: OneLineText.Message(FailureTexts.DescribeCause(t, unreadable.Why)));
-        }
-
-        throw new UnreachableException($"A tab showing {content.GetType().Name} has no placeholder note.");
+    private static string DescribeNotReloaded(Strings t, TabContent.NotReloaded notReloaded)
+    {
+        return notReloaded.End == ReloadEnd.AssemblyClosed
+            ? t.DocumentClosed(OneLineText.Name(notReloaded.Location.FilePath.FileName))
+            : t.DocumentNotReloaded(OneLineText.Name(notReloaded.Location.Label));
     }
 }

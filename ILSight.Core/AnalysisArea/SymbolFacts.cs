@@ -13,7 +13,7 @@ internal sealed record SymbolFacts
     public required string Label { get; init; }
     public required string Container { get; init; }
     public required string? AssemblyName { get; init; }
-    public required CodeReference.Navigable? Reference { get; init; }
+    public required Navigable? Reference { get; init; }
     public required OfferFacts Offers { get; init; }
     public required IReadOnlyList<SymbolFacts> Accessors { get; init; }
     public required AssemblyPath? File { get; init; }

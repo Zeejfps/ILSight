@@ -276,7 +276,7 @@ The build checks what can be checked mechanically (`analyzers/`, wired in throug
 | R002 | `!` (RL0201), `== null` (RL0202, except in expression trees, which can't contain `is`), nullable suppressions (RL0203), a value read through `?.` into an assertion a missing value can pass: one of absence or difference, an equality whose other side may be null, a null an operator turns into an answer (RL0204) | where to narrow, what null means; in tests, whether a value is the subject's (asserted) or the test's own fact (`?? throw`, before the act); a null passed to a call inside an assertion |
 | R003 | missing `Async` (RL0301), `Find*` not `T?` or a union with a not-found case, itself or one level in (`Outcome<Lookup<T>>`) (RL0302), `Get*` returning `T?` (RL0303), `Is*`... not `bool` (RL0304), `Load*` / `Fetch*` (RL0305); suggestions while measured: a `bool` method named as an action (RL0306: also `bool CloseTab`, `bool Set`), a method returning -1 (not beside a sequence's count or a literal 1), a `char`'s `'\0'` or `default` of a struct that names or asks for its empty value, comparisons and `Get*OrDefault` aside (RL0307), a method whose name starts with a verb that only says it reacts (`Follow`, `Handle`, `Process`, `Manage`, `Update`, `Sync`, `React`), `Handle` / `HandleAsync` on a `*Handler` type or as its type's one public method, framework-facing methods and a word the method's own types name aside (RL0308), a call of the codebase's own written as an argument or an interpolated hole whose name starts with an action verb or only a moment (`AfterDraw`), receivers and `Task.WhenAll`'s tasks aside (RL0309) | whether a name is a verb; a call made for its effect under a verb RL0309 doesn't list, or a library's (`Task.Run`, `Queue.Dequeue`), in an argument; whether a name says the method's effect (a verb not on RL0308's list: `Refresh`, `Apply`), and whether a skipped `Handle` / `HandleAsync` is one use case's entry, its class named for the effect;  choosing the right pattern; sentinels that come from elsewhere (`Array.IndexOf`, `FirstOrDefault`) or travel through the codebase's own parameters and fields (-1 for "no row"); a `TrySet` that should count changes; a placeholder returned to fill a generic `T` |
 | R007 | braces and block bodies (`.editorconfig`), target-typed `new()` (RL0701), two statements on one line (RL0702), `var` for locals (IDE0007) | – |
-| R008 | `switch` on a union (RL0801; the union's own code, and a `Match` / `Switch` extension method of it, written once for a union the code can't change, excepted), discarded `To*`/`With*` results (RL0802), `if` / `else if` chain over union cases (RL0803), discarded result union (RL0804), a `Status` / `State` / `Kind` enum next to nullable properties (RL0805; rows, saved forms and wire shapes named for their role are skipped: `*Row`, `*Record`, `*Dto`, `*Json`, `*Request`, `*Response`), a case added from outside a union (RL0806); each of them for a union another project declares too (seen through its reference assembly, which keeps no private constructor); suggestion while measured: a dropped value of a type marked `[MustUse]`, a `Task<T>` of one taken as a plain `Task` included (RL0807) | whether nullable fields really depend on the status; whether a question every case answers or only some (and whether a default is harmless for a future case); whether a union with no `Match` really can't be changed (else its `Match` goes on it); which types leave state stuck when dropped (the marker is put by hand); a value passed to code that ignores it; whether a value carrying several kinds of work makes its consumer handle each (a handler per kind); RL0807 at error (`dotnet_diagnostic.RL0807.severity = error`) where a drop must fail the build |
+| R008 | a hand-written closed hierarchy where `union` belongs (RL0809), a switch over a union with a catch-all arm (`_`, `default`, `var`, `object`, `not`) or a switch statement that doesn't name every case (RL0801; a switch expression that misses one is CS8509, an error), discarded `To*`/`With*` results (RL0802), `if` / `else if` chain over union cases (RL0803), discarded returned union, not a generic call handing its argument back (RL0804), a union's `Value` read (RL0808), a `Status` / `State` / `Kind` enum next to nullable properties (RL0805; rows, saved forms and wire shapes named for their role are skipped: `*Row`, `*Record`, `*Dto`, `*Json`, `*Request`, `*Response`); each of them for a union another project declares too (known by the compiler's `[Union]` attribute); suggestions while measured: a dropped value of a type marked `[MustUse]`, a `Task<T>` of one taken as a plain `Task` included (RL0807), a union treated as a reference (a case tested after boxing it, `GetType()`, an identity check: RL0810) | whether nullable fields really depend on the status; whether a closed set is data (a union) or behaviour (a class); whether a question every case answers or only some; data every state shares kept beside the union; a union left at `default`; which types leave state stuck when dropped (the marker is put by hand); a value passed to code that ignores it; whether a value carrying several kinds of work makes its consumer handle each (a handler per kind); RL0807 at error (`dotnet_diagnostic.RL0807.severity = error`) where a drop must fail the build |
 | R004 | vague type names (RL0401); suggestions while measured: a public field or collection the type changes in its own methods (a collection it was handed to write into included), unless a widget binds it by `ref` (RL0403); a public field or auto-property only other types' code writes, on a type with instance methods of its own (RL0404); a type with no methods of its own whose exposed mutable members one other type changes, two or more of them, what the writer holds privately, edges and rows aside, conditional: suppressed with the reason where no rule ties the values, as a root's plain settings (RL0405); a static class whose functions write members of a type of the compilation themselves, through a parameter: two or more of them, a function changing it through another of the class's that writes it, or a lone one that reads what it writes or sets two members (fields and auto-properties: a setter with a body is the type's method; a call to the type's own methods is orchestration), extension methods included, draws, edges, structs, rows named for their role, fields a framework binds by `ref` and the class's own nested shapes skipped (RL0406); a lock that is a member of another type in source taken (`lock`, `Monitor`, `Lock`, `SemaphoreSlim`, `ReaderWriterLockSlim`), or a type's event handed out as its delegate by a member others can call (RL0407); a get-only member whose body only reads a member of a part the same type hands out, explicit interface implementations, overrides and `[Obsolete]` ones aside (RL0408); a settable field or auto-property of a type holding parts, used (read, written or bound by `ref`) by one other type alone, the whole's own code, its view (a type using another loose value of it), its maker and a feature's own state type (no other type using a member of it the one type doesn't, a save's reads included) aside, conditional: suppressed with the reason for state shared on purpose or a published member (RL0409); a static class whose name's last word is a moment of the app's life (`Start`, `Startup`, `Shutdown`, `Frame(s)`, `Exit`, `Teardown`, `Boot`, `Init`) and whose functions take two or more of the compilation's own objects (classes, interfaces), tests aside: a sign, a cohesive calculation suppressed with the reason (RL0410); a type whose name's last word is a verb's -ing form not on the list of nouns (a word also a noun read as the activity on a class or interface: a genuine noun suppressed with the reason), union cases, static classes and tests aside (RL0411) | whether a type is an agent or one run (which noun), and an -ing word RL0411's list misjudges; whether a class is grouped by what its code works on or by when it runs where its name doesn't say a moment (a `Chores`, a `Loop` holding the chores themselves), and whether functions keep taking the same collaborators;  classification; a project's own lock wrapper handed out (RL0407 sees only the framework's locks); one-implementation interfaces (an analyzer can't see across projects); framework-facing data mixed with rules kept elsewhere; something depending on a framework-facing method having run; whether use cases share a step (one class) or not (a class each); where a helper with no port lives (the compiler keeps a rule's type private once it's there: CS0122); whether a rule's type holds every part the rule spans, a setting included, and names the changes it exempts; which changes its rule covers (read from the domain contract, every kind it covers included, not from whether a user asked for the transition), and whether each covered transition is handled alike for every kind, restoration and late results included; where its parts end (what a caller could break the rule through, in what it hands out, a change landing late included, checked again against the prerequisite's pending, completed or removed state, which the domain rule reads); whether per-object state is held where only the holder reaches it; whether what the rule keeps about a place is a value; duplicate execution paths only tests use, and internal members confirmed dead (another project's calls; external contracts stay); a root's test hook that hands out its parts for the test to build an adapter, instead of handing the test the adapter it built; whether an input that arrives at more than one moment has one handler, its first copy fed through it once the handler's prerequisites are in place and before anything accepting later copies opens; a rule kept by another type's functions through a setter with a body or a method it calls; whether static code is owned by nothing (a pure function, a parse, a type the code doesn't own, a static a framework requires, P/Invoke) or orchestration through objects' own public operations, or writes an object's state itself where RL0406 doesn't count it (a collection reached through the object, its `Add`; a lone plain store a rule covers); a forwarder on a whole for a part's member, and the readers it keeps on the whole; whether a rule ties the parts a change spans (the smallest type holding all it constrains, or orchestration over them), and whether anything but the type reaches that state (a framework's widget handed it by the type); state one feature owns together left as separate parts, or a bundle carrying what the caller didn't mean to pass; a rule's code in another type's functions the owner forwards its parts to; a test reaching a rule's state where the framework it plays never does (where the owner's check compares the state around the framework's call), and a hook only tests call between an owner's steps where the state it leaves could be built; feature state's intended owner and lifetime, and whether it sits on a value other features share, and whether one user is its owner (RL0409 sees one user in the compilation) |
 | R005 | positional records with 2+ values (RL0501); suggestion while measured: a value passed by position to a method generated from a text template with two or more parameters of one type (RL0502; on a type listed in `rulelab.template_types`) | rules spanning several values; which hand-written signatures' order callers can swap |
 | R001 | direct time / randomness / I/O, and the codebase's own services listed in `rulelab.ambient_types` (static, or reached through an object passed in), outside adapters (and types only adapters or listed services use: I/O code they share), the composition root, tests and edge code (`[Edge]` types, `rulelab.infrastructure` folders) (RL0101); a static class whose functions take the same port (RL0103); a port member whose signature is, or holds, infrastructure or a listed service, through a union's cases too (RL0105); suggestions while measured: a use case or adapter constructed outside the composition root (RL0102), another use case reached around the port: its port taken as a parameter or extended, or a constructor taking code or state beside its port, configured values set once aside (RL0104), ordinary code taking an answer from a member of an `[Edge]` type: a call's value, a property, indexer or field read; adapters and listed services aside (RL0106), a `WaitAsync` cutting short a wait on a task whose result is disposable, made by a call or held by a local (RL0107; a task a field or property holds is an object's, whose release is review's) | an effect reached through an unlisted method of an object passed in; another feature's use case called as a static function over the state; a decision inside I/O code adapters share; pure code that differs per kind injected or passed per call instead of on the kind (a closed set; an open one chosen at run time, such as plugins, is a strategy interface); whether a library object kept against a handle holds a resource its owner must release when the handle goes, and whether that release waits for every read of it (a lease per read, new reads refused once it is closed, a cache that keeps another item's object leasing it at each use; an object holding only memory never disposed), is done once on the thread its API requires, and is awaited by a close whose completion contract needs the resource free; whether a table a view shows a window of, whose reads reach a file, is paged whatever its size (its first window read with its content, sized by the window the screen last laid out, else the tallest it can show, with any sample the first show measures), not read whole under a threshold; whether a view of a closed item still asks for reads; whether a record of functions is standing in for a port; whether a function takes the whole state (and narrowing it bottom-up); a settings pass setting values on live objects; what lives per document or request; a decision that relied on an object's identity once the port passes values (a key's hand-written `Equals` without `GetHashCode` is CS8851); ports, adapters, what counts as a decision (would a second adapter of the port repeat the branch?); a caller converted before its callee (passes the state on, no port member carrying it); whole-state work called outside an edge; which of a library's types are I/O code another project's adapters use, or read past memory as the app makes them (listed by hand: one compilation sees no other project's uses, no library says which of its members read, and a type made both ways, as an image in memory and a mapped file, can't be listed); whether a value read after a wait is read from its owner; whether the content decides what else to read (the kind says what it names); a function that takes the state only to reach a use case; a context typed by the whole state outside the root view (steps that only hand parts) and the edge, a parameter object's inputs and whether it holds owners or values (the operation's contract; whether a request's parts agree with what its choices were made from as asked, and whether a contract the one asking could take otherwise is said to them), and a dispatch's guard written on each entry or its exceptions set apart by position alone; a decision inside an edge (R001's checks are off there; a second edge for the same input would repeat the branch), work an edge's void member does for ordinary code, an edge that assembles the root's steps itself, and a host that copies the app's start or a root that starts work as it builds; whether what a read made is released on every way it ends before a receiver takes it (a cancellation seen after it finished, a stale answer), a result holding a resource in a field included, and whether a wait cut short leaves the read to an owner that tracks it |
@@ -394,7 +394,7 @@ closed and known when compiling, `static abstract` on the kind; closed and chose
 cases answer (R008); open (implementations from outside the app, such as plugins), a strategy interface chosen at run
 time from what the composition root registered, each implementation still pure. In testing (S32, a report CLI asked
 for a format a plugin supplies), a union of the known formats and static abstract kinds both
-answered "unknown format 'markdown'" (a plugin's case can't derive from the union: `DEMO_CS0122_RL0806`; a kind
+answered "unknown format 'markdown'" (a plugin's case can't derive from the union: `DEMO_CS0509`; a kind
 picked by name can't reach its static members: `DEMO_CS8926`, though reflection's `MakeGenericMethod` could, checked
 by nothing); a strategy interface chosen from what the root registered ran the plugin's format, and the use case's
 test passed its own.
@@ -403,7 +403,7 @@ test passed its own.
 a job runner or other shared state such as an error log) is its dependency however it's reached: a static, a method on
 an object passed in, or a delegate it was handed to do part of its job. Put it on the port. Reading and writing plain
 data on an object passed in is not an effect, and neither is calling its pure methods (`bookmarks.IsMarked(name)`):
-use them directly. A handler the caller passes for its own policy (`Match` handlers, a comparer) is the caller's (R011).
+use them directly. A handler the caller passes for its own policy (a predicate, a comparer) is the caller's (R011).
 
 ```csharp
 // ❌ the port is faked, the lookup isn't: it reads assemblies from disk on another thread
@@ -768,8 +768,8 @@ and a value type with methods that is (a `Percentage` applying itself, suppresse
      (`Ui`, where the framework has one) and the part; the typed context stays with code that needs what it carries
      whole (the root view, the edge, a registration the framework types by the state). Where the framework offers no
      untyped context, the function keeps the context the framework requires, takes the part beside it and reads nothing
-     else through it. A tuple carrying the context into a library's dispatch (a `Match` or `Switch` taking a state for
-     its static lambdas) is the function's own parameters carried across, under the same rule (RULE-ISSUES BJ14, BL3,
+     else through it. A tuple carrying the context into a library's dispatch (a method taking a state for its static
+     lambdas) is the function's own parameters carried across, under the same rule (RULE-ISSUES BJ14, BL3,
      BN10). How many parts a function takes is no reason to take the whole: the count asks what the parts are to it, and
      state is grouped by what owns it and the rules that tie it (R004). State one feature owns together (a grid's sort,
      filter and page) is one part, held for the owner and lifetime it is meant to have; values it only reads and passes
@@ -837,7 +837,7 @@ and a value type with methods that is (a `Percentage` applying itself, suppresse
      (S42 r, s).
      A dispatch over many entries (key bindings, routes, message handlers) is a table or direct checks, the codebase's
      choice, and one rule holds for both forms: the code that wires an edge's entries to their handlers keeps the edge's
-     context, a table or a `Switch` alike; any other dispatch's shared state is exactly the parts its entries act on (a
+     context, a table or a switch alike; any other dispatch's shared state is exactly the parts its entries act on (a
      tuple or a parameter object, never the whole or a context typed by it); either way each handler takes the parts it
      needs (RULE-ISSUES BO5, BO6, BQ3). A guard of the dispatch (not while a text box takes the keys; signed in) is
      stated once and applies by default, so an entry written later meets it unasked (the table's default, a group of
@@ -850,7 +850,7 @@ and a value type with methods that is (a `Percentage` applying itself, suppresse
      covered a check written below it, but Delete written beside Find, above it, was unguarded, nothing saying so; with
      the exceptions a group named for running while typing and the rest a group run only outside a text box, Delete went
      into the group for its kind (S44 e, f). The edge's dispatch as a table over the screen ran the same handlers as its
-     `Switch` (S43 e).
+     switch (S43 e).
      A function that takes the whole only to write to one of its parts (a command queue it enqueues on) takes that
      part: the queue's writing side, which a type whose owner drains it hands out without the drain (R004 "A collection
      the type is handed only to write into"; RULE-ISSUES BJ16).
@@ -1066,7 +1066,7 @@ outside the composition root.
 - [ ] Another use case is reached through a member of this one's port, and the adapter calls it; never its port, its effects, or the use case itself beside the port.
 - [ ] Only the composition root, an edge (`[Edge]`), constructs use cases and adapters; a test that builds the application builds it through it.
 - [ ] Edges stay thin: they translate, start work and catch; a branch on what the world or the state answered is a use case over a port (the edge's I/O its adapter) or pure code; ordinary code hands an edge work but takes no answer from one (a call's value, a property, indexer or field read). Startup and the test hosts that run the whole app build it through one entry point of the root's and, where the app has a lifecycle, call one lifecycle owner the root builds (in a frame-driven app the app loop: its start, and its calls before and after each draw, a window's hooks calling them after its own setup), host-only setup kept in its host; building starts nothing; other edges receive what they call; focused tests keep their seams. An adapter's I/O may go through an edge.
-- [ ] Only edges and functions that work on the whole state take it, a context typed by it included (the root view, its private steps that only hand views their parts, and the edge, its dispatch's tuple too); nested scopes pass parts, or one parameter object of exactly their items' targets, owners or values as the operation's contract says (a snapshot where it runs as requested), however long it is held, and a request's parts agree (a choice made as asked, a file named for the language, runs with what it was made from: captured then, or read again at the run and refused where it changed; the preconditions its contract states rechecked at the run, its subject still there only where the contract needs it, a request that captured all it acts on running on that; where the caller could take the contract otherwise (values kept as asked while the user can change them), it is said where they ask: an API's documentation, or the command, its dialog or result, never an implementation comment alone); a parameter object, assembled or copied, carries only inputs right for this call; an edge's dispatch keeps the edge's context, table or `Switch`, any other shares only its entries' parts; a dispatch's guard is stated once and applies by default, each exception said where its entry is (never by position alone). Callees were narrowed first, then their callers (a caller converted first passes the state on as before, never through a port member). Whole-state work (saving the session) is called by edges only: a use case whose change requires it ends, and the edge's step runs it (an autosave), or the use case hands it back.
+- [ ] Only edges and functions that work on the whole state take it, a context typed by it included (the root view, its private steps that only hand views their parts, and the edge, its dispatch's tuple too); nested scopes pass parts, or one parameter object of exactly their items' targets, owners or values as the operation's contract says (a snapshot where it runs as requested), however long it is held, and a request's parts agree (a choice made as asked, a file named for the language, runs with what it was made from: captured then, or read again at the run and refused where it changed; the preconditions its contract states rechecked at the run, its subject still there only where the contract needs it, a request that captured all it acts on running on that; where the caller could take the contract otherwise (values kept as asked while the user can change them), it is said where they ask: an API's documentation, or the command, its dialog or result, never an implementation comment alone); a parameter object, assembled or copied, carries only inputs right for this call; an edge's dispatch keeps the edge's context, table or switch, any other shares only its entries' parts; a dispatch's guard is stated once and applies by default, each exception said where its entry is (never by position alone). Callees were narrowed first, then their callers (a caller converted first passes the state on as before, never through a port member). Whole-state work (saving the session) is called by edges only: a use case whose change requires it ends, and the edge's step runs it (an autosave), or the use case hands it back.
 - [ ] I/O code a library declares for another project's adapters is listed in `rulelab.ambient_types`, and holds nothing else (members others call for what they know live on their concept).
 - [ ] A library object that reads lazily is read only on the I/O side; the state keeps a handle (the values read when it was read), the library's object kept against it by I/O code (a `ConditionalWeakTable` for one that holds only memory; one holding a resource is released when the owner of closing drops the handle, on every way of closing), and the library's types whose reads reach past memory are listed.
 - [ ] A resource is released when nothing can read it: the close request drops the handle and the I/O side refuses new reads (`Closed`), and a view of the closed item, of every kind that reads it, asks for nothing more (what would read shown unavailable, saying why, never "loading"); each read under way holds a lease, given back however it ends; once closed and its last lease ended, the owner disposes it exactly once, on the thread or scheduler its API requires. A cache that keeps another item's object a hook handed it leases that object at each use, a refusal dropping the cache (never a count for the cache's life: a cycle is never released); or, where the product keeps showing a closed item's content in the open items that read it and the close promises nothing about the resource, the closed item stays while what is open or reading reaches it, released by reachability (a cycle included). The close completes at the request, or awaits the release where its completion contract needs the resource free. Nothing a running read may reach is disposed at the close; an object holding only memory is never disposed while reachable. What a read made is its maker's until a receiver takes it: every way it ends without the hand-over (a failure after it was made, a cancellation seen after it finished, a stale answer) releases it, and its ownership is never abandoned: no wait that is its only owner is cut short (RL0107), a wait stopping early only where an owner that outlives it tracks the read and takes or releases what it makes; a finished answer handed on instead is taken or released by the receiver's ticket, which every cancellation that should drop it changes.
@@ -1335,13 +1335,6 @@ An async question (`IsEmailRegisteredAsync`) may **read** over I/O, but never wr
 
 For records, prefer the `with` expression over a `With*` method: `options with { Timeout = TimeSpan.FromSeconds(5) }`.
 
-### Unions (R008)
-
-| Pattern | Meaning | Example |
-|---------|---------|---------|
-| `Match` | One handler parameter per case; returns the handler's result | `order.Match(pending: p => ..., confirmed: c => ..., cancelled: c => ...)` |
-| `Switch` | One `Action` per case; side effects only, returns nothing | `notification.Switch(email: e => ..., sms: s => ...)` |
-
 ### Mutation
 
 | Pattern | Meaning | Example |
@@ -1542,7 +1535,7 @@ Work top to bottom and take the first match.
 |---------------|---------|---------|
 | Data with no rules | a `record` with `required init` properties (R005) | `new OrderLine { Sku = "A-1", Quantity = 2, UnitPrice = 50m }` |
 | A value with a rule (format, range) | a type that can't be built invalid: validation in the `init` accessor (R005), plus `Parse`/`TryParse` | `Email.Parse(raw)` |
-| State with distinct phases, each with its own data (status + fields that must agree) | a union: one type per state (R008) | `Order.Pending` → `pending.ToCancelled(now)` → `Order.Cancelled` |
+| State with distinct phases, each with its own data (status + fields that must agree) | a union: one type per state (R008) | `OrderState.Pending` → `pending.ToCancelled(now)` → `OrderState.Cancelled` |
 | State that changes under rules | a class: `required init` for the initial state, a private field that only its methods change (R005) | `account.Withdraw(amount)` |
 | A calculation or decision over data | a static method on a static class named for the concept | `Shipping.CalculateCost(order)`, `Csv.ReadRecords(reader)` |
 | Read → compute → write, with no decision between I/O calls | **no use-case class**: do the I/O at the edge (endpoint, `Program`) and call pure code in between; where that I/O keeps taking the same collaborators or holds a resource or a lifetime (a watcher, a window-only chore's font file), it is an `[Edge]` object holding them, built by the root (step 3) | `File.WriteAllText(output, PeopleCsv.ConvertToJson(File.ReadAllText(input)))` |
@@ -2300,17 +2293,15 @@ out through response DTOs. Domain types never meet a serializer.
        return new Result<NewOrder>.Success { Value = new NewOrder { CustomerEmail = email, Lines = lines } };
    }
    ```
-3. **Return every error at once**, handling both outcomes through `Match`:
+3. **Return every error at once**, handling both outcomes in one switch expression:
    ```csharp
-   return await request.ToNewOrder().Match(
-       success: async newOrder =>
-       {
-           var placed = await placeOrder.HandleAsync(newOrder, ct);
-           return Results.Ok(placed.ToResponse());
-       },
-       failure: errors => Task.FromResult(Results.ValidationProblem(errors)));
+   return await (request.ToNewOrder() switch
+   {
+       Result<NewOrder>.Success success => PlaceAsync(success.Value, ct),
+       Result<NewOrder>.Failure failure => Task.FromResult<IResult>(Results.ValidationProblem(failure.Errors)),
+   });
    ```
-   Both branches must return the same type, so a synchronous branch next to an async one is wrapped in `Task.FromResult`.
+   Both arms must return the same type, so a synchronous arm next to an async one is wrapped in `Task.FromResult`.
 4. **Values you don't control are decisions, not crashes.** Map open-ended strings (third-party statuses, enum names)
    explicitly in the conversion step: report them as errors, or map them to an `Unknown` case on purpose.
 5. **Decide per input whether one bad part spoils the whole.**
@@ -2384,19 +2375,15 @@ out through response DTOs. Domain types never meet a serializer.
 A union (R008): a successful result can't exist without its value, and a failed one can't exist without an error.
 
 ```csharp
-public abstract record Result<T>
+public union Result<T>(Result<T>.Success, Result<T>.Failure)
     where T : notnull
 {
-    private Result()
-    {
-    }
-
-    public sealed record Success : Result<T>
+    public sealed record Success
     {
         public required T Value { get; init; }
     }
 
-    public sealed record Failure : Result<T>
+    public sealed record Failure
     {
         public required IReadOnlyDictionary<string, string[]> Errors
         {
@@ -2405,16 +2392,6 @@ public abstract record Result<T>
                 ? value.ToDictionary(e => e.Key, e => e.Value.ToArray())   // a copy: the caller can't empty it afterwards
                 : throw new ArgumentException("A failed result needs at least one error.", nameof(Errors));
         }
-    }
-
-    public TResult Match<TResult>(Func<T, TResult> success, Func<IReadOnlyDictionary<string, string[]>, TResult> failure)
-    {
-        return this switch
-        {
-            Success s => success(s.Value),
-            Failure f => failure(f.Errors),
-            _ => throw new UnreachableException($"Result<{typeof(T).Name}>.Match does not handle {GetType().Name}."),
-        };
     }
 }
 ```
@@ -2544,154 +2521,121 @@ its phase is a union inside the type that owns its rules, held beside the bool.
 
 ### How
 
-C# has no union type yet; use a closed hierarchy: an abstract record or abstract class with a private constructor, and sealed nested cases.
+Declare it with `union` (C# 15): each case a sealed record nested in its body, holding exactly that case's data,
+`required init` (R005) or positional. A union of existing types names them instead (R006's `Result<T>`).
 
 ```csharp
-public abstract record Order
+public sealed record Order
 {
-    private Order()   // closed: only the nested cases can exist
-    {
-    }
-
     public required int Id { get; init; }
+    public required OrderState State { get; init; }
+}
 
-    public sealed record Pending : Order
+public union OrderState(OrderState.Pending, OrderState.Confirmed, OrderState.Cancelled)
+{
+    public sealed record Pending
     {
         public Confirmed ToConfirmed(DateTimeOffset now)
         {
-            return new Confirmed { Id = Id, ConfirmedAt = now };
-        }
-
-        public Cancelled ToCancelled(DateTimeOffset now)
-        {
-            return new Cancelled { Id = Id, CancelledAt = now };
+            return new Confirmed { ConfirmedAt = now };
         }
     }
 
-    public sealed record Confirmed : Order
+    public sealed record Confirmed
     {
         public required DateTimeOffset ConfirmedAt { get; init; }
     }
 
-    public sealed record Cancelled : Order
+    public sealed record Cancelled
     {
         public required DateTimeOffset CancelledAt { get; init; }
     }
-
-    public TResult Match<TResult>(Func<Pending, TResult> pending, Func<Confirmed, TResult> confirmed, Func<Cancelled, TResult> cancelled)
-    {
-        return this switch
-        {
-            Pending p => pending(p),
-            Confirmed c => confirmed(c),
-            Cancelled c => cancelled(c),
-            _ => throw new UnreachableException($"Order.Match does not handle {GetType().Name}."),
-        };
-    }
-
-    // Only when a caller needs side effects that differ per case (see "Using a union").
-    public void Switch(Action<Pending> pending, Action<Confirmed> confirmed, Action<Cancelled> cancelled)
-    {
-        switch (this)
-        {
-            case Pending p:
-                pending(p);
-                break;
-            case Confirmed c:
-                confirmed(c);
-                break;
-            case Cancelled c:
-                cancelled(c);
-                break;
-            default:
-                throw new UnreachableException($"Order.Switch does not handle {GetType().Name}.");
-        }
-    }
 }
+
+var label = order.State switch
+{
+    OrderState.Pending => "awaiting payment",
+    OrderState.Confirmed confirmed => $"confirmed {confirmed.ConfirmedAt:d}",
+    OrderState.Cancelled => "cancelled",
+};
 ```
 
-1. **Closed:** private base constructor, sealed nested cases. A record or a class both work:
-   - A **class** union is closed by the compiler: outside code can't derive from it (CS0122).
-   - A **record** union also gets a protected copy constructor, which C# won't let you make private (CS8878), so
-     outside code can still add a case with `: base(source)`; its `Match` then throws at runtime. RL0806 makes that
-     a build error. Pick a record when you want value equality or `with`.
-2. **Data:** shared data on the base, state data on its case, all `required init` (R005).
-3. **Transitions** live only on the state they start from and return the next state. Name them `To<State>` (R003: returns a
-   new value), and always use the result: `pending.ToCancelled(now);` on its own compiles and does nothing. A transition
-   several states allow (cancelling a `Pending` or a `Confirmed` order) is an abstract `Try<Verb>` on the base that every
-   state answers: `order.TryCancel(now, out var cancelled)`. The rule stays on the type, and a new state can't skip it.
-4. **Exhaustiveness: give every union a `Match` method** (one handler parameter per case) and use it outside the union
-   instead of a `switch` (RL0801) or an `if` / `else if` chain over its cases (RL0803). C# can't prove a closed hierarchy
-   exhaustive, so a `switch` is forced to have a `_` arm, and a case added later falls into it at runtime; an `if` chain
-   silently skips it. Adding a case to `Match` breaks every call site at compile time. (That is for questions every
-   case answers; a question only some cases answer is in "Using a union".)
-5. A single-case check is fine: `if (order is Order.Confirmed confirmed) { ... confirmed.ConfirmedAt ... }`.
+1. **Not a closed hierarchy** (an abstract record with a private constructor and nested sealed cases, RL0809), and no
+   `Match` or `Switch` methods: they stood in for the checking C# now does. A union is data. These stay classes: a base
+   meant to be extended (R004); a closed set whose cases carry behaviour through abstract members and keep identity or
+   mutable state (two implementations of one grid, used through its members: RL0809 skips it when nothing dispatches
+   on its cases); an entity with identity (a tree row other code keys by reference); a type System.Text.Json reads
+   polymorphically.
+2. **Data:** the union holds only the case. Data the thing has whatever its state (an identity, an order's customer)
+   sits beside the union, in a record holding both (`Order` above). Data each case holds for its own reasons (a
+   recipient that is an address in one case and a phone in another) stays in its case, read through a member on the
+   union where callers want it whatever the case. A union can't hold the shared data itself (CS9373).
+3. **Transitions** live on the state they start from and return the next state, named `To<State>` (R003), and their
+   result is always used: `pending.ToConfirmed(now);` alone compiles and does nothing (RL0802). A transition several
+   states allow is a member on the union whose switch answers per case.
+4. **Every case named, no catch-all.** A switch expression over a union names every case, with no `_`, `default`,
+   `var` or `object` arm (RL0801); it then stops compiling when a case is added (CS8509, an error). A catch-all arm
+   takes the new case silently; an `if` / `else if` chain over cases skips it (RL0803). A switch statement (side effects
+   that really differ per case) names every case too, with no default: the compiler doesn't check statements, RL0801
+   does, and its flow analysis doesn't either (a local assigned in every arm isn't assigned after it, CS0165). So a
+   value is computed by a switch expression (an arm of several statements calls a method of its own), statements only
+   for effects. A single-case check is fine: `if (state is OrderState.Confirmed confirmed) { ... }`.
+5. **Never read a union's `Value`** (an `object?` that has lost the case): use patterns (RL0808).
+6. **A union is a struct, not a reference.** `default` holds no case, and a switch over it throws
+   `SwitchExpressionException` (S08), as over an array slot, a field or a `GetValueOrDefault` never given one; "maybe
+   no state" is `OrderState?`. Boxed to `object` or an interface it is the union, never its case: `obj is Case` and
+   `Assert.IsType<Case>(u)` are false, `ReferenceEquals` and `Assert.Same` never true (CA2013, RL0810), `OfType<Case>()`
+   and `Cast<Case>()` keep nothing (CA2021: take the case by a pattern, `Select(u => u is Case c ? c : null)
+   .OfType<Case>()`), `GetType()` and `ToString()` name the union. Compare with `Equals` or a pattern. Generic code
+   constrained `where T : class` doesn't take a union, and an arm answering null is `(OrderState?)null`. In testing
+   (S14, ILSight's flyout and package details), comparing by reference closed the flyout every frame and never
+   replaced the details' "loading".
+7. **A union inside another isn't seen through:** `outer is Inner.Case` doesn't compile (CS8121). A two-level set is
+   one flat union, plus a smaller union for the cases some code takes, converted to the flat one (ILSight's `Navigable`
+   within `CodeReference`). Don't name a case `Value` (the union's own property); deconstruct a switch's tuple from a
+   typed local (deconstructing it directly gives a spurious CS8655).
+
+In testing (S02, S12), a switch with `_` took a case added later at runtime; a switch expression naming every case
+stopped compiling at each place (`DEMO_CS8509`), over a library's union in another assembly too, and a switch statement
+written before the case compiled and skipped it (`DEMO_RL0801`).
 
 ### Using a union
 
-**`Match` is for questions every case answers.** For a question only some cases answer (most questions about a wide
-union: ILSight's `NodeSubject` has 24 cases), use the last two rows. Pick the first that fits:
+| The operation... | Use |
+|------------------|-----|
+| is the type's own knowledge, every case answers (a label, a rule) | a **member on the union** whose switch expression names every case |
+| is the type's own knowledge, only some cases answer (a metadata token) | a **member on the union** naming the cases that answer, the others in one `or` arm (`Assembly or Namespace or Resource => null`) |
+| belongs to another layer (a response DTO, persistence, an HTTP result) | a **switch expression at the call site**: the domain union doesn't learn about DTOs, EF or ASP.NET |
+| has an effect, the same kind for every case (fill the same columns, send one message) | a **switch expression returning it as one value** (a tuple of every column), then act once |
+| is an async side effect | a **switch expression returning a `Task`** per case |
+| is a synchronous side effect that really differs per case | a **switch statement** naming every case, no default |
+| belongs to another layer, and only some cases matter (what the decompiler can show) | **one `is` check per case** it cares about, each its own `if`, then what every other case gets |
 
-| The operation... | Use | Why |
-|------------------|-----|-----|
-| is the type's own knowledge, and every case has an answer (a label, an area, a rule) | an **abstract member** on the base, overridden in each case | A case added without it doesn't compile (CS0534), and callers need no handlers. |
-| belongs to another layer (a response DTO, persistence, an HTTP result) | **`Match`** at the call site | The domain union doesn't learn about DTOs, EF or ASP.NET. |
-| has an effect, but every case does the same kind of thing (fill the same columns, send one message) | **`Match`** returning that as one value, then act once | Each case must supply the whole value, so none can leave a part out. |
-| is an async side effect | **`Match`** with `Task` as the result | `TResult` can be `Task`; no extra method needed. |
-| is a synchronous side effect that really differs per case | **`Switch`** (one `Action` per case) | Adding a case breaks every call site, as with `Match`. |
-| is the type's own knowledge, but only some cases have an answer (a metadata token) | a **virtual member** on the base whose default says "doesn't apply" (`null`), overridden by the cases that answer | Stated once, beside the cases. It does **not** make a case added later answer: that case gets the default. Use it only where the default is harmless for any future case (a command isn't offered); where a wrong default would do damage, make it abstract. |
-| belongs to another layer, and only some cases matter to it (what the decompiler can show) | **one `is` check per case** it cares about, each its own `if`, then what every other case gets | Every other case, including any added later, doesn't apply. An `else if` chain over the same cases is RL0803's shape, kept for questions every case answers. |
-
-Outside the union, never a `switch` with a `_` arm (RL0801; the union's own `Match` and `Switch` dispatch with one that
-throws `UnreachableException`): at runtime it does what the `is` checks do, but it reads as covering every
-case, so a reader can't tell a deliberate default from a forgotten case. In testing (S09, a 24-case union and a 25th
-added later), the token question through `Match` took a handler per case (25) at every call site to answer for 6,
-and broke at compile time when the case was added (CS7036); as a virtual member it was one default plus 5
-overrides, and the added case, which has a token, silently answered "none", as did the `switch` with `_`. The
-decompiler's `is` checks were right for it: a forwarded type has nothing to decompile.
+The `or` arm makes a case added later break the build until someone decides what it answers. In testing (S09,
+ILSight's 24-case `NodeSubject` and a 25th added later that has a token), it did, where a switch with `_` answered
+"none" silently. The decompiler's `is` checks were right for it: a forwarded type has nothing to decompile, and every
+other case, now and later, doesn't apply.
 
 ```csharp
-public virtual int? DefinitionToken => null;                 // on NodeSubject: "this node shows no definition"
-public override int? DefinitionToken => Token;               // on Type, Method, Field, Property, Event
-
-if (subject is NodeSubject.Type type)                        // the decompiler panel: the two cases it can show
+(string Channel, string? Subject, string? Text) columns = notification switch
 {
-    return DecompileType(type);
-}
-
-if (subject is NodeSubject.Method method)
-{
-    return DecompileMethod(method);
-}
-
-return null;                                                 // everything else, now and later: nothing to show
+    Notification.Email email => ("email", email.Subject, null),   // every arm gives every column,
+    Notification.Sms sms => ("sms", null, sms.Text),              // so none is left stale
+};
+(row.Channel, row.Subject, row.Text) = columns;
 ```
 
-```csharp
-(row.Channel, row.Subject, row.Text) = notification.Match<(string Channel, string? Subject, string? Text)>(
-    email: e => (e.Channel, e.Subject, null),
-    sms: s => (s.Channel, null, s.Text));   // can't forget to clear Subject: the tuple needs every column
-```
+In testing (S07), the same `CopyTo` as a switch statement setting each case's columns compiled and left a stale
+`Subject` on a row that changed from an email to an sms.
 
-The same `CopyTo` written with `Switch` (`sms: s => { row.Channel = ...; row.Text = s.Text; }`) compiled and left a
-stale `Subject` on a row that changed from an email to an sms.
-
-**A union the codebase can't change** (a library's, another team's, with no `Match`) is used the same way. A question
-only some cases answer needs no `Match`: one `is` check per case, then what every other case gets. A question every
-case answers goes through a `Match` (or `Switch`) written once beside the codebase's own code, as an extension method of
-the union: its switch, whose `_` arm throws `UnreachableException` naming the case, is the only one (RL0801 accepts
-it), so a case the library adds stops there by name, and once its handler is added every call site must answer it.
-Not a switch with `_` at each place, suppressed each time or skipped by the check for a library's unions: each `_` arm
-takes the new case silently. (The check can't skip "unions outside the solution" anyway: it sees another project's
-and a package's alike, as metadata.) In testing (S12, ZGF's `TargetResult` in ILSight's test driver, the library's
-next version adding a case), the double-click's `is` check and ILSight's switch both refused the new case; for a
-question every case answers, a switch at each place answered "?" at both places, and the `Match` written once threw
-`UnreachableException` naming the case, and with its handler added both callers stopped compiling (`DEMO_CS7036`).
+**A union the codebase can't change** (a library's) is used the same way: a switch expression over it is checked
+across assemblies, so a case the library adds breaks the build at every switch (S12).
 
 ### Values the caller must act on
 
-**A method whose result the caller must act on returns a type whose drop is reported.** A result union is one
-already (RL0804, an error, R009). Anything else whose loss leaves state stuck (a ticket the state hands out for I/O only the
+**A method whose result the caller must act on returns a type whose drop is reported.** A union is one already
+(RL0804, an error, R009): which case came back is the answer. A test that calls only to see the call doesn't throw says
+so: `_ = grid.FindDefinition(row);`. Anything else whose loss leaves state stuck (a ticket the state hands out for I/O only the
 caller can start: dropped, the tab says "loading" forever) is a type marked `[MustUse]`, an attribute the project
 declares itself (`public sealed class MustUseAttribute : Attribute`, in any namespace: the analyzer knows it by name).
 Mark the type, not each method: every method that returns it is covered, the next one written included. RL0807, which
@@ -2707,23 +2651,19 @@ loads.Start(Navigation.ShowNode(tab, node));          // acted on
 commands.Later(() => Navigation.ShowNode(tab, node)); // RL0807: an Action drops it (ShowLater, a Func, keeps it)
 ```
 
-RL0807 reports a value of a marked type (or its `T?`, or a collection of them) used as a statement (awaited, or
-through `?.`), discarded with `_ =`, returned by a lambda whose delegate returns nothing, or put in a local nothing
-reads, and a `Task<T>` of one taken as a plain `Task`, which nobody can read the `T` from: a lambda or a method group
-handed to a runner whose delegate returns `Task` (`Workflows.Start(name, ct => handler.HandleAsync(...))`), a `Task`
-local, an argument, a `return`, `Task.WhenAll` over tasks of different types (a task kept in a variable first can
-still be read, and isn't reported). In testing (S10), ILSight's `DecompileTicket?` dropped those four ways (a call as a
+RL0807 reports a drop however it happens: a statement, `_ =`, a lambda whose delegate returns nothing, a local
+nothing reads, a `Task<T>` taken as a plain `Task` (a task kept in a variable first can still be read). In testing (S10), ILSight's `DecompileTicket?` dropped those four ways (a call as a
 statement, the list a reload returns, a lambda handed to `Later` where `ShowLater` was meant, a workflow returning the
 ticket run through a runner that takes a plain `Task`) compiled cleanly and left every tab "loading" with no load
 started; with the type marked, each drop is reported. A union for "a load or nothing" (`Showing.Loading` /
 `AlreadyShown`) behaved the same when used, but RL0804 reported one of the three drops, and every caller wrote a
-`Switch` for what `T?` already says. Marking methods instead (JetBrains' `[MustUseReturnValue]`) would take 26
+switch over both cases for what `T?` already says. Marking methods instead (JetBrains' `[MustUseReturnValue]`) would take 26
 attributes in ILSight, and miss the 27th method.
 
 **Several kinds of work handed back through one chain are one `[MustUse]` value that makes its consumer handle each
-kind it carries:** one handler per kind, as a union's `Switch`, so a kind added later doesn't compile at the edge
-until the edge starts it (`DEMO_CS7036`). Either a list of a union of the kinds, or a carrier whose one method takes a
-handler per kind:
+kind it carries**, so a kind added later breaks the edge until the edge starts it. Either a list of a union of the
+kinds, switched on naming every case (RL0801 reports a switch written for fewer, `DEMO_RL0801`), or a carrier whose
+one method takes a handler per kind (`DEMO_CS7036`):
 
 ```csharp
 [MustUse]
@@ -2739,7 +2679,7 @@ Not lists the edge reads one by one, and not a tuple. In testing (S11, a third k
 carrier whose lists the edge read (ILSight's `TabLoads`) carried the new kind to the edge, which still compiled and
 never started it ("comparing" for good); the tuple broke every deconstruction, and the edge compiled again once the
 new element was discarded (`var (decompiles, reads, _) = work;`), with the same result, and RL0807 doesn't look
-inside a tuple. A handler per kind and a list of a union both started all three; combining two results is the
+inside a tuple. A handler per kind and a switch over a list of a union both started all three; combining two results is the
 carrier's own `With` or concatenating lists.
 
 ### A case nothing produces
@@ -2750,7 +2690,7 @@ core it calls, a state the workflow no longer reaches) is deleted with the chang
 handlers; a port's answer is what its adapters can answer, not every outcome one might some day have. Kept, it tells
 a reader something can happen that can't, its handlers are code no run takes, and a source written later that does
 produce it compiles against those handlers unasked. Added back with the code that produces it, the case breaks every
-`Match` until each handler says what it does, with the producing code there to test it. A fake answering a case no
+switch over the union until each says what it does, with the producing code there to test it. A fake answering a case no
 real adapter produces tests a path the app never takes. In testing (S13, a search panel whose port kept a `Failed` no
 adapter produced, its never-run branch leaving the spinner on; a remote index written later that can be offline),
 kept (ILSight's), the offline index compiled against the old branch and left the panel searching for good; removed,
@@ -2763,8 +2703,9 @@ port.
 
 ### Persistence
 
-EF Core maps a **row type** (database-shaped, flat, nullable), never the union: EF can't change an entity's type, and
-mapping the union directly silently wrote a corrupt row (`Status = Pending` with a `CancelledAt`).
+EF Core maps a **row type** (database-shaped, flat, nullable), never the union: EF can't map a `union` (a struct), and
+a class hierarchy mapped in its place silently wrote a corrupt row (`Status = Pending` with a `CancelledAt`: EF can't
+change an entity's type).
 
 The handler decides (R001's `ConfirmOrderHandler`); the adapter's port members do the row mechanics:
 
@@ -2778,7 +2719,7 @@ public async Task<Order?> FindOrderAsync(int orderId, CancellationToken ct)
 public async Task SaveOrderAsync(Order order, CancellationToken ct)
 {
     var row = await db.Orders.SingleAsync(o => o.Id == order.Id, ct);
-    order.CopyTo(row);       // copy onto the TRACKED row, via Match; never db.Update(newRow)
+    order.CopyTo(row);       // copy onto the TRACKED row, via a switch expression; never db.Update(newRow)
     await db.SaveChangesAsync(ct);
 }
 ```
@@ -2786,20 +2727,20 @@ public async Task SaveOrderAsync(Order order, CancellationToken ct)
 ### Boundaries
 
 An inbound DTO (R006) converts into a union case in its `To<Union>()` step; the union defines what is valid (a "shipped"
-update without a tracking number has no case to become). Response DTOs stay flat and are built through `Match`.
+update without a tracking number has no case to become). Response DTOs stay flat and are built by a switch expression.
 
 ### Checklist
 
 - [ ] No status/kind field paired with nullable fields that must agree with it.
-- [ ] Union base (abstract record or class) has a private constructor; cases are sealed and nested; nothing outside derives from it (RL0806).
-- [ ] Every union has a `Match`; code outside the union uses `Match`, not `switch` or an `if` / `else if` chain over cases.
-- [ ] Behaviour the type owns is an abstract member; effects that are the same kind for every case are a value returned from `Match`.
-- [ ] A question only some cases answer: a virtual member with a "doesn't apply" default (only where that default is harmless for a future case), or one `is` check per case in another layer, not a `Match` that answers "none" for most cases; never `switch` with `_`.
-- [ ] A union the codebase can't change that has no `Match`: `is` checks for a question only some cases answer; for one every case answers, a `Match` written once as an extension method of the union, its switch the only one.
-- [ ] `Switch` only for synchronous side effects that differ per case.
+- [ ] Declared with `union`, cases nested sealed records; no closed hierarchy written by hand (RL0809), no `Match` / `Switch` methods.
+- [ ] Data every state shares sits beside the union, in a record holding both, not in each case.
+- [ ] Every switch over a union names every case, with no `_` / `default` / `var` / `object` arm (RL0801); no `if` / `else if` chain over its cases (RL0803).
+- [ ] The type's own knowledge is a member on the union; one only some cases answer names the rest in one `or` arm; another layer's partial question is one `is` check per case.
+- [ ] An effect the same kind for every case is one value returned by a switch expression; a switch statement only for synchronous effects that differ per case.
+- [ ] No union's `Value` read (RL0808), no union left at `default`, none treated as a reference (boxed then tested for a case, compared by identity: RL0810).
 - [ ] Transitions are `To<State>` on the source state, and their result is used.
 - [ ] A value whose loss leaves state stuck (a ticket for I/O the caller must start) is a type marked `[MustUse]`, and none is dropped (RL0807), a `Task<T>` of it taken as a plain `Task` included.
-- [ ] Several kinds of work handed back together make the consumer handle each: one handler per kind (a union's `Switch`, or the carrier's), not lists read one by one or a tuple.
+- [ ] Several kinds of work handed back together make the consumer handle each: a switch naming every kind of a union, or the carrier's handler per kind, not lists read one by one or a tuple.
 - [ ] Persisted unions go through a row type with `ToX()` / `CopyTo(trackedRow)`.
 - [ ] Independent optional fields stay nullable.
 
@@ -2827,32 +2768,28 @@ a catch-all turned a missing price into a free order. And with no catch at the e
 ### Expected failures: a union per operation
 
 ```csharp
-public abstract record WithdrawResult
+public union WithdrawResult(WithdrawResult.Succeeded, WithdrawResult.InsufficientFunds)
 {
-    private WithdrawResult()
-    {
-    }
-
-    public sealed record Succeeded : WithdrawResult
+    public sealed record Succeeded
     {
         public required decimal NewBalance { get; init; }
     }
 
-    public sealed record InsufficientFunds : WithdrawResult
+    public sealed record InsufficientFunds
     {
         public required decimal Shortfall { get; init; }
     }
-
-    // + Match (R008)
 }
 
-var message = account.Withdraw(amount).Match(
-    succeeded: s => $"New balance: {s.NewBalance}",
-    insufficientFunds: f => $"Insufficient funds: {f.Shortfall} short.");
+var message = account.Withdraw(amount) switch
+{
+    WithdrawResult.Succeeded succeeded => $"New balance: {succeeded.NewBalance}",
+    WithdrawResult.InsufficientFunds refused => $"Insufficient funds: {refused.Shortfall} short.",
+};
 ```
 
 - One case per outcome the caller handles differently, each with its own data. A failure case added later breaks every
-  `Match` that doesn't handle it.
+  switch that doesn't handle it (R008).
 - Use the shared `Result<T>` (R006) when callers only need "it failed, and why", as with input validation.
 - **Never discard a result.** `account.Withdraw(500);` compiles, and the refusal goes unnoticed (RL0804). A value
   that isn't an outcome but leaves state stuck when lost (a ticket) is marked `[MustUse]` (R008 "Values the caller
@@ -2870,7 +2807,7 @@ var message = account.Withdraw(amount).Match(
   failure and retried (2 reads refused); worded by the adapter in the app's language, still logged and retried, and
   left German in the English text once the UI switched; doing nothing said "saved" for a file never written; a
   `Closed` case said why where Save was pressed, in the current language, logged nothing, read once and kept a full
-  disk apart, at one case and a handler in each place that shows the answer (one missing: `DEMO_CS7036`).
+  disk apart, at one case and an arm in each switch that shows the answer (a switch statement missing it: `DEMO_RL0801`).
   **Every input of a command reads one decision of what it applies to.** A command reached by a menu item, a shortcut,
   a toolbar button or a palette decides once, for what has focus, whether it runs, is unavailable now (with why), or
   isn't offered there at all (it never applies to that kind: a namespace has nothing to analyze). Each input reads that
@@ -3689,9 +3626,11 @@ reason.
   public bool OnCloseRequested()                               // the edge: the window's host asks before closing
   {
       var write = saving.Save(settings);
-      return write.Match(
-          written: _ => true,
-          failed: failure => closing.AllowsClosingAfter(failure));   // the product's policy: keep open, ask, retry, discard
+      return write switch
+      {
+          SettingsWrite.Written => true,
+          SettingsWrite.Failed failure => closing.AllowsClosingAfter(failure),   // the product's policy: keep open, ask, retry, discard
+      };
   }
   ```
   In testing (S15, settings saved at exit into a read-only folder), the save at shutdown with its result dropped and
@@ -4230,7 +4169,7 @@ draw or right after it, or from a **command** the draw queues, which the frame l
 every statement in the body is at that one level. Lower levels never call back up: code that knows *how* (parse,
 compute, format, store) doesn't decide *why*, or start on its own account what does (a use case, a policy, a
 notification). It returns what it found, and the caller decides. Direction is set by who asked, not which type is
-called. Running a delegate the caller passed in (`Match`, `Switch`, a predicate, a comparer) is not calling up: the
+called. Running a delegate the caller passed in (a predicate, a comparer, a handler per kind) is not calling up: the
 lower level still knows nothing of the policy. Neither is an adapter carrying out a port member by calling another use
 case (R001 "Another use case is reached through the port"): the calling use case asked for that step by name
 (`ShowNode`), so the other use case runs below it, as that step's *how*, and the adapter decides nothing.
@@ -4333,8 +4272,8 @@ A level is a vocabulary, not a kind of statement:
    null though `required`, and asking about it threw.
 5. **Calls only go down.** A lower level returns what it found: a value, `T?`, or a result union (R009). It doesn't
    send email, log business events, read configuration or call back into the use case that called it. Adapters make no
-   decisions (R001). Handlers the caller supplies are fine: `notification.Switch(email: SendEmail, sms: SendSms)` is the
-   caller's policy, run by a union that doesn't know it. So is an adapter whose port member the use case named for
+   decisions (R001). Handlers the caller supplies are fine: `orders.Where(isOverdue)` runs the caller's policy, in code
+   that doesn't know it. So is an adapter whose port member the use case named for
    another use case's work: the adapter calls that use case because it was asked to, and the other's decisions stay
    its own (R001 S20).
 6. **Name database queries, not predicates.** EF can't see inside a C# method, so `Where(i => IsOverdue(i, today))`

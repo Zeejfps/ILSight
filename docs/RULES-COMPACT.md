@@ -90,7 +90,7 @@ reached around the port), RL0106 (an answer from an `[Edge]` type), RL0107 (a wa
     object): a function reading one part takes the untyped context and the part (where none exists, it keeps the
     required one but reads state only through the part); one only writing to a part takes its writing side (a command
     queue); a parameter object, assembled or copied, holds only inputs meant for this call. Only the root view, with its
-    private steps that only hand views parts, and an edge's dispatch (a `Switch` or a table) keep the whole; any other
+    private steps that only hand views parts, and an edge's dispatch (a switch or a table) keep the whole; any other
     dispatch shares only its entries' parts, handlers taking theirs. A dispatch's guard (a table or direct checks) is
     stated once, applying by default to new entries; exceptions are explicit, never by position alone.
   - **A part taken out of a whole** is read there, never through a forwarder on the whole (one stands only while
@@ -169,7 +169,7 @@ RL0309 (an action call inside an argument).
 | `Where*` `Select*` `OrderBy*` | LINQ-style: only what that operator does |
 | `Calculate*` `Build*` / `Create*` / `Read*` | computes, no I/O / constructs something new / reads raw content from a source the caller names |
 | `Save*` `Send*` `Publish*` `Delete*` / `Add*` `Remove*` `Clear*` | I/O side effects / mutates this object or its store, never a copy |
-| `Match` `Switch` / `Handle(Async)` / `Log*` / `ThrowIf*` / `*Async` | union dispatch / a use case's entry, its class named for the effect / records / guards / awaitable, always |
+| `Handle(Async)` / `Log*` / `ThrowIf*` / `*Async` | a use case's entry, its class named for the effect / records / guards / awaitable, always |
 
 - **Named for the effect**, never a verb that only says it reacts (`Follow`, `Handle`, `Process`, `Manage`, `Update`,
   `Sync`, `React`); a conditional effect says both (`ReloadListWhenLoadOptionsChange`). Event handlers too.
@@ -309,23 +309,23 @@ Build: everything (`.editorconfig`: `csharp_prefer_braces = true`, not `when_mul
 
 ## R008: Make invalid states unrepresentable with unions
 
-Build, other projects' unions included: RL0801 (`switch` on a union), RL0802 (discarded `To*` / `With*`), RL0803
-(`if` chain over cases), RL0804 (discarded result union), RL0805 (status enum beside nullables), RL0806 (a case
-added from outside); suggestion: RL0807 (a dropped `[MustUse]` value).
+Build: RL0801 (catch-all arm; statement missing a case), RL0802 (dropped `To*` / `With*`), RL0803 (`if` chain over
+cases), RL0804 (dropped union), RL0805 (status beside nullables), RL0808 (`Value` read), RL0809 (hand-written closed
+hierarchy), CS8509; suggestions: RL0807 (dropped `[MustUse]`), RL0810 (union treated as a reference).
 
-- Use a union when which data exists depends on a state or kind; independent optional fields stay nullable. Shape: an
-  abstract record or class with a private constructor and sealed nested cases, shared data on the base, all `required
-  init`. Transitions are `To<State>` on the state they start from, result used; one several states allow is an
-  abstract `Try<Verb>` on the base.
-- Every union has `Match` (a handler per case), used outside it instead of `switch` or an `if` chain: behaviour the
-  type owns → an abstract member; another layer → `Match`; one kind of effect per case → `Match` returning a value,
-  acted on once; async effects → `Match` returning `Task`; differing sync effects → `Switch`. A question only some
-  cases answer: a virtual "doesn't apply" default (harmless for a future case), or an `is` check per case in another
-  layer. A union you can't change gets `Match` once, as an extension method. No `switch` with `_` outside the union;
-  inside (or that extension), the `_` arm throws `UnreachableException`.
-- **A value the caller must act on** is a result union, or, when its loss leaves state stuck, a type marked `[MustUse]`
-  (RL0807, raised to error where a drop must fail the build). Several kinds of work handed back together are one
-  `[MustUse]` value with a handler per kind, not lists read one by one or a tuple.
+- Use a union when which data exists depends on a state or kind; independent optional fields stay nullable. Declare it
+  with `union`, each case a sealed record nested in it; data every state shares sits beside it (`record Order { Id;
+  OrderState State; }`). No `Match` / `Switch`. Behaviour with identity stays a class. Transitions are `To<State>` on
+  the state they start from, result used.
+- Every switch over a union names every case, with no catch-all arm or `if` chain over cases.
+  The type's own knowledge → a member on the union (cases that don't answer in one `or` arm); another layer → a switch
+  expression; one kind of effect per case → a switch expression returning it (or a `Task`), acted on once; differing
+  sync effects → a switch statement (never to compute a value); another layer's partial question → an `is` check per
+  case. Never read `Value`; never leave a union `default` ("maybe none" is `T?`). It's a struct: boxed it is never its
+  case, it has no identity (compare with `Equals`), `OfType<Case>` keeps nothing.
+- **A value the caller must act on** is a union, or, when its loss leaves state stuck, a type marked `[MustUse]`
+  (RL0807; error where a drop must fail the build). Several kinds of work handed back together are one
+  `[MustUse]` value whose consumer must handle each kind, not lists read one by one or a tuple.
 - In an internal contract (its producers, consumers and stored forms all here), a case nothing produces goes with
   what stopped producing it, and comes back with what does; a published one (a public API, a plugin, a wire or saved
   form) follows its compatibility policy.

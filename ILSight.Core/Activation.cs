@@ -6,5 +6,5 @@ public union Activation(Activation.OpenSelf, Activation.Navigate)
 {
     public sealed record OpenSelf;
 
-    public sealed record Navigate(CodeReference.Navigable Target);
+    public sealed record Navigate(Navigable Target);
 }

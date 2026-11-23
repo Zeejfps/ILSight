@@ -10,7 +10,7 @@ public readonly record struct MetadataGridResult
     public required MetadataAddress? Target { get; init; }
 
     /// <summary>What a row stands for in the code, to decompile.</summary>
-    public required CodeReference.Navigable? Definition { get; init; }
+    public required Navigable? Definition { get; init; }
 
     /// <summary>Whether to show either in a new tab.</summary>
     public required bool InNewTab { get; init; }
